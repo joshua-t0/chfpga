@@ -1,0 +1,4 @@
+.. _crossbar-module:
+
+Crossbar
+********

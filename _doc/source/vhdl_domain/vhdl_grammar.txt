@@ -1,0 +1,399 @@
+# http://insights.sigasi.com/tech/vhdl2008.ebnf.html#interface_list
+statements = ( _ statement)* _  # This must be first in the file: it is the root parse node. Final '_' needed to catch traiing spaces/comments at the end of the file.
+
+statement = library_clause / use_clause / entity_declaration / architecture_declaration / package_declaration / package_body
+
+# Whitespaces and comments
+spaces = ~r"[ \t]+"
+newline = ~r"(^|\n)"
+
+# Comments
+# Includes leading spaces, comment tag ('--' or Doxygen-style '--!'), the comment text, terminal newline.
+# All 4 elements are always present in the parse tree. This facilitates comment processing.
+
+comment_spaces = ~r"[ \t]*"
+comment_tag =~r"--!?"
+comment_text = ~r"[^\n]*"  # all text until (but excluding) newline
+comment =  comment_spaces comment_tag comment_text newline
+
+# Generic separator, which gobbles whitespaces, newlines and comments
+# This element always matches, so no need to make it conditional, but don't use it in n-or-more or any-of expression
+_ = (comment / spaces / newline)* # comment must be first to grab its leading spaces.
+
+
+
+# NAMEs (n, n.n, n(i), n(1 downto 0), n'ATTR() etc.
+#-------------------------------------------------------
+# Names are key language constructs. They represent an object (signal, variable etc) or part of an object
+# They do not just represent values or expressions, as we can assign values to them.
+# expressions can be names, but names cannot be expressions.
+#
+# The original LRM rules (below) imply left-recursive rules that create infinite loops with our recursive parser.
+# We replaced the rules with unwrapped (mostly) equivalent ones
+#
+# name = attribute_name / indexed_name / selected_name_ / slice_name  / operator_symbol / simple_name #  simple_name must be last because it might partially match the previous expressions. attribute_name must be first because it includes
+# prefix =  name / function_call  # See indexed_name_prefix, slice_name_prefix and attribute_name_prefix
+# selected_name_ = prefix (_ '.' _ identifier)+ # will match only if there is a .name, used to disambiguate simple_name
+# indexed_name =   prefix (_ '('_  expression ( _ "," _ expression)* _ ')')+ # exclude indexed_name from prefix and use repetition to deal with that specific case to avoid  left recursive infinite loops
+# slice_name =     prefix (_ '(' _ discrete_range _ ')')+  # exclude indexed_name from prefix and use repetition to deal with that specific case to avoid  left recursive infinite loops
+# attribute_name = prefix ((_ signature)? _ "'" _ attribute_designator ( _ '(' _ expression _ ')')?)+ # cannot use 'prefix' because we have an infinite left-recursive rule. We exclude 'attribute_name' from prefix, and handle that special case by repeating what follows the prefix
+#
+# Here is an example of a complex 'name':
+#    a.b(3)'LEFT(3 to 4)(x).test -> selected_name -> indexed_name->attribute_name->indexed_name->selected_name
+
+# List of keywords to be excluded as valid names
+# keyword = (expression_operator / shift_operator / adding_operator / multiplying_operator / direction / mode / 'IS' / 'LOOP' / 'THEN' / 'ELSE' / 'ELSIF') !~"\w+"  # keyword not followed by any character to eliminate partial matches
+# keyword = 'ABS' /  'ACCESS' /  'AFTER' /  'ALIAS' /  'ALL' /  'AND' /  'ARCHITECTURE' /  'ARRAY' /  'ASSERT' /  'ATTRIBUTE' /  'BEGIN' /  'BLOCK' /  'BODY' /  'BUFFER' /  'BUS' /  'CASE' /  'COMPONENT' /  'CONFIGURATION' /  'CONSTANT' /  'DISCONNECT' /  'DOWNTO' /  'ELSE' /  'ELSIF' /  'END' /  'ENTITY' /  'EXIT' /  'FILE' /  'FOR' /  'FUNCTION' /  'GENERATE' /  'GENERIC' /  'GROUP' /  'GUARDED' /  'IF' /  'IMPURE' /  'IN' /  'INERTIAL' /  'INOUT' /  'IS' /  'LABEL' /  'LIBRARY' /  'LINKAGE' /  'LITERAL' /  'LOOP' /  'MAP' /  'MOD' /  'NAND' /  'NEW' /  'NEXT' /  'NOR' /  'NOT' /  'NULL' /  'OF' /  'ON' /  'OPEN' /  'OR' /  'OTHERS' /  'OUT' /  'PACKAGE' /  'PORT' /  'POSTPONED' /  'PROCEDURE' /  'PROCESS' /  'PURE' /  'REM' /  'RANGE' /  'RECORD' /  'REGISTER' /  'REJECT' /  'RETURN' /  'ROL' /  'ROR' /  'SELECT' /  'SEVERITY' /  'SIGNAL' /  'SHARED' /  'SLA' /  'SLI' /  'SRA' /  'SRL' /  'SUBTYPE' /  'THEN' /  'TO' /  'TRANSPORT' /  'TYPE' /  'UNAFFECTED' /  'UNITS' /  'UNTIL' /  'USE' /  'VARIABLE' /  'WAIT' /  'WHEN' /  'WHILE' /  'WITH' /  'XNOR' /  xor_kwd ;
+	keyword = ~r'(?:ABS|ACCESS|AFTER|ALIAS|ALL|AND|ARCHITECTURE|ARRAY|ASSERT|ATTRIBUTE|BEGIN|BLOCK|BODY|BUFFER|BUS|CASE|COMPONENT|CONFIGURATION|CONSTANT|DISCONNECT|DOWNTO|ELSE|ELSIF|END|ENTITY|EXIT|FILE|FOR|FUNCTION|GENERATE|GENERIC|GROUP|GUARDED|IF|IMPURE|IN|INERTIAL|INOUT|IS|LABEL|LIBRARY|LINKAGE|LITERAL|LOOP|MAP|MOD|NAND|NEW|NEXT|NOR|NOT|NULL|OF|ON|OPEN|OR|OTHERS|OUT|PACKAGE|PORT|POSTPONED|PROCEDURE|PROCESS|PURE|REM|RANGE|RECORD|REGISTER|REJECT|RETURN|ROL|ROR|SELECT|SEVERITY|SIGNAL|SHARED|SLA|SLI|SRA|SRL|SUBTYPE|THEN|TO|TRANSPORT|TYPE|UNAFFECTED|UNITS|UNTIL|USE|VARIABLE|WAIT|WHEN|WHILE|WITH|XNOR)\b'i
+	# keyword = ['ABS','ACCESS','AFTER','ALIAS','ALL','AND','ARCHITECTURE','ARRAY','ASSERT','ATTRIBUTE','BEGIN','BLOCK','BODY','BUFFER','BUS','CASE','COMPONENT','CONFIGURATION','CONSTANT','DISCONNECT','DOWNTO','ELSE','ELSIF','END','ENTITY','EXIT','FILE','FOR','FUNCTION','GENERATE','GENERIC','GROUP','GUARDED','IF','IMPURE','IN','INERTIAL','INOUT','IS','LABEL','LIBRARY','LINKAGE','LITERAL','LOOP','MAP','MOD','NAND','NEW','NEXT','NOR','NOT','NULL','OF','ON','OPEN','OR','OTHERS','OUT','PACKAGE','PORT','POSTPONED','PROCEDURE','PROCESS','PURE','REM','RANGE','RECORD','REGISTER','REJECT','RETURN','ROL','ROR','SELECT','SEVERITY','SIGNAL','SHARED','SLA','SLI','SRA','SRL','SUBTYPE','THEN','TO','TRANSPORT','TYPE','UNAFFECTED','UNITS','UNTIL','USE','VARIABLE','WAIT','WHEN','WHILE','WITH','XNOR']
+
+	identifier = !keyword ~r"[A-Z][A-Z0-9_]*"i 	# We prevent 'name' from matching keywords, otherwiese some constructs are ambiguous such as physical_literal, alias_definition
+	identifier_list = identifier (_ "," _ identifier)*
+	simple_name = identifier
+
+	name = (operator_symbol / function_call / simple_name) (attribute_name_suffix / selected_name_suffix / indexed_name_suffix / slice_name_suffix )*
+
+	operator_symbol = string_literal
+
+	suffix = 'ALL' / simple_name / character_literal / operator_symbol
+	prefix = name / function_call
+	selected_name_suffix = _ '.' _ suffix # used in 'name' to prevent left-recursive infinite recursion
+	selected_name = name # Normally prefix.suffix, but the non-recursive name gobbles it #
+	# selected_name = (operator_symbol / function_call / simple_name) ((attribute_name_suffix / indexed_name_suffix / slice_name_suffix )* selected_name_suffix)*
+
+	indexed_name_suffix = _ '('_  expression ( _ "," _ expression)* _ ')'
+
+	slice_name_suffix =_  '(' _ discrete_range _ ')'
+
+# names with pre-defined attributes
+#---------------------------------------------
+	attribute_name_suffix = (_ signature)? _ "'" _ attribute_designator ( _ '(' _ expression _ ')')?
+	attribute_designator = attribute_simple_name
+	attribute_simple_name = 'RANGE'/ simple_name # Have to accept range exolicitely because it is also a keyword and would be rejected as 'simple_name'
+	signature = (( type_mark ( _ ',' _ type_mark)*)? (_ 'RETURN' _ type_mark)? )?
+	attribute_name = (operator_symbol / function_call / simple_name) ((selected_name_suffix / indexed_name_suffix / slice_name_suffix )* attribute_name_suffix)+
+
+# Literals
+	literal = 'null' / numeric_literal / string_literal / bit_string_literal / enumeration_literal
+	numeric_literal = physical_literal / abstract_literal # must test abstract_literal first to grab the unit name
+	physical_literal = abstract_literal _ unit_name # ! unit name excludes keywords to avoid taking binary operator as a unit (i.e. '1 to 2' would use 'to' as units for 1)
+	unit_name = name
+	abstract_literal = decimal_literal / based_literal
+	integer = ~r"[\d_]+"
+	decimal_literal = ~r"\d+(\.\d+)?(E[+-]?\d+)?"i # simplified, does not support underlines, spaces or comments within the literal
+	based_literal = ~r"\d+#[^#]*#(\d+)?" # simplified. Grabs everything betwen '#'s (i.e. does not validate characters). Does not extract comments within litteral.
+	string_literal = ~r'\"[^\"]*\"'
+	bit_string_literal = (integer _)? base_specifier string_literal  # simplified: replaced bit_literal with string_literal
+	base_specifier = 'B' / 'O' / 'X'
+	enumeration_literal = character_literal # Did not include 'identifier'. This will be grabbed as a 'name' in primary
+	character_literal = ~r"'.'"  # Simplified: accepts any character
+
+expr_chars = ~r"(?:[A-Z0-9_+*/&\s'.>]|<(?!=)|-(?!-)|=(?!>))+"i
+expr = (parenthesized_expr / string_literal / expr_chars )*  # expression with nested parenthesis that grabs all text until an extra closing parenthesis or the ':', ',' or ';' characters
+parenthesized_expr = "(" (~r'[^()\"]+')? (parenthesized_expr / string_literal)? ")"
+skip_to_semicolon = ~r"[^;]*"
+
+# Expressions and simple_expressions
+	expression = relation ( _ expression_operator _ relation)*  #  not exact, simplified
+	expression_operator = 'and'/'or'/'xor'/'nand'/'nor'/'xnor'
+	relation = shift_expression (_ relational_operator _ shift_expression)?
+	relational_operator = '<=' / '>=' / '/=' / '='  / '<' / '>'  # longer operators must be first otherwise '>' matches only part of '>='
+	shift_expression = simple_expression (_ shift_operator _ simple_expression)?
+	shift_operator = 'sll' / 'srl' / 'sla' / 'sra' / 'rol' / 'ror'
+	simple_expression = (sign _)? term  (_ adding_operator _ term)*
+	sign = '+' / '-'
+	adding_operator = '+' / '-' / '&'
+	term = factor (_ multiplying_operator _ factor)*
+	multiplying_operator = '*' / '/' / 'mod' / 'rem'
+	factor = ('abs' _ primary) /  ('not' _ primary) / (primary (_ '**' _ primary )?) # primary**primary must be last to or abs and not will be taken as variables
+
+	# primary expresion element
+	# '(expression)' matches first, has priority over one-element aggregate '(element)'
+	# 'name' must be tested after function call ( 'name(' ), qualified_expression ( "name'")
+	# function call will match type conversions (type(expr))
+	primary = ( '(' _ expression _ ')') /  aggregate  / qualified_expression / allocator / literal / name / function_call   # name must be towards the end because it mightmatch part of the previous elements. Function call is after 'name' because it grabs only part of a(1)(2)
+
+	#   aggregates
+	aggregate = '(' _  element_association ( _ ',' _ element_association)* _ ')'
+	element_association = ( choices _ '=>' _ )? expression
+	choices = choice ( _ '|' _ choice)*
+	choice = 'OTHERS' / discrete_range / simple_expression /  element_simple_name # 'others' must be first
+	element_simple_name = simple_name
+
+	#   function calls
+	function_call = function_name ( _ '(' _ actual_parameter_part _ ')' )  # Did not make the parameters optional to allow unambiguous parsing. Will be grabbed by 'name' in  'primary'
+	function_name = simple_name # LRM states 'name', but that creates a left-recursive loop whise fix would make the code even harder to fix. Since using complex function names based on attributes, selected and slices, we opt for a 'simple_name'
+	actual_parameter_part = parameter_association_list
+	parameter_association_list = association_list
+
+	#   qualified expressions type'(expr) or type'(el, el ...)
+	qualified_expression = type_mark _ "'" _ ( ('(' _ expression _ ')' ) / aggregate)
+
+	#   type conversion
+	# type_conversion = type_mark _ '(' _ expression _ ')' # not used. function_call returned instead.
+
+
+	allocator = 'NEW' _ (subtype_indication / qualified_expression)
+
+# TYPES, SUBTYPES and RANGES
+# slv RANGE 1 to 2, slv(1 to 2), slv(RANGE 1 to 2), slv(slv32)
+	subtype_indication = (resolution_function_name _ type_mark _ constraint) / (type_mark _ constraint) / (resolution_function_name _ type_mark) / type_mark # split (res type) and type to disambiguate parsing
+	resolution_function_name = name
+	type_mark = name  # matches type_name or subtype_name
+	constraint = range_constraint / index_constraint
+	range_constraint = 'RANGE' _ range
+	range = (simple_expression _ direction _ simple_expression) / range_attribute_name  # range_attribute_name must be last (i.e. std_logic_vector(x'HIGH downto x'LOW))
+	index_constraint = '(' _ discrete_range (_ ',' _ discrete_range)* _ ')'
+	discrete_range = range / discrete_subtype_indication
+	discrete_subtype_indication = subtype_indication
+	range_attribute_name = attribute_name
+	direction = 'TO' / 'DOWNTO'
+
+
+
+# Association list 4.3.2.2 - used in function calls and component instantiations to match formals with actuals
+#---------------------------------------------
+	association_list = association_element (_ ',' _ association_element)*
+	association_element = (formal_part _ '=>' _)? actual_part
+	formal_part =  (function_name _ '(' _ formal_designator _ ')') / (type_mark _ '(' _ formal_designator _ ')') / (formal_designator _ index_constraint) / formal_designator  # formal designator must be last or it will prtially match the pervious ones.
+	formal_designator = formal_name # parsing cannot distinguish between generic_name / port_name / parameter_name
+	formal_name = name
+	actual_part = actual_designator / (function_name _ '(' _ actual_designator _ ')') / (type_mark _ '(' _ actual_designator _ ')')
+	actual_designator = 'OPEN' / expression   # signal_name, variable_name and file_name will match 'expression'. 'OPEN' tested first to catch this special case.
+
+
+
+# LIBRARY management statements
+#---------------------------------------------
+library_clause = "LIBRARY" _ identifier_list _ ';'
+use_clause = "USE" _ selected_name (_ ',' _ selected_name)* _ ';'
+
+# ENTITY declarations
+entity_declaration = 'ENTITY' _ identifier _ 'IS' _ entity_header _ ('BEGIN' _ entity_statement_part _)? 'END' _ ('ENTITY' _)? (identifier _)? ';'
+entity_header = (generic_clause _)? port_clause?
+entity_statement_part = entity_statement*
+entity_statement = 'kjhdskjhdkjdsh' # unsupported
+
+generic_clause = "GENERIC" _ "(" _ generic_list _ ")" _ ";"
+generic_list = generic_element ( _ ";" _ generic_element)*
+#_generic_list = (BC generic_element _ ";" EC)* (BC generic_element EC)
+generic_element = identifier_list _ ':'_ subtype_indication (_ ":=" _ static_expression)?
+
+port_clause =  "PORT" _ "(" interface_list _ ")" _ ";"  # comments after ( should be gobbled by interface list
+interface_list = _ interface_element ( _ ";" _ interface_element)*
+interface_element = interface_declaration
+interface_declaration = interface_signal_declaration / interface_constant_declaration  # missing file and variable declaration
+# _port_list = port_element ( _ ";" _ port_element)*
+interface_constant_declaration = ("CONSTANT" _)? identifier_list _ ':' _ ('IN' _)? subtype_indication (_ ":=" _ static_expression)?
+interface_signal_declaration = ("SIGNAL" _)? identifier_list _ ':' _ (mode _)? subtype_indication (_ ":=" _ static_expression)?
+mode = "IN" /"OUT" / "INOUT" / "BUF"
+
+static_expression = expression
+
+
+
+
+
+
+
+
+architecture_declaration = _ 'ARCHITECTURE' _ identifier _ 'OF' _ identifier _ 'IS' _ architecture_declarative_part _ 'BEGIN' _ architecture_statement_part _ 'END' _ ('ARCHITECTURE' _)? (identifier? _) ';' _
+architecture_declarative_part = (_ block_declarative_item)*
+
+# block_declarative_item is incomplete
+block_declarative_item =  subprogram_declaration / subprogram_body / package_declaration / package_body / type_declaration / subtype_declaration / constant_declaration / signal_declaration / alias_declaration / component_declaration/  attribute_declaration / attribute_specification/ use_clause
+# Missing: subprogram_instantiation_declaration, package_instantiation_declaration, shared_variable_declaration, file_declaration, configuration_specification, disconnection_specification, group_template_declaration, group_declaration, PSL_Property_Declaration, PSL_Sequence_Declaration, PSL_Clock_Declaration
+
+# type_declaration = 'TYPE' _ identifier _ ('IS' _ expr _)? ';' _
+type_declaration = full_type_declaration / incomplete_type_declaration
+incomplete_type_declaration = 'TYPE' _ identifier _ ';'
+full_type_declaration = 'TYPE' _ identifier _ 'IS' _ type_definition _ ';'
+type_definition = scalar_type_definition / composite_type_definition # / access_type_definition / file_type_definition
+scalar_type_definition = enumeration_type_definition / integer_type_definition / floating_type_definition / physical_type_definition
+enumeration_type_definition = '(' _ enumeration_literal2 (_ ',' _ enumeration_literal2)* _ ')'
+enumeration_literal2 = identifier / character_literal # Here we can safely include identifier to avoid abiguities
+integer_type_definition = range_constraint
+range_constraint = 'RANGE' _ range
+floating_type_definition = range_constraint
+physical_type_definition =  range_constraint _ 'UNITS' _ primary_unit_declaration  (_ secondary_unit_declaration)? _ 'END' _ 'UNITS' (_ physical_type_simple_name)?
+primary_unit_declaration = identifier _ ';'
+secondary_unit_declaration = identifier _ '=' _ physical_literal _ ';'
+physical_type_simple_name = simple_name
+composite_type_definition = array_type_definition / record_type_definition
+array_type_definition = unbound_array_definition / constrained_array_definition
+unbound_array_definition = 'ARRAY' _ '(' _ index_subtype_definition ( _ ',' _  index_subtype_definition)* _ ')' _ 'OF' _ element_subtype_indication
+index_subtype_definition = type_mark _ 'RANGE' _ '<>'
+element_subtype_indication = subtype_indication
+constrained_array_definition = 'ARRAY' _  index_constraint _ 'OF' _ element_subtype_indication
+record_type_definition = 'RECORD' _  element_declaration ( _ element_declaration)* _ 'END' _ 'RECORD' ( _ record_type_simple_name )?
+element_declaration =  identifier_list _ ':' _ element_subtype_definition _ ';'
+element_subtype_definition = subtype_indication
+record_type_simple_name = simple_name
+
+subtype_declaration = 'SUBTYPE' _ identifier _ 'IS'_ expr _ ';' _ # subtype identifier is subtype_indication ;
+constant_declaration = 'CONSTANT' _ identifier_list _ ':' _ subtype_indication (_ ':='_ expression)? _ ';'
+signal_declaration = 'SIGNAL' _ identifier_list _ ':' _ subtype_indication (_ ':=' _ expression)? _ ';' # signal_kind (BUS / REGISTER) absorbed in subtype declaration
+attribute_declaration = 'ATTRIBUTE' _ identifier _ ':' _ type_mark _ ';'
+attribute_specification = 'ATTRIBUTE' _ identifier _ 'OF' _ entity_specification _ 'IS' _ expression _ ';'
+entity_specification = entity_name_list _ ':' _ entity_class # simplified
+entity_name_list = 'ALL' / 'OTHER' / (entity_designator (_ ',' _ entity_designator)*)
+entity_designator = entity_tag  # missing [signature]
+entity_tag = character_literal / operator_symbol / simple_name
+entity_class = 'ENTITY' / 'ARCHITECTURE' / 'CONFIGURATION' / 'PROCEDURE' / 'FUNCTION' / 'PACKAGE' / 'TYPE' / 'SUBTYPE' / 'CONSTANT' / 'SIGNAL' / 'VARIABLE' / 'COMPONENT' / 'LABEL' / 'LITERAL' / 'UNITS'
+
+variable_declaration = ('SHARED' _)? 'VARIABLE' _ identifier_list _ ':' _ subtype_indication (_ ':=' _ expression)? _';' # signal_kind (BUS / REGISTER) absorbed in subtype declaration
+alias_declaration = 'ALIAS' _ alias_designator (_ ':' _ subtype_indication)? _ 'IS' _ name (_ signature)? _ ';'
+alias_designator =  identifier / character_literal / operator_symbol
+
+#     configuration_specification
+#     disconnection_specification
+#     use_clause
+#     group_template_declaration
+#     group_ declaration
+#     shared _variable_declaration
+#     file_declaration
+#     alias_declaration
+#     component_declaration
+#     subprogram_declaration subprogram_body
+
+architecture_statement_part = (_concurrent_statement _)*
+_concurrent_statement = block_statement / process_statement / generate_statement / concurrent_signal_assignment / component_instantiation_statement
+
+label = identifier
+
+block_statement = label _ ':' _ 'BLOCK' _ ('(' _ expr _ ')' _)? ('IS' _)? 'BEGIN' _ (_concurrent_statement _)* 'END' _ 'BLOCK' _ label _ ';'  # declarative part not supporyted yet
+
+process_statement = label _ ':' _ ('POSTPONED' _)? 'PROCESS' _ (process_sensitivity_list _)? ('IS' _)? process_declarative_part _ 'BEGIN' _ process_statement_part _ 'END' _ ('POSTPONED' _)? 'PROCESS' _ (label _)? ';'
+process_sensitivity_list = '(' _ expr (_ ',' _ expr)* _ ')'
+process_declarative_part = (_ process_declarative_item)*
+process_declarative_item = variable_declaration / type_declaration / subtype_declaration / constant_declaration / alias_declaration / attribute_declaration / attribute_specification / use_clause
+process_statement_part = (_ sequential_statement)*
+
+# SEQUENTIAL STATEMENTS
+#----------------------
+	# sequential_statement =  _ !('END' _ ('POSTPONED' _)? 'PROCESS') skip_to_semicolon ';' _ # catchall
+	sequential_statement =     wait_statement / assertion_statement / report_statement / signal_assignment_statement / variable_assignment_statement / procedure_call_statement / if_statement / case_statement / loop_statement / next_statement / exit_statement / return_statement / null_statement
+	wait_statement = (label _ ':'_ )? 'WAIT' (_ sensitivity_clause)? (_ condition_clause)? (_ timeout_clause)? _ ';'
+	sensitivity_clause = 'ON' _ sensitivity_list
+	sensitivity_list = signal_name (_ ',' _ signal_name)*
+	signal_name = name
+	condition_clause = 'UNTIL' _ condition
+	condition = expression
+	timeout_clause = 'FOR' _ time_expression
+	time_expression = expression
+
+	assertion_statement = (label _ ':'_ )? assertion _ ';'
+	assertion = 'ASSERT' _ condition (_ 'REPORT' _ expression)? (_ 'SEVERITY' _ expression)?
+
+	report_statement = (label _ ':'_ )? 'REPORT' _ expression (_ 'SEVERITY' _ expression)? _ ';'
+
+	signal_assignment_statement = (label _ ':'_ )? (simple_signal_assignment / conditional_signal_assignment / selected_signal_assignment)
+	simple_signal_assignment = (simple_waveform_assignment / simple_force_assignment / simple_release_assignment )
+	simple_waveform_assignment = target _ '<=' (_ delay_mechanism)? _ waveform _ ';'
+	delay_mechanism = 'TRANSPORT' / (('REJECT' _ time_expression _ )? 'INERTIAL')
+	time_expression = expression
+	waveform = 'UNAFFECTED' / (waveform_element (_ ',' _ waveform_element)*)
+	waveform_element = ('NULL' / value_expression) (_ 'AFTER' _ time_expression)? # reordered
+	value_expression = expression
+
+	simple_force_assignment = target _ '<=' _ 'FORCE' (_ force_mode)? _ expression _ ';'
+	force_mode = 'IN' / 'OUT'
+
+	simple_release_assignment = target _ '<=' _ 'RELEASE' (_ force_mode)? _ ';'
+
+	conditional_signal_assignment =     conditional_force_assignment / conditional_waveform_assignment # FORCE assignment first because it is more restrictive
+	conditional_waveform_assignment =  target _ '<=' (_ delay_mechanism)? _ conditional_waveforms _';'
+	conditional_force_assignment =     target _ '<=' _ 'FORCE' (_ force_mode)? _ conditional_expression _ ';'
+	conditional_waveforms = waveform _ 'WHEN' condition (_ 'ELSE' _ waveform _ 'WHEN' _ condition)* (_ 'ELSE' _ waveform)?
+	conditional_expression = expression _ 'WHEN' _ condition ( _ 'ELSE' _ expression _ 'WHEN' _ condition)* ( _ 'ELSE' _ expression)?
+
+	selected_signal_assignment = selected_force_assignment / selected_waveform_assignment
+	selected_waveform_assignment =  'WITH' _ expression _ 'SELECT' (_ '?')? _ target _ '<=' (_ delay_mechanism)? _ selected_waveforms _ ';'
+	selected_waveforms = (waveform _ 'WHEN' _ choices _  ',' _)* waveform _ 'WHEN' _ choices
+
+	selected_force_assignment = 'WITH' _ expression _ 'SELECT' (_ '?')? _ target _ '<=' _ 'FORCE' (_ force_mode)? _ selected_expressions _ ';'
+	selected_expressions = (expression _ 'WHEN' _ choices _  ',' _)* expression _ 'WHEN' _ choices
+
+	variable_assignment_statement = (label _ !':=' '=' _ )? (selected_variable_assignment / simple_variable_assignment / conditional_variable_assignment ) # Make sure we don't take 'x:' as a label in  x:=y
+	simple_variable_assignment = target _ ':=' _ expression _ ';'
+	conditional_variable_assignment = target _ ':=' _ conditional_expression _ ';'
+	selected_variable_assignment = 'WITH' _ expression _ 'SELECT' (_ '?')? _ target _ ':=' _ selected_expressions _ ';'
+
+	procedure_call_statement =  (label _ ':'_ )? procedure_call _ ';'
+	procedure_call = procedure_name (_ '(' _  actual_parameter_part _ ')')?
+	procedure_name = name
+
+	if_statement = (if_label _ ':'_ )? 'IF' _ condition _  'THEN' _  sequence_of_statements (_ 'ELSIF' _ condition _ 'THEN' _ sequence_of_statements)* (_ 'ELSE' _ sequence_of_statements)? _ 'END' _ 'IF' (_ if_label)? _ ';'
+	if_label = label
+	sequence_of_statements = (_ sequential_statement)*
+
+	case_statement = (case_label _ ':'_ )? 'CASE' (_ '?')? _ expression _ 'IS' _ case_statement_alternative (_ case_statement_alternative)* _ 'END' _ 'CASE' (_'?')? (_ case_label)? _ ';'
+	case_label = label
+	case_statement_alternative = 'WHEN' _ choices _ '=>' _ sequence_of_statements
+
+
+	loop_statement = (case_label _ ':'_ )? (iteration_scheme _ )? 'LOOP' _ sequence_of_statements _ 'END' _ 'LOOP' ( _ loop_label)? _ ';'
+	loop_label = label
+	iteration_scheme = ('WHILE' _ condition) / ('FOR' _ loop_parameter_specification)
+	loop_parameter_specification = parameter_specification
+	parameter_specification = identifier _ 'IN' _ discrete_range
+
+	next_statement = (label _ ':'_ )? 'NEXT' (_ loop_label)? (_ 'WHEN' _ condition)? _ ';'
+	exit_statement = (label _ ':'_ )? 'EXIT' (_ loop_label)? (_ 'WHEN' _ condition)? _ ';'
+	return_statement = (label _ ':'_ )? 'RETURN' (_ expression)? _ ';'
+	null_statement = (label _ ':'_ )? 'NULL' _ ';'
+
+
+concurrent_signal_assignment = (label _ ':' _)? ('POSTPONED' _)? (concurrent_simple_signal_assignment / concurrent_conditional_signal_assignment / concurrent_selected_signal_assignment) _
+concurrent_simple_signal_assignment = target _ '<=' _ skip_to_semicolon ';'
+concurrent_conditional_signal_assignment = target _ '<=' _ skip_to_semicolon ';'
+concurrent_selected_signal_assignment = 'WITH' _ expr _ ~r".*?SELECT"i _ '<=' _ skip_to_semicolon ';'
+target = name / aggregate
+
+# Component instantiation
+component_instantiation_statement = label _ ':' _ instantiated_unit _ (generic_map_aspect _)? (port_map_aspect _)? ';'
+instantiated_unit = ('ENTITY' _ name _ ('(' _ identifier _ ')' _)? ) / ('CONFIGURATION' _ name) / (('COMPONENT' _)? name)
+generic_map_aspect = 'GENERIC' _ 'MAP' _ '(' _ association_list _ ')'
+port_map_aspect = 'PORT' _ 'MAP' _ '(' _ association_list _ ')'
+
+generate_statement = for_generate_statement / if_generate_statement
+for_generate_statement = label _ ':' _ 'FOR' _ ~r".*?GENERATE"i _ (_concurrent_statement _)* 'END' _ 'GENERATE' _ (label _)? ';'
+if_generate_statement = label _ ':' _ 'IF' _ ~r".*?GENERATE"i _ (_concurrent_statement _)* 'END' _ 'GENERATE' _ (label _)? ';'
+
+package_declaration = 'PACKAGE' _ identifier _ 'IS' _ package_header _ package_declarative_part _ 'END' (_  'PACKAGE')? (_ package_simple_name)? _ ';'
+package_simple_name = simple_name
+package_header = ( generic_clause (_ generic_map_aspect _ ';' )? )?
+package_declarative_part = ( _ package_declarative_item)*
+
+#missing elements below
+package_declarative_item = subprogram_declaration / type_declaration / subtype_declaration / constant_declaration / signal_declaration / variable_declaration / alias_declaration / attribute_declaration / attribute_specification / use_clause / component_declaration
+
+subprogram_declaration = subprogram_specification _ ';'
+subprogram_specification = procedure_specification / function_specification
+
+procedure_specification = 'PROCEDURE' _ designator _ subprogram_header ( (_ 'PARAMETER' )? _ '(' formal_parameter_list _ ')' )?
+function_specification = (('PURE' _) / ('IMPURE' _))? 'FUNCTION' _  designator _ subprogram_header ( (_ 'PARAMETER' )? _ '(' _ formal_parameter_list _ ')' )? _  'RETURN' _ type_mark
+designator = identifier / operator_symbol
+subprogram_header = ('GENERIC' _ '(' _ generic_list _ ')' ( _ generic_map_aspect)? )?
+formal_parameter_list = parameter_interface_list
+parameter_interface_list = interface_list # gobbles preceding _
+
+component_declaration = 'COMPONENT' _ identifier (_ 'IS')? ( _ local_generic_clause)? (_ local_port_clause)? _ 'END' _ 'COMPONENT' (_ component_simple_name )? _ ';'
+local_generic_clause = generic_clause
+local_port_clause = port_clause
+component_simple_name = simple_name
+
+package_body = 'PACKAGE' _  'BODY' _ package_simple_name _ 'IS' _ package_body_declarative_part _ 'END' (_ 'PACKAGE' _ 'BODY')? (_ package_simple_name)? _ ';'
+package_body_declarative_part =  (_ package_body_declarative_item)*
+
+# Missing:  subprogram_instantiation_declaration, package_instantiation_declaration, file_declaration, group_template_declaration, group_declaration
+package_body_declarative_item = subprogram_declaration / subprogram_body / package_declaration / package_body / type_declaration / subtype_declaration / constant_declaration  / variable_declaration / alias_declaration / attribute_declaration / attribute_specification / use_clause
+
+subprogram_body = subprogram_specification _ 'IS' _ subprogram_declarative_part _ 'BEGIN' _ subprogram_statement_part _ 'END' (_ subprogram_kind)? (_ designator)? _ ';'
+subprogram_declarative_part = (_ subprogram_declarative_item)*
+# Missing:  subprogram_instantiation_declaration, package_instantiation_declaration, file_declaration, group_template_declaration, group_declaration
+subprogram_declarative_item = subprogram_declaration / subprogram_body / package_declaration / package_body / type_declaration / subtype_declaration / constant_declaration  / variable_declaration / alias_declaration / attribute_declaration / attribute_specification / use_clause
+
+subprogram_statement_part = (_ sequential_statement)*
+subprogram_kind = 'FUNCTION' / 'PROCEDURE'
+
