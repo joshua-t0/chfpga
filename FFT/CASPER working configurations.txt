@@ -1,0 +1,54 @@
+
+
+ISE14.2 
+========
+	- Supported Matlab versions: 
+	- Unsupportd MATLAB versions:  R2007b, R2009b nor R2010b. 
+
+Cannot use for Casper Generation
+
+ISE13.4
+========
+	- Supportd MATLAB versions: R2010b 
+	- Unsupported Matlab versions: R2007b, R2009b
+
+Configured with R2010b.
+Get main casper library from git repository https://casper.berkeley.edu/git/mlib_devel.git
+
+Add mlib_devel/casper_library to Matlab path
+Select View->Refresh Tree View to show the CASPER library
+Open CASPER library and Xilinx Library blockset to cause generation of library repository
+ 
+Test design:
+fft_wideband_real
+Change length from 5 to 6: Delay, stages are updated. 
+Add Xilinx Sys Gen block
+Add input gateways (SYNC=Boolean, shift=6 bits, all four inputs connected together with 18 bits gateway
+Add output gateways on each 4 outputs
+Save as: FFT_test_ISE13_4_R2010b
+Run sim
+Initializing
+Simulation ends. this works
+Setup System Generator
+Vixtex 6 LX240T
+Generate (needs proper license for System generator). Start at 23h25
+Compiling: Propagating sample times... 
+Generation completed at 23h47 (1418 seconds)
+
+Open FFT/SIMPLE_PFB/SIMPLE_PFB.mdl
+Try to simulate:
+...Update Library links ... Evaluating block parameters ... Propagating sample times ... Initializing window appears with animated Xilinx logo 
+Sumulation successful.
+
+Modify FFT.
+Parrameters do not update.
+Re-insert elements. Try resolving links.
+BOth PFB and FFT blocks have a delay after parameters are updated, a sign it worked.
+run simulation
+Works
+
+Open System Generator
+Updated target directory
+start generate: 00h23 end 1h15. Took 3177 seconds.
+
+

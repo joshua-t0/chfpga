@@ -1,0 +1,63 @@
+PFB/FFT for CHIME channelizer.
+==========================
+
+This model uss CASPER libraries  to generate the VHDL code that implements a
+      FFT with a preceding Polyphase Filter Bank in order to provide a low-lea
+      kage channelization of the input frames. The VHDL is inserted into the
+      CHIME chFPGA firmware. The CASPER ecosystem is not used.
+
+This model was successfully generated into HDL using the following configuration:
+  - MATLAB R2010b
+  - ISE13.4 (with System Generator license, configured to use R2010b)
+  - Main CASPER library
+
+      - Git repository: https://casper.berkeley.edu/git/mlib_devel.git
+      - Commit date: Tue, 27 Sep 2011 21:31:58
+      - Commit hash: f5ae85b636be80bbbeb63483634f63a938fe311e
+   - MATLAB path:
+      - ISE13.4 System Ge
+      nerator libraries automatically added by Sys Gen configuration tool
+      - mlib_devel/casper_library
+
+To generate the VHDL code:
+   - Make sure the Xilinx and Casper libraries are opened so their internal database is built
+   - Simulate the design (Simulation->Start) to make sure the design works. The simulation will do nothing,
+       but if something is wrong you will know it right away. This will take time.
+   - Open System Generator. Check
+      that the output directory is right. Click on Generate. This can take up to 1h when starting from scratch, but ca
+      n be as fast as 1 minute if only small changes were made.
+
+PFB configuration
+==============
+
+Window type: Hamming
+Each of the 4 input branches uses
+   - One coefficient generator using  4 RAMs
+   - 3 frame delays  using 1 RAM
+   - One real multiplier for each tap, using 4 DSP48 total
+
+   - A 4 port adder (implemented in logic)
+
+To balance BRAM vs DSP48 usage, we use the following block parameters:
+   - Use Distributer Memory for Coef: 1 (not default). This implements the 4 coeff RAMs in distributed
+       memory instead of BRAMS
+   - Specify multiplier use: [1,1,1,1]
+   - Fold adders into DSPs: Enabled
+   - Adder implementation: Fabric (Otherwise will use extra DSP48s)
+
+Resuld: each branc uses 4 DSP48 for the multiplier, 3 BRAMs for the frame delays. Total: 16 DSPs, 12 BRAMs. The rest is in the fabric.
+Since we have slices tospare, this is a reasonable configuration. At 200 MHz clocking rate, speed is not an issue and so we can use thedistributed RAM without problems..
+
+FFT Configuration
+==============
+
+The wideband Real FFT uses:
+   - N complex multipliers
+
+To balance DSP and BRAM usage:
+   - Use less: Multipliers: implements the complex multipliers using 3 multipliers instead of 4, but uses more adders (which can be implemntedi at no cost in the DSP48s)
+   - Number of bits above which to store coefficients in BRAM: 9
+   - Number of bits above which to store delays in BRAM: 9
+   - Specify multiplier use: Enabled
+   - Multiplier specification: [1,1,1,1,1,1,1,1,1,1,1] (one '1' for each stage). Implements all multipliers in DSP48s
+   - DSP48s in butetrfly: Disable: We want to use slice logic for this, otherwise additional DSP48s will be used.
