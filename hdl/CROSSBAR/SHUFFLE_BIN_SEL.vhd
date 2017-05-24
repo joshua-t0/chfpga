@@ -1,0 +1,971 @@
+----------------------------------------------------------------------------------
+-- @file
+-- Company: McGill University
+-- Engineer: J.-F. Cliche
+--
+-- Create Date:    16:32:32 05/02/2011
+-- Design Name: chFPGA PoC
+-- Module Name:    SHUFFLE_BIN_SEL - Behavioral
+-- Project Name: CHIME
+-- Target Devices: Virtex 6 or 7 series
+-- Tool versions: Vivado 2013.4
+-- Dependencies:
+--
+-- Revision:
+-- Revision 0.01 - File Created
+--	2011-07-18 JFC: Modified output interface to 32 bits, with header inserted in the stream
+--		Major cleanup of the FIFO writer code to make it more readable (?). Removed all (?) combinatorial signals.
+--	2012-05-31 JFC: Modified for AXI4 Streaming interface. Removed the VALID handling. All frames are processed, but the TUSER flags are passed on to the header and output.
+--	2012-10-20 JFC: Made the RESET synchronous to allow more flexibility to the Synthesizer and help meet timing constraints. Resized the word counter to LOG2_MAX_NUMBER_OF_WORDS to reduce the load on the RAM output (the mask bit a) determines when to incement the counter and b)is used to mux whether we store length or length+1 in header)
+--	2013-12-05 JFC: Added 4-bit mode and multi-frame packing support. Output reset is now same as input reset to avoid saturating the FIFOs unless the right sequence of reset is used.
+--	2014-01-14 JFC: Modified into CHAN_SEL with new architecture: Now has a front-end FIFO for alignment/half-word selection/buffer consecutively selected channels. There is no more output fifos.
+--		Also added handling of headers and flagging info.
+-- Additional Comments:
+--
+----------------------------------------------------------------------------------
+library IEEE;
+use IEEE.std_logic_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+use IEEE.std_logic_misc.ALL; -- for and_reduce
+use IEEE.math_real.ALL; -- for ceil()
+
+-- Uncomment the following library declaration if instantiating
+-- any Xilinx primitives in this code.
+library UNISIM;
+use UNISIM.VComponents.all;
+use work.chFPGA_Package.all; -- Get all component definitions
+use work.ip_package.all; -- Import definition of components used in this module
+
+------- CH_DIST ENTITY DECLARATION ----------------------
+--! @brief Receives multiple data streams, aligns them, select specific frequency channel across all streams and repackage them in the output stream with overflow flagging info.
+--!
+
+--! stores selected frequency channels from every antenna in a FIFO,
+--! adds a header, and send the reordered data as a AXI4 STREAMING stream
+--!
+--! The purpose of the filtering is to reduce the amount of data going into the correlator.
+--! Indeed, the correlator receives N times the data send by an antenna, where N is the total number of antennas.
+--! For example, if the pipe to the correlator has the same bandwidth as the pipe out of the antenna processor (200 MHz * 4 bytes/word = 800 MByte/s),
+--! we  need to filter the stream so only 1/Nth of the incoming words are passed through the correlator.
+--!
+--! The frequency channels are selected by writing a bit pattern into a RAM block, where each bit identifies
+--! whether the corresponding word (containing a pair of frequency samples) is to passed on to the output.
+--! The streams coming from all antennas are filtered using the same pattern.
+--!
+--! The output stream is clocked on a separate clock than the antenna processor outputs.
+--! This means that the correlator can be clocked faster than the antenna processor clock to allow more time for transmission of the the header overhead or simply to allow the correlator to process more channels.
+--! It is important that in all cases the output data rate of the FIFO is higher than the rate required to transmit the selected data plus the header bytes.
+--!
+--! No frame is transmitted (not even a header with empty payload) of no data was selected by the filtering process.
+--!
+--! Both inputs and outputs are implemented using the snatdard AXI4 Straming protocol.
+--! The input bus is non-blocking, and contains only time or frequency samples.
+--! The output bus is blocking and contains a frame header in addition to the filtered and reordered data.
+--! A blocking interface was implemented for the output bus because it will eventually be connected to data shuffling logic (MGTs) which might require transmission of data in bursts without interruption.
+--!
+--! The module assumes:
+--!   - The antenna processors are synchronized (i.e. they have been reset in a sequence that ensures that the first frame started sampling at the same time)
+--!   - All antenna processor output buses operate on a single common clock (the firmware doe snot yet support multi-phase clocks (which might be good to reduce maximum current spikes on the FPGA supplies))
+--!
+--!  Word selection map format
+--!  ------------------
+--! 	Each bit in the RAM block identifies whether a 32-bit word received from the antenna processor module is to be kept or not.
+--!   The mapping is as follows:
+--!
+--!   Byte | bit | Flag for Word # | Time sample # | Frequency sample #
+--!   -----|-----|-----------------|---------------|--------------------
+--!     0  |  0  | Word 0          | 0-3           | 0-1
+--!     0  |  1  | Word 1          | 4-7           | 2-3
+--!   ...  | ... | ...             |  ...          | ...
+--!     0  |  7  | Word 7          | 28-31         | 14-16
+--!     1  |  0  | Word 8          | 32-35         | 16-17
+--!   ...  | ... | ...             |               | ...
+--!     63 |  7  | Word 511        | 2044-2047     | 1022-1023
+--!
+--! 	If FFT is bypassed, each antenna processor word corresponds to 4 8-bit samples. One byte of the filter RAM enables 8 words or 32 samples. 64 bytes are required to set the filter flags for the whole 512 words/2048 sample frame.
+--!
+--!   If FFT is NOT bypassed, each antenna processor output word correspond to two frequency bins (two complex numbers, 8-bit Real + 8-bit Imag each). One byte of the filter RAM selects 16 frequency bins/ ^4 bytes are required to set the flags for the while 512 words/1024 frequency samples
+--!
+entity shuffle_bin_sel is
+	GENERIC (
+		BIN_SEL_NUMBER: integer; --! Actual output lane number is BIN_SEL_NUMBER*NUMBER_OF_OUTPUTS+output__lane_number
+		NUMBER_OF_INPUTS: integer; --! Number of antennas to capture simultaneously. Must be a multiple of 4 between 4 and 16, and a multiple of NUMBER_OF_OUTPUTS.
+		NUMBER_OF_OUTPUTS: integer :=1; --! Must be a multiple of 2 if COMBINE_DATA_FLAGS=TRUE
+		COMBINE_DATA_FLAGS: boolean := TRUE;
+		WORDS_PER_BIN_MAX: integer :=4; --! Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 4*16=64 words.
+		BINS_PER_FRAME_MAX: integer :=64; --! Maximum number of bins per frame
+		FIFO_TYPE_MAP: integer_array
+		);
+    PORT (
+		-- Input interface (non-blocking, i.e. always accept data)
+		s_axis_tdata: in slv32_array(0 to NUMBER_OF_INPUTS-1);
+		s_axis_tvalid: in std_logic_vector(0 to NUMBER_OF_INPUTS-1);
+		s_axis_tlast: in std_logic_vector(0 to NUMBER_OF_INPUTS-1);
+
+		s_axis_global_tvalid: in std_logic; --! active while the longest packet is active
+		s_axis_global_tlast: in std_logic; --! active when the longest packet is at its last word
+
+		-- Output interface (blocking, i.e. will send data only when the sink is ready)
+		m_axis_tdata:  out slv32_array(0 to NUMBER_OF_OUTPUTS-1);
+		m_axis_tvalid: out std_logic_vector(0 to NUMBER_OF_OUTPUTS-1);
+		m_axis_tlast:  out std_logic_vector(0 to NUMBER_OF_OUTPUTS-1);
+
+		-- lane_map: in slv4_array(0 to NUMBER_OF_INPUTS-1);
+		clk: in  std_logic; --! Input clock, common to all antenna processor buses
+		rst: in std_logic; --! reset, synchronous to clk
+
+		-- Control interface (command and reply stream buses)
+		CTRL_CMD_DAT: in AXIS8_DAT_STRUCT;
+		CTRL_CMD_RDY: out AXIS8_RDY_STRUCT;
+		CTRL_RPLY_DAT: out AXIS8_DAT_STRUCT;
+		CTRL_RPLY_RDY: in AXIS8_RDY_STRUCT;
+		CTRL_CLK: in  std_logic;
+		CTRL_RST : in  std_logic
+	);
+
+
+end shuffle_bin_sel;
+
+--- ARCHITECTURE DECLARATION and DEFINITION ---------------------
+--! Describes the logic that implement the entity's functionnalities. See this architecture for the implementation details.
+--!
+--! The writing process waits for all antenna processor to have valid data, and if the filter bit is '1', the data from each antenna is written in their respective FIFO.
+--! Then the filter RAM 'bit' pointer is incremented.
+--! When the last word of a frame is detected, the pointer is reset, the header is constructed and is written in the HEADER FIFO.
+--! This assumes that all the input data streams are aligned.
+--!
+--! When the readout process detects
+architecture Behavioral of shuffle_bin_sel is
+
+
+attribute keep:string;
+attribute equivalent_register_removal: string;
+
+
+constant NUMBER_OF_INPUT_LANES_PER_OUTPUT: integer := NUMBER_OF_INPUTS/NUMBER_OF_OUTPUTS;
+--- Signal definitions ------------------------------------
+
+signal m_axis_tdata_int:  slv32_array(0 to NUMBER_OF_OUTPUTS-1);
+signal m_axis_tvalid_int: std_logic_vector(0 to NUMBER_OF_OUTPUTS-1);
+signal m_axis_tlast_int:  std_logic_vector(0 to NUMBER_OF_OUTPUTS-1);
+
+-- MASK RAM signals
+--  Port A: Control port ( data width: 8 bits)
+signal mask_ram_ctrl_addr: std_logic_vector(6 downto 0);
+-- signal mask_ram_ctrl_rd_en: std_logic;
+signal mask_ram_ctrl_wr_en: std_logic;
+signal mask_ram_ctrl_wr_en_vect: std_logic_vector(0 downto 0);
+signal mask_ram_ctrl_din: std_logic_vector(7 downto 0);
+signal mask_ram_ctrl_dout: std_logic_vector(7 downto 0);
+
+--  Port B: Data processing port ( data width: 1 bit)
+signal mask_ram_dout: std_logic; -- Up to 2 selection flags per word (both flags are used only in dual-channel mode, otherwise only the LSB is used)
+-- signal mask_ram_addr: UNSIGNED(8 downto 0):=(others=>'0'); -- up to 512 flag groups. Initialization needed to prevent 'U' from getting into the RAM before the clock starts and resets this register.
+
+
+-- DATA FIFO signals
+signal data_fifo_rd_en: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
+signal data_fifo_rd_en_int: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
+signal data_fifo_wr_en: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
+-- signal data_fifo_wr_en_dly2: std_logic:='0';
+signal data_fifo_wr_en_packet_flags: std_logic:='0';
+signal data_fifo_wr_en_packet_flags_dly: std_logic:='0';
+signal data_fifo_wr_en_always: std_logic:='0';
+signal data_fifo_wr_en_always_dly: std_logic:='0';
+signal data_fifo_wr_en_if_selected: std_logic:='0';
+signal data_fifo_wr_en_if_selected_dly: std_logic:='0';
+signal data_fifo_first_word: std_logic:='0';
+signal data_fifo_first_word_dly: std_logic:='0';
+signal data_fifo_last_word: std_logic:='0';
+signal data_fifo_last_word_dly: std_logic:='0';
+signal data_fifo_combine_flag: std_logic:='0';
+signal data_fifo_combine_flag_dly: std_logic:='0';
+signal data_fifo_number_of_words: unsigned(width(WORDS_PER_BIN_MAX)-1 downto 0); --! Counts the word in the current bin
+signal data_fifo_number_of_words_dly: unsigned(width(WORDS_PER_BIN_MAX)-1 downto 0); --! Counts the word in the current bin
+
+signal frame_number_capture_trig: std_logic:='0';
+signal stream_id_capture_trig: std_logic:='0';
+signal frame_number_capture_trig_dly: std_logic:='0';
+signal stream_id_capture_trig_dly: std_logic:='0';
+
+signal data_fifo_empty: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
+signal data_fifo_valid: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
+signal data_fifo_overflow: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
+signal data_fifo_full: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
+signal data_fifo_din: slv35_array(0 to NUMBER_OF_INPUTS-1):=(others=>(others=>'0')); -- init not necessary
+signal data_fifo_dout: slv35_array(0 to NUMBER_OF_INPUTS-1);
+-- signal data_fifo_din_dly: slv36_array(0 to NUMBER_OF_INPUTS-1);
+-- signal data_fifo_din_dly2: slv36_array(0 to NUMBER_OF_INPUTS-1);
+-- signal data_fifo_din: slv36_array(0 to NUMBER_OF_INPUTS-1);
+
+signal flags_fifo_din: slv8;
+signal flags_fifo_wr_en: std_logic;
+signal flags_fifo_rd_en: std_logic;
+signal flags_fifo_dout: slv8;
+signal flags_fifo_overflow: std_logic;
+signal flags_fifo_valid: std_logic;
+-- type slv36_array_array is array (NATURAL RANGE <>) of slv36_array(0 to 2);
+-- signal data_fifo_din: slv36_array_array(0 to NUMBER_OF_INPUTS-1);
+
+-- attribute shreg_extract : string;
+-- attribute shreg_extract of data_fifo_din : signal is "yes";
+-- attribute shreg_extract of data_fifo_din_dly : signal is "yes";
+-- attribute shreg_extract of data_fifo_din_dly2 : signal is "yes";
+
+signal data_fifo_overflow_sticky: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
+signal flags_fifo_overflow_sticky: std_logic;
+
+-- signal IN_DAT_DLY: AXIS32_DAT_STRUCT_ARRAY,(0 to NUMBER_OF_INPUTS-1);
+-- signal IN_DAT_DLY2: AXIS32_DAT_STRUCT_ARRAY,(0 to NUMBER_OF_INPUTS-1);
+-- signal IN_DAT_TFIRST: std_logic;
+-- signal IN_DAT_TFIRST_DLY: std_logic;
+-- signal IN_DAT_TFIRST_DLY2: std_logic;
+
+
+-- signal IN_DAT_ALIGN: AXIS32_DAT_STRUCT_ARRAY,(0 to NUMBER_OF_INPUTS-1);
+
+
+--signal timestamp_ctr: unsigned(SHUFFLE_FRAME_HEADER_STRUCT.TIMESTAMP'Range):=(others=>'0');
+signal timestamp_ctr: unsigned(47 downto 0):=(others=>'0');
+signal recv_header_word_ctr: unsigned(width(SHUFFLE_FRAME_HEADER_WORD_LENGTH) downto 0);
+signal send_header_word_ctr: unsigned(width(SHUFFLE_FRAME_HEADER_WORD_LENGTH) downto 0);
+
+signal odd_bin_dly1: std_logic;
+signal odd_bin_dly2: std_logic;
+signal select_word: std_logic;
+-- signal DIN_FRAME_HEADER_READY: std_logic;
+-- signal DIN_FRAME_HEADER_CTR: integer range 0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH-1;
+-- --signal DIN_WORD_CTR: UNSIGNED(LOG2_MAX_NUMBER_OF_WORDS downto 0):=(others=>'0'); -- Counts the number of words stored in a frame. We need one additional bit in case all the samples are stored.
+-- signal DIN_WORD_CTR: UNSIGNED(7 downto 0); -- Counts the number of words stored in a frame. Used to flag the last stored frame in the data FIFOs.
+-- signal DIN_FLAGS: std_logic_vector(SHUFFLE_FRAME_HEADER_STRUCT.FLAGS'Range);
+-- signal DIN_FLAGS_DLY2: std_logic_vector(SHUFFLE_FRAME_HEADER_STRUCT.FLAGS'Range);
+
+-- type OUT_DATA_TYPE_TYPE is (OUT_DATA_TYPE_HEADER, OUT_DATA_TYPE_DATA, OUT_DATA_TYPE_SCALER_FLAGS, OUT_DATA_TYPE_frame_FLAGS);
+-- signal out_data_type: OUT_DATA_TYPE_TYPE := OUT_DATA_TYPE_HEADER;
+-- signal out_send_second_bin: std_logic;
+
+-- signal number_of_data_word_vars_per_bin_minus_one: integer;
+-- signal number_of_scaler_flag_words_per_bin_minus_one: integer;
+-- signal number_of_adc_flag_words_per_frame_minus_one: integer;
+
+signal IN_DAT_FRAME_CTR: unsigned(7 downto 0):=(others=>'0');
+
+-- FIFO readout machine
+-- signal data_fifo_dout_rdy: std_logic:='0';
+-- signal data_type_fifo_dout_rdy: std_logic:='0';
+
+-- signal DOUT_READ_FRAME1: std_logic:='1';
+-- signal DOUT_READ_FRAME2: std_logic:='1';
+-- signal DOUT_FRAME_HEADER_CTR: integer range 0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH-1;
+-- signal DOUT_FLAGS: std_logic_vector(SHUFFLE_FRAME_HEADER_STRUCT.FLAGS'Range);
+--signal DOUT_FRAME_CTR: unsigned(7 downto 0):=(others=>'0');
+
+-- attribute keep of DOUT_READ_FRAME1 :signal is "true";
+-- attribute keep of DOUT_READ_FRAME2 :signal is "true";
+-- attribute equivalent_register_removal of DOUT_READ_FRAME1 : signal is "no";
+-- attribute equivalent_register_removal of DOUT_READ_FRAME2 : signal is "no";
+
+signal reset_all: std_logic;
+signal reset_all_reg: std_logic;
+-- signal OUT_RST_ALL: std_logic;
+-- attribute ASYNC_REG : string;
+-- attribute ASYNC_REG of OUT_RST_ALL : signal is "true"; -- used to resync the user_reset (IN_CLK domain) to the OUT_CLK domain.
+-- attribute ASYNC_REG of reset_all : signal is "true"; -- used to resync the resets in the in_clk domain
+
+--- Define Control word and its signals
+signal control_bytes: ByteArray(0 to 7); -- default value set in the CMD_SLAVE
+signal status_bytes: ByteArray(0 to 2); -- default value set in the CMD_SLAVE
+
+signal STREAM_ID: std_logic_vector(11 downto 0);
+signal user_reset: std_logic;
+
+signal FOUR_BITS: std_logic;
+signal USE_OFFSET_BINARY: std_logic;
+signal SEND_FLAGS: std_logic;
+signal lane0_bypass: std_logic;
+signal overflow_reset: std_logic;
+signal number_of_output_bins_per_frame: std_logic_vector(11 downto 0);
+signal number_of_output_words_per_bin: std_logic_vector(7 downto 0);
+signal first_lane: unsigned(3 downto 0); --!
+signal last_lane: unsigned(3 downto 0); --!
+signal number_of_input_bins_per_frame: unsigned(10 downto 0); --! number of words that are selected by the word selection map
+signal number_of_input_words_per_bin: unsigned(6 downto 0); --! number of words in a bin (full chime max, 4 bits mode, 3rd shuffle = 256 pol/ (4 pol/word) = 64 words
+signal number_of_input_frame_flags_words_per_frame: unsigned(1 downto 0); --! number of frame flags words in each frame. 2nd crossbar gets 1, 3rd crossbar gets 2
+
+signal frames_per_packet: unsigned(2 downto 0); --! number of input frames to put in one output frame
+
+
+signal word_ctr: unsigned(width(WORDS_PER_BIN_MAX)-1 downto 0); --! Counts the word in the current bin
+signal bin_ctr: unsigned(width(BINS_PER_FRAME_MAX)-1 downto 0); --! Counts the bin in the current frame
+signal lane_en: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
+
+signal last_frame_number: unsigned(1 downto 0); --! Counts the current frame number in the output packet
+signal last_word_number: unsigned(word_ctr'range); --! Counts the word in the current bin
+signal last_frame_flags_word_number: unsigned(word_ctr'range); --! Counts the frame flags words in the current frame
+signal last_bin_number: unsigned(bin_ctr'range); --! Counts the bin in the current frame
+signal block_ctr: unsigned(1 downto 0);
+constant DATA_BLOCK: integer       := 0;
+constant DATA_FLAGS_BLOCK: integer := 1;
+constant FRAME_FLAGS_BLOCK: integer:= 2;
+constant FLUSH_BLOCK: integer      := 3;
+
+
+constant NEXT_INPUT_BIT: integer := 32; -- Indicates that the next word should come from the next input
+constant COMBINE_WORDS_BIT: integer := 6; -- Indicates that the current word should be combined with the next one (enabled sending data flags block from the 1st crossbar, which occupy only 16 of the 32 bits).
+constant END_OF_PACKET_BIT: integer:= 7; -- Indicates this is the last word of a packet, and is therefore a packet status word. Overrides any other control bits.
+
+signal recv_header: std_logic;
+signal packet_flags: slv32;
+
+-- FIFO readout signals
+
+signal lane: unsigned(3 downto 0); --! Current indexes the lane map
+signal first_lane_reg: unsigned(3 downto 0);
+signal last_lane_reg: unsigned(3 downto 0);
+signal frame_ctr: unsigned(1 downto 0); --! Counts the current frame number in the output packet
+signal send_header: std_logic;
+signal combine_words: std_logic;
+signal end_of_packet: std_logic;
+signal is_last_word: std_logic;
+signal is_last_lane: std_logic;
+signal send_word_ctr: unsigned(width(WORDS_PER_BIN_MAX)-1 downto 0); --! Counts the word in the current bin
+
+
+begin
+
+
+-----------------------------------------------------------------------------------
+-- CONTROL and STATUS Bytes
+-----------------------------------------------------------------------------------
+--! \addtogroup memory_map
+--! CH_DIST Module
+--! =============
+--! ------------------------------------------------------------------------------
+--! |  Page   | Addr|Bit(s)|     Name             | Description                   |
+--! |---------|-----|------|----------------------|-------------------------------|
+--! | CONTROL |  0  |   7  | user_reset               | Reset the CH_DIST and clears the FIFOs.|
+--! |         |     |   6  | FOUR_BITS                | The input data is in 4-bit mode. The word streams will be combined 2-by-2 to pack 4 (4+4) bits samples in the output word|
+--! |         |     |   5  | USE_OFFSET_BINARY        | Indicates if the data is encoded in offset_binary or 2's complement. This is not used by this module, but is passed in the header flags. It must be set consistently with the type of encoding of the source data.|
+--! |         |     |   4  | SEND_FLAGS               | Indicates if we want the packets to contain scaler and adc flags.|
+--! |         |     |   3  | dual_bins                | Indicates if we want to send the pairs of odd-even bins together. If enabled, the numbe of selected bins MUST be even.|
+--! |         |     | 2-0  | (unused)                 |   |
+--! |         | 1-2 | 15:0 | STREAM_ID                 | Stream ID to be used for tagging the output frames |
+--! |         |  3  | 7:0  | number_of_input_bins_per_frame  | Indicates the number of words (frequency bin pairs) that are selected by this correlators. This must match the number of '1' bits in the word selection map.|
+--! |         |  4  | 7:0  | frames_per_packet        | Number of input frames to group into an output packet.|
+--! |         |  5  | 7:4  | first_input_number       | Index of the first input lane to be included in the output |
+--! |         |     | 3:0  | last_input_number        | Index of the last input labe to be included in the output. The value must be consistent with the operation mode (see below) |
+--! | STATUS  |  0  |   7  | data_fifo_empty          | EMPTY status flag of the DATA FIFO for antenna processor 0. Active HIGH. |
+--! |         |     |   6  | data_fifo_overflow       | Sticky flag indicating that one of the DATA FIFO has overflown. Cleared only by a reset of the module.|
+--! |         |     | 5:0  | '0'                      | Unused   |
+--! |         |  1  |  7:0 | FRAME_CTR                | Counts the number of frames written into the FIFOs. Rolls over.|
+--! | RAM     | 0-63 | -   | MASK_RAM                 | Word selection map. Each of the 512 bit indicates whether the corresponding word (frequency bin pair) is retained by this correlator. |
+--! ------------------------------------------------------------------------------
+--!
+
+--! CONTROL Byte 0
+user_reset   <= control_bytes(0)(7); --! Used in both IN_CLK and OUT_CLK domain
+lane0_bypass <= control_bytes(0)(6);
+number_of_input_frame_flags_words_per_frame <= unsigned(control_bytes(0)(5 downto 4));
+first_lane   <= unsigned(control_bytes(0)(3 downto 0));
+-- header_capture_data_sel <= control_bytes(0)(5);
+-- header_capture_lane_sel <= control_bytes(0)(4 downto 1);
+-- header_capture_enable   <= control_bytes(0)(0);
+--! CONTROL Byte 1-2
+STREAM_ID <= (control_bytes(1)  & control_bytes(2)(7 downto 4)); --
+
+--! CONTROL Byte 2-3
+number_of_input_bins_per_frame <= unsigned(std_logic_vector'(control_bytes(2)(2 downto 0) & control_bytes(3))); -- used in IN_CLK domain
+
+--! CONTROL Byte 4
+overflow_reset          <= control_bytes(4)(7);
+number_of_input_words_per_bin <= unsigned(control_bytes(4)(6 downto 0)); --
+
+--! CONTROL Byte 5
+frames_per_packet     <= unsigned(control_bytes(5)(7 downto 5)); --
+last_lane <= unsigned(control_bytes(5)(3 downto 0)); --
+
+--! CONTROL Byte 6
+number_of_output_words_per_bin <= control_bytes(6); -- for the header only
+
+--! CONTROL Byte 7
+four_bits             <= control_bytes(7)(7); -- for the header only
+use_offset_binary     <= control_bytes(7)(6); -- for the header only
+send_flags            <= control_bytes(7)(5);
+number_of_output_bins_per_frame <= resize(control_bytes(7)(4 downto 0), number_of_output_bins_per_frame'LENGTH);
+
+
+--! STATUS Byte 0
+status_bytes(0)(7) <= data_fifo_empty(0);
+status_bytes(0)(6) <= flags_fifo_overflow_sticky;
+status_bytes(0)(5) <= reset_all_reg;
+status_bytes(0)(4) <= to_std_logic(COMBINE_DATA_FLAGS);
+-- status_bytes(0)(2)<= to_std_logic(IMPLEMENT_HEADER_CAPTURE);
+status_bytes(0)(3 downto 0) <= to_slv(NUMBER_OF_OUTPUTS, 4);
+
+
+--! STATUS Byte 1-2
+-- status_bytes(2)<=to_ByteArray(timestamp_capture(to_integer(unsigned(header_capture_lane_sel))));
+-- status_bytes(3)<=to_slv(DOUT_FRAME_CTR);
+status_bytes(1 to 2) <= to_ByteArray(resize(reverse_bits_and_dir(data_fifo_overflow_sticky), 16));
+
+--! debug ports
+-- status_bytes(4)(3 downto 0)<=to_slv(lane);
+-- status_bytes(4)(4)<= scaler_flags_fifo_overflow;
+-- status_bytes(4)(5)<= frame_flags_fifo_overflow;
+-- status_bytes(4)(6)<= data_fifo_rd_en;
+-- status_bytes(4)(7)<=data_fifo_rd_en;
+
+-- status_bytes(5)(3 downto 0)<= reverse_bits_and_dir(data_fifo_valid(0 to 3));
+-- status_bytes(5)(7 downto 4)<= reverse_bits_and_dir(data_fifo_overflow(0 to 3));
+
+-----------------------------------------------------------------------------------
+-- Memory-Mapped interface instantiation
+-----------------------------------------------------------------------------------
+--! Instantiates a memory-mapped interface to the control and status bytes
+CTRL_SLAVE0: entity work.CTRL_SLAVE
+	GENERIC MAP (
+		NUMBER_OF_control_bytes=>control_bytes'Length(1), --
+		NUMBER_OF_status_bytes=>status_bytes'Length(1), --
+		DEFAULT_control_bytes=> X"01_123_008_01_2F_00_00",
+		RAM_ADDR_WIDTH => 7,
+		RAM_LATENCY=>2,  --! Control port of RAM has an output register that creates a 2-clock latency total
+		USE_RAM_DOUT_RDY=> FALSE,
+		USE_FIFO => FALSE
+ 	)
+
+	PORT MAP(
+		-- Control interface (command and reply stream buses)
+		CTRL_CMD_IN_DAT => CTRL_CMD_DAT,
+		CTRL_CMD_IN_RDY => CTRL_CMD_RDY,
+		CTRL_RPLY_OUT_DAT => CTRL_RPLY_DAT,
+		CTRL_RPLY_OUT_RDY => CTRL_RPLY_RDY,
+		CTRL_CLK => CTRL_CLK,
+		CTRL_RST => CTRL_RST,
+
+		CONTROL_BYTES => control_bytes,
+		STATUS_BYTES => status_bytes,
+		CLK => clk,
+		RST => rst,
+
+		RAM_DIN => mask_ram_ctrl_din,
+		RAM_DOUT => mask_ram_ctrl_dout,
+		RAM_ADDR => mask_ram_ctrl_addr,
+		RAM_WR_EN => mask_ram_ctrl_wr_en,
+		RAM_RD_EN => open -- the ram is always reading
+	);
+
+
+
+------------------------------------------------
+-- Bin selection map RAM
+------------------------------------------------
+
+--- FILTER RAM instantiation ------------------------------------
+--! Dual port RAM used to store the channel selection mask pattern
+--! The control side has 2 clock latency, as we use the embedded output registers to relax timing.
+--! The system-side port uses 1 clock output latency (no output registers) to avoid pipeling the wide data bus unnecessarily to align the ram content with the corresponding word.
+--! We will increase to 2 clock latency if the combinatorial delays are too large.
+--! Port A is an 8-bit wide interface allowing the control system to program the RAM
+--! Port B is a 2-bit interface that the processing process reads to identify if a word is to be kept.
+--! We need to use a Block RAM (as opposed to distributed RAM) so we can have assymetric aspect ratio
+
+mask_ram0 : SHUFFLE_BIN_SEL_MASK_RAM
+	PORT MAP (
+		clka  => CTRL_CLK,
+		wea(0)   => mask_ram_ctrl_wr_en,
+		addra => mask_ram_ctrl_addr,
+		dina  => mask_ram_ctrl_din,
+		douta => mask_ram_ctrl_dout,
+
+		clkb  => clk,
+		web   => (others=>'0'), --! we never write from this side
+		dinb  => (others=>'0'), --! we never write from this side
+		addrb => std_logic_vector(resize(bin_ctr,10)), --! we strip one bit because we read flags in pairs
+		doutb(0) => mask_ram_dout -- two flags for each bin number
+	);
+
+
+flags_fifo0: SHUFFLE_BIN_SEL_FLAGS_FIFO
+	PORT MAP (
+		clk      => clk,
+		srst     => reset_all_reg,
+
+		din      => flags_fifo_din,
+		wr_en    => flags_fifo_wr_en,
+
+		rd_en    => flags_fifo_rd_en,
+		dout     => flags_fifo_dout,
+		valid    => flags_fifo_valid,
+
+		overflow => flags_fifo_overflow
+	);
+
+-- DOUT_FLAGS<=(others=>'0'); -- clear flags until we decide what we will send to the correlator
+--! Generates a DATA FIFO for each of the antenna processor outputs
+DATA_FIFO_GEN: for i in 0 to NUMBER_OF_INPUTS-1 generate
+	---------------------------------------------------
+	-- Data FIFOs
+	---------------------------------------------------
+	--! The DATA FIFO stores the selected words.
+	--! This is a *NOT* a First Word Fall-through FIFO (to save a set of 32 output registers)
+	--! We have a FIFO for each input.
+	--! This FIFO needs to be deep enough to accomodate:
+	--!   - D = (1-Fout/Fin/N)*W*B*F words, where
+	--!         N=Number of input lanes,
+	--!			W= words per bin,
+	--!			B= number of contiguous bins,
+	--!			F=Frames per packet,
+	--!			Fout/Fin: input/output word clock frequencies (after and before the CROSSBAR FIFO).
+	--! For the CHIME Pathfinder second cross bar, N=16 input lanes, W=4 (16 antennas, 4-bit mode), B=1024/16/8=8 bins, F=4, Fout/Fin=322/244 MHz: D= (1-322/244/16)*4*8*4 = 118 words deep
+	--! In practice there are always dead cycles in the incoming data (due to 200/244 MHz crossing, backplane link data framing, gearbox etc). This gives more time for the read side to  catch up, so the effectively used depth is less than this.
+	--! A single RAMB18 provides a 514 deep FWFT FIFO.
+	--! We elimine this FIFO by requiring every selected bin to be followed by at least N non-selected bins. To be considered if BRAM resource availability is an issue.
+
+	BRAM_FIFO_GEN: if FIFO_TYPE_MAP(i)=0 and i MOD 2=0 generate
+		data_fifo0 : SHUFFLE_BIN_SEL_DATA_FIFO_BRAM
+			port map (
+				srst      => reset_all_reg,
+				clk      => clk,
+
+				din      => data_fifo_din(i),
+				wr_en    => data_fifo_wr_en(i),
+				full     => data_fifo_full(i),
+
+				rd_en    => data_fifo_rd_en(i),
+				dout     => data_fifo_dout(i),
+				valid    => data_fifo_valid(i),
+				empty    => data_fifo_empty(i),
+
+				overflow => data_fifo_overflow(i)
+				);
+		end generate;
+
+	--! Every other FIFO is implemented as an embedded FIFO to eliminate the use of external logic.
+	--! WARNING: The FIFO must have the same latency as the other FIFOs! Disable Embedded register to get a latency of zero.
+	EMBED_FIFO_GEN: if FIFO_TYPE_MAP(i)=0 and i MOD 2=1 generate
+		data_fifo0 : entity work.SHUFFLE_BIN_SEL_DATA_FIFO_EMBED
+			port map (
+				rst      => reset_all_reg,
+				clk      => clk,
+
+				din      => data_fifo_din(i),
+				wr_en    => data_fifo_wr_en(i),
+				full     => data_fifo_full(i),
+
+				rd_en    => data_fifo_rd_en(i),
+				dout     => data_fifo_dout(i),
+				valid    => data_fifo_valid(i),
+				empty    => data_fifo_empty(i),
+
+				overflow => data_fifo_overflow(i)
+				);
+		end generate;
+
+	--! If desired, use a Shift register FIFO. Those use only 1 LUT per 2 bits of width.
+	--! Since those are not FWFT, we use a standard FIFO and turn it into a FWFT with some extra logic.
+	--! The Distributed FIFO has a latenct of 1: data is placed on the bus on the next rising edge when RD_EN is high.
+	--! With the surrounding logic, this FIFO has a latency of 0: if VALID is High, the data is immediately available on the bus.
+	--! When RD_EN is High and the clock rises, the current value is captured by the user, and a new value is placed on the bus
+	DRAM_FIFO_GEN: if FIFO_TYPE_MAP(i)=1 generate
+		data_fifo_rd_en_int(i) <= data_fifo_rd_en(i) or not data_fifo_valid(i);
+		data_fifo0 : SHUFFLE_BIN_SEL_DATA_FIFO_DRAM
+			port map (
+				srst      => reset_all_reg,
+				clk      => clk,
+
+				din      => data_fifo_din(i),
+				wr_en    => data_fifo_wr_en(i),
+				full     => data_fifo_full(i),
+
+				rd_en    => data_fifo_rd_en_int(i), -- emulate a FWFT FIFO by forcing a read if there is no valid data
+				dout     => data_fifo_dout(i),
+				empty    => data_fifo_empty(i),
+
+				overflow => data_fifo_overflow(i)
+				);
+
+		process(clk)
+		begin
+			if rising_edge(clk) then
+				if reset_all_reg='1' then
+					data_fifo_valid(i) <= '0';
+				elsif data_fifo_rd_en_int(i)='1' then
+					data_fifo_valid(i) <= not data_fifo_empty(i);
+				end if;
+			end if;
+		end process;
+
+	end generate; -- if DRAM
+end generate; -- for i in NUMBER_OF_INPUTS/4
+
+
+
+
+fifo_wr_proc: process(clk)
+
+	variable ix: integer range 0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH-1;
+	-- variable header_word_array: slv32_array(0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH-1);
+	-- variable header:SHUFFLE_FRAME_HEADER_STRUCT;
+	-- variable new_packet_flags: slv32;
+	variable data_fifo_wr_en_var: std_logic;
+	begin
+		if rising_edge(clk) then
+
+			reset_all <= rst or user_reset;
+			reset_all_reg <= reset_all;
+
+			if overflow_reset='1' then
+				data_fifo_overflow_sticky <= (others=>'0');
+				flags_fifo_overflow_sticky <= '0';
+			else
+				-- for i in 0 to NUMBER_OF_INPUTS-1 loop
+				-- 	if i>=first_lane_reg and i<=last_lane_reg then
+						-- data_fifo_overflow_sticky(i) <= data_fifo_overflow_sticky(i) or data_fifo_overflow(i);
+					-- end if;
+				-- end loop;
+				-- if or_reduce(data_fifo_overflow)='1' then
+				-- 	data_fifo_overflow_sticky<='1';
+				-- end if;
+				data_fifo_overflow_sticky <= data_fifo_overflow_sticky or data_fifo_overflow;
+				flags_fifo_overflow_sticky <= flags_fifo_overflow_sticky or flags_fifo_overflow;
+				-- if flags_fifo_overflow='1' then
+				-- 	flags_fifo_overflow_sticky<='1';
+				-- end if;
+			end if;
+
+
+			-- data_fifo_din_dly <= data_fifo_din;
+			data_fifo_wr_en_always_dly       <= data_fifo_wr_en_always;
+			data_fifo_wr_en_if_selected_dly  <= data_fifo_wr_en_if_selected;
+			data_fifo_wr_en_packet_flags_dly <= data_fifo_wr_en_packet_flags;
+			data_fifo_first_word_dly         <= data_fifo_first_word;
+			data_fifo_last_word_dly          <= data_fifo_last_word;
+			data_fifo_combine_flag_dly       <= data_fifo_combine_flag;
+			data_fifo_number_of_words_dly    <= data_fifo_number_of_words;
+
+			data_fifo_wr_en_var := data_fifo_wr_en_always_dly or (data_fifo_wr_en_if_selected_dly and mask_ram_dout);
+
+			flags_fifo_din(data_fifo_number_of_words_dly'length-1 downto 0) <= to_slv(data_fifo_number_of_words_dly);
+			flags_fifo_din(COMBINE_WORDS_BIT) <= data_fifo_combine_flag_dly;
+			flags_fifo_din(END_OF_PACKET_BIT) <= data_fifo_wr_en_packet_flags_dly;
+			flags_fifo_wr_en <= data_fifo_last_word_dly and data_fifo_wr_en_var; -- we write only when the last word is there, so it is guaranteed that we will have WORDS_PER_BIN words in the data FIFO. This way we don't have to check the valid flags (very stretched out 16:1 mux, very bad for timing).
+
+			for i in 0 to NUMBER_OF_INPUTS-1 loop
+				data_fifo_din(i)(NEXT_INPUT_BIT) <= data_fifo_last_word_dly; -- Tell the FIFO reader to increment the lane counteer because this is the last word of the bin
+				if data_fifo_wr_en_packet_flags_dly='1' then
+					data_fifo_din(i) <= (others =>'0');
+					data_fifo_din(i)(NUMBER_OF_INPUTS-1 downto 0) <= not reverse_bits_and_dir(s_axis_tvalid and s_axis_tlast);
+				else
+					data_fifo_din(i)(31 downto 0) <= s_axis_tdata(i);
+				end if;
+				data_fifo_wr_en(i) <= data_fifo_wr_en_var;
+			end loop;
+
+
+			data_fifo_wr_en_always <= '0';
+			data_fifo_wr_en_if_selected <= '0';
+			data_fifo_wr_en_packet_flags <= '0';
+			data_fifo_last_word <= '0';
+
+			if reset_all_reg='1' then -- make sure there won't be spurious data and flag FIFO write in case of a single-clock reset pulse.
+				data_fifo_wr_en_always_dly <= '0';
+				data_fifo_wr_en_if_selected_dly <= '0';
+				data_fifo_last_word_dly <= '0';
+			end if;
+
+			last_frame_flags_word_number <= resize(number_of_input_frame_flags_words_per_frame-1, last_word_number'length);
+			last_frame_number <= resize(frames_per_packet-1, last_frame_number'length); -- Pre-compute the number of the last frame to reduce combinatorial depth
+			if recv_header = '1' then
+				last_word_number <= resize(number_of_input_words_per_bin-1, last_word_number'length); -- initial value for DATA blocks. Is changed to appropriate values after each block
+				last_bin_number <= resize(number_of_input_bins_per_frame-1, last_bin_number'length); -- is set to 0 after the DATA FLAGS block
+				block_ctr <= (others=>'0');
+				frame_ctr <= (others=>'0');
+				bin_ctr <= (others=>'0');
+				word_ctr <= (others=>'0');
+				data_fifo_combine_flag <= '0';
+			end if;
+
+			frame_number_capture_trig <= '0';
+			stream_id_capture_trig <= '0';
+
+			if s_axis_global_tvalid='1' then
+
+				if recv_header = '1' then
+					recv_header_word_ctr <= recv_header_word_ctr + 1;
+					ix := to_integer(recv_header_word_ctr);
+
+					case ix is
+						when 0 =>
+						when 1 =>
+						when 2 =>
+						when 3 =>
+							-- check timestamp
+							-- If all ok proceed to read the data, otherwise flush
+							recv_header <= '0';
+							packet_flags <= (others => '0'); -- by the time we clear this register we have already sent the packet flags
+					end case;
+
+				else -- if recv_header='0'
+
+					data_fifo_wr_en_if_selected <= to_std_logic(block_ctr = DATA_BLOCK or block_ctr = DATA_FLAGS_BLOCK);
+					data_fifo_wr_en_always <= to_std_logic(block_ctr = FRAME_FLAGS_BLOCK);
+					data_fifo_combine_flag <= to_std_logic(COMBINE_DATA_FLAGS and (block_ctr = DATA_FLAGS_BLOCK));
+					data_fifo_first_word <= to_std_logic(word_ctr = 0);
+					data_fifo_number_of_words <= last_word_number;
+
+					-- Count words, bins and frames
+					word_ctr <= word_ctr +1;
+					if word_ctr = last_word_number then -- if last word in bin
+						data_fifo_last_word <= '1';
+						word_ctr <= (others=>'0');
+						bin_ctr <= bin_ctr + 1;
+						if bin_ctr = last_bin_number then -- if last bin in frame
+							bin_ctr <= (others=>'0');
+							frame_ctr <= frame_ctr +1;
+							if frame_ctr = last_frame_number then -- if last frame in block
+								frame_ctr <= (others=>'0');
+								if block_ctr /= FLUSH_BLOCK then
+									block_ctr <= block_ctr + 1;
+								end if;
+								if block_ctr = DATA_BLOCK then -- this is the end of the data block. Next we will count one scaler flag word for each bin.
+									last_word_number <= (others=>'0'); -- We assume there is always one scaler flag word per bin, which is true for normal operations of crossbar 2 and 3. This woul dnot be true for a hypothetical crossbar4.
+								elsif block_ctr = DATA_FLAGS_BLOCK then -- Scaler flags are finished. Now we count the frame flags for each frame
+									last_bin_number <= (others=>'0'); -- Frame flags do not repeat for every bin
+									last_word_number <= last_frame_flags_word_number; -- Depending ont he crossbar, there could be 1 or 2 frame flags.
+								elsif block_ctr = FRAME_FLAGS_BLOCK then -- Frame flags are finished. Now we count a single packet flag per frame
+									last_word_number <= (others=>'0'); -- There is only one packet flag per frame
+								end if;
+							end if;
+						end if;
+					end if;
+
+					-- Cumulate packet flags whenver a lane reaches its EOF
+					-- for i in 0 to NUMBER_OF_INPUTS-1 loop
+					-- 	-- if i<last_lane and s_axis_tvalid(i)='1' and s_axis_tlast(i)='1' then
+					-- 		-- new_packet_flags := new_packet_flags or s_axis_tdata(i);
+					-- 	if i<last_lane and s_axis_tvalid(i)='1' and s_axis_tlast(i)='1' then
+					-- 		new_packet_flags := new_packet_flags or s_axis_tdata(i);
+					-- 	end if;
+					-- end loop;
+					-- packet_flags <= new_packet_flags;
+
+				end if; -- if recv_header
+
+
+			-- override the FIFO write if an unexpected EOF occurs
+				if s_axis_global_tlast='1' then
+					data_fifo_wr_en_packet_flags <= '1';
+					data_fifo_combine_flag <= '0'; --Make sure the readout system will not combine adjacent signals
+					data_fifo_wr_en_always <= '1'; -- Write the packet flags
+
+					recv_header_word_ctr <= (others=>'0');
+					recv_header <= '1';
+				end if; --s_axis_global_tlast='1'
+			end if; -- if s_axis_global_tvalid='1'
+
+			if reset_all_reg='1' then
+				recv_header_word_ctr <= (others=>'0');
+				recv_header <= '1';
+			end if;
+
+		end if; -- clk
+
+	end process;
+
+
+
+
+
+-------------------------------
+--! FIFO Read Process
+-------------------------------
+--! This is a state machine that we implemented explicitely with one-hot states (send_header, send_data, send_data_flags, send_frame_flags, send_packet_flags).
+--! We did not let the synthesizer infer the state machine because we need to use the state variables combinatorially to enable the FIFO read enables.
+--! Why? Because the synthesizer does not take into account the one-hot nature of the encoding of states when the state variable is used outside the process, and will generate extra logic.
+--!
+--! The readout of the FIFOS is throttelled by the destination via tready (in other words we have a blobking AXI interface here). The throttelling is used by ALIGN to align the frames.
+--! We are very careful to minimize the combinatorial logic depth because the tready signal from the destination combinatorially sets the FIFO read enabled and the state machine operations.
+--! Otherwise we would need to implement a 2 word-deep FIFO, and would like to avoid that to minimize resource usage.
+--!
+--! The output bus uses the standard AXI4 STREAMING protocol
+--! The protocol is as follows
+--!  1) TVALID indicates when valid data is on the bus.
+--!  2) TREADY Indicates when the sink is ready to accept data
+--!  3) A transaction occurs when both TVALID and TDATA are HIGH.
+--!  4) TVALID is cleared when a transaction occurs (TREADY=1) unness a new word is ready (see below)
+--!	 5) The source puts a word on the bus whenever it has one ready and either a) ther is nothing on the bus (TVALID=0) or 2) the current word has been accepted (TREADY=1).
+--!
+--! We use a native fall-through FIFOs to make the logic simpler and reduce the latency.
+
+
+
+
+-- FIFO Read enable
+-- These are derived combinatiorally to make sure we geta new word as soon as the destination accepts the current word.
+-- The combinatorial signal depends on the destination tready, so we don't break the combinatorial tready chain here.
+-- This signal goes to all the loads in each of the 16 FIFOs.
+-- We want to minimize combinatorial depth to allow high speed operation at 322 MHz.
+-- The logic can be implemented in a single 6-input LUT.
+-- We use selection mask (input_sel) for each FIFO to minimize the logic. Otherwise we need to take into account the readout state and input counter value, which makes the logic more complex.
+-- We read the FIFO when the destination is ready (tready=1 or tvalid=0), and if the input is selected (input_sel=1) or if we are reading the last word of the packet on lane zero (data_fifo_valid(0)='1' and data_fifo_dout(0)(END_OF_PACKET_BIT)='1').
+-- We don't check data_fifo_valid for other lanes because an underflow is not detrimental and we want to limit the number of combinatorial inputs.
+
+fifo_rd_en_gen0: for j in 0 to NUMBER_OF_OUTPUTS-1 generate
+	fifo_rd_en_gen: for i in 0 to NUMBER_OF_INPUT_LANES_PER_OUTPUT-1 generate
+		data_fifo_rd_en(j*NUMBER_OF_INPUT_LANES_PER_OUTPUT + i) <= '1' when send_header='0' and flags_fifo_valid='1' and (i=lane or (combine_words='1' and  i=(lane or "0001")) or end_of_packet='1') else '0'; --8-input LUT
+	end generate;
+end generate;
+
+
+combine_words <= flags_fifo_dout(COMBINE_WORDS_BIT) and to_std_logic(COMBINE_DATA_FLAGS); -- And with COMBINE_DATA_FLAGS to reduce logic utilization if combining is never needed
+end_of_packet <= flags_fifo_dout(END_OF_PACKET_BIT);
+is_last_word <= to_std_logic(send_word_ctr = unsigned(flags_fifo_dout(send_word_ctr'length-1 downto 0))); -- 4-input LUT
+is_last_lane <= to_std_logic((lane(3 downto 1) = last_lane_reg(3 downto 1)) and (combine_words='1' or lane(0) = last_lane_reg(0))); -- 9 signals
+flags_fifo_rd_en <= '1' when send_header='0' and ((is_last_word='1' and is_last_lane='1') or end_of_packet='1') else '0'; -- 15-input LUT, all local!
+
+
+fifo_rd_proc: process(clk)
+	variable header_word_array: slv32_array(0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH-1);
+	variable frame_header: SHUFFLE_FRAME_HEADER_STRUCT;
+	variable ix0, ix1: integer range 0 to NUMBER_OF_INPUT_LANES_PER_OUTPUT-1;
+	variable tdata: slv35_array(0 to NUMBER_OF_INPUT_LANES_PER_OUTPUT-1);
+	begin
+		if rising_edge(clk) then
+
+			if lane0_bypass='1' then
+				for j in 0 to NUMBER_OF_OUTPUTS - 1 loop
+					m_axis_tdata(j) <= s_axis_tdata(BIN_SEL_NUMBER * NUMBER_OF_OUTPUTS + j);
+					m_axis_tvalid(j) <= s_axis_tvalid(BIN_SEL_NUMBER * NUMBER_OF_OUTPUTS + j);
+					m_axis_tlast(j) <= s_axis_tlast(BIN_SEL_NUMBER * NUMBER_OF_OUTPUTS + j);
+				end loop;
+			else
+				m_axis_tdata <= m_axis_tdata_int;
+				m_axis_tvalid <= m_axis_tvalid_int;
+				m_axis_tlast <= m_axis_tlast_int;
+			end if;
+
+			first_lane_reg <= first_lane;
+			last_lane_reg <= to_unsigned(max(0, min(to_integer(last_lane), NUMBER_OF_INPUT_LANES_PER_OUTPUT-1)), 4);
+
+			------------------------------------
+			-- SYNCHRONOUS RESET : See the end of the block
+			-------------------------------------
+
+
+
+				-----------
+				-- SEND HEADER
+				-----------
+			if send_header='1' then
+				-- Initialize state variables that will be used for data transmission. We keep those outside if blocks to minimize logic depth.
+				-- combine_words <= '0';
+				lane <= first_lane_reg; -- Lane being read
+				send_word_ctr <= (others=>'0');
+
+				for j in 0 to NUMBER_OF_OUTPUTS -1 loop
+					-- Build the packet header to be sent for this lane
+					frame_header := (
+						-- Word 0
+						COOKIE                 => SHUFFLE_FRAME_HEADER_COOKIE,
+						PROTOCOL_VERSION       => SHUFFLE_FRAME_HEADER_PROTOCOL_VERSION,
+						HEADER_LENGTH_IN_WORDS => to_slv(SHUFFLE_FRAME_HEADER_WORD_LENGTH, frame_header.HEADER_LENGTH_IN_WORDS'LENGTH),
+						STREAM_ID              => STREAM_ID & to_slv(BIN_SEL_NUMBER * NUMBER_OF_OUTPUTS + j, 4),
+						-- Word 1
+						ENCODING               => (0=> four_bits, 1=> use_offset_binary, 2=> send_flags, others=>'0'),
+						NUMBER_OF_FRAMES       => to_slv(frames_per_packet, frame_header.NUMBER_OF_FRAMES'LENGTH),
+						NUMBER_OF_BINS         => number_of_output_bins_per_frame, -- ** to be fixed : will change for 2nd, 3rd etc  shuffle
+						NUMBER_OF_ANTENNAS     => std_logic_vector(resize(number_of_output_words_per_bin, frame_header.NUMBER_OF_ANTENNAS'LENGTH)),
+						-- Word 2
+						ANCILLARY_DATA         => (X"0000" & std_logic_vector(timestamp_ctr(47 downto 32))),
+						-- Word 3
+						TIMESTAMP              => std_logic_vector(timestamp_ctr(31 downto 0))
+						);
+
+					header_word_array := struct_to_word(FRAME_HEADER);
+					m_axis_tdata_int(j) <= header_word_array(to_integer(send_header_word_ctr)); --! We re-use send_word ctr because it is already used in the logic path
+					m_axis_tvalid_int(j) <= '0'; -- overriden below
+					m_axis_tlast_int(j) <= '0'; -- overriden below
+				end loop;
+
+				if flags_fifo_valid='1' then
+					m_axis_tvalid_int <= (others=> '1');
+					send_header_word_ctr <= send_header_word_ctr + 1;
+					if send_header_word_ctr = SHUFFLE_FRAME_HEADER_WORD_LENGTH-1 then
+						send_header <= '0';
+						send_header_word_ctr <= (others=>'0');
+						timestamp_ctr <= timestamp_ctr + frames_per_packet;
+					end if;
+				end if;
+			end if;
+			-----------
+			-- SEND DATA
+			-----------
+			-- Data and frame flags: Send word from each lane
+			if send_header='0' then
+
+
+				-- Put data on the currently selected lane bus, whether or not it is valid.
+				-- We'll set the tvalid flag only if it is valid.
+				-- This is to avoid generating an enable line on the whole bus that is based on a 16:1 mux on the fifo valid signals.
+				for j in 0 to NUMBER_OF_OUTPUTS-1 loop
+					tdata := data_fifo_dout(j*NUMBER_OF_INPUT_LANES_PER_OUTPUT to (j+1)*NUMBER_OF_INPUT_LANES_PER_OUTPUT - 1);
+					ix0 := to_integer(lane);
+					ix1 := to_integer(lane or "0001");
+					if combine_words='1' and COMBINE_DATA_FLAGS=TRUE then
+						m_axis_tdata_int(j)(15 downto 0) <= tdata(ix0)(15 downto 0);
+						m_axis_tdata_int(j)(31 downto 16) <= tdata(ix1)(15 downto 0);
+					else
+						m_axis_tdata_int(j) <= tdata(ix0)(31 downto 0);
+					end if;
+				end loop;
+
+				m_axis_tvalid_int <= (others => '0'); -- overriden below
+				m_axis_tlast_int <= (others => '0'); -- overriden below
+
+				if flags_fifo_valid='1' then
+					m_axis_tvalid_int <= (others => '1');
+					send_word_ctr <= send_word_ctr + 1;
+
+					if end_of_packet='1' then
+						m_axis_tlast_int <= (others => '1');
+						send_header_word_ctr <= (others=>'0');
+						send_header <= '1';
+						lane <= first_lane_reg;
+						-- input_sel <= not data_fifo_rd_en;
+
+					elsif is_last_word='1' then -- If we are told to switch to the next lane
+						send_word_ctr <= (others=>'0');
+
+						if is_last_lane='1' then -- if this is the last lane being read
+							lane <= first_lane_reg; --
+						else -- not last lane. Proceed to next lane
+							if combine_words='1' and COMBINE_DATA_FLAGS=TRUE then
+								lane <= lane + 2;
+							else
+								lane <= lane + 1;
+							end if;
+						end if;
+
+					end if; --if next input flag
+				end if; -- if fifo data valid on selected lane
+
+			end if; -- if header or data
+
+			-- end if; -- if data=1 and data_fifo_valid
+		-- end if; -- if destination ready
+
+
+			-- Reset - overrides the variables that may have been set above
+			-- We do not implement this as a "if reset (..reset code..) else (...main code...) end if". because all signals not processed in the reset code would end up with a clock enable depending on the reset line in the main code. That is quite a heavy load.
+			if reset_all_reg='1' then
+				m_axis_tvalid_int <=(others=> '0'); --needed
+				send_header_word_ctr <= (others=>'0');
+				send_word_ctr <= (others=>'0'); -- needed?
+				timestamp_ctr <= (others => '0');
+				send_header <= '1';
+			end if; -- reset
+
+		end if; -- clk
+	end process;
+end Behavioral;
+
