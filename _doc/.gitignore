@@ -1,0 +1,8 @@
+*.pyc
+/rtf
+/xml
+_Archives
+*.tmp
+*.~vsd
+/build/
+*.sublime-workspace
