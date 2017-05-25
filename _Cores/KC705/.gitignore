@@ -8,7 +8,7 @@
 !/.gitignore
 # Re-introduce this .gitignore file
 # Include any .vhd file at this level (might be a core package definition)
-#!/*.vhd
+!/*.vhd
 
 
 # Enable the essential core generator files in the top-level dir of each core only.
