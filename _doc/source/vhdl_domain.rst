@@ -3,7 +3,10 @@ VHDL_DOMAIN
 
 .. default-domain:: py
 
-.. .. automodule:: vhdl_domain
+.. autosummary:: vhdl_domain
+
+	vhdl_parser.VHDLParser
+	vhdl_domain.VHDLDomain
 
 .. automodule:: vhdl_parser
 
