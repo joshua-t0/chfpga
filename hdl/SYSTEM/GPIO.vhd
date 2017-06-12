@@ -293,9 +293,9 @@ signal target_local_base_ip_addr: std_logic_vector(31 downto 0);
 signal target_local_base_ip_port: std_logic_vector(15 downto 0);
 
 -- Network parameters from SPI registers
-signal fpga_ip_address: std_logic_vector(31 downto 0) := X"0A0A0A0B";
-signal fpga_ip_port: std_logic_vector(15 downto 0) := X"A028"; -- 41000
-signal fpga_mac_address: std_logic_vector(47 downto 0) := X"123456789ABC";
+signal spi_fpga_ip_address: std_logic_vector(31 downto 0) := X"0A0A0A0B";
+signal spi_fpga_ip_port: std_logic_vector(15 downto 0) := X"A028"; -- 41000
+signal spi_fpga_mac_address: std_logic_vector(47 downto 0) := X"123456789ABC";
 
 
 signal local_mac_addr_int: std_logic_vector(47 downto 0);
@@ -687,15 +687,15 @@ core_reg_rd_value(6) <= "0000000" & fpga_serial_number(56 downto 32); -- (Read o
 -- Networking configuration
 -------------------------
 -- Register 7
-core_reg_rd_value(7)           <= fpga_mac_address(31 downto 0); -- (Read/Write with readback)
-fpga_mac_address(31 downto 0)  <= core_reg_wr_value(7);
+core_reg_rd_value(7)           <= spi_fpga_mac_address(31 downto 0); -- (Read/Write with readback)
+spi_fpga_mac_address(31 downto 0)  <= core_reg_wr_value(7);
 -- Register 8
-core_reg_rd_value(8)           <= fpga_mac_address(47 downto 32) & fpga_ip_port; -- (Read/Write with readback)
-fpga_mac_address(47 downto 32) <= core_reg_wr_value(8)(31 downto 16);
-fpga_ip_port                   <= core_reg_wr_value(8)(15 downto 0);
+core_reg_rd_value(8)           <= spi_fpga_mac_address(47 downto 32) & spi_fpga_ip_port; -- (Read/Write with readback)
+spi_fpga_mac_address(47 downto 32) <= core_reg_wr_value(8)(31 downto 16);
+spi_fpga_ip_port                   <= core_reg_wr_value(8)(15 downto 0);
 -- Register 9
-core_reg_rd_value(9)           <= fpga_ip_address; -- (Read/Write with readback)
-fpga_ip_address                <= core_reg_wr_value(9);
+core_reg_rd_value(9)           <= spi_fpga_ip_address; -- (Read/Write with readback)
+spi_fpga_ip_address                <= core_reg_wr_value(9);
 
 -- IRIG-B timestamp registers
 -------------------------
@@ -740,8 +740,7 @@ ts_force                           <= core_reg_wr_value(15)(30);
 -- Register 16 (_IRIGB_EVENT_CTR_ADDR)
 core_reg_rd_value(16) <= std_logic_vector(event_sample); -- (Read-only)
 
--- Register 17 (_BP_BUCK_SYNC_ADDR)
-
+-- Registers 17 and 18 (_BP_BUCK_SYNC_ADDR and _BP_BUCK_SYNC_ADDR2)
 bp_buck_sync_wr_dat                 <= core_reg_wr_value(17);
 core_reg_rd_value(17)(31 downto 16) <= bp_buck_sync_wr_dat(31 downto 16); -- readback
 core_reg_rd_value(17)(15 downto 8)  <= release_ctr_mon;
@@ -749,13 +748,15 @@ core_reg_rd_value(17)(7 downto 0)   <= sync_ctr_mon;
 core_reg_rd_value(18)(31)           <= bp_buck_sync_rd_dat_valid; -- (Read-only)
 core_reg_rd_value(18)(30 downto 0)  <= bp_buck_sync_rd_dat(30 downto 0); -- (Read-only)
 
-
+-- Register 19 (_SFP_STATUS_ADDR)
 core_reg_rd_value(19)(15 downto 0)  <= sfp_status_vector; -- (Read-only)
 
+-- Register 20 (_REMOTE_IP_PORT_ADDR)
 remote_ip_port0                 <= core_reg_wr_value(20)(15 downto 0);
 remote_ip_port1                 <= core_reg_wr_value(20)(31 downto 16);
 core_reg_rd_value(20)           <= core_reg_wr_value(20);
 
+-- Register 21 (_IRIGB_REFCLK_SAMPLE)
 core_reg_rd_value(21)           <= std_logic_vector(refclk_sample);
 
 core_regs0: entity work.register_array
@@ -989,10 +990,17 @@ network_setup_proc: process(ctrl_clk)
 
 			-- Select which networking parameters to use
 			case local_network_config_source_reg is
-				when "00" => -- Network config  is from SPI link registers (default)
-					local_mac_addr     <= fpga_mac_address;
-					local_base_ip_addr <= fpga_ip_address;
-					local_base_ip_port <= fpga_ip_port;
+				when "00" => -- Network configuration comes from the ARM SPI registers
+					-- This is the default configuration unless there is a rising edge on
+					-- target_load_trigger is '1' with matching target FPGA serial number
+					--
+					-- In this configuration, UDP channel 0 (control networking) is set through the
+					-- SPI interface, and the UDP channel 1 (usually raw data and correlator data,
+					-- but configurable) is set through the IP/PORT/MAC target registers that are
+					-- also used for matched-FPGA-serial set-up.
+					local_mac_addr     <= spi_fpga_mac_address;
+					local_base_ip_addr <= spi_fpga_ip_address;
+					local_base_ip_port <= spi_fpga_ip_port;
 					local_subarray     <= (others=>'0');
 					remote_ip_addr1     <= target_local_base_ip_addr;
 					remote_mac_addr1    <= target_local_mac_addr;
