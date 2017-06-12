@@ -1,0 +1,14 @@
+# Ignore all files and folders in this directory except what we will allow later
+/*
+# Add files we want in the current directory
+!/.gitignore
+!/*.wcfg
+!/*.xise
+
+# Make the work subdir visible again
+!/work
+# Exclude everything in work directory except what we will exclude below
+/work/*
+# Include work directory contents
+!/work/*.bit
+#!/work/*.twr

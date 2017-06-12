@@ -1,0 +1,14 @@
+# Ignore all files and folders in this directory except what we will allow later
+*.dcp
+*.filter
+/*.cache
+/*.data/wt
+/*.hw
+/*.data/cache
+# ignore all run files, except the .bit files 2 directories below
+/*.runs/*
+!/*.runs/*/
+/*.runs/*/*
+!/*.runs/*/*.bit
+#Keep top level sim files but not the folders below
+/*.sim/*/*

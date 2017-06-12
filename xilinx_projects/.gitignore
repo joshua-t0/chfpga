@@ -1,0 +1,29 @@
+# Exclude everything by default
+/*
+# Add files we want in this directory
+!/.gitignore
+# Make the project directories and their contents visible
+!/chFPGA_ML605/
+!/chFPGA_ML605/*
+
+
+#!/chFPGA_KC705/
+#!/chFPGA_KC705/*
+
+#!/CHFPGA_MGK7MB/
+#!/CHFPGA_MGK7MB/*
+
+!/CHFPGA_MGK7MB_REV2/
+!/CHFPGA_MGK7MB_REV2/*
+
+!/SIFPGA_MGK7MB/
+!/SIFPGA_MGK7MB/*
+
+!/shuffle_crossbar_testbench/
+!/shuffle_crossbar_testbench/*
+
+!/shuffle_sim/
+!/shuffle_sim/*
+
+!/corr_core_testbench/
+!/corr_core_testbench/*
