@@ -680,13 +680,14 @@ class VHDLFiles(ElementTree.ElementTree):
     def __init__(self):
         super(VHDLFiles, self).__init__(VHDLElement('project'))
         self.vhdl_parser = VHDLParser()
-        self.summaries={}
-        self.entities={}
-        self.labels=[]
+        self.summaries = {}
+        self.entities = {}
+        self.labels = []
 
     def parse_file(self, filename):
         if filename in self.summaries:
-            raise RuntimeError("File '%s' has already been parsed" % filename)
+            print("Warning: File '%s' has already been parsed" % filename)
+            # raise RuntimeError("File '%s' has already been parsed" % filename)
 
         parse_elem = self.vhdl_parser.parse_file(filename)
         summary = self.vhdl_parser.analyze(parse_elem, filename=filename)
@@ -702,7 +703,9 @@ class VHDLFiles(ElementTree.ElementTree):
         # Add found entities to global entity list
         for entity_key, entity in summary['entities'].items():
             if entity_key in self.entities:
-                raise RuntimeError("Entity '%s' has already been parsed" % entity['name'])
+                print("Entity '%s' has already been parsed" % entity.name)
+
+                # raise RuntimeError("Entity '%s' has already been parsed" % entity['name'])
             self.entities[entity_key] = entity
 
     def get_entity(self, entity_name):
