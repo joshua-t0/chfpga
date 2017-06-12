@@ -1141,18 +1141,23 @@ clk200pipeproc: process(clk200)
 			SIM => SIM
 			)
 		PORT MAP(
+
+			-- UDP incoming traffic network parameters
 			local_mac_addr =>local_mac_addr,
 			local_ip_addr  =>local_ip_addr,
 			local_ip_port  =>local_base_ip_port,
 			local_subarray => local_subarray,
 			-- User-side streaming interface
-			remote_mac_addr0 => (others=>'0'), -- Auto detect
-			remote_ip_addr0  => (others=>'0'), -- Auto detect
-			remote_ip_port0  => remote_ip_port0, -- ignored because ip_addr=0
 
-			remote_mac_addr1 => remote_mac_addr1, --
-			remote_ip_addr1  => remote_ip_addr1, --
-			remote_ip_port1  => remote_ip_port1, -- Is always used
+			-- UDP outgoing traffic port/channel 0 network parameters
+			remote_mac_addr0 => (others=>'0'), -- Auto detect: Use last incoming packet source mac
+			remote_ip_addr0  => (others=>'0'), -- Auto detect: Use last incoming packet source ip
+			remote_ip_port0  => remote_ip_port0, -- If 0: Use last incoming packet source port number
+
+			-- UDP outgoing traffic port/channel 1 network parameters
+			remote_mac_addr1 => remote_mac_addr1, -- If 0: Use last incoming packet source mac
+			remote_ip_addr1  => remote_ip_addr1, -- If 0: Use last incoming packet source ip
+			remote_ip_port1  => remote_ip_port1, -- If 0: Use last incoming packet source port number + 1 (*** Notice the "+ 1" ***)
 
 			-- GMII Phy interface (connects to Marvell chip pins)
 			phy_rxclk        => phy_rxclk,
@@ -1234,13 +1239,13 @@ ctrl_master0: entity work.ctrl_master
 		s_axis_rply_tlast => axis_rply_tlast,
 		s_axis_rply_tready => axis_rply_tready,
 
-		rply_port_offset => CTRL_RPLY_IP_PORT_OFFSET, -- UDP port offset used for all command replies
+		rply_port_offset => CTRL_RPLY_IP_PORT_OFFSET, -- UDP channel used for all command outgoing replies
 		cmd_packet_counter => cmd_packet_counter,
 		rply_packet_counter => rply_packet_counter,
 		-- Probe inputs
 		PRB_DAT => PRB_DAT,
 		PRB_RDY => PRB_RDY,
-		PRB_PORT_OFFSET => PRB_PORT_OFFSET, -- UDP port offset used for each prober channel
+		PRB_PORT_OFFSET => PRB_PORT_OFFSET, -- UDP channel used for each prober channel outgoing data
 
 		-- System
 		HOST_FRAME_READ_RATE => HOST_FRAME_READ_RATE,
