@@ -33,7 +33,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
-    # 'sphinx.ext.mathjax',  # JFC temporarily disable to prevent unnecessary web accesses
+    'sphinx.ext.mathjax',  # JFC temporarily disable to prevent unnecessary web accesses
     'vhdl_domain',
 ]
 
