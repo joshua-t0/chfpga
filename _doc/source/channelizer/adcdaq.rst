@@ -21,7 +21,7 @@ Schematic
 Entity documentation
 ====================
 
-.. parse:: hdl/chan/adcdaq.vhd
+.. parse:: hdl/chan/ADCDAQ.vhd
 
 .. autoentity:: ADCDAQ
 
