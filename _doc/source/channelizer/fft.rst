@@ -6,7 +6,7 @@
 .. default-role:: vhdl:entity
 
 
-.. parse:: hdl/chan/FFT.vhd
+.. parse:: hdl/CHAN/FFT.vhd
 
 
 Entity documentation

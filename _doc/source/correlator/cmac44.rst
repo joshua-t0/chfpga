@@ -4,7 +4,7 @@ CMAC44: (4+4) bit Complex Multiply-and-Accumulate Core
 
 .. default-role:: vhdl:entity
 
-.. parse:: hdl/corr/cmac44.vhd
+.. parse:: hdl/CORR/CMAC44.vhd
 
 
 Entity documentation
@@ -15,6 +15,47 @@ Entity documentation
 
 Architecture implementation
 ---------------------------
+
+
+Design requirements
+-------------------
+
+The `CMAC44` is designed with the following objectives:
+
+- Implement a full (4+4) bit complex multiplier and vector accumulator
+- Both (4+4) bit terms are full range signed values, with each element ranging from  -8 to 7 (and not -7 to 7).
+- A flag can enable the complex conjugate on each term individually to facilitate implementation of the correlator
+- The accumulator is wide enough to allow non-saturated accumulation periods that are long enough to reduce the readout bandwidth of a 16-element correlator below 1 Gbps.
+- The vector accumulator must be as deep as possible to maximize the number of products and frequency bins stored by each correlator and minimize the number of CMAC44 required to implement a correlator.
+- The CMAC must use its ressources efficiently and perform one or more CMAC operation on each clock (or more).
+- The CMAC must operate at a minimum of 250 MHz (250 MCMAC/s) to match the input base clock and avoid unnecessary cross-domain clock crossing (CDC) FIFO and logic. The CMAC must be as fast as possible, as it might be worth using CDC logic if that meant less CMACs are needed to implement a correlatoro if a given size.
+- Use as little resources as possible
+- Have a non-blocking AXI4-Streaming input interface
+- Offer a daisy-chainable output readout
+- Handle accumulator saturation adequately
+
+
+Data rates
+----------
+
+A :math:`N` element :math:`N^2` correlator generate :math:`Np = N(N+1)/2` products for each frequency bin.  Each product is stored in a Nb bit value (Nb/2 + Nb/2) bit complex number.
+
+The sampling rate of CHIME is 800MSPS, with data grouped in 2048 sample frames, yielding a frame rate of :math:`Fr = 800MSPS/2048= 390625 Frames/s`.
+
+The output data rate is :math:`Bout = NpFrNb/P`, where P is the integration period. Increasing P reduces Bout, but increases the probability that the Nb-wide accumulated product will saturate during that period.
+
+The worst case (nonrealistic) maximum integration period can be computed by assuming the products is constantly the maximum real or imaginary value possible. The maximum real or imaginary product is 64 (e.g. (-8 + 0j) * (-8 + 0j)). The number of bits required to store thr integration is Nb=2*log2(64*P), or P = 2^{Nb/2}/64. This requires 6 bits. For a N=16 correlator generating 1 Gbps, we would require
+
+Nb*P =Bout/Np/Fr = Nb*2^{Nb/2)/64
+
+
+The table shows that in the worst case, we need (19+19) bit products, but (17+17) bit is sufficient with t e constant mid-range ADC signal. There is also the consideration of the FPGA resources. It happens that the 7-Series BRAMs width can be configured to be 36, 18, 9, etc.. bits wide, meaning that a (18+18) bit accumulated product value would fit conveniently both in memory and in bandwidth. The next step, (9+9) bit products, is not feasable even if 10G links were available.
+
+In consequence, accumulators will be (18+18) bits wide. A single BRAM can therefore store 512 such products.
+
+BRAM and DSP utilization
+------------------------
+
 
 
 Increasing density of the CMAC44: an analysis

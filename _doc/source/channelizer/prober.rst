@@ -11,7 +11,7 @@ Schematic
 .. figure:: ../images/prober.svg
     :width: 50%
 
-.. parse:: hdl/chan/PROBER.vhd
+.. parse:: hdl/CHAN/PROBER.vhd
 
 .. toctree::
    :titlesonly:

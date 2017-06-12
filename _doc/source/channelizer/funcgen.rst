@@ -25,7 +25,7 @@ Schematic
 Entity documentation
 ====================
 
-.. parse:: hdl/chan/FUNCGEN.vhd
+.. parse:: hdl/CHAN/FUNCGEN.vhd
 
 .. autoentity:: FUNCGEN
 

@@ -42,7 +42,7 @@ The Channelizer consists of the following sub-modules:
 Entity documentation
 --------------------
 
-.. parse:: hdl/chan/chan.vhd
+.. parse:: hdl/CHAN/CHAN.vhd
 
 .. autoentity:: CHAN
 
