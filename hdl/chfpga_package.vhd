@@ -272,14 +272,14 @@ type COMPLEX48_STRUCT is -- (54 Re + 54 Im) = 108 bits wide combined -- maximum 
 	end record;
 type COMPLEX48_STRUCT_ARRAY is array (NATURAL RANGE <>) of COMPLEX48_STRUCT;
 
-
-constant FRAME_HEADER_WORD_LENGTH: integer :=2; -- Number of 32-bit words taken by a header
+--! Raw data capture (PROBER) frame header
+constant FRAME_HEADER_BYTE_LENGTH: integer :=9; -- Number of 32-bit words taken by a header
 type FRAME_HEADER_STRUCT is
-	record
-		ID: std_logic_vector(15 downto 0); -- 16 bits (2560 antennas * 1024 frequency channels/512 freqCh/frame = 5120 possible frame IDs, x some factor for intermediate shuffling stages)
-		FLAGS: std_logic_vector(3 downto 0); -- 4 bits (ADC overflow, channelizer Overflow, calib overflow, capture flag)
-		WORD_LENGTH: std_logic_vector(11 downto 0); -- 12 bits, up to 4095 words = ~16380 time samples (in practice, 1024 words = 4096 time samples). Must be one bit longer than the maximum word number (i.e. 1024 bits require 11 bits to represent values between 0-1024)
-		TIMESTAMP: std_logic_vector(31 downto 0); --28 bits = 40 s @ 850MSPS, 2048 time samples/frame
+	record  -- In transmission order (bytewise)
+		PROBE_ID: std_logic_vector(7 downto 0); -- 1 byte, user-defined. Generally a cookie, but can be used by user to convey more info (e.g. extend the number of channels)
+		STREAM_ID: std_logic_vector(11 downto 0); -- 12 bits, user-defined (4096 possible STREAM ID (channels). CHIME has 2048 channels.)
+		FLAGS: std_logic_vector(3 downto 0); -- 4 bits, system-defined. (ADC overflow, channelizer Overflow, calib overflow, capture flag)
+		TIMESTAMP: std_logic_vector(47 downto 0); --6 bytes (48 bits), system-defined
 	end record;
 
 constant SHUFFLE_FRAME_HEADER_WORD_LENGTH: integer :=4; -- Number of 32-bit words taken by a header
@@ -369,8 +369,8 @@ function cmplx(re, im:integer) return complex; -- Create a complex value out of 
 function cmplx(re, im:signed) return complex; -- Create a complex value out of two signed values
 
 
-function struct_to_word(s:FRAME_HEADER_STRUCT) return Word32Array; -- Converts a FRAME_HEADER structure into a word array
-function word_to_struct(w: Word32Array) return FRAME_HEADER_STRUCT; -- Converts a word array into a FRAME_HEADER structure
+FUNCTION struct_to_bytes(s:FRAME_HEADER_STRUCT) return slv8_array; -- Converts a FRAME_HEADER structure into a word array
+-- function word_to_struct(w: Word32Array) return FRAME_HEADER_STRUCT; -- Converts a word array into a FRAME_HEADER structure
 
 function struct_to_word(s:SHUFFLE_FRAME_HEADER_STRUCT) return slv32_array; -- Converts a SHUFFLE_FRAME_HEADER structure into a word array
 function word_to_struct(w: slv32_array(0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH-1):= (others=>(others=>'0'))) return SHUFFLE_FRAME_HEADER_STRUCT; -- Converts a word array into a SHUFFLE_FRAME_HEADER structure
@@ -1688,24 +1688,27 @@ FUNCTION to_unsigned(i:slv8_array) return unsigned is -- concatenated bytes in a
 	begin
 		return to_unsigned(i,8*i'Length);
 	end to_unsigned;
-
-FUNCTION struct_to_word(s:FRAME_HEADER_STRUCT) return Word32Array is
-	variable w : Word32Array(0 to 1);
+-- Return the Raw data capture frame header structure as a byte array
+FUNCTION struct_to_bytes(s:FRAME_HEADER_STRUCT) return slv8_array is
+	variable b: slv8_array(0 to FRAME_HEADER_BYTE_LENGTH-1);
+	variable w: std_logic_vector(8*FRAME_HEADER_BYTE_LENGTH-1 downto 0);
 	begin
-		w(0):=STD_LOGIC_VECTOR'(s.ID & s.FLAGS & s.WORD_LENGTH);
-		w(1):=s.TIMESTAMP;
-		return w;
-	end struct_to_word;
+		w := s.PROBE_ID & s.STREAM_ID & s.FLAGS & s.TIMESTAMP;
+		for i in 0 to FRAME_HEADER_BYTE_LENGTH-1 loop
+			b(i) := w(8*(FRAME_HEADER_BYTE_LENGTH-i)-1 downto 8*(FRAME_HEADER_BYTE_LENGTH-i-1));
+		end loop;
+		return b;
+	end struct_to_bytes;
 
-FUNCTION word_to_struct(w: Word32Array) return FRAME_HEADER_STRUCT is
-	variable s : FRAME_HEADER_STRUCT;
-	begin
-		s.ID:=w(0)(31 downto 16);
-		s.FLAGS:=w(0)(15 downto 12);
-		s.WORD_LENGTH:=w(0)(11 downto 0);
-		s.TIMESTAMP:=w(1);
-		return s;
-	end word_to_struct;
+-- FUNCTION word_to_struct(w: Word32Array) return FRAME_HEADER_STRUCT is
+-- 	variable s : FRAME_HEADER_STRUCT;
+-- 	begin
+-- 		s.ID:=w(0)(31 downto 16);
+-- 		s.FLAGS:=w(0)(15 downto 12);
+-- 		s.WORD_LENGTH:=w(0)(11 downto 0);
+-- 		s.TIMESTAMP:=w(1);
+-- 		return s;
+-- 	end word_to_struct;
 
 
 FUNCTION struct_to_word(s:SHUFFLE_FRAME_HEADER_STRUCT) return slv32_array is
