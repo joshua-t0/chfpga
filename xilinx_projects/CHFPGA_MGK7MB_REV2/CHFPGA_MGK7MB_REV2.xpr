@@ -3,7 +3,7 @@
 <!--                                                         -->
 <!-- Copyright 1986-2016 Xilinx, Inc. All Rights Reserved.   -->
 
-<Project Version="7" Minor="17" Path="C:/Users/jfcliche/workspace/McGill/CHIME/chFPGA/xilinx_projects/CHFPGA_MGK7MB_REV2/CHFPGA_MGK7MB_REV2.xpr">
+<Project Version="7" Minor="17" Path="C:/Users/jfcliche/workspace/CHIME/chfpgalite/xilinx_projects/CHFPGA_MGK7MB_REV2/CHFPGA_MGK7MB_REV2.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
     <Option Name="Id" Val="e8412ef7b89146c484018ba7184f2158"/>
@@ -35,13 +35,13 @@
     <Option Name="WTVcsLaunchSim" Val="0"/>
     <Option Name="WTRivieraLaunchSim" Val="0"/>
     <Option Name="WTActivehdlLaunchSim" Val="0"/>
-    <Option Name="WTXSimExportSim" Val="83"/>
-    <Option Name="WTModelSimExportSim" Val="83"/>
-    <Option Name="WTQuestaExportSim" Val="83"/>
-    <Option Name="WTIesExportSim" Val="83"/>
-    <Option Name="WTVcsExportSim" Val="83"/>
-    <Option Name="WTRivieraExportSim" Val="83"/>
-    <Option Name="WTActivehdlExportSim" Val="83"/>
+    <Option Name="WTXSimExportSim" Val="84"/>
+    <Option Name="WTModelSimExportSim" Val="84"/>
+    <Option Name="WTQuestaExportSim" Val="84"/>
+    <Option Name="WTIesExportSim" Val="84"/>
+    <Option Name="WTVcsExportSim" Val="84"/>
+    <Option Name="WTRivieraExportSim" Val="84"/>
+    <Option Name="WTActivehdlExportSim" Val="84"/>
     <Option Name="GenerateIPUpgradeLog" Val="TRUE"/>
     <Option Name="XSimRadix" Val="hex"/>
     <Option Name="XSimTimeUnit" Val="ns"/>
@@ -375,6 +375,19 @@
           <Attr Name="UsedInImplementation" Val="0"/>
         </CompFileExtendedInfo>
       </File>
+      <File Path="$PPRDIR/../../hdl/CORR/CMAC44.vhd">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../_Cores/KC705/CORR44_DATA_FIFO/CORR44_DATA_FIFO.xci">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <File Path="$PPRDIR/../../_Cores/KC705/ADCDAQ_FIFO/ADCDAQ_FIFO.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -508,6 +521,12 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/../../hdl/CORR/CORR44.vhd">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <File Path="$PPRDIR/../../hdl/SYSTEM/GPIO.vhd">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -598,6 +617,12 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/../../hdl/CORR/CORR44_ARRAY.vhd">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <File Path="$PPRDIR/../../hdl/chfpga.vhd">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -616,34 +641,6 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/ADCDAQ_FIFO/ADCDAQ_FIFO.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/CHDIST_DATA_FIFO/CHDIST_DATA_FIFO.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/CHDIST_FRAME_FIFO/CHDIST_FRAME_FIFO.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/CHDIST_SCALER_FLAGS_FIFO/CHDIST_SCALER_FLAGS_FIFO.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/MASK_RAM/MASK_RAM.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_DATA_FIFO_BRAM/SHUFFLE_BIN_SEL_DATA_FIFO_BRAM.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_DATA_FIFO_DRAM/SHUFFLE_BIN_SEL_DATA_FIFO_DRAM.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_MASK_RAM/SHUFFLE_BIN_SEL_MASK_RAM.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_CROSSBAR_ALIGN_FIFO/SHUFFLE_CROSSBAR_ALIGN_FIFO.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/XGLINK_RX_DATA_FIFO/XGLINK_RX_DATA_FIFO.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/XG_UDP_MAC_TX_DATA_FIFO/XGMII_UDP_MAC_TX_DATA_FIFO.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/XG_UDP_MAC_TX_HEADER_FIFO/XGMII_UDP_MAC_TX_HEADER_FIFO.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/UDP_MAC_RX_DATA_FIFO/udp_mac_rx_data_fifo.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/UDP_MAC_RX_FRAME_FIFO/udp_mac_rx_frame_fifo.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/udp_mac_tx_data_fifo/udp_mac_tx_data_fifo.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/CMD_FIFO/CMD_FIFO.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/PROBER_DATA_FIFO/PROBER_DATA_FIFO.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/PROBER_FRAME_FIFO/PROBER_FRAME_FIFO.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/SCALER_COEFF_RAM/SCALER_COEFF_RAM.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_FLAGS_FIFO/SHUFFLE_BIN_SEL_FLAGS_FIFO.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/SCALER_CMUL/SCALER_CMUL.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/AXI4S_REG_SLICE/AXI4S_REG_SLICE.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/FUNCGEN_RAM/FUNCGEN_RAM.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/CHDIST_DATA_EMBED_FIFO/CHDIST_DATA_EMBED_FIFO.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_DATA_FIFO_EMBED/SHUFFLE_BIN_SEL_DATA_FIFO_EMBED.upgrade_log"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/XGLINK_TX_DATA_FIFO/XGLINK_TX_DATA_FIFO.upgrade_log"/>
       <Config>
         <Option Name="DesignMode" Val="RTL"/>
         <Option Name="TopModule" Val="chFPGA_MGK7MB_Rev2"/>
@@ -1321,16 +1318,11 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/CHAN/new/CHAN_ooc.xdc">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="out_of_context"/>
-        </FileInfo>
-      </File>
       <Config>
         <Option Name="TopModule" Val="CHAN"/>
         <Option Name="TopRTLFile" Val="$PPRDIR/../../hdl/CHAN/CHAN.vhd"/>
         <Option Name="ElabLinkDCPs" Val="0"/>
+        <Option Name="ElabLoadTimingContstraints" Val="0"/>
         <Option Name="UseBlackboxStub" Val="0"/>
       </Config>
     </FileSet>
@@ -1364,7 +1356,9 @@
     </Run>
     <Run Id="CHAN_synth_1" Type="Ft3:Synth" SrcSet="CHAN" Part="xc7k420tffg901-2" ConstrsSet="CHAN" Description="Vivado Synthesis Defaults" Dir="$PRUNDIR/CHAN_synth_1" IncludeInArchive="true">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2016"/>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2016">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
         <Step Id="synth_design"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -1403,7 +1397,9 @@
     </Run>
     <Run Id="CHAN_impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="CHAN" Description="Default settings for Implementation." SynthRun="CHAN_synth_1" IncludeInArchive="false">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016"/>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
