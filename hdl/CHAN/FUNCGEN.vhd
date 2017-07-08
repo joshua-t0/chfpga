@@ -101,6 +101,7 @@ signal ram_ctrl_dout: std_logic_vector(7 downto 0);
 signal ram_addr: std_logic_vector(9 downto 0); -- 512 words
 signal ram_dout: std_logic_vector(31 downto 0);
 signal ram_dout_int: std_logic_vector(31 downto 0);
+signal crc_in: std_logic_vector(31 downto 0);
 signal crc_out: std_logic_vector(31 downto 0);
 
 signal delay_capture_ctr: unsigned(15 downto 0);
@@ -207,10 +208,11 @@ ram0 : entity work.FUNCGEN_RAM
         doutb  => ram_dout_int
     );
 
+crc_in <= (byte_a & byte_b & not byte_a & not byte_b);
 -- Instantiate the CRC engine, 32-bit wide input, that is used as a noise generator.
 crc32: entity work.xglink_crc32_32
     port map(
-        data_in => (byte_a & byte_b & not byte_a & not byte_b), --
+        data_in => crc_in,
         crc_out => crc_out,
         rst => rst,
         crc_en => '1',
