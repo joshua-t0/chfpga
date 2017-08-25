@@ -36,65 +36,78 @@ use UNISIM.VComponents.all;
 use work.chFPGA_Package.all; -- Get all component definitions
 use work.ip_package.all; -- Import definition of components used in this module
 
-------- CH_DIST ENTITY DECLARATION ----------------------
---! @brief Receives multiple data streams, aligns them, select specific frequency channel across all streams and repackage them in the output stream with overflow flagging info.
---!
+------- SHUFFLE_BIN_SEL ENTITY DECLARATION ----------------------
 
---! stores selected frequency channels from every antenna in a FIFO,
---! adds a header, and send the reordered data as a AXI4 STREAMING stream
+--! @brief Aggregates data for selected frequency bins from from multiple incoming packetized data streams
 --!
---! The purpose of the filtering is to reduce the amount of data going into the correlator.
---! Indeed, the correlator receives N times the data send by an antenna, where N is the total number of antennas.
---! For example, if the pipe to the correlator has the same bandwidth as the pipe out of the antenna processor (200 MHz * 4 bytes/word = 800 MByte/s),
---! we  need to filter the stream so only 1/Nth of the incoming words are passed through the correlator.
+--! The bin selector aggregates data from some or all of its input streams. In order to maintain a
+--! manageable data rate on the resulting aggregated output lanes, some data must be dropped. For this reason,
+--! only a fraction of the frequency bins are kept.
+--!
+--! For example, if we have  200 MWord/s of data coming from 16 lanes and to select 1/16 of the frequency bins,
+--! the output stream will still clock at 200 MWords/s.
 --!
 --! The frequency channels are selected by writing a bit pattern into a RAM block, where each bit identifies
---! whether the corresponding word (containing a pair of frequency samples) is to passed on to the output.
---! The streams coming from all antennas are filtered using the same pattern.
+--! whether a frequency bin  is to passed on to the output.
 --!
---! The output stream is clocked on a separate clock than the antenna processor outputs.
+--! The bin selector can have one or multiple outputs. All the outputs are filtered using the bin
+--! selection map. Each output of a  N-inputs, M-outputs bin selector gathers data from N/M input
+--! lanes. A bin selector with multiple outputs allows partial combining of the channels of incoming streams, which can then be
+--! combined in a downstream crossbar. This feature provides the flexibility required to support multiple software-configurable corner turn modes.
+--!
+--! The input data is provided by an array of N 32-bit-wide non-blocking AXI4-Streaming buses. Each
+--! incoming stream have headers, followed by a block of data, a block of data flags, frame flags, and
+--! a final packet flag word. The frames must already be aligned.
+--!
+--! The output consist of M 32-bit-wide non-blocking AXI4-Streaming buses, with a same overall structure, but with ddta from more channels and less bins.
+--! The output is non-blocking, meaning it will not wait for a TREADY signal from the destination before sending data. The destination must have buffering to cope with uneven data flow.
+--!
+--! The packets for both input and output streams have the following structure:
+--!
+--!   - Packet header (4 words)
+--!   - Data block, consisting of:
+--!        - For each frame
+--!           - For each bin
+--!              - data words, from lower channel to higher channel number, 1 byte ((4+4) bit complex value)  per channel, little endian ordering (lower channel in Leasy significant Byte).
+--!	  - Data flag block, consisting of:
+--!        - For each frame
+--!           - For each bin
+--!              - data flag words, 1 bit per channel, same order as data block channels, bit 0 of word correspond to the lower channel number.
+--!   - Frame flags, consisting of
+--!        - For each frame
+--!            - Frame flag words, 2 bits per channel : ADC saturation flags in bits 0-15, FFT saturation flags in bits 16-31.
+--!   - Packet flags (1 word)
+--!
+--! The data from multiple lanes is combined and buffers in a way that this structure is preserved
+--! at the output. The data words, data flags and frame flags are sent out in the order of the input
+--! lanes: data from  lane 0 first, then data from lane 1 etc.
+--!
+--! The bin selector operates on a single clock to simplify the logic and resource usage. All inputs and outputs buses operate on that clock. is clocked on a separate clock than the antenna processor outputs.
 --! This means that the correlator can be clocked faster than the antenna processor clock to allow more time for transmission of the the header overhead or simply to allow the correlator to process more channels.
 --! It is important that in all cases the output data rate of the FIFO is higher than the rate required to transmit the selected data plus the header bytes.
 --!
---! No frame is transmitted (not even a header with empty payload) of no data was selected by the filtering process.
+--! Each bit in the RAM block identifies whether a bin received in the incoming stream is to be
+--! included in the output. Bit 0 in dicates if the incoming bin 0 is kept, bit 1 indicates for bin 1
+--! etc. The memory map is software configurable over the control interface.
 --!
---! Both inputs and outputs are implemented using the snatdard AXI4 Straming protocol.
---! The input bus is non-blocking, and contains only time or frequency samples.
---! The output bus is blocking and contains a frame header in addition to the filtered and reordered data.
---! A blocking interface was implemented for the output bus because it will eventually be connected to data shuffling logic (MGTs) which might require transmission of data in bursts without interruption.
+--! The control interface offers a number of registers that must be programmed with the expected
+--! input packet geometry and the desired output packet contents.
 --!
---! The module assumes:
---!   - The antenna processors are synchronized (i.e. they have been reset in a sequence that ensures that the first frame started sampling at the same time)
---!   - All antenna processor output buses operate on a single common clock (the firmware doe snot yet support multi-phase clocks (which might be good to reduce maximum current spikes on the FPGA supplies))
---!
---!  Word selection map format
---!  ------------------
---! 	Each bit in the RAM block identifies whether a 32-bit word received from the antenna processor module is to be kept or not.
---!   The mapping is as follows:
---!
---!   Byte | bit | Flag for Word # | Time sample # | Frequency sample #
---!   -----|-----|-----------------|---------------|--------------------
---!     0  |  0  | Word 0          | 0-3           | 0-1
---!     0  |  1  | Word 1          | 4-7           | 2-3
---!   ...  | ... | ...             |  ...          | ...
---!     0  |  7  | Word 7          | 28-31         | 14-16
---!     1  |  0  | Word 8          | 32-35         | 16-17
---!   ...  | ... | ...             |               | ...
---!     63 |  7  | Word 511        | 2044-2047     | 1022-1023
---!
---! 	If FFT is bypassed, each antenna processor word corresponds to 4 8-bit samples. One byte of the filter RAM enables 8 words or 32 samples. 64 bytes are required to set the filter flags for the whole 512 words/2048 sample frame.
---!
---!   If FFT is NOT bypassed, each antenna processor output word correspond to two frequency bins (two complex numbers, 8-bit Real + 8-bit Imag each). One byte of the filter RAM selects 16 frequency bins/ ^4 bytes are required to set the flags for the while 512 words/1024 frequency samples
+--! The hardwired generics parameter, `COMBINE_DATA_FLAGS`, indicates if the bin selector shall
+--! combine data flags from two adjacent lanes to fill a 32-bit word. Indeed, data from the first
+--! crossbar contain data from 16 channels, and only the lower half or the data flag words are
+--! occupied. Combining the flags on the 2nd crossbar saves bandwidth, but is not needed on the
+--! subsequent crossbars since all 32-bits are packed with flags.
 --!
 entity shuffle_bin_sel is
 	GENERIC (
-		BIN_SEL_NUMBER: integer; --! Actual output lane number is BIN_SEL_NUMBER*NUMBER_OF_OUTPUTS+output__lane_number
-		NUMBER_OF_INPUTS: integer; --! Number of antennas to capture simultaneously. Must be a multiple of 4 between 4 and 16, and a multiple of NUMBER_OF_OUTPUTS.
-		NUMBER_OF_OUTPUTS: integer :=1; --! Must be a multiple of 2 if COMBINE_DATA_FLAGS=TRUE
+		BIN_SEL_NUMBER: integer; --! Bin selector index number. Output lanes will be numbered in the packet header as lane_number=  BIN_SEL_NUMBER*NUMBER_OF_OUTPUTS + bin_sel_output_lane_index
+		NUMBER_OF_INPUTS: integer; --! Number of input streams. Must be a multiple of NUMBER_OF_OUTPUTS.
+		NUMBER_OF_OUTPUTS: integer :=1; --! Number of output streams. Must be a multiple of 2 if COMBINE_DATA_FLAGS=TRUE
 		COMBINE_DATA_FLAGS: boolean := TRUE;
 		WORDS_PER_BIN_MAX: integer :=4; --! Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 4*16=64 words.
 		BINS_PER_FRAME_MAX: integer :=64; --! Maximum number of bins per frame
-		FIFO_TYPE_MAP: integer_array
+		FIFO_TYPE_MAP: integer_array --! Specifies the type of data FIFO to use for each input lane in order to balance resource type and acheive the highest logic density. 0= use pairs of BRAM/Embedded FIFOs, 1=Use shift-register (LUT-based) FIFO.
 		);
     PORT (
 		-- Input interface (non-blocking, i.e. always accept data)
@@ -143,6 +156,8 @@ attribute equivalent_register_removal: string;
 
 
 constant NUMBER_OF_INPUT_LANES_PER_OUTPUT: integer := NUMBER_OF_INPUTS/NUMBER_OF_OUTPUTS;
+
+
 --- Signal definitions ------------------------------------
 
 signal m_axis_tdata_int:  slv32_array(0 to NUMBER_OF_OUTPUTS-1);
@@ -192,8 +207,8 @@ signal data_fifo_empty: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
 signal data_fifo_valid: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
 signal data_fifo_overflow: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
 signal data_fifo_full: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
-signal data_fifo_din: slv35_array(0 to NUMBER_OF_INPUTS-1):=(others=>(others=>'0')); -- init not necessary
-signal data_fifo_dout: slv35_array(0 to NUMBER_OF_INPUTS-1);
+signal data_fifo_din: slv35_array(0 to NUMBER_OF_INPUTS-1):=(others=>(others=>'0')); -- (Only 32 bits are used) init not necessary
+signal data_fifo_dout: slv35_array(0 to NUMBER_OF_INPUTS-1); -- (Only 32 bits are used)
 -- signal data_fifo_din_dly: slv36_array(0 to NUMBER_OF_INPUTS-1);
 -- signal data_fifo_din_dly2: slv36_array(0 to NUMBER_OF_INPUTS-1);
 -- signal data_fifo_din: slv36_array(0 to NUMBER_OF_INPUTS-1);
@@ -290,8 +305,8 @@ signal first_lane: unsigned(3 downto 0); --!
 signal last_lane: unsigned(3 downto 0); --!
 signal number_of_input_bins_per_frame: unsigned(10 downto 0); --! number of words that are selected by the word selection map
 signal number_of_input_words_per_bin: unsigned(6 downto 0); --! number of words in a bin (full chime max, 4 bits mode, 3rd shuffle = 256 pol/ (4 pol/word) = 64 words
-signal number_of_input_frame_flags_words_per_frame: unsigned(1 downto 0); --! number of frame flags words in each frame. 2nd crossbar gets 1, 3rd crossbar gets 2
-
+signal number_of_input_frame_flags_words_per_frame: unsigned(2 downto 0); --! number of frame flags words in each frame. 2nd crossbar gets 1, 3rd crossbar gets 2 in shuffle256 and 4 in shuffle512
+signal number_of_input_data_flags_words_per_bin: unsigned(1 downto 0); --! number of data flags words for each bin. 2nd crossbar gets 1 (half filled, use COMBINE_DATA_FLAGS=TRUE), 3rd crossbar gets 1 in shuffle256 and 2 in shuffle512
 signal frames_per_packet: unsigned(2 downto 0); --! number of input frames to put in one output frame
 
 
@@ -301,7 +316,11 @@ signal lane_en: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
 
 signal last_frame_number: unsigned(1 downto 0); --! Counts the current frame number in the output packet
 signal last_word_number: unsigned(word_ctr'range); --! Counts the word in the current bin
-signal last_frame_flags_word_number: unsigned(word_ctr'range); --! Counts the frame flags words in the current frame
+signal last_frame_flags_word_number: unsigned(word_ctr'range); --! Last frame flags words in the current frame
+signal last_data_flags_word_number: unsigned(word_ctr'range); --! Last  data flags words in the current bin
+
+
+
 signal last_bin_number: unsigned(bin_ctr'range); --! Counts the bin in the current frame
 signal block_ctr: unsigned(1 downto 0);
 constant DATA_BLOCK: integer       := 0;
@@ -310,7 +329,7 @@ constant FRAME_FLAGS_BLOCK: integer:= 2;
 constant FLUSH_BLOCK: integer      := 3;
 
 
-constant NEXT_INPUT_BIT: integer := 32; -- Indicates that the next word should come from the next input
+constant NEXT_INPUT_BIT: integer := 32; -- (NOT USED) Indicates that the next word should come from the next input
 constant COMBINE_WORDS_BIT: integer := 6; -- Indicates that the current word should be combined with the next one (enabled sending data flags block from the 1st crossbar, which occupy only 16 of the 32 bits).
 constant END_OF_PACKET_BIT: integer:= 7; -- Indicates this is the last word of a packet, and is therefore a packet status word. Overrides any other control bits.
 
@@ -337,9 +356,7 @@ begin
 -----------------------------------------------------------------------------------
 -- CONTROL and STATUS Bytes
 -----------------------------------------------------------------------------------
---! \addtogroup memory_map
---! CH_DIST Module
---! =============
+--! SHUFFLE_BIN_SEL Memory Map
 --! ------------------------------------------------------------------------------
 --! |  Page   | Addr|Bit(s)|     Name             | Description                   |
 --! |---------|-----|------|----------------------|-------------------------------|
@@ -365,14 +382,15 @@ begin
 --! CONTROL Byte 0
 user_reset   <= control_bytes(0)(7); --! Used in both IN_CLK and OUT_CLK domain
 lane0_bypass <= control_bytes(0)(6);
-number_of_input_frame_flags_words_per_frame <= unsigned(control_bytes(0)(5 downto 4));
+number_of_input_data_flags_words_per_bin <= unsigned(control_bytes(0)(5 downto 4));
 first_lane   <= unsigned(control_bytes(0)(3 downto 0));
 -- header_capture_data_sel <= control_bytes(0)(5);
 -- header_capture_lane_sel <= control_bytes(0)(4 downto 1);
 -- header_capture_enable   <= control_bytes(0)(0);
+
 --! CONTROL Byte 1-2
 STREAM_ID <= (control_bytes(1)  & control_bytes(2)(7 downto 4)); --
-
+number_of_input_frame_flags_words_per_frame <= unsigned(control_bytes(2)(2 downto 0));
 --! CONTROL Byte 2-3
 number_of_input_bins_per_frame <= unsigned(std_logic_vector'(control_bytes(2)(2 downto 0) & control_bytes(3))); -- used in IN_CLK domain
 
@@ -460,7 +478,6 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 -- Bin selection map RAM
 ------------------------------------------------
 
---- FILTER RAM instantiation ------------------------------------
 --! Dual port RAM used to store the channel selection mask pattern
 --! The control side has 2 clock latency, as we use the embedded output registers to relax timing.
 --! The system-side port uses 1 clock output latency (no output registers) to avoid pipeling the wide data bus unnecessarily to align the ram content with the corresponding word.
@@ -468,7 +485,6 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 --! Port A is an 8-bit wide interface allowing the control system to program the RAM
 --! Port B is a 2-bit interface that the processing process reads to identify if a word is to be kept.
 --! We need to use a Block RAM (as opposed to distributed RAM) so we can have assymetric aspect ratio
-
 mask_ram0 : SHUFFLE_BIN_SEL_MASK_RAM
 	PORT MAP (
 		clka  => CTRL_CLK,
@@ -484,7 +500,8 @@ mask_ram0 : SHUFFLE_BIN_SEL_MASK_RAM
 		doutb(0) => mask_ram_dout -- two flags for each bin number
 	);
 
-
+-- The flags FIFO describe provide instructions to the readout logic on how to read each block of data from the data FIFO.
+-- It indicate the size of each block of data, whether words should be combined, and when this is the last block of he packet.
 flags_fifo0: SHUFFLE_BIN_SEL_FLAGS_FIFO
 	PORT MAP (
 		clk      => clk,
@@ -596,11 +613,11 @@ DATA_FIFO_GEN: for i in 0 to NUMBER_OF_INPUTS-1 generate
 		end process;
 
 	end generate; -- if DRAM
-end generate; -- for i in NUMBER_OF_INPUTS/4
+end generate; -- for i in NUMBER_OF_INPUTS
 
 
 
-
+-- Write data to the data and data flags FIFOs according to the bin selection map
 fifo_wr_proc: process(clk)
 
 	variable ix: integer range 0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH-1;
@@ -651,7 +668,7 @@ fifo_wr_proc: process(clk)
 			flags_fifo_wr_en <= data_fifo_last_word_dly and data_fifo_wr_en_var; -- we write only when the last word is there, so it is guaranteed that we will have WORDS_PER_BIN words in the data FIFO. This way we don't have to check the valid flags (very stretched out 16:1 mux, very bad for timing).
 
 			for i in 0 to NUMBER_OF_INPUTS-1 loop
-				data_fifo_din(i)(NEXT_INPUT_BIT) <= data_fifo_last_word_dly; -- Tell the FIFO reader to increment the lane counteer because this is the last word of the bin
+				data_fifo_din(i)(NEXT_INPUT_BIT) <= data_fifo_last_word_dly; -- (not used) Tell the FIFO reader to increment the lane counteer because this is the last word of the bin
 				if data_fifo_wr_en_packet_flags_dly='1' then
 					data_fifo_din(i) <= (others =>'0');
 					data_fifo_din(i)(NUMBER_OF_INPUTS-1 downto 0) <= not reverse_bits_and_dir(s_axis_tvalid and s_axis_tlast);
@@ -673,8 +690,15 @@ fifo_wr_proc: process(clk)
 				data_fifo_last_word_dly <= '0';
 			end if;
 
-			last_frame_flags_word_number <= resize(number_of_input_frame_flags_words_per_frame-1, last_word_number'length);
+			-- Precompute static values so we don't expose combinatorial logic to the state machine
+			last_frame_flags_word_number <= resize(number_of_input_frame_flags_words_per_frame-1, last_word_number'length); --precompute static value
+			last_data_flags_word_number <= resize(number_of_input_data_flags_words_per_bin-1, last_word_number'length); --precompute static value
 			last_frame_number <= resize(frames_per_packet-1, last_frame_number'length); -- Pre-compute the number of the last frame to reduce combinatorial depth
+
+
+			-- Initialize the word/bin/block/frame counters when we are processing the packet
+			-- header. Located out of the "if s_axis_global_tvalid='1'" block to remove unnecessary
+			-- conditional logic and to remove load and routing on s_axis_global_tvalid='1'.
 			if recv_header = '1' then
 				last_word_number <= resize(number_of_input_words_per_bin-1, last_word_number'length); -- initial value for DATA blocks. Is changed to appropriate values after each block
 				last_bin_number <= resize(number_of_input_bins_per_frame-1, last_bin_number'length); -- is set to 0 after the DATA FLAGS block
@@ -685,11 +709,12 @@ fifo_wr_proc: process(clk)
 				data_fifo_combine_flag <= '0';
 			end if;
 
+			-- Single shot flags. Are always zero unless overriden below.
 			frame_number_capture_trig <= '0';
 			stream_id_capture_trig <= '0';
 
 			if s_axis_global_tvalid='1' then
-
+				-- Header processing phase. We just skip the header.
 				if recv_header = '1' then
 					recv_header_word_ctr <= recv_header_word_ctr + 1;
 					ix := to_integer(recv_header_word_ctr);
@@ -704,7 +729,7 @@ fifo_wr_proc: process(clk)
 							recv_header <= '0';
 							packet_flags <= (others => '0'); -- by the time we clear this register we have already sent the packet flags
 					end case;
-
+				-- data processing phase
 				else -- if recv_header='0'
 
 					data_fifo_wr_en_if_selected <= to_std_logic(block_ctr = DATA_BLOCK or block_ctr = DATA_FLAGS_BLOCK);
@@ -728,10 +753,10 @@ fifo_wr_proc: process(clk)
 									block_ctr <= block_ctr + 1;
 								end if;
 								if block_ctr = DATA_BLOCK then -- this is the end of the data block. Next we will count one scaler flag word for each bin.
-									last_word_number <= (others=>'0'); -- We assume there is always one scaler flag word per bin, which is true for normal operations of crossbar 2 and 3. This woul dnot be true for a hypothetical crossbar4.
+									last_word_number <= last_data_flags_word_number; -- depending on the crossbar and shuffle mode, there might be 1 or 2 data flag words per bins
 								elsif block_ctr = DATA_FLAGS_BLOCK then -- Scaler flags are finished. Now we count the frame flags for each frame
-									last_bin_number <= (others=>'0'); -- Frame flags do not repeat for every bin
 									last_word_number <= last_frame_flags_word_number; -- Depending ont he crossbar, there could be 1 or 2 frame flags.
+									last_bin_number <= (others=>'0'); -- Frame flags do not repeat for every bin
 								elsif block_ctr = FRAME_FLAGS_BLOCK then -- Frame flags are finished. Now we count a single packet flag per frame
 									last_word_number <= (others=>'0'); -- There is only one packet flag per frame
 								end if;

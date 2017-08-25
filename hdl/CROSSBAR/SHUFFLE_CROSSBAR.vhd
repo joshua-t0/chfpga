@@ -266,11 +266,7 @@ crossbar_router0: entity work.CTRL_ROUTER
 
 
 -----------------------------------------------------------------------------------
--- CONTROL and STATUS Bytes
------------------------------------------------------------------------------------
---! \addtogroup memory_map
---! CH_DIST Module
---! =============
+--! SHUFFLE_CROSSBAR Memory Map
 --! ------------------------------------------------------------------------------
 --! |  Page   | Addr|Bit(s)|     Name             | Description                   |
 --! |---------|-----|------|----------------------|-------------------------------|
@@ -291,7 +287,8 @@ crossbar_router0: entity work.CTRL_ROUTER
 --! |         |  1  |  7:0 | FRAME_CTR                | Counts the number of frames written into the FIFOs. Rolls over.|
 --! | RAM     | 0-63 | -   | MASK_RAM                 | Word selection map. Each of the 512 bit indicates whether the corresponding word (frequency bin pair) is retained by this correlator. |
 --! ------------------------------------------------------------------------------
---!
+
+
 --! ------------------------------------------------------------------------------------
 --! | dual_bin | four_bits | Number of selected_bins                | Number of inputs |
 --! |----------|-----------|----------------------------------------|------------------|
@@ -468,6 +465,7 @@ indet_gen: for i in 0 to NUMBER_OF_INPUT_LANES-1 generate
 	end process;
 end generate;
 
+-- Capture various stats on the internal signals
 capture_proc: process(clk)
 begin
 	if rising_edge(clk) then
