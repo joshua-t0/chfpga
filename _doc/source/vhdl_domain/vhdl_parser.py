@@ -1,4 +1,5 @@
 
+import sys
 import os
 import time
 from xml.etree import ElementTree, ElementPath
@@ -415,7 +416,39 @@ class VHDLParser(object):
         self.parse_vhdl_syntax() # make sure the parser exist
         return self.vhdl_rules[rule_name].parse(code, pos=pos)
 
-    def parse(self, code, pos=0, rule_name='statements'):
+    def parse(self, code, pos=None, line=None, rule_name='statements'):
+        """ Parse the VHDL code.
+
+        Parameters:
+
+            code (str): Code to parse
+
+            pos (int): position from which to parse in `code`. Zero-based. Default is zero if no
+                line number is specified.
+
+            line (int): line number from which to parse in `code`. leading spaces are skipped.
+                `line` **is zero-based**, unlike what editos show, but is consistent with the parser
+                reporting. Default is first line of `code` if no `pos` is specified.
+
+            rule_name(str): Name of the VHDL rule to parse with.
+
+        Returns:
+
+                An ElementTree of the parsed code, with comments fixed to be grouped with their proper
+            associated elements.
+
+        """
+        if line is None and pos is None:
+            pos = 0
+        elif line is not None:
+            # line -= 1
+            lines = code.splitlines(True)
+            pos = sum(len(t) for t in lines[:line])
+            pos += len(lines[line]) - len(lines[line].lstrip()) # skip whitespaces
+            print 'starting with text at pos %i:%r' % (pos, code[pos:pos+300])
+        else:
+            raise TypeError('Cannot specify both pos and line arguments')
+
         elem = self.node_to_element(self.parse_to_node_tree(code, pos=pos, rule_name=rule_name))
 
         # fix empty tags
@@ -774,7 +807,9 @@ def pp(t, level=0, collapsed_expr=['target', 'name', 'expression', 'simple_expre
 
 
 if __name__ == '__main__':
-    v = VHDLFiles()
-    v.parse_file('../../../hdl/chan/FFT.vhd')
-    e = v.get_entity('FFT')
-    f = v.get_file_with_entity('FFT')
+    # v = VHDLFiles()
+    v = VHDLParser()
+    print('parsing %s', sys.argv[1])
+    p=v.parse_file(sys.argv[1])
+    # e = v.get_entity('FFT')
+    # f = v.get_file_with_entity('FFT')
