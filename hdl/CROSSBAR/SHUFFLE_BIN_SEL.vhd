@@ -303,7 +303,7 @@ signal number_of_output_bins_per_frame: std_logic_vector(11 downto 0);
 signal number_of_output_words_per_bin: std_logic_vector(7 downto 0);
 signal first_lane: unsigned(3 downto 0); --!
 signal last_lane: unsigned(3 downto 0); --!
-signal number_of_input_bins_per_frame: unsigned(10 downto 0); --! number of words that are selected by the word selection map
+signal number_of_input_bins_per_frame: unsigned(7 downto 0); --! number of words that are selected by the word selection map
 signal number_of_input_words_per_bin: unsigned(6 downto 0); --! number of words in a bin (full chime max, 4 bits mode, 3rd shuffle = 256 pol/ (4 pol/word) = 64 words
 signal number_of_input_frame_flags_words_per_frame: unsigned(2 downto 0); --! number of frame flags words in each frame. 2nd crossbar gets 1, 3rd crossbar gets 2 in shuffle256 and 4 in shuffle512
 signal number_of_input_data_flags_words_per_bin: unsigned(1 downto 0); --! number of data flags words for each bin. 2nd crossbar gets 1 (half filled, use COMBINE_DATA_FLAGS=TRUE), 3rd crossbar gets 1 in shuffle256 and 2 in shuffle512
@@ -392,7 +392,7 @@ first_lane   <= unsigned(control_bytes(0)(3 downto 0));
 STREAM_ID <= (control_bytes(1)  & control_bytes(2)(7 downto 4)); --
 number_of_input_frame_flags_words_per_frame <= unsigned(control_bytes(2)(2 downto 0));
 --! CONTROL Byte 2-3
-number_of_input_bins_per_frame <= unsigned(std_logic_vector'(control_bytes(2)(2 downto 0) & control_bytes(3))); -- used in IN_CLK domain
+number_of_input_bins_per_frame <= unsigned(control_bytes(3)); -- used in IN_CLK domain
 
 --! CONTROL Byte 4
 overflow_reset          <= control_bytes(4)(7);

@@ -164,6 +164,9 @@ entity GPIO is
 
 		cmd_packet_counter: in std_logic_vector(7 downto 0);
 		rply_packet_counter: in std_logic_vector(7 downto 0);
+		udp_stack_reset: out std_logic;
+		ctrl_master_reset: out std_logic;
+
 		-- bp_shuffle_lock: in std_logic_vector(0 to 1);
 
 		-- General signals
@@ -296,7 +299,8 @@ signal target_local_base_ip_port: std_logic_vector(15 downto 0);
 signal spi_fpga_ip_address: std_logic_vector(31 downto 0) := X"0A0A0A0B";
 signal spi_fpga_ip_port: std_logic_vector(15 downto 0) := X"A028"; -- 41000
 signal spi_fpga_mac_address: std_logic_vector(47 downto 0) := X"123456789ABC";
-
+--signal udp_stack_reset: std_logic;
+--signal ctrl_master_reset: std_logic;
 
 signal local_mac_addr_int: std_logic_vector(47 downto 0);
 
@@ -673,7 +677,7 @@ core_reg_rd_value(2) <= X"00000000"; -- (Read only) Application Flags: Kintex 7
 
 -- Register 3
 core_reg_rd_value(3) <= firmware_crc32; -- (Read/Write with readback) Firmware CRC32, computed by the host application and stored here for future reference
-firmware_crc32                 <= core_reg_wr_value(3);
+firmware_crc32       <= core_reg_wr_value(3);
 
 -- Registers 4-6
 core_reg_rd_value(4) <= firmware_timestamp; -- (Read only) Firmware timestamp, taken from the USER_ACCESS data filled in when the bitstream file was generated
@@ -687,14 +691,14 @@ core_reg_rd_value(6) <= "0000000" & fpga_serial_number(56 downto 32); -- (Read o
 -- Networking configuration
 -------------------------
 -- Register 7
-core_reg_rd_value(7)           <= spi_fpga_mac_address(31 downto 0); -- (Read/Write with readback)
+core_reg_rd_value(7)               <= spi_fpga_mac_address(31 downto 0); -- (Read/Write with readback)
 spi_fpga_mac_address(31 downto 0)  <= core_reg_wr_value(7);
 -- Register 8
-core_reg_rd_value(8)           <= spi_fpga_mac_address(47 downto 32) & spi_fpga_ip_port; -- (Read/Write with readback)
+core_reg_rd_value(8)               <= spi_fpga_mac_address(47 downto 32) & spi_fpga_ip_port; -- (Read/Write with readback)
 spi_fpga_mac_address(47 downto 32) <= core_reg_wr_value(8)(31 downto 16);
 spi_fpga_ip_port                   <= core_reg_wr_value(8)(15 downto 0);
 -- Register 9
-core_reg_rd_value(9)           <= spi_fpga_ip_address; -- (Read/Write with readback)
+core_reg_rd_value(9)               <= spi_fpga_ip_address; -- (Read/Write with readback)
 spi_fpga_ip_address                <= core_reg_wr_value(9);
 
 -- IRIG-B timestamp registers
@@ -749,12 +753,17 @@ core_reg_rd_value(18)(31)           <= bp_buck_sync_rd_dat_valid; -- (Read-only)
 core_reg_rd_value(18)(30 downto 0)  <= bp_buck_sync_rd_dat(30 downto 0); -- (Read-only)
 
 -- Register 19 (_SFP_STATUS_ADDR)
+core_reg_rd_value(19)(31 downto 18) <= core_reg_wr_value(19)(31 downto 18); -- (readback)
+core_reg_rd_value(19)(17) <= udp_tx_overflow; -- (Read only)
+core_reg_rd_value(19)(16) <= udp_rx_overflow; -- (Read only)
 core_reg_rd_value(19)(15 downto 0)  <= sfp_status_vector; -- (Read-only)
+udp_stack_reset                     <= core_reg_wr_value(19)(31)
+ctrl_master_reset                   <= core_reg_wr_value(19)(30)
 
 -- Register 20 (_REMOTE_IP_PORT_ADDR)
 remote_ip_port0                 <= core_reg_wr_value(20)(15 downto 0);
 remote_ip_port1                 <= core_reg_wr_value(20)(31 downto 16);
-core_reg_rd_value(20)           <= core_reg_wr_value(20);
+core_reg_rd_value(20)           <= core_reg_wr_value(20); -- (Readback)
 
 -- Register 21 (_IRIGB_REFCLK_SAMPLE)
 core_reg_rd_value(21)           <= std_logic_vector(refclk_sample);

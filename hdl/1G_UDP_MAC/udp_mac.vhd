@@ -4,18 +4,18 @@
 --
 -- Create Date:    06:51:55 03/12/2011
 -- Design Name:
--- Module Name:    UDP_IF - Behavioral
+-- Module Name:    UDP_MAC
 -- Project Name:
 -- Target Devices:
 -- Tool versions:
--- Description: UDP packet transmitter/receiver interface wrapper for the SP605 board
+-- Description: UDP packet transmitter/receiver interface
 --
 -- Dependencies:
 --
 -- Revision:
 -- 	2011-03-12 JFC: Created wrapper
--- 110709 JFC: Implemented DUMMY functionnality
--- 2013-08-01 : Copied the new dual GMII/SGMII version from DFMUX and embedded RX and TX max to eliminate UDP_MAC. Renamed this one UDP_MAC instead of UDP_PHY.
+--  2011-07-09 JFC: Implemented DUMMY functionnality
+--  2013-08-01 : Copied the new dual GMII/SGMII version from DFMUX and embedded RX and TX max to eliminate UDP_MAC. Renamed this one UDP_MAC instead of UDP_PHY.
 
 -- Additional Comments:
 --
@@ -27,7 +27,31 @@ use IEEE.NUMERIC_STD.ALL;
 library UNISIM;
 use UNISIM.VComponents.all;
 
-
+-- UDP_MAC: Lightweight UDP/IP/Ethernet 1G Ethernet packet transmitter/receiver stack
+--
+-- This module implements a Gigabit Ethernet UDP packet transmitter/receiver. It is comprised of a
+-- monolithic UDP Ethernet packet encoder and UDP Packet that can connect to a PHY with a parallel
+-- GMII interface (such as a Alaska 881111 PHY). The module can optionnally implement  GMII-to-SGMII
+-- Xilinx core that allows the use of a serial SGMII PHY interface (such aa a SFP adapter).
+--
+-- The UDP receiver/transmitter implement a very simple ARP protocol.
+--
+-- The UDP receivers listen to a single MAC/IP/port, which are set by ``std_logic_vector`` input signals
+-- and can therefore be set by the top level application.
+--
+-- The UDP transmitter can send data to two MAC/IP/port destinations (a.k.a. transmit channels).
+-- Those destinations are also set by ``std_logic_vector`` signals. Each packet presented on the
+-- data input interface is accompanied by a `tx_port` signal that tags this packet for one or the
+-- other transmit channels. If the destination MAC/IP/Port is set to zero, the tranmitter will send
+-- the packet to the source MAC/IP/Port of the last packet that was received.
+--
+-- The user data interfce is implemented as a AXI4-Streaming blocking interface with a 8-bit-wide
+-- data bus. Both the tx and rx data is clocked on a single `clk125`` clock.
+--
+-- If the SGMII interface is used, an connection to an external reference clock that can drive the
+-- GTX transceiver has to be provided. A BUFG-buffered version of the same clock shall also be
+-- provided to clock the SGMII internal logic.
+--
 entity udp_mac is
 	GENERIC (
 		PHY_TYPE: string; -- -- "GMII": Alaska 881111 PHY,  or "SGMII": SFP module
@@ -52,10 +76,10 @@ entity udp_mac is
 		remote_ip_addr1: in std_logic_vector(31 downto 0) := X"00000000";
 		remote_ip_port1: in std_logic_vector(15 downto 0) := X"0000";
 
-	------------------------------------
-	-- GMII interface (Gbit Ethernet)
-	------------------------------------
-			-- GMII PHY Ethernet Interface (Marvell Alaska 10-100-1000BASE-T PHY)
+		------------------------------------
+		-- GMII PHY interface (Gbit Ethernet)
+		-- (Marvell Alaska 10-100-1000BASE-T PHY, used if PHY_TYPE="GMII")
+		------------------------------------
 		phy_rxclk : in std_logic:='0'; --Clock provided by the PHY to clock the RX bus
 		phy_rxctrl_rxdv : in std_logic:='0';
 		phy_rxd : in std_logic_vector(7 downto 0):=(others=>'0');
@@ -66,17 +90,19 @@ entity udp_mac is
 		phy_txctl_txen : out std_logic;
 		phy_txd : out std_logic_vector(7 downto 0);
 
-	------------------------------------
-	-- SGMII interface (Gbit Ethernet)
-	------------------------------------
-		-- sfp_clk_p : in std_logic := '0'; --! sfp reference clock, generated on-board using a high quality oscillator and used to synchronize the mgt used to communicate to the sfp.
-		-- sfp_clk_n : in std_logic := '1';
+		------------------------------------
+		-- SGMII interface (Gbit Ethernet)
+		-- (SFP transceiver, used if PHY_TYPE="SGMII")
+		------------------------------------
+
 		sfp_tx_p : out std_logic; --! serialized data from the fpga mgt to the sfp
 		sfp_tx_n : out std_logic;
 		sfp_rx_p : in std_logic := '0'; --! serialized data from the sfp to the fpga mgt
 		sfp_rx_n : in std_logic := '1';
 		sfp_refclk_nobuf: in std_logic; -- Unbuffered 125 MHz SFP GTX reference clock reference clock for SGMII operation
 		sfp_refclk_buf: in std_logic; -- Buffered 125 MHz SFP GTX reference clock reference clock for SGMII operation
+
+		-- Debugging/status signals
 
 		status_vector : out std_logic_vector(15 downto 0); -- Core status.
 		mmcm_locked : out std_logic;
@@ -85,19 +111,24 @@ entity udp_mac is
 		------------------------------------
 		-- UDP data interface
 		------------------------------------
+
 		-- TX port
+
 		s_axis_udp_tx_tvalid : in std_logic;
 		s_axis_udp_tx_tdata : in  std_logic_vector (7 downto 0); -- will be axis_udp_tx_tdata
 		s_axis_udp_tx_tlast : in std_logic;
 		s_axis_udp_tx_tready: out std_logic;
 		tx_port: in std_logic_vector(1 downto 0):="00";
 		tx_overflow: out std_logic;
+
 		-- RX port
+
 		m_axis_udp_rx_tdata  : out std_logic_vector (7 downto 0);
 		m_axis_udp_rx_tvalid : out std_logic;
 		m_axis_udp_rx_tlast  : out std_logic;
 		m_axis_udp_rx_tready : in std_logic;
 		rx_overflow: out std_logic;
+
 		------------------------------------
 		-- System
 		------------------------------------
@@ -163,6 +194,7 @@ begin
 	--GMII_TXC_GTXCLK<=CLK125;
 	reset_done <= reset_done_int;
 
+	-- Select thedestination address: Either the user provided one, or if zero, use the last source
 	remote_mac_addr_sel0 <= remote_mac_addr0 when unsigned(remote_mac_addr0)/=0 else latest_remote_mac_addr;
 	remote_ip_addr_sel0 <= remote_ip_addr0 when unsigned(remote_ip_addr0)/=0 else latest_remote_ip_addr;
 	remote_ip_port_sel0 <= remote_ip_port0 when unsigned(remote_ip_port0)/=0 else latest_remote_ip_port;
@@ -172,7 +204,8 @@ begin
 	remote_ip_port_sel1 <= remote_ip_port1 when unsigned(remote_ip_port1)/=0 else std_logic_vector(unsigned(latest_remote_ip_port)+1);
 
 	tx_rst <= rst or (not reset_done_int);
-		-- Instantiate UDP MAC for SFP and loopback receive data to transmitter
+
+	-- Instantiate UDP MAC transmitter
 	tx0: entity work.udp_mac_tx
 		port map(
 
@@ -244,13 +277,16 @@ begin
 		phy_reset_l       <= gmii_reset_l; -- pass the active low reset signal
 
 		-- TX bus
+
 		gmii_txclk     <= clk125; -- clock  the TX outputs of the MAC with clk125
 		phy_txc_gtxclk <= clk125; -- pass  the 125 MHz TX data clock to the PHY
 		phy_txctl_txen <= gmii_txen;
 		phy_txd        <= gmii_txd;
 		phy_txer       <= gmii_txer;
 		reset_done_int <= '1';
+
 		-- RX bus signals
+
 		-- Instantiate a clock buffer to launch a copy of the RX clock into the FPGA fabric
 		rxclk_bufg_inst : bufg
 			port map (
@@ -266,6 +302,7 @@ begin
 					gmii_rxd <= phy_rxd;
 				end if;
 			end process;
+
 		sfp_tx_p <='Z';
 		sfp_tx_n <='Z';
 	end generate;

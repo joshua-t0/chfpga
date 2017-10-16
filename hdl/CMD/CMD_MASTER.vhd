@@ -19,7 +19,7 @@
 --	 2012-10-18 JFC: Added wait state after data transmission
 
 -- History
---  120608 JFC: removed some commended code. Changed CTRL_CLK to CLK.
+--  120608 JFC: removed some commended code. Changed CTRL_CLK to clk.
 --  120612 JFC: Cleanup. Removed Probe header insertion (now in prober itself). Added timeout on the command and probe streams
 --  121021 JFC: Added throttling since transmitting a large number of large correlator frames overflows the Host buffers
 --  130128 JFC: Changed they way HOST_BUFFER_READOUT_TIMER_MAX is computed to suit Vivado 2012.4 (did not like a non-constant in the slice)
@@ -66,36 +66,27 @@ use work.ip_package.all; -- Import definition of components used in this module
 --!
 --! Note: Does not handle the UDP transmitter TREADY signal: we will send data even if the TX buffers are full.
 --!    Also always passes the received UDP data to the command bus independent of its TREADY state.
+--!
 entity CTRL_MASTER is
 	GENERIC (
 		NUMBER_OF_PROBES: INTEGER
 	);
 	PORT (
-		-- Command source interface
-		-- UDP Receiver
+		-- UDP Transmitter/Receiver interface
+
+		-- UDP Rx interface
 		s_axis_udp_rx_tdata  : in std_logic_vector (7 downto 0);
 		s_axis_udp_rx_tvalid : in std_logic;
 		s_axis_udp_rx_tlast  : in std_logic;
 		s_axis_udp_rx_tready : out std_logic;
 
-		-- Command reply and streaming data output
-		-- UDP Transmitter
+		-- UDP Tx interface
 		m_axis_udp_tx_tvalid : out std_logic;
 		m_axis_udp_tx_tdata : out  std_logic_vector (7 downto 0); -- will be axis_tx_tdata
 		m_axis_udp_tx_tlast : out std_logic;
 		m_axis_udp_tx_tready: in std_logic;
 		udp_tx_port : out std_logic_vector(1 downto 0); --! Port offset. The destination port number will be offseted by this value relatove to the base port number.
 
-		-- -- UDP Receiver
-		-- UDP_RX_DATA : in  STD_LOGIC_VECTOR (7 downto 0);
-		-- UDP_RX_READY : in STD_LOGIC;
-		-- UDP_RX_RD_EN : out STD_LOGIC;
-
-		-- -- UDP Transmitter
-		-- UDP_TX_DATA : OUT  STD_LOGIC_VECTOR (7 downto 0);
-		-- m_axis_udp_tx_tlast : OUT STD_LOGIC;
-		-- UDP_TX_WR_EN : OUT STD_LOGIC;
-		-- UDP_TX_PORT : OUT STD_LOGIC_VECTOR(1 downto 0); --! Port offset. The destination port number will be offseted by this value relatove to the base port number.
 
 		-- Command and reply stream buses
 		m_axis_cmd_tdata  : out std_logic_vector(7 downto 0);
@@ -112,7 +103,7 @@ entity CTRL_MASTER is
 		rply_packet_counter: out std_logic_vector(7 downto 0);
 
 
-		-- Probe inputs
+		-- Raw Data (probe) inputs
 		prb_dat: in axis8_dat_struct_array(number_of_probes-1 downto 0);
 		prb_rdy: out axis8_rdy_struct_array(number_of_probes-1 downto 0);
 		prb_port_offset: in slv2_array(number_of_probes-1 downto 0);
@@ -161,47 +152,40 @@ m_axis_cmd_tvalid    <= s_axis_udp_rx_tvalid;
 m_axis_cmd_tlast     <= s_axis_udp_rx_tlast;
 
 
-rx_proc: process(CLK,RST)
+-- UDP Received packet counter and tfirst flag generator
+rx_proc: process(clk)
 begin
-	if rst='1' then -- Asynchronous reset
-		s_axis_udp_rx_tfirst <= '1';
-		cmd_packet_counter_int <= (others=>'0');
-	elsif rising_edge(clk) then
+	if rising_edge(clk) then
 		if s_axis_udp_rx_tvalid='1' then
 			s_axis_udp_rx_tfirst <= s_axis_udp_rx_tlast;
 			if s_axis_udp_rx_tfirst='1' then
 				cmd_packet_counter_int <= cmd_packet_counter_int + 1;
 			end if;
 		end if;
-	end if;
+
+		if rst='1' then -- Synchronous reset
+			s_axis_udp_rx_tfirst <= '1';
+			cmd_packet_counter_int <= (others=>'0');
+		end if; --rst
+	end if; -- clk
 end process;
 
 m_axis_udp_tx_tvalid <= m_axis_udp_tx_tvalid_int;
-tx_proc: process(CLK,RST)
+
+------------------------
+-- UDP Transmit process
+------------------------
+-- Selects data from the reply or raw data buses, and forward them to the UDP transmitter.
+tx_proc: process(clk,RST)
 	begin
-		if rst='1' then -- Asynchronous reset
-			tx_state<=TX_STATE_SCAN;
+		if rising_edge(clk) then
 
-			m_axis_udp_tx_tvalid_int<='0';
-			m_axis_udp_tx_tdata <= (others=>'0');
-			--m_axis_udp_tx_tlast<='1';
-			udp_tx_port<=(others=>'0');
+			timeout_ctr <= timeout_ctr + 1; -- Always increment timout counter, unless resetted below
 
-			-- reset reply bus
-			s_axis_rply_tready<='0';
 
-			for i in 0 to NUMBER_OF_PROBES-1 loop
-				prb_rdy(i).tready<='0';
-			end loop;
-
-			host_buffer_readout_timer<=(others=>'0');
-			host_buffer_count<=(others=>'0');
-
-			rply_packet_counter_int <= (others=>'0');
-		elsif rising_edge(CLK) then
-
-			timeout_ctr <= timeout_ctr+1; -- Always increment timout counter, unless resetted below
-
+			-------------------------------
+			-- Data throttling
+			-------------------------------
 			-- Throttle the data output rate.
 			-- The HOST_BUFFER_COUNTER is incremented every time a byte is sent. Transmission of non-command frames will be held when the buffer more than half-full.
 			-- The counter is cleared every 2^HOST_READ_RATE *2  clock cycles.
@@ -209,6 +193,7 @@ tx_proc: process(CLK,RST)
 			-- First compute the maximum timer count based on HOST_FRAME_READ_RATE.
 			-- Set all bits <=HOST_FRAME_READ_RATE to 1
             -- The code was refactored below to make it work with Vivado, but beware of how it is implemented
+
             for i in HOST_BUFFER_READOUT_TIMER_MAX'Range loop
                 if i <= to_integer(unsigned(host_frame_read_rate)) then
                     host_buffer_readout_timer_max(i) <= '1';
@@ -232,7 +217,9 @@ tx_proc: process(CLK,RST)
 				end if;
 			end if;
 
-
+			-------------------------------
+			-- Data selector/transmitter
+			-------------------------------
 			---- Alternate between CMD and ANT states
 			CASE TX_STATE IS
 				WHEN TX_STATE_SCAN => -- If current antenna finished processing, set next state to SEND_CMD and increment antenna number in preparation for the next round
@@ -322,7 +309,32 @@ tx_proc: process(CLK,RST)
 						end if;
 					end if;
 			end case;
-		end if; -- TXCLK
+
+			-------------------------------
+			-- Synchronous reset
+			-------------------------------
+			if rst = '1' then
+				tx_state <= TX_STATE_SCAN;
+
+				m_axis_udp_tx_tvalid_int <= '0';
+				m_axis_udp_tx_tdata <= (others=>'0');
+				--m_axis_udp_tx_tlast<='1';
+				udp_tx_port <= (others=>'0');
+
+				-- reset reply bus
+				s_axis_rply_tready <= '0';
+
+				for i in 0 to NUMBER_OF_PROBES-1 loop
+					prb_rdy(i).tready <= '0';
+				end loop;
+
+				host_buffer_readout_timer <= (others=>'0');
+				host_buffer_count <= (others=>'0');
+
+				rply_packet_counter_int <= (others=>'0');
+			end if;
+
+		end if; -- clk
 	end process;
 
 

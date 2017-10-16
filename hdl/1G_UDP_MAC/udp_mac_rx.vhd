@@ -14,7 +14,7 @@
 -- Dependencies:
 --
 -- Revision:
---    110106 JFC - Inplemented basic receiver. Checks incoming MAC/IP/port but tdo not act on them yet.
+--    110106 JFC - Implemented basic receiver. Checks incoming MAC/IP/port but tdo not act on them yet.
 --    110108 JFC - Tested UDP with PHY. Debugegd the PHY interface with IODELAYS to improve timing.
 --    110317 JFC - RX and TX splitted. Created this file.
 --    110430 JFC - Added MAC and IP address/PORT parameters. Changed code to use these instead of the RAM values. Had to rewrite the way the IP checksum is pre-computed to make sure this takes into account the changing destination IP address.
@@ -42,10 +42,8 @@ use UNISIM.VComponents.all;
 
 use work.ip_package.all; -- Import definition of components used in this module
 
---use work.dfmux_package.all; -- Get all component definitions
---use work.ip_package.all; -- Import definition of components used in this module
-
 --! @brief Implements a UDP packet receiver combined with a GMII MAC
+--
 --!     UDP/IP/Ethernet Packet structure
 --!     X"00", X"1b", X"fc", X"43", X"ba", X"ff", -- Ethernet destination MAC address
 --!     X"12", X"34", X"56", X"78", X"9A", X"BC", -- Ethernet source MAC address
@@ -68,7 +66,6 @@ use work.ip_package.all; -- Import definition of components used in this module
 --!     UDP payload
 --!     Padding (if needed to guarantee minimum frame length)
 --!     Ethernet CRC32
-
 entity udp_mac_rx is
 	generic(
 		BROADCAST_IP_PORT: integer
@@ -108,7 +105,7 @@ end udp_mac_rx;
 
 architecture Behavioral of udp_mac_rx is
 
-	-- RX state machine
+	-- RX state machine states
 	TYPE RX_STATE_TYPE IS -- States of the RX state machine
 		(
 		RX_STATE_STDBY,
@@ -193,15 +190,6 @@ architecture Behavioral of udp_mac_rx is
 
 	signal rx_overflow_int: std_logic;
 
---	signal rx_dat_int: AXIS8_DAT_STRUCT;
---	signal rx_rdy: AXIS8_RDY_STRUCT;
-
-	-- Front End Signals
---	signal rx_dout_ctr: unsigned(15 downto 0) := (others=>'0');
---	signal rx_last, rx_last_dly: std_logic:='0';
---	signal rx_flush: std_logic:='0';
-
-
 begin
 
 
@@ -251,9 +239,13 @@ DATA_FIFO0 : udp_mac_rx_data_fifo
 			valid       => rx_data_fifo_valid
 			);
 
---! Instantiate Frame FIFO
---! This is a First Word Fall Through FIFO
---! The frame validity flag is written in this FIFO once the data is finished to be written in the DATA FIFO. If the flag is '0', the frame will be discarded.
+-- Instantiate Frame FIFO, which contains a single bit flag that indicates that a  frame is in the
+-- data FIFO, and whether it is valid or not.
+--
+-- This is an asynchronous First Word Fall Through FIFO.
+--
+-- The frame validity flag is written in this FIFO once the data is finished to be written in the
+-- DATA FIFO. If the flag is '0', the frame will be discarded.
 FRAME_FIFO0 : udp_mac_rx_frame_fifo
 		port map (
 			rst    => rst,

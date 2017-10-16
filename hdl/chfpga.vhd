@@ -502,6 +502,8 @@ signal remote_ip_addr1: std_logic_vector(31 downto 0);
 signal remote_ip_port1: std_logic_vector(15 downto 0);
 
 signal sfp_status_vector_int: std_logic_vector(15 downto 0); -- Core status.
+signal: udp_stack_reset: std_logic;
+signal: ctrl_master_reset: std_logic;
 
 -- signal RX_IP_DEST_ADDR: std_logic_vector(31 downto 0);
 -- signal test: unsigned(47 downto 0);
@@ -857,7 +859,9 @@ signal axis_corr_out_tready: slv(0 to NUMBER_OF_CORRELATORS-1);
 signal gpu_reset: std_logic;
 signal gpu_reset_reg: std_logic;
 
-signal top_ctrl_rst: std_logic;
+signal top_router_rst: std_logic;
+signal udp_stack_rst: std_logic;
+signal ctrl_master_rst: std_logic;
 signal sys_ctrl_rst: std_logic;
 signal sys_ctrl_rst_reg: std_logic;
 signal sysmon_ctrl_rst: std_logic;
@@ -876,7 +880,7 @@ signal gpu_ctrl_rst: std_logic;
 signal gpu_ctrl_rst_reg: std_logic;
 signal corr_reset_reg1: std_logic;
 
--- attribute shreg_extract of top_ctrl_rst: signal is "no";
+-- attribute shreg_extract of top_router_rst: signal is "no";
 -- attribute shreg_extract of sys_ctrl_rst: signal is "no";
 -- attribute shreg_extract of sys_ctrl_rst_reg: signal is "no";
 -- attribute shreg_extract of chan_router_ctrl_rst: signal is "no";
@@ -891,7 +895,9 @@ signal corr_reset_reg1: std_logic;
 -- attribute shreg_extract of gpu_ctrl_rst_reg: signal is "no";
 
 
-attribute DONT_TOUCH of top_ctrl_rst: signal is "true";
+attribute DONT_TOUCH of top_router_rst: signal is "true";
+attribute DONT_TOUCH of udp_stack_rst: signal is "true";
+attribute DONT_TOUCH of ctrl_master_rst: signal is "true";
 attribute DONT_TOUCH of sys_ctrl_rst: signal is "true";
 attribute DONT_TOUCH of sys_ctrl_rst_reg: signal is "true";
 attribute DONT_TOUCH of sysmon_ctrl_rst: signal is "true";
@@ -1078,25 +1084,27 @@ ctrl_clk <= clk125; -- Control system master clock
 clk125pipeproc: process(clk125)
 	begin
 		if rising_edge(clk125) then
-			ctrl_rst <= clk125_reset;
-			top_ctrl_rst <= ctrl_rst;
-			sys_ctrl_rst <= ctrl_rst;
-			sys_ctrl_rst_reg <= sys_ctrl_rst;
-			sysmon_ctrl_rst <= ctrl_rst;
-			refclk_ctrl_rst <= ctrl_rst;
-			chan_router_ctrl_rst <= ctrl_rst;
-			adcdaq_ctrl_rst <= (others => ctrl_rst);
-			chan_ctrl_rst <= (others => ctrl_rst);
-			adcdaq_ctrl_rst_reg <= adcdaq_ctrl_rst;
-			chan_ctrl_rst_reg <= chan_ctrl_rst;
-			crossbar1_ctrl_rst <= ctrl_rst;
-			crossbar2_ctrl_rst <= ctrl_rst;
-			crossbar3_ctrl_rst <= ctrl_rst;
-			bp_shuffle_ctrl_rst <= ctrl_rst;
+			ctrl_rst                <= clk125_reset;
+			top_router_rst          <= ctrl_rst;
+			udp_stack_rst           <= ctrl_rst or udp_stack_reset;
+			ctrl_master_rst         <= ctrl_rst or ctrl_master_reset;
+			sys_ctrl_rst            <= ctrl_rst;
+			sys_ctrl_rst_reg        <= sys_ctrl_rst;
+			sysmon_ctrl_rst         <= ctrl_rst;
+			refclk_ctrl_rst         <= ctrl_rst;
+			chan_router_ctrl_rst    <= ctrl_rst;
+			adcdaq_ctrl_rst         <= (others => ctrl_rst);
+			chan_ctrl_rst           <= (others => ctrl_rst);
+			adcdaq_ctrl_rst_reg     <= adcdaq_ctrl_rst;
+			chan_ctrl_rst_reg       <= chan_ctrl_rst;
+			crossbar1_ctrl_rst      <= ctrl_rst;
+			crossbar2_ctrl_rst      <= ctrl_rst;
+			crossbar3_ctrl_rst      <= ctrl_rst;
+			bp_shuffle_ctrl_rst     <= ctrl_rst;
 			bp_shuffle_ctrl_rst_reg <= bp_shuffle_ctrl_rst;
-			gpu_ctrl_rst <= ctrl_rst;
-			gpu_ctrl_rst_reg <= gpu_ctrl_rst;
-			clk125_reset_reg <= clk125_reset;
+			gpu_ctrl_rst            <= ctrl_rst;
+			gpu_ctrl_rst_reg        <= gpu_ctrl_rst;
+			clk125_reset_reg        <= clk125_reset;
 		end if; -- RST/CLK
 	end process;
 
@@ -1206,7 +1214,7 @@ clk200pipeproc: process(clk200)
 			-- clk200 => clk200, -- used for the SGMII interface to initialize the cores even if the transceiver is not locked
 
 			-- rst => ctrl_rst
-			rst => top_ctrl_rst
+			rst => udp_stack_rst
 		);
 
 ctrl_master0: entity work.ctrl_master
@@ -1250,7 +1258,7 @@ ctrl_master0: entity work.ctrl_master
 		-- System
 		HOST_FRAME_READ_RATE => HOST_FRAME_READ_RATE,
 		CLK => CTRL_CLK, -- Common clock for all bus accesses
-		RST => top_ctrl_rst
+		RST => ctrl_master_rst
 	);
 
 
@@ -1310,7 +1318,7 @@ top_router0: entity work.CTRL_ROUTER
 
 		-- Slave (module) control interface
 		CLK => CTRL_CLK,
-		RST => top_ctrl_rst
+		RST => top_router_rst
 	);
 
 ---------------------------------------------------------------------
@@ -1537,6 +1545,9 @@ GPIO0: entity work.GPIO
 		remote_mac_addr1           => remote_mac_addr1,
 		remote_ip_addr1           => remote_ip_addr1,
 		remote_ip_port1          => remote_ip_port1,
+
+		udp_stack_reset => udp_stack_reset,
+		ctrl_master_reset => ctrl_master_reset,
 
 		arm_spi_sck => arm_spi_sck,
 		arm_spi_miso => arm_spi_miso,
@@ -2463,7 +2474,7 @@ CROSSBAR2_GEN: if NUMBER_OF_BP_SHUFFLE_LINKS>0 and NUMBER_OF_GPU_LINKS>0 generat
 			NUMBER_OF_INPUT_LANES              => NUMBER_OF_BP_PCB_SHUFFLE_LANES, -- Number of input streams
 			NUMBER_OF_OUTPUT_LANES             => NUMBER_OF_BP_QSFP_SHUFFLE_LANES, -- Number of output streams
 			NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL => 4,
-			WORDS_PER_BIN_MAX                  => 4,
+			WORDS_PER_BIN_MAX                  => 4,  -- 1st crossbar outputs data for 16 channels max = 4 words
 			BINS_PER_FRAME_MAX                 => 128, -- need 128 bins in case i'm in 16
 			COMBINE_DATA_FLAGS                 => TRUE
 			)
