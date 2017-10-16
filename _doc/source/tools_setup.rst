@@ -62,10 +62,10 @@ Start implementation. On 2016.4, Vivado automatically generates the core product
 Compiling issues
 ================
 
-Abnormal program termination (EXCEPTION_ACCESS_VIOLATION
-********************************************************
+Abnormal program termination (EXCEPTION_ACCESS_VIOLATION)
+*********************************************************
 
-Vivado 2016.4 will sometimes crash after routing during the final Methodology check, after the routed database was created and saved. The implementation log (log tab, implementation sub-tab) will end with::
+Vivado 2016.4 will sometimes (often) crash after routing during the final Methodology check, after the routed database was created and saved. The implementation log (log tab, implementation sub-tab) will end with::
 
 	INFO: [DRC 23-133] Running Methodology with 8 threads
 	Abnormal program termination (EXCEPTION_ACCESS_VIOLATION)
