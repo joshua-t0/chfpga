@@ -502,8 +502,8 @@ signal remote_ip_addr1: std_logic_vector(31 downto 0);
 signal remote_ip_port1: std_logic_vector(15 downto 0);
 
 signal sfp_status_vector_int: std_logic_vector(15 downto 0); -- Core status.
-signal: udp_stack_reset: std_logic;
-signal: ctrl_master_reset: std_logic;
+signal udp_stack_reset: std_logic;
+signal ctrl_master_reset: std_logic;
 
 -- signal RX_IP_DEST_ADDR: std_logic_vector(31 downto 0);
 -- signal test: unsigned(47 downto 0);

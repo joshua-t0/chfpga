@@ -219,12 +219,12 @@ frame_fifo0 : UDP_MAC_TX_FRAME_FIFO
 			wr_clk => tx_clk,
 			rd_clk => gmii_txclk,
 			din    => tx_frame_fifo_din,
-			wr_en  = >  tx_frame_fifo_wr_en,
-			rd_en  = >  tx_frame_fifo_rd_en,
+			wr_en  =>  tx_frame_fifo_wr_en,
+			rd_en  =>  tx_frame_fifo_rd_en,
 			dout   => tx_frame_fifo_dout,
 			full   => tx_frame_fifo_full,
 			empty  => tx_frame_fifo_empty
- 			;
+ 			);
 
 
 
@@ -376,8 +376,8 @@ begin
 
 
 				-- STANDBY State
-				WHEN TX_STATE_STDB Y  =>
-					tx_src_sel <= TX_SRC_SE L_ IDLE;  -- just in case.
+				WHEN TX_STATE_STDBY  =>
+					tx_src_sel <= TX_SRC_SEL_IDLE;  -- just in case.
 
 					crc_action <= CRC_ACTION_INIT; -- not really needed - will be initialized later
 

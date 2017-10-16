@@ -754,11 +754,11 @@ core_reg_rd_value(18)(30 downto 0)  <= bp_buck_sync_rd_dat(30 downto 0); -- (Rea
 
 -- Register 19 (_SFP_STATUS_ADDR)
 core_reg_rd_value(19)(31 downto 18) <= core_reg_wr_value(19)(31 downto 18); -- (readback)
-core_reg_rd_value(19)(17) <= udp_tx_overflow; -- (Read only)
-core_reg_rd_value(19)(16) <= udp_rx_overflow; -- (Read only)
+core_reg_rd_value(19)(17)           <= udp_tx_overflow; -- (Read only)
+core_reg_rd_value(19)(16)           <= udp_rx_overflow; -- (Read only)
 core_reg_rd_value(19)(15 downto 0)  <= sfp_status_vector; -- (Read-only)
-udp_stack_reset                     <= core_reg_wr_value(19)(31)
-ctrl_master_reset                   <= core_reg_wr_value(19)(30)
+udp_stack_reset                     <= core_reg_wr_value(19)(31);
+ctrl_master_reset                   <= core_reg_wr_value(19)(30);
 
 -- Register 20 (_REMOTE_IP_PORT_ADDR)
 remote_ip_port0                 <= core_reg_wr_value(20)(15 downto 0);

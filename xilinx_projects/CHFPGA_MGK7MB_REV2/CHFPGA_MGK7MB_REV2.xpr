@@ -89,6 +89,32 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/../../_Cores/KC705/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+        <CompFileExtendedInfo CompFileName="udp_mac_tx_frame_fifo.xci" FileRelPathName="udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo_clocks.xdc">
+          <Attr Name="UsedInImplementation" Val="0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="udp_mac_tx_frame_fifo.xci" FileRelPathName="udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xdc">
+          <Attr Name="UsedInImplementation" Val="0"/>
+        </CompFileExtendedInfo>
+      </File>
+      <File Path="$PPRDIR/../../_Cores/KC705/udp_mac_tx_data_fifo/udp_mac_tx_data_fifo.xci">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+        <CompFileExtendedInfo CompFileName="udp_mac_tx_data_fifo.xci" FileRelPathName="udp_mac_tx_data_fifo/udp_mac_tx_data_fifo_clocks.xdc">
+          <Attr Name="UsedInImplementation" Val="0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="udp_mac_tx_data_fifo.xci" FileRelPathName="udp_mac_tx_data_fifo/udp_mac_tx_data_fifo.xdc">
+          <Attr Name="UsedInImplementation" Val="0"/>
+        </CompFileExtendedInfo>
+      </File>
       <File Path="$PPRDIR/../../hdl/CMD/icecore_package.vhd">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -274,32 +300,6 @@
           <Attr Name="UsedInImplementation" Val="0"/>
         </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="udp_mac_rx_frame_fifo.xci" FileRelPathName="udp_mac_rx_frame_fifo/udp_mac_rx_frame_fifo.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/udp_mac_tx_data_fifo/udp_mac_tx_data_fifo.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-        <CompFileExtendedInfo CompFileName="udp_mac_tx_data_fifo.xci" FileRelPathName="udp_mac_tx_data_fifo/udp_mac_tx_data_fifo_clocks.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="udp_mac_tx_data_fifo.xci" FileRelPathName="udp_mac_tx_data_fifo/udp_mac_tx_data_fifo.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-        <CompFileExtendedInfo CompFileName="udp_mac_tx_frame_fifo.xci" FileRelPathName="udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo_clocks.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="udp_mac_tx_frame_fifo.xci" FileRelPathName="udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xdc">
           <Attr Name="UsedInImplementation" Val="0"/>
         </CompFileExtendedInfo>
       </File>
