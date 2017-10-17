@@ -219,8 +219,8 @@ frame_fifo0 : UDP_MAC_TX_FRAME_FIFO
 			wr_clk => tx_clk,
 			rd_clk => gmii_txclk,
 			din    => tx_frame_fifo_din,
-			wr_en  =>  tx_frame_fifo_wr_en,
-			rd_en  =>  tx_frame_fifo_rd_en,
+			wr_en  => tx_frame_fifo_wr_en,
+			rd_en  => tx_frame_fifo_rd_en,
 			dout   => tx_frame_fifo_dout,
 			full   => tx_frame_fifo_full,
 			empty  => tx_frame_fifo_empty
@@ -231,8 +231,10 @@ frame_fifo0 : UDP_MAC_TX_FRAME_FIFO
 s_axis_udp_tx_tready_int <= (not tx_fifo_full) and (not tx_frame_fifo_full);
 s_axis_udp_tx_tready <= s_axis_udp_tx_tready_int;
 
+-- We write data to the FIFO as long as the frame FIFO is not full because we need to be able to store the frame length
 tx_fifo_wr_en <= s_axis_udp_tx_tvalid and s_axis_udp_tx_tready_int;
-tx_frame_fifo_wr_en <= s_axis_udp_tx_tvalid and s_axis_udp_tx_tready_int and s_axis_udp_tx_tlast;
+-- We write the length to the FRAME FIFO even if the data buffer is full so we always have an entry even if the data FIFO saturated
+tx_frame_fifo_wr_en <= s_axis_udp_tx_tvalid and (not tx_frame_fifo_full) and s_axis_udp_tx_tlast;
 tx_frame_fifo_din(15 downto 0) <= std_logic_vector(tx_frame_length);
 tx_frame_fifo_din(17 downto 16) <= tx_port_offset; -- If the END of frame is detected by seeing that s_axis_udp_tx_tvalid is no longer active, we want to use the last valid port number sent with the last data byte while s_axis_udp_tx_tvalid was '1'
 
@@ -240,7 +242,7 @@ tx_frame_fifo_din(17 downto 16) <= tx_port_offset; -- If the END of frame is det
 --  Counts incoming bytes and stores the frame length in the frame FIFO once a frame is finished. This allows the TX state machine :
 --   1) to know that a full frame is available in the TX data FIFO, therefore ensuring uninterrupted transmission of the data on the GMII interface
 --   2) know how many bytes to read from the FIFO
-tx_front_end : process(tx_clk, rst)
+tx_front_end : process(tx_clk)
 	begin
 		if rising_edge(tx_clk) then
 			-- Determine if the transmit buffer has overflow. Now we are very conservative and assume there is an overflow if we ever have to throttle the data source.
@@ -249,13 +251,13 @@ tx_front_end : process(tx_clk, rst)
 			--	tx_overflow <= '1';
 			--end if;
 			tx_overflow <= tx_overflow or tx_fifo_full or tx_frame_fifo_full;
-			if tx_fifo_wr_en ='1' then -- if we are writing a byte in the fifo...
+			if s_axis_udp_tx_tvalid='1' and s_axis_udp_tx_tlast ='1' then -- but if this is the last byte of the packet
+				tx_frame_length <= to_unsigned(1, tx_frame_length'length); -- ... reset the counter to 1
+			elsif tx_fifo_wr_en ='1' then -- if we are writing a byte in the fifo...
 				tx_frame_length <= tx_frame_length + 1; --... increase the byte counter
-				if s_axis_udp_tx_tlast ='1' then -- but if this is the last byte of the packet
-					tx_frame_length <= to_unsigned(1, tx_frame_length'length); -- ... reset the counter to 1
-				end if;
 			end if;
-			if rst='1' then
+
+			if rst='1' then -- synchronous reset
 				tx_frame_length <= to_unsigned(1, tx_frame_length'length);
 				tx_overflow <= '0';
 			end if; --rst
@@ -266,26 +268,24 @@ tx_front_end : process(tx_clk, rst)
 -- GMII transmit process
 --
 -- Sends the Ethernet, IP and UDP header, payload and CRC32 to the GMII interface
-tx_back_end : process(gmii_txclk, rst)
+tx_back_end : process(gmii_txclk)
 begin
-
 	if rising_edge(gmii_txclk) then
 
 		-- Output registering with CRC or CHECKSUM insertion
-
 		if crc_insert='1' THEN
-			gmii_txd<=crc_out;
+			gmii_txd <= crc_out;
 		else
-			gmii_txd<=gmii_txd_out2;
+			gmii_txd <= gmii_txd_out2;
 		end if;
 
-		GMII_TXEN<=gmii_txen_out;
+		GMII_TXEN <= gmii_txen_out;
 
 		-- Detect a '0'-to-'1' transition on the arp_request input to trigger ARP packet
 		-- transmission
 		arp_request_previous <= arp_request;
 		if(arp_request_previous='0' and arp_request='1') then
-			send_arp<='1';
+			send_arp <= '1';
 		end if;
 
 
@@ -313,7 +313,7 @@ begin
 				gmii_txd_out <= TX_FIFO_DOUT;
 				ip_checksum_in <= TX_FIFO_DOUT;
 
-			END CASE;
+		END CASE;
 
 
 		-- Sets the CRC computation/insertion control lines based on the CRC tag that was set with the data
@@ -335,265 +335,262 @@ begin
 				crc_init<='0';
 				crc_calc<='0';
 				crc_insert<='1';
-			END CASE;
+		END CASE;
 
 		-- Sets the IP checksum computation/insertion control lines based on the IP CHECKSUM ACTION tag that was set with the data
 		CASE ip_checksum_action IS
 			WHEN IP_CHECKSUM_ACTION_INIT =>
-				ip_checksum_init<='1';
-				ip_checksum_calc<='0';
-				ip_checksum_insert<='0';
+				ip_checksum_init <= '1';
+				ip_checksum_calc <= '0';
+				ip_checksum_insert <= '0';
 
 			WHEN IP_CHECKSUM_ACTION_CALC=>
-				ip_checksum_init<='0';
-				ip_checksum_calc<='1';
-				ip_checksum_insert<='0';
+				ip_checksum_init <= '0';
+				ip_checksum_calc <= '1';
+				ip_checksum_insert <= '0';
 
 			WHEN IP_CHECKSUM_ACTION_HOLD=>
-				ip_checksum_init<='0';
-				ip_checksum_calc<='0';
-				ip_checksum_insert<='0';
+				ip_checksum_init <= '0';
+				ip_checksum_calc <= '0';
+				ip_checksum_insert <= '0';
 
 			WHEN IP_CHECKSUM_ACTION_INSERT =>
-				ip_checksum_init<='0';
-				ip_checksum_calc<='0';
-				ip_checksum_insert<='1';
-			END CASE;
+				ip_checksum_init <= '0';
+				ip_checksum_calc <= '0';
+				ip_checksum_insert <= '1';
+		END CASE;
 
 
-			-- Transmit state machine: Sequences the transmission of the Ethernet/IP/UDP frame
+		-- Transmit state machine: Sequences the transmission of the Ethernet/IP/UDP frame
+		--
+		-- The signals used to get the data (RAM address, FIFO_RD_EN) is set as the same time as the state that process this data is set.
+		-- The data source is set when clocking out of that state.
+		-- The flag indicating the source of the data is set when clocking out. It tags the data.
+		--
+		CASE tx_state IS
 
-			-- The signals used to get the data (RAM address, FIFO_RD_EN) is set as the same time as the state that process this data is set.
-			-- The data source is set when clocking out of that state.
-			-- The flag indicating the source of the data is set when clocking out. It tags the data.
-			--
+			-- STANDBY State
+			WHEN TX_STATE_STDBY  =>
+				tx_src_sel <= TX_SRC_SEL_IDLE;  -- just in case.
 
+				crc_action <= CRC_ACTION_INIT; -- not really needed - will be initialized later
 
-			CASE tx_state IS
+				if tx_frame_fifo_empty = '0' then -- If frame data is available
+					tx_state <= TX_STATE_TX_PREAMBLE;
+					tx_ctr <= (others => '0'); -- Initialize the counter. We're going to count 8 bytes
+					tx_frame_fifo_rd_en <='1'; -- Read Frame length from frame FIFO
+					ip_checksum_action <= IP_CHECKSUM_ACTION_INIT; -- needed to prepare for IP header checksum precomputation
+				elsif send_arp='1' then
+					tx_state <= TX_STATE_TX_PREAMBLE;
+					tx_ctr <= (others => '0'); -- Initialize the counter. We're going to count 8 bytes
+					ip_checksum_action <= IP_CHECKSUM_ACTION_INIT; -- needed to prepare for IP header checksum precomputation
+				end if;
 
-
-				-- STANDBY State
-				WHEN TX_STATE_STDBY  =>
-					tx_src_sel <= TX_SRC_SEL_IDLE;  -- just in case.
-
-					crc_action <= CRC_ACTION_INIT; -- not really needed - will be initialized later
-
-					if tx_frame_fifo_empty = '0' then -- If frame data is available
-						tx_state <= TX_STATE_TX_PREAMBLE;
-						tx_ctr <= (others => '0'); -- Initialize the counter. We're going to count 8 bytes
-						tx_frame_fifo_rd_en <='1'; -- Read Frame length from frame FIFO
-						ip_checksum_action <= IP_CHECKSUM_ACTION_INIT; -- needed to prepare for IP header checksum precomputation
-					elsif send_arp='1' then
-						tx_state <= TX_STATE_TX_PREAMBLE;
-						tx_ctr <= (others => '0'); -- Initialize the counter. We're going to count 8 bytes
-						ip_checksum_action<=IP_CHECKSUM_ACTION_INIT; -- needed to prepare for IP header checksum precomputation
-					end if;
-
-				WHEN TX_STATE_TX_PREAMBLE => -- Transmits the 8-byte Ethernet preamble (0x55 x7 and 0xD5). While doing that, compute the IP Checksum on the IP addresses
+			WHEN TX_STATE_TX_PREAMBLE => -- Transmits the 8-byte Ethernet preamble (0x55 x7 and 0xD5). While doing that, compute the IP Checksum on the IP addresses
 
 
-					tx_sreg(47 downto 8)<=tx_sreg(39 downto 0); -- Shift left SREG by one byte. This assignment may be overriden below.
-					tx_ctr<=tx_ctr+1; -- This assignment may be overriden below
+				tx_sreg(47 downto 8) <= tx_sreg(39 downto 0); -- Shift left SREG by one byte. This assignment may be overriden below.
+				tx_ctr<=tx_ctr+1; -- This assignment may be overriden below
 
-					CASE tx_ctr(3 downto 0) is
-						WHEN X"0"=>
-							tx_frame_fifo_rd_en <= '0'; -- Stop reading the FIFO buffer. Length of current frame to transmit is now on the FRAME_FIFO_DOUT. It will be transferred lated into the length register
-							tx_src_sel <= TX_SRC_SEL_PREAMBLE; -- Send the data in tx_reg to the GMII, but the SREG data to the IP checksum engine for IP checksum precomputation
-							tx_reg <= X"55";
+				CASE tx_ctr(3 downto 0) is
+					WHEN X"0"=>
+						tx_frame_fifo_rd_en <= '0'; -- Stop reading the FIFO buffer. Length of current frame to transmit is now on the FRAME_FIFO_DOUT. It will be transferred lated into the length register
+						tx_src_sel <= TX_SRC_SEL_PREAMBLE; -- Send the data in tx_reg to the GMII, but the SREG data to the IP checksum engine for IP checksum precomputation
+						tx_reg <= X"55";
+						tx_sreg(47 downto 16) <= local_ip_addr;
+						ip_checksum_action <= IP_CHECKSUM_ACTION_CALC; -- Pre-Compute IP header checksum from the IP addresses
+					WHEN X"1"=>
+						-- FRAME FIFO word is now on the bus.
+						tx_payload_length <= unsigned(tx_frame_fifo_dout(15 downto 0)); -- Store Frame length in register -- need it to obtain IP and UDP lengths, and to count bytes during the payload transmission
+						-- Now store the destination port based on bit 17:16
+						case to_integer(unsigned(tx_frame_fifo_dout(17 downto 16))) is
+							when 0 =>
+								remote_mac_addr_sel     <= remote_mac_addr0;
+								remote_ip_base_addr_sel <= remote_ip_addr0;
+								remote_ip_base_port_sel <= remote_ip_port0;
+							when 1 =>
+								remote_mac_addr_sel     <= remote_mac_addr1;
+								remote_ip_base_addr_sel <= remote_ip_addr1;
+								remote_ip_base_port_sel <= remote_ip_port1;
+							when others =>
+								remote_mac_addr_sel     <= remote_mac_addr0;
+								remote_ip_base_addr_sel <= remote_ip_addr0;
+								remote_ip_base_port_sel <= remote_ip_port0;
+						end case;
+					WHEN X"4"=>
+						tx_sreg(47 downto 16) <= remote_ip_base_addr_sel;
+					WHEN X"7"=>
+						tx_reg <= X"D5";
+						crc_action <= CRC_ACTION_INIT; -- initialize CRC. COmputation will start at the next state.
+						tx_ctr <= (others => '0'); -- Initialize the header byte address for header transmission
+
+						if send_arp='1' then
+							tx_state <= TX_STATE_TX_ARP;
+						else
+							tx_state <= TX_STATE_TX_HEADER;
+						end if;
+					WHEN others=>
+						-- Do nothing else
+				end case;
+
+			-- TX_HEADER state
+			WHEN TX_STATE_TX_HEADER =>  -- Transmits the Ethernet/IP/UDP headers. IP Header computation/insertion is enabled when necessary. Computed IP/UDP lengths are inserted when necessary.
+
+					tx_ctr <= tx_ctr + 1; -- This assignment is sometimes overriden below
+					tx_sreg(47 downto 8) <= tx_sreg(39 downto 0); -- Shift left SREG by one byte. -- This assignment is sometimes overriden below
+
+					CASE tx_ctr(7 downto 0) IS
+						WHEN X"00" => --
+							crc_action <= CRC_ACTION_CALC; -- needed to start computing the Ethernet CRC
+							ip_checksum_action <= IP_CHECKSUM_ACTION_HOLD; -- Needed to stop precomputation of the IP checksum on the IP addresses
+
+							tx_src_sel <= TX_SRC_SEL_SREG;
+							tx_sreg(47 downto 0) <= remote_mac_addr_sel;
+						WHEN X"06" => --
+							tx_src_sel <= TX_SRC_SEL_SREG;
+							tx_sreg(47 downto 0) <= local_mac_addr;
+						WHEN X"0C" => -- Ethertype
+							tx_src_sel <= TX_SRC_SEL_SREG;
+							tx_sreg(47 downto 32) <= X"0800"; -- Ethertype=0x0800
+						WHEN X"0E" => -- First IP header byte
+							ip_checksum_action <= IP_CHECKSUM_ACTION_CALC; -- Resume IP header checksum computation
+							tx_src_sel <= TX_SRC_SEL_SREG;
+							tx_sreg(47 downto 16) <= (X"4500" & ip_length); --  Ip version 0x4, IP Hdr Length = 0x5, DSCP/ECP=0x00, IP total Length= ip_length
+						WHEN X"12" => -- First IP header byte
+							tx_src_sel<=TX_SRC_SEL_SREG;
+							tx_sreg(47 downto 0)<=X"142600007F11"; -- IP Identification =0x1426, Flags/Fragments offset=0x0000, TTL=0x7F, Protocol=0x11 (UDP)
+						WHEN X"18" => -- Start inserting IP Checksum
+							ip_checksum_action<=IP_CHECKSUM_ACTION_INSERT; -- Start inserting the IP Checksum. The checksum must include the IP addresses that will follow after this checksum, but we already precomputed them while sending the preamble so the checksum is valid
+							tx_src_sel<=TX_SRC_SEL_SREG; -- not useful - data is overriden by IP_CHECKSUM_ACTION_INSERT
+						WHEN X"1A" => -- Source IP addresses
+							ip_checksum_action <= IP_CHECKSUM_ACTION_INIT; -- Stop inserting IP Checksum
+							tx_src_sel <= TX_SRC_SEL_SREG;
 							tx_sreg(47 downto 16) <= local_ip_addr;
-							ip_checksum_action <= IP_CHECKSUM_ACTION_CALC; -- Pre-Compute IP header checksum from the IP addresses
-						WHEN X"1"=>
-							-- FRAME FIFO word is now on the bus.
-							tx_payload_length<=unsigned(tx_frame_fifo_dout(15 downto 0)); -- Store Frame length in register -- need it to obtain IP and UDP lengths, and to count bytes during the payload transmission
-							-- Now store the destination port based on bit 17:16
-							case to_integer(unsigned(tx_frame_fifo_dout(17 downto 16))) is
-								when 0 =>
-									remote_mac_addr_sel     <= remote_mac_addr0;
-									remote_ip_base_addr_sel <= remote_ip_addr0;
-									remote_ip_base_port_sel <= remote_ip_port0;
-								when 1 =>
-									remote_mac_addr_sel     <= remote_mac_addr1;
-									remote_ip_base_addr_sel <= remote_ip_addr1;
-									remote_ip_base_port_sel <= remote_ip_port1;
-								when others =>
-									remote_mac_addr_sel     <= remote_mac_addr0;
-									remote_ip_base_addr_sel <= remote_ip_addr0;
-									remote_ip_base_port_sel <= remote_ip_port0;
-							end case;
-						WHEN X"4"=>
+						WHEN X"1E" => -- Get Destination IP
+							tx_src_sel <= TX_SRC_SEL_SREG;
 							tx_sreg(47 downto 16) <= remote_ip_base_addr_sel;
-						WHEN X"7"=>
-							tx_reg <= X"D5";
-							crc_action <= CRC_ACTION_INIT; -- initialize CRC. COmputation will start at the next state.
-							tx_ctr <= (others => '0'); -- Initialize the header byte address for header transmission
-
-							if send_arp='1' then
-								tx_state <= TX_STATE_TX_ARP;
-							else
-								tx_state <= TX_STATE_TX_HEADER;
-							end if;
-						WHEN others=>
-							-- Do nothing else
+						WHEN X"22" => -- Source port, Destination port, UDP Length
+							tx_src_sel<=TX_SRC_SEL_SREG;
+							tx_sreg(47 downto 0) <= (X"0000" & remote_ip_base_port_sel & udp_length); --
+						WHEN X"28" => --  UDP Checksum (disabled)
+							tx_src_sel<=TX_SRC_SEL_SREG;
+							tx_sreg(47 downto 32) <= X"0000"; -- UDP Checksum will be ignored
+						WHEN X"29"=> -- end of header buffer: proceed to data trasmnission
+--								tx_src_sel<=TX_SRC_SEL_RAM;
+							tx_state <= TX_STATE_TX_PAYLOAD;
+							tx_fifo_rd_en <= '1';
+							tx_ctr <= (others => '0');
+						WHEN others =>
+							-- Do nothing
 					end case;
 
-				-- TX_HEADER state
-				WHEN TX_STATE_TX_HEADER =>  -- Transmits the Ethernet/IP/UDP headers. IP Header computation/insertion is enabled when necessary. Computed IP/UDP lengths are inserted when necessary.
+			WHEN TX_STATE_TX_ARP =>  -- Transmits the Ethernet/IP/UDP headers. IP Header computation/insertion is enabled when necessary. Computed IP/UDP lengths are inserted when necessary.
+					send_arp <= '0';
+					tx_ctr <= tx_ctr + 1; -- This assignment is sometimes overriden below
+					tx_sreg(47 downto 8) <= tx_sreg(39 downto 0); -- Shift left SREG by one byte. -- This assignment is sometimes overriden below
 
-						tx_ctr <= tx_ctr + 1; -- This assignment is sometimes overriden below
-						tx_sreg(47 downto 8) <= tx_sreg(39 downto 0); -- Shift left SREG by one byte. -- This assignment is sometimes overriden below
+					CASE tx_ctr(7 downto 0) IS
+						WHEN X"00" => --
+							crc_action <= CRC_ACTION_CALC; -- needed to start computing the Ethernet CRC
+							tx_src_sel <= TX_SRC_SEL_SREG;
+							tx_sreg(47 downto 0) <= arp_remote_mac_addr; --
+						WHEN X"06" => --
+							tx_sreg(47 downto 0)<=local_mac_addr;
+						WHEN X"0C" => -- Ethertype et al.
+							tx_src_sel <= TX_SRC_SEL_SREG;
+							tx_sreg(47 downto 0)<=X"080600010800"; -- Ethertype=0x0806 (ARP), ARP HArdware type: 1 (ethernet), ARP Protocol type 0800=IP
 
-						CASE tx_ctr(7 downto 0) IS
-							WHEN X"00" => --
-								crc_action <= CRC_ACTION_CALC; -- needed to start computing the Ethernet CRC
-								ip_checksum_action <= IP_CHECKSUM_ACTION_HOLD; -- Needed to stop precomputation of the IP checksum on the IP addresses
+						WHEN X"12" => -- First IP header byte
+							tx_src_sel <= TX_SRC_SEL_SREG;
+							--if ARP_TYPE='0' then
+							tx_sreg(47 downto 16) <= X"06040002" ; -- Hsize=6,  ProtoSize=4, Opcode=reply
+							--else
+							--	tx_sreg(47 downto 16)<=X"06040001" ; --
+							--end if;
+							--ARP_TYPE<=not ARP_TYPE;
+						WHEN X"16" => -- Sender MAC
+							tx_src_sel <= TX_SRC_SEL_SREG;
+							tx_sreg(47 downto 0) <= local_mac_addr;
+						WHEN X"1C" => -- Sender IP
+							tx_src_sel <= TX_SRC_SEL_SREG;
+							tx_sreg(47 downto 16) <= local_ip_addr;
+						WHEN X"20" => -- target MAC
+							tx_src_sel <= TX_SRC_SEL_SREG;
+							tx_sreg(47 downto 0) <= arp_remote_mac_addr;
+						WHEN X"26" => -- TArget IP
+							tx_src_sel <= TX_SRC_SEL_SREG;
+							tx_sreg(47 downto 16) <= arp_remote_ip_addr;
+						WHEN X"2A" => -- Filing to greate a 60 byte ethernet frame (excluding pramble & checksum)
+							tx_src_sel <= TX_SRC_SEL_SREG;
+							tx_sreg(47 downto 0) <= X"000000000000"; -- Filling
+						WHEN X"3B"=> -- end of frame -- proceed to checksum transmission
+							tx_state <= TX_STATE_TX_ETH_CHECKSUM;
+							tx_ctr <= (others => '0');
+						WHEN others =>
+							-- Do nothing
+					end case;
 
-								tx_src_sel <= TX_SRC_SEL_SREG;
-								tx_sreg(47 downto 0) <= remote_mac_addr_sel;
-							WHEN X"06" => --
-								tx_src_sel <= TX_SRC_SEL_SREG;
-								tx_sreg(47 downto 0) <= local_mac_addr;
-							WHEN X"0C" => -- Ethertype
-								tx_src_sel <= TX_SRC_SEL_SREG;
-								tx_sreg(47 downto 32) <= X"0800"; -- Ethertype=0x0800
-							WHEN X"0E" => -- First IP header byte
-								ip_checksum_action <= IP_CHECKSUM_ACTION_CALC; -- Resume IP header checksum computation
-								tx_src_sel <= TX_SRC_SEL_SREG;
-								tx_sreg(47 downto 16) <= (X"4500" & ip_length); --  Ip version 0x4, IP Hdr Length = 0x5, DSCP/ECP=0x00, IP total Length= ip_length
-							WHEN X"12" => -- First IP header byte
-								tx_src_sel<=TX_SRC_SEL_SREG;
-								tx_sreg(47 downto 0)<=X"142600007F11"; -- IP Identification =0x1426, Flags/Fragments offset=0x0000, TTL=0x7F, Protocol=0x11 (UDP)
-							WHEN X"18" => -- Start inserting IP Checksum
-								ip_checksum_action<=IP_CHECKSUM_ACTION_INSERT; -- Start inserting the IP Checksum. The checksum must include the IP addresses that will follow after this checksum, but we already precomputed them while sending the preamble so the checksum is valid
-								tx_src_sel<=TX_SRC_SEL_SREG; -- not useful - data is overriden by IP_CHECKSUM_ACTION_INSERT
-							WHEN X"1A" => -- Source IP addresses
-								ip_checksum_action <= IP_CHECKSUM_ACTION_INIT; -- Stop inserting IP Checksum
-								tx_src_sel <= TX_SRC_SEL_SREG;
-								tx_sreg(47 downto 16) <= local_ip_addr;
-							WHEN X"1E" => -- Get Destination IP
-								tx_src_sel <= TX_SRC_SEL_SREG;
-								tx_sreg(47 downto 16) <= remote_ip_base_addr_sel;
-							WHEN X"22" => -- Source port, Destination port, UDP Length
-								tx_src_sel<=TX_SRC_SEL_SREG;
-								tx_sreg(47 downto 0) <= (X"0000" & remote_ip_base_port_sel & udp_length); --
-							WHEN X"28" => --  UDP Checksum (disabled)
-								tx_src_sel<=TX_SRC_SEL_SREG;
-								tx_sreg(47 downto 32) <= X"0000"; -- UDP Checksum will be ignored
-							WHEN X"29"=> -- end of header buffer: proceed to data trasmnission
---								tx_src_sel<=TX_SRC_SEL_RAM;
-								tx_state <= TX_STATE_TX_PAYLOAD;
-								tx_fifo_rd_en <= '1';
-								tx_ctr <= (others => '0');
-							WHEN others =>
-								-- Do nothing
-						end case;
+			WHEN TX_STATE_TX_PAYLOAD => -- Transmit the UDP payload data frol the TX data FIFO
+					tx_src_sel <= TX_SRC_SEL_FIFO;
+					crc_action <= CRC_ACTION_CALC;
 
-				WHEN TX_STATE_TX_ARP =>  -- Transmits the Ethernet/IP/UDP headers. IP Header computation/insertion is enabled when necessary. Computed IP/UDP lengths are inserted when necessary.
-						send_arp <= '0';
-						tx_ctr <= tx_ctr + 1; -- This assignment is sometimes overriden below
-						tx_sreg(47 downto 8) <= tx_sreg(39 downto 0); -- Shift left SREG by one byte. -- This assignment is sometimes overriden below
-
-						CASE tx_ctr(7 downto 0) IS
-							WHEN X"00" => --
-								crc_action <= CRC_ACTION_CALC; -- needed to start computing the Ethernet CRC
-								tx_src_sel <= TX_SRC_SEL_SREG;
-								tx_sreg(47 downto 0) <= arp_remote_mac_addr; --
-							WHEN X"06" => --
-								tx_sreg(47 downto 0)<=local_mac_addr;
-							WHEN X"0C" => -- Ethertype et al.
-								tx_src_sel <= TX_SRC_SEL_SREG;
-								tx_sreg(47 downto 0)<=X"080600010800"; -- Ethertype=0x0806 (ARP), ARP HArdware type: 1 (ethernet), ARP Protocol type 0800=IP
-
-							WHEN X"12" => -- First IP header byte
-								tx_src_sel <= TX_SRC_SEL_SREG;
-								--if ARP_TYPE='0' then
-								tx_sreg(47 downto 16) <= X"06040002" ; -- Hsize=6,  ProtoSize=4, Opcode=reply
-								--else
-								--	tx_sreg(47 downto 16)<=X"06040001" ; --
-								--end if;
-								--ARP_TYPE<=not ARP_TYPE;
-							WHEN X"16" => -- Sender MAC
-								tx_src_sel <= TX_SRC_SEL_SREG;
-								tx_sreg(47 downto 0) <= local_mac_addr;
-							WHEN X"1C" => -- Sender IP
-								tx_src_sel <= TX_SRC_SEL_SREG;
-								tx_sreg(47 downto 16) <= local_ip_addr;
-							WHEN X"20" => -- target MAC
-								tx_src_sel <= TX_SRC_SEL_SREG;
-								tx_sreg(47 downto 0) <= arp_remote_mac_addr;
-							WHEN X"26" => -- TArget IP
-								tx_src_sel <= TX_SRC_SEL_SREG;
-								tx_sreg(47 downto 16) <= arp_remote_ip_addr;
-							WHEN X"2A" => -- Filing to greate a 60 byte ethernet frame (excluding pramble & checksum)
-								tx_src_sel <= TX_SRC_SEL_SREG;
-								tx_sreg(47 downto 0) <= X"000000000000"; -- Filling
-							WHEN X"3B"=> -- end of frame -- proceed to checksum transmission
-								tx_state <= TX_STATE_TX_ETH_CHECKSUM;
-								tx_ctr <= (others => '0');
-							WHEN others =>
-								-- Do nothing
-						end case;
-
-				WHEN TX_STATE_TX_PAYLOAD => -- Transmit the UDP payload data frol the TX data FIFO
-						tx_src_sel <= TX_SRC_SEL_FIFO;
-						crc_action <= CRC_ACTION_CALC;
-
-						if tx_ctr = (tx_payload_length-1) THEN
-							tx_fifo_rd_en <= '0';
-							if(tx_ctr >= 17) then -- if the minimum payload size was transmitted to ensure a 64 byte overall ethernet frame (including checksum)
-								tx_state <= TX_STATE_TX_ETH_CHECKSUM;
-								tx_ctr <= (others => '0');
-							else -- send padding
-								tx_state <= TX_STATE_TX_PADDING;
-								tx_ctr <= tx_ctr + 1;
-							end if;
-						else
+					if tx_ctr = (tx_payload_length-1) THEN
+						tx_fifo_rd_en <= '0';
+						if(tx_ctr >= 17) then -- if the minimum payload size was transmitted to ensure a 64 byte overall ethernet frame (including checksum)
+							tx_state <= TX_STATE_TX_ETH_CHECKSUM;
+							tx_ctr <= (others => '0');
+						else -- send padding
+							tx_state <= TX_STATE_TX_PADDING;
 							tx_ctr <= tx_ctr + 1;
 						end if;
-				WHEN TX_STATE_TX_PADDING => -- Transmit Padding up to 18 bytes
-						tx_src_sel <= TX_SRC_SEL_SREG;
-						tx_sreg(47 downto 40) <= X"00"; -- send zeros for padding
-						crc_action <= CRC_ACTION_CALC; -- redundant
+					else
+						tx_ctr <= tx_ctr + 1;
+					end if;
+			WHEN TX_STATE_TX_PADDING => -- Transmit Padding up to 18 bytes
+					tx_src_sel <= TX_SRC_SEL_SREG;
+					tx_sreg(47 downto 40) <= X"00"; -- send zeros for padding
+					crc_action <= CRC_ACTION_CALC; -- redundant
 
-						if (tx_ctr=17) THEN
-								tx_state <= TX_STATE_TX_ETH_CHECKSUM;
-								tx_ctr <= (others => '0');
-						else
-								tx_ctr <= tx_ctr + 1;
-
-						end if;
-
-
-
-				WHEN TX_STATE_TX_ETH_CHECKSUM =>  -- Transmits the Ethernet CRC32 checksum that was computed on the whole ethernet frame
-					crc_action <= CRC_ACTION_INSERT;
-
-					if tx_ctr=3 then
-							tx_state <= TX_STATE_INTERFRAME;
+					if (tx_ctr=17) THEN
+							tx_state <= TX_STATE_TX_ETH_CHECKSUM;
 							tx_ctr <= (others => '0');
 					else
 							tx_ctr <= tx_ctr + 1;
+
 					end if;
 
-				WHEN TX_STATE_INTERFRAME => -- Wait for 12 clocks without sending anything to implement the interframe delay.
-					crc_action <= CRC_ACTION_INIT; -- needed to stop the CRC engine to override output words
-					tx_src_sel <= TX_SRC_SEL_IDLE; -- don't send anything
 
-					if(tx_ctr=15) then
-							if tx_frame_fifo_empty = '1' then -- if there is no new full frame available then jump to standby
-								tx_state <= TX_STATE_STDBY;
-								tx_ctr <= (others=>'0');
-							else -- else start transmission of a new frame immediately
-								tx_state <= TX_STATE_TX_PREAMBLE;
-								tx_ctr <= (others => '0');
-								tx_frame_fifo_rd_en <= '1'; -- Enable FRAME_FIFO Read to get the frame length. Will be available on the next state.
-								ip_checksum_action <= IP_CHECKSUM_ACTION_INIT; -- needed to prepare for IP header checksum precomputation
-							end if;
-					else
-							tx_ctr <= tx_ctr + 1;
-					end if;
-			end CASE;
 
-		-- Implement synchronous reset
+			WHEN TX_STATE_TX_ETH_CHECKSUM =>  -- Transmits the Ethernet CRC32 checksum that was computed on the whole ethernet frame
+				crc_action <= CRC_ACTION_INSERT;
+
+				if tx_ctr=3 then
+						tx_state <= TX_STATE_INTERFRAME;
+						tx_ctr <= (others => '0');
+				else
+						tx_ctr <= tx_ctr + 1;
+				end if;
+
+			WHEN TX_STATE_INTERFRAME => -- Wait for 12 clocks without sending anything to implement the interframe delay.
+				crc_action <= CRC_ACTION_INIT; -- needed to stop the CRC engine to override output words
+				tx_src_sel <= TX_SRC_SEL_IDLE; -- don't send anything
+
+				if(tx_ctr=15) then
+						if tx_frame_fifo_empty = '1' then -- if there is no new full frame available then jump to standby
+							tx_state <= TX_STATE_STDBY;
+							tx_ctr <= (others=>'0');
+						else -- else start transmission of a new frame immediately
+							tx_state <= TX_STATE_TX_PREAMBLE;
+							tx_ctr <= (others => '0');
+							tx_frame_fifo_rd_en <= '1'; -- Enable FRAME_FIFO Read to get the frame length. Will be available on the next state.
+							ip_checksum_action <= IP_CHECKSUM_ACTION_INIT; -- needed to prepare for IP header checksum precomputation
+						end if;
+				else
+						tx_ctr <= tx_ctr + 1;
+				end if;
+		end CASE; -- TX_STATE
+
+		-- Synchronous reset
 		if rst='1' then
 			arp_request_previous <= '0';
 			send_arp <= '0';
@@ -620,7 +617,7 @@ crc32_0: entity work.CRC32 -- we explicitely specify the work library because CR
 
 -- IP CHECKSUM process
 --
--- Computes the 16-bit IP header checksum while the Ethernet headers are being sent. This is because
+-- Computes the 16-bit IP header checksum while the Ethernet header bytes are being sent. This is because
 -- we need to send the checksum *before* the IP header is sent.
 ip_checksum : process(gmii_txclk)
 	begin
@@ -634,7 +631,7 @@ ip_checksum : process(gmii_txclk)
 					if ip_checksum_is_msb='1' then
 						ip_checksum_msb <= ip_checksum_in;
 					else
-						ip_checksum_reg <= ip_checksum_reg+("00000" & unsigned(ip_checksum_msb) & unsigned(ip_checksum_in));
+						ip_checksum_reg <= ip_checksum_reg + ("00000" & unsigned(ip_checksum_msb) & unsigned(ip_checksum_in));
 					end if;
 				end if;
 				if ip_checksum_calc='1' or ip_checksum_insert='1' then

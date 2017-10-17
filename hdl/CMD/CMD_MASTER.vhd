@@ -104,9 +104,9 @@ entity CTRL_MASTER is
 
 
 		-- Raw Data (probe) inputs
-		prb_dat: in axis8_dat_struct_array(number_of_probes-1 downto 0);
-		prb_rdy: out axis8_rdy_struct_array(number_of_probes-1 downto 0);
-		prb_port_offset: in slv2_array(number_of_probes-1 downto 0);
+		prb_dat: in axis8_dat_struct_array(NUMBER_OF_PROBES-1 downto 0);
+		prb_rdy: out axis8_rdy_struct_array(NUMBER_OF_PROBES-1 downto 0);
+		prb_port_offset: in slv2_array(NUMBER_OF_PROBES-1 downto 0);
 
 		-- System
 		host_frame_read_rate: in std_logic_vector(4 downto 0);
@@ -124,7 +124,7 @@ signal s_axis_udp_rx_tready_int: std_logic;
 -- TX Process
 
 TYPE TX_STATE_TYPE IS (TX_STATE_SCAN, TX_STATE_SEND_CMD,TX_STATE_SEND_ANT, TX_STATE_WAIT); -- States of the TX state machine
-signal tx_state: TX_STATE_TYPE:=TX_STATE_SCAN; -- Initialization needed
+signal tx_state: TX_STATE_TYPE := TX_STATE_SCAN; -- Initialization needed
 signal probe_number : integer range 0 to (NUMBER_OF_PROBES-1):=0;
 signal timeout_ctr: unsigned(7 downto 0); --
 signal host_buffer_readout_timer: unsigned(23 downto 0);
@@ -137,6 +137,10 @@ signal cmd_packet_counter_int: unsigned(7 downto 0) := (others=>'0');
 signal rply_packet_counter_int: unsigned(7 downto 0) := (others=>'0');
 signal is_reply_header: std_logic;
 signal s_axis_udp_rx_tfirst: std_logic := '1';
+
+signal rply_flush: std_logic;
+signal prb_flush: std_logic_vector(0 to NUMBER_OF_PROBES-1);
+
 begin
 
 --! Receive process: process incoming commands
@@ -176,7 +180,7 @@ m_axis_udp_tx_tvalid <= m_axis_udp_tx_tvalid_int;
 -- UDP Transmit process
 ------------------------
 -- Selects data from the reply or raw data buses, and forward them to the UDP transmitter.
-tx_proc: process(clk,RST)
+tx_proc: process(clk)
 	begin
 		if rising_edge(clk) then
 
@@ -221,35 +225,48 @@ tx_proc: process(clk,RST)
 			-- Data selector/transmitter
 			-------------------------------
 			---- Alternate between CMD and ANT states
-			CASE TX_STATE IS
+			CASE tx_state IS
 				WHEN TX_STATE_SCAN => -- If current antenna finished processing, set next state to SEND_CMD and increment antenna number in preparation for the next round
 
 					-- end the write that was in progress when the last state completed
 					m_axis_udp_tx_tvalid_int <= '0';
 					--m_axis_udp_tx_tlast<='0';
 
-					if m_axis_udp_tx_tready = '1' then -- Send data only if the header and data FIFOs of the transmitter are not full. This does not guarantee that the data buffer won't overflow, but it is better than nothing.
-						if probe_number = 0 and s_axis_rply_tvalid = '1' then --! Send control data in priority
+					s_axis_rply_tready <= rply_flush;
+					if s_axis_rply_tvalid='1' and s_axis_rply_tlast ='1' then
+						rply_flush <= '0';
+					end if;
+
+					for i in 0 to NUMBER_OF_PROBES-1 loop
+						prb_rdy(i).tready <= prb_flush(i);
+						if prb_dat(i).tvalid='1' and prb_dat(i).tlast='1' then
+							prb_flush(i) <= '0';
+						end if;
+					end loop;
+
+
+					--if m_axis_udp_tx_tready = '1' then -- Send data only if the header and data FIFOs of the transmitter are not full. This does not guarantee that the data buffer won't overflow, but it is better than nothing.
+						if probe_number = 0 and s_axis_rply_tvalid = '1' and rply_flush='0' then --! Send control data in priority
 								s_axis_rply_tready <= '1';
 								timeout_ctr <= (others=>'0');
 								is_reply_header <= '1';
 								tx_state <= TX_STATE_SEND_CMD;
 						elsif host_buffer_count(host_buffer_count'HIGH) = '0' then--! If the count is less than half the max buffer size, then continue scanning the probe inputs and send the frames
-							if(prb_dat(probe_number).tvalid='1')  then -- antenna data is ready
+							if prb_dat(probe_number).tvalid='1' and prb_flush(probe_number)='0'  then -- antenna data is ready
 									-- start reading antenna data
 									prb_rdy(probe_number).tready <= '1';
 									timeout_ctr <= (others=>'0');
 									tx_state <= TX_STATE_SEND_ANT;
 							else
 								-- if no data is awaiting, increment antenna number to proceed with scanning
-								if (probe_number = number_of_probes-1) then
+								if (probe_number = NUMBER_OF_PROBES-1) then
 									probe_number <= 0;
 								else
 									probe_number <= probe_number+1;
 								end if;
 							end if;
 						end if;
-					end if; -- if tready=1
+					--end if; -- if tready=1
 				WHEN TX_STATE_SEND_CMD => --
 					if s_axis_rply_tvalid = '1' then timeout_ctr<=(others=>'0'); end if; -- reset timout counter as long as we receive bytes
 					if signed(timeout_ctr)=-1 then -- if we had no TVALID until the counter reaches its maximum, abandon reception
@@ -276,10 +293,10 @@ tx_proc: process(clk,RST)
 					end if; -- if timeout
 
 --
-				WHEN TX_STATE_SEND_ANT=>
+				WHEN TX_STATE_SEND_ANT =>
 					if PRB_DAT(PROBE_NUMBER).TVALID='1' then TIMEOUT_CTR<=(others=>'0'); end if; -- reset timout counter as long as we receive bytes
 					if signed(TIMEOUT_CTR)=-1 then -- if we had no TVALID until the counter reaches its maximum, abandon reception
-							TX_STATE<=TX_STATE_SCAN; -- the SCAN state will reset the UDP write signals
+							tx_state<=TX_STATE_SCAN; -- the SCAN state will reset the UDP write signals
 					else
 						m_axis_udp_tx_tvalid_int<=PRB_DAT(PROBE_NUMBER).TVALID;
 						m_axis_udp_tx_tdata <= PRB_DAT(PROBE_NUMBER).TDATA;
@@ -290,16 +307,16 @@ tx_proc: process(clk,RST)
 								m_axis_udp_tx_tlast<='1'; --  signal the end of frame
 								PRB_RDY(PROBE_NUMBER).TREADY<='0'; -- we don't accept reply bytes anymore
 								TIMEOUT_CTR<=(others=>'0'); -- prepare counter for the wait state
-								TX_STATE<=TX_STATE_WAIT; -- wait some time before returning to scan to make sure we don't fill the Ethernet interface FIFO
+								tx_state<=TX_STATE_WAIT; -- wait some time before returning to scan to make sure we don't fill the Ethernet interface FIFO
 							--end if; -- TLAST=1
 						end if; -- TVALID=1;
 					end if; -- if timeout
 
-				WHEN TX_STATE_WAIT=> -- Wait for some time after transmission to make sure there is enough time for the Ethernet interface to transmit the header bytes, otherwise the FIFO will eventually overflow
+				WHEN TX_STATE_WAIT => -- Wait for some time after transmission to make sure there is enough time for the Ethernet interface to transmit the header bytes, otherwise the FIFO will eventually overflow
 					m_axis_udp_tx_tvalid_int<='0';
 					--m_axis_udp_tx_tlast<='0';
 					if signed(TIMEOUT_CTR)=-1 then
-						TX_STATE<=TX_STATE_SCAN;
+						tx_state<=TX_STATE_SCAN;
 					-- enabled block below while debugging CORR output in 2017
 					-- make sure we continue with the next probe. We don't want to send the same probe again if it happens it has an other frame already waiting.
 						if (PROBE_NUMBER=NUMBER_OF_PROBES-1) then
@@ -308,7 +325,7 @@ tx_proc: process(clk,RST)
 							PROBE_NUMBER<=PROBE_NUMBER+1;
 						end if;
 					end if;
-			end case;
+			end case;-- tx_state
 
 			-------------------------------
 			-- Synchronous reset
@@ -321,6 +338,9 @@ tx_proc: process(clk,RST)
 				--m_axis_udp_tx_tlast<='1';
 				udp_tx_port <= (others=>'0');
 
+
+				prb_flush <= (others => '1');
+				rply_flush <= '1';
 				-- reset reply bus
 				s_axis_rply_tready <= '0';
 
