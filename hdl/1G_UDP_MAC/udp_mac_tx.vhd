@@ -250,7 +250,9 @@ tx_front_end : process(tx_clk)
 			--if s_axis_udp_tx_tready_int='0' then
 			--	tx_overflow <= '1';
 			--end if;
-			tx_overflow <= tx_overflow or tx_fifo_full or tx_frame_fifo_full;
+			if tx_fifo_full='1' or tx_frame_fifo_full='1' then
+				tx_overflow <= '1';
+			end if;
 			if s_axis_udp_tx_tvalid='1' and s_axis_udp_tx_tlast ='1' then -- but if this is the last byte of the packet
 				tx_frame_length <= to_unsigned(1, tx_frame_length'length); -- ... reset the counter to 1
 			elsif tx_fifo_wr_en ='1' then -- if we are writing a byte in the fifo...
