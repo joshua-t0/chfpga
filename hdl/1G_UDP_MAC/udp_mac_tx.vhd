@@ -122,12 +122,12 @@ signal tx_src_sel: TX_SRC_SEL_TYPE;
 signal tx_reg: std_logic_vector(7 downto 0); -- Temporary storage for the outgoing TX byte to delay its transmission by one clock and align it with the FIFO latency
 
 
-signal tx_payload_length: UNSIGNED(15 downto 0):= (others=>'0'); -- Amount of data to transfer in UDP packet
+signal tx_payload_length: unsigned(15 downto 0):= (others=>'0'); -- Amount of data to transfer in UDP packet
 signal udp_length: std_logic_vector(15 downto 0); -- UDP packet length (including header), to be insterted in UDP Length field
 signal ip_length: std_logic_vector(15 downto 0); -- IP packet length (including header), to be insterted in IP Length field
 
 
-signal tx_ctr: UNSIGNED(15 downto 0) := (others=>'0'); -- General purpose counter. Indexes the header RAM.
+signal tx_ctr: unsigned(15 downto 0) := (others=>'0'); -- General purpose counter. Indexes the header RAM.
 --signal HEADER_BYTE: std_logic_vector(7 downto 0); -- General purpose counter. Indexes the header RAM.
 signal gmii_txd_out, gmii_txd_out2: std_logic_vector(7 downto 0); --
 signal gmii_txen_out: std_logic:='0'; --
@@ -136,36 +136,36 @@ signal gmii_txen_out: std_logic:='0'; --
 TYPE CRC_ACTION_TYPE IS (CRC_ACTION_INIT,CRC_ACTION_CALC, CRC_ACTION_INSERT);
 signal crc_action: CRC_ACTION_TYPE:=CRC_ACTION_INIT; -- Initialization is needed
 
-signal eth_crc: std_logic_vector(31 downto 0):=X"12345678"; -- Ethernet frame CRC32
-signal crc_calc: std_logic:='0'; --
-signal crc_init: std_logic:='0'; --
-signal crc_en: std_logic:='0'; --
+signal eth_crc: std_logic_vector(31 downto 0) := X"12345678"; -- Ethernet frame CRC32
+signal crc_calc: std_logic := '0'; --
+signal crc_init: std_logic := '0'; --
+signal crc_en: std_logic := '0'; --
 signal crc_out: std_logic_vector(7 downto 0); -- Ethernet CRC byte
-signal crc_insert: std_logic:='0'; --
+signal crc_insert: std_logic := '0'; --
 
 
 TYPE IP_CHECKSUM_ACTION_TYPE IS (IP_CHECKSUM_ACTION_INIT,IP_CHECKSUM_ACTION_CALC,IP_CHECKSUM_ACTION_HOLD, IP_CHECKSUM_ACTION_INSERT);
 signal ip_checksum_action: IP_CHECKSUM_ACTION_TYPE := IP_CHECKSUM_ACTION_INIT; -- Initialization is needed
 
-signal ip_checksum_reg: UNSIGNED(20 downto 0); -- IP header Checksum computation register.
-signal ip_checksum_out16: UNSIGNED(15 downto 0);
-signal ip_checksum_in,ip_checksum_out,ip_checksum_msb: std_logic_vector(7 downto 0);
-signal ip_checksum_is_msb : std_logic:='1';
-signal ip_checksum_calc: std_logic:='0'; --
-signal ip_checksum_init: std_logic:='1'; --
-signal ip_checksum_insert: std_logic:='0'; --
+signal ip_checksum_reg: unsigned(20 downto 0); -- IP header Checksum computation register.
+signal ip_checksum_out16: unsigned(15 downto 0);
+signal ip_checksum_in, ip_checksum_out, ip_checksum_msb: std_logic_vector(7 downto 0);
+signal ip_checksum_is_msb : std_logic := '1';
+signal ip_checksum_calc: std_logic := '0'; --
+signal ip_checksum_init: std_logic := '1'; --
+signal ip_checksum_insert: std_logic := '0'; --
 
 signal tx_fifo_dout: std_logic_vector(7 downto 0); -- TX FIFO output data
-signal tx_fifo_rd_en: std_logic:='0'; -- TX FIFO Read enable
-signal tx_fifo_wr_en: std_logic:='0'; -- TX FIFO Write enable
+signal tx_fifo_rd_en: std_logic := '0'; -- TX FIFO Read enable
+signal tx_fifo_wr_en: std_logic := '0'; -- TX FIFO Write enable
 signal tx_fifo_empty: std_logic; -- TX FIFO empty flag (on the read side)
 signal tx_fifo_full: std_logic; -- TX FIFO full flag
 
 signal s_axis_udp_tx_tready_int: std_logic;
 
 signal tx_frame_fifo_din, tx_frame_fifo_dout: std_logic_vector(17 downto 0); --
-signal tx_frame_length: UNSIGNED(15 downto 0) :=(0=>'1', others=>'0'); -- needed in case there is no reset
-signal tx_frame_length_plus_one: UNSIGNED(15 downto  0) ;
+signal tx_frame_length: unsigned(15 downto 0) := (0=>'1', others=>'0'); -- needed in case there is no reset
+signal tx_frame_length_plus_one: unsigned(15 downto  0) ;
 
 signal tx_frame_fifo_wr_en: std_logic :='0';
 signal tx_frame_fifo_rd_en: std_logic :='0';
@@ -177,7 +177,7 @@ signal remote_mac_addr_sel:  std_logic_vector(47 downto 0);
 signal remote_ip_base_addr_sel:  std_logic_vector(31 downto 0);
 signal remote_ip_base_port_sel:  std_logic_vector(15 downto 0);
 
-signal tx_sreg: std_logic_vector(47 downto 0):=(others=>'0'); -- 6 bytes
+signal tx_sreg: std_logic_vector(47 downto 0) := (others => '0'); -- 6 bytes
 
 signal send_arp: std_logic:='1';
 --signal ARP_TYPE: std_logic:='0';
@@ -231,13 +231,9 @@ frame_fifo0 : UDP_MAC_TX_FRAME_FIFO
 s_axis_udp_tx_tready_int <= (not tx_fifo_full) and (not tx_frame_fifo_full);
 s_axis_udp_tx_tready <= s_axis_udp_tx_tready_int;
 
---tx_frame_length_plus_one<=tx_frame_length+1;
---tx_frame_fifo_wr_en<='1' when ((s_axis_udp_tx_tvalid='1' and TX_FRAME='0') or (s_axis_udp_tx_tvalid='0' and TX_FRAME='0' and tx_frame_previous='1')) else '0';
-tx_fifo_wr_en <= '1' when (s_axis_udp_tx_tvalid = '1' and s_axis_udp_tx_tready_int = '1') else '0';
-tx_frame_fifo_wr_en <= '1' when (s_axis_udp_tx_tvalid = '1' and s_axis_udp_tx_tready_int = '1' and s_axis_udp_tx_tlast = '1') else '0';
---tx_frame_fifo_din(15 downto 0)<=std_logic_vector(tx_frame_length_plus_one) when s_axis_udp_tx_tvalid='1' else std_logic_vector(tx_frame_length);
+tx_fifo_wr_en <= s_axis_udp_tx_tvalid and s_axis_udp_tx_tready_int;
+tx_frame_fifo_wr_en <= s_axis_udp_tx_tvalid and s_axis_udp_tx_tready_int and s_axis_udp_tx_tlast;
 tx_frame_fifo_din(15 downto 0) <= std_logic_vector(tx_frame_length);
---tx_frame_fifo_din(17 downto 16)<=tx_port_offset when s_axis_udp_tx_tvalid='1' else tx_port_previous; -- If the END of frame is detected by seeing that s_axis_udp_tx_tvalid is no longer active, we want to use the last valid port number sent with the last data byte while s_axis_udp_tx_tvalid was '1'
 tx_frame_fifo_din(17 downto 16) <= tx_port_offset; -- If the END of frame is detected by seeing that s_axis_udp_tx_tvalid is no longer active, we want to use the last valid port number sent with the last data byte while s_axis_udp_tx_tvalid was '1'
 
 -- TX Frame FIFO management process
@@ -246,22 +242,23 @@ tx_frame_fifo_din(17 downto 16) <= tx_port_offset; -- If the END of frame is det
 --   2) know how many bytes to read from the FIFO
 tx_front_end : process(tx_clk, rst)
 	begin
-		if rst='1' then
-			tx_frame_length <= to_unsigned(1, tx_frame_length'length);
-			tx_overflow <= '0';
-		elsif rising_edge(tx_clk) then
+		if rising_edge(tx_clk) then
 			-- Determine if the transmit buffer has overflow. Now we are very conservative and assume there is an overflow if we ever have to throttle the data source.
 			-- which in practive should not be a problem
-			if s_axis_udp_tx_tready_int='0' then
-				tx_overflow <= '1';
-			end if;
-
+			--if s_axis_udp_tx_tready_int='0' then
+			--	tx_overflow <= '1';
+			--end if;
+			tx_overflow <= tx_overflow or tx_fifo_full or tx_frame_fifo_full;
 			if tx_fifo_wr_en ='1' then -- if we are writing a byte in the fifo...
 				tx_frame_length <= tx_frame_length + 1; --... increase the byte counter
 				if s_axis_udp_tx_tlast ='1' then -- but if this is the last byte of the packet
 					tx_frame_length <= to_unsigned(1, tx_frame_length'length); -- ... reset the counter to 1
 				end if;
 			end if;
+			if rst='1' then
+				tx_frame_length <= to_unsigned(1, tx_frame_length'length);
+				tx_overflow <= '0';
+			end if; --rst
 		end if; -- CLK
 	end process;
 
@@ -407,7 +404,7 @@ begin
 							ip_checksum_action <= IP_CHECKSUM_ACTION_CALC; -- Pre-Compute IP header checksum from the IP addresses
 						WHEN X"1"=>
 							-- FRAME FIFO word is now on the bus.
-							tx_payload_length<=UNSIGNED(tx_frame_fifo_dout(15 downto 0)); -- Store Frame length in register -- need it to obtain IP and UDP lengths, and to count bytes during the payload transmission
+							tx_payload_length<=unsigned(tx_frame_fifo_dout(15 downto 0)); -- Store Frame length in register -- need it to obtain IP and UDP lengths, and to count bytes during the payload transmission
 							-- Now store the destination port based on bit 17:16
 							case to_integer(unsigned(tx_frame_fifo_dout(17 downto 16))) is
 								when 0 =>
@@ -637,7 +634,7 @@ ip_checksum : process(gmii_txclk)
 					if ip_checksum_is_msb='1' then
 						ip_checksum_msb <= ip_checksum_in;
 					else
-						ip_checksum_reg <= ip_checksum_reg+("00000" & UNSIGNED(ip_checksum_msb) & UNSIGNED(ip_checksum_in));
+						ip_checksum_reg <= ip_checksum_reg+("00000" & unsigned(ip_checksum_msb) & unsigned(ip_checksum_in));
 					end if;
 				end if;
 				if ip_checksum_calc='1' or ip_checksum_insert='1' then
