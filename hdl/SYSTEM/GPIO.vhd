@@ -353,8 +353,8 @@ signal pwm_soft_reset: std_logic;
 
 
 -- Event counter and capture
-signal event_ctr: unsigned(31 downto 0);
-signal event_sample: unsigned(31 downto 0); -- Captured value
+signal event_ctr: unsigned(47 downto 0);
+signal event_sample: unsigned(47 downto 0); -- Captured value
 signal event_ctr_soft_reset: std_logic;
 
 signal event_sample_trig: std_logic;
@@ -379,8 +379,8 @@ signal bp_buck_sync_wr_dat: std_logic_vector(31 downto 0);
 signal bp_buck_sync_rd_dat: std_logic_vector(31 downto 0);
 signal bp_buck_sync_rd_dat_valid: std_logic;
 
-signal release_ctr_mon: std_logic_vector(7 downto 0);
-signal sync_ctr_mon: std_logic_vector(7 downto 0);
+--signal release_ctr_mon: std_logic_vector(7 downto 0);
+--signal sync_ctr_mon: std_logic_vector(7 downto 0);
 begin
 
 -----------------------------------------------------------------------------------
@@ -742,13 +742,19 @@ ts_target.ss                       <= unsigned(core_reg_wr_value(15)(27 downto 0
 ts_compare_enable                  <= core_reg_wr_value(15)(31);
 ts_force                           <= core_reg_wr_value(15)(30);
 -- Register 16 (_IRIGB_EVENT_CTR_ADDR)
-core_reg_rd_value(16) <= std_logic_vector(event_sample); -- (Read-only)
+core_reg_rd_value(16) <= std_logic_vector(event_sample(31 downto 0)); -- (Read-only)
 
--- Registers 17 and 18 (_BP_BUCK_SYNC_ADDR and _BP_BUCK_SYNC_ADDR2)
-bp_buck_sync_wr_dat                 <= core_reg_wr_value(17);
-core_reg_rd_value(17)(31 downto 16) <= bp_buck_sync_wr_dat(31 downto 16); -- readback
-core_reg_rd_value(17)(15 downto 8)  <= release_ctr_mon;
-core_reg_rd_value(17)(7 downto 0)   <= sync_ctr_mon;
+-- Registers 17 (_IRIGB_EVENT_CTR_ADDR2)
+core_reg_rd_value(17)(15 downto 0) <= std_logic_vector(event_sample(47 downto 32)); -- (read-only)
+core_reg_rd_value(17)(31 downto 16) <= (others=>'0'); -- (read-only)
+
+--core_reg_rd_value(17)(31 downto 16) <= bp_buck_sync_wr_dat(31 downto 16); -- readback
+--core_reg_rd_value(17)(15 downto 8)  <= release_ctr_mon; --unused
+--core_reg_rd_value(17)(7 downto 0)   <= sync_ctr_mon; --unused
+
+-- Registers 18 (_BP_BUCK_SYNC_ADDR2)
+
+bp_buck_sync_wr_dat                 <= core_reg_wr_value(18); -- write-only
 core_reg_rd_value(18)(31)           <= bp_buck_sync_rd_dat_valid; -- (Read-only)
 core_reg_rd_value(18)(30 downto 0)  <= bp_buck_sync_rd_dat(30 downto 0); -- (Read-only)
 
@@ -1156,8 +1162,10 @@ bp_buck_sync0: entity work.bp_buck_sync
 	port map (
 		sync => bp_buck_sync,
 		sync_mon => bp_buck_sync_mon,
-		release_ctr_mon => release_ctr_mon,
-		sync_ctr_mon => sync_ctr_mon,
+
+		-- Data interface
+		--release_ctr_mon => release_ctr_mon,
+		--sync_ctr_mon => sync_ctr_mon,
 		wr_dat => bp_buck_sync_wr_dat,
 		rd_dat => bp_buck_sync_rd_dat,
 		rd_dat_valid => bp_buck_sync_rd_dat_valid,

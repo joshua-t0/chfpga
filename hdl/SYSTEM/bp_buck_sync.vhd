@@ -6,11 +6,11 @@
 --
 -- Create Date:    2012-03-28
 -- Design Name:
--- Module Name:    I2C - Behavioral
+-- Module Name:    bp_buck_sync - Behavioral
 -- Project Name: CHIME
 -- Target Devices:
--- Tool versions: ISE 13.4
--- Description: Implements a I2C interface
+-- Tool versions: Vivado 2013.3
+-- Description: Generates a self-synchronizing distributed buck converter synchronization signal 
 --
 -- Dependencies:
 --
@@ -22,30 +22,38 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 use work.chFPGA_Package.all; -- Get all component definitions
 
--- Uncomment the following library declaration if instantiating
--- any Xilinx primitives in this code.
 library UNISIM;
 use UNISIM.VComponents.all;
 
 ------------ ENTITY DECLAREATION ------------------
 --! @brief
---! This module implements I^2C interface that is compliant with the I2C and PMBUs standard.
---! The interface operate at a fixed speed of about 100 KHz.
---! The I2C transaction can be performed in 1 or 2 phases:
---!  Phase 1: The I2C address is sent, and BYTES1 bytes are read or written depending on the R/W bit of the command
---!  Phase 2: if
+--! This module Generates a self-synchronizing distributed buck converter synchronization signal
+--
+-- A counter conts up continuously and is reset when  whenever a rising edge is seen or the target period is reached. 
+-- When half the periiod is reached (counter = tMARK), we force the sync line to zero, and release it when the period is reached (counter=tPERIOD).
+-- If a board sees that the sync line stayed high for too long (more than half the period), it will force the line low and will release it half a period later. 
+-- All the other boards will synchronize their counter to this board, and all boards will then do exactly the same thing.
+-- The frequency of the resulting sync line is determined by the frequency of the slowest board.
+--
+-- Data can be sent by modulating the position of the falling edge of the sync
+-- signal. The position of the rising edge, which is detected by the buck
+-- regulator, is not changed.
+--
 entity bp_buck_sync is
     port (
 		--Buck sync
 		sync: inout std_logic;
 		sync_mon: out std_logic;
 
+		-- Data interface - used to encode data by modulating the pulse width
+
 		data_en: in std_logic := '0';
 		wr_dat: in std_logic_vector(31 downto 0);
 		rd_dat: out std_logic_vector(31 downto 0);
 		rd_dat_valid: out std_logic;
-		release_ctr_mon: out std_logic_vector(7 downto 0);
-		sync_ctr_mon: out std_logic_vector(7 downto 0);
+		--release_ctr_mon: out std_logic_vector(7 downto 0);
+		--sync_ctr_mon: out std_logic_vector(7 downto 0);
+
 		-- System-level signals
 		clk10: in STD_LOGIC;
 		rst: in STD_LOGIC -- synchronous to clk10
@@ -73,7 +81,7 @@ signal sync_out_not: std_logic;
 signal is_one: std_logic;
 signal is_zero: std_logic;
 signal send_data: std_logic;
-signal release_ctr: unsigned(7 downto 0);
+--signal release_ctr: unsigned(7 downto 0);
 signal wr_bit: std_logic;
 signal sync_ctr: unsigned(7 downto 0);
 signal bit_ctr: unsigned(4 downto 0);
@@ -82,8 +90,8 @@ signal rd_dat_shreg: std_logic_vector(31 downto 0);
 
 begin
 sync_mon <= sync_in;
-release_ctr_mon <= std_logic_vector(release_ctr);
-sync_ctr_mon <= std_logic_vector(sync_ctr);
+--release_ctr_mon <= std_logic_vector(release_ctr);
+--sync_ctr_mon <= std_logic_vector(sync_ctr);
 
 -- Output buffers
 IOBUF0 : IOBUF
