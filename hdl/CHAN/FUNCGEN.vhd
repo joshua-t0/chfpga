@@ -35,7 +35,28 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --! @brief Implements a AXI4-Streaming function generator that either forwards
 --!     the input from the ADC or replaces it with user-programmable arbitrary
 --!     waveforms, noise, or packet test patterns.
---!
+--
+-- The data from the ADC is provided to `in_dat`, which is a 32-bit, non-blocking AXI4-Streaming
+-- bus. The four 8-bit samples are packed in the 32-bit data word, with the first sampled stored in
+-- the MSB. The bus contains the usual AXI-S TVALID and TLAST lines, and a 4-bit TUSER field
+-- containing the following information:
+--
+--   - Bit 0: Saturation flag for sample 0 (which is in bits 31-24 of TDATA)
+--   - Bit 1: Saturation flag for sample 1 (which is in bits 23-16 of TDATA)
+--   - Bit 2: Saturation flag for sample 2 (which is in bits 15-8 of TDATA)
+--   - Bit 3: Saturation flag for sample 3 (which is in bits 7-0 of TDATA)
+--
+--
+-- The output is a 32-bit non-blocking AXI4-Streaming bus. The four 8-bit samples are packed in the
+-- 32-bit data word, with the first sampled stored in the MSB. The bus contains the usual AXI-S TVALID and TLAST lines.
+--
+-- The output bus also contains a 4-bit TUSER field containing the following information:
+--
+--   - Bit 0: (TUSER_CAPTURE_BIT): Passed downstream to indicate to the PROBER that the data should be captured if continuous capture  mode is enabled
+--   - Bit 1: Unused (set to zero)
+--   - Bit 2: Unused (set to zero)
+--   - Bit 3: (TUSER_ADC_OVERFLOW_BIT): Set on the last word of a frame (i.e. valid only when TLAST=1) to indicate if an ADC saturation has occured on any sample of the frame.
+--
 entity FUNCGEN is
     PORT (
 

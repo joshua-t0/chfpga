@@ -31,7 +31,23 @@ use work.ip_package.all; -- Import definition of components used in this module
 --! \brief Scales the FFT output into (8+8) bits or (4+4) bits complex values
 --! by applying a constant or table-based complex gain, shifting the results,
 --! and truncate or round the value to the desired format.
---!
+--
+-- The scaler converts the (18+18) bits FFT output to (8+8) bit or (4+4) bits by applying a separate
+-- (16+16) bit complex gain to each frequency sample and applying a global binary scaling to all the
+-- results.
+--
+-- Overflows are detected during the scaling process, and saturations are applied if those occur.
+-- Saturation of negative values can be selected to occur at -7 (in 4-bit mode) or -15 (in 8-bit mode) instead of -8 or -16. , the later case being used to
+-- ensure symmetric statistics in the outgoing data.
+--
+-- Various rounding methods can be applied to the result.
+--
+-- SCALER has a statistics module that counts scaler overflows and ADC saturations. These stats use
+-- 16-bit counters and are gathered over a programmable number of frames so we always get counts
+-- that are taken over the same period of time.
+--
+-- FFT overflow are NOT handled by the statistics module.
+
 entity SCALER is
     generic (
         EIGHT_BIT_SUPPORT: BOOLEAN := FALSE --! Does the module support (8+8) bit output?
