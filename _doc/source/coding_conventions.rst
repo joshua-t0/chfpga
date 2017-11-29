@@ -6,10 +6,10 @@ VHDL Editor
 
 A good text editor with VHDL syntax highlighting is recommended.
 
-The internal Vivado text editor is not bad, but apart from basic syntax highlighting, it does not offer much coding help. However, Vivado can be configured to use any external editor.
+The internal Vivado text editor is not bad and is getting better as Vivado evolves. It does basic syntax highlighting, it does not offer much coding help. However, Vivado can be configured to use any external editor.
 
 
-The chFPGA code was written mainly using SublimeText (free, very-powerful, works on any platform), which we found provided a significant productivity boost. One of the best feature is the multi-cursor which allows for editing multiple lines at once, which happens a lot when working on port assignments in VHDL. The following Sublime Text packages were used:
+The chFPGA code was written mainly using Sublime Text (https://www.sublimetext.com/), which is free, works on any platform, and has a large ecosystem of plug-ins that are useful for VHDL source file and documentation editing. Sublime Text significant increases productivity. One of its best feature is the multi-cursor which allows for editing multiple lines at once, which happens a lot when working on port assignments in VHDL. The following Sublime Text packages were used:
 
    * VHDL: provides syntax highlighting of VHDL code
    * Alignment: (:kbd:`control-alt-a`): allows block of code to be aligned to ``<=``, ``:`` or other key characters with a single keystroke, making the code easier to read.
@@ -18,7 +18,7 @@ The chFPGA code was written mainly using SublimeText (free, very-powerful, works
 
 Sublime Text also has modules for writing and building reStructeredText, LaTeX documents, Vivado TCL files etc. This all-in-one character made it our daily editor.
 
-We have not found good, free VHDL linting tools. That would be very useful.
+What Sublime Text lacks is a VHDL linting tool, which would interactively show us syntax errors, unused variables etc. We have not found good, free VHDL linting tools. That would be very useful.
 Sigasi offer a non-free specialized HDL editor that seems very good and offers many advanced features (like linting), but we have not tried it out.
 
 Line width

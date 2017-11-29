@@ -32,13 +32,17 @@ use UNISIM.VComponents.all;
 use work.chFPGA_Package.all; -- Get all component definitions
 
 ------ FUNCGEN Entity -------------
+
 --! @brief Implements a AXI4-Streaming function generator that either forwards
 --!     the input from the ADC or replaces it with user-programmable arbitrary
 --!     waveforms, noise, or packet test patterns.
 --
+-- Interface
+-- ---------
+--
 -- The data from the ADC is provided to `in_dat`, which is a 32-bit, non-blocking AXI4-Streaming
--- bus. The four 8-bit samples are packed in the 32-bit data word, with the first sampled stored in
--- the MSB. The bus contains the usual AXI-S TVALID and TLAST lines, and a 4-bit TUSER field
+-- bus. The four 8-bit samples are packed in the 32-bit data word, with the first sample stored in
+-- the MSB. The input bus from the ADC contains the usual AXI-S TVALID and TLAST lines, and a 4-bit TUSER field
 -- containing the following information:
 --
 --   - Bit 0: Saturation flag for sample 0 (which is in bits 31-24 of TDATA)
@@ -56,6 +60,58 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --   - Bit 1: Unused (set to zero)
 --   - Bit 2: Unused (set to zero)
 --   - Bit 3: (TUSER_ADC_OVERFLOW_BIT): Set on the last word of a frame (i.e. valid only when TLAST=1) to indicate if an ADC saturation has occured on any sample of the frame.
+--
+-- Operation modes
+-- ---------------
+--
+-- The output of the FUNCGEN module is selected by the 3-bit `fn_sel` memory-mapped field. The supported modes are:
+--  - 0 / FN_ADC: Passes on the ADC input. The ADC overflow bits are aggregated througout the frame
+--    and the resulting TUSER_ADC_OVERFLOW_BIT TUSER but is provided on the last frame.
+--
+--  - 1 / FN_RAM: Outputs the RAM contents (2048 bytes, 512 words). TUSER_ADC_OVERFLOW_BIT is always zero.
+--
+--  - 2 / FN_NOISE: Outputs Pseudo-Random noise. TUSER_ADC_OVERFLOW_BIT is always zero. The noise
+--    generator is seeeded by the 8-bit A and B fields to allow each channelizer to have up to 65536
+--    different (presumamly uncorrelated) patterns.
+--
+--  - 3 / FN_FRAME_WORD_CTR_RAM_FLAGS: Counts frames and words, with programmable ADC overflow bit
+--    patterns. This mode is mostly used for testing. The output data is grouped in 32-bit words,
+--    containing a 23-bit frame count in the MSB followed bit 9-bit word count (0-511). This pattern
+--    does not generate nice data when splitted in 4-bytes (and even less when going through the
+--    FFT), but it ensures that consecutive frames will contain unique data when looked word-wise.
+--    In that mode, the ADC overflow flag of each sample is taken from the RAM bit 0.
+--
+--  - 4 / FN_FRAME8: Each sample is the last 8 bits of the current frame number.
+--    TUSER_ADC_OVERFLOW_BIT is always zero.
+--
+--  - 5 / FN_FRAME4: The most significant 4 bits of each sample is the last 4 bits of the current
+--    frame number. The lower 4 bits are zero. TUSER_ADC_OVERFLOW_BIT is always zero.
+--
+-- Waveform buffer
+-- ---------------
+--
+-- The waveform buffer consist of 4096 bytes that can be programmed in banks of 512 bytes. Only the
+-- first 2048 bytes are currently used to generate waveform in the FN_RAM mode.
+--
+-- NOTE: The new MMI interface supports writing all 4096 bytes in a single command, but the logic
+-- here does not support it and uses paging instead.
+--
+-- Noise generator
+-- ---------------
+--
+-- The noise is generated as a 32-bit output CRC generator fed by the 8-bit A and B signals (the
+-- 32-bit input is a combination of A, B, not A, and not B). These A and B parameters act as seed.
+-- The same A and B value will always result in the same sequence.
+--
+-- The 32-bit output values generated bu the CRC32 are simply distributed
+-- amongst the 4 samples.
+--
+-- We have not analyzed the entropy of this generator, nor how uncorrelated the outputs are, or
+-- whether some seed values are better than other. Is it ok to assume that 8-bit portions of the
+-- 32-bit word are uncorrelated with others? Will some seeds provide extremely bad entropy?
+--
+-- The conclusion here is that the noise generator is an experimental feature that might be useful
+-- but needs to be tested.
 --
 entity FUNCGEN is
     PORT (
@@ -87,6 +143,8 @@ constant FN_ADC                      : FN_TYPE:="000"; -- ADC input
 constant FN_RAM                      : FN_TYPE:="001"; -- Outputs RAM contents (2048 bytes, 512 words)
 constant FN_NOISE                    : FN_TYPE:="010"; -- noise
 constant FN_FRAME_WORD_CTR_RAM_FLAGS : FN_TYPE:="011"; -- Counts frames and words, and ADC flags is set from RAM bit 0 writes page 1 (bytes 512-1023)
+constant FRAME8                      : FN_TYPE:="100"; -- Current frame number in each 8-bit sample
+constant FRAME4                      : FN_TYPE:="101"; -- Current frame number in the upper 4-bit of each sample (lower bits are zero)
 
 signal byte_a: Byte;
 signal byte_b: Byte;
@@ -141,7 +199,7 @@ begin
 --! | CONTROL |  0  |   7  | soft_reset           |                               |
 --! |         |     |   6  | enable               | if '1', funcgen continuously generate frame. If '0', stop generating frame and resets the frame counter.|
 --! |         |     |  5:3 | ram_page             |  |
---! |         |     |  2:0 | fn_sel               |  Source selection |
+--! |         |     |  2:0 | fn_sel               |  Selects which 512-byte page is being accessed by the RAM address space of the MMI |
 --! |         |  1  |  7:0 | byte_a               | |
 --! |         |  2  |  7:0 | byte_b               | |
 --! | STATUS  |  0  |  7:0 | ramp_word_ctr        | |
@@ -336,6 +394,21 @@ funcgen_proc: process (clk)
 
                 when FN_FRAME_WORD_CTR_RAM_FLAGS =>
                     out_dat.TDATA <= to_slv(frame_ctr) & ctr;
+                    out_dat.TVALID <= send_frame;
+                    adc_overflow_flag <= ram_dout(0);
+
+                when FN_FRAME8 =>
+                    for i in 0 to 3 loop
+                        out_dat.TDATA(8*i+7 downto 8*i) <= to_slv(frame_ctr(7 downto 0));
+                    end loop;
+                    out_dat.TVALID <= send_frame;
+                    adc_overflow_flag <= ram_dout(0);
+
+                when FN_FRAME4 =>
+                    for i in 0 to 3 loop
+                        out_dat.TDATA(8*i+7 downto 8*i+4) <= to_slv(frame_ctr(3 downto 0));
+                        out_dat.TDATA(8*i+3 downto 8*i) <= "0000";
+                    end loop;
                     out_dat.TVALID <= send_frame;
                     adc_overflow_flag <= ram_dout(0);
 
