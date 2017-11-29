@@ -143,8 +143,8 @@ constant FN_ADC                      : FN_TYPE:="000"; -- ADC input
 constant FN_RAM                      : FN_TYPE:="001"; -- Outputs RAM contents (2048 bytes, 512 words)
 constant FN_NOISE                    : FN_TYPE:="010"; -- noise
 constant FN_FRAME_WORD_CTR_RAM_FLAGS : FN_TYPE:="011"; -- Counts frames and words, and ADC flags is set from RAM bit 0 writes page 1 (bytes 512-1023)
-constant FRAME8                      : FN_TYPE:="100"; -- Current frame number in each 8-bit sample
-constant FRAME4                      : FN_TYPE:="101"; -- Current frame number in the upper 4-bit of each sample (lower bits are zero)
+constant FN_FRAME8                      : FN_TYPE:="100"; -- Current frame number in each 8-bit sample
+constant FN_FRAME4                      : FN_TYPE:="101"; -- Current frame number in the upper 4-bit of each sample (lower bits are zero)
 
 signal byte_a: Byte;
 signal byte_b: Byte;
