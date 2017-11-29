@@ -1194,7 +1194,7 @@ clk200pipeproc: process(clk200)
 			status_vector => sfp_status_vector_int,
 			mmcm_locked => sfp_mmcm_locked,
 			reset_done => sfp_reset_done,
-
+			signal_detect => not ctrl_master_reset,
 			-- User TX interface
 			s_axis_udp_tx_tvalid => axis_udp_tx_tvalid,
 			s_axis_udp_tx_tdata  => axis_udp_tx_tdata,

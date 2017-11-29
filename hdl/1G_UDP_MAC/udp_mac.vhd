@@ -101,7 +101,8 @@ entity udp_mac is
 		sfp_rx_n : in std_logic := '1';
 		sfp_refclk_nobuf: in std_logic; -- Unbuffered 125 MHz SFP GTX reference clock reference clock for SGMII operation
 		sfp_refclk_buf: in std_logic; -- Buffered 125 MHz SFP GTX reference clock reference clock for SGMII operation
-
+		signal_detect: in std_logic := '1';
+		
 		-- Debugging/status signals
 
 		status_vector : out std_logic_vector(15 downto 0); -- Core status.
@@ -364,7 +365,7 @@ begin
 				reset_done    => reset_done_int,
 				-- clk200        => clk200,
 				clk125        => clk125,
-				signal_detect =>'1',
+				signal_detect => signal_detect,
 				reset         => rst
 				);
 
