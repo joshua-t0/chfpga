@@ -5,17 +5,22 @@ import time
 from xml.etree import ElementTree, ElementPath
 import textwrap
 
+# Works only with parsimonious 0.7.0 for now.
+# version 0.8.0 raises: AttributeError: 'LazyReference' object has no attribute 'match_core'
+
 from parsimonious.grammar import rule_grammar, RuleVisitor, evaluate_string, LazyReference
 from parsimonious.expressions import Literal, Sequence, Node
 from parsimonious.nodes import NodeVisitor
 
 
 class CaselessLiteral(Literal):
+    # __slots__ = ['literal']
     def _uncached_match(self, text, pos, cache, error):
         if text[pos:pos+len(self.literal)].lower() == self.literal.lower():
             #name = self.name or ("'" + self.literal + "'")
             name = 'literal'
             return Node(name, text, pos, pos + len(self.literal))
+            # return Node(self, text, pos, pos + len(self.literal)) # parsimonious 0.8.0
 
 
 class VHDLRuleVisitor(RuleVisitor):
@@ -100,7 +105,7 @@ class VHDLElement(ElementTree.Element):
 
     #def findafter(self, path):
 
-    def findwithtext(self, path, text, caseless=False):
+    def findwithtext(self,  text, path='.//*', caseless=False):
         if caseless:
             text = text.upper()
         for e in self.iterfind(path):
@@ -148,6 +153,11 @@ class VHDLElement(ElementTree.Element):
             is_end_before = False
             end = None
 
+        if isinstance(start, basestring):
+            start = self.find(start)
+        if isinstance(end, basestring):
+            end = self.find(end)
+
         it = self.iterskip()
         #print 'looking for start=', start
         for e in it:
@@ -159,10 +169,10 @@ class VHDLElement(ElementTree.Element):
                 yield e
                 for ee in it:
                     #print 'testing ', ee
-                    if  ee == end_before:
+                    if is_end_before and ee == end:
                         return
                     yield ee
-                    if ee is end_after:
+                    if ee is end:
                         for eee in ee.iter():
                             yield eee
                         return
@@ -174,7 +184,7 @@ class VHDLElement(ElementTree.Element):
         elem = self.find(path, namespaces)
         return default if elem is None else elem.subtext or default
 
-    def pp(self, level=0, collapsed_expr=['comment', 'target', 'name', 'expression', 'simple_expression', 'simple_name',  'association_element'], max_depth=0, width=80):
+    def pp(self, level=0, collapsed_expr=['comment', 'target', 'name', 'expression', 'simple_expression', 'simple_name',  'association_element', '_'], max_depth=0, width=80):
         #skip = ((not t.expr_name or (t.expr_name.startswith('_') and 1)) and t.children) or not t.text
         collapsed =  self.tag in collapsed_expr or (max_depth and level>=max_depth)
         #skip = bool(t.children) or not t.text
@@ -401,6 +411,7 @@ class VHDLParser(object):
         with open(vhdl_grammar_filename) as f:
             self.vhdl_grammar=f.read()
         self.vhdl_rules = None  # for now don't parse the rules, in case we don't need to
+        self._last_code = None
 
     def parse_vhdl_syntax(self):
         """ Convert the VHDL syntax file into Expression tree, which are objects that will recursively look at the VHDL code to recognize the language element and return a Parse Tree. """
@@ -409,14 +420,47 @@ class VHDLParser(object):
         t0 = time.time()
         print 'VHDL Parser: Processing VHDL syntax file'
         self.vhdl_rules, self.vhdl = VHDLRuleVisitor().parse(self.vhdl_grammar)
+        # self.resolve_all_rules() # This might be needed for parsimonious 0.8.0
         print 'VHDL Parser: finished processing VHDL rules. Loading and processing took %0.3f seconds.' % (time.time()-t0)
+
+    def resolve_all_rules(self):
+        """ Try to resolve any remaining unresolved cross-references.
+
+        These probably occur because our grammar has circular references. Parsimonious 0.8.0 solves rules in a different order, which might be why we don't have the problem  on 0.7.0 .
+        For some reasons, another pass can resolve them. But 0.8.0 still causes us problems: sime entity port comments are not moved with their port entry.
+
+        """
+        rules = self.vhdl_rules
+        visited_ids=set()
+        def resolve(r):
+            if id(r) in visited_ids:
+                    return 0
+            visited_ids.add(id(r))
+            members = list(getattr(r, 'members', []))
+            n = 0
+            for i,m in enumerate(members):
+                if isinstance(m, LazyReference):
+                    name = str(m)
+                    if name in rules:
+                        members[i]=rules[name]
+                        print '   Resolved ', name, 'to', rules[name]
+                        r.members=tuple(members)
+                        n += 1
+                else:
+                    n += resolve(m)
+            return n
+
+        n = 0
+        for name, rule in rules.items():
+            n += resolve(rule)
+        print 'VHDL Parser: Resolved %i additional references in second pass' % n
 
     def parse_to_node_tree(self, code, pos=0, rule_name='statements'):
         #  if code hash not in cache, parse
         self.parse_vhdl_syntax() # make sure the parser exist
         return self.vhdl_rules[rule_name].parse(code, pos=pos)
 
-    def parse(self, code, pos=None, line=None, rule_name='statements'):
+    def parse(self, code=None, pos=None, line=None, rule_name='statements'):
         """ Parse the VHDL code.
 
         Parameters:
@@ -438,6 +482,11 @@ class VHDLParser(object):
             associated elements.
 
         """
+        if code is None:
+            if self._last_code:
+                code = self._last_code
+            else:
+                raise ValueError('Please provide the soure code')
         if line is None and pos is None:
             pos = 0
         elif line is not None:
@@ -628,7 +677,7 @@ class VHDLParser(object):
                 name_list (list of str): list of port/generic identifier names. Is empty if the entry is for an isolated (sectionning) comment.
                 definition (str): rest of the port/generics definition
                 comments (str): Single newline-separated string containing both the head and tail comment for that interface element
-    """
+        """
         interface_list_node = entity_elem.find(list_name)
         if interface_list_node is None: return []
         interface_list = []
@@ -636,11 +685,11 @@ class VHDLParser(object):
             if elem.tag == element_name:
                 name_list = [ n.subtext for n in elem.findall('.//identifier_list//identifier')]
                 # names = ','.join(name_list)
-                colon = elem.findwithtext('.//literal', ':')
-                head_comment = elem.find('.//head_comment')
-                tail_comment = elem.find('.//tail_comment')
+                # colon = elem.findwithtext(':')
+                # head_comment = elem.find('.//head_comment')
+                # tail_comment = elem.find('.//tail_comment')
                 # tail_comment= elem[-1] if elem[-1].tag == 'block_comment' else None
-                definition = elem.textbetween(start_after=colon, end_before=tail_comment)
+                definition = elem.textbetween(start_after=elem.findwithtext(':'), end_before='.//tail_comment')
                 comments = '\n'.join(n.subtext for n in elem.findall('.//comment_text'))
                 interface_info = Namespace(names=name_list, definition=definition, comments=comments)
                 interface_list.append(interface_info)
@@ -793,7 +842,7 @@ class VHDLFiles(ElementTree.ElementTree):
             lines=textwrap.dedent('\n'.join(lines)).splitlines()  # dedent captured text
         return lines
 
-def pp(t, level=0, collapsed_expr=['target', 'name', 'expression', 'simple_expression', 'simple_name']):
+def pp(t, level=0, collapsed_expr=['target', 'name', 'expression', 'simple_expression', 'simple_name', '_']):
     skip = ((not t.expr_name or (t.expr_name.startswith('_') and 1)) and t.children) or not t.text
     collapsed =  t.expr_name in collapsed_expr
     #skip = bool(t.children) or not t.text
@@ -807,9 +856,9 @@ def pp(t, level=0, collapsed_expr=['target', 'name', 'expression', 'simple_expre
 
 
 if __name__ == '__main__':
-    # v = VHDLFiles()
-    v = VHDLParser()
-    print('parsing %s', sys.argv[1])
+    v = VHDLFiles()
+    # v = VHDLParser()
+    print('parsing %s'% sys.argv[1])
     p=v.parse_file(sys.argv[1])
-    # e = v.get_entity('FFT')
+    e = v.get_entity('GPIO')
     # f = v.get_file_with_entity('FFT')

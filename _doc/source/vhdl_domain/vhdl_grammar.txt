@@ -40,7 +40,7 @@ _ = (comment / spaces / newline)* # comment must be first to grab its leading sp
 #
 # Here is an example of a complex 'name':
 #    a.b(3)'LEFT(3 to 4)(x).test -> selected_name -> indexed_name->attribute_name->indexed_name->selected_name
-
+#    fn(x)(3 to 4): function_call->
 # List of keywords to be excluded as valid names
 # keyword = (expression_operator / shift_operator / adding_operator / multiplying_operator / direction / mode / 'IS' / 'LOOP' / 'THEN' / 'ELSE' / 'ELSIF') !~"\w+"  # keyword not followed by any character to eliminate partial matches
 # keyword = 'ABS' /  'ACCESS' /  'AFTER' /  'ALIAS' /  'ALL' /  'AND' /  'ARCHITECTURE' /  'ARRAY' /  'ASSERT' /  'ATTRIBUTE' /  'BEGIN' /  'BLOCK' /  'BODY' /  'BUFFER' /  'BUS' /  'CASE' /  'COMPONENT' /  'CONFIGURATION' /  'CONSTANT' /  'DISCONNECT' /  'DOWNTO' /  'ELSE' /  'ELSIF' /  'END' /  'ENTITY' /  'EXIT' /  'FILE' /  'FOR' /  'FUNCTION' /  'GENERATE' /  'GENERIC' /  'GROUP' /  'GUARDED' /  'IF' /  'IMPURE' /  'IN' /  'INERTIAL' /  'INOUT' /  'IS' /  'LABEL' /  'LIBRARY' /  'LINKAGE' /  'LITERAL' /  'LOOP' /  'MAP' /  'MOD' /  'NAND' /  'NEW' /  'NEXT' /  'NOR' /  'NOT' /  'NULL' /  'OF' /  'ON' /  'OPEN' /  'OR' /  'OTHERS' /  'OUT' /  'PACKAGE' /  'PORT' /  'POSTPONED' /  'PROCEDURE' /  'PROCESS' /  'PURE' /  'REM' /  'RANGE' /  'RECORD' /  'REGISTER' /  'REJECT' /  'RETURN' /  'ROL' /  'ROR' /  'SELECT' /  'SEVERITY' /  'SIGNAL' /  'SHARED' /  'SLA' /  'SLI' /  'SRA' /  'SRL' /  'SUBTYPE' /  'THEN' /  'TO' /  'TRANSPORT' /  'TYPE' /  'UNAFFECTED' /  'UNITS' /  'UNTIL' /  'USE' /  'VARIABLE' /  'WAIT' /  'WHEN' /  'WHILE' /  'WITH' /  'XNOR' /  xor_kwd ;
@@ -78,7 +78,7 @@ _ = (comment / spaces / newline)* # comment must be first to grab its leading sp
 	numeric_literal = physical_literal / abstract_literal # must test abstract_literal first to grab the unit name
 	physical_literal = abstract_literal _ unit_name # ! unit name excludes keywords to avoid taking binary operator as a unit (i.e. '1 to 2' would use 'to' as units for 1)
 	unit_name = name
-	abstract_literal = decimal_literal / based_literal
+	abstract_literal = based_literal / decimal_literal # based_literal must be before decimal_literal
 	integer = ~r"[\d_]+"
 	decimal_literal = ~r"\d+(\.\d+)?(E[+-]?\d+)?"i # simplified, does not support underlines, spaces or comments within the literal
 	based_literal = ~r"\d+#[^#]*#(\d+)?" # simplified. Grabs everything betwen '#'s (i.e. does not validate characters). Does not extract comments within litteral.
@@ -155,7 +155,8 @@ skip_to_semicolon = ~r"[^;]*"
 #---------------------------------------------
 	association_list = association_element (_ ',' _ association_element)*
 	association_element = (formal_part _ '=>' _)? actual_part
-	formal_part =  (function_name _ '(' _ formal_designator _ ')') / (type_mark _ '(' _ formal_designator _ ')') / (formal_designator _ index_constraint) / formal_designator  # formal designator must be last or it will prtially match the pervious ones.
+	# formal_part =  (function_name _ '(' _ formal_designator _ ')') / (type_mark _ '(' _ formal_designator _ ')') / (formal_designator _ index_constraint) / formal_designator  # formal designator must be last or it will prtially match the previous ones.
+	formal_part =  (function_name _ '(' _ formal_designator _ ')') / (type_mark _ '(' _ formal_designator _ ')') / formal_designator  # formal designator must be last or it will prtially match the previous ones.
 	formal_designator = formal_name # parsing cannot distinguish between generic_name / port_name / parameter_name
 	formal_name = name
 	actual_part = actual_designator / (function_name _ '(' _ actual_designator _ ')') / (type_mark _ '(' _ actual_designator _ ')')
@@ -187,7 +188,7 @@ interface_declaration = interface_signal_declaration / interface_constant_declar
 # _port_list = port_element ( _ ";" _ port_element)*
 interface_constant_declaration = ("CONSTANT" _)? identifier_list _ ':' _ ('IN' _)? subtype_indication (_ ":=" _ static_expression)?
 interface_signal_declaration = ("SIGNAL" _)? identifier_list _ ':' _ (mode _)? subtype_indication (_ ":=" _ static_expression)?
-mode = "IN" / "OUT" / "INOUT" / "BUF"
+mode = "INOUT" / "IN" / "OUT" /  "BUF"  # INOUT must be before IN
 
 static_expression = expression
 
