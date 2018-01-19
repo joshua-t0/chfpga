@@ -6,7 +6,7 @@
 .. figure:: ../images/channelizer.svg
     :width: 75%
 
-The Channelizer (CHAN) implements the main data acquisition pipeline for the chFPGA project. It recieves a data stream from the ADCs and passes it to the Function Generator sub-module (FUNCGEN). The Function Generator can pass the ADC data down the pipeline or it can insert used-defined packets. The Channelizer then performs a 2048-sample PFB-FFT on the data and forwards the result to a Scaler (SCALER) sub-module which applies complex gains on the resulting spectrum and scales it down to (4+4) bit complex representsation. The output stream is then resynchronized to an external output clock (typically a correlator or corner-turn subsystem clocks) through a FIFO (CHAN_FIFO).
+The Channelizer (CHAN) implements the main data acquisition pipeline for the chFPGA project. It recieves a data stream from the ADCs and passes it to the Function Generator sub-module (FUNCGEN). The Function Generator can pass the ADC data down the pipeline or it can insert used-defined packets or other test waveforms. The Channelizer then performs a 2048-sample PFB-FFT on the data using a CASPER FFT core, and forwards the result to a Scaler (SCALER) sub-module which applies complex gains on the resulting (18+18) bit complex spectrum and scales it down to (4+4) bit complex representation. The output stream is then resynchronized to an external output clock (typically a correlator or corner-turn subsystem clocks) through a FIFO (CHAN_FIFO). The `CHAN` module also allows data from the function generator our scaler output to be captured in periodic bursts and be sent over the control Ethernet link.
 
 The Channelizer consists of the following sub-modules:
 

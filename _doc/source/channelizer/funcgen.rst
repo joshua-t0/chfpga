@@ -13,7 +13,10 @@ Schematic
 =========
 
 .. figure:: ../images/funcgen.svg
-    :width: 50%
+    :width: 100%
+
+Sub-modules
+===========
 
 .. toctree::
     :titlesonly:

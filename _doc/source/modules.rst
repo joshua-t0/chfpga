@@ -5,6 +5,7 @@ chFPGA Modules
 .. toctree::
    :titlesonly:
 
+   System modules (clocks, GPIO, I2C etc.) <system/system>
    Data Acquisition Engine
    channelizer/chan
    Corner turn engine (Used in CHIME) <corner-turn/corner-turn>
