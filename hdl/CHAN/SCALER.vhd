@@ -32,7 +32,7 @@ use work.ip_package.all; -- Import definition of components used in this module
 --! by applying a constant or table-based complex gain, shifting the results,
 --! and truncate or round the value to the desired format.
 --
--- The scaler converts the (18+18) bits FFT output to (8+8) bit or (4+4) bits by applying a separate
+-- The scaler converts each of the two (even,odd) (18+18) bits FFT output to (8+8) bit or (4+4) bits by applying a separate
 -- (16+16) bit complex gain to each frequency sample and applying a global binary scaling to all the
 -- results.
 --
@@ -47,7 +47,16 @@ use work.ip_package.all; -- Import definition of components used in this module
 -- that are taken over the same period of time.
 --
 -- FFT overflow are NOT handled by the statistics module.
-
+--
+--
+-- In BYPASS mode, the last 8 bit of each of the four 18-bit numbers in the input (From MSB to LSB:
+-- Re Even, Im Even, Re Odd, Im Odd) are placed in the 32 bits of the output without any
+-- transformation. The CAPTURE and ADC_OVERFLOW user bits are passed on, but the SCALER overflow
+-- bits are cleared.
+--
+-- The BYPASS mode, if also enabled in the SCALER module, allows the FUNCGEN output to be passed
+-- directly to the output of the channelizer.
+--
 entity SCALER is
     generic (
         EIGHT_BIT_SUPPORT: BOOLEAN := FALSE --! Does the module support (8+8) bit output?
@@ -559,7 +568,10 @@ scaler_proc: process(clk)
         end if; -- clk
     end process;
 
-
+----------------------------------
+-- Statistics process
+----------------------------------
+--
 stat_proc: process(clk)
     variable scaler_overflow_incr: integer;
 

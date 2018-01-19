@@ -444,19 +444,19 @@ gensync: for i in 0 to NUMBER_OF_MEZZANINES-1 generate
 	--! internal 10 MHz used to lock the PLL. The 10 MHz is therefore approximately an
 	--! inverted version of the motherboard 10 MHz, plus or minus a small
 	--! delay.
-	--
+	--!
 	--! We want the SYNC signal edge to be timed relative to the rising edge
 	--! of the mezzanine reference to allow accurate positioning between the
 	--! ADC 1600 MHz clock rising edges. So we need to transfer an internal
 	--! sync signal clocked on the motherboard reference and generate an
 	--! external sync clocked on the external reference.
-
+	--!
 	--! The Mezz reference falls when the internal sync toggles in the rising
 	--! edge of the motherboard reference. So we can directly clock the
 	--! external sync signal on the next rising edge of the mezzanine
 	--! reference, which happens hald a cycle (50 ns) later. This should gives
 	--! us plenty of setup and hold time (50 us of each ideally).
-
+	--!
 	adcsync_proc: process(fmc_refclk_int(i))
 		begin
 			if rising_edge(fmc_refclk_int(i)) then -- rising edge happens 50 us after the adc_sync_pre toggle.

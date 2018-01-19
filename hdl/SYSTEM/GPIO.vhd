@@ -60,9 +60,6 @@ entity GPIO is
 		NUMBER_OF_GPU_LINKS: integer;
 		NUMBER_OF_CORRELATORS: INTEGER; --! Number of correlator blocks (CH_DIST+CORR+ACC) that are implemented if IMPLEMENT_CORR=TRUE
 		NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER; --! Number of antennas to be correlated for each frequency channel. This is hard coded for now. Determines how many antenna streams are fed to the CORR_BLOCK modules, and how many multipliers to implement in parallel in the CORR module.
-		-- IMPLEMENT_ANT: BoolArray(0 to NUMBER_OF_CHANNELIZERS_MAX-1);
-		-- IMPLEMENT_FFT: BoolArray(0 to NUMBER_OF_CHANNELIZERS_MAX-1);
-		-- IMPLEMENT_CORR: BoolArray(0 to NUMBER_OF_CORRELATORS_MAX-1); --! Indicates if the correlator blocks are implemented
 		NUMBER_OF_ADC_BOARDS: integer := 1;
 		NUMBER_OF_BUCK_SYNC_LINES: integer :=16;
 		BUCK_CLK_DIVIDE_FACTOR: INTEGER :=12; -- Buck frequency is 200MHz/BUCK_CLK_DIVIDE_FACTOR/16
@@ -72,11 +69,12 @@ entity GPIO is
 		);
 	port (
 		-- Control interface
+
 		ctrl_cmd_in_dat: in AXIS8_DAT_STRUCT; -- Command stream input, signals from master (Data, Valid, Last)
 		ctrl_cmd_in_rdy: out AXIS8_RDY_STRUCT; -- Command stream input, signals to master (Ready)
 		ctrl_rply_out_dat: out AXIS8_DAT_STRUCT; -- Reply stream output, signals to slave (Data, Valid, Last)
 		ctrl_rply_out_rdy: in AXIS8_RDY_STRUCT; -- Reply stream output,  signals from slave (Ready)
-		ctrl_clk: in  STD_LOGIC;
+		ctrl_clk: in  std_logic;
 		ctrl_rst: in std_logic;
 
 		-- IP Port setting
@@ -95,12 +93,17 @@ entity GPIO is
 		remote_ip_port1: out std_logic_vector(15 downto 0);
 
 		-- Buck control signals
+
 		buck_sync: out std_logic_vector(0 to NUMBER_OF_BUCK_SYNC_LINES-1);
+
+		-- ARM SPI interface
 
 		arm_spi_sck: in std_logic;
 		arm_spi_miso: out std_logic;
 		arm_spi_mosi: in std_logic;
 		arm_spi_cs_n: in std_logic;
+
+		-- Various unused signals, defined for testing
 
 		arm_irq_in: in std_logic;
 		arm_irq_out: out std_logic;
@@ -126,36 +129,44 @@ entity GPIO is
 		uart_tx_out: out std_logic;
 		uart_tx_oe: out std_logic;
 
-		-- FAN control signals
-		FAN_PWM: out STD_LOGIC; --! PWM control of the fan
-		FAN_TACH: in STD_LOGIC; --! Tachymeter input from the fan (two pulses per revolution). A debouncer cleans this signal before measuring the fan frequency.
-		FAN_TACH_DIV2: out STD_LOGIC; --! logic signal pulsing at half the fan rotation speed
+		-- FAN control signals (for on-board fan found on some evaluation boards)
 
-		-- ADC control signals
+		FAN_PWM: out std_logic; --! PWM control of the fan
+		FAN_TACH: in std_logic; --! Tachymeter input from the fan (two pulses per revolution). A debouncer cleans this signal before measuring the fan frequency.
+		FAN_TACH_DIV2: out std_logic; --! logic signal pulsing at half the fan rotation speed
+
+		-- ADC mezzanine control signals
+
 		ADC_RST: out std_logic_vector(0 to NUMBER_OF_ADC_BOARDS-1);
 		adc_pll_lock: in std_logic_vector(0 to NUMBER_OF_ADC_BOARDS-1); --! Lock signal for the ADC PLL on each mezzanine
 
-		-- LCD
-		LCD_DB: out  STD_LOGIC_VECTOR(7 downto 4);
-		LCD_E : out  STD_LOGIC;
-		LCD_RS : out  STD_LOGIC;
-		LCD_RW : out  STD_LOGIC;
+		-- LCD (on some evaluation boards)
+
+		LCD_DB: out  std_logic_vector(7 downto 4);
+		LCD_E : out  std_logic;
+		LCD_RS : out  std_logic;
+		LCD_RW : out  std_logic;
 
 		-- Backplane signals
-		---------------------
+
 		-- Slot sensing system (measures capacitance on the sense line to identify the slot number)
+
 		slot_probe: in std_logic_vector(1 downto 0); --! Signal used to probe the capacitance of the backplane slot-sense line
 		slot_sense: in std_logic_vector( 1 downto 0); --! Returns the logic level change in response to the probe edge, which is used to determine the board capacitance.
-		-- bp_time_in: in std_logic; -- IRIG-B time signal
-		-- bp_trig_in: in std_logic; -- Alternate source for the IRIG_B time signal
+
+		-- Backplane buck regulator synchronization signal
+
 		bp_buck_sync: inout std_logic;
 		bp_buck_sync_mon: out std_logic;
+
+		-- Backplane global interrupt line
 
 		bp_gpio_int_out: out std_logic;
 		bp_gpio_int_in: in std_logic;
 		bp_gpio_int_oe: out std_logic;
 
-		-- Communication link monitoring
+		-- UDP Communication link monitoring
+
 		udp_tx_frame : in std_logic;
 		udp_rx_frame : in std_logic;
 		udp_tx_overflow : in std_logic;
@@ -167,34 +178,39 @@ entity GPIO is
 		udp_stack_reset: out std_logic;
 		ctrl_master_reset: out std_logic;
 
-		-- bp_shuffle_lock: in std_logic_vector(0 to 1);
-
 		-- General signals
-		TRIG_ASYNC: out STD_LOGIC;
 
-		clk200: in STD_LOGIC; --! 200 MHz clock, used for many things
+		TRIG_ASYNC: out std_logic;
+
+		-- Clocks
+
+		clk200: in std_logic; --! 200 MHz clock, used for many things
 		clk200_reset: in std_logic; --!
-		clk10: in STD_LOGIC; --! 10 MHZ reference clock, in phase for every board in the system
-
+		clk10: in std_logic; --! 10 MHZ reference clock, in phase for every board in the system
 		dna_clk: in std_logic; --! DNA port clock (max 97 MHz)
 
-		-- Frame-based PWM signal
+		-- PWM signal
+
 		pwm_clk: in std_logic;
 		pwm_ctr_en: in std_logic; -- Active when the pwm counter is to be enabled.
 		pwm_reset: in std_logic;
 		pwm_out: out std_logic;
 
 		-- Event (Frame) counter
+
 		event_ctr_clk: in std_logic;
 		event_ctr_en: in std_logic;
 		event_ctr_inc: in std_logic;
 		event_ctr_reset: in std_logic;
 
+		-- User output selection
+
 		user_mux_in: in std_logic_vector(0 to NUMBER_OF_USER_SMA_SIGNALS-1); -- User selectable signals (typically PWM, 1PPS, SYNC, ?)
 		user_mux_out: out std_logic_vector(0 to 3); -- User selected signal
 		user_bit: out std_logic_vector(1 downto 0);
 
-		-- IRIG-B time decoder
+		-- IRIG-B time
+
 		irigb_mux_in: in std_logic_vector(0 to 3); -- IRIG-B time signals
 		irigb_before_target: out std_logic;
 		irigb_pps: out std_logic;
@@ -203,45 +219,47 @@ entity GPIO is
 		irigb_delay_reset: out std_logic;
 
 		-- Channelizer clock source selection
-		CHAN_CLK_SOURCE: out STD_LOGIC;
+
+		CHAN_CLK_SOURCE: out std_logic;
 
 		-- User-controlled global resets
-		USER_RESET: out STD_LOGIC;
-		ADCDAQ_RESET_ASYNC: out STD_LOGIC;
-		CHAN_CLK_RESET_ASYNC: out STD_LOGIC;
-		CHAN_RESET_ASYNC: out STD_LOGIC;
-		CORR_RESET_ASYNC: out STD_LOGIC;
-		BLINKER_RESET: out STD_LOGIC
+
+		USER_RESET: out std_logic;
+		ADCDAQ_RESET_ASYNC: out std_logic;
+		CHAN_CLK_RESET_ASYNC: out std_logic;
+		CHAN_RESET_ASYNC: out std_logic;
+		CORR_RESET_ASYNC: out std_logic;
+		BLINKER_RESET: out std_logic
 	);
 end GPIO;
 
 architecture Behavioral of GPIO is
 
-	attribute async_reg : string;
+attribute async_reg : string;
 
---signal CLK: STD_LOGIC;
+--signal CLK: std_logic;
 signal CLK_CTR: UNSIGNED(7 downto 0):=(others=>'0'); -- Divides the ADC clock by up to 255
-signal CE: STD_LOGIC:='0';
+signal CE: std_logic:='0';
 
-signal firmware_timestamp: STD_LOGIC_VECTOR(31 downto 0);
-signal USER_DATA_VALID: STD_LOGIC;
+signal firmware_timestamp: std_logic_vector(31 downto 0);
+signal USER_DATA_VALID: std_logic;
 
 --- Define Control word and its signals
 signal CONTROL_BYTES: ByteArray(0 to 50); -- default value set in the CMD_SLAVE
 signal STATUS_BYTES: ByteArray(0 to 37); -- default value set in the CMD_SLAVE
 
---signal CTRL_FLAG_ADC_RESET: STD_LOGIC;
-signal CTRL_FLAG_BUCK_SYNC_ENABLE: STD_LOGIC;
-signal CTRL_FLAG_ADCDAQ_RESET: STD_LOGIC;
-signal CTRL_FLAG_GLOBAL_TRIG: STD_LOGIC;
+--signal CTRL_FLAG_ADC_RESET: std_logic;
+signal CTRL_FLAG_BUCK_SYNC_ENABLE: std_logic;
+signal CTRL_FLAG_ADCDAQ_RESET: std_logic;
+signal CTRL_FLAG_GLOBAL_TRIG: std_logic;
 signal CTRL_FLAG_BUCK_CLK_DIV: UNSIGNED(7 downto 0);
-signal buck_sync_int: STD_LOGIC:='0';
+signal buck_sync_int: std_logic:='0';
 signal buck_phase: std_logic_vector(NUMBER_OF_BUCK_SYNC_LINES*4-1 downto 0);
 signal buck_phase_ctr: unsigned(3 downto 0):=(others=>'0'); -- Counts the 16 possible phasess. Initialized to avoid metata on '=' for simulations.
 
---signal CTRL_FLAG_TEST: STD_LOGIC_VECTOR(3 downto 0);
---signal CHAN_RESET_ASYNC: STD_LOGIC;
---signal CORR_RESET_ASYNC: STD_LOGIC;
+--signal CTRL_FLAG_TEST: std_logic_vector(3 downto 0);
+--signal CHAN_RESET_ASYNC: std_logic;
+--signal CORR_RESET_ASYNC: std_logic;
 
 -- ARM-SPI interface
 	signal spi_addr, spi_rdat, spi_wdat: std_logic_vector(31 downto 0) := (others => '0');
@@ -271,8 +289,8 @@ signal buck_phase_ctr: unsigned(3 downto 0):=(others=>'0'); -- Counts the 16 pos
 
 -- Fan related signals
 signal FAN_TACH_CTR: UNSIGNED(16 downto 0); --! the length of this counter sets the number of clk200 cycles  the debouncing waits before deciding that the state is stable
-signal FAN_TACH_TARGET: STD_LOGIC :='0'; --!
-signal FAN_TACH_DIV2_INT: STD_LOGIC :='0';
+signal FAN_TACH_TARGET: std_logic :='0'; --!
+signal FAN_TACH_DIV2_INT: std_logic :='0';
 
 signal slot_probe_dly: std_logic_vector(1 downto 0);
 signal slot_sense_ctr: slv8_array( 1 downto 0);
@@ -855,9 +873,9 @@ irigb_ctr_proc: process(clk200)
 		end if;
 	end process;
 
------------------------
--- Event counter capture
------------------------
+--------------------------------
+-- Event (frame) counter capture
+--------------------------------
 --! On the rising edge of event_sample_trig, we arm the trigger. When the end
 --! of frame is detected, we enable the sampling to capture the frame counter
 --! and the timestamp on the first sample of the nest frame. The capture is
@@ -932,9 +950,9 @@ user_mux_out(3) <= user_mux_in(to_integer(unsigned(user_mux_source(3))));
 USRACCESS_V6: if FPGA_SERIES_LIST(PLATFORM_ID)=6 generate
 	USR_ACCESS0: USR_ACCESS_VIRTEX6
 		port map(
-			CFGCLK=>open,--1-bit Configuration Clock output
-			DATA=>firmware_timestamp,--32-bit Configuration Data output
-			DATAVALID=>USER_DATA_VALID--1-bit Active high data validoutput
+			CFGCLK    => open,--1-bit Configuration Clock output
+			DATA      => firmware_timestamp,--32-bit Configuration Data output
+			DATAVALID => USER_DATA_VALID--1-bit Active high data validoutput
 			);
 end generate;
 
@@ -942,9 +960,9 @@ end generate;
 USRACCESS_7: if FPGA_SERIES_LIST(PLATFORM_ID)=7 generate
 	USR_ACCESS0: USR_ACCESSE2
 		port map(
-			CFGCLK=>open,--1-bit Configuration Clock output
-			DATA=>firmware_timestamp,--32-bit Configuration Data output
-			DATAVALID=>USER_DATA_VALID--1-bit Active high data validoutput
+			CFGCLK    => open, --1-bit Configuration Clock output
+			DATA      => firmware_timestamp, --32-bit Configuration Data output
+			DATAVALID => USER_DATA_VALID --1-bit Active high data validoutput
 			);
 end generate;
 
@@ -960,6 +978,7 @@ dna0 : DNA_PORT
 		SHIFT => dna_shift -- 1-bit input: Active high shift enable input.
 	);
 
+-- Read the 57-bit DNA
 dna_proc: process(dna_clk)
 	begin
 		if rising_edge(dna_clk) then
@@ -1079,7 +1098,7 @@ buckproc: process(clk200)
 	end process;
 
 ------ Fan process  ------------------
---! Debounce the fan tachometer sigal
+--! Debounce the fan tachometer signal
 --! Implements the ML605 Tachometer readout with debouncing and provides a logic signal toggling at half the fan rotation frequency.
 --! The tachometer signal pulses twices a revolution, but each pulse is very noisy.
 --! This process implements some basic debouncing so we can read the rotation speed correctly using the general frequency counter
@@ -1124,7 +1143,6 @@ FAN_TACH_DIV2<=FAN_TACH_DIV2_INT;
 FAN_PWM <='1'; -- Fan is always operating at 100% speed
 
 ------ PWM generator process  ------------------
-
 pwm_out <= pwm_out_int;
 pwm_proc: process(pwm_clk)
 	begin

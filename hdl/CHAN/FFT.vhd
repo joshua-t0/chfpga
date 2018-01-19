@@ -33,7 +33,30 @@ use UNISIM.VComponents.all;
 --! @brief Wraps a CASPER channelizer (Typically a FFT or a variant) with a CASPER-compatible SYNC generator and delay line to accept a AXI4-STREAMING input and output bus.
 --! @details
 --!
+-- The FFT input is an Non-blocking, AXI4-Streaming bus with 32 bits of data and 4 bits of user-
+-- defined bits. The 4 bytes correspond to four 8-bit signed data samples, with the first sample
+-- being placed in the most significant byte.
+--
+-- The FFT is a PFB-FFT from CASPER.  The FFT has a duplex architecture that can process two complex
+-- input samples per clock. The FFT is done across frames consisting of 2048 real samples presented
+-- as 512 32-bit words. The PFB applies windowing across 4 consecutive frames.
+
+-- Since the input data is real, the negative frequency bins are the
+-- complex conjugate of the corresponding positive frequency bins.  The FFT is designed to taka
+-- advantage of this, and discards the negative frequencies in exchange of the ability to to process
+-- twice as many samples per clock. Overall, the FFT processes 4 real samples per clock.
+--
+-- The FFT outputs two (18+18) bits complex numbers per clock, for a total of 1024 frequency bins
+-- emitted during the 512-clock frame. An Even-numbered and Odd-numbered bin is provided on each
+-- clock. Those a re packed onto a 72-bit-wide non-blocking AXI-Streaming bus. The order of the
+-- 18-bit signed numbers emitted on each clock is, from MSB to LSB: Re Even, Im Even, Re Odd and Im Odd.
+--
+-- In BYPASS mode, each of the 8 bit of the input are signed extended to 18 bits and are passed to
+-- the output in the same order. The TUSER bits from the input are also passed directly to the output.
+--
+--
 --! Generating the CASPER FFT block
+--
 --! -------------------------------
 --!
 --! The following system setup was used:

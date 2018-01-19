@@ -44,7 +44,7 @@ use work.ip_package.all; -- Import definition of components used in this module
 --!
 --!
 --! The purpose of this module is to aggregate into a single stream the data
---! from all channelizers but for a subset of frequency bins.
+--! from all channelizers but for a subset of frequency bins, and combine those in packets with headers and flags.
 --!
 --! Both the input and outputs operate on a single clock. Since new data
 --! (header, flags) is added to the frame, the clock  must be fast enough to
@@ -61,14 +61,33 @@ use work.ip_package.all; -- Import definition of components used in this module
 --! The output bus is blocking and contains a frame header in addition to the filtered and reordered data.
 --! A blocking interface was implemented for the output bus because it will eventually be connected to data shuffling logic (MGTs) which might require transmission of data in bursts without interruption.
 --!
---! The module assumes:
---!   - The channelizers streams operate on a single clock and are aligned
---!   - All antenna processor output buses operate on a single common clock (the firmware does not yet support multi-phase clocks (which might be good to reduce maximum current spikes on the FPGA supplies))
---!
+--! The module assumes that channelizers input streams operate on a single clock and are frame-aligned.
+--
+-- Bypass mode
+-- -----------
+--
+-- In BYPASS mode all bins are selected (both the odd and even), but data comes only from one or two input lanes depending whether we operate in 4-bit or 8-bit mode.
+--
+-- In 4 bit mode, the 4 MSB bits of each byte of input lanes LANE_NUMBER*2 and LANE_NUMBER*2+1 are
+-- packed into a 32 bit output word. This allows the data from 16 channelizers to be packed into 8
+-- bin selectors, allowing the data to be ultimately passed to the GPU links.
+--
+-- In the case of the 4-bit mode, if the FFT is enabled, it make sense to enable the SCALER to scale the FFT output
+-- to (4+4) bit complex values. That allows the sending of the pre-corner-turn channelized data to
+-- the GPUs. If the FFT is bypassed, The SCALER could be configured to scale each of the 8-bit samples into four 4-bit values.
+--
+-- If the bypass is use din the 8 bit mode, the 32-bit word from the input lanes LANE_NUMBER is sent directly to the output.
+-- 16 bin selectors can therefore forward the 8-bit raw data from all 16 channelizers, but only 8 of those 16 streams can be ultimately forwarded through the 8 GPU links.
+--
+-- Packet headers are sent normally in bypass mode, but the `send_flags` value is ignored and no
+-- data, frame or packet flags are sent  (the data and frame flags are still collected in the FIFOs
+-- but they are never read out).
+--
 --!  Word selection map format
---!  ------------------
---! 	Each bit in the RAM block identifies whether a 32-bit word received from the antenna processor module is to be kept or not.
---!   The mapping is as follows:
+--!  -------------------------
+--!
+--!  Each bit in the RAM block identifies whether a 32-bit word received from the antenna processor module is to be kept or not.
+--!  The mapping is as follows:
 --!
 --!   Byte | bit | Flag for Word # | Time sample # | Frequency sample #
 --!   -----|-----|-----------------|---------------|--------------------
@@ -80,9 +99,6 @@ use work.ip_package.all; -- Import definition of components used in this module
 --!   ...  | ... | ...             |               | ...
 --!     63 |  7  | Word 511        | 2044-2047     | 1022-1023
 --!
---! 	If FFT is bypassed, each antenna processor word corresponds to 4 8-bit samples. One byte of the filter RAM enables 8 words or 32 samples. 64 bytes are required to set the filter flags for the whole 512 words/2048 sample frame.
---!
---!   If FFT is NOT bypassed, each antenna processor output word correspond to two frequency bins (two complex numbers, 8-bit Real + 8-bit Imag each). One byte of the filter RAM selects 16 frequency bins/ ^4 bytes are required to set the flags for the while 512 words/1024 frequency samples
 --!
 entity chan_bin_sel is
 	generic (
