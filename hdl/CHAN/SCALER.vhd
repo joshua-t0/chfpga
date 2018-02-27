@@ -173,7 +173,7 @@ signal stats_scaler_overflows: unsigned(15 downto 0);
 signal stats_adc_overflows: unsigned(15 downto 0);
 
 signal stats_capture: std_logic;
-signal stats_first: std_logic;
+signal stats_first_frame: std_logic;
 signal stats_ready: std_logic;
 
 signal delay_capture_ctr: unsigned(15 downto 0);
@@ -588,20 +588,23 @@ stat_proc: process(clk)
             if soft_reset='1' or reset='1' then
                 stats_ready <= '0';
                 stats_frame_ctr <= (0=>'1', others=>'0');
-                stats_first <= '1';
+                stats_first_frame <= '1';
             else
 
-                -- set stats_first at the beginning of each frame block
-                if stage2_tlast='1' then -- don't need to check tvalid. Overreset does not harm
-                    stats_frame_ctr <= stats_frame_ctr + 1;
-                    stats_first <= '0';
-                    if stats_frame_ctr = stats_frame_count then
-                        stats_first <= '1';
-                        stats_frame_ctr <= (0=>'1', others=>'0');
-                    end if;
-                end if;
 
                 if stage2_tvalid='1' then
+
+                    -- set stats_first_frame in the first sample of the first frame of each frame block
+                    stats_first_frame <= '0';
+                    if stage2_tlast='1' then
+                        stats_frame_ctr <= stats_frame_ctr + 1;
+                        if stats_frame_ctr = stats_frame_count then
+                            stats_first_frame <= '1';
+                            stats_frame_ctr <= (0=>'1', others=>'0');
+                        end if;
+                    end if;
+
+
                     -- Determine if how many scaler overflows we have on this sample
                     if stage2_overflow(1 downto 0)/="00" and stage2_overflow(3 downto 2)/="00" then
                         scaler_overflow_incr := 2;
@@ -612,16 +615,16 @@ stat_proc: process(clk)
                     end if;
 
                     -- Count scaler overflows
-                    if stats_first = '1' then
+                    if stats_first_frame = '1' then
                         scaler_overflow_ctr <= to_unsigned(scaler_overflow_incr, scaler_overflow_ctr'length);
                     elsif signed(scaler_overflow_ctr) /= -2 and signed(scaler_overflow_ctr) /= -1 then
                         scaler_overflow_ctr <= scaler_overflow_ctr + scaler_overflow_incr;
                     end if;
 
-                    -- Count ADC overflows
-                    if stats_first = '1' then
-                        adc_overflow_ctr <= (0=>stage2_tuser(TUSER_ADC_OVERFLOW_BIT), others=>'0');
-                    elsif signed(adc_overflow_ctr)/=-1 and stage2_tuser(TUSER_ADC_OVERFLOW_BIT)='1' then
+                    -- Count ADC overflows (counts how many frames have at least one overflow, as stated in the ADC_OVERFLOW flag thn TLAST=1)
+                    if stats_first_frame = '1' then
+                        adc_overflow_ctr <= (others=>'0'); -- This is the first sample of a frame, don't have to worry about the ADC_OVERFLOW flag yet
+                    elsif stage2_tlast='1' and stage2_tuser(TUSER_ADC_OVERFLOW_BIT)='1' and signed(adc_overflow_ctr)/=-1 then
                         adc_overflow_ctr <= adc_overflow_ctr + 1;
                     end if;
                 end if; -- if TVALID
@@ -630,7 +633,7 @@ stat_proc: process(clk)
                 -- Capture stats when requested
                 if stats_capture='0' then -- Clear the ready flags whenever trig is low
                     stats_ready <= '0';
-                elsif stage2_tvalid='1' and stats_first = '1' and stats_capture='1' then -- Capture stats of the last frame block when the new block begins
+                elsif stage2_tvalid='1' and stats_first_frame = '1' and stats_capture='1' then -- Capture stats of the last frame block when the new block begins
                     stats_scaler_overflows <= scaler_overflow_ctr;
                     stats_adc_overflows <= adc_overflow_ctr;
                     stats_ready <='1';
