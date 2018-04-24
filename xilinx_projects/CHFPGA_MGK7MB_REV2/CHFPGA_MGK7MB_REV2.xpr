@@ -1488,10 +1488,10 @@
           <ReportConfigOption Name="dummy_option" Type="string"/>
           <ReportConfigOutputOption Name="rpx" Type="string" Value=""/>
         </ReportConfig>
-        <ReportConfig Name="impl_Rev2_bitstream_report_webtalk_0" Spec="" RunStep="write_bitstream" ReportFile="usage_statistics_webtalk.html">
+        <ReportConfig Name="impl_Rev2_bitstream_report_webtalk_0" Spec="" RunStep="write_bitstream">
           <ReportConfigOption Name="dummy_option" Type="string"/>
         </ReportConfig>
-        <ReportConfig Name="impl_Rev2_bitstream_implementation_log_0" Spec="" RunStep="write_bitstream" ReportFile="chFPGA_MGK7MB_Rev2.vdi">
+        <ReportConfig Name="impl_Rev2_bitstream_implementation_log_0" Spec="" RunStep="write_bitstream">
           <ReportConfigOption Name="dummy_option" Type="string"/>
         </ReportConfig>
       </ReportStrategy>

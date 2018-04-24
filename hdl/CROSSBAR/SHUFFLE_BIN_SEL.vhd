@@ -329,7 +329,7 @@ constant FRAME_FLAGS_BLOCK: integer:= 2;
 constant FLUSH_BLOCK: integer      := 3;
 
 
-constant NEXT_INPUT_BIT: integer := 32; -- (NOT USED) Indicates that the next word should come from the next input
+--constant NEXT_INPUT_BIT: integer := 32; -- (NOT USED) Indicates that the next word should come from the next input
 constant COMBINE_WORDS_BIT: integer := 6; -- Indicates that the current word should be combined with the next one (enabled sending data flags block from the 1st crossbar, which occupy only 16 of the 32 bits).
 constant END_OF_PACKET_BIT: integer:= 7; -- Indicates this is the last word of a packet, and is therefore a packet status word. Overrides any other control bits.
 
@@ -668,9 +668,10 @@ fifo_wr_proc: process(clk)
 			flags_fifo_wr_en <= data_fifo_last_word_dly and data_fifo_wr_en_var; -- we write only when the last word is there, so it is guaranteed that we will have WORDS_PER_BIN words in the data FIFO. This way we don't have to check the valid flags (very stretched out 16:1 mux, very bad for timing).
 
 			for i in 0 to NUMBER_OF_INPUTS-1 loop
-				data_fifo_din(i)(NEXT_INPUT_BIT) <= data_fifo_last_word_dly; -- (not used) Tell the FIFO reader to increment the lane counteer because this is the last word of the bin
+				--data_fifo_din(i)(NEXT_INPUT_BIT) <= data_fifo_last_word_dly; -- (not used) Tell the FIFO reader to increment the lane counteer because this is the last word of the bin
 				if data_fifo_wr_en_packet_flags_dly='1' then
 					data_fifo_din(i) <= (others =>'0');
+					data_fifo_din(i)(31 downto 16) <= s_axis_tdata(i)(15 downto 0);
 					data_fifo_din(i)(NUMBER_OF_INPUTS-1 downto 0) <= not reverse_bits_and_dir(s_axis_tvalid and s_axis_tlast);
 				else
 					data_fifo_din(i)(31 downto 0) <= s_axis_tdata(i);
@@ -854,6 +855,15 @@ fifo_rd_proc: process(clk)
 	variable frame_header: SHUFFLE_FRAME_HEADER_STRUCT;
 	variable ix0, ix1: integer range 0 to NUMBER_OF_INPUT_LANES_PER_OUTPUT-1;
 	variable tdata: slv35_array(0 to NUMBER_OF_INPUT_LANES_PER_OUTPUT-1);
+	function or_reduce(a : slv35_array) return slv35 is
+	    variable ret : slv35 := (others => '0');
+		begin
+		    for i in a'range loop
+		        ret := ret or a(i);
+		    end loop;
+
+		    return ret;
+		end function or_reduce;
 	begin
 		if rising_edge(clk) then
 
@@ -936,7 +946,10 @@ fifo_rd_proc: process(clk)
 					tdata := data_fifo_dout(j*NUMBER_OF_INPUT_LANES_PER_OUTPUT to (j+1)*NUMBER_OF_INPUT_LANES_PER_OUTPUT - 1);
 					ix0 := to_integer(lane);
 					ix1 := to_integer(lane or "0001");
-					if combine_words='1' and COMBINE_DATA_FLAGS=TRUE then
+					if end_of_packet='1' then
+						m_axis_tdata_int(j) <= or_reduce(tdata);
+
+					elsif combine_words='1' and COMBINE_DATA_FLAGS=TRUE then
 						m_axis_tdata_int(j)(15 downto 0) <= tdata(ix0)(15 downto 0);
 						m_axis_tdata_int(j)(31 downto 16) <= tdata(ix1)(15 downto 0);
 					else
@@ -951,6 +964,7 @@ fifo_rd_proc: process(clk)
 					m_axis_tvalid_int <= (others => '1');
 					send_word_ctr <= send_word_ctr + 1;
 
+					-- When we reach the end of packet, we send the packet flags from the first lane and we ignore the rest, as we go back immediately in header mode.
 					if end_of_packet='1' then
 						m_axis_tlast_int <= (others => '1');
 						send_header_word_ctr <= (others=>'0');
