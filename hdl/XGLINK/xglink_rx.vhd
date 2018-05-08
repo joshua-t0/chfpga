@@ -167,6 +167,7 @@ begin
 			m_axis_rx_tdata_int <= tdata2;
 			m_axis_rx_tvalid_int <= tvalid2;
 			m_axis_rx_tlast_int <= '0';
+			m_axis_rx_terror_int <= '0';
 
 			case rx_state is
 				-- STANDBY State
@@ -194,7 +195,10 @@ begin
 						-- set CRC valid flag and tlast flag on second to last word
 							tvalid2 <= '0'; -- invalidates the CRC which is already in the data pipeline so it it not passed on to the output
 							m_axis_rx_tlast_int <= '1';
-							m_axis_rx_terror_int <= to_std_logic(crc_out /= tdata1);
+							if crc_out /= tdata1 then
+								m_axis_rx_terror_int <= '1';
+								m_axis_rx_tdata_int <= (others => '1'); -- force all ones on the last word (packet flags)
+							end if;
 							rx_state <= RX_STATE_SOF0;
 						elsif rx_data(31 downto 24) = X"CC" then -- end of frame with a CRC
 							rx_state <= RX_STATE_CRC_EOF1;
@@ -209,7 +213,10 @@ begin
 
 				when RX_STATE_CRC_EOF1 =>--Data block
 					m_axis_rx_tlast_int <= '1';
-					m_axis_rx_terror_int <= to_std_logic(crc_out /= (tdata1(23 downto 0) & rx_data(31 downto 24)));
+					if crc_out /= (tdata1(23 downto 0) & rx_data(31 downto 24)) then
+						m_axis_rx_terror_int <= '1';
+						m_axis_rx_tdata_int <= (others => '1'); -- force all ones on the last word (packet flags)
+					end if;
 					rx_state <= RX_STATE_SOF0;
 
 			end case;
