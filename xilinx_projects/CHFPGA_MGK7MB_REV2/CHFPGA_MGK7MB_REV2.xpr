@@ -38,13 +38,13 @@
     <Option Name="WTVcsLaunchSim" Val="0"/>
     <Option Name="WTRivieraLaunchSim" Val="0"/>
     <Option Name="WTActivehdlLaunchSim" Val="0"/>
-    <Option Name="WTXSimExportSim" Val="140"/>
-    <Option Name="WTModelSimExportSim" Val="140"/>
-    <Option Name="WTQuestaExportSim" Val="140"/>
-    <Option Name="WTIesExportSim" Val="140"/>
-    <Option Name="WTVcsExportSim" Val="140"/>
-    <Option Name="WTRivieraExportSim" Val="140"/>
-    <Option Name="WTActivehdlExportSim" Val="140"/>
+    <Option Name="WTXSimExportSim" Val="141"/>
+    <Option Name="WTModelSimExportSim" Val="141"/>
+    <Option Name="WTQuestaExportSim" Val="141"/>
+    <Option Name="WTIesExportSim" Val="141"/>
+    <Option Name="WTVcsExportSim" Val="141"/>
+    <Option Name="WTRivieraExportSim" Val="141"/>
+    <Option Name="WTActivehdlExportSim" Val="141"/>
     <Option Name="GenerateIPUpgradeLog" Val="TRUE"/>
     <Option Name="XSimRadix" Val="hex"/>
     <Option Name="XSimTimeUnit" Val="ns"/>
@@ -1488,10 +1488,10 @@
           <ReportConfigOption Name="dummy_option" Type="string"/>
           <ReportConfigOutputOption Name="rpx" Type="string" Value=""/>
         </ReportConfig>
-        <ReportConfig Name="impl_Rev2_bitstream_report_webtalk_0" Spec="" RunStep="write_bitstream">
+        <ReportConfig Name="impl_Rev2_bitstream_report_webtalk_0" Spec="" RunStep="write_bitstream" ReportFile="usage_statistics_webtalk.html">
           <ReportConfigOption Name="dummy_option" Type="string"/>
         </ReportConfig>
-        <ReportConfig Name="impl_Rev2_bitstream_implementation_log_0" Spec="" RunStep="write_bitstream">
+        <ReportConfig Name="impl_Rev2_bitstream_implementation_log_0" Spec="" RunStep="write_bitstream" ReportFile="chFPGA_MGK7MB_Rev2.vdi">
           <ReportConfigOption Name="dummy_option" Type="string"/>
         </ReportConfig>
       </ReportStrategy>
