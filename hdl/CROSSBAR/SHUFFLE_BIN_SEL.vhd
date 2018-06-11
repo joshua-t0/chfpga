@@ -308,7 +308,7 @@ signal number_of_input_words_per_bin: unsigned(6 downto 0); --! number of words 
 signal number_of_input_frame_flags_words_per_frame: unsigned(2 downto 0); --! number of frame flags words in each frame. 2nd crossbar gets 1, 3rd crossbar gets 2 in shuffle256 and 4 in shuffle512
 signal number_of_input_data_flags_words_per_bin: unsigned(1 downto 0); --! number of data flags words for each bin. 2nd crossbar gets 1 (half filled, use COMBINE_DATA_FLAGS=TRUE), 3rd crossbar gets 1 in shuffle256 and 2 in shuffle512
 signal frames_per_packet: unsigned(2 downto 0); --! number of input frames to put in one output frame
-
+signal zero_packet_flags: std_logic;
 
 signal word_ctr: unsigned(width(WORDS_PER_BIN_MAX)-1 downto 0); --! Counts the word in the current bin
 signal bin_ctr: unsigned(width(BINS_PER_FRAME_MAX)-1 downto 0); --! Counts the bin in the current frame
@@ -390,6 +390,7 @@ first_lane   <= unsigned(control_bytes(0)(3 downto 0));
 
 --! CONTROL Byte 1-2
 STREAM_ID <= (control_bytes(1)  & control_bytes(2)(7 downto 4)); --
+zero_packet_flags <= control_bytes(2)(3);
 number_of_input_frame_flags_words_per_frame <= unsigned(control_bytes(2)(2 downto 0));
 --! CONTROL Byte 2-3
 number_of_input_bins_per_frame <= unsigned(control_bytes(3)); -- used in IN_CLK domain
@@ -442,34 +443,34 @@ status_bytes(1 to 2) <= to_ByteArray(resize(reverse_bits_and_dir(data_fifo_overf
 --! Instantiates a memory-mapped interface to the control and status bytes
 CTRL_SLAVE0: entity work.CTRL_SLAVE
 	GENERIC MAP (
-		NUMBER_OF_control_bytes=>control_bytes'Length(1), --
-		NUMBER_OF_status_bytes=>status_bytes'Length(1), --
-		DEFAULT_control_bytes=> X"01_123_008_01_2F_00_00",
-		RAM_ADDR_WIDTH => 7,
-		RAM_LATENCY=>2,  --! Control port of RAM has an output register that creates a 2-clock latency total
-		USE_RAM_DOUT_RDY=> FALSE,
-		USE_FIFO => FALSE
+		NUMBER_OF_control_bytes => control_bytes'Length(1), --
+		NUMBER_OF_status_bytes  => status_bytes'Length(1), --
+		DEFAULT_control_bytes   => X"01_123_008_01_2F_00_00",
+		RAM_ADDR_WIDTH          => 7,
+		RAM_LATENCY             => 2,  --! Control port of RAM has an output register that creates a 2-clock latency total
+		USE_RAM_DOUT_RDY        => FALSE,
+		USE_FIFO                => FALSE
  	)
 
 	PORT MAP(
 		-- Control interface (command and reply stream buses)
-		CTRL_CMD_IN_DAT => CTRL_CMD_DAT,
-		CTRL_CMD_IN_RDY => CTRL_CMD_RDY,
+		CTRL_CMD_IN_DAT   => CTRL_CMD_DAT,
+		CTRL_CMD_IN_RDY   => CTRL_CMD_RDY,
 		CTRL_RPLY_OUT_DAT => CTRL_RPLY_DAT,
 		CTRL_RPLY_OUT_RDY => CTRL_RPLY_RDY,
-		CTRL_CLK => CTRL_CLK,
-		CTRL_RST => CTRL_RST,
+		CTRL_CLK          => CTRL_CLK,
+		CTRL_RST          => CTRL_RST,
 
-		CONTROL_BYTES => control_bytes,
-		STATUS_BYTES => status_bytes,
-		CLK => clk,
-		RST => rst,
+		CONTROL_BYTES     => control_bytes,
+		STATUS_BYTES      => status_bytes,
+		CLK               => clk,
+		RST               => rst,
 
-		RAM_DIN => mask_ram_ctrl_din,
-		RAM_DOUT => mask_ram_ctrl_dout,
-		RAM_ADDR => mask_ram_ctrl_addr,
-		RAM_WR_EN => mask_ram_ctrl_wr_en,
-		RAM_RD_EN => open -- the ram is always reading
+		RAM_DIN           => mask_ram_ctrl_din,
+		RAM_DOUT          => mask_ram_ctrl_dout,
+		RAM_ADDR          => mask_ram_ctrl_addr,
+		RAM_WR_EN         => mask_ram_ctrl_wr_en,
+		RAM_RD_EN         => open -- the ram is always reading
 	);
 
 
@@ -487,16 +488,16 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 --! We need to use a Block RAM (as opposed to distributed RAM) so we can have assymetric aspect ratio
 mask_ram0 : SHUFFLE_BIN_SEL_MASK_RAM
 	PORT MAP (
-		clka  => CTRL_CLK,
+		clka     => CTRL_CLK,
 		wea(0)   => mask_ram_ctrl_wr_en,
-		addra => mask_ram_ctrl_addr,
-		dina  => mask_ram_ctrl_din,
-		douta => mask_ram_ctrl_dout,
+		addra    => mask_ram_ctrl_addr,
+		dina     => mask_ram_ctrl_din,
+		douta    => mask_ram_ctrl_dout,
 
-		clkb  => clk,
-		web   => (others=>'0'), --! we never write from this side
-		dinb  => (others=>'0'), --! we never write from this side
-		addrb => std_logic_vector(resize(bin_ctr,10)), --! we strip one bit because we read flags in pairs
+		clkb     => clk,
+		web      => (others=>'0'), --! we never write from this side
+		dinb     => (others=>'0'), --! we never write from this side
+		addrb    => std_logic_vector(resize(bin_ctr,10)), --! we strip one bit because we read flags in pairs
 		doutb(0) => mask_ram_dout -- two flags for each bin number
 	);
 
@@ -541,7 +542,7 @@ DATA_FIFO_GEN: for i in 0 to NUMBER_OF_INPUTS-1 generate
 	BRAM_FIFO_GEN: if FIFO_TYPE_MAP(i)=0 and i MOD 2=0 generate
 		data_fifo0 : SHUFFLE_BIN_SEL_DATA_FIFO_BRAM
 			port map (
-				srst      => reset_all_reg,
+				srst     => reset_all_reg,
 				clk      => clk,
 
 				din      => data_fifo_din(i),
@@ -587,7 +588,7 @@ DATA_FIFO_GEN: for i in 0 to NUMBER_OF_INPUTS-1 generate
 		data_fifo_rd_en_int(i) <= data_fifo_rd_en(i) or not data_fifo_valid(i);
 		data_fifo0 : SHUFFLE_BIN_SEL_DATA_FIFO_DRAM
 			port map (
-				srst      => reset_all_reg,
+				srst     => reset_all_reg,
 				clk      => clk,
 
 				din      => data_fifo_din(i),
@@ -670,9 +671,21 @@ fifo_wr_proc: process(clk)
 			for i in 0 to NUMBER_OF_INPUTS-1 loop
 				--data_fifo_din(i)(NEXT_INPUT_BIT) <= data_fifo_last_word_dly; -- (not used) Tell the FIFO reader to increment the lane counteer because this is the last word of the bin
 				if data_fifo_wr_en_packet_flags_dly='1' then
+					-- Compose a new packet flag word
+					-- 31:16: bits 15:0 on incoming status flags
+					-- n : current status of input lane 'n'. Bit 'n' is set to '1' if:
+					--		- the lane has no data or is too short (tvalid=0)
+					--      - the lane has valid data but is too long (tvalid=1 and tlast=0)
+					--      - there was a GTX receive error (data bit 31 forced to 1)
+					--		- The frame or data fifo has overflowed in the past and data is no longer reliable
 					data_fifo_din(i) <= (others =>'0');
-					data_fifo_din(i)(31 downto 16) <= s_axis_tdata(i)(15 downto 0);
-					data_fifo_din(i)(NUMBER_OF_INPUTS-1 downto 0) <= not reverse_bits_and_dir(s_axis_tvalid and s_axis_tlast);
+					data_fifo_din(i)(31 downto 16) <= s_axis_tdata(i)(15 downto 0); -- shift left incoming packet flags by 16 bits
+					data_fifo_din(i)(i) <= to_std_logic(
+						s_axis_tvalid(i)='0' or
+						(s_axis_tvalid(i)='1' and s_axis_tlast(i)='0') or
+						s_axis_tdata(i)(31)='1' or
+						data_fifo_overflow_sticky(i)='1' or
+						flags_fifo_overflow_sticky='1');
 				else
 					data_fifo_din(i)(31 downto 0) <= s_axis_tdata(i);
 				end if;
@@ -947,8 +960,11 @@ fifo_rd_proc: process(clk)
 					ix0 := to_integer(lane);
 					ix1 := to_integer(lane or "0001");
 					if end_of_packet='1' then
-						m_axis_tdata_int(j) <= or_reduce(tdata);
-
+						if zero_packet_flags='1' then
+							m_axis_tdata_int(j) <= (others => '0');
+						else
+							m_axis_tdata_int(j) <= or_reduce(tdata);
+						end if;
 					elsif combine_words='1' and COMBINE_DATA_FLAGS=TRUE then
 						m_axis_tdata_int(j)(15 downto 0) <= tdata(ix0)(15 downto 0);
 						m_axis_tdata_int(j)(31 downto 16) <= tdata(ix1)(15 downto 0);
