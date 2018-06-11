@@ -164,6 +164,7 @@ signal data_fifo_dout:     slv36_array(0 to NUMBER_OF_LANES-1);
 signal data_fifo_wr_en:    slv(0 to NUMBER_OF_LANES-1);
 -- signal data_fifo_rd_en:    slv(0 to NUMBER_OF_LANES-1);
 signal data_fifo_empty:    slv(0 to NUMBER_OF_LANES-1);
+signal data_fifo_almost_full: slv(0 to NUMBER_OF_LANES-1);
 signal data_fifo_valid:    slv(0 to NUMBER_OF_LANES-1);
 signal data_fifo_overflow: slv(0 to NUMBER_OF_LANES-1);
 signal data_fifo_count:    slv10_array(0 to NUMBER_OF_LANES-1);
@@ -199,13 +200,14 @@ fifogen: for i in 0 to NUMBER_OF_LANES-1 generate
 	data_fifo_din(i)(35 downto 33) <= s_axis_tuser(i)(3 downto 1);
 	data_fifo_din(i)(32) <= s_axis_tlast(i);
 	data_fifo_din(i)(31 downto 0) <= s_axis_tdata(i);
-	data_fifo_wr_en(i) <= s_axis_tvalid(i);
+	data_fifo_wr_en(i) <= s_axis_tvalid(i) and ((not data_fifo_almost_full(i)) or s_axis_tlast(i));
 
 	fifo0: entity work.shuffle_crossbar_align_fifo
 		PORT MAP (
 			din          => data_fifo_din(i),
 			wr_en        => data_fifo_wr_en(i),
 			full         => open,
+			almost_full  => data_fifo_almost_full(i),
 			overflow     => data_fifo_overflow(i),
 
 			dout         => data_fifo_dout(i),
