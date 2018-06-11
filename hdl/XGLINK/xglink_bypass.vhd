@@ -56,7 +56,7 @@ entity xglink_bypass is
 		tx_fifo_overflow: out std_logic;
 		rx_fifo_overflow: out std_logic;
 		rx_frame_detect: out std_logic;
-		rx_err_ctr: out std_logic_vector(7 downto 0);
+		rx_err_ctr: out std_logic_vector(15 downto 0);
 		rx_max_frame: out std_logic_vector(12 downto 0);
 		rx_min_frame: out std_logic_vector(12 downto 0);
 

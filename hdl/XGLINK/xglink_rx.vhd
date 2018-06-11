@@ -63,7 +63,7 @@ entity xglink_rx is
 		reset_stats: in std_logic;
 		rx_fifo_overflow: out std_logic;
 		rx_frame_detect: out std_logic;
-		rx_err_ctr: out std_logic_vector(7 downto 0);
+		rx_err_ctr: out std_logic_vector(15 downto 0);
 		rx_max_frame: out std_logic_vector(12 downto 0);
 		rx_min_frame: out std_logic_vector(12 downto 0);
 
@@ -121,7 +121,7 @@ signal crc_out: slv32; -- Ethernet CRC word
 signal crc_out_int: slv32; -- Ethernet CRC word
 signal crc_en: std_logic;
 
-signal err_ctr_int: unsigned(7 downto 0); -- counts rx errors
+signal err_ctr_int: unsigned(15 downto 0); -- counts rx errors
 signal rx_max_frame_int: unsigned(12 downto 0); -- maximum detected frame size (max 8191)
 signal rx_min_frame_int: unsigned(12 downto 0); -- minimum detecteed frame size
 signal rx_word_ctr: unsigned(12 downto 0); -- counts rx errors on lane specified uin 'lane_sel'
@@ -197,7 +197,7 @@ begin
 							m_axis_rx_tlast_int <= '1';
 							if crc_out /= tdata1 then
 								m_axis_rx_terror_int <= '1';
-								m_axis_rx_tdata_int <= (others => '1'); -- force all ones on the last word (packet flags)
+								m_axis_rx_tdata_int(31) <= '1'; -- force '1' in the MSB of the last word (packet flags) to indicate an error (in case `terror` is not propagated)
 							end if;
 							rx_state <= RX_STATE_SOF0;
 						elsif rx_data(31 downto 24) = X"CC" then -- end of frame with a CRC
@@ -215,7 +215,7 @@ begin
 					m_axis_rx_tlast_int <= '1';
 					if crc_out /= (tdata1(23 downto 0) & rx_data(31 downto 24)) then
 						m_axis_rx_terror_int <= '1';
-						m_axis_rx_tdata_int <= (others => '1'); -- force all ones on the last word (packet flags)
+						m_axis_rx_tdata_int(31) <= '1'; -- -- force '1' in the MSB of the last word (packet flags) to indicate an error (in case `terror` is not propagated)
 					end if;
 					rx_state <= RX_STATE_SOF0;
 

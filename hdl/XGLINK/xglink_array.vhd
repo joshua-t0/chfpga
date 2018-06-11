@@ -212,7 +212,7 @@ signal rx_frame_ctr: u8_array(0 to NUMBER_OF_LANES-1);
 signal lane_sel: unsigned(4 downto 0);
 signal reset_stats: std_logic; -- resets the fifo overflow  and error counter
 signal bypass: std_logic_vector(NUMBER_OF_LANE_GROUPS-1 downto 0);
-signal err_ctr: slv8_array(0 to NUMBER_OF_LANES-1); -- counts rx errors on lane specified uin 'lane_sel'
+signal err_ctr: slv16_array(0 to NUMBER_OF_LANES-1); -- counts rx errors on lane specified uin 'lane_sel'
 signal rx_max_frame_length: slv13_array(0 to NUMBER_OF_LANES-1); -- counts rx errors on lane specified uin 'lane_sel'
 signal rx_min_frame_length: slv13_array(0 to NUMBER_OF_LANES-1); -- counts rx errors on lane specified uin 'lane_sel'
 
@@ -246,8 +246,8 @@ status_bytes(0)(1)          <= areset;
 status_bytes(0)(0)          <= rx_fifo_overflow_sticky(to_integer(lane_sel));
 
 -- STATUS byte 3-4
-status_bytes(1) <= (others=>'0');
-status_bytes(2 to 2) <= to_slv8_array(err_ctr(to_integer(lane_sel)));
+--status_bytes(1) <= (others=>'0');
+status_bytes(1 to 2) <= to_slv8_array(err_ctr(to_integer(lane_sel)));
 status_bytes(3 to 4) <= to_slv8_array(rx_max_frame_length(to_integer(lane_sel)));
 status_bytes(5 to 6) <= to_slv8_array(rx_min_frame_length(to_integer(lane_sel)));
 
@@ -408,14 +408,12 @@ lane_gen: for i in 0 to NUMBER_OF_LANES-1 generate
 
 			s_axis_tx_clk    => clk,
 
-			reset_stats => reset_stats_reg(i),
+			reset_stats      => reset_stats_reg(i),
 			tx_fifo_overflow => tx_fifo_overflow(i),
 
 			tx_data   => xglink_tx_data(LANE_TO_LINK_MAP(i)),
 			tx_header => xglink_tx_header(LANE_TO_LINK_MAP(i)),
 			tx_ready  => xglink_tx_ready(LANE_TO_LINK_MAP(i)),
-
-
 
 			clk       => xglink_tx_clk,
 
@@ -443,13 +441,12 @@ lane_gen: for i in 0 to NUMBER_OF_LANES-1 generate
 				m_axis_rx_terror => m_axis_rx_terror_int(i),
 				m_axis_rx_clk    => clk,
 
-				reset_stats => reset_stats_reg(i),
+				reset_stats      => reset_stats_reg(i),
 				rx_fifo_overflow => rx_fifo_overflow(i),
-				rx_frame_detect => rx_frame_detect(i),
-				rx_err_ctr => err_ctr(i),
-				rx_max_frame => rx_max_frame_length(i),
-				rx_min_frame => rx_min_frame_length(i),
-
+				rx_frame_detect  => rx_frame_detect(i),
+				rx_err_ctr       => err_ctr(i),
+				rx_max_frame     => rx_max_frame_length(i),
+				rx_min_frame     => rx_min_frame_length(i),
 				rst              => xglink_rx_reset(LANE_TO_LINK_MAP(i))
 			 );
 
