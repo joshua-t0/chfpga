@@ -143,8 +143,9 @@ constant FN_ADC                      : FN_TYPE:="000"; -- ADC input
 constant FN_RAM                      : FN_TYPE:="001"; -- Outputs RAM contents (2048 bytes, 512 words)
 constant FN_NOISE                    : FN_TYPE:="010"; -- noise
 constant FN_FRAME_WORD_CTR_RAM_FLAGS : FN_TYPE:="011"; -- Counts frames and words, and ADC flags is set from RAM bit 0 writes page 1 (bytes 512-1023)
-constant FN_FRAME8                      : FN_TYPE:="100"; -- Current frame number in each 8-bit sample
-constant FN_FRAME4                      : FN_TYPE:="101"; -- Current frame number in the upper 4-bit of each sample (lower bits are zero)
+constant FN_FRAME8                   : FN_TYPE:="100"; -- Current frame number in each 8-bit sample
+constant FN_FRAME4                   : FN_TYPE:="101"; -- Current frame number in the upper 4-bit of each sample (lower bits are zero)
+constant FN_RAM_NIBBLE4              : FN_TYPE:="110"; -- Current frame number in the upper 4-bit of each sample (lower bits are zero)
 
 signal byte_a: Byte;
 signal byte_b: Byte;
@@ -386,6 +387,19 @@ funcgen_proc: process (clk)
                     out_dat.TDATA <= ram_dout; -- Byte at address 0 is in the MSB
                     out_dat.TVALID <= send_frame;
                     adc_overflow_flag <= '0';
+
+                when FN_RAM_NIBBLE4 =>
+                    for i in 0 to 3 loop
+                        if frame_ctr(0)='0' then
+                            out_dat.TDATA(8*i+7 downto 8*i+4) <= ram_dout(8*i+3 downto 8*i);
+                        else
+                            out_dat.TDATA(8*i+7 downto 8*i+4) <= ram_dout(8*i+7 downto 8*i+4);
+                        end if;
+                        out_dat.TDATA(8*i+3 downto 8*i) <= "0000";
+                    end loop;
+                    out_dat.TVALID <= send_frame;
+                    adc_overflow_flag <= '0';
+
 
                 when FN_NOISE =>
                     out_dat.TDATA <= crc_out;
