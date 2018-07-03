@@ -122,6 +122,7 @@ entity shuffle_bin_sel is
 		m_axis_tdata:  out slv32_array(0 to NUMBER_OF_OUTPUTS-1);
 		m_axis_tvalid: out std_logic_vector(0 to NUMBER_OF_OUTPUTS-1);
 		m_axis_tlast:  out std_logic_vector(0 to NUMBER_OF_OUTPUTS-1);
+		m_axis_terror: out std_logic_vector(0 to NUMBER_OF_OUTPUTS-1);
 
 		-- lane_map: in slv4_array(0 to NUMBER_OF_INPUTS-1);
 		clk: in  std_logic; --! Input clock, common to all antenna processor buses
@@ -289,7 +290,7 @@ signal reset_all_reg: std_logic;
 
 --- Define Control word and its signals
 signal control_bytes: ByteArray(0 to 7); -- default value set in the CMD_SLAVE
-signal status_bytes: ByteArray(0 to 2); -- default value set in the CMD_SLAVE
+signal status_bytes: ByteArray(0 to 2);
 
 signal STREAM_ID: std_logic_vector(11 downto 0);
 signal user_reset: std_logic;
@@ -384,9 +385,6 @@ user_reset   <= control_bytes(0)(7); --! Used in both IN_CLK and OUT_CLK domain
 lane0_bypass <= control_bytes(0)(6);
 number_of_input_data_flags_words_per_bin <= unsigned(control_bytes(0)(5 downto 4));
 first_lane   <= unsigned(control_bytes(0)(3 downto 0));
--- header_capture_data_sel <= control_bytes(0)(5);
--- header_capture_lane_sel <= control_bytes(0)(4 downto 1);
--- header_capture_enable   <= control_bytes(0)(0);
 
 --! CONTROL Byte 1-2
 STREAM_ID <= (control_bytes(1)  & control_bytes(2)(7 downto 4)); --
@@ -632,23 +630,13 @@ fifo_wr_proc: process(clk)
 			reset_all <= rst or user_reset;
 			reset_all_reg <= reset_all;
 
+			-- Make sticky FIFO overflow flags
 			if overflow_reset='1' then
 				data_fifo_overflow_sticky <= (others=>'0');
 				flags_fifo_overflow_sticky <= '0';
 			else
-				-- for i in 0 to NUMBER_OF_INPUTS-1 loop
-				-- 	if i>=first_lane_reg and i<=last_lane_reg then
-						-- data_fifo_overflow_sticky(i) <= data_fifo_overflow_sticky(i) or data_fifo_overflow(i);
-					-- end if;
-				-- end loop;
-				-- if or_reduce(data_fifo_overflow)='1' then
-				-- 	data_fifo_overflow_sticky<='1';
-				-- end if;
 				data_fifo_overflow_sticky <= data_fifo_overflow_sticky or data_fifo_overflow;
 				flags_fifo_overflow_sticky <= flags_fifo_overflow_sticky or flags_fifo_overflow;
-				-- if flags_fifo_overflow='1' then
-				-- 	flags_fifo_overflow_sticky<='1';
-				-- end if;
 			end if;
 
 
@@ -672,20 +660,23 @@ fifo_wr_proc: process(clk)
 				--data_fifo_din(i)(NEXT_INPUT_BIT) <= data_fifo_last_word_dly; -- (not used) Tell the FIFO reader to increment the lane counteer because this is the last word of the bin
 				if data_fifo_wr_en_packet_flags_dly='1' then
 					-- Compose a new packet flag word
-					-- 31:16: bits 15:0 on incoming status flags
-					-- n : current status of input lane 'n'. Bit 'n' is set to '1' if:
-					--		- the lane has no data or is too short (tvalid=0)
-					--      - the lane has valid data but is too long (tvalid=1 and tlast=0)
-					--      - there was a GTX receive error (data bit 31 forced to 1)
-					--		- The frame or data fifo has overflowed in the past and data is no longer reliable
-					data_fifo_din(i) <= (others =>'0');
-					data_fifo_din(i)(31 downto 16) <= s_axis_tdata(i)(15 downto 0); -- shift left incoming packet flags by 16 bits
+					-- The new status consists of incoming status flags left-shifted by N+2 bits.
+					--   NOTE: The CHAN_BIT_SEL sets the packet flags to all zeros.
+					-- The lower bits n=0 to N-1 are set as follows:
+					-- bit n : current status of input lane 'n'. Bit 'n' is set to '1' if:
+					--		- the lane has no data or is too short relative to the reference frame (tvalid=0)
+					--      - the lane has valid data but is too long relative to the reference frame (tvalid=1 and tlast=0)
+					--      - there was a GTX receive error (data bit 31 of the last word forced to 1. That bit just was shifted out)
+					-- bit N : The data fifo has overflowed in the past and data is no longer reliable
+					-- bit N+1 : The frame fifo has overflowed in the past and data is no longer reliable
+					data_fifo_din(i) <= shift_left(s_axis_tdata(i), NUMBER_OF_INPUTS + 2);
+					--data_fifo_din(i)(31 downto 16) <= s_axis_tdata(i)(15 downto 0); -- shift left incoming packet flags by 16 bits
 					data_fifo_din(i)(i) <= to_std_logic(
 						s_axis_tvalid(i)='0' or
 						(s_axis_tvalid(i)='1' and s_axis_tlast(i)='0') or
-						s_axis_tdata(i)(31)='1' or
-						data_fifo_overflow_sticky(i)='1' or
-						flags_fifo_overflow_sticky='1');
+						s_axis_tdata(i)(31)='1'); -- CRC error
+					data_fifo_din(i)(NUMBER_OF_INPUTS) <= data_fifo_overflow_sticky(i);
+					data_fifo_din(i)(NUMBER_OF_INPUTS + 1) <= flags_fifo_overflow_sticky;
 				else
 					data_fifo_din(i)(31 downto 0) <= s_axis_tdata(i);
 				end if;
@@ -709,7 +700,9 @@ fifo_wr_proc: process(clk)
 			last_data_flags_word_number <= resize(number_of_input_data_flags_words_per_bin-1, last_word_number'length); --precompute static value
 			last_frame_number <= resize(frames_per_packet-1, last_frame_number'length); -- Pre-compute the number of the last frame to reduce combinatorial depth
 
-
+			--------------
+			-- SEQUENCER
+			--------------
 			-- Initialize the word/bin/block/frame counters when we are processing the packet
 			-- header. Located out of the "if s_axis_global_tvalid='1'" block to remove unnecessary
 			-- conditional logic and to remove load and routing on s_axis_global_tvalid='1'.
@@ -753,7 +746,7 @@ fifo_wr_proc: process(clk)
 					data_fifo_number_of_words <= last_word_number;
 
 					-- Count words, bins and frames
-					word_ctr <= word_ctr +1;
+					word_ctr <= word_ctr + 1;
 					if word_ctr = last_word_number then -- if last word in bin
 						data_fifo_last_word <= '1';
 						word_ctr <= (others=>'0');
@@ -777,17 +770,6 @@ fifo_wr_proc: process(clk)
 							end if;
 						end if;
 					end if;
-
-					-- Cumulate packet flags whenver a lane reaches its EOF
-					-- for i in 0 to NUMBER_OF_INPUTS-1 loop
-					-- 	-- if i<last_lane and s_axis_tvalid(i)='1' and s_axis_tlast(i)='1' then
-					-- 		-- new_packet_flags := new_packet_flags or s_axis_tdata(i);
-					-- 	if i<last_lane and s_axis_tvalid(i)='1' and s_axis_tlast(i)='1' then
-					-- 		new_packet_flags := new_packet_flags or s_axis_tdata(i);
-					-- 	end if;
-					-- end loop;
-					-- packet_flags <= new_packet_flags;
-
 				end if; -- if recv_header
 
 
@@ -885,11 +867,15 @@ fifo_rd_proc: process(clk)
 					m_axis_tdata(j) <= s_axis_tdata(BIN_SEL_NUMBER * NUMBER_OF_OUTPUTS + j);
 					m_axis_tvalid(j) <= s_axis_tvalid(BIN_SEL_NUMBER * NUMBER_OF_OUTPUTS + j);
 					m_axis_tlast(j) <= s_axis_tlast(BIN_SEL_NUMBER * NUMBER_OF_OUTPUTS + j);
+					m_axis_terror(j) <= '0';
 				end loop;
 			else
-				m_axis_tdata <= m_axis_tdata_int;
-				m_axis_tvalid <= m_axis_tvalid_int;
-				m_axis_tlast <= m_axis_tlast_int;
+				for j in 0 to NUMBER_OF_OUTPUTS - 1 loop
+					m_axis_tdata(j) <= m_axis_tdata_int(j);
+					m_axis_tvalid(j) <= m_axis_tvalid_int(j);
+					m_axis_tlast(j) <= m_axis_tlast_int(j);
+					m_axis_terror(j) <= or_reduce(m_axis_tdata_int(j)(NUMBER_OF_INPUTS-1 downto 0));
+				end loop;
 			end if;
 
 			first_lane_reg <= first_lane;
@@ -899,11 +885,9 @@ fifo_rd_proc: process(clk)
 			-- SYNCHRONOUS RESET : See the end of the block
 			-------------------------------------
 
-
-
-				-----------
-				-- SEND HEADER
-				-----------
+			-----------
+			-- SEND HEADER
+			-----------
 			if send_header='1' then
 				-- Initialize state variables that will be used for data transmission. We keep those outside if blocks to minimize logic depth.
 				-- combine_words <= '0';

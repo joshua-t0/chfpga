@@ -35,15 +35,14 @@ use work.ip_package.all; -- Import definition of components used in this module
 
 entity shuffle_crossbar is
 	GENERIC (
-		NUMBER_OF_INPUT_LANES: integer :=16; -- Number of input streams
-		NUMBER_OF_OUTPUT_LANES: integer :=8; -- Number of output streams
+		NUMBER_OF_INPUT_LANES: integer := 16; -- Number of input streams
+		NUMBER_OF_OUTPUT_LANES: integer := 8; -- Number of output streams
 		NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL: integer := 1;
-		EIGHT_BIT_SUPPORT: boolean:= FALSE; --
+		EIGHT_BIT_SUPPORT: boolean := FALSE; --
 		COMBINE_DATA_FLAGS: boolean := TRUE;
 		WORDS_PER_BIN_MAX: integer :=4; --! Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 16 words.
 		BINS_PER_FRAME_MAX: integer :=64; --! Maximum number of bins per frame
-		BIN_SEL_FIFO_TYPE_MAP: integer_16xN_array:= (0 to 15 => (0 to 3=>0, others=>0)) -- 0= Block RAM., 1=Dist RAM. By default, for every BIN_SEL, 10 FIFOS are made of BRAM and the rest is made of distributed RAM to maximize area utilization efficiency
-
+		BIN_SEL_FIFO_TYPE_MAP: integer_16xN_array := (0 to 15 => (0 to 3=>0, others=>0)) -- 0= Block RAM., 1=Dist RAM. By default, for every BIN_SEL, 10 FIFOS are made of BRAM and the rest is made of distributed RAM to maximize area utilization efficiency
 		);
 	PORT(
 
@@ -101,6 +100,7 @@ architecture Behavioral of shuffle_crossbar is
 	signal m_axis_tvalid_int: slv(0 to NUMBER_OF_OUTPUT_LANES-1);
 	signal m_axis_tdata_int: slv32_array(0 to NUMBER_OF_OUTPUT_LANES-1);
 	signal m_axis_tlast_int: slv(0 to NUMBER_OF_OUTPUT_LANES-1);
+	signal m_axis_terror_int: slv(0 to NUMBER_OF_OUTPUT_LANES-1);
 
 	-- Internal AXI-Streaming buses
 
@@ -144,6 +144,7 @@ architecture Behavioral of shuffle_crossbar is
 	signal input_frame_ctr: u8_array(0 to NUMBER_OF_INPUT_LANES-1);
 	signal align_frame_ctr: u8_array(0 to NUMBER_OF_INPUT_LANES-1);
 	signal output_frame_ctr: u8_array(0 to NUMBER_OF_OUTPUT_LANES-1);
+	signal packet_error_ctr: u16_array(0 to NUMBER_OF_OUTPUT_LANES-1);
 	-- signal enable_fifo_frame_detection: std_logic;
 	-- signal enable_align_frame_detection: std_logic;
 	-- signal enable_remap_frame_detection: std_logic;
@@ -178,7 +179,7 @@ architecture Behavioral of shuffle_crossbar is
 
 	--- Define Control word and its signals
 	signal CONTROL_BYTES: ByteArray(0 to 2 + (NUMBER_OF_INPUT_LANES+1)/2); -- default value set in the CMD_SLAVE
-	signal STATUS_BYTES: ByteArray(0 to 12); -- default value set in the CMD_SLAVE
+	signal STATUS_BYTES: ByteArray(0 to 14);
 
 	-- signal capture_word_ctr: unsigned(7 downto 0);
 	-- signal capture_word_number: unsigned(7 downto 0);
@@ -377,7 +378,7 @@ status_bytes(7)       <= frame_number_capture_reg(to_integer(lane_monitor_sel));
 status_bytes(8)       <= stream_id_capture_reg(to_integer(lane_monitor_sel));
 status_bytes(9 to 10) <= to_ByteArray(delay_capture_ref_word_ctr) when lane_monitor_sel=0 else to_ByteArray(delay_capture_word_ctr);
 status_bytes(11 to 12) <= to_ByteArray(fifo_count_mon_reg(to_integer(lane_monitor_sel)));
-
+status_bytes(13 to 14) <= to_ByteArray(packet_error_ctr(to_integer(lane_monitor_sel)));
 --! STATUS Byte 8
 -- STATUS_BYTES(8)<=resize(reverse_bits_and_dir(m_axis_fifo_tvalid),8);
 
@@ -736,9 +737,13 @@ bin_ctr_proc: process(clk)
 				if lane_monitor_reset='1' or rst_reg='1' then
 					output_frame_detection(i)<='0';
 					output_frame_ctr(i) <= (others=> '0');
+					packet_error_ctr(i) <= (others=> '0');
 				elsif m_axis_tvalid_int(i)='1' and m_axis_tlast_int(i)='1' then  -- if end of frame
 					output_frame_detection(i) <= '1';
 					output_frame_ctr(i) <= output_frame_ctr(i) + 1;
+					if signed(packet_error_ctr(i)) /= -1 then
+						packet_error_ctr(i) <= packet_error_ctr(i) + 1;
+					end if;
 				end if;
 			end loop;
 		end if; -- clk
@@ -780,6 +785,7 @@ begin
 			m_axis_tdata => m_axis_tdata_int(i*NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL to (i+1)*NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL-1),
 			m_axis_tvalid => m_axis_tvalid_int(i*NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL to (i+1)*NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL-1),
 			m_axis_tlast => m_axis_tlast_int(i*NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL to (i+1)*NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL-1),
+			m_axis_terror => m_axis_terror_int(i*NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL to (i+1)*NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL-1),
 
 			-- lane_map => lane_map,
 
