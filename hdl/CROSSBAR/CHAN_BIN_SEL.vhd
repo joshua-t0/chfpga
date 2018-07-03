@@ -1049,7 +1049,7 @@ fifo_rd_proc: process(clk)
 			end if;
 
 			-----------
-			-- SEND PACKET FLAGS
+			-- SEND PACKET FLAGS (all zeros)
 			-----------
 			if send_packet_flags='1' then
 				m_axis_tdata_int(31 downto 0) <= (others=>'0');
