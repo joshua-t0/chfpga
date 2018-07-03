@@ -187,35 +187,41 @@ begin
 						rx_state <= RX_STATE_SOF0;
 					end if;
 
-				when RX_STATE_DATA0 =>--Data block
-					-- Situations: 1) Get a control 0x87, meaning that the previous was the CRC
+				when RX_STATE_DATA0 => --Data block
 					if rx_header_valid='1' and rx_header = "10" then
 						tvalid1 <= '0';
+						-- Situation 1: We get a control 0x87 (End of frame with no data), meaning that the previous word was the CRC
 						if rx_data(31 downto 24) = X"87" then -- end of frame
-						-- set CRC valid flag and tlast flag on second to last word
-							tvalid2 <= '0'; -- invalidates the CRC which is already in the data pipeline so it it not passed on to the output
+							-- disable the tvalid of the CRC  that is already in the data pipeline so it it not passed on to the output
+							tvalid2 <= '0';
+							-- set the tlast flag on the data word before the CRC, whih is being presented at the output (m_axis_rx_tdata_int)
 							m_axis_rx_tlast_int <= '1';
+							-- If the CRC does not match, set error flags on the last word before the CRC, which is presented at the output
 							if crc_out /= tdata1 then
-								m_axis_rx_terror_int <= '1';
+								m_axis_rx_terror_int <= '1'; -- set the terror flag (a AXI-S TUSER bit)
 								m_axis_rx_tdata_int(31) <= '1'; -- force '1' in the MSB of the last word (packet flags) to indicate an error (in case `terror` is not propagated)
 							end if;
-							rx_state <= RX_STATE_SOF0;
-						elsif rx_data(31 downto 24) = X"CC" then -- end of frame with a CRC
+							rx_state <= RX_STATE_SOF0; -- wait for SOF. The SOF0 state will receive the second half of the EOF block, which the transmitter sets to zeros. It will therefore be skipped by the SOF state.
+						-- Situation 2: We get a control 0xCC (end of frame with data); The first 24 bits of the CRC are included in the first half (32 bits) of the block, and the last 8 bits are in the MSB of the second half.
+						elsif rx_data(31 downto 24) = X"CC" then -- end of frame with a CRC. Get the second word of the block, which contains some of the CRC
 							rx_state <= RX_STATE_CRC_EOF1;
+						-- This is an unsopported control code or genuine Idle. Treat as idle. Skip the second 32-bit word of the 64-bit control word.
 						else
 							rx_state <= RX_STATE_DATA_IDLE1;
 						end if;
 					end if;
 
-				when RX_STATE_DATA_IDLE1 =>--Data block
+				when RX_STATE_DATA_IDLE1 =>-- Skip the 2nd word of the command block
 					tvalid1 <= '0';
 					rx_state <= RX_STATE_DATA0;
 
-				when RX_STATE_CRC_EOF1 =>--Data block
+				when RX_STATE_CRC_EOF1 => -- Second half of the combined CRC/EOF block
+					-- set the tlast flag on the data word before the CRC, whih is being presented at the output (m_axis_rx_tdata_int)
 					m_axis_rx_tlast_int <= '1';
+					-- If the CRC does not match, set error flags on the last word before the CRC, which is presented at the output
 					if crc_out /= (tdata1(23 downto 0) & rx_data(31 downto 24)) then
-						m_axis_rx_terror_int <= '1';
-						m_axis_rx_tdata_int(31) <= '1'; -- -- force '1' in the MSB of the last word (packet flags) to indicate an error (in case `terror` is not propagated)
+						m_axis_rx_terror_int <= '1'; -- set the terror flag (a AXI-S TUSER bit)
+						m_axis_rx_tdata_int(31) <= '1'; -- force '1' in the MSB of the last word (packet flags) to indicate an error (in case `terror` is not propagated)
 					end if;
 					rx_state <= RX_STATE_SOF0;
 

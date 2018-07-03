@@ -263,23 +263,23 @@ begin
 					send_data <= "10";
 					tx_state <= TX_STATE_DATA0;
 
-				when TX_STATE_DATA0 =>--Data block
+				when TX_STATE_DATA0 => --Data block, first half
 					if tvalid2='1' and tlast2='1' then -- if this is the last word of the frame
 						tx_data <= tdata2;
 						tx_header <= "01";
 						send_data <= "00";
-						tx_state<=TX_STATE_DATA1_CRC; -- ...send the CRC on the second half
-					elsif tvalid2='1' and tvalid1='1' then -- If there are two words in the FIFO...
+						tx_state<=TX_STATE_DATA1_CRC; -- ...send the CRC on the second half of the block, then EOF in a new block
+					elsif tvalid2='1' and tvalid1='1' then -- If there are two words in the FIFO (we can't interrupt mid-block)...
 						tx_data <= tdata2;
 						tx_header <= "01";
 						-- tready <= '1';
 						send_data <= "11";
-						tx_state<=TX_STATE_DATA1; -- ... send the second word
-					else -- othewise we don't have enough data to fill a block so send an IDLE block
+						tx_state<=TX_STATE_DATA1; -- ... send the second word of the block
+					else -- othewise we don't have enough data to fill a block so send an IDLE block instead. The data is in the pipeline and will be sent later.
 						tx_data <= X"1E000000";
 						tx_header <= "10";
 						send_data <= "00";
-						tx_state<=TX_STATE_DATA1_IDLE;
+						tx_state <= TX_STATE_DATA1_IDLE; -- send second word of IDLE
 					end if;
 
 				when TX_STATE_DATA1 => -- Data block, second half
@@ -287,46 +287,46 @@ begin
 					tx_header <= "01";
 					if tlast2='1' then
 						send_data <= "00";
-						tx_state<=TX_STATE_CRC_EOF0; -- if this is the first half of the block, send the CRC in the second half of the block
+						tx_state<=TX_STATE_CRC_EOF0; -- send the CRC with the EOF on the next block
 					else
 						-- tready <= '1';
 						send_data <= "10";
-						tx_state<=TX_STATE_DATA0; -- if this is the first half of the block, send the CRC in the second half of the block
+						tx_state<=TX_STATE_DATA0; -- Next word will be the first half of a data block
 					end if;
 
-				when TX_STATE_DATA1_IDLE => -- Idle block, second half
+				when TX_STATE_DATA1_IDLE => -- Second half of Idle block (during data transmission)
 					tx_data <= X"00000000";
 					tx_header <= "10";
 					send_data <= "10";
 					tx_state <= TX_STATE_DATA0;
 					-- tready <= '1';
 
-				when TX_STATE_DATA1_CRC => -- CRC on the second half of the block
+				when TX_STATE_DATA1_CRC => -- Send CRC on the second half of the block
 					tx_data <= crc_out;
 					tx_header <= "01";
 					send_data <= "00";
-					tx_state<=TX_STATE_EOF0;
+					tx_state<=TX_STATE_EOF0; -- then send a EOF aligned with the beginning of next block
 
-				when TX_STATE_EOF0 =>--End of frame block, first half
-					tx_data <= X"87000000";
+				when TX_STATE_EOF0 => --End of frame block, first half
+					tx_data <= X"87000000"; -- Format: 0x87 T0 C0 C1 C2 C3 C4 C5 C6 C7. T0="0000000", and commands C0-C7 are IDLEs (0)
 					tx_header <= "10";
 					send_data <= "00";
 					tx_state<=TX_STATE_EOF1;
 
 				when TX_STATE_EOF1 =>--End of frame block, second half
-					tx_data <= X"00000000";
+					tx_data <= X"00000000"; -- Note: see format above. Second word is all zeros, so it won't trigger a SOF
 					tx_header <= "10";
 					send_data <= "00";
 					tx_state<=TX_STATE_STANDBY_IDLE0;
 
-				when TX_STATE_CRC_EOF0 =>-- Combined CRC and EOF block.
-					tx_data(31 downto 24) <= X"CC"; -- data block format:  D0 D1 D2 D3 T4 C5 C6 C7
+				when TX_STATE_CRC_EOF0 =>-- First half of a combined CRC and EOF block.
+					tx_data(31 downto 24) <= X"CC"; -- data block format: 0xCC D0 D1 D2 D3 T4 C5 C6 C7. D0-D4 is CRC, T4="0000", and C5-C7 are IDLEs (0)
 					tx_data(23 downto 0) <= crc_out(31 downto 8);
 					tx_header <= "10";
 					send_data <= "00";
-					tx_state<=TX_STATE_CRC_EOF1; -- if this is the first half of the block, send the CRC in the second half of the block
+					tx_state<=TX_STATE_CRC_EOF1; -- Send second half of the block
 
-				when TX_STATE_CRC_EOF1 =>-- Combined CRC and EOF block.
+				when TX_STATE_CRC_EOF1 =>-- Second half of the combined CRC and EOF block.
 					tx_data(31 downto 24) <= crc_out(7 downto 0);
 					tx_data(23 downto 0) <= X"000000"; -- pad remaining of block (C5 C6 C7) with IDLEs
 					tx_header <= "10";
