@@ -42,7 +42,8 @@ entity shuffle_crossbar is
 		COMBINE_DATA_FLAGS: boolean := TRUE;
 		WORDS_PER_BIN_MAX: integer :=4; --! Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 16 words.
 		BINS_PER_FRAME_MAX: integer :=64; --! Maximum number of bins per frame
-		BIN_SEL_FIFO_TYPE_MAP: integer_16xN_array := (0 to 15 => (0 to 3=>0, others=>0)) -- 0= Block RAM., 1=Dist RAM. By default, for every BIN_SEL, 10 FIFOS are made of BRAM and the rest is made of distributed RAM to maximize area utilization efficiency
+		BIN_SEL_FIFO_TYPE_MAP: integer_16xN_array := (0 to 15 => (0 to 3=>0, others=>0)); -- 0= Block RAM., 1=Dist RAM. By default, for every BIN_SEL, 10 FIFOS are made of BRAM and the rest is made of distributed RAM to maximize area utilization efficiency
+		SHUFFLE_FLAGS_MASK: slv32 -- Mask to apply to the shuffle flags to count packet errors
 		);
 	PORT(
 
@@ -769,7 +770,8 @@ begin
 			COMBINE_DATA_FLAGS => COMBINE_DATA_FLAGS,
 			WORDS_PER_BIN_MAX => WORDS_PER_BIN_MAX,
 			BINS_PER_FRAME_MAX => BINS_PER_FRAME_MAX,
-			FIFO_TYPE_MAP => BIN_SEL_FIFO_TYPE_MAP(i)
+			FIFO_TYPE_MAP => BIN_SEL_FIFO_TYPE_MAP(i),
+			SHUFFLE_FLAGS_MASK => SHUFFLE_FLAGS_MASK
 			)
 		PORT MAP(
 			-- Input from remap (non blocking)

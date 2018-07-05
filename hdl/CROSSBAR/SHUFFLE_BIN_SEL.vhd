@@ -107,7 +107,8 @@ entity shuffle_bin_sel is
 		COMBINE_DATA_FLAGS: boolean := TRUE;
 		WORDS_PER_BIN_MAX: integer :=4; --! Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 4*16=64 words.
 		BINS_PER_FRAME_MAX: integer :=64; --! Maximum number of bins per frame
-		FIFO_TYPE_MAP: integer_array --! Specifies the type of data FIFO to use for each input lane in order to balance resource type and acheive the highest logic density. 0= use pairs of BRAM/Embedded FIFOs, 1=Use shift-register (LUT-based) FIFO.
+		FIFO_TYPE_MAP: integer_array; --! Specifies the type of data FIFO to use for each input lane in order to balance resource type and acheive the highest logic density. 0= use pairs of BRAM/Embedded FIFOs, 1=Use shift-register (LUT-based) FIFO.
+		SHUFFLE_FLAGS_MASK: slv32 -- Specify the mask to apply on the packet flags word to trigger the terror line.
 		);
     PORT (
 		-- Input interface (non-blocking, i.e. always accept data)
@@ -660,23 +661,41 @@ fifo_wr_proc: process(clk)
 				--data_fifo_din(i)(NEXT_INPUT_BIT) <= data_fifo_last_word_dly; -- (not used) Tell the FIFO reader to increment the lane counteer because this is the last word of the bin
 				if data_fifo_wr_en_packet_flags_dly='1' then
 					-- Compose a new packet flag word
-					-- The new status consists of incoming status flags left-shifted by N+2 bits.
+					-- The new status consists of incoming status flags left-shifted by N+4 bits.
+					--
 					--   NOTE: The CHAN_BIT_SEL sets the packet flags to all zeros.
+					--
+					--   NOTE: If errors occur on this stage (CRC erors,
+					--   missing packet or wrong packet length), the incoming
+					--   packet flags will NOT be forwarded (the bits are all set
+					--   to zero). Do not rely on the previous stage flags if
+					--   there are aerors in the current stage.
+					--
 					-- The lower bits n=0 to N-1 are set as follows:
-					-- bit n : current status of input lane 'n'. Bit 'n' is set to '1' if:
-					--		- the lane has no data or is too short relative to the reference frame (tvalid=0)
-					--      - the lane has valid data but is too long relative to the reference frame (tvalid=1 and tlast=0)
-					--      - there was a GTX receive error (data bit 31 of the last word forced to 1. That bit just was shifted out)
-					-- bit N : The data fifo has overflowed in the past and data is no longer reliable
-					-- bit N+1 : The frame fifo has overflowed in the past and data is no longer reliable
-					data_fifo_din(i) <= shift_left(s_axis_tdata(i), NUMBER_OF_INPUTS + 2);
+					--     bit n : indicated if ANY of the following errors occured on the input lane 'n'. Bit 'n' is set to '1' if:
+					--    		- the lane has no data or is too short relative to the reference frame (tvalid=0)
+					--            - the lane has valid data but is too long relative to the reference frame (tvalid=1 and tlast=0)
+					--            - there was a GTX receive error (data bit 31 of the last word forced to 1. That bit just was shifted out)
+					--     bit N+0 : CRC Error on incoming frame (might not be set if frame is missing or not the right length, which will be indicated by other flags)
+					--     bit N+1 : Missing frame or frame too short (tvalid = 0)
+					--     bit N+2 : Frame too long (tvalid=1 and tlast = 0)
+					--     bit N+3 : The data of frame fifo has overflowed in the past and data is no longer reliable
+
+					if s_axis_tvalid(i)='1' and s_axis_tlast(i)='1' and s_axis_tdata(i)(31)='0' then
+						data_fifo_din(i) <= shift_left(s_axis_tdata(i), NUMBER_OF_INPUTS + 4);
+					else
+						data_fifo_din(i) <= (others => '0');
+					end if;
 					--data_fifo_din(i)(31 downto 16) <= s_axis_tdata(i)(15 downto 0); -- shift left incoming packet flags by 16 bits
+					data_fifo_din(i)(NUMBER_OF_INPUTS + 3) <= data_fifo_overflow_sticky(i) or flags_fifo_overflow_sticky; -- FIFO overflow
+					data_fifo_din(i)(NUMBER_OF_INPUTS + 2) <= to_std_logic(s_axis_tvalid(i)='1' and s_axis_tlast(i)='1' and s_axis_tdata(i)(31)='1'); -- CRC Error
+					data_fifo_din(i)(NUMBER_OF_INPUTS + 1) <= to_std_logic(s_axis_tvalid(i)='1' and s_axis_tlast(i)='0'); -- frame too long
+					data_fifo_din(i)(NUMBER_OF_INPUTS + 0) <= to_std_logic(s_axis_tvalid(i)='0'); -- Missing frame or frame too short
 					data_fifo_din(i)(i) <= to_std_logic(
-						s_axis_tvalid(i)='0' or
-						(s_axis_tvalid(i)='1' and s_axis_tlast(i)='0') or
-						s_axis_tdata(i)(31)='1'); -- CRC error
-					data_fifo_din(i)(NUMBER_OF_INPUTS) <= data_fifo_overflow_sticky(i);
-					data_fifo_din(i)(NUMBER_OF_INPUTS + 1) <= flags_fifo_overflow_sticky;
+						(s_axis_tvalid(i)='1' and s_axis_tlast(i)='1' and s_axis_tdata(i)(31)='1') or -- CRC error
+						(s_axis_tvalid(i)='0') or -- Missing frame or frame too short
+						(s_axis_tvalid(i)='1' and s_axis_tlast(i)='0') -- frame too long
+						);
 				else
 					data_fifo_din(i)(31 downto 0) <= s_axis_tdata(i);
 				end if;
@@ -874,7 +893,7 @@ fifo_rd_proc: process(clk)
 					m_axis_tdata(j) <= m_axis_tdata_int(j);
 					m_axis_tvalid(j) <= m_axis_tvalid_int(j);
 					m_axis_tlast(j) <= m_axis_tlast_int(j);
-					m_axis_terror(j) <= or_reduce(m_axis_tdata_int(j)(NUMBER_OF_INPUTS-1 downto 0));
+					m_axis_terror(j) <= or_reduce(m_axis_tdata_int(j) and SHUFFLE_FLAGS_MASK);
 				end loop;
 			end if;
 

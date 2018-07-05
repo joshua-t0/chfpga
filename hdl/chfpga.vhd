@@ -2476,7 +2476,8 @@ CROSSBAR2_GEN: if NUMBER_OF_BP_SHUFFLE_LINKS>0 and NUMBER_OF_GPU_LINKS>0 generat
 			NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL => 4,
 			WORDS_PER_BIN_MAX                  => 4,  -- 1st crossbar outputs data for 16 channels max = 4 words
 			BINS_PER_FRAME_MAX                 => 128, -- need 128 bins in case i'm in 16
-			COMBINE_DATA_FLAGS                 => TRUE
+			COMBINE_DATA_FLAGS                 => TRUE,
+			SHUFFLE_FLAGS_MASK                 => X"00070000" -- count errors from crossbar 2 only
 			)
 		port map (
 			-- Non-blocking AXI-Streaming input
@@ -2535,7 +2536,9 @@ CROSSBAR2_GEN: if NUMBER_OF_BP_SHUFFLE_LINKS>0 and NUMBER_OF_GPU_LINKS>0 generat
 			COMBINE_DATA_FLAGS                 => FALSE,
 			WORDS_PER_BIN_MAX                  => 16,
 			BINS_PER_FRAME_MAX                 => 64,
-			BIN_SEL_FIFO_TYPE_MAP              => (0 to 15 => (0 to 2=>1, others=>0))
+			BIN_SEL_FIFO_TYPE_MAP              => (0 to 15 => (0 to 2=>1, others=>0)),
+			SHUFFLE_FLAGS_MASK                 => X"70000700" -- Count errors from both crossbars
+
 			)
 		port map (
 			-- Non-blocking AXI-Streaming input
