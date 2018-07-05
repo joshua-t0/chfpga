@@ -143,7 +143,7 @@ signal dest_ready: std_logic;
 
 
 -- Control and status bytes
-signal control_bytes: ByteArray(0 to 8); -- default value set in the CMD_SLAVE
+signal control_bytes: ByteArray(0 to 10); -- default value set in the CMD_SLAVE
 signal status_bytes: ByteArray(0 to 1);
 
 signal burst_length: unsigned(7 downto 0);
@@ -161,7 +161,9 @@ signal is_last_burst: std_logic;
 signal burst_active: std_logic := '0';
 signal burst_delay: unsigned(23 downto 0);
 signal burst_delay2: unsigned(23 downto 0);
-
+signal send_delay: unsigned(31 downto 0);
+signal send_delay_ctr: unsigned(31 downto 0); -- 16 bit delay + 16 bits prescaler, counts 125 MHz
+signal send_data: std_logic;
 signal soft_reset: std_logic;
 signal fifo_reset: std_logic;
 signal reset_all: std_logic;
@@ -231,6 +233,8 @@ probe_id <= control_bytes(6);
 -- CONTROL Byte 7-8
 stream_id(11 downto 8) <= control_bytes(7)(3 downto 0);
 stream_id(7 downto 0) <= control_bytes(8);
+-- CONTROL Byte 9-10
+send_delay <= to_unsigned(control_bytes(9 to 10)) & X"0000";
 
 -- STATUS Byte 0
 status_bytes(0)(7) <= in_dat_reg.TUSER(TUSER_CAPTURE_BIT); -- for debugging
@@ -252,7 +256,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
     GENERIC MAP (
         NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --
         NUMBER_OF_STATUS_BYTES => status_bytes'Length(1), --
-        DEFAULT_CONTROL_BYTES => (X"00_01" & DEFAULT_BURST_PERIOD & X"00_AA_0000"), -- reset=0, burst length=1, burst period=1s @ 800 MHz/2048 samples, burst number = 0 (infinite), Probe ID=0xAA (unassigned yet)
+        DEFAULT_CONTROL_BYTES => (X"00_01" & DEFAULT_BURST_PERIOD & X"00_AA_0000_0000"), -- reset=0, burst length=1, burst period=1s @ 800 MHz/2048 samples, burst number = 0 (infinite), Probe ID=0xAA (unassigned yet)
         USE_FIFO => FALSE
             )
     PORT MAP(
@@ -551,38 +555,53 @@ read_proc: process(OUT_CLK)
         if rising_edge(OUT_CLK) then
             out_rst <= ctrl_rst or soft_reset; -- Retime the reset to OUT_CLK (which is normally ctrl_clk). We use an ASYNC_REG attribute because soft_reset is in the in_clk domain.
             fifo_reset_reg <= fifo_reset;
-            -- synchronous reset
-            if out_rst='1' then
-                out_dat_int.TVALID<='0'; -- needed
-                --out_dat_int.TLAST<='0'; -- optional
-                --out_dat_int.TDATA<=(others => '0'); -- optional
-                send_header<='1'; -- needed to make sure we start with header transmission
-            else
-                -- Clear the TREADY if the data is read by the destination. This will be overriden below if a new byte is sent at the same time
-                if OUT_RDY.TREADY='1' then
-                    out_dat_int.TVALID<='0';
-                end if;
 
-                -- Output the data to the destination
-                if dest_ready='1'  then -- if the bus is ready to receive a new byte and we have
-                    if send_header='1' and  header_fifo_valid='1' then
-                        out_dat_int.TDATA<=lsb(header_fifo_dout);
-                        out_dat_int.TVALID<='1';
-                        out_dat_int.TLAST<='0';
-                        if header_fifo_dout(8)='1' then -- if this is the last header byte
-                            send_header<='0'; -- start sending the data
-                        end if;
-                    elsif send_header='0' and  data_fifo_valid='1' then
-                        out_dat_int.TDATA<=lsb(data_fifo_dout);
-                        out_dat_int.TVALID<='1';
-                        out_dat_int.TLAST<=data_fifo_dout(8);
-                        if data_fifo_dout(8)='1' then -- if this is the last data byte
-                            send_header<='1'; -- start sending the next header
-                        end if;
-                    else -- if we have nothing to send
-                        out_dat_int.TVALID<='0';
-                    end if; -- HEADER or DATA ready to be sent
-                end if; -- if destination ready
+            -- synchronous reset is at the bottom of this process
+
+            -- Handle send delay
+            if send_header = '1' then
+                if header_fifo_valid='0' then
+                    send_delay_ctr <= (others => '0');
+                    send_data <= '0';
+                elsif send_delay_ctr=send_delay then
+                    send_data <= '1';
+                else
+                    send_delay_ctr <= send_delay_ctr + 1;
+                end if;
+            end if;
+
+            -- Clear the TREADY if the data is read by the destination. This will be overriden below if a new byte is sent at the same time
+            if OUT_RDY.TREADY='1' then
+                out_dat_int.TVALID<='0';
+            end if;
+
+            -- Output the data to the destination
+            if dest_ready='1'  then -- if the bus is ready to receive a new byte and we have
+                if send_header='1' and  header_fifo_valid='1' and send_data='1' then
+                    out_dat_int.TDATA <= lsb(header_fifo_dout);
+                    out_dat_int.TVALID <= '1';
+                    out_dat_int.TLAST <= '0';
+                    if header_fifo_dout(8) = '1' then -- if this is the last header byte
+                        send_header <= '0'; -- start sending the data
+                    end if;
+                elsif send_header='0' and  data_fifo_valid='1' then
+                    out_dat_int.TDATA <= lsb(data_fifo_dout);
+                    out_dat_int.TVALID <= '1';
+                    out_dat_int.TLAST <= data_fifo_dout(8);
+                    if data_fifo_dout(8)='1' then -- if this is the last data byte
+                        send_header <= '1'; -- start sending the next header
+                    end if;
+                else -- if we have nothing to send
+                    out_dat_int.TVALID <= '0';
+                end if; -- HEADER or DATA ready to be sent
+            end if; -- if destination ready
+            -- Synchronous reset
+
+            if out_rst='1' then
+                out_dat_int.TVALID <= '0'; -- needed
+                send_header <= '1'; -- needed to make sure we start with header transmission
+                send_data <= '0';
+                send_delay_ctr <= (others => '0');
             end if; -- reset
         end if; -- clk
     end process;
