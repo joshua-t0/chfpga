@@ -739,10 +739,10 @@ bin_ctr_proc: process(clk)
 					output_frame_detection(i)<='0';
 					output_frame_ctr(i) <= (others=> '0');
 					packet_error_ctr(i) <= (others=> '0');
-				elsif m_axis_tvalid_int(i)='1' and m_axis_tlast_int(i)='1' then  -- if end of frame
+				elsif m_axis_tvalid_int(i)='1' and m_axis_tlast_int(i)='1'  then  -- if end of frame
 					output_frame_detection(i) <= '1';
 					output_frame_ctr(i) <= output_frame_ctr(i) + 1;
-					if signed(packet_error_ctr(i)) /= -1 then
+					if m_axis_terror_int(i)='1' and signed(packet_error_ctr(i)) /= -1 then
 						packet_error_ctr(i) <= packet_error_ctr(i) + 1;
 					end if;
 				end if;
