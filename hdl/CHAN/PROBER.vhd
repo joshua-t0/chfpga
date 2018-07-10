@@ -543,11 +543,11 @@ write_proc: process(in_clk)
 OUT_DAT <= out_dat_int;
 
 -- Determines when the source and destination are ready
-dest_ready<='1' when OUT_RDY.TREADY='1' or out_dat_int.TVALID='0' else '0'; -- the output is ready for a new byte if there is currently no valid byte or if the destination is accepting current one.
+dest_ready <='1' when OUT_RDY.TREADY='1' or out_dat_int.TVALID='0' else '0'; -- the output is ready for a new byte if there is currently no valid byte or if the destination is accepting current one.
 
 -- Determine when to read the data and header FIFOs
-data_fifo_rd_en<= dest_ready and (not send_header); -- Read data FIFO on the TREADY singal and only if there is a valid frame and we are not sending the header byte
-header_fifo_rd_en<=dest_ready and send_header; -- read the new frame status when we read the last byte of a frame
+data_fifo_rd_en <= dest_ready and (not send_header); -- Read data FIFO on the TREADY singal and only if there is a valid frame and we are not sending the header byte
+header_fifo_rd_en <= dest_ready and send_header and send_data; -- read the new frame status when we read the last byte of a frame
 
 
 read_proc: process(OUT_CLK)
@@ -566,6 +566,7 @@ read_proc: process(OUT_CLK)
                 elsif send_delay_ctr=send_delay then
                     send_data <= '1';
                 else
+                    send_data <= '0';
                     send_delay_ctr <= send_delay_ctr + 1;
                 end if;
             end if;
@@ -577,7 +578,7 @@ read_proc: process(OUT_CLK)
 
             -- Output the data to the destination
             if dest_ready='1'  then -- if the bus is ready to receive a new byte and we have
-                if send_header='1' and  header_fifo_valid='1' and send_data='1' then
+                if send_header='1' and send_data='1' and header_fifo_valid='1' then
                     out_dat_int.TDATA <= lsb(header_fifo_dout);
                     out_dat_int.TVALID <= '1';
                     out_dat_int.TLAST <= '0';
@@ -591,8 +592,9 @@ read_proc: process(OUT_CLK)
                     if data_fifo_dout(8)='1' then -- if this is the last data byte
                         send_header <= '1'; -- start sending the next header
                     end if;
-                else -- if we have nothing to send
-                    out_dat_int.TVALID <= '0';
+
+                --else -- if we have nothing to send
+                --    out_dat_int.TVALID <= '0';
                 end if; -- HEADER or DATA ready to be sent
             end if; -- if destination ready
             -- Synchronous reset
