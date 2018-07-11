@@ -218,6 +218,8 @@ architecture Behavioral of shuffle_crossbar is
 	signal fifo_count_mon_reg: slv10_array(0 to NUMBER_OF_INPUT_LANES-1);
 	signal ignore_lane: std_logic_vector(0 to 15) := (others=>'0');
 	signal use_timeout: std_logic;
+	signal shuffle_flags_mask_int: slv32;
+
 	-- signal had_timeout: std_logic;
 
 
@@ -322,6 +324,7 @@ lane_map_gen: for i in 0 to NUMBER_OF_INPUT_LANES-1 generate
 	lane_map(i) <= CONTROL_BYTES(3+i/2)((i mod 2)*4+3 downto (i mod 2)*4); --
 end generate;
 
+shuffle_flags_mask_int <= SHUFFLE_FLAGS_MASK;
 
 -- ignore_lane <= to_slv(CONTROL_BYTES(4 + (NUMBER_OF_INPUT_LANES-1)/2 to 5 + (NUMBER_OF_INPUT_LANES-1)/2));
 -- ignore_lane <= (others => '0');
@@ -770,8 +773,7 @@ begin
 			COMBINE_DATA_FLAGS => COMBINE_DATA_FLAGS,
 			WORDS_PER_BIN_MAX => WORDS_PER_BIN_MAX,
 			BINS_PER_FRAME_MAX => BINS_PER_FRAME_MAX,
-			FIFO_TYPE_MAP => BIN_SEL_FIFO_TYPE_MAP(i),
-			SHUFFLE_FLAGS_MASK => SHUFFLE_FLAGS_MASK
+			FIFO_TYPE_MAP => BIN_SEL_FIFO_TYPE_MAP(i)
 			)
 		PORT MAP(
 			-- Input from remap (non blocking)
@@ -793,6 +795,8 @@ begin
 
 			rst => rst_reg,
 			clk => clk, --! common clock for both the input and output
+
+			shuffle_flags_mask => shuffle_flags_mask_int,
 
 			-- Control Interface
 			-- ctrl_cmd_dat=> (TVALID=>xbar_cmd_dat(i+1).TVALID, TDATA=>xbar_cmd_dat(i+1).TDATA, TLAST=>xbar_cmd_dat(i+1).TLAST, DUMMY=>'0'),

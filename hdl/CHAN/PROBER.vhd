@@ -573,12 +573,12 @@ read_proc: process(OUT_CLK)
 
             -- Clear the TREADY if the data is read by the destination. This will be overriden below if a new byte is sent at the same time
             if OUT_RDY.TREADY='1' then
-                out_dat_int.TVALID<='0';
+                out_dat_int.TVALID <= '0';
             end if;
 
             -- Output the data to the destination
-            if dest_ready='1'  then -- if the bus is ready to receive a new byte and we have
-                if send_header='1' and send_data='1' and header_fifo_valid='1' then
+            if dest_ready='1'  then -- if the bus is ready to receive a new byte
+                if send_header='1' and send_data='1' and header_fifo_valid='1' then -- if we have a header byte to send
                     out_dat_int.TDATA <= lsb(header_fifo_dout);
                     out_dat_int.TVALID <= '1';
                     out_dat_int.TLAST <= '0';

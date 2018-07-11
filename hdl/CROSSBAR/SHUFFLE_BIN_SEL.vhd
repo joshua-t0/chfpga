@@ -107,8 +107,7 @@ entity shuffle_bin_sel is
 		COMBINE_DATA_FLAGS: boolean := TRUE;
 		WORDS_PER_BIN_MAX: integer :=4; --! Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 4*16=64 words.
 		BINS_PER_FRAME_MAX: integer :=64; --! Maximum number of bins per frame
-		FIFO_TYPE_MAP: integer_array; --! Specifies the type of data FIFO to use for each input lane in order to balance resource type and acheive the highest logic density. 0= use pairs of BRAM/Embedded FIFOs, 1=Use shift-register (LUT-based) FIFO.
-		SHUFFLE_FLAGS_MASK: slv32 -- Specify the mask to apply on the packet flags word to trigger the terror line.
+		FIFO_TYPE_MAP: integer_array --! Specifies the type of data FIFO to use for each input lane in order to balance resource type and acheive the highest logic density. 0= use pairs of BRAM/Embedded FIFOs, 1=Use shift-register (LUT-based) FIFO.
 		);
     PORT (
 		-- Input interface (non-blocking, i.e. always accept data)
@@ -128,6 +127,8 @@ entity shuffle_bin_sel is
 		-- lane_map: in slv4_array(0 to NUMBER_OF_INPUTS-1);
 		clk: in  std_logic; --! Input clock, common to all antenna processor buses
 		rst: in std_logic; --! reset, synchronous to clk
+
+		shuffle_flags_mask: in slv32; -- Specify the mask to apply on the packet flags word to trigger the terror line.
 
 		-- Control interface (command and reply stream buses)
 		CTRL_CMD_DAT: in AXIS8_DAT_STRUCT;
@@ -881,21 +882,19 @@ fifo_rd_proc: process(clk)
 	begin
 		if rising_edge(clk) then
 
-			if lane0_bypass='1' then
-				for j in 0 to NUMBER_OF_OUTPUTS - 1 loop
+			for j in 0 to NUMBER_OF_OUTPUTS - 1 loop
+				if lane0_bypass='1' then
 					m_axis_tdata(j) <= s_axis_tdata(BIN_SEL_NUMBER * NUMBER_OF_OUTPUTS + j);
 					m_axis_tvalid(j) <= s_axis_tvalid(BIN_SEL_NUMBER * NUMBER_OF_OUTPUTS + j);
 					m_axis_tlast(j) <= s_axis_tlast(BIN_SEL_NUMBER * NUMBER_OF_OUTPUTS + j);
-					m_axis_terror(j) <= '0';
-				end loop;
-			else
-				for j in 0 to NUMBER_OF_OUTPUTS - 1 loop
+					m_axis_terror(j) <= or_reduce(s_axis_tdata(BIN_SEL_NUMBER * NUMBER_OF_OUTPUTS + j) and shuffle_flags_mask);
+				else
 					m_axis_tdata(j) <= m_axis_tdata_int(j);
 					m_axis_tvalid(j) <= m_axis_tvalid_int(j);
 					m_axis_tlast(j) <= m_axis_tlast_int(j);
-					m_axis_terror(j) <= or_reduce(m_axis_tdata_int(j) and SHUFFLE_FLAGS_MASK);
-				end loop;
-			end if;
+					m_axis_terror(j) <= or_reduce(m_axis_tdata_int(j) and shuffle_flags_mask);
+				end if;
+			end loop;
 
 			first_lane_reg <= first_lane;
 			last_lane_reg <= to_unsigned(max(0, min(to_integer(last_lane), NUMBER_OF_INPUT_LANES_PER_OUTPUT-1)), 4);
