@@ -206,7 +206,7 @@ udp_gen: for i in 0 to NUMBER_OF_TX_LANES-1 generate
 		MAC_SRC_ADDR  => DEFAULT_MAC_SRC_ADDR(i),
 		MAC_DEST_ADDR => DEFAULT_MAC_DEST_ADDR(i), -- broadcast
 		IP_SRC_ADDR   => DEFAULT_IP_SRC_ADDR(i),
-		IP_DEST_ADDR  => DEFAULT_IP_DEST_ADDR(i), -- broadcast
+		IP_DEST_ADDR  => ip_dest_addr(i), -- broadcast
 		IP_DEST_PORT  => DEFAULT_IP_DEST_PORT(i),
 
 
@@ -253,7 +253,7 @@ xglink0: entity work.xglink_core
 		EXAMPLE_SIMULATION          => 1,
 		EXAMPLE_SIM_GTRESET_SPEEDUP => "TRUE",    -- simulation setting for GT SecureIP model
 		DONT_RESET_ON_DATA_ERROR_IN => '0',
-		NUMBER_OF_CONTROL_BYTES     => control_bytes'Length(1),
+		NUMBER_OF_CONTROL_BYTES     => control_bytes'Length(1), -- All control bytes default to 0x00
 		NUMBER_OF_STATUS_BYTES      => status_bytes'Length(1),
 		SIM                         => TRUE
 		)
