@@ -143,7 +143,7 @@ signal dest_ready: std_logic;
 
 
 -- Control and status bytes
-signal control_bytes: ByteArray(0 to 10); -- default value set in the CMD_SLAVE
+signal control_bytes: ByteArray(0 to 11); -- default value set in the CMD_SLAVE
 signal status_bytes: ByteArray(0 to 1);
 
 signal burst_length: unsigned(7 downto 0);
@@ -197,13 +197,17 @@ begin
 --! | CONTROL |  0  |  7   | Soft reset           | |
 --! |         |     |  6   | fifo_reset           | |
 --! |         |     |  5   | input source         | |
---! |         |     |  4:0 | burst_delay(4:0)     | Number of frames to skip before starting the capture (multiplied by 256)|
---! |         |  1  |  7:4 | burst_delay(4:0)     | Number of frames to skip before starting the capture (multiplied by 256)|
+--! |         |     |  4:0 | burst_delay(12:8)     | Number of frames to skip before starting the capture (multiplied by 256)|
+--! |         |  1  |  7:4 | burst_delay(16:13)     | Number of frames to skip before starting the capture (multiplied by 256)|
 --! |         |  1  |  3:0 | burst_length         | |
 --! |         | 2:4 | 23:0 | burst_period         | |
 --! |         |  5  |  7:0 | burst_number         | |
 --! |         |  6  |  7:0 | probe_id             | |
---! |         | 7-8 | 11:0 | stream_id            | |
+--! |         |  7  |  7:4 | burst_delay(20:17)   | |
+--! |         |     |  3:0 | stream_id(11:8)      | |
+--! |         |  8  |  7:0 | stream_id(7:0)       | |
+--! |         | 9-10| 15:0 | send_delay           | | TIme to wait before sending captured data
+--! |         | 11  | 7:0  | burst_delay(7:0)     | |
 --! | STATUS  |  0  |   7  | TUSER_CAPTURE_BIT    | For debugging. |
 --! |         |     |   6  | capture_frame        | For debugging. |
 --! |         |     |   5  | '0' (unused)         |  |
@@ -220,9 +224,13 @@ fifo_reset <= control_bytes(0)(6);
 input_source <= control_bytes(0)(5);
 -- Burst from an iceboard of 16 channels ~250uS
 -- Make roughly twice the burst time so run at half max speed.
-burst_delay2 <= ("000" & unsigned(control_bytes(7)(7 downto 4)) & unsigned(control_bytes(1)(7 downto 4)) & unsigned(control_bytes(0)(4 downto 0)) & "00000000");
+burst_delay2 <= ("000" & unsigned(control_bytes(7)(7 downto 4)) &
+                         unsigned(control_bytes(1)(7 downto 4)) &
+                         unsigned(control_bytes(0)(4 downto 0)) &
+                         unsigned(control_bytes(11)));
 
 -- CONTROL Byte 1
+--  Bits 7:4 used by burst_delay2
 burst_length <= ("0000" & unsigned(control_bytes(1)(3 downto 0)));
 -- CONTROL Bytes 2-4
 burst_period <= (unsigned(control_bytes(2)) & unsigned(control_bytes(3)) & unsigned(control_bytes(4))); -- 24 bit burst period. Period = 1/850e6 samples/s *2048samples/frame * 2^24 frames = 40.4 seconds max between bursts
@@ -231,10 +239,13 @@ burst_number <= unsigned(control_bytes(5));
 -- CONTROL Byte 6
 probe_id <= control_bytes(6);
 -- CONTROL Byte 7-8
+-- control_bytes(7)(7 downto 4) used by burst_delay2
 stream_id(11 downto 8) <= control_bytes(7)(3 downto 0);
 stream_id(7 downto 0) <= control_bytes(8);
 -- CONTROL Byte 9-10
 send_delay <= to_unsigned(control_bytes(9 to 10)) & X"0000";
+-- CONTROL Byte 11
+-- control_bytes(11) used by burst_delay2
 
 -- STATUS Byte 0
 status_bytes(0)(7) <= in_dat_reg.TUSER(TUSER_CAPTURE_BIT); -- for debugging
@@ -256,7 +267,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
     GENERIC MAP (
         NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --
         NUMBER_OF_STATUS_BYTES => status_bytes'Length(1), --
-        DEFAULT_CONTROL_BYTES => (X"00_01" & DEFAULT_BURST_PERIOD & X"00_AA_0000_0000"), -- reset=0, burst length=1, burst period=1s @ 800 MHz/2048 samples, burst number = 0 (infinite), Probe ID=0xAA (unassigned yet)
+        DEFAULT_CONTROL_BYTES => (X"00_01" & DEFAULT_BURST_PERIOD & X"00_AA_0000_0000_00"), -- reset=0, burst length=1, burst period=1s @ 800 MHz/2048 samples, burst number = 0 (infinite), Probe ID=0xAA (unassigned yet)
         USE_FIFO => FALSE
             )
     PORT MAP(

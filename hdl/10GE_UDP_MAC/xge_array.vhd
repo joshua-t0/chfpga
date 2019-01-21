@@ -99,6 +99,8 @@ architecture Behavioral of xge_array is
 	signal xglink_tx_clk: std_logic;
 	signal xglink_tx_resetdone: std_logic_vector(0 to NUMBER_OF_TX_LANES-1);
 
+	signal ip_dest_addr: slv32_array(0 to GLOBAL_NUMBER_OF_GPU_LINKS-1);
+
 	signal overflow_reset: std_logic;
 	signal data_overflow: std_logic_vector(0 to NUMBER_OF_TX_LANES-1);
 	signal frame_overflow: std_logic_vector(0 to NUMBER_OF_TX_LANES-1);
@@ -117,7 +119,7 @@ architecture Behavioral of xge_array is
 	signal frame_ctr: unsigned(7 downto 0);
 	signal test_packet_length: unsigned(15 downto 0);
 	signal test_packet_period: unsigned(15 downto 0);
-
+	signal dest_address_mode: std_logic;
 	signal control_bytes: slv8_array(0 to 4);
 	signal status_bytes: slv8_array(0 to 3);
 
@@ -130,6 +132,7 @@ link_enable <='1';
 user_reset     <= control_bytes(0)(0);
 test_enable    <= control_bytes(0)(1);
 overflow_reset <= control_bytes(0)(2);
+dest_address_mode <= control_bytes(0)(3); -- when zero, default dest IP addr is used. Otherwise, use (control_bytes(1 to 3) & index)
 
 test_packet_length <= to_unsigned(control_bytes(1 to 2));
 test_packet_period <= to_unsigned(control_bytes(3 to 4));
@@ -190,6 +193,9 @@ udp_gen: for i in 0 to NUMBER_OF_TX_LANES-1 generate
 	s_axis_tx_tdata_int(i)  <= test_tdata when test_enable='1' else s_axis_tx_tdata(i);
 	s_axis_tx_tvalid_int(i) <= test_tvalid when test_enable='1' else s_axis_tx_tvalid(i);
 	s_axis_tx_tlast_int(i)  <= test_tlast when test_enable='1' else s_axis_tx_tlast(i);
+
+	ip_dest_addr(i) <= DEFAULT_IP_DEST_ADDR(i) when dest_address_mode='0' else
+		               to_slv(test_packet_length & test_packet_period(15 downto 8) & to_unsigned(i, 8));
 
 	udp0: entity work.xge_udp_mac_tx
 	generic map (
