@@ -32,18 +32,21 @@ library work;
 use work.chFPGA_Package.all;
 use work.ip_package.all; -- Import definition of components used in this module
 
+--
+-- Implements an array of 10G Ethernet interfaces that transmit the incoming data as UDP packets.
+--
 entity xge_array is
 	generic (
-		NUMBER_OF_TX_LANES: integer := GLOBAL_NUMBER_OF_GPU_LINKS;
-		NUMBER_OF_REFCLK: integer:= GLOBAL_NUMBER_OF_GPU_REFCLKS;
+		NUMBER_OF_TX_LANES: integer := GLOBAL_NUMBER_OF_GPU_LINKS; -- Number of transmit-only lanes to implement
+		NUMBER_OF_REFCLK: integer:= GLOBAL_NUMBER_OF_GPU_REFCLKS; -- Number of external GTX reference clocks
 		LANE_TO_QUAD_MAP: integerArray := GLOBAL_GPU_CHANNEL_QUAD; --! Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
 		QUAD_TO_REFCLK_MAP: integerArray := GLOBAL_GPU_QUAD_REFCLK; --! Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
 
-		DEFAULT_MAC_SRC_ADDR: slv48_array := (0 to GLOBAL_NUMBER_OF_GPU_LINKS-1=> X"123456789ABC");
-		DEFAULT_MAC_DEST_ADDR: slv48_array := (0 to GLOBAL_NUMBER_OF_GPU_LINKS-1=> X"FFFFFFFFFFFF");
-		DEFAULT_IP_SRC_ADDR: slv32_array := (0 to GLOBAL_NUMBER_OF_GPU_LINKS-1=> X"0A0A0A0B");
-		DEFAULT_IP_DEST_ADDR: slv32_array := (0 to GLOBAL_NUMBER_OF_GPU_LINKS-1=> X"0A0A0A0A");
-		DEFAULT_IP_DEST_PORT: slv16_array := (0 to GLOBAL_NUMBER_OF_GPU_LINKS-1=> X"A028");
+		DEFAULT_MAC_SRC_ADDR: slv48_array := (0 to GLOBAL_NUMBER_OF_GPU_LINKS-1=> X"123456789ABC"); -- Source MAC Address to use for each link
+		DEFAULT_MAC_DEST_ADDR: slv48_array := (0 to GLOBAL_NUMBER_OF_GPU_LINKS-1=> X"FFFFFFFFFFFF"); -- Destination MAC address to use by each link. 0xFFFFFFFFFFFF means Ethernet broadcast.
+		DEFAULT_IP_SRC_ADDR: slv32_array := (0 to GLOBAL_NUMBER_OF_GPU_LINKS-1=> X"0A0A0A0B"); -- Source IP address used by each link
+		DEFAULT_IP_DEST_ADDR: slv32_array := (0 to GLOBAL_NUMBER_OF_GPU_LINKS-1=> X"0A0A0A0A"); -- Default destination addres used by each link. If DEST_ADDR_MODE=1, the destination adress is determined by a combination of register values and lane number.
+		DEFAULT_IP_DEST_PORT: slv16_array := (0 to GLOBAL_NUMBER_OF_GPU_LINKS-1=> X"A028"); -- Destination port used by each lane
 
 		USE_LITTLE_ENDIAN: boolean := TRUE; --! TRUE: Byte is LSB is transmitted first (i.e. bit 0 of word transmitted first). FALSE: Byte in MSB is transmitted first (i.e. bit 24 of word is transmitted first)
 
@@ -100,6 +103,7 @@ architecture Behavioral of xge_array is
 	signal xglink_tx_resetdone: std_logic_vector(0 to NUMBER_OF_TX_LANES-1);
 
 	signal ip_dest_addr: slv32_array(0 to GLOBAL_NUMBER_OF_GPU_LINKS-1);
+	signal ip_dest_port: slv16_array(0 to GLOBAL_NUMBER_OF_GPU_LINKS-1);
 
 	signal overflow_reset: std_logic;
 	signal data_overflow: std_logic_vector(0 to NUMBER_OF_TX_LANES-1);
@@ -195,7 +199,10 @@ udp_gen: for i in 0 to NUMBER_OF_TX_LANES-1 generate
 	s_axis_tx_tlast_int(i)  <= test_tlast when test_enable='1' else s_axis_tx_tlast(i);
 
 	ip_dest_addr(i) <= DEFAULT_IP_DEST_ADDR(i) when dest_address_mode='0' else
-		               to_slv(test_packet_length & test_packet_period(15 downto 8) & to_unsigned(i, 8));
+		               to_slv(test_packet_length & to_unsigned(i, 8) & to_unsigned(255, 8));
+
+	ip_dest_port(i) <= DEFAULT_IP_DEST_PORT(i) when dest_address_mode='0' else
+		               to_slv(test_packet_period);
 
 	udp0: entity work.xge_udp_mac_tx
 	generic map (
@@ -207,7 +214,7 @@ udp_gen: for i in 0 to NUMBER_OF_TX_LANES-1 generate
 		MAC_DEST_ADDR => DEFAULT_MAC_DEST_ADDR(i), -- broadcast
 		IP_SRC_ADDR   => DEFAULT_IP_SRC_ADDR(i),
 		IP_DEST_ADDR  => ip_dest_addr(i), -- broadcast
-		IP_DEST_PORT  => DEFAULT_IP_DEST_PORT(i),
+		IP_DEST_PORT  => ip_dest_port(i),
 
 
 		s_axis_tx_tdata  => s_axis_tx_tdata_int(i),
