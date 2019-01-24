@@ -199,7 +199,7 @@ udp_gen: for i in 0 to NUMBER_OF_TX_LANES-1 generate
 	s_axis_tx_tlast_int(i)  <= test_tlast when test_enable='1' else s_axis_tx_tlast(i);
 
 	ip_dest_addr(i) <= DEFAULT_IP_DEST_ADDR(i) when dest_address_mode='0' else
-		               to_slv(test_packet_length & to_unsigned(i, 8) & to_unsigned(255, 8));
+		               X"FFFFFFFF";
 
 	ip_dest_port(i) <= DEFAULT_IP_DEST_PORT(i) when dest_address_mode='0' else
 		               to_slv(test_packet_period);
