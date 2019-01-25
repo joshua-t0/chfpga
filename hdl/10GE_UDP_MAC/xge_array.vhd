@@ -102,6 +102,7 @@ architecture Behavioral of xge_array is
 	signal xglink_tx_clk: std_logic;
 	signal xglink_tx_resetdone: std_logic_vector(0 to NUMBER_OF_TX_LANES-1);
 
+	signal mac_dest_addr: slv48_array(0 to GLOBAL_NUMBER_OF_GPU_LINKS-1);
 	signal ip_dest_addr: slv32_array(0 to GLOBAL_NUMBER_OF_GPU_LINKS-1);
 	signal ip_dest_port: slv16_array(0 to GLOBAL_NUMBER_OF_GPU_LINKS-1);
 
@@ -199,10 +200,13 @@ udp_gen: for i in 0 to NUMBER_OF_TX_LANES-1 generate
 	s_axis_tx_tlast_int(i)  <= test_tlast when test_enable='1' else s_axis_tx_tlast(i);
 
 	ip_dest_addr(i) <= DEFAULT_IP_DEST_ADDR(i) when dest_address_mode='0' else
-		               X"FFFFFFFF";
+		               to_slv(test_packet_length & to_unsigned(0, 8) & to_unsigned(i, 8));
 
 	ip_dest_port(i) <= DEFAULT_IP_DEST_PORT(i) when dest_address_mode='0' else
 		               to_slv(test_packet_period);
+
+	mac_dest_addr(i) <= DEFAULT_MAC_DEST_ADDR(i) when dest_address_mode='0' else
+		               to_slv(to_unsigned(0, 16) & test_packet_length & to_unsigned(0, 8) & to_unsigned(i, 8));
 
 	udp0: entity work.xge_udp_mac_tx
 	generic map (
@@ -211,7 +215,7 @@ udp_gen: for i in 0 to NUMBER_OF_TX_LANES-1 generate
 	port map (
 
 		MAC_SRC_ADDR  => DEFAULT_MAC_SRC_ADDR(i),
-		MAC_DEST_ADDR => DEFAULT_MAC_DEST_ADDR(i), -- broadcast
+		MAC_DEST_ADDR => mac_dest_addr(i), -- broadcast
 		IP_SRC_ADDR   => DEFAULT_IP_SRC_ADDR(i),
 		IP_DEST_ADDR  => ip_dest_addr(i), -- broadcast
 		IP_DEST_PORT  => ip_dest_port(i),
