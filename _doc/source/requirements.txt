@@ -1,0 +1,3 @@
+sphinx
+sphinx-rtd-theme
+parsimonious==0.7.0 # latest version cause errors
