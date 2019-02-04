@@ -160,15 +160,15 @@ begin
 --! |  Page   | Addr|Bit(s)|     Name             | Description                   |
 --! |---------|-----|------|----------------------|-------------------------------|
 --! | CONTROL |  0  | 7    | soft_reset           | Reset the block. Also reset the computation of the CASPER block pipelining delay. When released, the block will compute the block latency once a CASPER SYNC has passed through the block and make the result available.|
---! |         |     | 6:3  |  Unused              | |
---! |         |     |  2   | overflow_reset       | Resets the overflow counter |
---! |         |     |  1   | Unused            |  |
---! |         |     |  0   | bypass_fft           | Bypass the FFT |
+--! |         |     | 6:3  |  Unused              |                               |
+--! |         |     |  2   | overflow_reset       | Resets the overflow counter   |
+--! |         |     |  1   | Unused               |                               |
+--! |         |     |  0   | bypass_fft           | Bypass the FFT                |
 --! |         | 1:2 | 15:0 | fft_shift_schedule   | Sets the shifting schedule through the FFT to prevent overflow. Bit 0 specifies the behavior of stage 0, bit 1 of stage 1, and so on. |
 --! |         | 3:4 | 15:0 | sync_period          | Number of clock cycles between SYNC pulses. If zero, no SYNC pulses are generated. See CASPER documentation for minimum SYNC spacing. |
---! |         | 5:6 | 15:0 | fft_pipeline_delay            | Latency (in number of clocks) of the CASPER PFB/FFT. This is used to delay the input flags that accompany the data fed into the FFT so they come out aligned with the FFT output. This should be the values measured by fft_measured_pipeline_delay. |
+--! |         | 5:6 | 15:0 | fft_pipeline_delay   | Latency (in number of clocks) of the CASPER PFB/FFT. This is used to delay the input flags that accompany the data fed into the FFT so they come out aligned with the FFT output. This should be the values measured by fft_measured_pipeline_delay. |
 --! | STATUS  | 0:1 | 15:0 | fft_measured_pipeline_delay   | Measured latency (in number of clocks) of the CASPER PFB/FFT. This is updated when a reset is performed |
---! |         |  2  |  7:0 | overflow_count                | Number of FFT overflows since reset (rolls back) |
+--! |         |  2  |  7:0 | overflow_count       | Number of FFT overflows since reset (rolls back) |
 --!  ------------------------------------------------------------------------------
 --!
 
