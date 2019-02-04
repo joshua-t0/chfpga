@@ -206,7 +206,7 @@ begin
 --! |         |  7  |  7:4 | burst_delay(20:17)   | |
 --! |         |     |  3:0 | stream_id(11:8)      | |
 --! |         |  8  |  7:0 | stream_id(7:0)       | |
---! |         | 9-10| 15:0 | send_delay           | | TIme to wait before sending captured data
+--! |         | 9-10| 15:0 | send_delay           | Time to wait before sending captured data |
 --! |         | 11  | 7:0  | burst_delay(7:0)     | |
 --! | STATUS  |  0  |   7  | TUSER_CAPTURE_BIT    | For debugging. |
 --! |         |     |   6  | capture_frame        | For debugging. |
