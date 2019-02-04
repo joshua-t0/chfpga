@@ -103,9 +103,9 @@ class VHDLObject(ObjectDescription):  # which inherits from docutil's Directive
                 indextype = 'single'
                 indexentry = self.indextemplate % (name,)
             self.indexnode['entries'].append((indextype, indexentry,
-                                              targetname, ''))
+                                              targetname, '', None)) # Added 5th element for Sphinx 1.8
         objects = self.env.domaindata[self.domain]['objects']
-        print 'adding', self.objtype, name, self.env.docname, targetname
+        print 'VHDL Domain: add_target_and_index: adding', self.objtype, name, self.env.docname, targetname
         objects[self.objtype, name] = self.env.docname, targetname
 
     def run(self):
@@ -118,8 +118,8 @@ class VHDLObject(ObjectDescription):  # which inherits from docutil's Directive
         if self.objtype.startswith('auto'):
             self.objtype = self.objtype[4:]
 
-
-        self.env = self.state.document.settings.env
+        # print dir(self.state.document.settings.env)
+        # self.env = self.state.document.settings.env  # now included in SphinxDirective since 1.8.0
         self.indexnode = addnodes.index(entries=[])
 
         # Create a container node desc() to contain the whole contents of this directive.
@@ -253,28 +253,37 @@ def parse_rest(state, lines, class_dict={}):
                 n['classes'].extend(class_dict[n.tagname])
     return list(container_node)
 
+
 def parse_markdown_table(state, rows, pos):
-    """ Attempts to decode a block of text as a markdown table and return a new position and
-    docutils node if successful, or None otherwise.
+    """ Attempts to decode a block of text as a markdown table
+
+    Returns:
+
+    (new position, docutils_table_node) if successful, or None if there is no
+    markdown table at this location.
     """
 
     # Define some helper functions first
     def split_row(rows, pos):
-        if pos >= len(rows): return []
+        if pos >= len(rows):
+            return []
         e = [s.strip() for s in rows[pos].strip().split('|')]
-        if len(e) < 2: return []
-        if not e[0]: del e[0]
-        if not e[-1]: del e[-1]
+        if len(e) < 2:
+            return []
+        if not e[0]:
+            del e[0]
+        if not e[-1]:
+            del e[-1]
         return e
 
     def build_row(entries, alignment):
         # return nodes.row('', *[nodes.entry('', nodes.inline('', e)) for e in entries])
         node_list = []
-        for i,e in enumerate(entries):
+        for i, e in enumerate(entries):
             n = parse_rest(state, [e])
             # print '********** Element node = ', n
             entry = nodes.entry('', *n)
-            if alignment[i]:
+            if i < len(alignment) and alignment[i]:
                 entry['classes'].append(alignment[i])
             node_list.append(entry)
         return nodes.row('', *node_list)
@@ -282,23 +291,25 @@ def parse_markdown_table(state, rows, pos):
     def max_column_widths(*rows):
         widths = [0] * max(len(r) for r in rows)
         for row in rows:
-            for i,entry in enumerate(row):
+            for i, entry in enumerate(row):
                 widths[i] = max(widths[i], len(entry))
         return widths
 
     # Parsing starts here
     # print 'parsing Markdown table'
-    if rows[pos].strip().startswith('---'): # if we have a top fence, skip it
-        pos +=1
-    headers = split_row(rows, pos) # attempt to decode the header row
-    if not headers: return # if unsuccessful, this is not a markdown table
+    if rows[pos].strip().startswith('---'):  # if we have a top fence, skip it
+        pos += 1
+    headers = split_row(rows, pos)  # attempt to decode the header row
+    if not headers:
+        return # if unsuccessful, this is not a markdown table
     # print 'header=', headers
     pos += 1
     separators = split_row(rows, pos)
-    if not separators: return  # bad separators = not a markdown table = give up
+    if not separators:
+        return  # bad separators = not a markdown table = give up
     # print 'separator=', separators
-    pos +=1
-    row_entries=[]
+    pos += 1
+    row_entries = []
     while pos < len(rows):
         entries = split_row(rows, pos)
         # print 'row=', entries
@@ -307,7 +318,7 @@ def parse_markdown_table(state, rows, pos):
         row_entries.append(entries)
         pos += 1
     if not row_entries: return # no rows? give up, not a markdon table
-
+    print 'We have %i header columns, %i separator coulmns, %s row columns' % (len(headers), len(separators), ','.join('%i' % len(r) for r in row_entries))
     widths = max_column_widths(headers, separators, *row_entries)
     cols = len(widths)
 
@@ -335,8 +346,10 @@ def parse_markdown_table(state, rows, pos):
     tbody = nodes.tbody()
     tgroup += tbody
     # print '*********** building table header'
+    assert len(headers) == cols, 'Headers has invalid number of columns. We expected %i columns, but got got headers: %s' % (cols, ','.join(headers))
     thead += build_row(headers, align)
     for r in row_entries:
+        assert len(r) == cols, 'Row has invalid number of columns'
         tbody += build_row(r, align)
     return pos, table
 
@@ -375,6 +388,30 @@ def parse_comment_block(state, lines, class_dict={}):
 
 
 def make_vhdl_entity_table(generics, ports):
+        """ Create a table that describes the ports and generics of a VHDL entity.
+
+        Returns:
+
+            a Docutils table.
+
+        Notes:
+
+            The table is structured as follows:
+
+                table
+                    -tgroup
+                        -colspec
+                        (-thead)
+                        (   -row)
+                        (       -entry)
+                        -tbody
+                            -row
+                                -entry
+                                -entry
+                                -...
+                            -row
+                            -...
+        """
         COLS = 2
         table = nodes.table(classes=['vhdl_entity'])
         colspec_nodes = [nodes.colspec(colwidth=0)]*(COLS-1) + [nodes.colspec(colwidth=1)]
@@ -407,7 +444,7 @@ def make_vhdl_entity_table(generics, ports):
                         nodes.entry('', identifier_node, classes=['vhdl_entity_id']), #
                         nodes.entry('', definition_node, comments_node, classes=['vhdl_entity_def']), classes=[def_row_class])
 
-        print generics
+        # print generics
         if generics:
             add_header('GENERICS')
             add_rows(generics)
@@ -450,7 +487,7 @@ class Test(ObjectDescription):
                 entry = nodes.entry()
                 # cell = [nodes.paragraph(nodes.Text(str(cell)))]
                 # cell = nodes.paragraph(str(cell), str(cell))
-                print 'cell is', cell
+                # print 'cell is', cell
                 # entry += nodes.paragraph(nodes.Text(str(cell)))
                 entry += cell
                 row_node += entry

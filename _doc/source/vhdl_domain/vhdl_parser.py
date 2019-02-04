@@ -6,30 +6,47 @@ from xml.etree import ElementTree, ElementPath
 import textwrap
 
 # Works only with parsimonious 0.7.0 for now.
-# version 0.8.0 raises: AttributeError: 'LazyReference' object has no attribute 'match_core'
+# version 0.8.0 has the following problems:
+#    - raises: AttributeError: 'LazyReference' object has no attribute 'match_core'
+#    - see `resolve_all_rules` below
 
 from parsimonious.grammar import rule_grammar, RuleVisitor, evaluate_string, LazyReference
 from parsimonious.expressions import Literal, Sequence, Node
 from parsimonious.nodes import NodeVisitor
 
 
-class CaselessLiteral(Literal):
-    # __slots__ = ['literal']
-    def _uncached_match(self, text, pos, cache, error):
-        if text[pos:pos+len(self.literal)].lower() == self.literal.lower():
-            #name = self.name or ("'" + self.literal + "'")
-            name = 'literal'
-            return Node(name, text, pos, pos + len(self.literal))
-            # return Node(self, text, pos, pos + len(self.literal)) # parsimonious 0.8.0
 
 
 class VHDLRuleVisitor(RuleVisitor):
-    """ Visitor used to convert the node tree resulting from the parsed VHDL syntax into Expression objects"""
+    """ Visitor used to convert the node tree resulting from the parsed VHDL grammar into Expression objects.
+
+    This RuleVisitor has two purposes:
+
+        - Make 'literals' use the case-insensitive CaselessLiteral Expression matcher
+        - Make sure that rules like a=b and a=c are not simplified into a=c so
+          the node tree maintains reference to 'b' rules, which are language
+          elements we might need to refer to when processing the parsed code.
+    """
     grammar = rule_grammar
 
+    class CaselessLiteral(Literal):
+        """Overriden parsimonious Literal parsing Expression that perform case
+        insensitive matches.
+
+        This is used when parsing the VHDL grammar into Expression so that the
+        VHDL keywords may be interpreded in a case insensitive way,
+        """
+        # __slots__ = ['literal']
+        def _uncached_match(self, text, pos, cache, error):
+            if text[pos:pos+len(self.literal)].lower() == self.literal.lower():
+                #name = self.name or ("'" + self.literal + "'")
+                name = 'literal'
+                return Node(name, text, pos, pos + len(self.literal))
+                # return Node(self, text, pos, pos + len(self.literal)) # parsimonious 0.8.0
+
     def visit_spaceless_literal(self, spaceless_literal, visited_children):
-        """Turn a string literal into a ``Literal`` that recognizes it."""
-        return CaselessLiteral(evaluate_string(spaceless_literal.text))
+        """Turn a string literal into a ``CaselessLiteral``"""
+        return self.CaselessLiteral(evaluate_string(spaceless_literal.text))
 
     def visit_rule(self, node, rule):
         """Assign a name to the Expression and return it."""
@@ -40,27 +57,16 @@ class VHDLRuleVisitor(RuleVisitor):
         expression.name = label  # Assign a name to the expr.
         return expression
 
+
 class Namespace(object):
-    def __init__(self, **kwargs): vars(self).update(**kwargs)
+    """ Simple container to hold alll sort of data.
+    """
+    def __init__(self, **kwargs):
+        vars(self).update(**kwargs)
 
 class VHDLElement(ElementTree.Element):
     """ ElementTree Element that represents a parsed VHDL object.
-
-
     """
-    #def __init__(self, tag, full_text, start, end, attrib={}, **extra):
-        #super(VHDLElement, self).__init__(tag, attrib=attrib, start=str(start), end=str(end), **extra)
-        #self.full_text = full_text
-        #self.start=start
-        #self.end=end
-    #start = property(lambda self:self.attrib['start'])
-    #end = property(lambda self:self.attrib['end'])
-    #text = property(lambda self:self.full_text[self.start:self.end])
-#    @property
-#    def text(self):
-#        """Return the text this node matched."""
-#        return self.full_text[self.start:self.end] if not len(self) else None
-#
     @property
     def subtext(self):
         """Return the text of this element and all its subelements."""
@@ -73,15 +79,15 @@ class VHDLElement(ElementTree.Element):
 
     def iterskip(self):
         for elem in self:
-            skip=yield elem
+            skip = yield elem
             if not skip:
                 # yield from elem.iterskip()  # in python 3.3
 
                 g = elem.iterskip()
-                s=None
+                s = None
                 while True:
                     try:
-                        s=yield g.send(s)
+                        s = yield g.send(s)
                     except StopIteration:
                         break
 
@@ -185,6 +191,8 @@ class VHDLElement(ElementTree.Element):
         return default if elem is None else elem.subtext or default
 
     def pp(self, level=0, collapsed_expr=['comment', 'target', 'name', 'expression', 'simple_expression', 'simple_name',  'association_element', '_'], max_depth=0, width=80):
+        """ Pretty printer for the VHDLElement tree.
+        """
         #skip = ((not t.expr_name or (t.expr_name.startswith('_') and 1)) and t.children) or not t.text
         collapsed =  self.tag in collapsed_expr or (max_depth and level>=max_depth)
         #skip = bool(t.children) or not t.text
@@ -197,11 +205,31 @@ class VHDLElement(ElementTree.Element):
             for elem in self:
                 elem.pp(level=(level+1), collapsed_expr=collapsed_expr, max_depth=max_depth)
 
+
 class VHDLBlockCommentTransform(object):
+    """ Scan the node tree for comments and move comment blocks immediately
+    preceding the target expressions and their trailing comment line into that
+    expression node.
+
+    Parameters:
+
+        elem (VHDLElement): Top node of the VHDLElement Tree from which the
+            search for comments will start. ``elem`` will be modified
+            in-place, but its text (``elem.subtext()``) will remain unchanged.
+
+    Notes:
+
+        This processing function is implemented as a class so its main
+    workhorse, ``visit``, can be called resursively while maintaining access
+    to global state information.
+
+        In the VHDL grammar file, a ``comment`` element contains the following children::
+
+            comment =  comment_spaces comment_tag comment_text newline
+
+    """
 
     def __init__(self, elem):
-        """ Scan the node tree for comments and move comment blocks immediately preceding the target expressions and their trailing comment line into that expression node.
-        """
         self.block_comment_elements = []
         self.elems_to_delete = []
         self.line = 0
@@ -217,10 +245,29 @@ class VHDLBlockCommentTransform(object):
         assert elem.subtext == original_subtext  # This should have only moved block around without changing the code. If not, that is a problem
 
     def visit(self, elem, parent):
-        #   1) scan the children to find consecutine line comments (unbroken by blank lines), and store them in block_comment_elements
-        #   2) if  a comment in not a a new line and we just left an element to comment (last_commentd_elem is not None), then move the comment to it
-        #if elem == '_': # contains spaces, newline and comment in any number or order
-        #    self.block_comment_elements = []
+        """ Process comments on the specified element.
+
+        Parameters:
+
+            elem (VHDLElement): element to be currently processed
+
+            parent (VHDLElement): parent of the element currently being processed
+
+        Notes:
+
+            Operations:
+
+                1) scan the children to find consecutine line comments
+                   (unbroken by blank lines), and store them in
+                   block_comment_elements
+
+                2) if  a comment in not a a new line and we just left an
+                   element to comment (last_commentd_elem is not None), then
+                   move the comment to it if elem == '_': # contains spaces,
+                   newline and comment in any number or order
+
+        """
+        # self.block_comment_elements = []
 
         # step over nodes we just added
         assert elem.tag != 'block_comment', 'Encounterred a BlockComment while processing comments!'
@@ -405,7 +452,6 @@ class VHDLParser(object):
     def __init__(self):
         """ Initializes the VHDL parser """
         # Load and parse the VHDLsyntax file
-        t0 = time.time()
         print 'VHDL Parser: loading VHDL syntax file'
         vhdl_grammar_filename = os.path.join(os.path.dirname(__file__), 'vhdl_grammar.txt')
         with open(vhdl_grammar_filename) as f:
@@ -516,7 +562,24 @@ class VHDLParser(object):
     #    return self.node_to_element(node)
 
     def node_to_element(self, node):
-        """ Convert  parsimonious parse Node (and its children) into ElementTree Element"""
+        """ Convert a ``parsimonious`` parse Node tree into an VHDLElement tree
+
+        Parameters:
+
+            node (parsimonious.nodes.Node): The top node obrained from the
+                parsimonious parse method.
+
+        Returns:
+
+            A `VHDLElement`, which is simply a standard
+            ``ElementTree.Element`` wrapped with some text extraction utility
+            methods.
+
+        Nodes that have no tag and no text (such as those created by intrinsic
+        grouping, parenthesis, logical operations etc) are removed from the
+        hierarchy. The VHDLElement tree contains only the elements that are
+        explicitely listed in the language definition file.
+        """
 
         tag = node.expr_name
         #if not node.expr_name and not node.children:
@@ -644,7 +707,7 @@ class VHDLParser(object):
                 lib_info = Namespace(name=lib_name, node=lib_node, use=[], source_file=filename, **self.get_comments(lib_node))
                 libraries[lib_name.lower()] = lib_info
                 self.add_label(label_list, 'library', lib_name, lib_info)
-                print 'Added library', lib_name
+                # print 'Added library', lib_name
 
         # Analyze USE clauses
         for use_node in top_elem.findall('.//use_clause'):
@@ -655,7 +718,7 @@ class VHDLParser(object):
                 lib_name = name_node[0].subtext
                 sel_name = ''.join(n.subtext for n in name_node[1:])
                 use_info = Namespace(label=sel_name, node=use_node, **self.get_comments(use_node))
-                print 'Use lib', lib_name
+                # print 'Use lib', lib_name
                 if lib_name.lower() not in libraries:
                     print use_node.subtext
                     raise RuntimeError("Use of library '%s' before it is defined" % lib_name);
@@ -757,7 +820,10 @@ class VHDLParser(object):
 
 class VHDLFiles(ElementTree.ElementTree):
     """ ElementTree object representing a set of VHDL files and allows loading and parsing VHDL files, and provides direct access to entity, architectures,
-    variables etc across the project"""
+    variables etc across the project
+
+
+    """
 
     def __init__(self):
         super(VHDLFiles, self).__init__(VHDLElement('project'))
@@ -767,6 +833,17 @@ class VHDLFiles(ElementTree.ElementTree):
         self.labels = []
 
     def parse_file(self, filename):
+        """ Parse and analyze the specified VHDL file and add the resulting info to th
+
+        Parameters:
+
+            filename (str): filename of the VHDL file to be parsed
+
+
+        Returns:
+
+            VHDLElementTree describing the parsed file.
+        """
         if filename in self.summaries:
             print("Warning: File '%s' has already been parsed" % filename)
             # raise RuntimeError("File '%s' has already been parsed" % filename)
@@ -782,13 +859,14 @@ class VHDLFiles(ElementTree.ElementTree):
         # Add summary info
         self.summaries[filename] = summary
 
-        # Add found entities to global entity list
+        # Add entities found in the summary to global entity list
         for entity_key, entity in summary['entities'].items():
             if entity_key in self.entities:
                 print("Entity '%s' has already been parsed" % entity.name)
 
                 # raise RuntimeError("Entity '%s' has already been parsed" % entity['name'])
             self.entities[entity_key] = entity
+        return parse_elem
 
     def get_entity(self, entity_name):
         # for entity_node in self.findall('.//entity_declaration'):
