@@ -1,4 +1,4 @@
-.. clocks::
+.. title:: Clocks
 
 Clocks
 ******

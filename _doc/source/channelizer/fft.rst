@@ -1,5 +1,6 @@
 .. title:: FFT
 
+
 :entity:`FFT`: Fast Fourier Transform
 *************************************
 

@@ -1,5 +1,5 @@
 :entity:`ADCDAQ_FIFO`: FIFO to cross clock phase boundaries and allow line delay compensation
-********************************************************************************************
+*********************************************************************************************
 
 .. image:: ../images/xilinx_modules/adcdaq_fifo.png
     :width: 25%
