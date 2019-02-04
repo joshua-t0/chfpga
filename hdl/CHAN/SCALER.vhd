@@ -27,10 +27,11 @@ use IEEE.std_logic_misc.ALL; -- for and_reduce() and or_reduce()
 use work.chFPGA_Package.all; -- Get all component definitions
 use work.ip_package.all; -- Import definition of components used in this module
 
-------- ENTITY DECLARATION ---------------------
---! \brief Scales the FFT output into (8+8) bits or (4+4) bits complex values
---! by applying a constant or table-based complex gain, shifting the results,
---! and truncate or round the value to the desired format.
+-------- ENTITY DECLARATION ---------------------
+
+-- Scales the FFT output into (8+8) bits or (4+4) bits complex values
+-- by applying a constant or table-based complex gain, shifting the results,
+-- and truncate or round the value to the desired format.
 --
 -- The scaler converts each of the two (even,odd) (18+18) bits FFT output to (8+8) bit or (4+4) bits by applying a separate
 -- (16+16) bit complex gain to each frequency sample and applying a global binary scaling to all the
@@ -228,7 +229,8 @@ begin
 --! |         | 3:4 | 15:0 | stats_adc_overflows          | Number of adc overflows in the last captured frame block. Saturates at 0xFFFF. |
 --! |         |  5  |  7:0 | frame_ctr                    | Last 8 bits of the frame counter. |
 --! -----------------------------------------------------------------------------------------------
---!
+
+
 -- CONTROL Byte 0
 soft_reset             <= control_bytes(0)(7);
 bypass_scaler          <= control_bytes(0)(6);
