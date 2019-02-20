@@ -38,13 +38,13 @@
     <Option Name="WTVcsLaunchSim" Val="0"/>
     <Option Name="WTRivieraLaunchSim" Val="0"/>
     <Option Name="WTActivehdlLaunchSim" Val="0"/>
-    <Option Name="WTXSimExportSim" Val="167"/>
-    <Option Name="WTModelSimExportSim" Val="167"/>
-    <Option Name="WTQuestaExportSim" Val="167"/>
-    <Option Name="WTIesExportSim" Val="167"/>
-    <Option Name="WTVcsExportSim" Val="167"/>
-    <Option Name="WTRivieraExportSim" Val="167"/>
-    <Option Name="WTActivehdlExportSim" Val="167"/>
+    <Option Name="WTXSimExportSim" Val="198"/>
+    <Option Name="WTModelSimExportSim" Val="198"/>
+    <Option Name="WTQuestaExportSim" Val="198"/>
+    <Option Name="WTIesExportSim" Val="198"/>
+    <Option Name="WTVcsExportSim" Val="198"/>
+    <Option Name="WTRivieraExportSim" Val="198"/>
+    <Option Name="WTActivehdlExportSim" Val="198"/>
     <Option Name="GenerateIPUpgradeLog" Val="TRUE"/>
     <Option Name="XSimRadix" Val="hex"/>
     <Option Name="XSimTimeUnit" Val="ns"/>
@@ -69,12 +69,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="ADCDAQ_FIFO.xci" FileRelPathName="ADCDAQ_FIFO/ADCDAQ_FIFO_clocks.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="ADCDAQ_FIFO.xci" FileRelPathName="ADCDAQ_FIFO/ADCDAQ_FIFO.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/XG_UDP_MAC_TX_HEADER_FIFO/XGMII_UDP_MAC_TX_HEADER_FIFO.xci">
         <FileInfo>
@@ -82,12 +76,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="XGMII_UDP_MAC_TX_HEADER_FIFO.xci" FileRelPathName="XGMII_UDP_MAC_TX_HEADER_FIFO/XGMII_UDP_MAC_TX_HEADER_FIFO_clocks.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="XGMII_UDP_MAC_TX_HEADER_FIFO.xci" FileRelPathName="XGMII_UDP_MAC_TX_HEADER_FIFO/XGMII_UDP_MAC_TX_HEADER_FIFO.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/XG_UDP_MAC_TX_DATA_FIFO/XGMII_UDP_MAC_TX_DATA_FIFO.xci">
         <FileInfo>
@@ -95,12 +83,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="XGMII_UDP_MAC_TX_DATA_FIFO.xci" FileRelPathName="XGMII_UDP_MAC_TX_DATA_FIFO/XGMII_UDP_MAC_TX_DATA_FIFO_clocks.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="XGMII_UDP_MAC_TX_DATA_FIFO.xci" FileRelPathName="XGMII_UDP_MAC_TX_DATA_FIFO/XGMII_UDP_MAC_TX_DATA_FIFO.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/AXI4S_REG_SLICE/AXI4S_REG_SLICE.xci">
         <FileInfo>
@@ -115,9 +97,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="SHUFFLE_BIN_SEL_DATA_FIFO_EMBED.xci" FileRelPathName="SHUFFLE_BIN_SEL_DATA_FIFO_EMBED/SHUFFLE_BIN_SEL_DATA_FIFO_EMBED.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_DATA_FIFO_BRAM/SHUFFLE_BIN_SEL_DATA_FIFO_BRAM.xci">
         <FileInfo>
@@ -125,9 +104,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="SHUFFLE_BIN_SEL_DATA_FIFO_BRAM.xci" FileRelPathName="SHUFFLE_BIN_SEL_DATA_FIFO_BRAM/SHUFFLE_BIN_SEL_DATA_FIFO_BRAM.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_DATA_FIFO_DRAM/SHUFFLE_BIN_SEL_DATA_FIFO_DRAM.xci">
         <FileInfo>
@@ -135,9 +111,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="SHUFFLE_BIN_SEL_DATA_FIFO_DRAM.xci" FileRelPathName="SHUFFLE_BIN_SEL_DATA_FIFO_DRAM/SHUFFLE_BIN_SEL_DATA_FIFO_DRAM.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_FLAGS_FIFO/SHUFFLE_BIN_SEL_FLAGS_FIFO.xci">
         <FileInfo>
@@ -145,9 +118,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="SHUFFLE_BIN_SEL_FLAGS_FIFO.xci" FileRelPathName="SHUFFLE_BIN_SEL_FLAGS_FIFO/SHUFFLE_BIN_SEL_FLAGS_FIFO.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_MASK_RAM/SHUFFLE_BIN_SEL_MASK_RAM.xci">
         <FileInfo>
@@ -155,9 +125,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="SHUFFLE_BIN_SEL_MASK_RAM.xci" FileRelPathName="SHUFFLE_BIN_SEL_MASK_RAM_ooc.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_CROSSBAR_ALIGN_FIFO/SHUFFLE_CROSSBAR_ALIGN_FIFO.xci">
         <FileInfo>
@@ -165,9 +132,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="SHUFFLE_CROSSBAR_ALIGN_FIFO.xci" FileRelPathName="SHUFFLE_CROSSBAR_ALIGN_FIFO/SHUFFLE_CROSSBAR_ALIGN_FIFO.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/XGLINK_RX_DATA_FIFO/XGLINK_RX_DATA_FIFO.xci">
         <FileInfo>
@@ -175,12 +139,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="XGLINK_RX_DATA_FIFO.xci" FileRelPathName="XGLINK_RX_DATA_FIFO/XGLINK_RX_DATA_FIFO_clocks.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="XGLINK_RX_DATA_FIFO.xci" FileRelPathName="XGLINK_RX_DATA_FIFO/XGLINK_RX_DATA_FIFO.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/XGLINK_TX_DATA_FIFO/XGLINK_TX_DATA_FIFO.xci">
         <FileInfo>
@@ -188,12 +146,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="XGLINK_TX_DATA_FIFO.xci" FileRelPathName="XGLINK_TX_DATA_FIFO/XGLINK_TX_DATA_FIFO_clocks.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="XGLINK_TX_DATA_FIFO.xci" FileRelPathName="XGLINK_TX_DATA_FIFO/XGLINK_TX_DATA_FIFO.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/CHDIST_FRAME_FIFO/CHDIST_FRAME_FIFO.xci">
         <FileInfo>
@@ -201,9 +153,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="CHDIST_FRAME_FIFO.xci" FileRelPathName="CHDIST_FRAME_FIFO/CHDIST_FRAME_FIFO.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/CHDIST_SCALER_FLAGS_FIFO/CHDIST_SCALER_FLAGS_FIFO.xci">
         <FileInfo>
@@ -211,9 +160,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="CHDIST_SCALER_FLAGS_FIFO.xci" FileRelPathName="CHDIST_SCALER_FLAGS_FIFO/CHDIST_SCALER_FLAGS_FIFO.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/CHDIST_DATA_EMBED_FIFO/CHDIST_DATA_EMBED_FIFO.xci">
         <FileInfo>
@@ -221,9 +167,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="CHDIST_DATA_EMBED_FIFO.xci" FileRelPathName="CHDIST_DATA_EMBED_FIFO/CHDIST_DATA_EMBED_FIFO.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/MASK_RAM/MASK_RAM.xci">
         <FileInfo>
@@ -231,9 +174,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="MASK_RAM.xci" FileRelPathName="MASK_RAM_ooc.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/CMD_FIFO/CMD_FIFO.xci">
         <FileInfo>
@@ -248,15 +188,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="gmii_to_sgmii_bridge.xci" FileRelPathName="gmii_to_sgmii_bridge_board.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="gmii_to_sgmii_bridge.xci" FileRelPathName="synth/gmii_to_sgmii_bridge.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="gmii_to_sgmii_bridge.xci" FileRelPathName="synth/gmii_to_sgmii_bridge_ooc.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/UDP_MAC_RX_FRAME_FIFO/udp_mac_rx_frame_fifo.xci">
         <FileInfo>
@@ -264,12 +195,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="udp_mac_rx_frame_fifo.xci" FileRelPathName="udp_mac_rx_frame_fifo/udp_mac_rx_frame_fifo_clocks.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="udp_mac_rx_frame_fifo.xci" FileRelPathName="udp_mac_rx_frame_fifo/udp_mac_rx_frame_fifo.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/UDP_MAC_RX_DATA_FIFO/udp_mac_rx_data_fifo.xci">
         <FileInfo>
@@ -277,12 +202,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="udp_mac_rx_data_fifo.xci" FileRelPathName="udp_mac_rx_data_fifo/udp_mac_rx_data_fifo_clocks.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="udp_mac_rx_data_fifo.xci" FileRelPathName="udp_mac_rx_data_fifo/udp_mac_rx_data_fifo.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci">
         <FileInfo>
@@ -290,12 +209,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="udp_mac_tx_frame_fifo.xci" FileRelPathName="udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo_clocks.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="udp_mac_tx_frame_fifo.xci" FileRelPathName="udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/udp_mac_tx_data_fifo/udp_mac_tx_data_fifo.xci">
         <FileInfo>
@@ -303,12 +216,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="udp_mac_tx_data_fifo.xci" FileRelPathName="udp_mac_tx_data_fifo/udp_mac_tx_data_fifo_clocks.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="udp_mac_tx_data_fifo.xci" FileRelPathName="udp_mac_tx_data_fifo/udp_mac_tx_data_fifo.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/chfpga_package.vhd">
         <FileInfo>
@@ -1219,9 +1126,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="FUNCGEN_RAM.xci" FileRelPathName="FUNCGEN_RAM_ooc.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/AXI4S_REG_SLICE/AXI4S_REG_SLICE.xci">
         <FileInfo>
@@ -1307,12 +1211,11 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/CMD_FIFO/CMD_FIFO.xci">
+      <File Path="$PSRCDIR/CHAN/new/CHAN_ooc.xdc">
         <FileInfo>
-          <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
+          <Attr Name="UsedIn" Val="out_of_context"/>
         </FileInfo>
       </File>
       <Config>
@@ -1362,19 +1265,11 @@
     </Run>
     <Run Id="CHAN_synth_1" Type="Ft3:Synth" SrcSet="CHAN" Part="xc7k420tffg901-2" ConstrsSet="CHAN" Description="Vivado Synthesis Defaults" WriteIncrSynthDcp="false" Dir="$PRUNDIR/CHAN_synth_1" IncludeInArchive="true">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2016"/>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2018"/>
         <Step Id="synth_design"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
-      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2017" CtrlBit="true">
-        <ReportConfig Name="CHAN_synth_1_synth_report_utilization_0" Spec="report_utilization" RunStep="synth_design" ReportFile="CHAN_utilization_synth.rpt" Version="1" Minor="0">
-          <ReportConfigOption Name="dummy_option" Type="string"/>
-          <ReportConfigOutputOption Name="pb" Type="string" Value="CHAN_utilization_synth.pb"/>
-        </ReportConfig>
-        <ReportConfig Name="CHAN_synth_1_synth_synthesis_report_0" Spec="" RunStep="synth_design" ReportFile="CHAN.vds">
-          <ReportConfigOption Name="dummy_option" Type="string"/>
-        </ReportConfig>
-      </ReportStrategy>
+      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2018"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
     </Run>
     <Run Id="impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="constrs_1" Description="Default settings for Implementation." WriteIncrSynthDcp="false" SynthRun="synth_1" IncludeInArchive="true" GenFullBitstream="false">
@@ -1506,9 +1401,9 @@
       </ReportStrategy>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
     </Run>
-    <Run Id="CHAN_impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="CHAN" Description="Default settings for Implementation." WriteIncrSynthDcp="false" SynthRun="CHAN_synth_1" IncludeInArchive="false" GenFullBitstream="false">
+    <Run Id="CHAN_impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="CHAN" Description="Default settings for Implementation." WriteIncrSynthDcp="false" SynthRun="CHAN_synth_1" IncludeInArchive="false" GenFullBitstream="true">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016"/>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2018"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
@@ -1519,7 +1414,7 @@
         <Step Id="post_route_phys_opt_design"/>
         <Step Id="write_bitstream"/>
       </Strategy>
-      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2017"/>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2018"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
     </Run>
   </Runs>

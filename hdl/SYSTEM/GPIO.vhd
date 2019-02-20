@@ -399,6 +399,7 @@ signal manual_refclk_sample_trig_reg: std_logic; -- 1st stage of the synchronize
 attribute ASYNC_REG of manual_refclk_sample_trig_reg: signal is "true";
 signal manual_refclk_sample_trig_reg2: std_logic; -- delayed version used to detect the rising edge and do clock synchronization (needs ASYNC_REG)
 attribute ASYNC_REG of manual_refclk_sample_trig_reg2: signal is "true";
+signal manual_refclk_sample_trig_reg3: std_logic;
 signal refclk_sample_done: std_logic;
 attribute async_reg of refclk_sample_done: signal is "true";
 signal ts_sample_trig10: std_logic :='0';
@@ -1029,7 +1030,8 @@ refclk_capture_proc: process(clk10)
 			-- This automatically triggers capture of the IRIG-B time (about 2xclk200 later)`
 			manual_refclk_sample_trig_reg <= manual_refclk_sample_trig; -- two stage synchronizer
 			manual_refclk_sample_trig_reg2 <= manual_refclk_sample_trig_reg;
-			if manual_refclk_sample_trig_reg='1' and manual_refclk_sample_trig_reg2='0' then
+			manual_refclk_sample_trig_reg3 <= manual_refclk_sample_trig_reg2;
+			if manual_refclk_sample_trig_reg2='1' and manual_refclk_sample_trig_reg3='0' then
 				refclk_sample <= refclk_ctr; -- register the current counter
 				refclk_ts_sample_trig <= not refclk_ts_sample_trig; -- triggers the sampling of the IRIG-B time
 			end if;
