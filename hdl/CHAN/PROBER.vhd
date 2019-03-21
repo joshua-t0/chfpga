@@ -499,7 +499,8 @@ write_proc: process(in_clk)
                     if in_dat_reg.TLAST='1' then
                         -- Build the header VARIABLE
                         frame_header.PROBE_ID := probe_id;
-                        frame_header.STREAM_ID := stream_id;
+                        frame_header.STREAM_ID(15 downto 12) := ("000" & input_source);
+                        frame_header.STREAM_ID(11 downto 0) := stream_id;
                         frame_header.FLAGS := frame_flags;
                         frame_header.TIMESTAMP := std_logic_vector(frame_ctr);
                         -- Store the header into an adday of bytes for insertion into the FIFO
