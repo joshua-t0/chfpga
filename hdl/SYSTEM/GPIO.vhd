@@ -207,11 +207,12 @@ entity GPIO is
 
 		user_mux_in: in std_logic_vector(0 to NUMBER_OF_USER_SMA_SIGNALS-1); -- User selectable signals (typically PWM, 1PPS, SYNC, ?)
 		user_mux_out: out std_logic_vector(0 to 3); -- User selected signal
+		user_mux_oe: out std_logic_vector(0 to 3);
 		user_bit: out std_logic_vector(1 downto 0);
 
 		-- IRIG-B time
 
-		irigb_mux_in: in std_logic_vector(0 to 3); -- IRIG-B time signals
+		irigb_mux_in: in std_logic_vector(0 to 7); -- IRIG-B time signals
 		irigb_before_target: out std_logic;
 		irigb_pps: out std_logic;
 		irigb_out: out std_logic;
@@ -337,7 +338,7 @@ signal user_mux_source: slv4_array(0 to 3);
 
 -- IRIG-B receiver
 
-signal irig_source: std_logic_vector(1 downto 0) := "00";
+signal irig_source: std_logic_vector(2 downto 0) := "000";
 -- signal irigb_out_int: std_logic;
 -- signal irig_vect : std_logic_vector(0 to 3);
 signal ts: irigb; -- Current time as obtained by the IRIG-B decoder
@@ -739,23 +740,25 @@ core_reg_rd_value(10)(31 downto 26) <= to_slv(pps_ctr); -- (Read only)
 core_reg_rd_value(10)(25 downto 8)  <= ts_sample.sbs; -- (Read only)
 core_reg_rd_value(10)(7 downto 0)   <= to_slv(ts_sample.y); -- (Read only)
 -- Register 11 (_IRIGB_SAMPLE1_ADDR)
-core_reg_rd_value(11)(31 downto 30) <= to_slv(ts_sample.source); -- (Read only)
+core_reg_rd_value(11)(31 downto 30) <= to_slv(ts_sample.source(1 downto 0)); -- (Read only)
 core_reg_rd_value(11)(29)           <= ts_sample.recent; -- (Read only)
 core_reg_rd_value(11)(28 downto 20) <= to_slv(ts_sample.d); -- (Read only)
 core_reg_rd_value(11)(19 downto 14) <= to_slv(ts_sample.h); -- (Read only)
 core_reg_rd_value(11)(13 downto 7)  <= to_slv(ts_sample.m); -- (Read only)
 core_reg_rd_value(11)(6 downto 0)   <= to_slv(ts_sample.s); -- (Read only)
 -- Register 12 (_IRIGB_SAMPLE2_ADDR)
-core_reg_rd_value(12)(31 downto 30) <= irig_source; -- (Read/Write with readback)
+core_reg_rd_value(12)(31 downto 30) <= irig_source(1 downto 0); -- (Read/Write with readback)
 core_reg_rd_value(12)(29)           <= manual_refclk_sample_trig; -- (Read/Write with readback)
 core_reg_rd_value(12)(28)           <= manual_event_sample_trig; -- (Read/Write with readback)
 core_reg_rd_value(12)(27 downto 0)  <= to_slv(ts_sample.ss); -- (Read only)
-irig_source                         <= core_reg_wr_value(12)(31 downto 30);
+irig_source(1 downto 0)             <= core_reg_wr_value(12)(31 downto 30);
 manual_refclk_sample_trig           <= core_reg_wr_value(12)(29);
 manual_event_sample_trig            <= core_reg_wr_value(12)(28);
 -- Register 13 (_IRIGB_TARGET0_ADDR)
+core_reg_rd_value(13)(31)          <= irig_source(2); -- (Read/Write with readback)
 core_reg_rd_value(13)(7 downto 0)  <= core_reg_wr_value(13)(7 downto 0); -- (Readback)
 ts_target.y                        <= unsigned(core_reg_wr_value(13)(7 downto 0));
+irig_source(2)                     <= core_reg_wr_value(13)(31);
 -- Register 14 (_IRIGB_TARGET1_ADDR)
 core_reg_rd_value(14)(31)          <= ts_before_target; -- (Read-only)
 core_reg_rd_value(14)(30)          <= event_sample_done; -- (Read only)
@@ -1034,8 +1037,10 @@ refclk_capture_proc: process(clk10)
 			if manual_refclk_sample_trig_reg2='1' and manual_refclk_sample_trig_reg3='0' then
 				refclk_sample <= refclk_ctr; -- register the current counter
 				refclk_ts_sample_trig <= not refclk_ts_sample_trig; -- triggers the sampling of the IRIG-B time
+				refclk_sample_done <= '0';
+			else
+				refclk_sample_done <= to_std_logic(refclk_ts_sample_trig_reg3 = refclk_ts_sample_trig); -- reg3 is not synchronous to clk10, but that's just for a flag
 			end if;
-
 			-- Event-based trigger (sync or start of frame) (level-sensitive)
 			--event_refclk_sample_trig_reg <= event_refclk_sample_trig; -- two stage synchronizer
 			--event_refclk_sample_trig_reg2 <= event_refclk_sample_trig_reg;
@@ -1048,11 +1053,10 @@ refclk_capture_proc: process(clk10)
 
 
 --! User muxed output selection
-user_mux_out(0) <= user_mux_in(to_integer(unsigned(user_mux_source(0))));
-user_mux_out(1) <= user_mux_in(to_integer(unsigned(user_mux_source(1))));
-user_mux_out(2) <= user_mux_in(to_integer(unsigned(user_mux_source(2))));
-user_mux_out(3) <= user_mux_in(to_integer(unsigned(user_mux_source(3))));
-
+user_gen: for i in 0 to 3 generate
+	user_mux_out(i) <= user_mux_in(to_integer(unsigned(user_mux_source(i))));
+	user_mux_oe(i) <= '0' when signed(user_mux_source(i)) = -1 else '1';
+end generate;
 
 --! Implement USR_ACCESS for VIRTEX6-based platforms
 USRACCESS_V6: if FPGA_SERIES_LIST(PLATFORM_ID)=6 generate

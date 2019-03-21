@@ -34,8 +34,8 @@ use work.icecore_package.irigb;
 --
 entity irigb_decoder is port (
 	clk_200mhz : in std_logic; -- 200 MHz clock, used to sample and decode the IRIGB signal and interpolate time between seconds
-	irig : in std_logic_vector(0 to 3); -- IRIG-B sources, one of which is selected by the index in `source`
-	source : in unsigned(1 downto 0); -- Selects which IRIG-B source to use
+	irig : in std_logic_vector(0 to 7); -- IRIG-B sources, one of which is selected by the index in `source`
+	source : in unsigned(2 downto 0); -- Selects which IRIG-B source to use
 	pps: out std_logic; -- Pulsed high for 0.5s at the eginning of each new IRIG-B frame
 	ts : out irigb -- structure containing the decoded time contained in the previous IRIG-B frame
 );

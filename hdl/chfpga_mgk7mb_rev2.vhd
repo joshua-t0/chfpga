@@ -138,7 +138,7 @@ entity chFPGA_MGK7MB_Rev2 is
 			mgt_clk125_n: in std_logic;
 
 --			bp_io: out  STD_LOGIC_VECTOR(8 downto 0); --! Backplane IO
-			sma_a: out std_logic; -- sync out
+			sma_a: inout std_logic; -- sync out
 			sma_b_fpga_led2: inout std_logic; -- LED2
 			bp_time_p: in std_logic; -- Time_P
 			bp_time_n: in std_logic; -- Time_N
@@ -451,6 +451,8 @@ architecture Behavioral of chFPGA_MGK7MB_Rev2 is
 	signal time_in: std_logic;
 	-- signal sma_out: std_logic;
 	signal user_mux_out: std_logic_vector(0 to 3);
+	signal user_mux_in: std_logic_vector(0 to 3);
+	signal user_mux_oe: std_logic_vector(0 to 3);
 
 	signal gpio_rst_in: std_logic;
 	signal gpio_rst_in_not: std_logic;
@@ -502,56 +504,65 @@ begin
 -- Use the PWM of the pulsing LED to probe the capacitance of the slot number lines
 -- slot_probe(0) <= gpio_led(4);
 -- slot_probe(1) <= gpio_led(7);
-slot_probe(0) <= user_mux_out(1);
-slot_probe(1) <= user_mux_out(2);
+slot_probe(0) <= user_mux_out(1); -- connected to sma_b_fpga_led2
+slot_probe(1) <= user_mux_out(2); -- connected to fpga_led1_bp_sma
+slot_sense(0) <= user_mux_in(1);
+slot_sense(1) <= user_mux_in(2);
 
-IOBUF_led0 : IOBUF
+
+-------------------
+-- fpga_led1_bp_sma
+--    Motherboard LED1
+--    Backplane SMA
+-------------------
+led1_bp_sma_iobuf : IOBUF
 	generic map (
 		DRIVE => 16,
 		IOSTANDARD => "DEFAULT",
 		SLEW => "FAST")
 	port map (
-		O => slot_sense(0), -- Buffer output
 		IO => fpga_led1_bp_sma, -- Buffer inout port (connect directly to top-level port)
-		I => user_mux_out(1), -- Buffer input
-		T => '0' -- 3-state enable input, high=input, low=output
+		O => user_mux_in(2), -- Buffer output
+		I => user_mux_out(2), -- Buffer input
+		T => not user_mux_oe(2) -- 3-state enable input, high=input, low=output
 	);
-IOBUF_led1 : IOBUF
+
+-------------------
+-- sma_b_fpga_led2
+--   Motherboard LED2
+--   Motherboard SMA-B
+-------------------
+led2_sma_b_iobuf : IOBUF
 	generic map (
 		DRIVE => 4,
 		IOSTANDARD => "DEFAULT",
 		SLEW => "FAST")
 	port map (
-		O => slot_sense(1), -- Buffer output
 		IO => sma_b_fpga_led2, -- Buffer inout port (connect directly to top-level port)
-		I => user_mux_out(2), -- Buffer input
-		T => '0' -- 3-state enable input, high=input, low=output
+		O => user_mux_in(1), -- Buffer output
+		I => user_mux_out(1), -- Buffer input
+		T => not user_mux_oe(1) -- 3-state enable input, high=input, low=output
 	);
 
-
-
--- clk10BUF:OBUF
--- --	generic map(
--- --		DRIVE=>24,
--- --		IOSTANDARD=>"LVDCI_25",
--- --		SLEW=>"FAST"
--- --		)
--- 	port map(
--- 		I=>clk10_out,--Buffer input
--- 		O=>clk10_from_fpga --Buffer output(connect directly to top-level port)
--- 		);
-
-sma_obuf:OBUF
+-------------------
+-- sma_a
+--   Motherboard SMA-A
+-------------------
+sma_a_iobuf: IOBUF
 	generic map (
 		DRIVE => 4,
 		IOSTANDARD => "DEFAULT",
 		SLEW => "SLOW")
 	port map(
+		IO => sma_a, --Buffer output(connect directly to top-level port)
+		O => user_mux_in(0), --Buffer output
 		I => user_mux_out(0),--Buffer input
-		O => sma_a --Buffer output(connect directly to top-level port)
+		T => not user_mux_oe(0) -- 3-state enable input, high=input, low=output
 		);
 
-
+-------------------
+-- bp_trig
+-------------------
 trig_in_ibuf: IBUFGDS
 	generic map(
 		DIFF_TERM    => TRUE, --Differential Termination
@@ -563,6 +574,9 @@ trig_in_ibuf: IBUFGDS
 		O  => trig_in
 		);
 
+-------------------
+-- bp_time
+-------------------
 time_in_ibuf: IBUFGDS
 	generic map(
 		DIFF_TERM    => TRUE, --Differential Termination
@@ -574,6 +588,9 @@ time_in_ibuf: IBUFGDS
 		O  => time_in
 		);
 
+-------------------
+-- gpio_rst
+-------------------
 gpio_rst_in <= not gpio_rst_in_not;
 IOBUF_gpio_rst : IOBUF
 	generic map (
@@ -581,36 +598,45 @@ IOBUF_gpio_rst : IOBUF
 		IOSTANDARD => "DEFAULT",
 		SLEW => "SLOW")
 	port map (
-		O => gpio_rst_in_not, -- Buffer output
 		IO => gpio_rst_n, -- Buffer inout port (connect directly to top-level port)
+		O => gpio_rst_in_not, -- Buffer output
 		I => not gpio_rst_out, -- Buffer input
 		T => not gpio_rst_oe -- 3-state enable input, high=input, low=output
 	);
 
+-------------------
+-- uart_tx
+-------------------
 iobuf_uart_tx : IOBUF
 	generic map (
 		DRIVE => 4,
 		IOSTANDARD => "DEFAULT",
 		SLEW => "SLOW")
 	port map (
-		O => uart_tx_in, -- Buffer output
 		IO => uart_tx, -- Buffer inout port (connect directly to top-level port)
+		O => uart_tx_in, -- Buffer output
 		I => uart_tx_out, -- Buffer input
 		T => not uart_tx_oe -- 3-state enable input, high=input, low=output
 	);
 
+-------------------
+-- uart_rx
+-------------------
 iobuf_uart_rx : IOBUF
 	generic map (
 		DRIVE => 4,
 		IOSTANDARD => "DEFAULT",
 		SLEW => "SLOW")
 	port map (
-		O => uart_rx_in, -- Buffer output
 		IO => uart_rx, -- Buffer inout port (connect directly to top-level port)
+		O => uart_rx_in, -- Buffer output
 		I => uart_rx_out, -- Buffer input
 		T => not uart_rx_oe -- 3-state enable input, high=input, low=output
 	);
 
+-------------------
+-- arm_irq_n
+-------------------
 iobuf_arm_irq : IOBUF
 	generic map (
 		DRIVE => 4,
@@ -623,18 +649,24 @@ iobuf_arm_irq : IOBUF
 		T => not arm_irq_oe -- 3-state enable input, high=input, low=output
 	);
 
+-------------------
+-- flash_spi_cs_n
+-------------------
 iobuf_flash_cs : IOBUF
 	generic map (
 		DRIVE => 4,
 		IOSTANDARD => "DEFAULT",
 		SLEW => "SLOW")
 	port map (
-		O => flash_cs_in, -- Buffer output
 		IO => flash_spi_cs_n, -- Buffer inout port (connect directly to top-level port)
+		O => flash_cs_in, -- Buffer output
 		I => flash_cs_out, -- Buffer input
 		T => not flash_cs_oe -- 3-state enable input, high=input, low=output
 	);
 
+-------------------
+-- gpio_irq_n
+-------------------
 iobuf_gpio_irq : IOBUF
 	generic map (
 		DRIVE => 4,
@@ -647,6 +679,9 @@ iobuf_gpio_irq : IOBUF
 		T => not gpio_irq_oe -- 3-state enable input, high=input, low=output
 	);
 
+-------------------
+-- bp_gpio_int
+-------------------
 bp_gpio_int_buf: IOBUF
 	generic map (
 		DRIVE => 4,
@@ -659,7 +694,10 @@ bp_gpio_int_buf: IOBUF
 		T => not bp_gpio_int_oe -- 3-state enable input, high=input, low=output
 	);
 
--- 10 MHz reference clock
+-------------------
+-- mgt_clk10
+-------------------
+-- 10 MHz reference differential clock direct from the external PLL (but in bypass mode)
 ibufds_gtrefclk10 : IBUFDS_GTE2
 	port map (
 		I     => mgt_clk10_p,
@@ -669,13 +707,17 @@ ibufds_gtrefclk10 : IBUFDS_GTE2
 		ODIV2 => open
 	);
 
+-- Send the 10 MHz through a global buffer
 bufg_gtrefclk10 : BUFG
 	port map (
 		I => mgt_clk10_nobuf,
 		O => mgt_clk10
 	);
 
--- 100 MHz MGT reference clock
+-------------------
+-- mgt_clk100
+-------------------
+-- 100 MHz MGT reference clock from the external PLL
 ibufds_gtrefclk100 : IBUFDS_GTE2
 	generic map (
 		CLKCM_CFG => TRUE, -- Refer to Transceiver User Guide
@@ -695,7 +737,10 @@ buf_gtrefclk100 : BUFH
 		O => mgt_clk100
 	);
 
--- 200 MHz MGT reference clock
+-------------------
+-- mgt_clk200
+-------------------
+-- 200 MHz MGT reference clock from the external PLL
 ibufds_gtrefclk200 : IBUFDS_GTE2
 	port map (
 		I     => mgt_clk200_p,
@@ -711,7 +756,10 @@ buf_gtrefclk200 : BUFH
 		O => mgt_clk200
 	);
 
--- 125 MHz MGT reference clock
+-------------------
+-- mgt_clk125
+-------------------
+-- 125 MHz MGT reference clock from the external PLL
 ibufds_gtrefclk125 : IBUFDS_GTE2
 	port map (
 		I     => mgt_clk125_p,
@@ -727,6 +775,10 @@ buf_gtrefclk125 : BUFH
 		O => mgt_clk125
 	);
 
+-------------------
+-- raw_clk10
+-------------------
+-- 10 MHz single-ended clock thAt does not go through the EXTERNAL pll
 bufr_rawclk10 : BUFR
 	generic map (
 		BUFR_DIVIDE => "BYPASS", --  ("BYPASS", "1", "2", "3", "4", "5", "6", "7", "8")
@@ -740,15 +792,10 @@ bufr_rawclk10 : BUFR
 	);
 
 
--- ibufds_xge : IBUFDS_GTE2
--- 	port map (
--- 		I     => xge_refclk_p(0),
--- 		IB    => xge_refclk_n(0),
--- 		CEB   => '0',
--- 		O     => open,
--- 		ODIV2 => open
--- 	);
-
+-----------------------------------------
+-- Buck converter synchronization signals
+-----------------------------------------
+--
 --! Buck phase schedule
 --! |  0 | 5V0      | Supply |
 --! |  1 | 1V0_GTX  | 5V0    | GTX |
@@ -973,12 +1020,16 @@ bufr_rawclk10 : BUFR
 			bp_gpio_int_out => bp_gpio_int_out,
 			bp_gpio_int_oe => bp_gpio_int_oe,
 
+			-- Capacitance detector signals -- not used
 			bp_slot_probe   => slot_probe,
 			bp_slot_sense   => slot_sense,
 
 			clk10_out  => open, -- 10 MHz reference clock generated by FPGA.
 
+			-- User-controlled/selected signals for LEDs and SMAs
 			user_mux_out => user_mux_out,
+			user_mux_in => user_mux_in,
+			user_mux_oe => user_mux_oe,
 			---------------------------
 			-- FMC
 			---------------------------
