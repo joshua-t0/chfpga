@@ -273,12 +273,17 @@ type COMPLEX48_STRUCT is -- (54 Re + 54 Im) = 108 bits wide combined -- maximum 
 type COMPLEX48_STRUCT_ARRAY is array (NATURAL RANGE <>) of COMPLEX48_STRUCT;
 
 --! Raw data capture (PROBER) frame header
-constant FRAME_HEADER_BYTE_LENGTH: integer :=9; -- Number of 32-bit words taken by a header
+constant FRAME_HEADER_BYTE_LENGTH: integer := 10; -- Number of 32-bit words taken by a header
 type FRAME_HEADER_STRUCT is
 	record  -- In transmission order (bytewise)
 		PROBE_ID: std_logic_vector(7 downto 0); -- 1 byte, user-defined. Generally a cookie, but can be used by user to convey more info (e.g. extend the number of channels)
-		STREAM_ID: std_logic_vector(11 downto 0); -- 12 bits, user-defined (4096 possible STREAM ID (channels). CHIME has 2048 channels.)
-		FLAGS: std_logic_vector(3 downto 0); -- 4 bits, system-defined. (ADC overflow, channelizer Overflow, calib overflow, capture flag)
+		STREAM_ID: std_logic_vector(15 downto 0); --! 16 bit value used to uniquely define the data stream and lookup . Defined as listed below:
+			--! Bits 15-12 (4 bits). Software defined. Identifies the data source within the internal pipeline (1st shuffle, 2nd shufle, raw data etc.).
+			--! Bits 12-8 (4 bits). Software defined. Identifies the crate_number.
+			--! Bits 7-4 (4 bits). Software defined. Identifies slot number (zero-based).
+			--! Bits 3-0 (4 bits). Hardware defined. Identifies the 10Gb/s lane (1st shuffle has 15 lanes, 2nd shuffle has 4 lanes, GPU link has 8 lanes).
+		UNUSED: std_logic_vector(3 downto 0);
+		FLAGS: std_logic_vector(3 downto 0); -- 4 bits: aggregated TUSER bits at the input source
 		TIMESTAMP: std_logic_vector(47 downto 0); --6 bytes (48 bits), system-defined
 	end record;
 
@@ -290,8 +295,9 @@ type SHUFFLE_FRAME_HEADER_STRUCT is
 	record
 		-- Word 0
 		STREAM_ID: std_logic_vector(15 downto 0); --! 16 bit value used to uniquely define the data stream and lookup . Defined as listed below:
-			--! Bits 15-6 (10 bits). Software defined. Identifies the source FPGA board.  There are 160 FPGAs in full CHIME.
-			--! Bits 5-4 (2 bits). Software defined. Identifies the shuffle level (1st shuffle, 2nd shufle, GPU link).
+			--! Bits 15-12 (4 bits). Software defined. Identifies the data source within the internal pipeline (1st shuffle, 2nd shufle, raw data etc.).
+			--! Bits 12-8 (4 bits). Software defined. Identifies the crate_number.
+			--! Bits 7-4 (4 bits). Software defined. Identifies slot number (zero-based).
 			--! Bits 3-0 (4 bits). Hardware defined. Identifies the 10Gb/s lane (1st shuffle has 15 lanes, 2nd shuffle has 4 lanes, GPU link has 8 lanes).
 		PROTOCOL_VERSION: std_logic_vector(3 downto 0); --! Along with the cookie, identifies how the data is encoded in this header and the data. The cookie will have to change if we run out of space for versions.
 		HEADER_LENGTH_IN_WORDS: std_logic_vector(3 downto 0); --! Number of 32-bit words in this header, to help the GPU skip this part if needed
@@ -1688,14 +1694,15 @@ FUNCTION to_unsigned(i:slv8_array) return unsigned is -- concatenated bytes in a
 	begin
 		return to_unsigned(i,8*i'Length);
 	end to_unsigned;
+
 -- Return the Raw data capture frame header structure as a byte array
 FUNCTION struct_to_bytes(s:FRAME_HEADER_STRUCT) return slv8_array is
-	variable b: slv8_array(0 to FRAME_HEADER_BYTE_LENGTH-1);
-	variable w: std_logic_vector(8*FRAME_HEADER_BYTE_LENGTH-1 downto 0);
+	variable b: slv8_array(0 to FRAME_HEADER_BYTE_LENGTH - 1);
+	variable w: std_logic_vector(8 * FRAME_HEADER_BYTE_LENGTH - 1 downto 0);
 	begin
-		w := s.PROBE_ID & s.STREAM_ID & s.FLAGS & s.TIMESTAMP;
+		w := s.PROBE_ID & s.STREAM_ID & s.UNUSED & s.FLAGS & s.TIMESTAMP;
 		for i in 0 to FRAME_HEADER_BYTE_LENGTH-1 loop
-			b(i) := w(8*(FRAME_HEADER_BYTE_LENGTH-i)-1 downto 8*(FRAME_HEADER_BYTE_LENGTH-i-1));
+			b(i) := w(8 * (FRAME_HEADER_BYTE_LENGTH - i) - 1 downto 8 * (FRAME_HEADER_BYTE_LENGTH - i - 1));
 		end loop;
 		return b;
 	end struct_to_bytes;

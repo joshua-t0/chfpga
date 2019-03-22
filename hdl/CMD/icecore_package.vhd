@@ -23,10 +23,10 @@ package icecore_package is
 		d : unsigned(8 downto 0);
 		y : unsigned(7 downto 0);
 		c : std_logic_vector(17 downto 0);
-		sbs : std_logic_vector(17 downto 0);
-		ss : unsigned(27 downto 0); -- 100MHz ticks, saturating
+		sbs : std_logic_vector(17 downto 0);  -- straight binary seconds
+		ss : unsigned(27 downto 0); -- 100 MHz (10 ns) ticks, saturating
 		recent : std_logic;
-		source : unsigned(1 downto 0);
+		source : unsigned(2 downto 0);
 	end record;
 
 	-- generic types and subtypes
