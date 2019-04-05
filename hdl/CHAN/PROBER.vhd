@@ -151,7 +151,7 @@ signal burst_number: unsigned(7 downto 0);
 signal burst_period: unsigned(23 downto 0);
 signal burst_period_minus_1: unsigned(burst_period'Range) := (others => '0'); -- registered version of the burst_period minus one used to determine the end of the loop
 signal probe_id: std_logic_vector(7 downto 0);
-signal stream_id: std_logic_vector(11 downto 0);
+signal stream_id: std_logic_vector(15 downto 0);
 signal continuous_transmission: std_logic;
 signal input_source: std_logic;
 
@@ -167,7 +167,7 @@ signal send_data: std_logic;
 signal soft_reset: std_logic;
 signal fifo_reset: std_logic;
 signal reset_all: std_logic;
-
+signal serial_flags: std_logic_vector(2 to 0);
 signal fifo_reset_reg: std_logic;
 
 -- These signals require previous signals to be defined
@@ -204,8 +204,7 @@ begin
 --! |         |  5  |  7:0 | burst_number         | |
 --! |         |  6  |  7:0 | probe_id             | |
 --! |         |  7  |  7:4 | burst_delay(20:17)   | |
---! |         |     |  3:0 | stream_id(11:8)      | |
---! |         |  8  |  7:0 | stream_id(7:0)       | |
+--! |         | 7-8 | 15:0 | stream_id(15:0)      | |
 --! |         | 9-10| 15:0 | send_delay           | Time to wait before sending captured data |
 --! |         | 11  | 7:0  | burst_delay(7:0)     | |
 --! | STATUS  |  0  |   7  | TUSER_CAPTURE_BIT    | For debugging. |
@@ -240,8 +239,7 @@ burst_number <= unsigned(control_bytes(5));
 probe_id <= control_bytes(6);
 -- CONTROL Byte 7-8
 -- control_bytes(7)(7 downto 4) used by burst_delay2
-stream_id(11 downto 8) <= control_bytes(7)(3 downto 0);
-stream_id(7 downto 0) <= control_bytes(8);
+stream_id <= to_slv(control_bytes(7 to 8));
 -- CONTROL Byte 9-10
 send_delay <= to_unsigned(control_bytes(9 to 10)) & X"0000";
 -- CONTROL Byte 11
@@ -422,6 +420,10 @@ write_proc: process(in_clk)
 
 
             if in_dat_reg.TVALID='1' then
+                -- Keep track of the serial flags
+                serial_flags(2 downto 1) <= serial_flags(1 downto 0);
+                serial_flags(0) <= in_dat_reg.TUSER(TUSER_SERIAL_FLAGS_BIT);
+
                 trig_var:=in_dat_reg.TUSER(TUSER_CAPTURE_BIT); -- assign the trigger to a temporary variable for clarity
                 trig_prev <= trig_var; -- store previous state of the trig signal so we can detect edges
 
@@ -455,7 +457,7 @@ write_proc: process(in_clk)
                                 burst_frame_ctr <= (others => '0'); -- reset the frame counter
                                 burst_ctr <= burst_ctr + 1; -- increase the number of bursts sent
                                 if continuous_transmission='1' then -- if burst_number=0, tranmit bursts continuously
-                                    capture_frame <= in_dat_reg.TUSER(TUSER_CAPTURE_BIT); -- transmit frames whenever the CAPTURE bit embedeed in the frame is set
+                                    capture_frame <= in_dat_reg.TUSER(TUSER_CAPTURE_BIT); -- transmit frames whenever the CAPTURE bit embedded in the frame is set
                                 elsif is_last_burst='1' then  -- if we are the last burst then stop
                                     capture_frame <= '0'; -- stop transmitting bursts
                                     capture_mode_active<='0'; -- Stop the capture mode. Will have to reset to restart a new sequence of bursts
@@ -499,8 +501,9 @@ write_proc: process(in_clk)
                     if in_dat_reg.TLAST='1' then
                         -- Build the header VARIABLE
                         frame_header.PROBE_ID := probe_id;
-                        frame_header.STREAM_ID(15 downto 12) := ("000" & input_source);
-                        frame_header.STREAM_ID(11 downto 0) := stream_id;
+                        frame_header.STREAM_ID(15) := input_source;
+                        frame_header.STREAM_ID(14 downto 0) := stream_id(14 downto 0);
+                        frame_header.SERIAL_FLAGS := serial_flags(2 downto 0) & in_dat_reg.TUSER(TUSER_SERIAL_FLAGS_BIT);
                         frame_header.FLAGS := frame_flags;
                         frame_header.TIMESTAMP := std_logic_vector(frame_ctr);
                         -- Store the header into an adday of bytes for insertion into the FIFO

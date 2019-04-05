@@ -161,11 +161,11 @@ attribute keep:string;
 attribute equivalent_register_removal: string;
 
 signal s_axis_global_tfirst: std_logic;
+signal s_axis_tuser_dly: slv4_array(0 to NUMBER_OF_INPUTS-1); -- stores a delayed version of TUSER so we can see the SERIAL_FLAGS before TLAST
 
 signal m_axis_tdata_int:  slv32;
 signal m_axis_tvalid_int: std_logic;
 signal m_axis_tlast_int:  std_logic;
-
 -- MASK RAM signals
 --  Port A: Control port ( data width: 8 bits)
 signal mask_ram_ctrl_addr: std_logic_vector(6 downto 0);
@@ -757,6 +757,9 @@ fifo_wr_proc: process(clk)
 				--     data_in_odd(63:0)  = b3* b2* b1* b0* b3 b2 b1 b0
 				-- If we have a 32-bit fifo and therefore support only the 4-bit mode, we have all the data we need in the first 32 bits.
 				for j in 0 to 3 loop
+					-- Get a delayed version of TUSER so we can access the SERIAL_FLAGS at TLAST-1
+					s_axis_tuser_dly(4*i+j) <= s_axis_tuser(4*i+j);
+
 					-- EVEN bin
 					-- Remap high nibble of complex value (used both in 4 and 8 bit mode)
 					data_in_even(8*j+7 downto 8*j+4) := s_axis_tdata(4*i+j)(31 downto 28); -- get high nibble, Real part, even bin
@@ -836,8 +839,8 @@ fifo_wr_proc: process(clk)
 				end if;
 				-- Put the ADC and FFT flags of the selected values on the frame FIFO input. These will be written only at the end of each frame
 				for j in 0 to 3 loop
-						frame_flags_fifo_din(4*i+j) <= s_axis_tuser(4*i+j)(TUSER_ADC_OVERFLOW_BIT);
-						frame_flags_fifo_din(16+4*i+j) <= s_axis_tuser(4*i+j)(TUSER_FFT_OVERFLOW_BIT);
+						frame_flags_fifo_din(4*i+j) <= s_axis_tuser(4*i+j)(TUSER_SERIAL_FLAGS_BIT); -- SERIAL_FLAG @ TLAST: ADC Overflow bit
+						frame_flags_fifo_din(16+4*i+j) <= s_axis_tuser_dly(4*i+j)(TUSER_SERIAL_FLAGS_BIT);  -- SERIAL_FLAG @ TLAST-1: FFT Overflow bit
 				end loop;
 
 			end loop; --for i in 0 to NUMBER_OF_INPUTS/4-1

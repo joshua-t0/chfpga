@@ -71,36 +71,36 @@ use UNISIM.VComponents.all;
 --! The CASPER toolset must be open in the Simulink library browser before the FFT model is loaded to force it to re-parse the library
 --!
 entity FFT is
-    generic (
-        IMPLEMENT_FFT: BOOLEAN :=TRUE
-        );
-    port (
-        -- Input Interface
-        --! Input time stream, implemented as a non-blocking AXI4 Streaming Interface with a 32-bit data bus.
-        --! Each word presents 4 time samples, where the early sample is in the MSB.
-        in_dat  : in AXIS32_DAT_STRUCT;
+	generic (
+		IMPLEMENT_FFT: BOOLEAN :=TRUE
+		);
+	port (
+		-- Input Interface
+		--! Input time stream, implemented as a non-blocking AXI4 Streaming Interface with a 32-bit data bus.
+		--! Each word presents 4 time samples, where the early sample is in the MSB.
+		in_dat  : in AXIS32_DAT_STRUCT;
 
-        -- Output Interface
-        --! Output spectrum stream, implemented as a non-blocking AXI4 Streaming interface with a 72 bit bus.
-        --! Each 72-bit word contains two 36-bit complex numbers (18 bit real signed + 18 bit imaginary signed values).
-        --! The most significant 36 bits contains the value for the even frequency bins,
-        --! while the lower ones is the value for the odd frequency bin.
-        --! The Most significant bits of a complex values contain the real part.
-        out_dat : out AXIS72_DAT_STRUCT;
+		-- Output Interface
+		--! Output spectrum stream, implemented as a non-blocking AXI4 Streaming interface with a 72 bit bus.
+		--! Each 72-bit word contains two 36-bit complex numbers (18 bit real signed + 18 bit imaginary signed values).
+		--! The most significant 36 bits contains the value for the even frequency bins,
+		--! while the lower ones is the value for the odd frequency bin.
+		--! The Most significant bits of a complex values contain the real part.
+		out_dat : out AXIS72_DAT_STRUCT;
 
-        -- Common Clock and Reset
-        clk     : in  std_logic; --! Processing clock, common to the input and output bus
-        reset   : in  std_logic; --! clk-synchronous Antenna processor reset.
-                                 --! In this module, resets the SYNC generator and send SYNC signals to the FFT
+		-- Common Clock and Reset
+		clk     : in  std_logic; --! Processing clock, common to the input and output bus
+		reset   : in  std_logic; --! clk-synchronous Antenna processor reset.
+		                         --! In this module, resets the SYNC generator and send SYNC signals to the FFT
 
-        -- Control interface (command and reply stream buses)
-        ctrl_cmd_in_dat     : in  AXIS8_DAT_STRUCT;
-        ctrl_cmd_in_rdy     : out AXIS8_RDY_STRUCT;
-        ctrl_rply_out_dat   : out AXIS8_DAT_STRUCT;
-        ctrl_rply_out_rdy   : in  AXIS8_RDY_STRUCT;
-        ctrl_clk            : in  std_logic;
-        ctrl_rst            : in  std_logic
-        );
+		-- Control interface (command and reply stream buses)
+		ctrl_cmd_in_dat     : in  AXIS8_DAT_STRUCT;
+		ctrl_cmd_in_rdy     : out AXIS8_RDY_STRUCT;
+		ctrl_rply_out_dat   : out AXIS8_DAT_STRUCT;
+		ctrl_rply_out_rdy   : in  AXIS8_RDY_STRUCT;
+		ctrl_clk            : in  std_logic;
+		ctrl_rst            : in  std_logic
+		);
 end FFT;
 
 
@@ -119,6 +119,8 @@ signal sync_reset: std_logic;
 -- FFT block
 
 signal fft_in: AXIS32_DAT_STRUCT;
+signal out_dat_int :AXIS72_DAT_STRUCT;
+
 signal fft_clk_en: std_logic:='1'; -- init value needed for initial sync
 signal fft_clk_en_buf: std_logic;
 signal delay_clk_en: std_logic;
@@ -128,6 +130,8 @@ signal fft_sync_in: std_logic := '1'; -- init value needed to generate first syn
 signal fft_sync_out: std_logic := '0';
 signal fft_sync_out2: std_logic := '0';
 signal fft_overflow: std_logic := '0';
+signal fft_overflow_sticky: std_logic;
+--signal fft_overflow_sticky_dly: std_logic;
 signal fft_tuser: std_logic_vector(out_dat.TUSER'RANGE);
 signal fft_tlast: std_logic;
 signal fft_tvalid: std_logic;
@@ -198,28 +202,28 @@ status_bytes(2) <= std_logic_vector(overflow_count);
 -----------------------------------------------------------------------------------
 --! Instantiates a memory-mapped interface to the control and status bytes
 CTRL_SLAVE0: entity work.CTRL_SLAVE
-    GENERIC MAP (
-        NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), -- Number of bits in the control word
-        NUMBER_OF_STATUS_BYTES  => status_bytes'Length(1), -- Number of bits in the status word.
-        DEFAULT_CONTROL_BYTES   => X"00_03FF_0000_0C9E", -- default values.
-        USE_FIFO                => FALSE
-    )
+	GENERIC MAP (
+		NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), -- Number of bits in the control word
+		NUMBER_OF_STATUS_BYTES  => status_bytes'Length(1), -- Number of bits in the status word.
+		DEFAULT_CONTROL_BYTES   => X"00_03FF_0000_0C9E", -- default values.
+		USE_FIFO                => FALSE
+	)
 
-    PORT MAP(
-        -- Control interface (command and reply stream buses)
-        ctrl_cmd_in_dat   => ctrl_cmd_in_dat,
-        ctrl_cmd_in_rdy   => ctrl_cmd_in_rdy,
-        ctrl_rply_out_dat => ctrl_rply_out_dat,
-        ctrl_rply_out_rdy => ctrl_rply_out_rdy,
-        ctrl_clk          => ctrl_clk,
-        ctrl_rst          => ctrl_rst,
+	PORT MAP(
+		-- Control interface (command and reply stream buses)
+		ctrl_cmd_in_dat   => ctrl_cmd_in_dat,
+		ctrl_cmd_in_rdy   => ctrl_cmd_in_rdy,
+		ctrl_rply_out_dat => ctrl_rply_out_dat,
+		ctrl_rply_out_rdy => ctrl_rply_out_rdy,
+		ctrl_clk          => ctrl_clk,
+		ctrl_rst          => ctrl_rst,
 
-        control_bytes     => control_bytes,
-        status_bytes      => status_bytes,
+		control_bytes     => control_bytes,
+		status_bytes      => status_bytes,
 
-        clk               => clk,
-        RST               => reset
-    );
+		clk               => clk,
+		RST               => reset
+	);
 
 
 -----------------------------------------------------------------------------------
@@ -228,156 +232,174 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 --! Sends the input data to the FFT input and repackage the FFT output and pass it to the output bus.
 fft_clk_en <= '1';
 main_proc: process(clk)
-    begin
-        if rising_edge(clk) then
-            sync_reset <= soft_reset or reset; -- Both reset sources are clk-synchronous
+	begin
+		if rising_edge(clk) then
+			sync_reset <= soft_reset or reset; -- Both reset sources are clk-synchronous
 
-            -- Handle Resets
-            -- If reset is enabled, the FFT is fed with dummy data and SYNC=1.
-            -- When reset is disabled, the FFT is fed with the incoming data and is clocked only if the data is valid.
-            -- SYNC is pulsed every N frames afterwards.
-            if reset='1' then
-                sync_frame_ctr <= (others=>'0'); --needed
-                overflow_count <= (others=>'0');
-                -- Clock the FFT with a SYNC input
-                fft_in.TVALID <= '0';
-                fft_in.TDATA <= (others=>'X');
-                -- fft_clk_en<='1';
-                fft_sync_in <= '1';
-                delay_clk_en <= '0'; -- don't write anything to the delay line. we don't want the forced SYNC in there
-            else
-                -- Define intermediate signals to simplify the logic
-                -- These are needed only at the first TLAST, so they have time to initialize before they are needed. No reset values are necessary.
-                sync_period_is_zero <= to_std_logic(sync_period=0);
+			sync_period_is_zero <= to_std_logic(sync_period=0);
 
-                -- This is set on a TLAST=1, and is not needed until the next TLAST, so they have time to set before then.
-                if sync_frame_ctr = (sync_period - 1) then
-                    is_last_frame_of_sync_period <='1';
-                else
-                    is_last_frame_of_sync_period <='0';
-                end if;
+			-- This is set on a TLAST=1, and is not needed until the next TLAST, so they have time to set before then.
+			if sync_frame_ctr = (sync_period - 1) then
+				is_last_frame_of_sync_period <='1';
+			else
+				is_last_frame_of_sync_period <='0';
+			end if;
 
-                -- Counts the FFT overflows and stop at maximum value, and reset when overflow_reset=1
-                if overflow_reset='1' then
-                    overflow_count <= (others=>'0');
-                elsif fft_overflow='1' and signed(overflow_count)/=-1 then
-                    overflow_count <= overflow_count + 1;
-                end if;
+			-- Counts the FFT overflows and stop at maximum value, and reset when overflow_reset=1
+			if overflow_reset='1' then
+				overflow_count <= (others=>'0');
+			elsif fft_tvalid='1' and fft_clk_en='1' and fft_overflow='1' and signed(overflow_count)/=-1 then
+				overflow_count <= overflow_count + 1;
+			end if;
 
-                -- Process the input data
-                fft_in       <= in_dat; -- delay the data so it is aligned with the generated sync
-                -- fft_clk_en   <= in_dat.TVALID; -- enable passing the valid data into the FFT
-                delay_clk_en <= in_dat.TVALID; -- enable writing control signals through the delay line
+			-- Keep track of the FFT overflow flag during the frame. Note that
+			-- the CASPER fft flag is not necessarily aligned to a frame, so
+			-- this info shall be used carefully (maybe invalidate one or more
+			-- frames after, and maybe the frame before). Also note that thet
+			-- TLAST occurs, we have not yet included the last `fft_overflow` in
+			-- `fft_overflow_sticky`; we ned to do that separately.
+			if fft_tvalid='1' and fft_clk_en='1' and fft_tlast='1' then
+				fft_overflow_sticky <= '0';
+				--fft_overflow_sticky_dly <= fft_overflow_sticky_int or fft_overflow;
+			elsif fft_tvalid='1' and fft_clk_en='1' and fft_overflow='1' then
+				fft_overflow_sticky <= '1';
+			end if;
 
-                if in_dat.TVALID='1' then
-                    -- Generate a SYNC pulse every sync_period frames on the last word of the previous frame
-                    fft_sync_in <= '0'; -- SYNC returns to zero on every valid word so it lasts only one sample. Will be overriden below.
-                    if in_dat.TLAST='1' and sync_period_is_zero='0' then -- if this is the last word of the frame, check if it is time to generate a SYNC pulse
-                        if  is_last_frame_of_sync_period='1' then -- if maximum count reach, send a sync pulse, otherwise blank it
-                            sync_frame_ctr <= (others=>'0');
-                            fft_sync_in <= '1';
-                        else
-                            sync_frame_ctr <= sync_frame_ctr+1;
-                        end if; -- sync_frame_ctr = max count
-                    end if; -- TLAST=1
-                end if; -- TVALID=1
-            end if; -- if RST
+			-- Process the input data
+			fft_in <= in_dat; -- delay the data so it is aligned with the generated sync
+			-- fft_clk_en   <= in_dat.TVALID; -- enable passing the valid data into the FFT
+			delay_clk_en <= in_dat.TVALID; -- enable writing control signals through the delay line
 
+			if in_dat.TVALID='1' then
+				-- Generate a SYNC pulse every sync_period frames on the last word of the previous frame
+				fft_sync_in <= '0'; -- SYNC returns to zero on every valid word so it lasts only one sample. Will be overriden below.
+				if in_dat.TLAST='1' and sync_period_is_zero='0' then -- if this is the last word of the frame, check if it is time to generate a SYNC pulse
+					if  is_last_frame_of_sync_period='1' then -- if maximum count reach, send a sync pulse, otherwise blank it
+						sync_frame_ctr <= (others=>'0');
+						fft_sync_in <= '1';
+					else
+						sync_frame_ctr <= sync_frame_ctr + 1;
+					end if; -- sync_frame_ctr = max count
+				end if; -- TLAST=1
+			end if; -- TVALID=1
 
-            -- if the FFT module is present and it is not bypassed by software, pass the FFT output to the output
-            if IMPLEMENT_FFT=TRUE and bypass_fft='0' then -- if the FFT is being used
-                out_dat.TVALID <= fft_tvalid and fft_clk_en; -- The FFT outputs valid data only of the FFT is clocked AND the data has gone through the pipeline
-                out_dat.TLAST <= fft_tlast;
-                out_dat.TUSER <= fft_tuser;
-                -- out_dat.TUSER(TUSER_FFT_OVERFLOW_BIT)<=fft_overflow; -- add the FFT overflow flag
-                out_dat.TDATA <= fft_tdata;
-            else
-                -- otherwise, just pass the input to the output, adapting the data width.
-                out_dat.TVALID <= in_dat.TVALID;
-                out_dat.TLAST <= in_dat.TLAST;
-                out_dat.TUSER <= in_dat.TUSER;
---              out_dat.TUSER(TUSER_FFT_OVERFLOW_BIT)<='0'; -- add the FFT overflow flag
-                out_dat.TDATA <= (others=>'0');
-                for i in 0 to 3 loop
-                    out_dat.TDATA(18*i+17 downto 18*i) <= std_logic_vector(resize(signed(in_dat.TDATA(8*i+7 downto 8*i)), 18)); -- make sure to sign extend the byte to the full 18 bits
-                end loop; -- if FFT is implemented
-            end if;
+			if IMPLEMENT_FFT=TRUE and bypass_fft='0' then -- if the FFT is being used
+				-- if the FFT module is present and it is not bypassed by software, pass the FFT output to the output
+				out_dat_int.TVALID <= fft_tvalid and fft_clk_en; -- The FFT outputs valid data only of the FFT is clocked AND the data has gone through the pipeline
+				out_dat_int.TLAST <= fft_tlast;
+				out_dat_int.TUSER <= fft_tuser;
+				out_dat_int.TDATA <= fft_tdata;
 
-            if reset='1' then
-                out_dat.TVALID<='0'; --! needed to make sure we don't sent invalid data after reset.
-            end if;
-        end if; -- clk
-    end process;
+				out_dat <= out_dat_int;
+				-- Insert the FFT overflow flag in the next_to_last Serial flag bit
+				if fft_tlast='1' then
+					out_dat.TUSER(TUSER_SERIAL_FLAGS_BIT) <= fft_overflow_sticky or fft_overflow; -- add the FFT overflow flag, including the one on TLAST
+				end if;
+			else
+				-- otherwise, just pass the input to the output, adapting the data width.
+				out_dat_int.TVALID <= in_dat.TVALID;
+				out_dat_int.TLAST <= in_dat.TLAST;
+				out_dat_int.TUSER <= in_dat.TUSER;
+				out_dat_int.TDATA <= (others=>'0'); -- all bits are dezo by default unless defined below
+				for i in 0 to 3 loop
+					out_dat_int.TDATA(18*i+17 downto 18*i) <= std_logic_vector(resize(signed(in_dat.TDATA(8*i+7 downto 8*i)), 18)); -- make sure to sign extend the byte to the full 18 bits
+				end loop; -- if FFT is implemented
+
+				out_dat <= out_dat_int;
+			end if;
+
+			-- Handle Resets
+			-- If reset is enabled, the FFT is fed with dummy data and SYNC=1.
+			-- When reset is disabled, the FFT is fed with the incoming data and is clocked only if the data is valid.
+			-- SYNC is pulsed every N frames afterwards.
+			-- Define intermediate signals to simplify the logic
+			-- These are needed only at the first TLAST, so they have time to initialize before they are needed. No reset values are necessary.
+			if reset='1' then
+				sync_frame_ctr <= (others=>'0'); --needed
+				overflow_count <= (others=>'0');
+				-- Clock the FFT with a SYNC input
+				fft_in.TVALID <= '0';
+				fft_in.TDATA <= (others=>'X');
+				out_dat.TVALID <= '0'; --! needed to make sure we don't sent invalid data after reset.
+				-- fft_clk_en<='1';
+				fft_sync_in <= '1';
+				delay_clk_en <= '0'; -- don't write anything to the delay line. we don't want the forced SYNC in there
+			end if; -- if RST
+
+		end if; -- clk
+	end process;
 
 
 FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 
------------------------------------------------------------------------------------
--- PFB/FFT Instance
------------------------------------------------------------------------------------
---! This is a CASPER PFB/FFT geneted using Xilinx System Generator
---! Time-based data is presented 4 samples at a time,  in0 being the earliest sample. A time sample is 8 bit wide.
---! Output is the complex frequency samples (18 bits real + 18 bits imaginary). Out0 and out 1 provide the even and odd frequencies respectively. The upper
-    FFT0: SIMPLE_PFB_V2
-        PORT MAP(
-            sync_in  => fft_sync_in,
-            in0      => fft_in.TDATA(31 downto 24),
-            in1      => fft_in.TDATA(23 downto 16),
-            in2      => fft_in.TDATA(15 downto 8),
-            in3      => fft_in.TDATA(7 downto 0),
+	-----------------------------------------------------------------------------------
+	-- PFB/FFT Instance
+	-----------------------------------------------------------------------------------
+	--! This is a CASPER PFB/FFT geneted using Xilinx System Generator
+	--! Time-based data is presented 4 samples at a time,  in0 being the earliest sample. A time sample is 8 bit wide.
+	--! Output is the complex frequency samples (18 bits real + 18 bits imaginary). Out0 and out 1 provide the even and odd frequencies respectively. The upper
+	FFT0: SIMPLE_PFB_V2
+		PORT MAP(
+			sync_in  => fft_sync_in,
+			in0      => fft_in.TDATA(31 downto 24),
+			in1      => fft_in.TDATA(23 downto 16),
+			in2      => fft_in.TDATA(15 downto 8),
+			in3      => fft_in.TDATA(7 downto 0),
 
-            sync_out => fft_sync_out,
-            out1     => fft_dout0_int,
-            out2     => fft_dout1_int,
+			sync_out => fft_sync_out,
+			out1     => fft_dout0_int,
+			out2     => fft_dout1_int,
 
-            shift    => fft_shift_schedule(10 downto 0),
-            overflow => fft_overflow,
-            ce_1     => fft_clk_en,
-            clk_1    => clk
-        );
+			shift    => fft_shift_schedule(10 downto 0),
+			overflow => fft_overflow,
+			ce_1     => fft_clk_en,
+			clk_1    => clk
+		);
 
--- -- Pass the FFT CE signal through a BUFH to avoid the signal to be replicated a large number of times to meet timing.
--- fft_ce_bufh : BUFH
---  port map (
---      I => fft_clk_en,
---      O => fft_clk_en_buf
---  );
+	-- -- Pass the FFT CE signal through a BUFH to avoid the signal to be replicated a large number of times to meet timing.
+	-- fft_ce_bufh : BUFH
+	--  port map (
+	--      I => fft_clk_en,
+	--      O => fft_clk_en_buf
+	--  );
 
---  sync_reset <= soft_reset;
+	--  sync_reset <= soft_reset;
 
-    flags_in       <= (fft_sync_in & fft_in.TLAST & fft_in.TUSER);
-    fft_tuser     <= flags_out(3 downto 0);
-    fft_tlast     <= flags_out(4);
-    fft_sync_out2 <= flags_out(5); -- for validating proper delay adjustment; should align with fft_sync_out
-    fft_tdata     <= (fft_dout0_int & fft_dout1_int);
+	flags_in(5)   <= fft_sync_in;
+	flags_in(4)   <= fft_in.TLAST;
+	flags_in(3 downto 0) <= fft_in.TUSER;
+	fft_sync_out2 <= flags_out(5); -- for validating proper delay adjustment; should align with fft_sync_out
+	fft_tlast     <= flags_out(4);
+	fft_tuser     <= flags_out(3 downto 0);
+	fft_tdata     <= (fft_dout0_int & fft_dout1_int);
 
 
------------------------------------------------------------------------------------
--- Pipeline Delay measurer/generator
------------------------------------------------------------------------------------
---! Measures the CASPER block pipelining delay and propagate a vector containing the data flags with the same delay
-    DELAY0: entity work.FFT_DELAY
-        GENERIC MAP (
-            CTR_WIDTH  => fft_pipeline_delay'Length,
-            DATA_WIDTH => flags_in' Length
-            )
+	-----------------------------------------------------------------------------------
+	-- Pipeline Delay measurer/generator
+	-----------------------------------------------------------------------------------
+	--! Measures the CASPER block pipelining delay and propagate a vector containing the data flags with the same delay
+		DELAY0: entity work.FFT_DELAY
+			GENERIC MAP (
+				CTR_WIDTH  => fft_pipeline_delay'Length,
+				DATA_WIDTH => flags_in' Length
+				)
 
-        PORT MAP(
-            -- Delay measurement signals
-            SYNC_IN        => fft_sync_in, -- SYNC at the input of the FFT
-            SYNC_OUT       => fft_sync_out, -- SYNC at the output of the FFT
-            MEASURED_DELAY => fft_measured_pipeline_delay, -- Contains the pipeline delay
+			PORT MAP(
+				-- Delay measurement signals
+				SYNC_IN        => fft_sync_in, -- SYNC at the input of the FFT
+				SYNC_OUT       => fft_sync_out, -- SYNC at the output of the FFT
+				MEASURED_DELAY => fft_measured_pipeline_delay, -- Contains the pipeline delay
 
-            -- Delay line
-            DELAY          => fft_pipeline_delay, -- Contains the pipeline delay
-            DATA_IN        => flags_in,  -- user data synchronized with the SYNC at the input of the processing block
-            DATA_OUT       => flags_out, -- user data synchronized with SYNC_OUT and DOUT
-            VALID          => fft_tvalid,
+				-- Delay line
+				DELAY          => fft_pipeline_delay, -- Contains the pipeline delay
+				DATA_IN        => flags_in,  -- user data synchronized with the SYNC at the input of the processing block
+				DATA_OUT       => flags_out, -- user data synchronized with SYNC_OUT and DOUT
+				VALID          => fft_tvalid,
 
-            clk            => clk,
-            CE             => delay_clk_en,
-            RST            => sync_reset
-        );
+				clk            => clk,
+				CE             => delay_clk_en,
+				RST            => sync_reset
+			);
 end generate;
 
 

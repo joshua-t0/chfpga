@@ -237,15 +237,26 @@ type AXIS108_DAT_STRUCT is
 	end record;
 type AXIS108_DAT_STRUCT_ARRAY is ARRAY (natural range <>) of AXIS108_DAT_STRUCT;
 
--- AXIS bus TUSER bit definitions
+-- Channelizer AXIS bus TUSER bit definitions
+---------------------------------------------
+-- From  ADCDAQ:
+--   Bits 0-3 are overflow flags for sample 0-3 in each word
+-- From FUNCGEN
+constant TUSER_CAPTURE_BIT: INTEGER :=0; -- Set by FUNCGEN and passed downstream to indicate to the PROBER that the data should be captured if continuous capture  mode is enabled
 
-constant TUSER_CAPTURE_BIT: INTEGER :=0; -- Set by SRCSEL and passed downstream to indicate to the PROBER that the data should be captured if continuous capture  mode is enabled
+-- Flags that are set on the last N words of each packet.
+--  TLAST - 0: ADC Overflow (Downstream of FUNCGEN only)
+--  TLAST - 1: FFT Overflow (Downstream of FFT only)
+--  TLAST - 2: Gain Bank (Downstream of SCALER only)
+constant TUSER_SERIAL_FLAGS_BIT: INTEGER :=3;
+
+constant TUSER_ADC_OVERFLOW_BIT: INTEGER :=3; -- Set by SRCSEL ont he last word of a frame to indicate that ADC saturation has occured on a sample of the frame.
 constant TUSER_FFT_OVERFLOW_BIT: INTEGER :=0; -- Set by SRCSEL and passed downstream to indicate to the PROBER that the data should be captured if continuous capture  mode is enabled
+
 constant TUSER_SCALER_LOW_OVERFLOW_BIT: INTEGER :=1; -- Set by SCALER to indicate ovweflow on the sample in the Low part of the word
 constant TUSER_SCALER_HIGH_OVERFLOW_BIT: INTEGER :=2; -- -- Set by SCALER to indicate ovweflow on the sample in the high part of the word
 constant TUSER_EVEN_SCALER_OVERFLOW_BIT: INTEGER := TUSER_SCALER_HIGH_OVERFLOW_BIT; -- -- Set by SCALER to indicate ovweflow on the sample in the high part of the word
 constant TUSER_ODD_SCALER_OVERFLOW_BIT: INTEGER := TUSER_SCALER_LOW_OVERFLOW_BIT; -- -- Set by SCALER to indicate ovweflow on the sample in the high part of the word
-constant TUSER_ADC_OVERFLOW_BIT: INTEGER :=3; -- Set by SRCSEL ont he last word of a frame to indicate that ADC saturation has occured on a sample of the frame.
 
 type FREQ_SAMPLE_STRUCT is
 	record
@@ -282,7 +293,7 @@ type FRAME_HEADER_STRUCT is
 			--! Bits 12-8 (4 bits). Software defined. Identifies the crate_number.
 			--! Bits 7-4 (4 bits). Software defined. Identifies slot number (zero-based).
 			--! Bits 3-0 (4 bits). Hardware defined. Identifies the 10Gb/s lane (1st shuffle has 15 lanes, 2nd shuffle has 4 lanes, GPU link has 8 lanes).
-		UNUSED: std_logic_vector(3 downto 0);
+		SERIAL_FLAGS: std_logic_vector(3 downto 0); -- last 4 bits of the TUSER_SERIAL_FLAGS_BIT field (meaning depends on the data source)
 		FLAGS: std_logic_vector(3 downto 0); -- 4 bits: aggregated TUSER bits at the input source
 		TIMESTAMP: std_logic_vector(47 downto 0); --6 bytes (48 bits), system-defined
 	end record;
@@ -1700,7 +1711,7 @@ FUNCTION struct_to_bytes(s:FRAME_HEADER_STRUCT) return slv8_array is
 	variable b: slv8_array(0 to FRAME_HEADER_BYTE_LENGTH - 1);
 	variable w: std_logic_vector(8 * FRAME_HEADER_BYTE_LENGTH - 1 downto 0);
 	begin
-		w := s.PROBE_ID & s.STREAM_ID & s.UNUSED & s.FLAGS & s.TIMESTAMP;
+		w := s.PROBE_ID & s.STREAM_ID & s.SERIAL_FLAGS & s.FLAGS & s.TIMESTAMP;
 		for i in 0 to FRAME_HEADER_BYTE_LENGTH-1 loop
 			b(i) := w(8 * (FRAME_HEADER_BYTE_LENGTH - i) - 1 downto 8 * (FRAME_HEADER_BYTE_LENGTH - i - 1));
 		end loop;

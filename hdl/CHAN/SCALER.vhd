@@ -529,7 +529,11 @@ scaler_proc: process(clk)
                     out_dat.TDATA(8*i+7 downto i*8) <= IN_DAT_DLY2.TDATA(i*18+7 downto i*18);
                 end loop;
                 out_dat.TUSER(TUSER_CAPTURE_BIT) <= IN_DAT_DLY2.TUSER(TUSER_CAPTURE_BIT);
-                out_dat.TUSER(TUSER_ADC_OVERFLOW_BIT) <= IN_DAT_DLY2.TUSER(TUSER_ADC_OVERFLOW_BIT);
+                if IN_DAT_DLY2.TLAST='1' then
+                    out_dat.TUSER(TUSER_ADC_OVERFLOW_BIT) <= IN_DAT_DLY2.TUSER(TUSER_ADC_OVERFLOW_BIT);
+                else
+                    out_dat.TUSER(TUSER_ADC_OVERFLOW_BIT) <= current_gain_bank;
+                end if;
                 out_dat.TUSER(TUSER_SCALER_LOW_OVERFLOW_BIT) <= '0';
                 out_dat.TUSER(TUSER_SCALER_HIGH_OVERFLOW_BIT) <= '0';
                 out_dat.TLAST <= IN_DAT_DLY2.TLAST;
@@ -539,7 +543,11 @@ scaler_proc: process(clk)
                     out_dat.TDATA(8*i+7 downto i*8) <= std_logic_vector(OUT_WORD_VAR(i));
                 end loop;
                 out_dat.TUSER(TUSER_CAPTURE_BIT) <= stage2_tuser(TUSER_CAPTURE_BIT);
-                out_dat.TUSER(TUSER_ADC_OVERFLOW_BIT) <= stage2_tuser(TUSER_ADC_OVERFLOW_BIT);
+                if scaled_data_even_tvalid='1' then
+                    out_dat.TUSER(TUSER_SERIAL_FLAGS_BIT) <= current_gain_bank;
+                else
+                    out_dat.TUSER(TUSER_SERIAL_FLAGS_BIT) <= stage2_tuser(TUSER_SERIAL_FLAGS_BIT);
+                end if;
                 out_dat.TUSER(TUSER_SCALER_LOW_OVERFLOW_BIT) <= stage2_overflow(0) or stage2_overflow(1); -- Overflow for the low word is when either its real or imaginary value overflows
                 out_dat.TUSER(TUSER_SCALER_HIGH_OVERFLOW_BIT) <= stage2_overflow(2) or stage2_overflow(3); -- Overflow for the low word is when either its real or imaginary value overflows
                 out_dat.TLAST <= stage2_tlast;
