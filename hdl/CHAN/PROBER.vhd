@@ -123,7 +123,6 @@ signal capture_mode_active: std_logic:='1';
 signal capture_frame: std_logic:='0';
 --signal STORE_FRAME: std_logic:='0';
 signal trig_prev: std_logic;
-signal first_word: std_logic := '1';
 signal frame_flags: std_logic_vector(3 downto 0);
 
 signal frame_ctr: UNSIGNED(FRAME_HEADER_STRUCT.TIMESTAMP'Range) := (others => '0');
@@ -423,6 +422,7 @@ write_proc: process(in_clk)
                 -- Keep track of the serial flags
                 serial_flags(2 downto 1) <= serial_flags(1 downto 0);
                 serial_flags(0) <= in_dat_reg.TUSER(TUSER_SERIAL_FLAGS_BIT);
+                serial_flags(2) <= '1';
 
                 trig_var:=in_dat_reg.TUSER(TUSER_CAPTURE_BIT); -- assign the trigger to a temporary variable for clarity
                 trig_prev <= trig_var; -- store previous state of the trig signal so we can detect edges
@@ -475,11 +475,10 @@ write_proc: process(in_clk)
                     frame_ctr <= frame_ctr + 1;
                 end if;
 
-                -- Sets a flag indicating when is the first word
-                first_word<=in_dat_reg.TLAST;
-                -- Cumulate the flags for each incoming word. Start over when the first work is received.
-                if first_word='1' then
-                    frame_flags <= in_dat_reg.TUSER;
+                -- Cumulate the flags for each incoming word. Clear when the last word is received.
+                -- When  TLAST=1, `last_flag` contains the or'ed version of all flags EXCEPT the ones sent along the last word. We need to add them later.
+                if in_dat_reg.TLAST = '1' then
+                    frame_flags <= (others => '0');
                 else
                     frame_flags <= frame_flags or in_dat_reg.TUSER;
                 end if;
@@ -497,6 +496,13 @@ write_proc: process(in_clk)
                         in_dat_reg.TLAST & in_dat_reg.TDATA(7 downto 0)
                         );
 
+                    if input_source='1' then
+                        data_fifo_din(30 downto 27) <= in_dat_reg.TUSER;
+                        data_fifo_din(21 downto 18) <= in_dat_reg.TUSER;
+                        data_fifo_din(12 downto 9) <= in_dat_reg.TUSER;
+                        data_fifo_din(3 downto 0) <= in_dat_reg.TUSER;
+                    end if;
+
                     -- If this is the last word, build the frame header and set it up for injection into the header FIFO
                     if in_dat_reg.TLAST='1' then
                         -- Build the header VARIABLE
@@ -504,7 +510,7 @@ write_proc: process(in_clk)
                         frame_header.STREAM_ID(15) := input_source;
                         frame_header.STREAM_ID(14 downto 0) := stream_id(14 downto 0);
                         frame_header.SERIAL_FLAGS := serial_flags(2 downto 0) & in_dat_reg.TUSER(TUSER_SERIAL_FLAGS_BIT);
-                        frame_header.FLAGS := frame_flags;
+                        frame_header.FLAGS := frame_flags or in_dat_reg.TUSER;
                         frame_header.TIMESTAMP := std_logic_vector(frame_ctr);
                         -- Store the header into an adday of bytes for insertion into the FIFO
                         frame_header_bytes <= struct_to_bytes(frame_header);
@@ -530,7 +536,6 @@ write_proc: process(in_clk)
                 burst_ctr <= (others => '0'); -- needed
                 trig_count <= (others => '0'); -- needed
                 trig_prev <= '0'; -- needed (mostly)
-                first_word <= '1'; -- needed
                 burst_period_minus_1 <= (others => '0');
 --              continuous_transmission <= '0'; -- not needed. This is not needed until the first TLAST, which gives time to the signal to be set before it is needed.
                 write_frame_header_bytes <= '0'; -- needed
