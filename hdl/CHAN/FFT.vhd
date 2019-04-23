@@ -146,6 +146,7 @@ signal soft_reset: std_logic;
 signal fft_shift_schedule: std_logic_vector(15 downto 0);
 signal overflow_count: unsigned(7 downto 0);
 signal overflow_reset: std_logic;
+signal overflow_force: std_logic;
 
 signal sync_period: unsigned(15 downto 0);
 signal sync_frame_ctr: unsigned(sync_period'Range):=(others=>'0'); -- Counts SYNC pulses
@@ -164,7 +165,8 @@ begin
 --! |  Page   | Addr|Bit(s)|     Name             | Description                   |
 --! |---------|-----|------|----------------------|-------------------------------|
 --! | CONTROL |  0  | 7    | soft_reset           | Reset the block. Also reset the computation of the CASPER block pipelining delay. When released, the block will compute the block latency once a CASPER SYNC has passed through the block and make the result available.|
---! |         |     | 6:3  |  Unused              |                               |
+--! |         |     | 6:4  |  Unused              |                               |
+--! |         |     |  3   | overflow_force       | Forces the overflow flag to 1. Used for testing. |
 --! |         |     |  2   | overflow_reset       | Resets the overflow counter   |
 --! |         |     |  1   | Unused               |                               |
 --! |         |     |  0   | bypass_fft           | Bypass the FFT                |
@@ -179,6 +181,7 @@ begin
 -- CONTROL Byte 0
 soft_reset <= control_bytes(0)(7);
 overflow_reset <= control_bytes(0)(2);
+overflow_force <= control_bytes(0)(3);
 --DLY_RESET <= control_bytes(0)(1);
 bypass_fft <= control_bytes(0)(0); --!
 
@@ -248,7 +251,7 @@ main_proc: process(clk)
 			-- Counts the FFT overflows and stop at maximum value, and reset when overflow_reset=1
 			if overflow_reset='1' then
 				overflow_count <= (others=>'0');
-			elsif fft_tvalid='1' and fft_clk_en='1' and fft_overflow='1' and signed(overflow_count)/=-1 then
+			elsif fft_tvalid='1' and fft_clk_en='1' and (fft_overflow='1' or overflow_force='1') and signed(overflow_count)/=-1 then
 				overflow_count <= overflow_count + 1;
 			end if;
 
@@ -261,7 +264,7 @@ main_proc: process(clk)
 			if fft_tvalid='1' and fft_clk_en='1' and fft_tlast='1' then
 				fft_overflow_sticky <= '0';
 				--fft_overflow_sticky_dly <= fft_overflow_sticky_int or fft_overflow;
-			elsif fft_tvalid='1' and fft_clk_en='1' and fft_overflow='1' then
+			elsif fft_tvalid='1' and fft_clk_en='1' and (fft_overflow='1' or overflow_force='1') then
 				fft_overflow_sticky <= '1';
 			end if;
 
@@ -292,8 +295,8 @@ main_proc: process(clk)
 
 				out_dat <= out_dat_int;
 				-- Insert the FFT overflow flag in the next_to_last Serial flag bit
-				if fft_tlast='1' then
-					out_dat.TUSER(TUSER_SERIAL_FLAGS_BIT) <= fft_overflow_sticky or fft_overflow; -- add the FFT overflow flag, including the one on TLAST
+				if fft_tlast='1' and fft_tvalid='1' and fft_clk_en='1' then
+					out_dat.TUSER(TUSER_SERIAL_FLAGS_BIT) <= fft_overflow_sticky or fft_overflow or overflow_force; -- add the FFT overflow flag, including the one on TLAST
 				end if;
 			else
 				-- otherwise, just pass the input to the output, adapting the data width.
@@ -308,7 +311,7 @@ main_proc: process(clk)
 				out_dat <= out_dat_int;
 			end if;
 
-			-- Handle Resets
+			-- Synchronous Resets -- overrides only some of the previously assigned signals
 			-- If reset is enabled, the FFT is fed with dummy data and SYNC=1.
 			-- When reset is disabled, the FFT is fed with the incoming data and is clocked only if the data is valid.
 			-- SYNC is pulsed every N frames afterwards.

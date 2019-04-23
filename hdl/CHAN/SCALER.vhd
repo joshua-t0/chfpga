@@ -542,12 +542,14 @@ scaler_proc: process(clk)
                 for i in 0 to 3 loop
                     out_dat.TDATA(8*i+7 downto i*8) <= std_logic_vector(OUT_WORD_VAR(i));
                 end loop;
-                out_dat.TUSER(TUSER_CAPTURE_BIT) <= stage2_tuser(TUSER_CAPTURE_BIT);
-                if scaled_data_even_tvalid='1' then
+                out_dat.TUSER <= stage2_tuser; -- pass on the USER bits
+                -- insert the current bank in the TLAST-2 serial flag bit (TLAST-0 (stage2_tlast): ADC overflow, TLAST-1 (stage1_tlast) = FFT overflow, TLAST-2 (scaled_data_even_tlast) = gain bank)
+                if scaled_data_even_tvalid='1' and scaled_data_even_tlast='1' then
                     out_dat.TUSER(TUSER_SERIAL_FLAGS_BIT) <= current_gain_bank;
                 else
                     out_dat.TUSER(TUSER_SERIAL_FLAGS_BIT) <= stage2_tuser(TUSER_SERIAL_FLAGS_BIT);
                 end if;
+                -- Set the scaler overflow bits in the user data
                 out_dat.TUSER(TUSER_SCALER_LOW_OVERFLOW_BIT) <= stage2_overflow(0) or stage2_overflow(1); -- Overflow for the low word is when either its real or imaginary value overflows
                 out_dat.TUSER(TUSER_SCALER_HIGH_OVERFLOW_BIT) <= stage2_overflow(2) or stage2_overflow(3); -- Overflow for the low word is when either its real or imaginary value overflows
                 out_dat.TLAST <= stage2_tlast;
