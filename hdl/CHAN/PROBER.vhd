@@ -166,7 +166,7 @@ signal send_data: std_logic;
 signal soft_reset: std_logic;
 signal fifo_reset: std_logic;
 signal reset_all: std_logic;
-signal serial_flags: std_logic_vector(2 to 0);
+signal serial_flags: std_logic_vector(2 downto 0);
 signal fifo_reset_reg: std_logic;
 
 -- These signals require previous signals to be defined
@@ -422,7 +422,7 @@ write_proc: process(in_clk)
                 -- Keep track of the serial flags
                 serial_flags(2 downto 1) <= serial_flags(1 downto 0);
                 serial_flags(0) <= in_dat_reg.TUSER(TUSER_SERIAL_FLAGS_BIT);
-                serial_flags(2) <= '1';
+                --serial_flags(2) <= '1';
 
                 trig_var:=in_dat_reg.TUSER(TUSER_CAPTURE_BIT); -- assign the trigger to a temporary variable for clarity
                 trig_prev <= trig_var; -- store previous state of the trig signal so we can detect edges
