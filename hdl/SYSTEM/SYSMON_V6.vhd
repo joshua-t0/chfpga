@@ -66,11 +66,13 @@ end SYSMON_XADC;
 architecture Behavioral of SYSMON_XADC is
 
 --- Define Control word and its signals
-signal CONTROL_BYTES: ByteArray(0 to 0); --
+signal CONTROL_BYTES: slv8_array(0 to 0); --
+signal STATUS_BYTES: slv8_array(0 to 1);
+
 signal CONTROL_BYTES_BANK_SEL: STD_LOGIC_VECTOR(0 downto 0);
 signal CONTROL_BYTES_FAN_EN: STD_LOGIC;
 
-signal STATUS_BYTES: ByteArray(0 to 1);
+
 
 
 

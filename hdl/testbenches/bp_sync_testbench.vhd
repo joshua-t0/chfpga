@@ -33,7 +33,6 @@ USE ieee.numeric_std.ALL;
 
 library work;
 USE work.chFPGA_Package.all;
---use work.util_package.all;
 use work.tb_package.all;
 
 ENTITY bp_buck_sync_testbench IS

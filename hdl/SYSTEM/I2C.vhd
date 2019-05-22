@@ -93,10 +93,10 @@ signal IDLE_CLK_AT_tHIGH: std_logic;
 
 --- Define Control word and its signals
 --signal CONTROL_WORD: STD_LOGIC_VECTOR(47 downto 0); -- default value set in the CMD_SLAVE
-signal control_bytes: ByteArray(0 to 5); -- default value set in the CMD_SLAVE
-signal status_bytes: ByteArray(0 to 8); -- default value set in the CMD_SLAVE
+signal control_bytes: slv8_array(0 to 5); -- default value set in the CMD_SLAVE
+signal status_bytes: slv8_array(0 to 8); -- default value set in the CMD_SLAVE
 
-signal CTRL_DATA: ByteArray(0 to 3);
+signal CTRL_DATA: slv8_array(0 to 3);
 
 constant CTRL_DIR_READ: std_logic:='1';
 constant CTRL_DIR_WRITE: std_logic:='0';

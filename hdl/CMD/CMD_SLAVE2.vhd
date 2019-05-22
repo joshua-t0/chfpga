@@ -92,16 +92,16 @@ use UNISIM.VComponents.all;
 
 entity CTRL_SLAVE is
 	GENERIC (
-		DEFAULT_CONTROL_BYTES: std_logic_vector :=X"00000000"; --! Vector of bits to initialize the control register to a known value
-		NUMBER_OF_CONTROL_BYTES: integer        :=1; --! Number of bytes in the control word
-		NUMBER_OF_STATUS_BYTES: integer         :=1; --! Number of bytes in the status word.
-		STICKY_BYTES_MASK:  std_logic_vector    :=X""; --! (not implemented) Determines which status bits are sticky (1=sticky, 0=non-sticky)
-		ADDR_WIDTH: integer                     :=19; --! Number of command address bits available to this module (all other bits are zeroed, useful to have large RAM address buses)
-		RAM_DATA_WIDTH: integer                 :=8; --! Either 8 or 16 bits
-		RAM_ADDR_WIDTH: integer                 :=0; --! Number of bits in the RAB/DRP adress bus. A velue of 0 removes most of the RAM/DRP access logic.
+		DEFAULT_CONTROL_BYTES: std_logic_vector := X"00000000"; --! Vector of bits to initialize the control register to a known value
+		NUMBER_OF_CONTROL_BYTES: integer        := 1; --! Number of bytes in the control word
+		NUMBER_OF_STATUS_BYTES: integer         := 1; --! Number of bytes in the status word.
+		STICKY_BYTES_MASK:  std_logic_vector    := X""; --! (not implemented) Determines which status bits are sticky (1=sticky, 0=non-sticky)
+		ADDR_WIDTH: integer                     := 19; --! Number of command address bits available to this module (all other bits are zeroed, useful to have large RAM address buses)
+		RAM_DATA_WIDTH: integer                 := 8; --! Either 8 or 16 bits
+		RAM_ADDR_WIDTH: integer                 := 0; --! Number of bits in the RAB/DRP adress bus. A velue of 0 removes most of the RAM/DRP access logic.
 		USE_PIPELINED_RAM_WRITE: boolean        := TRUE;
-		USE_RAM_DOUT_RDY: boolean               :=FALSE; --! Indicates is the RAM interface provides a DOUT_RDY signal. If FALSE, it is assumed that the data is available the clock after RD_EN.
-		RAM_LATENCY: integer                    :=1; --! Number of cycles if takes for the RAM data to be ready after a read. Can be 1 or 2. Not used if USE_RAM_DOUT_RDY=TRUE.
+		USE_RAM_DOUT_RDY: boolean               := FALSE; --! Indicates is the RAM interface provides a DOUT_RDY signal. If FALSE, it is assumed that the data is available the clock after RD_EN.
+		RAM_LATENCY: integer                    := 1; --! Number of cycles if takes for the RAM data to be ready after a read. Can be 1 or 2. Not used if USE_RAM_DOUT_RDY=TRUE.
 		USE_FIFO: boolean                       := FALSE; --! Indicates if a FIFO is to be used.
 		USE_ASYNC_FIFO: boolean                 := FALSE --! Indicates if an asynchronous FIFO is to be used. In this case the external size of the FIFO is clocked by CTRL_CLK, and the internal side is clocked by CLK.
 		);
@@ -118,8 +118,8 @@ entity CTRL_SLAVE is
 		CTRL_RST: in std_logic; --! Reset, synchronous to CTRL_CLK
 
 		-- Control/status words
-		CONTROL_BYTES: out ByteArray(0 to NUMBER_OF_CONTROL_BYTES-1); --
-		STATUS_BYTES: in ByteArray(0 to NUMBER_OF_STATUS_BYTES-1):=(others=> (others=>'0')); --
+		CONTROL_BYTES: out slv8_array(0 to NUMBER_OF_CONTROL_BYTES-1); --
+		STATUS_BYTES: in slv8_array(0 to NUMBER_OF_STATUS_BYTES-1):=(others=> (others=>'0')); --
 		CLK: in STD_LOGIC; -- Clock used to sample the status bits and output the control bits
 		RST : in  STD_LOGIC:='0'; --! *NOT USED * reset, synchronous to CLK
 
@@ -169,21 +169,21 @@ architecture Behavioral of CTRL_SLAVE is
 	signal opcode: OPCODE_TYPE;
 	signal previous_byte: std_logic_vector(7 downto 0);
 
-	signal CONTROL_BYTES_INT: ByteArray(0 to NUMBER_OF_CONTROL_BYTES-1):= (others=>(others=>'0')); -- Will be initialized with the default values at reset
-	signal STATUS_BYTES_INT: ByteArray(0 to NUMBER_OF_STATUS_BYTES-1);
+	signal CONTROL_BYTES_INT: slv8_array(0 to NUMBER_OF_CONTROL_BYTES-1):= (others=>(others=>'0')); -- Will be initialized with the default values at reset
+	signal STATUS_BYTES_INT: slv8_array(0 to NUMBER_OF_STATUS_BYTES-1);
 
 	attribute FROM_TIG of CONTROL_BYTES_INT: signal is "true"; --!
 	attribute TO_TIG of STATUS_BYTES_INT : signal is "true"; --
 
-	signal ram_rdy_dly1: STD_LOGIC:='0';
-	signal ram_rdy_dly2: STD_LOGIC:='0';
-	signal RAM_RDY: STD_LOGIC:='0';
+	signal ram_rdy_dly1: STD_LOGIC := '0';
+	signal ram_rdy_dly2: STD_LOGIC := '0';
+	signal RAM_RDY: STD_LOGIC := '0';
 	signal ram_en_int: std_logic;
 
 	signal ram_dout_msb: STD_LOGIC_VECTOR(7 downto 0);
 
 	TYPE RX_STATE_TYPE IS (COMMAND_BYTE1, COMMAND_BYTE2, COMMAND_BYTE3, EXECUTE_COMMAND); -- States of the RX state machine
-	signal RX_STATE: RX_STATE_TYPE:= COMMAND_BYTE1; -- Init for sim
+	signal RX_STATE: RX_STATE_TYPE := COMMAND_BYTE1; -- Init for sim
 
 
 	signal first: std_logic;

@@ -94,8 +94,8 @@ signal IN_DAT_DLY1: AXIS72_DAT_STRUCT; --!
 signal IN_DAT_DLY2: AXIS72_DAT_STRUCT; --!
 
 --- Define Control word and its signals
-signal control_bytes: ByteArray(0 to 9); -- default value set in the CMD_SLAVE
-signal status_bytes: ByteArray(0 to 7);
+signal control_bytes: slv8_array(0 to 9); -- default value set in the CMD_SLAVE
+signal status_bytes: slv8_array(0 to 7);
 
 signal bypass_scaler: STD_LOGIC;
 signal soft_reset: STD_LOGIC;
@@ -260,10 +260,10 @@ status_bytes(0)(7)   <= stats_ready;
 status_bytes(0)(6)   <= current_gain_bank;
 status_bytes(0)(5)   <= '1' when EIGHT_BIT_SUPPORT=TRUE else '0';
 status_bytes(0)(4)   <= fifo_overflow_sticky;
-status_bytes(1 to 2) <= to_ByteArray(stats_scaler_overflows);
-status_bytes(3 to 4) <= to_ByteArray(stats_adc_overflows);
+status_bytes(1 to 2) <= to_slv8_array(stats_scaler_overflows);
+status_bytes(3 to 4) <= to_slv8_array(stats_adc_overflows);
 status_bytes(5)      <= to_slv(lsb(frame_ctr, 8));
-status_bytes(6 to 7) <= to_ByteArray(delay_capture_ctr);
+status_bytes(6 to 7) <= to_slv8_array(delay_capture_ctr);
 -----------------------------------------------------------------------------------
 -- Memory-Mapped interface
 -----------------------------------------------------------------------------------

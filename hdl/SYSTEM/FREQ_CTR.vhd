@@ -65,8 +65,8 @@ end FREQ_CTR;
 architecture Behavioral of FREQ_CTR is
 
 --- Define Control word and its signals
-signal CONTROL_BYTES: ByteArray(0 to 4); -- default value set in the CMD_SLAVE
-signal STATUS_BYTES: ByteArray(0 to 4); -- default value set in the CMD_SLAVE
+signal CONTROL_BYTES: slv8_array(0 to 4); -- default value set in the CMD_SLAVE
+signal STATUS_BYTES: slv8_array(0 to 4); -- default value set in the CMD_SLAVE
 
 
 
@@ -94,7 +94,7 @@ FREQ_CTR_START              <= CONTROL_BYTES(4)(7);
 FREQ_CTR_SRC_SEL            <= unsigned(CONTROL_BYTES(4)(6 downto 0));
 
 -- STATUS bytes 0-3
-STATUS_BYTES(0 to 3)        <= to_ByteArray(FREQ_CTR);
+STATUS_BYTES(0 to 3)        <= to_slv8_array(FREQ_CTR);
 -- STATUS_BYTES(1)             <= std_logic_vector(FREQ_CTR(23 downto 16));
 -- STATUS_BYTES(2)             <= std_logic_vector(FREQ_CTR(15 downto 8));
 -- STATUS_BYTES(3)             <= std_logic_vector(FREQ_CTR(7 downto 0));

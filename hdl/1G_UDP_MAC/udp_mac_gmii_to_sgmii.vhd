@@ -26,7 +26,6 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library work;
---use work.util_package.all;
 use work.ip_package.all; -- Import definition of components used in this module
 
 --------------------------------------------------------------------------------

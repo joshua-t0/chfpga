@@ -270,7 +270,7 @@ crc_out_reg <= not reverse_bytes(reverse_bits_same_dir(crc_out_reg_int)); -- Fir
 --!   2) know in advance how many bytes are in the buffer so we can use that information to set the IP Length and UDP Length fields before we start reading the data
 --!  Also inserts a dummy frame if an odd amount of 32-bit words is received to make sure that the data will appear on the 64-bit output of the FIFO
 s_axis_tx_tready <= '1';
-tx_front_end : process(s_axis_tx_clk, RST)
+tx_front_end : process(s_axis_tx_clk)
 	begin
 
 		if rising_edge(s_axis_tx_clk) then
@@ -299,6 +299,7 @@ tx_front_end : process(s_axis_tx_clk, RST)
 				-- store the header info
 			end if;
 
+			-- SYnchronous reset
 			if RST='1' then
 				DIN_CTR<=to_unsigned(1,DIN_CTR'LENGTH);
 			end if;
@@ -309,10 +310,10 @@ tx_front_end : process(s_axis_tx_clk, RST)
 data_overflow <= data_fifo_overflow_sticky;
 frame_overflow <= header_fifo_overflow_sticky;
 
-fifo_readout : process(clk, RST)
+fifo_readout : process(clk)
 	begin
 		if rising_edge(clk) then
-			if RST='1' then
+			if RST='1' then -- synchronous reset
 				-- data_fifo_alignment<='0';
 				DATA_FIFO_OVERFLOW_STICKY <= '0';
 				header_fifo_overflow_sticky <= '0';
@@ -326,7 +327,14 @@ fifo_readout : process(clk, RST)
 -- TXD_REVERSE<=reverse_bytes(TXD);
 -- TXC_REVERSE<=reverse_bits_same_dir(TXC);
 
-tx_back_end : process(clk, RST)
+--- -------------------------------
+-- Transmit packet encoder process
+-- --------------------------------
+--
+-- The tx_back_end process reads the FIFO and generate the control and data words that wil form UDP packets Using the 10G protocol.
+-- The words sent are 32-bit wide, although the downstream transmitter  use a 64-bit word boundary to implement the 64-66 bit encoding.
+--
+tx_back_end : process(clk)
 	-- variable XGMII_TXD_REVERSE_VAR: std_logic_vector(63 downto 0);
 	-- variable XGMII_TXC_REVERSE_VAR: std_logic_vector(7 downto 0);
 
@@ -518,6 +526,7 @@ begin
 			end case;
 		end if; -- if destination ready to accept word
 
+		-- Synchronous reset
 		-- We reset here to override any signals that need to be reset
 		-- If the reset was at the top, with the cod ein the 'else' clause, we risk inferring a lot of unnecessary data enables for signals that are not resetted.
 		if RST='1' then

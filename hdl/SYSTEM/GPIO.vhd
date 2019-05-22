@@ -246,8 +246,8 @@ signal firmware_timestamp: std_logic_vector(31 downto 0);
 signal USER_DATA_VALID: std_logic;
 
 --- Define Control word and its signals
-signal CONTROL_BYTES: ByteArray(0 to 50); -- default value set in the CMD_SLAVE
-signal STATUS_BYTES: ByteArray(0 to 37); -- default value set in the CMD_SLAVE
+signal CONTROL_BYTES: slv8_array(0 to 50); -- default value set in the CMD_SLAVE
+signal STATUS_BYTES: slv8_array(0 to 37); -- default value set in the CMD_SLAVE
 
 --signal CTRL_FLAG_ADC_RESET: std_logic;
 signal CTRL_FLAG_BUCK_SYNC_ENABLE: std_logic;
@@ -599,7 +599,7 @@ STATUS_BYTES(6) <= to_slv(NUMBER_OF_GPU_LINKS,8);
 -- end generate;
 
 -- STATUS Bytes 7-10
-STATUS_BYTES(7 to 10) <= to_ByteArray(firmware_timestamp);
+STATUS_BYTES(7 to 10) <= to_slv8_array(firmware_timestamp);
 
 -- STATUS Bytes 11
 STATUS_BYTES(11)<=to_slv(PLATFORM_ID,8);
@@ -607,17 +607,17 @@ STATUS_BYTES(11)<=to_slv(PLATFORM_ID,8);
 -- STATUS Bytes 12-15
 STATUS_BYTES(12)(7 downto 1) <= (others=>'0');
 STATUS_BYTES(12)(0) <= fpga_serial_number(56);
-STATUS_BYTES(13 to 19) <= to_ByteArray(fpga_serial_number(55 downto 0));
+STATUS_BYTES(13 to 19) <= to_slv8_array(fpga_serial_number(55 downto 0));
 
 STATUS_BYTES(20) <= to_slv(NUMBER_OF_CROSSBAR_INPUTS, 8);
 STATUS_BYTES(21) <= to_slv(NUMBER_OF_CROSSBAR_OUTPUTS, 8);
 
-STATUS_BYTES(22 to 23) <= to_ByteArray(to_slv(PROTOCOL_VERSION, 16));
+STATUS_BYTES(22 to 23) <= to_slv8_array(to_slv(PROTOCOL_VERSION, 16));
 STATUS_BYTES(24) <= to_slv(CHANNELIZERS_CLOCK_SOURCE, 8);
 -- Connect signals to module ports
 
 -- STATUS Bytes 25-30
-STATUS_BYTES(25 to 30) <= to_ByteArray(local_mac_addr_int);
+STATUS_BYTES(25 to 30) <= to_slv8_array(local_mac_addr_int);
 
 -- STATUS Bytes 31-32
 STATUS_BYTES(31) <= slot_sense_ctr(0);

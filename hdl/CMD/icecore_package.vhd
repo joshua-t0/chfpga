@@ -47,7 +47,7 @@ end icecore_package;
 
 package body icecore_package is
 
-	FUNCTION to_std_logic(i:boolean) return std_logic is -- converts boot to std_logic
+	FUNCTION to_std_logic(i:boolean) return std_logic is -- converts bool to std_logic
 		begin
 			if i then
 				return '1';

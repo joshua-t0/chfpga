@@ -26,12 +26,10 @@
 --------------------------------------------------------------------------------
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
---USE ieee.std_logic_unsigned.all;
 USE ieee.numeric_std.ALL;
 
 library work;
 USE work.chFPGA_Package.all;
---use work.util_package.all;
 use work.tb_package.all;
 
 ENTITY cmd_slave_testbench IS
@@ -61,8 +59,8 @@ signal cmd_tvalid: std_logic;
 signal cmd_tlast: std_logic;
 signal cmd_tready: std_logic;
 
-signal CONTROL_BYTES: ByteArray(0 to 3); --
-signal STATUS_BYTES: ByteArray(0 to 1);
+signal CONTROL_BYTES: slv8_array(0 to 3); --
+signal STATUS_BYTES: slv8_array(0 to 1);
 signal RPLY_OUT_DAT: AXIS8_DAT_STRUCT;
 
 -- SYSMON signals

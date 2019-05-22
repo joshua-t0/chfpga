@@ -179,8 +179,8 @@ architecture Behavioral of shuffle_crossbar is
 	signal align_reset_all: std_logic;
 
 	--- Define Control word and its signals
-	signal CONTROL_BYTES: ByteArray(0 to 2 + (NUMBER_OF_INPUT_LANES+1)/2); -- default value set in the CMD_SLAVE
-	signal STATUS_BYTES: ByteArray(0 to 14);
+	signal CONTROL_BYTES: slv8_array(0 to 2 + (NUMBER_OF_INPUT_LANES+1)/2); -- default value set in the CMD_SLAVE
+	signal STATUS_BYTES: slv8_array(0 to 14);
 
 	-- signal capture_word_ctr: unsigned(7 downto 0);
 	-- signal capture_word_number: unsigned(7 downto 0);
@@ -340,7 +340,7 @@ shuffle_flags_mask_int <= SHUFFLE_FLAGS_MASK;
 -- 	align_fifo_overflow_sticky when 6,
 -- 	data_timeout               when 7,
 -- 	(others=>'0')              when others;
--- STATUS_BYTES(0 to 1) <= to_ByteArray(resize(reverse_bits_and_dir(lane_monitor), 16));
+-- STATUS_BYTES(0 to 1) <= to_slv8_array(resize(reverse_bits_and_dir(lane_monitor), 16));
 
 STATUS_BYTES(0)(0) <='0';
 STATUS_BYTES(0)(1) <= fifo_tfirst_mon(to_integer(lane_monitor_sel));
@@ -376,13 +376,13 @@ STATUS_BYTES(6)(6) <= lane0_tfirst_mon;
 STATUS_BYTES(6)(5) <= '0';
 STATUS_BYTES(6)(4 downto 0) <= to_slv(NUMBER_OF_INPUT_LANES, 5);
 
--- STATUS_BYTES(7 to 10) <= to_ByteArray(capture_tdata);
+-- STATUS_BYTES(7 to 10) <= to_slv8_array(capture_tdata);
 
 status_bytes(7)       <= frame_number_capture_reg(to_integer(lane_monitor_sel));
 status_bytes(8)       <= stream_id_capture_reg(to_integer(lane_monitor_sel));
-status_bytes(9 to 10) <= to_ByteArray(delay_capture_ref_word_ctr) when lane_monitor_sel=0 else to_ByteArray(delay_capture_word_ctr);
-status_bytes(11 to 12) <= to_ByteArray(fifo_count_mon_reg(to_integer(lane_monitor_sel)));
-status_bytes(13 to 14) <= to_ByteArray(packet_error_ctr(to_integer(lane_monitor_sel)));
+status_bytes(9 to 10) <= to_slv8_array(delay_capture_ref_word_ctr) when lane_monitor_sel=0 else to_slv8_array(delay_capture_word_ctr);
+status_bytes(11 to 12) <= to_slv8_array(fifo_count_mon_reg(to_integer(lane_monitor_sel)));
+status_bytes(13 to 14) <= to_slv8_array(packet_error_ctr(to_integer(lane_monitor_sel)));
 --! STATUS Byte 8
 -- STATUS_BYTES(8)<=resize(reverse_bits_and_dir(m_axis_fifo_tvalid),8);
 

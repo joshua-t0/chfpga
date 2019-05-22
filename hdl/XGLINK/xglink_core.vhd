@@ -254,17 +254,17 @@ signal quad_drp_wr_en: slv(NUMBER_OF_QUADS-1 downto 0);
 
 
 
-signal common_control_bytes: ByteArray(0 to 3 + NUMBER_OF_CONTROL_BYTES);
-signal common_status_bytes: ByteArray(0 to 1 + NUMBER_OF_STATUS_BYTES);
+signal common_control_bytes: slv8_array(0 to 3 + NUMBER_OF_CONTROL_BYTES);
+signal common_status_bytes: slv8_array(0 to 1 + NUMBER_OF_STATUS_BYTES);
 
-type QUAD_CONTROL_BYTES_ARRAY is array (natural range <>) of ByteArray(0 to 0);
+type QUAD_CONTROL_BYTES_ARRAY is array (natural range <>) of slv8_array(0 to 0);
 signal quad_control_bytes: QUAD_CONTROL_BYTES_ARRAY(0 to NUMBER_OF_QUADS-1);
-type QUAD_STATUS_BYTES_ARRAY is array (natural range <>) of ByteArray(0 to 0);
+type QUAD_STATUS_BYTES_ARRAY is array (natural range <>) of slv8_array(0 to 0);
 signal quad_status_bytes: QUAD_STATUS_BYTES_ARRAY(0 to NUMBER_OF_QUADS-1);
 
-type gt_CONTROL_BYTES_ARRAY is array (natural range <>) of ByteArray(0 to 5);
+type gt_CONTROL_BYTES_ARRAY is array (natural range <>) of slv8_array(0 to 5);
 signal gt_control_bytes: gt_control_bytes_array(0 to NUMBER_OF_GTX-1);
-type gt_STATUS_BYTES_ARRAY is array (natural range <>) of ByteArray(0 to sel(NUMBER_OF_RX_LANES>0, 11, 4));
+type gt_STATUS_BYTES_ARRAY is array (natural range <>) of slv8_array(0 to sel(NUMBER_OF_RX_LANES>0, 11, 4));
 signal gt_status_bytes: gt_status_bytes_array(0 to NUMBER_OF_GTX-1);
 
 signal txclk_div2_int: std_logic := '0'; -- init needed
@@ -605,7 +605,7 @@ common_status_bytes(1)(3) <= qpllreset;
 -- common_status_bytes(3) <= to_slv(frame_counter);
 -- common_status_bytes(4) <= to_slv(lsb(word_counter, 8));
 
-common_status_bytes(2 to 2 + NUMBER_OF_STATUS_BYTES-1) <= ByteArray(status_bytes);
+common_status_bytes(2 to 2 + NUMBER_OF_STATUS_BYTES-1) <= slv8_array(status_bytes);
 
 
 --------------------------------------
@@ -837,7 +837,7 @@ gtx_gen: for i in 0 to NUMBER_OF_GTX-1 generate
 
 
 	-- STATUS BYTE 1-4
-	gt_status_bytes(i)(1 to 4) <= to_ByteArray(gt_err_ctr(i)); -- needed for link tests
+	gt_status_bytes(i)(1 to 4) <= to_slv8_array(gt_err_ctr(i)); -- needed for link tests
 
 	-- RX STATUS BYTES
 	--------------------
@@ -850,7 +850,7 @@ gtx_gen: for i in 0 to NUMBER_OF_GTX-1 generate
 		gt_status_bytes(i)(6)(6 downto 0) <= gt_rxmonitorout_out(i); -- Needed for link tests?
 
 		-- STATUS BYTE 7-10
-		gt_status_bytes(i)(7 to 10) <= to_ByteArray(rx_data_capture(i));
+		gt_status_bytes(i)(7 to 10) <= to_slv8_array(rx_data_capture(i));
 		-- STATUS BYTE 11
 		gt_status_bytes(i)(11) <= gt_dmonitorout_out(i); -- Always needed? state of the receiver LPM and DFE mode adaptation loops, such as the adapted continuous time linear equalizer (CTLE) gains and DFE taps
 	end generate;

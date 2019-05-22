@@ -61,7 +61,8 @@ architecture Behavioral of SPI is
 constant SPI_PORT_WIDTH: integer := width(NUMBER_OF_PORTS);
 --- Define Control word and its signals
 --signal CONTROL_WORD: STD_LOGIC_VECTOR(47 downto 0); -- default value set in the CMD_SLAVE
-signal CONTROL_BYTES: ByteArray(0 to 5); -- default value set in the CMD_SLAVE
+signal CONTROL_BYTES: slv8_array(0 to 5); -- default value set in the CMD_SLAVE
+signal STATUS_BYTES: slv8_array(0 to 4); -- default value set in the CMD_SLAVE
 
 signal CTRL_FLAG_TX_DATA: STD_LOGIC_VECTOR(31 downto 0);
 signal CTRL_FLAG_ADDR: STD_LOGIC_VECTOR(3 downto 0);
@@ -79,7 +80,6 @@ signal CTRL_FLAG_SPI_CLK_ENABLE: STD_LOGIC;
 signal ALT_TIMING: std_logic;
 
 --signal STATUS_WORD: STD_LOGIC_VECTOR(39 downto 0):=(others=>'0');
-signal STATUS_BYTES: ByteArray(0 to 4); -- default value set in the CMD_SLAVE
 
 --constant STATUS_FLAG_READY_BIT: INTEGER :=32;
 

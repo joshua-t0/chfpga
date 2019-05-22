@@ -455,8 +455,8 @@ signal drp_den: std_logic;
 signal drp_dwe: std_logic;
 
 --- Define Control word and its signals
-signal control_bytes: ByteArray(0 to 14); -- default value set in the CMD_SLAVE
-signal status_bytes: ByteArray(0 to 26):=(others=>(others=>'0')); -- default value set in the CMD_SLAVE
+signal control_bytes: slv8_array(0 to 14); -- default value set in the CMD_SLAVE
+signal status_bytes: slv8_array(0 to 26) := (others=>(others=>'0')); -- default value set in the CMD_SLAVE
 
 signal enable_ramp: std_logic;
 signal serdes_soft_reset: std_logic;
@@ -524,7 +524,7 @@ status_bytes(10)(4) <= fifo_overflow_sticky;
 status_bytes(10)(3) <= fifo_underflow_sticky;
 status_bytes(10)(2) <= fifo_empty_sticky;
 
-status_bytes(11 to 12) <= to_ByteArray(ramp_err_ctr);
+status_bytes(11 to 12) <= to_slv8_array(ramp_err_ctr);
 
 -- STATUS BYTES 13-14: Not used
 status_bytes(15)<=to_slv(LSB(output_word_ctr));
@@ -541,7 +541,7 @@ status_bytes(20) <= capture2_pattern(23 downto 16);
 status_bytes(21) <= capture2_pattern(15 downto 8);
 status_bytes(22) <= capture2_pattern(7 downto 0);
 
-status_bytes(23 to 26) <= to_ByteArray(ramp_bit_err_ctr);
+status_bytes(23 to 26) <= to_slv8_array(ramp_bit_err_ctr);
 
 -- IODELAY and IODELAYCTRL Resets
 idelayctrl_reset_all <= ctrl_rst or idelayctrl_rst; -- resets the IODELAY Controller

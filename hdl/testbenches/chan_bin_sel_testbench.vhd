@@ -31,8 +31,7 @@ USE ieee.numeric_std.ALL;
 
 library work;
 USE work.chFPGA_Package.all;
---use work.util_package.all;
-use work.tb_package.all;
+USE work.tb_package.all;
 
 ENTITY packetizer_testbench IS
 	generic (

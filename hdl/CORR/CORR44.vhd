@@ -193,8 +193,8 @@ signal data_fifo_empty: std_logic;
 signal started: std_logic;
 
 -- Control and status bytes
-signal control_bytes: ByteArray(0 to 5); -- default value set in the CMD_SLAVE
-signal status_bytes: ByteArray(0 to 2);
+signal control_bytes: slv8_array(0 to 5); -- default value set in the CMD_SLAVE
+signal status_bytes: slv8_array(0 to 2);
 
 signal integration_period: std_logic_vector(31 downto 0);
 signal number_of_bins_per_frame: std_logic_vector(11 downto 0);

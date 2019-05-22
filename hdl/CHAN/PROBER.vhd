@@ -142,8 +142,8 @@ signal dest_ready: std_logic;
 
 
 -- Control and status bytes
-signal control_bytes: ByteArray(0 to 11); -- default value set in the CMD_SLAVE
-signal status_bytes: ByteArray(0 to 1);
+signal control_bytes: slv8_array(0 to 11); -- default value set in the CMD_SLAVE
+signal status_bytes: slv8_array(0 to 1);
 
 signal burst_length: unsigned(7 downto 0);
 signal burst_number: unsigned(7 downto 0);

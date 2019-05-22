@@ -137,8 +137,8 @@ signal fft_tlast: std_logic;
 signal fft_tvalid: std_logic;
 
 --- Define Control word and its signals
-signal control_bytes: ByteArray(0 to 6); --
-signal status_bytes: ByteArray(0 to 2);
+signal control_bytes: slv8_array(0 to 6);
+signal status_bytes: slv8_array(0 to 2);
 
 signal bypass_fft: std_logic;
 signal soft_reset: std_logic;

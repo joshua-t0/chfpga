@@ -26,12 +26,10 @@
 --------------------------------------------------------------------------------
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
---USE ieee.std_logic_unsigned.all;
 USE ieee.numeric_std.ALL;
 
 library work;
 USE work.chFPGA_Package.all;
---use work.util_package.all;
 use work.tb_package.all;
 
 ENTITY shuffle_crossbar_testbench IS

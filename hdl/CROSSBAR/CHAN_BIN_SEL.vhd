@@ -247,8 +247,8 @@ signal bin_ctr_max: unsigned(10 downto 0);
 signal reset_all: std_logic;
 
 --- Define Control word and its signals
-signal control_bytes: ByteArray(0 to 4); -- default value set in the CMD_SLAVE
-signal status_bytes: ByteArray(0 to 2); -- default value set in the CMD_SLAVE
+signal control_bytes: slv8_array(0 to 4); -- default value set in the CMD_SLAVE
+signal status_bytes: slv8_array(0 to 2); -- default value set in the CMD_SLAVE
 
 signal stream_id: std_logic_vector(11 downto 0);
 signal user_reset: std_logic;

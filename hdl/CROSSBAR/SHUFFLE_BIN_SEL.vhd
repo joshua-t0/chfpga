@@ -291,8 +291,8 @@ signal reset_all_reg: std_logic;
 -- attribute ASYNC_REG of reset_all : signal is "true"; -- used to resync the resets in the in_clk domain
 
 --- Define Control word and its signals
-signal control_bytes: ByteArray(0 to 7); -- default value set in the CMD_SLAVE
-signal status_bytes: ByteArray(0 to 2);
+signal control_bytes: slv8_array(0 to 7); -- default value set in the CMD_SLAVE
+signal status_bytes: slv8_array(0 to 2);
 
 signal STREAM_ID: std_logic_vector(11 downto 0);
 signal user_reset: std_logic;
@@ -423,9 +423,9 @@ status_bytes(0)(3 downto 0) <= to_slv(NUMBER_OF_OUTPUTS, 4);
 
 
 --! STATUS Byte 1-2
--- status_bytes(2)<=to_ByteArray(timestamp_capture(to_integer(unsigned(header_capture_lane_sel))));
+-- status_bytes(2)<=to_slv8_array(timestamp_capture(to_integer(unsigned(header_capture_lane_sel))));
 -- status_bytes(3)<=to_slv(DOUT_FRAME_CTR);
-status_bytes(1 to 2) <= to_ByteArray(resize(reverse_bits_and_dir(data_fifo_overflow_sticky), 16));
+status_bytes(1 to 2) <= to_slv8_array(resize(reverse_bits_and_dir(data_fifo_overflow_sticky), 16));
 
 --! debug ports
 -- status_bytes(4)(3 downto 0)<=to_slv(lane);

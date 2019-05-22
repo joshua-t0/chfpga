@@ -82,8 +82,8 @@ attribute IOB: string;
 
 --- Define Control word and its signals
 --signal CONTROL_WORD: STD_LOGIC_VECTOR(47 downto 0); -- default value set in the CMD_SLAVE
-signal control_bytes: ByteArray(0 to 2); -- default value set in the CMD_SLAVE
-signal status_bytes: ByteArray(0 to 2); -- default value set in the CMD_SLAVE
+signal control_bytes: slv8_array(0 to 2); -- default value set in the CMD_SLAVE
+signal status_bytes: slv8_array(0 to 2); -- default value set in the CMD_SLAVE
 
 --signal fmc_clk200_nobuf: STD_LOGIC;
 --signal fmc_clk200_int: STD_LOGIC;

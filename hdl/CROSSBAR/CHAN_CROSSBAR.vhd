@@ -208,8 +208,8 @@ architecture Behavioral of chan_crossbar is
 	-- signal bin_ctr : unsigned(9 downto 0); -- Up to 1024 bins per frame
 	-- signal lane_map: slv4_array(0 to NUMBER_OF_INPUT_LANES-1);
 	--- Define Control word and its signals
-	signal control_bytes: ByteArray(0 to 1); -- default value set in the CMD_SLAVE
-	signal status_bytes: ByteArray(0 to 4); --
+	signal control_bytes: slv8_array(0 to 1); -- default value set in the CMD_SLAVE
+	signal status_bytes: slv8_array(0 to 4); --
 
 --attribute keep_hierarchy : string;
 --attribute keep_hierarchy of binsel_i : label is "yes";
@@ -345,9 +345,9 @@ status_bytes(1) <= input_frame_ctr(to_integer(unsigned(lane_monitor_sel)));
 
 --! STATUS Byte 2
 status_bytes(2) <= align_frame_ctr(to_integer(unsigned(lane_monitor_sel)));
-status_bytes(3 to 4) <= to_ByteArray(delay_capture_ref_word_ctr);
+status_bytes(3 to 4) <= to_slv8_array(delay_capture_ref_word_ctr);
 
--- status_bytes(0 to 1) <= to_ByteArray(resize(reverse_bits_and_dir(lane_monitor), 16));
+-- status_bytes(0 to 1) <= to_slv8_array(resize(reverse_bits_and_dir(lane_monitor), 16));
 -- status_bytes(2) <= to_slv(lsb(bin_ctr, 8));
 --! STATUS Byte 2
 -- none
