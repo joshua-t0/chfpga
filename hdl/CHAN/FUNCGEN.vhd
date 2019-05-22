@@ -147,12 +147,13 @@ constant FN_FRAME8                   : FN_TYPE:="100"; -- Current frame number i
 constant FN_FRAME4                   : FN_TYPE:="101"; -- Current frame number in the upper 4-bit of each sample (lower bits are zero)
 constant FN_RAM_NIBBLE4              : FN_TYPE:="110"; -- Current frame number in the upper 4-bit of each sample (lower bits are zero)
 
-signal byte_a: Byte;
-signal byte_b: Byte;
+signal byte_a: slv8;
+signal byte_b: slv8;
+signal byte_c: slv8;
 
 -- Control and status bytes
-signal control_bytes: ByteArray(0 to 3); -- default value set in the CMD_SLAVE
-signal status_bytes: ByteArray(0 to 4);
+signal control_bytes: slv8_array(0 to 4); -- default value set in the CMD_SLAVE
+signal status_bytes: slv8_array(0 to 4);
 
 signal fn_sel: FN_TYPE;
 signal ramp_word_ctr: unsigned(LOG2_WORDS_PER_FRAME-1 downto 0) := (others=>'0'); -- Counts words from 0 to FRAME_LENGTH/4-1
@@ -199,8 +200,8 @@ begin
 --! |---------|-----|------|----------------------|-------------------------------|
 --! | CONTROL |  0  |   7  | soft_reset           |                               |
 --! |         |     |   6  | enable               | if '1', funcgen continuously generate frame. If '0', stop generating frame and resets the frame counter.|
---! |         |     |  5:3 | ram_page             |  |
---! |         |     |  2:0 | fn_sel               |  Selects which 512-byte page is being accessed by the RAM address space of the MMI |
+--! |         |     |  5:3 | ram_page             | Selects which 512-byte page is being accessed by the RAM address space of the MMI |
+--! |         |     |  2:0 | fn_sel               |   |
 --! |         |  1  |  7:0 | byte_a               | |
 --! |         |  2  |  7:0 | byte_b               | |
 --! | STATUS  |  0  |  7:0 | ramp_word_ctr        | |
@@ -219,6 +220,8 @@ byte_b <= control_bytes(2);
 -- CONTROL Byte 3
 number_of_frames <= unsigned(control_bytes(3));
 
+-- CONTROL Bytes 4
+byte_c <= control_bytes(4);
 -- STATUS Byte 0
 status_bytes(0) <= std_logic_vector(lsb(ramp_word_ctr));
 -- STATUS Byte 1
@@ -226,7 +229,7 @@ status_bytes(1) <= std_logic_vector(lsb(frame_ctr));
 -- STATUS Byte 2
 status_bytes(2)(0) <= send_frame;
 -- STATUS Byte 3-4
-status_bytes(3 to 4) <= to_ByteArray(delay_capture_ctr);
+status_bytes(3 to 4) <= to_slv8_array(delay_capture_ctr);
 
 -----------------------------------------------------------------------------------
 -- Memory-Mapped interface instantiation
@@ -236,7 +239,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
     GENERIC MAP (
         NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --
         NUMBER_OF_STATUS_BYTES  => status_bytes'Length(1), --
-        DEFAULT_CONTROL_BYTES   => X"40_0101_00", -- No reset
+        DEFAULT_CONTROL_BYTES   => X"40_0101_00_FF", -- No reset
         ADDR_WIDTH              => 9, -- We have 9 bits of data left after routing
         RAM_DATA_WIDTH          => 8, -- 8 or 16 bits
         RAM_ADDR_WIDTH          => 12, -- Cannot exceed 9 bits with 8-bit data width because higher bits are used for routing
@@ -402,7 +405,7 @@ funcgen_proc: process (clk)
 
 
                 when FN_NOISE =>
-                    out_dat.TDATA <= crc_out;
+                    out_dat.TDATA <= crc_out and (byte_c & byte_c & byte_c & byte_c);
                     out_dat.TVALID <= send_frame;
                     adc_overflow_flag <= '0';
 
