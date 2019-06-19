@@ -30,7 +30,7 @@ The module contains a set of control and monitoring memory-map registers.
 Entity documentation
 --------------------
 
-.. parse:: hdl/CROSSBAR/shuffle_crossbar.vhd
+.. parse:: hdl/CROSSBAR/SHUFFLE_CROSSBAR.vhd
 
 .. autoentity:: shuffle_crossbar
 
