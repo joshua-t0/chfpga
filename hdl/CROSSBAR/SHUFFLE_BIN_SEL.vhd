@@ -194,8 +194,8 @@ signal data_fifo_wr_en_if_selected: std_logic:='0';
 signal data_fifo_wr_en_if_selected_dly: std_logic:='0';
 signal data_fifo_first_word: std_logic:='0';
 signal data_fifo_first_word_dly: std_logic:='0';
-signal data_fifo_last_word: std_logic:='0';
-signal data_fifo_last_word_dly: std_logic:='0';
+signal data_fifo_last_word_of_group: std_logic:='0';
+signal data_fifo_last_word_of_group_dly: std_logic:='0';
 signal data_fifo_combine_flag: std_logic:='0';
 signal data_fifo_combine_flag_dly: std_logic:='0';
 signal data_fifo_number_of_words: unsigned(width(WORDS_PER_BIN_MAX)-1 downto 0); --! Counts the word in the current bin
@@ -647,19 +647,26 @@ fifo_wr_proc: process(clk)
 			data_fifo_wr_en_if_selected_dly  <= data_fifo_wr_en_if_selected;
 			data_fifo_wr_en_packet_flags_dly <= data_fifo_wr_en_packet_flags;
 			data_fifo_first_word_dly         <= data_fifo_first_word;
-			data_fifo_last_word_dly          <= data_fifo_last_word;
+			data_fifo_last_word_of_group_dly <= data_fifo_last_word_of_group;
 			data_fifo_combine_flag_dly       <= data_fifo_combine_flag;
 			data_fifo_number_of_words_dly    <= data_fifo_number_of_words;
 
-			data_fifo_wr_en_var := data_fifo_wr_en_always_dly or data_fifo_wr_en_packet_flags_dly or (data_fifo_wr_en_if_selected_dly and mask_ram_dout);
+			-- Determine if words in the ongoing data group shall be written to the FIFO. This happens when:
+			-- 1) they are bin-related (data, data flags) and the bin is selected;
+			-- 2) they are not bin-related (frame_flags, packet_flags) and should unconditionally be written
+
+			data_fifo_wr_en_var := data_fifo_wr_en_packet_flags_dly or data_fifo_wr_en_always_dly  or (data_fifo_wr_en_if_selected_dly and mask_ram_dout);
 
 			flags_fifo_din(data_fifo_number_of_words_dly'length-1 downto 0) <= to_slv(data_fifo_number_of_words_dly);
 			flags_fifo_din(COMBINE_WORDS_BIT) <= data_fifo_combine_flag_dly;
 			flags_fifo_din(END_OF_PACKET_BIT) <= data_fifo_wr_en_packet_flags_dly;
-			flags_fifo_wr_en <= data_fifo_last_word_dly and data_fifo_wr_en_var; -- we write only when the last word is there, so it is guaranteed that we will have WORDS_PER_BIN words in the data FIFO. This way we don't have to check the valid flags (very stretched out 16:1 mux, very bad for timing).
+			-- We write to the flags FIFO when
+			--  1) we are writing data and this is the last word of the bin to be written
+			--  2) we are writing the packets flags, and must write the entry whether or we have reached the end of the data group (in case of malformed packets)
+			flags_fifo_wr_en <= data_fifo_wr_en_packet_flags_dly or (data_fifo_last_word_of_group_dly and data_fifo_wr_en_var); -- we write only when the last word is there, so it is guaranteed that we will have WORDS_PER_BIN words in the data FIFO. This way we don't have to check the valid flags (very stretched out 16:1 mux, very bad for timing).
 
 			for i in 0 to NUMBER_OF_INPUTS-1 loop
-				--data_fifo_din(i)(NEXT_INPUT_BIT) <= data_fifo_last_word_dly; -- (not used) Tell the FIFO reader to increment the lane counteer because this is the last word of the bin
+				--data_fifo_din(i)(NEXT_INPUT_BIT) <= data_fifo_last_word_of_group_dly; -- (not used) Tell the FIFO reader to increment the lane counteer because this is the last word of the bin
 				if data_fifo_wr_en_packet_flags_dly='1' then
 					-- Compose a new packet flag word
 					-- The new status consists of incoming status flags left-shifted by N+4 bits.
@@ -707,12 +714,12 @@ fifo_wr_proc: process(clk)
 			data_fifo_wr_en_always <= '0';
 			data_fifo_wr_en_if_selected <= '0';
 			data_fifo_wr_en_packet_flags <= '0';
-			data_fifo_last_word <= '0';
+			data_fifo_last_word_of_group <= '0';
 
 			if reset_all_reg='1' then -- make sure there won't be spurious data and flag FIFO write in case of a single-clock reset pulse.
 				data_fifo_wr_en_always_dly <= '0';
 				data_fifo_wr_en_if_selected_dly <= '0';
-				data_fifo_last_word_dly <= '0';
+				data_fifo_last_word_of_group_dly <= '0';
 			end if;
 
 			-- Precompute static values so we don't expose combinatorial logic to the state machine
@@ -760,7 +767,7 @@ fifo_wr_proc: process(clk)
 				else -- if recv_header='0'
 
 					data_fifo_wr_en_if_selected <= to_std_logic(block_ctr = DATA_BLOCK or block_ctr = DATA_FLAGS_BLOCK);
-					data_fifo_wr_en_always <= to_std_logic(block_ctr = FRAME_FLAGS_BLOCK);
+					data_fifo_wr_en_always <= to_std_logic(block_ctr = FRAME_FLAGS_BLOCK); -- don't write if we get packet flags that ar enot the last word of the frame
 					data_fifo_combine_flag <= to_std_logic(COMBINE_DATA_FLAGS and (block_ctr = DATA_FLAGS_BLOCK));
 					data_fifo_first_word <= to_std_logic(word_ctr = 0);
 					data_fifo_number_of_words <= last_word_number;
@@ -768,7 +775,7 @@ fifo_wr_proc: process(clk)
 					-- Count words, bins and frames
 					word_ctr <= word_ctr + 1;
 					if word_ctr = last_word_number then -- if last word in bin
-						data_fifo_last_word <= '1';
+						data_fifo_last_word_of_group <= '1';
 						word_ctr <= (others=>'0');
 						bin_ctr <= bin_ctr + 1;
 						if bin_ctr = last_bin_number then -- if last bin in frame
@@ -793,12 +800,11 @@ fifo_wr_proc: process(clk)
 				end if; -- if recv_header
 
 
-			-- override the FIFO write if an unexpected EOF occurs
+				-- override the FIFO write if an unexpected EOF occurs
+				-- We presume the last word is always a packet flag word in which error bits will be set as needed
+				-- If this is not a packet flag word due to corruption, additional bits might be randomly set
 				if s_axis_global_tlast='1' then
-					data_fifo_wr_en_packet_flags <= '1';
-					data_fifo_combine_flag <= '0'; --Make sure the readout system will not combine adjacent signals
-					data_fifo_wr_en_always <= '1'; -- Write the packet flags
-
+					data_fifo_wr_en_packet_flags <= '1'; -- will force data and flags FIFO writing. combine_flag will be ignored by the read process.
 					recv_header_word_ctr <= (others=>'0');
 					recv_header <= '1';
 				end if; --s_axis_global_tlast='1'

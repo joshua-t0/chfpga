@@ -1014,8 +1014,7 @@ fifo_rd_proc: process(clk)
 					if send_flags='1' and bypass_reg='0' then
 						send_data_flags <='1';
 					else
-						send_header <='1';
-						m_axis_tlast_int <= '1';
+						send_packet_flags <='1';
 					end if;
 				end if; -- if last word of packet
 				-- end if; -- half
@@ -1055,7 +1054,7 @@ fifo_rd_proc: process(clk)
 			-- SEND PACKET FLAGS (all zeros)
 			-----------
 			if send_packet_flags='1' then
-				m_axis_tdata_int(31 downto 0) <= (others=>'0');
+				m_axis_tdata_int(31 downto 0) <= (others => '0');
 				-- m_axis_tdata_int(15 downto 0) <= lane_errors;
 				m_axis_tvalid_int <= '1';
 				m_axis_tlast_int <= '1'; -- this is the last word of the packet.
@@ -1074,7 +1073,7 @@ fifo_rd_proc: process(clk)
 			-- quite a heavy load.
 			if reset_all='1' then
 				m_axis_tvalid_int <='0'; --needed
-				header_word_ctr <= (others=>'0');
+				header_word_ctr <= (others => '0');
 				timestamp_ctr <= (others => '0');
 				send_header <= '1';
 				send_data <= '0';
