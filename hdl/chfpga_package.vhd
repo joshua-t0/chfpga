@@ -98,10 +98,12 @@ type Word3Array is array (NATURAL RANGE <>) of std_logic_vector(2 downto 0);
 type Word32Array is array (NATURAL RANGE <>) of std_logic_vector(31 downto 0);
 type Word33Array is array (NATURAL RANGE <>) of std_logic_vector(32 downto 0);
 type BoolArray is array (natural range <>) of BOOLEAN;
-type u16_array is array (NATURAL RANGE <>) of unsigned(15 downto 0);
-type u13_array is array (NATURAL RANGE <>) of unsigned(12 downto 0);
 type u4_array is array (NATURAL RANGE <>) of unsigned(3 downto 0);
 type u8_array is array (NATURAL RANGE <>) of unsigned(7 downto 0);
+type u13_array is array (NATURAL RANGE <>) of unsigned(12 downto 0);
+type u16_array is array (NATURAL RANGE <>) of unsigned(15 downto 0);
+type u24_array is array (NATURAL RANGE <>) of unsigned(23 downto 0);
+type u48_array is array (NATURAL RANGE <>) of unsigned(47 downto 0);
 type int8_array is array (NATURAL RANGE <>) of signed(7 downto 0);
 type int35_array is array (NATURAL RANGE <>) of signed(34 downto 0);
 

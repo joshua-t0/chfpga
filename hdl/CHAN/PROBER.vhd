@@ -21,6 +21,7 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
+use IEEE.STD_LOGIC_MISC.ALL; -- for or_reduce()
 
 library UNISIM;
 use UNISIM.VComponents.all;
@@ -41,7 +42,8 @@ use work.ip_package.all; -- Import definition of components used in this module
 --!
 entity PROBER is
     generic (
-        SIM: BOOLEAN :=FALSE
+        SIM: BOOLEAN :=FALSE;
+        NUMBER_OF_INPUTS : INTEGER := 2
         );
     port (
         -- Input Interface
@@ -84,8 +86,10 @@ attribute shreg_extract: string;
 -----------------------------------------------------------------------
 -- Signals
 -----------------------------------------------------------------------
-
+signal in_dat: AXIS32_DAT_STRUCT_ARRAY(0 to NUMBER_OF_INPUTS-1);
 signal in_dat_reg: AXIS32_DAT_STRUCT; --! Registered Input data bus
+signal trig_reg: std_logic;
+
 attribute equivalent_register_removal of in_dat_reg: signal is "no";
 attribute shreg_extract of in_dat_reg: signal is "no";
 
@@ -119,16 +123,18 @@ signal data_fifo_dout       : std_logic_vector(8 downto 0);
 
 -- FIFO writing logic signals
 
-signal capture_mode_active: std_logic:='1';
-signal capture_frame: std_logic:='0';
+--signal capture_mode_active: std_logic:='1';
+--signal capture_frame: std_logic:='0';
 --signal STORE_FRAME: std_logic:='0';
-signal trig_prev: std_logic;
+--signal trig_prev: std_logic;
 signal frame_flags: std_logic_vector(3 downto 0);
 
-signal frame_ctr: UNSIGNED(FRAME_HEADER_STRUCT.TIMESTAMP'Range) := (others => '0');
+-- Frame counters
+signal frame_ctr: u48_array(0 to NUMBER_OF_INPUTS-1);
+
+-- Header bytes & counter
 signal frame_header_ctr: integer range 0 to FRAME_HEADER_BYTE_LENGTH;
 signal frame_header_bytes: slv8_array(0 to FRAME_HEADER_BYTE_LENGTH-1); --
-signal write_frame_header_bytes: std_logic; --
 
 signal trig_count: unsigned(7 downto 0) := (others => '0'); -- Counts the number of frames that has been captured.
 
@@ -142,24 +148,42 @@ signal dest_ready: std_logic;
 
 
 -- Control and status bytes
-signal control_bytes: slv8_array(0 to 11); -- default value set in the CMD_SLAVE
+signal control_bytes: slv8_array(0 to 14); -- default value set in the CMD_SLAVE
 signal status_bytes: slv8_array(0 to 1);
 
-signal burst_length: unsigned(7 downto 0);
-signal burst_number: unsigned(7 downto 0);
-signal burst_period: unsigned(23 downto 0);
-signal burst_period_minus_1: unsigned(burst_period'Range) := (others => '0'); -- registered version of the burst_period minus one used to determine the end of the loop
-signal probe_id: std_logic_vector(7 downto 0);
-signal stream_id: std_logic_vector(15 downto 0);
-signal continuous_transmission: std_logic;
-signal input_source: std_logic;
+signal burst_length_reg: unsigned(1 downto 0); --
 
-signal is_last_frame_of_period: std_logic;
-signal is_last_frame_of_burst: std_logic;
-signal is_last_burst: std_logic;
-signal burst_active: std_logic := '0';
-signal burst_delay: unsigned(23 downto 0);
-signal burst_delay2: unsigned(23 downto 0);
+--signal number_of_bursts: unsigned(7 downto 0); -- total number of bursts to capture
+
+-- Offset and period
+signal primary_period: u24_array(0 to NUMBER_OF_INPUTS-1);
+--signal burst_period_reg: unsigned(primary_period'RANGE) := (others => '0'); -- registered version of the primary_period minus one used to determine the end of the loop
+signal primary_frame_ctr: u24_array(0 to NUMBER_OF_INPUTS-1); -- Counts frames within a burst.
+signal capture_offset: unsigned(23 downto 0);
+--signal capture_offset_reg: unsigned(primary_period'RANGE);
+
+--signal trig: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
+signal offset_done: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
+
+-- Number of consecutive frames in a burst
+signal burst_length: unsigned(1 downto 0); -- number of consecutives frames in a burst
+signal burst_ctr: UNSIGNED(burst_length'Range) := (others => '0'); -- Counts SYNC psignal SYNC_SAMPLE_MISMATCH: std_logic :=  '0';
+
+--signal probe_id: std_logic_vector(7 downto 0);
+signal stream_id: std_logic_vector(15 downto 0);
+--signal continuous_transmission: std_logic;
+signal new_source: unsigned(0 downto 0);
+signal current_source: unsigned(0 downto 0);
+signal inhibit_data: std_logic; -- inhibit data while transitionning from one source to the other
+--signal secondary_trig: std_logic;
+--signal secondary_trig_active: std_logic;
+--signal secondary_period: unsigned(23 downto 0);
+signal sub_period: unsigned(4 downto 0);
+
+--signal is_last_frame_of_period: std_logic;
+--signal is_last_frame_of_burst: std_logic;
+--signal is_last_burst: std_logic;
+--signal burst_active: std_logic := '0';
 signal send_delay: unsigned(31 downto 0);
 signal send_delay_ctr: unsigned(31 downto 0); -- 16 bit delay + 16 bits prescaler, counts 125 MHz
 signal send_data: std_logic;
@@ -170,8 +194,6 @@ signal serial_flags: std_logic_vector(2 downto 0);
 signal fifo_reset_reg: std_logic;
 
 -- These signals require previous signals to be defined
-signal burst_frame_ctr: unsigned(burst_period'Range) := (others => '0'); -- Counts frames within a burst.
-signal burst_ctr: UNSIGNED(burst_number'Range) := (others => '0'); -- Counts SYNC psignal SYNC_SAMPLE_MISMATCH: std_logic :=  '0';
 
 constant DEFAULT_BURST_PERIOD: std_logic_vector(23 downto 0) := sel(SIM,x"000004",X"05f5e1");
 
@@ -196,65 +218,69 @@ begin
 --! | CONTROL |  0  |  7   | Soft reset           | |
 --! |         |     |  6   | fifo_reset           | |
 --! |         |     |  5   | input source         | |
---! |         |     |  4:0 | burst_delay(12:8)     | Number of frames to skip before starting the capture (multiplied by 256)|
---! |         |  1  |  7:4 | burst_delay(16:13)     | Number of frames to skip before starting the capture (multiplied by 256)|
---! |         |  1  |  3:0 | burst_length         | |
---! |         | 2:4 | 23:0 | burst_period         | |
---! |         |  5  |  7:0 | burst_number         | |
---! |         |  6  |  7:0 | probe_id             | |
---! |         |  7  |  7:4 | burst_delay(20:17)   | |
+--! |         |     | 4:2  | (unused)             |  |
+--! |         |     | 1:0  | burst_length         | | Number of consecutive frames in a burst (1-3, limited to 2 max by data FIFO depth)
+--! |         | 1-3 | 23:0 | capture_offset(23:0)     | Number of frames to skip before starting the capture (multiplied by 256)|
+--! |         | 4-6 | 23:0 | primary_period(0)    | |
 --! |         | 7-8 | 15:0 | stream_id(15:0)      | |
 --! |         | 9-10| 15:0 | send_delay           | Time to wait before sending captured data |
---! |         | 11  | 7:0  | burst_delay(7:0)     | |
+--! |         |11-13| 23:0 | primary_period(1)    | |
+--! |         | 14  | 4:0  | sub_period            | |  range: 0-23.  Create additional captures every N=2^(sub_period+1) frames after the primary period. If N > primary_period, only the primary period frames are captured. If the primary period is not a multiple of N, the last sub capture of a period might be close to the beginning of the next period.
 --! | STATUS  |  0  |   7  | TUSER_CAPTURE_BIT    | For debugging. |
---! |         |     |   6  | capture_frame        | For debugging. |
---! |         |     |   5  | '0' (unused)         |  |
---! |         |     |   4  | data_fifo_empty      | For debugging. |
+--! |         |     |   6  | inhibit_data        | For debugging. |
+--! |         |     |   5  | current_source         |  |
+--! |         |     |   4  | data_fifo_4mpty      | For debugging. |
 --! |         |     |   3  | data_fifo_overflow   | For debugging. |
---! |         |     |  2:1 | '0' (unused)         |  |
---! |         |     |   0  | capture_mode_active  |  |
+--! |         |     |   2  | data_fifo_overflow_sticky         |  |
+--! |         |     |   1  | header_fifo_overflow   | For debugging. |
+--! |         |     |   0  | '0'  |  |
 --! |         |  1  |  7:0 | trig_count           | |
 --!  ------------------------------------------------------------------------------
 
 -- CONTROL Byte 0
 soft_reset <= control_bytes(0)(7);
 fifo_reset <= control_bytes(0)(6);
-input_source <= control_bytes(0)(5);
+new_source <= unsigned(control_bytes(0)(5 downto 5));
+burst_length <= unsigned(control_bytes(0)(1 downto 0));
 -- Burst from an iceboard of 16 channels ~250uS
 -- Make roughly twice the burst time so run at half max speed.
-burst_delay2 <= ("000" & unsigned(control_bytes(7)(7 downto 4)) &
-                         unsigned(control_bytes(1)(7 downto 4)) &
-                         unsigned(control_bytes(0)(4 downto 0)) &
-                         unsigned(control_bytes(11)));
 
--- CONTROL Byte 1
---  Bits 7:4 used by burst_delay2
-burst_length <= ("0000" & unsigned(control_bytes(1)(3 downto 0)));
--- CONTROL Bytes 2-4
-burst_period <= (unsigned(control_bytes(2)) & unsigned(control_bytes(3)) & unsigned(control_bytes(4))); -- 24 bit burst period. Period = 1/850e6 samples/s *2048samples/frame * 2^24 frames = 40.4 seconds max between bursts
--- CONTROL Byte 5
-burst_number <= unsigned(control_bytes(5));
--- CONTROL Byte 6
-probe_id <= control_bytes(6);
+-- CONTROL Byte 1-3
+capture_offset <= to_unsigned(control_bytes(1 to 3));
+
+-- CONTROL Bytes 4-6
+primary_period(0) <= to_unsigned(control_bytes(4 to 6)); -- 24 bit period for input 0.
+
+
+---- CONTROL Byte 5
+--number_of_bursts <= unsigned(control_bytes(5));
+---- CONTROL Byte 6
+--probe_id <= control_bytes(6);
+
 -- CONTROL Byte 7-8
--- control_bytes(7)(7 downto 4) used by burst_delay2
 stream_id <= to_slv(control_bytes(7 to 8));
 -- CONTROL Byte 9-10
 send_delay <= to_unsigned(control_bytes(9 to 10)) & X"0000";
--- CONTROL Byte 11
--- control_bytes(11) used by burst_delay2
+
+-- CONTROL Bytes 11-13
+primary_period(1) <= to_unsigned(control_bytes(11 to 13)); -- 24 bit period for input 1
+---- CONTROL Bytes 14-16
+sub_period <= unsigned(control_bytes(14)(4 downto 0)); -- Create additional captures every 2**(N+1) frames
+
+
+-- control_bytes(11) used by capture_offset2
 
 -- STATUS Byte 0
 status_bytes(0)(7) <= in_dat_reg.TUSER(TUSER_CAPTURE_BIT); -- for debugging
-status_bytes(0)(6) <= capture_frame; -- for debugging
-status_bytes(0)(5) <= input_source;
+status_bytes(0)(6) <= inhibit_data; -- for debugging
+status_bytes(0)(5) <= current_source(0);
 status_bytes(0)(4) <= data_fifo_empty; -- for debugging
 status_bytes(0)(3) <= data_fifo_overflow; -- for debugging
 status_bytes(0)(2) <= data_fifo_overflow_sticky; -- for debugging
-status_bytes(0)(1) <= '0';
-status_bytes(0)(0) <= capture_mode_active;
+status_bytes(0)(1) <= header_fifo_overflow;
+status_bytes(0)(0) <= '0';
 -- STATUS Byte 1
-status_bytes(1)<=std_logic_vector(trig_count);
+status_bytes(1) <= std_logic_vector(trig_count);
 
 -----------------------------------------------------------------------------------
 -- Memory-Mapped interface instantiation
@@ -264,7 +290,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
     GENERIC MAP (
         NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --
         NUMBER_OF_STATUS_BYTES => status_bytes'Length(1), --
-        DEFAULT_CONTROL_BYTES => (X"00_01" & DEFAULT_BURST_PERIOD & X"00_AA_0000_0000_00"), -- reset=0, burst length=1, burst period=1s @ 800 MHz/2048 samples, burst number = 0 (infinite), Probe ID=0xAA (unassigned yet)
+        DEFAULT_CONTROL_BYTES => (X"01_000000" & DEFAULT_BURST_PERIOD & X"0000_0000" & DEFAULT_BURST_PERIOD & X"17"), -- reset=0, burst length=1, burst period=1s @ 800 MHz/2048 samples, burst number = 0 (infinite), Probe ID=0xAA (unassigned yet)
         USE_FIFO => FALSE
             )
     PORT MAP(
@@ -337,6 +363,10 @@ HEADER_FIFO0 : prober_frame_fifo
     empty    => header_fifo_empty
   );
 
+
+in_dat(0) <= in_dat0;
+in_dat(1) <= in_dat1;
+
 ------------------------------------
 -- FIFO Writing process
 ------------------------------------
@@ -344,149 +374,224 @@ HEADER_FIFO0 : prober_frame_fifo
 --!
 --! Writes the incoming words in the data FIFO along with the LAST_WORD bit. The FIFO will be read one byte at a time by the reading interface.
 --! The header FIFO is written when the frame is complete.
-write_proc: process(in_clk)
+fifo_write_proc: process(in_clk)
     variable frame_header: FRAME_HEADER_STRUCT;
     variable trig_var: std_logic;
-
+    variable source: integer range 0 to NUMBER_OF_INPUTS-1;
     begin
         if rising_edge(in_clk) then
             -- Synchronous reset
             reset_all <= soft_reset or in_reset; -- aggregate reset lines into a single, registered lines to simplify the logic. Both resets are synchronous to in_clk.
-            burst_delay <= burst_delay2;
             if fifo_reset='1' or reset_all='1' then
                 data_fifo_overflow_sticky <= '0';
             else
                 data_fifo_overflow_sticky <= data_fifo_overflow_sticky or data_fifo_overflow;
             end if;
 
-            -- register the selected input bus
-            if input_source='0' then
-                in_dat_reg <= in_dat0;
-            else
-                in_dat_reg <= in_dat1;
-            end if;
-
-            -- Determine if we are using continuous transmissions (i.e unlimited number of bursts). Having this in the single bit simplifies the logic.
-            if burst_number=0 then
-                continuous_transmission <= '1';
-            else
-                continuous_transmission <= '0';
-            end if;
 
             ------  Define a few intermediate variables to simplify the logic implementation and help meet timing
-            -- Determine if we are at the last frame of the period. This is arriving one clock after the counter is set to its new value on a TLAST=1, but the value is not needed until the next TLAST so this is ok.
-            burst_period_minus_1 <= burst_period - 1; -- This is a quasi-static value, so latency is not important
-            if burst_frame_ctr = burst_period_minus_1 then
-                is_last_frame_of_period <= '1';
-            else
-                is_last_frame_of_period <= '0';
-            end if;
+            -- Determine if we are using continuous transmissions (i.e unlimited number of bursts). Having this in the single bit simplifies the logic.
+            --if number_of_bursts=0 then
+            --    continuous_transmission <= '1';
+            --else
+            --    continuous_transmission <= '0';
+            --end if;
 
-            -- Determine if we are the last frame of the burst. Same comments as above
-            if burst_frame_ctr = burst_length - 1 then
-                is_last_frame_of_burst <= '1';
-            else
-                is_last_frame_of_burst <= '0';
-            end if;
 
-            -- Determine if we are the last burst. Same comments as above
-            if burst_ctr = burst_number - 1 then
-                is_last_burst <= '1';
-            else
-                is_last_burst <= '0';
-            end if;
 
-            -- Write frame header into HEADER_FIFO until frame_header_ctr=0. The last byte of the frame has bit 8 set to '1'.
+            -- Counts incoming frames for each input, and generate a trig
+            -- pulse that spans the first frame of each capture period
+            --
+            -- Note: We don't hold trig for the burst length because the
+            -- capture logic might want to capture multiple bursts
+            -- synchronized to this trig.
+            --burst_period_reg <= primary_period; -- This is a quasi-static value, so latency is not important
+            --capture_offset_reg <= capture_offset;
+            for i in 0 to NUMBER_OF_INPUTS-1 loop
+                if in_dat(i).TVALID='1' and in_dat(i).TLAST='1' then
+                        --trig(i) <= '0';  -- trig is held until the end of the following frame
+                        frame_ctr(i) <= frame_ctr(i) + 1;  -- always count the 48-bit frame number. We will put this in the header.
+                        primary_frame_ctr(i) <= primary_frame_ctr(i) + 1; -- cound frames within a period on a 24-bit counter (~43s period max)
+                        if offset_done(i)='0' then
+                            if primary_frame_ctr(i) = capture_offset then
+                                offset_done(i) <= '1';
+                                primary_frame_ctr(i) <= (0 => '1', others=> '0');
+                                --trig(i) <= '1';
+                            end if;
+                        else
+                            if primary_frame_ctr(i) = primary_period(i) then
+                                primary_frame_ctr(i) <= (0 => '1', others=> '0');
+                                --trig(i) <= '1';
+                            end if; -- if period done
+                        end if; -- if offset done
+                end if; -- last word
+                if reset_all='1' then
+                    frame_ctr(i) <= (others => '0'); -- needed
+                    primary_frame_ctr(i) <= (0 => '1', others => '0'); -- needed. Start at 1, so we don't have to offset capture_offset and primary_period
+                    if capture_offset=0 then
+                        --trig(i) <= '1';
+                        offset_done(i) <= '1';
+                    else
+                        --trig(i) <= '0';
+                        offset_done(i) <= '0';
+                    end if;
+                end if; --reset
+            end loop;
+
+
+            if in_dat_reg.TVALID='1' and in_dat_reg.TLAST='1' then -- If last word of the frame
+                inhibit_data <= '0';
+                if new_source /= current_source then
+                    current_source <= new_source;
+                    inhibit_data <= '1';
+                end if;
+            end if;
+            if reset_all='1' then
+                inhibit_data <= '0';
+                current_source <= new_source;
+            end if; -- reset
+
+
+            -- register the selected input bus and corresponding trigger
+            source := to_integer(current_source);
+            in_dat_reg <= in_dat(source);
+            in_dat_reg.TVALID <= to_std_logic(in_dat(source).TVALID ='1' and inhibit_data='0');
+            --trig_reg <= trig(source);
+            trig_reg <= to_std_logic(offset_done(source)='1'  and primary_frame_ctr(source)(0)='1');
+            for i in 1 to 23 loop
+                if i <= to_integer(sub_period) and primary_frame_ctr(source)(i)='1' then
+                    trig_reg <= '0';
+                end if;
+            end loop;
+            -- -------------------------------------------
+            -- Write frame header bytes in the header FIFO
+            -- -------------------------------------------
+            --
+            -- Write bytes from frame_header_bytes into the HEADER_FIFO until frame_header_ctr=0. The last byte of the frame has bit 8 set to '1'.
             -- This block has to be before frame_header_ctr is assigned for transmission of a new frame so it can be overriden
             header_fifo_wr_en <= '0'; -- by default do not write to the header FIFO - will be overriden below
-            if write_frame_header_bytes='1' then
+            header_fifo_din(7 downto 0) <= frame_header_bytes(0);  -- always assign to save logic
+            header_fifo_din(8) <= '0'; -- this is not the last word by default
+            if frame_header_ctr /= 0 then  -- if we have bytes to send
                 frame_header_ctr <= frame_header_ctr-1; -- is overriden below is a new header is to be stored
-
-                header_fifo_din(7 downto 0) <= frame_header_bytes(0);
-                if frame_header_ctr = 1 then
-                    header_fifo_din(8) <= '1'; -- set bit 8 to '1' to indicate this is the last byte of the frame.
-                    write_frame_header_bytes <= '0'; -- Stop writing the bytes to the FIFO
-                else
-                    header_fifo_din(8) <= '0';
+                if frame_header_ctr = 1 then -- if the last byte
+                    header_fifo_din(8) <= '1'; -- set bit 8 to '1' to indicate this is the last byte of the frame in the FIFO.
                 end if;
                 header_fifo_wr_en <= '1'; -- write byte to the FIFO
                 frame_header_bytes(0 to frame_header_bytes'Length-2) <= frame_header_bytes(1 to frame_header_bytes'Length-1); -- Shift bytes by one position towards byte 0
             end if;
 
-            -- Store the data into the FIFO, and start header storage when the end of frame is detected.
 
-            data_fifo_wr_en <= '0'; -- by default, do not wtite to the DATA FIFOs. Will be overriden below when appropriate
-
-
+            -- -------------------------------------------
+            -- Keep track of the last serial flags
+            -- -------------------------------------------
+            --
             if in_dat_reg.TVALID='1' then
-                -- Keep track of the serial flags
+                -- Keep track of the serial flags provided with each incoming
+                -- word. We put those in N-bit shift register, so we can have
+                -- access to the last N flags of the frame.
                 serial_flags(2 downto 1) <= serial_flags(1 downto 0);
                 serial_flags(0) <= in_dat_reg.TUSER(TUSER_SERIAL_FLAGS_BIT);
-                --serial_flags(2) <= '1';
-
-                trig_var:=in_dat_reg.TUSER(TUSER_CAPTURE_BIT); -- assign the trigger to a temporary variable for clarity
-                trig_prev <= trig_var; -- store previous state of the trig signal so we can detect edges
-
-                -- Generate the capture_frame signal, which tells whether the words of this frames are to be stored in the data FIFO
-                if in_dat_reg.TLAST='1' then -- If first word of the frame
-                    burst_frame_ctr <= burst_frame_ctr + 1; -- count frames in burst - may be overriden below
-                    if capture_mode_active='0' then -- if the capture mode is not active. capture_mode_active defaults to '1'.
-                        -- If burst_number/=0 and a rising edge is seen on the trigger signal, restart a new acquisition
-                        -- Default values. Those are here to minimize the amount of logic (these are wide counters) and eliminare inverred feedback.
-                        burst_frame_ctr <= (others => '0'); -- needed
-                        burst_ctr <= (others => '0'); -- needed
-                        trig_count <= (others => '0'); -- needed
-                        capture_frame <= '0'; -- Do not send data
-                        if trig_var='1' and trig_prev='0' and continuous_transmission='0' then
-                            capture_mode_active <= '1'; -- needed
-                            capture_frame <= '1'; -- We always start by transmitting at least one frame
-                        end if;
-                    else -- if the capture mode is active (TLAST=1 and capture_mode_active=1)
-                        if burst_active='0' then
-                            if burst_frame_ctr = burst_delay then
-                                burst_active <= '1';
-                                burst_frame_ctr <= (others => '0'); -- reset the frame counter
-                            end if;
-                        else
-                            -- Stop capturing when we reach the number of frames per burst
-                            if is_last_frame_of_burst='1' then -- if burst_active=1 and if we have reached the burst length (but not the burst period yet) stop transmissing frames. It will be restarted on the next period
-                                capture_frame <= '0'; -- Stop capturing frames for the rest of the burst_period
-                            end if; -- if last frame of burst
-                            -- Restart capture if we reach the end of period and we should be capturing more bursts
-                            if is_last_frame_of_period='1' then -- burst_active=1 and if we are and the end of the period
-                                burst_frame_ctr <= (others => '0'); -- reset the frame counter
-                                burst_ctr <= burst_ctr + 1; -- increase the number of bursts sent
-                                if continuous_transmission='1' then -- if burst_number=0, tranmit bursts continuously
-                                    capture_frame <= in_dat_reg.TUSER(TUSER_CAPTURE_BIT); -- transmit frames whenever the CAPTURE bit embedded in the frame is set
-                                elsif is_last_burst='1' then  -- if we are the last burst then stop
-                                    capture_frame <= '0'; -- stop transmitting bursts
-                                    capture_mode_active<='0'; -- Stop the capture mode. Will have to reset to restart a new sequence of bursts
-                                else -- if we have not tranmitted the last burst
-                                    capture_frame <= '1'; -- Flag the frame to be captured
-                                end if; -- if burst_ctr=N
-                            end if; -- if last frame of period
-                        end if; -- if burst active
-                    end if; -- if capture_mode_active
-                end if; -- if FIRST word of frame
+            end if;
 
 
-                -- Counts incoming frames
-                if in_dat_reg.TLAST='1' then
-                    frame_ctr <= frame_ctr + 1;
+            --trig_var:=in_dat_reg.TUSER(TUSER_CAPTURE_BIT); -- assign the trigger to a temporary variable for clarity
+            --trig_prev <= trig_var; -- store previous state of the trig signal so we can detect edges
+
+            -- -------------------------------------------
+            -- Extend burst capture
+            -- -------------------------------------------
+            --
+            -- Generate the capture_frame signal, which tells whether the words of this frames are to be stored in the data FIFO
+            burst_length_reg <= burst_length;
+            if in_dat_reg.TVALID='1' and in_dat_reg.TLAST='1' then -- If first word of the frame
+
+                -- Extend the trig for the burst length
+                if trig_reg = '1'  then
+                    burst_ctr <= burst_length_reg - 1;
+                elsif burst_ctr /= 0 then
+                    burst_ctr <= burst_ctr - 1;
                 end if;
+            end if; -- if FIRST word of frame
 
-                -- Cumulate the flags for each incoming word. Clear when the last word is received.
-                -- When  TLAST=1, `last_flag` contains the or'ed version of all flags EXCEPT the ones sent along the last word. We need to add them later.
+
+                ---- Generate extra secondary triggers so we can make multiple burst capture in a primary period
+                --secondary_trig <= '0';
+                --if trig_reg ='1' then
+                --    secondary_frame_ctr <= to_unsigned(2, secondary_frame_ctr'LENGTH); -- The frame that was triggered was #1, so the next one is #2
+                --    secondary_trig_active <= '1';
+                --else
+                --    secondary_frame_ctr <= secondary_frame_ctr + 1;
+                --    if secondary_trig_active='1' and secondary_frame_ctr = secondary_period then
+                --        secondary_trig <= '1';
+                --        secondary_frame_ctr <= to_unsigned(1, secondary_frame_ctr'LENGTH); -- The next frame is triggered and is #1 if the new secondary period
+                --    end if;
+                --end if;
+
+
+
+                ----primary_frame_ctr <= primary_frame_ctr + 1; -- count frames in burst - may be overriden below
+                --if capture_mode_active='0' then -- if the capture mode is not active. capture_mode_active defaults to '1'.
+                --    -- If number_of_bursts/=0 and a rising edge is seen on the trigger signal, restart a new acquisition
+                --    -- Default values. Those are here to minimize the amount of logic (these are wide counters) and eliminare inverred feedback.
+                --    primary_frame_ctr <= (others => '0'); -- needed
+                --    burst_ctr <= (others => '0'); -- needed
+                --    trig_count <= (others => '0'); -- needed
+                --    capture_frame <= '0'; -- Do not send data
+                --    if trig_var='1' and trig_prev='0' and continuous_transmission='0' then
+                --        capture_mode_active <= '1'; -- needed
+                --        capture_frame <= '1'; -- We always start by transmitting at least one frame
+                --    end if;
+                --else -- if the capture mode is active (TLAST=1 and capture_mode_active=1)
+                --    if burst_active='0' then
+                --        if primary_frame_ctr = capture_offset then
+                --            burst_active <= '1';
+                --            primary_frame_ctr <= (others => '0'); -- reset the frame counter
+                --        end if;
+                --    else
+                --        -- Stop capturing when we reach the number of frames per burst
+                --        if is_last_frame_of_burst='1' then -- if burst_active=1 and if we have reached the burst length (but not the burst period yet) stop transmissing frames. It will be restarted on the next period
+                --            capture_frame <= '0'; -- Stop capturing frames for the rest of the primary_period
+                --        end if; -- if last frame of burst
+                --        -- Restart capture if we reach the end of period and we should be capturing more bursts
+                --        if is_last_frame_of_period='1' then -- burst_active=1 and if we are and the end of the period
+                --            primary_frame_ctr <= (others => '0'); -- reset the frame counter
+                --            burst_ctr <= burst_ctr + 1; -- increase the number of bursts sent
+                --            if continuous_transmission='1' then -- if number_of_bursts=0, tranmit bursts continuously
+                --                capture_frame <= in_dat_reg.TUSER(TUSER_CAPTURE_BIT); -- transmit frames whenever the CAPTURE bit embedded in the frame is set
+                --            elsif is_last_burst='1' then  -- if we are the last burst then stop
+                --                capture_frame <= '0'; -- stop transmitting bursts
+                --                capture_mode_active<='0'; -- Stop the capture mode. Will have to reset to restart a new sequence of bursts
+                --            else -- if we have not tranmitted the last burst
+                --                capture_frame <= '1'; -- Flag the frame to be captured
+                --            end if; -- if burst_ctr=N
+                --        end if; -- if last frame of period
+                --    end if; -- if burst active
+                --end if; -- if capture_mode_active
+
+
+
+            -- Cumulate the flags for each incoming word. Clear when the last word is received.
+            -- When  TLAST=1, `last_flag` contains the or'ed version of all flags EXCEPT the ones sent along the last word. We need to add them later.
+            if in_dat_reg.TVALID='1' then
                 if in_dat_reg.TLAST = '1' then
                     frame_flags <= (others => '0');
                 else
                     frame_flags <= frame_flags or in_dat_reg.TUSER;
                 end if;
+            end if;
 
-                --Assign bytes in the incoming word to the fifo word.
+            -- -------------------------------------------
+            -- Write data into data FIFO, and setup header to be written in header FIFO
+            -- -------------------------------------------
+
+            data_fifo_wr_en <= '0'; -- by default, do not wtite to the DATA FIFOs. Will be overriden below when appropriate
+            if in_dat_reg.TVALID='1' then
+
+                -- Assign bytes in the incoming word to the fifo word.
                 -- The FIFO will be read one 9-bit byte at a time. The MSB is read first.
-                --The extra bit on each byte is zero, except for the LSB , where it indicate whether this is the last byte
-                if capture_frame = '1' then
+                -- The extra bit on each byte is zero, except for the LSB , where it indicate whether this is the last byte
+                if trig_reg='1' or burst_ctr /= 0  then
                     data_fifo_wr_en <= '1';
                     data_fifo_din <=
                         (
@@ -496,7 +601,7 @@ write_proc: process(in_clk)
                         in_dat_reg.TLAST & in_dat_reg.TDATA(7 downto 0)
                         );
 
-                    if input_source='1' then
+                    if current_source=1 then
                         data_fifo_din(30 downto 27) <= in_dat_reg.TUSER;
                         data_fifo_din(21 downto 18) <= in_dat_reg.TUSER;
                         data_fifo_din(12 downto 9) <= in_dat_reg.TUSER;
@@ -506,17 +611,16 @@ write_proc: process(in_clk)
                     -- If this is the last word, build the frame header and set it up for injection into the header FIFO
                     if in_dat_reg.TLAST='1' then
                         -- Build the header VARIABLE
-                        frame_header.PROBE_ID := probe_id;
-                        frame_header.STREAM_ID(15) := input_source;
-                        frame_header.STREAM_ID(14 downto 0) := stream_id(14 downto 0);
+                        frame_header.PROBE_ID := X"A0";
+                        frame_header.PROBE_ID(0) := current_source(0);
+                        frame_header.STREAM_ID := stream_id;
                         frame_header.SERIAL_FLAGS := serial_flags(2 downto 0) & in_dat_reg.TUSER(TUSER_SERIAL_FLAGS_BIT);
                         frame_header.FLAGS := frame_flags or in_dat_reg.TUSER;
-                        frame_header.TIMESTAMP := std_logic_vector(frame_ctr);
+                        frame_header.TIMESTAMP := std_logic_vector(frame_ctr(source));
                         -- Store the header into an adday of bytes for insertion into the FIFO
                         frame_header_bytes <= struct_to_bytes(frame_header);
                         -- Set frame_header_ctr to the number of header bytes to indicate that the header bytes are ready to be sent into the FIFO
                         frame_header_ctr <= FRAME_HEADER_BYTE_LENGTH;
-                        write_frame_header_bytes <= '1'; -- Starts writing the bytes to the FIFO
                         trig_count <= trig_count + 1; -- keep track of how manny triggers we detected for debugging purposes
                     end if; -- if TLAST
                 end if; -- capture_frame=1
@@ -526,25 +630,31 @@ write_proc: process(in_clk)
                 in_dat_reg.TVALID <= '0';
                 -- FIFO signals
                 header_fifo_wr_en <= '0'; -- needed
+                --frame_header_ctr <= (others => '0');
                 data_fifo_wr_en <= '0'; -- needed
-                frame_ctr <= (others => '0'); -- needed
 
-                -- Capture engine
-                capture_frame <= '0'; -- needed.
-                capture_mode_active <= '1'; -- needed. '1' is needed in case we set burst_number=0, in which case we transmit whenever TRIG=1
-                burst_frame_ctr <= (others => '0'); -- needed
+                -- Secondary triggers
                 burst_ctr <= (others => '0'); -- needed
+                --secondary_trig <= '0';
+                --secondary_trig_active <= '0';
+                trig_reg <= '0';
+                -- Captured frame counter
                 trig_count <= (others => '0'); -- needed
-                trig_prev <= '0'; -- needed (mostly)
-                burst_period_minus_1 <= (others => '0');
+
+                -- Frame header FIFO write counter
+                -- Capture engine
+                --capture_frame <= '0'; -- needed.
+                --capture_mode_active <= '1'; -- needed. '1' is needed in case we set number_of_bursts=0, in which case we transmit whenever TRIG=1
+                --trig_prev <= '0'; -- needed (mostly)
+--                burst_period_minus_1 <= (others => '0');
 --              continuous_transmission <= '0'; -- not needed. This is not needed until the first TLAST, which gives time to the signal to be set before it is needed.
-                write_frame_header_bytes <= '0'; -- needed
-                is_last_frame_of_period <= '0';--needed
-                is_last_frame_of_burst <= '0'; --needd
-                is_last_burst <= '0'; --needed
-                burst_active  <=  '0';
+                --write_frame_header_bytes <= '0'; -- needed
+                --is_last_frame_of_period <= '0';--needed
+                --is_last_frame_of_burst <= '0'; --needd
+                --is_last_burst <= '0'; --needed
+                --burst_active  <=  '0';
             end if; -- if reset
-        end if; -- rst/clk
+        end if; -- clk
     end process;
 
 
