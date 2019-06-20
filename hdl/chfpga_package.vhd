@@ -291,7 +291,7 @@ type FRAME_HEADER_STRUCT is
 	record  -- In transmission order (bytewise)
 		PROBE_ID: std_logic_vector(7 downto 0); -- 1 byte, user-defined. Generally a cookie, but can be used by user to convey more info (e.g. extend the number of channels)
 		STREAM_ID: std_logic_vector(15 downto 0); --! 16 bit value used to uniquely define the data stream and lookup . Defined as listed below:
-			--! Bits 15-12 (4 bits). Software defined. Identifies the data source within the internal pipeline (1st shuffle, 2nd shufle, raw data etc.).
+			--! Bits 15-12 (4 bits). Software defined. Identifies the data source (0 = adc/funcgen, 1=fft/scaler).
 			--! Bits 12-8 (4 bits). Software defined. Identifies the crate_number.
 			--! Bits 7-4 (4 bits). Software defined. Identifies slot number (zero-based).
 			--! Bits 3-0 (4 bits). Hardware defined. Identifies the 10Gb/s lane (1st shuffle has 15 lanes, 2nd shuffle has 4 lanes, GPU link has 8 lanes).
