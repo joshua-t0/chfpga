@@ -205,7 +205,10 @@ Data/scaler flags of consecutive bins are **not** combined by the shiffle bin se
 
 The data rate at the output of the channelizer bin selectors is about half of what it was in `shuffle16`, so there is no concern for bandwidth here::
 
-   Payload (for 2 frames/packet) =  (4 header words/frame) + (N frame/packet) * {(64 bins/frame) * [ (4 data words/bin) + (1 data flag word/bin (half filled))] + (1 frame flags word/frame)} + (1 packet flags word/packet)] = 647 words, x4 = 2588 bytes, *8*frame_rate/{N frames/packet) = 4.04375 Gbit/s # Confirmed with wireshark & tcpump
+   Payload size=  (4 header words/frame) + (N frame/packet) * {(64 bins/frame) * [ (4 data words/bin) + (1 data flag word/bin (half filled))] + (1 frame flags word/frame)} + (1 packet flags word/packet)]
+
+      For 2 frames/packet, with flags = 647 words, x4 = 2588 bytes, *8*frame_rate/{N frames/packet) = 4.04375 Gbit/s # Confirmed with wireshark & tcpump
+      For 2 frames/packet, no flags: 516 words, 2064 bytes
 
 
 Since the connectivity of the PCB links between two slots varies from slot to slot, and since the channelizer crossbar does not have any lane remapping capability, the bin selection maps of each bin selector must be customized in order to make sure that the right bins end up at least in the right slot (i.e. bins 0,16,... on slot 0, bins 1,17,... on slot 1 etc). The map is therefore created using the knowledge of the backplane connectivity. Even if we do that, we can't control on which lane of the destination slot the data will arrive in; fixing that is the role of the second crossbar remap operation which will reorder the lanes such that post-remap lane 0 gets its data from slot 0,  lane 1 from slot 1 etc...
@@ -224,22 +227,44 @@ Note that the  2nd crossbar is configured to combine the data flag words, which 
 
 The packet size at the output of the 2nd bin selectors is::
 
-   Payload (for 2 frames/packet) =  (4 header words/frame) + (N frame/packet) * {(64 bins/frame) * [ (8 data words/bin) + (1 data flag word/bin (fully filled))] + (2 frame flags word/frame)} + (1 packet flags word/packet)] = 1161 words, x4 =  bytes, *8*frame_rate/{N frames/packet) =  Gbit/s
+   Payload size =  (4 header words/frame) + (N frame/packet) * {(64 bins/frame) * [ (8 data words/bin) + (1 data flag word/bin (fully filled))] + (2 frame flags word/frame)} + (1 packet flags word/packet)]
+      For 1 frame/packet:
+      For 2 frames/packet, with flags= 1161 words, 4644 bytes
+      For 2 frames/packet, no flags= 1028 words, 4112 bytes
 
 The backplane QSFP data shuffle is bypassed in this mode. The 8 output lanes of the 2nd crossbar are connected directly to the 8 inputs of the 3rd crossbar.
 
 The 3rd crossbar remap reorganizes the lanes so the 8 input lanes of the bin selectors to undo the interleaving of the 2nd crossbar. The bin selectors then combine data from all remapped 8 input lanes, from lane 0 to lane 7, and selects 1/8th of the bins. We end up with 64/8=8 bins per output lanes, with each bins containing data from 32*8=256 channels.
 
-Packet size is::
+The data packet size at each output of the 3rd crossbar is::
 
-   Payload (for 2 frames/packet) =  (4 header words/frame) + (N frame/packet) * {(8 bins/frame) * [ (64 data words/bin) + (8 data flag word/bin (fully filled))] + (16 frame flags word/frame)} + (1 packet flags word/packet)] = 1189 words, x4 =  bytes, *8*frame_rate/{N frames/packet) =  7.43125 Gbit/s
+   Payload size:  (4 header words/frame) + (N frame/packet) * {(8 bins/frame) * [ (64 data words/bin) + (8 data flag word/bin (fully filled))] + (16 frame flags word/frame)} + (1 packet flags word/packet)]
+      For 1 frame/packet: 597 words, 2388 bytes
+      For 2 frames/packet: 1189 words, 4756 bytes
+
+The packet size and data rate at the output of the 10G transmitter are::
+
+   For 1 frame/packet, with flags:
+      Ethernet frame size: 2432 bytes
+      Ethernet data rate: 2432 *8/2.56e-6 = 7.600 Gbits/s
+
+   For 2 frames/packets, with flags:
+      Ethernet frame size: 4800 bytes (4756+42+7)//8*8)
+      Ethernet data rate: 4800 *8/2/2.56e-6 = 7.500 Gbits/s
 
 
 ``shuffle512``
 --------------
 
-in `shuffle512` mode, the 1st crossbar and PCB shuffle is identical to the ``shuffle256`` mode. However, the 3rd crossbar now needs to split data in a way that half the channels will go to the other crate. Do do this, each output of the bin selectors are set to gather data from all 16 input channels, but they select only half of the bins. The 4 outputs of bin selector 0,1,2 and 3  therefore contains 32 bins from lanes 0-4, 5-8, 9-12 and 13-16. Bin selector 1 contains the other bins from the other channels.
+in `shuffle512` mode, the 1st crossbar and PCB shuffle is identical to the ``shuffle256`` mode. However, the 3rd crossbar now needs to split data in a way that half the channels will go to the other crate. Do do this, each output of the bin selectors are set to gather data from all 16 input channels, but they select only half of the bins. The 4 outputs of bin selector 0,1,2 and 3  therefore contains 32 bins from lanes 0-3, 4-7, 8-11 and 12-15. Bin selector 1 contains the other bins from the other channels.
 
 The backplane QSFP shuffle passes the 4 first lanes 0-3 directly to the 3rd crossbar lanes 0-3.  The odd-selected bins are sent to the other crate through the GTX links connected to the QSFP cables between the crates. The even crate bin selection map is configured to send its odd bins to the other crate and keep the even bine. The odd-numbered crate kepps the odd bine and send over the even bins.
 
 In the end the 3rd crossbar receives all the even- or odd-selected bins in its 8 lanes. Even crates do not need to remap. Odd crates needs to remap so as to read the remote data (lower channel numbers) before the local data (higher channel numbers) to preserve the channel ordering within bins.  Each 8 bin selector selects 1/8th of the bins from the 8 input lanes, and feed the corresponding 10G Ethernet offload link.
+
+The packet size at the output of the 2nd bin selectors is::
+
+   Payload size =  (4 header words/frame) + (N frame/packet) * {(32 bins/frame) * [ (16 data words/bin) + (2 data flag word/bin (fully filled))] + (4 frame flags word/frame)} + (1 packet flags word/packet)]
+      For 1 frame/packet:
+      For 2 frames/packet, with flags= 1165 words (as reported by CB3 monitor)
+      For 2 frames/packet, no flags= 1028 words, 4112 bytes (CB3 reports 1013 words from CB2)
