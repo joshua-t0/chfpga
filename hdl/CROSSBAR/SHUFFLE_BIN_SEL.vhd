@@ -651,7 +651,7 @@ fifo_wr_proc: process(clk)
 			data_fifo_combine_flag_dly       <= data_fifo_combine_flag;
 			data_fifo_number_of_words_dly    <= data_fifo_number_of_words;
 
-			data_fifo_wr_en_var := data_fifo_wr_en_always_dly or (data_fifo_wr_en_if_selected_dly and mask_ram_dout);
+			data_fifo_wr_en_var := data_fifo_wr_en_always_dly or data_fifo_wr_en_packet_flags_dly or (data_fifo_wr_en_if_selected_dly and mask_ram_dout);
 
 			flags_fifo_din(data_fifo_number_of_words_dly'length-1 downto 0) <= to_slv(data_fifo_number_of_words_dly);
 			flags_fifo_din(COMBINE_WORDS_BIT) <= data_fifo_combine_flag_dly;
