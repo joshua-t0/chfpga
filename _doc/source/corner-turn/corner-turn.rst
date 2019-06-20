@@ -116,6 +116,12 @@ have a single output. Each output feed on eof the 8 lanes of the 10G Ethernet
 transmitter connecter to the two **motherboard** QSFPs for offloading the data
 to the node.
 
+The shuffle bin selectors can combine data words. It does that on the FIFO
+readout process. This does not involve adding an extra FIFO read cycle (as it
+was the case for the channelizer bin selector) because the data flags to be
+combined are already present simulaneously at the output of all the FIFOs, and
+can then be combined by reading them two at a time on each clock.
+
 
 ``shuffle16`` mode
 ==================
@@ -160,29 +166,6 @@ The output data rate is that of the 1st crossbar. For 1 frame/packet::
 No flags, 2 fpp, UDP=4112
 No flags, 2 fpp, UDP=2064 (WS,TCP), Eth= 2112 (WS)
 
-
-
-
-``shuffle256`` mode
-===================
-
-In ``shuffle256`` mode, all 16 bin selectors of the channelizer crossbars are used to feed the 16 PCB data shuffle lanes. Each crossbar captures 1/16 of the bins, and therefore contain 1024/16=64 bins in total. Each bin still comprises of the data from all 16 channels and fit in 4 words.
-
-Data/scaler flags of consecutive bins are **not** combined by the shiffle bin selectors. Only half of the data scaler word that represent each bin is populated. This will allow the next crossbar to further downselect bins.
-
-The data rate at the output of the channelizer bin selectors is about half of what it was in `shuffle16`, so there is no concern for bandwidth here.
-
-Since the connectivity of the PCB links between two slots varies from slot to slot, and since the channelizer crossbar does not have any lane remapping capability, the bin selection maps of each bin selector must be customized in order to make sure that the right bins end up at least in the right slot (i.e. bins 0,16,... on slot 0, bins 1,17,... on slot 1 etc). The map is therefore created using the knowledge of the backplane connectivity. Even if we do that, we can't control on which lane of the destination slot the data will arrive in; fixing that is the role of the second crossbar remap operation which will reorder the lanes such that post-remap lane 0 gets its data from slot 0,  lane 1 from slot 1 etc...
-
-In ``shuffle`` 256 mode, the backplane PCB shuffle is operated normally. Lane
-0 is the direct, internal one, and is assumed to suffer no packet loss, and is
-therefore used by the 2nd crossbar aligner as a reference to align the
-packets. The latency of lane 0 is therefore much shorter than that of lanes
-1-15 which go through the GTX logic. Data is transmitted at the 156.25*50 =7.812 Gbit/s.
-
-The 2nd crossbar receives packetized data from the one direct and 15 GTX links, realigns the data on the direct link (always lane 0), and remaps (reorders) the lanes to account for the backplane connectivity so the bin selectors can pack data in order from lane 0 to lane 15.
-
-
 Channelizer bin selector
 ------------------------
 
@@ -212,11 +195,51 @@ The packet format is as follows (assuming one frame per packet):
     - Total: 2328 bytes
 
 
-``shuffle256`` mode
--------------------
 
+``shuffle256`` mode
+===================
+
+In ``shuffle256`` mode, all 16 bin selectors of the channelizer crossbars are used to feed the 16 PCB data shuffle lanes. Each crossbar captures 1/16 of the bins, and therefore contain 1024/16=64 bins in total. Each bin still comprises of the data from all 16 channels and fit in 4 words.
+
+Data/scaler flags of consecutive bins are **not** combined by the shiffle bin selectors. Only half of the data scaler word that represent each bin is populated. This will allow the next crossbar to further downselect bins.
+
+The data rate at the output of the channelizer bin selectors is about half of what it was in `shuffle16`, so there is no concern for bandwidth here::
+
+   Payload (for 2 frames/packet) =  (4 header words/frame) + (N frame/packet) * {(64 bins/frame) * [ (4 data words/bin) + (1 data flag word/bin (half filled))] + (1 frame flags word/frame)} + (1 packet flags word/packet)] = 647 words, x4 = 2588 bytes, *8*frame_rate/{N frames/packet) = 4.04375 Gbit/s # Confirmed with wireshark & tcpump
+
+
+Since the connectivity of the PCB links between two slots varies from slot to slot, and since the channelizer crossbar does not have any lane remapping capability, the bin selection maps of each bin selector must be customized in order to make sure that the right bins end up at least in the right slot (i.e. bins 0,16,... on slot 0, bins 1,17,... on slot 1 etc). The map is therefore created using the knowledge of the backplane connectivity. Even if we do that, we can't control on which lane of the destination slot the data will arrive in; fixing that is the role of the second crossbar remap operation which will reorder the lanes such that post-remap lane 0 gets its data from slot 0,  lane 1 from slot 1 etc...
+
+In ``shuffle`` 256 mode, the backplane PCB shuffle is operated normally. Lane
+0 is the direct, internal one, and is assumed to suffer no packet loss, and is
+therefore used by the 2nd crossbar aligner as a reference to align the
+packets. The latency of lane 0 is therefore much shorter than that of lanes
+1-15 which go through the GTX logic. Data is transmitted at the 156.25*50 =7.812 Gbit/s.
+
+The 2nd crossbar receives packetized data from the one direct and 15 GTX links, realigns the data on the direct link (always lane 0), and remaps (reorders) the lanes to account for the backplane connectivity so the bin selectors can pack data in order from lane 0 to lane 15. Since there are only two 4-output bin selectors, we cannot do the final corner-turn operation of splitting the data in 8 ways with each of the 8 output having a different set of bin because both bin selectors use the same bin selection map. We need the 3rd crossbar to finish the job. This means the the second crossbar role is to combine the 16 input lanes into 8 output lanes, but we need the output lanes to still represent different channels that the 3rd crossbar will finally combine.
+
+For this reason, each of the output lanes of the bin selector 0 is set-up to combine bins from half of their associated lanes: output lanes 0,1,2 and 3 combines input from lane 0-1, 4-5, 8-9, and 12-13   respectively. Bin selector 1outputs  combines data from lanes 1-2, 5-6, 9-10 and 13-14. So each output lanes combines data from 2 input lanes, but we select every bin (i.e. 64 bins), so we end up with twice the data. This makes sense since overall we are merging the 16 input lanes into 8.
+
+Note that the  2nd crossbar is configured to combine the data flag words, which wasn't done by the channelizer bin selectors.
+
+The packet size at the output of the 2nd bin selectors is::
+
+   Payload (for 2 frames/packet) =  (4 header words/frame) + (N frame/packet) * {(64 bins/frame) * [ (8 data words/bin) + (1 data flag word/bin (fully filled))] + (2 frame flags word/frame)} + (1 packet flags word/packet)] = 1161 words, x4 =  bytes, *8*frame_rate/{N frames/packet) =  Gbit/s
+
+The backplane QSFP data shuffle is bypassed in this mode. The 8 output lanes of the 2nd crossbar are connected directly to the 8 inputs of the 3rd crossbar.
+
+The 3rd crossbar remap reorganizes the lanes so the 8 input lanes of the bin selectors to undo the interleaving of the 2nd crossbar. The bin selectors then combine data from all remapped 8 input lanes, from lane 0 to lane 7, and selects 1/8th of the bins. We end up with 64/8=8 bins per output lanes, with each bins containing data from 32*8=256 channels.
+
+Packet size is::
+
+   Payload (for 2 frames/packet) =  (4 header words/frame) + (N frame/packet) * {(8 bins/frame) * [ (64 data words/bin) + (8 data flag word/bin (fully filled))] + (16 frame flags word/frame)} + (1 packet flags word/packet)] = 1189 words, x4 =  bytes, *8*frame_rate/{N frames/packet) =  7.43125 Gbit/s
 
 
 ``shuffle512``
 --------------
 
+in `shuffle512` mode, the 1st crossbar and PCB shuffle is identical to the ``shuffle256`` mode. However, the 3rd crossbar now needs to split data in a way that half the channels will go to the other crate. Do do this, each output of the bin selectors are set to gather data from all 16 input channels, but they select only half of the bins. The 4 outputs of bin selector 0,1,2 and 3  therefore contains 32 bins from lanes 0-4, 5-8, 9-12 and 13-16. Bin selector 1 contains the other bins from the other channels.
+
+The backplane QSFP shuffle passes the 4 first lanes 0-3 directly to the 3rd crossbar lanes 0-3.  The odd-selected bins are sent to the other crate through the GTX links connected to the QSFP cables between the crates. The even crate bin selection map is configured to send its odd bins to the other crate and keep the even bine. The odd-numbered crate kepps the odd bine and send over the even bins.
+
+In the end the 3rd crossbar receives all the even- or odd-selected bins in its 8 lanes. Even crates do not need to remap. Odd crates needs to remap so as to read the remote data (lower channel numbers) before the local data (higher channel numbers) to preserve the channel ordering within bins.  Each 8 bin selector selects 1/8th of the bins from the 8 input lanes, and feed the corresponding 10G Ethernet offload link.
