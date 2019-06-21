@@ -138,34 +138,6 @@ bypassing the PCB shuffle (16 lane wide), 2nd crossbar (8 lane wide), QSFP
 shuffle (8 lane wide) and 3rd crossbar (8 lane wide). The output of the last 8
 channelizer bin selectors is discarded.
 
-Because we pack 128 bins, we **have to** ask the channelizer bin selector to
-combine the data flags from two consecutive words in order to allow the data
-rate to fit within the corner turn's engine internal data bus bandwidth (see
-discussion in :ref:`CHAN_BIN_SEL`). The combined words cannot be used by
-further bin_selectors, but there is no need to.
-
-In `shuffle16` mode, the backplane PCB link data shuffle, 2nd crossbar,
-backplane QSFP link shuffle, and 3rd crossbars are bypassed and pass the 1st
-crossbar 8 outputs directly to the 8 10G Ethernet tranmitter connected to the
-motherboard QSFPs.
-
-The output data rate is that of the 1st crossbar. For 1 frame/packet::
-
-   UDP Payload =  [(4 header words/frame) (1 frame/packet) *{(128 bins/frame) * [ (4 data words/bin) + (0.5 data flag word/bin)] + (1 frame flags word/frame)} * (1 frame/packet) + (1 packet flags/packet)] * (4 bytes/word) = 2328 bytes # Confirmed with wireshark & tcpump
-
-   Ethernet frame size = int(UDP Payload) + 42 + 7) /8) * 8 = 2376 bytes # confirmwd with wireshark
-   Ethernet bandwidth = (2376 *8 bits/frame) / (2.56e-6 s/frame) = 7.425 Gbit/s
-
- With 2 frames per packet:
-
-   UDP payload: 4636 bytes # confirmed by tcpdump & wireshark
-   Ethernet frame size: ((4+ 2*(128*(4+.5) +1) + 1)*4 + 42 + 7)//8*8 = 4680 bytes # confirmed by wireshark & logs
-   Ethernet Bandwidth: ((2*(4+ 128*(4+.5) +1)+1)*4 + 42 +7)//8*8*8/2.56e-6/2/1e9 = 7.3125 Gbit/s # configmed with bmon
-
-
-No flags, 2 fpp, UDP=4112
-No flags, 2 fpp, UDP=2064 (WS,TCP), Eth= 2112 (WS)
-
 Channelizer bin selector
 ------------------------
 
@@ -178,10 +150,32 @@ There are a total of 128 selected bins. There are 4 words per bins (16
 channels). The data flags of two consecutive bins are combine to build a
 single data flag word.
 
+Because we pack 128 bins, we **have to** ask the channelizer bin selector to
+combine the data flags from two consecutive words in order to allow the data
+rate to fit within the corner turn's engine internal data bus bandwidth (see
+discussion in :ref:`CHAN_BIN_SEL`). The combined words cannot be split apart
+by the bin selection of downstream bin_selectors, but there is no need to
+since those will be bypassed.
+
+
+
+
+
+The packet size at the output of the 1st crossbar is::
+
+   Payload size =  [(4 header words/frame) (1 frame/packet) *{(128 bins/frame) * [ (4 data words/bin) + (0.5 data flag word/bin)] + (1 frame flags word/frame)} * (1 frame/packet) + (1 packet flags/packet)]
+      For 1 frames/packet, with flags: = 2328 bytes # Confirmed with wireshark & tcpump
+      For 2 frames/packet, with flags, (4+2*(128*(4+.5)+1)+1): 1159 words, 4636 bytes
+      For 2 frames/packet, no flags, (4+2*(128*(4+0)+0)+1): 1029 words, 4116 bytes
 
 
 Output packet format
 --------------------
+
+In `shuffle16` mode, the backplane PCB link data shuffle, 2nd crossbar,
+backplane QSFP link shuffle, and 3rd crossbars are bypassed and pass the 1st
+crossbar 8 outputs directly to the 8 10G Ethernet tranmitter connected to the
+motherboard QSFPs.
 
 The packet format is as follows (assuming one frame per packet):
 
@@ -193,6 +187,23 @@ The packet format is as follows (assuming one frame per packet):
     - Frame flags: 16 bit FFT overflow + 16 bit ADC overflow flags per frame. This is 1 word = 4 bytes.
     - Packet flags: 32 bit word (4 bytes)
     - Total: 2328 bytes
+
+
+The output data rate on the 10G links are:
+   For 1 frame/packet, with flags::
+      UDP Packet size: 2328 bytes
+      Ethernet frame size = int(UDP Payload) + 42 + 7) /8) * 8 = 2376 bytes # confirmwd with wireshark
+      Ethernet bandwidth = (2376 *8 bits/frame) / (2.56e-6 s/frame) = 7.425 Gbit/s
+
+   For 2 frames per packet, with flags:
+      UDP payload: 4636 bytes # confirmed by tcpdump & wireshark
+      Ethernet frame size:  4680 bytes # confirmed by wireshark & logs
+      Ethernet Bandwidth: = 7.3125 Gbit/s # configmed with bmon
+
+   For 2 frames per packet, no flags:
+      UDP payload: 4116 bytes # confirmed by tcpdump & wireshark
+      Ethernet frame size:  4160 bytes # confirmed by wireshark
+      Ethernet Bandwidth: 6.500 Gbit/s # configmed with bmon
 
 
 
@@ -207,6 +218,7 @@ The data rate at the output of the channelizer bin selectors is about half of wh
 
    Payload size=  (4 header words/frame) + (N frame/packet) * {(64 bins/frame) * [ (4 data words/bin) + (1 data flag word/bin (half filled))] + (1 frame flags word/frame)} + (1 packet flags word/packet)]
 
+      For 1 frame/packet, no flags: 261 words ((4+1*(64*(4+0)+0)+1))
       For 2 frames/packet, with flags = 647 words, x4 = 2588 bytes, *8*frame_rate/{N frames/packet) = 4.04375 Gbit/s # Confirmed with wireshark & tcpump
       For 2 frames/packet, no flags: 516 words, 2064 bytes
 
@@ -228,7 +240,7 @@ Note that the  2nd crossbar is configured to combine the data flag words, which 
 The packet size at the output of the 2nd bin selectors is::
 
    Payload size =  (4 header words/frame) + (N frame/packet) * {(64 bins/frame) * [ (8 data words/bin) + (1 data flag word/bin (fully filled))] + (2 frame flags word/frame)} + (1 packet flags word/packet)]
-      For 1 frame/packet:
+      For 1 frame/packet, no flags: 517 words  (4+1*(64*(8+0)+0)+1) (checked on CB3)
       For 2 frames/packet, with flags= 1161 words, 4644 bytes
       For 2 frames/packet, no flags= 1028 words, 4112 bytes
 
@@ -239,18 +251,31 @@ The 3rd crossbar remap reorganizes the lanes so the 8 input lanes of the bin sel
 The data packet size at each output of the 3rd crossbar is::
 
    Payload size:  (4 header words/frame) + (N frame/packet) * {(8 bins/frame) * [ (64 data words/bin) + (8 data flag word/bin (fully filled))] + (16 frame flags word/frame)} + (1 packet flags word/packet)]
-      For 1 frame/packet: 597 words, 2388 bytes
-      For 2 frames/packet: 1189 words, 4756 bytes
+      For 1 frame/packet, no flags: 517 words (4+1*(8*(64+0)+0)+1), 2068 bytes (checked on TCPDump)
+      For 1 frame/packet, with flags: 597 words, 2388 bytes
+      For 2 frames/packet, no flags: 1029 words (4+2*(8*(64+0)+0)+1), 4116 bytes
+      For 2 frames/packet, with flags: 1189 words, 4756 bytes
 
-The packet size and data rate at the output of the 10G transmitter are::
+The Ethernet packet size and data rate at the output of the 10G transmitter are::
+
+   For 1 frame/packet, no flags:
+      Ethernet frame size: 2112 bytes
+      Ethernet data rate: 2112 * 8/2.56e-6 = 6.600 Gbits/s (hard to measure with bmon)
 
    For 1 frame/packet, with flags:
-      Ethernet frame size: 2432 bytes
-      Ethernet data rate: 2432 *8/2.56e-6 = 7.600 Gbits/s
+      UDP payload size: 2388 bytes (confirmed with TCPdump)
+      Ethernet frame size: 2432 bytes (confirmed with wireshark)
+      Ethernet data rate: 2432 *8/2.56e-6 = 7.600 Gbits/s (hard to measure with bmon)
+
+   For 2 frames/packet, no flags:
+      UDP payload size: 4116 bytes (confirmed with TCPdump)
+      Ethernet frame size: 4160 bytes
+      Ethernet data rate: 4160 * 8/2.56e-6/2 = 6.500 Gbits/s (confirmed with bmon)
 
    For 2 frames/packets, with flags:
-      Ethernet frame size: 4800 bytes (4756+42+7)//8*8)
-      Ethernet data rate: 4800 *8/2/2.56e-6 = 7.500 Gbits/s
+      UDP payload size: 4756 bytes (confirmed with tcpdump)
+      Ethernet frame size: 4800 bytes (4756+42+7)//8*8) (confirmed with wireshark)
+      Ethernet data rate: 4800 *8/2/2.56e-6 = 7.500 Gbits/s (confirmed with bmon)
 
 
 ``shuffle512``
