@@ -175,6 +175,8 @@ signal stream_id: std_logic_vector(15 downto 0);
 signal new_source: unsigned(0 downto 0);
 signal current_source: unsigned(0 downto 0);
 signal inhibit_data: std_logic; -- inhibit data while transitionning from one source to the other
+signal in_dat_reg_tvalid: std_logic;
+
 --signal secondary_trig: std_logic;
 --signal secondary_trig_active: std_logic;
 --signal secondary_period: unsigned(23 downto 0);
@@ -389,16 +391,10 @@ fifo_write_proc: process(in_clk)
             end if;
 
 
-            ------  Define a few intermediate variables to simplify the logic implementation and help meet timing
-            -- Determine if we are using continuous transmissions (i.e unlimited number of bursts). Having this in the single bit simplifies the logic.
-            --if number_of_bursts=0 then
-            --    continuous_transmission <= '1';
-            --else
-            --    continuous_transmission <= '0';
-            --end if;
 
-
-
+            -- -------------------------------------------
+            -- Trigger generator
+            -- -------------------------------------------
             -- Counts incoming frames for each input, and generate a trig
             -- pulse that spans the first frame of each capture period
             --
@@ -415,19 +411,19 @@ fifo_write_proc: process(in_clk)
                         if offset_done(i)='0' then
                             if primary_frame_ctr(i) = capture_offset then
                                 offset_done(i) <= '1';
-                                primary_frame_ctr(i) <= (0 => '1', others=> '0');
+                                primary_frame_ctr(i) <= (others=> '0');
                                 --trig(i) <= '1';
                             end if;
                         else
                             if primary_frame_ctr(i) = primary_period(i) then
-                                primary_frame_ctr(i) <= (0 => '1', others=> '0');
+                                primary_frame_ctr(i) <= (others=> '0');
                                 --trig(i) <= '1';
                             end if; -- if period done
                         end if; -- if offset done
                 end if; -- last word
                 if reset_all='1' then
                     frame_ctr(i) <= (others => '0'); -- needed
-                    primary_frame_ctr(i) <= (0 => '1', others => '0'); -- needed. Start at 1, so we don't have to offset capture_offset and primary_period
+                    primary_frame_ctr(i) <= (others => '0'); -- needed. Start at 1, so we don't have to offset capture_offset and primary_period
                     if capture_offset=0 then
                         --trig(i) <= '1';
                         offset_done(i) <= '1';
@@ -439,7 +435,7 @@ fifo_write_proc: process(in_clk)
             end loop;
 
 
-            if in_dat_reg.TVALID='1' and in_dat_reg.TLAST='1' then -- If last word of the frame
+            if in_dat_reg_tvalid='1' and in_dat_reg.TLAST='1' then -- If last word of the frame
                 inhibit_data <= '0';
                 if new_source /= current_source then
                     current_source <= new_source;
@@ -449,16 +445,18 @@ fifo_write_proc: process(in_clk)
             if reset_all='1' then
                 inhibit_data <= '0';
                 current_source <= new_source;
+                in_dat_reg_tvalid <= '0';
             end if; -- reset
 
 
             -- register the selected input bus and corresponding trigger
             source := to_integer(current_source);
             in_dat_reg <= in_dat(source);
+            in_dat_reg_tvalid <= in_dat(source).TVALID;
             in_dat_reg.TVALID <= to_std_logic(in_dat(source).TVALID ='1' and inhibit_data='0');
             --trig_reg <= trig(source);
-            trig_reg <= to_std_logic(offset_done(source)='1'  and primary_frame_ctr(source)(0)='1');
-            for i in 1 to 23 loop
+            trig_reg <= offset_done(source);
+            for i in 0 to 23 loop
                 if i <= to_integer(sub_period) and primary_frame_ctr(source)(i)='1' then
                     trig_reg <= '0';
                 end if;
@@ -495,9 +493,6 @@ fifo_write_proc: process(in_clk)
             end if;
 
 
-            --trig_var:=in_dat_reg.TUSER(TUSER_CAPTURE_BIT); -- assign the trigger to a temporary variable for clarity
-            --trig_prev <= trig_var; -- store previous state of the trig signal so we can detect edges
-
             -- -------------------------------------------
             -- Extend burst capture
             -- -------------------------------------------
@@ -513,63 +508,6 @@ fifo_write_proc: process(in_clk)
                     burst_ctr <= burst_ctr - 1;
                 end if;
             end if; -- if FIRST word of frame
-
-
-                ---- Generate extra secondary triggers so we can make multiple burst capture in a primary period
-                --secondary_trig <= '0';
-                --if trig_reg ='1' then
-                --    secondary_frame_ctr <= to_unsigned(2, secondary_frame_ctr'LENGTH); -- The frame that was triggered was #1, so the next one is #2
-                --    secondary_trig_active <= '1';
-                --else
-                --    secondary_frame_ctr <= secondary_frame_ctr + 1;
-                --    if secondary_trig_active='1' and secondary_frame_ctr = secondary_period then
-                --        secondary_trig <= '1';
-                --        secondary_frame_ctr <= to_unsigned(1, secondary_frame_ctr'LENGTH); -- The next frame is triggered and is #1 if the new secondary period
-                --    end if;
-                --end if;
-
-
-
-                ----primary_frame_ctr <= primary_frame_ctr + 1; -- count frames in burst - may be overriden below
-                --if capture_mode_active='0' then -- if the capture mode is not active. capture_mode_active defaults to '1'.
-                --    -- If number_of_bursts/=0 and a rising edge is seen on the trigger signal, restart a new acquisition
-                --    -- Default values. Those are here to minimize the amount of logic (these are wide counters) and eliminare inverred feedback.
-                --    primary_frame_ctr <= (others => '0'); -- needed
-                --    burst_ctr <= (others => '0'); -- needed
-                --    trig_count <= (others => '0'); -- needed
-                --    capture_frame <= '0'; -- Do not send data
-                --    if trig_var='1' and trig_prev='0' and continuous_transmission='0' then
-                --        capture_mode_active <= '1'; -- needed
-                --        capture_frame <= '1'; -- We always start by transmitting at least one frame
-                --    end if;
-                --else -- if the capture mode is active (TLAST=1 and capture_mode_active=1)
-                --    if burst_active='0' then
-                --        if primary_frame_ctr = capture_offset then
-                --            burst_active <= '1';
-                --            primary_frame_ctr <= (others => '0'); -- reset the frame counter
-                --        end if;
-                --    else
-                --        -- Stop capturing when we reach the number of frames per burst
-                --        if is_last_frame_of_burst='1' then -- if burst_active=1 and if we have reached the burst length (but not the burst period yet) stop transmissing frames. It will be restarted on the next period
-                --            capture_frame <= '0'; -- Stop capturing frames for the rest of the primary_period
-                --        end if; -- if last frame of burst
-                --        -- Restart capture if we reach the end of period and we should be capturing more bursts
-                --        if is_last_frame_of_period='1' then -- burst_active=1 and if we are and the end of the period
-                --            primary_frame_ctr <= (others => '0'); -- reset the frame counter
-                --            burst_ctr <= burst_ctr + 1; -- increase the number of bursts sent
-                --            if continuous_transmission='1' then -- if number_of_bursts=0, tranmit bursts continuously
-                --                capture_frame <= in_dat_reg.TUSER(TUSER_CAPTURE_BIT); -- transmit frames whenever the CAPTURE bit embedded in the frame is set
-                --            elsif is_last_burst='1' then  -- if we are the last burst then stop
-                --                capture_frame <= '0'; -- stop transmitting bursts
-                --                capture_mode_active<='0'; -- Stop the capture mode. Will have to reset to restart a new sequence of bursts
-                --            else -- if we have not tranmitted the last burst
-                --                capture_frame <= '1'; -- Flag the frame to be captured
-                --            end if; -- if burst_ctr=N
-                --        end if; -- if last frame of period
-                --    end if; -- if burst active
-                --end if; -- if capture_mode_active
-
-
 
             -- Cumulate the flags for each incoming word. Clear when the last word is received.
             -- When  TLAST=1, `last_flag` contains the or'ed version of all flags EXCEPT the ones sent along the last word. We need to add them later.
