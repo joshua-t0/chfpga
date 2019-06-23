@@ -151,14 +151,14 @@ signal dest_ready: std_logic;
 signal control_bytes: slv8_array(0 to 14); -- default value set in the CMD_SLAVE
 signal status_bytes: slv8_array(0 to 1);
 
-signal burst_length_reg: unsigned(1 downto 0); --
+--signal burst_length_reg: unsigned(1 downto 0); --
 
 --signal number_of_bursts: unsigned(7 downto 0); -- total number of bursts to capture
 
 -- Offset and period
 signal primary_period: u24_array(0 to NUMBER_OF_INPUTS-1);
 --signal burst_period_reg: unsigned(primary_period'RANGE) := (others => '0'); -- registered version of the primary_period minus one used to determine the end of the loop
-signal primary_frame_ctr: u24_array(0 to NUMBER_OF_INPUTS-1); -- Counts frames within a burst.
+signal primary_period_ctr: u24_array(0 to NUMBER_OF_INPUTS-1); -- Counts frames within a burst.
 signal capture_offset: unsigned(23 downto 0);
 --signal capture_offset_reg: unsigned(primary_period'RANGE);
 
@@ -393,74 +393,99 @@ fifo_write_proc: process(in_clk)
 
 
             -- -------------------------------------------
-            -- Trigger generator
+            -- Frame and period counter
             -- -------------------------------------------
-            -- Counts incoming frames for each input, and generate a trig
-            -- pulse that spans the first frame of each capture period
+            -- Counts incoming frames and the primary period  for each input
             --
             -- Note: We don't hold trig for the burst length because the
             -- capture logic might want to capture multiple bursts
             -- synchronized to this trig.
-            --burst_period_reg <= primary_period; -- This is a quasi-static value, so latency is not important
-            --capture_offset_reg <= capture_offset;
             for i in 0 to NUMBER_OF_INPUTS-1 loop
                 if in_dat(i).TVALID='1' and in_dat(i).TLAST='1' then
-                        --trig(i) <= '0';  -- trig is held until the end of the following frame
                         frame_ctr(i) <= frame_ctr(i) + 1;  -- always count the 48-bit frame number. We will put this in the header.
-                        primary_frame_ctr(i) <= primary_frame_ctr(i) + 1; -- cound frames within a period on a 24-bit counter (~43s period max)
+                        primary_period_ctr(i) <= primary_period_ctr(i) + 1; -- cound frames within a period on a 24-bit counter (~43s period max)
                         if offset_done(i)='0' then
-                            if primary_frame_ctr(i) = capture_offset then
+                            if primary_period_ctr(i) = capture_offset then
                                 offset_done(i) <= '1';
-                                primary_frame_ctr(i) <= (others=> '0');
-                                --trig(i) <= '1';
+                                primary_period_ctr(i) <= (others=> '0');
                             end if;
                         else
-                            if primary_frame_ctr(i) = primary_period(i) then
-                                primary_frame_ctr(i) <= (others=> '0');
-                                --trig(i) <= '1';
+                            if primary_period_ctr(i) = primary_period(i) then
+                                primary_period_ctr(i) <= (others=> '0');
                             end if; -- if period done
                         end if; -- if offset done
                 end if; -- last word
-                if reset_all='1' then
-                    frame_ctr(i) <= (others => '0'); -- needed
-                    primary_frame_ctr(i) <= (others => '0'); -- needed. Start at 1, so we don't have to offset capture_offset and primary_period
-                    if capture_offset=0 then
-                        --trig(i) <= '1';
-                        offset_done(i) <= '1';
-                    else
-                        --trig(i) <= '0';
-                        offset_done(i) <= '0';
-                    end if;
-                end if; --reset
             end loop;
 
+            source := to_integer(current_source);
 
-            if in_dat_reg_tvalid='1' and in_dat_reg.TLAST='1' then -- If last word of the frame
-                inhibit_data <= '0';
-                if new_source /= current_source then
-                    current_source <= new_source;
-                    inhibit_data <= '1';
+            if in_dat(source).TVALID='1' and in_dat(source).TLAST='1' then -- If last word of the frame
+
+                -- -------------------------------------------
+                -- Keep track of serial flags
+                -- -------------------------------------------
+                -- Keep track of the serial flags provided with each incoming
+                -- word. We put those in N-bit shift register, so we can have
+                -- access to the last N flags of the frame.
+                serial_flags(2 downto 1) <= serial_flags(1 downto 0);
+                serial_flags(0) <= in_dat(source).TUSER(TUSER_SERIAL_FLAGS_BIT);
+
+                -- -------------------------------------------
+                -- Cumulate user flags
+                -- -------------------------------------------
+                -- Cumulate the flags for each incoming word. Clear when the last word is received.
+                -- When  TLAST=1, `last_flag` contains the or'ed version of all flags EXCEPT the ones sent along the last word. We need to add them later.
+                frame_flags <= frame_flags or in_dat_reg.TUSER;
+
+
+                if in_dat(source).TLAST = '1' then
+                    -- Clear the frame flags
+                    frame_flags <= (others => '0');
+
+                    -- Freeze the frame information. It might be sent out or not, depending on whether the frame is captured. The data is sent
+                    frame_header.PROBE_ID := X"A0";
+                    frame_header.PROBE_ID(0) := current_source(0);
+                    frame_header.STREAM_ID := stream_id;
+                    frame_header.SERIAL_FLAGS := serial_flags(2 downto 0) & in_dat(source).TUSER(TUSER_SERIAL_FLAGS_BIT);
+                    frame_header.FLAGS := frame_flags or in_dat(source).TUSER;
+                    frame_header.TIMESTAMP := std_logic_vector(frame_ctr(source));
+                    -- Store the header into an adday of bytes for insertion into the FIFO
+                    frame_header_bytes <= struct_to_bytes(frame_header);
+
+                    -- switch to the new data source on a frame boundary
+                    inhibit_data <= '0';
+                    if new_source /= current_source then
+                        current_source <= new_source;
+                        inhibit_data <= '1';
+                    end if;
                 end if;
             end if;
-            if reset_all='1' then
-                inhibit_data <= '0';
-                current_source <= new_source;
-                in_dat_reg_tvalid <= '0';
-            end if; -- reset
-
 
             -- register the selected input bus and corresponding trigger
-            source := to_integer(current_source);
             in_dat_reg <= in_dat(source);
-            in_dat_reg_tvalid <= in_dat(source).TVALID;
-            in_dat_reg.TVALID <= to_std_logic(in_dat(source).TVALID ='1' and inhibit_data='0');
             --trig_reg <= trig(source);
-            trig_reg <= offset_done(source);
+            trig_reg <= offset_done(source) and not inhibit_data;
             for i in 0 to 23 loop
-                if i <= to_integer(sub_period) and primary_frame_ctr(source)(i)='1' then
+                if i <= to_integer(sub_period) and primary_period_ctr(source)(i)='1' then
                     trig_reg <= '0';
                 end if;
             end loop;
+
+            if reset_all='1' then
+                trig_reg <= '0';
+                inhibit_data <= '0';
+                current_source <= new_source;
+                in_dat_reg_tvalid <= '0';
+                frame_ctr <= (others => (others => '0')); -- needed
+                primary_period_ctr <= (others=> (others => '0')); -- needed.
+                if capture_offset=0 then
+                    offset_done <= (others => '1');
+                else
+                    offset_done <= (others => '0');
+                end if;
+            end if; -- reset
+
+
             -- -------------------------------------------
             -- Write frame header bytes in the header FIFO
             -- -------------------------------------------
@@ -471,7 +496,7 @@ fifo_write_proc: process(in_clk)
             header_fifo_din(7 downto 0) <= frame_header_bytes(0);  -- always assign to save logic
             header_fifo_din(8) <= '0'; -- this is not the last word by default
             if frame_header_ctr /= 0 then  -- if we have bytes to send
-                frame_header_ctr <= frame_header_ctr-1; -- is overriden below is a new header is to be stored
+                frame_header_ctr <= frame_header_ctr - 1; -- is overriden below is a new header is to be stored
                 if frame_header_ctr = 1 then -- if the last byte
                     header_fifo_din(8) <= '1'; -- set bit 8 to '1' to indicate this is the last byte of the frame in the FIFO.
                 end if;
@@ -479,118 +504,77 @@ fifo_write_proc: process(in_clk)
                 frame_header_bytes(0 to frame_header_bytes'Length-2) <= frame_header_bytes(1 to frame_header_bytes'Length-1); -- Shift bytes by one position towards byte 0
             end if;
 
-
-            -- -------------------------------------------
-            -- Keep track of the last serial flags
-            -- -------------------------------------------
-            --
-            if in_dat_reg.TVALID='1' then
-                -- Keep track of the serial flags provided with each incoming
-                -- word. We put those in N-bit shift register, so we can have
-                -- access to the last N flags of the frame.
-                serial_flags(2 downto 1) <= serial_flags(1 downto 0);
-                serial_flags(0) <= in_dat_reg.TUSER(TUSER_SERIAL_FLAGS_BIT);
-            end if;
-
-
             -- -------------------------------------------
             -- Extend burst capture
             -- -------------------------------------------
             --
             -- Generate the capture_frame signal, which tells whether the words of this frames are to be stored in the data FIFO
-            burst_length_reg <= burst_length;
             if in_dat_reg.TVALID='1' and in_dat_reg.TLAST='1' then -- If first word of the frame
 
                 -- Extend the trig for the burst length
                 if trig_reg = '1'  then
-                    burst_ctr <= burst_length_reg - 1;
+                    burst_ctr <= burst_length - 1;
                 elsif burst_ctr /= 0 then
                     burst_ctr <= burst_ctr - 1;
                 end if;
             end if; -- if FIRST word of frame
 
-            -- Cumulate the flags for each incoming word. Clear when the last word is received.
-            -- When  TLAST=1, `last_flag` contains the or'ed version of all flags EXCEPT the ones sent along the last word. We need to add them later.
-            if in_dat_reg.TVALID='1' then
-                if in_dat_reg.TLAST = '1' then
-                    frame_flags <= (others => '0');
-                else
-                    frame_flags <= frame_flags or in_dat_reg.TUSER;
-                end if;
+
+            -- -------------------------------------------
+            -- Prepare data to be written into data FIFO
+            -- -------------------------------------------
+            -- The FIFO will be read one 9-bit byte at a time. The MSB is read first.
+            -- The extra bit on each byte is zero, except for the LSB , where it indicate whether this is the last byte
+            data_fifo_din <= (others => '0'); -- Clear unused bits (other bits 8, or unused data bits when sending flags)
+            data_fifo_din(8) <= in_dat_reg.TLAST; -- this is bit 8 of the last byte to be read out of the FIFO for each word written in
+
+            if current_source=1 then
+                data_fifo_din(30 downto 27) <= in_dat_reg.TUSER;
+                data_fifo_din(21 downto 18) <= in_dat_reg.TUSER;
+                data_fifo_din(12 downto 9) <= in_dat_reg.TUSER;
+                data_fifo_din(3 downto 0) <= in_dat_reg.TUSER;
+            else
+                data_fifo_din(34 downto 27) <= in_dat_reg.TDATA(31 downto 24);
+                data_fifo_din(25 downto 18) <= in_dat_reg.TDATA(23 downto 16);
+                data_fifo_din(16 downto 9) <= in_dat_reg.TDATA(15 downto 8);
+                data_fifo_din(7 downto 0) <= in_dat_reg.TDATA(7 downto 0);
             end if;
 
-            -- -------------------------------------------
-            -- Write data into data FIFO, and setup header to be written in header FIFO
-            -- -------------------------------------------
 
+            -- -------------------------------------------
+            -- Generate the data FIFO write signals for words in a burst
+            -- -------------------------------------------
             data_fifo_wr_en <= '0'; -- by default, do not wtite to the DATA FIFOs. Will be overriden below when appropriate
-            if in_dat_reg.TVALID='1' then
+            if in_dat_reg.TVALID='1' and (trig_reg='1' or burst_ctr /= 0) then
+                data_fifo_wr_en <= '1'; -- by default, do not wtite to the DATA FIFOs. Will be overriden below when appropriate
 
-                -- Assign bytes in the incoming word to the fifo word.
-                -- The FIFO will be read one 9-bit byte at a time. The MSB is read first.
-                -- The extra bit on each byte is zero, except for the LSB , where it indicate whether this is the last byte
-                if trig_reg='1' or burst_ctr /= 0  then
-                    data_fifo_wr_en <= '1';
-                    data_fifo_din <=
-                        (
-                        '0' & in_dat_reg.TDATA(31 downto 24) &
-                        '0' & in_dat_reg.TDATA(23 downto 16) &
-                        '0' & in_dat_reg.TDATA(15 downto 8) &
-                        in_dat_reg.TLAST & in_dat_reg.TDATA(7 downto 0)
-                        );
+                if in_dat_reg.TLAST='1' then
 
-                    if current_source=1 then
-                        data_fifo_din(30 downto 27) <= in_dat_reg.TUSER;
-                        data_fifo_din(21 downto 18) <= in_dat_reg.TUSER;
-                        data_fifo_din(12 downto 9) <= in_dat_reg.TUSER;
-                        data_fifo_din(3 downto 0) <= in_dat_reg.TUSER;
+                    -- Decrement burst counter or reset it when a new trigger arrives
+                    burst_ctr <= burst_ctr - 1; -- at this point burst_ctr is either non-zero (burst_ctr /= 0) or we will reset it anyway below (trig_reg='1')
+                    if trig_reg = '1'  then
+                        burst_ctr <= burst_length;
                     end if;
 
-                    -- If this is the last word, build the frame header and set it up for injection into the header FIFO
-                    if in_dat_reg.TLAST='1' then
-                        -- Build the header VARIABLE
-                        frame_header.PROBE_ID := X"A0";
-                        frame_header.PROBE_ID(0) := current_source(0);
-                        frame_header.STREAM_ID := stream_id;
-                        frame_header.SERIAL_FLAGS := serial_flags(2 downto 0) & in_dat_reg.TUSER(TUSER_SERIAL_FLAGS_BIT);
-                        frame_header.FLAGS := frame_flags or in_dat_reg.TUSER;
-                        frame_header.TIMESTAMP := std_logic_vector(frame_ctr(source));
-                        -- Store the header into an adday of bytes for insertion into the FIFO
-                        frame_header_bytes <= struct_to_bytes(frame_header);
-                        -- Set frame_header_ctr to the number of header bytes to indicate that the header bytes are ready to be sent into the FIFO
-                        frame_header_ctr <= FRAME_HEADER_BYTE_LENGTH;
-                        trig_count <= trig_count + 1; -- keep track of how manny triggers we detected for debugging purposes
-                    end if; -- if TLAST
+                    -- If this is the last word, start the writing of the frame header info in the header FIFO
+                    -- We do this by setting frame_header_ctr to the number of header bytes to indicate that the header bytes are ready to be sent into the FIFO
+                    frame_header_ctr <= FRAME_HEADER_BYTE_LENGTH;
+                    trig_count <= trig_count + 1; -- keep track of how manny triggers we detected for debugging purposes
                 end if; -- capture_frame=1
-            end if; -- TVALID='1'
+            end if; -- TVALID='1' and capture word
 
             if reset_all='1' then
                 in_dat_reg.TVALID <= '0';
                 -- FIFO signals
                 header_fifo_wr_en <= '0'; -- needed
-                --frame_header_ctr <= (others => '0');
+                frame_header_ctr <= 0;
                 data_fifo_wr_en <= '0'; -- needed
 
                 -- Secondary triggers
                 burst_ctr <= (others => '0'); -- needed
-                --secondary_trig <= '0';
-                --secondary_trig_active <= '0';
-                trig_reg <= '0';
                 -- Captured frame counter
                 trig_count <= (others => '0'); -- needed
 
-                -- Frame header FIFO write counter
-                -- Capture engine
-                --capture_frame <= '0'; -- needed.
-                --capture_mode_active <= '1'; -- needed. '1' is needed in case we set number_of_bursts=0, in which case we transmit whenever TRIG=1
-                --trig_prev <= '0'; -- needed (mostly)
---                burst_period_minus_1 <= (others => '0');
---              continuous_transmission <= '0'; -- not needed. This is not needed until the first TLAST, which gives time to the signal to be set before it is needed.
-                --write_frame_header_bytes <= '0'; -- needed
-                --is_last_frame_of_period <= '0';--needed
-                --is_last_frame_of_burst <= '0'; --needd
-                --is_last_burst <= '0'; --needed
-                --burst_active  <=  '0';
             end if; -- if reset
         end if; -- clk
     end process;
