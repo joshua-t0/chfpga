@@ -281,7 +281,9 @@ The Ethernet packet size and data rate at the output of the 10G transmitter are:
 ``shuffle512``
 --------------
 
-in `shuffle512` mode, the 1st crossbar and PCB shuffle is identical to the ``shuffle256`` mode. However, the 3rd crossbar now needs to split data in a way that half the channels will go to the other crate. Do do this, each output of the bin selectors are set to gather data from all 16 input channels, but they select only half of the bins. The 4 outputs of bin selector 0,1,2 and 3  therefore contains 32 bins from lanes 0-3, 4-7, 8-11 and 12-15. Bin selector 1 contains the other bins from the other channels.
+in `shuffle512` mode, the 1st crossbar and PCB shuffle is identical to the ``shuffle256`` mode, with identical packet sizes.
+
+However, the 2nd crossbar is configured differently. The 3rd crossbar now needs to split data in a way that half the channels will go to the other crate. Do do this, each output of the bin selectors are set to gather data from all 16 input channels, but they select only half of the bins. The 4 outputs of bin selector 0,1,2 and 3  therefore contains 32 bins from lanes 0-3, 4-7, 8-11 and 12-15. Bin selector 1 contains the other bins from the other channels.
 
 The backplane QSFP shuffle passes the 4 first lanes 0-3 directly to the 3rd crossbar lanes 0-3.  The odd-selected bins are sent to the other crate through the GTX links connected to the QSFP cables between the crates. The even crate bin selection map is configured to send its odd bins to the other crate and keep the even bine. The odd-numbered crate kepps the odd bine and send over the even bins.
 
@@ -290,6 +292,29 @@ In the end the 3rd crossbar receives all the even- or odd-selected bins in its 8
 The packet size at the output of the 2nd bin selectors is::
 
    Payload size =  (4 header words/frame) + (N frame/packet) * {(32 bins/frame) * [ (16 data words/bin) + (2 data flag word/bin (fully filled))] + (4 frame flags word/frame)} + (1 packet flags word/packet)]
-      For 1 frame/packet:
-      For 2 frames/packet, with flags= 1165 words (as reported by CB3 monitor)
+      For 1 frame/packet, with flags:
+      For 2 frames/packet, with flags, (4+2*(32*(16+2)+4)+1): 1165 words, 4660 bytes (as reported by CB3 monitor)
       For 2 frames/packet, no flags= 1028 words, 4112 bytes (CB3 reports 1013 words from CB2)
+
+
+The output of the 3rd crossbar:
+   Payload size =  (4 header words/frame) + (N frame/packet) * {(4 bins/frame) * [ (64 data words/bin) + (16 data flag word/bin (fully filled))] + (32 frame flags word/frame)} + (1 packet flags word/packet)]
+
+      For 2 frames/packet, no flags, (4+2*(4*(128+0)+0)+1): 1029 words, 4116 bytes
+      For 2 frames/packet, with flags, (4+2*(4*(128+16)+32)+1): 1165 words, 4884 bytes
+
+
+10G Ethernet output:
+
+   For 2 frames/packet, no flags:
+      USP payload: 4116 bytes (confirmed with tcpdump)
+      Ethernet packet size: 4160 bytes (confirmed with wireshark)
+      Ethernet data rate: 6.500 Gbits/s (confirmed with bmon)
+   For 2 frames/packet, with flags:
+      USP payload: 4884 bytes (confirmed with tcpdump)
+      Ethernet packet size: 4928 bytes (confirmed with wireshark)
+      Ethernet data rate: 7.700 Gbits/s (confirmed with bmon)
+
+
+
+
