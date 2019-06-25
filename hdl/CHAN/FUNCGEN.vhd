@@ -405,7 +405,11 @@ funcgen_proc: process (clk)
 
 
                 when FN_NOISE =>
-                    out_dat.TDATA <= crc_out and (byte_c & byte_c & byte_c & byte_c);
+                    for i in 0 to 3 loop
+                        out_dat.TDATA(8*i+7 downto 8*i) <=
+                            (crc_out(8*i+7 downto 8*i) and byte_c) or
+                            ((7 downto 0 => crc_out(8*i+7)) and not byte_c);
+                    end loop;
                     out_dat.TVALID <= send_frame;
                     adc_overflow_flag <= '0';
 
