@@ -528,16 +528,15 @@ fifo_write_proc: process(in_clk)
             data_fifo_din <= (others => '0'); -- Clear unused bits (other bits 8, or unused data bits when sending flags)
             data_fifo_din(8) <= in_dat_reg.TLAST; -- this is bit 8 of the last byte to be read out of the FIFO for each word written in
 
+            data_fifo_din(34 downto 27) <= in_dat_reg.TDATA(31 downto 24);
+            data_fifo_din(25 downto 18) <= in_dat_reg.TDATA(23 downto 16);
+            data_fifo_din(16 downto 9) <= in_dat_reg.TDATA(15 downto 8);
+            data_fifo_din(7 downto 0) <= in_dat_reg.TDATA(7 downto 0);
             if current_source=1 then
                 data_fifo_din(30 downto 27) <= in_dat_reg.TUSER;
                 data_fifo_din(21 downto 18) <= in_dat_reg.TUSER;
                 data_fifo_din(12 downto 9) <= in_dat_reg.TUSER;
                 data_fifo_din(3 downto 0) <= in_dat_reg.TUSER;
-            else
-                data_fifo_din(34 downto 27) <= in_dat_reg.TDATA(31 downto 24);
-                data_fifo_din(25 downto 18) <= in_dat_reg.TDATA(23 downto 16);
-                data_fifo_din(16 downto 9) <= in_dat_reg.TDATA(15 downto 8);
-                data_fifo_din(7 downto 0) <= in_dat_reg.TDATA(7 downto 0);
             end if;
 
 
