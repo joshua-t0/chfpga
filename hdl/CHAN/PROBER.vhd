@@ -419,7 +419,7 @@ fifo_write_proc: process(in_clk)
 
             source := to_integer(current_source);
 
-            if in_dat(source).TVALID='1' and in_dat(source).TLAST='1' then -- If last word of the frame
+            if in_dat(source).TVALID='1' then
 
                 -- -------------------------------------------
                 -- Keep track of serial flags

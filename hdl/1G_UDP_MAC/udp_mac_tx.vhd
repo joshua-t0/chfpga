@@ -129,7 +129,15 @@ architecture Behavioral of UDP_MAC_TX is
 -- Signals
 
 -- TX state machine states
-TYPE TX_STATE_TYPE IS (TX_STATE_STDBY,TX_STATE_TX_PREAMBLE,TX_STATE_TX_HEADER,TX_STATE_TX_ARP,TX_STATE_TX_PAYLOAD,TX_STATE_TX_PADDING, TX_STATE_TX_ETH_CHECKSUM,TX_STATE_INTERFRAME); -- States of the TX state machine
+TYPE TX_STATE_TYPE IS (
+	TX_STATE_STDBY,
+	TX_STATE_TX_PREAMBLE,
+	TX_STATE_TX_HEADER,
+	TX_STATE_TX_ARP,
+	TX_STATE_TX_PAYLOAD,
+	TX_STATE_TX_PADDING,
+	TX_STATE_TX_ETH_CHECKSUM,
+	TX_STATE_INTERFRAME); -- States of the TX state machine
 
 signal tx_state: TX_STATE_TYPE := TX_STATE_STDBY; -- Initialization needed
 
@@ -249,20 +257,26 @@ frame_fifo0 : UDP_MAC_TX_FRAME_FIFO
  			);
 
 
-
-s_axis_udp_tx_tready_int <= (not tx_fifo_almost_full) and (not tx_frame_fifo_almost_full);
+-- We will accept the data (but can discard it) until we can no longer write
+-- the final word in either the data or frame FIFO
+s_axis_udp_tx_tready_int <= (not tx_fifo_full) and (not tx_frame_fifo_full);
 s_axis_udp_tx_tready <= s_axis_udp_tx_tready_int;
 
 -- We write data to the FIFO as long as there is place for the last word to be
 -- registered in both the data and frame fifo, i.e. the frame FIFO is not full
 -- and if this is not the last data word, the data FIFO must have at least one
 -- additional word left for that last word
-tx_fifo_wr_en <= '1' when (s_axis_udp_tx_tvalid='1' and tx_frame_fifo_full='0' and (tx_fifo_almost_full='0' or s_axis_udp_tx_tlast ='1')) else '0';
+tx_fifo_wr_en <= '1' when (
+	s_axis_udp_tx_tvalid='1' and tx_frame_fifo_full='0' and
+	(tx_fifo_almost_full='0' or s_axis_udp_tx_tlast ='1'))
+	else '0';
 -- We write the length to the FRAME FIFO when the last word arrives. We don't
 -- check if this FIFO is full. The write won't work anyway, and we need the
 -- write+full condition to detect overflows. But we don't want to write
 -- anything her eif the the DATA fifo write of the last word is not going to work (data fifo full)
-tx_frame_fifo_wr_en <= '1' when (s_axis_udp_tx_tvalid='1' and s_axis_udp_tx_tlast='1' and tx_fifo_full='0') else '0';
+tx_frame_fifo_wr_en <= '1' when (
+	s_axis_udp_tx_tvalid='1' and s_axis_udp_tx_tlast='1' and tx_fifo_full='0')
+	else '0';
 tx_frame_fifo_din(15 downto 0) <= std_logic_vector(tx_frame_length);
 tx_frame_fifo_din(17 downto 16) <= tx_port_offset; -- If the END of frame is detected by seeing that s_axis_udp_tx_tvalid is no longer active, we want to use the last valid port number sent with the last data byte while s_axis_udp_tx_tvalid was '1'
 
@@ -282,7 +296,7 @@ tx_front_end : process(tx_clk)
 
 			if s_axis_udp_tx_tvalid='1' and s_axis_udp_tx_tlast ='1' then -- but if this is the last byte of the packet
 				tx_frame_length <= to_unsigned(1, tx_frame_length'length); -- ... reset the counter to 1
-			elsif tx_fifo_wr_en ='1' then -- if we are writing a byte in the fifo...
+			elsif tx_fifo_wr_en='1' and tx_fifo_full='0' then -- if we are actually writing a byte in the fifo...
 				tx_frame_length <= tx_frame_length + 1; --... increase the byte counter
 			end if;
 
@@ -511,7 +525,7 @@ begin
 							-- trasmnission
 							tx_state <= TX_STATE_TX_PAYLOAD;
 							tx_fifo_rd_en <= '1'; -- data will come in the next cycle since the FIFO has a layency of 1 clock
-							tx_ctr <= (0 => '1', others => '0'); -- Start the data word count at 1 so we can compare directly with the packet length
+							tx_ctr <= (others => '0'); -- Start the data word count at 1 so we can compare directly with the packet length
 						WHEN others =>
 							-- Do nothing
 					end case;
@@ -568,14 +582,13 @@ begin
 					crc_action <= CRC_ACTION_CALC;
 
 					-- Stop reading the FIFO what we have reached the packet length count.
-					-- It's safer than to count on the packet length.
-					if tx_ctr = tx_payload_length then
+					if tx_ctr = (tx_payload_length -1) then
 						tx_fifo_rd_en <= '0'; -- ok, we're finished reading data from the FIFO
-						-- if the minimum payload size was transmitted to
-						-- ensure a 64 byte overall ethernet frame (including
-						-- checksum). gain, this is lots of combinatorial
+						-- Check if the minimum UDP payload size of 18 bytes was transmitted to
+						-- ensure a 64 byte overall ethernet frame length (including
+						-- CRC). This is lots of combinatorial
 						-- logic, but it works at 125 MHz
-						if(tx_ctr >= 18) then
+						if(tx_ctr >= 17) then
 							tx_state <= TX_STATE_TX_ETH_CHECKSUM;
 							tx_ctr <= (others => '0');
 						else -- send padding
