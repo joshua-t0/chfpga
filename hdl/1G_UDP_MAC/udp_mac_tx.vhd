@@ -106,6 +106,23 @@ entity UDP_MAC_TX is
 
 end UDP_MAC_TX;
 
+-- UDP MAC TX implementation
+--------------------------
+--
+-- We try to make the transmitter as robust as possible against overflows etc.
+--
+-- We don't write data in the data fifo unles we are certain we can fit the last word. This ensures there is at lease one data word for each frame flag word, and that ensures that the TLAST flag will be present.
+
+-- Scenarios
+-- 	1) Frame fifo not full, data is not read out, and we keep writing last words until FIFO is full.
+--     desired behavior: we can't match data packets with frame words anymore: the frame word should not be written.
+--
+--	   Solution: We don't write frame word if data fifo is Full? This works because the ladt data word and frame word are written at the same time, and we know if the data write will succeed.
+--
+--  2) If he data fifo is full and is being filled, it will stop when the
+--     frame fifo is full. If the frame fifi suddenly becomes available, the
+--     end of a packet will be stored. packet length will be ok, the user will
+--     have to live with partial packets with the wrong length.
 architecture Behavioral of UDP_MAC_TX is
 
 
@@ -155,11 +172,12 @@ signal ip_checksum_calc: std_logic := '0'; --
 signal ip_checksum_init: std_logic := '1'; --
 signal ip_checksum_insert: std_logic := '0'; --
 
-signal tx_fifo_dout: std_logic_vector(7 downto 0); -- TX FIFO output data
+signal tx_fifo_dout: std_logic_vector(8 downto 0); -- TX FIFO output data
 signal tx_fifo_rd_en: std_logic := '0'; -- TX FIFO Read enable
 signal tx_fifo_wr_en: std_logic := '0'; -- TX FIFO Write enable
 signal tx_fifo_empty: std_logic; -- TX FIFO empty flag (on the read side)
 signal tx_fifo_full: std_logic; -- TX FIFO full flag
+signal tx_fifo_almost_full: std_logic; -- TX FIFO almost full flag
 
 signal s_axis_udp_tx_tready_int: std_logic;
 
@@ -172,6 +190,7 @@ signal tx_frame_fifo_rd_en: std_logic :='0';
 signal tx_frame_previous: std_logic :='0';
 signal tx_frame_fifo_empty :  std_logic;
 signal tx_frame_fifo_full: std_logic;
+signal tx_frame_fifo_almost_full: std_logic;
 
 signal remote_mac_addr_sel:  std_logic_vector(47 downto 0);
 signal remote_ip_base_addr_sel:  std_logic_vector(31 downto 0);
@@ -200,11 +219,13 @@ data_fifo0 : udp_mac_tx_data_fifo
 			rst    => rst,
 			wr_clk => tx_clk,
 			rd_clk => gmii_txclk,
-			din    => s_axis_udp_tx_tdata,
+			din(8) => s_axis_udp_tx_tlast,
+			din(7 downto 0) => s_axis_udp_tx_tdata,
 			wr_en  => tx_fifo_wr_en,
 			rd_en  => tx_fifo_rd_en,
 			dout   => tx_fifo_dout,
 			full   => tx_fifo_full,
+			almost_full   => tx_fifo_almost_full,
 			empty  => tx_fifo_empty
 			);
 
@@ -215,26 +236,33 @@ data_fifo0 : udp_mac_tx_data_fifo
 -- The FIFO also allows clock domain crossing from the user data clock to the GMII interface clock.
 frame_fifo0 : UDP_MAC_TX_FRAME_FIFO
 		port map (
-			rst    => rst,
-			wr_clk => tx_clk,
-			rd_clk => gmii_txclk,
-			din    => tx_frame_fifo_din,
-			wr_en  => tx_frame_fifo_wr_en,
-			rd_en  => tx_frame_fifo_rd_en,
-			dout   => tx_frame_fifo_dout,
-			full   => tx_frame_fifo_full,
-			empty  => tx_frame_fifo_empty
+			rst         => rst,
+			wr_clk      => tx_clk,
+			rd_clk      => gmii_txclk,
+			din         => tx_frame_fifo_din,
+			wr_en       => tx_frame_fifo_wr_en,
+			rd_en       => tx_frame_fifo_rd_en,
+			dout        => tx_frame_fifo_dout,
+			full        => tx_frame_fifo_full,
+			almost_full => tx_frame_fifo_almost_full,
+			empty       => tx_frame_fifo_empty
  			);
 
 
 
-s_axis_udp_tx_tready_int <= (not tx_fifo_full) and (not tx_frame_fifo_full);
+s_axis_udp_tx_tready_int <= (not tx_fifo_almost_full) and (not tx_frame_fifo_almost_full);
 s_axis_udp_tx_tready <= s_axis_udp_tx_tready_int;
 
--- We write data to the FIFO as long as the frame FIFO is not full because we need to be able to store the frame length
-tx_fifo_wr_en <= s_axis_udp_tx_tvalid and s_axis_udp_tx_tready_int;
--- We write the length to the FRAME FIFO even if the data buffer is full so we always have an entry even if the data FIFO saturated
-tx_frame_fifo_wr_en <= s_axis_udp_tx_tvalid and (not tx_frame_fifo_full) and s_axis_udp_tx_tlast;
+-- We write data to the FIFO as long as there is place for the last word to be
+-- registered in both the data and frame fifo, i.e. the frame FIFO is not full
+-- and if this is not the last data word, the data FIFO must have at least one
+-- additional word left for that last word
+tx_fifo_wr_en <= '1' when (s_axis_udp_tx_tvalid='1' and tx_frame_fifo_full='0' and (tx_fifo_almost_full='0' or s_axis_udp_tx_tlast ='1')) else '0';
+-- We write the length to the FRAME FIFO when the last word arrives. We don't
+-- check if this FIFO is full. The write won't work anyway, and we need the
+-- write+full condition to detect overflows. But we don't want to write
+-- anything her eif the the DATA fifo write of the last word is not going to work (data fifo full)
+tx_frame_fifo_wr_en <= '1' when (s_axis_udp_tx_tvalid='1' and s_axis_udp_tx_tlast='1' and tx_fifo_full='0') else '0';
 tx_frame_fifo_din(15 downto 0) <= std_logic_vector(tx_frame_length);
 tx_frame_fifo_din(17 downto 16) <= tx_port_offset; -- If the END of frame is detected by seeing that s_axis_udp_tx_tvalid is no longer active, we want to use the last valid port number sent with the last data byte while s_axis_udp_tx_tvalid was '1'
 
@@ -247,12 +275,11 @@ tx_front_end : process(tx_clk)
 		if rising_edge(tx_clk) then
 			-- Determine if the transmit buffer has overflow. Now we are very conservative and assume there is an overflow if we ever have to throttle the data source.
 			-- which in practive should not be a problem
-			--if s_axis_udp_tx_tready_int='0' then
-			--	tx_overflow <= '1';
-			--end if;
-			if tx_fifo_full='1' or tx_frame_fifo_full='1' then
+			if (tx_fifo_wr_en='1' and tx_fifo_full='1') or
+			   (tx_frame_fifo_wr_en='1' and tx_frame_fifo_full='1') then
 				tx_overflow <= '1';
 			end if;
+
 			if s_axis_udp_tx_tvalid='1' and s_axis_udp_tx_tlast ='1' then -- but if this is the last byte of the packet
 				tx_frame_length <= to_unsigned(1, tx_frame_length'length); -- ... reset the counter to 1
 			elsif tx_fifo_wr_en ='1' then -- if we are writing a byte in the fifo...
@@ -312,8 +339,8 @@ begin
 
 			WHEN TX_SRC_SEL_FIFO =>
 				gmii_txen_out <= '1';
-				gmii_txd_out <= TX_FIFO_DOUT;
-				ip_checksum_in <= TX_FIFO_DOUT;
+				gmii_txd_out <= tx_fifo_dout(7 downto 0);
+				ip_checksum_in <= tx_fifo_dout(7 downto 0);
 
 		END CASE;
 
@@ -392,16 +419,16 @@ begin
 
 
 				tx_sreg(47 downto 8) <= tx_sreg(39 downto 0); -- Shift left SREG by one byte. This assignment may be overriden below.
-				tx_ctr<=tx_ctr+1; -- This assignment may be overriden below
+				tx_ctr <= tx_ctr + 1; -- This assignment may be overriden below
 
 				CASE tx_ctr(3 downto 0) is
-					WHEN X"0"=>
+					WHEN X"0" =>
 						tx_frame_fifo_rd_en <= '0'; -- Stop reading the FIFO buffer. Length of current frame to transmit is now on the FRAME_FIFO_DOUT. It will be transferred lated into the length register
 						tx_src_sel <= TX_SRC_SEL_PREAMBLE; -- Send the data in tx_reg to the GMII, but the SREG data to the IP checksum engine for IP checksum precomputation
 						tx_reg <= X"55";
 						tx_sreg(47 downto 16) <= local_ip_addr;
 						ip_checksum_action <= IP_CHECKSUM_ACTION_CALC; -- Pre-Compute IP header checksum from the IP addresses
-					WHEN X"1"=>
+					WHEN X"1" =>
 						-- FRAME FIFO word is now on the bus.
 						tx_payload_length <= unsigned(tx_frame_fifo_dout(15 downto 0)); -- Store Frame length in register -- need it to obtain IP and UDP lengths, and to count bytes during the payload transmission
 						-- Now store the destination port based on bit 17:16
@@ -419,9 +446,9 @@ begin
 								remote_ip_base_addr_sel <= remote_ip_addr0;
 								remote_ip_base_port_sel <= remote_ip_port0;
 						end case;
-					WHEN X"4"=>
+					WHEN X"4" =>
 						tx_sreg(47 downto 16) <= remote_ip_base_addr_sel;
-					WHEN X"7"=>
+					WHEN X"7" =>
 						tx_reg <= X"D5";
 						crc_action <= CRC_ACTION_INIT; -- initialize CRC. COmputation will start at the next state.
 						tx_ctr <= (others => '0'); -- Initialize the header byte address for header transmission
@@ -477,11 +504,14 @@ begin
 						WHEN X"28" => --  UDP Checksum (disabled)
 							tx_src_sel<=TX_SRC_SEL_SREG;
 							tx_sreg(47 downto 32) <= X"0000"; -- UDP Checksum will be ignored
-						WHEN X"29"=> -- end of header buffer: proceed to data trasmnission
---								tx_src_sel<=TX_SRC_SEL_RAM;
+						WHEN X"29"=>
+							-- The second byte of the UDP checksum is still
+							-- being sent on this cycle. But this is also the
+							-- end of header buffer: proceed to data
+							-- trasmnission
 							tx_state <= TX_STATE_TX_PAYLOAD;
-							tx_fifo_rd_en <= '1';
-							tx_ctr <= (others => '0');
+							tx_fifo_rd_en <= '1'; -- data will come in the next cycle since the FIFO has a layency of 1 clock
+							tx_ctr <= (0 => '1', others => '0'); -- Start the data word count at 1 so we can compare directly with the packet length
 						WHEN others =>
 							-- Do nothing
 					end case;
@@ -533,12 +563,19 @@ begin
 					end case;
 
 			WHEN TX_STATE_TX_PAYLOAD => -- Transmit the UDP payload data frol the TX data FIFO
-					tx_src_sel <= TX_SRC_SEL_FIFO;
+					-- The fifo is registering rhe rd_en=1 and the first data word will appear on this clock edge
+					tx_src_sel <= TX_SRC_SEL_FIFO; -- we register the data source at the same time as the data
 					crc_action <= CRC_ACTION_CALC;
 
-					if tx_ctr = (tx_payload_length-1) THEN
-						tx_fifo_rd_en <= '0';
-						if(tx_ctr >= 17) then -- if the minimum payload size was transmitted to ensure a 64 byte overall ethernet frame (including checksum)
+					-- Stop reading the FIFO what we have reached the packet length count.
+					-- It's safer than to count on the packet length.
+					if tx_ctr = tx_payload_length then
+						tx_fifo_rd_en <= '0'; -- ok, we're finished reading data from the FIFO
+						-- if the minimum payload size was transmitted to
+						-- ensure a 64 byte overall ethernet frame (including
+						-- checksum). gain, this is lots of combinatorial
+						-- logic, but it works at 125 MHz
+						if(tx_ctr >= 18) then
 							tx_state <= TX_STATE_TX_ETH_CHECKSUM;
 							tx_ctr <= (others => '0');
 						else -- send padding

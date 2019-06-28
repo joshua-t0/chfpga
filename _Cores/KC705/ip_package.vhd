@@ -767,15 +767,17 @@ COMPONENT udp_mac_tx_data_fifo
     rst : IN STD_LOGIC;
     wr_clk : IN STD_LOGIC;
     rd_clk : IN STD_LOGIC;
-    din : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
+    din : IN STD_LOGIC_VECTOR(8 DOWNTO 0);
     wr_en : IN STD_LOGIC;
     rd_en : IN STD_LOGIC;
-    dout : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
+    dout : OUT STD_LOGIC_VECTOR(8 DOWNTO 0);
     full : OUT STD_LOGIC;
-    empty : OUT STD_LOGIC
+    almost_full : OUT STD_LOGIC;
+    empty : OUT STD_LOGIC;
+    wr_rst_busy : OUT STD_LOGIC;
+    rd_rst_busy : OUT STD_LOGIC
   );
 END COMPONENT;
-
 -- ATTRIBUTE SYN_BLACK_BOX OF udp_mac_tx_data_fifo : COMPONENT IS TRUE;
 ATTRIBUTE BLACK_BOX_PAD_PIN OF udp_mac_tx_data_fifo : COMPONENT IS "rst,wr_clk,rd_clk,din[7:0],wr_en,rd_en,dout[7:0],full,empty";
 
@@ -790,6 +792,7 @@ COMPONENT udp_mac_tx_frame_fifo
     rd_en : IN STD_LOGIC;
     dout : OUT STD_LOGIC_VECTOR(17 DOWNTO 0);
     full : OUT STD_LOGIC;
+    almost_full : OUT STD_LOGIC;
     overflow : OUT STD_LOGIC;
     empty : OUT STD_LOGIC
   );
