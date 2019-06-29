@@ -101,6 +101,7 @@ signal header_fifo_wr_en    : std_logic:='0';
 signal header_fifo_empty    : std_logic;
 signal header_fifo_valid    : std_logic;
 signal header_fifo_overflow : std_logic;
+signal header_fifo_overflow_sticky: std_logic;
 signal header_fifo_din      : std_logic_vector(8 downto 0) := (others => '0'); -- initialization for nice simulations
 signal header_fifo_dout     : std_logic_vector(8 downto 0);
 
@@ -121,12 +122,10 @@ signal data_fifo_dout       : std_logic_vector(8 downto 0);
 --signal DATA_FIFO_OUT_DAT: AXIS8_DAT_STRUCT;
 --signal DATA_FIFO_OUT_RDY: AXIS8_RDY_STRUCT;
 
+-----------------------------
 -- FIFO writing logic signals
+-----------------------------
 
---signal capture_mode_active: std_logic:='1';
---signal capture_frame: std_logic:='0';
---signal STORE_FRAME: std_logic:='0';
---signal trig_prev: std_logic;
 signal frame_flags: std_logic_vector(3 downto 0);
 
 -- Frame counters
@@ -138,13 +137,20 @@ signal frame_header_bytes: slv8_array(0 to FRAME_HEADER_BYTE_LENGTH-1); --
 
 signal trig_count: unsigned(7 downto 0) := (others => '0'); -- Counts the number of frames that has been captured.
 
--- FIFO readout logic signals
-
+-----------------------------
+-- FIFO readout signals
+-----------------------------
 signal out_dat_int: AXIS8_DAT_STRUCT := (DUMMY=>'0', TVALID=>'0', TDATA=>(others => '0'), TLAST=>'0');
---signal OVERFLOW_DAT: AXIS8_DAT_STRUCT;
-
-signal send_header: std_logic;
 signal dest_ready: std_logic;
+signal send_delay_target: unsigned(31 downto 0);
+signal send_delay_ctr: unsigned(31 downto 0); -- 16 bit delay + 16 bits prescaler, counts 125 MHz
+
+type SEND_STATE_TYPE IS (
+    SEND_DELAY,
+    SEND_HEADER,
+    SEND_DATA);
+signal send_state: SEND_STATE_TYPE;
+
 
 
 -- Control and status bytes
@@ -186,9 +192,9 @@ signal sub_period: unsigned(4 downto 0);
 --signal is_last_frame_of_burst: std_logic;
 --signal is_last_burst: std_logic;
 --signal burst_active: std_logic := '0';
-signal send_delay: unsigned(31 downto 0);
-signal send_delay_ctr: unsigned(31 downto 0); -- 16 bit delay + 16 bits prescaler, counts 125 MHz
-signal send_data: std_logic;
+
+
+
 signal soft_reset: std_logic;
 signal fifo_reset: std_logic;
 signal reset_all: std_logic;
@@ -262,7 +268,7 @@ primary_period(0) <= to_unsigned(control_bytes(4 to 6)); -- 24 bit period for in
 -- CONTROL Byte 7-8
 stream_id <= to_slv(control_bytes(7 to 8));
 -- CONTROL Byte 9-10
-send_delay <= to_unsigned(control_bytes(9 to 10)) & X"0000";
+send_delay_target <= to_unsigned(control_bytes(9 to 10)) & X"0000";
 
 -- CONTROL Bytes 11-13
 primary_period(1) <= to_unsigned(control_bytes(11 to 13)); -- 24 bit period for input 1
@@ -279,7 +285,7 @@ status_bytes(0)(5) <= current_source(0);
 status_bytes(0)(4) <= data_fifo_empty; -- for debugging
 status_bytes(0)(3) <= data_fifo_overflow; -- for debugging
 status_bytes(0)(2) <= data_fifo_overflow_sticky; -- for debugging
-status_bytes(0)(1) <= header_fifo_overflow;
+status_bytes(0)(1) <= header_fifo_overflow_sticky;
 status_bytes(0)(0) <= '0';
 -- STATUS Byte 1
 status_bytes(1) <= std_logic_vector(trig_count);
@@ -386,8 +392,10 @@ fifo_write_proc: process(in_clk)
             reset_all <= soft_reset or in_reset; -- aggregate reset lines into a single, registered lines to simplify the logic. Both resets are synchronous to in_clk.
             if fifo_reset='1' or reset_all='1' then
                 data_fifo_overflow_sticky <= '0';
+                header_fifo_overflow_sticky <= '0';
             else
                 data_fifo_overflow_sticky <= data_fifo_overflow_sticky or data_fifo_overflow;
+                header_fifo_overflow_sticky <= header_fifo_overflow_sticky or header_fifo_overflow;
             end if;
 
 
@@ -504,34 +512,27 @@ fifo_write_proc: process(in_clk)
                 frame_header_bytes(0 to frame_header_bytes'Length-2) <= frame_header_bytes(1 to frame_header_bytes'Length-1); -- Shift bytes by one position towards byte 0
             end if;
 
-            -- -------------------------------------------
-            -- Extend burst capture
-            -- -------------------------------------------
-            --
-            -- Generate the capture_frame signal, which tells whether the words of this frames are to be stored in the data FIFO
-            if in_dat_reg.TVALID='1' and in_dat_reg.TLAST='1' then -- If first word of the frame
-
-                -- Extend the trig for the burst length
-                if trig_reg = '1'  then
-                    burst_ctr <= burst_length - 1;
-                elsif burst_ctr /= 0 then
-                    burst_ctr <= burst_ctr - 1;
-                end if;
-            end if; -- if FIRST word of frame
-
 
             -- -------------------------------------------
             -- Prepare data to be written into data FIFO
             -- -------------------------------------------
             -- The FIFO will be read one 9-bit byte at a time. The MSB is read first.
             -- The extra bit on each byte is zero, except for the LSB , where it indicate whether this is the last byte
-            data_fifo_din <= (others => '0'); -- Clear unused bits (other bits 8, or unused data bits when sending flags)
-            data_fifo_din(8) <= in_dat_reg.TLAST; -- this is bit 8 of the last byte to be read out of the FIFO for each word written in
 
+            -- Byte 0 (first to come out if the FIFO)
+            data_fifo_din(35) <= '0';
             data_fifo_din(34 downto 27) <= in_dat_reg.TDATA(31 downto 24);
+            -- Byte 1
+            data_fifo_din(16) <= '0';
             data_fifo_din(25 downto 18) <= in_dat_reg.TDATA(23 downto 16);
+            -- Byte 2
+            data_fifo_din(17) <= '0';
             data_fifo_din(16 downto 9) <= in_dat_reg.TDATA(15 downto 8);
+            -- Byte 3 (last to come out if the FIFO)
+            data_fifo_din(8) <= in_dat_reg.TLAST; -- this is bit 8 of the last byte to be read out of the FIFO for each word written in
             data_fifo_din(7 downto 0) <= in_dat_reg.TDATA(7 downto 0);
+
+            -- Override low nibble with TUSER flags if we are on source 1 (FFT data, in which only the high nibble is used in 4-bit mode)
             if current_source=1 then
                 data_fifo_din(30 downto 27) <= in_dat_reg.TUSER;
                 data_fifo_din(21 downto 18) <= in_dat_reg.TUSER;
@@ -597,8 +598,8 @@ OUT_DAT <= out_dat_int;
 dest_ready <='1' when OUT_RDY.TREADY='1' or out_dat_int.TVALID='0' else '0'; -- the output is ready for a new byte if there is currently no valid byte or if the destination is accepting current one.
 
 -- Determine when to read the data and header FIFOs
-data_fifo_rd_en <= dest_ready and (not send_header); -- Read data FIFO on the TREADY singal and only if there is a valid frame and we are not sending the header byte
-header_fifo_rd_en <= dest_ready and send_header and send_data; -- read the new frame status when we read the last byte of a frame
+data_fifo_rd_en <= to_std_logic(send_state=SEND_DATA and dest_ready='1'); -- Read data FIFO on the TREADY singal and only if there is a valid frame and we are not sending the header byte
+header_fifo_rd_en <= to_std_logic(send_state=SEND_HEADER and dest_ready='1'); -- read the new frame status when we read the last byte of a frame
 
 
 read_proc: process(OUT_CLK)
@@ -609,51 +610,68 @@ read_proc: process(OUT_CLK)
 
             -- synchronous reset is at the bottom of this process
 
-            -- Handle send delay
-            if send_header = '1' then
-                if header_fifo_valid='0' then
-                    send_delay_ctr <= (others => '0');
-                    send_data <= '0';
-                elsif send_delay_ctr=send_delay then
-                    send_data <= '1';
-                else
-                    send_data <= '0';
-                    send_delay_ctr <= send_delay_ctr + 1;
-                end if;
-            end if;
-
             -- Clear the TREADY if the data is read by the destination. This will be overriden below if a new byte is sent at the same time
             if OUT_RDY.TREADY='1' then
                 out_dat_int.TVALID <= '0';
             end if;
 
-            -- Output the data to the destination
-            if dest_ready='1'  then -- if the bus is ready to receive a new byte
-                if send_header='1' and send_data='1' and header_fifo_valid='1' then -- if we have a header byte to send
-                    out_dat_int.TDATA <= lsb(header_fifo_dout);
-                    out_dat_int.TVALID <= '1';
-                    out_dat_int.TLAST <= '0';
-                    if header_fifo_dout(8) = '1' then -- if this is the last header byte
-                        send_header <= '0'; -- start sending the data
-                    end if;
-                elsif send_header='0' and  data_fifo_valid='1' then
-                    out_dat_int.TDATA <= lsb(data_fifo_dout);
-                    out_dat_int.TVALID <= '1';
-                    out_dat_int.TLAST <= data_fifo_dout(8);
-                    if data_fifo_dout(8)='1' then -- if this is the last data byte
-                        send_header <= '1'; -- start sending the next header
-                    end if;
 
-                --else -- if we have nothing to send
-                --    out_dat_int.TVALID <= '0';
+            -- Implementing the send delay is tricky, as we do not want to
+            -- delay every packets, but only the first packet in a burst.
+            -- Otherwise this will limit our throughput.
+
+            -- We start sending the packet only when the send delay counter has
+            -- reached the target delay. We reset the delay counter only when we
+            -- are finished sending a packet and  there is no more data in the
+            -- FIFO, meaning we have finished that burst. We increment
+            -- the counter when data appears on frame FIFO, as this event is
+            -- related in time to the capture edge. Once the counter has
+            -- reached its target delay, data transmission of the header starts.
+
+            -- Once header transmision is finished, the data follows without
+            -- interruption.
+            --
+            -- We implement this as a tree-state state machine.
+
+            case send_state is
+                when SEND_DELAY =>
+                    if header_fifo_valid='1' then
+                        if send_delay_ctr/=send_delay_target then
+                            send_delay_ctr <= send_delay_ctr + 1;
+                        else
+                            send_state<= SEND_HEADER;
+                        end if;
+                    end if;
+                when SEND_HEADER =>
+                    if header_fifo_valid='1' and dest_ready='1' then
+                        -- We reach this step and read the fifo (rd_en=1) when the following  conditions are met
+                        --  send_header='1' and header_fifo_valid='1' and send_delay_ctr=send_delay and dest_ready='1
+                        out_dat_int.TDATA <= lsb(header_fifo_dout);
+                        out_dat_int.TVALID <= '1';
+                        out_dat_int.TLAST <= '0';
+                        if header_fifo_dout(8) = '1' then -- if this is the last header byte
+                            send_state <= SEND_DATA; -- start sending the data
+                        end if;
+                    end if; -- if header fifo & send_delay & dest_ready
+                when SEND_DATA =>
+                    if data_fifo_valid='1' and dest_ready='1' then
+                        out_dat_int.TDATA <= lsb(data_fifo_dout);
+                        out_dat_int.TVALID <= '1';
+                        out_dat_int.TLAST <= data_fifo_dout(8);
+                        if data_fifo_dout(8)='1' then -- if this is the last data byte
+                            if header_fifo_valid='0' then -- there are no more packats awaiting
+                                send_delay_ctr <= (others => '0');
+                                send_state <= SEND_DELAY;
+                            else
+                                send_state <= SEND_HEADER;
+                            end if;
+                        end if;
                 end if; -- HEADER or DATA ready to be sent
-            end if; -- if destination ready
-            -- Synchronous reset
+            end case;
 
             if out_rst='1' then
                 out_dat_int.TVALID <= '0'; -- needed
-                send_header <= '1'; -- needed to make sure we start with header transmission
-                send_data <= '0';
+                send_state <= SEND_DELAY; -- needed to make sure we start with header transmission
                 send_delay_ctr <= (others => '0');
             end if; -- reset
         end if; -- clk
