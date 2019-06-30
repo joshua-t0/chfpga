@@ -99,6 +99,8 @@ attribute shreg_extract of in_dat_reg: signal is "no";
 signal header_fifo_rd_en    : std_logic:='0';
 signal header_fifo_wr_en    : std_logic:='0';
 signal header_fifo_empty    : std_logic;
+signal header_fifo_full     : std_logic;
+signal header_fifo_almost_full : std_logic;
 signal header_fifo_valid    : std_logic;
 signal header_fifo_overflow : std_logic;
 signal header_fifo_overflow_sticky: std_logic;
@@ -111,6 +113,8 @@ signal data_fifo_rd_en      : std_logic:='0';
 signal data_fifo_wr_en      : std_logic:='0';
 signal data_fifo_empty      : std_logic;
 signal data_fifo_valid      : std_logic;
+signal data_fifo_full     : std_logic;
+signal data_fifo_almost_full : std_logic;
 signal data_fifo_overflow   : std_logic;
 signal data_fifo_overflow_sticky: std_logic;
 signal data_fifo_din        : std_logic_vector(35 downto 0) := (others => '0'); -- initialization for nice simulations
@@ -344,7 +348,8 @@ DATA_FIFO0 : prober_data_fifo
     wr_en    => data_fifo_wr_en,
     rd_en    => data_fifo_rd_en,
     dout     => data_fifo_dout,
-    full     => open,
+    full     => data_fifo_full,
+    almost_full => data_fifo_almost_full,
     overflow => data_fifo_overflow,
     valid    => data_fifo_valid,
     empty    => data_fifo_empty
@@ -365,7 +370,8 @@ HEADER_FIFO0 : prober_frame_fifo
     wr_en    => header_fifo_wr_en,
     rd_en    => header_fifo_rd_en,
     dout     => header_fifo_dout,
-    full     => open,
+    full     => header_fifo_full,
+    almost_full => header_fifo_almost_full,
     overflow => header_fifo_overflow,
     valid    => header_fifo_valid,
     empty    => header_fifo_empty
@@ -456,6 +462,8 @@ fifo_write_proc: process(in_clk)
                     frame_header.STREAM_ID := stream_id;
                     frame_header.SERIAL_FLAGS := serial_flags(2 downto 0) & in_dat(source).TUSER(TUSER_SERIAL_FLAGS_BIT);
                     frame_header.FLAGS := frame_flags or in_dat(source).TUSER;
+                    -- Override the capture flag withthe overflow flags so we know  from the packet header if somewhing is amiss with the stream
+                    frame_header.FLAGS(TUSER_CAPTURE_BIT) := data_fifo_overflow_sticky or header_fifo_overflow_sticky;
                     frame_header.TIMESTAMP := std_logic_vector(frame_ctr(source));
                     -- Store the header into an adday of bytes for insertion into the FIFO
                     frame_header_bytes <= struct_to_bytes(frame_header);
@@ -472,7 +480,19 @@ fifo_write_proc: process(in_clk)
             -- register the selected input bus and corresponding trigger
             in_dat_reg <= in_dat(source);
             --trig_reg <= trig(source);
-            trig_reg <= offset_done(source) and not inhibit_data;
+            -- Generate a trigger signal if:
+            --   - The offset is elapsed
+            --   - Data is not inhibited due to a source change
+            --   - None of the fifos are full. There is no point accepting
+            --     data if we know we are going to overflow. But that does not
+            --     guarantee there won't be one, since the FIFO might be
+            --     almost full. We have other mechanisms to try to deal with that.
+            --   - We match the power-of-two multiple set by the sub-period
+            --     (i.e. all bits from 0 to `sub_period` are zero). This
+            --     necessarily always include the first frame of the period
+            --     (counter is zero)
+            trig_reg <= offset_done(source) and (not inhibit_data) and (not data_fifo_full) and not (header_fifo_full);
+            -- Clear (override) trig_reg if any of the bits in the sub_period range is not zero
             for i in 0 to 23 loop
                 if i <= to_integer(sub_period) and primary_period_ctr(source)(i)='1' then
                     trig_reg <= '0';
@@ -505,10 +525,12 @@ fifo_write_proc: process(in_clk)
             header_fifo_din(8) <= '0'; -- this is not the last word by default
             if frame_header_ctr /= 0 then  -- if we have bytes to send
                 frame_header_ctr <= frame_header_ctr - 1; -- is overriden below is a new header is to be stored
+                header_fifo_wr_en <= '1'; -- write byte to the FIFO
                 if frame_header_ctr = 1 then -- if the last byte
                     header_fifo_din(8) <= '1'; -- set bit 8 to '1' to indicate this is the last byte of the frame in the FIFO.
+                elsif header_fifo_almost_full='1'  then
+                    header_fifo_wr_en <= '0'; -- Cancel write to leave space for the last byte with the last FLAG
                 end if;
-                header_fifo_wr_en <= '1'; -- write byte to the FIFO
                 frame_header_bytes(0 to frame_header_bytes'Length-2) <= frame_header_bytes(1 to frame_header_bytes'Length-1); -- Shift bytes by one position towards byte 0
             end if;
 
@@ -560,7 +582,12 @@ fifo_write_proc: process(in_clk)
                     -- We do this by setting frame_header_ctr to the number of header bytes to indicate that the header bytes are ready to be sent into the FIFO
                     frame_header_ctr <= FRAME_HEADER_BYTE_LENGTH;
                     trig_count <= trig_count + 1; -- keep track of how manny triggers we detected for debugging purposes
-                end if; -- capture_frame=1
+                elsif data_fifo_almost_full='1' then
+                    -- Unless it's the last word, cancel the write if the FIFO
+                    -- is almost full so we have one slot left for the last
+                    -- word (with the LAST flag)
+                    data_fifo_wr_en <= '0'; -- just don't write anything except the last word
+                end if; -- TLAST
             end if; -- TVALID='1' and capture word
 
             if reset_all='1' then

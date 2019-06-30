@@ -642,6 +642,7 @@ COMPONENT PROBER_DATA_FIFO
     rd_en : IN STD_LOGIC;
     dout : OUT STD_LOGIC_VECTOR(8 DOWNTO 0);
     full : OUT STD_LOGIC;
+    almost_full : OUT STD_LOGIC;
     overflow : OUT STD_LOGIC;
     empty : OUT STD_LOGIC;
     valid : OUT STD_LOGIC
@@ -649,7 +650,7 @@ COMPONENT PROBER_DATA_FIFO
 END COMPONENT;
 
 -- ATTRIBUTE SYN_BLACK_BOX OF PROBER_DATA_FIFO : COMPONENT IS TRUE;
-ATTRIBUTE BLACK_BOX_PAD_PIN OF PROBER_DATA_FIFO : COMPONENT IS "rst,wr_clk,rd_clk,din[35:0],wr_en,rd_en,dout[8:0],full,overflow,empty,valid";
+--ATTRIBUTE BLACK_BOX_PAD_PIN OF PROBER_DATA_FIFO : COMPONENT IS "rst,wr_clk,rd_clk,din[35:0],wr_en,rd_en,dout[8:0],full,overflow,empty,valid";
 
 
 COMPONENT PROBER_FRAME_FIFO
@@ -662,6 +663,7 @@ COMPONENT PROBER_FRAME_FIFO
     rd_en : IN STD_LOGIC;
     dout : OUT STD_LOGIC_VECTOR(8 DOWNTO 0);
     full : OUT STD_LOGIC;
+    almost_full : OUT STD_LOGIC;
     overflow : OUT STD_LOGIC;
     empty : OUT STD_LOGIC;
     valid : OUT STD_LOGIC
@@ -669,7 +671,7 @@ COMPONENT PROBER_FRAME_FIFO
 END COMPONENT;
 
 -- ATTRIBUTE SYN_BLACK_BOX OF PROBER_FRAME_FIFO : COMPONENT IS TRUE;
-ATTRIBUTE BLACK_BOX_PAD_PIN OF PROBER_FRAME_FIFO : COMPONENT IS "rst,wr_clk,rd_clk,din[8:0],wr_en,rd_en,dout[8:0],full,overflow,empty,valid";
+--ATTRIBUTE BLACK_BOX_PAD_PIN OF PROBER_FRAME_FIFO : COMPONENT IS "rst,wr_clk,rd_clk,din[8:0],wr_en,rd_en,dout[8:0],full,overflow,empty,valid";
 
 
 -- COMPONENT FrameDist_Ctrl_FIFO
