@@ -396,6 +396,9 @@ fifo_write_proc: process(in_clk)
         if rising_edge(in_clk) then
             -- Synchronous reset
             reset_all <= soft_reset or in_reset; -- aggregate reset lines into a single, registered lines to simplify the logic. Both resets are synchronous to in_clk.
+            fifo_reset_reg <= fifo_reset or in_reset or soft_reset;
+
+
             if fifo_reset='1' or reset_all='1' then
                 data_fifo_overflow_sticky <= '0';
                 header_fifo_overflow_sticky <= '0';
@@ -633,7 +636,6 @@ read_proc: process(OUT_CLK)
     begin
         if rising_edge(OUT_CLK) then
             out_rst <= ctrl_rst or soft_reset; -- Retime the reset to OUT_CLK (which is normally ctrl_clk). We use an ASYNC_REG attribute because soft_reset is in the in_clk domain.
-            fifo_reset_reg <= fifo_reset;
 
             -- synchronous reset is at the bottom of this process
 
@@ -696,7 +698,7 @@ read_proc: process(OUT_CLK)
                 end if; -- HEADER or DATA ready to be sent
             end case;
 
-            if out_rst='1' then
+            if reset_all='1' then
                 out_dat_int.TVALID <= '0'; -- needed
                 send_state <= SEND_DELAY; -- needed to make sure we start with header transmission
                 send_delay_ctr <= (others => '0');
