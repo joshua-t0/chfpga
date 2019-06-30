@@ -186,6 +186,7 @@ signal new_source: unsigned(0 downto 0);
 signal current_source: unsigned(0 downto 0);
 signal inhibit_data: std_logic; -- inhibit data while transitionning from one source to the other
 signal in_dat_reg_tvalid: std_logic;
+signal overflow_hold: std_logic;
 
 --signal secondary_trig: std_logic;
 --signal secondary_trig_active: std_logic;
@@ -477,6 +478,8 @@ fifo_write_proc: process(in_clk)
                         current_source <= new_source;
                         inhibit_data <= '1';
                     end if;
+
+                    overflow_hold <= not (data_fifo_almost_full or header_fifo_almost_full);
                 end if;
             end if;
 
@@ -494,7 +497,7 @@ fifo_write_proc: process(in_clk)
             --     (i.e. all bits from 0 to `sub_period` are zero). This
             --     necessarily always include the first frame of the period
             --     (counter is zero)
-            trig_reg <= offset_done(source) and (not inhibit_data) and (not data_fifo_full) and not (header_fifo_full);
+            trig_reg <= offset_done(source) and (not inhibit_data) and not overflow_hold;
             -- Clear (override) trig_reg if any of the bits in the sub_period range is not zero
             for i in 0 to 23 loop
                 if i <= to_integer(sub_period) and primary_period_ctr(source)(i)='1' then
