@@ -303,7 +303,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
     GENERIC MAP (
         NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --
         NUMBER_OF_STATUS_BYTES => status_bytes'Length(1), --
-        DEFAULT_CONTROL_BYTES => (X"01_000000" & DEFAULT_BURST_PERIOD & X"0000_0000" & DEFAULT_BURST_PERIOD & X"17"), -- reset=0, burst length=1, burst period=1s @ 800 MHz/2048 samples, burst number = 0 (infinite), Probe ID=0xAA (unassigned yet)
+        DEFAULT_CONTROL_BYTES => (X"00_000000" & DEFAULT_BURST_PERIOD & X"0000_0000" & DEFAULT_BURST_PERIOD & X"17"), -- reset=0, burst length=1, burst period=1s @ 800 MHz/2048 samples, burst number = 0 (infinite), Probe ID=0xAA (unassigned yet)
         USE_FIFO => FALSE
             )
     PORT MAP(
@@ -382,6 +382,30 @@ HEADER_FIFO0 : prober_frame_fifo
 in_dat(0) <= in_dat0;
 in_dat(1) <= in_dat1;
 
+-- -------------------------------------------
+-- Prepare data to be written into data FIFO
+-- -------------------------------------------
+-- The FIFO will be read one 9-bit byte at a time. The MSB is read first.
+-- The extra bit on each byte is zero, except for the LSB , where it indicate whether this is the last byte
+
+-- Byte 0 (first to come out if the FIFO)
+data_fifo_din(35) <= '0';
+data_fifo_din(34 downto 31) <= in_dat_reg.TDATA(31 downto 28);
+data_fifo_din(30 downto 27) <= in_dat_reg.TUSER when current_source=1 else in_dat_reg.TDATA(27 downto 24);
+-- Byte 1
+data_fifo_din(26) <= '0';
+data_fifo_din(25 downto 22) <= in_dat_reg.TDATA(23 downto 20);
+data_fifo_din(21 downto 18) <= in_dat_reg.TUSER when current_source=1 else in_dat_reg.TDATA(19 downto 16);
+-- Byte 2
+data_fifo_din(17) <= '0';
+data_fifo_din(16 downto 13) <= in_dat_reg.TDATA(15 downto 12);
+data_fifo_din(12 downto 9) <= in_dat_reg.TUSER when current_source=1 else in_dat_reg.TDATA(11 downto 8);
+-- Byte 3 (last to come out if the FIFO)
+data_fifo_din(8) <= in_dat_reg.TLAST; -- this is bit 8 of the last byte to be read out of the FIFO for each word written in
+data_fifo_din(7 downto 4) <= in_dat_reg.TDATA(7 downto 4);
+data_fifo_din(3 downto 0) <= in_dat_reg.TUSER when current_source=1 else in_dat_reg.TDATA(3 downto 0);
+
+data_fifo_wr_en <= to_std_logic(in_dat_reg.TVALID='1' and (trig_reg='1' or burst_ctr /= 0) and (data_fifo_almost_full='0' or in_dat_reg.TLAST='1'));
 ------------------------------------
 -- FIFO Writing process
 ------------------------------------
@@ -479,7 +503,7 @@ fifo_write_proc: process(in_clk)
                         inhibit_data <= '1';
                     end if;
 
-                    overflow_hold <= not (data_fifo_almost_full or header_fifo_almost_full);
+                    overflow_hold <= data_fifo_almost_full or header_fifo_almost_full;
                 end if;
             end if;
 
@@ -507,9 +531,11 @@ fifo_write_proc: process(in_clk)
 
             if reset_all='1' then
                 trig_reg <= '0';
+                in_dat_reg.TVALID <= '0';
                 inhibit_data <= '0';
                 current_source <= new_source;
                 in_dat_reg_tvalid <= '0';
+                overflow_hold <= '0';
                 frame_ctr <= (others => (others => '0')); -- needed
                 primary_period_ctr <= (others=> (others => '0')); -- needed.
                 if capture_offset=0 then
@@ -541,40 +567,40 @@ fifo_write_proc: process(in_clk)
             end if;
 
 
-            -- -------------------------------------------
-            -- Prepare data to be written into data FIFO
-            -- -------------------------------------------
-            -- The FIFO will be read one 9-bit byte at a time. The MSB is read first.
-            -- The extra bit on each byte is zero, except for the LSB , where it indicate whether this is the last byte
+            ---- -------------------------------------------
+            ---- Prepare data to be written into data FIFO
+            ---- -------------------------------------------
+            ---- The FIFO will be read one 9-bit byte at a time. The MSB is read first.
+            ---- The extra bit on each byte is zero, except for the LSB , where it indicate whether this is the last byte
 
-            -- Byte 0 (first to come out if the FIFO)
-            data_fifo_din(35) <= '0';
-            data_fifo_din(34 downto 27) <= in_dat_reg.TDATA(31 downto 24);
-            -- Byte 1
-            data_fifo_din(16) <= '0';
-            data_fifo_din(25 downto 18) <= in_dat_reg.TDATA(23 downto 16);
-            -- Byte 2
-            data_fifo_din(17) <= '0';
-            data_fifo_din(16 downto 9) <= in_dat_reg.TDATA(15 downto 8);
-            -- Byte 3 (last to come out if the FIFO)
-            data_fifo_din(8) <= in_dat_reg.TLAST; -- this is bit 8 of the last byte to be read out of the FIFO for each word written in
-            data_fifo_din(7 downto 0) <= in_dat_reg.TDATA(7 downto 0);
+            ---- Byte 0 (first to come out if the FIFO)
+            --data_fifo_din(35) <= '0';
+            --data_fifo_din(34 downto 27) <= in_dat_reg.TDATA(31 downto 24);
+            ---- Byte 1
+            --data_fifo_din(16) <= '0';
+            --data_fifo_din(25 downto 18) <= in_dat_reg.TDATA(23 downto 16);
+            ---- Byte 2
+            --data_fifo_din(17) <= '0';
+            --data_fifo_din(16 downto 9) <= in_dat_reg.TDATA(15 downto 8);
+            ---- Byte 3 (last to come out if the FIFO)
+            --data_fifo_din(8) <= in_dat_reg.TLAST; -- this is bit 8 of the last byte to be read out of the FIFO for each word written in
+            --data_fifo_din(7 downto 0) <= in_dat_reg.TDATA(7 downto 0);
 
-            -- Override low nibble with TUSER flags if we are on source 1 (FFT data, in which only the high nibble is used in 4-bit mode)
-            if current_source=1 then
-                data_fifo_din(30 downto 27) <= in_dat_reg.TUSER;
-                data_fifo_din(21 downto 18) <= in_dat_reg.TUSER;
-                data_fifo_din(12 downto 9) <= in_dat_reg.TUSER;
-                data_fifo_din(3 downto 0) <= in_dat_reg.TUSER;
-            end if;
+            ---- Override low nibble with TUSER flags if we are on source 1 (FFT data, in which only the high nibble is used in 4-bit mode)
+            --if current_source=1 then
+            --    data_fifo_din(30 downto 27) <= in_dat_reg.TUSER;
+            --    data_fifo_din(21 downto 18) <= in_dat_reg.TUSER;
+            --    data_fifo_din(12 downto 9) <= in_dat_reg.TUSER;
+            --    data_fifo_din(3 downto 0) <= in_dat_reg.TUSER;
+            --end if;
 
 
             -- -------------------------------------------
             -- Generate the data FIFO write signals for words in a burst
             -- -------------------------------------------
-            data_fifo_wr_en <= '0'; -- by default, do not wtite to the DATA FIFOs. Will be overriden below when appropriate
+            --data_fifo_wr_en <= '0'; -- by default, do not wtite to the DATA FIFOs. Will be overriden below when appropriate
             if in_dat_reg.TVALID='1' and (trig_reg='1' or burst_ctr /= 0) then
-                data_fifo_wr_en <= '1'; -- by default, do not wtite to the DATA FIFOs. Will be overriden below when appropriate
+                --data_fifo_wr_en <= '1'; -- by default, do not wtite to the DATA FIFOs. Will be overriden below when appropriate
 
                 if in_dat_reg.TLAST='1' then
 
@@ -588,20 +614,19 @@ fifo_write_proc: process(in_clk)
                     -- We do this by setting frame_header_ctr to the number of header bytes to indicate that the header bytes are ready to be sent into the FIFO
                     frame_header_ctr <= FRAME_HEADER_BYTE_LENGTH;
                     trig_count <= trig_count + 1; -- keep track of how manny triggers we detected for debugging purposes
-                elsif data_fifo_almost_full='1' then
+                --elsif data_fifo_almost_full='1' then
                     -- Unless it's the last word, cancel the write if the FIFO
                     -- is almost full so we have one slot left for the last
                     -- word (with the LAST flag)
-                    data_fifo_wr_en <= '0'; -- just don't write anything except the last word
+                    --data_fifo_wr_en <= '0'; -- just don't write anything except the last word
                 end if; -- TLAST
             end if; -- TVALID='1' and capture word
 
             if reset_all='1' then
-                in_dat_reg.TVALID <= '0';
                 -- FIFO signals
                 header_fifo_wr_en <= '0'; -- needed
                 frame_header_ctr <= 0;
-                data_fifo_wr_en <= '0'; -- needed
+                --data_fifo_wr_en <= '0'; -- needed
 
                 -- Secondary triggers
                 burst_ctr <= (others => '0'); -- needed

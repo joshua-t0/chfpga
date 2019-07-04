@@ -42,7 +42,7 @@ package tb_package is
 	procedure send_buffer( signal CLK : IN STD_LOGIC; signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0); signal tvalid: OUT STD_LOGIC; signal tlast: OUT STD_LOGIC; signal tready: in std_logic; data: IN slv8_array);
 	function to_command_bytes( opcode: slv3; increment: integer:=1; log2_length: integer :=0; addr: integer) return slv8_array;
 	procedure fpga_read(  signal CLK : IN STD_LOGIC;  signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0); signal tvalid: OUT STD_LOGIC; signal tlast: OUT STD_LOGIC; signal tready: in std_logic;  addr: integer; log2_length: integer := 0);
-	procedure fpga_write_control(  signal CLK : IN STD_LOGIC;  signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0); signal tvalid: OUT STD_LOGIC; signal tlast: OUT STD_LOGIC;  signal tready: in std_logic; addr: integer; data: integer );
+	procedure fpga_write_control(  signal CLK : IN STD_LOGIC;  signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0); signal tvalid: OUT STD_LOGIC; signal tlast: OUT STD_LOGIC;  signal tready: in std_logic; addr: integer; data: integer; nbytes: integer:=1);
 	procedure fpga_write_mask(  signal CLK : IN STD_LOGIC;  signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0); signal tvalid: OUT STD_LOGIC; signal tlast: OUT STD_LOGIC;  signal tready: in std_logic; addr: integer; data: integer; mask:integer );
 	procedure fpga_write_ram(  signal CLK : IN STD_LOGIC;  signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0); signal tvalid: OUT STD_LOGIC; signal tlast: OUT STD_LOGIC;  signal tready: in std_logic; addr: integer; data: slv8_array );
 	procedure fpga_select_bins( signal clk : in STD_LOGIC;  signal tdata: out STD_LOGIC_VECTOR(7 downto 0); signal tvalid: out std_logic; signal tlast: out STD_LOGIC;   signal tready: in std_logic; addr: integer;  first_bin: integer; bin_step: integer; number_of_bins: integer);
@@ -133,12 +133,13 @@ package body tb_package is
 			signal tlast: OUT STD_LOGIC;
 			signal tready: in std_logic;
 			addr: IN integer;
-			data: in integer
+			data: in integer;
+			nbytes: in integer := 1
 			) is
-		variable buf: slv8_array(0 to 3);
+		variable buf: slv8_array(0 to 2+nbytes);
 	begin
 		buf(0 to 2) := to_command_bytes(opcode=> WRITE_CONTROL, addr=> addr);
-		buf(3) := to_slv(data, 8);
+		buf(3 to 3+nbytes-1) := to_slv8_array(to_unsigned(data, 8*nbytes));
 		send_buffer(clk, tdata, tvalid, tlast, tready, buf);
 	end procedure fpga_write_control;
 
