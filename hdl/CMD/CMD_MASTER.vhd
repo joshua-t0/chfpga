@@ -138,8 +138,8 @@ signal rply_packet_counter_int: unsigned(7 downto 0) := (others=>'0');
 signal is_reply_header: std_logic;
 signal s_axis_udp_rx_tfirst: std_logic := '1';
 
-signal rply_flush: std_logic;
-signal prb_flush: std_logic_vector(0 to NUMBER_OF_PROBES-1);
+--signal rply_flush: std_logic;
+--signal prb_flush: std_logic_vector(0 to NUMBER_OF_PROBES-1);
 
 begin
 
@@ -257,19 +257,22 @@ tx_proc: process(clk)
 					-- us here. This is mainly useful for flush conditions, in
 					-- which case no data will be processed anyway..
 
-					-- Flush (and stop flushing) command replies
-					s_axis_rply_tready <= rply_flush;
-					if s_axis_rply_tvalid='1' and s_axis_rply_tlast ='1' then
-						rply_flush <= '0';
-					end if;
+					s_axis_rply_tready <= '0';
+					prb_rdy <= (others => (TREADY => '0'));
 
-					-- Flush (and stop flushing) probe data
-					for i in 0 to NUMBER_OF_PROBES-1 loop
-						prb_rdy(i).tready <= prb_flush(i);
-						if prb_dat(i).tvalid='1' and prb_dat(i).tlast='1' then
-							prb_flush(i) <= '0';
-						end if;
-					end loop;
+					-- Flush (and stop flushing) command replies
+					--s_axis_rply_tready <= rply_flush;
+					--if s_axis_rply_tvalid='1' and s_axis_rply_tlast ='1' then
+					--	rply_flush <= '0';
+					--end if;
+
+					---- Flush (and stop flushing) probe data
+					--for i in 0 to NUMBER_OF_PROBES-1 loop
+					--	prb_rdy(i).tready <= prb_flush(i);
+					--	if prb_dat(i).tvalid='1' and prb_dat(i).tlast='1' then
+					--		prb_flush(i) <= '0';
+					--	end if;
+					--end loop;
 
 
 					-- Send command reply in priority (if available)
@@ -277,14 +280,14 @@ tx_proc: process(clk)
 					-- We removed waiting for probe_number=0, because this
 					-- prevents fast replies if we are waiting for throttling
 					-- before getting to probe 0.
-					if s_axis_rply_tvalid = '1' and rply_flush='0' then
+					if s_axis_rply_tvalid = '1' then
 						s_axis_rply_tready <= '1'; -- start accepting reply bytes
 						timeout_ctr <= (others=>'0');
 						is_reply_header <= '1'; -- prepare to override first reply byte with reply counter
 						tx_state <= TX_STATE_SEND_CMD;
 					-- If we have noreply and are not throttling, check the probe input
 					elsif host_buffer_count(host_buffer_count'HIGH) = '0' then--! If the count is less than half the max buffer size, then continue scanning the probe inputs and send the frames
-						if prb_dat(probe_number).tvalid='1' and prb_flush(probe_number)='0'  then -- antenna data is ready
+						if prb_dat(probe_number).tvalid='1' then -- antenna data is ready
 								-- start reading antenna data.
 								-- the probe number will be incremented in the SEND_ANT state.
 								prb_rdy(probe_number).tready <= '1';
@@ -393,8 +396,8 @@ tx_proc: process(clk)
 				udp_tx_port <= (others=>'0');
 
 
-				prb_flush <= (others => '1');
-				rply_flush <= '0';  -- this used to be 1, but that complicates recovering after a fresh power up, and it does not seem to help much.
+				--prb_flush <= (others => '0');
+				--rply_flush <= '0';  -- this used to be 1, but that complicates recovering after a fresh power up, and it does not seem to help much.
 				-- reset reply bus
 				s_axis_rply_tready <= '0';
 
