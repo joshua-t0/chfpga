@@ -78,6 +78,7 @@ architecture Behavioral of REFCLK is
 -- Attributes used in this module
 attribute dont_touch: string;
 attribute IOB: string;
+attribute ASYNC_REG: string;
 
 
 --- Define Control word and its signals
@@ -118,8 +119,16 @@ signal remote_sync_dly: std_logic;
 signal remote_sync_oneshot: std_logic;
 
 
-signal local_sync: std_logic;
-signal local_sync_dly: std_logic;
+signal local_sync: std_logic; -- asynchronous (on clk125)
+signal local_sync_reg: std_logic;  -- on clk10
+signal local_sync_dly: std_logic;  -- on clk10
+
+attribute ASYNC_REG of local_sync_reg: signal is "true";
+attribute ASYNC_REG of local_sync_dly: signal is "true";
+
+
+
+
 signal recovered_sync: std_logic;
 signal adc_sync_user: std_logic;
 signal sync_done: std_logic;
@@ -533,12 +542,17 @@ clksync: process(clk10, RST)
 			sync_ctr <= (others=>'0');
 			sync <= '0';
 			sync_dly <= '0';
+			local_sync_reg <= '0';
 			local_sync_dly <= '0';
 			sync_event_ctr <= (others=>'0');
 			sync_done <= '1';
 		elsif rising_edge(clk10) then
 			-- sync <= recovered_sync or local_sync or (slave and EXT_SYNC_IN);
-			local_sync_dly <= local_sync;
+
+			-- Implement a synchronizer for local_sync
+			local_sync_reg <= local_sync;
+			local_sync_dly <= local_sync_reg;
+
 			sync <= sync_source_vect(to_integer(unsigned(sync_source)));
 			sync_dly <= sync;
 
@@ -549,7 +563,7 @@ clksync: process(clk10, RST)
 				adc_sync_pre <= '1';
 			else
 				-- Warning: Because adc_sync is to be implemented on a IOB, it must be assigned a new value on every clock to prevent the inferring of a memory element that is implemented by feeding he output back to the input. Reading the output is not possible from the IOB.
-				if (sync='1' and sync_dly='0') or (local_sync='1' and local_sync_dly='0') then --! reset the ADCDAQ SERDES and enable the SYNC line to stop the ADC clock
+				if (sync='1' and sync_dly='0') or (local_sync_reg='1' and local_sync_dly='0') then --! reset the ADCDAQ SERDES and enable the SYNC line to stop the ADC clock
 					sync_done<='0';
 					sync_event_ctr <= sync_event_ctr + 1;
 					sync_state <=SYNC_STATE_STABILIZE_PLL;
