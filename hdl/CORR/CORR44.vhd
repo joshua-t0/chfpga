@@ -458,7 +458,7 @@ main: process(in_clk)
 					--if autocorr_only_reg='1' then
 					--	buf(to_integer(word_ctr)) <= X"10101010";
 					--else
-						buf(to_integer(word_ctr)) <= s_axis_tdata;
+						buf(to_integer(word_ctr)) <= s_axis_tdata xor X"88888888";
 					--end if;
 					if word_ctr = NUMBER_OF_WORDS_PER_BIN-1 then
 						load <='1'; -- Start the correlation process
