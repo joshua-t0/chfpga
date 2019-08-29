@@ -14,11 +14,11 @@ pipelines:
           - cd _doc
           - pip install -r requirements.txt
           - make html
-          - git clone git@bitbucket.org:winterlandcosmology/winterlandcosmology.bitbucket.io.git
-          - mkdir -p winterlandcosmology.bitbucket.io/chfpga/jfc_dev/
-          - rm -r winterlandcosmology.bitbucket.io/chfpga/jfc_dev/*
-          - cp -r _build/html/* winterlandcosmology.bitbucket.io/chfpga/jfc_dev/
-          - cd winterlandcosmology.bitbucket.io
+          - git clone git@bitbucket.org:winterlandcosmology/winterlandcosmology.bitbucket.io.git www
+          - mkdir -p www/chfpga/jfc_dev/
+          - rm -rf www/chfpga/jfc_dev/*
+          - cp -r _build/html/* www/chfpga/jfc_dev/
+          - cd www
           - git config --global user.email "bb-pipelines@jfciche.com"
           - git config --global user.name "BitBucket Pipelines (chfpga/jfc_dev)"
           - git commit -a -m "bitbucket-pipelines updated chfpga/jfc_dev sphinx-generated documentation"
