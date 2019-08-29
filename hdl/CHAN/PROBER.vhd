@@ -228,26 +228,26 @@ begin
 --!  ------------------------------------------------------------------------------
 --! |  Page   | Addr|Bit(s)|     Name             | Description                   |
 --! |---------|-----|------|----------------------|-------------------------------|
---! | CONTROL |  0  |  7   | Soft reset           | |
---! |         |     |  6   | fifo_reset           | |
---! |         |     |  5   | input source         | |
---! |         |     | 4:2  | (unused)             |  |
---! |         |     | 1:0  | burst_length         | | Number of consecutive frames in a burst (1-3, limited to 2 max by data FIFO depth)
---! |         | 1-3 | 23:0 | capture_offset(23:0)     | Number of frames to skip before starting the capture (multiplied by 256)|
---! |         | 4-6 | 23:0 | primary_period(0)    | |
---! |         | 7-8 | 15:0 | stream_id(15:0)      | |
+--! | CONTROL |  0  |  7   | Soft reset           |                |
+--! |         |     |  6   | fifo_reset           |                |
+--! |         |     |  5   | input source         |                |
+--! |         |     | 4:2  | (unused)             |                |
+--! |         |     | 1:0  | burst_length         | Number of consecutive frames in a burst (1-3, limited to 2 max by data FIFO depth)|
+--! |         | 1-3 | 23:0 | capture_offset(23:0) | Number of frames to skip before starting the capture (multiplied by 256)|
+--! |         | 4-6 | 23:0 | primary_period(0)    |                |
+--! |         | 7-8 | 15:0 | stream_id(15:0)      |                |
 --! |         | 9-10| 15:0 | send_delay           | Time to wait before sending captured data |
---! |         |11-13| 23:0 | primary_period(1)    | |
---! |         | 14  | 4:0  | sub_period            | |  range: 0-23.  Create additional captures every N=2^(sub_period+1) frames after the primary period. If N > primary_period, only the primary period frames are captured. If the primary period is not a multiple of N, the last sub capture of a period might be close to the beginning of the next period.
+--! |         |11-13| 23:0 | primary_period(1)    |                |
+--! |         | 14  | 4:0  | sub_period           | range: 0-23.  Create additional captures every N=2^(sub_period+1) frames after the primary period. If N > primary_period, only the primary period frames are captured. If the primary period is not a multiple of N, the last sub capture of a period might be close to the beginning of the next period.|
 --! | STATUS  |  0  |   7  | TUSER_CAPTURE_BIT    | For debugging. |
---! |         |     |   6  | inhibit_data        | For debugging. |
---! |         |     |   5  | current_source         |  |
+--! |         |     |   6  | inhibit_data         | For debugging. |
+--! |         |     |   5  | current_source       |  |
 --! |         |     |   4  | data_fifo_4mpty      | For debugging. |
 --! |         |     |   3  | data_fifo_overflow   | For debugging. |
---! |         |     |   2  | data_fifo_overflow_sticky         |  |
---! |         |     |   1  | header_fifo_overflow   | For debugging. |
---! |         |     |   0  | '0'  |  |
---! |         |  1  |  7:0 | trig_count           | |
+--! |         |     |   2  | data_fifo_overflow_sticky |           |
+--! |         |     |   1  | header_fifo_overflow | For debugging. |
+--! |         |     |   0  | '0'                  |                |
+--! |         |  1  |  7:0 | trig_count           |                |
 --!  ------------------------------------------------------------------------------
 
 -- CONTROL Byte 0
