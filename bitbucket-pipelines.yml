@@ -1,0 +1,26 @@
+# This is a sample build configuration for Python.
+# Check our guides at https://confluence.atlassian.com/x/x4UWN for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+image: python:2.7
+
+pipelines:
+  default:
+    - step:
+        caches:
+          - pip
+        script: # Modify the commands below to build your repository.
+          # - pip install -r requirements.txt
+          - cd _doc
+          - pip install -r requirements.txt
+          - make html
+          - git clone git@bitbucket.org:winterlandcosmology/winterlandcosmology.bitbucket.io.git
+          - rm -r winterlandcosmology.bitbucket.io/chfpga/jfc_dev/*
+          - cp -r _build/html/* winterlandcosmology.bitbucket.io/chfpga/jfc_dev/
+          - cd winterlandcosmology.bitbucket.io
+          - git config --global user.email "bb-pipelines@jfciche.com"
+          - git config --global user.name "BitBucket Pipelines (chfpga/jfc_dev)"
+          - git commit -a -m "bitbucket-pipelines updated chfpga/jfc_dev sphinx-generated documentation"
+          - git push
+
