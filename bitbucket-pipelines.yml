@@ -15,7 +15,8 @@ pipelines:
           - pip install -r requirements.txt
           - make html
           - git clone git@bitbucket.org:winterlandcosmology/winterlandcosmology.bitbucket.io.git
-          - rm -rf winterlandcosmology.bitbucket.io/chfpga/jfc_dev/*
+          - mkdir -p winterlandcosmology.bitbucket.io/chfpga/jfc_dev/
+          - rm -r winterlandcosmology.bitbucket.io/chfpga/jfc_dev/*
           - cp -r _build/html/* winterlandcosmology.bitbucket.io/chfpga/jfc_dev/
           - cd winterlandcosmology.bitbucket.io
           - git config --global user.email "bb-pipelines@jfciche.com"
