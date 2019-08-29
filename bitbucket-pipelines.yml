@@ -14,7 +14,7 @@ pipelines:
           - cd _doc
           - pip install -r requirements.txt
           - make html
-          - git clone git@bitbucket.org:winterlandcosmology/winterlandcosmology.bitbucket.io.git www
+          - git lfs clone git@bitbucket.org:winterlandcosmology/winterlandcosmology.bitbucket.io.git www
           - mkdir -p www/chfpga/jfc_dev/
           - rm -rf www/chfpga/jfc_dev/*
           - ls -al
