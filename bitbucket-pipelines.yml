@@ -18,8 +18,8 @@ pipelines:
           - mkdir -p www/chfpga/jfc_dev/
           - rm -rf www/chfpga/jfc_dev/*
           - ls -al
-          - ls -al _build
-          - cp -r _build/html/* www/chfpga/jfc_dev/
+          - ls -al build
+          - cp -r build/html/* www/chfpga/jfc_dev/
           - cd www
           - git config --global user.email "bb-pipelines@jfciche.com"
           - git config --global user.name "BitBucket Pipelines (chfpga/jfc_dev)"
