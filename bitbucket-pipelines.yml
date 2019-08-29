@@ -24,6 +24,7 @@ pipelines:
           - git config --global user.email "bb-pipelines@jfciche.com"
           - git config --global user.name "BitBucket Pipelines (chfpga/jfc_dev)"
           - git add -A chfpga/jfc_dev
+          - git lfs ls-files
           - git commit -m "bitbucket-pipelines updated chfpga/jfc_dev sphinx-generated documentation"
           - git push
 
