@@ -38,13 +38,13 @@
     <Option Name="WTVcsLaunchSim" Val="0"/>
     <Option Name="WTRivieraLaunchSim" Val="0"/>
     <Option Name="WTActivehdlLaunchSim" Val="0"/>
-    <Option Name="WTXSimExportSim" Val="241"/>
-    <Option Name="WTModelSimExportSim" Val="241"/>
-    <Option Name="WTQuestaExportSim" Val="241"/>
-    <Option Name="WTIesExportSim" Val="241"/>
-    <Option Name="WTVcsExportSim" Val="241"/>
-    <Option Name="WTRivieraExportSim" Val="241"/>
-    <Option Name="WTActivehdlExportSim" Val="241"/>
+    <Option Name="WTXSimExportSim" Val="242"/>
+    <Option Name="WTModelSimExportSim" Val="242"/>
+    <Option Name="WTQuestaExportSim" Val="242"/>
+    <Option Name="WTIesExportSim" Val="242"/>
+    <Option Name="WTVcsExportSim" Val="242"/>
+    <Option Name="WTRivieraExportSim" Val="242"/>
+    <Option Name="WTActivehdlExportSim" Val="242"/>
     <Option Name="GenerateIPUpgradeLog" Val="TRUE"/>
     <Option Name="XSimRadix" Val="hex"/>
     <Option Name="XSimTimeUnit" Val="ns"/>
@@ -98,6 +98,13 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_DATA_FIFO_DRAM/SHUFFLE_BIN_SEL_DATA_FIFO_DRAM.xci">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_DATA_FIFO_EMBED/SHUFFLE_BIN_SEL_DATA_FIFO_EMBED.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -106,13 +113,6 @@
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_DATA_FIFO_BRAM/SHUFFLE_BIN_SEL_DATA_FIFO_BRAM.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_DATA_FIFO_DRAM/SHUFFLE_BIN_SEL_DATA_FIFO_DRAM.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>

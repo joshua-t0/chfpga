@@ -2544,7 +2544,7 @@ CROSSBAR2_GEN: if NUMBER_OF_BP_SHUFFLE_LINKS>0 and NUMBER_OF_GPU_LINKS>0 generat
 			COMBINE_DATA_FLAGS                 => FALSE,
 			WORDS_PER_BIN_MAX                  => 16,
 			BINS_PER_FRAME_MAX                 => 64,
-			BIN_SEL_FIFO_TYPE_MAP              => (0 to 15 => (0 to 2=>1, others=>0)),
+			BIN_SEL_FIFO_TYPE_MAP              => (0 to 15 => (0 to 1=>0, others=>0)),
 			SHUFFLE_FLAGS_MASK                 => X"70000700" -- Count errors from both crossbars
 
 			)
