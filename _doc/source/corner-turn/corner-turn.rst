@@ -1,9 +1,9 @@
 Corner-Turn Engine
 ******************
 
-The corner turn engine takes the packets coming out of all the F-Engine (channelizers) in a set of boards and shares them with other boards and reorganizes them in such a way to produce packets that contain data from all channelizers, but for a subset of the frequency bins.
+The corner turn engine takes the packets coming out of the F-Engine and reorganizes the data to produce packets that combines the data from all F-Engines but for a subset of the frequency bins. The output of the corner-turn engine is typically sent over the IceBoard QSFP+ links (8x 10 G Ethernet links) to a X Engine.
 
-The corner turn engine is flexible enough to allow repacketizing of channelizer data from single oard, a single crate, or a pair of crates. It also allow various bypass modes to stream raw channelizer in real time.
+The corner turn engine is software-configurable to allow repacketizing of F-Engine data from single board, a single crate, or a pair of crates. It also allow various bypass modes to stream raw channelizer in real time.
 
 The supported modes of operation:
    - `shuffle512`:  Reorders the data from 2 crates/512 analog channels so that each board produces eight 10G Ethernet streams of 4 bins / 512 channels of (4+4) bit FFT data.
@@ -16,11 +16,12 @@ The supported modes of operation:
 The corner-turn operations are performed in six stages:
 
 1) The first crossbar, (channelizer crossbar `chan_crossbar`) takes the output of 16 on-board channelizers, realigned the data frames, exchanges and reorganizes the data between those, packetizes frames into packets with headers, data flags, frame flags, and produce 16 streams of data.
-2) The backpane PCB links transmit 15 of the streams to other boards in the same crate, and receives data from those crates as well.
-3) The second crossbar (shuffle_crossbar) takes the data from the 15 other boards and the local stream, realigns the packets, and reorganizes the data in 8 streams.
-4) The backplane QSFP links transmit 4 of those streams to the corresponding board in another crate, and receives 4 streams from those boards.
-5) The 3rd crossbar (another shuffle crossbar) takes the data from the 4 links and the 4 local streams, realigns the packets, and reorder their contents into 8 streams.
-6) The 8 streams are fed to 8 10G Ethernet packetizers/transmitters that send their data through two QSFP+ connectors.
+2) The backplane PCB links transmit 15 of the streams to other boards in the same crate, and receives data from those crates as well. The stream from lane 0 is passed directly to the next stage in the same FPGA.
+3) The second crossbar (shuffle_crossbar) takes the data from the local lane and the 15 remote lanes, realigns the packets, and reorganizes the data in 8 streams.
+4) The backplane QSFP links transmit 4 of those streams to the corresponding board in another crate, and receives 4 streams from those boards. Lanes 0-3 are passed directly to the next stage.
+5) The 3rd crossbar (another shuffle crossbar) takes the data from the 4 local lanes and 4 remote lanes, realigns the packets, and reorder their contents into 8 streams.
+
+The 8 resulting streams are then fed to 8 10G Ethernet packetizers/transmitters that send their data through two QSFP+ connectors.
 
 The modules that implement each of these stages are configured differnetly by software depending on the desired mode of operation.
 

@@ -1459,9 +1459,9 @@ gpio_irib_mux_in <= ( -- source for the IRIG-B signals
 	1 => bp_time_reg,
 	2 => irigb_gen_out,
 	3 => bp_gpio_int_in,
-	4 => user_mux_in(0),
-	5 => user_mux_in(1),
-	6 => user_mux_in(2),
+	4 => user_mux_in(0), -- sma_a
+	5 => user_mux_in(1), -- led2_sma_b
+	6 => user_mux_in(2), -- led1_bp_sma
 	7 => user_mux_in(3)
 	); -- Backplane GPIO_INT signal
 
@@ -1869,6 +1869,8 @@ REFCLK0: entity work.REFCLK
 		sync_in(1) => refclk_irigb_sync_in, -- Corresponds to source #3
 		sync_in(2) => bp_time_in, -- Corresponds to source #4
 		sync_in(3) => bp_gpio_int_in, -- Corresponds to source #5
+		sync_in(4) => user_mux_in(0), -- Corresponds to source #6 - sma_a
+		sync_in(5) => user_mux_in(1), -- Corresponds to source #7 - sma_b
 
 		sync_out => sync_out,
 
