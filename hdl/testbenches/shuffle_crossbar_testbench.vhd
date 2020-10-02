@@ -35,8 +35,9 @@ use work.tb_package.all;
 ENTITY shuffle_crossbar_testbench IS
 	generic (
 		NUMBER_OF_INPUT_LANES: integer := 16; -- Must be a multiple of 4
-		NUMBER_OF_OUTPUT_LANES: integer := 1;
-		COMBINE_DATA_FLAGS: boolean := true
+		NUMBER_OF_OUTPUT_LANES: integer := 4;
+		NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL: integer := 4;
+		COMBINE_DATA_FLAGS: boolean := TRUE
 		);
 END shuffle_crossbar_testbench;
 
@@ -54,7 +55,7 @@ constant CLK125_period : time := 8 ns;
 	constant CROSSBAR_ADDR_INCREMENT : integer := 16#00800#; --
 	constant CROSSBAR_BIN_SEL0_ADDR: integer :=CROSSBAR_BASE_ADDR + 1*CROSSBAR_ADDR_INCREMENT;
 	constant CROSSBAR_BIN_SEL1_ADDR: integer :=CROSSBAR_BASE_ADDR + 2*CROSSBAR_ADDR_INCREMENT;
-
+	constant NUMBER_OF_BIN_SEL: integer := NUMBER_OF_OUTPUT_LANES / NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL;
 	--Inputs
 	signal reset : std_logic := '0';
 
@@ -73,6 +74,10 @@ constant CLK125_period : time := 8 ns;
 	signal s_axis_tdata_int: slv32_array(0 to NUMBER_OF_INPUT_LANES-1);
 	signal s_axis_tvalid_int: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1); -- needed for sim. If, U, data will not start
 	signal s_axis_tlast_int: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
+
+	signal m_axis_tdata_int: slv32_array(0 to NUMBER_OF_OUTPUT_LANES-1);
+	signal m_axis_tvalid_int: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES-1); -- needed for sim. If, U, data will not start
+	signal m_axis_tlast_int: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES-1);
 
 	signal m_axis_tdata: slv32;
 	signal m_axis_tvalid: std_logic;
@@ -116,14 +121,17 @@ begin
 
 frame_clk_in <= s_axis_tvalid and s_axis_tlast;
 s_axis_tdata_int <= (others=> s_axis_tdata);
-s_axis_tvalid_int <= (3=>'0', others=>s_axis_tvalid);
+--s_axis_tvalid_int <= (3=>'0', others=>s_axis_tvalid);
+s_axis_tvalid_int <= (others=>s_axis_tvalid);
 s_axis_tlast_int <= (others=> s_axis_tlast);
 dut0: entity work.shuffle_crossbar
 	generic map (
-		NUMBER_OF_INPUT_LANES=>NUMBER_OF_INPUT_LANES, -- Number of input streams
-		NUMBER_OF_OUTPUT_LANES=>NUMBER_OF_OUTPUT_LANES, -- Number of output streams
+		NUMBER_OF_INPUT_LANES => NUMBER_OF_INPUT_LANES, -- Number of input streams
+		NUMBER_OF_OUTPUT_LANES => NUMBER_OF_OUTPUT_LANES, -- Number of output streams
+		NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL => NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL,
 		COMBINE_DATA_FLAGS => COMBINE_DATA_FLAGS,
-		BIN_SEL_FIFO_TYPE_MAP => (0 to NUMBER_OF_OUTPUT_LANES-1 => (others=> 0))
+		BIN_SEL_FIFO_TYPE_MAP => (0 to NUMBER_OF_OUTPUT_LANES-1 => (others=> 0)),
+		SHUFFLE_FLAGS_MASK => X"70000700"
 		)
 	port map (
 		s_axis_tdata  => s_axis_tdata_int,
@@ -133,9 +141,9 @@ dut0: entity work.shuffle_crossbar
 		-- s_axis_clk => (others=>in_clk),
 		-- s_axis_tready => s_axis_tready,
 
-		m_axis_tdata(0)  => m_axis_tdata,
-		m_axis_tvalid(0) => m_axis_tvalid,
-		m_axis_tlast(0)  => m_axis_tlast,
+		m_axis_tdata  => m_axis_tdata_int,
+		m_axis_tvalid => m_axis_tvalid_int,
+		m_axis_tlast  => m_axis_tlast_int,
 		-- m_axis_tready(0)  => '1',
 
 		-- frame_clk_in => frame_clk_in,
@@ -154,6 +162,10 @@ dut0: entity work.shuffle_crossbar
 		CTRL_CLK => clk125,
 		CTRL_RST => reset
 	);
+
+m_axis_tdata  <= m_axis_tdata_int(0);
+m_axis_tvalid <= m_axis_tvalid_int(0);
+m_axis_tlast  <= m_axis_tlast_int(0);
 
 in_clk_process :process
    begin
@@ -180,11 +192,13 @@ clk125_process :process
    end process;
 
 stim_proc : process
-	variable number_of_selected_bins: integer :=8;
-	variable number_of_bins_per_frame: integer :=156;
+	variable number_of_selected_bins: integer :=64;
+	variable number_of_bins_per_frame: integer :=64;
 	variable number_of_words_per_bin: integer :=4;
-	variable actual_number_of_input_lanes: integer := 16;
-	variable number_of_frames_per_packet: integer :=4;
+	variable first_lane: integer := 0;
+	variable last_lane: integer := 1;
+	variable number_of_frames_per_packet: integer :=1;
+	variable number_of_input_data_flags_words_per_bin: integer := 1;
 	begin
 		reset <= '1';
 		sleep(out_clk, 10);
@@ -192,11 +206,12 @@ stim_proc : process
 		sleep(clk125, 10); -- make sure we start command transmission on a CLK125 edge or we will lose some data
 		-- fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, CROSSBAR_BASE_ADDR + 0, 0); --
 
-		for i in 0 to NUMBER_OF_OUTPUT_LANES-1 loop
+		for i in 0 to NUMBER_OF_BIN_SEL-1 loop
+			fpga_write_control(       clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, CROSSBAR_BIN_SEL0_ADDR + i*CROSSBAR_ADDR_INCREMENT + 0, number_of_input_data_flags_words_per_bin * 16 + first_lane); -- Set the number of words to select
 			fpga_write_control(       clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, CROSSBAR_BIN_SEL0_ADDR + i*CROSSBAR_ADDR_INCREMENT + 3, number_of_bins_per_frame); -- Set the number of words to select
 			fpga_write_control(       clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, CROSSBAR_BIN_SEL0_ADDR + i*CROSSBAR_ADDR_INCREMENT + 4, number_of_words_per_bin); -- Set the number of words to select
-			fpga_write_control(       clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, CROSSBAR_BIN_SEL0_ADDR + i*CROSSBAR_ADDR_INCREMENT + 5, number_of_frames_per_packet*32 + actual_number_of_input_lanes); -- Set the range of inputs to capture (0 to NUMBER_OF_CROSSBAR_INPUTS-1)
-			fpga_select_bins( clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, CROSSBAR_BIN_SEL0_ADDR + i*CROSSBAR_ADDR_INCREMENT, first_bin=>0, bin_step=>10, number_of_bins=>number_of_selected_bins); -- Enable storage and transmission of N frequency bins.
+			fpga_write_control(       clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, CROSSBAR_BIN_SEL0_ADDR + i*CROSSBAR_ADDR_INCREMENT + 5, number_of_frames_per_packet*32 + last_lane); -- Set the range of inputs to capture (0 to NUMBER_OF_CROSSBAR_INPUTS-1)
+			fpga_select_bins( clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, CROSSBAR_BIN_SEL0_ADDR + i*CROSSBAR_ADDR_INCREMENT, first_bin=>0, bin_step=>1, number_of_bins=>number_of_selected_bins); -- Enable storage and transmission of N frequency bins.
 			-- wait for 2*64*SYSCLK_period; -- prevent the buffers from overflowing by allowing time to send the ethernet framing
 			-- fpga_read(       clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, CROSSBAR_BIN_SEL0_ADDR + 16#200#, 3); -- Re-read the first 8 bytes of the map for debugging
 		end loop;
@@ -204,7 +219,10 @@ stim_proc : process
 		sleep(out_clk,20);
 		-- sleep(clk,start_delay(i));
 		for j in 0 to 100 loop
-			send_axis32_packet(out_clk, s_axis_tdata, s_axis_tvalid, s_axis_tlast, s_axis_tready, create_packet(16#FA#,j,100), 500); -- 512*244/200=625 clocks = actual duration of  the incoming frames
+			send_axis32_packet(out_clk, s_axis_tdata, s_axis_tvalid, s_axis_tlast, s_axis_tready,
+				create_packet(16#FA#, j ,
+				4 + number_of_frames_per_packet * (number_of_words_per_bin * number_of_bins_per_frame + number_of_bins_per_frame + 1) + 1),
+				number_of_frames_per_packet * 624); -- 512*244/200=625 clocks = actual duration of  the incoming frames
 			-- sleep(clk,1);
 		end loop;
 		wait;

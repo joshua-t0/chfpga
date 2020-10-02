@@ -180,7 +180,7 @@ signal mask_ram_ctrl_dout: std_logic_vector(7 downto 0);
 signal mask_ram_dout: std_logic; -- Up to 2 selection flags per word (both flags are used only in dual-channel mode, otherwise only the LSB is used)
 -- signal mask_ram_addr: UNSIGNED(8 downto 0):=(others=>'0'); -- up to 512 flag groups. Initialization needed to prevent 'U' from getting into the RAM before the clock starts and resets this register.
 
-
+constant WORD_CTR_WIDTH: integer := width(WORDS_PER_BIN_MAX);
 -- DATA FIFO signals
 signal data_fifo_rd_en: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
 signal data_fifo_rd_en_int: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
@@ -198,8 +198,8 @@ signal data_fifo_last_word_of_group: std_logic:='0';
 signal data_fifo_last_word_of_group_dly: std_logic:='0';
 signal data_fifo_combine_flag: std_logic:='0';
 signal data_fifo_combine_flag_dly: std_logic:='0';
-signal data_fifo_number_of_words: unsigned(width(WORDS_PER_BIN_MAX)-1 downto 0); --! Counts the word in the current bin
-signal data_fifo_number_of_words_dly: unsigned(width(WORDS_PER_BIN_MAX)-1 downto 0); --! Counts the word in the current bin
+signal data_fifo_number_of_words: unsigned(WORD_CTR_WIDTH-1 downto 0); --! Counts the word in the current bin
+signal data_fifo_number_of_words_dly: unsigned(WORD_CTR_WIDTH-1 downto 0); --! Counts the word in the current bin
 
 signal frame_number_capture_trig: std_logic:='0';
 signal stream_id_capture_trig: std_logic:='0';
@@ -216,10 +216,10 @@ signal data_fifo_dout: slv35_array(0 to NUMBER_OF_INPUTS-1); -- (Only 32 bits ar
 -- signal data_fifo_din_dly2: slv36_array(0 to NUMBER_OF_INPUTS-1);
 -- signal data_fifo_din: slv36_array(0 to NUMBER_OF_INPUTS-1);
 
-signal flags_fifo_din: slv8;
+signal flags_fifo_din: slv(WORD_CTR_WIDTH-1+2 downto 0);
 signal flags_fifo_wr_en: std_logic;
 signal flags_fifo_rd_en: std_logic;
-signal flags_fifo_dout: slv8;
+signal flags_fifo_dout: slv(WORD_CTR_WIDTH-1+2 downto 0);
 signal flags_fifo_overflow: std_logic;
 signal flags_fifo_valid: std_logic;
 -- type slv36_array_array is array (NATURAL RANGE <>) of slv36_array(0 to 2);
@@ -313,7 +313,7 @@ signal number_of_input_data_flags_words_per_bin: unsigned(1 downto 0); --! numbe
 signal frames_per_packet: unsigned(2 downto 0); --! number of input frames to put in one output frame
 signal zero_packet_flags: std_logic;
 
-signal word_ctr: unsigned(width(WORDS_PER_BIN_MAX)-1 downto 0); --! Counts the word in the current bin
+signal word_ctr: unsigned(WORD_CTR_WIDTH-1 downto 0); --! Counts the word in the current bin
 signal bin_ctr: unsigned(width(BINS_PER_FRAME_MAX)-1 downto 0); --! Counts the bin in the current frame
 signal lane_en: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
 
@@ -333,8 +333,8 @@ constant FLUSH_BLOCK: integer      := 3;
 
 
 --constant NEXT_INPUT_BIT: integer := 32; -- (NOT USED) Indicates that the next word should come from the next input
-constant COMBINE_WORDS_BIT: integer := 6; -- Indicates that the current word should be combined with the next one (enabled sending data flags block from the 1st crossbar, which occupy only 16 of the 32 bits).
-constant END_OF_PACKET_BIT: integer:= 7; -- Indicates this is the last word of a packet, and is therefore a packet status word. Overrides any other control bits.
+constant COMBINE_WORDS_BIT: integer := WORD_CTR_WIDTH; -- Indicates that the current word should be combined with the next one (enabled sending data flags block from the 1st crossbar, which occupy only 16 of the 32 bits).
+constant END_OF_PACKET_BIT: integer := WORD_CTR_WIDTH + 1; -- Indicates this is the last word of a packet, and is therefore a packet status word. Overrides any other control bits.
 
 signal recv_header: std_logic;
 signal packet_flags: slv32;
@@ -501,9 +501,12 @@ mask_ram0 : SHUFFLE_BIN_SEL_MASK_RAM
 		doutb(0) => mask_ram_dout -- two flags for each bin number
 	);
 
+
 -- The flags FIFO describe provide instructions to the readout logic on how to read each block of data from the data FIFO.
 -- It indicate the size of each block of data, whether words should be combined, and when this is the last block of he packet.
-flags_fifo0: SHUFFLE_BIN_SEL_FLAGS_FIFO
+-- Implement the  4-bit wide FIFO (CB2, nominally 4x128, two per FPGA) or the 6-bit wide (CB3, 6x32, 8 per FPGA) depending on the need to save space.
+FLAGS_FIFO4_GEN: if WORD_CTR_WIDTH = 2 generate -- WORDS_PER_BIN = 4
+flags_fifo0: SHUFFLE_BIN_SEL_FLAGS_FIFO4 -- 2 bit counter + 2 extra flags
 	PORT MAP (
 		clk      => clk,
 		srst     => reset_all_reg,
@@ -514,9 +517,27 @@ flags_fifo0: SHUFFLE_BIN_SEL_FLAGS_FIFO
 		rd_en    => flags_fifo_rd_en,
 		dout     => flags_fifo_dout,
 		valid    => flags_fifo_valid,
-
+		data_count => open,
 		overflow => flags_fifo_overflow
 	);
+end generate;
+
+FLAGS_FIFO6_GEN: if WORD_CTR_WIDTH /= 2 generate -- WORDS_PER_BIN = 16 or other. make sure we always instantiate a FIFO, so there will be an error if  flags_fifo_din/dout with don't match with the FIFO
+flags_fifo0: SHUFFLE_BIN_SEL_FLAGS_FIFO6 -- 4 bit counter + 2 extra flags
+	PORT MAP (
+		clk      => clk,
+		srst     => reset_all_reg,
+
+		din      => flags_fifo_din,
+		wr_en    => flags_fifo_wr_en,
+
+		rd_en    => flags_fifo_rd_en,
+		dout     => flags_fifo_dout,
+		valid    => flags_fifo_valid,
+		data_count => open,
+		overflow => flags_fifo_overflow
+	);
+end generate;
 
 -- DOUT_FLAGS<=(others=>'0'); -- clear flags until we decide what we will send to the correlator
 --! Generates a DATA FIFO for each of the antenna processor outputs
@@ -633,7 +654,7 @@ fifo_wr_proc: process(clk)
 			reset_all_reg <= reset_all;
 
 			-- Make sticky FIFO overflow flags
-			if overflow_reset='1' then
+			if overflow_reset='1' or reset_all_reg='1' then
 				data_fifo_overflow_sticky <= (others=>'0');
 				flags_fifo_overflow_sticky <= '0';
 			else
@@ -971,7 +992,7 @@ fifo_rd_proc: process(clk)
 						if zero_packet_flags='1' then
 							m_axis_tdata_int(j) <= (others => '0');
 						else
-							m_axis_tdata_int(j) <= or_reduce(tdata);
+							m_axis_tdata_int(j) <= or_reduce(tdata)(31 downto 0);
 						end if;
 					elsif combine_words='1' and COMBINE_DATA_FLAGS=TRUE then
 						m_axis_tdata_int(j)(15 downto 0) <= tdata(ix0)(15 downto 0);

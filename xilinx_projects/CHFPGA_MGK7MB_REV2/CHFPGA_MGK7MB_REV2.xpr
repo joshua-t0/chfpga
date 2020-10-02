@@ -31,20 +31,20 @@
     <Option Name="EnableBDX" Val="FALSE"/>
     <Option Name="DSAVendor" Val="xilinx"/>
     <Option Name="DSANumComputeUnits" Val="16"/>
-    <Option Name="WTXSimLaunchSim" Val="27"/>
+    <Option Name="WTXSimLaunchSim" Val="28"/>
     <Option Name="WTModelSimLaunchSim" Val="0"/>
     <Option Name="WTQuestaLaunchSim" Val="0"/>
     <Option Name="WTIesLaunchSim" Val="0"/>
     <Option Name="WTVcsLaunchSim" Val="0"/>
     <Option Name="WTRivieraLaunchSim" Val="0"/>
     <Option Name="WTActivehdlLaunchSim" Val="0"/>
-    <Option Name="WTXSimExportSim" Val="242"/>
-    <Option Name="WTModelSimExportSim" Val="242"/>
-    <Option Name="WTQuestaExportSim" Val="242"/>
-    <Option Name="WTIesExportSim" Val="242"/>
-    <Option Name="WTVcsExportSim" Val="242"/>
-    <Option Name="WTRivieraExportSim" Val="242"/>
-    <Option Name="WTActivehdlExportSim" Val="242"/>
+    <Option Name="WTXSimExportSim" Val="245"/>
+    <Option Name="WTModelSimExportSim" Val="245"/>
+    <Option Name="WTQuestaExportSim" Val="245"/>
+    <Option Name="WTIesExportSim" Val="245"/>
+    <Option Name="WTVcsExportSim" Val="245"/>
+    <Option Name="WTRivieraExportSim" Val="245"/>
+    <Option Name="WTActivehdlExportSim" Val="245"/>
     <Option Name="GenerateIPUpgradeLog" Val="TRUE"/>
     <Option Name="XSimRadix" Val="hex"/>
     <Option Name="XSimTimeUnit" Val="ns"/>
@@ -105,6 +105,13 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_FLAGS_FIFO4/SHUFFLE_BIN_SEL_FLAGS_FIFO4.xci">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_DATA_FIFO_EMBED/SHUFFLE_BIN_SEL_DATA_FIFO_EMBED.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -119,7 +126,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_FLAGS_FIFO/SHUFFLE_BIN_SEL_FLAGS_FIFO.xci">
+      <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_FLAGS_FIFO6/SHUFFLE_BIN_SEL_FLAGS_FIFO6.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -546,6 +553,14 @@
           <Attr Name="UsedIn" Val="synthesis"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_FLAGS_FIFO/SHUFFLE_BIN_SEL_FLAGS_FIFO.xci">
+        <FileInfo>
+          <Attr Name="AutoDisabled" Val="1"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <Config>
         <Option Name="DesignMode" Val="RTL"/>
         <Option Name="TopModule" Val="chFPGA_MGK7MB_Rev2"/>
@@ -622,7 +637,6 @@
         <Option Name="TopModule" Val="chFPGA_testbench"/>
         <Option Name="TransportPathDelay" Val="0"/>
         <Option Name="TransportIntDelay" Val="0"/>
-        <Option Name="SimMode" Val="post-implementation"/>
         <Option Name="SrcSet" Val="sources_1"/>
         <Option Name="xsim.elaborate.debug_level" Val="all"/>
         <Option Name="xsim.elaborate.mt_level" Val="8"/>
