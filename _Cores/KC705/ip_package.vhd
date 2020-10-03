@@ -386,7 +386,7 @@ COMPONENT SHUFFLE_BIN_SEL_FLAGS_FIFO4
     overflow : OUT STD_LOGIC;
     empty : OUT STD_LOGIC;
     valid : OUT STD_LOGIC;
-    data_count : OUT STD_LOGIC_VECTOR(7 DOWNTO 0)
+    data_count : OUT STD_LOGIC_VECTOR(8 DOWNTO 0)
   );
 END COMPONENT;
 
