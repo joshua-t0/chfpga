@@ -711,7 +711,7 @@ fifo_wr_proc: process(clk)
 					--     bit N+3 : The data of frame fifo has overflowed in the past and data is no longer reliable
 
 					if s_axis_tvalid(i)='1' and s_axis_tlast(i)='1' and s_axis_tdata(i)(31)='0' then
-						data_fifo_din(i) <= shift_left(s_axis_tdata(i), NUMBER_OF_INPUTS + 4);
+						data_fifo_din(i)(31 downto 0) <= shift_left(s_axis_tdata(i), NUMBER_OF_INPUTS + 4);
 					else
 						data_fifo_din(i) <= (others => '0');
 					end if;
