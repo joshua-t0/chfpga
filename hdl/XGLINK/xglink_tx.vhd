@@ -51,7 +51,6 @@ entity xglink_tx is
 		s_axis_tx_tdata: in slv32; -- Fisrt *byte* transmitted is in the MSB (i.e. first bit transmitted is bit 24)
 		s_axis_tx_tvalid: in std_logic;
 		s_axis_tx_tlast: in std_logic;
-		s_axis_tx_clk: in std_logic;
 
 		reset_stats: in std_logic;
 		tx_fifo_overflow: out std_logic;
@@ -147,12 +146,10 @@ begin
 tx_fifo0 : entity work.XGLINK_TX_DATA_FIFO
   PORT MAP (
 
-	wr_clk            => s_axis_tx_clk,
 	wr_en             => s_axis_tx_tvalid,
 	din(32)           => s_axis_tx_tlast,
 	din(31 downto 0)  => s_axis_tx_tdata,
 
-	rd_clk            => clk,
 	rd_en             => s_axis_tx_tready_int,
 	valid             => s_axis_tx_tvalid_int,
 	dout(32)          => s_axis_tx_tlast_int,
@@ -162,7 +159,8 @@ tx_fifo0 : entity work.XGLINK_TX_DATA_FIFO
 	full              => open,
 	empty             => open,
 
-	rst              => rst
+	clk               => clk,
+	rst               => rst
   );
 
 
@@ -351,9 +349,9 @@ end process;
 
 
 -- Gather stats of the RX data stream
-rx_fifo_overflow_proc: process(s_axis_tx_clk)
+rx_fifo_overflow_proc: process(clk)
 begin
-	if rising_edge(s_axis_tx_clk) then
+	if rising_edge(clk) then
 		-- Detect TX FIFO overflows
 		if tx_fifo_overflow_int='1' then
 			tx_fifo_overflow <= '1';

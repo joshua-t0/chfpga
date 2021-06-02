@@ -128,15 +128,15 @@ begin
 	-- 		axis_overflow => tx_fifo_overflow_int -- on s_aclk clock
 	-- 	);
 
+-- TX FIFO: synchronous, 33x512 words, without embed regirters => latency = 0
+---- Note: EMBED FIFO (FIFO18) has a latency of 1 with embedde doutput register.
 		tx_fifo0 : entity work.XGLINK_TX_DATA_FIFO
 		  PORT MAP (
 
-			wr_clk            => clk,
 			wr_en             => s_axis_tx_tvalid,
 			din(32)           => s_axis_tx_tlast,
 			din(31 downto 0)  => s_axis_tx_tdata,
 
-			rd_clk            => clk,
 			rd_en             => read_en,
 			valid             => s_axis_tx_tvalid_int,
 			dout(32)          => s_axis_tx_tlast_int,
@@ -146,9 +146,9 @@ begin
 			full              => open,
 			empty             => open,
 
+			clk               => clk,
 			rst               => rst
 		  );
-
 
 
 m_axis_rx_tvalid <= m_axis_rx_tvalid_int;
