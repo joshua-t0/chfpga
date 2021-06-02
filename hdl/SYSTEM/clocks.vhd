@@ -105,8 +105,8 @@ architecture Behavioral of clocks is
 attribute ASYNC_REG : string;
 attribute DONT_TOUCH: string;
 
-constant CLKFBOUT_MULT_F: real := sel(CLOCK_SOURCE="SYSCLK",5.000, 8.000);
-constant CLKIN_PERIOD: real := sel(CLOCK_SOURCE="SYSCLK",5.000, 8.000);
+constant CLKFBOUT_MULT_F: real := sel(CLOCK_SOURCE="SYSCLK", 5.000, 8.000);
+constant CLKIN_PERIOD: real := sel(CLOCK_SOURCE="SYSCLK", 5.000, 8.000);
 
 signal SYSCLK_NOBUF: STD_LOGIC; --! External 200 MHz buffered by the differential receiver BUFGDS
 signal SYSCLK: STD_LOGIC; --! External 200 MHz clock buffered by BUFG
@@ -343,32 +343,32 @@ end generate;
 			CLKOUT4_CASCADE      => FALSE,
 			COMPENSATION         => "ZHOLD",
 			STARTUP_WAIT         => FALSE,
-			DIVCLK_DIVIDE        => 1, -- 200 MHz or 125 MHz PFD
-			CLKFBOUT_MULT_F      => 5.0, -- 1 GHz VCO
+			DIVCLK_DIVIDE        => 1, -- 300 MHz or 200 MHz PFD
+			CLKFBOUT_MULT_F      => 3.0, -- 1 GHz VCO
 			CLKFBOUT_PHASE       => 0.000,
 			CLKFBOUT_USE_FINE_PS => FALSE,
-			CLKOUT0_DIVIDE_F     => 5.000, -- 200 MHz
+			CLKOUT0_DIVIDE_F     => 3.000, -- 200 MHz
 			CLKOUT0_PHASE        => 0.000,
 			CLKOUT0_DUTY_CYCLE   => 0.500,
 			CLKOUT0_USE_FINE_PS  => FALSE,
 
-			CLKOUT1_DIVIDE       => 5, -- 200 MHz
+			CLKOUT1_DIVIDE       => 3, -- 200 MHz
 			CLKOUT1_PHASE        => 45.000,
 			CLKOUT1_DUTY_CYCLE   => 0.500,
 			CLKOUT1_USE_FINE_PS  => FALSE,
 
-			CLKOUT2_DIVIDE       => 5, -- 200 MHz
+			CLKOUT2_DIVIDE       => 3, -- 200 MHz
 			CLKOUT2_PHASE        => 90.000,
 			CLKOUT2_DUTY_CYCLE   => 0.500,
 			CLKOUT2_USE_FINE_PS  => FALSE,
 
-			CLKOUT3_DIVIDE       => 5, -- 200 MHz
+			CLKOUT3_DIVIDE       => 3, -- 200 MHz
 			CLKOUT3_PHASE        => 135.000,
 			CLKOUT3_DUTY_CYCLE   => 0.500,
 			CLKOUT3_USE_FINE_PS  => FALSE,
 
-			CLKIN1_PERIOD        => 5.000,
-			CLKIN2_PERIOD        => 5.000,
+			CLKIN1_PERIOD        => 3.333,
+			CLKIN2_PERIOD        => 3.333,
 			REF_JITTER1          => 0.010
 			)
 		port map(

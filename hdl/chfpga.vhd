@@ -2382,7 +2382,7 @@ BPSHFGEN: if NUMBER_OF_CROSSBAR_OUTPUTS>0 and NUMBER_OF_BP_PCB_SHUFFLE_LANES+NUM
 
 	bp_shuffle0: entity work.xglink_array
 		generic map (
-			LINK_SPEED             => 0, -- 0: 7.5 Gb/s (244 MHz word clock), 1: 10 Gb/s (322 MHz word clock)
+			LINK_SPEED             => 1, -- 0: 7.5 Gb/s (244 MHz word clock), 1: 10 Gb/s (322 MHz word clock)
 			NUMBER_OF_LANES        => NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES,
 			NUMBER_OF_LANE_GROUPS  => 2,
 			-- LANE_GROUP_MAP         => (0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1 => 0, NUMBER_OF_BP_PCB_SHUFFLE_LANES to NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1 => 1),
