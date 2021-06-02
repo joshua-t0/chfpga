@@ -147,12 +147,15 @@ Each of the 16 `chan_bin_sel` selects data from lane groups 0-3
 Bin selector inputs are  interleaved, i.e. bin_sel[0] selects bins 0,8,16..., bin_sel[1] selects bins 1,9,17... etc. The first 8 bin selectors [0-7] therefore capture all the data. The data from the last 8 bin selectors is redundant and will not be used. The logic does not offer the capability to disable unused lanes to save power.
 
 
-There are a total of 128 selected bins. There are 4 words per bins (16
-channels). The data flags of two consecutive bins are combine to build a
-single data flag word.
+There are a total of 128 selected bins. Each bin contains 16 1-byte sample from each channel. There are therefore 4 words per bins.
 
-Because we pack 128 bins, we **have to** ask the channelizer bin selector to
-combine the data flags from two consecutive words in order to allow the data
+There are 16 data flags per bin. However, the minimum unit of transmission is a 32-bit word, so the data flags would fill only half the word. However, because we have selected 128 bins, we don't have the bandwidth to  send half-filled data flag words. Indeed, this would require sending one word of data flag for each 4 words of data, i.e. a 25% overhead (excluding the additional overhead of the header, frame flags and packet flags, which are much smaller overheads). The corner-turn engine is clocked at 244 MHz, but the data is coming at 200 MHz, so can process only a 1-244/200 = 22% overhead.
+
+
+In order to handle the case of 128 bins/frame, the channelizer bin selector has the capability to
+combine the data flags from two consecutive bins in a single word.  This brings down the overhead to 12.5%, which is within the capability of the corner-turn engine. The first crossbar flags combining is not used in modes where downstream crossbars need to further separate bins, which would be harder if the flags of two bins are combined
+
+
 rate to fit within the corner turn's engine internal data bus bandwidth (see
 discussion in :ref:`CHAN_BIN_SEL`). The combined words cannot be split apart
 by the bin selection of downstream bin_selectors, but there is no need to
