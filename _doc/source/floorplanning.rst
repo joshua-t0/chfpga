@@ -3,6 +3,11 @@
 Floorplanning
 *************
 
+
+
+
+
+
 General approach
 ----------------
 
@@ -31,6 +36,59 @@ BP_SHUFFLE
 Each GTX Receiver generates its own local clock buffered with a BUFH. This clock runs the PRBS Error counter, Block lock, descrambler, and the RX FIFO. There must be enough slices in the same clock region as the GTX to accomodate that logic. This includes at least one RAMB18 per GTX to implement the RX FIFO. It's easy to forget those. The rest of the logic (packetizer/depacketizer with CRC32, TX FIFO etc) operate on the global TX clock and can be placed anywhere.
 
 
+
+Pblocks
+-------
+
+
+CHAN0-15: Channelizers. 1/2 clock region high. We leave space to the left for the ADCDAQ. Extends to the right until there is enough resources. We grab a few more BRAM to the left to meet the needs.
+
+ADCDAQ0-15: Located there they can have access to the required logic. They use only CLBs, but grab one extra BRAM for the output FIFO.
+
+
+ARM_SPI: close to the SPI pins.
+SPI
+SYSTEM
+UDP_MAC: Next to the corresponding GTX.
+BP_BUCK_SYNC
+CLK0
+
+ALIGN2: Crossbar0 CTRL_SLAVE and CHAN_ALIGN block.
+
+ALIGN3:
+	- Located between the GPU blocks
+	- Common stuff for all GPU links
+
+	    - XGLINK QUAD_GEN, CTRL_SLVE, etc.
+	- Crossbar 3 common logic
+
+	    + CTRL_ROUTER & CTRL_SLAVE
+	    + ALIGN
+	    + REMAP
+	    + Bus pipelining registers
+	- Uses 8 RAMB18 for ALIGN. 12 are unused.
+	- Limited by logic.
+	-
+
+BP0
+BP1
+BP2
+BP3
+
+BP4: (logic that feeds the backplane QSFP link (4 GTX))
+	CB2 ALIGN, REMAP, BIN_SEL[0..1]
+	BP_TX[15..18]
+
+	Usage:
+		CB2 ALIGN: 16 RMB16
+		BIN_SEL: 16 RAMB18 for each BIN_SEL
+		TOTAL: 2 * 16 + 16 = 48
+
+
+GPU0 : Instance [0] and [1] of CB3 BIN_SEL, UDP_GEN, xglink0.gtx_gen, xglink0.tx_gen
+GPU1 : CB3 BIN_SEL 2 & 3, with all GTX TX logic, next to their corresponding GTXes.
+GPU2 : CB3 BIN_SEL 4 & 5, with all GTX TX logic, next to their corresponding GTXes.
+GPU3 : CB3 BIN_SEL 6 & 7, with all GTX TX logic, next to their corresponding GTXes.
 
 
 .. .. figure:: ../images/banner.jpg
