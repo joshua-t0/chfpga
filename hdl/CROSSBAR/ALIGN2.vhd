@@ -253,7 +253,6 @@ bad_frame_length <= bad_frame_length_int;
 lane0_tfirst_mon <= lane0_tfirst;
 fifo_tfirst_mon <= fifo_tfirst;
 fifo_count_mon <= data_fifo_count;
-timeout <= timeout_int;
 
 out_proc: process(clk)
 	-- variable start_send_var: std_logic;
@@ -307,50 +306,12 @@ out_proc: process(clk)
 				sof_window <= '0';
 			end if;
 
-			-- -- EOF window
-			-- if s_axis_tvalid(0)='1' and s_axis_tlast(0)='1' then
-			-- 	eof_window_ctr <= (others=>'0');
-			-- 	eof_window <= '1';
-			-- elsif eof_window='1' then
-			-- -- elsif is_last_in_sof_window='1' then
-			-- 	eof_window_ctr <= eof_window_ctr + 1; -- overriden below
-			--  	if eof_window_ctr = unsigned(eof_window_stop) then
-			-- 		eof_window <= '0';
-			-- 	end if;
-			-- end if;
-			timeout_int <= (others=> '0');
-			if all_valid='1' or use_timeout='0' then -- if all valid lanes have data or if no lanes are selected, clear the timeout counter
-				data_timeout_ctr <= (others=>'0');
-			elsif data_timeout_ctr = unsigned(timeout_period) then
-				timeout_int <= valid_lane and not fifo_tvalid;
-				-- had_timeout <= '1'; -- sticky timeout
-			else
-				data_timeout_ctr <= data_timeout_ctr + 1;
-			end if;
-
-			-- if data_timeout_ctr = unsigned(timeout_period) then
-			-- end if;
-
-			-- any_valid <= or_reduce(valid_lane_var);
-			-- all_valid <= and_reduce(not valid_lane or (valid_lane and fifo_tvalid)) and or_reduce(valid_lane); -- All that lanes that should be sent are valid. Is True when no lane are tagged as valid (i.e when holding data until SOF)
 
 			for i in 0 to NUMBER_OF_LANES-1 loop
 
-				-- valid_lane_var(i) := valid_lane(i);
-
-				--If a lane was expected to send data but no data was received
-				--for a number of clocks, ban the lane and start discarding
-				--its data.
-				-- JFC: disabled for debugging. Not really used anyway
-				-- if data_timeout_ctr = unsigned(timeout_period) and data_timeout_ctr /= 0 and fifo_tvalid(i)='0' and valid_lane(i)='1' then
-				-- 	valid_lane_var(i) := '0';
-				-- 	bad_frame_length_int(i) <= '1';
-				-- 	ban_lane(i) <= '1';
-				-- end if;
-
-				if timeout_int(i)='1' then
-					valid_lane(i) <= '0';
-				end if;
+				-- -------------------------
+				-- Set the discard_lane flag
+				-- -------------------------
 
 				-- If the frame ends, stop sending data
 				-- from that lane so the next SOF will be kept waiting in the
@@ -412,7 +373,6 @@ out_proc: process(clk)
 			-- Synchronous reset
 			-- The reset code is placed at the end to avoid the non-resetted signals to hold their value during reset (which requires additional logic).
 			if rst='1' then
-				data_timeout_ctr <= (others=>'0');
 				sof_window <= '0';
 				-- eof_window <= '0';
 				is_last_in_sof_window <= '0';
@@ -425,7 +385,6 @@ out_proc: process(clk)
 				valid_lane <= (others=>'0');
 				-- ban_lane <= (others=>'0');
 				m_axis_tvalid <= (others=>'0');
-				-- had_timeout <= '0';
 			end if; -- rst
 
 
