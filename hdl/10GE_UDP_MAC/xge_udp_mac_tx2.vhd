@@ -179,37 +179,37 @@ signal header_fifo_overflow: std_logic;
 signal header_fifo_overflow_sticky: std_logic;
 
 
-COMPONENT XGMII_UDP_MAC_TX_HEADER_FIFO
-  PORT (
-    rst : IN STD_LOGIC;
-    wr_clk : IN STD_LOGIC;
-    rd_clk : IN STD_LOGIC;
-    din : IN STD_LOGIC_VECTOR(17 DOWNTO 0);
-    wr_en : IN STD_LOGIC;
-    rd_en : IN STD_LOGIC;
-    dout : OUT STD_LOGIC_VECTOR(17 DOWNTO 0);
-    full : OUT STD_LOGIC;
-    overflow : OUT STD_LOGIC;
-    empty : OUT STD_LOGIC;
-    valid : OUT STD_LOGIC
-  );
-END COMPONENT;
+--COMPONENT XGMII_UDP_MAC_TX_HEADER_FIFO
+--  PORT (
+--    rst : IN STD_LOGIC;
+--    wr_clk : IN STD_LOGIC;
+--    rd_clk : IN STD_LOGIC;
+--    din : IN STD_LOGIC_VECTOR(17 DOWNTO 0);
+--    wr_en : IN STD_LOGIC;
+--    rd_en : IN STD_LOGIC;
+--    dout : OUT STD_LOGIC_VECTOR(17 DOWNTO 0);
+--    full : OUT STD_LOGIC;
+--    overflow : OUT STD_LOGIC;
+--    empty : OUT STD_LOGIC;
+--    valid : OUT STD_LOGIC
+--  );
+--END COMPONENT;
 
-COMPONENT XGMII_UDP_MAC_TX_DATA_FIFO
-  PORT (
-    rst : IN STD_LOGIC;
-    wr_clk : IN STD_LOGIC;
-    rd_clk : IN STD_LOGIC;
-    din : IN STD_LOGIC_VECTOR(32 DOWNTO 0);
-    wr_en : IN STD_LOGIC;
-    rd_en : IN STD_LOGIC;
-    dout : OUT STD_LOGIC_VECTOR(32 DOWNTO 0);
-    full : OUT STD_LOGIC;
-    overflow : OUT STD_LOGIC;
-    empty : OUT STD_LOGIC;
-    valid : OUT STD_LOGIC
-  );
-END COMPONENT;
+--COMPONENT XGMII_UDP_MAC_TX_DATA_FIFO
+--  PORT (
+--    rst : IN STD_LOGIC;
+--    wr_clk : IN STD_LOGIC;
+--    rd_clk : IN STD_LOGIC;
+--    din : IN STD_LOGIC_VECTOR(32 DOWNTO 0);
+--    wr_en : IN STD_LOGIC;
+--    rd_en : IN STD_LOGIC;
+--    dout : OUT STD_LOGIC_VECTOR(32 DOWNTO 0);
+--    full : OUT STD_LOGIC;
+--    overflow : OUT STD_LOGIC;
+--    empty : OUT STD_LOGIC;
+--    valid : OUT STD_LOGIC
+--  );
+--END COMPONENT;
 
 
 begin
@@ -217,7 +217,7 @@ begin
 tx_data <= tx_data_int;
 tx_header <= tx_header_int;
 
-DATA_FIFO0 : XGMII_UDP_MAC_TX_DATA_FIFO
+DATA_FIFO0 : entity work.XGMII_UDP_MAC_TX_DATA_FIFO
 		port map (
 			rst => RST,
 			wr_clk => s_axis_tx_clk,
@@ -232,7 +232,7 @@ DATA_FIFO0 : XGMII_UDP_MAC_TX_DATA_FIFO
 			);
 data_fifo_dout_last <= data_fifo_dout(32);
 
-FRAME_FIFO0 : XGMII_UDP_MAC_TX_HEADER_FIFO
+FRAME_FIFO0 : entity work.XGMII_UDP_MAC_TX_HEADER_FIFO
 		port map (
 			rst => RST,
 			wr_clk => s_axis_tx_clk,
