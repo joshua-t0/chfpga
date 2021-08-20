@@ -527,27 +527,33 @@ core0: entity work.xglink_core
 --------------------------------------
 
 
--- rx_fifo_gen: for i in 0 to sel(IMPLEMENT_RX, NUMBER_OF_LANES, 0)-1 generate
+ --rx_fifo_gen: for i in 0 to sel(IMPLEMENT_RX, NUMBER_OF_LANES, 0)-1 generate
 
 
--- 	-- Gather stats of the RX data stream
--- 	rx_fifo_overflow_proc: process(clk)
--- 	begin
--- 		if rising_edge(clk) then
--- 			-- Detect TX FIFO overflows
--- 			if tx_fifo_overflow(i)='1' then
--- 				tx_fifo_overflow_sticky(i) <= '1';
--- 			end if;
+ 	-- Gather stats of the RX data stream
+ 	fifo_overflow_proc: process(clk)
+ 	begin
+ 		if rising_edge(clk) then
+ 			-- Detect TX FIFO overflows
+ 			for i in 0 to NUMBER_OF_LANES-1 loop
+	 			if tx_fifo_overflow(i)='1' then
+	 				tx_fifo_overflow_sticky(i) <= '1';
+	 			end if;
 
--- 			if reset_reg(i)='1' or reset_stats_reg(i)='1' or rx_resetdone_int(i)='0' then
--- 				rx_fifo_overflow_sticky(i) <= '0';
--- 				tx_fifo_overflow_sticky(i) <= '0';
--- 			end if; -- reset
+	 			if rx_fifo_overflow(i)='1' then
+	 				rx_fifo_overflow_sticky(i) <= '1';
+	 			end if;
 
--- 		end if; --clk
--- 	end process;
+	 			if reset_reg(i)='1' or reset_stats_reg(i)='1' or rx_resetdone_int(i)='0' then
+	 				rx_fifo_overflow_sticky(i) <= '0';
+	 				tx_fifo_overflow_sticky(i) <= '0';
+	 			end if; -- reset
+ 			end loop;
 
--- end generate;
+ 		end if; --clk
+ 	end process;
+
+ --end generate;
 
 
 end Behavioral;
