@@ -58,10 +58,10 @@ use work.ip_package.all; -- Import definition of components used in this module
 
 	-- General system clocks
 --		CLK25 : OUT std_logic; --! Not used
-		CLK200 : OUT std_logic; --! 200 MHz clock directly from the clock input pins of the FPGA with a BUFG. Used for system-level and operation, 10 MHz refernce generation (which requires the lowest jitter)
-		CORR_CLK : OUT std_logic; --! Correlator clock. Is usually a bit faster than the antenna clock to allow for headers to be processed.
+		CLK200 : OUT std_logic; --! 200 MHz clock, with a BUFG,  for system-level logic (IRIGB etc). Is always 200 MHz.  Depending on SFP_REFCLK, it is taken  directly from the SYSCLK input pins of the FPGA, or is generated my the first MMCM from the SFP REFCLK.
+		CORR_CLK : OUT std_logic; --! 250 MHz Correlator clock. Is usually a bit faster than the channelizer clock to allow for headers to be processed.
 --		PROC_CLK : OUT std_logic; --! Not used
-		CLK125 : OUT std_logic; --! Clock used for the control system
+		CLK125 : OUT std_logic; --! 125 MHz clock used for the command and control system
 		SYSMON_CLK: OUT std_logic; --! Clock used for the SYSMON FPGA internal system monitor hardware block
 
 		-- Channelizer clocks
@@ -278,24 +278,24 @@ end generate;
 			CLKOUT4_CASCADE      => FALSE,
 			COMPENSATION         => "ZHOLD",
 			STARTUP_WAIT         => FALSE,
-			DIVCLK_DIVIDE        => 1, -- 200 MHz or 125 MHz PFD
-			CLKFBOUT_MULT_F      => CLKFBOUT_MULT_F, -- 1 GHz VCO
+			DIVCLK_DIVIDE        => 1, -- for both 200 MHz or 125 MHz CLKIN. PFD frequency is therefore 125 or 200 MHz.
+			CLKFBOUT_MULT_F      => CLKFBOUT_MULT_F, -- 1 GHz VCO. 8 for CLKIN=125 MHz, 5 for CLKIN=200 MHz
 			CLKFBOUT_PHASE       => 0.000,
 			CLKFBOUT_USE_FINE_PS => FALSE,
-			CLKOUT0_DIVIDE_F     => 5.000, -- 200 MHz
+			CLKOUT0_DIVIDE_F     => 5.000, -- 200 MHz always. Is not dependent on sampling frequency. Used for SPI, SYNC, IRIGB etc.
 			CLKOUT0_PHASE        => 0.000,
 			CLKOUT0_DUTY_CYCLE   => 0.500,
 			CLKOUT0_USE_FINE_PS  => FALSE,
 
-			CLKOUT4_DIVIDE       => 8, -- 125 MHz
+			CLKOUT4_DIVIDE       => 8, -- 125 MHz always. Used for command system.
 			CLKOUT4_PHASE        => 0.000,
 			CLKOUT4_DUTY_CYCLE   => 0.500,
 			CLKOUT4_USE_FINE_PS  => FALSE,
-			CLKOUT5_DIVIDE       => 4, -- 250 MHz
+			CLKOUT5_DIVIDE       => 4, -- 250 MHz always. used for embedded correlator (when present).
 			CLKOUT5_PHASE        => 0.000,
 			CLKOUT5_DUTY_CYCLE   => 0.500,
 			CLKOUT5_USE_FINE_PS  => FALSE,
-			CLKOUT6_DIVIDE       => 16, -- 62.5 MHz
+			CLKOUT6_DIVIDE       => 16, -- 62.5 MHz always. For SYSMON
 			CLKOUT6_PHASE        => 0.000,
 			CLKOUT6_DUTY_CYCLE   => 0.500,
 			CLKOUT6_USE_FINE_PS  => FALSE,
@@ -312,7 +312,7 @@ end generate;
 			CLKOUT6             => SYSMON_CLK_NOBUF,
 			-- Input clock control
 			CLKFBIN             => CLK_FB_IN,
-			CLKIN1              => mmcm_clk_in,
+			CLKIN1              => mmcm_clk_in, -- 125 MHz if CLOCK_SOURCE="SFP_REFCLK", 200 MHz if CLOCK_SOYRCE="SYSCLK". Divider is ajusted accordingly.
 			CLKIN2              => '0',
 			-- Tied to always select the primary input clock
 			CLKINSEL            => '1',
@@ -343,26 +343,26 @@ end generate;
 			CLKOUT4_CASCADE      => FALSE,
 			COMPENSATION         => "ZHOLD",
 			STARTUP_WAIT         => FALSE,
-			DIVCLK_DIVIDE        => 1, -- 300 MHz or 200 MHz PFD
-			CLKFBOUT_MULT_F      => 3.0, -- 1 GHz VCO
+			DIVCLK_DIVIDE        => 1, -- PFD = 300 MHz or 200 MHz. Range is 10 - 550 MHz for -2 device.
+			CLKFBOUT_MULT_F      => 3.0, -- VCO=600 MHz @ CLKIN=200 MHz, 900 MHz @ CLKIN=300 MHz.  Valid range = 600 - 1440 MHz for a -2 device.
 			CLKFBOUT_PHASE       => 0.000,
 			CLKFBOUT_USE_FINE_PS => FALSE,
-			CLKOUT0_DIVIDE_F     => 3.000, -- 200 MHz
+			CLKOUT0_DIVIDE_F     => 2.000, -- 300 MHz @ CLKIN=200 MHz
 			CLKOUT0_PHASE        => 0.000,
 			CLKOUT0_DUTY_CYCLE   => 0.500,
 			CLKOUT0_USE_FINE_PS  => FALSE,
 
-			CLKOUT1_DIVIDE       => 3, -- 200 MHz
+			CLKOUT1_DIVIDE       => 2, -- 300 MHz @ CLKIN=200 MHz
 			CLKOUT1_PHASE        => 45.000,
 			CLKOUT1_DUTY_CYCLE   => 0.500,
 			CLKOUT1_USE_FINE_PS  => FALSE,
 
-			CLKOUT2_DIVIDE       => 3, -- 200 MHz
+			CLKOUT2_DIVIDE       => 2, -- 300 MHz @ CLKIN=200 MHz
 			CLKOUT2_PHASE        => 90.000,
 			CLKOUT2_DUTY_CYCLE   => 0.500,
 			CLKOUT2_USE_FINE_PS  => FALSE,
 
-			CLKOUT3_DIVIDE       => 3, -- 200 MHz
+			CLKOUT3_DIVIDE       => 2, -- 300 MHz @ CLKIN=200 MHz
 			CLKOUT3_PHASE        => 135.000,
 			CLKOUT3_DUTY_CYCLE   => 0.500,
 			CLKOUT3_USE_FINE_PS  => FALSE,
@@ -386,7 +386,7 @@ end generate;
 			-- Input clock & control
 			CLKFBIN             => chan_clk_fb,
 			CLKIN1              => CLK200_INT, -- can use CLK200_MMCM_NOBUF if adjacent to sys_mmcm, -- used when CLKINSEL='1'
-			CLKIN2              => adc_clk, -- used when CLKINSEL='0'. If there is no bufg, this mmcm needs to be adjacent to the adc mmcm
+			CLKIN2              => adc_clk, -- 200 or 300 MHz depending on ADC sampling rate. used when CLKINSEL='0'. If there is no bufg, this mmcm needs to be adjacent to the adc mmcm
 			CLKINSEL            => chan_clk_src_sel,
 			-- Ports for dynamic reconfiguration
 			DADDR               => (others => '0'),

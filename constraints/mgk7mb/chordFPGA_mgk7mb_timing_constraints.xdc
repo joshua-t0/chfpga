@@ -173,26 +173,26 @@ set_clock_groups -name bp_txclk_group -asynchronous -group [get_clocks -include_
 # The delay is set to roughly take into account the min (fast) and max (slow) delay caused between the external virtual clock and the CLK125 clock.
 # Really, it would be better to sample the SPI signal on their SPI clocks. Some problems have been reported with the current set-up by others.
 
-set_input_delay -clock [get_clocks arm_spi_virt_clk] 5.0 [get_ports {arm_spi_sck arm_spi_cs_n arm_spi_mosi}]
+set_input_delay -clock [get_clocks arm_spi_virt_clk] 5.000 [get_ports {arm_spi_sck arm_spi_cs_n arm_spi_mosi}]
 
 # FMC SPI clock
 ################
 
-set_input_delay -clock [get_clocks arm_spi_virt_clk] 5.0 [get_ports {fmc?_spi_miso}]
+set_input_delay -clock [get_clocks arm_spi_virt_clk] 5.000 [get_ports fmc?_spi_miso]
 
 # I2C clock
 ################
-create_clock -period 1000 -name i2c_clk [get_ports i2c_scl]
+create_clock -period 1000.000 -name i2c_clk [get_ports i2c_scl]
 set_clock_groups -name i2c_clk_group -asynchronous -group [get_clocks -include_generated_clocks i2c_clk]
 
-set_input_delay -clock [get_clocks i2c_clk] 0.0 [get_ports {i2c_sda}]
+set_input_delay -clock [get_clocks i2c_clk] 0.000 [get_ports i2c_sda]
 
 # Ignore input delays and timing on asynchronously-sampled inputs
 ################
-set_input_delay -clock [get_clocks arm_spi_virt_clk] 0.0 [get_ports {bp_gpio_int fmc?_adc_pll_lock fpga_led1_bp_sma sma_b_fpga_led2}]
+set_input_delay -clock [get_clocks arm_spi_virt_clk] 0.000 [get_ports {bp_gpio_int fmc?_adc_pll_lock fpga_led1_bp_sma sma_b_fpga_led2}]
 set_false_path -from [get_ports {bp_gpio_int fmc?_adc_pll_lock fpga_led1_bp_sma sma_b_fpga_led2}]
 
-set_input_delay -clock [get_clocks arm_spi_virt_clk] 0.0 [get_ports {arm_irq_n bp_buck_sync cpu_reset_n flash_spi_cs_n gpio_irq_n gpio_rst_n uart_rx uart_tx}]
+set_input_delay -clock [get_clocks arm_spi_virt_clk] 0.000 [get_ports {arm_irq_n bp_buck_sync cpu_reset_n flash_spi_cs_n gpio_irq_n gpio_rst_n uart_rx uart_tx}]
 set_false_path -from [get_ports {arm_irq_n bp_buck_sync cpu_reset_n flash_spi_cs_n gpio_irq_n gpio_rst_n uart_rx uart_tx}]
 
 
@@ -232,7 +232,6 @@ set_false_path -to [get_cells -hierarchical -filter {NAME =~ "*/CLK0/*" && ASYNC
 
 #set_false_path -through [get_ports rst] -to [get_pins inst_fifo_gen/gconvfifo.rf/grf.rf/rstblk/*/CLR]
 
-set_false_path -from [get_clocks divclk_local_d_3] -to [get_clocks {chan_clk_nobuf[0]}]
 
 # adc-send_data_reg1 signals come from multiple clocks. Ignore the timing to that register. That register has a ASYNC_REG=True property.
 set_false_path -to [get_pins {chfpga0/ADCGEN[*].adc_send_data_reg1_reg[*]/D}]
@@ -259,84 +258,84 @@ set_false_path -to [get_pins {chfpga0/ADCGEN[*].adc_send_data_reg1_reg[*]/D}]
 #   - 1.081 ns with BUFMR  => max_delay = (1.175-setup_min) + 1.081 = 1.856 ns
 #
 
-set_input_delay -clock [get_clocks ADCCLK0] -min 3.8 [get_ports {fmca_adc0_ahdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK0] -min 3.800 [get_ports {fmca_adc0_ahdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK0] -max 1.856 [get_ports {fmca_adc0_ahdp[*]}]
-set_input_delay -clock [get_clocks ADCCLK0] -clock_fall -min -add_delay 3.8 [get_ports {fmca_adc0_ahdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK0] -clock_fall -min -add_delay 3.800 [get_ports {fmca_adc0_ahdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK0] -clock_fall -max -add_delay 1.856 [get_ports {fmca_adc0_ahdp[*]}]
 
-set_input_delay -clock [get_clocks ADCCLK1] -min 2.36 [get_ports {fmca_adc0_bhdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK1] -min 2.360 [get_ports {fmca_adc0_bhdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK1] -max 1.305 [get_ports {fmca_adc0_bhdp[*]}]
-set_input_delay -clock [get_clocks ADCCLK1] -clock_fall -min -add_delay 2.36 [get_ports {fmca_adc0_bhdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK1] -clock_fall -min -add_delay 2.360 [get_ports {fmca_adc0_bhdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK1] -clock_fall -max -add_delay 1.305 [get_ports {fmca_adc0_bhdp[*]}]
 
-set_input_delay -clock [get_clocks ADCCLK2] -min 3.8 [get_ports {fmca_adc0_chdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK2] -min 3.800 [get_ports {fmca_adc0_chdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK2] -max 1.856 [get_ports {fmca_adc0_chdp[*]}]
-set_input_delay -clock [get_clocks ADCCLK2] -clock_fall -min -add_delay 3.8 [get_ports {fmca_adc0_chdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK2] -clock_fall -min -add_delay 3.800 [get_ports {fmca_adc0_chdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK2] -clock_fall -max -add_delay 1.856 [get_ports {fmca_adc0_chdp[*]}]
 
-set_input_delay -clock [get_clocks ADCCLK3] -min 3.8 [get_ports {fmca_adc0_dhdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK3] -min 3.800 [get_ports {fmca_adc0_dhdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK3] -max 1.856 [get_ports {fmca_adc0_dhdp[*]}]
-set_input_delay -clock [get_clocks ADCCLK3] -clock_fall -min -add_delay 3.8 [get_ports {fmca_adc0_dhdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK3] -clock_fall -min -add_delay 3.800 [get_ports {fmca_adc0_dhdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK3] -clock_fall -max -add_delay 1.856 [get_ports {fmca_adc0_dhdp[*]}]
 
-set_input_delay -clock [get_clocks ADCCLK4] -min 3.8 [get_ports {fmca_adc1_ahdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK4] -min 3.800 [get_ports {fmca_adc1_ahdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK4] -max 1.856 [get_ports {fmca_adc1_ahdp[*]}]
-set_input_delay -clock [get_clocks ADCCLK4] -clock_fall -min -add_delay 3.8 [get_ports {fmca_adc1_ahdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK4] -clock_fall -min -add_delay 3.800 [get_ports {fmca_adc1_ahdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK4] -clock_fall -max -add_delay 1.856 [get_ports {fmca_adc1_ahdp[*]}]
 
-set_input_delay -clock [get_clocks ADCCLK5] -min 3.8 [get_ports {fmca_adc1_bhdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK5] -min 3.800 [get_ports {fmca_adc1_bhdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK5] -max 1.856 [get_ports {fmca_adc1_bhdp[*]}]
-set_input_delay -clock [get_clocks ADCCLK5] -clock_fall -min -add_delay 3.8 [get_ports {fmca_adc1_bhdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK5] -clock_fall -min -add_delay 3.800 [get_ports {fmca_adc1_bhdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK5] -clock_fall -max -add_delay 1.856 [get_ports {fmca_adc1_bhdp[*]}]
 
-set_input_delay -clock [get_clocks ADCCLK6] -min 3.8 [get_ports {fmca_adc1_chdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK6] -min 3.800 [get_ports {fmca_adc1_chdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK6] -max 1.856 [get_ports {fmca_adc1_chdp[*]}]
-set_input_delay -clock [get_clocks ADCCLK6] -clock_fall -min -add_delay 3.8 [get_ports {fmca_adc1_chdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK6] -clock_fall -min -add_delay 3.800 [get_ports {fmca_adc1_chdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK6] -clock_fall -max -add_delay 1.856 [get_ports {fmca_adc1_chdp[*]}]
 
-set_input_delay -clock [get_clocks ADCCLK7] -min 2.36 [get_ports {fmca_adc1_dhdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK7] -min 2.360 [get_ports {fmca_adc1_dhdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK7] -max 1.305 [get_ports {fmca_adc1_dhdp[*]}]
-set_input_delay -clock [get_clocks ADCCLK7] -clock_fall -min -add_delay 2.36 [get_ports {fmca_adc1_dhdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK7] -clock_fall -min -add_delay 2.360 [get_ports {fmca_adc1_dhdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK7] -clock_fall -max -add_delay 1.305 [get_ports {fmca_adc1_dhdp[*]}]
 
-set_input_delay -clock [get_clocks ADCCLK8] -min 3.8 [get_ports {fmcb_adc0_ahdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK8] -min 3.800 [get_ports {fmcb_adc0_ahdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK8] -max 1.856 [get_ports {fmcb_adc0_ahdp[*]}]
-set_input_delay -clock [get_clocks ADCCLK8] -clock_fall -min -add_delay 3.8 [get_ports {fmcb_adc0_ahdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK8] -clock_fall -min -add_delay 3.800 [get_ports {fmcb_adc0_ahdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK8] -clock_fall -max -add_delay 1.856 [get_ports {fmcb_adc0_ahdp[*]}]
 
-set_input_delay -clock [get_clocks ADCCLK9] -min 2.36 [get_ports {fmcb_adc0_bhdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK9] -min 2.360 [get_ports {fmcb_adc0_bhdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK9] -max 1.305 [get_ports {fmcb_adc0_bhdp[*]}]
-set_input_delay -clock [get_clocks ADCCLK9] -clock_fall -min -add_delay 2.36 [get_ports {fmcb_adc0_bhdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK9] -clock_fall -min -add_delay 2.360 [get_ports {fmcb_adc0_bhdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK9] -clock_fall -max -add_delay 1.305 [get_ports {fmcb_adc0_bhdp[*]}]
 
-set_input_delay -clock [get_clocks ADCCLK10] -min 3.8 [get_ports {fmcb_adc0_chdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK10] -min 3.800 [get_ports {fmcb_adc0_chdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK10] -max 1.856 [get_ports {fmcb_adc0_chdp[*]}]
-set_input_delay -clock [get_clocks ADCCLK10] -clock_fall -min -add_delay 3.8 [get_ports {fmcb_adc0_chdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK10] -clock_fall -min -add_delay 3.800 [get_ports {fmcb_adc0_chdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK10] -clock_fall -max -add_delay 1.856 [get_ports {fmcb_adc0_chdp[*]}]
 
-set_input_delay -clock [get_clocks ADCCLK11] -min 3.8 [get_ports {fmcb_adc0_dhdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK11] -min 3.800 [get_ports {fmcb_adc0_dhdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK11] -max 1.856 [get_ports {fmcb_adc0_dhdp[*]}]
-set_input_delay -clock [get_clocks ADCCLK11] -clock_fall -min -add_delay 3.8 [get_ports {fmcb_adc0_dhdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK11] -clock_fall -min -add_delay 3.800 [get_ports {fmcb_adc0_dhdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK11] -clock_fall -max -add_delay 1.856 [get_ports {fmcb_adc0_dhdp[*]}]
 
-set_input_delay -clock [get_clocks ADCCLK12] -min 3.8 [get_ports {fmcb_adc1_ahdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK12] -min 3.800 [get_ports {fmcb_adc1_ahdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK12] -max 1.856 [get_ports {fmcb_adc1_ahdp[*]}]
-set_input_delay -clock [get_clocks ADCCLK12] -clock_fall -min -add_delay 3.8 [get_ports {fmcb_adc1_ahdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK12] -clock_fall -min -add_delay 3.800 [get_ports {fmcb_adc1_ahdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK12] -clock_fall -max -add_delay 1.856 [get_ports {fmcb_adc1_ahdp[*]}]
 
-set_input_delay -clock [get_clocks ADCCLK13] -min 3.8 [get_ports {fmcb_adc1_bhdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK13] -min 3.800 [get_ports {fmcb_adc1_bhdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK13] -max 1.856 [get_ports {fmcb_adc1_bhdp[*]}]
-set_input_delay -clock [get_clocks ADCCLK13] -clock_fall -min -add_delay 3.8 [get_ports {fmcb_adc1_bhdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK13] -clock_fall -min -add_delay 3.800 [get_ports {fmcb_adc1_bhdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK13] -clock_fall -max -add_delay 1.856 [get_ports {fmcb_adc1_bhdp[*]}]
 
-set_input_delay -clock [get_clocks ADCCLK14] -min 3.8 [get_ports {fmcb_adc1_chdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK14] -min 3.800 [get_ports {fmcb_adc1_chdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK14] -max 1.856 [get_ports {fmcb_adc1_chdp[*]}]
-set_input_delay -clock [get_clocks ADCCLK14] -clock_fall -min -add_delay 3.8 [get_ports {fmcb_adc1_chdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK14] -clock_fall -min -add_delay 3.800 [get_ports {fmcb_adc1_chdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK14] -clock_fall -max -add_delay 1.856 [get_ports {fmcb_adc1_chdp[*]}]
 
-set_input_delay -clock [get_clocks ADCCLK15] -min 3.8 [get_ports {fmcb_adc1_dhdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK15] -min 3.800 [get_ports {fmcb_adc1_dhdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK15] -max 1.856 [get_ports {fmcb_adc1_dhdp[*]}]
-set_input_delay -clock [get_clocks ADCCLK15] -clock_fall -min -add_delay 3.8 [get_ports {fmcb_adc1_dhdp[*]}]
+set_input_delay -clock [get_clocks ADCCLK15] -clock_fall -min -add_delay 3.800 [get_ports {fmcb_adc1_dhdp[*]}]
 set_input_delay -clock [get_clocks ADCCLK15] -clock_fall -max -add_delay 1.856 [get_ports {fmcb_adc1_dhdp[*]}]
 
 
@@ -388,3 +387,14 @@ set_input_delay -clock [get_clocks ADCCLK15] -clock_fall -max -add_delay 1.856 [
 
 
 
+
+set_operating_conditions -airflow 250
+set_switching_activity -toggle_rate 25.000 -type {lut} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 25.000 -type {register} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 25.000 -type {shift_register} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 25.000 -type {lut_ram} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 25.000 -type {bram} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 25.000 -type {dsp} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
