@@ -29,7 +29,12 @@ use work.chFPGA_Package.all; -- Get all component definitions
 use work.ip_package.all; -- Import definition of components used in this module
 
 ------- ALIGN ENTITY DECLARATION ----------------------
---! @brief Aligns data streams from multiple sources (lanes).
+--! Aligns data streams from multiple sources (lanes).
+--!
+--! Buffer the incoming non-blocking streams for a fixed time after the lane 0 has arrived then start sending the data from all lanes.
+--!
+--! lanes that do not present a start-of_frame word at the FIFO after the window are flushed.  Lanes  that start before the window, or any data that extends beyond lane 0, are also discarded.
+--!
 --! Frames that do not start within a programmable window of time relative to a reference frame clock are discarded.
 --! This window represents the worst case delay we can expect between lanes.
 --! If one or more lanes are not sending data, the module will give up waiting for them at the end of the window and the available frames will be sent at the end on the window
@@ -39,7 +44,8 @@ use work.ip_package.all; -- Import definition of components used in this module
 --! See the architecture description for more information on how the entity's functionality was implemented.
 entity ALIGN is
 	GENERIC (
-		NUMBER_OF_LANES: INTEGER:=16 --! Number of buses to align
+		NUMBER_OF_LANES: INTEGER:= 16; --! Number of buses to align
+		ENABLE_MONITORING_LOGIC: BOOLEAN := FALSE -- Enable additional monitoring logic for debugging
 		);
 	PORT (
 		-- Input interface (non-blocking, i.e. always accepts data)
@@ -59,8 +65,6 @@ entity ALIGN is
 		m_axis_global_tlast: out std_logic; --! Active high on the last word of the longest frame.
 
 		-- Operational parameters
-		use_timeout: in std_logic;
-		timeout_period: in std_logic_vector(7 downto 0):=(others=>'0'); --!
 		sof_window_stop: in std_logic_vector(7 downto 0); --!
 
 		-- Monitoring signals
@@ -68,21 +72,14 @@ entity ALIGN is
 		fifo_overflow: out slv(0 to NUMBER_OF_LANES-1);
 		missing_frame: out slv(0 to NUMBER_OF_LANES-1);
 		bad_frame_length: out slv(0 to NUMBER_OF_LANES-1);
-		timeout: out slv(0 to NUMBER_OF_LANES-1);
-
-		lane_monitor_source: in std_logic_vector(3 downto 0);
-		lane_monitor: out slv(0 to NUMBER_OF_LANES-1);
-
 		lane0_tfirst_mon: out std_logic;
 		fifo_tfirst_mon: out std_logic_vector(0 to NUMBER_OF_LANES-1);
 		fifo_count_mon: out slv10_array(0 to NUMBER_OF_LANES-1);
 
+		-- Additional monitoring port for debugging (if ENABLE_MONITORING_LOGIC=TRUE)
+		lane_monitor_source: in std_logic_vector(3 downto 0);
+		lane_monitor: out slv(0 to NUMBER_OF_LANES-1) := (others=>'0');
 
-		-- frame_clk : in std_logic := '0'; --! Not used. Frame clock used if frame_clk_sel='1'. The SOF window is computed from the rising edge of this signal.
-		-- frame_clk_sel: in std_logic := '0'; --! Not used. 0=use incoming lane0; 1: use external frame_clk
-
-		-- ignore_lane: in std_logic_vector(0 to NUMBER_OF_LANES-1) := (others=>'0');
-		-- had_timeout: out std_logic;
 
 		clk: in std_logic;
 		rst : in STD_LOGIC --! Synchronous  reset synchronized to CLK
@@ -154,9 +151,6 @@ signal is_last_in_sof_window: std_logic;
 -- signal eof_window_ctr: unsigned(7 downto 0) := (others=>'0'); -- init for sim
 -- signal eof_window: std_logic;
 
--- signal data_timeout_ctr: unsigned(width(DATA_TIMEOUT+1)-1 downto 0);
-signal data_timeout_ctr: unsigned(7 downto 0);
-signal timeout_int: slv(0 to NUMBER_OF_LANES-1);
 signal lane0_tfirst: std_logic;
 
 signal data_fifo_din:      slv36_array(0 to NUMBER_OF_LANES-1);
@@ -282,53 +276,6 @@ out_proc: process(clk)
 				end if;
 			end loop;
 
-
-			case to_integer(unsigned(lane_monitor_source)) is
-				when 0 =>
-					lane_monitor <= (
-						0 => is_last_in_sof_window,
-						1 => all_valid,
-						2 => sof_window,
-						-- 3 => lane0_tfirst and s_axis_tvalid(0) ,
-						-- 4 => any_valid,
-						-- 5 => is_last_in_sof_window and not is_sof(0),
-						-- 6 => m_axis_global_tvalid_int,
-						-- 7 => m_axis_global_tlast_int,
-						others => '0');
-				when 1 =>
-					lane_monitor <= is_sof;
-				when 2 =>
-					lane_monitor <= is_eof;
-				when 3 =>
-					lane_monitor <= valid_lane;
-				when 4 =>
-					lane_monitor <= read_en;
-				when 5 =>
-					lane_monitor <= bad_frame_length_int;
-				when 6 =>
-					lane_monitor <= fifo_tvalid;
-				when 7 =>
-					lane_monitor <= fifo_tlast;
-				when 8 =>
-					lane_monitor <= fifo_empty;
-				when 9 =>
-					lane_monitor <= fifo_tfirst;
-				when 10 =>
-					lane_monitor <= s_axis_tvalid;
-				when 11 =>
-					lane_monitor <= s_axis_tlast;
-				-- when 12 =>
-				-- 	lane_monitor <= ban_lane;
-				when 13 =>
-					lane_monitor <= data_fifo_overflow;
-				when 14 =>
-					lane_monitor <= align_pulse;
-				when others =>
-					lane_monitor <= (others => '0');
-			end case;
-
-
-			-- eof_window_stop <= std_logic_vector(unsigned(sof_window_stop) + 8);
 
 			--! Detect SOF on the incoming (unbufferred) lane 0 to derive a frame clock used as a timing reference.
 			if s_axis_tvalid(0)='1' then
@@ -486,6 +433,68 @@ out_proc: process(clk)
 	end process;
 
 
+MON_GEN: if ENABLE_MONITORING_LOGIC generate
+mon_proc: process(clk)
 
+	begin
+		if rising_edge(clk) then
+
+			for i in 0 to NUMBER_OF_LANES-1 loop
+				if s_axis_tvalid(0)='1' and s_axis_tfirst(0)='1' then
+					align_pulse(i) <= '1';
+				elsif s_axis_tvalid(i)='1' and s_axis_tfirst(i)='1' then
+					align_pulse(i) <= '0';
+				end if;
+			end loop;
+
+
+			case to_integer(unsigned(lane_monitor_source)) is
+				when 0 =>
+					lane_monitor <= (
+						0 => is_last_in_sof_window,
+						1 => all_valid,
+						2 => sof_window,
+						-- 3 => lane0_tfirst and s_axis_tvalid(0) ,
+						-- 4 => any_valid,
+						-- 5 => is_last_in_sof_window and not is_sof(0),
+						-- 6 => m_axis_global_tvalid_int,
+						-- 7 => m_axis_global_tlast_int,
+						others => '0');
+				when 1 =>
+					lane_monitor <= is_sof;
+				when 2 =>
+					lane_monitor <= is_eof;
+				when 3 =>
+					lane_monitor <= valid_lane;
+				when 4 =>
+					lane_monitor <= read_en;
+				when 5 =>
+					lane_monitor <= bad_frame_length_int;
+				when 6 =>
+					lane_monitor <= fifo_tvalid;
+				when 7 =>
+					lane_monitor <= fifo_tlast;
+				when 8 =>
+					lane_monitor <= fifo_empty;
+				when 9 =>
+					lane_monitor <= fifo_tfirst;
+				when 10 =>
+					lane_monitor <= s_axis_tvalid;
+				when 11 =>
+					lane_monitor <= s_axis_tlast;
+				-- when 12 =>
+				-- 	lane_monitor <= ban_lane;
+				when 13 =>
+					lane_monitor <= data_fifo_overflow;
+				when 14 =>
+					lane_monitor <= align_pulse;
+				when others =>
+					lane_monitor <= (others => '0');
+			end case;
+		end if; --clk
+
+	end process;
+
+end generate;
 
 end Behavioral;

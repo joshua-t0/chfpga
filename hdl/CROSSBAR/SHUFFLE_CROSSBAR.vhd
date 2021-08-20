@@ -138,8 +138,6 @@ architecture Behavioral of shuffle_crossbar is
 
 	signal bin_ctr : unsigned(9 downto 0); -- Up to 1024 bins per frame
 	signal lane_map: slv4_array(0 to NUMBER_OF_INPUT_LANES-1);
-	signal timeout_period: std_logic_vector(7 downto 0);
-	signal timeout_period_reg: std_logic_vector(7 downto 0);
 	signal sof_window_stop: std_logic_vector(7 downto 0);
 
 	signal input_frame_ctr: u8_array(0 to NUMBER_OF_INPUT_LANES-1);
@@ -165,8 +163,6 @@ architecture Behavioral of shuffle_crossbar is
 	signal missing_frame_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
 	signal discarded_data: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
 	signal discarded_data_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
-	signal data_timeout: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
-	signal data_timeout_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
 	signal bad_lane_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
 	signal bad_eof_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
 
@@ -217,8 +213,6 @@ architecture Behavioral of shuffle_crossbar is
 	signal fifo_count_mon: slv10_array(0 to NUMBER_OF_INPUT_LANES-1);
 	signal fifo_count_mon_reg: slv10_array(0 to NUMBER_OF_INPUT_LANES-1);
 	signal ignore_lane: std_logic_vector(0 to 15) := (others=>'0');
-	signal use_timeout: std_logic;
-	signal shuffle_flags_mask_int: slv32;
 
 	-- signal had_timeout: std_logic;
 
@@ -274,17 +268,16 @@ crossbar_router0: entity work.CTRL_ROUTER
 --! ------------------------------------------------------------------------------
 --! |  Page   | Addr|Bit(s)|     Name             | Description                   |
 --! |---------|-----|------|----------------------|-------------------------------|
---! | CONTROL |  0  |   7  | USER_RESET               | Reset the CH_DIST and clears the FIFOs.|
---! |         |     |   6  | FOUR_BITS                | The input data is in 4-bit mode. The word streams will be combined 2-by-2 to pack 4 (4+4) bits samples in the output word|
---! |         |     |   5  | USE_OFFSET_BINARY        | Indicates if the data is encoded in offset_binary or 2's complement. This is not used by this module, but is passed in the header flags. It must be set consistently with the type of encoding of the source data.|
---! |         |     |   4  | SEND_FLAGS               | Indicates if we want the packets to contain scaler and adc flags.|
---! |         |     |   3  |                          | |
---! |         |     | 2-0  | (unused)                 |   |
---! |         | 1-2 | 15:0 | STREAM_ID                 | Stream ID to be used for tagging the output frames |
---! |         |  3  | 7:0  | number_of_selected_bins  | Indicates the number of words (frequency bin pairs) that are selected. This must match the number of '1' bits in the word selection map.|
---! |         |  4  | 2:0  | frames_per_packet        | Number of input frames to group into an output packet.|
---! |         |  5  | 7:5  |                          |  |
---! |         |     | 4:0  | number_of_input_lanes    | Number of input lanes from which data is gathered. Must be a multiple of 4. |
+--! | CONTROL |  0  |   7  | header_capture_enable    | |
+--! |         |     |   6  | align_reset              | manually resets the align module |
+--! |         |     |   5  | remap_reset              | manually resets the remap module |
+--! |         |     |   4  | lane_monitor_reset       | resets the lane monitoring statistics|
+--! |         |     |  3:0 | lane_monitor_sel         | Selects for which lane lane monitoring statistics are presented|
+--! |         |  1  |  7   | (unused)                 | Unused|
+--! |         |     | 6:3  | align_lane_monitor_source| Selects the Align module lane monitoring signal (only if compile option is provided) |
+--! |         |     | 2:0 | (unused)                  | Unused |
+--! |         |  2  | 7:0  | sof_window_stop          | Sets how long after the start of lane 0 ALIGN will wait for the start of the other lanes. Passed this, late lanes will be discarded. |
+--! |         |3-6/10| 7:0  | lane_map                | Lanes input map. N/s bytes, where N is the numeb rof input lanes. Each 4-bit nibble is an input lane number.|
 --! | STATUS  |  0  |   7  | data_fifo_empty          | EMPTY status flag of the DATA FIFO for antenna processor 0. Active HIGH. |
 --! |         |     |   6  | data_align_fifo_overflow       | Sticky flag indicating that one of the DATA FIFO has overflown. Cleared only by a reset of the module.|
 --! |         |     | 5:0  | '0'                      | Unused   |
@@ -292,15 +285,6 @@ crossbar_router0: entity work.CTRL_ROUTER
 --! | RAM     | 0-63 | -   | MASK_RAM                 | Word selection map. Each of the 512 bit indicates whether the corresponding word (frequency bin pair) is retained by this correlator. |
 --! ------------------------------------------------------------------------------
 
-
---! ------------------------------------------------------------------------------------
---! | dual_bin | four_bits | Number of selected_bins                | Number of inputs |
---! |----------|-----------|----------------------------------------|------------------|
---! |    0     |     0     |                                        | Multiple of 2    |
---! |    0     |     1     |                                        | Multiple of 4    |
---! |    1     |     0     | Even, odd-even pair selected together  | Any              |
---! |    1     |     1     | Even, odd-even pair selected together  | Multiple of 2    |
---! ------------------------------------------------------------------------------------
 
 --! CONTROL Byte 0
 header_capture_enable         <= CONTROL_BYTES(0)(7); --!
@@ -310,11 +294,8 @@ lane_monitor_reset            <= CONTROL_BYTES(0)(4); --!
 lane_monitor_sel              <= unsigned(CONTROL_BYTES(0)(3 downto 0)); --!
 
 --! CONTROL Byte 1
-use_timeout <= CONTROL_BYTES(1)(7);
+-- CONTROL_BYTES(1)(7) unused
 align_lane_monitor_source <= CONTROL_BYTES(1)(6 downto 3); --!
-timeout_period(7) <= '0';
-timeout_period(6 downto 4) <= CONTROL_BYTES(1)(2 downto 0);
-timeout_period(3 downto 0) <= "0000";
 
 --! CONTROL Byte 2
 sof_window_stop <= CONTROL_BYTES(2);
@@ -324,24 +305,6 @@ lane_map_gen: for i in 0 to NUMBER_OF_INPUT_LANES-1 generate
 	lane_map(i) <= CONTROL_BYTES(3+i/2)((i mod 2)*4+3 downto (i mod 2)*4); --
 end generate;
 
-shuffle_flags_mask_int <= SHUFFLE_FLAGS_MASK;
-
--- ignore_lane <= to_slv(CONTROL_BYTES(4 + (NUMBER_OF_INPUT_LANES-1)/2 to 5 + (NUMBER_OF_INPUT_LANES-1)/2));
--- ignore_lane <= (others => '0');
-
--- --! STATUS Byte 4-5
--- with to_integer(lane_monitor_sel) select lane_monitor <=
--- 	-- input_frame_detection      when 0,
--- 	fifo_tfirst_mon            when 1,
--- 	bad_eof_sticky             when 2,
--- 	bad_lane_sticky            when 3,
--- 	discarded_data_sticky      when 4,
--- 	missing_frame_sticky       when 5,
--- 	align_fifo_overflow_sticky when 6,
--- 	data_timeout               when 7,
--- 	(others=>'0')              when others;
--- STATUS_BYTES(0 to 1) <= to_slv8_array(resize(reverse_bits_and_dir(lane_monitor), 16));
-
 STATUS_BYTES(0)(0) <='0';
 STATUS_BYTES(0)(1) <= fifo_tfirst_mon(to_integer(lane_monitor_sel));
 STATUS_BYTES(0)(2) <= bad_eof_sticky(to_integer(lane_monitor_sel));
@@ -349,7 +312,6 @@ STATUS_BYTES(0)(3) <= bad_lane_sticky(to_integer(lane_monitor_sel));
 STATUS_BYTES(0)(4) <= discarded_data_sticky(to_integer(lane_monitor_sel));
 STATUS_BYTES(0)(5) <= missing_frame_sticky(to_integer(lane_monitor_sel));
 STATUS_BYTES(0)(6) <= align_fifo_overflow_sticky(to_integer(lane_monitor_sel));
-STATUS_BYTES(0)(7) <= data_timeout_sticky(to_integer(lane_monitor_sel));
 
 --! STATUS Byte 1
 STATUS_BYTES(1)(3 downto 0) <= to_slv(NUMBER_OF_OUTPUT_LANES, 4);
@@ -491,7 +453,6 @@ begin
 		-- 	end if;
 		-- end if;
 		header_capture_enable_reg <= header_capture_enable;
-		timeout_period_reg <= timeout_period; -- to facilitate timing closure
 
 		-- Capture header information
 		if rst_reg='1' then
@@ -553,9 +514,6 @@ begin
 			if delay_capture_word_ctr_en = '1'  then
 				delay_capture_word_ctr <= delay_capture_word_ctr + 1;
 			end if;
-
-
-
 		end if;
 
 		align_pulse <= align_lane_monitor(to_integer(lane_monitor_sel));
@@ -602,8 +560,6 @@ align0: entity work.ALIGN
 		s_axis_tvalid => s_axis_tvalid,
 		s_axis_tdata  => s_axis_tdata,
 		s_axis_tlast  => s_axis_tlast,
-		-- s_axis_tuser  => (others=>'0'),
-		-- s_axis_tready => m_axis_fifo_tready,
 
 		-- Data to the remapper (AXI Streaming, non-blocking)
 		m_axis_global_tvalid => m_axis_align_global_tvalid,
@@ -611,43 +567,45 @@ align0: entity work.ALIGN
 		m_axis_tvalid        => m_axis_align_tvalid,
 		m_axis_tdata         => m_axis_align_tdata,
 		m_axis_tlast         => m_axis_align_tlast,
-		-- m_axis_tuser => m_axis_align_tuser,
 
-		use_timeout => use_timeout,
-		timeout_period => timeout_period_reg,
 		sof_window_stop => sof_window_stop,
 
 
 		fifo_overflow => align_fifo_overflow,
 		missing_frame => missing_frame,
 		bad_frame_length => discarded_data,
-		timeout => data_timeout,
-
-
-		lane_monitor_source => align_lane_monitor_source,
-		lane_monitor => align_lane_monitor,
-
-
 		lane0_tfirst_mon => lane0_tfirst_mon,
 		fifo_tfirst_mon => fifo_tfirst_mon,
 		fifo_count_mon => fifo_count_mon,
+
+
+		-- Additional debugging monitoring, not enabled by default
+		lane_monitor_source => align_lane_monitor_source,
+		lane_monitor => align_lane_monitor,
 
 		clk => clk,
 		rst => align_reset_all
 		);
 
---- Bypas the align module for debugging
+--- Bypass the align module for debugging
 -- m_axis_align_tvalid <= s_axis_tvalid;
 -- m_axis_align_tdata <= s_axis_tdata;
 -- m_axis_align_tlast <= s_axis_tlast;
 
 ---------------------------------------------------------------------
---! REMAP
+-- REMAP
 ---------------------------------------------------------------------
---! Routes any data stream from any channelizer to any output lane to compensate for slot-to-slot dependent the lane shuffle caused by the backplane routing.
---! The REMAP module is a non-blocking AXI-S interface.
---! It is instantiated here in the data chain since we need to delay the data relative to the bin counter as required by the bin selector module (to allow it time to lookup its bin selection map RAM).
-
+-- Routes any data stream from any any input lane to internal REMAP/BIN_SEL
+-- lane. This is used to compensate for slot-dependent lane ordering caused by
+-- the backplane wiring, or for reordering bin order depending on whether we
+-- use a crate shuffle or not.
+--
+-- The REMAP module is a non-blocking AXI-S interface.
+--
+-- It is instantiated here in the data chain since we need to delay the data
+-- relative to the bin counter as required by the bin selector module (to allow
+-- it time to lookup its bin selection map RAM).
+--
 remap0: entity work.remap
 	generic map (
 		NUMBER_OF_INPUT_LANES => NUMBER_OF_INPUT_LANES,
@@ -700,12 +658,10 @@ bin_ctr_proc: process(clk)
 				align_fifo_overflow_sticky <= (others=>'0');
 				missing_frame_sticky <= (others=>'0');
 				discarded_data_sticky <= (others=>'0');
-				data_timeout_sticky <= (others=>'0');
 			else
 				align_fifo_overflow_sticky <= align_fifo_overflow_sticky or align_fifo_overflow;
 				missing_frame_sticky <= missing_frame_sticky or missing_frame;
 				discarded_data_sticky <= discarded_data_sticky or discarded_data;
-				data_timeout_sticky <= data_timeout_sticky or data_timeout;
 			end if;
 
 			for i in 0 to NUMBER_OF_INPUT_LANES-1 loop
@@ -759,12 +715,9 @@ m_axis_tvalid <= m_axis_tvalid_int;
 m_axis_tlast <= m_axis_tlast_int;
 
 BIN_SEL_GEN: for i in 0 to NUMBER_OF_BIN_SEL-1 generate
-	signal cmd_dat_local: AXIS8_DAT_STRUCT;
-begin
 	----------------------------------------
-	--! Instantiate the Channel distributor
+	--! Instantiate a bin selector
 	----------------------------------------
-	-- cmd_dat_local :=xbar_cmd_dat(i);
 	binsel_i: entity work.shuffle_bin_sel
 		GENERIC MAP (
 			BIN_SEL_NUMBER => i,
@@ -796,7 +749,7 @@ begin
 			rst => rst_reg,
 			clk => clk, --! common clock for both the input and output
 
-			shuffle_flags_mask => shuffle_flags_mask_int,
+			shuffle_flags_mask => SHUFFLE_FLAGS_MASK,
 
 			-- Control Interface
 			-- ctrl_cmd_dat=> (TVALID=>xbar_cmd_dat(i+1).TVALID, TDATA=>xbar_cmd_dat(i+1).TDATA, TLAST=>xbar_cmd_dat(i+1).TLAST, DUMMY=>'0'),
