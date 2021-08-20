@@ -1,5 +1,3 @@
---!@file
-----------------------------------------------------------------------------------
 -- Company: McGill Univ.
 -- Engineer: JF Cliche
 --
@@ -9,26 +7,15 @@
 -- Project Name:
 -- Target Devices: Kintex 7
 -- Tool versions: Vivado 2014.2
---! Description: Packetizes an incoming AXI stream with a start of frame, payload, CRC32 and end of frame to be fed to the 10G link. The framing is to that of 10G Ethernet (IEEE 802.3ae).
---! This transmitter is meant to be very lightweight in terms or resource utilization.
---!
---! On the user side, the start of a frame is initiated when TVALID is active after the last byte of the previous frame is accepted (TVALID=1, TLAST=1 & TREADY=1)
---! If the input data is continuously available, continuous transmission will occur without mid-frame IDLEs (this is needed for Ethernet). If there is no input data, IDLE frames will be inserted.
---! A 32-bit CRC is added at the end of the frame, followed by the End of Frame control block.
---!
---! On the GTX side, data will be captured only when tx_ready='1' (due to the GTX gearbox, this line is low every 2 consecutive clock out of every 66 clocks).
---! The next word word accepted after tready has been low is always the first word of a block. The ready line is therefore used to synchronize the first/last half of the data block.
---!
---! On the link, the byte in the MSB of the user data word is transmitted first (big-endian). In other words, bit 24 is transmitted first.
---! This is consistent with the ordering used by the xglink core, and is easier to visualize in simulations.
---! The endianness is not configurable.
---!
+
+-- Description: Packetizes an incoming AXI stream with a header and CRC and
+-- feed the packets to a 64/66B XGLINK core transmitter, inserting control
+-- words and IDLEs as needed.
+
 -- History:
 -- 	140617 JFC: File Created
 
 -- Additional Comments:
--- 	TODO:
---
 -- Possible features:
 
 ----------------------------------------------------------------------------------
@@ -42,9 +29,21 @@ use UNISIM.VComponents.all;
 
 library work;
 use work.chFPGA_Package.all;
--- use work.ip_package.all; -- Import definition of components used in this module
 
 
+-- Packetizes an incoming AXI stream with a start of frame, payload, CRC32 and end of frame to be fed to the 10G link. The framing is to that of 10G Ethernet (IEEE 802.3ae).
+-- This transmitter is meant to be very lightweight in terms or resource utilization.
+--
+-- On the user side, the start of a frame is initiated when TVALID is active after the last byte of the previous frame is accepted (TVALID=1, TLAST=1 & TREADY=1)
+-- If the input data is continuously available, continuous transmission will occur without mid-frame IDLEs (this is needed for Ethernet). If there is no input data, IDLE frames will be inserted.
+-- A 32-bit CRC is added at the end of the frame, followed by the End of Frame control block.
+--
+-- On the GTX side, data will be captured only when tx_ready='1' (due to the GTX gearbox, this line is low every 2 consecutive clock out of every 66 clocks).
+-- The next word word accepted after tready has been low is always the first word of a block. The ready line is therefore used to synchronize the first/last half of the data block.
+--
+-- On the link, the byte in the MSB of the user data word is transmitted first (big-endian). In other words, bit 24 is transmitted first.
+-- This is consistent with the ordering used by the xglink core, and is easier to visualize in simulations.
+-- The endianness is not configurable.
 entity xglink_tx is
 	port (
 			-- User-side streaming interface
@@ -58,7 +57,7 @@ entity xglink_tx is
 		-- XGLINK core interface
 		tx_data: out slv32;
 		tx_header: out slv2; -- '10' for control, '01' for data
-		tx_ready: in std_logic; -- The ata is accepted only on clocks where tx_ready is High
+		tx_ready: in std_logic; -- The data is accepted only on clocks where tx_ready is High
 		clk: in std_logic; -- TX clock from the XGLINK core
 
 		rst : in STD_LOGIC -- asynchronous reset
@@ -123,26 +122,6 @@ signal crc_out_int: slv32; -- Ethernet CRC word
 begin
 
 
--- tx_fifo0: entity work.XGLINK_TX_DATA_FIFO
--- 	PORT MAP (
-
--- 		s_aclk          => s_axis_tx_clk,
--- 		s_aresetn       => not rst,
-
--- 		s_axis_tvalid   => s_axis_tx_tvalid,
--- 		s_axis_tdata    => s_axis_tx_tdata,
--- 		s_axis_tlast    => s_axis_tx_tlast,
--- 		s_axis_tready   => s_axis_tx_tready, -- .
-
--- 		m_aclk          => clk,
--- 		m_axis_tvalid   => s_axis_tx_tvalid_int,
--- 		m_axis_tdata    => s_axis_tx_tdata_int,
--- 		m_axis_tlast    => s_axis_tx_tlast_int,
--- 		m_axis_tready   => s_axis_tx_tready_int,
-
--- 		axis_overflow => tx_fifo_overflow_int -- on s_aclk clock
--- 	);
-
 tx_fifo0 : entity work.XGLINK_TX_DATA_FIFO
   PORT MAP (
 
@@ -160,7 +139,7 @@ tx_fifo0 : entity work.XGLINK_TX_DATA_FIFO
 	empty             => open,
 
 	clk               => clk,
-	rst               => rst
+	srst              => rst
   );
 
 

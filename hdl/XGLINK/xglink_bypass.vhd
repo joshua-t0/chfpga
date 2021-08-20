@@ -128,8 +128,10 @@ begin
 	-- 		axis_overflow => tx_fifo_overflow_int -- on s_aclk clock
 	-- 	);
 
--- TX FIFO: synchronous, 33x512 words, without embed regirters => latency = 0
----- Note: EMBED FIFO (FIFO18) has a latency of 1 with embedde doutput register.
+		-- TX FIFO: synchronous, FWFT, 33x512 words. The design expects a read latency of 0.
+		-- Using embedded output register is highly desirable to facilitate timing closure, especially if the CT engine runs at 322 MHz.
+		-- Note: We cannot use EMBED FIFO (FIFO18) with embedded output register because it has a latency of 1.
+		-- We use a BRAM-based FIFO with embedded register, which has a latency of 0.
 		tx_fifo0 : entity work.XGLINK_TX_DATA_FIFO
 		  PORT MAP (
 
@@ -147,7 +149,7 @@ begin
 			empty             => open,
 
 			clk               => clk,
-			rst               => rst
+			srst              => rst
 		  );
 
 

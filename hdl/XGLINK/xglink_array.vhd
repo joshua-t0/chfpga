@@ -70,6 +70,7 @@ entity xglink_array is
 		SIM: boolean                    := FALSE
 		);
 	port (
+		-- GTX interfaces
 		tx_p: out std_logic_vector(0 to NUMBER_OF_LINKS-1);
 		tx_n: out std_logic_vector(0 to NUMBER_OF_LINKS-1);
 		rx_p: in std_logic_vector(0 to NUMBER_OF_LINKS-1);
@@ -77,14 +78,14 @@ entity xglink_array is
 		refclk_p : in std_logic_vector(0 to NUMBER_OF_REFCLK-1); --156.250 clock
 		refclk_n : in std_logic_vector(0 to NUMBER_OF_REFCLK-1);
 
-		-- TX user interface (AXI-Streaming, blocking)
+		-- TX user interface (AXI-Streaming, blocking), synchronous to clk_out
 		s_axis_tx_tdata: in slv32_array(0 to NUMBER_OF_LANES -1);
 		s_axis_tx_tvalid: in std_logic_vector(0 to NUMBER_OF_LANES -1);
 		s_axis_tx_tlast: in std_logic_vector(0 to NUMBER_OF_LANES -1);
 		s_axis_tx_tready: out std_logic_vector(0 to NUMBER_OF_LANES -1);
 
 
-		-- RX user interface (AXI-Streaming, non-blocking)
+		-- RX user interface (AXI-Streaming, non-blocking), sychronous to clk_out
 		m_axis_rx_tdata: out slv32_array(0 to NUMBER_OF_LANES-1);
 		m_axis_rx_tvalid: out std_logic_vector(0 to NUMBER_OF_LANES-1);
 		m_axis_rx_tlast: out std_logic_vector(0 to NUMBER_OF_LANES-1);
@@ -148,7 +149,7 @@ attribute dont_touch of reset_stats_reg: signal is "true";
 signal xglink_tx_data: slv32_array(0 to NUMBER_OF_LINKS-1);
 signal xglink_tx_header: slv2_array(0 to NUMBER_OF_LINKS-1);
 signal xglink_tx_ready: std_logic_vector(0 to NUMBER_OF_LINKS-1);
-signal xglink_tx_clk: std_logic;
+signal tx_clk: std_logic;
 signal xglink_tx_resetdone: std_logic_vector(0 to NUMBER_OF_LINKS-1);
 
 signal xglink_tx_reset: std_logic_vector(0 to NUMBER_OF_LINKS-1);
@@ -259,12 +260,12 @@ status_bytes(7) <= to_slv(rx_frame_ctr(to_integer(lane_sel)));
 
 
 -- reset
-rst_proc: process(xglink_tx_clk)
+rst_proc: process(tx_clk)
 begin
-	if rising_edge(xglink_tx_clk) then
+	if rising_edge(tx_clk) then
 		reset_reg <= (others => areset);
 		reset_stats_reg <= (others => reset_stats);
-	end if; --xglink_tx_clk
+	end if; --tx_clk
 end process;
 
 --! Data source selector
@@ -275,10 +276,10 @@ end process;
 --------------------------------------
 
 -- -- Test pattern generator
--- test_pat_proc: process(xglink_tx_clk)
+-- test_pat_proc: process(tx_clk)
 -- 	variable test_byte: std_logic_vector(7 downto 0);
 -- begin
--- 	if rising_edge(xglink_tx_clk) then
+-- 	if rising_edge(tx_clk) then
 
 -- 		-- Generate test pattern
 -- 		tx_test_enable_reg <= tx_test_enable;
@@ -300,14 +301,14 @@ end process;
 -- 				test_tvalid<='0';
 -- 			end if;
 -- 		end if;
--- 	end if; --xglink_tx_clk
+-- 	end if; --tx_clk
 -- end process;
 
 --------------------------------------
 -- Data clock
 --------------------------------------
 
-clk_out <= xglink_tx_clk;
+clk_out <= tx_clk;
 
 
 --------------------------------------
@@ -335,9 +336,9 @@ m_axis_rx_tlast <= m_axis_rx_tlast_int2;
 m_axis_rx_terror <= m_axis_rx_terror_int2;
 
 bypass_gen: if IMPLEMENT_RX generate
-	bypass_proc: process(xglink_tx_clk)
+	bypass_proc: process(tx_clk)
 	begin
-		if rising_edge(xglink_tx_clk) then
+		if rising_edge(tx_clk) then
 			for i in 0 to NUMBER_OF_LANES-1 loop
 				if bypass(LANE_GROUP_MAP(i))='1' then
 					m_axis_rx_tdata_int2(i)  <= s_axis_tx_tdata(i);
@@ -354,7 +355,7 @@ bypass_gen: if IMPLEMENT_RX generate
 					m_axis_rx_tvalid_int2(i) <= '0';
 				end if;
 			end loop;
-		end if; -- xglink_tx_clk
+		end if; -- tx_clk
 	end process;
 end generate;
 
@@ -389,7 +390,7 @@ lane_gen: for i in 0 to NUMBER_OF_LANES-1 generate
 			m_axis_rx_tlast  => m_axis_rx_tlast_int(i),
 			m_axis_rx_terror => m_axis_rx_terror_int(i),
 
-			clk => xglink_tx_clk,
+			clk => tx_clk,
 
 			rst => reset_reg(i)
 			);
@@ -415,7 +416,7 @@ lane_gen: for i in 0 to NUMBER_OF_LANES-1 generate
 			tx_header => xglink_tx_header(LANE_TO_LINK_MAP(i)),
 			tx_ready  => xglink_tx_ready(LANE_TO_LINK_MAP(i)),
 
-			clk       => xglink_tx_clk,
+			clk       => tx_clk,
 
 		    rst => xglink_tx_reset(LANE_TO_LINK_MAP(i)) --! make sure we reset until the clock is available, otherwise the reset does not happen
 		  );
@@ -439,7 +440,7 @@ lane_gen: for i in 0 to NUMBER_OF_LANES-1 generate
 				m_axis_rx_tvalid => m_axis_rx_tvalid_int(i),
 				m_axis_rx_tlast  => m_axis_rx_tlast_int(i),
 				m_axis_rx_terror => m_axis_rx_terror_int(i),
-				m_axis_rx_clk    => xglink_tx_clk,
+				m_axis_rx_clk    => tx_clk,
 
 				reset_stats      => reset_stats_reg(i),
 				rx_fifo_overflow => rx_fifo_overflow(i),
@@ -494,7 +495,7 @@ core0: entity work.xglink_core
 		tx_data   => xglink_tx_data,
 		tx_header => xglink_tx_header,
 		tx_ready  => xglink_tx_ready,
-		tx_clk    => xglink_tx_clk,
+		tx_clk    => tx_clk,
 		tx_resetdone => xglink_tx_resetdone,
 
 		rx_data         => xglink_rx_data,
@@ -531,9 +532,9 @@ core0: entity work.xglink_core
 
 
  	-- Gather stats of the RX data stream
- 	fifo_overflow_proc: process(clk)
+ 	fifo_overflow_proc: process(tx_clk)
  	begin
- 		if rising_edge(clk) then
+ 		if rising_edge(tx_clk) then
  			-- Detect TX FIFO overflows
  			for i in 0 to NUMBER_OF_LANES-1 loop
 	 			if tx_fifo_overflow(i)='1' then
@@ -550,7 +551,7 @@ core0: entity work.xglink_core
 	 			end if; -- reset
  			end loop;
 
- 		end if; --clk
+ 		end if; --tx_clk
  	end process;
 
  --end generate;
