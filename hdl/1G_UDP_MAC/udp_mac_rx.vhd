@@ -40,7 +40,7 @@ use IEEE.NUMERIC_STD.ALL;
 library UNISIM;
 use UNISIM.VComponents.all;
 
-use work.ip_package.all; -- Import definition of components used in this module
+--use work.ip_package.all; -- Import definition of components used in this module
 
 --! @brief Implements a UDP packet receiver combined with a GMII MAC
 --
@@ -224,7 +224,7 @@ CRC32_0: entity work.crc32
 --! Instantiate Data FIFO
 --! This is a First-Word-Fall-Through FIFO
 --! This stored the data frame. Bit 8 indicates wether this is the last byte.
-DATA_FIFO0 : udp_mac_rx_data_fifo
+        DATA_FIFO0 : entity work.udp_mac_rx_data_fifo
 		port map (
 			rst         => rst,
 			wr_clk      => rx_clk,
@@ -246,7 +246,7 @@ DATA_FIFO0 : udp_mac_rx_data_fifo
 --
 -- The frame validity flag is written in this FIFO once the data is finished to be written in the
 -- DATA FIFO. If the flag is '0', the frame will be discarded.
-FRAME_FIFO0 : udp_mac_rx_frame_fifo
+        FRAME_FIFO0 : entity work.udp_mac_rx_frame_fifo
 		port map (
 			rst    => rst,
 			wr_clk => rx_clk,
