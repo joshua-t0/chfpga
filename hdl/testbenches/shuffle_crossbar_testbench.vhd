@@ -5,24 +5,16 @@
 --
 -- Create Date:   17:23:04 11/17/2010
 -- Design Name:
--- Module Name:   C:/Xilinx/work/CHIME/SP605_test2/ADCDAQ/ADC_IOSERDES_testbench.vhd
--- Project Name:  ADCDAQ
+-- Module Name:
+-- Project Name:
 -- Target Device:
 -- Tool versions:
--- Description:
 --
--- Dependencies:
---
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
---
--- Notes:
--- This testbench has been automatically generated using types std_logic and
--- std_logic_vector for the ports of the unit under test.  Xilinx recommends
--- that these types always be used for the top-level I/O of a design in order
--- to guarantee that the testbench will bind correctly to the post-implementation
--- simulation model.
+-- Description: This testbench tests the SHUFFLE_CROSSBAR module. The crossbar
+-- is configured through commands, and input data stream is generated
+-- programmatically. Data timing may differ from reality, as we do not
+-- implement BP_SHUFFLE. Good for testing ALIGN, REMAP and SHUFFLE_BIN_SEL (data combining etc).
+
 --------------------------------------------------------------------------------
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
