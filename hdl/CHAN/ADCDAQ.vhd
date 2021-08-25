@@ -443,7 +443,7 @@ signal fifo_rst: std_logic;
 signal fifo_prog_full: std_logic;
 attribute ASYNC_REG of fifo_rst : signal is "true";
 
-signal fifo_rst_ctr: unsigned(2 downto 0);
+signal fifo_rst_ctr: unsigned(3 downto 0);
 signal fifo_din: std_logic_vector(31 downto 0);
 signal fifo_dout: std_logic_vector(31 downto 0);
 
@@ -513,7 +513,7 @@ data_mask               <= control_bytes(14);
 -- status_bytes(0..8) are the delay values inputs from the IODELAY
 --status_bytes(9)(7)<=CAPTURE_DONE;
 status_bytes(9)(3) <= pll_locked;
-status_bytes(9)(2) <= '0';
+status_bytes(9)(2) <= fifo_rst;
 status_bytes(9)(1) <= idelayctrl_present;
 status_bytes(9)(0) <= idelayctrl_rdy;
 
@@ -527,6 +527,11 @@ status_bytes(10)(2) <= fifo_empty_sticky;
 status_bytes(11 to 12) <= to_slv8_array(ramp_err_ctr);
 
 -- STATUS BYTES 13-14: Not used
+status_bytes(13)(0)<=fifo_wr_en;
+status_bytes(13)(1)<=fifo_rd_en;
+status_bytes(13)(2)<=fifo_data_valid;
+status_bytes(13)(3)<=data_ready_int;
+
 status_bytes(15)<=to_slv(LSB(output_word_ctr));
 
 -- STATUS BYTES 16-17: Not used
