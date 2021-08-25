@@ -51,15 +51,15 @@ entity xglink_tx is
 		s_axis_tx_tvalid: in std_logic;
 		s_axis_tx_tlast: in std_logic;
 
-		reset_stats: in std_logic;
-		tx_fifo_overflow: out std_logic;
+		--reset_stats: in std_logic;
+		tx_fifo_overflow: out std_logic; -- transient flag indicating that the TX FIFO has a overflow condition.
 
 		-- XGLINK core interface
 		tx_data: out slv32;
 		tx_header: out slv2; -- '10' for control, '01' for data
 		tx_ready: in std_logic; -- The data is accepted only on clocks where tx_ready is High
-		clk: in std_logic; -- TX clock from the XGLINK core
 
+		clk: in std_logic; -- TX clock from the XGLINK core
 		rst : in STD_LOGIC -- asynchronous reset
 		);
 
@@ -104,12 +104,13 @@ signal tlast2: std_logic;
 signal tready: std_logic;
 signal tx_ready_dly: std_logic;
 
-signal s_axis_tx_tready: std_logic;
 signal s_axis_tx_tdata_int: slv32;
 signal s_axis_tx_tvalid_int: std_logic;
 signal s_axis_tx_tlast_int: std_logic;
 signal s_axis_tx_tready_int: std_logic;
 signal tx_fifo_overflow_int: std_logic;
+signal tx_reset_done: std_logic;
+signal tx_reset_ctr: unsigned(3 downto 0);
 
 signal send_data: std_logic_vector(1 downto 0); --! Identifies when we are in either of the data sending phases so we don't have to decode the state
 
@@ -125,7 +126,7 @@ begin
 tx_fifo0 : entity work.XGLINK_TX_DATA_FIFO
   PORT MAP (
 
-	wr_en             => s_axis_tx_tvalid,
+	wr_en             => s_axis_tx_tvalid and tx_reset_done,
 	din(32)           => s_axis_tx_tlast,
 	din(31 downto 0)  => s_axis_tx_tdata,
 
@@ -139,11 +140,11 @@ tx_fifo0 : entity work.XGLINK_TX_DATA_FIFO
 	empty             => open,
 
 	clk               => clk,
-	srst              => rst
+	rst               => rst
   );
 
 
-tx_fifo_overflow <= tx_fifo_overflow_int or not s_axis_tx_tready;
+tx_fifo_overflow <= tx_fifo_overflow_int;
 
 
 -- Instantiate the CRC engine, 32-bit wide input.
@@ -159,7 +160,6 @@ crc_calc <= tvalid2 and tready;
 crc_out <= not reverse_bytes(reverse_bits_same_dir(crc_out_int)); -- First *byte* to transmit in the MSB, all bits inverted as per Ethernet standard
 
 s_axis_tx_tready_int <= to_std_logic(tready='1' or tvalid2='0' or tvalid1='0'); -- We will take the data if there is any empty slot or if we are poping a word out
--- s_axis_tx_tready <= s_axis_tx_tready_int;
 
 -- tready is high when we will consume the data on the next clock
 -- We consume data if we are sending the second word, or we are sending the first word of the block and we are the last word of the frame or we expect a second word
@@ -168,6 +168,14 @@ tready <= '1' when tx_ready='1' and (send_data="11" or (send_data="10" and tvali
 tx_proc : process(clk)
 begin
 	if rising_edge(clk) then
+
+		-- Mare sure no data is written to FIFO a few clocks after reset
+		if signed(tx_reset_ctr) = -1 then
+			tx_reset_done <= '1';
+		else
+			tx_reset_ctr <= tx_reset_ctr + 1;
+		end if;
+
 
 		-- Store up to two words in an elastic queue so we know if we have two words to send.
 		-- This is essentially a two word deep FIFO, but with the ability to look at the status of the two words at the same time
@@ -314,32 +322,36 @@ begin
 
 		end if; -- if tx_ready=1
 
-		if RST='1' then
-			tx_state<=TX_STATE_STANDBY_IDLE0;
+		if rst = '1' then
+			tx_state <= TX_STATE_STANDBY_IDLE0;
 			send_data <= "00";
-			tvalid1<='0';
-			tvalid2<='0';
+			tvalid1 <= '0';
+			tvalid2 <= '0';
 			tx_half <= '0';
 			tx_header <= "01"; -- Make sure we have a valid header even when RST is held high.
+			tx_reset_ctr <= (others => '0');
+			tx_reset_done <= '0';
+
 		end if;
 
 	end if; -- if CLK
 end process;
 
 
--- Gather stats of the RX data stream
-rx_fifo_overflow_proc: process(clk)
-begin
-	if rising_edge(clk) then
-		-- Detect TX FIFO overflows
-		if tx_fifo_overflow_int='1' then
-			tx_fifo_overflow <= '1';
-		elsif rst='1' or reset_stats='1'then
-			tx_fifo_overflow <= '0';
-		end if; -- reset
+---- Gather stats of the RX data stream
+-- (we do not provide a sticky flag here, just a transient. Stickines is managed by upper level)
+--rx_fifo_overflow_proc: process(clk)
+--begin
+--	if rising_edge(clk) then
+--		-- Detect TX FIFO overflows
+--		if tx_fifo_overflow_int='1' then
+--			tx_fifo_overflow <= '1';
+--		elsif rst='1' or reset_stats='1'then
+--			tx_fifo_overflow <= '0';
+--		end if; -- reset
 
-	end if; --clk
-end process;
+--	end if; --clk
+--end process;
 
 end Behavioral;
 

@@ -51,7 +51,7 @@ entity xglink_rx is
 		rx_clk: in std_logic;
 
 
-			-- User-side streaming interface
+		-- User-side streaming interface
 		m_axis_rx_tdata: out slv32;
 		m_axis_rx_tvalid: out std_logic;
 		m_axis_rx_tlast: out std_logic;
@@ -60,8 +60,8 @@ entity xglink_rx is
 		m_axis_rx_clk: in std_logic; -- AXIS bus clock
 
 		-- Rx stats
-		reset_stats: in std_logic;
-		rx_fifo_overflow: out std_logic;
+		rx_fifo_overflow: out std_logic; -- non-sticky
+		reset_stats: in std_logic; -- for stats below
 		rx_frame_detect: out std_logic;
 		rx_err_ctr: out std_logic_vector(15 downto 0);
 		rx_max_frame: out std_logic_vector(12 downto 0);
@@ -268,17 +268,18 @@ m_axis_rx_tdata <= m_axis_rx_tdata_int2;
 m_axis_rx_tlast <= m_axis_rx_tlast_int2;
 m_axis_rx_terror <= m_axis_rx_terror_int2;
 
+rx_fifo_overflow <= rx_fifo_overflow_int or not m_axis_rx_tready_int;
 
-rx_overflow_proc: process(rx_clk, rst, reset_stats)
-begin
-	if rising_edge(rx_clk) then
-		if rx_fifo_overflow_int='1' or m_axis_rx_tready_int='0' then
-			rx_fifo_overflow <= '1';
-		elsif rst='1' or reset_stats='1' then
-			rx_fifo_overflow <= '0';
-		end if;
-	end if;
-end process;
+--rx_overflow_proc: process(rx_clk, rst, reset_stats)
+--begin
+--	if rising_edge(rx_clk) then
+--		if rx_fifo_overflow_int='1' or m_axis_rx_tready_int='0' then
+--			rx_fifo_overflow <= '1';
+--		elsif rst='1' or reset_stats='1' then
+--			rx_fifo_overflow <= '0';
+--		end if;
+--	end if;
+--end process;
 
 rx_err_ctr <= std_logic_vector(err_ctr_int);
 rx_max_frame <= std_logic_vector(rx_max_frame_int);
@@ -299,7 +300,6 @@ rx_fifo_overflow_proc: process(m_axis_rx_clk)
 			if m_axis_rx_tvalid_int2 = '1' then
 				rx_word_ctr <= rx_word_ctr + 1;
 				if m_axis_rx_tlast_int2 = '1' then
-					-- rx_frame_ctr <= rx_frame_ctr + 1;
 					rx_frame_detect <= '1';
 					rx_word_ctr <= (others => '0');
 					if rx_word_ctr > rx_max_frame_int then
@@ -320,7 +320,6 @@ rx_fifo_overflow_proc: process(m_axis_rx_clk)
 				rx_max_frame_int <= (others=>'0');
 				rx_min_frame_int <= (others=>'1');
 				rx_frame_detect <= '0';
-				-- rx_frame_ctr <= (others => '0');
 			end if; -- reset
 
 
