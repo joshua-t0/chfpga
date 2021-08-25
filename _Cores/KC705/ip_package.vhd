@@ -121,27 +121,27 @@ ATTRIBUTE BLACK_BOX_PAD_PIN OF ADCDAQ_FIFO : COMPONENT IS "rst,wr_clk,rd_clk,din
 -- ATTRIBUTE BLACK_BOX_PAD_PIN OF IO_PLL : COMPONENT IS "CLK_IN1,CLKFB_INCLK_OUT1,CLK_OUT2,CLK_OUT3,CLKFB_OUT,DADDR[6:0],DCLK,DCLK,DEN,DIN[15:0],DOUT[15:0],DRDY,DWE,RESET,LOCKED";
 
 
-COMPONENT AXI4S_REG_SLICE
-  PORT (
-    ACLK : IN STD_LOGIC;
-    ARESETN : IN STD_LOGIC;
-    S00_AXIS_ACLK : IN STD_LOGIC;
-    S00_AXIS_ARESETN : IN STD_LOGIC;
-    S00_AXIS_TVALID : IN STD_LOGIC;
-    S00_AXIS_TREADY : OUT STD_LOGIC;
-    S00_AXIS_TDATA : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
-    S00_AXIS_TLAST : IN STD_LOGIC;
-    M00_AXIS_ACLK : IN STD_LOGIC;
-    M00_AXIS_ARESETN : IN STD_LOGIC;
-    M00_AXIS_TVALID : OUT STD_LOGIC;
-    M00_AXIS_TREADY : IN STD_LOGIC;
-    M00_AXIS_TDATA : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
-    M00_AXIS_TLAST : OUT STD_LOGIC
-  );
-END COMPONENT;
+--COMPONENT AXI4S_REG_SLICE
+--  PORT (
+--    ACLK : IN STD_LOGIC;
+--    ARESETN : IN STD_LOGIC;
+--    S00_AXIS_ACLK : IN STD_LOGIC;
+--    S00_AXIS_ARESETN : IN STD_LOGIC;
+--    S00_AXIS_TVALID : IN STD_LOGIC;
+--    S00_AXIS_TREADY : OUT STD_LOGIC;
+--    S00_AXIS_TDATA : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
+--    S00_AXIS_TLAST : IN STD_LOGIC;
+--    M00_AXIS_ACLK : IN STD_LOGIC;
+--    M00_AXIS_ARESETN : IN STD_LOGIC;
+--    M00_AXIS_TVALID : OUT STD_LOGIC;
+--    M00_AXIS_TREADY : IN STD_LOGIC;
+--    M00_AXIS_TDATA : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
+--    M00_AXIS_TLAST : OUT STD_LOGIC
+--  );
+--END COMPONENT;
 
--- ATTRIBUTE SYN_BLACK_BOX OF AXI4S_REG_SLICE : COMPONENT IS TRUE;
-ATTRIBUTE BLACK_BOX_PAD_PIN OF AXI4S_REG_SLICE : COMPONENT IS "ACLK,ARESETN,S00_AXIS_ACLK,S00_AXIS_ARESETN,S00_AXIS_TVALID,S00_AXIS_TREADY,S00_AXIS_TDATA[7:0],S00_AXIS_TLAST,M00_AXIS_ACLK,M00_AXIS_ARESETN,M00_AXIS_TVALID,M00_AXIS_TREADY,M00_AXIS_TDATA[7:0],M00_AXIS_TLAST,M00_SPARSE_TKEEP_REMOVED";
+---- ATTRIBUTE SYN_BLACK_BOX OF AXI4S_REG_SLICE : COMPONENT IS TRUE;
+--ATTRIBUTE BLACK_BOX_PAD_PIN OF AXI4S_REG_SLICE : COMPONENT IS "ACLK,ARESETN,S00_AXIS_ACLK,S00_AXIS_ARESETN,S00_AXIS_TVALID,S00_AXIS_TREADY,S00_AXIS_TDATA[7:0],S00_AXIS_TLAST,M00_AXIS_ACLK,M00_AXIS_ARESETN,M00_AXIS_TVALID,M00_AXIS_TREADY,M00_AXIS_TDATA[7:0],M00_AXIS_TLAST,M00_SPARSE_TKEEP_REMOVED";
 
 
 -------------------------------------------------------------------------------
@@ -431,24 +431,24 @@ END COMPONENT;
 -------------------------------------------------------------------------------
 
 
-COMPONENT CMD_FIFO
-  PORT (
-    m_aclk : IN STD_LOGIC;
-    s_aclk : IN STD_LOGIC;
-    s_aresetn : IN STD_LOGIC;
-    s_axis_tvalid : IN STD_LOGIC;
-    s_axis_tready : OUT STD_LOGIC;
-    s_axis_tdata : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
-    s_axis_tlast : IN STD_LOGIC;
-    m_axis_tvalid : OUT STD_LOGIC;
-    m_axis_tready : IN STD_LOGIC;
-    m_axis_tdata : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
-    m_axis_tlast : OUT STD_LOGIC
-  );
-END COMPONENT;
+--COMPONENT CMD_FIFO
+--  PORT (
+--    m_aclk : IN STD_LOGIC;
+--    s_aclk : IN STD_LOGIC;
+--    s_aresetn : IN STD_LOGIC;
+--    s_axis_tvalid : IN STD_LOGIC;
+--    s_axis_tready : OUT STD_LOGIC;
+--    s_axis_tdata : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
+--    s_axis_tlast : IN STD_LOGIC;
+--    m_axis_tvalid : OUT STD_LOGIC;
+--    m_axis_tready : IN STD_LOGIC;
+--    m_axis_tdata : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
+--    m_axis_tlast : OUT STD_LOGIC
+--  );
+--END COMPONENT;
 
--- ATTRIBUTE SYN_BLACK_BOX OF CMD_FIFO : COMPONENT IS TRUE;
-ATTRIBUTE BLACK_BOX_PAD_PIN OF CMD_FIFO : COMPONENT IS "m_aclk,s_aclk,s_aresetn,s_axis_tvalid,s_axis_tready,s_axis_tdata[7:0],s_axis_tlast,m_axis_tvalid,m_axis_tready,m_axis_tdata[7:0],m_axis_tlast";
+---- ATTRIBUTE SYN_BLACK_BOX OF CMD_FIFO : COMPONENT IS TRUE;
+--ATTRIBUTE BLACK_BOX_PAD_PIN OF CMD_FIFO : COMPONENT IS "m_aclk,s_aclk,s_aresetn,s_axis_tvalid,s_axis_tready,s_axis_tdata[7:0],s_axis_tlast,m_axis_tvalid,m_axis_tready,m_axis_tdata[7:0],m_axis_tlast";
 
 
 -------------------------------------------------------------------------------
@@ -648,46 +648,46 @@ END COMPONENT;
 
 
 
-COMPONENT PROBER_DATA_FIFO
-  PORT (
-    rst : IN STD_LOGIC;
-    wr_clk : IN STD_LOGIC;
-    rd_clk : IN STD_LOGIC;
-    din : IN STD_LOGIC_VECTOR(35 DOWNTO 0);
-    wr_en : IN STD_LOGIC;
-    rd_en : IN STD_LOGIC;
-    dout : OUT STD_LOGIC_VECTOR(8 DOWNTO 0);
-    full : OUT STD_LOGIC;
-    almost_full : OUT STD_LOGIC;
-    overflow : OUT STD_LOGIC;
-    empty : OUT STD_LOGIC;
-    valid : OUT STD_LOGIC
-  );
-END COMPONENT;
+--COMPONENT PROBER_DATA_FIFO
+--  PORT (
+--    rst : IN STD_LOGIC;
+--    wr_clk : IN STD_LOGIC;
+--    rd_clk : IN STD_LOGIC;
+--    din : IN STD_LOGIC_VECTOR(35 DOWNTO 0);
+--    wr_en : IN STD_LOGIC;
+--    rd_en : IN STD_LOGIC;
+--    dout : OUT STD_LOGIC_VECTOR(8 DOWNTO 0);
+--    full : OUT STD_LOGIC;
+--    almost_full : OUT STD_LOGIC;
+--    overflow : OUT STD_LOGIC;
+--    empty : OUT STD_LOGIC;
+--    valid : OUT STD_LOGIC
+--  );
+--END COMPONENT;
 
--- ATTRIBUTE SYN_BLACK_BOX OF PROBER_DATA_FIFO : COMPONENT IS TRUE;
---ATTRIBUTE BLACK_BOX_PAD_PIN OF PROBER_DATA_FIFO : COMPONENT IS "rst,wr_clk,rd_clk,din[35:0],wr_en,rd_en,dout[8:0],full,overflow,empty,valid";
+---- ATTRIBUTE SYN_BLACK_BOX OF PROBER_DATA_FIFO : COMPONENT IS TRUE;
+----ATTRIBUTE BLACK_BOX_PAD_PIN OF PROBER_DATA_FIFO : COMPONENT IS "rst,wr_clk,rd_clk,din[35:0],wr_en,rd_en,dout[8:0],full,overflow,empty,valid";
 
 
-COMPONENT PROBER_FRAME_FIFO
-  PORT (
-    rst : IN STD_LOGIC;
-    wr_clk : IN STD_LOGIC;
-    rd_clk : IN STD_LOGIC;
-    din : IN STD_LOGIC_VECTOR(8 DOWNTO 0);
-    wr_en : IN STD_LOGIC;
-    rd_en : IN STD_LOGIC;
-    dout : OUT STD_LOGIC_VECTOR(8 DOWNTO 0);
-    full : OUT STD_LOGIC;
-    almost_full : OUT STD_LOGIC;
-    overflow : OUT STD_LOGIC;
-    empty : OUT STD_LOGIC;
-    valid : OUT STD_LOGIC
-  );
-END COMPONENT;
+--COMPONENT PROBER_FRAME_FIFO
+--  PORT (
+--    rst : IN STD_LOGIC;
+--    wr_clk : IN STD_LOGIC;
+--    rd_clk : IN STD_LOGIC;
+--    din : IN STD_LOGIC_VECTOR(8 DOWNTO 0);
+--    wr_en : IN STD_LOGIC;
+--    rd_en : IN STD_LOGIC;
+--    dout : OUT STD_LOGIC_VECTOR(8 DOWNTO 0);
+--    full : OUT STD_LOGIC;
+--    almost_full : OUT STD_LOGIC;
+--    overflow : OUT STD_LOGIC;
+--    empty : OUT STD_LOGIC;
+--    valid : OUT STD_LOGIC
+--  );
+--END COMPONENT;
 
--- ATTRIBUTE SYN_BLACK_BOX OF PROBER_FRAME_FIFO : COMPONENT IS TRUE;
---ATTRIBUTE BLACK_BOX_PAD_PIN OF PROBER_FRAME_FIFO : COMPONENT IS "rst,wr_clk,rd_clk,din[8:0],wr_en,rd_en,dout[8:0],full,overflow,empty,valid";
+---- ATTRIBUTE SYN_BLACK_BOX OF PROBER_FRAME_FIFO : COMPONENT IS TRUE;
+----ATTRIBUTE BLACK_BOX_PAD_PIN OF PROBER_FRAME_FIFO : COMPONENT IS "rst,wr_clk,rd_clk,din[8:0],wr_en,rd_en,dout[8:0],full,overflow,empty,valid";
 
 
 -- COMPONENT FrameDist_Ctrl_FIFO
@@ -709,20 +709,20 @@ END COMPONENT;
 -- ATTRIBUTE SYN_BLACK_BOX OF FrameDist_Ctrl_FIFO : COMPONENT IS TRUE;
 -- ATTRIBUTE BLACK_BOX_PAD_PIN OF FrameDist_Ctrl_FIFO : COMPONENT IS "rst,wr_clk,rd_clk,din[7:0],wr_en,rd_en,dout[31:0],full,overflow,empty,valid,rd_data_count[9:0]";
 
-COMPONENT FUNCGEN_RAM
-  PORT (
-    clka : IN STD_LOGIC;
-    wea : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-    addra : IN STD_LOGIC_VECTOR(11 DOWNTO 0);
-    dina : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
-    douta : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
-    clkb : IN STD_LOGIC;
-    web : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-    addrb : IN STD_LOGIC_VECTOR(9 DOWNTO 0);
-    dinb : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
-    doutb : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
-  );
-END COMPONENT;
+--COMPONENT FUNCGEN_RAM
+--  PORT (
+--    clka : IN STD_LOGIC;
+--    wea : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+--    addra : IN STD_LOGIC_VECTOR(11 DOWNTO 0);
+--    dina : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
+--    douta : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
+--    clkb : IN STD_LOGIC;
+--    web : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+--    addrb : IN STD_LOGIC_VECTOR(9 DOWNTO 0);
+--    dinb : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
+--    doutb : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
+--  );
+--END COMPONENT;
 
 
 
@@ -761,63 +761,63 @@ END COMPONENT;
 -- ATTRIBUTE SYN_BLACK_BOX OF udp_mac_rx_data_fifo : COMPONENT IS TRUE;
 --ATTRIBUTE BLACK_BOX_PAD_PIN OF udp_mac_rx_data_fifo : COMPONENT IS "rst,wr_clk,rd_clk,din[8:0],wr_en,rd_en,dout[8:0],full,almost_full,empty,valid";
 
-COMPONENT udp_mac_rx_frame_fifo
-  PORT (
-    rst : IN STD_LOGIC;
-    wr_clk : IN STD_LOGIC;
-    rd_clk : IN STD_LOGIC;
-    din : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-    wr_en : IN STD_LOGIC;
-    rd_en : IN STD_LOGIC;
-    dout : OUT STD_LOGIC_VECTOR(0 DOWNTO 0);
-    full : OUT STD_LOGIC;
-    overflow : OUT STD_LOGIC;
-    empty : OUT STD_LOGIC;
-    valid : OUT STD_LOGIC
-  );
-END COMPONENT;
+--COMPONENT udp_mac_rx_frame_fifo
+--  PORT (
+--    rst : IN STD_LOGIC;
+--    wr_clk : IN STD_LOGIC;
+--    rd_clk : IN STD_LOGIC;
+--    din : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+--    wr_en : IN STD_LOGIC;
+--    rd_en : IN STD_LOGIC;
+--    dout : OUT STD_LOGIC_VECTOR(0 DOWNTO 0);
+--    full : OUT STD_LOGIC;
+--    overflow : OUT STD_LOGIC;
+--    empty : OUT STD_LOGIC;
+--    valid : OUT STD_LOGIC
+--  );
+--END COMPONENT;
 
--- ATTRIBUTE SYN_BLACK_BOX OF udp_mac_rx_frame_fifo : COMPONENT IS TRUE;
-ATTRIBUTE BLACK_BOX_PAD_PIN OF udp_mac_rx_frame_fifo : COMPONENT IS "rst,wr_clk,rd_clk,din[0:0],wr_en,rd_en,dout[0:0],full,overflow,empty,valid";
+---- ATTRIBUTE SYN_BLACK_BOX OF udp_mac_rx_frame_fifo : COMPONENT IS TRUE;
+--ATTRIBUTE BLACK_BOX_PAD_PIN OF udp_mac_rx_frame_fifo : COMPONENT IS "rst,wr_clk,rd_clk,din[0:0],wr_en,rd_en,dout[0:0],full,overflow,empty,valid";
 
-COMPONENT udp_mac_tx_data_fifo
-  PORT (
-    rst : IN STD_LOGIC;
-    wr_clk : IN STD_LOGIC;
-    rd_clk : IN STD_LOGIC;
-    din : IN STD_LOGIC_VECTOR(8 DOWNTO 0);
-    wr_en : IN STD_LOGIC;
-    rd_en : IN STD_LOGIC;
-    dout : OUT STD_LOGIC_VECTOR(8 DOWNTO 0);
-    full : OUT STD_LOGIC;
-    almost_full : OUT STD_LOGIC;
-    empty : OUT STD_LOGIC;
-    wr_rst_busy : OUT STD_LOGIC;
-    rd_rst_busy : OUT STD_LOGIC
-  );
-END COMPONENT;
--- ATTRIBUTE SYN_BLACK_BOX OF udp_mac_tx_data_fifo : COMPONENT IS TRUE;
-ATTRIBUTE BLACK_BOX_PAD_PIN OF udp_mac_tx_data_fifo : COMPONENT IS "rst,wr_clk,rd_clk,din[7:0],wr_en,rd_en,dout[7:0],full,empty";
+--COMPONENT udp_mac_tx_data_fifo
+--  PORT (
+--    rst : IN STD_LOGIC;
+--    wr_clk : IN STD_LOGIC;
+--    rd_clk : IN STD_LOGIC;
+--    din : IN STD_LOGIC_VECTOR(8 DOWNTO 0);
+--    wr_en : IN STD_LOGIC;
+--    rd_en : IN STD_LOGIC;
+--    dout : OUT STD_LOGIC_VECTOR(8 DOWNTO 0);
+--    full : OUT STD_LOGIC;
+--    almost_full : OUT STD_LOGIC;
+--    empty : OUT STD_LOGIC;
+--    wr_rst_busy : OUT STD_LOGIC;
+--    rd_rst_busy : OUT STD_LOGIC
+--  );
+--END COMPONENT;
+---- ATTRIBUTE SYN_BLACK_BOX OF udp_mac_tx_data_fifo : COMPONENT IS TRUE;
+--ATTRIBUTE BLACK_BOX_PAD_PIN OF udp_mac_tx_data_fifo : COMPONENT IS "rst,wr_clk,rd_clk,din[7:0],wr_en,rd_en,dout[7:0],full,empty";
 
 
-COMPONENT udp_mac_tx_frame_fifo
-  PORT (
-    rst : IN STD_LOGIC;
-    wr_clk : IN STD_LOGIC;
-    rd_clk : IN STD_LOGIC;
-    din : IN STD_LOGIC_VECTOR(17 DOWNTO 0);
-    wr_en : IN STD_LOGIC;
-    rd_en : IN STD_LOGIC;
-    dout : OUT STD_LOGIC_VECTOR(17 DOWNTO 0);
-    full : OUT STD_LOGIC;
-    almost_full : OUT STD_LOGIC;
-    overflow : OUT STD_LOGIC;
-    empty : OUT STD_LOGIC
-  );
-END COMPONENT;
+--COMPONENT udp_mac_tx_frame_fifo
+--  PORT (
+--    rst : IN STD_LOGIC;
+--    wr_clk : IN STD_LOGIC;
+--    rd_clk : IN STD_LOGIC;
+--    din : IN STD_LOGIC_VECTOR(17 DOWNTO 0);
+--    wr_en : IN STD_LOGIC;
+--    rd_en : IN STD_LOGIC;
+--    dout : OUT STD_LOGIC_VECTOR(17 DOWNTO 0);
+--    full : OUT STD_LOGIC;
+--    almost_full : OUT STD_LOGIC;
+--    overflow : OUT STD_LOGIC;
+--    empty : OUT STD_LOGIC
+--  );
+--END COMPONENT;
 
--- ATTRIBUTE SYN_BLACK_BOX OF udp_mac_tx_frame_fifo : COMPONENT IS TRUE;
-ATTRIBUTE BLACK_BOX_PAD_PIN OF udp_mac_tx_frame_fifo : COMPONENT IS "rst,wr_clk,rd_clk,din[17:0],wr_en,rd_en,dout[17:0],full,overflow,empty";
+---- ATTRIBUTE SYN_BLACK_BOX OF udp_mac_tx_frame_fifo : COMPONENT IS TRUE;
+--ATTRIBUTE BLACK_BOX_PAD_PIN OF udp_mac_tx_frame_fifo : COMPONENT IS "rst,wr_clk,rd_clk,din[17:0],wr_en,rd_en,dout[17:0],full,overflow,empty";
 
 
 COMPONENT XGMII_UDP_MAC_TX_DATA_FIFO

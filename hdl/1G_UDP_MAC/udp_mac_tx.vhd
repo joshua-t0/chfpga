@@ -55,7 +55,6 @@ use IEEE.NUMERIC_STD.ALL;
 library UNISIM;
 use UNISIM.VComponents.all;
 
-use work.ip_package.all; -- Import definition of components for IP cores used in this module
 
 entity UDP_MAC_TX is
 
@@ -222,39 +221,39 @@ ip_length <= std_logic_vector(tx_payload_length + 28);
 gmii_txd_out2 <= ip_checksum_out WHEN ip_checksum_insert = '1' else gmii_txd_out;
 
 -- Data FIFO instance
-data_fifo0 : udp_mac_tx_data_fifo
-		port map (
-			rst    => rst,
-			wr_clk => tx_clk,
-			rd_clk => gmii_txclk,
-			din(8) => s_axis_udp_tx_tlast,
-			din(7 downto 0) => s_axis_udp_tx_tdata,
-			wr_en  => tx_fifo_wr_en,
-			rd_en  => tx_fifo_rd_en,
-			dout   => tx_fifo_dout,
-			full   => tx_fifo_full,
-			almost_full   => tx_fifo_almost_full,
-			empty  => tx_fifo_empty
-			);
+data_fifo0 : entity work.udp_mac_tx_data_fifo
+	port map (
+		rst    => rst,
+		wr_clk => tx_clk,
+		rd_clk => gmii_txclk,
+		din(8) => s_axis_udp_tx_tlast,
+		din(7 downto 0) => s_axis_udp_tx_tdata,
+		wr_en  => tx_fifo_wr_en,
+		rd_en  => tx_fifo_rd_en,
+		dout   => tx_fifo_dout,
+		full   => tx_fifo_full,
+		almost_full   => tx_fifo_almost_full,
+		empty  => tx_fifo_empty
+		);
 
 -- Frame FIFO instance
 --
 -- Stores the number of bytes stored in the DATA, and to which tranmit channel they should be sent.
 -- We need to store the length here because the length of the packet must be sent *before* the data in the IP header.
 -- The FIFO also allows clock domain crossing from the user data clock to the GMII interface clock.
-frame_fifo0 : UDP_MAC_TX_FRAME_FIFO
-		port map (
-			rst         => rst,
-			wr_clk      => tx_clk,
-			rd_clk      => gmii_txclk,
-			din         => tx_frame_fifo_din,
-			wr_en       => tx_frame_fifo_wr_en,
-			rd_en       => tx_frame_fifo_rd_en,
-			dout        => tx_frame_fifo_dout,
-			full        => tx_frame_fifo_full,
-			almost_full => tx_frame_fifo_almost_full,
-			empty       => tx_frame_fifo_empty
- 			);
+frame_fifo0 : entity work.udp_mac_tx_frame_fifo
+	port map (
+		rst         => rst,
+		wr_clk      => tx_clk,
+		rd_clk      => gmii_txclk,
+		din         => tx_frame_fifo_din,
+		wr_en       => tx_frame_fifo_wr_en,
+		rd_en       => tx_frame_fifo_rd_en,
+		dout        => tx_frame_fifo_dout,
+		full        => tx_frame_fifo_full,
+		almost_full => tx_frame_fifo_almost_full,
+		empty       => tx_frame_fifo_empty
+			);
 
 
 -- We will accept the data (but can discard it) until we can no longer write

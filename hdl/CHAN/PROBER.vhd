@@ -27,19 +27,18 @@ library UNISIM;
 use UNISIM.VComponents.all;
 
 use work.chFPGA_Package.all; -- Get all component definitions
-use work.ip_package.all; -- Import definition of components used in this module
 
---! @brief Periodically captures a subset of AXI-S 32-bit wide data packets and send them over a 8-bit AXI-S interface.
---!
---! Captures and buffer data frames and makes them available over a 8-bit AXI4 STREAM interface for transmission over Ethernet
---! A frame header is added to the data to profide flags, frame number, stream ID etc.
---! The number of frames to capture in a contiguous burst,  the number of frames between bursts, and the total number of bursts to send are configurable by software
---! If the number of bursts to transmit= 0, the bursts are sent continuously while the frame capture bit is high.
---! Otherwise, the tranemisision of N bursts is triggered on a 0-to-1 transition of the capture bit. The transition is disregarded while until all the bursts have been sent.
---! The capture-bit transition can happen on any byte of a frame, but transmission is always aligned on the beginning of the next frame.
---!
---! The capture output format is documented [here][Ethernet_frame_formats]
---!
+-- @brief Periodically captures a subset of AXI-S 32-bit wide data packets and send them over a 8-bit AXI-S interface.
+--
+-- Captures and buffer data frames and makes them available over a 8-bit AXI4 STREAM interface for transmission over Ethernet
+-- A frame header is added to the data to profide flags, frame number, stream ID etc.
+-- The number of frames to capture in a contiguous burst,  the number of frames between bursts, and the total number of bursts to send are configurable by software
+-- If the number of bursts to transmit= 0, the bursts are sent continuously while the frame capture bit is high.
+-- Otherwise, the tranemisision of N bursts is triggered on a 0-to-1 transition of the capture bit. The transition is disregarded while until all the bursts have been sent.
+-- The capture-bit transition can happen on any byte of a frame, but transmission is always aligned on the beginning of the next frame.
+--
+-- The capture output format is documented [here][Ethernet_frame_formats]
+--
 entity PROBER is
     generic (
         SIM: BOOLEAN :=FALSE;
@@ -340,7 +339,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 --! The input and output operate on independent clocks
 --! The FIFO is First Word Fall Through.
 
-DATA_FIFO0 : prober_data_fifo
+DATA_FIFO0: entity work.prober_data_fifo
   port map (
     rst      => fifo_reset_reg, -- clocked on OUT_CLK
     wr_clk   => in_clk,
@@ -362,7 +361,7 @@ DATA_FIFO0 : prober_data_fifo
 --! The Header FIFO contains the frame header. It has a 9-bit wide input and a 9 bit wide.
 --! The input and output operate on independent clocks
 --! The FIFO is First Word Fall Through.
-HEADER_FIFO0 : prober_frame_fifo
+HEADER_FIFO0: entity work.prober_frame_fifo
   PORT MAP (
     rst      => fifo_reset_reg, -- clocked on OUT_CLK
     wr_clk   => in_clk,
