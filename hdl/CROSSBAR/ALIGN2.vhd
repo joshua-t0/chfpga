@@ -185,10 +185,16 @@ m_axis_global_tlast <= m_axis_global_tlast_int;
 -------------------------------------------------
 -- ALIGN FIFOs
 -------------------------------------------------
---! Buffer the incoming non-blocking streams so we can hold the data until all lanes are aligned.
---! The FIFOs are FWFT, and their outputs must be registered to make sure they are not the critical path in the timing.
---! The embedded registers are used for this at no cost.
---! The FIFO is 512-deep to accomodate misalignments up to a full frame, although we are limited by the SOF window range (256 plus a few samples)
+-- Buffer the incoming non-blocking streams so we can hold the data until all lanes are aligned.
+-- The design assumes zero latency.
+-- The FIFOs are FWFT, and their outputs must be registered to make sure they are not the critical path in the timing.
+-- The embedded registers are used for this at no latency cost if we use a BRAM FIFO (embedded FIFO eith output regs has a latency of 1).
+-- The FIFO is 512-deep to accomodate misalignments up to a full frame, although we are limited by the SOF window range (256 plus a few samples)
+--
+-- We stop writing if almost_full is asserted, unless this is the last word of
+-- the frame. This way we ensure we will always see the TLAST bit and prevent
+-- the FIFOs from becoming irrevocably desynchronized.
+--
 fifogen: for i in 0 to NUMBER_OF_LANES-1 generate
 
 	data_fifo_din(i)(35 downto 33) <= s_axis_tuser(i)(3 downto 1);
@@ -237,16 +243,16 @@ all_valid <= and_reduce(not valid_lane or (valid_lane and fifo_tvalid)); -- All 
 is_sof          <= fifo_tvalid and fifo_tfirst;
 is_eof          <= fifo_tvalid and fifo_tlast;
 
---! 1) wait for any SOF and start is_last_in_sof_window counter
---! 2) if all SOF present, start sending all data
---! 3) if is_last_in_sof_window, send available data only.
---! on EOF, truncate any lane and bad_frame_length_int the rest
+-- 1) wait for any SOF and start is_last_in_sof_window counter
+-- 2) if all SOF present, start sending all data
+-- 3) if is_last_in_sof_window, send available data only.
+-- on EOF, truncate any lane and bad_frame_length_int the rest
 
---! All frames are aligned within a given time window starting when a start of frame is detected on any lane.
---! If a frame is not present within that window, the available frames are sent.
---! When a frame ends one one lane, the frames from all other lanes are truncated and the remaining data is discarded.
+-- All frames are aligned within a given time window starting when a start of frame is detected on any lane.
+-- If a frame is not present within that window, the available frames are sent.
+-- When a frame ends one one lane, the frames from all other lanes are truncated and the remaining data is discarded.
 
---! All frames are aligned and are of the same length (tlast=1 occur at the same time), but some lanes might be missing (tvalid=0)
+-- All frames are aligned and are of the same length (tlast=1 occur at the same time), but some lanes might be missing (tvalid=0)
 
 fifo_overflow <= data_fifo_overflow;
 bad_frame_length <= bad_frame_length_int;
@@ -276,7 +282,7 @@ out_proc: process(clk)
 			end loop;
 
 
-			--! Detect SOF on the incoming (unbufferred) lane 0 to derive a frame clock used as a timing reference.
+			-- Detect SOF on the incoming (unbufferred) lane 0 to derive a frame clock used as a timing reference.
 			if s_axis_tvalid(0)='1' then
 				lane0_tfirst <= s_axis_tlast(0);
 			end if;
