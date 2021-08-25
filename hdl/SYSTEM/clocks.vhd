@@ -38,8 +38,8 @@ use work.ip_package.all; -- Import definition of components used in this module
  entity clocks is
  	generic (
  		CLOCK_SOURCE: string :="SFP_REFCLK"; --! Either "SYSCLK", "SFP_REFCLK"
- 		CHAN_RESET_DELAY: integer := 63;
- 		CORR_RESET_DELAY: integer := 31
+ 		CHAN_RESET_DELAY: integer := 127;
+ 		CORR_RESET_DELAY: integer := 63
  		);
 	PORT(
 		-- Clock input: 200 MHz system clock (used if CLOCK_SOURCE = "SYSCLK")
