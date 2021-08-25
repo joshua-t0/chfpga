@@ -27,7 +27,6 @@ use UNISIM.VComponents.all;
 
 library work;
 use work.chFPGA_Package.all; -- Get all component definitions
-use work.ip_package.all; -- Import definition of components used in this module
 
 
 
@@ -76,7 +75,7 @@ RPLY_B_RDY.TREADY<=RPLY_B_RDY_TREADY; -- debug sim
 RPLY_A_RDY_TREADY<= RPLY_A_RDY.TREADY; -- debug sim
 
 FIFOGEN_SYNC: if USE_ASYNC_FIFO=FALSE and SIM=FALSE generate
-	CMD_FIFO0 : AXI4S_REG_SLICE
+	CMD_FIFO0 : entity work.AXI4S_REG_SLICE
 	  PORT MAP (
 		 ACLK => A_CLK,
 		 ARESETN => RST_N,
@@ -96,7 +95,7 @@ FIFOGEN_SYNC: if USE_ASYNC_FIFO=FALSE and SIM=FALSE generate
 		 M00_AXIS_TLAST => CMD_B_DAT.TLAST
 	  );
 
-	RPLY_FIFO0 : AXI4S_REG_SLICE
+	RPLY_FIFO0 : entity work.AXI4S_REG_SLICE
 	  PORT MAP (
 		 ACLK => A_CLK,
 		 ARESETN => RST_N,
@@ -160,7 +159,7 @@ FIFOGEN_ASYNC: if USE_ASYNC_FIFO=TRUE generate
 --		 M00_AXIS_TLAST => RPLY_A_DAT.TLAST
 --	  );
 
-	CMD_FIFO0 : CMD_FIFO
+	CMD_FIFO0: entity work.CMD_FIFO
 	  PORT MAP (
 		 m_aclk => B_CLK,
 		 s_aclk => A_CLK,
@@ -177,7 +176,7 @@ FIFOGEN_ASYNC: if USE_ASYNC_FIFO=TRUE generate
 		 m_axis_tlast => CMD_B_DAT.TLAST
 	  );
 
-	RPLY_FIFO0 : CMD_FIFO
+	RPLY_FIFO0 : entity work.CMD_FIFO
 	  PORT MAP (
 		 m_aclk => A_CLK,
 		 s_aclk => B_CLK,
