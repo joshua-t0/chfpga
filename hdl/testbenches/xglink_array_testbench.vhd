@@ -44,12 +44,13 @@ END xglink_array_testbench;
 ARCHITECTURE behavior OF xglink_array_testbench IS
 
    -- Clock period definitions
-   constant REFCLK_PERIOD : time := 3.2 ns;
+constant REFCLK_PERIOD : time := 6.4 ns;
 constant CLK125_period : time := 8 ns;
 
 
-	--Inputs
-	signal CPU_RESET : std_logic := '0';
+--Inputs
+signal CPU_RESET : std_logic := '0';
+signal send_data : std_logic := '0';
 
  -- UDP/Ethernet interfaces
 
@@ -176,6 +177,7 @@ constant data6: slv36_array(0 to 127) := (
 
 alias data is data6; -- select test patern source
 
+
 signal rx_p: std_logic_vector(0 to max(NUMBER_OF_TX_LANES, NUMBER_OF_RX_LANES)-1);
 signal rx_n: std_logic_vector(0 to max(NUMBER_OF_TX_LANES, NUMBER_OF_RX_LANES)-1);
 signal tx_p: std_logic_vector(0 to max(NUMBER_OF_TX_LANES, NUMBER_OF_RX_LANES)-1);
@@ -187,41 +189,48 @@ signal refclk_n: std_logic;
 signal s_axis_tx_tdata: slv32_array(0 to NUMBER_OF_TX_LANES-1);
 signal s_axis_tx_tvalid: std_logic_vector(0 to NUMBER_OF_TX_LANES-1);
 signal s_axis_tx_tlast: std_logic_vector(0 to NUMBER_OF_TX_LANES-1);
-signal s_axis_tx_tready: std_logic_vector(0 to NUMBER_OF_TX_LANES-1);
-signal s_axis_tx_clk: std_logic; --! AXI-S data clock thet must be used to clock the data in. This is derived from the GTX TX clock. There is one single clock per array.
 
 signal m_axis_rx_tdata: slv32_array(0 to NUMBER_OF_RX_LANES-1);
 signal m_axis_rx_tvalid: std_logic_vector(0 to NUMBER_OF_RX_LANES-1);
 signal m_axis_rx_tlast: std_logic_vector(0 to NUMBER_OF_RX_LANES-1);
-signal m_axis_rx_clk: std_logic_vector(0 to NUMBER_OF_RX_LANES-1); --! AXI-S data clock thet must be used to clock the data in. This is derived from the GTX RX clock. There is one clock *per lane*
 
-signal tx_data: slv32;
-signal tx_header: slv2; -- '10' for control, '01' for data
-signal tx_ready: std_logic; -- The ata is accepted only on clocks where tx_ready is High
+signal tdata: slv32_array(0 to data'length-1);
+signal tvalid: slv(0 to data'length-1);
+signal tlast: slv(0 to data'length-1);
 
 signal tx_resetdone: std_logic_vector(0 to NUMBER_OF_TX_LANES-1); --
 signal rx_resetdone: std_logic_vector(0 to NUMBER_OF_RX_LANES-1); --
 
-	signal cmd_tdata: slv8;
-	signal cmd_tvalid: std_logic;
-	signal cmd_tlast: std_logic;
-	signal cmd_tready: std_logic;
+signal cmd_tdata: slv8;
+signal cmd_tvalid: std_logic;
+signal cmd_tlast: std_logic;
+signal cmd_tready: std_logic;
 
 BEGIN
 
 rx_p <= tx_p;
 rx_n <= tx_n;
 
+gen1: for i in  0 to data'length-1 generate
+	tdata(i) <= data(i)(31 downto 0);
+	tvalid(i)<= data(i)(32);
+	tlast(i) <= data(i)(33);
+end generate;
+
 
 dut0: entity work.xglink_array
 	generic map (
 		LINK_SPEED  => LINK_SPEED,
-		NUMBER_OF_BYPASS_LANES => 0,
-		NUMBER_OF_TX_LANES => NUMBER_OF_TX_LANES,
-		NUMBER_OF_RX_LANES => NUMBER_OF_RX_LANES,
+   	NUMBER_OF_LANES        => NUMBER_OF_TX_LANES,
+		NUMBER_OF_LANE_GROUPS  => 2,
+		LANE_GROUP_MAP         => (0 to NUMBER_OF_TX_LANES-1 => 0),
+		NUMBER_OF_LINKS        => NUMBER_OF_TX_LANES,
+		LANE_TO_LINK_MAP       => (0=>0, 1=>1, 2=>2, 3=>3),
+
 		NUMBER_OF_REFCLK => 1,
 		LANE_TO_QUAD_MAP => (0=>0),
 		QUAD_TO_REFCLK_MAP => (0=>0),
+		IMPLEMENT_RX           => TRUE,
 		SIM => True
 		)
 	port map (
@@ -236,17 +245,15 @@ dut0: entity work.xglink_array
 		s_axis_tx_tdata  => s_axis_tx_tdata,
 		s_axis_tx_tvalid => s_axis_tx_tvalid,
 		s_axis_tx_tlast  => s_axis_tx_tlast,
-		s_axis_tx_tready => s_axis_tx_tready,
-		s_axis_tx_clk    => clk,
-		tx_resetdone => tx_resetdone,
 
 		m_axis_rx_tdata  => m_axis_rx_tdata,
 		m_axis_rx_tvalid => m_axis_rx_tvalid,
 		m_axis_rx_tlast  => m_axis_rx_tlast,
-		m_axis_rx_clk    => m_axis_rx_clk,
-		m_axis_rx_tready => (others=>'1'),
+
+		tx_resetdone => tx_resetdone,
 		rx_resetdone => rx_resetdone,
 
+		clk_out    => clk,
 		areset => CPU_RESET,
 
 		CMD_DAT => (TDATA=> cmd_tdata, TVALID => cmd_tvalid, TLAST => cmd_tlast, DUMMY =>'0'),
@@ -264,25 +271,21 @@ dut0: entity work.xglink_array
 txproc: process(clk)
 begin
     if rising_edge(clk) then
-      -- if GPIO_BUTTON1='1' then
-		-- if tx_ctr=65 then
-		-- 	tx_ctr<=(others=>'0');
-		-- else
-		-- 	tx_ctr <= tx_ctr+1;
-		-- end if;
-
-      	if tx_resetdone(0)='1' and rx_resetdone(0)='1' and s_axis_tx_tready(0)='1' then
-      		if ctr < data'LENGTH then
-				s_axis_tx_tdata  <= (others=>data(to_integer(ctr))(31 downto 0));
-				s_axis_tx_tvalid <= (others=>data(to_integer(ctr))(32));
-				s_axis_tx_tlast  <= (others=>data(to_integer(ctr))(33));
-	       else
+		s_axis_tx_tdata  <= (others=>X"00000000");
+		s_axis_tx_tvalid <= (others=>'0');
+		s_axis_tx_tlast  <= (others=>'0');
+   	if send_data='1' then
+   		if ctr < data'LENGTH then
+				s_axis_tx_tdata  <= (others=>tdata(to_integer(ctr)));
+				s_axis_tx_tvalid <= (others=>tvalid(to_integer(ctr)));
+				s_axis_tx_tlast  <= (others=>tlast(to_integer(ctr)));
+	      else
 				s_axis_tx_tdata  <= (others=>X"07070707");
 				s_axis_tx_tvalid <= (others=>'0');
 				s_axis_tx_tlast  <= (others=>'0');
-	        end if;
-	        ctr<=ctr+1;
-		end if;
+	      end if;
+         ctr<=ctr+1;
+		end if; --if send_data
      end if; --clk
   end process;
 
@@ -307,11 +310,24 @@ clk125_process :process
 
 reset_process: process
 	begin
-	CPU_RESET<='1';
-	wait for 10*REFCLK_PERIOD;
-	CPU_RESET<='0';
-	wait for 10*REFCLK_PERIOD;
+	CPU_RESET <= '1';
+	sleep(refclk_p, 10); -- not really needed
+	sleep(clk, 10); -- wait for the QPLL to lock and starts generating the main clock
+	CPU_RESET <= '0'; -- release RESET. FIFOs start their reset sequence
+	wait until tx_resetdone(0)='1' and rx_resetdone(0)='1';
+	sleep(clk, 32); -- wait for the FIFO to finish their resent before writing into them
+	send_data <= '1';
 	wait;
 end process;
+
+---- Enable send_data an number of clk  after reset was deasserted to allow the
+---- FIFOs to finish their reset procedure
+--clock_ready_process: process
+--	begin
+--	wait until CPU_RESET='0';
+--	sleep(clk, 15);
+--	send_data <= '1';
+--	wait;
+--end process;
 
 END;
