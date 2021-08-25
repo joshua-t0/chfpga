@@ -186,6 +186,7 @@ architecture Behavioral of chan_crossbar is
 	signal lane_monitor_reset: std_logic;
 	signal lane_monitor_sel: std_logic_vector(3 downto 0);
 	signal lane_monitor_source: std_logic_vector(3 downto 0);
+	signal lane_monitor_bit: std_logic;
 
 	signal delay_capture_ref_word_ctr: unsigned(15 downto 0);
 	signal delay_capture_ref_word_ctr_en: std_logic;
@@ -321,22 +322,10 @@ lane_monitor_sel              <= control_bytes(0)(3 downto 0); --!
 --! CONTROL Byte 1
 lane_monitor_source <= control_bytes(1)(3 downto 0);
 
---! CONTROL Byte 2
--- sof_window_stop <= control_bytes(2);
-
-
-
--- --! STATUS Byte 0-1
--- with to_integer(unsigned(lane_monitor_sel)) select lane_monitor <=
--- 	(others=> rst_reg)         when 0,
--- 	-- missing_frame              when 3,
--- 	-- missing_frame_sticky       when 4,
--- 	-- align_fifo_overflow        when 5,
--- 	align_fifo_overflow_sticky when 6,
--- 	(others=>'0')              when others;
 
 --! STATUS Byte 0
-status_bytes(0)(7 downto 2) <= (others=>'0');
+status_bytes(0)(7 downto 3) <= (others=>'0');
+status_bytes(0)(2) <= lane_monitor_bit;
 status_bytes(0)(1) <= align_fifo_overflow_sticky(to_integer(unsigned(lane_monitor_sel)));
 status_bytes(0)(0) <= rst_reg;
 
@@ -437,14 +426,14 @@ align0: entity work.CHAN_ALIGN
 		rst => align_reset_all
 		);
 
+lane_monitor <= lane_monitor_bit;
 bin_ctr_proc: process(clk)
 begin
 	if rising_edge(clk) then
 
 		reset_stats <= lane_monitor_reset or rst_reg;
 
-		lane_monitor <= align_lane_monitor(to_integer(unsigned(lane_monitor_sel)));
-
+		lane_monitor_bit <= align_lane_monitor(to_integer(unsigned(lane_monitor_sel)));
 
 		if rst_reg='1' or lane_monitor_reset='1' then
 			delay_capture_ref_word_ctr <= (others=> '0');
