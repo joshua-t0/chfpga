@@ -135,6 +135,8 @@ signal axis_fifo_out_tdata  : slv32;
 signal axis_fifo_out_tlast  : std_logic;
 signal axis_fifo_out_tuser  : slv4;
 signal fifo_overflow        : std_logic;
+signal fifo_rst_ctr : unsigned(4 downto 0);
+signal fifo_rst: std_logic;
 
 
 signal in_reset_reg         : std_logic :='1'; --! added =1 to see if it helps the reset problem
@@ -392,9 +394,9 @@ SCALER0: entity work.SCALER
         in_dat    => axis_fft_out,
         out_dat   => axis_scaler_out,
         clk       => in_clk,
-        reset => in_reset_reg,
+        reset     => in_reset_reg,
 
-        fifo_overflow => fifo_overflow,
+        fifo_overflow => fifo_overflow, -- We ask SCALER to monitor the channel FIFO for us
         -- Control interface
         CTRL_CMD_IN_DAT   => CMD_DAT(MODULE_SCALER_ADDR),
         CTRL_CMD_IN_RDY   => CMD_RDY(MODULE_SCALER_ADDR),
@@ -405,31 +407,56 @@ SCALER0: entity work.SCALER
     );
 
 
+----------------------
+-- FIFO reset process.
+----------------------
+-- According to the user manual, for Async FIFOs, reset
+-- must be held for 31 clocks of the slowest clk (in_clk) when there is no safety circuit, and there must be no
+-- read or write during that period. There does not seem to be a safety circuit from the core generator GUI.
+fifo_rst_proc: process(in_clk)
+    begin
+        if rising_edge(in_clk) then
+            if in_reset_reg ='1' then
+                fifo_rst <= '1';
+                fifo_rst_ctr <= (others => '0'); -- this is a 5-bit counter
+            elsif signed(fifo_rst_ctr) = -1 then
+                fifo_rst <= '0';
+            else
+                fifo_rst_ctr <= fifo_rst_ctr + 1;
+            end if; --reset
+        end if; --clk
+    end process;
+
 ---------------------------------------------------------------------
 -- Instantiate the Channel FIFO
 ---------------------------------------------------------------------
+-- This is a independant-clock FIFO, FWFT, 32+4 bits wide (data + 4 user flags), 0 latency.
+--
+-- We implement it with a built-in FIFO, with registers for better timing. The registers add no latency to an independent-clock built-in FIFO.
+--
 -- The channel FIFO crosses clock domains from the multiphase channelizer
 -- clock to the 1st crossbar clock so we can confine the channelizer clock to
 -- the channelizer region.
 --
 -- Using the channelizer clocks elsewhere in the design would cause every
--- region that use any of those clocks to infer one of the 12 buffer available
+-- region that use any of those clocks to infer one of the 12 clock buffer available
 -- in each clock region. The corner-turn and shuffling logic uses many of
 -- those buffers and some regions would run out of clock buffers.
 --
--- It is more economical to sacrifice a block RAM pe rchannelizer and have the
--- outputs of all channelizers operate on a  single global clock.
+-- It is more economical to sacrifice a block RAM per channelizer and have the
+-- outputs of all channelizers operate on a single global clock.
+--
 chan_fifo0 : entity work.CHAN_FIFO2
     PORT MAP (
-        rst                => in_reset_reg,
+        rst                => fifo_rst, -- asynchronous
         wr_clk             => in_clk,
-        wr_en              => axis_scaler_out.TVALID,
+        wr_en              => axis_scaler_out.TVALID and not fifo_rst, -- make sure we don't write during reset
         din(31 downto 0)   => axis_scaler_out.TDATA,
         din(32)            => axis_scaler_out.TLAST,
         din(36 downto 33)  => axis_scaler_out.TUSER,
 
         rd_clk             => out_clk,
-        rd_en              => axis_fifo_out_tvalid, -- start reading only when there is data. In simulation, tying rd_en to '1' causes 'valid' to be invalid.
+        rd_en              => axis_fifo_out_tvalid and not fifo_rst, -- start reading only when there is data. make sure we don't read during reset. In simulation, tying rd_en to '1' causes 'valid' to be invalid.
         dout(31 downto 0)  => axis_fifo_out_tdata,
         dout(32)           => axis_fifo_out_tlast,
         dout(36 downto 33) => axis_fifo_out_tuser,
@@ -438,6 +465,7 @@ chan_fifo0 : entity work.CHAN_FIFO2
         overflow           => fifo_overflow,
         empty              => open
     );
+
 
 
 ---------------------------------------------------------------------
