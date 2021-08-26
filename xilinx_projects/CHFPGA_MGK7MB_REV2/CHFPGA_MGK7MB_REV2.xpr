@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Product Version: Vivado v2020.2 (64-bit)              -->
+<!-- Product Version: Vivado v2021.1 (64-bit)              -->
 <!--                                                         -->
-<!-- Copyright 1986-2020 Xilinx, Inc. All Rights Reserved.   -->
+<!-- Copyright 1986-2021 Xilinx, Inc. All Rights Reserved.   -->
 
-<Project Version="7" Minor="54" Path="/home/lbuser/jfcliche/chfpga/xilinx_projects/CHFPGA_MGK7MB_REV2/CHFPGA_MGK7MB_REV2.xpr">
+<Project Version="7" Minor="55" Path="C:/Users/jfcliche/workspace/CHIME/chfpga/xilinx_projects/CHFPGA_MGK7MB_REV2/CHFPGA_MGK7MB_REV2.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
     <Option Name="Id" Val="e8412ef7b89146c484018ba7184f2158"/>
@@ -31,6 +31,22 @@
     <Option Name="SimulatorGccInstallDirVCS" Val=""/>
     <Option Name="SimulatorGccInstallDirRiviera" Val=""/>
     <Option Name="SimulatorGccInstallDirActiveHdl" Val=""/>
+    <Option Name="SimulatorVersionXsim" Val="2021.1"/>
+    <Option Name="SimulatorVersionModelSim" Val="2020.4"/>
+    <Option Name="SimulatorVersionQuesta" Val="2020.4"/>
+    <Option Name="SimulatorVersionIES" Val="15.20.083"/>
+    <Option Name="SimulatorVersionXcelium" Val="20.09.006"/>
+    <Option Name="SimulatorVersionVCS" Val="R-2020.12"/>
+    <Option Name="SimulatorVersionRiviera" Val="2020.10"/>
+    <Option Name="SimulatorVersionActiveHdl" Val="12.0"/>
+    <Option Name="SimulatorGccVersionXsim" Val="6.2.0"/>
+    <Option Name="SimulatorGccVersionModelSim" Val="5.3.0"/>
+    <Option Name="SimulatorGccVersionQuesta" Val="5.3.0"/>
+    <Option Name="SimulatorGccVersionIES" Val="6.2.0"/>
+    <Option Name="SimulatorGccVersionXcelium" Val="6.3"/>
+    <Option Name="SimulatorGccVersionVCS" Val="6.2.0"/>
+    <Option Name="SimulatorGccVersionRiviera" Val="6.2.0"/>
+    <Option Name="SimulatorGccVersionActiveHdl" Val="6.2.0"/>
     <Option Name="TargetLanguage" Val="VHDL"/>
     <Option Name="BoardPart" Val=""/>
     <Option Name="ActiveSimSet" Val="sim_1"/>
@@ -51,13 +67,13 @@
     <Option Name="WTVcsLaunchSim" Val="0"/>
     <Option Name="WTRivieraLaunchSim" Val="0"/>
     <Option Name="WTActivehdlLaunchSim" Val="0"/>
-    <Option Name="WTXSimExportSim" Val="300"/>
-    <Option Name="WTModelSimExportSim" Val="300"/>
-    <Option Name="WTQuestaExportSim" Val="300"/>
-    <Option Name="WTIesExportSim" Val="300"/>
-    <Option Name="WTVcsExportSim" Val="300"/>
-    <Option Name="WTRivieraExportSim" Val="300"/>
-    <Option Name="WTActivehdlExportSim" Val="300"/>
+    <Option Name="WTXSimExportSim" Val="331"/>
+    <Option Name="WTModelSimExportSim" Val="331"/>
+    <Option Name="WTQuestaExportSim" Val="331"/>
+    <Option Name="WTIesExportSim" Val="331"/>
+    <Option Name="WTVcsExportSim" Val="331"/>
+    <Option Name="WTRivieraExportSim" Val="331"/>
+    <Option Name="WTActivehdlExportSim" Val="331"/>
     <Option Name="GenerateIPUpgradeLog" Val="TRUE"/>
     <Option Name="XSimRadix" Val="hex"/>
     <Option Name="XSimTimeUnit" Val="ns"/>
@@ -66,6 +82,7 @@
     <Option Name="SimTypes" Val="rtl"/>
     <Option Name="MEMEnableMemoryMapGeneration" Val="TRUE"/>
     <Option Name="DcpsUptoDate" Val="TRUE"/>
+    <Option Name="ClassicSocBoot" Val="FALSE"/>
   </Configuration>
   <FileSets Version="1" Minor="31">
     <FileSet Name="sources_1" Type="DesignSrcs" RelSrcDir="$PSRCDIR/sources_1">
@@ -568,14 +585,6 @@
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_FLAGS_FIFO/SHUFFLE_BIN_SEL_FLAGS_FIFO.xci">
-        <FileInfo>
-          <Attr Name="AutoDisabled" Val="1"/>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/udp_mac_rx_data_fifo_1/udp_mac_rx_data_fifo_1.xci">
         <FileInfo>
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -1263,6 +1272,13 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PSRCDIR/CHAN/new/CHAN_ooc.xdc">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="out_of_context"/>
+        </FileInfo>
+      </File>
       <Config>
         <Option Name="TopModule" Val="CHAN"/>
         <Option Name="TopRTLFile" Val="$PPRDIR/../../hdl/CHAN/CHAN.vhd"/>
@@ -1283,21 +1299,15 @@
     <Simulator Name="Questa">
       <Option Name="Description" Val="Questa Advanced Simulator"/>
     </Simulator>
-    <Simulator Name="IES">
-      <Option Name="Description" Val="Incisive Enterprise Simulator (IES)"/>
-    </Simulator>
-    <Simulator Name="Xcelium">
-      <Option Name="Description" Val="Xcelium Parallel Simulator"/>
-    </Simulator>
-    <Simulator Name="VCS">
-      <Option Name="Description" Val="Verilog Compiler Simulator (VCS)"/>
-    </Simulator>
     <Simulator Name="Riviera">
       <Option Name="Description" Val="Riviera-PRO Simulator"/>
     </Simulator>
+    <Simulator Name="ActiveHDL">
+      <Option Name="Description" Val="Active-HDL Simulator"/>
+    </Simulator>
   </Simulators>
   <Runs Version="1" Minor="15">
-    <Run Id="synth_1" Type="Ft3:Synth" SrcSet="sources_1" Part="xc7k420tffg901-2" ConstrsSet="constrs_1" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/synth_1" IncludeInArchive="true" AutoIncrementalDir="$PPRDIR/../../../../../../tools/Xilinx/Vivado/2020.2/C:/Users/jfcliche/workspace/CHIME/chfpga/xilinx_projects/CHFPGA_MGK7MB_REV2/CHFPGA_MGK7MB_REV2.srcs/utils_1/imports/synth_1">
+    <Run Id="synth_1" Type="Ft3:Synth" SrcSet="sources_1" Part="xc7k420tffg901-2" ConstrsSet="constrs_1" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PPRDIR/../../../../../../../tools/Xilinx/Vivado/2020.2/C:/Users/jfcliche/workspace/CHIME/chfpga/xilinx_projects/CHFPGA_MGK7MB_REV2/CHFPGA_MGK7MB_REV2.srcs/utils_1/imports/synth_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2018"/>
         <Step Id="synth_design"/>
@@ -1307,17 +1317,17 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="CHAN_synth_1" Type="Ft3:Synth" SrcSet="CHAN" Part="xc7k420tffg901-2" ConstrsSet="CHAN" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/CHAN_synth_1" IncludeInArchive="true" AutoIncrementalDir="$PPRDIR/../../../../../../tools/Xilinx/Vivado/2020.2/C:/Users/jfcliche/workspace/CHIME/chfpga/xilinx_projects/CHFPGA_MGK7MB_REV2/CHFPGA_MGK7MB_REV2.srcs/utils_1/imports/CHAN_synth_1">
+    <Run Id="CHAN_synth_1" Type="Ft3:Synth" SrcSet="CHAN" Part="xc7k420tffg901-2" ConstrsSet="CHAN" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/CHAN_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/CHAN_synth_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2020"/>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2021"/>
         <Step Id="synth_design"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
-      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2020"/>
+      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2021"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="synth_1" IncludeInArchive="true" GenFullBitstream="false" AutoIncrementalDir="$PPRDIR/../../../../../../tools/Xilinx/Vivado/2020.2/C:/Users/jfcliche/workspace/CHIME/chfpga/xilinx_projects/CHFPGA_MGK7MB_REV2/CHFPGA_MGK7MB_REV2.srcs/utils_1/imports/impl_1">
+    <Run Id="impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="false" AutoIncrementalDir="$PPRDIR/../../../../../../../tools/Xilinx/Vivado/2020.2/C:/Users/jfcliche/workspace/CHIME/chfpga/xilinx_projects/CHFPGA_MGK7MB_REV2/CHFPGA_MGK7MB_REV2.srcs/utils_1/imports/impl_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016"/>
         <Step Id="init_design"/>
@@ -1334,7 +1344,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="impl_Rev2" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/impl_Rev2" SynthRun="synth_1" IncludeInArchive="true" GenFullBitstream="false" AutoIncrementalDir="$PPRDIR/../../../../../../tools/Xilinx/Vivado/2020.2/C:/Users/jfcliche/workspace/CHIME/chfpga/xilinx_projects/CHFPGA_MGK7MB_REV2/CHFPGA_MGK7MB_REV2.srcs/utils_1/imports/impl_Rev2">
+    <Run Id="impl_Rev2" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/impl_Rev2" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="false" AutoIncrementalDir="$PPRDIR/../../../../../../../tools/Xilinx/Vivado/2020.2/C:/Users/jfcliche/workspace/CHIME/chfpga/xilinx_projects/CHFPGA_MGK7MB_REV2/CHFPGA_MGK7MB_REV2.srcs/utils_1/imports/impl_Rev2">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2018"/>
         <Step Id="init_design"/>
@@ -1352,9 +1362,9 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="CHAN_impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="CHAN" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="CHAN_synth_1" IncludeInArchive="false" GenFullBitstream="true" AutoIncrementalDir="$PPRDIR/../../../../../../tools/Xilinx/Vivado/2020.2/C:/Users/jfcliche/workspace/CHIME/chfpga/xilinx_projects/CHFPGA_MGK7MB_REV2/CHFPGA_MGK7MB_REV2.srcs/utils_1/imports/CHAN_impl_1">
+    <Run Id="CHAN_impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="CHAN" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="CHAN_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/CHAN_impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2020"/>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2021"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
@@ -1365,7 +1375,7 @@
         <Step Id="post_route_phys_opt_design"/>
         <Step Id="write_bitstream"/>
       </Strategy>
-      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2020"/>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2021"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>

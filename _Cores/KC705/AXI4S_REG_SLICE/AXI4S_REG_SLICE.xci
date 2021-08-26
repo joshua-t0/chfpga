@@ -16,7 +16,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M00_AXIS.CLK_DOMAIN"/>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M00_AXIS.FREQ_HZ">100000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M00_AXIS.HAS_TKEEP">0</spirit:configurableElementValue>
@@ -25,7 +25,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M00_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M00_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M00_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M00_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M00_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M00_AXIS.TDATA_NUM_BYTES">1</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M00_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M00_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -37,7 +37,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M00_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M00_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M00_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M00_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M00_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M00_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M00_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M01_AXIS.CLK_DOMAIN"/>
@@ -48,7 +48,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M01_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M01_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M01_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M01_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M01_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M01_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M01_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M01_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -60,7 +60,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M01_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M01_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M01_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M01_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M01_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M01_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M01_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M02_AXIS.CLK_DOMAIN"/>
@@ -71,7 +71,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M02_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M02_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M02_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M02_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M02_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M02_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M02_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M02_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -83,7 +83,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M02_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M02_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M02_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M02_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M02_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M02_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M02_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M03_AXIS.CLK_DOMAIN"/>
@@ -94,7 +94,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M03_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M03_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M03_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M03_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M03_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M03_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M03_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M03_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -106,7 +106,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M03_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M03_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M03_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M03_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M03_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M03_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M03_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M04_AXIS.CLK_DOMAIN"/>
@@ -117,7 +117,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M04_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M04_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M04_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M04_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M04_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M04_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M04_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M04_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -129,7 +129,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M04_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M04_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M04_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M04_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M04_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M04_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M04_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M05_AXIS.CLK_DOMAIN"/>
@@ -140,7 +140,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M05_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M05_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M05_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M05_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M05_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M05_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M05_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M05_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -152,7 +152,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M05_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M05_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M05_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M05_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M05_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M05_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M05_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M06_AXIS.CLK_DOMAIN"/>
@@ -163,7 +163,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M06_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M06_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M06_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M06_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M06_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M06_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M06_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M06_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -175,7 +175,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M06_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M06_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M06_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M06_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M06_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M06_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M06_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M07_AXIS.CLK_DOMAIN"/>
@@ -186,7 +186,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M07_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M07_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M07_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M07_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M07_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M07_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M07_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M07_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -198,7 +198,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M07_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M07_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M07_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M07_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M07_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M07_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M07_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M08_AXIS.CLK_DOMAIN"/>
@@ -209,7 +209,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M08_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M08_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M08_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M08_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M08_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M08_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M08_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M08_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -221,7 +221,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M08_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M08_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M08_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M08_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M08_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M08_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M08_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M09_AXIS.CLK_DOMAIN"/>
@@ -232,7 +232,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M09_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M09_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M09_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M09_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M09_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M09_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M09_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M09_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -244,7 +244,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M09_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M09_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M09_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M09_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M09_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M09_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M09_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M10_AXIS.CLK_DOMAIN"/>
@@ -255,7 +255,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M10_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M10_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M10_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M10_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M10_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M10_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M10_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M10_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -267,7 +267,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M10_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M10_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M10_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M10_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M10_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M10_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M10_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M11_AXIS.CLK_DOMAIN"/>
@@ -278,7 +278,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M11_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M11_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M11_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M11_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M11_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M11_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M11_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M11_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -290,7 +290,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M11_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M11_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M11_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M11_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M11_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M11_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M11_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M12_AXIS.CLK_DOMAIN"/>
@@ -301,7 +301,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M12_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M12_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M12_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M12_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M12_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M12_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M12_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M12_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -313,7 +313,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M12_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M12_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M12_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M12_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M12_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M12_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M12_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M13_AXIS.CLK_DOMAIN"/>
@@ -324,7 +324,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M13_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M13_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M13_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M13_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M13_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M13_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M13_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M13_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -336,7 +336,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M13_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M13_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M13_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M13_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M13_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M13_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M13_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M14_AXIS.CLK_DOMAIN"/>
@@ -347,7 +347,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M14_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M14_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M14_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M14_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M14_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M14_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M14_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M14_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -359,7 +359,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M14_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M14_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M14_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M14_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M14_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M14_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M14_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M15_AXIS.CLK_DOMAIN"/>
@@ -370,7 +370,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M15_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M15_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M15_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M15_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M15_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M15_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M15_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M15_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -382,7 +382,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M15_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M15_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M15_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M15_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M15_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M15_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.M15_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
@@ -395,7 +395,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S00_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S00_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S00_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S00_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S00_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S00_AXIS.TDATA_NUM_BYTES">1</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S00_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S00_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -407,7 +407,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S00_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S00_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S00_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S00_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S00_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S00_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S00_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S01_AXIS.CLK_DOMAIN"/>
@@ -418,7 +418,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S01_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S01_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S01_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S01_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S01_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S01_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S01_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S01_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -430,7 +430,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S01_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S01_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S01_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S01_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S01_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S01_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S01_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S02_AXIS.CLK_DOMAIN"/>
@@ -441,7 +441,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S02_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S02_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S02_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S02_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S02_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S02_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S02_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S02_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -453,7 +453,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S02_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S02_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S02_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S02_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S02_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S02_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S02_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S03_AXIS.CLK_DOMAIN"/>
@@ -464,7 +464,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S03_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S03_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S03_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S03_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S03_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S03_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S03_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S03_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -476,7 +476,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S03_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S03_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S03_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S03_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S03_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S03_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S03_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S04_AXIS.CLK_DOMAIN"/>
@@ -487,7 +487,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S04_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S04_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S04_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S04_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S04_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S04_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S04_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S04_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -499,7 +499,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S04_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S04_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S04_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S04_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S04_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S04_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S04_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S05_AXIS.CLK_DOMAIN"/>
@@ -510,7 +510,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S05_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S05_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S05_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S05_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S05_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S05_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S05_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S05_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -522,7 +522,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S05_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S05_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S05_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S05_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S05_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S05_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S05_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S06_AXIS.CLK_DOMAIN"/>
@@ -533,7 +533,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S06_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S06_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S06_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S06_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S06_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S06_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S06_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S06_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -545,7 +545,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S06_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S06_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S06_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S06_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S06_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S06_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S06_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S07_AXIS.CLK_DOMAIN"/>
@@ -556,7 +556,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S07_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S07_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S07_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S07_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S07_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S07_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S07_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S07_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -568,7 +568,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S07_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S07_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S07_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S07_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S07_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S07_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S07_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S08_AXIS.CLK_DOMAIN"/>
@@ -579,7 +579,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S08_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S08_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S08_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S08_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S08_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S08_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S08_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S08_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -591,7 +591,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S08_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S08_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S08_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S08_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S08_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S08_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S08_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S09_AXIS.CLK_DOMAIN"/>
@@ -602,7 +602,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S09_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S09_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S09_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S09_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S09_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S09_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S09_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S09_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -614,7 +614,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S09_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S09_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S09_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S09_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S09_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S09_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S09_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S10_AXIS.CLK_DOMAIN"/>
@@ -625,7 +625,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S10_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S10_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S10_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S10_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S10_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S10_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S10_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S10_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -637,7 +637,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S10_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S10_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S10_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S10_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S10_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S10_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S10_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S11_AXIS.CLK_DOMAIN"/>
@@ -648,7 +648,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S11_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S11_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S11_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S11_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S11_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S11_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S11_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S11_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -660,7 +660,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S11_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S11_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S11_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S11_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S11_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S11_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S11_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S12_AXIS.CLK_DOMAIN"/>
@@ -671,7 +671,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S12_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S12_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S12_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S12_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S12_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S12_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S12_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S12_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -683,7 +683,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S12_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S12_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S12_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S12_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S12_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S12_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S12_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S13_AXIS.CLK_DOMAIN"/>
@@ -694,7 +694,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S13_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S13_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S13_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S13_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S13_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S13_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S13_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S13_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -706,7 +706,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S13_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S13_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S13_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S13_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S13_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S13_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S13_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S14_AXIS.CLK_DOMAIN"/>
@@ -717,7 +717,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S14_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S14_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S14_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S14_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S14_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S14_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S14_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S14_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -729,7 +729,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S14_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S14_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S14_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S14_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S14_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S14_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S14_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S15_AXIS.CLK_DOMAIN"/>
@@ -740,7 +740,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S15_AXIS.HAS_TSTRB">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S15_AXIS.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S15_AXIS.LAYERED_METADATA">undef</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S15_AXIS.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S15_AXIS.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S15_AXIS.TDATA_NUM_BYTES">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S15_AXIS.TDEST_WIDTH">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S15_AXIS.TID_WIDTH">0</spirit:configurableElementValue>
@@ -752,7 +752,7 @@
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S15_CLKIF.FREQ_HZ">200000000</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S15_CLKIF.FREQ_TOLERANCE_HZ">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S15_CLKIF.INSERT_VIP">0</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S15_CLKIF.PHASE">0.000</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S15_CLKIF.PHASE">0.0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S15_RSTIF.INSERT_VIP">0</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="BUSIFPARAM_VALUE.S15_RSTIF.POLARITY">ACTIVE_LOW</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="MODELPARAM_VALUE.C_FAMILY">kintex7</spirit:configurableElementValue>
@@ -1564,7 +1564,7 @@
         <spirit:configurableElementValue spirit:referenceId="RUNTIME_PARAM.OUTPUTDIR">.</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="RUNTIME_PARAM.SELECTEDSIMMODEL"/>
         <spirit:configurableElementValue spirit:referenceId="RUNTIME_PARAM.SHAREDDIR">.</spirit:configurableElementValue>
-        <spirit:configurableElementValue spirit:referenceId="RUNTIME_PARAM.SWVERSION">2020.2_AR76232</spirit:configurableElementValue>
+        <spirit:configurableElementValue spirit:referenceId="RUNTIME_PARAM.SWVERSION">2021.1</spirit:configurableElementValue>
         <spirit:configurableElementValue spirit:referenceId="RUNTIME_PARAM.SYNTHESISFLOW">GLOBAL</spirit:configurableElementValue>
       </spirit:configurableElementValues>
       <spirit:vendorExtensions>
@@ -1895,16 +1895,23 @@
             <xilinx:configElementInfo xilinx:referenceId="PARAM_VALUE.M15_S15_CONNECTIVITY" xilinx:valueSource="user"/>
           </xilinx:configElementInfos>
           <xilinx:boundaryDescriptionInfo>
-            <xilinx:boundaryDescription xilinx:boundaryDescriptionJSON="{&quot;ip_boundary&quot;:{&quot;ports&quot;:{&quot;ACLK&quot;:{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;},&quot;ARESETN&quot;:{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;},&quot;S00_AXIS_ACLK&quot;:{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;},&quot;S00_AXIS_ARESETN&quot;:{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;},&quot;S00_AXIS_TVALID&quot;:{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;},&quot;S00_AXIS_TREADY&quot;:{&quot;direction&quot;:&quot;out&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;},&quot;S00_AXIS_TDATA&quot;:{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;7&quot;,&quot;physical_right&quot;:&quot;0&quot;},&quot;S00_AXIS_TLAST&quot;:{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;},&quot;M00_AXIS_ACLK&quot;:{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;},&quot;M00_AXIS_ARESETN&quot;:{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;},&quot;M00_AXIS_TVALID&quot;:{&quot;direction&quot;:&quot;out&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;},&quot;M00_AXIS_TREADY&quot;:{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;},&quot;M00_AXIS_TDATA&quot;:{&quot;direction&quot;:&quot;out&quot;,&quot;physical_left&quot;:&quot;7&quot;,&quot;ph
-ysical_right&quot;:&quot;0&quot;},&quot;M00_AXIS_TLAST&quot;:{&quot;direction&quot;:&quot;out&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;}},&quot;interfaces&quot;:{&quot;S00_AXIS&quot;:{&quot;vlnv&quot;:&quot;xilinx.com:interface:axis:1.0&quot;,&quot;abstraction_type&quot;:&quot;xilinx.com:interface:axis_rtl:1.0&quot;,&quot;mode&quot;:&quot;slave&quot;,&quot;parameters&quot;:{&quot;TDATA_NUM_BYTES&quot;:[{&quot;value&quot;:&quot;1&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;TDEST_WIDTH&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;TID_WIDTH&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;TUSER_WIDTH&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;HAS_TREADY&quot;:[{&quot;value&quot;:&quot;1&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;HAS_TSTRB&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;HAS_TKEEP&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolv
-e_type&quot;:&quot;generated&quot;}],&quot;HAS_TLAST&quot;:[{&quot;value&quot;:&quot;1&quot;},{&quot;value_src&quot;:&quot;auto&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;FREQ_HZ&quot;:[{&quot;value&quot;:&quot;100000000&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;PHASE&quot;:[{&quot;value&quot;:&quot;0.000&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;CLK_DOMAIN&quot;:[{&quot;value&quot;:&quot;&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;LAYERED_METADATA&quot;:[{&quot;value&quot;:&quot;undef&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;INSERT_VIP&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;user&quot;}]},&quot;port_maps&quot;:{&quot;TDATA&quot;:{&quot;physical_name&quot;:&quot;S00_AXIS_TDATA&quot;,&quot;physical_left&quot;:&quot;7&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;7&quot;,&quot;logical_right&quot;:&quot;0&quot;},&quot;TLAST&quot;:{&quot;physical_name&quot;:&quot;S00_AXIS_TLAST&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;},&quot;TREADY&quot;:{&quot;physical_name&quot;:&quot;S00_AXIS_TREADY&quot;,&quot;physical
-_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;},&quot;TVALID&quot;:{&quot;physical_name&quot;:&quot;S00_AXIS_TVALID&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;}}},&quot;M00_AXIS&quot;:{&quot;vlnv&quot;:&quot;xilinx.com:interface:axis:1.0&quot;,&quot;abstraction_type&quot;:&quot;xilinx.com:interface:axis_rtl:1.0&quot;,&quot;mode&quot;:&quot;master&quot;,&quot;parameters&quot;:{&quot;TDATA_NUM_BYTES&quot;:[{&quot;value&quot;:&quot;1&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;TDEST_WIDTH&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;TID_WIDTH&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;TUSER_WIDTH&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;HAS_TREADY&quot;:[{&quot;value&quot;:&quot;1&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;HAS_TSTRB&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}]
-,&quot;HAS_TKEEP&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;HAS_TLAST&quot;:[{&quot;value&quot;:&quot;1&quot;},{&quot;value_src&quot;:&quot;auto&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;FREQ_HZ&quot;:[{&quot;value&quot;:&quot;100000000&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;PHASE&quot;:[{&quot;value&quot;:&quot;0.000&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;CLK_DOMAIN&quot;:[{&quot;value&quot;:&quot;&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;LAYERED_METADATA&quot;:[{&quot;value&quot;:&quot;undef&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;INSERT_VIP&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;user&quot;}]},&quot;port_maps&quot;:{&quot;TDATA&quot;:{&quot;physical_name&quot;:&quot;M00_AXIS_TDATA&quot;,&quot;physical_left&quot;:&quot;7&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;7&quot;,&quot;logical_right&quot;:&quot;0&quot;},&quot;TLAST&quot;:{&quot;physical_name&quot;:&quot;M00_AXIS_TLAST&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logi
-cal_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;},&quot;TREADY&quot;:{&quot;physical_name&quot;:&quot;M00_AXIS_TREADY&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;},&quot;TVALID&quot;:{&quot;physical_name&quot;:&quot;M00_AXIS_TVALID&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;}}},&quot;RSTIF&quot;:{&quot;vlnv&quot;:&quot;xilinx.com:signal:reset:1.0&quot;,&quot;abstraction_type&quot;:&quot;xilinx.com:signal:reset_rtl:1.0&quot;,&quot;mode&quot;:&quot;slave&quot;,&quot;parameters&quot;:{&quot;POLARITY&quot;:[{&quot;value&quot;:&quot;ACTIVE_LOW&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;INSERT_VIP&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;user&quot;}]},&quot;port_maps&quot;:{&quot;RST&quot;:{&quot;physical_name&quot;:&quot;ARESETN&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;}}},&quot;CLKIF&quot;:{&quot;vlnv&quot;:&quot;xilinx.com:signal:clock:1.0&quot;,&quot;abstraction_type&quot;:&quot;xilinx.com:signal:clock_rtl:1.0&quot;,&quot;mode&quot;:&quot;slave&quot;,&quot;parameters&quot;:{&quot;FREQ_HZ&quot;:[{&quot;value&quot;:&quot;200000000&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;us
-er&quot;}],&quot;FREQ_TOLERANCE_HZ&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;PHASE&quot;:[{&quot;value&quot;:&quot;0.000&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;CLK_DOMAIN&quot;:[{&quot;value&quot;:&quot;&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;ASSOCIATED_BUSIF&quot;:[{&quot;value&quot;:&quot;&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;ASSOCIATED_RESET&quot;:[{&quot;value&quot;:&quot;&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;INSERT_VIP&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;user&quot;}]},&quot;port_maps&quot;:{&quot;CLK&quot;:{&quot;physical_name&quot;:&quot;ACLK&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;}}},&quot;S00_RSTIF&quot;:{&quot;vlnv&quot;:&quot;xilinx.com:signal:reset:1.0&quot;,&quot;abstraction_type&quot;:&quot;xilinx.com:signal:reset_rtl:1.0&quot;,&quot;mode&quot;:&quot;slave&quot;,&quot;parameters&quot;:{&quot;POLARITY&quot;:[{&quot;value&quot;:&quot;ACTIVE_LOW&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;val
-ue_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;INSERT_VIP&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;user&quot;}]},&quot;port_maps&quot;:{&quot;RST&quot;:{&quot;physical_name&quot;:&quot;S00_AXIS_ARESETN&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;}}},&quot;S00_CLKIF&quot;:{&quot;vlnv&quot;:&quot;xilinx.com:signal:clock:1.0&quot;,&quot;abstraction_type&quot;:&quot;xilinx.com:signal:clock_rtl:1.0&quot;,&quot;mode&quot;:&quot;slave&quot;,&quot;parameters&quot;:{&quot;FREQ_HZ&quot;:[{&quot;value&quot;:&quot;200000000&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;user&quot;}],&quot;FREQ_TOLERANCE_HZ&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;PHASE&quot;:[{&quot;value&quot;:&quot;0.000&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;CLK_DOMAIN&quot;:[{&quot;value&quot;:&quot;&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;ASSOCIATED_BUSIF&quot;:[{&quot;value&quot;:&quot;&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;ASSOCIATE
-D_RESET&quot;:[{&quot;value&quot;:&quot;&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;INSERT_VIP&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;user&quot;}]},&quot;port_maps&quot;:{&quot;CLK&quot;:{&quot;physical_name&quot;:&quot;S00_AXIS_ACLK&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;}}},&quot;M00_RSTIF&quot;:{&quot;vlnv&quot;:&quot;xilinx.com:signal:reset:1.0&quot;,&quot;abstraction_type&quot;:&quot;xilinx.com:signal:reset_rtl:1.0&quot;,&quot;mode&quot;:&quot;slave&quot;,&quot;parameters&quot;:{&quot;POLARITY&quot;:[{&quot;value&quot;:&quot;ACTIVE_LOW&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;INSERT_VIP&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;user&quot;}]},&quot;port_maps&quot;:{&quot;RST&quot;:{&quot;physical_name&quot;:&quot;M00_AXIS_ARESETN&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;}}},&quot;M00_CLKIF&quot;:{&quot;vlnv&quot;:&quot;xilinx.com:signal:clock:1.0&quot;,&quot;abstraction_type&quot;:&quot;xilinx.com:signal:clock_rtl:1.0&quot;,&quot;mode&quot;:&quot;slave&quot;,&quot;parameters&quot;:{&quot;FREQ_HZ&quot;:[{&quot;value&quot;:&quot;2000000
-00&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;user&quot;}],&quot;FREQ_TOLERANCE_HZ&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;PHASE&quot;:[{&quot;value&quot;:&quot;0.000&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;CLK_DOMAIN&quot;:[{&quot;value&quot;:&quot;&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;ASSOCIATED_BUSIF&quot;:[{&quot;value&quot;:&quot;&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;ASSOCIATED_RESET&quot;:[{&quot;value&quot;:&quot;&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;generated&quot;}],&quot;INSERT_VIP&quot;:[{&quot;value&quot;:&quot;0&quot;},{&quot;value_src&quot;:&quot;default&quot;},{&quot;value_permission&quot;:&quot;user&quot;},{&quot;resolve_type&quot;:&quot;user&quot;}]},&quot;port_maps&quot;:{&quot;CLK&quot;:{&quot;physical_name&quot;:&quot;M00_AXIS_ACLK&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;}}}}}}"/>
+            <xilinx:boundaryDescription xilinx:boundaryDescriptionJSON="{&quot;ip_boundary&quot;:{&quot;ports&quot;:{&quot;ACLK&quot;:[{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;is_vector&quot;:&quot;false&quot;}],&quot;ARESETN&quot;:[{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;is_vector&quot;:&quot;false&quot;}],&quot;M00_AXIS_ACLK&quot;:[{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;is_vector&quot;:&quot;false&quot;}],&quot;M00_AXIS_ARESETN&quot;:[{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;is_vector&quot;:&quot;false&quot;}],&quot;M00_AXIS_TDATA&quot;:[{&quot;direction&quot;:&quot;out&quot;,&quot;physical_left&quot;:&quot;7&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;is_vector&quot;:&quot;true&quot;}],&quot;M00_AXIS_TLAST&quot;:[{&quot;direction&quot;:&quot;out&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;is_vector&quot;:&quot;false&quot;}],&quot;M00_AXIS_TREADY&quot;:[{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;is_vector&quot;:&quot;false&quot;}],&quot;M00_AXIS_TVALID&quot;:[{&quot;direction&quot;:&quot;out&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;is_vector&quot;:&quot;false&quot;}],&quot;S00_AXIS_ACLK&quot;:[{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;is_vector&quot;:&quot;false&quot;}],&quot;S00_AXIS_ARESETN&quot;:[{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;is_vector&quot;:&quot;fals
+e&quot;}],&quot;S00_AXIS_TDATA&quot;:[{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;7&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;is_vector&quot;:&quot;true&quot;}],&quot;S00_AXIS_TLAST&quot;:[{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;is_vector&quot;:&quot;false&quot;}],&quot;S00_AXIS_TREADY&quot;:[{&quot;direction&quot;:&quot;out&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;is_vector&quot;:&quot;false&quot;}],&quot;S00_AXIS_TVALID&quot;:[{&quot;direction&quot;:&quot;in&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;is_vector&quot;:&quot;false&quot;}]},&quot;interfaces&quot;:{&quot;CLKIF&quot;:{&quot;vlnv&quot;:&quot;xilinx.com:signal:clock:1.0&quot;,&quot;abstraction_type&quot;:&quot;xilinx.com:signal:clock_rtl:1.0&quot;,&quot;mode&quot;:&quot;slave&quot;,&quot;parameters&quot;:{&quot;ASSOCIATED_BUSIF&quot;:[{&quot;value&quot;:&quot;&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;string&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;ASSOCIATED_RESET&quot;:[{&quot;value&quot;:&quot;&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;string&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;CLK_DOMAIN&quot;:[{&quot;value&quot;:&quot;&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;
+,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;string&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;FREQ_HZ&quot;:[{&quot;value&quot;:&quot;200000000&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;user&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;all&quot;,&quot;is_ips_inferred&quot;:false,&quot;is_static_object&quot;:true}],&quot;FREQ_TOLERANCE_HZ&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;INSERT_VIP&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;user&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;simulation.rtl&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;PHASE&quot;:[{&quot;value&quot;:&quot;0.0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;float&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}]},&quot;port_maps&quot;:{&quot;CLK&quot;:[{&quot;physical_name&quot;:&quot;ACLK&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none
+&quot;}]}},&quot;M00_AXIS&quot;:{&quot;vlnv&quot;:&quot;xilinx.com:interface:axis:1.0&quot;,&quot;abstraction_type&quot;:&quot;xilinx.com:interface:axis_rtl:1.0&quot;,&quot;mode&quot;:&quot;master&quot;,&quot;parameters&quot;:{&quot;CLK_DOMAIN&quot;:[{&quot;value&quot;:&quot;&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;string&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;FREQ_HZ&quot;:[{&quot;value&quot;:&quot;100000000&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;HAS_TKEEP&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;HAS_TLAST&quot;:[{&quot;value&quot;:&quot;1&quot;,&quot;value_src&quot;:&quot;auto&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;HAS_TREADY&quot;:[{&quot;value&quot;:&quot;1&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage
+&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;HAS_TSTRB&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;INSERT_VIP&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;user&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;simulation.rtl&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;LAYERED_METADATA&quot;:[{&quot;value&quot;:&quot;undef&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;string&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;PHASE&quot;:[{&quot;value&quot;:&quot;0.0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;float&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;TDATA_NUM_BYTES&quot;:[{&quot;value&quot;:&quot;1&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;TDEST
+_WIDTH&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;TID_WIDTH&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;TUSER_WIDTH&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}]},&quot;port_maps&quot;:{&quot;TDATA&quot;:[{&quot;physical_name&quot;:&quot;M00_AXIS_TDATA&quot;,&quot;physical_left&quot;:&quot;7&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;7&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}],&quot;TDEST&quot;:[{&quot;physical_name&quot;:&quot;M00_AXIS_TDEST&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}],&quot;TID&quot;:[{&quot;physical_name&quot;:&quot;M00_AXIS_TID&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}
+],&quot;TKEEP&quot;:[{&quot;physical_name&quot;:&quot;M00_AXIS_TKEEP&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}],&quot;TLAST&quot;:[{&quot;physical_name&quot;:&quot;M00_AXIS_TLAST&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}],&quot;TREADY&quot;:[{&quot;physical_name&quot;:&quot;M00_AXIS_TREADY&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}],&quot;TSTRB&quot;:[{&quot;physical_name&quot;:&quot;M00_AXIS_TSTRB&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}],&quot;TUSER&quot;:[{&quot;physical_name&quot;:&quot;M00_AXIS_TUSER&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}],&quot;TVALID&quot;:[{&quot;physical_name&quot;:&quot;M00_AXIS_TVALID&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}]}},&quot;M00_CLKIF&quot;:{&quot;vlnv&quot;:&quot;xilinx.com:signal:clock:1.0&quot;,&quot;abstraction_type&quot;:&quot;xilinx.com:signal:clock_rtl
+:1.0&quot;,&quot;mode&quot;:&quot;slave&quot;,&quot;parameters&quot;:{&quot;ASSOCIATED_BUSIF&quot;:[{&quot;value&quot;:&quot;&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;string&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;ASSOCIATED_RESET&quot;:[{&quot;value&quot;:&quot;&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;string&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;CLK_DOMAIN&quot;:[{&quot;value&quot;:&quot;&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;string&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;FREQ_HZ&quot;:[{&quot;value&quot;:&quot;200000000&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;user&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;all&quot;,&quot;is_ips_inferred&quot;:false,&quot;is_static_object&quot;:true}],&quot;FREQ_TOLERANCE_HZ&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;INSERT_VIP&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;
+value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;user&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;simulation.rtl&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;PHASE&quot;:[{&quot;value&quot;:&quot;0.0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;float&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}]},&quot;port_maps&quot;:{&quot;CLK&quot;:[{&quot;physical_name&quot;:&quot;M00_AXIS_ACLK&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}]}},&quot;M00_RSTIF&quot;:{&quot;vlnv&quot;:&quot;xilinx.com:signal:reset:1.0&quot;,&quot;abstraction_type&quot;:&quot;xilinx.com:signal:reset_rtl:1.0&quot;,&quot;mode&quot;:&quot;slave&quot;,&quot;parameters&quot;:{&quot;INSERT_VIP&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;user&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;simulation.rtl&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;POLARITY&quot;:[{&quot;value&quot;:&quot;ACTIVE_LOW&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;string&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_
+object&quot;:false}]},&quot;port_maps&quot;:{&quot;RST&quot;:[{&quot;physical_name&quot;:&quot;M00_AXIS_ARESETN&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}]}},&quot;RSTIF&quot;:{&quot;vlnv&quot;:&quot;xilinx.com:signal:reset:1.0&quot;,&quot;abstraction_type&quot;:&quot;xilinx.com:signal:reset_rtl:1.0&quot;,&quot;mode&quot;:&quot;slave&quot;,&quot;parameters&quot;:{&quot;INSERT_VIP&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;user&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;simulation.rtl&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;POLARITY&quot;:[{&quot;value&quot;:&quot;ACTIVE_LOW&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;string&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}]},&quot;port_maps&quot;:{&quot;RST&quot;:[{&quot;physical_name&quot;:&quot;ARESETN&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}]}},&quot;S00_AXIS&quot;:{&quot;vlnv&quot;:&quot;xilinx.com:interface:axis:1.0&quot;,&quot;abstraction_type&quot;:&quot;xilinx.com:interface:axis_rtl:1.0&quot;,&quot;mode&quot;:&quot;slave&quot;,&quot;parameters&quot;:{&quot;CLK_DOMAIN&quot;:[{&quot;val
+ue&quot;:&quot;&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;string&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;FREQ_HZ&quot;:[{&quot;value&quot;:&quot;100000000&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;HAS_TKEEP&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;HAS_TLAST&quot;:[{&quot;value&quot;:&quot;1&quot;,&quot;value_src&quot;:&quot;auto&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;HAS_TREADY&quot;:[{&quot;value&quot;:&quot;1&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;HAS_TSTRB&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;
+format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;INSERT_VIP&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;user&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;simulation.rtl&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;LAYERED_METADATA&quot;:[{&quot;value&quot;:&quot;undef&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;string&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;PHASE&quot;:[{&quot;value&quot;:&quot;0.0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;float&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;TDATA_NUM_BYTES&quot;:[{&quot;value&quot;:&quot;1&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;TDEST_WIDTH&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static
+_object&quot;:false}],&quot;TID_WIDTH&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;TUSER_WIDTH&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}]},&quot;port_maps&quot;:{&quot;TDATA&quot;:[{&quot;physical_name&quot;:&quot;S00_AXIS_TDATA&quot;,&quot;physical_left&quot;:&quot;7&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;7&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}],&quot;TDEST&quot;:[{&quot;physical_name&quot;:&quot;S00_AXIS_TDEST&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}],&quot;TID&quot;:[{&quot;physical_name&quot;:&quot;S00_AXIS_TID&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}],&quot;TKEEP&quot;:[{&quot;physical_name&quot;:&quot;S00_AXIS_TKEEP&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}],&quot;TLAST&quot;:[{
+&quot;physical_name&quot;:&quot;S00_AXIS_TLAST&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}],&quot;TREADY&quot;:[{&quot;physical_name&quot;:&quot;S00_AXIS_TREADY&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}],&quot;TSTRB&quot;:[{&quot;physical_name&quot;:&quot;S00_AXIS_TSTRB&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}],&quot;TUSER&quot;:[{&quot;physical_name&quot;:&quot;S00_AXIS_TUSER&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}],&quot;TVALID&quot;:[{&quot;physical_name&quot;:&quot;S00_AXIS_TVALID&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}]}},&quot;S00_CLKIF&quot;:{&quot;vlnv&quot;:&quot;xilinx.com:signal:clock:1.0&quot;,&quot;abstraction_type&quot;:&quot;xilinx.com:signal:clock_rtl:1.0&quot;,&quot;mode&quot;:&quot;slave&quot;,&quot;parameters&quot;:{&quot;ASSOCIATED_BUSIF&quot;:[{&quot;value&quot;:&quot;&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;string&quot;,&quot;
+usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;ASSOCIATED_RESET&quot;:[{&quot;value&quot;:&quot;&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;string&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;CLK_DOMAIN&quot;:[{&quot;value&quot;:&quot;&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;string&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;FREQ_HZ&quot;:[{&quot;value&quot;:&quot;200000000&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;user&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;all&quot;,&quot;is_ips_inferred&quot;:false,&quot;is_static_object&quot;:true}],&quot;FREQ_TOLERANCE_HZ&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;INSERT_VIP&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;user&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;simulation.rtl&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;
+PHASE&quot;:[{&quot;value&quot;:&quot;0.0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;float&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}]},&quot;port_maps&quot;:{&quot;CLK&quot;:[{&quot;physical_name&quot;:&quot;S00_AXIS_ACLK&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_maps_used&quot;:&quot;none&quot;}]}},&quot;S00_RSTIF&quot;:{&quot;vlnv&quot;:&quot;xilinx.com:signal:reset:1.0&quot;,&quot;abstraction_type&quot;:&quot;xilinx.com:signal:reset_rtl:1.0&quot;,&quot;mode&quot;:&quot;slave&quot;,&quot;parameters&quot;:{&quot;INSERT_VIP&quot;:[{&quot;value&quot;:&quot;0&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;user&quot;,&quot;format&quot;:&quot;long&quot;,&quot;usage&quot;:&quot;simulation.rtl&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}],&quot;POLARITY&quot;:[{&quot;value&quot;:&quot;ACTIVE_LOW&quot;,&quot;value_src&quot;:&quot;default&quot;,&quot;value_permission&quot;:&quot;user&quot;,&quot;resolve_type&quot;:&quot;generated&quot;,&quot;format&quot;:&quot;string&quot;,&quot;usage&quot;:&quot;none&quot;,&quot;is_ips_inferred&quot;:true,&quot;is_static_object&quot;:false}]},&quot;port_maps&quot;:{&quot;RST&quot;:[{&quot;physical_name&quot;:&quot;S00_AXIS_ARESETN&quot;,&quot;physical_left&quot;:&quot;0&quot;,&quot;physical_right&quot;:&quot;0&quot;,&quot;logical_left&quot;:&quot;0&quot;,&quot;logical_right&quot;:&quot;0&quot;,&quot;port_ma
+ps_used&quot;:&quot;none&quot;}]}}}}}"/>
           </xilinx:boundaryDescriptionInfo>
         </xilinx:componentInstanceExtensions>
       </spirit:vendorExtensions>
