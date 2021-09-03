@@ -217,7 +217,7 @@ fifogen: for i in 0 to NUMBER_OF_LANES-1 generate
 			almost_empty => data_fifo_empty(i),
 			data_count   => data_fifo_count(i),
 			clk          => clk,
-			srst         => rst
+			rst         => rst
 		);
 
 		fifo_tuser(i)(3 downto 1) <= data_fifo_dout(i)(35 downto 33);

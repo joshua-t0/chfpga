@@ -176,6 +176,11 @@ architecture Behavioral of chan_crossbar is
 	signal m_axis_tvalid_int: slv(0 to NUMBER_OF_OUTPUT_LANES-1);
 
 	signal align_reset: std_logic;
+	signal align_reset_reg: std_logic;
+	attribute async_reg of align_reset_reg: signal is "yes";
+	attribute async_reg of align_reset: signal is "yes";
+
+
 	signal align_reset_all: std_logic;
 	signal reset_stats: std_logic;
 	signal align_lane_monitor: slv(0 to NUMBER_OF_INPUT_LANES-1);
@@ -187,6 +192,7 @@ architecture Behavioral of chan_crossbar is
 	signal lane_monitor_sel: std_logic_vector(3 downto 0);
 	signal lane_monitor_source: std_logic_vector(3 downto 0);
 	signal lane_monitor_bit: std_logic;
+	signal lane_monitor_bit_ctr: unsigned(4 downto 0);
 
 	signal delay_capture_ref_word_ctr: unsigned(15 downto 0);
 	signal delay_capture_ref_word_ctr_en: std_logic;
@@ -324,7 +330,7 @@ lane_monitor_source <= control_bytes(1)(3 downto 0);
 
 
 --! STATUS Byte 0
-status_bytes(0)(7 downto 3) <= (others=>'0');
+status_bytes(0)(7 downto 3) <= slv(lane_monitor_bit_ctr);
 status_bytes(0)(2) <= lane_monitor_bit;
 status_bytes(0)(1) <= align_fifo_overflow_sticky(to_integer(unsigned(lane_monitor_sel)));
 status_bytes(0)(0) <= rst_reg;
@@ -389,7 +395,7 @@ frame_clk_out <= s_axis_tvalid(0) and s_axis_tlast(0);
 --! data is coming straight from the channelizer through the internal FPGA routing, which will not cause packet loss.
  --! The only exception to this are for channels that do not send data due to missing ADC cards, inwhich case the ALIGN will handle those automatically.
 
-align_reset_all <= rst_reg or align_reset;
+
 align0: entity work.CHAN_ALIGN
 	generic map (
 		NUMBER_OF_LANES => NUMBER_OF_INPUT_LANES
@@ -430,6 +436,8 @@ lane_monitor <= lane_monitor_bit;
 bin_ctr_proc: process(clk)
 begin
 	if rising_edge(clk) then
+		align_reset_reg <= align_reset;
+		align_reset_all <= rst_reg or align_reset_reg;
 
 		reset_stats <= lane_monitor_reset or rst_reg;
 
@@ -438,7 +446,13 @@ begin
 		if rst_reg='1' or lane_monitor_reset='1' then
 			delay_capture_ref_word_ctr <= (others=> '0');
 			delay_capture_ref_word_ctr_en <= '1';
+			lane_monitor_bit_ctr <= (others => '0');
+
 		else
+			if lane_monitor_bit = '1' then
+				lane_monitor_bit_ctr <= lane_monitor_bit_ctr + 1;
+			end if;
+
 			if delay_capture_ref_word_ctr_en = '1'  then
 				delay_capture_ref_word_ctr <= delay_capture_ref_word_ctr + 1;
 				if signed(delay_capture_ref_word_ctr)=-2 or align_lane_monitor(to_integer(unsigned(lane_monitor_sel)))='1' then
