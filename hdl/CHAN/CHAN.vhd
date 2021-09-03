@@ -135,6 +135,8 @@ signal axis_fifo_out_tdata  : slv32;
 signal axis_fifo_out_tlast  : std_logic;
 signal axis_fifo_out_tuser  : slv4;
 signal fifo_overflow        : std_logic;
+signal fifo_almost_full     : std_logic;
+
 signal fifo_rst_ctr : unsigned(4 downto 0);
 signal fifo_rst: std_logic;
 
@@ -450,7 +452,7 @@ chan_fifo0 : entity work.CHAN_FIFO2
     PORT MAP (
         rst                => fifo_rst, -- asynchronous
         wr_clk             => in_clk,
-        wr_en              => axis_scaler_out.TVALID and not fifo_rst, -- make sure we don't write during reset
+        wr_en              => axis_scaler_out.TVALID and not fifo_rst and (not fifo_almost_full or axis_scaler_out.TLAST), -- make sure we don't write during reset
         din(31 downto 0)   => axis_scaler_out.TDATA,
         din(32)            => axis_scaler_out.TLAST,
         din(36 downto 33)  => axis_scaler_out.TUSER,
@@ -462,6 +464,7 @@ chan_fifo0 : entity work.CHAN_FIFO2
         dout(36 downto 33) => axis_fifo_out_tuser,
         valid              => axis_fifo_out_tvalid,
         full               => open,
+        prog_full          => fifo_almost_full,
         overflow           => fifo_overflow,
         empty              => open
     );
