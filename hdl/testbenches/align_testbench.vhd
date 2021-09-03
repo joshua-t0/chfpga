@@ -35,7 +35,7 @@ use work.tb_package.all;
 
 ENTITY align_testbench IS
 	generic (
-		NUMBER_OF_LANES: integer := 3
+		NUMBER_OF_LANES: integer := 6 -- minimum to fit bits on lane monitor source 0
 		);
 END align_testbench;
 
@@ -78,6 +78,9 @@ constant OUT_CLK_PERIOD : time := 4.096 ns; -- 244 MHz
 	signal tvalid_error: std_logic_vector(0 to NUMBER_OF_LANES-1);
 
 	signal fifo_rd_en: std_logic_vector(0 to NUMBER_OF_LANES-1) := (others=> '0');
+	signal fifo_rst: std_logic;
+	signal fifo_inhibit: std_logic;
+	signal fifo_rst_ctr : unsigned(5 downto 0);
 
 	signal frame_clk: std_logic;
 	signal first: std_logic := '1';
@@ -99,9 +102,9 @@ constant OUT_CLK_PERIOD : time := 4.096 ns; -- 244 MHz
 
 	constant PL: integer := 512; -- packet length
 	constant PP: integer := 512; -- packet period (packet length + interpacket delay)
-	constant start_delay: integer_array          := (0=> 0,          1=> 36,          2=> 37); -- normal delay
+	constant start_delay: integer_array          := (0=> 0, 1=> 600, 2=> 37, 3 to 5 => 0); -- normal delay
 	-- constant start_delay: integer_array          := (0=> 0,          1=> 0,          2=> 0); -- normal delay
-	constant lane_active: integer_array          := (0=> 1,          1=> 1,          2=> 1);
+	constant lane_active: integer_array          := (0=> 1, 1=> 1, 2=> 1, 3 to 5 => 1);
 	-- constant start_delay: integer_array          := (0=> 0,          1=> 9,          2=> 1); -- borderline delay
 	constant packet_length: lane_config_type     := (others=>(others=>PL)); -- All lanes normal
 	constant packet_period: lane_config_type     := (others=>(others=>PP)); -- All lanes normal, with interpacket space
@@ -159,8 +162,10 @@ rst_proc : process
 		reset <= '1';
 		sleep(out_clk, 10);
 		reset <= '0';
-		sleep(out_clk, 1);
-		wait;
+		sleep(out_clk, 257);
+
+
+		wait; -- comment out to implement periodic resets
 	end process ; -- lane0_proc
 -- tests
 -- 5 back-to back frames, all same length, aligned: ok
@@ -197,9 +202,9 @@ lane_gen: for i in 0 to NUMBER_OF_LANES-1 generate
 
 	fifo0 : entity work.CHAN_FIFO2
 		PORT MAP (
-			rst                => reset,
+			rst                => fifo_rst,
 			wr_clk             => in_clk,
-			wr_en              => s_axis_tvalid(i),
+			wr_en              => s_axis_tvalid(i) and not fifo_inhibit,
 			din(31 downto 0)   => s_axis_tdata(i),
 			din(32)            => s_axis_tlast(i),
 			din(36 downto 33)  => "1100",
@@ -215,10 +220,37 @@ lane_gen: for i in 0 to NUMBER_OF_LANES-1 generate
 			empty              => open
 		);
 
+----------------------
+-- FIFO reset process.
+----------------------
+-- According to the user manual, for Async FIFOs, reset
+-- must be held for 31 clocks of the slowest clk (in_clk) when there is no safety circuit, and there must be no
+-- read or write during that period. There does not seem to be a safety circuit from the core generator GUI.
+fifo_rst_proc: process(in_clk)
+
+   begin
+        if rising_edge(in_clk) then
+            if reset ='1' then
+                fifo_inhibit <='1';
+                fifo_rst_ctr <= (others => '0'); -- this is a 5-bit counter
+            elsif signed(fifo_rst_ctr) = -1 then
+                fifo_inhibit <= '0';
+            else
+	            if fifo_rst_ctr = 10 then
+	   	                fifo_rst <= '1';
+	            elsif signed(fifo_rst_ctr) = -20 then
+	   	                fifo_rst <= '0';
+  				end if;
+                fifo_rst_ctr <= fifo_rst_ctr + 1;
+            end if; --reset
+        end if; --clk
+    end process;
+
+
 	lane_proc : process
 		begin
 			wait until reset='0';
-			sleep(in_clk, 5);
+			sleep(in_clk, 80);
 			fifo_rd_en(i) <= '1';
 			if lane_active(i)>0 then
 				sleep(in_clk, start_delay(i));
@@ -256,7 +288,7 @@ process(out_clk) begin
 end process;
 
 -- frame_clk <= s_axis_tvalid and s_axis_tlast;
-align0: entity work.align
+align0: entity work.chan_align
 	generic map (
 		NUMBER_OF_LANES => NUMBER_OF_LANES
 		)
@@ -276,12 +308,16 @@ align0: entity work.align
 		m_axis_global_tlast => m_axis_global_tlast,
 
 		lane_monitor_source => (others=>'0'),
-
+		reset_stats => '0',
+		lane_monitor => open,
+		overflow => open,
+		in_frame_ctr => open,
+		out_frame_ctr => open,
 		clk => out_clk,
 		-- sof_window_start => to_slv(0,8),
-		sof_window_stop => to_slv(50,8),
-		use_timeout => '1',
-		timeout_period => to_slv(7,8),
+		--sof_window_stop => to_slv(50,8),
+		--use_timeout => '1',
+		--timeout_period => to_slv(7,8),
 		-- frame_clk => frame_clk,
 		rst => reset
 	);
