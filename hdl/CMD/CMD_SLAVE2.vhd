@@ -331,7 +331,6 @@ cmd_proc: process(CLK_SEL)
 					opcode <= CMD_IN_DAT_FIFO.TDATA(7 downto 5);
 					count <= shift_left(to_unsigned(1, count'length), to_integer(unsigned(CMD_IN_DAT_FIFO.TDATA(4 downto 3)))); -- initialize byte counter as 2^COMMAND_COUNT
 					addr(18 downto 16) <= unsigned(CMD_IN_DAT_FIFO.TDATA(2 downto 0));
-					addr(18 downto max(16, ADDR_WIDTH)) <= (others=>'0');
 					incr <='1';
 					timeout_reset <= '1'; -- Ignore timeouts while waiting for first command byte
 					CMD_IN_RDY_FIFO.TREADY <= '1'; -- We will always be ready to capture the next byte when it comes
@@ -346,8 +345,6 @@ cmd_proc: process(CLK_SEL)
 				when COMMAND_BYTE2 =>
 				---------------------
 					addr(15 downto 8) <= unsigned(CMD_IN_DAT_FIFO.TDATA);
-					addr(15 downto  max(8, ADDR_WIDTH)) <= (others=>'0');
-					-- is_ram <= CMD_IN_DAT_FIFO.TDATA(1);
 
 					if CMD_IN_DAT_FIFO.TVALID='1' then
 						timeout_reset <= '1';
@@ -367,7 +364,7 @@ cmd_proc: process(CLK_SEL)
 					if  CMD_IN_DAT_FIFO.TVALID='1' and CMD_IN_RDY_FIFO.TREADY='1' then -- we use TREADY to determine if we have already obtained a byte.
 						timeout_reset <= '1';
 						addr(7 downto 0) <= unsigned(CMD_IN_DAT_FIFO.TDATA); -- grab the final byte of the address
-						addr(7 downto max(7, ADDR_WIDTH)) <= (others=>'0');
+						addr(18 downto ADDR_WIDTH) <= (others=>'0'); -- zero all the address bits we dont need
 						CMD_IN_RDY_FIFO.TREADY <= '0'; -- Don't read any incoming byte. Will be overriden below.
 					end if;
 
