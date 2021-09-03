@@ -527,10 +527,10 @@ status_bytes(10)(2) <= fifo_empty_sticky;
 status_bytes(11 to 12) <= to_slv8_array(ramp_err_ctr);
 
 -- STATUS BYTES 13-14: Not used
-status_bytes(13)(0)<=fifo_wr_en;
-status_bytes(13)(1)<=fifo_rd_en;
-status_bytes(13)(2)<=fifo_data_valid;
-status_bytes(13)(3)<=data_ready_int;
+status_bytes(13)(0) <= fifo_wr_en;
+status_bytes(13)(1) <= fifo_rd_en;
+status_bytes(13)(2) <= fifo_data_valid;
+status_bytes(13)(3) <= data_ready_int;
 
 status_bytes(15)<=to_slv(LSB(output_word_ctr));
 
