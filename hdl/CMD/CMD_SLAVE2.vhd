@@ -45,7 +45,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 use work.chFPGA_Package.all; -- Get all component definitions
-use work.ip_package.all; -- Import definition of components used in this module
+--use work.ip_package.all; -- Import definition of components used in this module
 
 library UNISIM;
 use UNISIM.VComponents.all;
@@ -64,16 +64,15 @@ use UNISIM.VComponents.all;
 --!    Bit 18-0: 19-bit address
 --!
 --! | 000 | Read 2^NN control bytes | [000NNxxx] [xxxxxxxx] [aaaaaaaa]
---! | 001 | Write command byte|
---! | 010 | Write command byte with mask |
---! | 011 | Read status byte |
---! | 100 | Read RAM byte |
---! | 101 | Read RAM 16-bit word |
---! | 110 | Write RAM byte |
---! | 111 | Write RAM 16-bit word |
+--! | 001 | No operation (reserved for future operations)|
+--! | 010 | Read 2^^NN status byte |
+--! | 011 | Read 2^NN RAM bytes or 2^NN DRP words (LSB fist)|
+--! | 100 | Write control bytes |
+--! | 101 | Write control bytes with mask |
+--! | 110 | No operation (reserved for future operations)|
+--! | 111 | Write RAM bytes or DRP words (LSB first) |
 --!
 --!
-
 --!  In 16-bit mode, The LSB is stored at even addresses and the MSB is at odd addresses (little endian). This is the opposite to the general big endian convention used for the control registers.
 --!   e.g.
 --!      Addr 2*N = bits 7-0 = LSB
@@ -95,7 +94,6 @@ entity CTRL_SLAVE is
 		DEFAULT_CONTROL_BYTES: std_logic_vector := X"00000000"; --! Vector of bits to initialize the control register to a known value
 		NUMBER_OF_CONTROL_BYTES: integer        := 1; --! Number of bytes in the control word
 		NUMBER_OF_STATUS_BYTES: integer         := 1; --! Number of bytes in the status word.
-		STICKY_BYTES_MASK:  std_logic_vector    := X""; --! (not implemented) Determines which status bits are sticky (1=sticky, 0=non-sticky)
 		ADDR_WIDTH: integer                     := 19; --! Number of command address bits available to this module (all other bits are zeroed, useful to have large RAM address buses)
 		RAM_DATA_WIDTH: integer                 := 8; --! Either 8 or 16 bits
 		RAM_ADDR_WIDTH: integer                 := 0; --! Number of bits in the RAB/DRP adress bus. A velue of 0 removes most of the RAM/DRP access logic.
@@ -365,7 +363,7 @@ cmd_proc: process(CLK_SEL)
 						timeout_reset <= '1';
 						addr(7 downto 0) <= unsigned(CMD_IN_DAT_FIFO.TDATA); -- grab the final byte of the address
 						addr(18 downto ADDR_WIDTH) <= (others=>'0'); -- zero all the address bits we dont need
-						CMD_IN_RDY_FIFO.TREADY <= '0'; -- Don't read any incoming byte. Will be overriden below.
+						CMD_IN_RDY_FIFO.TREADY <= '0'; -- Don't read any incoming byte by default. Will be overriden below as needed.
 					end if;
 
 					-- Prepare reply byte in case it is needed
