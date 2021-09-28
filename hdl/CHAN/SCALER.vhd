@@ -25,7 +25,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 use IEEE.std_logic_misc.ALL; -- for and_reduce() and or_reduce()
 use work.chFPGA_Package.all; -- Get all component definitions
-use work.ip_package.all; -- Import definition of components used in this module
+--use work.ip_package.all; -- Import definition of components used in this module
 
 -------- ENTITY DECLARATION ---------------------
 
@@ -301,7 +301,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 coeff_ram_ctrl_wr_en_vect <= (0 => coeff_ram_ctrl_wr_en);
 coeff_ram_ctrl_addr_int <= (gain_table_page & coeff_ram_ctrl_addr);
 coeff_ram_addr <= (current_gain_bank & std_logic_vector(bin_ctr(9 downto 1)));
-coeff_ram0 : SCALER_COEFF_RAM
+coeff_ram0 : entity work.SCALER_COEFF_RAM
     PORT MAP (
         clka  => CTRL_CLK,
         wea   => coeff_ram_ctrl_wr_en_vect,
@@ -322,7 +322,7 @@ coeff_odd_din <= (coeff_ram_dout(32+15 downto 32+0) & coeff_ram_dout(32+31 downt
 
 cmul0_a_tdata <= ("000000" & IN_DAT_DLY2.TDATA(2*18+17 downto 2*18+0) & "000000" & IN_DAT_DLY2.TDATA(3*18+17 downto 3*18+0));
 -- Instantiate complex multiplier for the even bin
-cmul0 : SCALER_CMUL
+cmul0: entity work.SCALER_CMUL
   PORT MAP (
     aclk => clk,
     s_axis_a_tvalid => IN_DAT_DLY2.TVALID,
@@ -339,7 +339,7 @@ cmul0 : SCALER_CMUL
 
 -- Instantiate complex multiplier for the odd bin
 cmul1_a_tdata <= ("000000" & IN_DAT_DLY2.TDATA(0*18+17 downto 0*18+0) & "000000" & IN_DAT_DLY2.TDATA(1*18+17 downto 1*18+0));
-cmul1 : SCALER_CMUL
+cmul1: entity work.SCALER_CMUL
   PORT MAP (
     aclk => clk,
     s_axis_a_tvalid => IN_DAT_DLY2.TVALID,
