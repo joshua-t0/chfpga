@@ -159,7 +159,7 @@ architecture Behavioral of CTRL_SLAVE is
 	constant OPCODE_READ_STATUS: OPCODE_TYPE          := "010";
 	constant OPCODE_READ_RAM: OPCODE_TYPE             := "011";
 
-	signal is_write: std_logic;
+--	signal is_write: std_logic;
 	signal incr: std_logic;
 	-- signal is_ram: std_logic;
 	signal addr: unsigned(INT_ADDR_WIDTH-1 downto 0); --
@@ -214,31 +214,31 @@ end generate;
 
 RST_SEL <= CTRL_RST;
 
-fifo_gen: if USE_FIFO generate
+--fifo_gen: if USE_FIFO generate
 
-	--! Implement a FIFO to improve timing
-	FIFO0 : entity work.CTRL_FIFO
-	  GENERIC MAP (
-			USE_ASYNC_FIFO=> USE_ASYNC_FIFO
-			)
-	  PORT MAP (
-			CMD_A_DAT  => CTRL_CMD_IN_DAT,
-			CMD_A_RDY  => CTRL_CMD_IN_RDY,
-			RPLY_A_DAT => CTRL_RPLY_OUT_DAT,
-			RPLY_A_RDY => CTRL_RPLY_OUT_RDY,
-			A_CLK      => CTRL_CLK,
+--	--! Implement a FIFO to improve timing
+--	FIFO0 : entity work.CTRL_FIFO
+--	  GENERIC MAP (
+--			USE_ASYNC_FIFO=> USE_ASYNC_FIFO
+--			)
+--	  PORT MAP (
+--			CMD_A_DAT  => CTRL_CMD_IN_DAT,
+--			CMD_A_RDY  => CTRL_CMD_IN_RDY,
+--			RPLY_A_DAT => CTRL_RPLY_OUT_DAT,
+--			RPLY_A_RDY => CTRL_RPLY_OUT_RDY,
+--			A_CLK      => CTRL_CLK,
 
-			CMD_B_DAT  => CMD_IN_DAT_FIFO,
-			CMD_B_RDY  => CMD_IN_RDY_FIFO,
-			-- RPLY_B_DAT => (TVALID=>RPLY_OUT_DAT_FIFO.TVALID, TDATA=>RPLY_OUT_DAT_FIFO.TDATA, TLAST=>RPLY_OUT_DAT_FIFO.TLAST, DUMMY => '0'),
-			RPLY_B_DAT => RPLY_OUT_DAT_FIFO,
-			RPLY_B_RDY => RPLY_OUT_RDY_FIFO,
-			B_CLK      => CLK_SEL,
+--			CMD_B_DAT  => CMD_IN_DAT_FIFO,
+--			CMD_B_RDY  => CMD_IN_RDY_FIFO,
+--			-- RPLY_B_DAT => (TVALID=>RPLY_OUT_DAT_FIFO.TVALID, TDATA=>RPLY_OUT_DAT_FIFO.TDATA, TLAST=>RPLY_OUT_DAT_FIFO.TLAST, DUMMY => '0'),
+--			RPLY_B_DAT => RPLY_OUT_DAT_FIFO,
+--			RPLY_B_RDY => RPLY_OUT_RDY_FIFO,
+--			B_CLK      => CLK_SEL,
 
-			-- System interface
-			RST => CTRL_RST
-			);
-end generate;
+--			-- System interface
+--			RST => CTRL_RST
+--			);
+--end generate;
 
 nofifo_gen: if not USE_FIFO generate
 	CMD_IN_DAT_FIFO <= CTRL_CMD_IN_DAT after dly;  -- make simulations work by ensuring that the command data changes after the clock.
@@ -325,7 +325,7 @@ cmd_proc: process(CLK_SEL)
 				---------------------
 				when COMMAND_BYTE1 =>
 				---------------------
-					is_write <= CMD_IN_DAT_FIFO.TDATA(7);
+--					is_write <= CMD_IN_DAT_FIFO.TDATA(7);
 					opcode <= CMD_IN_DAT_FIFO.TDATA(7 downto 5);
 					count <= shift_left(to_unsigned(1, count'length), to_integer(unsigned(CMD_IN_DAT_FIFO.TDATA(4 downto 3)))); -- initialize byte counter as 2^COMMAND_COUNT
 					addr(18 downto 16) <= unsigned(CMD_IN_DAT_FIFO.TDATA(2 downto 0));
@@ -374,27 +374,28 @@ cmd_proc: process(CLK_SEL)
 							incr <='0'; -- don't pre-increment address on the first RAM write: we need it to be stable during the read
 					end if;
 
-
+                    -- we use TREADY to determine if we have already obtained a byte
 					if (CMD_IN_DAT_FIFO.TVALID='1' or CMD_IN_RDY_FIFO.TREADY='0') and (RPLY_OUT_DAT_FIFO.TVALID='0' or  RPLY_OUT_RDY_FIFO.TREADY='1') then -- if the last command byte is available and the reply channel is ready
 						-- Send a dummy reply byte header. The value is not important: it will be replaced by MASTER with a sequence number.
 						-- RPLY_OUT_DAT_FIFO.TDATA <= is_write & incr & "000000";
 						RPLY_OUT_DAT_FIFO.TVALID <= '1';
-						RPLY_OUT_DAT_FIFO.TLAST <= '0';
 
-						if is_write='1' then -- if we have a write command and the last command byte has arrived
-							RPLY_OUT_DAT_FIFO.TLAST <= '1';
+						if opcode=OPCODE_READ_CONTROL or opcode=OPCODE_READ_STATUS or opcode=OPCODE_READ_RAM  then -- if is_write='0'
+    						RPLY_OUT_DAT_FIFO.TLAST <= '0'; -- the first reply byte was not the last one - there are more to come
+							CMD_IN_RDY_FIFO.TREADY <= '0'; -- do not accept more bytes
+							if opcode = OPCODE_READ_RAM then
+								RAM_RD_EN_INT <='1';
+							end if;
+							RX_STATE <= EXECUTE_COMMAND;
+
+						else -- if we have a write command and the last command byte has arrived
+							RPLY_OUT_DAT_FIFO.TLAST <= '1'; -- the first reply byte is our last one
 							CMD_IN_RDY_FIFO.TREADY <= '1'; -- the next data or command byte will be consumed
 							if CMD_IN_DAT_FIFO.TLAST='1' then -- if this is the last byte of the packet, abort. This being a write command, we need more data coming!
 								RX_STATE <= COMMAND_BYTE1;
 							else
 								RX_STATE <= EXECUTE_COMMAND;
 							end if;
-						else -- if is_write='0'
-							CMD_IN_RDY_FIFO.TREADY <= '0'; -- do not accept more bytes
-							if opcode = OPCODE_READ_RAM then
-								RAM_RD_EN_INT <='1';
-							end if;
-							RX_STATE <= EXECUTE_COMMAND;
 						end if;
 					end if;
 
@@ -579,15 +580,95 @@ cmd_proc: process(CLK_SEL)
 		end if; --CLK
 	end process;
 
-
-
-
-
-
---keep
-
-
-
-
 end Behavioral;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.chFPGA_Package.all; -- Get all component definitions
+entity ctrl_slave_bd is
+GENERIC (
+		DEFAULT_CONTROL_BYTES: std_logic_vector := X"00000000"; --! Vector of bits to initialize the control register to a known value
+		NUMBER_OF_CONTROL_BYTES: integer        := 1; --! Number of bytes in the control word
+		NUMBER_OF_STATUS_BYTES: integer         := 1 --! Number of bytes in the status word.
+		);
+    PORT (
+
+		-- Control interface
+
+		-- Command stream bus (slave)
+		s_ctrl_tdata: in std_logic_vector(31 downto 0);
+		s_ctrl_tvalid: in std_logic;
+		s_ctrl_tlast: in std_logic;
+		s_ctrl_tready: out std_logic;
+
+		m_ctrl_tdata: out std_logic_vector(31 downto 0);
+		m_ctrl_tvalid: out std_logic;
+		m_ctrl_tlast: out std_logic;
+		m_ctrl_tready: in std_logic;
+
+
+		-- Control/status words
+--		CONTROL_BYTES: out slv8_array(0 to NUMBER_OF_CONTROL_BYTES-1); --
+--		STATUS_BYTES: in slv8_array(0 to NUMBER_OF_STATUS_BYTES-1):=(others=> (others=>'0')) --
+
+		clk: in STD_LOGIC;
+		rstn: in std_logic --! Reset, synchronous to CTRL_CLK
+
+		-- System interface
+		);
+end ctrl_slave_bd;
+
+architecture arch_impl of ctrl_slave_bd is
+
+signal CTRL_CMD_IN_DAT: AXIS8_DAT_STRUCT;
+signal CTRL_CMD_IN_RDY: AXIS8_RDY_STRUCT;
+signal CTRL_RPLY_OUT_DAT:  AXIS8_DAT_STRUCT;
+signal CTRL_RPLY_OUT_RDY: AXIS8_RDY_STRUCT;
+
+signal control_bytes: slv8_array(0 to NUMBER_OF_CONTROL_BYTES-1); -- default value set in the CMD_SLAVE
+signal status_bytes: slv8_array(0 to NUMBER_OF_STATUS_BYTES-1); -- default value set in the CMD_SLAVE
+
+begin
+
+		CTRL_CMD_IN_DAT.TDATA <= s_ctrl_tdata(7 downto 0);
+		CTRL_CMD_IN_DAT.TLAST <= s_ctrl_tlast;
+		CTRL_CMD_IN_DAT.TVALID <= s_ctrl_tvalid;
+		CTRL_CMD_IN_DAT.DUMMY <= '0';
+		s_ctrl_tready <= CTRL_CMD_IN_RDY.TREADY;
+
+		m_ctrl_tdata(7 downto 0) <= CTRL_RPLY_OUT_DAT.TDATA;
+		m_ctrl_tlast <= CTRL_RPLY_OUT_DAT.TLAST;
+		m_ctrl_tvalid <= CTRL_RPLY_OUT_DAT.TVALID;
+--		CTRL_RPLY_OUT_DAT.DUMMY => '0',
+		CTRL_RPLY_OUT_RDY.TREADY<= m_ctrl_tready;
+
+
+CTRL_SLAVE0: entity work.CTRL_SLAVE
+	GENERIC MAP (
+		NUMBER_OF_CONTROL_BYTES=>NUMBER_OF_CONTROL_BYTES , --
+		NUMBER_OF_STATUS_BYTES=>NUMBER_OF_STATUS_BYTES , --
+		DEFAULT_CONTROL_BYTES=> DEFAULT_CONTROL_BYTES
+	)
+
+	PORT MAP(
+		-- Control interface (command and reply stream buses)
+		CTRL_CMD_IN_DAT => CTRL_CMD_IN_DAT,
+		CTRL_CMD_IN_RDY => CTRL_CMD_IN_RDY,
+
+		CTRL_RPLY_OUT_DAT => CTRL_RPLY_OUT_DAT,
+		CTRL_RPLY_OUT_RDY => CTRL_RPLY_OUT_RDY,
+		CTRL_CLK => clk,
+		CTRL_RST => not rstn,
+
+		control_bytes => control_bytes,
+		status_bytes => status_bytes,
+		CLK => clk,
+		RST => not rstn	);
+end arch_impl;
+			
+			
+
+
+
 
