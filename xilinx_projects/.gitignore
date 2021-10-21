@@ -27,3 +27,6 @@
 
 !/corr_core_testbench/
 !/corr_core_testbench/*
+
+!/chfpga_zcu111/
+!/chfpga_zcu111/*
