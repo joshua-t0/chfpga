@@ -38,8 +38,6 @@ use work.chFPGA_Package.all; -- Get all component definitions
 library UNISIM;
 use UNISIM.VComponents.all;
 
-use work.ip_package.all; -- Import definition of components used in this module
-
 --! Ethernet port access arbitrator. Passes the incoming commands to the modules, and merges the incoming command replies and data streams with some arbitrating algorithm.
 --! Command frame format
 --!		  Byte 0 | Byte 1 | Byte 2

@@ -27,7 +27,6 @@ use UNISIM.VComponents.all;
 
 library work;
 use work.chFPGA_Package.all; -- Get all component definitions
-use work.ip_package.all; -- Import definition of components used in this module
 
 
 
