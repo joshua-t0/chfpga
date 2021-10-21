@@ -30,13 +30,14 @@ library UNISIM;
 use UNISIM.VComponents.all;
 
 use work.chFPGA_Package.all; --! Get all component definitions
-use work.ip_package.all; -- Import definition of components used in this module
+--use work.ip_package.all; -- Import definition of components used in this module
 
 --! Implements the system clock, correlator clock etc.
 --! For the KC705, the direct CLK200 BUFG cannot drive the BUFGMUX because it is not in the same region.
 --! In this case, the MMCM instantiated here has to be put in the same half as the BUFGMUX, and its output can directly drive the BUFGMUX
  entity clocks is
  	generic (
+ 		PLATFORM_ID: integer;
  		CLOCK_SOURCE: string :="SFP_REFCLK"; --! Either "SYSCLK", "SFP_REFCLK"
  		CHAN_RESET_DELAY: integer := 127;
  		CORR_RESET_DELAY: integer := 63
@@ -104,6 +105,8 @@ architecture Behavioral of clocks is
 
 attribute ASYNC_REG : string;
 attribute DONT_TOUCH: string;
+
+constant FPGA_SERIES:integer := FPGA_SERIES_LIST(PLATFORM_ID);
 
 constant CLKFBOUT_MULT_F: real := sel(CLOCK_SOURCE="SYSCLK",5.000, 8.000);
 constant CLKIN_PERIOD: real := sel(CLOCK_SOURCE="SYSCLK",5.000, 8.000);
@@ -243,6 +246,9 @@ use_sysclk: if CLOCK_SOURCE="SYSCLK" generate
 end generate;
 
 use_sfp_refclk: if CLOCK_SOURCE="SFP_REFCLK" generate
+
+
+	gen_bufgte7: if FPGA_SERIES = FPGA_KINTEX7 generate
 	ibufds_gtrefclk : IBUFDS_GTE2
 		port map (
 			I     => sfp_refclk_p,
@@ -251,6 +257,15 @@ use_sfp_refclk: if CLOCK_SOURCE="SFP_REFCLK" generate
 			O     => sfp_refclk_nobuf_int,
 			ODIV2 => open
 		);
+	end generate;
+	gen_bufgteup: if PLATFORM_ID = PLATFORM_ID_ZCU111 generate
+		ibufds_mgtpllrefclk : IBUFDS
+			port map (
+			I     => sfp_refclk_p,
+			IB    => sfp_refclk_n,
+			O     => sfp_refclk_nobuf_int
+			);
+	end generate;
 
 -- We use a BUFG to reach the MMCM from the refclk to the MMCM
 -- We have to use a BUFG because this clock is also used to clock the SGMII reset logic and GTX, which resides in another clock region that the REFCLK input.
@@ -337,6 +352,13 @@ end generate;
 			RST                 => RST_IN
 		);
 
+
+---------------------
+-- Channelizer clocks
+---------------------
+
+-- for the Iceboard, generate a 8-phase clock based on either the 200 MHz ADC clock or the 200 MHz system clock
+gen_chanpll_k7: if PLATFORM_ID = PLATFORM_ID_MGK7MB_REV2 or PLATFORM_ID=PLATFORM_ID_MGK7MB_REV0 generate
 	chan_mmcm0 : MMCME2_ADV
 		generic map(
 			BANDWIDTH            => "HIGH",
@@ -409,9 +431,32 @@ end generate;
 			RST                 => chan_pll_reset_in
 		);
 
---! Select which clock is used as the main system clock
+	gen_chanbuf: for i in 0 to 7 generate
+		chan_bufg0 : BUFG
+					port map (
+						I => chan_clk_nobuf(i), -- Clock buffer input
+						O => chan_clk_int(i) -- Clock buffer output
+					);
 
--- RST_OUT<=RST_OUT_INT_TIMING_IGNORE;
+		chan_clk(i) <= chan_clk_int(i);
+
+		-- Generate a synchronous reset signal for each channel clock
+		chan_reset0: entity work.sync_reset
+			port map(
+				clk => chan_clk_int(i),
+				async_reset => chan_async_reset,
+				reset_out => chan_reset_out(i)
+				);
+	end generate;
+
+
+end generate;
+
+-- For the ZCU111, we just send the already-buffered single ADC clock to all channel clocks
+gen_chanpll_up: if PLATFORM_ID = PLATFORM_ID_ZCU111 generate
+	chan_clk <= (others => adc_clk);
+	chan_mmcm_locked <= '1'; --make sure the RESETs don't wait on the inexistent MMCM locked signal
+end generate;
 
 clk200_async_reset <= rst_in or (not mmcm_locked);
 clk200_reset0: entity work.sync_reset
@@ -471,23 +516,6 @@ sequencer_proc: process(CLK200_INT)
 	end process;
 
 chan_async_reset <= rst_in or chan_reset_in or chan_pll_reset_in or (not chan_mmcm_locked) or chan_sequence_reset;
-changen: for i in 0 to 7 generate
-	chan_bufg0 : BUFG
-				port map (
-					I => chan_clk_nobuf(i), -- Clock buffer input
-					O => chan_clk_int(i) -- Clock buffer output
-				);
-
-	chan_clk(i) <= chan_clk_int(i);
-
-	-- Generate a synchronous reset signal for each channel clock
-	chan_reset0: entity work.sync_reset
-		port map(
-			clk => chan_clk_int(i),
-			async_reset => chan_async_reset,
-			reset_out => chan_reset_out(i)
-			);
-end generate;
 
 -- Generate synchronous reset signal for each system clock
 
