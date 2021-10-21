@@ -1,0 +1,25 @@
+# Generic .gitignore for IP directories
+# Each core must reside as exactly one subdirectory below this directory
+
+# By defult ignore all files and directories at all level of hierarchy
+*
+
+# Include this .gitignore file
+!/.gitignore
+# Re-introduce this .gitignore file
+# Include any .vhd file at this level (might be a core package definition)
+!/*.vhd
+
+
+# Enable the essential core generator files in the top-level dir of each core only.
+!*/
+!*/*.xci
+#!*/*.dcp
+#   The xml file seemed to be needed to prevent Vivado from crashing when opening
+# 2017-05-24 JFC: Let's see if we can get rid of them now
+# !*/*.xml
+
+# Get the coefficient files wherever they are
+!*.coe
+
+/_unused/
