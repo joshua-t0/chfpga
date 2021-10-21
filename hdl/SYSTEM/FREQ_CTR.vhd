@@ -154,7 +154,7 @@ K7: if FPGA_SERIES=7 generate
 
 end generate;
 
-V6: if FPGA_SERIES=6 generate
+V6: if FPGA_SERIES=FPGA_VIRTEX6 or FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
 	SRCCLK0 : BUFG
 		port map (
 			O => SRC_CLK, -- 1-bit output: Clock buffer output
