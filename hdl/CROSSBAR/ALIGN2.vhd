@@ -26,7 +26,7 @@ use IEEE.std_logic_misc.ALL; -- for and_reduce
 library UNISIM;
 use UNISIM.VComponents.all;
 use work.chFPGA_Package.all; -- Get all component definitions
-use work.ip_package.all; -- Import definition of components used in this module
+--use work.ip_package.all; -- Import definition of components used in this module
 
 ------- ALIGN ENTITY DECLARATION ----------------------
 --! Aligns data streams from multiple sources (lanes).
