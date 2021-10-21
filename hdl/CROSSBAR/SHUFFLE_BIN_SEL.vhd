@@ -34,7 +34,7 @@ use IEEE.math_real.ALL; -- for ceil()
 library UNISIM;
 use UNISIM.VComponents.all;
 use work.chFPGA_Package.all; -- Get all component definitions
-use work.ip_package.all; -- Import definition of components used in this module
+--use work.ip_package.all; -- Import definition of components used in this module
 
 ------- SHUFFLE_BIN_SEL ENTITY DECLARATION ----------------------
 
@@ -486,7 +486,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 --! Port A is an 8-bit wide interface allowing the control system to program the RAM
 --! Port B is a 2-bit interface that the processing process reads to identify if a word is to be kept.
 --! We need to use a Block RAM (as opposed to distributed RAM) so we can have assymetric aspect ratio
-mask_ram0 : SHUFFLE_BIN_SEL_MASK_RAM
+mask_ram0 : entity work.SHUFFLE_BIN_SEL_MASK_RAM
 	PORT MAP (
 		clka     => CTRL_CLK,
 		wea(0)   => mask_ram_ctrl_wr_en,
@@ -506,7 +506,7 @@ mask_ram0 : SHUFFLE_BIN_SEL_MASK_RAM
 -- It indicate the size of each block of data, whether words should be combined, and when this is the last block of he packet.
 -- Implement the  4-bit wide FIFO (CB2, nominally 4x128, two per FPGA) or the 6-bit wide (CB3, 6x32, 8 per FPGA) depending on the need to save space.
 FLAGS_FIFO4_GEN: if WORD_CTR_WIDTH = 2 generate -- WORDS_PER_BIN = 4
-flags_fifo0: SHUFFLE_BIN_SEL_FLAGS_FIFO4 -- 2 bit counter + 2 extra flags
+flags_fifo0: entity work.SHUFFLE_BIN_SEL_FLAGS_FIFO4 -- 2 bit counter + 2 extra flags
 	PORT MAP (
 		clk      => clk,
 		srst     => reset_all_reg,
@@ -523,7 +523,7 @@ flags_fifo0: SHUFFLE_BIN_SEL_FLAGS_FIFO4 -- 2 bit counter + 2 extra flags
 end generate;
 
 FLAGS_FIFO6_GEN: if WORD_CTR_WIDTH /= 2 generate -- WORDS_PER_BIN = 16 or other. make sure we always instantiate a FIFO, so there will be an error if  flags_fifo_din/dout with don't match with the FIFO
-flags_fifo0: SHUFFLE_BIN_SEL_FLAGS_FIFO6 -- 4 bit counter + 2 extra flags
+flags_fifo0: entity work.SHUFFLE_BIN_SEL_FLAGS_FIFO6 -- 4 bit counter + 2 extra flags
 	PORT MAP (
 		clk      => clk,
 		srst     => reset_all_reg,
@@ -561,7 +561,7 @@ DATA_FIFO_GEN: for i in 0 to NUMBER_OF_INPUTS-1 generate
 	--! We elimine this FIFO by requiring every selected bin to be followed by at least N non-selected bins. To be considered if BRAM resource availability is an issue.
 
 	BRAM_FIFO_GEN: if FIFO_TYPE_MAP(i)=0 and i MOD 2=0 generate
-		data_fifo0 : SHUFFLE_BIN_SEL_DATA_FIFO_BRAM
+		data_fifo0 : entity work.SHUFFLE_BIN_SEL_DATA_FIFO_BRAM
 			port map (
 				srst     => reset_all_reg,
 				clk      => clk,
@@ -584,7 +584,7 @@ DATA_FIFO_GEN: for i in 0 to NUMBER_OF_INPUTS-1 generate
 	EMBED_FIFO_GEN: if FIFO_TYPE_MAP(i)=0 and i MOD 2=1 generate
 		data_fifo0 : entity work.SHUFFLE_BIN_SEL_DATA_FIFO_EMBED
 			port map (
-				rst      => reset_all_reg,
+				srst      => reset_all_reg,
 				clk      => clk,
 
 				din      => data_fifo_din(i),
@@ -607,7 +607,7 @@ DATA_FIFO_GEN: for i in 0 to NUMBER_OF_INPUTS-1 generate
 	--! When RD_EN is High and the clock rises, the current value is captured by the user, and a new value is placed on the bus
 	DRAM_FIFO_GEN: if FIFO_TYPE_MAP(i)=1 generate
 		data_fifo_rd_en_int(i) <= data_fifo_rd_en(i) or not data_fifo_valid(i);
-		data_fifo0 : SHUFFLE_BIN_SEL_DATA_FIFO_DRAM
+		data_fifo0 : entity work.SHUFFLE_BIN_SEL_DATA_FIFO_DRAM
 			port map (
 				srst     => reset_all_reg,
 				clk      => clk,
