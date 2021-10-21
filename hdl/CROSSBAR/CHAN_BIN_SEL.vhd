@@ -34,7 +34,7 @@ use IEEE.math_real.ALL; -- for ceil()
 library UNISIM;
 use UNISIM.VComponents.all;
 use work.chFPGA_Package.all; -- Get all component definitions
-use work.ip_package.all; -- Import definition of components used in this module
+--use work.ip_package.all; -- Import definition of components used in this module
 
 ------- CHAN_BIN_SEL ENTITY DECLARATION ----------------------
 --! @brief Select specific frequency bins across all incoming channelizer data
@@ -416,7 +416,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 --! Port A is an 8-bit wide interface allowing the control system to program the RAM
 --! Port B is a 2-bit interface that the processing process reads to identify if a word is to be kept.
 --! We need to use a Block RAM (as opposed to distributed RAM) so we can have assymetric aspect ratio
-mask_ram0 : MASK_RAM
+mask_ram0 : entity work.MASK_RAM
 	PORT MAP (
 		clka  => CTRL_CLK,
 		wea(0)   => mask_ram_ctrl_wr_en,
@@ -501,7 +501,7 @@ data_fifo_din_sel(64) <= data_fifo_last and to_std_logic(data_fifo_wr_ctr=last_f
 		-- All data FIFOs are Embedded FIFOs. They are paired with the DATA flag FIFOs which are BRAM.
 		data_fifo0 : entity work.CHDIST_DATA_EMBED_FIFO
 			port map (
-				rst      => reset_all,
+				srst      => reset_all,
 				clk      => clk,
 
 				din      => data_fifo_din32,
@@ -555,7 +555,7 @@ data_fifo_din_sel(64) <= data_fifo_last and to_std_logic(data_fifo_wr_ctr=last_f
 --!
 --! A 17-bit wide x 512-word deep FIFO fits in a single 18K BRAM.
 
-data_flags_fifo0 : chdist_scaler_flags_fifo
+data_flags_fifo0 : entity work.chdist_scaler_flags_fifo
   port map (
 	srst      => reset_all,
 	clk      => clk,
@@ -586,7 +586,7 @@ data_flags_fifo0 : chdist_scaler_flags_fifo
 --! last word indicator. The FIFO must accomodate F words, where F is the
 --! number of frames per packet (typically 4). 16-word deep is the smallest we can get.
 --!
-frame_flags_fifo0 : chdist_frame_fifo
+frame_flags_fifo0 : entity work.chdist_frame_fifo
   port map (
 	rst      => reset_all,
 	clk      => clk,
