@@ -39,13 +39,15 @@ use UNISIM.VComponents.all;
 --!
 entity CORR44_ARRAY is
 	GENERIC (
+		PLATFORM_ID: integer;
 		NUMBER_OF_CORRELATORS: integer;
-		NUMBER_OF_WORDS_PER_BIN: integer;
-		LEFT_DSP_RPM_X: integer_array;
-		LEFT_BRAM_RPM_X: integer_array;
-		RIGHT_DSP_RPM_X: integer_array;
-		RIGHT_BRAM_RPM_X: integer_array;
-		BOTTOM_RPM_Y: integer_array
+		NUMBER_OF_WORDS_PER_BIN: integer
+		--LEFT_DSP_RPM_X: integer_array;
+		--LEFT_BRAM_RPM_X: integer_array;
+		--RIGHT_DSP_RPM_X: integer_array;
+		--RIGHT_BRAM_RPM_X: integer_array;
+		--BOTTOM_DSP_RPM_Y: integer_array;
+		--BOTTOM_BRAM_RPM_Y: integer_array
 	);
 
 	PORT (
@@ -179,13 +181,15 @@ outpipe_proc: process(out_clk)
 CORRGENi: for i in 0 to NUMBER_OF_CORRELATORS-1 generate
 	corr0: entity work.corr44
 		generic map (
-			CORR_NUMBER             => i,
-			NUMBER_OF_WORDS_PER_BIN => NUMBER_OF_WORDS_PER_BIN,-- corresponds to the number of clocks per bin
-			LEFT_DSP_RPM_X          => LEFT_DSP_RPM_X(i),
-			LEFT_BRAM_RPM_X         => LEFT_BRAM_RPM_X(i),
-			RIGHT_DSP_RPM_X         => RIGHT_DSP_RPM_X(i),
-			RIGHT_BRAM_RPM_X        => RIGHT_BRAM_RPM_X(i),
-			BOTTOM_RPM_Y            => BOTTOM_RPM_Y(i)
+			PLATFORM_ID             => PLATFORM_ID,
+			CORR_NUMBER             => i, -- will be used in the packet header and to determine the RPM location of the CORR44 cores
+			NUMBER_OF_WORDS_PER_BIN => NUMBER_OF_WORDS_PER_BIN-- corresponds to the number of clocks per bin
+			--LEFT_DSP_RPM_X          => LEFT_DSP_RPM_X(i),
+			--LEFT_BRAM_RPM_X         => LEFT_BRAM_RPM_X(i),
+			--RIGHT_DSP_RPM_X         => RIGHT_DSP_RPM_X(i),
+			--RIGHT_BRAM_RPM_X        => RIGHT_BRAM_RPM_X(i),
+			--BOTTOM_DSP_RPM_Y        => BOTTOM_DSP_RPM_Y(i),
+			--BOTTOM_BRAM_RPM_Y       => BOTTOM_BRAM_RPM_Y(i)
 			)
 		port map(
 			s_axis_tvalid           => s_axis_tvalid_reg(i),

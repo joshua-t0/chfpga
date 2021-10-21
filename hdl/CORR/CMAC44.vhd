@@ -45,11 +45,11 @@ use unimacro.Vcomponents.all;
 --! See the Entity architecture for implementation details.
 entity CMAC44 is
 	GENERIC (
-		DSP_RPM_X: integer := 45;
+		PLATFORM_ID: integer;
+		DSP_RPM_X: integer := 45; -- X position in RPM coordinates
 		BRAM_RPM_X: integer := 34;
-		RPM_Y: integer := 0
-		--DSP_LEFT: boolean := FALSE;
-		--ORIGIN: string := "X0Y0"
+		DSP_RPM_Y: integer := 0;
+		BRAM_RPM_Y: integer := 0
 		);
 	PORT(
 
@@ -155,6 +155,7 @@ end CMAC44;
 --!
 architecture Behavioral of CMAC44 is
 
+
 signal rst_reg: std_logic;
 
 signal dsp1_a: std_logic_vector(29 downto 0);
@@ -209,8 +210,8 @@ signal acc_fifo_din_complex: complex;
 signal acc_fifo_rderr: std_logic;
 signal acc_fifo_wrerr: std_logic;
 signal acc_fifo_empty: std_logic;
-signal acc_fifo_wrcount: std_logic_vector(11 downto 0);
-signal acc_fifo_rdcount: std_logic_vector(11 downto 0);
+signal acc_fifo_wrcount: std_logic_vector(12 downto 0) := (others =>'0'); -- for sims: make sure MSB is set to zero if we don't assign it
+signal acc_fifo_rdcount: std_logic_vector(12 downto 0) := (others =>'0');
 signal acc_fifo_rd_error: std_logic;
 signal acc_fifo_wr_error: std_logic;
 
@@ -247,15 +248,24 @@ attribute KEEP_HIERARCHY : string;
 --constant FIFO_RLOC: string := sel(DSP_LEFT, "X78Y0", "X34Y0");
 --constant BRAM_RLOC: string := sel(DSP_LEFT, "X78Y1", "X34Y1");
 
+-- Get the FPGA series for this platform so we can chose which DSP primitive to use
+constant FPGA_SERIES:integer := PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES;
+
+-- DSP & BRAM vertical spacing in RPM coordinates for this platform
+constant DSP_BEL_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_ID).DSP_BEL_DELTA_RPM_Y;
+constant BRAM_BEL_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_ID).BRAM_BEL_DELTA_RPM_Y;
+
 attribute HU_SET of dsp1, dsp2 : label is "DSP_PAIR";
 attribute HU_SET of acc_fifo0, capture_bram0 : label is "BRAM_PAIR";
-attribute RPM_GRID of dsp1, acc_fifo0: label is "GRID";
-attribute RLOC of dsp1 : label is "X45Y0";
-attribute RLOC of dsp2 : label is "X45Y5";
-attribute RLOC of acc_fifo0 : label is "X34Y0";  -- in a RAMB36, the FIFO18 is the lower one
-attribute RLOC of capture_bram0 : label is "X34Y1";
-attribute RLOC_ORIGIN of dsp1 : label is "X"& integer'IMAGE(DSP_RPM_X-45) & "Y" & integer'IMAGE(RPM_Y);
-attribute RLOC_ORIGIN of acc_fifo0 : label is "X"& integer'IMAGE(BRAM_RPM_X-34) & "Y" & integer'IMAGE(RPM_Y);
+attribute RPM_GRID of dsp1,dsp2, acc_fifo0, capture_bram0: label is "GRID";
+attribute RLOC of dsp1 : label is "X0Y0";
+attribute RLOC of dsp2 : label is "X0Y" & integer'IMAGE(DSP_BEL_DELTA_RPM_Y); -- dsp2 is just above dsp1
+attribute RLOC of acc_fifo0 : label is "X0Y0";  -- in a RAMB36, the FIFO18 is the lower one
+attribute RLOC of capture_bram0 : label is "X0Y" & integer'IMAGE(BRAM_BEL_DELTA_RPM_Y); -- capture bram is just above acc_fifo0;
+attribute RLOC_ORIGIN of dsp1 : label is "X"& integer'IMAGE(DSP_RPM_X) & "Y" & integer'IMAGE(DSP_RPM_Y);
+attribute RLOC_ORIGIN of acc_fifo0 : label is "X"& integer'IMAGE(BRAM_RPM_X) & "Y" & integer'IMAGE(BRAM_RPM_Y);
+
+
 --attribute RLOC of dsp2 : label is "X0Y1";
 --attribute RPM_GRID of Behavioral: architecture is "GRID";
 --attribute RPM_GRID of dsp2 : label is "GRID";
@@ -520,51 +530,92 @@ acc_fifo_rd_en <= first_frame_completed0 and s_axis_xy_tvalid and not rst_reg; -
 --! *** to Update*** We do not need a FWFT FIFO because we know one clock in advance when we need a new value out of the FIFO.
 --!
 --! NOTE: When EN_SYN=TRUE, then FWFT *must* be FALSE.
-acc_fifo0 : FIFO18E1
-	generic map (
-		ALMOST_EMPTY_OFFSET     => X"0080", -- Sets the almost empty threshold
-		ALMOST_FULL_OFFSET      => X"0080", -- Sets almost full threshold
-		DATA_WIDTH              => 36, -- Sets data width to 4-36
-		DO_REG                  => 1, -- Enable output register (1-0) Must be 1 if EN_SYN = FALSE.
-		EN_SYN                  => TRUE, -- Specifies FIFO as dual-clock (FALSE) or Synchronous (TRUE).
-		FIFO_MODE               => "FIFO18_36", -- Sets mode to FIFO18 or FIFO18_36
-		FIRST_WORD_FALL_THROUGH => FALSE, -- Sets the FIFO FWFT to FALSE, TRUE. Must be FALSE when EN_SYN=TRUE.
-		INIT                    => X"000000000", -- Initial values on output port
-		SIM_DEVICE              => "7SERIES", -- Must be set to "7SERIES" for simulation behavior
-		SRVAL                   => X"000000000" -- Set/Reset value for output port
-	)
-	port map (
-		-- Read Data: 32-bit (each) output: Read output data
-		DO          => acc_fifo_dout(31 downto 0), -- 32-bit output: Data output
-		DOP         => acc_fifo_dout(35 downto 32), -- 4-bit output: Parity data output
-		-- Status: 1-bit (each) output: Flags and other FIFO status outputs
-		--ALMOSTEMPTY => ALMOSTEMPTY, -- 1-bit output: Almost empty flag
-		--ALMOSTFULL  => ALMOSTFULL, -- 1-bit output: Almost full flag
-		--EMPTY       => EMPTY, -- 1-bit output: Empty flag
-		--FULL        => FULL, -- 1-bit output: Full flag
-		--RDCOUNT     => RDCOUNT, -- 12-bit output: Read count
-		--RDERR       => RDERR, -- 1-bit output: Read error
-		--WRCOUNT     => WRCOUNT, -- 12-bit output: Write count
-		--WRERR       => WRERR, -- 1-bit output: Write error
-		-- Read Control Signals: 1-bit (each) input: Read clock, enable and reset input signals
-		RDCLK       => clk, -- 1-bit input: Read clock
-		RDEN        => acc_fifo_rd_en, -- 1-bit input: Read enable
-		REGCE       => '1', -- 1-bit input: Clock enable
-		RST         => rst_reg, -- 1-bit input: Asynchronous Reset
-		RSTREG      => '0', -- 1-bit input: Output register set/reset
-		-- Write Control Signals: 1-bit (each) input: Write clock and enable input signals
-		WRCLK       => clk, -- 1-bit input: Write clock
-		WREN        => acc_fifo_wr_en, -- 1-bit input: Write enable
-		FULL        => acc_fifo_full,
-		RDERR => acc_fifo_rderr,
-		WRERR => acc_fifo_wrerr,
-		EMPTY => acc_fifo_empty,
-		WRCOUNT => acc_fifo_wrcount,
-		RDCOUNT => acc_fifo_rdcount,
-		-- Write Data: 32-bit (each) input: Write input data
-		DI          => acc_fifo_din(31 downto 0), -- 32-bit input: Data input
-		DIP         => acc_fifo_din(35 downto 32) -- 4-bit input: Parity input
-	);
+gen_fifo7: if FPGA_SERIES=FPGA_KINTEX7 generate
+	acc_fifo0 : FIFO18E1
+		generic map (
+			ALMOST_EMPTY_OFFSET     => X"0080", -- Sets the almost empty threshold
+			ALMOST_FULL_OFFSET      => X"0080", -- Sets almost full threshold
+			DATA_WIDTH              => 36, -- Sets data width to 4-36
+			DO_REG                  => 1, -- Enable output register (1-0) Must be 1 if EN_SYN = FALSE.
+			EN_SYN                  => TRUE, -- Specifies FIFO as dual-clock (FALSE) or Synchronous (TRUE).
+			FIFO_MODE               => "FIFO18_36", -- Sets mode to FIFO18 or FIFO18_36
+			FIRST_WORD_FALL_THROUGH => FALSE, -- Sets the FIFO FWFT to FALSE, TRUE. Must be FALSE when EN_SYN=TRUE.
+			INIT                    => X"000000000", -- Initial values on output port
+			SIM_DEVICE              => "7SERIES", -- Must be set to "7SERIES" for simulation behavior
+			SRVAL                   => X"000000000" -- Set/Reset value for output port
+		)
+		port map (
+			-- Read Data: 32-bit (each) output: Read output data
+			DO          => acc_fifo_dout(31 downto 0), -- 32-bit output: Data output
+			DOP         => acc_fifo_dout(35 downto 32), -- 4-bit output: Parity data output
+			-- Read Control Signals: 1-bit (each) input: Read clock, enable and reset input signals
+			RDCLK       => clk, -- 1-bit input: Read clock
+			RDEN        => acc_fifo_rd_en, -- 1-bit input: Read enable
+			REGCE       => '1', -- 1-bit input: Clock enable
+			RST         => rst_reg, -- 1-bit input: Asynchronous Reset
+			RSTREG      => '0', -- 1-bit input: Output register set/reset
+			-- Write Control Signals: 1-bit (each) input: Write clock and enable input signals
+			WRCLK       => clk, -- 1-bit input: Write clock
+			WREN        => acc_fifo_wr_en, -- 1-bit input: Write enable
+			FULL        => acc_fifo_full,
+			RDERR => acc_fifo_rderr,
+			WRERR => acc_fifo_wrerr,
+			EMPTY => acc_fifo_empty,
+			WRCOUNT => acc_fifo_wrcount(11 downto 0),
+			RDCOUNT => acc_fifo_rdcount(11 downto 0),
+			-- Write Data: 32-bit (each) input: Write input data
+			DI          => acc_fifo_din(31 downto 0), -- 32-bit input: Data input
+			DIP         => acc_fifo_din(35 downto 32) -- 4-bit input: Parity input
+		);
+end generate;
+
+--gen_fifoup: if FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
+	acc_fifo0 : FIFO18E2
+		generic map (
+			CLOCK_DOMAINS => "COMMON",
+			PROG_EMPTY_THRESH     => 128, -- Sets the almost empty threshold
+			PROG_FULL_THRESH      => 128, -- Sets almost full threshold
+			READ_WIDTH              => 36, -- Sets data width to 4-36
+			WRITE_WIDTH              => 36, -- Sets data width to 4-36
+			REGISTER_MODE         => "REGISTERED", -- Enable output register (1-0) Must be 1 if EN_SYN = FALSE.
+			FIRST_WORD_FALL_THROUGH => "FALSE", -- Sets the FIFO FWFT to FALSE, TRUE. Must be FALSE when EN_SYN=TRUE.
+			INIT                    => X"000000000", -- Initial values on output port
+			SRVAL                   => X"000000000" -- Set/Reset value for output port
+		)
+		port map (
+			CASDIN => (others => '0'),
+			CASDINP => (others => '0'),
+			casdomux => '0',
+			casdomuxen => '0',
+			casnxtrden => '0',
+			casoregimux => '0',
+			casoregimuxen => '0',
+			casprvempty => '0',
+
+			-- Read Data: 32-bit (each) output: Read output data
+			DOUT          => acc_fifo_dout(31 downto 0), -- 32-bit output: Data output
+			DOUTP         => acc_fifo_dout(35 downto 32), -- 4-bit output: Parity data output
+			-- Read Control Signals: 1-bit (each) input: Read clock, enable and reset input signals
+			RDCLK       => clk, -- 1-bit input: Read clock
+			RDEN        => acc_fifo_rd_en, -- 1-bit input: Read enable
+			REGCE       => '1', -- 1-bit input: Clock enable
+			RST         => rst_reg, -- 1-bit input: Asynchronous Reset
+			RSTREG      => '0', -- 1-bit input: Output register set/reset
+			SLEEP => '0',
+			-- Write Control Signals: 1-bit (each) input: Write clock and enable input signals
+			WRCLK       => clk, -- 1-bit input: Write clock
+			WREN        => acc_fifo_wr_en, -- 1-bit input: Write enable
+			FULL        => acc_fifo_full,
+			RDERR => acc_fifo_rderr,
+			WRERR => acc_fifo_wrerr,
+			EMPTY => acc_fifo_empty,
+			WRCOUNT => acc_fifo_wrcount,
+			RDCOUNT => acc_fifo_rdcount,
+			-- Write Data: 32-bit (each) input: Write input data
+			DIN          => acc_fifo_din(31 downto 0), -- 32-bit input: Data input
+			DINP         => acc_fifo_din(35 downto 32) -- 4-bit input: Parity input
+		);
+--end generate;
 
 
 capture_wr_en_vect <= (others=> capture_wr_en4);

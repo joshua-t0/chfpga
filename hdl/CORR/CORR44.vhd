@@ -29,26 +29,29 @@ use UNISIM.VComponents.all;
 ------------------------------------
 ------- CORR ENTITY ----------
 ------------------------------------
---! Implements a correlator block, which consists of
---!   1) a correlator that computes the products of all antennas for every channel and
---!   2) an accumulator that cumulates the results over time and periodically sends the sum over the capture (Ethernet) interface.
---!   3) a command router that routes the commands to one of the modules above based on the destination address
---!
---! The correlator received a packaged stream consisting of a frame header, frequency bin data from all antennas for one channel, then the frequency bin data for another channel etc.
---! The products between every antenna for each channels are computed and integrated, and the result is framed and streamed through a 8-bit interface  for transmission over the (prober) control channel.
---!
+-- Implements a correlator block, which consists of
+--   1) a correlator that computes the products between all inputs for every freqyency bin in the input frame
+--   2) an accumulator that cumulates the results over time and periodically sends the sum over the capture (Ethernet) interface.
+--   3) a command router that routes the commands to one of the modules above based on the destination address
+--
+-- The correlator received a packaged stream consisting of a frame header, frequency bin data from all antennas for one channel, then the frequency bin data for another channel etc.
+-- The products between every antenna for each channels are computed and integrated, and the result is framed and streamed through a 8-bit interface  for transmission over the (prober) control channel.
+--
+-- Location of each CMAC44
 entity CORR44 is
 	generic (
-		CORR_NUMBER: integer := 0;
+		PLATFORM_ID: integer; -- necessary to select the DSP RPM spacing and instantiate the proper DSP and FIFO primitives
+		CORR_NUMBER: integer := 0; -- used for packet header and to determine the CORR44 RPM locations
 		NUMBER_OF_WORDS_PER_BIN: integer := 4; -- also corresponds to the number of clocks per bin. There are 4 samples per word.
 		NUMBER_OF_HEADER_WORDS: integer := 4; -- must be <= 4
 		DEFAULT_INTEGRATION_PERIOD: integer := 390625; -- 1 sec
-		DEFAULT_BINS_PER_FRAME: integer := 128;
-		LEFT_DSP_RPM_X: integer := 361;
-		LEFT_BRAM_RPM_X: integer := 350;
-		RIGHT_DSP_RPM_X: integer := 381;
-		RIGHT_BRAM_RPM_X: integer := 394;
-		BOTTOM_RPM_Y: integer := 0
+		DEFAULT_BINS_PER_FRAME: integer := 128
+		--LEFT_DSP_RPM_X: integer := 361;
+		--LEFT_BRAM_RPM_X: integer := 350;
+		--RIGHT_DSP_RPM_X: integer := 381;
+		--RIGHT_BRAM_RPM_X: integer := 394;
+		--BOTTOM_DSP_RPM_Y: integer := 0;
+		--BOTTOM_BRAM_RPM_Y: integer := 0
 		);
 
 	port (
@@ -130,7 +133,16 @@ attribute shreg_extract: string;
 -- constant MODULE_ACC_ADDR: integer :=2;
 
 constant N: integer := 4 * NUMBER_OF_WORDS_PER_BIN; -- number of complex samples per frequency bin
+
 constant NUMBER_OF_CMACS : integer := (N+1)*2;
+
+
+-- Get the RPM position of the corr44 cores
+constant corr_rpm: corr_rpm_struct := get_corr_rpm_struct(PLATFORM_ID, N);
+
+-- DSP & BRAM vertical spacing in RPM coordinates
+constant DSP_TILE_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_ID).DSP_TILE_DELTA_RPM_Y;
+constant BRAM_TILE_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_ID).BRAM_TILE_DELTA_RPM_Y;
 
 signal buf: slv32_array(0 to NUMBER_OF_WORDS_PER_BIN-1);
 signal x: slv8_array(0 to N-1);
@@ -335,17 +347,17 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 	);
 
 
---------------------------------------------
--- Implements the correlator block components
---------------------------------------------
--- CMACs are daisy chained, with data flowing out from CMAC(0)
-
+-- Instantiate an array of CMAC44s
+-- CMACS are placed in two columns (left & right) of N+1 CMAC44. Each CMAC is 2 DSP high (and 2 BRAM high as well).
+-- CMAC outputs are daisy chained, with data flowing out from CMAC(0)
 cmac: for i in 0 to NUMBER_OF_CMACS-1 generate
 	cmac0: entity work.CMAC44
 		GENERIC map (
-			DSP_RPM_X => sel((i mod 2)=0, LEFT_DSP_RPM_X, RIGHT_DSP_RPM_X), --,
-			BRAM_RPM_X => sel((i mod 2)=0, LEFT_BRAM_RPM_X, RIGHT_BRAM_RPM_X), --(i mod 2)=1,
-			RPM_Y => BOTTOM_RPM_Y + (i/2)*10
+			PLATFORM_ID => PLATFORM_ID,
+			DSP_RPM_X => sel((i mod 2)=0, corr_rpm.LEFT_DSP_X(CORR_NUMBER), corr_rpm.RIGHT_DSP_X(CORR_NUMBER)), --,
+			BRAM_RPM_X => sel((i mod 2)=0, corr_rpm.LEFT_BRAM_X(CORR_NUMBER), corr_rpm.RIGHT_BRAM_X(CORR_NUMBER)), --(i mod 2)=1,
+			DSP_RPM_Y => corr_rpm.DSP_BOTTOM_Y(CORR_NUMBER) + (i/2)*DSP_TILE_DELTA_RPM_Y, -- Each CMAC is 1 DSP tile (2 DSP) high
+			BRAM_RPM_Y => corr_rpm.BRAM_BOTTOM_Y(CORR_NUMBER) + (i/2)*BRAM_TILE_DELTA_RPM_Y -- Each CMAC is 1 BRAM tile (2 BRAM) high
 			)
 		PORT MAP(
 			s_axis_xy_tvalid             => xy_tvalid,
@@ -543,7 +555,7 @@ main: process(in_clk)
 -- 36 bits for data, 1 bit for TLAST, 1 bit to indicate a new readout sequence (i.e data is from CMAC0)
 data_fifo : entity work.CORR44_DATA_FIFO
   PORT MAP (
-	rst       => rst_all,
+	srst       => rst_all,
 	wr_clk    => in_clk,
 	wr_en     => data_fifo_wr_en,
 	din       => data_fifo_din,
