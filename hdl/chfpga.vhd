@@ -1115,7 +1115,7 @@ chclkgen: for i in 8 to NUMBER_OF_CHAN_CLOCKS-1 generate
 end generate;
 
 
-ctrl_clk_sel7: if PLATFORM_ID=PLATFORM_ID_MGK7MB_REV0 or PLATFORM_ID=PLATFORM_ID_MGK7MB_REV2 generate
+ctrl_clk_sel7: if PLATFORM_ID=PLATFORM_ID_MGK7MB generate
 	ctrl_clk <= clk125; -- Control system master clock
 end generate;
 

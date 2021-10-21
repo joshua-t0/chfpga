@@ -131,8 +131,8 @@ type PortOffsetArray is array (natural range <>) of PortOffset;
 -- The number is used to index FPGA_SERIES_LIST below
 constant PLATFORM_ID_ML605: integer :=0;
 constant PLATFORM_ID_KC705: integer :=1;
-constant PLATFORM_ID_MGK7MB_REV0: integer :=2;
-constant PLATFORM_ID_MGK7MB_REV2: integer :=3;
+--constant PLATFORM_ID_UNUSED: integer :=2;
+constant PLATFORM_ID_MGK7MB: integer :=3;
 constant PLATFORM_ID_ZCU111: integer :=4;
 
 -- Platform information structure
@@ -178,7 +178,7 @@ constant PLATFORM_INFO: PLATFORM_INFO_ARRAY:=(
 		BRAM_BEL_DELTA_RPM_Y => 5
 		),
 
-	PLATFORM_ID_MGK7MB_REV0 => (
+	PLATFORM_ID_UNUSED => (
 		FPGA_SERIES => FPGA_KINTEX7,
 		DSP_TILE_DELTA_RPM_Y => 5,
 		DSP_BEL_DELTA_RPM_Y => 5,
@@ -186,7 +186,7 @@ constant PLATFORM_INFO: PLATFORM_INFO_ARRAY:=(
 		BRAM_BEL_DELTA_RPM_Y => 5
 		),
 
-	PLATFORM_ID_MGK7MB_REV2 => (
+	PLATFORM_ID_MGK7MB => (
 		FPGA_SERIES => FPGA_KINTEX7,
 		DSP_TILE_DELTA_RPM_Y => 10,
 		DSP_BEL_DELTA_RPM_Y => 5,
@@ -208,8 +208,8 @@ constant PLATFORM_INFO: PLATFORM_INFO_ARRAY:=(
 constant FPGA_SERIES_LIST: IntegerArray:=(
 	PLATFORM_ID_ML605 => FPGA_VIRTEX6,
 	PLATFORM_ID_KC705 => FPGA_KINTEX7,
-	PLATFORM_ID_MGK7MB_REV0 => FPGA_KINTEX7,
-	PLATFORM_ID_MGK7MB_REV2 => FPGA_KINTEX7,
+	PLATFORM_ID_UNUSED => FPGA_KINTEX7,
+	PLATFORM_ID_MGK7MB => FPGA_KINTEX7,
 	PLATFORM_ID_ZCU111 => FPGA_ULTRASCALEPLUS
 	);
 
@@ -1130,7 +1130,7 @@ function get_corr_rpm_struct(platform_id:integer; N:integer) return corr_rpm_str
 	 	begin
  			DSP_TILE_DELTA_Y := PLATFORM_INFO(platform_id).DSP_TILE_DELTA_RPM_Y; --same for BRAM
 
-	 		if platform_id = PLATFORM_ID_MGK7MB_REV2 or platform_id = PLATFORM_ID_MGK7MB_REV0 then
+	 		if platform_id = PLATFORM_ID_MGK7MB then
 			 	DSP_X0L:=361;
 			 	DSP_X0R:=381;
 			 	DSP_X1L := 425;

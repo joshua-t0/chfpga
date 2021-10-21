@@ -358,7 +358,7 @@ end generate;
 ---------------------
 
 -- for the Iceboard, generate a 8-phase clock based on either the 200 MHz ADC clock or the 200 MHz system clock
-gen_chanpll_k7: if PLATFORM_ID = PLATFORM_ID_MGK7MB_REV2 or PLATFORM_ID=PLATFORM_ID_MGK7MB_REV0 generate
+gen_chanpll_k7: if PLATFORM_ID = PLATFORM_ID_MGK7MB generate
 	chan_mmcm0 : MMCME2_ADV
 		generic map(
 			BANDWIDTH            => "HIGH",

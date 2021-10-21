@@ -32,7 +32,7 @@ use work.chFPGA_Package.all; --! Get all component definitions
 --! The ports of this top-level entity correspond to physical pins on the Kintex 7 FPGA on that board. The location of these pins are defined in the constraint file.
 entity chFPGA_MGK7MB_Rev2 is
 	 generic (
-			PLATFORM_ID: INTEGER                         := PLATFORM_ID_MGK7MB_REV0; --! identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705
+			PLATFORM_ID: INTEGER                         := PLATFORM_ID_MGK7MB; --! identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705
 			UDP_MAC_PRESENT: BOOLEAN                     := TRUE; --! Indicates if the Ethernet interface is to be implemented (sets the DYMMY flag on the MAC). Used for debugging only.
 			BLINKER_PRESENT: BOOLEAN                     := TRUE; --! Indicates if the LED flasher is to be implemented by setting the DUMMY flag of the BLINKER module
 			SYSTEM_CLOCK_SOURCE: string                  := "SFP_REFCLK"; --!"SYSCLK": the 200 MHz clock will be taken from sysclk_p/n (CC pins) or "SFP_REFCLK": the system clock is 125 MHz from the GTX reference clock
