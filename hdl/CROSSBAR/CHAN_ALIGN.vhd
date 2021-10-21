@@ -24,7 +24,7 @@ use IEEE.std_logic_misc.ALL; -- for and_reduce
 library UNISIM;
 use UNISIM.VComponents.all;
 use work.chFPGA_Package.all; -- Get all component definitions
-use work.ip_package.all; -- Import definition of components used in this module
+--use work.ip_package.all; -- Import definition of components used in this module
 
 ------- CHAN_ALIGN ENTITY DECLARATION ----------------------
 --! @brief Align data from all the channelizers.
@@ -48,7 +48,7 @@ entity CHAN_ALIGN is
 		m_axis_global_tvalid: out std_logic; --! Active high when data is present on the longest frame. Check the individual lane's tvalid to see if a lane ended up prematurely.
 		m_axis_global_tlast: out std_logic; --! Active high on the last word of the longest frame.
 
-		lane_monitor: out slv(0 to NUMBER_OF_LANES-1);
+		lane_monitor: out slv(0 to max(NUMBER_OF_LANES, 16)-1);
 		lane_monitor_source: in std_logic_vector(3 downto 0);
 
 		reset_stats: in std_logic;
@@ -233,31 +233,31 @@ outpipe_proc: process(clk)
 						7 => fifo_rst,
 						others => '0');
 				when 1 =>
-					lane_monitor <= s_axis_tvalid and s_axis_tfirst;
+					lane_monitor(0 to NUMBER_OF_LANES-1) <= s_axis_tvalid and s_axis_tfirst;
 				when 2 =>
-					lane_monitor <= s_axis_tvalid and s_axis_tlast;
+					lane_monitor(0 to NUMBER_OF_LANES-1) <= s_axis_tvalid and s_axis_tlast;
 				when 3 =>
-					lane_monitor <= fifo_overflow;
+					lane_monitor(0 to NUMBER_OF_LANES-1) <= fifo_overflow;
 				when 4 =>
-					lane_monitor <= fifo_tvalid;
+					lane_monitor(0 to NUMBER_OF_LANES-1) <= fifo_tvalid;
 				when 5 =>
-					lane_monitor <= fifo_tvalid and fifo_tfirst;
+					lane_monitor(0 to NUMBER_OF_LANES-1) <= fifo_tvalid and fifo_tfirst;
 				when 6 =>
-					lane_monitor <= fifo_tvalid and fifo_tlast;
+					lane_monitor(0 to NUMBER_OF_LANES-1) <= fifo_tvalid and fifo_tlast;
 				when 7 =>
-					lane_monitor <= s_axis_tvalid;
+					lane_monitor(0 to NUMBER_OF_LANES-1) <= s_axis_tvalid;
 				when 8 =>
-					lane_monitor <= tvalid_during_reset;
+					lane_monitor(0 to NUMBER_OF_LANES-1) <= tvalid_during_reset;
 				when 9 =>
-					lane_monitor <= fifo_empty;
+					lane_monitor(0 to NUMBER_OF_LANES-1) <= fifo_empty;
 				when 10 =>
-					lane_monitor <= fifo_full;
+					lane_monitor(0 to NUMBER_OF_LANES-1) <= fifo_full;
 				when 11 =>
-					lane_monitor <= fifo_almost_full;
+					lane_monitor(0 to NUMBER_OF_LANES-1) <= fifo_almost_full;
 				when 12 =>
-					lane_monitor <= fifo_almost_empty;
+					lane_monitor(0 to NUMBER_OF_LANES-1) <= fifo_almost_empty;
 				when 13 =>
-					lane_monitor <= slv(reset_ctr);
+					lane_monitor(0 to NUMBER_OF_LANES-1) <= slv(reset_ctr);
 				when 14 =>
 					for i in 0 to NUMBER_OF_LANES-1 loop
 						lane_monitor(i) <= fifo_data_count(i)(8);
