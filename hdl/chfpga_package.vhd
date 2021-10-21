@@ -123,17 +123,99 @@ type PortOffsetArray is array (natural range <>) of PortOffset;
 --type ADCOut is array (0 to 7) of STD_LOGIC_VECTOR(31 downto 0); -- 8 64-bit words provided by the two ADCs ;
 
 
--- Platform related constants
+-- Platform IDs
+--
+-- Is used both by the HDL source code and runtime software to identify the
+-- hardware (FPGA and PCB type) on which the firmware runs
+--
+-- The number is used to index FPGA_SERIES_LIST below
 constant PLATFORM_ID_ML605: integer :=0;
 constant PLATFORM_ID_KC705: integer :=1;
 constant PLATFORM_ID_MGK7MB_REV0: integer :=2;
 constant PLATFORM_ID_MGK7MB_REV2: integer :=3;
-constant FPGA_SERIES_LIST: IntegerArray(0 to 2):=(6,7,7); --! 6 for VIRTEX6, 7 for VIRTEX/KINTEX7
---constant SIM_DEVICE_LIST: StringArray(0 to 1):=("VIRTEX6","7SERIES");
+constant PLATFORM_ID_ZCU111: integer :=4;
+
+-- Platform information structure
+type PLATFORM_INFO_STRUCT is
+	record
+		FPGA_SERIES: integer; -- indicates that the series of the FPGA. Is typically used to select low level primitives
+		DSP_TILE_DELTA_RPM_Y: integer; -- vertical spacing between DSP tiles in RPM coordinates
+		DSP_BEL_DELTA_RPM_Y: integer; -- vertical spacing between DSPs BELs within a tile, in RPM coordinates
+		BRAM_TILE_DELTA_RPM_Y: integer; -- vertical spacing between BRAM tiles in RPM coordinates
+		BRAM_BEL_DELTA_RPM_Y: integer; -- vertical spacing between BRAMs BELs within a tile, in RPM coordinates
+	end record;
+
+type PLATFORM_INFO_ARRAY is array (NATURAL RANGE <>) of PLATFORM_INFO_STRUCT;
+
+-- FPGA series list
+--
+-- Is indexed by the PLATFORM_ID value to obtain the FPGA series, which is used to select low-level primitives.
+--
+--  - 6: for VIRTEX6,
+--  - 7: VIRTEX/KINTEX7
+--  - 8: Ultrascale
+--  - 9: Ultrascale+
+constant FPGA_VIRTEX6: integer := 6;
+constant FPGA_KINTEX7: integer := 7;
+constant FPGA_ULTRASCALE: integer := 8;
+constant FPGA_ULTRASCALEPLUS: integer := 9;
+
+-- Define platform-specific constants
+constant PLATFORM_INFO: PLATFORM_INFO_ARRAY:=(
+	PLATFORM_ID_ML605 => (
+		FPGA_SERIES => FPGA_VIRTEX6,
+		DSP_TILE_DELTA_RPM_Y => 0, -- to be defined of ever needed again
+		DSP_BEL_DELTA_RPM_Y => 0,
+		BRAM_TILE_DELTA_RPM_Y => 0,
+		BRAM_BEL_DELTA_RPM_Y => 0
+		),
+
+	PLATFORM_ID_KC705 => (
+		FPGA_SERIES => FPGA_KINTEX7,
+		DSP_TILE_DELTA_RPM_Y => 5,
+		DSP_BEL_DELTA_RPM_Y => 5,
+		BRAM_TILE_DELTA_RPM_Y => 5,
+		BRAM_BEL_DELTA_RPM_Y => 5
+		),
+
+	PLATFORM_ID_MGK7MB_REV0 => (
+		FPGA_SERIES => FPGA_KINTEX7,
+		DSP_TILE_DELTA_RPM_Y => 5,
+		DSP_BEL_DELTA_RPM_Y => 5,
+		BRAM_TILE_DELTA_RPM_Y => 5,
+		BRAM_BEL_DELTA_RPM_Y => 5
+		),
+
+	PLATFORM_ID_MGK7MB_REV2 => (
+		FPGA_SERIES => FPGA_KINTEX7,
+		DSP_TILE_DELTA_RPM_Y => 10,
+		DSP_BEL_DELTA_RPM_Y => 5,
+		BRAM_TILE_DELTA_RPM_Y => 10,
+		BRAM_BEL_DELTA_RPM_Y => 5
+		),
+
+	PLATFORM_ID_ZCU111 => (
+		FPGA_SERIES => FPGA_ULTRASCALEPLUS,
+		DSP_TILE_DELTA_RPM_Y => 10,
+		DSP_BEL_DELTA_RPM_Y => 1,
+		BRAM_TILE_DELTA_RPM_Y => 10,
+		BRAM_BEL_DELTA_RPM_Y => 1
+		)
+	);
+
+
+
+constant FPGA_SERIES_LIST: IntegerArray:=(
+	PLATFORM_ID_ML605 => FPGA_VIRTEX6,
+	PLATFORM_ID_KC705 => FPGA_KINTEX7,
+	PLATFORM_ID_MGK7MB_REV0 => FPGA_KINTEX7,
+	PLATFORM_ID_MGK7MB_REV2 => FPGA_KINTEX7,
+	PLATFORM_ID_ZCU111 => FPGA_ULTRASCALEPLUS
+	);
+
 -- Hardware-related constants
-constant NUMBER_OF_CHANNELIZERS_MAX: INTEGER :=16; -- Maximum number of antennas supported by the system
-constant NUMBER_OF_ADCS_MAX: INTEGER :=16; -- Maximum number of antennas supported by the system
---constant NUMBER_OF_ANTENNAS: INTEGER :=NUMBER_OF_ANTENNAS_MAX; -- Number of antennas actually implemented. If changed, the UCF file needs to be changed to avoid IOSTANDARD errors.
+constant NUMBER_OF_CHANNELIZERS_MAX: INTEGER :=16; -- Maximum number of channelizers supported by the system
+constant NUMBER_OF_ADCS_MAX: INTEGER :=16; -- Maximum number of ADC inputs supported by the system
 constant NUMBER_OF_CORRELATORS_MAX: INTEGER :=8; -- Maximum number of correlators supported by the system
 
 
@@ -328,6 +410,17 @@ type SHUFFLE_FRAME_HEADER_STRUCT is
 		TIMESTAMP: std_logic_vector(31 downto 0); -- --! 32-bit frame number of the *first* frame in the packet. The data sampling time relative to the last SYNC event is directly computed from the frame number. Rolls back every ~3h @ 800MSPS, 2048 time samples/frame.
 	end record;
 
+-- Structure that describes the position of the correlator primitives in the fabric
+type corr_rpm_struct is record
+		LEFT_DSP_X: integer_array(0 to NUMBER_OF_CORRELATORS_MAX-1);
+		LEFT_BRAM_X: integer_array(0 to NUMBER_OF_CORRELATORS_MAX-1);
+		RIGHT_DSP_X: integer_array(0 to NUMBER_OF_CORRELATORS_MAX-1);
+		RIGHT_BRAM_X: integer_array(0 to NUMBER_OF_CORRELATORS_MAX-1);
+		DSP_BOTTOM_Y: integer_array(0 to NUMBER_OF_CORRELATORS_MAX-1);
+		BRAM_BOTTOM_Y: integer_array(0 to NUMBER_OF_CORRELATORS_MAX-1);
+	end record;
+
+
 
 
 function bit_reverse(s1:std_logic_vector) return std_logic_vector; -- reverses left-right bit order of a vector AND the direction of the vector
@@ -393,6 +486,7 @@ FUNCTION struct_to_bytes(s:FRAME_HEADER_STRUCT) return slv8_array; -- Converts a
 
 function struct_to_word(s:SHUFFLE_FRAME_HEADER_STRUCT) return slv32_array; -- Converts a SHUFFLE_FRAME_HEADER structure into a word array
 function word_to_struct(w: slv32_array(0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH-1):= (others=>(others=>'0'))) return SHUFFLE_FRAME_HEADER_STRUCT; -- Converts a word array into a SHUFFLE_FRAME_HEADER structure
+function get_corr_rpm_struct(platform_id:integer; N:integer) return corr_rpm_struct;
 
 --FUNCTION resize(s:signed; constant size:integer) return signed;
 PROCEDURE axis32_write_buffer(buffer_in: in Word32Array; signal stream_out: out AXIS32_DAT_STRUCT; signal clk: in std_logic);
@@ -483,913 +577,24 @@ end COMPONENT;
 
 
 
+--COMPONENT simple_pfb_v2
+--  port (
+--    ce_1: in std_logic;
+--    clk_1: in std_logic;
+--    in0: in std_logic_vector(7 downto 0);
+--    in1: in std_logic_vector(7 downto 0);
+--    in2: in std_logic_vector(7 downto 0);
+--    in3: in std_logic_vector(7 downto 0);
+--    shift: in std_logic_vector(10 downto 0);
+--    sync_in: in std_logic;
+--    out1: out std_logic_vector(35 downto 0);
+--    out2: out std_logic_vector(35 downto 0);
+--    overflow: out std_logic;
+--    sync_out: out std_logic
+--  );
+--END COMPONENT;
 
-COMPONENT CORR is
-	GENERIC (
-		IMPLEMENT_CORR: BOOLEAN :=TRUE;
-		NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER := GLOBAL_NUMBER_OF_CHANNELIZERS_TO_CORRELATE;
-		SIM: boolean:=GLOBAL_SIM
-	);
 
-	PORT (
-		-- Antenna processor output interface (non-blocking)
-		IN_DAT : in  AXIS32_DAT_STRUCT; --! Array of input data stream containing the channelized data from every antenna processor
-		IN_CLK : in std_logic; --! Input clock channelized data.
-		IN_RESET: in std_logic; --! Reset synchronous to the input clock
-
-		-- Data Probe output interface (blocking)
-		PRB_DAT : out  AXIS8_DAT_STRUCT; --! Output data stream containing the integrated values. Packaged in 8 bit stream for transmission over the Ethernet.
-		PRB_RDY : in  AXIS8_RDY_STRUCT; --! Handshaking for the output data stream to control the data flow
-		PRB_CLK : in STD_LOGIC; --! Output data stream clock
-
-		-- Control and reply streams
-		CMD_DAT: in AXIS8_DAT_STRUCT;
-		CMD_RDY: out AXIS8_RDY_STRUCT;
-		RPLY_DAT: out AXIS8_DAT_STRUCT;
-		RPLY_RDY: in AXIS8_RDY_STRUCT;
-		CTRL_CLK : IN std_logic; -- control clock
-		CTRL_RST : in STD_LOGIC
-			);
-
-
-end COMPONENT;
-
-COMPONENT xge_udp_mac is
-	generic (
-		NUMBER_OF_CHANNELS: integer := GLOBAL_NUMBER_OF_GPU_LINKS;
-		NUMBER_OF_REFCLK: integer:= GLOBAL_NUMBER_OF_GPU_REFCLKS;
-		CHANNEL_QUAD: integerArray := GLOBAL_GPU_CHANNEL_QUAD; --! Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-		QUAD_REFCLK: integerArray := GLOBAL_GPU_QUAD_REFCLK; --! Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
-		DEFAULT_MAC_SRC_ADDR: slv48_array := (0 to GLOBAL_NUMBER_OF_GPU_LINKS-1=> X"123456789ABC");
-		DEFAULT_MAC_DEST_ADDR: slv48_array := (0 to GLOBAL_NUMBER_OF_GPU_LINKS-1=> X"FFFFFFFFFFFF");
-		DEFAULT_IP_SRC_ADDR: slv32_array := (0 to GLOBAL_NUMBER_OF_GPU_LINKS-1=> X"0A0A0A0B");
-		DEFAULT_IP_DEST_ADDR: slv32_array := (0 to GLOBAL_NUMBER_OF_GPU_LINKS-1=> X"0A0A0A0A");
-		DEFAULT_IP_DEST_PORT: slv16_array := (0 to GLOBAL_NUMBER_OF_GPU_LINKS-1=> X"A028")
-		);
-	port (
-		tx_p: out std_logic_vector(0 to NUMBER_OF_CHANNELS-1);
-		tx_n: out std_logic_vector(0 to NUMBER_OF_CHANNELS-1);
-		rx_p: in std_logic_vector(0 to NUMBER_OF_CHANNELS-1);
-		rx_n: in std_logic_vector(0 to NUMBER_OF_CHANNELS-1);
-		refclk_p : in std_logic_vector(0 to NUMBER_OF_REFCLK-1); --156.250 clock
-		refclk_n : in std_logic_vector(0 to NUMBER_OF_REFCLK-1);
-
-		clk156_div2: out std_logic; -- Data clock generated from MMCM
-		userclk_div2: out std_logic; -- data clock geterated from GTX
-		refclk_div2: out std_logic; -- 156.25 MHz reference clock
-
-		s_axis_tx_tdata: in slv32_array(0 to NUMBER_OF_CHANNELS-1);
-		s_axis_tx_tvalid: in std_logic_vector(0 to NUMBER_OF_CHANNELS-1);
-		s_axis_tx_tlast: in std_logic_vector(0 to NUMBER_OF_CHANNELS-1);
-		s_axis_tx_tready: out std_logic_vector(0 to NUMBER_OF_CHANNELS-1);
-
-
-		-- Control and reply streams
-		CMD_DAT: in AXIS8_DAT_STRUCT;
-		CMD_RDY: out AXIS8_RDY_STRUCT;
-		RPLY_DAT: out AXIS8_DAT_STRUCT;
-		RPLY_RDY: in AXIS8_RDY_STRUCT;
-		CTRL_CLK : IN std_logic; -- control clock
-		CTRL_RST : in std_logic;
-
-		clk: in std_logic; --! AXI-S data clock. Not related to the 10G Ethernet clocks.
-		areset: in std_logic --! asynchronous reset
-	 );
-end COMPONENT;
-
-----------------------------------------------------------------------------------
-----------------------------------------------------------------------------------
--- SP605_GMII_PHY
-----------------------------------------------------------------------------------
-----------------------------------------------------------------------------------
-
-
-
--- COMPONENT ML605_GMII_PHY
--- 	PORT(
--- 		PHY_RXCLK : IN std_logic;
--- 		PHY_TXCLK : IN std_logic;
--- 		PHY_RXCTRL_RXDV : IN std_logic;
--- 		PHY_RXD : IN std_logic_vector(7 downto 0);
--- 		GMII_RESET_L : IN std_logic;
--- 		GMII_TXC_GTXCLK : IN std_logic;
--- 		GMII_TXEN : IN std_logic;
--- 		GMII_TXER : IN std_logic;
--- 		GMII_TXD : IN std_logic_vector(7 downto 0);
--- 		PHY_RESET_L : OUT std_logic;
--- 		PHY_TXER : OUT std_logic;
--- 		PHY_TXC_GTXCLK : OUT std_logic;
--- 		PHY_TXEN : OUT std_logic;
--- 		PHY_TXD : OUT std_logic_vector(7 downto 0);
--- 		GMII_RXCLK : OUT std_logic;
--- 		GMII_TXCLK : OUT std_logic;
--- 		GMII_RXCTRL_RXDV : OUT std_logic;
--- 		GMII_RXD : OUT std_logic_vector(7 downto 0)
--- 		);
--- 	END COMPONENT;
-
-
-----------------------------------------------------------------------------------
--- GMII_to_SFP
-----------------------------------------------------------------------------------
-
-	-- COMPONENT GMII_to_SFP
-	-- PORT(
-	-- 	gmii_tx_clk0 : IN std_logic;
-	-- 	gmii_txd0 : IN std_logic_vector(7 downto 0);
-	-- 	gmii_tx_en0 : IN std_logic;
-	-- 	gmii_tx_er0 : IN std_logic;
-	-- 	configuration_vector0 : IN std_logic_vector(3 downto 0);
-	-- 	reset0 : IN std_logic;
-	-- 	signal_detect0 : IN std_logic;
-	-- 	SFPCLKP : IN std_logic;
-	-- 	SFPCLKN : IN std_logic;
-	-- 	SFP_RX_P : IN std_logic;
-	-- 	SFP_RX_N : IN std_logic;
-	-- 	gmii_rx_clk0 : OUT std_logic;
-	-- 	gmii_rxd0 : OUT std_logic_vector(7 downto 0);
-	-- 	gmii_rx_dv0 : OUT std_logic;
-	-- 	gmii_rx_er0 : OUT std_logic;
-	-- 	status_vector0 : OUT std_logic_vector(7 downto 0);
-	-- 	SFP_TX_P : OUT std_logic;
-	-- 	SFP_TX_N : OUT std_logic
-	-- 	);
-	-- END COMPONENT;
-
-----------------------------------------------------------------------------------
-----------------------------------------------------------------------------------
--- UDP_SFP
-----------------------------------------------------------------------------------
-----------------------------------------------------------------------------------
-
--- 	COMPONENT UDP_MAC
--- 	PORT(
--- 		-- User-side streaming interface
--- 		RX_MAC_DEST_ADDR: in STD_LOGIC_VECTOR(47 downto 0);
--- 		RX_IP_DEST_ADDR: in STD_LOGIC_VECTOR(31 downto 0);
--- 		RX_IP_DEST_PORT: in STD_LOGIC_VECTOR(15 downto 0);
-
--- 				-- User-side streaming interface
--- 		TX_MAC_DEST_ADDR: in STD_LOGIC_VECTOR(47 downto 0);
--- 		TX_IP_DEST_ADDR: in STD_LOGIC_VECTOR(31 downto 0);
--- 		TX_IP_DEST_PORT: in STD_LOGIC_VECTOR(15 downto 0);
-
-
--- 		TX_EN : IN std_logic;
--- 		TX_FRAME : IN std_logic;
--- 		TX_PORT: IN STD_LOGIC_VECTOR(1 downto 0):="00";
-
--- 		RXD : OUT std_logic_vector(7 downto 0);
--- 		RX_READY : OUT std_logic;
--- 		TXD : IN std_logic_vector(7 downto 0);
--- 		CLK125 : IN std_logic;
--- 		RST : IN std_logic;
-
--- 		GMII_RXCLK : IN std_logic;
--- 		GMII_RXCTRL_RXDV : IN std_logic;
--- 		GMII_RXD : IN std_logic_vector(7 downto 0);
--- 		GMII_TXCLK : IN std_logic;
--- 		GMII_RESET_L : OUT std_logic;
--- 		GMII_TXER : OUT std_logic;
--- 		GMII_TXC_GTXCLK : OUT std_logic;
--- 		GMII_TXEN : OUT std_logic;
--- 		GMII_TXD : OUT std_logic_vector(7 downto 0)
--- 		);
--- 	END COMPONENT;
-
-
--- component XGMII_UDP_MAC_TX is
-
--- 	PORT (
--- 			-- User-side streaming interface
--- 		MAC_SRC_ADDR: in STD_LOGIC_VECTOR(47 downto 0);
--- 		IP_SRC_ADDR: in STD_LOGIC_VECTOR(31 downto 0);
-
--- 		MAC_DEST_ADDR: in STD_LOGIC_VECTOR(47 downto 0);
--- 		IP_DEST_ADDR: in STD_LOGIC_VECTOR(31 downto 0); --! Must reset whenever this address is changed
--- 		IP_DEST_PORT: in STD_LOGIC_VECTOR(15 downto 0); --! Must reset whenever this address is changed
-
--- --		ARP_REQUEST : in STD_LOGIC;
--- --		ARP_MAC_DEST_ADDR: in STD_LOGIC_VECTOR(47 downto 0);
--- --		ARP_IP_DEST_ADDR: in STD_LOGIC_VECTOR(31 downto 0);
-
--- 		-- User-side streaming interface
--- 		DIN: in AXIS32_DAT_STRUCT;
--- 		DIN_CLK: in std_logic; -- <322.5 MHz, minus Ethernet overhead
-
--- 		-- XGMII Interface
--- 		XGMII_TXD: out  STD_LOGIC_VECTOR(63 downto 0); -- Transmit data word
--- 		XGMII_TXC: out  STD_LOGIC_VECTOR(7 downto 0); -- Transmit control flags
--- 		XGMII_CLK: in STD_LOGIC; -- Transmit clock
-
--- 		RST : in STD_LOGIC -- asynchronous reset
--- 		);
-
-
--- end component;
-
-----------------------------------------------------------------------------------
-----------------------------------------------------------------------------------
--- ADC_DAQ
-----------------------------------------------------------------------------------
-----------------------------------------------------------------------------------
-
--- COMPONENT MGT_DIST is
--- 	GENERIC (
--- 		NUMBER_OF_MGT: INTEGER :=2;
--- 		NUMBER_OF_ANTENNAS: INTEGER :=1
--- 	);
-
--- 	PORT (
-
--- 		-- MGT pin interfaces
-
--- 		MGT_TXP: out STD_LOGIC_VECTOR(0 to NUMBER_OF_MGT-1);
--- 		MGT_TXN: out STD_LOGIC_VECTOR(0 to NUMBER_OF_MGT-1);
--- 		MGT_RXP: in STD_LOGIC_VECTOR(0 to NUMBER_OF_MGT-1);
--- 		MGT_RXN: in STD_LOGIC_VECTOR(0 to NUMBER_OF_MGT-1);
-
--- --		MGT_TXP: out STD_LOGIC;
--- --		MGT_TXN: out STD_LOGIC;
--- --		MGT_RXP: in STD_LOGIC;
--- --		MGT_RXN: in STD_LOGIC;
-
--- 		MGT_REFCLKP: in STD_LOGIC;
--- 		MGT_REFCLKN: in STD_LOGIC;
-
-
--- 		-- Antenna processor output interface
--- 		ANT_OUT_DAT : in  AXIS32_DAT_STRUCT_ARRAY(NUMBER_OF_ANTENNAS-1 downto 0); -- Antenna data stream
--- 		ANT_OUT_RDY : out  AXIS32_RDY_STRUCT_ARRAY(NUMBER_OF_ANTENNAS-1 downto 0); -- Antenna data frame is ready for readout
--- 		ANT_CLK:  OUT STD_LOGIC;
-
--- 		-- MGT Distributor output interface
-
--- 		MGT_DOUT : out  ByteArray(NUMBER_OF_MGT-1 downto 0); -- Antenna data stream
--- 		MGT_READY : out STD_LOGIC_VECTOR(NUMBER_OF_MGT-1 downto 0); -- Antenna data frame is ready for readout
--- 		MGT_RD_EN : in STD_LOGIC_VECTOR(NUMBER_OF_MGT-1 downto 0); -- Read enable (maintain high while ANT_READY is high)
--- 		MGT_CLK:  in STD_LOGIC;
-
--- 		-- System
--- 		MGT_REFCLK_DIV2: out STD_LOGIC;
--- 		MGT_USRCLK2_DIV2: out STD_LOGIC;
-
--- 		-- Control interface
--- 		CTRL_CMD_IN_DAT: in AXIS8_DAT_STRUCT;
--- 		CTRL_CMD_IN_RDY: out AXIS8_RDY_STRUCT;
--- 		CTRL_RPLY_OUT_DAT: out AXIS8_DAT_STRUCT;
--- 		CTRL_RPLY_OUT_RDY: in AXIS8_RDY_STRUCT;
--- 		CTRL_CLK: in  STD_LOGIC;
-
--- 		CLK200: in  STD_LOGIC;
--- 		RST : in STD_LOGIC
--- 		);
-
--- end COMPONENT;
-
--- component MGT
--- generic
--- (
---     -- Simulation attributes
---     WRAPPER_SIM_GTXRESET_SPEEDUP    : integer   := 0 -- Set to 1 to speed up sim reset
--- );
--- port
--- (
--- 	-- MGT Input and outputs
--- 	RXN                             : in   std_logic;
---    RXP                             : in   std_logic;
--- 	TXN                            : out  std_logic;
--- 	TXP                            : out  std_logic;
-
--- 	-- MGT control signals
--- 	USRCLK                        : in   std_logic;
--- 	USRCLK2                       : in   std_logic;
--- 	REFCLK                        : in   std_logic;
--- 	TXOUTCLK                        : out   std_logic;
--- 	RX_RESET                      : in   std_logic;
---    RX_PLL_LOCKED                     : out  std_logic;
--- 	TX_RESET                         : in   std_logic;
-
--- 	-- Antenna processor output interface
-
--- 	ANT_DOUT : in  STD_LOGIC_VECTOR(31 downto 0); -- Antenna data stream
--- 	ANT_READY : in STD_LOGIC; -- Antenna data frame is ready for readout
--- 	ANT_RD_EN : out STD_LOGIC; -- Read enable (maintain high while ANT_READY is high)
--- 	ANT_CLK:  OUT STD_LOGIC;
-
--- 	-- MGT Distributor output interface
-
--- 	MGT_DOUT : out  STD_LOGIC_VECTOR(7 downto 0):=(others=>'0'); -- Antenna data stream
--- 	MGT_READY : out STD_LOGIC:='0'; -- Antenna data frame is ready for readout
--- 	MGT_RD_EN : in STD_LOGIC; -- Read enable (maintain high while ANT_READY is high)
--- 	MGT_CLK:  in STD_LOGIC;
-
--- 	-- Control interface
--- 	CTRL_CMD_IN_DAT: in AXIS8_DAT_STRUCT;
--- 	CTRL_CMD_IN_RDY: out AXIS8_RDY_STRUCT;
--- 	CTRL_RPLY_OUT_DAT: out AXIS8_DAT_STRUCT;
--- 	CTRL_RPLY_OUT_RDY: in AXIS8_RDY_STRUCT;
--- 	CTRL_CLK: in  STD_LOGIC;
-
--- 	-- System
--- 	USER_RESET : in STD_LOGIC;
--- 	RST : in STD_LOGIC
--- );
--- end component;
-
-
-----------------------------------------------------------------------------------
-----------------------------------------------------------------------------------
--- EV8AQ160
-----------------------------------------------------------------------------------
-----------------------------------------------------------------------------------
-
--- COMPONENT EV8AQ160 is
--- 	 GENERIC (
--- 			DMUX :boolean :=FALSE; -- Is the output Demuxed between the High and Low bytes? (TRUE or FALSE)
--- 			CHANNELS : INTEGER := 4 -- Number of output channels (1, 2 or 4)
--- 	);
-
---     Port ( CLK : in  STD_LOGIC; -- Clock privided at the input of the ADC. The internal sampling clocks are half that rate (although they operate in DDR)
-
---            AHP : out  STD_LOGIC_VECTOR (7 downto 0); -- A Data
---            AHN : out  STD_LOGIC_VECTOR (7 downto 0); -- A Data
---            ALP : out  STD_LOGIC_VECTOR (7 downto 0); -- A Data (DMUX Mode only)
---            ALN : out  STD_LOGIC_VECTOR (7 downto 0); -- A Data (DMUX Mode only)
-
---            BHP : out  STD_LOGIC_VECTOR (7 downto 0);
---            BHN : out  STD_LOGIC_VECTOR (7 downto 0);
---            BLP : out  STD_LOGIC_VECTOR (7 downto 0);
---            BLN : out  STD_LOGIC_VECTOR (7 downto 0);
-
---            CHP : out  STD_LOGIC_VECTOR (7 downto 0);
---            CHN : out  STD_LOGIC_VECTOR (7 downto 0);
---            CLP : out  STD_LOGIC_VECTOR (7 downto 0);
---            CLN : out  STD_LOGIC_VECTOR (7 downto 0);
-
---            DHP : out  STD_LOGIC_VECTOR (7 downto 0);
---            DHN : out  STD_LOGIC_VECTOR (7 downto 0);
---            DLP : out  STD_LOGIC_VECTOR (7 downto 0);
---            DLN : out  STD_LOGIC_VECTOR (7 downto 0);
-
---            AAI : in  REAL;
---            BAI : in  REAL;
---           CAI : in  REAL;
---          DAI : in  REAL;
-
---            ADRP : out  STD_LOGIC;	-- DDR Output clock for AH Data (and AL Data if DMUS mode is used)
---            ADRN : out  STD_LOGIC;	-- DDR Output clock for AH Data (and AL Data if DMUS mode is used)
-
---            BDRP : out  STD_LOGIC;
---            BDRN : out  STD_LOGIC;
-
---            CDRP : out  STD_LOGIC;
---            CDRN : out  STD_LOGIC;
-
---            DDRP : out  STD_LOGIC;
---            DDRN : out  STD_LOGIC;
-
---            SYNCP : in  STD_LOGIC;
---            SYNCN : in  STD_LOGIC
-
--- 			  );
--- end COMPONENT;
-
-----------------------------------------------------------------------------------
-----------------------------------------------------------------------------------
--- FMC_EMUL
-----------------------------------------------------------------------------------
-----------------------------------------------------------------------------------
-
--- COMPONENT FMC_EMUL is
--- 		 GENERIC (
--- 			PRESENT:BOOLEAN := TRUE;
--- 			SAMPLING_FREQUENCY: real
--- 		);
-
--- 	PORT(
--- 		ADC_RESET : IN std_logic;
-
--- 		ADC0_AHDP : OUT std_logic_vector(7 downto 0);
--- 		ADC0_AHDN : OUT std_logic_vector(7 downto 0);
--- 		ADC0_ADRP : OUT std_logic;
--- 		ADC0_ADRN : OUT std_logic;
-
--- 		ADC0_BHDP_ALDP : OUT std_logic_vector(7 downto 0);
--- 		ADC0_BHDN_ALDN : OUT std_logic_vector(7 downto 0);
--- 		ADC0_BDRP : OUT std_logic;
--- 		ADC0_BDRN : OUT std_logic;
-
--- 		ADC0_CHDP : OUT std_logic_vector(7 downto 0);
--- 		ADC0_CHDN : OUT std_logic_vector(7 downto 0);
--- 		ADC0_CDRP : OUT std_logic;
--- 		ADC0_CDRN : OUT std_logic;
-
--- 		ADC0_DHDP_CLDP : OUT std_logic_vector(7 downto 0);
--- 		ADC0_DHDN_CLDN : OUT std_logic_vector(7 downto 0);
--- 		ADC0_DDRP : OUT std_logic;
--- 		ADC0_DDRN : OUT std_logic;
-
--- 		ADC1_AHDP : OUT std_logic_vector(7 downto 0);
--- 		ADC1_AHDN : OUT std_logic_vector(7 downto 0);
--- 		ADC1_ADRP : OUT std_logic;
--- 		ADC1_ADRN : OUT std_logic;
-
--- 		ADC1_BHDP_ALDP : OUT std_logic_vector(7 downto 0);
--- 		ADC1_BHDN_ALDN : OUT std_logic_vector(7 downto 0);
--- 		ADC1_BDRP : OUT std_logic;
--- 		ADC1_BDRN : OUT std_logic;
--- 		ADC1_CHDP : OUT std_logic_vector(7 downto 0);
--- 		ADC1_CHDN : OUT std_logic_vector(7 downto 0);
--- 		ADC1_CDRP : OUT std_logic;
--- 		ADC1_CDRN : OUT std_logic;
--- 		ADC1_DHDP_CLDP : OUT std_logic_vector(7 downto 0);
--- 		ADC1_DHDN_CLDN : OUT std_logic_vector(7 downto 0);
--- 		ADC1_DDRP : OUT std_logic;
--- 		ADC1_DDRN : OUT std_logic;
-
--- 		ADC_SYNCP : IN std_logic;
--- 		ADC_SYNCN : IN std_logic;
-
--- 		-----------------------
--- 		-- SPI Interface ------
--- 		-----------------------
-
--- 		SPI_MISO : OUT std_logic;
--- 		SPI_MOSI : IN std_logic:='0';
--- 		SPI_ADDR : IN std_logic_vector (2 downto 0):="000";
--- 		SPI_SCK : IN std_logic:='0';
-
-
--- 		-----------------------
--- 		-- PLL Interface ------
--- 		-----------------------
-
--- 		PLL_LE: IN std_logic:='0';
-
-
--- 		-----------------------
--- 		-- I2C Interface ------
--- 		-----------------------
-
--- 		I2C_SDI: INOUT std_logic:='0';
--- 		I2C_SCK: IN std_logic:='0';
--- 		--------------------------------
--- 		-- 10 MHz reference clock ------
--- 		--------------------------------
-
--- 		REFCLK: IN std_logic:='0'
-
--- 		);
-
--- end COMPONENT;
-
-
--- COMPONENT FFT is
--- 	generic (
--- 		IMPLEMENT_FFT: BOOLEAN :=TRUE
--- 		);
--- 	port (
--- 		-- Input interface
--- 		IN_DAT: in AXIS32_DAT_STRUCT;
--- --		SYNC_IN : in  STD_LOGIC; -- This is the CASPER SYNC
-
--- 		-- Output interface
--- 		OUT_DAT: out AXIS72_DAT_STRUCT;
-
--- 		-- Control interface (command and reply stream buses)
--- 		CTRL_CMD_IN_DAT: in AXIS8_DAT_STRUCT;
--- 		CTRL_CMD_IN_RDY: out AXIS8_RDY_STRUCT;
--- 		CTRL_RPLY_OUT_DAT: out AXIS8_DAT_STRUCT;
--- 		CTRL_RPLY_OUT_RDY: in AXIS8_RDY_STRUCT;
--- 		CTRL_CLK: in  STD_LOGIC;
-
--- 		CLK : in  STD_LOGIC;
--- 		ANT_RESET : in  STD_LOGIC;
--- 		RST : in  STD_LOGIC
--- 		);
--- END COMPONENT;
-
--- COMPONENT SPI_SLAVE is
--- 	 generic (
--- 		ADDRESS: integer :=4;
--- 		BYTES: integer :=2;
--- 		READ_VALUE: STD_LOGIC_VECTOR :=X"0000"
--- 		);
---     port (
--- 		--SPI signals
--- 		SPI_SCK: in STD_LOGIC;
--- 		SPI_MISO: out STD_LOGIC;
--- 		SPI_MOSI: in STD_LOGIC;
--- 		SPI_ADDR: in STD_LOGIC_VECTOR(2 downto 0);
--- 		SPI_RST_N: in STD_LOGIC;
-
--- 		-- System-level signals
--- 		RST: in STD_LOGIC
--- 	);
-
--- end component;
-
-
--- component FFT_DELAY is
--- 	generic (
--- 		CTR_WIDTH: INTEGER := 12; -- number of bits of the delay line. Max delay = 2^CTR_WIDTH
--- 		DATA_WIDTH: INTEGER := 4 -- number of flag bits to propagate through the delay line.
--- 		);
---    port (
--- 		SYNC_IN : in  STD_LOGIC;
--- 		SYNC_OUT: in  STD_LOGIC;
--- 		MEASURED_DELAY: out STD_LOGIC_VECTOR(CTR_WIDTH-1 downto 0);
-
--- 		DATA_IN : in  STD_LOGIC_VECTOR(DATA_WIDTH-1 downto 0);
--- 		DATA_OUT: out  STD_LOGIC_VECTOR(DATA_WIDTH-1 downto 0);
--- 		VALID: out std_logic;
--- 		DELAY: in STD_LOGIC_VECTOR(CTR_WIDTH-1 downto 0);
-
--- 		CLK : in  STD_LOGIC;
--- 		CE : in  STD_LOGIC;
--- 		RST : in  STD_LOGIC
--- 		);
-
--- end component;
-
-
--- COMPONENT simple_fft
--- 	PORT(
--- 		ce_1 : IN std_logic;
--- 		clk_1 : IN std_logic;
--- 		in0 : IN std_logic_vector(7 downto 0);
--- 		in1 : IN std_logic_vector(7 downto 0);
--- 		in2 : IN std_logic_vector(7 downto 0);
--- 		in3 : IN std_logic_vector(7 downto 0);
--- 		sync_in : IN std_logic;
--- 		out1 : OUT std_logic_vector(15 downto 0);
--- 		out2 : OUT std_logic_vector(15 downto 0);
--- 		overflow : OUT std_logic;
--- 		sync_out : OUT std_logic
--- 		);
--- END COMPONENT;
-
-COMPONENT simple_pfb_v2
-  port (
-    ce_1: in std_logic;
-    clk_1: in std_logic;
-    in0: in std_logic_vector(7 downto 0);
-    in1: in std_logic_vector(7 downto 0);
-    in2: in std_logic_vector(7 downto 0);
-    in3: in std_logic_vector(7 downto 0);
-    shift: in std_logic_vector(10 downto 0);
-    sync_in: in std_logic;
-    out1: out std_logic_vector(35 downto 0);
-    out2: out std_logic_vector(35 downto 0);
-    overflow: out std_logic;
-    sync_out: out std_logic
-  );
-END COMPONENT;
-
--- component SCALER is
--- 	generic (
--- 		IMPLEMENT_CALIB: BOOLEAN :=TRUE
--- 		);
--- 	port (
--- 		-- Input interface
--- 		IN_DAT: in AXIS72_DAT_STRUCT;
-
--- 		-- Output interface
--- 		OUT_DAT: out AXIS32_DAT_STRUCT;
-
--- 		-- Control interface (command and reply stream buses)
--- 		CTRL_CMD_IN_DAT: in AXIS8_DAT_STRUCT;
--- 		CTRL_CMD_IN_RDY: out AXIS8_RDY_STRUCT;
--- 		CTRL_RPLY_OUT_DAT: out AXIS8_DAT_STRUCT;
--- 		CTRL_RPLY_OUT_RDY: in AXIS8_RDY_STRUCT;
--- 		CTRL_CLK: in  STD_LOGIC;
-
--- 		CLK : in  STD_LOGIC;
--- 		ANT_RESET : in  STD_LOGIC;
--- 		RST : in  STD_LOGIC
--- 		);
--- end component;
-
--- COMPONENT FUNCGEN is
---     PORT (
-
--- 		-- Output data interface
--- 		OUT_DAT : out  AXIS32_DAT_STRUCT; --! Output stream of the function generator
-
--- 		-- Data clock
--- 		CLK : in  STD_LOGIC; --! Output stream clock
-
--- 		-- Control interface (command and reply stream buses)
--- 		CTRL_CMD_IN_DAT: in AXIS8_DAT_STRUCT;
--- 		CTRL_CMD_IN_RDY: out AXIS8_RDY_STRUCT;
--- 		CTRL_RPLY_OUT_DAT: out AXIS8_DAT_STRUCT;
--- 		CTRL_RPLY_OUT_RDY: in AXIS8_RDY_STRUCT;
--- 		CTRL_CLK: in  STD_LOGIC;
-
--- 		-- System interface
--- 		ANT_RESET: in std_logic; --! synchronous reset for the whole antenna processing chain
--- 		RST : in  STD_LOGIC --! Asynchronous power-on reset.
--- 	  );
--- end COMPONENT;
-
--- COMPONENT INJECT is
---     PORT (
--- 		-- Output data interface
--- 		OUT_DAT : out  AXIS32_DAT_STRUCT; --! Output stream
-
--- 		-- Data clock
--- 		CLK : in  STD_LOGIC; --! Antenna processing clock common to the input and output streams
-
--- 		-- System level signals
--- 		TRIG : in  STD_LOGIC; --! Global trigger, used to enable start the transmission of the data stored in the local FIFOs
-
--- 		-- Control interface (command and reply stream buses)
--- 		CTRL_CMD_IN_DAT: in AXIS8_DAT_STRUCT;
--- 		CTRL_CMD_IN_RDY: out AXIS8_RDY_STRUCT;
--- 		CTRL_RPLY_OUT_DAT: out AXIS8_DAT_STRUCT;
--- 		CTRL_RPLY_OUT_RDY: in AXIS8_RDY_STRUCT;
--- 		CTRL_CLK: in  STD_LOGIC;
-
--- 		-- System interface
--- 		ANT_RESET: in std_logic; --! synchronous reset for the whole antenna processing chain
--- 		RST : in  STD_LOGIC --! Asynchronous power-on reset.
--- 	  );
--- end COMPONENT;
-
-
--- COMPONENT SRCSEL is
---     PORT (
--- 		-- Input streams interface
--- 		ADC_IN_DAT : in  AXIS32_DAT_STRUCT; --! Data stream from the ADC. The TUSER field contain an overflow bit flag for each byte.
--- 		FUNCGEN_IN_DAT : in  AXIS32_DAT_STRUCT; --! Data stream from the Function Generator.
--- 		INJECT_IN_DAT : in  AXIS32_DAT_STRUCT; --! Data stream from the user injected data.
-
--- 		-- Output data interface
--- 		OUT_DAT : out  AXIS32_DAT_STRUCT; --! Output stream, selected from the software programmable source (ADC, injection or function generator)
-
--- 		-- Data clock
--- 		CLK : in  STD_LOGIC; --! Antenna processing clock common to the input and output streams
-
--- 		-- System level signals
--- 		TRIG : in  STD_LOGIC; --! Global trigger, used to enable the injection buffer readout or tag the ADC or function generator streams with the CAPTURE flag. This is synchronous to the antenna processor clock.
-
--- 		-- Control interface (command and reply stream buses)
--- 		CTRL_CMD_IN_DAT: in AXIS8_DAT_STRUCT;
--- 		CTRL_CMD_IN_RDY: out AXIS8_RDY_STRUCT;
--- 		CTRL_RPLY_OUT_DAT: out AXIS8_DAT_STRUCT;
--- 		CTRL_RPLY_OUT_RDY: in AXIS8_RDY_STRUCT;
--- 		CTRL_CLK: in  STD_LOGIC;
-
--- 		-- System interface
--- 		ANT_RESET: in std_logic; --! synchronous reset for the whole antenna processing chain
--- 		RST : in  STD_LOGIC --! Asynchronous power-on reset.
--- 	  );
--- END COMPONENT;
-
--- COMPONENT CH_DIST is
--- 	GENERIC (
--- 		NUMBER_OF_ANTENNAS: INTEGER -- Number of antennas to capture simultaneously
--- 		);
---     PORT (
--- 		-- Input interface (non-blocking, i.e. always accept data)
--- 		IN_DAT : in  AXIS32_DAT_STRUCT_ARRAY(NUMBER_OF_ANTENNAS-1 downto 0);
--- 		IN_CLK: in  STD_LOGIC;
-
--- 		-- Output interface (blocking, i.e. will send data only when the sink is ready)
--- 		OUT_DAT : out  AXIS32_DAT_STRUCT;
--- 		OUT_RDY : in  AXIS32_RDY_STRUCT;
--- 		OUT_CLK: in  STD_LOGIC; -- readout clock
-
--- 		-- Control interface (command and reply stream buses)
--- 		CTRL_CMD_IN_DAT: in AXIS8_DAT_STRUCT;
--- 		CTRL_CMD_IN_RDY: out AXIS8_RDY_STRUCT;
--- 		CTRL_RPLY_OUT_DAT: out AXIS8_DAT_STRUCT;
--- 		CTRL_RPLY_OUT_RDY: in AXIS8_RDY_STRUCT;
--- 		CTRL_CLK: in  STD_LOGIC;
-
--- 		CORR_RESET : in STD_LOGIC; --! Global correlator reset
--- 		RST : in  STD_LOGIC
--- 	  );
-
--- END COMPONENT;
-
-
-
------------ BLINKER ---------------------
-
-
-------- Command interface end-point ----------------
-
--- COMPONENT CTRL_SLAVE is
--- 	GENERIC (
--- 		DEFAULT_CONTROL_BYTES: STD_LOGIC_VECTOR:=X"00000000"; -- Vector of bits to initialize the control register to a known value
--- 		NUMBER_OF_CONTROL_BYTES: INTEGER :=1; -- Number of bytes in the control word
--- 		NUMBER_OF_STATUS_BYTES: INTEGER :=1; -- Number of bytes in the status word.
--- 		STICKY_BYTES_MASK:  STD_LOGIC_VECTOR:=X""; -- Determines which status bits are sticky (1=sticky, 0=non-sticky)
--- 		USE_RAM_DOUT_RDY: BOOLEAN :=FALSE; -- Indicates is the RAM interface provides a DOUT_RDY signal. If FALSE, it is assumed that the data is available the clock after RD_EN.
--- 		RAM_DATA_WIDTH: INTEGER :=8; -- Either 8 or 16 bits.
--- 		ADDR_WIDTH: INTEGER :=10; -- Number of bits in the CTRL bus address word
--- 		RAM_ADDR_WIDTH: INTEGER :=8; -- Number of bits in the RAM_Bank selection word.
--- 		USE_ASYNC_FIFO: boolean := False
--- 		);
---     PORT (
-
--- 		-- Control interface
-
--- 		CTRL_CMD_IN_DAT: in AXIS8_DAT_STRUCT; -- Command stream input, signals from master (Data, Valid, Last)
--- 		CTRL_CMD_IN_RDY: out AXIS8_RDY_STRUCT; -- Command stream input, signals to master (Ready)
--- 		CTRL_RPLY_OUT_DAT: out AXIS8_DAT_STRUCT; -- Reply stream output, signals to slave (Data, Valid, Last)
--- 		CTRL_RPLY_OUT_RDY: in AXIS8_RDY_STRUCT; -- Reply stream output,  signals from slave (Ready)
--- 		CTRL_CLK: in STD_LOGIC;
-
--- 		-- Control/status words
--- 		CONTROL_BYTES: out ByteArray(0 to NUMBER_OF_CONTROL_BYTES-1); --
--- 		STATUS_BYTES: in ByteArray(0 to NUMBER_OF_STATUS_BYTES-1):=(others=> (others=>'0')); --
--- 		CLK: in STD_LOGIC;
-
--- 		-- FIFO/RAM interface
--- 		RAM_DIN : OUT  STD_LOGIC_VECTOR (RAM_DATA_WIDTH-1 downto 0);
--- 		RAM_DOUT : IN  STD_LOGIC_VECTOR (RAM_DATA_WIDTH-1 downto 0):=(others=>'0');
--- 		RAM_DOUT_RDY : IN  STD_LOGIC :='0'; -- To interface devices that have a ready pin. Set GLOBAL variable USE_RAM_DOUT_RDY to determine whether this pin is used or not
--- 		RAM_ADDR : OUT  STD_LOGIC_VECTOR (RAM_ADDR_WIDTH-1 downto 0);
--- 		RAM_WR_EN : OUT  STD_LOGIC;
--- 		RAM_RD_EN : OUT  STD_LOGIC;
--- 		RAM_EN : OUT  STD_LOGIC;
--- --		RAM_BANK: IN  STD_LOGIC_VECTOR(RAM_BANK_WIDTH-1 downto 0) :=(others=>'0');
-
--- 		-- System interface
--- 		RST : in  STD_LOGIC
--- 		);
--- end COMPONENT CTRL_SLAVE;
-
-
------- Command interface router ----------
-
--- component CTRL_ROUTER is
--- 	generic(
--- 		NUMBER_OF_PORTS: INTEGER :=8;
--- 		PORT_NUMBER_HIGH_BIT: integer;
--- 		PORT_NUMBER_LOW_BIT: integer
--- 		--SIM: boolean :=FALSE
-
--- 		);
---     PORT (
--- 		-- Command streams from single slave input to multiple master outputs
--- 		CMD_IN_DAT: in AXIS8_DAT_STRUCT;
--- 		CMD_IN_RDY: out AXIS8_RDY_STRUCT;
--- 		CMD_OUT_DAT: out AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_PORTS-1 downto 0);
--- 		CMD_OUT_RDY: in AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_PORTS-1 downto 0);
-
--- 		-- Reply streams from multiple slave inputs to single master output
--- 		RPLY_IN_DAT: in AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_PORTS-1 downto 0);
--- 		RPLY_IN_RDY: out AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_PORTS-1 downto 0);
--- 		RPLY_OUT_DAT: out AXIS8_DAT_STRUCT;
--- 		RPLY_OUT_RDY: in AXIS8_RDY_STRUCT;
-
--- 		-- System interface
--- 		CLK: in STD_LOGIC;
--- 		RST : in  STD_LOGIC
--- 		);
--- end component;
-
--- COMPONENT CTRL_FIFO is
--- 	GENERIC (
--- 		USE_ASYNC_FIFO: boolean;
--- 		SIM: boolean :=FALSE
--- 		);
---     PORT (
-
--- 		-- Command streams from single slave input to multiple master outputs
--- 		CMD_A_DAT: in AXIS8_DAT_STRUCT;
--- 		CMD_A_RDY: out AXIS8_RDY_STRUCT;
--- 		RPLY_A_DAT: out AXIS8_DAT_STRUCT;
--- 		RPLY_A_RDY: in AXIS8_RDY_STRUCT;
--- 		A_CLK: in STD_LOGIC;
-
--- 		CMD_B_DAT: out AXIS8_DAT_STRUCT;
--- 		CMD_B_RDY: in AXIS8_RDY_STRUCT;
--- 		RPLY_B_DAT: in AXIS8_DAT_STRUCT;
--- 		RPLY_B_RDY: out AXIS8_RDY_STRUCT;
--- 		B_CLK: in STD_LOGIC;
-
--- 		-- System interface
--- 		RST : in  STD_LOGIC
--- 		);
-
--- end COMPONENT;
-
--------------- SPI Interface -------------------
-
-
--- ------------ ML605 FAN interface -------------------
--- COMPONENT FAN is
---     PORT (
--- 			-- FPGA fan signals
--- 			FAN_PWM: out STD_LOGIC;
--- 			FAN_TACH: in STD_LOGIC;
--- 			FAN_TACH_DIV2: out STD_LOGIC;
-
--- 			CLK200: in  STD_LOGIC;
---          RST: in  STD_LOGIC
--- 			 );
--- end COMPONENT;
-
--- ------------ FPGA System Monitor -------------------
-
-
-
--- component PROBER is
--- 	generic (
--- 		SIM: BOOLEAN :=FALSE
--- 		);
---    port (
--- 	-- Input interface
--- 	IN_DAT : in  AXIS32_DAT_STRUCT; -- Word to be captured (TDATA)
--- 	IN_CLK:  in STD_LOGIC;
-
--- 	-- Output interface
--- 	OUT_DAT: out AXIS8_DAT_STRUCT;
--- 	OUT_RDY: in AXIS8_RDY_STRUCT;
--- 	OUT_CLK:  in STD_LOGIC;
-
--- 	-- Control interface (command and reply stream buses)
--- 	CTRL_CMD_IN_DAT: in AXIS8_DAT_STRUCT;
--- 	CTRL_CMD_IN_RDY: out AXIS8_RDY_STRUCT;
--- 	CTRL_RPLY_OUT_DAT: out AXIS8_DAT_STRUCT;
--- 	CTRL_RPLY_OUT_RDY: in AXIS8_RDY_STRUCT;
--- 	CTRL_CLK : in  STD_LOGIC;
-
--- 	-- System
--- 	ANT_RESET : in STD_LOGIC;
--- 	RST : in STD_LOGIC
--- 	);
-
-
--- end component;
-
-----------------------------------------------------------------------------------
-----------------------------------------------------------------------------------
--- CORRELATOR
-----------------------------------------------------------------------------------
-----------------------------------------------------------------------------------
-
--- component XMUL is
--- 	GENERIC (
--- 		N: integer :=8 --! Number of antennas to correlate
--- 		);
--- 	PORT(
--- 	-- Input stream (non blocking)
--- 		IN_DAT : IN AXIS32_DAT_STRUCT;
-
--- 	-- Output stream (non blocking)
--- 		OUT_DAT : OUT AXIS34_DAT_STRUCT_ARRAY(0 to N);
-
--- 	-- Control and reply streams
--- 		CTRL_DAT: in AXIS8_DAT_STRUCT;
--- 		CTRL_RDY: out AXIS8_RDY_STRUCT;
--- 		RPLY_DAT: out AXIS8_DAT_STRUCT;
--- 		RPLY_RDY: in AXIS8_RDY_STRUCT;
--- 		CTRL_CLK : IN std_logic; -- control clock
-
-
--- 	-- General system clocks
--- 		CLK : IN std_logic; -- processing clock
--- 		CORR_RESET: IN std_logic; --! Global correltor reset
--- 		RST: IN std_logic -- asynchronous reset
-
--- 		);
-
--- end component;
-
--- component ACC is
--- 	GENERIC(
--- 		N: INTEGER:=8; -- Number of antennas per correlation
--- --		M: INTEGER:=4; -- Number of channel pairs that are correlated in a frame (i.e. number of times the antenna sequence is repeated)
--- 		SIM: boolean:=FALSE
--- 		);
--- 	PORT(
--- 		IN_DAT: in AXIS34_DAT_STRUCT_ARRAY(0 to N);
--- 		IN_CLK : IN std_logic; -- processing clock
-
-
--- 		OUT_DAT: out AXIS8_DAT_STRUCT;
--- 		OUT_RDY: in AXIS8_RDY_STRUCT;
--- 		OUT_CLK : IN std_logic; -- output clock
-
--- 	-- Control and reply streams
--- 		CTRL_DAT: in AXIS8_DAT_STRUCT;
--- 		CTRL_RDY: out AXIS8_RDY_STRUCT;
--- 		RPLY_DAT: out AXIS8_DAT_STRUCT;
--- 		RPLY_RDY: in AXIS8_RDY_STRUCT;
--- 		CTRL_CLK : IN std_logic; -- control clock
-
--- 		-- system
--- 		CORR_RESET: IN std_logic; --! Global correltor reset
--- 		RST: IN std_logic -- asynchronous reset
-
--- 		);
--- end component;
 
 
 end chFPGA_Package;
@@ -1915,6 +1120,61 @@ PROCEDURE axis32_write_buffer(buffer_in: in Word32Array; signal stream_out: out 
 --			end if;
 --			i:=i+1;
   end procedure;
+
+-- Returns a structure that defines the RPM position of the correlator elements in the fabric
+-- N: Number of inputs to correlate
+function get_corr_rpm_struct(platform_id:integer; N:integer) return corr_rpm_struct is
+		 	variable rpm: corr_rpm_struct;
+		 	variable fpga_family: integer;
+		 	variable DSP_TILE_DELTA_Y, DSP_X0L, DSP_X0R, DSP_X1L, DSP_X1R, BRAM_X0L, BRAM_X0R, BRAM_X1L, BRAM_X1R, DSP_Y0, DSP_Y1, DSP_Y2, DSP_Y3: integer;
+	 	begin
+ 			DSP_TILE_DELTA_Y := PLATFORM_INFO(platform_id).DSP_TILE_DELTA_RPM_Y; --same for BRAM
+
+	 		if platform_id = PLATFORM_ID_MGK7MB_REV2 or platform_id = PLATFORM_ID_MGK7MB_REV0 then
+			 	DSP_X0L:=361;
+			 	DSP_X0R:=381;
+			 	DSP_X1L := 425;
+			 	DSP_X1R := 473;
+			 	BRAM_X0L := 350;
+			 	BRAM_X0R := 394;
+			 	BRAM_X1L := 438;
+			 	BRAM_X1R := 462;
+			 	DSP_Y0 := 0;
+			 	DSP_Y1 := DSP_Y0 + DSP_TILE_DELTA_Y*(N+1); -- :=170 -- A corr44 is two columns of (N+1) CMAC44, each one being DSP tile high
+			 	DSP_Y2 := 450;
+			 	DSP_Y3 := DSP_Y2 + DSP_TILE_DELTA_Y*(N+1); -- =620
+
+				rpm.LEFT_DSP_X    := (DSP_X0L, DSP_X1L, DSP_X0L, DSP_X1L, DSP_X0L, DSP_X1L, DSP_X0L, DSP_X1L );
+				rpm.LEFT_BRAM_X   := (BRAM_X0L, BRAM_X1L, BRAM_X0L, BRAM_X1L, BRAM_X0L, BRAM_X1L, BRAM_X0L, BRAM_X1L );
+				rpm.RIGHT_DSP_X   := (DSP_X0R, DSP_X1R, DSP_X0R, DSP_X1R, DSP_X0R, DSP_X1R, DSP_X0R, DSP_X1R );
+				rpm.RIGHT_BRAM_X  := (BRAM_X0R, BRAM_X1R, BRAM_X0R, BRAM_X1R, BRAM_X0R, BRAM_X1R, BRAM_X0R, BRAM_X1R );
+				rpm.DSP_BOTTOM_Y  := (DSP_Y0, DSP_Y0 , DSP_Y1, DSP_Y1, DSP_Y2, DSP_Y2, DSP_Y3, DSP_Y3);
+				rpm.BRAM_BOTTOM_Y := rpm.DSP_BOTTOM_Y; -- on the K7 BRAM Y coords are the same as DSP Y coords
+				return rpm;
+
+			elsif platform_id = PLATFORM_ID_ZCU111 then
+				assert N=8 report "Unsupported N for this platform" severity ERROR;
+			 	DSP_X0L :=1448;
+			 	DSP_X0R :=1520;
+			 	BRAM_X0L  := 1376;
+			 	BRAM_X0R  := 1552;
+			 	DSP_Y0  := 374;
+
+			 	for i in 0 to NUMBER_OF_CORRELATORS_MAX-1 loop
+					rpm.LEFT_DSP_X(i)    := DSP_X0L;
+					rpm.LEFT_BRAM_X(i)   := BRAM_X0L;
+					rpm.RIGHT_DSP_X(i)   := DSP_X0R;
+					rpm.RIGHT_BRAM_X(i)  := BRAM_X0R;
+					rpm.DSP_BOTTOM_Y(i)  := DSP_Y0 + DSP_TILE_DELTA_Y*(N+1)*i; -- Each CORR44 is (N+1) DSP tile high
+					rpm.BRAM_BOTTOM_Y(i) := DSP_Y0 + DSP_TILE_DELTA_Y*(N+1)*i; -- on the K7 BRAM Y coords are the same as DSP Y coords
+				end loop;
+				return rpm;
+
+			else
+				assert FALSE report "UNSUPPORTED PLATFORM" severity ERROR;
+				return rpm;
+			end if;
+	 	end get_corr_rpm_struct;
 
 
 end chFPGA_Package;
