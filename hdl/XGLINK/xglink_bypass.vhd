@@ -141,9 +141,9 @@ rx_fifo0: entity work.XGLINK_RX_DATA_FIFO
 		m_axis_tdata    => m_axis_rx_tdata,
 		m_axis_tlast    => m_axis_rx_tlast_int,
 		m_axis_tuser(0) => m_axis_rx_terror,
-		m_axis_tready   => '1', -- always send data (non-blocking output)
+		m_axis_tready   => '1' -- always send data (non-blocking output)
 
-		axis_overflow => rx_fifo_overflow_int -- on s_aclk clock
+--		axis_overflow => rx_fifo_overflow_int -- on s_aclk clock
 	);
 
 rx_fifo_overflow <= rx_fifo_overflow_int or not s_axis_rx_tready;

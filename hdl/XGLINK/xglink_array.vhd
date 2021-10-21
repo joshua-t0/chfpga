@@ -30,7 +30,7 @@ use UNISIM.VComponents.all;
 
 library work;
 use work.chFPGA_Package.all;
-use work.ip_package.all; -- Import definition of components used in this module
+--use work.ip_package.all; -- Import definition of components used in this module
 
 --! @Brief Implements an array of packet transmitters and receivers using a GTX operating at 7.5Gbps or 10 Gbps.
 --! The link is implemented by GTX transceivers configured to operate at 7.5 Gbps if LINK_SPEED=0 or at 10 Gbps if LINK_SPEED=1.

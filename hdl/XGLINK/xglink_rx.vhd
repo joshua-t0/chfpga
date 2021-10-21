@@ -258,9 +258,9 @@ rx_fifo0: entity work.XGLINK_RX_DATA_FIFO
 		m_axis_tdata    => m_axis_rx_tdata_int2,
 		m_axis_tlast    => m_axis_rx_tlast_int2,
 		m_axis_tuser(0) => m_axis_rx_terror_int2,
-		m_axis_tready   => m_axis_rx_tvalid_int2, -- Always read (non blocking output) AXI4S specs: A slave is permitted to wait for TVALID to be asserted before asserting the corresponding TREADY
+		m_axis_tready   => m_axis_rx_tvalid_int2 -- Always read (non blocking output) AXI4S specs: A slave is permitted to wait for TVALID to be asserted before asserting the corresponding TREADY
 
-		axis_overflow => rx_fifo_overflow_int -- on rx_clk clock
+--		axis_overflow => rx_fifo_overflow_int -- on rx_clk clock
 	);
 
 m_axis_rx_tvalid <= m_axis_rx_tvalid_int2;

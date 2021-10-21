@@ -30,7 +30,7 @@ use UNISIM.VComponents.all;
 
 library work;
 use work.chFPGA_Package.all;
-use work.ip_package.all; -- Import definition of components used in this module
+--use work.ip_package.all; -- Import definition of components used in this module
 
 entity xglink_core is
 	generic (
