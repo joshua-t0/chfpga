@@ -56,7 +56,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 use work.chFPGA_Package.all; -- Get all component definitions
-use work.ip_package.all; -- Import definition of components used in this module
+--use work.ip_package.all; -- Import definition of components used in this module
 
 library UNISIM;
 use UNISIM.VComponents.all;
@@ -1413,9 +1413,9 @@ fifo_rd_proc: process(adc_clk, adcdaq_reset_all)
 	end process;
 
 -- This is a First-Word fall through FIFO
-FIFO0 : ADCDAQ_FIFO
+FIFO0 : entity work.ADCDAQ_FIFO
 	PORT MAP (
-		rst           => fifo_rst,
+		srst           => fifo_rst,
 		wr_clk        => divclk_vect(0),
 		wr_en         => fifo_wr_en,
 		din           => fifo_din,
