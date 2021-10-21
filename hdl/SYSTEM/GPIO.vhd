@@ -65,6 +65,9 @@ entity GPIO is
 		BUCK_CLK_DIVIDE_FACTOR: INTEGER :=12; -- Buck frequency is 200MHz/BUCK_CLK_DIVIDE_FACTOR/16
 		MAC_ADDRESS_OUI_CODE: std_logic_vector(23 downto 0) := X"000A35"; -- Xilinx OUI code used to identify the first 3 bytes of the MAC address
 		NUMBER_OF_USER_SMA_SIGNALS: integer := 8;
+		IMPLEMENT_LCD: BOOLEAN := FALSE;
+		IMPLEMENT_SWITCHER_SYNC: BOOLEAN := TRUE;
+		IMPLEMENT_FAN: BOOLEAN := TRUE;
 		SIM: boolean := FALSE
 		);
 	port (
@@ -238,6 +241,8 @@ end GPIO;
 architecture Behavioral of GPIO is
 
 attribute async_reg : string;
+
+constant FPGA_SERIES:integer := FPGA_SERIES_LIST(PLATFORM_ID);
 
 --signal CLK: std_logic;
 signal CLK_CTR: UNSIGNED(7 downto 0):=(others=>'0'); -- Divides the ADC clock by up to 255
@@ -493,11 +498,14 @@ ADC_RST                    <= reverse_bits_and_dir(CONTROL_BYTES(0)(NUMBER_OF_AD
 -- CONTROL Byte 1
 CTRL_FLAG_BUCK_CLK_DIV <= UNSIGNED(CONTROL_BYTES(1));
 
+gen_LCD: if IMPLEMENT_LCD generate
 -- CONTROL Byte 2
 LCD_E  <= CONTROL_BYTES(2)(7);
 LCD_RS <= CONTROL_BYTES(2)(6);
 LCD_RW <= CONTROL_BYTES(2)(5);
 LCD_DB <= CONTROL_BYTES(2)(3 downto 0);
+
+end generate;
 
 -- CONTROL Byte 3
 USER_RESET <='0';
@@ -512,9 +520,10 @@ DATA_IP_PORT_OFFSET <= CONTROL_BYTES(3)(1 downto 0);
 CTRL_RPLY_IP_PORT_OFFSET<= CONTROL_BYTES(4)(7 downto 6);
 HOST_FRAME_READ_RATE    <= CONTROL_BYTES(4)(4 downto 0);
 
+gen_sw_sync: if IMPLEMENT_SWITCHER_SYNC generate
 -- CONTROL bytes 5-12
 BUCK_PHASE <= to_slv(CONTROL_BYTES(5 to 12));
-
+end generate;
 
 -- CONTROL bytes 13-18
 target_local_mac_addr <= to_slv(CONTROL_BYTES(13 to 18));
@@ -1078,24 +1087,38 @@ USRACCESS_7: if FPGA_SERIES_LIST(PLATFORM_ID)=7 generate
 			);
 end generate;
 
-dna0 : DNA_PORT
-	generic map (
-		SIM_DNA_VALUE => X"000000000000000" -- Specifies a sample 57-bit DNA value for simulation
-	)
-	port map (
-		DOUT => dna_dout, -- 1-bit output: DNA output data.
-		CLK => dna_clk, -- 1-bit input: Clock input.
-		DIN => '0', -- 1-bit input: User data input pin.
-		READ => dna_read, -- 1-bit input: Active high load DNA, active low read input.
-		SHIFT => dna_shift -- 1-bit input: Active high shift enable input.
-	);
+gen_dna7: if FPGA_SERIES=FPGA_KINTEX7 generate
+	dna0 : DNA_PORT
+		generic map (
+			SIM_DNA_VALUE => X"000000000000000" -- Specifies a sample 57-bit DNA value for simulation
+		)
+		port map (
+			DOUT => dna_dout, -- 1-bit output: DNA output data.
+			CLK => dna_clk, -- 1-bit input: Clock input.
+			DIN => '0', -- 1-bit input: User data input pin.
+			READ => dna_read, -- 1-bit input: Active high load DNA, active low read input.
+			SHIFT => dna_shift -- 1-bit input: Active high shift enable input.
+		);
+	end generate;
+gen_dnaup: if FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
+	-- The core currently reads only 57 bits
+	dna0 : DNA_PORTE2
+		port map (
+			DOUT => dna_dout, -- 1-bit output: DNA output data.
+			CLK => dna_clk, -- 1-bit input: Clock input.
+			DIN => '0', -- 1-bit input: User data input pin.
+			READ => dna_read, -- 1-bit input: Active high load DNA, active low read input.
+			SHIFT => dna_shift -- 1-bit input: Active high shift enable input.
+		);
+end generate;
+
 
 -- Read the 57-bit DNA
 dna_proc: process(dna_clk)
 	begin
 		if rising_edge(dna_clk) then
-			dna_read <='0';
-			if dna_read='0' and dna_shift='1' then -- when data is ready and we have not finished shifting
+			dna_read <= '0';
+			if dna_read= '0' and dna_shift='1' then -- when data is ready and we have not finished shifting
 				fpga_serial_number <= std_logic_vector(shift_left(unsigned(fpga_serial_number), 1));
 				fpga_serial_number(0) <= dna_dout;
 				dna_ctr <= dna_ctr - 1;
@@ -1181,6 +1204,7 @@ network_setup_proc: process(ctrl_clk)
 TRIG_ASYNC<=CTRL_FLAG_GLOBAL_TRIG;
 
 
+gen_sw_sync_proc: if IMPLEMENT_SWITCHER_SYNC generate
 --! Generates the buck switching regulator synchronization signal
 buckproc: process(clk200)
 	begin
@@ -1208,7 +1232,10 @@ buckproc: process(clk200)
 		end if; -- CLK
 
 	end process;
+end generate;
 
+
+gen_fan: if IMPLEMENT_FAN generate
 ------ Fan process  ------------------
 --! Debounce the fan tachometer signal
 --! Implements the ML605 Tachometer readout with debouncing and provides a logic signal toggling at half the fan rotation frequency.
@@ -1235,6 +1262,7 @@ fanproc: process(clk200)
 
 FAN_TACH_DIV2<=FAN_TACH_DIV2_INT;
 FAN_PWM <='1'; -- Fan is always operating at 100% speed
+end generate;
 
 
 slotproc: process(ctrl_clk)
@@ -1251,8 +1279,6 @@ slotproc: process(ctrl_clk)
 		end if; --CLK
 	end process;
 
-FAN_TACH_DIV2<=FAN_TACH_DIV2_INT;
-FAN_PWM <='1'; -- Fan is always operating at 100% speed
 
 ------ PWM generator process  ------------------
 pwm_out <= pwm_out_int;
