@@ -31,7 +31,7 @@ library UNISIM;
 use UNISIM.VComponents.all;
 
 use work.chFPGA_Package.all; -- Get all component definitions
-use work.ip_package.all; -- Import definition of components used in this module
+--use work.ip_package.all; -- Import definition of components used in this module
 
 entity chan_crossbar is
 	GENERIC (
@@ -183,7 +183,7 @@ architecture Behavioral of chan_crossbar is
 
 	signal align_reset_all: std_logic;
 	signal reset_stats: std_logic;
-	signal align_lane_monitor: slv(0 to NUMBER_OF_INPUT_LANES-1);
+	signal align_lane_monitor: slv(0 to max(NUMBER_OF_INPUT_LANES, 16)-1);
 
 	-- signal fifo_reset: std_logic;
 	-- signal fifo_reset_all: std_logic;
