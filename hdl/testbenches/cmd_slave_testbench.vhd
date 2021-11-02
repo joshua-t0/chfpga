@@ -103,16 +103,14 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 
 		CONTROL_BYTES => CONTROL_BYTES,
 		STATUS_BYTES => STATUS_BYTES,
-		clk => clk125,
 
 		RAM_DIN => SYSMON_DIN,
 		RAM_DOUT => SYSMON_DOUT,
 		RAM_DOUT_RDY => SYSMON_DRDY,
 		RAM_WR_EN => SYSMON_WR_EN,
 		RAM_EN => SYSMON_DEN,
-		RAM_ADDR => SYSMON_ADDR,
+		RAM_ADDR => SYSMON_ADDR
 
-		RST => reset
 	);
 
 -- sysmon_clk_process :process
