@@ -208,6 +208,8 @@ entity chFPGA is
 			user_mux_in: in std_logic_vector(0 to 3) := (others =>'0');
 			user_mux_oe: out std_logic_vector(0 to 3);
 
+			--blinker_leds: out std_logic_vector(7 downto 0); -- see gpio_leds
+
 			-- Motherboard SMA clocks
 			clk10_out : out  std_logic; --! Delayed 10 MHz FMC Reference clock monitor. The delay line is used to align the ADC SYNC signal with the ADC clock.
 
@@ -668,15 +670,12 @@ signal CORR_RPLY_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_CORRELATORS-1 downto 0);
 
 -- Make sure the pipeline registers are not simplified by the synthesizer so they can be useful in helping meeting timing
 
-signal PRB_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_PROBES-1 downto 0);
-signal PRB_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_PROBES-1 downto 0);
-signal PRB_PORT_OFFSET: slv2_array(NUMBER_OF_PROBES-1 downto 0):=(others=>"01");
 
-
-signal DATA_IP_PORT_OFFSET: slv2;
-signal CORR_IP_PORT_OFFSET: slv2;
-signal CTRL_RPLY_IP_PORT_OFFSET: slv2;
-
+-- Slow data capture bus (PROBER & CORR output)
+signal axis_prb_tdata: slv8_array(NUMBER_OF_PROBES-1 downto 0);
+signal axis_prb_tvalid: slv(NUMBER_OF_PROBES-1 downto 0);
+signal axis_prb_tlast: slv(NUMBER_OF_PROBES-1 downto 0);
+signal axis_prb_tready: slv(NUMBER_OF_PROBES-1 downto 0);
 
 -- REFCLK signals
 
@@ -1284,8 +1283,7 @@ end generate;
 
 ctrl_master0: entity work.ctrl_master
 	GENERIC MAP (
-		NUMBER_OF_PROBES=>NUMBER_OF_PROBES
---		NUMBER_OF_CTRL_PORTS=>NUMBER_OF_PORTS
+		NUMBER_OF_PROBES=>NUMBER_OF_PROBES  -- number of data stream buses
 		)
 	PORT MAP(
 		-- RX UDP stream
@@ -1298,10 +1296,10 @@ ctrl_master0: entity work.ctrl_master
 		m_axis_udp_tx_tvalid => axis_udp_tx_tvalid,
 		m_axis_udp_tx_tdata => axis_udp_tx_tdata,
 		m_axis_udp_tx_tlast => axis_udp_tx_tlast,
-		m_axis_udp_tx_tready=> axis_udp_tx_tready,
-		udp_tx_port => udp0_tx_port,
+		m_axis_udp_tx_tready => axis_udp_tx_tready,
+		m_axis_udp_tx_channel => udp0_tx_port,
 
-		-- Command and reply stream buses
+		-- Command and reply stream buse
 		m_axis_cmd_tdata => axis_cmd_tdata,
 		m_axis_cmd_tvalid => axis_cmd_tvalid,
 		m_axis_cmd_tlast => axis_cmd_tlast,
@@ -1312,15 +1310,15 @@ ctrl_master0: entity work.ctrl_master
 		s_axis_rply_tlast => axis_rply_tlast,
 		s_axis_rply_tready => axis_rply_tready,
 
-		rply_port_offset => CTRL_RPLY_IP_PORT_OFFSET, -- UDP channel used for all command outgoing replies
-		cmd_packet_counter => cmd_packet_counter,
-		rply_packet_counter => rply_packet_counter,
-		-- Probe inputs
-		PRB_DAT => PRB_DAT,
-		PRB_RDY => PRB_RDY,
-		PRB_PORT_OFFSET => PRB_PORT_OFFSET, -- UDP channel used for each prober channel outgoing data
+		-- Data stream buses
+		s_axis_data_tdata => axis_prb_tdata,
+		s_axis_data_tvalid => axis_prb_tvalid,
+		s_axis_data_tlast => axis_prb_tlast,
+		s_axis_data_tready => axis_prb_tready,
 
 		-- System
+		cmd_packet_counter => cmd_packet_counter,
+		rply_packet_counter => rply_packet_counter,
 		HOST_FRAME_READ_RATE => HOST_FRAME_READ_RATE,
 		CLK => CTRL_CLK, -- Common clock for all bus accesses
 		RST => ctrl_master_rst
@@ -1602,9 +1600,6 @@ GPIO0: entity work.GPIO
 		CTRL_RST => sys_CTRL_RST_reg,
 
 		-- IP Port setting
-		CTRL_RPLY_IP_PORT_OFFSET => CTRL_RPLY_IP_PORT_OFFSET,
-		DATA_IP_PORT_OFFSET      => DATA_IP_PORT_OFFSET,
-		CORR_IP_PORT_OFFSET      => CORR_IP_PORT_OFFSET,
 		HOST_FRAME_READ_RATE     => HOST_FRAME_READ_RATE,
 		local_mac_addr           => local_mac_addr,
 		local_base_ip_addr       => local_ip_addr,
@@ -2212,23 +2207,31 @@ gen_adc_clk: if NUMBER_OF_ADCS > 0 generate
 	adc_divclk <= ADC_DIVCLK_OUT_PLL(ANT_CLK_SOURCE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
 end generate gen_adc_clk;
 
-gen_noadc: if NUMBER_OF_ADCS = 0 generate
+
+gen_noev8: if NUMBER_OF_ADCS = 0 generate
+
+	signal adc_word_ctr: frame_word_ctr_array(0 to NUMBER_OF_CHANNELIZERS-1) := (others => (others=>'0')); -- Counts words from 0 to FRAME_LENGTH/4-1
+
+begin
 	adc_clk_bufg <= adc_axis_clk(ANT_CLK_SOURCE);
 	-- Note: axis_adc_* length is max(NUMBER_OF_ADC, NUMBER_OF_CHANNELIZERS) and is therefore NUMBER_OF_CHANNELIZERS in this block
 	axis_adc_tvalid <= adc_axis_tvalid;
 	axis_adc_tdata <= adc_axis_tdata;
-	axis_adc_tlast <= (others => '0'); -- to be fixed. We need to frame the data.
 	axis_adc_tuser <= (others => (others => '0')); -- no overflows. need to fix.
 	-- Generate the divide-by-two adc clock monitoring signals for the frequency counter
 	gen_noadc_div2: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
+		axis_adc_tlast(i) <= to_std_logic(signed(adc_word_ctr(i))=-1);
 		noadc_div2: process(adc_axis_clk(i))
 			begin
 				if rising_edge(adc_axis_clk(i)) then
 					adc_clk_div2(i) <= not adc_clk_div2(i);
 				end if; -- if clk
+				if adc_axis_tvalid(i)='1' then
+					adc_word_ctr(i) <= adc_word_ctr(i) + 1;
+				end if;
 			end process;
 	end generate;
-end generate gen_noadc;
+end generate gen_noev8;
 
 
 ---------------------------------------------------------------------
@@ -2293,7 +2296,7 @@ chan_router0: entity work.CTRL_ROUTER
 
 CHANGEN: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
 
-	PRB_PORT_OFFSET(CHAN_PROBE_BASE_PORT+i) <= DATA_IP_PORT_OFFSET ; --! Assign the IP port number to be used for the returned data
+	--PRB_PORT_OFFSET(CHAN_PROBE_BASE_PORT+i) <= DATA_IP_PORT_OFFSET ; --! Assign the IP port number to be used for the returned data
 
 	--! Pipeline the channel synchronous reset line to the channelizers and correlator inputs
 	rst_proc: process(chan_clk(i))
@@ -2355,10 +2358,10 @@ CHANGEN: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
 			adc_RPLY_tready => ADC_RPLY_RDY(i).TREADY,
 
 			-- Data capture interface
-			PRB_tdata  => PRB_DAT(i).TDATA,
-			PRB_tvalid => PRB_DAT(i).TVALID,
-			PRB_tlast  => PRB_DAT(i).TLAST,
-			PRB_tready => PRB_RDY(i).TREADY,
+			PRB_tdata  => axis_prb_tdata(i),
+			PRB_tvalid => axis_prb_tvalid(i),
+			PRB_tlast  => axis_prb_tlast(i),
+			PRB_tready => axis_prb_tready(i),
 			PRB_CLK    => CTRL_CLK
 		);
 end generate;
@@ -2793,7 +2796,7 @@ end generate;
 
  CORRGEN: if NUMBER_OF_CORRELATORS>0 generate
 
-	PRB_PORT_OFFSET(CORR_PROBE_BASE_PORT + NUMBER_OF_CORRELATORS-1 downto CORR_PROBE_BASE_PORT) <= (others => CORR_IP_PORT_OFFSET); --! Assign the IP port number to be used for the returned data
+	--PRB_PORT_OFFSET(CORR_PROBE_BASE_PORT + NUMBER_OF_CORRELATORS-1 downto CORR_PROBE_BASE_PORT) <= (others => CORR_IP_PORT_OFFSET); --! Assign the IP port number to be used for the returned data
 
  	--! Pipeline and replicate the correlator data reset input to facilitate routing and timing closure.
  	corrrst_proc: process(corr_clk)
@@ -2810,10 +2813,10 @@ end generate;
 			axis_corr_in_tlast(i)                  <= axis_crossbar1_out_tlast(i);
 			axis_corr_in_tdata(i)                  <= axis_crossbar1_out_tdata(i);
 			-- output bus. Connects to the probe port
-			PRB_DAT(CORR_PROBE_BASE_PORT+i).TDATA  <= axis_corr_out_tdata(i);
-			PRB_DAT(CORR_PROBE_BASE_PORT+i).TVALID <= axis_corr_out_tvalid(i);
-			PRB_DAT(CORR_PROBE_BASE_PORT+i).TLAST  <= axis_corr_out_tlast(i);
-			axis_corr_out_tready(i)                <= PRB_RDY(CORR_PROBE_BASE_PORT+i).TREADY;
+			axis_prb_tdata(CORR_PROBE_BASE_PORT+i)  <= axis_corr_out_tdata(i);
+			axis_prb_tvalid(CORR_PROBE_BASE_PORT+i) <= axis_corr_out_tvalid(i);
+			axis_prb_tlast(CORR_PROBE_BASE_PORT+i)  <= axis_corr_out_tlast(i);
+			axis_corr_out_tready(i)                 <= axis_prb_tready(CORR_PROBE_BASE_PORT+i);
  		end generate;
 
  		-- Extract the control interface
@@ -2883,6 +2886,7 @@ BLINKER_RESET_ALL <= sys_ctrl_rst_reg or BLINKER_RESET;
 blinker_rst <= BLINKER_RESET_ALL or (not sfp_status_vector_int(0)); -- do not blink if Link Status = 0
 blinker_kick <= axis_udp_rx_tvalid and axis_udp_rx_tlast; -- blink faster when packets are received
 gpio_led <= gpio_led_int;
+--blinker_leds <= gpio_led_int;
 BLINKER0: entity work.BLINKER
 		GENERIC MAP(
 			DUMMY=>not BLINKER_PRESENT
