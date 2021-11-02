@@ -72,18 +72,18 @@ entity CTRL_MASTER is
 	PORT (
 		-- UDP Transmitter/Receiver interface
 
-		-- UDP Rx interface
+		-- UDP Rx interface (synchronous to clk)
 		s_axis_udp_rx_tdata  : in std_logic_vector (7 downto 0);
 		s_axis_udp_rx_tvalid : in std_logic;
 		s_axis_udp_rx_tlast  : in std_logic;
 		s_axis_udp_rx_tready : out std_logic;
 
-		-- UDP Tx interface
+		-- UDP Tx interface (synchronous to clk)
 		m_axis_udp_tx_tvalid : out std_logic;
 		m_axis_udp_tx_tdata : out  std_logic_vector (7 downto 0); -- will be axis_tx_tdata
 		m_axis_udp_tx_tlast : out std_logic;
 		m_axis_udp_tx_tready: in std_logic;
-		udp_tx_port : out std_logic_vector(1 downto 0); --! Port offset. The destination port number will be offseted by this value relatove to the base port number.
+		m_axis_udp_tx_channel : out std_logic_vector(1 downto 0); --! Port offset. The destination port number will be offseted by this value relatove to the base port number.
 
 
 		-- Command and reply stream buses
@@ -96,17 +96,21 @@ entity CTRL_MASTER is
 		s_axis_rply_tvalid : in std_logic;
 		s_axis_rply_tlast  : in std_logic;
 		s_axis_rply_tready : out std_logic;
-		rply_port_offset: in slv2;
-		cmd_packet_counter: out std_logic_vector(7 downto 0);
-		rply_packet_counter: out std_logic_vector(7 downto 0);
 
 
-		-- Raw Data (probe) inputs
-		prb_dat: in axis8_dat_struct_array(NUMBER_OF_PROBES-1 downto 0);
-		prb_rdy: out axis8_rdy_struct_array(NUMBER_OF_PROBES-1 downto 0);
-		prb_port_offset: in slv2_array(NUMBER_OF_PROBES-1 downto 0);
+		-- Raw Data stream buses
+
+		s_axis_data_tdata: in slv8_array(NUMBER_OF_PROBES-1 downto 0);
+		s_axis_data_tvalid: in slv(NUMBER_OF_PROBES-1 downto 0);
+		s_axis_data_tlast: in slv(NUMBER_OF_PROBES-1 downto 0);
+		s_axis_data_tready: out slv(NUMBER_OF_PROBES-1 downto 0);
+
+		--prb_dat: in axis8_dat_struct_array(NUMBER_OF_PROBES-1 downto 0);
+		--prb_rdy: out axis8_rdy_struct_array(NUMBER_OF_PROBES-1 downto 0);
 
 		-- System
+		cmd_packet_counter: out std_logic_vector(7 downto 0);
+		rply_packet_counter: out std_logic_vector(7 downto 0);
 		host_frame_read_rate: in std_logic_vector(4 downto 0);
 		clk:  in std_logic;
 		rst : in std_logic
@@ -256,7 +260,7 @@ tx_proc: process(clk)
 					-- which case no data will be processed anyway..
 
 					s_axis_rply_tready <= '0';
-					prb_rdy <= (others => (TREADY => '0'));
+					s_axis_data_tready <= (others => '0');
 
 					-- Flush (and stop flushing) command replies
 					--s_axis_rply_tready <= rply_flush;
@@ -285,10 +289,10 @@ tx_proc: process(clk)
 						tx_state <= TX_STATE_SEND_CMD;
 					-- If we have noreply and are not throttling, check the probe input
 					elsif host_buffer_count(host_buffer_count'HIGH) = '0' then--! If the count is less than half the max buffer size, then continue scanning the probe inputs and send the frames
-						if prb_dat(probe_number).tvalid='1' then -- antenna data is ready
+						if s_axis_data_tvalid(probe_number)='1' then -- antenna data is ready
 								-- start reading antenna data.
 								-- the probe number will be incremented in the SEND_ANT state.
-								prb_rdy(probe_number).tready <= '1';
+								s_axis_data_tready(probe_number) <= '1';
 								timeout_ctr <= (others => '0');
 								tx_state <= TX_STATE_SEND_ANT;
 						-- if no data is awaiting, increment antenna number to proceed with scanning
@@ -309,7 +313,7 @@ tx_proc: process(clk)
 						m_axis_udp_tx_tvalid_int <= '1';
 						m_axis_udp_tx_tdata <= s_axis_rply_tdata;
 						m_axis_udp_tx_tlast <= s_axis_rply_tlast;
-						udp_tx_port <= rply_port_offset;
+						m_axis_udp_tx_channel <= "00";
 
 						-- replace only first byte of the reply with command counter
 						is_reply_header <= '0';
@@ -333,34 +337,34 @@ tx_proc: process(clk)
 						m_axis_udp_tx_tvalid_int <= '1';
 						m_axis_udp_tx_tdata <= X"DD"; -- send a recognizable byte to help understand when this happens
 						m_axis_udp_tx_tlast <= '1';
-						udp_tx_port <= rply_port_offset;
+						m_axis_udp_tx_channel <= "00";
 					end if; -- if tvalid
 
 				-- Transmit probe data in the currently selected probe
 				when TX_STATE_SEND_ANT =>
 					m_axis_udp_tx_tvalid_int <= '0'; -- don't send anything if none of the conditions below are met
-					if PRB_DAT(probe_number).TVALID='1' then
+					if s_axis_data_tvalid(probe_number)='1' then
 
 						timeout_ctr <= (others => '0'); -- reset timout counter as long as we receive bytes
 
-						m_axis_udp_tx_tvalid_int <= PRB_DAT(probe_number).TVALID;
-						m_axis_udp_tx_tdata <= PRB_DAT(probe_number).TDATA;
-						udp_tx_port <= PRB_PORT_OFFSET(probe_number);
-						m_axis_udp_tx_tlast <= PRB_DAT(probe_number).TLAST;
+						m_axis_udp_tx_tvalid_int <= s_axis_data_tvalid(probe_number);
+						m_axis_udp_tx_tdata <= s_axis_data_tdata(probe_number);
+						m_axis_udp_tx_channel <= "01";
+						m_axis_udp_tx_tlast <= s_axis_data_tlast(probe_number);
 
-						if PRB_DAT(probe_number).TLAST='1' then
-							PRB_RDY(probe_number).TREADY<='0'; -- we don't accept reply bytes anymore
+						if s_axis_data_tlast(probe_number)='1' then
+							s_axis_data_tready(probe_number)<='0'; -- we don't accept reply bytes anymore
 							timeout_ctr <= (others=>'0'); -- prepare counter for the wait state
 							tx_state <= TX_STATE_WAIT; -- wait some time before returning to scan to make sure we don't fill the Ethernet interface FIFO
 						end if; -- if TLAST;
 					elsif signed(timeout_ctr)=-1 then -- if we had no TVALID until the counter reaches its maximum, abandon reception
-						PRB_RDY(probe_number).TREADY<='0'; -- we don't accept reply bytes anymore
+						s_axis_data_tready(probe_number) <= '0'; -- we don't accept reply bytes anymore
 						tx_state <= TX_STATE_SCAN; -- the SCAN state will reset the UDP write signals
 						-- Force the writing of one last byte with TLAST=1 so we don't leave packet remnants in the transmitter buffer
 						m_axis_udp_tx_tvalid_int <= '1';
 						m_axis_udp_tx_tdata <= X"55";
 						m_axis_udp_tx_tlast <= '1';
-						udp_tx_port <= PRB_PORT_OFFSET(probe_number);
+						m_axis_udp_tx_channel <= "01";
 					end if; -- if TVALID
 
 				-- Wait for some time after transmission to make sure there is
@@ -391,17 +395,14 @@ tx_proc: process(clk)
 				m_axis_udp_tx_tvalid_int <= '0';
 				m_axis_udp_tx_tdata <= (others=>'0');
 				--m_axis_udp_tx_tlast<='1';
-				udp_tx_port <= (others=>'0');
+				m_axis_udp_tx_channel <= (others=>'0');
 
 
 				--prb_flush <= (others => '0');
 				--rply_flush <= '0';  -- this used to be 1, but that complicates recovering after a fresh power up, and it does not seem to help much.
 				-- reset reply bus
 				s_axis_rply_tready <= '0';
-
-				for i in 0 to NUMBER_OF_PROBES-1 loop
-					prb_rdy(i).tready <= '0';
-				end loop;
+				s_axis_data_tready <= (others => '0');
 
 				host_buffer_readout_timer <= (others=>'0');
 				host_buffer_count <= (others=>'0');
