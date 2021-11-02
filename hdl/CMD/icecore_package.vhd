@@ -12,6 +12,7 @@
 ----------------------------------------------------------------------------------
 
 library IEEE;
+use IEEE.math_real.all; -- needed for ceil()
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.ALL;
 
@@ -42,6 +43,7 @@ package icecore_package is
 	type INTEGER_ARRAY_TYPE is array (natural range <>) of integer;
 
 	function to_std_logic(i:boolean) return std_logic; -- converts bool to std_logic
+	function width(len: integer) return integer; --! computes the number of bits needed to represent a number from 0 to len-1
 
 end icecore_package;
 
@@ -55,5 +57,12 @@ package body icecore_package is
 				return '0';
 			end if;
 		end to_std_logic;
+
+
+--! Compute the number of bits needed to represent `len` values (from 0 to len-1)
+function width(len: integer) return integer is
+	begin
+		return integer(ceil(log2(real(len))));
+	end function;
 
 end icecore_package;

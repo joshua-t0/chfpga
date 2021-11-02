@@ -22,6 +22,7 @@ use UNISIM.VComponents.all;
 
 use work.icecore_package.all;
 
+
 entity register_array is
 	generic (
 		ADDRESS_MASK: std_logic_vector(31 downto 0); -- X"000010--" means that we respond to s_addr(31:16)=x"000010" and that we have 8 bits of local address (i.e. 64 registers or less)
@@ -43,11 +44,20 @@ entity register_array is
 		reg_wr_value : out slv32_array(0 to NUMBER_OF_REGISTERS-1) := DEFAULT_REGISTER_VALUES(0 to NUMBER_OF_REGISTERS-1);
 		reg_rd_value : in slv32_array(0 to NUMBER_OF_REGISTERS-1) := (others=> (others=>'0'));
 
+		-- Alternate interface
+		din: in std_logic_vector(7 downto 0);
+		dout: out std_logic_vector(7 downto 0);
+		addr: in std_logic_vector(width(4*NUMBER_OF_REGISTERS)-1 downto 0); -- this is a byte address
+		wr_en: in std_logic;
+		rd_en: in std_logic;
+
 		clk: in std_logic -- Control interface clock
 	);
 end register_array;
 
 architecture IMPL of register_array is
+
+	constant LOCAL_ADDRESS_WIDTH: integer := width(NUMBER_OF_REGISTERS); -- we ignore the address mask
 
 	function find_local_address_width_from_mask(mask:std_logic_vector) return integer is --! returns the number of 32-bit registers. mask must be 'downto' direction.
 		begin
@@ -64,7 +74,7 @@ architecture IMPL of register_array is
 		end find_local_address_width_from_mask;
 
 	-- constant LOCAL_ADDRESS_WIDTH: integer := find_local_address_width_from_mask(ADDRESS_MASK);
-	constant LOCAL_ADDRESS_WIDTH: integer := 6;
+
 
 	signal local_addr_int: unsigned(LOCAL_ADDRESS_WIDTH-1 downto 0) := (others => '0');
 	signal s_wdat_int: std_logic_vector(31 downto 0) := (others => '0');
@@ -82,6 +92,7 @@ begin
 	reg_proc: process(clk)
 	-- variable reg_number_var: integer range 0 to 2**LOCAL_ADDRESS_WIDTH-1;
 	variable reg_number_var: integer range 0 to NUMBER_OF_REGISTERS-1;
+	variable byte_number_var: integer range 0 to 3;
 	begin
 		if rising_edge(clk) then
 
@@ -109,6 +120,17 @@ begin
 			-- Writes
 			if s_wreq_int='1' then
 				reg_wr_value(reg_number_var) <= s_wdat_int;
+			end if;
+
+			-- simplified interface
+			reg_number_var := to_integer(unsigned(addr(addr'LEFT downto 2))); --
+			byte_number_var := to_integer(unsigned(addr(1 downto 0)));
+			if wr_en='1' then
+				reg_wr_value(reg_number_var)(byte_number_var*8+7 downto byte_number_var*8) <= din;
+			end if;
+
+			if rd_en='1' then
+				dout <= reg_rd_value(reg_number_var)(byte_number_var*8+7 downto byte_number_var*8);
 			end if;
 
 		end if; -- clk
