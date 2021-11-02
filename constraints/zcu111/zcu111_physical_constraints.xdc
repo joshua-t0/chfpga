@@ -4,12 +4,15 @@
 ##
 ############################################################################
 
+set_property BITSTREAM.CONFIG.USR_ACCESS TIMESTAMP [current_design]
+
 # Frequency counter
 # ----------------
 # Constrain the frequency counter clock. The clock frequency on this net is 1/2 if the measured clock source
-create_clock -period 3.200 -name FREQ_CTR [get_pins */FREQ_CTR0/V6.SRCCLK0/I]
+create_clock -period 3.200 -name FREQ_CTR [get_pins */*/*/*/FREQ_CTR0/V6.SRCCLK0/I]
 set_clock_groups -name FREQ_CTR_GROUP -asynchronous -group [get_clocks FREQ_CTR]
 
+# 100 MHz clock provided by the PS to the PL is not in phase with any other clock
 set_clock_groups -name CLK_PL0_GROUP -asynchronous -group [get_clocks clk_pl_0]
 
 ########################################
@@ -54,6 +57,8 @@ set_property IOSTANDARD  LVDS     [get_ports {CLK_125_clk_p}] ;# Bank  64 VCCO -
 create_clock -name CLK125 -period 8 [get_ports {CLK_125_clk_p}]
 set_clock_groups -name CLK125_GROUP -asynchronous -group [get_clocks -include_generated_clocks CLK125]
 
+# ignore timing between CLK200 and CORR_CLK  domains. This line has to be placed after we have defines the source clock for the two specified derived clocks
+set_false_path -from [get_clocks CLK200_MMCM_NOBUF] -to [get_clocks {CORR_CLK_NOBUF}]
 
 ########################################
 # SI570 programmable user PLL, default 300 MHz
@@ -111,6 +116,17 @@ set_clock_groups -name CLK125_GROUP -asynchronous -group [get_clocks -include_ge
 ########################################
 # LEDs & Switches
 ########################################
+
+set_property PACKAGE_PIN AR13     [get_ports "gpio_led[0]"] ;# Bank  64 VCCO - VCC1V8   - IO_L7N_T1L_N1_QBC_AD13N_64
+set_property PACKAGE_PIN AP13     [get_ports "gpio_led[1]"] ;# Bank  64 VCCO - VCC1V8   - IO_L7P_T1L_N0_QBC_AD13P_64
+set_property PACKAGE_PIN AR16     [get_ports "gpio_led[2]"] ;# Bank  64 VCCO - VCC1V8   - IO_L8N_T1L_N3_AD5N_64
+set_property PACKAGE_PIN AP16     [get_ports "gpio_led[3]"] ;# Bank  64 VCCO - VCC1V8   - IO_L8P_T1L_N2_AD5P_64
+set_property PACKAGE_PIN AP15     [get_ports "gpio_led[4]"] ;# Bank  64 VCCO - VCC1V8   - IO_T1U_N12_64
+set_property PACKAGE_PIN AN16     [get_ports "gpio_led[5]"] ;# Bank  64 VCCO - VCC1V8   - IO_L10N_T1U_N7_QBC_AD4N_64
+set_property PACKAGE_PIN AN17     [get_ports "gpio_led[6]"] ;# Bank  64 VCCO - VCC1V8   - IO_L10P_T1U_N6_QBC_AD4P_64
+set_property PACKAGE_PIN AV15     [get_ports "gpio_led[7]"] ;# Bank  64 VCCO - VCC1V8   - IO_L2P_T0L_N2_64
+set_property IOSTANDARD  LVCMOS18 [get_ports "gpio_led*"]
+
 # Constraints already provided by the GPIO IP block
 #set_property PACKAGE_PIN AN16     [get_ports "GPIO_LED_5_LS"] ;# Bank  64 VCCO - VCC1V8   - IO_L10N_T1U_N7_QBC_AD4N_64
 #set_property IOSTANDARD  LVCMOS18 [get_ports "GPIO_LED_5_LS"] ;# Bank  64 VCCO - VCC1V8   - IO_L10N_T1U_N7_QBC_AD4N_64
