@@ -46,6 +46,7 @@ use unimacro.Vcomponents.all;
 entity CMAC44 is
 	GENERIC (
 		PLATFORM_ID: integer;
+		CORR_NUMBER: integer;
 		DSP_RPM_X: integer := 45; -- X position in RPM coordinates
 		BRAM_RPM_X: integer := 34;
 		DSP_RPM_Y: integer := 0;
@@ -240,6 +241,7 @@ signal m_axis_z_out_start_dly: std_logic := '1';
 attribute RPM_GRID : string;
 attribute RLOC : string;
 attribute HU_SET : string;
+attribute U_SET : string;
 attribute RLOC_ORIGIN : string;
 attribute KEEP_HIERARCHY : string;
 --attribute HU_SET : string;
@@ -255,15 +257,27 @@ constant FPGA_SERIES:integer := PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES;
 constant DSP_BEL_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_ID).DSP_BEL_DELTA_RPM_Y;
 constant BRAM_BEL_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_ID).BRAM_BEL_DELTA_RPM_Y;
 
-attribute HU_SET of dsp1, dsp2 : label is "DSP_PAIR";
-attribute HU_SET of acc_fifo0, capture_bram0 : label is "BRAM_PAIR";
-attribute RPM_GRID of dsp1,dsp2, acc_fifo0, capture_bram0: label is "GRID";
-attribute RLOC of dsp1 : label is "X0Y0";
-attribute RLOC of dsp2 : label is "X0Y" & integer'IMAGE(DSP_BEL_DELTA_RPM_Y); -- dsp2 is just above dsp1
-attribute RLOC of acc_fifo0 : label is "X0Y0";  -- in a RAMB36, the FIFO18 is the lower one
-attribute RLOC of capture_bram0 : label is "X0Y" & integer'IMAGE(BRAM_BEL_DELTA_RPM_Y); -- capture bram is just above acc_fifo0;
-attribute RLOC_ORIGIN of dsp1 : label is "X"& integer'IMAGE(DSP_RPM_X) & "Y" & integer'IMAGE(DSP_RPM_Y);
-attribute RLOC_ORIGIN of acc_fifo0 : label is "X"& integer'IMAGE(BRAM_RPM_X) & "Y" & integer'IMAGE(BRAM_RPM_Y);
+--attribute HU_SET of dsp1, dsp2 : label is "DSP_PAIR";
+--attribute HU_SET of acc_fifo0, capture_bram0 : label is "BRAM_PAIR";
+
+attribute U_SET of dsp1, dsp2 : label is "DSP_PAIR" & integer'IMAGE(CORR_NUMBER);
+attribute U_SET of acc_fifo0, capture_bram0 : label is "BRAM_PAIR" & integer'IMAGE(CORR_NUMBER);
+--attribute RPM_GRID of dsp1,dsp2, acc_fifo0, capture_bram0: label is "GRID"; -- commented out to use the primitive grid (the normalized one is too irregular for computations)
+--attribute RLOC of dsp1 : label is "X0Y0";
+--attribute RLOC of dsp2 : label is "X0Y" & integer'IMAGE(DSP_BEL_DELTA_RPM_Y); -- dsp2 is just above dsp1
+
+--attribute RLOC of acc_fifo0 : label is "X0Y0";  -- in a RAMB36, the FIFO18 is the lower one
+--attribute RLOC of capture_bram0 : label is "X0Y" & integer'IMAGE(BRAM_BEL_DELTA_RPM_Y); -- capture bram is just above acc_fifo0;
+--attribute RLOC_ORIGIN of dsp1: label is "X"& integer'IMAGE(DSP_RPM_X) & "Y" & integer'IMAGE(DSP_RPM_Y);
+--attribute RLOC_ORIGIN of acc_fifo0: label is "X"& integer'IMAGE(BRAM_RPM_X) & "Y" & integer'IMAGE(BRAM_RPM_Y);
+
+--attribute RLOC_ORIGIN of dsp1: label is "DSP48E2_X2Y72"; --"X11Y48";
+--attribute RLOC_ORIGIN of acc_fifo0: label is "X2344Y374"; --"X6Y48";
+
+attribute RLOC of dsp1: label is "X"& integer'IMAGE(DSP_RPM_X) & "Y" & integer'IMAGE(DSP_RPM_Y);
+attribute RLOC of dsp2: label is "X"& integer'IMAGE(DSP_RPM_X) & "Y" & integer'IMAGE(DSP_RPM_Y+1);
+attribute RLOC of acc_fifo0: label is "X"& integer'IMAGE(BRAM_RPM_X) & "Y" & integer'IMAGE(BRAM_RPM_Y);
+attribute RLOC of capture_bram0: label is "X"& integer'IMAGE(BRAM_RPM_X) & "Y" & integer'IMAGE(BRAM_RPM_Y+1);
 
 
 --attribute RLOC of dsp2 : label is "X0Y1";

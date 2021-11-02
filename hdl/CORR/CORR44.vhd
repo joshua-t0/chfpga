@@ -40,7 +40,7 @@ use UNISIM.VComponents.all;
 -- Location of each CMAC44
 entity CORR44 is
 	generic (
-		PLATFORM_ID: integer; -- necessary to select the DSP RPM spacing and instantiate the proper DSP and FIFO primitives
+		PLATFORM_ID: integer := PLATFORM_ID_ZCU111; -- necessary to select the DSP RPM spacing and instantiate the proper DSP and FIFO primitives
 		CORR_NUMBER: integer := 0; -- used for packet header and to determine the CORR44 RPM locations
 		NUMBER_OF_WORDS_PER_BIN: integer := 4; -- also corresponds to the number of clocks per bin. There are 4 samples per word.
 		NUMBER_OF_HEADER_WORDS: integer := 4; -- must be <= 4
@@ -340,10 +340,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 		CTRL_RST          => ctrl_rst,
 
 		CONTROL_BYTES => control_bytes,
-		STATUS_BYTES => status_bytes,
-
-		CLK => ctrl_clk,
-		RST => ctrl_rst
+		STATUS_BYTES => status_bytes
 	);
 
 
@@ -354,6 +351,7 @@ cmac: for i in 0 to NUMBER_OF_CMACS-1 generate
 	cmac0: entity work.CMAC44
 		GENERIC map (
 			PLATFORM_ID => PLATFORM_ID,
+			CORR_NUMBER => CORR_NUMBER,
 			DSP_RPM_X => sel((i mod 2)=0, corr_rpm.LEFT_DSP_X(CORR_NUMBER), corr_rpm.RIGHT_DSP_X(CORR_NUMBER)), --,
 			BRAM_RPM_X => sel((i mod 2)=0, corr_rpm.LEFT_BRAM_X(CORR_NUMBER), corr_rpm.RIGHT_BRAM_X(CORR_NUMBER)), --(i mod 2)=1,
 			DSP_RPM_Y => corr_rpm.DSP_BOTTOM_Y(CORR_NUMBER) + (i/2)*DSP_TILE_DELTA_RPM_Y, -- Each CMAC is 1 DSP tile (2 DSP) high
