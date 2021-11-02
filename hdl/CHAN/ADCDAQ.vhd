@@ -582,10 +582,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 		RAM_DOUT_RDY => drp_drdy,
 		RAM_WR_EN    => drp_dwe,
 		RAM_EN       => drp_den,
-		RAM_ADDR     => drp_addr,
-
-		CLK => ctrl_clk,
-		RST => ctrl_rst
+		RAM_ADDR     => drp_addr
 	);
 
 

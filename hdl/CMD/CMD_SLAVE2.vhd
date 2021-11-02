@@ -99,27 +99,23 @@ entity CTRL_SLAVE is
 		RAM_ADDR_WIDTH: integer                 := 0; --! Number of bits in the RAB/DRP adress bus. A velue of 0 removes most of the RAM/DRP access logic.
 		USE_PIPELINED_RAM_WRITE: boolean        := TRUE;
 		USE_RAM_DOUT_RDY: boolean               := FALSE; --! Indicates is the RAM interface provides a DOUT_RDY signal. If FALSE, it is assumed that the data is available the clock after RD_EN.
-		RAM_LATENCY: integer                    := 1; --! Number of cycles if takes for the RAM data to be ready after a read. Can be 1 or 2. Not used if USE_RAM_DOUT_RDY=TRUE.
-		USE_FIFO: boolean                       := FALSE; --! Indicates if a FIFO is to be used.
-		USE_ASYNC_FIFO: boolean                 := FALSE --! Indicates if an asynchronous FIFO is to be used. In this case the external size of the FIFO is clocked by CTRL_CLK, and the internal side is clocked by CLK.
+		RAM_LATENCY: integer                    := 1 --! Number of cycles if takes for the RAM data to be ready after a read. Can be 1 or 2. Not used if USE_RAM_DOUT_RDY=TRUE.
 		);
     PORT (
 
 		-- Control interface
 
 		-- Command stream bus (slave)
-		CTRL_CMD_IN_DAT: in AXIS8_DAT_STRUCT; -- Command stream input, signals from master (Data, Valid, Last)
-		CTRL_CMD_IN_RDY: out AXIS8_RDY_STRUCT; -- Command stream input, signals to master (Ready)
-		CTRL_RPLY_OUT_DAT: out AXIS8_DAT_STRUCT; -- Reply stream output, signals to slave (Data, Valid, Last)
-		CTRL_RPLY_OUT_RDY: in AXIS8_RDY_STRUCT; -- Reply stream output,  signals from slave (Ready)
-		CTRL_CLK: in STD_LOGIC;
-		CTRL_RST: in std_logic; --! Reset, synchronous to CTRL_CLK
+		ctrl_cmd_in_dat: in AXIS8_DAT_STRUCT; -- Command stream input, signals from master (Data, Valid, Last)
+		ctrl_cmd_in_rdy: out AXIS8_RDY_STRUCT; -- Command stream input, signals to master (Ready)
+		ctrl_rply_out_dat: out AXIS8_DAT_STRUCT; -- Reply stream output, signals to slave (Data, Valid, Last)
+		ctrl_rply_out_rdy: in AXIS8_RDY_STRUCT; -- Reply stream output,  signals from slave (Ready)
+		ctrl_clk: in STD_LOGIC;
+		ctrl_rst: in std_logic; --! Reset, synchronous to CTRL_CLK
 
 		-- Control/status words
 		CONTROL_BYTES: out slv8_array(0 to NUMBER_OF_CONTROL_BYTES-1); --
 		STATUS_BYTES: in slv8_array(0 to NUMBER_OF_STATUS_BYTES-1):=(others=> (others=>'0')); --
-		CLK: in STD_LOGIC; -- Clock used to sample the status bits and output the control bits
-		RST : in  STD_LOGIC:='0'; --! *NOT USED * reset, synchronous to CLK
 
 		-- FIFO/RAM interface
 		RAM_DIN : OUT  STD_LOGIC_VECTOR (RAM_DATA_WIDTH-1 downto 0);
@@ -141,8 +137,6 @@ architecture Behavioral of CTRL_SLAVE is
 	attribute TO_TIG : string;
 	attribute FROM_TIG : string;
 
-	signal CLK_SEL: std_logic; --! Clock to be used on the internal side of the FIFO
-	signal RST_SEL: std_logic; --! Reset to be used on the internal side of the FIFO
 	signal RAM_RD_EN_INT: STD_LOGIC;
 	signal RAM_WR_EN_INT: std_logic := '0'; -- init for sim only to prevent contamination of RAM first byte
 	signal RAM_DIN_INT: std_logic_vector(15 downto 0);
@@ -159,9 +153,10 @@ architecture Behavioral of CTRL_SLAVE is
 	constant OPCODE_READ_STATUS: OPCODE_TYPE          := "010";
 	constant OPCODE_READ_RAM: OPCODE_TYPE             := "011";
 
---	signal is_write: std_logic;
+	signal ctrl_cmd_in_rdy_int: AXIS8_RDY_STRUCT;
+	signal ctrl_rply_out_dat_int: AXIS8_DAT_STRUCT;
+
 	signal incr: std_logic;
-	-- signal is_ram: std_logic;
 	signal addr: unsigned(INT_ADDR_WIDTH-1 downto 0); --
 	signal count: unsigned(2**CTRL_CMD_COUNT_WIDTH-1 downto 0);
 	signal opcode: OPCODE_TYPE;
@@ -191,11 +186,6 @@ architecture Behavioral of CTRL_SLAVE is
 	signal wait_state: std_logic;
 
 
-	signal CMD_IN_DAT_FIFO:  AXIS8_DAT_STRUCT;
-	signal CMD_IN_RDY_FIFO:  AXIS8_RDY_STRUCT;
-	signal RPLY_OUT_DAT_FIFO:  AXIS8_DAT_STRUCT;
-	signal RPLY_OUT_RDY_FIFO: AXIS8_RDY_STRUCT;
-
 	signal timeout: std_logic;
 	signal timeout_int: std_logic;
 	signal timeout_reset: std_logic;
@@ -203,61 +193,10 @@ architecture Behavioral of CTRL_SLAVE is
 	constant dly: time := 10 ps;
 begin
 
---! Selects which clock is used for the logic connected to the SLAVE.
-clk_sel_gen: if USE_FIFO=TRUE and USE_ASYNC_FIFO=TRUE generate
-	CLK_SEL <= CLK; -- watch out, might mess up simulations.
-end generate;
+-- Use intermediary signals so we can read them back
+ctrl_cmd_in_rdy <= ctrl_cmd_in_rdy_int;
+ctrl_rply_out_dat <= ctrl_rply_out_dat_int;
 
-clk_sel_not_gen: if not(USE_FIFO=TRUE and USE_ASYNC_FIFO=TRUE) generate
-	CLK_SEL <= CTRL_CLK after 1 ps; -- watch out, might mess up simulations. Shoud this be here? Is it for the outputs?
-end generate;
-
-RST_SEL <= CTRL_RST;
-
---fifo_gen: if USE_FIFO generate
-
---	--! Implement a FIFO to improve timing
---	FIFO0 : entity work.CTRL_FIFO
---	  GENERIC MAP (
---			USE_ASYNC_FIFO=> USE_ASYNC_FIFO
---			)
---	  PORT MAP (
---			CMD_A_DAT  => CTRL_CMD_IN_DAT,
---			CMD_A_RDY  => CTRL_CMD_IN_RDY,
---			RPLY_A_DAT => CTRL_RPLY_OUT_DAT,
---			RPLY_A_RDY => CTRL_RPLY_OUT_RDY,
---			A_CLK      => CTRL_CLK,
-
---			CMD_B_DAT  => CMD_IN_DAT_FIFO,
---			CMD_B_RDY  => CMD_IN_RDY_FIFO,
---			-- RPLY_B_DAT => (TVALID=>RPLY_OUT_DAT_FIFO.TVALID, TDATA=>RPLY_OUT_DAT_FIFO.TDATA, TLAST=>RPLY_OUT_DAT_FIFO.TLAST, DUMMY => '0'),
---			RPLY_B_DAT => RPLY_OUT_DAT_FIFO,
---			RPLY_B_RDY => RPLY_OUT_RDY_FIFO,
---			B_CLK      => CLK_SEL,
-
---			-- System interface
---			RST => CTRL_RST
---			);
---end generate;
-
-nofifo_gen: if not USE_FIFO generate
-	CMD_IN_DAT_FIFO <= CTRL_CMD_IN_DAT after dly;  -- make simulations work by ensuring that the command data changes after the clock.
-	CTRL_CMD_IN_RDY <= CMD_IN_RDY_FIFO; -- does not work if sim with direct structure assignment of ports
-	-- CTRL_CMD_IN_RDY.TREADY <= CMD_IN_RDY_FIFO.TREADY; -- Does not help either
-	-- CTRL_RPLY_OUT_DAT <= RPLY_OUT_DAT_FIFO;
-	CTRL_RPLY_OUT_DAT.TDATA <= RPLY_OUT_DAT_FIFO.TDATA after dly;
-	CTRL_RPLY_OUT_DAT.TVALID <= RPLY_OUT_DAT_FIFO.TVALID after dly;
-	CTRL_RPLY_OUT_DAT.TLAST <= RPLY_OUT_DAT_FIFO.TLAST after dly;
-	RPLY_OUT_RDY_FIFO <= CTRL_RPLY_OUT_RDY after dly;  -- needd for sims. Otherwise  the ready flag from the sink changes before our re-assigned CLK_SEL...
-end generate;
-
--- COMMAND_WORD  <= command_data(2) & command_data(1) & command_data(0);
--- COMMAND_DIR   <= COMMAND_WORD(CTRL_CMD_DIR_BIT);
--- COMMAND_INCR  <= COMMAND_WORD(CTRL_CMD_INCR_BIT);
--- COMMAND_COUNT <= UNSIGNED(COMMAND_WORD((CTRL_CMD_COUNT_LSB+CTRL_CMD_COUNT_WIDTH-1) downto CTRL_CMD_COUNT_LSB));
--- COMMAND_ADDR  <= COMMAND_WORD(CTRL_ADDR_WIDTH-1 downto 0);
-
--- RPLY_OUT_DAT_FIFO<=RPLY_OUT_DAT_FIFO;
 RAM_RDY <=
 	RAM_DOUT_RDY when USE_RAM_DOUT_RDY=TRUE else
 	ram_rdy_dly1 when RAM_LATENCY=1 else -- USE RDY signal from RAM if available, otherwise use delayed version of RAM_EN Pulse
@@ -277,23 +216,23 @@ RAM_DIN <= RAM_DIN_INT(RAM_DATA_WIDTH-1 downto 0);
 timeout <= '1' when timeout_int='1' and timeout_reset = '0' else '0';
 
 -- Command processor process
-cmd_proc: process(CLK_SEL)
+cmd_proc: process(ctrl_clk)
 	variable byte_index_var: integer range 0 to max(NUMBER_OF_STATUS_BYTES, NUMBER_OF_CONTROL_BYTES)-1;
 	-- variable opcode_var: OPCODE_TYPE;
 
 	begin
-		if rising_edge(CLK_SEL) then
+		if rising_edge(ctrl_clk) then
 
 			-- if the byte at the reply is read, clear the valid flag. This is overriden below when we send a new byte.
-			if (RPLY_OUT_RDY_FIFO.TREADY='1') then
-				RPLY_OUT_DAT_FIFO.TVALID<='0';
+			if (ctrl_rply_out_rdy.TREADY='1') then
+				ctrl_rply_out_dat_int.TVALID<='0';
 			end if;
 
 
-			if CMD_IN_DAT_FIFO.TVALID='1' and CMD_IN_RDY_FIFO.TREADY ='1'then
-				first <= CMD_IN_DAT_FIFO.TLAST;
+			if ctrl_cmd_in_dat.TVALID='1' and ctrl_cmd_in_rdy_int.TREADY ='1'then
+				first <= ctrl_cmd_in_dat.TLAST;
 				is_msb <= not is_msb; -- toggles for each incoming byte. If overriden below to align msb/lsb.
-				previous_byte <= CMD_IN_DAT_FIFO.TDATA;
+				previous_byte <= ctrl_cmd_in_dat.TDATA;
 			end if;
 
 			ram_rdy_dly1 <= ram_en_int; -- delayed version of RAM_RD_EN used to generate the RAM_DOUT_RDY if the RAM does not provide one
@@ -317,7 +256,7 @@ cmd_proc: process(CLK_SEL)
 
 			-- Force a new state if timeout occurs
 			-- if timeout='1' then
-			-- 	CMD_IN_RDY_FIFO.TREADY<='1'; -- we will capture the next byte
+			-- 	ctrl_cmd_in_rdy_int.TREADY<='1'; -- we will capture the next byte
 			-- 	RX_STATE <= COMMAND_BYTE1;
 			-- end if;
 
@@ -325,16 +264,16 @@ cmd_proc: process(CLK_SEL)
 				---------------------
 				when COMMAND_BYTE1 =>
 				---------------------
---					is_write <= CMD_IN_DAT_FIFO.TDATA(7);
-					opcode <= CMD_IN_DAT_FIFO.TDATA(7 downto 5);
-					count <= shift_left(to_unsigned(1, count'length), to_integer(unsigned(CMD_IN_DAT_FIFO.TDATA(4 downto 3)))); -- initialize byte counter as 2^COMMAND_COUNT
-					addr(18 downto 16) <= unsigned(CMD_IN_DAT_FIFO.TDATA(2 downto 0));
+--					is_write <= ctrl_cmd_in_dat.TDATA(7);
+					opcode <= ctrl_cmd_in_dat.TDATA(7 downto 5);
+					count <= shift_left(to_unsigned(1, count'length), to_integer(unsigned(ctrl_cmd_in_dat.TDATA(4 downto 3)))); -- initialize byte counter as 2^COMMAND_COUNT
+					addr(18 downto 16) <= unsigned(ctrl_cmd_in_dat.TDATA(2 downto 0));
 					incr <='1';
 					timeout_reset <= '1'; -- Ignore timeouts while waiting for first command byte
-					CMD_IN_RDY_FIFO.TREADY <= '1'; -- We will always be ready to capture the next byte when it comes
+					ctrl_cmd_in_rdy_int.TREADY <= '1'; -- We will always be ready to capture the next byte when it comes
 
-					if CMD_IN_DAT_FIFO.TVALID='1' and first='1' then
-						if CMD_IN_DAT_FIFO.TLAST='0' then
+					if ctrl_cmd_in_dat.TVALID='1' and first='1' then
+						if ctrl_cmd_in_dat.TLAST='0' then
 							RX_STATE <= COMMAND_BYTE2;
 						end if;
 					end if;
@@ -342,12 +281,12 @@ cmd_proc: process(CLK_SEL)
 				---------------------
 				when COMMAND_BYTE2 =>
 				---------------------
-					addr(15 downto 8) <= unsigned(CMD_IN_DAT_FIFO.TDATA);
+					addr(15 downto 8) <= unsigned(ctrl_cmd_in_dat.TDATA);
 
-					if CMD_IN_DAT_FIFO.TVALID='1' then
+					if ctrl_cmd_in_dat.TVALID='1' then
 						timeout_reset <= '1';
-						CMD_IN_RDY_FIFO.TREADY<='1'; -- We will always capture the next byte when it comes
-						if CMD_IN_DAT_FIFO.TLAST='1' then
+						ctrl_cmd_in_rdy_int.TREADY<='1'; -- We will always capture the next byte when it comes
+						if ctrl_cmd_in_dat.TLAST='1' then
 							RX_STATE <= COMMAND_BYTE1;
 						else
 							RX_STATE <= COMMAND_BYTE3;
@@ -359,11 +298,11 @@ cmd_proc: process(CLK_SEL)
 				when COMMAND_BYTE3 =>
 				---------------------
 
-					if  CMD_IN_DAT_FIFO.TVALID='1' and CMD_IN_RDY_FIFO.TREADY='1' then -- we use TREADY to determine if we have already obtained a byte.
+					if  ctrl_cmd_in_dat.TVALID='1' and ctrl_cmd_in_rdy_int.TREADY='1' then -- we use TREADY to determine if we have already obtained a byte.
 						timeout_reset <= '1';
-						addr(7 downto 0) <= unsigned(CMD_IN_DAT_FIFO.TDATA); -- grab the final byte of the address
+						addr(7 downto 0) <= unsigned(ctrl_cmd_in_dat.TDATA); -- grab the final byte of the address
 						addr(18 downto ADDR_WIDTH) <= (others=>'0'); -- zero all the address bits we dont need
-						CMD_IN_RDY_FIFO.TREADY <= '0'; -- Don't read any incoming byte by default. Will be overriden below as needed.
+						ctrl_cmd_in_rdy_int.TREADY <= '0'; -- Don't read any incoming byte by default. Will be overriden below as needed.
 					end if;
 
 					-- Prepare reply byte in case it is needed
@@ -375,23 +314,23 @@ cmd_proc: process(CLK_SEL)
 					end if;
 
                     -- we use TREADY to determine if we have already obtained a byte
-					if (CMD_IN_DAT_FIFO.TVALID='1' or CMD_IN_RDY_FIFO.TREADY='0') and (RPLY_OUT_DAT_FIFO.TVALID='0' or  RPLY_OUT_RDY_FIFO.TREADY='1') then -- if the last command byte is available and the reply channel is ready
+					if (ctrl_cmd_in_dat.TVALID='1' or ctrl_cmd_in_rdy_int.TREADY='0') and (ctrl_rply_out_dat_int.TVALID='0' or  ctrl_rply_out_rdy.TREADY='1') then -- if the last command byte is available and the reply channel is ready
 						-- Send a dummy reply byte header. The value is not important: it will be replaced by MASTER with a sequence number.
-						-- RPLY_OUT_DAT_FIFO.TDATA <= is_write & incr & "000000";
-						RPLY_OUT_DAT_FIFO.TVALID <= '1';
+						-- ctrl_rply_out_dat_int.TDATA <= is_write & incr & "000000";
+						ctrl_rply_out_dat_int.TVALID <= '1';
 
 						if opcode=OPCODE_READ_CONTROL or opcode=OPCODE_READ_STATUS or opcode=OPCODE_READ_RAM  then -- if is_write='0'
-    						RPLY_OUT_DAT_FIFO.TLAST <= '0'; -- the first reply byte was not the last one - there are more to come
-							CMD_IN_RDY_FIFO.TREADY <= '0'; -- do not accept more bytes
+    						ctrl_rply_out_dat_int.TLAST <= '0'; -- the first reply byte was not the last one - there are more to come
+							ctrl_cmd_in_rdy_int.TREADY <= '0'; -- do not accept more bytes
 							if opcode = OPCODE_READ_RAM then
 								RAM_RD_EN_INT <='1';
 							end if;
 							RX_STATE <= EXECUTE_COMMAND;
 
 						else -- if we have a write command and the last command byte has arrived
-							RPLY_OUT_DAT_FIFO.TLAST <= '1'; -- the first reply byte is our last one
-							CMD_IN_RDY_FIFO.TREADY <= '1'; -- the next data or command byte will be consumed
-							if CMD_IN_DAT_FIFO.TLAST='1' then -- if this is the last byte of the packet, abort. This being a write command, we need more data coming!
+							ctrl_rply_out_dat_int.TLAST <= '1'; -- the first reply byte is our last one
+							ctrl_cmd_in_rdy_int.TREADY <= '1'; -- the next data or command byte will be consumed
+							if ctrl_cmd_in_dat.TLAST='1' then -- if this is the last byte of the packet, abort. This being a write command, we need more data coming!
 								RX_STATE <= COMMAND_BYTE1;
 							else
 								RX_STATE <= EXECUTE_COMMAND;
@@ -407,19 +346,19 @@ cmd_proc: process(CLK_SEL)
 						---------------------
 						when OPCODE_WRITE_CONTROL | OPCODE_WRITE_CONTROL_MASK=> -- wait for an incoming byte, and write it to the appropriate control byte
 						---------------------
-							if CMD_IN_DAT_FIFO.TVALID='1' then
+							if ctrl_cmd_in_dat.TVALID='1' then
 								timeout_reset <= '1';
 								if opcode = OPCODE_WRITE_CONTROL_MASK then -- if in mask mode, write only when you get 2 bytes
 									if is_msb='1' then
-										CONTROL_BYTES_INT(byte_index_var) <= (CONTROL_BYTES_INT(byte_index_var) and not CMD_IN_DAT_FIFO.TDATA) or (previous_byte and CMD_IN_DAT_FIFO.TDATA); -- Store byte in control word
+										CONTROL_BYTES_INT(byte_index_var) <= (CONTROL_BYTES_INT(byte_index_var) and not ctrl_cmd_in_dat.TDATA) or (previous_byte and ctrl_cmd_in_dat.TDATA); -- Store byte in control word
 										addr <= addr + 1;
 									end if; -- otherwise do nothing but wait for the next byte
 								else
-									CONTROL_BYTES_INT(byte_index_var) <= CMD_IN_DAT_FIFO.TDATA; -- Store byte in control word
+									CONTROL_BYTES_INT(byte_index_var) <= ctrl_cmd_in_dat.TDATA; -- Store byte in control word
 									addr <= addr + 1;
 								end if;
-								CMD_IN_RDY_FIFO.TREADY <='1'; -- the next byte will be processed
-								if CMD_IN_DAT_FIFO.TLAST='1' then
+								ctrl_cmd_in_rdy_int.TREADY <='1'; -- the next byte will be processed
+								if ctrl_cmd_in_dat.TLAST='1' then
 									RX_STATE <= COMMAND_BYTE1;
 								end if;
 							end if;
@@ -428,16 +367,16 @@ cmd_proc: process(CLK_SEL)
 						when OPCODE_READ_CONTROL =>
 						-- wait for the reply bus to be ready and send a control byte value. Repeat 'count' times.
 						---------------------
-							if RPLY_OUT_DAT_FIFO.TVALID='0' or RPLY_OUT_RDY_FIFO.TREADY='1' then -- if reply channel ready
+							if ctrl_rply_out_dat_int.TVALID='0' or ctrl_rply_out_rdy.TREADY='1' then -- if reply channel ready
 								timeout_reset <= '1';
-								RPLY_OUT_DAT_FIFO.TDATA <= CONTROL_BYTES_INT(byte_index_var);
-								RPLY_OUT_DAT_FIFO.TVALID <= '1';
-								RPLY_OUT_DAT_FIFO.TLAST <= '0';
+								ctrl_rply_out_dat_int.TDATA <= CONTROL_BYTES_INT(byte_index_var);
+								ctrl_rply_out_dat_int.TVALID <= '1';
+								ctrl_rply_out_dat_int.TLAST <= '0';
 								addr <= addr + 1;
 								count <= count - 1;
 								if count=1 then
-									RPLY_OUT_DAT_FIFO.TLAST <= '1';
-									CMD_IN_RDY_FIFO.TREADY <= '1'; -- the next byte will be processed
+									ctrl_rply_out_dat_int.TLAST <= '1';
+									ctrl_cmd_in_rdy_int.TREADY <= '1'; -- the next byte will be processed
 									RX_STATE <= COMMAND_BYTE1;
 								end if;
 							end if;
@@ -446,16 +385,16 @@ cmd_proc: process(CLK_SEL)
 						when OPCODE_READ_STATUS =>
 						-- wait for the reply bus to be ready and send a status byte value. Repeat 'count' times.
 						---------------------
-							if RPLY_OUT_DAT_FIFO.TVALID='0' or RPLY_OUT_RDY_FIFO.TREADY='1' then -- if reply channel ready
+							if ctrl_rply_out_dat_int.TVALID='0' or ctrl_rply_out_rdy.TREADY='1' then -- if reply channel ready
 								timeout_reset <= '1';
-								RPLY_OUT_DAT_FIFO.TDATA <= STATUS_BYTES_INT(byte_index_var);
-								RPLY_OUT_DAT_FIFO.TVALID <= '1';
-								RPLY_OUT_DAT_FIFO.TLAST <= '0';
+								ctrl_rply_out_dat_int.TDATA <= STATUS_BYTES_INT(byte_index_var);
+								ctrl_rply_out_dat_int.TVALID <= '1';
+								ctrl_rply_out_dat_int.TLAST <= '0';
 								addr <= addr + 1;
 								count <= count - 1;
 								if count=1 then
-									RPLY_OUT_DAT_FIFO.TLAST<='1';
-									CMD_IN_RDY_FIFO.TREADY <='1'; -- the next byte will be processed
+									ctrl_rply_out_dat_int.TLAST<='1';
+									ctrl_cmd_in_rdy_int.TREADY <='1'; -- the next byte will be processed
 									RX_STATE <= COMMAND_BYTE1;
 								end if;
 							end if;
@@ -466,15 +405,15 @@ cmd_proc: process(CLK_SEL)
 						---------------------
 							if RAM_ADDR_WIDTH/=0 then --Make sure this block of code is not synthesized if no RAM/DRP access is needed
 
-								if wait_state='0' and CMD_IN_DAT_FIFO.TVALID='1' then
+								if wait_state='0' and ctrl_cmd_in_dat.TVALID='1' then
 									timeout_reset <= '1';
 									if RAM_DATA_WIDTH=16 and is_msb='1' then -- if we are in 16-bit mode and this is the second byte (MSB)
-										RAM_DIN_INT(15 downto 8) <= CMD_IN_DAT_FIFO.TDATA;
+										RAM_DIN_INT(15 downto 8) <= ctrl_cmd_in_dat.TDATA;
 										RAM_DIN_INT(7 downto 0) <= previous_byte;
 										RAM_WR_EN_INT <='1';
 										addr <= addr + 1;
 									else -- if 8 bit mode, store and write always
-										RAM_DIN_INT(7 downto 0) <= CMD_IN_DAT_FIFO.TDATA;
+										RAM_DIN_INT(7 downto 0) <= ctrl_cmd_in_dat.TDATA;
 										RAM_WR_EN_INT <='1';
 										if incr='1' then
 											addr <= addr + 1;
@@ -483,26 +422,26 @@ cmd_proc: process(CLK_SEL)
 									end if;
 
 									if USE_PIPELINED_RAM_WRITE=FALSE and (RAM_DATA_WIDTH/=16 or is_msb='1') then -- if we need to wait for a ready signal and we actually wrote a byte/word (i.e. not interrupted half-word), then process a wait state. The end of frame will be handled there.
-										CMD_IN_RDY_FIFO.TREADY <='0'; -- we won't grab new data until the RAM is ready
-										was_last <= CMD_IN_DAT_FIFO.TLAST; -- store the end of frame flag so we process it once the write is acknowledged.
+										ctrl_cmd_in_rdy_int.TREADY <='0'; -- we won't grab new data until the RAM is ready
+										was_last <= ctrl_cmd_in_dat.TLAST; -- store the end of frame flag so we process it once the write is acknowledged.
 										wait_state <= '1';
-									elsif CMD_IN_DAT_FIFO.TLAST='1' then -- this is the last byte and we don't have to wait for the write to complete, process the next command
-										CMD_IN_RDY_FIFO.TREADY <='1'; -- the next byte will be processed
+									elsif ctrl_cmd_in_dat.TLAST='1' then -- this is the last byte and we don't have to wait for the write to complete, process the next command
+										ctrl_cmd_in_rdy_int.TREADY <='1'; -- the next byte will be processed
 										RX_STATE <= COMMAND_BYTE1;
 									else -- if we don't have to wait for the write and this is not the last byte, we stay in this state
-										CMD_IN_RDY_FIFO.TREADY <='1'; -- the next byte will be processed
+										ctrl_cmd_in_rdy_int.TREADY <='1'; -- the next byte will be processed
 									end if;
 								elsif wait_state='1'and USE_PIPELINED_RAM_WRITE=FALSE then -- wait for the RDY signal to be asserted before reading another byte
 									if RAM_RDY='1' then
 										wait_state <= '0';
-										CMD_IN_RDY_FIFO.TREADY <='1'; -- the next byte will be processed
+										ctrl_cmd_in_rdy_int.TREADY <='1'; -- the next byte will be processed
 										if was_last='1' then -- was the byte written the last one?
 											RX_STATE <= COMMAND_BYTE1;
 										end if;
 									end if;
 								end if; -- if new data available
 							else -- no RAM/DRP support, just return to next command. We should never get here.
-								CMD_IN_RDY_FIFO.TREADY <= '1'; -- the next byte will be processed
+								ctrl_cmd_in_rdy_int.TREADY <= '1'; -- the next byte will be processed
 								RX_STATE <= COMMAND_BYTE1;
 							end if; -- if RAM/DRP present
 
@@ -511,59 +450,59 @@ cmd_proc: process(CLK_SEL)
 						---------------------
 							-- RAM_RD_EN_INT <='0'; -- stop the read pulse
 							if RAM_ADDR_WIDTH /=0 then
-								if RPLY_OUT_DAT_FIFO.TVALID='0' or RPLY_OUT_RDY_FIFO.TREADY='1' then -- if reply channel ready
+								if ctrl_rply_out_dat_int.TVALID='0' or ctrl_rply_out_rdy.TREADY='1' then -- if reply channel ready
 									if RAM_DATA_WIDTH=16 then
 										if send_msb='1' then -- if send msb
 											timeout_reset <= '1';
-											RPLY_OUT_DAT_FIFO.TVALID <= '1';
-											RPLY_OUT_DAT_FIFO.TDATA <= ram_dout_msb;
+											ctrl_rply_out_dat_int.TVALID <= '1';
+											ctrl_rply_out_dat_int.TDATA <= ram_dout_msb;
 											send_msb <= '0';
 											RAM_RD_EN_INT <= '1'; -- fetch next word
 										elsif RAM_RDY='1' then
 											timeout_reset <= '1';
-											RPLY_OUT_DAT_FIFO.TVALID <= '1';
-											RPLY_OUT_DAT_FIFO.TDATA <= RAM_DOUT(7 downto 0);
+											ctrl_rply_out_dat_int.TVALID <= '1';
+											ctrl_rply_out_dat_int.TDATA <= RAM_DOUT(7 downto 0);
 											ram_dout_msb <= RAM_DOUT(15 downto 8); -- store the MSB for later transmission
 											send_msb <= '1'; -- next cycle will send the stored MSB
 											-- RAM_RD_EN_INT <='0'; -- stop reading while we send the MSB
 										end if;
 									elsif RAM_RDY='1' then
 										timeout_reset <= '1';
-										RPLY_OUT_DAT_FIFO.TVALID <= '1';
-										RPLY_OUT_DAT_FIFO.TDATA <= RAM_DOUT(7 downto 0);
+										ctrl_rply_out_dat_int.TVALID <= '1';
+										ctrl_rply_out_dat_int.TDATA <= RAM_DOUT(7 downto 0);
 										RAM_RD_EN_INT <= '1'; -- fetch next byte
 									end if;
 
 									if (RAM_DATA_WIDTH=16 and send_msb='1') or RAM_RDY='1' then
 										addr <= addr + 1;
 										count <= count - 1;
-											RPLY_OUT_DAT_FIFO.TLAST <= '0';
+											ctrl_rply_out_dat_int.TLAST <= '0';
 										if count=1 then -- if this is the last byte/word
 											RAM_RD_EN_INT <='0'; -- cancel any data fetch
-											RPLY_OUT_DAT_FIFO.TLAST <= '1';
-											CMD_IN_RDY_FIFO.TREADY <= '1'; -- the next byte will be processed
+											ctrl_rply_out_dat_int.TLAST <= '1';
+											ctrl_cmd_in_rdy_int.TREADY <= '1'; -- the next byte will be processed
 											RX_STATE <= COMMAND_BYTE1;
 										end if;
 									end if;
 								end if; -- if reply channel ready
 							else -- no RAM/DRP support, just return to next command. We should never get here.
-								CMD_IN_RDY_FIFO.TREADY <='1'; -- the next byte will be processed
+								ctrl_cmd_in_rdy_int.TREADY <='1'; -- the next byte will be processed
 								RX_STATE <= COMMAND_BYTE1;
 							end if;
 
 						when others => -- any other opcode is NOP
-							RPLY_OUT_DAT_FIFO.TVALID <= '0'; -- do not send reply header
-							CMD_IN_RDY_FIFO.TREADY <= '1'; -- next state will consume a byte when available
+							ctrl_rply_out_dat_int.TVALID <= '0'; -- do not send reply header
+							ctrl_cmd_in_rdy_int.TREADY <= '1'; -- next state will consume a byte when available
 							RX_STATE <= COMMAND_BYTE1;
 					end case;
 			end case;
 
 
 
-			if RST_SEL='1' then
+			if ctrl_rst='1' then
 				-- Reset buses
-				RPLY_OUT_DAT_FIFO.TVALID<='0';
-				CMD_IN_RDY_FIFO.TREADY <='1'; -- we are ready to accept the next byte
+				ctrl_rply_out_dat_int.TVALID<='0';
+				ctrl_cmd_in_rdy_int.TREADY <='1'; -- we are ready to accept the next byte
 				first <= '1'; -- make sure we accept the first command after reset
 
 				RX_STATE<=COMMAND_BYTE1;
@@ -572,7 +511,7 @@ cmd_proc: process(CLK_SEL)
 				timeout_reset <= '1';
 				for i in 0 to NUMBER_OF_CONTROL_BYTES-1 loop
 					for j in 0 to 7 loop
-						CONTROL_BYTES_INT(i)(j)<=DEFAULT_CONTROL_BYTES(i*8+7-j); -- Clock the control  bytes on the user clock
+						CONTROL_BYTES_INT(i)(j)<=DEFAULT_CONTROL_BYTES(i*8+7-j); -- Clock the control bytes on the user clock
 					end loop;
 				end loop;
 			end if; -- RST

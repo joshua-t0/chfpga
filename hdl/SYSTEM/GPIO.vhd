@@ -34,7 +34,7 @@ use work.icecore_package.irigb;
 library UNISIM;
 use UNISIM.VComponents.all;
 
---! @brief Implements general I/O common to all the devices
+--!  Implements general I/O common to all the devices
 --!
 --! Includes
 --!   - Global data capture/injection trigger
@@ -68,6 +68,7 @@ entity GPIO is
 		IMPLEMENT_LCD: BOOLEAN := FALSE;
 		IMPLEMENT_SWITCHER_SYNC: BOOLEAN := TRUE;
 		IMPLEMENT_FAN: BOOLEAN := TRUE;
+		IMPLEMENT_ARM_SPI: BOOLEAN := TRUE;
 		SIM: boolean := FALSE
 		);
 	port (
@@ -82,15 +83,18 @@ entity GPIO is
 
 		-- IP Port setting
 
-		CTRL_RPLY_IP_PORT_OFFSET: out PortOffset;
-		DATA_IP_PORT_OFFSET: out PortOffset;
-		CORR_IP_PORT_OFFSET: out PortOffset;
 		HOST_FRAME_READ_RATE: out std_logic_vector(4 downto 0);
+
+		-- UDP local Rx networking configuration
 		local_mac_addr: out std_logic_vector(47 downto 0);
 		local_base_ip_addr: out std_logic_vector(31 downto 0);
 		local_base_ip_port: out std_logic_vector(15 downto 0);
 		local_subarray: out std_logic_vector(1 downto 0);
-		remote_ip_port0: out std_logic_vector(15 downto 0);
+		-- UDP TX channel 0 remote network configuration
+		--   MAC & IP addresses are hardwired to be those of the perviously received packet
+		remote_ip_port0: out std_logic_vector(15 downto 0); -- normally set to zero to reply to the same port as the last command
+
+		-- UDP TX channel 1 remote network configuration
 		remote_mac_addr1: out std_logic_vector(47 downto 0);
 		remote_ip_addr1: out std_logic_vector(31 downto 0);
 		remote_ip_port1: out std_logic_vector(15 downto 0);
@@ -157,7 +161,7 @@ entity GPIO is
 		slot_probe: in std_logic_vector(1 downto 0); --! Signal used to probe the capacitance of the backplane slot-sense line
 		slot_sense: in std_logic_vector( 1 downto 0); --! Returns the logic level change in response to the probe edge, which is used to determine the board capacitance.
 
-		-- Backplane buck regulator synchronization signal
+		-- Backplane synchronization signal
 
 		bp_buck_sync: inout std_logic;
 		bp_buck_sync_mon: out std_logic;
@@ -175,7 +179,6 @@ entity GPIO is
 		udp_tx_overflow : in std_logic;
 		udp_rx_overflow : in std_logic;
 		sfp_status_vector: in std_logic_vector(15 downto 0);
-		sfp_config_vector: out std_logic_vector(31 downto 0);
 
 		cmd_packet_counter: in std_logic_vector(7 downto 0);
 		rply_packet_counter: in std_logic_vector(7 downto 0);
@@ -242,7 +245,7 @@ architecture Behavioral of GPIO is
 
 attribute async_reg : string;
 
-constant FPGA_SERIES:integer := FPGA_SERIES_LIST(PLATFORM_ID);
+constant FPGA_SERIES:integer := PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES;
 
 --signal CLK: std_logic;
 signal CLK_CTR: UNSIGNED(7 downto 0):=(others=>'0'); -- Divides the ADC clock by up to 255
@@ -270,9 +273,9 @@ signal buck_phase_ctr: unsigned(3 downto 0):=(others=>'0'); -- Counts the 16 pos
 
 -- ARM-SPI interface
 	signal spi_addr, spi_rdat, spi_wdat: std_logic_vector(31 downto 0) := (others => '0');
-	signal spi_rreq, spi_rack, spi_wreq, spi_wack: std_logic := '0';
+	signal spi_rreq, spi_rack, spi_wreq, spi_wack: std_logic := '0'; -- important to have default value in case the ARM SPI receiver is not instantiated.
 
-	constant NUMBER_OF_CORE_REGISTERS: integer := 23;
+	constant NUMBER_OF_CORE_REGISTERS: integer := 26;
 	signal core_reg_wr_value : work.icecore_package.slv32_array(0 to NUMBER_OF_CORE_REGISTERS-1);
 	signal core_reg_rd_value : work.icecore_package.slv32_array(0 to NUMBER_OF_CORE_REGISTERS-1);
 	constant core_reg_default_values : work.icecore_package.slv32_array(0 to NUMBER_OF_CORE_REGISTERS-1) := (
@@ -312,29 +315,42 @@ signal firmware_crc32: std_logic_vector(31 downto 0);
 signal fpga_serial_number: std_logic_vector(56 downto 0) := (others=>'0'); -- Need to initialize because we do not shift all the 64 bits
 signal target_fpga_serial_number: std_logic_vector(56 downto 0);
 
-signal target_local_subarray: std_logic_vector(1 downto 0);
-signal target_load_trigger: std_logic;
-signal target_load_trigger_dly: std_logic := '0';
-signal target_local_mac_addr: std_logic_vector(47 downto 0);
-signal target_network_config_source: std_logic_vector(1 downto 0);
-signal target_local_base_ip_addr: std_logic_vector(31 downto 0);
-signal target_local_base_ip_port: std_logic_vector(15 downto 0);
+--signal target_local_subarray: std_logic_vector(1 downto 0);
+--signal target_load_trigger: std_logic;
+--signal target_load_trigger_dly: std_logic := '0';
+--signal target_local_mac_addr: std_logic_vector(47 downto 0);
+--signal target_network_config_source: std_logic_vector(1 downto 0);
+--signal target_local_base_ip_addr: std_logic_vector(31 downto 0);
+--signal _base_ip_port: std_logic_vector(15 downto 0);
 
--- Network parameters from SPI registers
-signal spi_fpga_ip_address: std_logic_vector(31 downto 0) := X"0A0A0A0B";
-signal spi_fpga_ip_port: std_logic_vector(15 downto 0) := X"A028"; -- 41000
-signal spi_fpga_mac_address: std_logic_vector(47 downto 0) := X"123456789ABC";
+signal serial_match: std_logic; -- indicates if the FPGA serial number matches the target serial number
+
+signal bsb_core_din: std_logic_vector(7 downto 0);
+signal bsb_core_dout: std_logic_vector(7 downto 0);
+signal bsb_core_addr: std_logic_vector(6 downto 0); -- 5 bit word number (max 32 registers) + 2 bits (4 bytes per word)
+signal bsb_core_wr_en: std_logic;
+signal bsb_core_rd_en: std_logic;
+
+-- Network parameters from the core registers
+signal spi_fpga_local_ip_address: std_logic_vector(31 downto 0) := X"0A0A0A0B";
+signal spi_fpga_local_ip_port: std_logic_vector(15 downto 0) := X"A028"; -- 41000
+signal spi_fpga_local_mac_address: std_logic_vector(47 downto 0) := X"123456789ABC";
+signal spi_fpga_ch0_remote_ip_port: std_logic_vector(15 downto 0);
+signal spi_fpga_ch1_remote_ip_address: std_logic_vector(31 downto 0);
+signal spi_fpga_ch1_remote_ip_port: std_logic_vector(15 downto 0);
+signal spi_fpga_ch1_remote_mac_address: std_logic_vector(47 downto 0);
+
 --signal udp_stack_reset: std_logic;
 --signal ctrl_master_reset: std_logic;
 
-signal local_mac_addr_int: std_logic_vector(47 downto 0);
+-- signal local_mac_addr_int: std_logic_vector(47 downto 0);
 
 -- Default Network settings -- Valid until new targets are loaded (requires the matching FPGA serial number in the TARGET_FPGA_SERIAN_NUMBER)
-signal local_base_ip_addr_reg: std_logic_vector(31 downto 0) := X"0A0A0A0B";
-signal local_base_ip_port_reg: std_logic_vector(15 downto 0) := X"A028"; -- 41000
-signal local_network_config_source_reg: std_logic_vector(1 downto 0) := sel(SIM, "11", "00"); -- Normally Use SPI-based networking parameters, but use default local parameters if this is simulated
-signal local_mac_addr_reg: std_logic_vector(47 downto 0) := X"123456789ABC";
-signal local_subarray_reg: std_logic_vector(1 downto 0) := "00";
+--signal local_base_ip_addr_reg: std_logic_vector(31 downto 0) := X"0A0A0A0B";
+--signal local_base_ip_port_reg: std_logic_vector(15 downto 0) := X"A028"; -- 41000
+--signal local_network_config_source_reg: std_logic_vector(1 downto 0) := sel(SIM, "11", "00"); -- Normally Use SPI-based networking parameters, but use default local parameters if this is simulated
+--signal local_mac_addr_reg: std_logic_vector(47 downto 0) := X"123456789ABC";
+--signal local_subarray_reg: std_logic_vector(1 downto 0) := "00";
 
 -- signal udp_tx_frame_ctr: unsigned(7 downto 0) := (others=>'0');
 -- signal udp_rx_frame_ctr: unsigned(7 downto 0) := (others=>'0');
@@ -413,9 +429,9 @@ signal ts_sample_trig10: std_logic :='0';
 signal ts_sample_trig10_ack: std_logic;
 signal ts_sample_done: std_logic;
 
-signal bp_buck_sync_wr_dat: std_logic_vector(31 downto 0);
-signal bp_buck_sync_rd_dat: std_logic_vector(31 downto 0);
-signal bp_buck_sync_rd_dat_valid: std_logic;
+--signal bp_buck_sync_wr_dat: std_logic_vector(31 downto 0);
+--signal bp_buck_sync_rd_dat: std_logic_vector(31 downto 0);
+--signal bp_buck_sync_rd_dat_valid: std_logic;
 
 --signal release_ctr_mon: std_logic_vector(7 downto 0);
 --signal sync_ctr_mon: std_logic_vector(7 downto 0);
@@ -442,50 +458,64 @@ begin
 --! |         |     |  6   | LCD_RS                      | LCD Command/Data flag|
 --! |         |     |  5   | LCD_RW                      | LCD Read/Write flag|
 --! |         |     |  4   | (unused)                    | |
---! |         |     | 3:0  | LCD_DB                      | LCD data bus ( 4 bits) |
+--! |         |     | 3:0  | LCD_DB                      | LCD data bus (4 bits) |
 --! |         |  3  |  7   | BLINKER_RESET               | |
 --! |         |     |  6   | CHAN_RESET_ASYNC            | Resets all channelizers |
 --! |         |     |  5   | CORR_RESET_ASYNC            | Resets all correlators |
---! |         |     |  4   | (unused)                    | |
---! |         |     | 3:2  | CORR_IP_PORT_OFFSET         | Sets the IP port number offset of the returned captured data relative to the base port |
---! |         |     | 1:0  | DATA_IP_PORT_OFFSET         | Sets the IP port number offset of the returned correlator data relative to the base port |
---! |         |  4  | 7:6  | CTRL_RPLY_IP_PORT_OFFSET    | Sets the IP port number offset of the command replies relative to the base port |
---! |         |     |  5   | (unused)                    | |
+--! |         |     | 4:0  | (unused)                    | |
+--! |         |  4  | 7:5  | (unused)                    | |
 --! |         |     | 4:0  | HOST_FRAME_READ_RATE        | Indicates how often the host reads its UDP buffers in order to throttle the Ethernet output data rate. The read period is 2*(2^HOST_FRAME_READ_RATE)*(1/ctrl_clk) where CTRL lk is 125 MHz|
 --! |         |5-12 | 63:0 | BUCK_PHASE                  | Phase of each of the 16 Buck sync lines. There are 16 possible phase values for each line. Bits 3:0 is for phase 0, bits 7:4 for phase 1 etc.|
---! |         |13-18| 47:0 | TARGET_LOCAL_MAC_ADDR       | MAC address to be used by the board if target_network_config_SOURCE="11" |
---! |         |19-22| 31:0 | TARGET_local_BASE_IP_ADDR   | Target IP address to be loaded if the target serial number matches the FPGA serial number and the trigger goes from 0 to 1  |
---! |         |23-24| 15:0 | TARGET_BASE_PORT            | Target base UDP port to be loaded when the target serial matches the FPGA serial and the trigger bit rises to 1. All commands,replies and data streams are relative to this port.  |
+--! |         |13-24|      | (unused)                    | |
 --! |         |25-32| 63:57| (unused)                    | |
---! |         |     | 56:0 | TARGET_FPGA_DNA             | Target FPGA serial number: the specified IP address and port will be loaded only if the target serial matches the actual serial number. |
---! |         |  33 | 7    | TARGET_load_TRIGGER         | When going from 0 to 1, loads the target IP ADDRESS/ IP PORT/ MAC_ADDRESS ans subarray *IF* the TARGET_FPGA_SERIAL match the actual FPGA serial|
---! |         |     | 6:4  | (unused)                    | |
---! |         |     | 3:2  | target_TARGET_local_MAC_ADDR_SOURCE   | Determines when and what IP address and port is loaded. '11' Always loads the programmed values. '10' Sets the address and port based on the FPGA DNA. '00' loads the programmed values only if the  FPGA serial number match the target value specified in the lower bits of this register |
---! |         |     | 1:0  | TARGET_local_SUBARRAY       | Subarray number. The value is latched when the target FPGA DNA serial number matches the actual FPGA DNA number.|
+--! |         |     | 56:0 | TARGET_FPGA_DNA             | Target FPGA serial number: The core registers can be written via BSB commands if this target serial number matches the actual serial number of the FPGA |
+--! |         |  33 |      | (unused)                    | |
 --! |         |34-37| 31:0 | pwm_offset                  | Number of events (frames) to delay before starting to generate the first High of the PWM output|
 --! |         |38-41| 31:0 | pwm_high_time               | Number of events (frames) to keep the PWM output at High|
---! |         |42-45| 31:0 | pwm_pwriod                  | Number of events (frames) between PWM High (i.e PWM period)|
+--! |         |42-45| 31:0 | pwm_period                  | Number of events (frames) between PWM High (i.e PWM period)|
 --! |         |  33 | 7    | pwm_soft_reset              | Software reset of the PWM module. Active high. |
 --! |         |     | 7:3  | (unused)                    | |
 --! |         |     | 2:0  | user_mux_source             | Selects which user source to send to the user output. |
---! | STATUS  |  0  |  7   | USER_DATA_VALID             | |
---! |         |     | 6:0  | COOKIE                      | |
+--! | STATUS  |  0  |  7   | USER_DATA_VALID             | is '1' when the ACCESS0 register data (firmware timestamp) is valid |
+--! |         |     | 6:0  | COOKIE                      | Defined as a GENERIC (default = 0x42)|
 --! |         |  1  | 7:0  | LOG2_FRAME_LENGTH           | |
 --! |         |  2  | 7:0  | NUMBER_OF_CHANNELIZERS      | Number of antennas processing pipelines implemented in the firmware |
 --! |         |  3  | 7:0  | NUMBER_OF_CORRELATORS       | Number of correlators implemented in the firmware |
 --! |         |  4  | 7:0  | NUMBER_OF_CHANNELIZERS_TO_CORRELATE | Number of antennas connected to the correlators. Only antennas 0 to N-1 will be connected. This sets the numbe rof parallel multipliers and accumulators in the correlator. |
 --! |         |  5  | 7:0  | NUMBER_OF_CHANNELIZERS_WITH_FFT   | Indicates how many channelizers have a FFT module. Those will be channeizers 0 to N-1|
 --! |         |  6  | 7:0  | NUMBER_OF_GPU_LINKS         | Indicates how GPU Links are implemented. If zero, the GPU module is not present at all (not even the common registers)|
---! |         | 7-10| 31:0 | firmware_timestamp                   | 32-bit word containing the timestamp of the firmware inserted during the bitgen process |
---! |         | 11  | 7:0  | PLATFORM_ID                 | Type of platform on which the firmware is running. 0=ML605, 1=KC705 |
---! |         |12-19| 63:57| (unused)                    |   |
+--! |         | 7-10| 31:0 | firmware_timestamp          | 32-bit word containing the timestamp of the firmware inserted during the bitgen process |
+--! |         | 11  | 7:0  | PLATFORM_ID                 | Type of platform on which the firmware is running. 0=ML605, 1=KC705, 3=MGK7MB, 4=ZCU111 |
+--! |         |12-19| 63:57| (unused)                    | |
 --! |         |     | 56:0 | FPGA_DNA                    | FPGA unique serial number |
 --! |         | 20  | 7:0  | NUMBER_OF_CROSSBAR_INPUTS   | Indicates how many channelizers are connected to the crossbar inputs. Those will be channeizers 0 to N-1|
 --! |         | 21  | 7:0  | NUMBER_OF_CROSSBAR_OUTPUTS  | Indicates the number of crossbar outputs. Those outputs feed the GPU links and the FPGA correlators (if implemented).
 --! |         |22-23| 15:0 | PROTOCOL_VERSION            | 16-bit value indicating the protocol version. A change in the version means that some change is needed on host control software. |
 --! |         | 24  | 7:0  | CHANNELIZERS_CLOCK_SOURCE   | ADC channel from which the channelizer clocks are derived. Useful to know if we should expect the clock to be missing and use alternate internal clock.
+--! |         |25-30|      | (unused)                    | |
+--! |         |  31 | 7:0  | slot_sense_ctr(0)           | |
+--! |         |  32 | 7:0  | slot_sense_ctr(1)           | |
+--! |         |  33 | 7:6  | adc_pll_lock                | |
+--! |         |     | 5:2  | (unused)                    | |
+--! |         |     |  1   | udp_tx_overflow             | |
+--! |         |     |  0   | udp_rx_overflow             | |
+--! |         |  34 | 7:0  | cmd_packet_counter          | |
+--! |         |  35 | 7:0  | rply_packet_counter         | |
+--! |         |  36 | 7:0  | NUMBER_OF_BP_SHUFFLE_LINKS  | |
+--! |         |  37 |  7   | (unused)                    | |
+--! |         |  37 |  7   | bp_gpio_int_in              | |
+--! |         |  37 |  6   | bp_gpio_int_in              | |
+--! |         |  37 |  5   | gpio_irq_in                 | |
+--! |         |  37 |  4   | flash_cs_in                 | |
+--! |         |  37 |  3   | uart_tx_in                  | |
+--! |         |  37 |  2   | uart_rx_in                  | |
+--! |         |  37 |  1   | gpio_rst_in                 | |
+--! |         |  37 |  0   | arm_irq_in                  | |
 --!  ------------------------------------------------------------------------------
 --!
+
+
+
 -- CONTROL Byte 0
 CTRL_FLAG_GLOBAL_TRIG      <= CONTROL_BYTES(0)(7);
 CTRL_FLAG_BUCK_SYNC_ENABLE <= CONTROL_BYTES(0)(6);
@@ -504,7 +534,6 @@ LCD_E  <= CONTROL_BYTES(2)(7);
 LCD_RS <= CONTROL_BYTES(2)(6);
 LCD_RW <= CONTROL_BYTES(2)(5);
 LCD_DB <= CONTROL_BYTES(2)(3 downto 0);
-
 end generate;
 
 -- CONTROL Byte 3
@@ -513,11 +542,11 @@ BLINKER_RESET       <= CONTROL_BYTES(3)(7);
 CHAN_RESET_ASYNC     <= CONTROL_BYTES(3)(6);
 CORR_RESET_ASYNC    <= CONTROL_BYTES(3)(5);
 -- unused bit 4
-CORR_IP_PORT_OFFSET <= CONTROL_BYTES(3)(3 downto 2);
-DATA_IP_PORT_OFFSET <= CONTROL_BYTES(3)(1 downto 0);
+--CORR_IP_PORT_OFFSET <= CONTROL_BYTES(3)(3 downto 2);
+--DATA_IP_PORT_OFFSET <= CONTROL_BYTES(3)(1 downto 0);
 
 -- CONTROL Byte 4
-CTRL_RPLY_IP_PORT_OFFSET<= CONTROL_BYTES(4)(7 downto 6);
+-- CTRL_RPLY_IP_PORT_OFFSET<= CONTROL_BYTES(4)(7 downto 6);
 HOST_FRAME_READ_RATE    <= CONTROL_BYTES(4)(4 downto 0);
 
 gen_sw_sync: if IMPLEMENT_SWITCHER_SYNC generate
@@ -526,22 +555,24 @@ BUCK_PHASE <= to_slv(CONTROL_BYTES(5 to 12));
 end generate;
 
 -- CONTROL bytes 13-18
-target_local_mac_addr <= to_slv(CONTROL_BYTES(13 to 18));
+--target_local_mac_addr <= to_slv(CONTROL_BYTES(13 to 18));
 
 -- CONTROL bytes 19-22
-target_local_base_ip_addr <= to_slv(CONTROL_BYTES(19 to 22));
+--target_local_base_ip_addr <= to_slv(CONTROL_BYTES(19 to 22));
 
 -- CONTROL bytes 23-24
-target_local_base_ip_port <= to_slv(CONTROL_BYTES(23 to 24));
+--target_local_base_ip_port <= to_slv(CONTROL_BYTES(23 to 24));
 
 -- CONTROL bytes 25-32
 target_fpga_serial_number(56) <= CONTROL_BYTES(25)(0);
 target_fpga_serial_number(55 downto 0) <= to_slv(CONTROL_BYTES(26 to 32));
 
 -- CONTROL byte 33
-target_load_trigger          <= CONTROL_BYTES(33)(7);
-target_network_config_source <= CONTROL_BYTES(33)(3 downto 2);
-target_local_subarray        <= CONTROL_BYTES(33)(1 downto 0);
+--target_load_trigger          <= CONTROL_BYTES(33)(7);
+--target_network_config_source <= CONTROL_BYTES(33)(3 downto 2);
+--target_local_subarray        <= CONTROL_BYTES(33)(1 downto 0);
+
+
 
 -- CONTROL byte 34-37, 38-41, 42-45
 pwm_offset <= to_unsigned(CONTROL_BYTES(34 to 37));
@@ -597,7 +628,7 @@ STATUS_BYTES(3) <= to_slv(NUMBER_OF_CORRELATORS,8);
 
 --STATUS_BYTES(3)(7 downto 4) <= (others=>'0');
 
---STATUS Byte 4
+--STATUS Byte 4-6
 STATUS_BYTES(4) <= to_slv(NUMBER_OF_CHANNELIZERS_TO_CORRELATE, 8);
 STATUS_BYTES(5) <= to_slv(NUMBER_OF_CHANNELIZERS_WITH_FFT,8);
 STATUS_BYTES(6) <= to_slv(NUMBER_OF_GPU_LINKS,8);
@@ -614,7 +645,7 @@ STATUS_BYTES(7 to 10) <= to_slv8_array(firmware_timestamp);
 -- STATUS Bytes 11
 STATUS_BYTES(11)<=to_slv(PLATFORM_ID,8);
 
--- STATUS Bytes 12-15
+-- STATUS Bytes 12-19
 STATUS_BYTES(12)(7 downto 1) <= (others=>'0');
 STATUS_BYTES(12)(0) <= fpga_serial_number(56);
 STATUS_BYTES(13 to 19) <= to_slv8_array(fpga_serial_number(55 downto 0));
@@ -627,7 +658,7 @@ STATUS_BYTES(24) <= to_slv(CHANNELIZERS_CLOCK_SOURCE, 8);
 -- Connect signals to module ports
 
 -- STATUS Bytes 25-30
-STATUS_BYTES(25 to 30) <= to_slv8_array(local_mac_addr_int);
+--STATUS_BYTES(25 to 30) <= to_slv8_array(local_mac_addr_int);
 
 -- STATUS Bytes 31-32
 STATUS_BYTES(31) <= slot_sense_ctr(0);
@@ -666,7 +697,10 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 	GENERIC MAP (
 		NUMBER_OF_CONTROL_BYTES=>CONTROL_BYTES'Length(1), -- Length of array in the first dimension: number of bytes
 		NUMBER_OF_STATUS_BYTES=>STATUS_BYTES'Length(1),
-		DEFAULT_CONTROL_BYTES=> (X"50" & to_slv(BUCK_CLK_DIVIDE_FACTOR,8) & X"00_65_14_FEDCBA9876543210_000000000000_00000000_A028_0000000000000000_00_00000000_0002faf0_0005f5e1_00_00_00_89_00")
+		DEFAULT_CONTROL_BYTES=> (X"50" & to_slv(BUCK_CLK_DIVIDE_FACTOR,8) & X"00_65_14_FEDCBA9876543210_000000000000_00000000_A028_0000000000000000_00_00000000_0002faf0_0005f5e1_00_00_00_89_00"),
+        RAM_DATA_WIDTH          => 8, -- 8 or 16 bits
+        RAM_ADDR_WIDTH          => 5+2,  -- 6 bits (32 register words) + 2 bits (4 bytes per word)
+        RAM_LATENCY             => 1
 	)
 	PORT MAP(
 		-- Control interface (command and reply stream buses)
@@ -679,11 +713,15 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 
 		CONTROL_BYTES => CONTROL_BYTES,
 		STATUS_BYTES => STATUS_BYTES,
-		CLK => ctrl_clk, -- 110909 JFC: Was CLK (ADC_CLK), but did not work because SYNC stops the ADC CLK...
-		RST => ctrl_rst
+
+        RAM_DIN   => bsb_core_din,
+        RAM_DOUT  => bsb_core_dout,
+        RAM_ADDR  => bsb_core_addr,
+        RAM_WR_EN => bsb_core_wr_en,
+        RAM_RD_EN => bsb_core_rd_en
 	);
 
-
+gen_armspi: if IMPLEMENT_ARM_SPI generate
 	arm_spi0: entity work.arm_spi port map (
 		-- SPI interface
 		sck => arm_spi_sck,
@@ -691,19 +729,21 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 		mosi => arm_spi_mosi,
 		cs_n => arm_spi_cs_n,
 
-		-- Master bus interface
-		addr => spi_addr,
-		din  => spi_rdat,
-		dout => spi_wdat,
-		rreq => spi_rreq,
-		rack => spi_rack,
-		wreq => spi_wreq,
-		wack => spi_wack,
+		-- Master bus interface (synchronous to clk)
+		m_addr => spi_addr,
+		m_rdat => spi_rdat,
+		m_wdat => spi_wdat,
+		m_rreq => spi_rreq,
+		m_rack => spi_rack,
+		m_wreq => spi_wreq,
+		m_wack => spi_wack,
 
 		clk => ctrl_clk,
 		reset => '0' -- redundant; cs_n does the same thing
 
 	);
+end generate;
+
 
 
 -------------------------
@@ -730,18 +770,18 @@ core_reg_rd_value(6) <= "0000000" & fpga_serial_number(56 downto 32); -- (Read o
 -- Application-specific registers
 -------------------------
 
--- Networking configuration
--------------------------
+-- Networking configuration -- Local Rx MAC/IP/PORT numbers
+------------------------------------------------------------
 -- Register 7
-core_reg_rd_value(7)               <= spi_fpga_mac_address(31 downto 0); -- (Read/Write with readback)
-spi_fpga_mac_address(31 downto 0)  <= core_reg_wr_value(7);
+core_reg_rd_value(7)               <= spi_fpga_local_mac_address(31 downto 0); -- (Read/Write with readback)
+spi_fpga_local_mac_address(31 downto 0)  <= core_reg_wr_value(7);
 -- Register 8
-core_reg_rd_value(8)               <= spi_fpga_mac_address(47 downto 32) & spi_fpga_ip_port; -- (Read/Write with readback)
-spi_fpga_mac_address(47 downto 32) <= core_reg_wr_value(8)(31 downto 16);
-spi_fpga_ip_port                   <= core_reg_wr_value(8)(15 downto 0);
+core_reg_rd_value(8)               <= spi_fpga_local_mac_address(47 downto 32) & spi_fpga_local_ip_port; -- (Read/Write with readback)
+spi_fpga_local_mac_address(47 downto 32) <= core_reg_wr_value(8)(31 downto 16);
+spi_fpga_local_ip_port                   <= core_reg_wr_value(8)(15 downto 0);
 -- Register 9
-core_reg_rd_value(9)               <= spi_fpga_ip_address; -- (Read/Write with readback)
-spi_fpga_ip_address                <= core_reg_wr_value(9);
+core_reg_rd_value(9)               <= spi_fpga_local_ip_address; -- (Read/Write with readback)
+spi_fpga_local_ip_address                <= core_reg_wr_value(9);
 
 -- IRIG-B timestamp registers
 -------------------------
@@ -796,10 +836,11 @@ core_reg_rd_value(17)(31 downto 16) <= (others=>'0'); -- (read-only)
 --core_reg_rd_value(17)(15 downto 8)  <= release_ctr_mon; --unused
 --core_reg_rd_value(17)(7 downto 0)   <= sync_ctr_mon; --unused
 
--- Registers 18 (_BP_BUCK_SYNC_ADDR2)
+-- Registers 18 (_BP_BUCK_SYNC_ADDR2) (unused)
 
-sfp_config_vector                   <= core_reg_wr_value(18); -- read-write
-core_reg_rd_value(18)               <= core_reg_wr_value(18); -- (Readback)
+--bp_buck_sync_wr_dat                 <= core_reg_wr_value(18); -- write-only
+--core_reg_rd_value(18)(31)           <= bp_buck_sync_rd_dat_valid; -- (Read-only)
+--core_reg_rd_value(18)(30 downto 0)  <= bp_buck_sync_rd_dat(30 downto 0); -- (Read-only)
 
 -- Register 19 (_SFP_STATUS_ADDR)
 core_reg_rd_value(19)(31 downto 18) <= core_reg_wr_value(19)(31 downto 18); -- (readback)
@@ -809,9 +850,11 @@ core_reg_rd_value(19)(15 downto 0)  <= sfp_status_vector; -- (Read-only)
 udp_stack_reset                     <= core_reg_wr_value(19)(31);
 ctrl_master_reset                   <= core_reg_wr_value(19)(30);
 
+-- Networking parameters - TX Channel 0 PORT number
+
 -- Register 20 (_REMOTE_IP_PORT_ADDR)
-remote_ip_port0                 <= core_reg_wr_value(20)(15 downto 0);
-remote_ip_port1                 <= core_reg_wr_value(20)(31 downto 16);
+spi_fpga_ch0_remote_ip_port                 <= core_reg_wr_value(20)(15 downto 0);
+--remote_ip_port1                 <= core_reg_wr_value(20)(31 downto 16);
 core_reg_rd_value(20)           <= core_reg_wr_value(20); -- (Readback)
 
 -- Register 21 (_IRIGB_REFCLK_SAMPLE)
@@ -820,6 +863,19 @@ target_refclk_count(31 downto 0) <= unsigned(core_reg_wr_value(21));
 -- Register 22 (_IRIGB_REFCLK_SAMPLE2)
 core_reg_rd_value(22)           <= std_logic_vector(refclk_sample(63 downto 32)); -- read
 target_refclk_count(63 downto 32) <= unsigned(core_reg_wr_value(21));
+
+-- Networking parameters - TX Channel 1 MAC/IP/PORT numbers
+-- Register 23
+core_reg_rd_value(23)               <= spi_fpga_ch1_remote_mac_address(31 downto 0); -- (Read/Write with readback)
+spi_fpga_ch1_remote_mac_address(31 downto 0)  <= core_reg_wr_value(23);
+-- Register 24
+core_reg_rd_value(24)               <= spi_fpga_ch1_remote_mac_address(47 downto 32) & spi_fpga_ch1_remote_ip_port; -- (Read/Write with readback)
+spi_fpga_ch1_remote_mac_address(47 downto 32) <= core_reg_wr_value(24)(31 downto 16);
+spi_fpga_ch1_remote_ip_port                   <= core_reg_wr_value(24)(15 downto 0);
+-- Register 25
+core_reg_rd_value(25)               <= spi_fpga_ch1_remote_ip_address; -- (Read/Write with readback)
+spi_fpga_ch1_remote_ip_address           <= core_reg_wr_value(25);
+
 
 core_regs0: entity work.register_array
 	generic map(
@@ -838,6 +894,14 @@ core_regs0: entity work.register_array
 		s_wack => spi_wack,
 		s_rreq => spi_rreq,
 		s_rack => spi_rack,
+
+
+		-- Simplified byte r/w interface
+		din => bsb_core_din,
+		dout => bsb_core_dout,
+		addr => bsb_core_addr,
+		wr_en => bsb_core_wr_en and serial_match, -- write only if we match the serial number
+		rd_en => bsb_core_rd_en,
 
 		-- Register interface
 		reg_wr_value  => core_reg_wr_value,
@@ -1068,7 +1132,7 @@ user_gen: for i in 0 to 3 generate
 end generate;
 
 --! Implement USR_ACCESS for VIRTEX6-based platforms
-USRACCESS_V6: if FPGA_SERIES_LIST(PLATFORM_ID)=6 generate
+USRACCESS_V6: if FPGA_SERIES=FPGA_VIRTEX6 generate
 	USR_ACCESS0: USR_ACCESS_VIRTEX6
 		port map(
 			CFGCLK    => open,--1-bit Configuration Clock output
@@ -1078,7 +1142,8 @@ USRACCESS_V6: if FPGA_SERIES_LIST(PLATFORM_ID)=6 generate
 end generate;
 
 --! Implement USR_ACCESS for 7-series platforms
-USRACCESS_7: if FPGA_SERIES_LIST(PLATFORM_ID)=7 generate
+
+USRACCESS_7: if FPGA_SERIES=FPGA_KINTEX7 or FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
 	USR_ACCESS0: USR_ACCESSE2
 		port map(
 			CFGCLK    => open, --1-bit Configuration Clock output
@@ -1100,6 +1165,7 @@ gen_dna7: if FPGA_SERIES=FPGA_KINTEX7 generate
 			SHIFT => dna_shift -- 1-bit input: Active high shift enable input.
 		);
 	end generate;
+
 gen_dnaup: if FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
 	-- The core currently reads only 57 bits
 	dna0 : DNA_PORTE2
@@ -1146,57 +1212,73 @@ network_setup_proc: process(ctrl_clk)
 	begin
 		if rising_edge(ctrl_clk) then
 
+			serial_match <= to_std_logic(fpga_serial_number = target_fpga_serial_number);
+
 			-- Load broadcasted networking parameters if the previously received FPGA serial number match our own
-			target_load_trigger_dly <= target_load_trigger;
-			if target_load_trigger='1' and target_load_trigger_dly='0' and fpga_serial_number = target_fpga_serial_number then
-				local_network_config_source_reg <= target_network_config_source;
-				local_base_ip_addr_reg          <= target_local_base_ip_addr;
-				local_base_ip_port_reg          <= target_local_base_ip_port;
-				local_mac_addr_reg              <= target_local_mac_addr;
-				local_subarray_reg              <= target_local_subarray;
-			end if;
+			--target_load_trigger_dly <= target_load_trigger;
+			--if target_load_trigger='1' and target_load_trigger_dly='0' and serial_match='1' then
+			--	local_network_config_source_reg <= target_network_config_source;
+			--	local_base_ip_addr_reg          <= target_local_base_ip_addr;
+			--	local_base_ip_port_reg          <= target_local_base_ip_port;
+			--	local_mac_addr_reg              <= target_local_mac_addr;
+			--	local_subarray_reg              <= target_local_subarray;
+			--end if;
 
 
-			-- Select which networking parameters to use
-			case local_network_config_source_reg is
-				when "00" => -- Network configuration comes from the ARM SPI registers
-					-- This is the default configuration unless there is a rising edge on
-					-- target_load_trigger is '1' with matching target FPGA serial number
-					--
-					-- In this configuration, UDP channel 0 (control networking) is set through the
-					-- SPI interface, and the UDP channel 1 (usually raw data and correlator data,
-					-- but configurable) is set through the IP/PORT/MAC target registers that are
-					-- also used for matched-FPGA-serial set-up.
-					local_mac_addr     <= spi_fpga_mac_address;
-					local_base_ip_addr <= spi_fpga_ip_address;
-					local_base_ip_port <= spi_fpga_ip_port;
-					local_subarray     <= (others=>'0');
-					remote_ip_addr1     <= target_local_base_ip_addr;
-					remote_mac_addr1    <= target_local_mac_addr;
-				when "01" => -- Network config is from broadcast, MAC is MSB of FPGA serial number
-					local_mac_addr     <= (MAC_ADDRESS_OUI_CODE & fpga_serial_number(47 downto 24)); -- Use bytes 3-5 of FPGA serial to set the local MAC address
-					local_base_ip_addr <= local_base_ip_addr_reg;
-					local_base_ip_port <= local_base_ip_port_reg;
-					local_subarray     <= local_subarray_reg;
-					remote_mac_addr1     <= (others=>'0'); -- auto-detect
-					remote_ip_addr1     <= (others=>'0'); -- auto-detect
+			local_mac_addr     <= spi_fpga_local_mac_address;
+			local_base_ip_addr <= spi_fpga_local_ip_address;
+			local_base_ip_port <= spi_fpga_local_ip_port;
+			local_subarray     <= (others=>'0');
 
-				when "10" =>-- Network config is from broadcast, MAC is a mix of MSB and LSB of FPGA serial number
-					local_mac_addr     <= (MAC_ADDRESS_OUI_CODE & (fpga_serial_number(23 downto 0) xor fpga_serial_number(47 downto 24))); -- Use a mix of FPGA serial number bits to set the local MAC address
-					local_base_ip_addr <= local_base_ip_addr_reg;
-					local_base_ip_port <= local_base_ip_port_reg;
-					local_subarray     <= local_subarray_reg;
-					remote_mac_addr1     <= (others=>'0'); -- auto-detect
-					remote_ip_addr1     <= (others=>'0'); -- auto-detect
+			-- TX CHannel 0 parameters
+			remote_ip_port0  <= spi_fpga_ch0_remote_ip_port;
 
-				when others => -- Network config is from broadcast, MAC is fully user-defined
-					local_mac_addr     <= local_mac_addr_reg ; -- Use a completely user-defined MAC address
-					local_base_ip_addr <= local_base_ip_addr_reg;
-					local_base_ip_port <= local_base_ip_port_reg;
-					local_subarray     <= local_subarray_reg;
-					remote_mac_addr1     <= (others=>'0'); -- auto-detect
-					remote_ip_addr1     <= (others=>'0'); -- auto-detect
-			end case;
+			-- TX Channel 1 parameters
+			remote_ip_addr1     <= spi_fpga_ch1_remote_ip_address;
+			remote_mac_addr1    <= spi_fpga_ch1_remote_mac_address;
+			remote_ip_port1     <= spi_fpga_ch1_remote_ip_port;
+
+
+			---- Select which networking parameters to use
+			--case local_network_config_source_reg is
+			--	when "00" => -- Network configuration comes from the ARM SPI registers
+			--		-- This is the default configuration unless there is a rising edge on
+			--		-- target_load_trigger is '1' with matching target FPGA serial number
+			--		--
+			--		-- In this configuration, UDP channel 0 (control networking) is set through the
+			--		-- SPI interface, and the UDP channel 1 (usually raw data and correlator data,
+			--		-- but configurable) is set through the IP/PORT/MAC target registers that are
+			--		-- also used for matched-FPGA-serial set-up.
+			--		local_mac_addr     <= spi_fpga_local_mac_address;
+			--		local_base_ip_addr <= spi_fpga_local_ip_address;
+			--		local_base_ip_port <= spi_fpga_local_ip_port;
+			--		local_subarray     <= (others=>'0');
+			--		remote_ip_addr1     <= target_local_base_ip_addr;
+			--		remote_mac_addr1    <= target_local_mac_addr;
+			--	when "01" => -- Network config is from broadcast, MAC is MSB of FPGA serial number
+			--		local_mac_addr     <= (MAC_ADDRESS_OUI_CODE & fpga_serial_number(47 downto 24)); -- Use bytes 3-5 of FPGA serial to set the local MAC address
+			--		local_base_ip_addr <= local_base_ip_addr_reg;
+			--		local_base_ip_port <= local_base_ip_port_reg;
+			--		local_subarray     <= local_subarray_reg;
+			--		remote_mac_addr1     <= (others=>'0'); -- auto-detect
+			--		remote_ip_addr1     <= (others=>'0'); -- auto-detect
+
+			--	when "10" =>-- Network config is from broadcast, MAC is a mix of MSB and LSB of FPGA serial number
+			--		local_mac_addr     <= (MAC_ADDRESS_OUI_CODE & (fpga_serial_number(23 downto 0) xor fpga_serial_number(47 downto 24))); -- Use a mix of FPGA serial number bits to set the local MAC address
+			--		local_base_ip_addr <= local_base_ip_addr_reg;
+			--		local_base_ip_port <= local_base_ip_port_reg;
+			--		local_subarray     <= local_subarray_reg;
+			--		remote_mac_addr1     <= (others=>'0'); -- auto-detect
+			--		remote_ip_addr1     <= (others=>'0'); -- auto-detect
+
+			--	when others => -- Network config is from broadcast, MAC is fully user-defined
+			--		local_mac_addr     <= local_mac_addr_reg ; -- Use a completely user-defined MAC address
+			--		local_base_ip_addr <= local_base_ip_addr_reg;
+			--		local_base_ip_port <= local_base_ip_port_reg;
+			--		local_subarray     <= local_subarray_reg;
+			--		remote_mac_addr1     <= (others=>'0'); -- auto-detect
+			--		remote_ip_addr1     <= (others=>'0'); -- auto-detect
+			--end case;
 
 		end if;
 	end process;
@@ -1314,20 +1396,29 @@ pwm_proc: process(pwm_clk)
 ----------------------------------------------------------------
 -- Backplane BUCK SYNC generator and backplane access arbitrator
 ----------------------------------------------------------------
-bp_buck_sync0: entity work.bp_buck_sync
-	port map (
-		sync => bp_buck_sync,
-		sync_mon => bp_buck_sync_mon,
+-- This was an experiment to see if we boards in a crate could collaborate to
+-- generate a single clock to which all boards would be synchronized. This was
+-- done by borrowing the clock-slowing principle of multiple I2C devices
+-- connected on the same bus.
+--
+--	In addition, to this we modulated the clock to transmit data across multiple boards.
+--
+-- This is not used, and causes implementaton to fail on ZCU111, so we remove it.
+--
+--bp_buck_sync0: entity work.bp_buck_sync
+--	port map (
+--		sync => bp_buck_sync,
+--		sync_mon => bp_buck_sync_mon,
 
-		-- Data interface
-		--release_ctr_mon => release_ctr_mon,
-		--sync_ctr_mon => sync_ctr_mon,
-		wr_dat => bp_buck_sync_wr_dat,
-		rd_dat => bp_buck_sync_rd_dat,
-		rd_dat_valid => bp_buck_sync_rd_dat_valid,
-		clk10 => clk10,
-		rst => bp_buck_sync_wr_dat(31)
-	);
+--		-- Data interface
+--		--release_ctr_mon => release_ctr_mon,
+--		--sync_ctr_mon => sync_ctr_mon,
+--		wr_dat => bp_buck_sync_wr_dat,
+--		rd_dat => bp_buck_sync_rd_dat,
+--		rd_dat_valid => bp_buck_sync_rd_dat_valid,
+--		clk10 => clk10,
+--		rst => bp_buck_sync_wr_dat(31)
+--	);
 
 end Behavioral;
 

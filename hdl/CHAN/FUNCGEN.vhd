@@ -243,9 +243,8 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
         ADDR_WIDTH              => 9, -- We have 9 bits of data left after routing
         RAM_DATA_WIDTH          => 8, -- 8 or 16 bits
         RAM_ADDR_WIDTH          => 12, -- Cannot exceed 9 bits with 8-bit data width because higher bits are used for routing
-        RAM_LATENCY             => 2,
-        USE_FIFO                => FALSE
-    )
+        RAM_LATENCY             => 2
+        )
     PORT MAP(
         -- Control interface (command and reply stream buses)
         CTRL_CMD_IN_DAT   => ctrl_cmd_in_dat,
@@ -262,12 +261,8 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
         RAM_DOUT  => ram_ctrl_dout,
         RAM_ADDR  => ram_ctrl_addr,
         RAM_WR_EN => ram_ctrl_wr_en,
-        RAM_RD_EN => open, -- the ram is always reading
-
-
-        CLK               => clk,
-        RST               => rst
-    );
+        RAM_RD_EN => open -- the ram is always reading
+        );
 
 -- ram_ctrl_addr_paged(11 downto 9) <= ram_ctrl_addr(11 downto 9) or ram_page;
 ram_ctrl_addr_paged(11 downto 9) <= ram_page;

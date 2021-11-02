@@ -302,9 +302,8 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
     GENERIC MAP (
         NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --
         NUMBER_OF_STATUS_BYTES => status_bytes'Length(1), --
-        DEFAULT_CONTROL_BYTES => (X"00_000000" & DEFAULT_BURST_PERIOD & X"0000_0000" & DEFAULT_BURST_PERIOD & X"17"), -- reset=0, burst length=1, burst period=1s @ 800 MHz/2048 samples, burst number = 0 (infinite), Probe ID=0xAA (unassigned yet)
-        USE_FIFO => FALSE
-            )
+        DEFAULT_CONTROL_BYTES => (X"00_000000" & DEFAULT_BURST_PERIOD & X"0000_0000" & DEFAULT_BURST_PERIOD & X"17") -- reset=0, burst length=1, burst period=1s @ 800 MHz/2048 samples, burst number = 0 (infinite), Probe ID=0xAA (unassigned yet)
+        )
     PORT MAP(
         -- Control interface (command and reply stream buses)
 
@@ -316,10 +315,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
         ctrl_rst          => ctrl_rst,
 
         control_bytes => control_bytes,
-        status_bytes  => status_bytes,
-
-        clk => in_clk,
-        rst => in_reset
+        status_bytes  => status_bytes
     );
 
 

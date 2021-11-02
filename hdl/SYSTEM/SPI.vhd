@@ -163,9 +163,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 		CTRL_CLK          => CTRL_CLK,
 		CTRL_RST          => CTRL_RST,
 		CONTROL_BYTES     => CONTROL_BYTES,
-		STATUS_BYTES      => STATUS_BYTES,
-		CLK               => clk200,
-		RST               => RST
+		STATUS_BYTES      => STATUS_BYTES
 	);
 
 spiproc: process(clk200)

@@ -361,8 +361,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 	GENERIC MAP (
 		NUMBER_OF_CONTROL_BYTES=>control_bytes'Length(1), --
 		NUMBER_OF_STATUS_BYTES=>status_bytes'Length(1), --
-		DEFAULT_CONTROL_BYTES=> X"00_04_08",
-		USE_FIFO => FALSE
+		DEFAULT_CONTROL_BYTES=> X"00_04_08"
  	)
 
 	PORT MAP(
@@ -375,9 +374,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 		CTRL_RST => ctrl_rst_reg,
 
 		control_bytes => control_bytes,
-		status_bytes => status_bytes,
-		CLK => clk,
-		RST => rst_reg
+		status_bytes => status_bytes
 	);
 
 

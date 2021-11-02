@@ -274,8 +274,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
         NUMBER_OF_STATUS_BYTES=>status_bytes'Length(1), -- Number of bits in the status word.
         DEFAULT_CONTROL_BYTES=> X"21_60_02_05F5E1_00000000", -- post_scaler_left_shift=1, (if FFT input is a constant 1, bin 0 will be = 1)
         RAM_ADDR_WIDTH => 9,
-        RAM_LATENCY=> 2,
-        USE_FIFO => FALSE
+        RAM_LATENCY=> 2
         )
     PORT MAP(
         -- Control interface (command and reply stream buses)
@@ -288,8 +287,6 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 
         control_bytes => control_bytes,
         status_bytes => status_bytes,
-        clk => clk,
-        RST => reset,
 
         RAM_DIN => coeff_ram_ctrl_din,
         RAM_DOUT => coeff_ram_ctrl_dout,

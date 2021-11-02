@@ -560,8 +560,7 @@ common_slave0: entity work.CTRL_SLAVE
 	GENERIC MAP (
 		DEFAULT_CONTROL_BYTES=> X"00_FF2833" & repeat(X"00", NUMBER_OF_CONTROL_BYTES),
 		NUMBER_OF_CONTROL_BYTES=>common_control_bytes'Length(1) , -- Number of bits in the control word
-		NUMBER_OF_STATUS_BYTES=>common_status_bytes'Length(1), -- Number of bits in the status word.
-		USE_FIFO => FALSE
+		NUMBER_OF_STATUS_BYTES=>common_status_bytes'Length(1) -- Number of bits in the status word.
 	)
 	PORT MAP(
 		CTRL_CMD_IN_DAT=>   MODULE_CMD_DAT(0),
@@ -571,9 +570,7 @@ common_slave0: entity work.CTRL_SLAVE
 		CTRL_CLK => CTRL_CLK,
 		CTRL_RST => ctrl_rst_reg(0),
 		CONTROL_BYTES => common_control_bytes,
-		STATUS_BYTES => common_status_bytes,
-		CLK => clk156
-		-- RST => areset_clk156
+		STATUS_BYTES => common_status_bytes
 );
 
 resetdone <= (and_reduce(tx_resetdone_int) or to_std_logic(NUMBER_OF_TX_LANES=0)) and (and_reduce(rx_resetdone_int) or to_std_logic(NUMBER_OF_RX_LANES=0)) after DLY;
@@ -622,8 +619,7 @@ quad_gen: for i in 0 to NUMBER_OF_QUADS-1 generate
 			RAM_DATA_WIDTH=>16,
 			RAM_ADDR_WIDTH=>8, -- GTX DRP Address bus is 8 bits
 			NUMBER_OF_CONTROL_BYTES=>quad_control_bytes(i)'Length(1), -- Number of bits in the control word
-			NUMBER_OF_STATUS_BYTES=>quad_status_bytes(i)'Length(1), -- Number of bits in the status word.
-			USE_FIFO => FALSE
+			NUMBER_OF_STATUS_BYTES=>quad_status_bytes(i)'Length(1) -- Number of bits in the status word.
 		)
 		PORT MAP(
 			CTRL_CMD_IN_DAT=>   MODULE_CMD_DAT(i+1),
@@ -635,7 +631,6 @@ quad_gen: for i in 0 to NUMBER_OF_QUADS-1 generate
 
 			CONTROL_BYTES => quad_control_bytes(i),
 			STATUS_BYTES => quad_status_bytes(i),
-			CLK => CTRL_CLK,
 
 			-- DRP interface
 			RAM_DIN      => quad_drp_din(i),
@@ -731,9 +726,7 @@ gtx_gen: for i in 0 to NUMBER_OF_GTX-1 generate
 			RAM_DATA_WIDTH=>16,
 			RAM_ADDR_WIDTH=>9, -- GTX DRP Address bus is 9 bits, we use 10 bits of address in the memory-mapepd interface since we access bytes
 			NUMBER_OF_CONTROL_BYTES=>gt_control_bytes(i)'Length(1), -- Number of bits in the control word
-			NUMBER_OF_STATUS_BYTES=>gt_status_bytes(i)'Length(1), -- Number of bits in the status word.
-			USE_FIFO => FALSE
-			-- USE_ASYNC_FIFO => TRUE -- Use an async FIFO so the interface can operate on clk156
+			NUMBER_OF_STATUS_BYTES=>gt_status_bytes(i)'Length(1) -- Number of bits in the status word.
 	  	)
 		PORT MAP(
 			CTRL_CMD_IN_DAT=>   MODULE_CMD_DAT(i+NUMBER_OF_QUADS+1),
@@ -751,11 +744,7 @@ gtx_gen: for i in 0 to NUMBER_OF_GTX-1 generate
 			RAM_DOUT_RDY => gt_drp_rdy(i),
 			RAM_WR_EN    => gt_drp_wr_en(i),
 			RAM_EN       => gt_drp_en(i),
-			RAM_ADDR     => gt_drp_addr(i),
-
-			CLK => clk156
-			-- RST => areset_clk156
-
+			RAM_ADDR     => gt_drp_addr(i)
 			-- System
 		);
 

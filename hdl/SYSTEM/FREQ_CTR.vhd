@@ -124,9 +124,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 		CTRL_RST => CTRL_RST,
 
 		CONTROL_BYTES => CONTROL_BYTES,
-		STATUS_BYTES => STATUS_BYTES,
-		CLK => CLK200,
-		RST => RST
+		STATUS_BYTES => STATUS_BYTES
 	);
 
 -- Select clock to measure

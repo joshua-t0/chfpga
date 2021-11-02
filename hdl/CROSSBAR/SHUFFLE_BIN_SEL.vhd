@@ -448,8 +448,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 		DEFAULT_control_bytes   => X"01_123_008_01_2F_00_00",
 		RAM_ADDR_WIDTH          => 7,
 		RAM_LATENCY             => 2,  --! Control port of RAM has an output register that creates a 2-clock latency total
-		USE_RAM_DOUT_RDY        => FALSE,
-		USE_FIFO                => FALSE
+		USE_RAM_DOUT_RDY        => FALSE
  	)
 
 	PORT MAP(
@@ -463,8 +462,6 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 
 		CONTROL_BYTES     => control_bytes,
 		STATUS_BYTES      => status_bytes,
-		CLK               => clk,
-		RST               => rst,
 
 		RAM_DIN           => mask_ram_ctrl_din,
 		RAM_DOUT          => mask_ram_ctrl_dout,

@@ -139,7 +139,6 @@ architecture Behavioral of shuffle_crossbar is
 	signal bin_ctr : unsigned(9 downto 0); -- Up to 1024 bins per frame
 	signal lane_map: slv4_array(0 to NUMBER_OF_INPUT_LANES-1);
 	signal sof_window_stop: std_logic_vector(7 downto 0);
-	signal ignore_lane:  slv(0 to NUMBER_OF_INPUT_LANES-1);
 
 	signal input_frame_ctr: u8_array(0 to NUMBER_OF_INPUT_LANES-1);
 	signal align_frame_ctr: u8_array(0 to NUMBER_OF_INPUT_LANES-1);
@@ -176,7 +175,7 @@ architecture Behavioral of shuffle_crossbar is
 	signal align_reset_all: std_logic;
 
 	--- Define Control word and its signals
-	signal CONTROL_BYTES: slv8_array(0 to (2 + (NUMBER_OF_INPUT_LANES+1)/2 + 2)); -- default value set in the CMD_SLAVE
+	signal CONTROL_BYTES: slv8_array(0 to 2 + (NUMBER_OF_INPUT_LANES+1)/2); -- default value set in the CMD_SLAVE
 	signal STATUS_BYTES: slv8_array(0 to 14);
 
 	-- signal capture_word_ctr: unsigned(7 downto 0);
@@ -213,6 +212,9 @@ architecture Behavioral of shuffle_crossbar is
 	signal fifo_tfirst_mon: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
 	signal fifo_count_mon: slv10_array(0 to NUMBER_OF_INPUT_LANES-1);
 	signal fifo_count_mon_reg: slv10_array(0 to NUMBER_OF_INPUT_LANES-1);
+	signal ignore_lane: std_logic_vector(0 to 15) := (others=>'0');
+
+	-- signal had_timeout: std_logic;
 
 
 begin
@@ -298,15 +300,10 @@ align_lane_monitor_source <= CONTROL_BYTES(1)(6 downto 3); --!
 --! CONTROL Byte 2
 sof_window_stop <= CONTROL_BYTES(2);
 
--- CONTROL Bytes 3-4
-
-ignore_lane <= reverse_bits_and_dir(to_slv(CONTROL_BYTES(3 to 4))(NUMBER_OF_INPUT_LANES-1 downto 0));
-
---! CONTROL Bytes 5-12 (crossbar2) or 5-8 (crossbar3)
+--! CONTROL Bytes 3-10 (crossbar2) or 3-6 (crossbar3)
 lane_map_gen: for i in 0 to NUMBER_OF_INPUT_LANES-1 generate
-	lane_map(i) <= CONTROL_BYTES(5+i/2)((i mod 2)*4+3 downto (i mod 2)*4); --
+	lane_map(i) <= CONTROL_BYTES(3+i/2)((i mod 2)*4+3 downto (i mod 2)*4); --
 end generate;
-
 
 STATUS_BYTES(0)(0) <='0';
 STATUS_BYTES(0)(1) <= fifo_tfirst_mon(to_integer(lane_monitor_sel));
@@ -368,8 +365,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 	GENERIC MAP (
 		NUMBER_OF_CONTROL_BYTES=>CONTROL_BYTES'Length(1), --
 		NUMBER_OF_STATUS_BYTES=>STATUS_BYTES'Length(1), --
-		DEFAULT_CONTROL_BYTES=> X"80_07_64_1032547698BADCFE0000",
-		USE_FIFO => FALSE
+		DEFAULT_CONTROL_BYTES=> X"80_07_64_1032547698BADCFE"
  	)
 
 	PORT MAP(
@@ -384,9 +380,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 		CTRL_RST => ctrl_rst_reg,
 
 		CONTROL_BYTES => CONTROL_BYTES,
-		STATUS_BYTES => STATUS_BYTES,
-		CLK => clk,
-		RST => rst_reg
+		STATUS_BYTES => STATUS_BYTES
 	);
 
 ---------------------------------------------------------------------
@@ -548,7 +542,7 @@ end process;
 --! data is coming straight from the channelizer through the internal FPGA routing, which will not cause packet loss.
  --! The only exception to this are for channels that do not send data due to missing ADC cards, inwhich case the ALIGN will handle those automatically.
 align_rst_prog: process(clk)
-	begin
+begin
 	if rising_edge(clk) then
 		align_reset_all <= rst_reg or align_reset;
 	end if;
@@ -572,7 +566,6 @@ align0: entity work.ALIGN
 		m_axis_tlast         => m_axis_align_tlast,
 
 		sof_window_stop => sof_window_stop,
-		ignore_lane => ignore_lane,
 
 
 		fifo_overflow => align_fifo_overflow,

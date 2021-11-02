@@ -278,9 +278,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 		CTRL_CLK => CTRL_CLK,
 		CTRL_RST => CTRL_RST,
 		control_bytes => control_bytes,
-		status_bytes => status_bytes,
-		CLK => CLK200,
-		RST => RST
+		status_bytes => status_bytes
 		);
 
 -- Output buffers
