@@ -131,7 +131,7 @@ type PortOffsetArray is array (natural range <>) of PortOffset;
 -- The number is used to index FPGA_SERIES_LIST below
 constant PLATFORM_ID_ML605: integer :=0;
 constant PLATFORM_ID_KC705: integer :=1;
---constant PLATFORM_ID_UNUSED: integer :=2;
+constant PLATFORM_ID_UNUSED: integer :=2;
 constant PLATFORM_ID_MGK7MB: integer :=3;
 constant PLATFORM_ID_ZCU111: integer :=4;
 
@@ -196,9 +196,9 @@ constant PLATFORM_INFO: PLATFORM_INFO_ARRAY:=(
 
 	PLATFORM_ID_ZCU111 => (
 		FPGA_SERIES => FPGA_ULTRASCALEPLUS,
-		DSP_TILE_DELTA_RPM_Y => 10,
+		DSP_TILE_DELTA_RPM_Y => 2,
 		DSP_BEL_DELTA_RPM_Y => 1,
-		BRAM_TILE_DELTA_RPM_Y => 10,
+		BRAM_TILE_DELTA_RPM_Y => 2,
 		BRAM_BEL_DELTA_RPM_Y => 1
 		)
 	);
@@ -238,6 +238,8 @@ constant FRAME_LENGTH: integer:= 2048; --! 2048 time samples per frame (1024 fra
 constant LOG2_FRAME_LENGTH: integer :=11; --! Number of time samples per frame. 2^11 = 2048 time samples per frame
 constant LOG2_FREQ_SAMPLES_PER_FRAME: integer :=LOG2_FRAME_LENGTH-1; --! Number of frequency samples per frame. 1/2 of the time samples as we discard negative frequencies
 constant LOG2_WORDS_PER_FRAME: integer :=LOG2_FRAME_LENGTH-2; --! Number of words per frame. One word is 4 8-bit time samples or 2 8+8-bits frequency samples.
+
+type frame_word_ctr_array is array (natural range <>) of unsigned(LOG2_WORDS_PER_FRAME-1 downto 0);
 
 --	Control bus parameters
 constant CTRL_CMD_BYTE_LENGTH: integer :=3; --! Number of bytes in the command word
@@ -1052,7 +1054,7 @@ function repeat( V: std_logic_vector; N: natural) return std_logic_vector is
 		return result;
 	end repeat;
 
---! Compute the number of bits needed to represent values from 0 to len-1
+--! Compute the number of bits needed to represent `len` values (from 0 to len-1)
 function width(len: integer) return integer is
 	begin
 		return integer(ceil(log2(real(len))));
@@ -1154,11 +1156,11 @@ function get_corr_rpm_struct(platform_id:integer; N:integer) return corr_rpm_str
 
 			elsif platform_id = PLATFORM_ID_ZCU111 then
 				assert N=8 report "Unsupported N for this platform" severity ERROR;
-			 	DSP_X0L :=1448;
-			 	DSP_X0R :=1520;
-			 	BRAM_X0L  := 1376;
-			 	BRAM_X0R  := 1552;
-			 	DSP_Y0  := 374;
+			 	DSP_X0L := 0;--3;
+			 	DSP_X0R :=1;--4;
+			 	BRAM_X0L  := 0;--2;
+			 	BRAM_X0R  := 1;--3;
+			 	DSP_Y0  := 0;--72;
 
 			 	for i in 0 to NUMBER_OF_CORRELATORS_MAX-1 loop
 					rpm.LEFT_DSP_X(i)    := DSP_X0L;
