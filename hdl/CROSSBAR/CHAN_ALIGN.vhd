@@ -87,7 +87,7 @@ signal fifo_tlast:      slv(0 to NUMBER_OF_LANES-1);
 signal fifo_tfirst:      slv(0 to NUMBER_OF_LANES-1);
 signal fifo_data_count:      slv10_array(0 to NUMBER_OF_LANES-1);
 
-signal fifo_rst_ctr : unsigned(4 downto 0);
+signal fifo_rst_ctr : unsigned(3 downto 0); -- 16-clk FIFO reset cycle
 signal fifo_rst: std_logic;
 signal fifo_inhibit: std_logic;
 
@@ -128,7 +128,7 @@ fifogen: for i in 0 to NUMBER_OF_LANES-1 generate
 			almost_full  => fifo_almost_full(i),
 			data_count => fifo_data_count(i),
 			clk          => clk,
-			rst          => fifo_rst
+			srst         => fifo_rst
 		);
 
 		fifo_tuser(i)(3 downto 1) <= fifo_dout(i)(35 downto 33);
@@ -160,12 +160,12 @@ fifo_rst_proc: process(clk)
             elsif signed(fifo_rst_ctr) = -1 then
                 fifo_inhibit <= '0';
             else
-	            if fifo_rst_ctr = 10 then
+            	fifo_rst_ctr <= fifo_rst_ctr + 1;
+	            if fifo_rst_ctr = 5 then
 	   	                fifo_rst <= '1';
-	            elsif signed(fifo_rst_ctr) = -10 then
+	            elsif signed(fifo_rst_ctr) = -5 then
 	   	                fifo_rst <= '0';
   				end if;
-            	fifo_rst_ctr <= fifo_rst_ctr + 1;
             end if; --reset
 			rst_dly <= rst;
 
