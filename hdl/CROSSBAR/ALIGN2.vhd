@@ -66,7 +66,7 @@ entity ALIGN is
 
 		-- Operational parameters
 		sof_window_stop: in std_logic_vector(7 downto 0); --!
-
+		ignore_lane: in slv(0 to NUMBER_OF_LANES-1);
 		-- Monitoring signals
 
 		fifo_overflow: out slv(0 to NUMBER_OF_LANES-1);
@@ -136,13 +136,11 @@ signal s_axis_tfirst: slv(0 to NUMBER_OF_LANES-1);
 signal is_sof: slv(0 to NUMBER_OF_LANES-1);
 signal is_eof: slv(0 to NUMBER_OF_LANES-1);
 
--- signal send: slv(0 to NUMBER_OF_LANES-1);
-signal bad_frame_length_int: slv(0 to NUMBER_OF_LANES-1);
--- signal ignore: slv(0 to NUMBER_OF_LANES-1);
+
 signal read_en: slv(0 to NUMBER_OF_LANES-1);
 
 signal valid_lane: slv(0 to NUMBER_OF_LANES-1);
-
+signal ignore_lane_reg: slv(0 to NUMBER_OF_LANES-1); -- registered verson of the lanes to be ignored
 
 signal sof_window_ctr: unsigned(7 downto 0) := (others=>'0'); -- init for sim
 signal sof_window: std_logic;
@@ -172,8 +170,11 @@ signal fifo_empty:      slv(0 to NUMBER_OF_LANES-1);
 
 signal all_valid: std_logic;
 signal any_valid: std_logic;
--- signal ban_lane: slv(0 to NUMBER_OF_LANES-1);
+
+-- Monitoring signals
+signal bad_frame_length_int: slv(0 to NUMBER_OF_LANES-1);
 signal align_pulse: slv(0 to NUMBER_OF_LANES-1);
+-- signal ignore: slv(0 to NUMBER_OF_LANES-1);
 
 signal m_axis_global_tvalid_int: std_logic; --! Active high when data is present on the longest frame. Check the individual lane's tvalid to see if a lane ended up prematurely.
 signal m_axis_global_tlast_int: std_logic; --! Active high on the last word of the longest frame.
@@ -217,7 +218,7 @@ fifogen: for i in 0 to NUMBER_OF_LANES-1 generate
 			almost_empty => data_fifo_empty(i),
 			data_count   => data_fifo_count(i),
 			clk          => clk,
-			rst         => rst
+			srst         => rst
 		);
 
 		fifo_tuser(i)(3 downto 1) <= data_fifo_dout(i)(35 downto 33);
@@ -254,6 +255,7 @@ is_eof          <= fifo_tvalid and fifo_tlast;
 
 -- All frames are aligned and are of the same length (tlast=1 occur at the same time), but some lanes might be missing (tvalid=0)
 
+-- Assign monitoring signals to entity output ports
 fifo_overflow <= data_fifo_overflow;
 bad_frame_length <= bad_frame_length_int;
 lane0_tfirst_mon <= lane0_tfirst;
@@ -267,39 +269,28 @@ out_proc: process(clk)
 	begin
 		if rising_edge(clk) then
 
-			for i in 0 to NUMBER_OF_LANES-1 loop
-				if rst='1' then
-					s_axis_tfirst(i) <= '1';
-				elsif s_axis_tvalid(i)='1' then
-					s_axis_tfirst(i) <= s_axis_tlast(i);
-				end if;
-
-				if s_axis_tvalid(0)='1' and s_axis_tfirst(0)='1' then
-					align_pulse(i) <= '1';
-				elsif s_axis_tvalid(i)='1' and s_axis_tfirst(i)='1' then
-					align_pulse(i) <= '0';
-				end if;
-			end loop;
-
-
-			-- Detect SOF on the incoming (unbufferred) lane 0 to derive a frame clock used as a timing reference.
-			if s_axis_tvalid(0)='1' then
-				lane0_tfirst <= s_axis_tlast(0);
-			end if;
+			-- register the ignore_lane flags to facilitate timing closure.
+			ignore_lane_reg <= ignore_lane;
 
 			-- Identify the first word of each frame.
 			-- tfirst is set whenever the _last word of a frame is read out (tvalid=1 and tready=1) and stays there until the first word is read out itself.
 			for i in 0 to NUMBER_OF_LANES-1 loop
+				-- Generate a tfirst signal for the incoming data
+				if s_axis_tvalid(i)='1' then
+					s_axis_tfirst(i) <= s_axis_tlast(i);
+				end if;
+
+				-- Generate a tfirst signal for the data coming out of the FIFO
 				if fifo_tvalid(i)='1' and read_en(i) = '1' then
 					fifo_tfirst(i) <= fifo_tlast(i);
 				end if;
 			end loop;
 
-
 			-- SOF window generator
+			-- Detect SOF on the incoming (unbufferred) lane 0 to derive a frame clock used as a timing reference.
 			-- Pulse ``is_last_in_sof_window`` for one clock ``is_last_in_sof_window`` after the beginning of a frame on lane 0.
 			is_last_in_sof_window <='0'; -- flag lasts only one clock
-			if lane0_tfirst='1' and s_axis_tvalid(0)='1' then
+			if s_axis_tfirst(0)='1' and s_axis_tvalid(0)='1' then
 				sof_window_ctr <= (others=>'0');
 				sof_window <= '1';
 			elsif sof_window='1' then
@@ -313,11 +304,14 @@ out_proc: process(clk)
 			end if;
 
 
+
 			for i in 0 to NUMBER_OF_LANES-1 loop
 
 				-- -------------------------
-				-- Set the discard_lane flag
+				-- Generate the valid_lane flag
 				-- -------------------------
+				-- Monitors the output of the FIFO and determines if a lane has
+				-- valid data, or if it must be discarded until the next frame.
 
 				-- If the frame ends, stop sending data
 				-- from that lane so the next SOF will be kept waiting in the
@@ -328,44 +322,24 @@ out_proc: process(clk)
 				bad_frame_length_int(i) <= '0';
 				if (is_eof(i)='1' and read_en(i)='1') or (is_eof(0)='1' and read_en(0)='1') then --
 					valid_lane(i) <= '0';
-					-- bad_frame_length_int(i) <= '0'; -- debug: simplifying
-					-- bad_frame_length_int(i) <= not eof_window; -- debug
-					bad_frame_length_int(i) <= not is_eof(i) or not is_eof(0); -- Misaligned EOF / bad frame length
+					bad_frame_length_int(i) <= not is_eof(i) or not is_eof(0); -- monitoring flag only: Misaligned EOF / bad frame length
 				end if;
 
-				-- If we are pulling out the EOF from the reference lane FIFO and
-				-- the current lane is not EOF, we have an over-long frame.
-				-- We stop considering this lane as having valid data and
-				-- start discarting its data.
-				-- JFC Fix: if the lane is discarding, its EOF is lost and it gets discarded again forever... So bad_frame_length_int on EOF only if lane was supposed to be valid.
-				-- if is_eof(0)='1' and read_en(0)='1' and valid_lane(i)='1' then --
-				-- 	valid_lane(i) <= '0';
-				-- 	bad_frame_length_int(i) <= not is_eof(i);
-				-- end if;
-
-				-- Start sending all lanes that have a SOF flag at the end of
-				-- the SOF window, and bad_frame_length_int the rest. Banned lanes will
-				-- always be discarded. The ban can be lifted if
-				-- auto_unban='1' and the lane 0 FIFO is less than 25% full.
+				-- Start sending all lanes by enabling valid_lane on all lanes that have a SOF flag at the end of
+				-- the SOF window.
 				missing_frame(i) <= '0';
 				if is_last_in_sof_window='1' then
-					-- start_send_var := is_sof(i) and not bad_frame_length_int(i) and not (ignore_lane(i) or ban_lane(i));
-					-- start_send_var := is_sof(i);
 					valid_lane(i) <= is_sof(i);
-					-- bad_frame_length_int(i) <= not is_sof(i);
-					missing_frame(i) <= not is_sof(i);
-					-- if msb(data_fifo_count(0), 4)="0000" and auto_unban='1' then
-					-- 	ban_lane(i) <= '0';
-					-- end if;
+					missing_frame(i) <= not is_sof(i);  -- monitoring flag only
 				end if;
 
-				-- valid_lane(i) <= valid_lane_var(i);
+				-- Always invalidate lanes that are to be ignored so the aligner won't wait for those.
+				-- Overrides whatever was assigned to it above
+				if ignore_lane(i)='1' then
+					valid_lane(i) <= '0';
+				end if;
 
-			end loop;
-
-
-
-			for i in 0 to NUMBER_OF_LANES-1 loop
+				-- Register the FIFO output data
 				m_axis_tvalid(i) <= all_valid and valid_lane(i); -- A transfer occurs only when all the data lines are valid.  all_valid is 1 when no lane is valid, but the second term implies that at least one lane (the current lane) is valid.
 				m_axis_tdata(i) <= fifo_tdata(i);
 				m_axis_tlast(i) <= fifo_tlast(i) and valid_lane(i); -- Set the last flag from te FIFO if the lane is still being sent. If it was interrupted early and data is being discarder, EOF will not appear wit global_tlast.
@@ -380,19 +354,14 @@ out_proc: process(clk)
 			-- The reset code is placed at the end to avoid the non-resetted signals to hold their value during reset (which requires additional logic).
 			if rst='1' then
 				sof_window <= '0';
-				-- eof_window <= '0';
 				is_last_in_sof_window <= '0';
 				fifo_tfirst <= (others=>'1');
-				lane0_tfirst <= '1'; -- Make sure we trig on the first incoming packet after reset. Otherwise we will buffer a full frame before sending data.
-				-- send <= (others=>'0');
+				s_axis_tfirst <= (others=>'1'); -- Make sure we trig on the first incoming packet after reset. Otherwise we will buffer a full frame before sending data.
 				bad_frame_length_int <= (others=>'0');
 				missing_frame <= (others=>'0');
-				-- ignore <= (others=>'0');
 				valid_lane <= (others=>'0');
-				-- ban_lane <= (others=>'0');
 				m_axis_tvalid <= (others=>'0');
 			end if; -- rst
-
 
 		end if; -- clk
 	end process;
