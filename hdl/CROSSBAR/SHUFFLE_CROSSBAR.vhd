@@ -300,7 +300,7 @@ sof_window_stop <= CONTROL_BYTES(2);
 
 -- CONTROL Bytes 3-4
 
-ignore_lane <= to_slv(CONTROL_BYTES(3 to 4))(NUMBER_OF_INPUT_LANES-1 downto 0);
+ignore_lane <= reverse_bits_and_dir(to_slv(CONTROL_BYTES(3 to 4))(NUMBER_OF_INPUT_LANES-1 downto 0));
 
 --! CONTROL Bytes 5-12 (crossbar2) or 5-8 (crossbar3)
 lane_map_gen: for i in 0 to NUMBER_OF_INPUT_LANES-1 generate
