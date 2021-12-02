@@ -634,16 +634,18 @@ begin
 
 
 
-
+	-- Remap the separate ADC inputs into an array
+	-- ADC data comes in 64-bit bus that contains 4 samples, 16-bit word per sample. Data is MSB-aligned in each word. First sample is presumably in the lower word.
+	-- chFPGA input requires 32-bit bus, 1 byte per sample. THE FIRST SAMPLE IS IN THE MSB. This is a convention of the Casper FFT.
 	adc_axis_tdata <= (
-	   adc0_axis_tdata(63 downto 56) &  adc0_axis_tdata(47 downto 40) & adc0_axis_tdata(31 downto 24) & adc0_axis_tdata(15 downto 8), 
-	   adc1_axis_tdata(63 downto 56) &  adc1_axis_tdata(47 downto 40) & adc1_axis_tdata(31 downto 24) & adc1_axis_tdata(15 downto 8),
-	   adc2_axis_tdata(63 downto 56) &  adc2_axis_tdata(47 downto 40) & adc2_axis_tdata(31 downto 24) & adc2_axis_tdata(15 downto 8),
-	   adc3_axis_tdata(63 downto 56) &  adc3_axis_tdata(47 downto 40) & adc3_axis_tdata(31 downto 24) & adc3_axis_tdata(15 downto 8),
-	   adc4_axis_tdata(63 downto 56) &  adc4_axis_tdata(47 downto 40) & adc4_axis_tdata(31 downto 24) & adc4_axis_tdata(15 downto 8),
-	   adc5_axis_tdata(63 downto 56) &  adc5_axis_tdata(47 downto 40) & adc5_axis_tdata(31 downto 24) & adc5_axis_tdata(15 downto 8),
-	   adc6_axis_tdata(63 downto 56) &  adc6_axis_tdata(47 downto 40) & adc6_axis_tdata(31 downto 24) & adc6_axis_tdata(15 downto 8),
-	   adc7_axis_tdata(63 downto 56) &  adc7_axis_tdata(47 downto 40) & adc7_axis_tdata(31 downto 24) & adc7_axis_tdata(15 downto 8)
+	    adc0_axis_tdata(15 downto 8) &  adc0_axis_tdata(31 downto 24) & adc0_axis_tdata(47 downto 40) &  adc0_axis_tdata(63 downto 56),
+	    adc1_axis_tdata(15 downto 8) &  adc1_axis_tdata(31 downto 24) & adc1_axis_tdata(47 downto 40) &  adc1_axis_tdata(63 downto 56),
+	    adc2_axis_tdata(15 downto 8) &  adc2_axis_tdata(31 downto 24) & adc2_axis_tdata(47 downto 40) &  adc2_axis_tdata(63 downto 56),
+	    adc3_axis_tdata(15 downto 8) &  adc3_axis_tdata(31 downto 24) & adc3_axis_tdata(47 downto 40) &  adc3_axis_tdata(63 downto 56),
+	    adc4_axis_tdata(15 downto 8) &  adc4_axis_tdata(31 downto 24) & adc4_axis_tdata(47 downto 40) &  adc4_axis_tdata(63 downto 56),
+	    adc5_axis_tdata(15 downto 8) &  adc5_axis_tdata(31 downto 24) & adc5_axis_tdata(47 downto 40) &  adc5_axis_tdata(63 downto 56),
+	    adc6_axis_tdata(15 downto 8) &  adc6_axis_tdata(31 downto 24) & adc6_axis_tdata(47 downto 40) &  adc6_axis_tdata(63 downto 56),
+	    adc7_axis_tdata(15 downto 8) &  adc7_axis_tdata(31 downto 24) & adc7_axis_tdata(47 downto 40) &  adc7_axis_tdata(63 downto 56)
         );
 	adc_axis_tvalid <= (
 		adc0_axis_tvalid ,
