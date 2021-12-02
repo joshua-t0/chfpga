@@ -29,14 +29,14 @@ signal chan, bin: integer;
 signal z, zz: complex;
 signal x,y: complex;
 
-constant NUMBER_OF_WORDS_PER_BIN: integer := 4; -- corresponds to the number of clocks per bin
+constant NUMBER_OF_WORDS_PER_BIN: integer := 1; -- corresponds to the number of clocks per bin
 constant N: integer := 4*NUMBER_OF_WORDS_PER_BIN;
 constant NUMBER_OF_HEADER_WORDS: integer := 4;
 
 constant INTEGRATION_PERIOD: integer := 8;  -- must match the INTEGRATION_PERIOD register value
 constant NUMBER_OF_BINS_PER_FRAME: integer := 128; -- must match the BINS_PER_FRAME register value
 
-constant X_FN: string := "sign_prob";
+constant X_FN: string := "1 pulse";
 --constant Y_FN: string := "-8-8j";
 
 
@@ -118,7 +118,8 @@ corr0: entity work.corr44
 		NUMBER_OF_WORDS_PER_BIN => NUMBER_OF_WORDS_PER_BIN, -- corresponds to the number of clocks per bin
 		NUMBER_OF_HEADER_WORDS => NUMBER_OF_HEADER_WORDS,
 		DEFAULT_INTEGRATION_PERIOD => INTEGRATION_PERIOD,
-		DEFAULT_BINS_PER_FRAME => NUMBER_OF_BINS_PER_FRAME
+		DEFAULT_BINS_PER_FRAME => NUMBER_OF_BINS_PER_FRAME,
+		DEFAULT_CONTROL_BYTE0 => 2#01000000#
 		)
 	port map(
 
@@ -285,7 +286,7 @@ begin
 				for word in 0 to NUMBER_OF_WORDS_PER_BIN-1 loop
 					for chan in 0 to 3 loop
 						cc := fn(X_FN, frame, bin, 4*word + chan);
-						tdata(8*chan+7 downto 8*chan) <= to_slv(cc.RE,4) & to_slv(cc.IM,4);
+						tdata(8*chan+7 downto 8*chan) <= (to_slv(cc.RE,4) xor "1000") & (to_slv(cc.IM,4) xor "1000");
 					end loop;
 					tvalid <= '1';
 					tlast <= '0';
