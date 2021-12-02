@@ -438,25 +438,32 @@ gen_chanpll_k7: if PLATFORM_ID = PLATFORM_ID_MGK7MB generate
 						O => chan_clk_int(i) -- Clock buffer output
 					);
 
-		chan_clk(i) <= chan_clk_int(i);
-
-		-- Generate a synchronous reset signal for each channel clock
-		chan_reset0: entity work.sync_reset
-			port map(
-				clk => chan_clk_int(i),
-				async_reset => chan_async_reset,
-				reset_out => chan_reset_out(i)
-				);
 	end generate;
+
 
 
 end generate;
 
 -- For the ZCU111, we just send the already-buffered single ADC clock to all channel clocks
 gen_chanpll_up: if PLATFORM_ID = PLATFORM_ID_ZCU111 generate
-	chan_clk <= (others => adc_clk);
+	chan_clk_int <= (others => adc_clk);
 	chan_mmcm_locked <= '1'; --make sure the RESETs don't wait on the inexistent MMCM locked signal
 end generate;
+
+-- Generate channelizer clocks and resets
+gen_chanclk: for i in 0 to 7 generate
+
+	chan_clk(i) <= chan_clk_int(i);
+
+	-- Generate a synchronous reset signal for each channel clock
+	chan_reset0: entity work.sync_reset
+		port map(
+			clk => chan_clk_int(i),
+			async_reset => chan_async_reset,
+			reset_out => chan_reset_out(i)
+			);
+end generate;
+
 
 clk200_async_reset <= rst_in or (not mmcm_locked);
 clk200_reset0: entity work.sync_reset
