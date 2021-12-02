@@ -32,17 +32,20 @@ library UNIMACRO;
 use unimacro.Vcomponents.all;
 
 
---! @brief Casadable, compact (4+4) bit 512-element complex vector multiplier/accumulator that uses two DSP48E1 and two RAMB16 blocks.
+--! Casadable, compact (4+4) bit 512-element complex vector multiplier/accumulator that uses two DSP48E1 and two RAMB16 blocks.
 --!
---! The input stream present a pairs of (4+4) bit complex value on each clock on its 16-bit input
+--! The input stream consist of a pair of (4+4) bit complex value presented on each clock on its 16-bit input
 --! data bus. Each pair in a frame is multiplied and accumulated in a separate memory location. Up to
 --! 512 separate products can be stored.
 --!
---! When the `last_frame` flag is set, the final accumulated values are transferred in a readout
---! buffer and are read slowly while another integration in is progress.
+--! The data is accumulated in a FIFO as a saturated (18+18) bit value. ! When
+--! the `last_frame` flag is set, the final accumulated values are transferred
+--! in a BRAM readout ! buffer and are read slowly through a 36-bit bus while
+--!another integration in is progress. A readout input port allows the CMACs to
+--! be connected in a readout chain.
 --!
 --!
---! See the Entity architecture for implementation details.
+--! See the Entity architecture for more implementation details.
 entity CMAC44 is
 	GENERIC (
 		PLATFORM_ID: integer;
@@ -126,7 +129,7 @@ end CMAC44;
 --! Readout logic
 --! -------------
 --!
---! The CMAC is meant to be daisy-chained with other CMACs in order to stream the captured
+--! The CMAC output is meant to be daisy-chained with other CMACs in order to stream the captured
 --! accumulated products of all the units in the chain. Once the first unit of the chain has sent its data, the data
 --! from the second CMAC is passed through the first one, and so on. This ensures that the routing needed to readout all the CMACs stays local.
 --!
@@ -586,12 +589,13 @@ end generate;
 --gen_fifoup: if FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
 	acc_fifo0 : FIFO18E2
 		generic map (
-			CLOCK_DOMAINS => "COMMON",
+			CLOCK_DOMAINS => "COMMON", -- common clock / synchronous FIFO
 			PROG_EMPTY_THRESH     => 128, -- Sets the almost empty threshold
 			PROG_FULL_THRESH      => 128, -- Sets almost full threshold
 			READ_WIDTH              => 36, -- Sets data width to 4-36
 			WRITE_WIDTH              => 36, -- Sets data width to 4-36
-			REGISTER_MODE         => "REGISTERED", -- Enable output register (1-0) Must be 1 if EN_SYN = FALSE.
+			--REGISTER_MODE         => "REGISTERED", -- Output is registered as part of the FIFO, and does not add additional latency.
+			REGISTER_MODE         => "DO_PIPELINED", -- Output is registered as a pipeline register, with an additional latency. We need this latency to be compatible with the 7-series FIFOE1 in synchronous mode with output register.
 			FIRST_WORD_FALL_THROUGH => "FALSE", -- Sets the FIFO FWFT to FALSE, TRUE. Must be FALSE when EN_SYN=TRUE.
 			INIT                    => X"000000000", -- Initial values on output port
 			SRVAL                   => X"000000000" -- Set/Reset value for output port

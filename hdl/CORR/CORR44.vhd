@@ -45,7 +45,8 @@ entity CORR44 is
 		NUMBER_OF_WORDS_PER_BIN: integer := 4; -- also corresponds to the number of clocks per bin. There are 4 samples per word.
 		NUMBER_OF_HEADER_WORDS: integer := 4; -- must be <= 4
 		DEFAULT_INTEGRATION_PERIOD: integer := 390625; -- 1 sec
-		DEFAULT_BINS_PER_FRAME: integer := 128
+		DEFAULT_BINS_PER_FRAME: integer := 128;
+		DEFAULT_CONTROL_BYTE0: integer:= 2#10000000#
 		--LEFT_DSP_RPM_X: integer := 361;
 		--LEFT_BRAM_RPM_X: integer := 350;
 		--RIGHT_DSP_RPM_X: integer := 381;
@@ -205,7 +206,7 @@ signal data_fifo_empty: std_logic;
 signal started: std_logic;
 
 -- Control and status bytes
-signal control_bytes: slv8_array(0 to 5); -- default value set in the CMD_SLAVE
+signal control_bytes: slv8_array(0 to 6); -- default value set in the CMD_SLAVE
 signal status_bytes: slv8_array(0 to 2);
 
 signal integration_period: std_logic_vector(31 downto 0);
@@ -304,7 +305,7 @@ user_id <= control_bytes(0)(3 downto 0);
 integration_period <= to_slv(control_bytes(1 to 4));
 
 -- CONTROL Byte 5
-number_of_bins_per_frame <= "0000" & control_bytes(5);
+number_of_bins_per_frame <= "000" & to_slv(control_bytes(5 to 6))(8 downto 0);
 
 --! STATUS Byte 0
 --status_bytes(0)(7 downto 4) <= (others=>'0');
@@ -327,7 +328,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 		NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --
 		NUMBER_OF_STATUS_BYTES  => status_bytes'Length(1), --
 		--DEFAULT_CONTROL_BYTES   => (X"00" & X"0005F5E0" & x"7F") -- reset=0, user_id="0000", integration_period=390625-1 = 1s, bins_per_frame=128-1
-		DEFAULT_CONTROL_BYTES   => (X"80" & to_slv(DEFAULT_INTEGRATION_PERIOD-1, 32) & to_slv(DEFAULT_BINS_PER_FRAME-1, 8)) -- reset=0, user_id="0000", integration_period=390625-1 = 1s, bins_per_frame=128-1
+		DEFAULT_CONTROL_BYTES   => (to_slv(DEFAULT_CONTROL_BYTE0, 8) & to_slv(DEFAULT_INTEGRATION_PERIOD-1, 32) & "0000000" & to_slv(DEFAULT_BINS_PER_FRAME-1, 9)) -- reset=0, user_id="0000", integration_period=390625-1 = 1s, bins_per_frame=128-1
 	)
 
 	port map (
