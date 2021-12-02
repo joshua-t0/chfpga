@@ -1278,6 +1278,7 @@ gen_noeth: if PHY_TYPE = "NONE" generate
 	m_bsb_axis_tuser <= udp0_tx_port;
 	axis_udp_tx_tready <= m_bsb_axis_tready;
 
+	sfp_status_vector_int(0) <= '1'; -- simulate valid link so the blinker will work
 
 end generate;
 
@@ -2215,20 +2216,27 @@ gen_noev8: if NUMBER_OF_ADCS = 0 generate
 begin
 	adc_clk_bufg <= adc_axis_clk(ANT_CLK_SOURCE);
 	-- Note: axis_adc_* length is max(NUMBER_OF_ADC, NUMBER_OF_CHANNELIZERS) and is therefore NUMBER_OF_CHANNELIZERS in this block
-	axis_adc_tvalid <= adc_axis_tvalid;
-	axis_adc_tdata <= adc_axis_tdata;
-	axis_adc_tuser <= (others => (others => '0')); -- no overflows. need to fix.
 	-- Generate the divide-by-two adc clock monitoring signals for the frequency counter
 	gen_noadc_div2: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
-		axis_adc_tlast(i) <= to_std_logic(signed(adc_word_ctr(i))=-1);
 		noadc_div2: process(adc_axis_clk(i))
 			begin
 				if rising_edge(adc_axis_clk(i)) then
 					adc_clk_div2(i) <= not adc_clk_div2(i);
+
+
+					axis_adc_tvalid(i) <= adc_axis_tvalid(i);
+					axis_adc_tdata(i) <= adc_axis_tdata(i);
+					axis_adc_tuser(i) <= (others => '0'); -- no overflows. need to fix.
+					axis_adc_tlast(i) <= to_std_logic(signed(adc_word_ctr(i))=-1);
+
+					if adc_axis_tvalid(i)='1' then
+						adc_word_ctr(i) <= adc_word_ctr(i) + 1;
+					end if;
+					if chan_reset(i)='1' then
+						axis_adc_tvalid(i) <= '0';
+						adc_word_ctr(i) <= (others => '0');
+					end if;
 				end if; -- if clk
-				if adc_axis_tvalid(i)='1' then
-					adc_word_ctr(i) <= adc_word_ctr(i) + 1;
-				end if;
 			end process;
 	end generate;
 end generate gen_noev8;
@@ -2880,7 +2888,7 @@ end generate;
 
 
 -----------------------------------------------------------------------
----- Button and LED handling for a comfortable user experience
+---- LED blinking, for a comfortable user experience
 -----------------------------------------------------------------------
 BLINKER_RESET_ALL <= sys_ctrl_rst_reg or BLINKER_RESET;
 blinker_rst <= BLINKER_RESET_ALL or (not sfp_status_vector_int(0)); -- do not blink if Link Status = 0
@@ -2889,11 +2897,12 @@ gpio_led <= gpio_led_int;
 --blinker_leds <= gpio_led_int;
 BLINKER0: entity work.BLINKER
 		GENERIC MAP(
-			DUMMY=>not BLINKER_PRESENT
+			DUMMY => not BLINKER_PRESENT,
+			PING_PONG => PLATFORM_ID=PLATFORM_ID_ZCU111 or PLATFORM_ID=PLATFORM_ID_KC705 or PLATFORM_ID=PLATFORM_ID_ML605 -- We have 8 LEDS on these platform to perform a nice light show
 			)
 	PORT MAP(
 		RST => blinker_rst, -- do not blink if Link Status = 0
-		CLK => CLK125,
+		CLK => ctrl_clk,
 		LEDS=> gpio_led_int,
 		kick => blinker_kick -- blink faster when packets are received
 	);
