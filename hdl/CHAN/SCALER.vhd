@@ -553,6 +553,9 @@ scaler_proc: process(clk)
                 out_dat.TVALID <= stage2_tvalid;
             end if; -- if BYPASS
 
+
+            --out_dat.TDATA <= (others =>'0'); // as for debugging
+
             if reset ='1' then
                 delay_capture_ctr <= (others=> '0');
                 delay_capture_ctr_en <= '1';
