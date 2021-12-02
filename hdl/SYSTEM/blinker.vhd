@@ -22,6 +22,7 @@ use IEEE.STD_LOGIC_MISC.ALL;
 
 use IEEE.NUMERIC_STD.ALL;
 
+-- Knight Rider's KIT2000-style LED blinker
 entity blinker is
 	GENERIC (
 		PING_PONG: boolean := FALSE;
@@ -37,46 +38,15 @@ entity blinker is
 		LEDS: out STD_LOGIC_VECTOR(7 downto 0); --! Ramp up and down pattern Intensity = (0,1,2,3,2,1,0,0,0...)
 		LEDS_U: out STD_LOGIC_VECTOR(7 downto 0); --! Ramp_up pattern        Intensity = (0,1,2,3,0,0,0,0,0...)
 		LEDS_D: out STD_LOGIC_VECTOR(7 downto 0) --! Ramp down parrern      Intensity = (0,0,0,3,2,1,0,0,0...)
-
-		-- UDP stream
-
-		-- UDP_RX_DATA : in std_logic_vector(7 downto 0);
-		-- UDP_RX_READY : in std_logic;
-		-- UDP_RX_RD_EN : out std_logic;
-
-		-- UDP_TX_DATA : out std_logic_vector(7 downto 0);
-		-- UDP_TX_FRAME : out std_logic;
-		-- UDP_TX_WR_EN : out std_logic
 		);
 
 end blinker;
 
 architecture Behavioral of blinker is
 
--- MAC interface signals
--- signal eth_rx_stream, eth_tx_stream: STD_LOGIC_VECTOR(9 downto 0);
-
--- Ethernet transmitter and LED blinker
 signal CTR: unsigned (31 downto 0):=(others=>'0'); --
 
--- signal tx_ctr: unsigned (15 downto 0) :=(others=>'0');
--- signal frame_ctr: unsigned (15 downto 0) :=(others=>'0');
--- signal tx_frame: std_logic :='0';
--- signal tx_frame2: std_logic :='0';
--- signal tx_interframe: std_logic :='0';
--- signal tx_block : std_logic :='0';
 
--- signal button_ctr: unsigned (31 downto 0):=(others=>'0');
--- signal start : std_logic :='0';
--- signal tx_byte: unsigned (7 downto 0);
--- signal in_eth: STD_LOGIC_VECTOR(9 downto 0);
--- signal fe_out_tick: STD_LOGIC;
-
--- signal UDP_MAC_RXD,UDP_MAC_SFP_RXD: STD_LOGIC_VECTOR(7 downto 0);
--- signal UDP_MAC_RX_EN,UDP_MAC_SFP_RX_EN: STD_LOGIC;
-
-
--- Knight Rider blinker
 signal LEAD: unsigned(0 to 7) := "10000000"; -- The bit that bounces around
 type TRAIL_TYPE is array(natural range <>) of unsigned(0 to 4);
 signal TRAIL: TRAIL_TYPE(0 to 7) ; -- Memory of the passage of the bit so we can compute remanent intensity
@@ -110,16 +80,21 @@ blinker : process(CLK, kick)
 
 		if rising_edge(CLK) then
 			if RST='1' then
-				LEDS_D_INT<=(others=>'0');
-				LEDS_U_INT<=(others=>'0');
+				LEDS_D_INT <= (others=>'0');
+				LEDS_U_INT <= (others=>'0');
 				LEAD <= (0=>'1', others=>'0');
-				DIR<='1';
+				DIR <= '1';
 			else
-				CTR<=CTR+1;
-
-				PWM_LOW_TO_HIGH(0) <= and_reduce(std_logic_vector(CTR(16 downto 12)));
-				PWM_LOW_TO_HIGH(1) <= and_reduce(std_logic_vector(CTR(16 downto 15)));
-				PWM_LOW_TO_HIGH(2) <= '1';
+				CTR <= CTR + 1;
+				-- Generate 3 signals with different PWM duty cycles
+				-- We use the last 17 bits of CTR to determine the ON status so the PWM waveform is at a reasonable frequency
+				-- bits 16:0 : duty cycle= 2^0 / 2^17 = 2^-17
+				-- bits 16:1 : duty cycle= 2^1 / 2^17 = 2^-16
+				-- bits 16:12 : duty cycle= 2^12 / 2^17 = 2^-5 = 1/32
+				-- bits 16:15 : duty cycle= 2^15 / 2^17 = 2^-2 = 1/4
+				PWM_LOW_TO_HIGH(0) <= and_reduce(std_logic_vector(CTR(16 downto 12)));  -- 1/32 duty cycle
+				PWM_LOW_TO_HIGH(1) <= and_reduce(std_logic_vector(CTR(16 downto 15)));  -- 1/4 duty cycle
+				PWM_LOW_TO_HIGH(2) <= '1'; -- 100% duty cycle
 				PWM_HIGH_TO_LOW(0) <= PWM_LOW_TO_HIGH(2);
 				PWM_HIGH_TO_LOW(1) <= PWM_LOW_TO_HIGH(1);
 				PWM_HIGH_TO_LOW(2) <= PWM_LOW_TO_HIGH(0);
