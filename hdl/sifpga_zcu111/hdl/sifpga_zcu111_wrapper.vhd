@@ -1,7 +1,7 @@
 --Copyright 1986-2021 Xilinx, Inc. All Rights Reserved.
 ----------------------------------------------------------------------------------
---Tool Version: Vivado v.2021.1 (lin64) Build 3247384 Thu Jun 10 19:36:07 MDT 2021
---Date        : Mon Nov  1 16:44:36 2021
+--Tool Version: Vivado v.2021.2 (lin64) Build 3367213 Tue Oct 19 02:47:39 MDT 2021
+--Date        : Sat Nov 13 16:24:44 2021
 --Host        : lbcontrol running 64-bit Ubuntu 20.04.3 LTS
 --Command     : generate_target sifpga_zcu111_wrapper.bd
 --Design      : sifpga_zcu111_wrapper
@@ -50,6 +50,7 @@ end sifpga_zcu111_wrapper;
 architecture STRUCTURE of sifpga_zcu111_wrapper is
   component sifpga_zcu111 is
   port (
+    gpio_led : out STD_LOGIC_VECTOR ( 7 downto 0 );
     CLK_125_clk_p : in STD_LOGIC;
     CLK_125_clk_n : in STD_LOGIC;
     adc0_clk_clk_n : in STD_LOGIC;
@@ -79,8 +80,7 @@ architecture STRUCTURE of sifpga_zcu111_wrapper is
     vin3_01_v_n : in STD_LOGIC;
     vin3_01_v_p : in STD_LOGIC;
     vin3_23_v_n : in STD_LOGIC;
-    vin3_23_v_p : in STD_LOGIC;
-    gpio_led : out STD_LOGIC_VECTOR ( 7 downto 0 )
+    vin3_23_v_p : in STD_LOGIC
   );
   end component sifpga_zcu111;
 begin
