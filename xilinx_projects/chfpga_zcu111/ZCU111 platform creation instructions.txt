@@ -31,9 +31,9 @@ lwip211
 	igmp_options: true
 
 
-	ip options:
+	lwip_ip_options:
 
-		mtu: 9000
+		ip_max_frag_mtu: 3000
 
 	tcp_options:
 		tcp_wnd: 16384
@@ -42,6 +42,15 @@ lwip211
 		tcp_ip_rx_checksum*: true
 		tcp_rx_checksum_offload*: true
 		jumbo frames: True
+
+
+Need to set LWIP_MDNS_RESPONDER
+To enable MDNS responder, set
+  LWIP_MDNS_RESPONDER = 1
+in lwipopts.h and add src/apps/mdns/mdns.c to your list of files to build.
+
+#define LWIP_MDNS_RESPONDER 1
+
 
 system.mss:
 	BEGIN LIBRARY
