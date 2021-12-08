@@ -171,12 +171,12 @@ set_clock_groups -name bp_txclk_group -asynchronous -group [get_clocks -include_
 # The delay is set to roughly take into account the min (fast) and max (slow) delay caused between the external virtual clock and the CLK125 clock.
 # Really, it would be better to sample the SPI signal on their SPI clocks. Some problems have been reported with the current set-up by others.
 
-set_input_delay -clock [get_clocks arm_spi_virt_clk] 5.0 [get_ports {arm_spi_sck arm_spi_cs_n arm_spi_mosi}]
+set_input_delay -clock [get_clocks arm_spi_virt_clk] 4.0 [get_ports {arm_spi_sck arm_spi_cs_n arm_spi_mosi}]
 
 # FMC SPI clock
 ################
 
-set_input_delay -clock [get_clocks arm_spi_virt_clk] 5.0 [get_ports {fmc?_spi_miso}]
+set_input_delay -clock [get_clocks arm_spi_virt_clk] 4.0 [get_ports {fmc?_spi_miso}]
 
 # I2C clock
 ################

@@ -682,13 +682,13 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 		cs_n => arm_spi_cs_n,
 
 		-- Master bus interface
-		m_addr => spi_addr,
-		m_rdat => spi_rdat,
-		m_wdat => spi_wdat,
-		m_rreq => spi_rreq,
-		m_rack => spi_rack,
-		m_wreq => spi_wreq,
-		m_wack => spi_wack,
+		addr => spi_addr,
+		din  => spi_rdat,
+		dout => spi_wdat,
+		rreq => spi_rreq,
+		rack => spi_rack,
+		wreq => spi_wreq,
+		wack => spi_wack,
 
 		clk => ctrl_clk,
 		reset => '0' -- redundant; cs_n does the same thing

@@ -483,6 +483,9 @@ architecture Behavioral of chFPGA_MGK7MB_Rev2 is
 	signal bp_gpio_int_out: std_logic;
 	signal bp_gpio_int_oe: std_logic;
 
+	-- Ensure the ARM SPI interface signal registers are placed in the IOB to produce consistent timing
+	attribute IOB of arm_spi_sck, arm_spi_miso: signal is "true";
+
 begin
 
 	cpu_reset <= not cpu_reset_n; --! Reset is active LOW on the ICEBoard

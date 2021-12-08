@@ -42,7 +42,7 @@ set_property IOSTANDARD LVCMOS25 [get_ports cpu_reset_n]
 #################################
 
 set_property IOSTANDARD LVCMOS25 [get_ports arm_spi_*]
-set_property SLEW SLOW [get_ports arm_spi_miso]
+set_property SLEW FAST [get_ports arm_spi_miso]
 set_property DRIVE 16 [get_ports arm_spi_miso]
 
 set_property PACKAGE_PIN T22 [get_ports arm_spi_sck]
