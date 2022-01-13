@@ -30,10 +30,10 @@ use UNISIM.VComponents.all;
 
 --===== ENTITY DECLARATION ======================
 
---! @brief Wraps a CASPER channelizer (Typically a FFT or a variant) with a CASPER-compatible SYNC generator and delay line to accept a AXI4-STREAMING input and output bus.
---! @details
---!
--- The FFT input is an Non-blocking, AXI4-Streaming bus with 32 bits of data and 4 bits of user-
+-- Wraps a CASPER wideband FFT into a AXI4-STREAMING
+-- processing block with a few memory-mapped control registers.
+--
+-- The FFT input is an non-blocking, AXI4-Streaming bus with 32 bits of data and 4 bits of user-
 -- defined bits. The 4 bytes correspond to four 8-bit signed data samples, with the first sample
 -- being placed in the most significant byte.
 --
@@ -55,7 +55,7 @@ use UNISIM.VComponents.all;
 -- the output in the same order. The TUSER bits from the input are also passed directly to the output.
 --
 --
---! Generating the CASPER FFT block
+--! Generating the underlying CASPER FFT block
 --
 --! -------------------------------
 --!
@@ -142,7 +142,6 @@ signal status_bytes: slv8_array(0 to 2);
 
 signal bypass_fft: std_logic;
 signal soft_reset: std_logic;
---signal DLY_RESET: std_logic;
 signal fft_shift_schedule: std_logic_vector(15 downto 0);
 signal overflow_count: unsigned(7 downto 0);
 signal overflow_reset: std_logic;
@@ -182,17 +181,16 @@ begin
 soft_reset <= control_bytes(0)(7);
 overflow_reset <= control_bytes(0)(2);
 overflow_force <= control_bytes(0)(3);
---DLY_RESET <= control_bytes(0)(1);
 bypass_fft <= control_bytes(0)(0); --!
 
 --! CONTROL Byte 1-2
-fft_shift_schedule <= to_slv(control_bytes(1 to 2),fft_shift_schedule'Length); --Sets the shifting schedule through the FFT to prevent overflow. Bit 0 specifies the behavior of stage 0, bit 1 of stage 1, and so on.
+fft_shift_schedule <= to_slv(control_bytes(1 to 2),fft_shift_schedule'LENGTH); --Sets the shifting schedule through the FFT to prevent overflow. Bit 0 specifies the behavior of stage 0, bit 1 of stage 1, and so on.
 
 -- CONTROL Bytes 3-4
 sync_period <= to_unsigned(control_bytes(3 to 4));
 
 -- CONTROL Bytes 5-6
-fft_pipeline_delay <= to_slv(control_bytes(5 to 6),fft_pipeline_delay'Length);
+fft_pipeline_delay <= to_slv(control_bytes(5 to 6),fft_pipeline_delay'LENGTH);
 
 -- STATUS Byte 0-1
 status_bytes(0 to 1) <= ("0000" & fft_measured_pipeline_delay(11 downto 8), fft_measured_pipeline_delay(7 downto 0));
@@ -206,8 +204,8 @@ status_bytes(2) <= std_logic_vector(overflow_count);
 --! Instantiates a memory-mapped interface to the control and status bytes
 CTRL_SLAVE0: entity work.CTRL_SLAVE
 	GENERIC MAP (
-		NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), -- Number of bits in the control word
-		NUMBER_OF_STATUS_BYTES  => status_bytes'Length(1), -- Number of bits in the status word.
+		NUMBER_OF_CONTROL_BYTES => control_bytes'LENGTH(1), -- Number of bits in the control word
+		NUMBER_OF_STATUS_BYTES  => status_bytes'LENGTH(1), -- Number of bits in the status word.
 		DEFAULT_CONTROL_BYTES   => X"00_03FF_0000_0C9E" -- default values.
 	)
 
@@ -385,19 +383,19 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 
 			PORT MAP(
 				-- Delay measurement signals
-				SYNC_IN        => fft_sync_in, -- SYNC at the input of the FFT
-				SYNC_OUT       => fft_sync_out, -- SYNC at the output of the FFT
-				MEASURED_DELAY => fft_measured_pipeline_delay, -- Contains the pipeline delay
+				sync_in        => fft_sync_in, -- SYNC at the input of the FFT
+				sync_out       => fft_sync_out, -- SYNC at the output of the FFT
+				measured_delay => fft_measured_pipeline_delay, -- Contains the pipeline delay
 
 				-- Delay line
-				DELAY          => fft_pipeline_delay, -- Contains the pipeline delay
-				DATA_IN        => flags_in,  -- user data synchronized with the SYNC at the input of the processing block
-				DATA_OUT       => flags_out, -- user data synchronized with SYNC_OUT and DOUT
-				VALID          => fft_tvalid,
+				delay          => fft_pipeline_delay, -- Contains the pipeline delay
+				data_in        => flags_in,  -- user data synchronized with the SYNC at the input of the processing block
+				data_out       => flags_out, -- user data synchronized with SYNC_OUT and DOUT
+				valid          => fft_tvalid,
 
 				clk            => clk,
-				CE             => delay_clk_en,
-				RST            => sync_reset
+				ce             => delay_clk_en,
+				rst            => sync_reset
 			);
 end generate;
 
