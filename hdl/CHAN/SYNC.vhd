@@ -15,14 +15,14 @@
 --		It seems that holding the SYNC input for more than one clock cycle only generates a single output sync when it is released. We use that to our advantage.
 --		The block assumes there are no other SYNC pulses in the FFT pipeline, otherwise that would confuse the readout. RESET does not clear the FFT registers. 
 -- 	If we perform multiple resets in succession or just after a input SYNC signal was received we would get a wrong readout.
---  2) Implement a delay line to pass control signals with with the specified delay. This is used to pass VALID/OVERFLOW/etc signals around the FFT block and reassociate them with the corresponding samples at the output of the FFT.
+--  2) Implement a delay line to pass control signals with with the specified delay. This is used to pass valid/OVERFLOW/etc signals around the FFT block and reassociate them with the corresponding samples at the output of the FFT.
 --
 -- Dependencies: 
 --
 -- Revision: 
 -- Revision 0.01 - File Created
 -- Additional Comments: 
--- 2012-05-31 JFC: Added Clock Enable (CE)
+-- 2012-05-31 JFC: Added Clock Enable (ce)
 --		2012-08-28: Separated delay measurment from the delay line process
 
 ----------------------------------------------------------------------------------
@@ -41,18 +41,18 @@ entity FFT_DELAY is
 		DATA_WIDTH: INTEGER := 4 -- number of flag bits to propagate through the delay line.
 		);
    port (
-		SYNC_IN : in  STD_LOGIC;
-		SYNC_OUT: in  STD_LOGIC;
-		MEASURED_DELAY: out STD_LOGIC_VECTOR(CTR_WIDTH-1 downto 0);
+		sync_in : in  STD_LOGIC;
+		sync_out: in  STD_LOGIC;
+		measured_delay: out STD_LOGIC_VECTOR(CTR_WIDTH-1 downto 0);
 
-		DATA_IN : in  STD_LOGIC_VECTOR(DATA_WIDTH-1 downto 0);
-		DATA_OUT: out  STD_LOGIC_VECTOR(DATA_WIDTH-1 downto 0);
-		DELAY: in STD_LOGIC_VECTOR(CTR_WIDTH-1 downto 0);
-		VALID: out std_logic:='0';
+		data_in : in  STD_LOGIC_VECTOR(DATA_WIDTH-1 downto 0);
+		data_out: out  STD_LOGIC_VECTOR(DATA_WIDTH-1 downto 0);
+		delay: in STD_LOGIC_VECTOR(CTR_WIDTH-1 downto 0);
+		valid: out std_logic:='0';
 		
-		CLK : in  STD_LOGIC;
-		CE : in  STD_LOGIC;
-		RST : in  STD_LOGIC
+		clk : in  STD_LOGIC;
+		ce : in  STD_LOGIC;
+		rst : in  STD_LOGIC
 		);
 			  
 end FFT_DELAY;
@@ -60,49 +60,48 @@ end FFT_DELAY;
 architecture Behavioral of FFT_DELAY is
 
 
-signal DELAY_CTR: UNSIGNED(CTR_WIDTH-1 downto 0) := (others=>'0');
-signal MEASURED_DELAY_CTR: UNSIGNED(CTR_WIDTH-1 downto 0) := (others=>'0'); --needed
-signal WAIT_FOR_SYNC: std_logic:='1'; -- needed to start looking for SYNC without a reset
-signal COUNTING_DELAY: std_logic:='0'; -- needed
-signal VALID_INT: std_logic;
+signal delay_ctr: unsigned(CTR_WIDTH-1 downto 0) := (others=>'0');
+signal measured_delay_ctr: unsigned(CTR_WIDTH-1 downto 0) := (others=>'0'); --needed
+signal wait_for_sync: std_logic:='1'; -- needed to start looking for SYNC without a reset
+signal counting_delay: std_logic:='0'; -- needed
+signal valid_int: std_logic;
 
 type ram_type is array (0 to 2**CTR_WIDTH) of std_logic_vector(DATA_WIDTH-1 downto 0);
-signal RAM : ram_type :=(others=>(others=>'0'));
+signal ram : ram_type :=(others=>(others=>'0'));
 
 begin
 
 -- Generate RAM address. The address has to be zero at the same time an SYNC pulse is detected before or after the FFT (when in training mode). This is accomplished by muxing the counter with zero combinatorially so this is done without delay.
 --ADDR<=(others=>'0') when (TRAIN='1' and (DSP_SYNC_IN='1' or DSP_SYNC_OUT='1')) else CTR;
---DELAY<=STD_LOGIC_VECTOR(DLY);
+--delay<=STD_LOGIC_VECTOR(DLY);
 
 -------------------------------------------------------------
 -- Measure the propagation delay of a CASPER block
 -------------------------------------------------------------
-
-meas_dly: process(CLK)
+meas_dly: process(clk)
 	begin
-		if rising_edge(CLK) then
-			if RST='1' then
-				MEASURED_DELAY_CTR<=(others=>'0');
-				WAIT_FOR_SYNC<='0';
-				COUNTING_DELAY<='1';
-			elsif CE='1' then
+		if rising_edge(clk) then
+			if rst='1' then
+				measured_delay_ctr <= (others=>'0');
+				wait_for_sync <= '0';
+				counting_delay <= '1';
+			elsif ce='1' then
 				-- Measure pipelining delay between input and output SYNC
-				if SYNC_IN='1' and WAIT_FOR_SYNC='1' then
-					WAIT_FOR_SYNC<='0';
-					COUNTING_DELAY<='1';
+				if sync_in='1' and wait_for_sync='1' then
+					wait_for_sync <= '0';
+					counting_delay <= '1';
 				end if;
 				
-				if COUNTING_DELAY='1' then
-					MEASURED_DELAY_CTR<=MEASURED_DELAY_CTR+1;
+				if counting_delay='1' then
+					measured_delay_ctr <= measured_delay_ctr + 1;
 				end if;
 				
-				if SYNC_OUT='1' and COUNTING_DELAY='1' then
-					MEASURED_DELAY<=std_logic_vector(MEASURED_DELAY_CTR+1); -- the +1 migh generate unnecessary logic. Refactor to optimize (i.e reuse counter adder or delay SYNC_OUT).
-					COUNTING_DELAY<='0';
+				if sync_out='1' and counting_delay='1' then
+					measured_delay <= std_logic_vector(measured_delay_ctr + 1); -- the +1 might generate unnecessary logic. Refactor to optimize (i.e reuse counter adder or delay sync_out).
+					counting_delay <= '0';
 				end if;
-			end if; -- if RST or CE
-		end if; -- if CLK
+			end if; -- if rst or ce
+		end if; -- if clk
 	end process;
 
 
@@ -110,32 +109,32 @@ meas_dly: process(CLK)
 -- Implement a delay line with specified delay
 -------------------------------------------------------------
 
-dly_line: process(CLK)
+dly_line: process(clk)
 	begin
-		if rising_edge(CLK) then
-			if RST='1' then
-				DELAY_CTR<=(others=>'0'); 
-				VALID<='0';
-				VALID_INT<='0';
+		if rising_edge(clk) then
+			if rst='1' then
+				delay_ctr <= (others=>'0');
+				valid <= '0';
+				valid_int <= '0';
 			else
---				VALID<='0';
-				if CE='1' then
+--				valid<='0';
+				if ce='1' then
 					-- Implement a delay line with specified delay
-					if DELAY_CTR=unsigned(DELAY)-2 then -- -1 to account for the output register implicit to the synchronous RAM, and -1 because we count from zero (not efficient in logic, may need to be refactored)
-						DELAY_CTR<=(others=>'0');
-						VALID_INT<='1';
+					if delay_ctr = unsigned(delay)-2 then -- -1 to account for the output register implicit to the synchronous RAM, and -1 because we count from zero (not efficient in logic, may need to be refactored)
+						delay_ctr <= (others=>'0');
+						valid_int <= '1';
 					else
-						DELAY_CTR<=DELAY_CTR+1;
+						delay_ctr <= delay_ctr + 1;
 					end if;
 					
-					-- the VALID flag turns on after we read the data at address zero
+					-- the valid flag turns on after we read the data at address zero
 					
-					DATA_OUT<=RAM(TO_INTEGER(DELAY_CTR));
-					VALID<=VALID_INT;
-					RAM(TO_INTEGER(DELAY_CTR))<=DATA_IN;
-				end if; --CE
-			end if; -- RST
-		end if; -- CLK
+					data_out <= ram(to_integer(delay_ctr));
+					valid <= valid_int;
+					ram(to_integer(delay_ctr)) <= data_in;
+				end if; --ce
+			end if; -- rst
+		end if; -- clk
 	end process;
 	
 
