@@ -663,6 +663,18 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_util_ds_buf_1_0/sifpga_zcu111_util_ds_buf_1_0.xci">
+          <Proxy FileSetName="sifpga_zcu111_util_ds_buf_1_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_util_ds_buf_2_0/sifpga_zcu111_util_ds_buf_2_0.xci">
+          <Proxy FileSetName="sifpga_zcu111_util_ds_buf_2_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_zynq_ultra_ps_e_0_0/sifpga_zcu111_zynq_ultra_ps_e_0_0.xci">
+          <Proxy FileSetName="sifpga_zcu111_zynq_ultra_ps_e_0_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_sifpga_zcu111_chfpga_0_0/sifpga_zcu111_sifpga_zcu111_chfpga_0_0.xci">
+          <Proxy FileSetName="sifpga_zcu111_sifpga_zcu111_chfpga_0_0"/>
+        </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_rst_ps8_0_96M_0/sifpga_zcu111_rst_ps8_0_96M_0.xci">
           <Proxy FileSetName="sifpga_zcu111_rst_ps8_0_96M_0"/>
         </CompFileExtendedInfo>
@@ -686,18 +698,6 @@
         </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_util_ds_buf_0_1/sifpga_zcu111_util_ds_buf_0_1.xci">
           <Proxy FileSetName="sifpga_zcu111_util_ds_buf_0_1"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_util_ds_buf_1_0/sifpga_zcu111_util_ds_buf_1_0.xci">
-          <Proxy FileSetName="sifpga_zcu111_util_ds_buf_1_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_util_ds_buf_2_0/sifpga_zcu111_util_ds_buf_2_0.xci">
-          <Proxy FileSetName="sifpga_zcu111_util_ds_buf_2_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_zynq_ultra_ps_e_0_0/sifpga_zcu111_zynq_ultra_ps_e_0_0.xci">
-          <Proxy FileSetName="sifpga_zcu111_zynq_ultra_ps_e_0_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_sifpga_zcu111_chfpga_0_0/sifpga_zcu111_sifpga_zcu111_chfpga_0_0.xci">
-          <Proxy FileSetName="sifpga_zcu111_sifpga_zcu111_chfpga_0_0"/>
         </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/sifpga_zcu111/hdl/sifpga_zcu111_wrapper.vhd">

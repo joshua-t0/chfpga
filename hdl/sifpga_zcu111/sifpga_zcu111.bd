@@ -1284,6 +1284,9 @@
           "ADC1_Outclk_Freq": {
             "value": "100.000"
           },
+          "ADC1_PLL_Enable": {
+            "value": "false"
+          },
           "ADC1_Refclk_Freq": {
             "value": "1600.000"
           },
@@ -1305,6 +1308,9 @@
           "ADC2_Outclk_Freq": {
             "value": "100.000"
           },
+          "ADC2_PLL_Enable": {
+            "value": "false"
+          },
           "ADC2_Refclk_Freq": {
             "value": "1600.000"
           },
@@ -1314,6 +1320,9 @@
           "ADC3_Outclk_Freq": {
             "value": "100.000"
           },
+          "ADC3_PLL_Enable": {
+            "value": "false"
+          },
           "ADC3_Refclk_Freq": {
             "value": "1600.000"
           },
@@ -1321,34 +1330,76 @@
             "value": "1.6"
           },
           "ADC_Data_Width00": {
-            "value": "4"
+            "value": "8"
+          },
+          "ADC_Data_Width02": {
+            "value": "8"
+          },
+          "ADC_Data_Width10": {
+            "value": "8"
+          },
+          "ADC_Data_Width12": {
+            "value": "8"
+          },
+          "ADC_Data_Width20": {
+            "value": "8"
+          },
+          "ADC_Data_Width22": {
+            "value": "8"
+          },
+          "ADC_Data_Width30": {
+            "value": "8"
+          },
+          "ADC_Data_Width32": {
+            "value": "8"
           },
           "ADC_Decimation_Mode00": {
-            "value": "2"
+            "value": "1"
           },
           "ADC_Decimation_Mode02": {
-            "value": "2"
+            "value": "1"
           },
           "ADC_Decimation_Mode10": {
-            "value": "2"
+            "value": "1"
           },
           "ADC_Decimation_Mode12": {
-            "value": "2"
+            "value": "1"
           },
           "ADC_Decimation_Mode20": {
-            "value": "2"
+            "value": "1"
           },
           "ADC_Decimation_Mode22": {
-            "value": "2"
+            "value": "1"
           },
           "ADC_Decimation_Mode30": {
-            "value": "2"
+            "value": "1"
           },
           "ADC_Decimation_Mode32": {
-            "value": "2"
+            "value": "1"
           },
           "ADC_Dither00": {
-            "value": "true"
+            "value": "false"
+          },
+          "ADC_Dither02": {
+            "value": "false"
+          },
+          "ADC_Dither10": {
+            "value": "false"
+          },
+          "ADC_Dither12": {
+            "value": "false"
+          },
+          "ADC_Dither20": {
+            "value": "false"
+          },
+          "ADC_Dither22": {
+            "value": "false"
+          },
+          "ADC_Dither30": {
+            "value": "false"
+          },
+          "ADC_Dither32": {
+            "value": "false"
           },
           "ADC_Mixer_Type00": {
             "value": "0"
@@ -1356,50 +1407,98 @@
           "ADC_Mixer_Type01": {
             "value": "0"
           },
+          "ADC_Mixer_Type02": {
+            "value": "0"
+          },
           "ADC_Mixer_Type03": {
+            "value": "0"
+          },
+          "ADC_Mixer_Type10": {
             "value": "0"
           },
           "ADC_Mixer_Type11": {
             "value": "0"
           },
+          "ADC_Mixer_Type12": {
+            "value": "0"
+          },
           "ADC_Mixer_Type13": {
+            "value": "0"
+          },
+          "ADC_Mixer_Type20": {
             "value": "0"
           },
           "ADC_Mixer_Type21": {
             "value": "0"
           },
+          "ADC_Mixer_Type22": {
+            "value": "0"
+          },
           "ADC_Mixer_Type23": {
+            "value": "0"
+          },
+          "ADC_Mixer_Type30": {
             "value": "0"
           },
           "ADC_Mixer_Type31": {
             "value": "0"
           },
+          "ADC_Mixer_Type32": {
+            "value": "0"
+          },
           "ADC_Mixer_Type33": {
             "value": "0"
           },
+          "ADC_Nyquist00": {
+            "value": "0"
+          },
+          "ADC_Nyquist02": {
+            "value": "1"
+          },
+          "ADC_Nyquist10": {
+            "value": "0"
+          },
+          "ADC_Nyquist12": {
+            "value": "1"
+          },
+          "ADC_Nyquist20": {
+            "value": "0"
+          },
+          "ADC_Nyquist22": {
+            "value": "1"
+          },
+          "ADC_Nyquist30": {
+            "value": "0"
+          },
+          "ADC_Nyquist32": {
+            "value": "1"
+          },
           "ADC_OBS_Decimation_Mode00": {
-            "value": "2"
+            "value": "1"
           },
           "ADC_OBS_Decimation_Mode02": {
-            "value": "2"
+            "value": "1"
           },
           "ADC_OBS_Decimation_Mode10": {
-            "value": "2"
+            "value": "1"
           },
           "ADC_OBS_Decimation_Mode12": {
-            "value": "2"
+            "value": "1"
           },
           "ADC_OBS_Decimation_Mode20": {
-            "value": "2"
+            "value": "1"
           },
           "ADC_OBS_Decimation_Mode22": {
-            "value": "2"
+            "value": "1"
           },
           "ADC_OBS_Decimation_Mode30": {
-            "value": "2"
+            "value": "1"
           },
           "ADC_OBS_Decimation_Mode32": {
-            "value": "2"
+            "value": "1"
+          },
+          "ADC_RTS": {
+            "value": "false"
           },
           "ADC_Slice00_Enable": {
             "value": "true"
@@ -1425,20 +1524,29 @@
           "ADC_Slice32_Enable": {
             "value": "true"
           },
+          "Calibration_Freeze": {
+            "value": "false"
+          },
           "Converter_Setup": {
             "value": "0"
           },
           "mADC_Data_Width00": {
-            "value": "4"
+            "value": "8"
           },
           "mADC_Data_Width02": {
-            "value": "4"
+            "value": "8"
           },
           "mADC_Decimation_Mode00": {
-            "value": "2"
+            "value": "1"
           },
           "mADC_Decimation_Mode02": {
-            "value": "2"
+            "value": "1"
+          },
+          "mADC_Dither00": {
+            "value": "false"
+          },
+          "mADC_Dither02": {
+            "value": "false"
           },
           "mADC_Mixer_Type00": {
             "value": "0"
@@ -1454,6 +1562,12 @@
           },
           "mADC_Multi_Tile_Sync": {
             "value": "false"
+          },
+          "mADC_Nyquist00": {
+            "value": "0"
+          },
+          "mADC_Nyquist02": {
+            "value": "1"
           },
           "mADC_Outclk_Freq": {
             "value": "100.000"
@@ -4612,7 +4726,7 @@
             "vlnv": "xilinx.com:interface:axis_rtl:1.0",
             "parameters": {
               "TDATA_NUM_BYTES": {
-                "value": "8",
+                "value": "16",
                 "value_src": "constant"
               },
               "TDEST_WIDTH": {
@@ -4660,7 +4774,7 @@
               "TDATA": {
                 "physical_name": "adc0_axis_tdata",
                 "direction": "I",
-                "left": "63",
+                "left": "127",
                 "right": "0"
               },
               "TVALID": {
@@ -4679,7 +4793,7 @@
             "vlnv": "xilinx.com:interface:axis_rtl:1.0",
             "parameters": {
               "TDATA_NUM_BYTES": {
-                "value": "8",
+                "value": "16",
                 "value_src": "constant"
               },
               "TDEST_WIDTH": {
@@ -4727,7 +4841,7 @@
               "TDATA": {
                 "physical_name": "adc1_axis_tdata",
                 "direction": "I",
-                "left": "63",
+                "left": "127",
                 "right": "0"
               },
               "TVALID": {
@@ -4746,7 +4860,7 @@
             "vlnv": "xilinx.com:interface:axis_rtl:1.0",
             "parameters": {
               "TDATA_NUM_BYTES": {
-                "value": "8",
+                "value": "16",
                 "value_src": "constant"
               },
               "TDEST_WIDTH": {
@@ -4794,7 +4908,7 @@
               "TDATA": {
                 "physical_name": "adc2_axis_tdata",
                 "direction": "I",
-                "left": "63",
+                "left": "127",
                 "right": "0"
               },
               "TVALID": {
@@ -4813,7 +4927,7 @@
             "vlnv": "xilinx.com:interface:axis_rtl:1.0",
             "parameters": {
               "TDATA_NUM_BYTES": {
-                "value": "8",
+                "value": "16",
                 "value_src": "constant"
               },
               "TDEST_WIDTH": {
@@ -4861,7 +4975,7 @@
               "TDATA": {
                 "physical_name": "adc3_axis_tdata",
                 "direction": "I",
-                "left": "63",
+                "left": "127",
                 "right": "0"
               },
               "TVALID": {
@@ -4880,7 +4994,7 @@
             "vlnv": "xilinx.com:interface:axis_rtl:1.0",
             "parameters": {
               "TDATA_NUM_BYTES": {
-                "value": "8",
+                "value": "16",
                 "value_src": "constant"
               },
               "TDEST_WIDTH": {
@@ -4928,7 +5042,7 @@
               "TDATA": {
                 "physical_name": "adc4_axis_tdata",
                 "direction": "I",
-                "left": "63",
+                "left": "127",
                 "right": "0"
               },
               "TVALID": {
@@ -4947,7 +5061,7 @@
             "vlnv": "xilinx.com:interface:axis_rtl:1.0",
             "parameters": {
               "TDATA_NUM_BYTES": {
-                "value": "8",
+                "value": "16",
                 "value_src": "constant"
               },
               "TDEST_WIDTH": {
@@ -4995,7 +5109,7 @@
               "TDATA": {
                 "physical_name": "adc5_axis_tdata",
                 "direction": "I",
-                "left": "63",
+                "left": "127",
                 "right": "0"
               },
               "TVALID": {
@@ -5014,7 +5128,7 @@
             "vlnv": "xilinx.com:interface:axis_rtl:1.0",
             "parameters": {
               "TDATA_NUM_BYTES": {
-                "value": "8",
+                "value": "16",
                 "value_src": "constant"
               },
               "TDEST_WIDTH": {
@@ -5062,7 +5176,7 @@
               "TDATA": {
                 "physical_name": "adc6_axis_tdata",
                 "direction": "I",
-                "left": "63",
+                "left": "127",
                 "right": "0"
               },
               "TVALID": {
@@ -5081,7 +5195,7 @@
             "vlnv": "xilinx.com:interface:axis_rtl:1.0",
             "parameters": {
               "TDATA_NUM_BYTES": {
-                "value": "8",
+                "value": "16",
                 "value_src": "constant"
               },
               "TDEST_WIDTH": {
@@ -5129,7 +5243,7 @@
               "TDATA": {
                 "physical_name": "adc7_axis_tdata",
                 "direction": "I",
-                "left": "63",
+                "left": "127",
                 "right": "0"
               },
               "TVALID": {

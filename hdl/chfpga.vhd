@@ -107,6 +107,7 @@ entity chFPGA is
 		ADC_INSTANTIATE_BUFMR: BUFMRIndexArrayArray(0 to NUMBER_OF_ADCS_MAX-1) := (others=>(others=>0)); --! Determines which BUFR is used for each data and clock line
 		ANT_CLK_SOURCE: integer := 1; -- Indicate which ADC is the source of the channelizer clocks. Must be one that has PROVIDE_BUFFERED_DIVCLK=TRUE so we have a BUFG that can clock the logic across the chip
 		ADC_TO_ADC_BOARD_MAP: IntegerArray(0 to NUMBER_OF_ADCS_MAX-1):=(0 to 7 => 0, 8 to 15 => 1);
+		ADC_LSB_POSITION: integer := 4; -- position of the LSB in the 16-bit words provided by the external ADC bus.
 		GPU_CHANNEL_QUAD: IntegerArray := (0=>0);
 		GPU_QUAD_REFCLK: IntegerArray := (0=>0);
 		--IMPLEMENT_ADCDAQ: boolean := TRUE; -- if true, implement and feed the channelizer with ADCDAQ output. If False, the channelizer is fed with adc_axis_* data directly.
@@ -273,7 +274,7 @@ entity chFPGA is
 			-- Direct ADC interface
 			------------------------------------
 
-			adc_axis_tdata: in slv32_array(0 to NUMBER_OF_CHANNELIZERS-1);
+			adc_axis_tdata: in slv64_array(0 to NUMBER_OF_CHANNELIZERS-1);
 			adc_axis_tvalid: in std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1);
 			adc_axis_clk: in std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1);
 			adc_clkout: in std_logic_vector(0 to 3); -- Clock output of the ADC tiles (for monitoring)
@@ -2212,11 +2213,14 @@ end generate gen_adc_clk;
 gen_noev8: if NUMBER_OF_ADCS = 0 generate
 
 	signal adc_word_ctr: frame_word_ctr_array(0 to NUMBER_OF_CHANNELIZERS-1) := (others => (others=>'0')); -- Counts words from 0 to FRAME_LENGTH/4-1
+	signal adc_send_data2: slv(0 to NUMBER_OF_CHANNELIZERS-1); -- indicates when TVALID can be passed on
 
 begin
 	adc_clk_bufg <= adc_axis_clk(ANT_CLK_SOURCE);
 	-- Note: axis_adc_* length is max(NUMBER_OF_ADC, NUMBER_OF_CHANNELIZERS) and is therefore NUMBER_OF_CHANNELIZERS in this block
-	-- Generate the divide-by-two adc clock monitoring signals for the frequency counter
+
+	-- Pipeline and frame the ADC with a TLAST signal and generate the divide-by-two adc clock monitoring signals for the frequency counter
+	-- The first frame is skipped to provide time for the channelizer pipeline modules to complete their reset cycles.
 	gen_noadc_div2: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
 		noadc_div2: process(adc_axis_clk(i))
 			begin
@@ -2224,17 +2228,34 @@ begin
 					adc_clk_div2(i) <= not adc_clk_div2(i);
 
 
-					axis_adc_tvalid(i) <= adc_axis_tvalid(i);
-					axis_adc_tdata(i) <= adc_axis_tdata(i);
-					axis_adc_tuser(i) <= (others => '0'); -- no overflows. need to fix.
-					axis_adc_tlast(i) <= to_std_logic(signed(adc_word_ctr(i))=-1);
-
 					if adc_axis_tvalid(i)='1' then
 						adc_word_ctr(i) <= adc_word_ctr(i) + 1;
 					end if;
+
+
+					-- Saturate and pass on the 4 8-bit samples
+					for j in 0 to 3 loop
+						if adc_axis_tdata(i)(16*j+15) = '0' and signed(adc_axis_tdata(i)(16*j+14 downto 16*j+ADC_LSB_POSITION+7)) /= 0 then
+							axis_adc_tdata(i)(8*j+7 downto 8*j) <= X"7F";
+	    					axis_adc_tuser(i)(j) <= '1';
+						elsif adc_axis_tdata(i)(16*j+15) = '1' and signed(adc_axis_tdata(i)(16*j+14 downto 16*j+ADC_LSB_POSITION+7)) /= -1 then
+							axis_adc_tdata(i)(8*j+7 downto 8*j) <= X"80";
+	    					axis_adc_tuser(i)(j) <= '1';
+						else
+							axis_adc_tdata(i)(8*j+7 downto 8*j) <= adc_axis_tdata(i)(16*j+ADC_LSB_POSITION+7 downto 16*j+ADC_LSB_POSITION);
+	    					axis_adc_tuser(i)(j) <= '0';
+						end if;
+					end loop;
+					axis_adc_tvalid(i) <= adc_axis_tvalid(i) and adc_send_data2(i);
+					axis_adc_tlast(i) <= '0';
+					if signed(adc_word_ctr(i))=-1 then
+						axis_adc_tlast(i) <= '1';
+						adc_send_data2(i) <= '1'; -- start setting tvalid to 1
+					end if; -- last word
 					if chan_reset(i)='1' then
 						axis_adc_tvalid(i) <= '0';
 						adc_word_ctr(i) <= (others => '0');
+						adc_send_data2(i) <= '0';
 					end if;
 				end if; -- if clk
 			end process;
