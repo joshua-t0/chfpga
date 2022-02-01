@@ -663,18 +663,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_util_ds_buf_1_0/sifpga_zcu111_util_ds_buf_1_0.xci">
-          <Proxy FileSetName="sifpga_zcu111_util_ds_buf_1_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_util_ds_buf_2_0/sifpga_zcu111_util_ds_buf_2_0.xci">
-          <Proxy FileSetName="sifpga_zcu111_util_ds_buf_2_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_zynq_ultra_ps_e_0_0/sifpga_zcu111_zynq_ultra_ps_e_0_0.xci">
-          <Proxy FileSetName="sifpga_zcu111_zynq_ultra_ps_e_0_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_sifpga_zcu111_chfpga_0_0/sifpga_zcu111_sifpga_zcu111_chfpga_0_0.xci">
-          <Proxy FileSetName="sifpga_zcu111_sifpga_zcu111_chfpga_0_0"/>
-        </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_rst_ps8_0_96M_0/sifpga_zcu111_rst_ps8_0_96M_0.xci">
           <Proxy FileSetName="sifpga_zcu111_rst_ps8_0_96M_0"/>
         </CompFileExtendedInfo>
@@ -698,6 +686,18 @@
         </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_util_ds_buf_0_1/sifpga_zcu111_util_ds_buf_0_1.xci">
           <Proxy FileSetName="sifpga_zcu111_util_ds_buf_0_1"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_util_ds_buf_1_0/sifpga_zcu111_util_ds_buf_1_0.xci">
+          <Proxy FileSetName="sifpga_zcu111_util_ds_buf_1_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_util_ds_buf_2_0/sifpga_zcu111_util_ds_buf_2_0.xci">
+          <Proxy FileSetName="sifpga_zcu111_util_ds_buf_2_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_zynq_ultra_ps_e_0_0/sifpga_zcu111_zynq_ultra_ps_e_0_0.xci">
+          <Proxy FileSetName="sifpga_zcu111_zynq_ultra_ps_e_0_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_sifpga_zcu111_chfpga_0_0/sifpga_zcu111_sifpga_zcu111_chfpga_0_0.xci">
+          <Proxy FileSetName="sifpga_zcu111_sifpga_zcu111_chfpga_0_0"/>
         </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/sifpga_zcu111/hdl/sifpga_zcu111_wrapper.vhd">
@@ -981,9 +981,7 @@
     </Run>
     <Run Id="sifpga_zcu111_sifpga_zcu111_chfpga_0_0_synth_1" Type="Ft3:Synth" SrcSet="sifpga_zcu111_sifpga_zcu111_chfpga_0_0" Part="xczu28dr-ffvg1517-2-e" ConstrsSet="sifpga_zcu111_sifpga_zcu111_chfpga_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/sifpga_zcu111_sifpga_zcu111_chfpga_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/sifpga_zcu111_sifpga_zcu111_chfpga_0_0_synth_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2021">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2021"/>
         <Step Id="synth_design"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -1198,9 +1196,7 @@
     </Run>
     <Run Id="sifpga_zcu111_sifpga_zcu111_chfpga_0_0_impl_1" Type="Ft2:EntireDesign" Part="xczu28dr-ffvg1517-2-e" ConstrsSet="sifpga_zcu111_sifpga_zcu111_chfpga_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="sifpga_zcu111_sifpga_zcu111_chfpga_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/sifpga_zcu111_sifpga_zcu111_chfpga_0_0_impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2021">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2021"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>

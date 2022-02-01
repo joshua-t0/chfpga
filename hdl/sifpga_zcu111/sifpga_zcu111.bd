@@ -1329,6 +1329,18 @@
           "ADC3_Sampling_Rate": {
             "value": "1.6"
           },
+          "ADC_Bypass_BG_Cal02": {
+            "value": "true"
+          },
+          "ADC_Bypass_BG_Cal12": {
+            "value": "true"
+          },
+          "ADC_Bypass_BG_Cal22": {
+            "value": "true"
+          },
+          "ADC_Bypass_BG_Cal32": {
+            "value": "true"
+          },
           "ADC_Data_Width00": {
             "value": "8"
           },
@@ -1450,25 +1462,25 @@
             "value": "0"
           },
           "ADC_Nyquist00": {
-            "value": "0"
+            "value": "1"
           },
           "ADC_Nyquist02": {
             "value": "1"
           },
           "ADC_Nyquist10": {
-            "value": "0"
+            "value": "1"
           },
           "ADC_Nyquist12": {
             "value": "1"
           },
           "ADC_Nyquist20": {
-            "value": "0"
+            "value": "1"
           },
           "ADC_Nyquist22": {
             "value": "1"
           },
           "ADC_Nyquist30": {
-            "value": "0"
+            "value": "1"
           },
           "ADC_Nyquist32": {
             "value": "1"
@@ -1530,6 +1542,9 @@
           "Converter_Setup": {
             "value": "0"
           },
+          "mADC_Bypass_BG_Cal02": {
+            "value": "true"
+          },
           "mADC_Data_Width00": {
             "value": "8"
           },
@@ -1564,7 +1579,7 @@
             "value": "false"
           },
           "mADC_Nyquist00": {
-            "value": "0"
+            "value": "1"
           },
           "mADC_Nyquist02": {
             "value": "1"
