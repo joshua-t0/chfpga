@@ -106,6 +106,7 @@ entity udp_mac is
 		-- Debugging/status signals
 
 		status_vector : out std_logic_vector(15 downto 0); -- Core status.
+		config_vector : in std_logic_vector(31 downto 0); -- Core status.
 		mmcm_locked : out std_logic;
 		reset_done: out std_logic;
 
@@ -361,6 +362,7 @@ begin
 				-- General IO's
 				---------------
 				status_vector => status_vector,
+				config_vector => config_vector,
 				mmcm_locked   => mmcm_locked,
 				reset_done    => reset_done_int,
 				-- clk200        => clk200,

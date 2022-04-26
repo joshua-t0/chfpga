@@ -504,6 +504,8 @@ signal remote_ip_addr1: std_logic_vector(31 downto 0);
 signal remote_ip_port1: std_logic_vector(15 downto 0);
 
 signal sfp_status_vector_int: std_logic_vector(15 downto 0); -- Core status.
+signal sfp_config_vector: std_logic_vector(31 downto 0); -- Core config.
+
 signal udp_stack_reset: std_logic;
 signal ctrl_master_reset: std_logic;
 
@@ -1194,6 +1196,8 @@ clk200pipeproc: process(clk200)
 
 			-- SGMII-specific status signals
 			status_vector => sfp_status_vector_int,
+			config_vector => sfp_config_vector,
+
 			mmcm_locked => sfp_mmcm_locked,
 			reset_done => sfp_reset_done,
 			signal_detect => not ctrl_master_reset,
@@ -1636,6 +1640,7 @@ GPIO0: entity work.GPIO
 		udp_tx_overflow => udp_tx_overflow,
 		udp_rx_overflow => udp_rx_overflow,
 		sfp_status_vector => sfp_status_vector_int,
+		sfp_config_vector => sfp_config_vector,
 		cmd_packet_counter => cmd_packet_counter,
 		rply_packet_counter => rply_packet_counter,
 

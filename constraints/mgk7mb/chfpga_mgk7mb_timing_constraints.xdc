@@ -97,9 +97,9 @@ create_clock -period 100.000 -name raw_clk10 -waveform {0.000 50.000} [get_ports
 # Also feeds a MMCM to generate the internal 200 MHz, control systel clock (CLK125), SYSMON clock and CORR clock
 create_clock -period 8.000 -name SFP_CLK [get_ports sfp_clk_p]
 create_clock -period 8.000 -name arm_spi_virt_clk
-
 # Make unrelated MMCM-generated system clocks independent from the other clocks
-set_clock_groups -name CLK125_GROUP -asynchronous -group [get_clocks -include_generated_clocks {arm_spi_virt_clk CLK125_NOBUF}]
+set_clock_groups -name ARM_SPI_CLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks {arm_spi_virt_clk}]
+set_clock_groups -name CLK125_GROUP -asynchronous -group [get_clocks -include_generated_clocks {CLK125_NOBUF}]
 set_clock_groups -name SYSMON_CLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks SYSMON_CLK_NOBUF]
 set_clock_groups -name CORR_CLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks CORR_CLK_NOBUF]
 

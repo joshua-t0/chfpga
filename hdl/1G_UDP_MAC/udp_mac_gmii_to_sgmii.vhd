@@ -26,7 +26,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library work;
-use work.ip_package.all; -- Import definition of components used in this module
+--use work.ip_package.all; -- Import definition of components used in this module
 
 --------------------------------------------------------------------------------
 -- The entity declaration for the example design
@@ -60,6 +60,7 @@ entity gmii_to_sgmii is
 
 		-- General IO's
 		status_vector : out std_logic_vector(15 downto 0); -- Core status.
+		config_vector : in std_logic_vector(31 downto 0); -- Core config.
 		signal_detect : in std_logic;                      -- Input from PMD to indicate presence of optical input.
 		mmcm_locked   : out std_logic;
 		reset_done    : out std_logic;
@@ -88,8 +89,10 @@ architecture top_level of gmii_to_sgmii is
 	-- clock generation signals for tranceiver
 	signal txoutclk_nobuf: std_logic;   -- txoutclk from GT transceiver
 	signal txoutclk_bufg: std_logic;    -- txoutclk from GT transceiver routed onto global routing.
+
 	signal rxoutclk_nobuf: std_logic;   -- rxoutclk from GT transceiver
 	signal rxoutclk_bufh: std_logic;    -- buffered rxoutclk from GT transceiver
+
 	signal resetdone: std_logic;        -- To indicate that the GT transceiver has completed its reset cycle
 	signal tx_reset_done_int: std_logic;        --
 	signal rx_reset_done_int: std_logic;        --
@@ -100,6 +103,13 @@ architecture top_level of gmii_to_sgmii is
 	signal userclk_nobuf: std_logic;    -- MMCM clock1 output (125 MHz).
 	signal userclk: std_logic;          -- 62.5 MHz clock for GT transceiver Tx/Rx user clocks
 	signal userclk2: std_logic;         -- 125 MHz clock for core reference clock.
+
+	signal basex_or_sgmii: std_logic;
+	signal user_reset: std_logic;
+	signal an_restart: std_logic;
+	signal loss_of_signal: std_logic;
+	signal config_vector_int: std_logic_vector(4 downto 0);
+	signal an_config_vector: std_logic_vector(15 downto 0);
 
 	attribute DONT_TOUCH of userclk2_nobuf: signal is "yes";
 	attribute DONT_TOUCH of userclk_nobuf: signal is "yes";
@@ -263,11 +273,22 @@ port map (
 			O     => userclk2
 		);
 
-	-- bufh_rxclkout: BUFH
-	-- 	port map (
-	-- 		I     => rxoutclk_nobuf,
-	-- 		O     => rxoutclk_bufh
-	-- 	);
+	 bufh_rxclkout: BUFH
+	 	port map (
+	 		I     => rxoutclk_nobuf,
+	 		O     => rxoutclk_bufh
+	 	);
+
+
+   ---- Place the Rx recovered clock on a Global Clock Buffer (it may be possible
+   ---- to switch this for a BUFHCE/BUR and BUFMR combination)
+   --rxrecclkbufg : BUFG port map (
+   --  I   => rxoutclk,
+   --  O   => rxoutclk_buf
+   --);
+
+   --  rxuserclk2 <= rxoutclk_buf;
+   --  rxuserclk  <= rxoutclk_buf;
 
 
 --    -----------------------------------------------------------------------------
@@ -275,9 +296,8 @@ port map (
 --    -----------------------------------------------------------------------------
 -- -- Hold the rest line for some delay after FPGA configuration and reset to make sure the link comes up.
 -- -- Otherwise we have 2-3% link up failure rate (known to happen on cores v14.3 rev1 and v15, maybe this is a SFP thing).
-process (reset, mmcm_locked_int, clk125)
+process (reset, clk125)
 begin
-	-- if (reset = '1' or mmcm_locked_int= '0') then
 	if reset = '1' then
 		init_reset <= '1';
 		init_reset_ctr <= (others=>'0');
@@ -293,22 +313,22 @@ end process;
    -- Create a reset pulse of a decent length
    process(reset, clk125)
    begin
-     if reset = '1' then
+     if reset = '1' or user_reset='1' then
        pma_reset_pipe <= "1111";
      elsif rising_edge(clk125) then
        pma_reset_pipe <= pma_reset_pipe(2 downto 0) & reset;
      end if;
    end process;
 
-   pma_reset <= pma_reset_pipe(3) or init_reset;
-   -- pma_reset <= pma_reset_pipe(3); -- bypass initial delay. Will cause 3% uplink failure rate
+   --pma_reset <= pma_reset_pipe(3) or init_reset;
+    pma_reset <= pma_reset_pipe(3); -- bypass initial delay. Will cause 3% uplink failure rate
 
    tx_reset_done <= tx_reset_done_int;
    rx_reset_done <= rx_reset_done_int;
   ------------------------------------------------------------------------------
   -- Instantiate the Core Block (core wrapper).
   ------------------------------------------------------------------------------
-	core_wrapper : gmii_to_sgmii_bridge
+	core_wrapper : entity work.gmii_to_sgmii_bridge
 		port map (
 			-- GTX interface
 			gtrefclk               => gtrefclk_nobuf, -- reference clock. Can be direct output from IBUFGDS_GTE2, but coming from a BUFG also works
@@ -321,19 +341,19 @@ end process;
 			rxn                    => rxn,
 
 			txoutclk               => txoutclk_nobuf,-- 62.5 MHz clock from GT transceiver to be used by the MMCM to generate user clocks
-			rxoutclk               => open,-- Not used. 62.5 MHz clock from GT transceiver. Internally buffered by BUFH in the core.
+			rxoutclk               => rxoutclk_nobuf,-- 62.5 MHz clock from GT transceiver. re-introduced . Was not used for a while, as it was internally buffered by BUFH in the core.
 
 			resetdone              => resetdone,
 			cplllock               => open,
-			mmcm_reset             => mmcm_reset, -- New in v15
+			mmcm_reset             => mmcm_reset, -- MMCM reset output. New in v15.
 			mmcm_locked            => mmcm_locked_int,
 
 			-- Transceiver user clock inputs
 			userclk                => userclk, -- 62.5 MHz transceiver TX user clock used for **both** txuserclk and txuserclk2 since external data width (20 bits) = internal data width
 			userclk2               => userclk2, -- 125 MHz user clock used for the PCS/PMA core
 
-			rxuserclk             =>  '0',  --Not used in the core. Was 62.5 MHz transcever RX user clock used for rxuserclk
-			rxuserclk2            =>  '0', --Not used in the core. Was 62.5 MHz transceiver RX user clock user for rxuserclk2. Xilinx's naming convention is very confusing.
+			rxuserclk             =>  rxoutclk_bufh,  --re-introduced. Was Not used in the core. Was 62.5 MHz transcever RX user clock used for rxuserclk
+			rxuserclk2            =>  rxoutclk_bufh, --re-introduced. Was not used in the core. Was 62.5 MHz transceiver RX user clock user for rxuserclk2. Xilinx's naming convention is very confusing.
 
 			independent_clock_bufg => clk125,
 			pma_reset              => pma_reset,
@@ -347,70 +367,108 @@ end process;
 			gmii_rx_er             => gmii_rx_er_int,
 			gmii_isolate           => open,
 
-			configuration_vector   => "00000", --
-			status_vector          => status_vector_int,
+			-- Configuration vector
+			--  bit 0: Unidirectional enable: 1:enabled
+			--  bit 1: Loopbck control: 1:enabled
+			--  bit 2: Power down: 1:enabled
+			--  bit 3: Isolate: 1:enabled
+			--  bit 4: Auto-negotiation Enable: 1:enabled
+			configuration_vector   => config_vector_int, --"10000"
+
+
+			status_vector        => status_vector_int,
+
+
+			-- Ports present if auto-negotiation is enabled
+			-- Auto-negociation config vector
+			--  bit 0 :    1000BASE-X: Reserved; SGMII: always 1
+			--  bit 4:1:   Reserved
+			--  bit 5:     100BASE-X: 1: Advertise full duplex mode; SGMII: Reserved
+			--  bit 6:     Reserved
+			--  bit 8-7:   1000BASE-X pause: 00=None, 01: Sym pause, 10, Asym pause, 11: both sym & asym pause
+			--  bit 9:     Reserved
+			--  bit 11:10: 1000BASE-X: reserved, SGMII: speed
+			--  bit 13:12: 100BASEX: Remote fault: 00: no error, 01 offline, 10 Link failure, 11: AN error; SGMII: see docs
+			--  bit 14:    1000BASE-X: Reserved; SGMII: Acknowledge
+			--  bit 15:    1000BASE-X: Reserved, SGMII: Link Status: 1=Up, 0-down
+			--an_adv_config_vector => "0000000000100000", -- for 1000BASE-X core
+			an_adv_config_vector => an_config_vector, -- for 1000BASE-X core
+			an_restart_config    => an_restart,
+
+
+
+			-- Ports present if SGMII is enabled
+			speed_is_10_100      => '0',
+			speed_is_100         => '0',
+
+			-- Ports present if dynamic SGMII/1000BASE-X switching is enabled
+
+			--basex_or_sgmii       => basex_or_sgmii,
+
+			-- Resets
+
 			reset                  => pma_reset,
-			signal_detect          => signal_detect,
+			signal_detect          => not loss_of_signal
 
-			-- DRP Interface (not used, except to provide a clock to work around core bugs)
-			gt0_drpaddr_in             => (others => '0') ,
-			gt0_drpclk_in              => gtrefclk_buf, -- updated in v15
-			-- gt0_drpclk_in              => '0', -- Is not needed now that the 14.3 Rev1 core is fixed
-			gt0_drpdi_in               => (others => '0') ,
-			gt0_drpdo_out              => open ,
-			gt0_drpen_in               => '0',
-			gt0_drprdy_out             => open,
-			gt0_drpwe_in               => '0',
+			---- DRP Interface (not used, except to provide a clock to work around core bugs)
+			--gt0_drpaddr_in             => (others => '0') ,
+			--gt0_drpclk_in              => gtrefclk_buf, -- updated in v15
+			---- gt0_drpclk_in              => '0', -- Is not needed now that the 14.3 Rev1 core is fixed
+			--gt0_drpdi_in               => (others => '0') ,
+			--gt0_drpdo_out              => open ,
+			--gt0_drpen_in               => '0',
+			--gt0_drprdy_out             => open,
+			--gt0_drpwe_in               => '0',
 
-			-- Debug interface. Not used. Just there because it comes when we enable the DRP interface.
-			gt0_rxchariscomma_out => open,
-			gt0_rxcharisk_out => open,
-			gt0_rxbyteisaligned_out => open,
-			gt0_rxbyterealign_out => open,
-			gt0_rxcommadet_out => open,
-			gt0_txpolarity_in  =>'0',
-			gt0_txdiffctrl_in => (others =>'0'),
-			gt0_txpostcursor_in => (others =>'0'),
-			gt0_txprecursor_in => (others =>'0'),
-			gt0_rxpolarity_in =>'0',
-			gt0_txinhibit_in => '0',
-			gt0_txprbssel_in => (others =>'0'),
-			gt0_txprbsforceerr_in =>'0',
-			gt0_rxprbscntreset_in =>'0',
-			gt0_rxprbserr_out => open,
-			gt0_rxprbssel_in => (others =>'0'),
+			---- Debug interface. Not used. Just there because it comes when we enable the DRP interface.
+			--gt0_rxchariscomma_out => open,
+			--gt0_rxcharisk_out => open,
+			--gt0_rxbyteisaligned_out => open,
+			--gt0_rxbyterealign_out => open,
+			--gt0_rxcommadet_out => open,
+			--gt0_txpolarity_in  =>'0',
+			--gt0_txdiffctrl_in => (others =>'0'),
+			--gt0_txpostcursor_in => (others =>'0'),
+			--gt0_txprecursor_in => (others =>'0'),
+			--gt0_rxpolarity_in =>'0',
+			--gt0_txinhibit_in => '0',
+			--gt0_txprbssel_in => (others =>'0'),
+			--gt0_txprbsforceerr_in =>'0',
+			--gt0_rxprbscntreset_in =>'0',
+			--gt0_rxprbserr_out => open,
+			--gt0_rxprbssel_in => (others =>'0'),
 
-			gt0_loopback_in => (others=>'0'),
-			gt0_txresetdone_out => tx_reset_done_int,
-			gt0_rxresetdone_out => rx_reset_done_int,
-			gt0_rxdisperr_out => open,
-			gt0_txbufstatus_out => open,
-			gt0_rxnotintable_out => open,
-			gt0_dmonitorout_out       => open,
+			--gt0_loopback_in => (others=>'0'),
+			--gt0_txresetdone_out => tx_reset_done_int,
+			--gt0_rxresetdone_out => rx_reset_done_int,
+			--gt0_rxdisperr_out => open,
+			--gt0_txbufstatus_out => open,
+			--gt0_rxnotintable_out => open,
+			--gt0_dmonitorout_out       => open,
 
-			gt0_eyescanreset_in =>'0',
-			gt0_eyescandataerror_out=>open,
-			gt0_eyescantrigger_in =>'0',
+			--gt0_eyescanreset_in =>'0',
+			--gt0_eyescandataerror_out=>open,
+			--gt0_eyescantrigger_in =>'0',
 
-			gt0_rxcdrhold_in  =>'0',
-			gt0_rxpmareset_in =>'0',
-			gt0_txpmareset_in => '0',
-			gt0_rxpcsreset_in =>'0',
-			gt0_txpcsreset_in =>'0',
-			gt0_rxbufreset_in =>'0',
-			gt0_rxbufstatus_out => open,
-			gt0_rxdfelpmreset_in =>'0',
-			gt0_rxdfeagcovrden_in  =>'0',
-			gt0_rxlpmen_in  =>'0',
-			gt0_rxmonitorout_out => open,
-			gt0_rxmonitorsel_in => (others=>'0')
+			--gt0_rxcdrhold_in  =>'0',
+			--gt0_rxpmareset_in =>'0',
+			--gt0_txpmareset_in => '0',
+			--gt0_rxpcsreset_in =>'0',
+			--gt0_txpcsreset_in =>'0',
+			--gt0_rxbufreset_in =>'0',
+			--gt0_rxbufstatus_out => open,
+			--gt0_rxdfelpmreset_in =>'0',
+			--gt0_rxdfeagcovrden_in  =>'0',
+			--gt0_rxlpmen_in  =>'0',
+			--gt0_rxmonitorout_out => open,
+			--gt0_rxmonitorsel_in => (others=>'0')
 
 			);
    -----------------------------------------------------------------------------
    -- GMII clock
    -----------------------------------------------------------------------------
 
-gmii_clk <= userclk2;
+	gmii_clk <= userclk2;
 
    -----------------------------------------------------------------------------
    -- GMII transmitter clock logic
@@ -435,14 +493,24 @@ gmii_clk <= userclk2;
    end process;
 
    -- status_vector(0) <= resetdone;
-   status_vector(0) <= resetdone;
-   status_vector(3 downto 1) <= status_vector_int(3 downto 1);
-   status_vector(4) <= pma_reset;
-   status_vector(5) <= mmcm_locked_int;
-   status_vector(6) <= signal_detect;
-   status_vector(7) <= tx_reset_done_int;
-   status_vector(8) <= rx_reset_done_int;
-   status_vector(9) <= reset;
-   status_vector(10) <= mmcm_reset;
+   --status_vector(0) <= resetdone;
+   --status_vector(3 downto 1) <= status_vector_int(3 downto 1);
+   --status_vector(4) <= pma_reset;
+   --status_vector(5) <= mmcm_locked_int;
+   --status_vector(6) <= signal_detect;
+   --status_vector(7) <= tx_reset_done_int;
+   --status_vector(8) <= rx_reset_done_int;
+   --status_vector(9) <= reset;
+   --status_vector(10) <= mmcm_reset;
+
+   status_vector <= status_vector_int; -- pass the native core stus vector.
+
+   basex_or_sgmii <= config_vector(31);
+   an_restart <= config_vector(30);
+   user_reset <= config_vector(29);
+   loss_of_signal <= config_vector(28);
+   config_vector_int <= config_vector(20 downto 16);
+   an_config_vector <= config_vector(15 downto 0);
+
 
 end top_level;
