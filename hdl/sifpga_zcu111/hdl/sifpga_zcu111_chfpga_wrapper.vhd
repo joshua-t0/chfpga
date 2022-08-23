@@ -247,7 +247,7 @@ end entity sifpga_zcu111_chfpga_wrapper;
 --! Implements the chFPGA CHIME PoC Data acquisition/channelizer/corrrlator for the KC705 evaluation board (equipped with a Kintex 7 7K355 FPGA).
 --! This simply instantiate the generic chFPGA code with the appropriate generics for that hardware platform.
 --!
-architecture impl of sifpga_zcu111_chfpga_wrapper is
+architecture impl of sifpga_zcu111_chfpga_wrapper is 
 	-- SIGNALS
 
 	attribute IOB: string;

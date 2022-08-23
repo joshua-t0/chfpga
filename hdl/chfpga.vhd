@@ -107,7 +107,7 @@ entity chFPGA is
 		ADC_INSTANTIATE_BUFMR: BUFMRIndexArrayArray(0 to NUMBER_OF_ADCS_MAX-1) := (others=>(others=>0)); --! Determines which BUFR is used for each data and clock line
 		ANT_CLK_SOURCE: integer := 1; -- Indicate which ADC is the source of the channelizer clocks. Must be one that has PROVIDE_BUFFERED_DIVCLK=TRUE so we have a BUFG that can clock the logic across the chip
 		ADC_TO_ADC_BOARD_MAP: IntegerArray(0 to NUMBER_OF_ADCS_MAX-1):=(0 to 7 => 0, 8 to 15 => 1);
-		ADC_LSB_POSITION: integer := 4; -- position of the LSB in the 16-bit words provided by the external ADC bus.
+		ADC_LSB_POSITION: integer := 8; -- position of the LSB in the 16-bit words provided by the external ADC bus.
 		GPU_CHANNEL_QUAD: IntegerArray := (0=>0);
 		GPU_QUAD_REFCLK: IntegerArray := (0=>0);
 		--IMPLEMENT_ADCDAQ: boolean := TRUE; -- if true, implement and feed the channelizer with ADCDAQ output. If False, the channelizer is fed with adc_axis_* data directly.
@@ -2235,10 +2235,10 @@ begin
 
 					-- Saturate and pass on the 4 8-bit samples
 					for j in 0 to 3 loop
-						if adc_axis_tdata(i)(16*j+15) = '0' and signed(adc_axis_tdata(i)(16*j+14 downto 16*j+ADC_LSB_POSITION+7)) /= 0 then
+						if ADC_LSB_POSITION < 8 and adc_axis_tdata(i)(16*j+15) = '0' and signed(adc_axis_tdata(i)(16*j+14 downto 16*j+ADC_LSB_POSITION+7)) /= 0 then
 							axis_adc_tdata(i)(8*j+7 downto 8*j) <= X"7F";
 	    					axis_adc_tuser(i)(j) <= '1';
-						elsif adc_axis_tdata(i)(16*j+15) = '1' and signed(adc_axis_tdata(i)(16*j+14 downto 16*j+ADC_LSB_POSITION+7)) /= -1 then
+						elsif ADC_LSB_POSITION < 8 and adc_axis_tdata(i)(16*j+15) = '1' and signed(adc_axis_tdata(i)(16*j+14 downto 16*j+ADC_LSB_POSITION+7)) /= -1 then
 							axis_adc_tdata(i)(8*j+7 downto 8*j) <= X"80";
 	    					axis_adc_tuser(i)(j) <= '1';
 						else
