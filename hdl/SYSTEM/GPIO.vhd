@@ -179,6 +179,7 @@ entity GPIO is
 		udp_tx_overflow : in std_logic;
 		udp_rx_overflow : in std_logic;
 		sfp_status_vector: in std_logic_vector(15 downto 0);
+		sfp_config_vector: out std_logic_vector(31 downto 0);
 
 		cmd_packet_counter: in std_logic_vector(7 downto 0);
 		rply_packet_counter: in std_logic_vector(7 downto 0);
@@ -729,14 +730,13 @@ gen_armspi: if IMPLEMENT_ARM_SPI generate
 		mosi => arm_spi_mosi,
 		cs_n => arm_spi_cs_n,
 
-		-- Master bus interface (synchronous to clk)
-		m_addr => spi_addr,
-		m_rdat => spi_rdat,
-		m_wdat => spi_wdat,
-		m_rreq => spi_rreq,
-		m_rack => spi_rack,
-		m_wreq => spi_wreq,
-		m_wack => spi_wack,
+		-- Master bus interface		addr => spi_addr,
+		din  => spi_rdat,
+		dout => spi_wdat,
+		rreq => spi_rreq,
+		rack => spi_rack,
+		wreq => spi_wreq,
+		wack => spi_wack,
 
 		clk => ctrl_clk,
 		reset => '0' -- redundant; cs_n does the same thing
@@ -836,11 +836,10 @@ core_reg_rd_value(17)(31 downto 16) <= (others=>'0'); -- (read-only)
 --core_reg_rd_value(17)(15 downto 8)  <= release_ctr_mon; --unused
 --core_reg_rd_value(17)(7 downto 0)   <= sync_ctr_mon; --unused
 
--- Registers 18 (_BP_BUCK_SYNC_ADDR2) (unused)
+-- Registers 18 (_BP_BUCK_SYNC_ADDR2)
 
---bp_buck_sync_wr_dat                 <= core_reg_wr_value(18); -- write-only
---core_reg_rd_value(18)(31)           <= bp_buck_sync_rd_dat_valid; -- (Read-only)
---core_reg_rd_value(18)(30 downto 0)  <= bp_buck_sync_rd_dat(30 downto 0); -- (Read-only)
+sfp_config_vector                   <= core_reg_wr_value(18); -- read-write
+core_reg_rd_value(18)               <= core_reg_wr_value(18); -- (Readback)
 
 -- Register 19 (_SFP_STATUS_ADDR)
 core_reg_rd_value(19)(31 downto 18) <= core_reg_wr_value(19)(31 downto 18); -- (readback)
