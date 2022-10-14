@@ -320,7 +320,7 @@ signal target_fpga_serial_number: std_logic_vector(56 downto 0);
 --signal target_load_trigger: std_logic;
 --signal target_load_trigger_dly: std_logic := '0';
 --signal target_local_mac_addr: std_logic_vector(47 downto 0);
---signal target_network_config_source: std_logic_vector(1 downto 0);
+signal target_network_config_source: std_logic_vector(1 downto 0);
 --signal target_local_base_ip_addr: std_logic_vector(31 downto 0);
 --signal _base_ip_port: std_logic_vector(15 downto 0);
 
@@ -570,7 +570,7 @@ target_fpga_serial_number(55 downto 0) <= to_slv(CONTROL_BYTES(26 to 32));
 
 -- CONTROL byte 33
 --target_load_trigger          <= CONTROL_BYTES(33)(7);
---target_network_config_source <= CONTROL_BYTES(33)(3 downto 2);
+target_network_config_source <= CONTROL_BYTES(33)(3 downto 2);
 --target_local_subarray        <= CONTROL_BYTES(33)(1 downto 0);
 
 
@@ -688,6 +688,7 @@ STATUS_BYTES(37)(3) <= uart_tx_in;
 STATUS_BYTES(37)(4) <= flash_cs_in;
 STATUS_BYTES(37)(5) <= gpio_irq_in;
 STATUS_BYTES(37)(6) <= bp_gpio_int_in;
+STATUS_BYTES(37)(7) <= serial_match; -- debug
 
 
 -----------------------------------------------------------------------------------
@@ -730,7 +731,8 @@ gen_armspi: if IMPLEMENT_ARM_SPI generate
 		mosi => arm_spi_mosi,
 		cs_n => arm_spi_cs_n,
 
-		-- Master bus interface		addr => spi_addr,
+		-- Master bus interface
+		addr => spi_addr,
 		din  => spi_rdat,
 		dout => spi_wdat,
 		rreq => spi_rreq,
@@ -1211,7 +1213,7 @@ network_setup_proc: process(ctrl_clk)
 	begin
 		if rising_edge(ctrl_clk) then
 
-			serial_match <= to_std_logic(fpga_serial_number = target_fpga_serial_number);
+			serial_match <= to_std_logic(fpga_serial_number = target_fpga_serial_number or target_network_config_source="00");
 
 			-- Load broadcasted networking parameters if the previously received FPGA serial number match our own
 			--target_load_trigger_dly <= target_load_trigger;
