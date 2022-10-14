@@ -1412,7 +1412,7 @@ fifo_rd_proc: process(adc_clk, adcdaq_reset_all)
 -- This is a First-Word fall through FIFO
 FIFO0 : entity work.ADCDAQ_FIFO
 	PORT MAP (
-		srst           => fifo_rst,
+		rst           => fifo_rst, -- ZCU111 / U+ has only srst, but we don't need this FIFO for those.
 		wr_clk        => divclk_vect(0),
 		wr_en         => fifo_wr_en,
 		din           => fifo_din,
