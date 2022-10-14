@@ -335,7 +335,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 	--! This is a CASPER PFB/FFT geneted using Xilinx System Generator
 	--! Time-based data is presented 4 samples at a time,  in0 being the earliest sample. A time sample is 8 bit wide.
 	--! Output is the complex frequency samples (18 bits real + 18 bits imaginary). Out0 and out 1 provide the even and odd frequencies respectively. The upper
-	FFT0: entity work.FFT2_0
+	FFT0: entity work.FFT2
 		PORT MAP(
 			sync_in  => fft_sync_in,
 			in0      => fft_in.TDATA(31 downto 24),
