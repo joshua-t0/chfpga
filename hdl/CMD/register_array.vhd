@@ -126,11 +126,11 @@ begin
 			reg_number_var := to_integer(unsigned(addr(addr'LEFT downto 2))); --
 			byte_number_var := to_integer(unsigned(addr(1 downto 0)));
 			if wr_en='1' then
-				reg_wr_value(reg_number_var)(byte_number_var*8+7 downto byte_number_var*8) <= din;
+				reg_wr_value(reg_number_var)(byte_number_var*8+7 downto byte_number_var*8) <= din;  -- little endian storage
 			end if;
 
 			if rd_en='1' then
-				dout <= reg_rd_value(reg_number_var)(byte_number_var*8+7 downto byte_number_var*8);
+				dout <= reg_rd_value(reg_number_var)(byte_number_var*8+7 downto byte_number_var*8); -- little endian storage
 			end if;
 
 		end if; -- clk
