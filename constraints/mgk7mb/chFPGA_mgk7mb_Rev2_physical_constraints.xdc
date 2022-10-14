@@ -331,7 +331,7 @@ set_property PACKAGE_PIN H6 [get_ports sfp_clk_p]
 # SFP line son the PCI_SFP GTX transceiver( MGT3, Bank 115)
 # set_property LOC GTXE2_CHANNEL_X0Y19 [get_cells dfmux0/UDP_PHY0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/GTWIZARD_i/U0/gt0_GTWIZARD_i/gtxe2_i]
 # set_property LOC GTXE2_CHANNEL_X0Y19 [get_cells dfmux0/UDP_PHY0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/gtwizard_i/U0/gt0_GTWIZARD_i/gtxe2_i]
-# set_property LOC GTXE2_CHANNEL_X0Y19 [get_cells chfpga0/udp_mac0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/gtwizard_i/U0/gt0_GTWIZARD_i/gtxe2_i]
+# set_property LOC GTXE2_CHANNEL_X0Y19 [get_cells chfpga0/gen_eth.udp_mac0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/gtwizard_i/U0/gt0_GTWIZARD_i/gtxe2_i]
 set_property PACKAGE_PIN F2 [get_ports sfp_tx_p]
 
 #################################
@@ -717,13 +717,13 @@ set_property LOC XADC_X0Y0 [get_cells chfpga0/SYSMON0/SYSMON7_GEN.XADC0]
 # We need to put the ADCDAQ PLL in the same bank as the BUFR that drives it (Bank 13)
 #set_property LOC MMCME2_ADV_X0Y3 [get_cells {chfpga0/ADCGEN[0].ADCDAQ0/IMPL.USEPLL.PLL0/U0/mmcm_adv_inst}]
 # The Channelizer MMCM has 2 inputs:  ADCDAQ0 and System MMCM (CLK200). If Tey are there were driven directly (no BUFG) by both the ADCDAQ BUFR and Sysntem MMCM output, . The MMCM must be adjacent, but on a half that has enough BUFGs
-set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/CLK0/chan_mmcm0]
+set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/CLK0/gen_chanpll_k7.chan_mmcm0]
 # The system MMCM also drives the Channelizer MMCM, and also needs to be adjacent.
 
 # Make sure that the BUFG instantiated by the SGMII core is on the same half as the IBUFGDS that drives it. For some reason Vivado places it on the wrong half and fails.
-# set_property LOC BUFGCTRL_X0Y16 [get_cells chfpga0/udp_mac0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/U0/gtwizard_i/gt0_GTWIZARD_i/bufg_gtrefclk0_in]
+# set_property LOC BUFGCTRL_X0Y16 [get_cells chfpga0/gen_eth.udp_mac0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/U0/gtwizard_i/gt0_GTWIZARD_i/bufg_gtrefclk0_in]
 # Make sure that the BUFG instantiated by the SGMII core is on the same half as the IBUFGDS that drives it. For some reason Vivado places it on the wrong half and fails.
-set_property LOC BUFGCTRL_X0Y17 [get_cells chfpga0/udp_mac0/sgmiigen.sgmii0/bufg_txoutclk]
+set_property LOC BUFGCTRL_X0Y17 [get_cells chfpga0/gen_eth.udp_mac0/sgmiigen.sgmii0/bufg_txoutclk]
 
 set_property LOC BUFGCTRL_X0Y18 [get_cells chfpga0/GPUGEN.gpulink0/xglink0/txoutclk_bufg0]
 set_property LOC BUFGCTRL_X0Y19 [get_cells chfpga0/GPUGEN.gpulink0/xglink0/refclk_bufg0]
@@ -941,7 +941,7 @@ resize_pblock [get_pblocks CHAN13] -add {RAMB18_X1Y90:RAMB18_X8Y99 RAMB18_X0Y94:
 resize_pblock [get_pblocks CHAN13] -add {RAMB36_X1Y45:RAMB36_X8Y49 RAMB36_X0Y47:RAMB36_X0Y49}
 # add_cells_to_pblock [get_pblocks CHAN13] [get_cells -quiet [list {chfpga0/CHANGEN[13].CHANi}]]
 
-set_property LOC DNA_PORT_X0Y0 [get_cells chfpga0/GPIO0/dna0]
+set_property LOC DNA_PORT_X0Y0 [get_cells chfpga0/GPIO0/gen_dna7.dna0]
 
 # create_pblock CHAN0
 # add_cells_to_pblock [get_pblocks CHAN0] [get_cells -quiet [list {chfpga0/CHANGEN[0].CHANi}]]
@@ -1006,7 +1006,7 @@ set_property LOC DNA_PORT_X0Y0 [get_cells chfpga0/GPIO0/dna0]
 # resize_pblock [get_pblocks SYSTEM0] -add {DSP48_X10Y40:DSP48_X11Y59}
 # resize_pblock [get_pblocks SYSTEM0] -add {RAMB18_X10Y40:RAMB18_X11Y59}
 # resize_pblock [get_pblocks SYSTEM0] -add {RAMB36_X10Y20:RAMB36_X11Y29}
-# # add_cells_to_pblock [get_pblocks SYSTEM0] [get_cells -quiet [list chfpga0/BLINKER0 chfpga0/FREQ_CTR0 chfpga0/GPIO0 chfpga0/I2C0 chfpga0/REFCLK0 chfpga0/SPI0 chfpga0/SYSMON0 chfpga0/chan_router0 chfpga0/ctrl_master0 chfpga0/sys_router0 chfpga0/top_router0 chfpga0/udp_mac0]]
+# # add_cells_to_pblock [get_pblocks SYSTEM0] [get_cells -quiet [list chfpga0/BLINKER0 chfpga0/FREQ_CTR0 chfpga0/GPIO0 chfpga0/I2C0 chfpga0/REFCLK0 chfpga0/SPI0 chfpga0/SYSMON0 chfpga0/chan_router0 chfpga0/ctrl_master0 chfpga0/sys_router0 chfpga0/top_router0 chfpga0/gen_eth.udp_mac0]]
 
 
 # add_cells_to_pblock [get_pblocks {pblock_udp_gen[0].udp0}] [get_cells -quiet [list {chfpga0/GPUGEN.gpulink0/udp_gen[0].udp0}]]
@@ -1037,7 +1037,7 @@ set_property LOC DNA_PORT_X0Y0 [get_cells chfpga0/GPIO0/dna0]
 
 
 create_pblock SYSTEM
-add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list chfpga0/BLINKER0 chfpga0/FREQ_CTR0 chfpga0/GPIO0/CTRL_SLAVE0 chfpga0/GPIO0/bp_buck_sync0 chfpga0/GPIO0/core_regs0 chfpga0/GPIO0/irigb_comparator0 chfpga0/GPIO0/irigb_decoder0 chfpga0/GPIO0/irigb_encoder0 chfpga0/I2C0 chfpga0/SPI0 chfpga0/sys_router0]]
+add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list chfpga0/BLINKER0 chfpga0/FREQ_CTR0 chfpga0/GPIO0/CTRL_SLAVE0 chfpga0/GPIO0/bp_buck_sync0 chfpga0/GPIO0/core_regs0 chfpga0/GPIO0/irigb_comparator0 chfpga0/GPIO0/irigb_decoder0 chfpga0/GPIO0/irigb_encoder0 chfpga0/gen_i2c.I2C0 chfpga0/gen_spi.SPI0 chfpga0/sys_router0]]
 resize_pblock [get_pblocks SYSTEM] -add {SLICE_X150Y350:SLICE_X189Y374 SLICE_X142Y355:SLICE_X149Y374}
 resize_pblock [get_pblocks SYSTEM] -add {DSP48_X10Y140:DSP48_X11Y149 DSP48_X9Y142:DSP48_X9Y149}
 resize_pblock [get_pblocks SYSTEM] -add {RAMB18_X10Y140:RAMB18_X11Y149 RAMB18_X9Y142:RAMB18_X9Y149}
@@ -1057,7 +1057,7 @@ resize_pblock [get_pblocks SYSTEM] -add {RAMB36_X10Y70:RAMB36_X11Y74 RAMB36_X9Y7
 
 
 create_pblock UDP_MAC
-add_cells_to_pblock [get_pblocks UDP_MAC] [get_cells -quiet [list chfpga0/ctrl_master0 chfpga0/top_router0 chfpga0/udp_mac0]]
+add_cells_to_pblock [get_pblocks UDP_MAC] [get_cells -quiet [list chfpga0/ctrl_master0 chfpga0/top_router0 chfpga0/gen_eth.udp_mac0]]
 resize_pblock [get_pblocks UDP_MAC] -add {SLICE_X150Y235:SLICE_X189Y249 SLICE_X144Y235:SLICE_X149Y244}
 resize_pblock [get_pblocks UDP_MAC] -add {DSP48_X10Y94:DSP48_X11Y99}
 resize_pblock [get_pblocks UDP_MAC] -add {RAMB18_X10Y94:RAMB18_X11Y99 RAMB18_X9Y94:RAMB18_X9Y97}
@@ -1104,7 +1104,7 @@ resize_pblock [get_pblocks CLK0] -add {SLICE_X0Y248:SLICE_X7Y249 SLICE_X0Y150:SL
 
 
 create_pblock ARM_SPI
-add_cells_to_pblock [get_pblocks ARM_SPI] [get_cells -quiet [list chfpga0/GPIO0/arm_spi0]]
+add_cells_to_pblock [get_pblocks ARM_SPI] [get_cells -quiet [list chfpga0/GPIO0/gen_armspi.arm_spi0]]
 resize_pblock [get_pblocks ARM_SPI] -add {SLICE_X0Y187:SLICE_X7Y206}
 
 
