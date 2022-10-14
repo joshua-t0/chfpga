@@ -133,6 +133,8 @@ attribute shreg_extract: string;
 -- constant MODULE_CORR_ADDR: integer :=1;
 -- constant MODULE_ACC_ADDR: integer :=2;
 
+constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
+
 constant N: integer := 4 * NUMBER_OF_WORDS_PER_BIN; -- number of complex samples per frequency bin
 
 constant NUMBER_OF_CMACS : integer := (N+1)*2;
@@ -550,24 +552,46 @@ main: process(in_clk)
 		end if; -- CLK
 	end process;
 
--- 38bits x 512 words FIFO
+-- 38bits x 512 words Embedded FIFO
 -- 36 bits for data, 1 bit for TLAST, 1 bit to indicate a new readout sequence (i.e data is from CMAC0)
-data_fifo : entity work.CORR44_DATA_FIFO
-  PORT MAP (
-	srst       => rst_all,
-	wr_clk    => in_clk,
-	wr_en     => data_fifo_wr_en,
-	din       => data_fifo_din,
-	overflow  => data_fifo_overflow,
-	full      => open,
-	prog_full => data_fifo_prog_full,
+-- EMbedded FIFO has only rs on K7, and only srst on Ultrascale+
+DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
+	data_fifo : entity work.CORR44_DATA_FIFO
+	  PORT MAP (
+		rst       => rst_all, -- async reset on K7 Embed FIFO
+		wr_clk    => in_clk,
+		wr_en     => data_fifo_wr_en,
+		din       => data_fifo_din,
+		overflow  => data_fifo_overflow,
+		full      => open,
+		prog_full => data_fifo_prog_full,
 
-	rd_clk    => out_clk,
-	rd_en     => data_fifo_rd_en,
-	dout      => data_fifo_dout,
-	empty     => data_fifo_empty,
-	valid     => data_fifo_valid
-  );
+		rd_clk    => out_clk,
+		rd_en     => data_fifo_rd_en,
+		dout      => data_fifo_dout,
+		empty     => data_fifo_empty,
+		valid     => data_fifo_valid
+	  );
+end generate;
+DATA_FIFO_UP: if FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
+	data_fifo : entity work.CORR44_DATA_FIFO_UP
+	  PORT MAP (
+		srst       => rst_all, -- sync reset on u+ embedded FIFO
+		wr_clk    => in_clk,
+		wr_en     => data_fifo_wr_en,
+		din       => data_fifo_din,
+		overflow  => data_fifo_overflow,
+		full      => open,
+		prog_full => data_fifo_prog_full,
+
+		rd_clk    => out_clk,
+		rd_en     => data_fifo_rd_en,
+		dout      => data_fifo_dout,
+		empty     => data_fifo_empty,
+		valid     => data_fifo_valid
+	  );
+end generate;
+
 
 -- FIFO write interface
 cmac_z_send(0) <= not data_fifo_prog_full;
