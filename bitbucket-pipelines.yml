@@ -24,8 +24,8 @@ pipelines:
           - cp -r build/html/* www/$DOC_PUBLISH_FOLDER/
           - cd www
           - git config --global user.email "bb-pipelines@jfciche.com"
-          - git config --global user.name "BitBucket Pipelines ($DOC_PUBLISH_FOLDER)"
+          - git config --global user.name "BitBucket Pipelines"
           - git add -A $DOC_PUBLISH_FOLDER
-          - git diff-index --quiet HEAD -- || git commit -m "bitbucket-pipelines updated chfpga sphinx-generated documentation"
+          - git diff-index --quiet HEAD -- || git commit -m "Auto update of $DOC_PUBLISH_FOLDER documentation"
           - git push
 

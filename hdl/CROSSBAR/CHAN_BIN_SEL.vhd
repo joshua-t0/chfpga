@@ -502,6 +502,8 @@ data_fifo_dout(31 downto 0) <= data_fifo_dout32(31 downto 0);
 ---------------------------------------------------
 -- Data FIFOs
 ---------------------------------------------------
+-- Stores the selected incoming frequency bins
+--
 -- All data FIFOs are Embedded FIFOs. They are paired with the DATA flag FIFOs which are BRAM-based.
 -- 7-series have only async resets (rst pin) on their embedded FIFOs, ultrascale+ has only synchronous reset (srst)
 DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
