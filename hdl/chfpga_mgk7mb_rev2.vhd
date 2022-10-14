@@ -58,7 +58,7 @@ entity chFPGA_MGK7MB_Rev2 is
 			                                                 20=>15, 21=>16, 22=>17, 23=>18
 			                                                );
 			BP_SHUFFLE_LANE_TO_QUAD_MAP : integerArray   := (0 to 3=>0, 4 to 7=>1, 8 to 11=> 2, 12 to 14 => 3, 15 to 18=> 4); --!  Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-			BP_SHUFFLE_QUAD_TO_REFCLK_MAP : integerArray := (0 => 1, 1 => 0, 2 => 0, 3=> 1, 4 => 1); --! Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+			BP_SHUFFLE_QUAD_TO_REFCLK_MAP : integerArray := (0 => 1, 1 => 0, 2 => 0, 3=> 1, 4 => 1); --! Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_BP_SHUFFLE_REFCLK-1).
 
 			NUMBER_OF_GPU_LINKS: integer                 := GLOBAL_NUMBER_OF_GPU_LINKS; --! (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
 			NUMBER_OF_GPU_REFCLKS: integer               := GLOBAL_NUMBER_OF_GPU_REFCLKS; --! Number of Reference clocks provided for the 10GE links to the GPU
@@ -771,8 +771,10 @@ ibufds_gtrefclk125 : IBUFDS_GTE2
 		O     => mgt_clk125_nobuf,
 		ODIV2 => open
 	);
-
-buf_gtrefclk125 : BUFH
+-- We use a BUFG to buffer this signal because clock region X1Y4 where it arrives already uses its 12 horizontal clock lines (BUFHs).
+-- The IBUFDS can drive the BUFG directly without using those lines. The divide-by-two circuit can then land anywhere where there are available horizontal clocks.
+-- We have plenty of BUFGs
+buf_gtrefclk125 : BUFG
 	port map (
 		I => mgt_clk125_nobuf,
 		O => mgt_clk125
@@ -781,7 +783,7 @@ buf_gtrefclk125 : BUFH
 -------------------
 -- raw_clk10
 -------------------
--- 10 MHz single-ended clock thAt does not go through the EXTERNAL pll
+-- 10 MHz single-ended clock that does not go through the EXTERNAL pll
 bufr_rawclk10 : BUFR
 	generic map (
 		BUFR_DIVIDE => "BYPASS", --  ("BYPASS", "1", "2", "3", "4", "5", "6", "7", "8")
