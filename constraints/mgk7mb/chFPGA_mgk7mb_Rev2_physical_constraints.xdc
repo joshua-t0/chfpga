@@ -325,7 +325,7 @@ set_property PACKAGE_PIN AF6 [get_ports mgt_clk200_p]
 
 # 125 MHz  reference clock on CLK_FPGA_B (MGTREFCLK1, Bank 116 from PLL1 Port 3)
 # Force ibufgs placement. Vivado provisionnally placed it at X0Y11 which cannot work.
-set_property LOC IBUFDS_GTE2_X0Y11 [get_cells chfpga0/CLK0/use_sfp_refclk.ibufds_gtrefclk]
+# set_property LOC IBUFDS_GTE2_X0Y11 [get_cells chfpga0/CLK0/use_sfp_refclk.ibufds_gtrefclk] -- 2022-09 JFC: not now fails after ZCU111 merge.
 set_property PACKAGE_PIN H6 [get_ports sfp_clk_p]
 
 # SFP line son the PCI_SFP GTX transceiver( MGT3, Bank 115)
