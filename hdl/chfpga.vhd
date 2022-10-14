@@ -2623,6 +2623,7 @@ CROSSBAR2_GEN: if NUMBER_OF_BP_SHUFFLE_LINKS>0 and NUMBER_OF_GPU_LINKS>0 generat
 
 	crossbar2: entity work.shuffle_crossbar
 		generic map (
+		 	PLATFORM_ID => PLATFORM_ID,  -- needed to select family-dependent FIFOs
 			NUMBER_OF_INPUT_LANES              => NUMBER_OF_BP_PCB_SHUFFLE_LANES, -- Number of input streams
 			NUMBER_OF_OUTPUT_LANES             => NUMBER_OF_BP_QSFP_SHUFFLE_LANES, -- Number of output streams
 			NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL => 4,
@@ -2682,6 +2683,7 @@ CROSSBAR2_GEN: if NUMBER_OF_BP_SHUFFLE_LINKS>0 and NUMBER_OF_GPU_LINKS>0 generat
 
 	crossbar3: entity work.shuffle_crossbar
 		generic map (
+		 	PLATFORM_ID => PLATFORM_ID,  -- needed to select family-dependent FIFOs
 			NUMBER_OF_INPUT_LANES              => NUMBER_OF_BP_QSFP_SHUFFLE_LANES, -- Number of input streams
 			NUMBER_OF_OUTPUT_LANES             => NUMBER_OF_GPU_LINKS, -- Number of output streams
 			NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL => 1,

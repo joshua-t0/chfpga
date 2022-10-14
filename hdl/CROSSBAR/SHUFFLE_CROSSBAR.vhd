@@ -35,6 +35,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 
 entity shuffle_crossbar is
 	GENERIC (
+		PLATFORM_ID: integer; -- necessary to select the proper FIFOs
 		NUMBER_OF_INPUT_LANES: integer := 16; -- Number of input streams
 		NUMBER_OF_OUTPUT_LANES: integer := 8; -- Number of output streams
 		NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL: integer := 1;
@@ -368,8 +369,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 	GENERIC MAP (
 		NUMBER_OF_CONTROL_BYTES=>CONTROL_BYTES'Length(1), --
 		NUMBER_OF_STATUS_BYTES=>STATUS_BYTES'Length(1), --
-		DEFAULT_CONTROL_BYTES=> X"80_07_64_1032547698BADCFE0000",
-		USE_FIFO => FALSE
+		DEFAULT_CONTROL_BYTES=> X"80_07_64_1032547698BADCFE0000"
  	)
 
 	PORT MAP(
@@ -722,6 +722,7 @@ BIN_SEL_GEN: for i in 0 to NUMBER_OF_BIN_SEL-1 generate
 	----------------------------------------
 	binsel_i: entity work.shuffle_bin_sel
 		GENERIC MAP (
+			PLATFORM_ID => PLATFORM_ID,
 			BIN_SEL_NUMBER => i,
 			NUMBER_OF_INPUTS => NUMBER_OF_INPUT_LANES,
 			NUMBER_OF_OUTPUTS => NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL,

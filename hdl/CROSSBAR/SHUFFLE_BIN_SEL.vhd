@@ -101,6 +101,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --!
 entity shuffle_bin_sel is
 	GENERIC (
+		PLATFORM_ID: integer; -- necessary to select the proper FIFOs
 		BIN_SEL_NUMBER: integer; --! Bin selector index number. Output lanes will be numbered in the packet header as lane_number=  BIN_SEL_NUMBER*NUMBER_OF_OUTPUTS + bin_sel_output_lane_index
 		NUMBER_OF_INPUTS: integer; --! Number of input streams. Must be a multiple of NUMBER_OF_OUTPUTS.
 		NUMBER_OF_OUTPUTS: integer :=1; --! Number of output streams. Must be a multiple of 2 if COMBINE_DATA_FLAGS=TRUE
@@ -157,7 +158,7 @@ architecture Behavioral of shuffle_bin_sel is
 attribute keep:string;
 attribute equivalent_register_removal: string;
 
-
+constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
 constant NUMBER_OF_INPUT_LANES_PER_OUTPUT: integer := NUMBER_OF_INPUTS/NUMBER_OF_OUTPUTS;
 
 
@@ -579,22 +580,43 @@ DATA_FIFO_GEN: for i in 0 to NUMBER_OF_INPUTS-1 generate
 	--! Every other FIFO is implemented as an embedded FIFO to eliminate the use of external logic.
 	--! WARNING: The FIFO must have the same latency as the other FIFOs! Disable Embedded register to get a latency of zero.
 	EMBED_FIFO_GEN: if FIFO_TYPE_MAP(i)=0 and i MOD 2=1 generate
-		data_fifo0 : entity work.SHUFFLE_BIN_SEL_DATA_FIFO_EMBED
-			port map (
-				srst      => reset_all_reg,
-				clk      => clk,
 
-				din      => data_fifo_din(i),
-				wr_en    => data_fifo_wr_en(i),
-				full     => data_fifo_full(i),
+		DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
+			data_fifo0 : entity work.SHUFFLE_BIN_SEL_DATA_FIFO_EMBED
+				port map (
+					rst      => reset_all_reg, -- async reset on K7 embed FIFOs
+					clk      => clk,
 
-				rd_en    => data_fifo_rd_en(i),
-				dout     => data_fifo_dout(i),
-				valid    => data_fifo_valid(i),
-				empty    => data_fifo_empty(i),
+					din      => data_fifo_din(i),
+					wr_en    => data_fifo_wr_en(i),
+					full     => data_fifo_full(i),
 
-				overflow => data_fifo_overflow(i)
-				);
+					rd_en    => data_fifo_rd_en(i),
+					dout     => data_fifo_dout(i),
+					valid    => data_fifo_valid(i),
+					empty    => data_fifo_empty(i),
+
+					overflow => data_fifo_overflow(i)
+					);
+			end generate;
+		DATA_FIFO_UP: if FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
+			data_fifo0 : entity work.SHUFFLE_BIN_SEL_DATA_FIFO_EMBED_UP
+				port map (
+					srst      => reset_all_reg, -- sync reset on U+ embed FIFOs
+					clk      => clk,
+
+					din      => data_fifo_din(i),
+					wr_en    => data_fifo_wr_en(i),
+					full     => data_fifo_full(i),
+
+					rd_en    => data_fifo_rd_en(i),
+					dout     => data_fifo_dout(i),
+					valid    => data_fifo_valid(i),
+					empty    => data_fifo_empty(i),
+
+					overflow => data_fifo_overflow(i)
+					);
+			end generate;
 		end generate;
 
 	--! If desired, use a Shift register FIFO. Those use only 1 LUT per 2 bits of width.
