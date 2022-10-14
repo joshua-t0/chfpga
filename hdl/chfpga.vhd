@@ -2455,6 +2455,7 @@ end process;
 crossbar0_gen: if NUMBER_OF_CROSSBAR_INPUTS>0 and NUMBER_OF_CROSSBAR_OUTPUTS>0 generate
 	chan_crossbar0: entity work.CHAN_CROSSBAR
 		generic map (
+		 	PLATFORM_ID => PLATFORM_ID,  -- needed to select family-dependent FIFOs
 			NUMBER_OF_INPUT_LANES  => NUMBER_OF_CROSSBAR_INPUTS,
 			NUMBER_OF_OUTPUT_LANES => NUMBER_OF_CROSSBAR_OUTPUTS,
 			-- BINSEL_PBLOCK_MAP => (0 to 4 => 0, 5 to 8 => 1, 9 to 12 => 2, 13 to 15 => 3),

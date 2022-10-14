@@ -35,6 +35,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 
 entity chan_crossbar is
 	GENERIC (
+	 	PLATFORM_ID: integer;
 		NUMBER_OF_INPUT_LANES: integer :=16; -- Number of input streams
 		NUMBER_OF_OUTPUT_LANES: integer :=16; -- Number of output streams
 		BINSEL_PBLOCK_MAP: integerArray; -- Inticates to which pblock each BINSEL belongs. This is used to correctly pipeline the data.
@@ -510,6 +511,7 @@ begin
 	m_axis_tvalid(i) <= m_axis_tvalid_int(i);
 	binsel_i: entity work.chan_bin_sel
 		GENERIC MAP (
+		 	PLATFORM_ID => PLATFORM_ID,
 			LANE_NUMBER => i,
 			NUMBER_OF_INPUTS => NUMBER_OF_INPUT_LANES
 			)

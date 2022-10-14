@@ -102,6 +102,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --!
 entity chan_bin_sel is
 	generic (
+	 	PLATFORM_ID: integer;
 		LANE_NUMBER: integer; --!
 		NUMBER_OF_INPUTS: integer --! Number of antennas to capture simultaneously. Must be a multiple of 4 between 4 and 16.
 		-- EIGHT_BIT_SUPPORT: boolean:= FALSE --
@@ -159,6 +160,9 @@ attribute keep_hierarchy of Behavioral : architecture is "yes";
 
 attribute keep:string;
 attribute equivalent_register_removal: string;
+
+constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
+
 
 signal s_axis_global_tfirst: std_logic;
 signal s_axis_tuser_dly: slv4_array(0 to NUMBER_OF_INPUTS-1); -- stores a delayed version of TUSER so we can see the SERIAL_FLAGS before TLAST
@@ -431,74 +435,78 @@ mask_ram0 : entity work.MASK_RAM
 
 
 	---------------------------------------------------
-	-- Data FIFOs
-	---------------------------------------------------
-	--! The DATA FIFO stores the data for the selected bins.
-	--!
-	--! This is a synchronous, First Word Fall-through FIFO, implemented in
-	--! BRAM. Reset is synchronous with no default value to save logic. VALID
-	--! flag is needed. EMPTY and OVERFLOW flags are used for diagnosis.
-	--! Embedded registers are needed to meet timing and save space.
-	--!
-	--!
-	--! We have a single FIFO for all 16 input stream. The FIFO is 36 bits
-	--! wide (32 bit for data, 1 bit for the LAST flag, others unused). It
-	--! stores four (4+4) bits complex values at a time in 4-bit mode. All 16
-	--! complex values are captured in a holding register and are written
-	--! sequentially four at a time in the FIFO.
-	--!
-	--! ** No longer supported** : If EIGHT_BIT_SUPPORT is true, a second FIFO is instantiated. The first
-	--! FIFO stores the upper nibbles and the second FIFO stores the lower
-	--! nibbles of every complex number. The second FIFO is then used only if
-	--! eight-bit mode is selected by software. EIGHT-BIT support is generally disabled to save BRAM resources.
-	--!
-	--! This FIFO needs to be deep enough to accomodate:
-	--!   - M*N/4 word, where M is the number of selected bins and N is the
-	--!     number of input lanes. For 16 output lanes, M is typically
-	--!     1024/16=64 and N=16, which corresponds to a depth of 256 words. A
-	--!     block RAM offers 512 words. Since the FIFO input is multiplexed by
-	--!     4:1, selected 'words' have to be separated by at least 3 non-
-	--!     selected 'words'. We therefore cannot select more than 512 words/frame / 4 * 16/4 lanes =512
-	--!     words or bins.
-	--!   - the amount of data that is stored while the data flags and frame
-	--!     flags are being sent out at the end of the packet.
-	--!
-	--! A 36-bit wide x 512-word deep FIFO fits in a single 18K BRAM.
-	--!
+-- Data FIFOs
+---------------------------------------------------
+--! The DATA FIFO stores the data for the selected bins.
+--!
+--! This is a synchronous, First Word Fall-through FIFO, implemented in
+--! BRAM. Reset is synchronous with no default value to save logic. VALID
+--! flag is needed. EMPTY and OVERFLOW flags are used for diagnosis.
+--! Embedded registers are needed to meet timing and save space.
+--!
+--!
+--! We have a single FIFO for all 16 input stream. The FIFO is 36 bits
+--! wide (32 bit for data, 1 bit for the LAST flag, others unused). It
+--! stores four (4+4) bits complex values at a time in 4-bit mode. All 16
+--! complex values are captured in a holding register and are written
+--! sequentially four at a time in the FIFO.
+--!
+--! ** No longer supported** : If EIGHT_BIT_SUPPORT is true, a second FIFO is instantiated. The first
+--! FIFO stores the upper nibbles and the second FIFO stores the lower
+--! nibbles of every complex number. The second FIFO is then used only if
+--! eight-bit mode is selected by software. EIGHT-BIT support is generally disabled to save BRAM resources.
+--!
+--! This FIFO needs to be deep enough to accomodate:
+--!   - M*N/4 word, where M is the number of selected bins and N is the
+--!     number of input lanes. For 16 output lanes, M is typically
+--!     1024/16=64 and N=16, which corresponds to a depth of 256 words. A
+--!     block RAM offers 512 words. Since the FIFO input is multiplexed by
+--!     4:1, selected 'words' have to be separated by at least 3 non-
+--!     selected 'words'. We therefore cannot select more than 512 words/frame / 4 * 16/4 lanes =512
+--!     words or bins.
+--!   - the amount of data that is stored while the data flags and frame
+--!     flags are being sent out at the end of the packet.
+--!
+--! A 36-bit wide x 512-word deep FIFO fits in a single 18K BRAM.
+--!
 data_fifo_din_sel(63 downto 0) <= data_fifo_din(to_integer(data_fifo_wr_ctr))(63 downto 0);
 data_fifo_din_sel(64) <= data_fifo_last and to_std_logic(data_fifo_wr_ctr=last_fifo_number_int);
 
 -- fourbitfifo_gen: if EIGHT_BIT_SUPPORT=FALSE generate
 
-	data_fifo_din32(32) <= data_fifo_din_sel(64); -- LAST flag
-	data_fifo_din32(31 downto 0) <= data_fifo_din_sel(31 downto 0); -- lower 4-bits of every value is discarded
-	data_fifo_dout(64) <= data_fifo_dout32(32);
-	data_fifo_dout(31 downto 0) <= data_fifo_dout32(31 downto 0);
+data_fifo_din32(32) <= data_fifo_din_sel(64); -- LAST flag
+data_fifo_din32(31 downto 0) <= data_fifo_din_sel(31 downto 0); -- lower 4-bits of every value is discarded
+data_fifo_dout(64) <= data_fifo_dout32(32);
+data_fifo_dout(31 downto 0) <= data_fifo_dout32(31 downto 0);
 
-	-- bram_fifo_gen: if LANE_NUMBER MOD 2 = 0 generate
-	-- 	data_fifo0 : CHDIST_DATA_FIFO
-	-- 		port map (
-	-- 			srst      => reset_all,
-	-- 			clk      => clk,
+-- bram_fifo_gen: if LANE_NUMBER MOD 2 = 0 generate
+-- 	data_fifo0 : CHDIST_DATA_FIFO
+-- 		port map (
+-- 			srst      => reset_all,
+-- 			clk      => clk,
 
-	-- 			din      => data_fifo_din32,
-	-- 			wr_en    => data_fifo_wr_en,
-	-- 			full     => data_fifo_full,
+-- 			din      => data_fifo_din32,
+-- 			wr_en    => data_fifo_wr_en,
+-- 			full     => data_fifo_full,
 
-	-- 			rd_en    => data_fifo_rd_en,
-	-- 			dout     => data_fifo_dout32,
-	-- 			valid    =>data_fifo_valid,
-	-- 			empty    => data_fifo_empty,
+-- 			rd_en    => data_fifo_rd_en,
+-- 			dout     => data_fifo_dout32,
+-- 			valid    =>data_fifo_valid,
+-- 			empty    => data_fifo_empty,
 
-	-- 			overflow => data_fifo_overflow
-	-- 			);
-	-- 	end generate;
-	-- embed_fifo_gen: if LANE_NUMBER MOD 2 = 1 generate
+-- 			overflow => data_fifo_overflow
+-- 			);
+-- 	end generate;
+-- embed_fifo_gen: if LANE_NUMBER MOD 2 = 1 generate
 
-		-- All data FIFOs are Embedded FIFOs. They are paired with the DATA flag FIFOs which are BRAM.
+
+-- All data FIFOs are Embedded FIFOs. They are paired with the DATA flag FIFOs which are BRAM-based.
+--7-series have only async resets (rst pin) on their embedded FIFOs, ultrascale+ has only synchronous reset (srst)
+DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
+
 		data_fifo0 : entity work.CHDIST_DATA_EMBED_FIFO
 			port map (
-				srst      => reset_all,
+				rst      => reset_all, -- async reset with builtin FIFO
 				clk      => clk,
 
 				din      => data_fifo_din32,
@@ -507,12 +515,34 @@ data_fifo_din_sel(64) <= data_fifo_last and to_std_logic(data_fifo_wr_ctr=last_f
 
 				rd_en    => data_fifo_rd_en,
 				dout     => data_fifo_dout32,
-				valid    =>data_fifo_valid,
+				valid    => data_fifo_valid,
 				empty    => data_fifo_empty,
 
 				overflow => data_fifo_overflow
 				);
-		-- end generate;
+end generate;
+
+DATA_FIFO_UP: if FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
+
+		data_fifo0 : entity work.CHDIST_DATA_EMBED_FIFO_UP
+			port map (
+				srst      => reset_all, -- sync reset with builtin FIFO
+				clk      => clk,
+
+				din      => data_fifo_din32,
+				wr_en    => data_fifo_wr_en,
+				full     => data_fifo_full,
+
+				rd_en    => data_fifo_rd_en,
+				dout     => data_fifo_dout32,
+				valid    => data_fifo_valid,
+				empty    => data_fifo_empty,
+
+				overflow => data_fifo_overflow
+				);
+end generate;
+
+
 -- end generate; -- if EIGHT_BIT_SUPPORT=FALSE
 
 -- eightbitfifo_gen: if EIGHT_BIT_SUPPORT=TRUE generate
@@ -551,7 +581,7 @@ data_fifo_din_sel(64) <= data_fifo_last and to_std_logic(data_fifo_wr_ctr=last_f
 --!     frames/packet = 512 word-deep FIFO).
 --!
 --! A 17-bit wide x 512-word deep FIFO fits in a single 18K BRAM.
-
+-- We use a BRAM-based FIFO, so we can have a synchronous reset on any platform
 data_flags_fifo0 : entity work.chdist_scaler_flags_fifo
   port map (
 	srst      => reset_all,
