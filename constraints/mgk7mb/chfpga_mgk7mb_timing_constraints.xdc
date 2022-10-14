@@ -4,7 +4,7 @@
 
 # Tell the tool to analyze only the timing when the ADCCLK is selected by the chan_mmcm (as opposed to the internal 200 MHz clock)
 # The following line does this by forcing the CLKINSEL input to '0'
-set_case_analysis 1 [get_pins -hierarchical chan_mmcm0/CLKINSEL]
+set_case_analysis 1 [get_pins -hierarchical gen_chanpll_k7.chan_mmcm0/CLKINSEL]
 
 
 # ADC clocks
@@ -105,15 +105,20 @@ set_clock_groups -name CORR_CLK_GROUP -asynchronous -group [get_clocks -include_
 
 # Vivado 2016.2 does not seem to automatically create GTX TXOUTCLK clocks
 # Belay that. No, it's defined in the sgmii xdc file. For some reason a previous compile ignored that.
-# create_clock -period 16 -name sgmii_txclk [get_pins  {chfpga0/udp_mac0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/U0/gtwizard_i/gt0_GTWIZARD_i/gtxe2_i/TXOUTCLK}]
+# create_clock -period 16 -name sgmii_txclk [get_pins  {chfpga0/gen_eth.udp_mac0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/U0/gtwizard_i/gt0_GTWIZARD_i/gtxe2_i/TXOUTCLK}]
 # set_clock_groups -name SGMII_CLOCK_GROUP -asynchronous -group [get_clocks -include_generated_clocks sgmii_txclk]
 
 # Clock period for the recovered Rx clock
-create_clock -period 16.000 -name sgmii_rxclk [get_pins chfpga0/udp_mac0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/*/gtwizard_i/gt0_GTWIZARD_i/gtxe2_i/RXOUTCLK]
-# Clock period for the Txout clock
-create_clock -period 16.000 -name sgmii_txclk [get_pins chfpga0/udp_mac0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/*/gtwizard_i/gt0_GTWIZARD_i/gtxe2_i/TXOUTCLK]
-set_clock_groups -name sgmii_txclk_group -asynchronous -group [get_clocks -include_generated_clocks sgmii_txclk]
+# This clock is now automatically defined by the core itself
+# create_clock -period 16.000 -name sgmii_rxclk [get_pins chfpga0/gen_eth.udp_mac0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/*/gtwizard_i/gt0_GTWIZARD_i/gtxe2_i/RXOUTCLK]
 
+# Clock period for the Txout clock
+# This clock is now automatically defined by the core itself
+# create_clock -period 16.000 -name sgmii_txclk [get_pins chfpga0/gen_eth.udp_mac0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/*/gtwizard_i/gt0_GTWIZARD_i/gtxe2_i/TXOUTCLK]
+
+# set_clock_groups -name sgmii_txclk_group -asynchronous -group [get_clocks -include_generated_clocks sgmii_txclk]
+
+set_clock_groups -name sgmii_txclk_group -asynchronous -group [get_clocks -include_generated_clocks -of_objects [get_pins chfpga0/gen_eth.udp_mac0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/*/gtwizard_i/gt0_GTWIZARD_i/gtxe2_i/TXOUTCLK]]
 
 # The following clocks are not used except for monitoring their frequency during board QC
 # ----------------------------------------
