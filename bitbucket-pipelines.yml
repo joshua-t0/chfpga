@@ -12,20 +12,20 @@ pipelines:
         caches:
           - pip
         script: # Modify the commands below to build your repository.
-          - DOC_PUBLISH_FOLDER='www/chfpga/'$BITBUCKET_BRANCH
+          - DOC_PUBLISH_FOLDER='chfpga/'$BITBUCKET_BRANCH
           - cd _doc
           - pip install -r requirements.txt
           - make html
           - git clone git@bitbucket.org:winterlandcosmology/winterlandcosmology.bitbucket.io.git www
-          - mkdir -p $DOC_PUBLISH_FOLDER/
-          - rm -rf $DOC_PUBLISH_FOLDER/*
+          - mkdir -p www/$DOC_PUBLISH_FOLDER/
+          - rm -rf www/$DOC_PUBLISH_FOLDER/*
           - ls -al
           - ls -al build
-          - cp -r build/html/* $DOC_PUBLISH_FOLDER/
+          - cp -r build/html/* www/$DOC_PUBLISH_FOLDER/
           - cd www
           - git config --global user.email "bb-pipelines@jfciche.com"
-          - git config --global user.name "BitBucket Pipelines (chfpga/jfc_dev)"
-          - git add -A chfpga/jfc_dev
+          - git config --global user.name "BitBucket Pipelines ($DOC_PUBLISH_FOLDER)"
+          - git add -A $DOC_PUBLISH_FOLDER
           - git diff-index --quiet HEAD -- || git commit -m "bitbucket-pipelines updated chfpga sphinx-generated documentation"
           - git push
 
