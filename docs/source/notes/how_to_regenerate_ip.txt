@@ -1,0 +1,139 @@
+How to regenerate ip
+--------------------
+
+Internal notes - dot for general documentation
+This file are personal notes taken while learning how to package the FFT into an IP.
+
+
+Start vivato
+tasks -> Manage IP -> New IP Location
+
+part is xc7k420tffg901-2
+IP location is C:/Users/jfcliche/workspace/CHIME/chfpga/_Cores/KC705_managed_ip
+
+1st try:
+
+In source window, click +. No, that is for addinc a xci file.
+
+
+2nd try: 
+
+tools -> package new IP
+select option Package specified directory (default)
+Directory: C:/Users/jfcliche/workspace/CHIME/chfpga/FFT2
+don't select "package as a library core" (?)
+
+Message: AN IP definition already exists. open existing or overwite?
+
+We chose open
+We click compatibility 
+we add kintex 7. And enable automatic family support level1, whatever that is.
+Click review and package -> package IP
+It just says finished packaging FFT2 successfully
+
+We open our project CHFPGA_MGK7MB_Rev2
+Click IP Catalog
+In the IP catalog window, we already added a user repository:
+	right-click anywhere, select Add IP repository, select chfpga/FFT2
+
+
+We expand user repo, and now can see FFT2 because the FPGA family is supported now
+Double click on the FFT
+Customize IP window opens
+click IP location. Select cores/KC705/
+Name is set to FFT2_0. We keep it.
+geterate output products window appears. we enable Out of context per IP
+, click generate
+
+fft2_0.xcix is generated in the coreséKC705 folder. 
+Design runs shows the design being synthesized.
+xcix file gets bugger when OOC module run is finished. 
+We probably selected packaged ip somewhere.
+
+We restart. recclick on the IP. Change folder to:
+chfpga\_Cores\KC705\FFT2_0
+does not want to create with same name. revane xcix file, but still unhappy. 
+Manage to remove FFT2_0 from the IP SOurces. Had to reset products, rename file, etc.
+Cannot generate IP in a folder FFT2_0
+We set path to chfpga\_Cores\KC705, clock ok. There is no option to not have packge ip
+
+New file is FFT0_2_1.xcix because the old one was still there
+in property-.name the core is called FFT2_0. 
+
+we launch synthesis of the project to see if the fft will be resolved
+no
+It at the top in the the hierarchy, not in the FFT.vhd
+We unset OOC for CHANGEN
+now it is associated to FFT, but cannot set OOC on CHANGEN again. Seems it cannot have hierarchical OOC modules...
+
+truying to regenerate FFT as global:
+   - reset output products
+   - recustomize. click ok. nothing happens. bugÉ
+   - close and reopen project
+   nope.
+
+   Disable container. The .xcix file becomes a folder with a .xic file in it
+   Still cannot regenerate
+   remove fft from IP sources.
+   Add-sources, re-add it
+   still cannot reconfigure. Maybe the window is opened somewhere?
+   restarting vivado...reopening project
+   no change
+   idea: click generate output products: it works!
+   click global, click generate
+   says generation successful, FFT has products in IP sources, but nothing in folder FFT2_0 apart from the .xci
+   properties say for one file in the synthesis group:
+
+CLASS	file
+CORE_CONTAINER	
+FILE_TYPE	Memory Initialization Files
+IS_AVAILABLE	true
+IS_ENABLED	true
+IS_GENERATED	true
+IS_GLOBAL_INCLUDE	false
+LIBRARY	xil_defaultlib
+NAME	c:/Users/jfcliche/workspace/CHIME/chfpga/xilinx_projects/CHFPGA_MGK7MB_REV2/CHFPGA_MGK7MB_REV2.gen/sources_1/ip/FFT2_0/bmg_63_a2f7768c249d67dd.mif
+NEEDS_REFRESH	false
+PARENT_COMPOSITE_FILE	C:/Users/jfcliche/workspace/CHIME/chfpga/_Cores/KC705/FFT2_0_1/FFT2_0.xci
+PATH_MODE	RelativeFirst
+USED_IN	synthesis, simulation
+USED_IN_SIMULATION	true
+USED_IN_SYNTHESIS	true
+
+
+Will have to figure out how to set the destination folder
+set OOC on CHANGEN. works
+start synthesis
+
+Fail on the srts on ADCDAQ FIFO, but the FFT did not cause an error. 
+
+
+
+----
+
+How to regenrerate FFT2
+Add hdl/FFT2 folder as a user library path
+Add IP - > User -> FFT2.0
+On the IP customization page, click select IP destination. Select _cores/KC705
+Set IP name to FFT2. 
+Select global, clock Generate.
+make sure Pro
+This will create a _Cores/KC705/FFT2.xcix core container
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

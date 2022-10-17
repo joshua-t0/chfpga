@@ -1,0 +1,69 @@
+CHORD chFPGA
+ToDo
+
+ALIGN2: 
+-------
+FIFO was too slow and/or all_valid depends on too many signals. 
+
+FIFO are both BRAM and EMBED.
+Internal registers are enabled on BRAM FIFO without latency
+Internat registers on EMBED FIFO adds 1 latency.
+
+    -- EMBEDDED FIFO (FIFO18), 36x512, FWFT, EMBED REG=True, Latency = 1
+    -- The embedded registers on a EMBED FIFO cause a Latency or 1. Data is
+    -- not present at output until a read operation. We compensate by logic.
+Logic does not work because external register is not enabled by rd_en. It does not just add a pipeline delay.
+Solution:
+we trie all_valid to depend only on lane 0, but data does not arrive all at the same time even at the output of the FIFO
+Enabled register on sync FIFO, but the latency on 1 cannot be compensated just with rd_en logic. Trying to figure out how to pipeline all_valid, and predict if the FIFO will have data one clock in advance.
+
+Maybe try with standard all_valid, and use external registers on the EMBED FIFO. But that will add fabric logic.
+
+
+XGLINK_TX
+---------
+
+XGLINK_TX_DATA_FIFO is async, without register. Latency must be zero!
+Delay may be a problem.
+Does not need to be async: XGLINK_TX inputs and outputs operate on the same clock in CHIME. The extra clock domain make the design unnecessarily more complex.
+
+
+Problem, depending on the config, the embedded registers can add a latency:
+ Common CLK, BRAM , Embedded register: latency = 0
+ Common CLK, Built-in FIFO , Embedded register: latency = 1
+ Independent clock, BRAM , Embedded register: latency = 0
+ Independent clock, Built-in FIFO , Embedded register: latency = 0
+
+
+
+Solution: XGLINK_TX_DATA_FIFO was changed to a common-clock FIFO, BRAM-based, with embedded output registers. The FIFO18 half of the RAMB36 will be used to implement the RX-side asynchronous FIFO.  
+
+XGLINK_BYPASS
+-------------
+also used TX FIFO with latency. Is there a way to combine the 64/66 cadence limiter to avoid the need to use external registers.?
+
+
+
+FIFO info from Xilinx docs:
+--------------------------
+
+Standard FIFOs
+When using the embedded registers to add an output pipeline register to the standard
+FIFOs, only the dout and VALID output ports are delayed by one clock cycle during a read
+operation. These additional pipeline registers are always enabled, as illustrated in
+Fig
+
+
+Block RAM Based FWFT FIFOs
+When using the embedded output registers to implement the FWFT FIFOs, the behavior of
+the core is identical to the implementation without the embedded registers.
+
+Built-in Based FWFT FIFOs (Common Clock Only)
+When using the embedded output registers with a common clock built-in based FIFO with
+FWFT, the embedded registers add an output pipeline register to the FWFT FIFO. The dout
+and VALID output ports are delayed by 1 clock cycle during a read operation in 7 Series.
+These pipeline registers are always enabled, as shown in Figure 3-18.
+
+For UltraScale designs, the read behavior with and without embedded register enabled is
+same. 
+
