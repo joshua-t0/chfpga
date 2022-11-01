@@ -41,6 +41,7 @@ use UNISIM.VComponents.all;
 entity CORR44 is
 	generic (
 		PLATFORM_ID: integer := PLATFORM_ID_ZCU111; -- necessary to select the DSP RPM spacing and instantiate the proper DSP and FIFO primitives
+		RPM_LAYOUT: string; -- Name of the layout of the correlator DSP, BRAM and FIFO elements  (e.g. "BDDB" or "DBBD")
 		CORR_NUMBER: integer := 0; -- used for packet header and to determine the CORR44 RPM locations
 		NUMBER_OF_WORDS_PER_BIN: integer := 4; -- also corresponds to the number of clocks per bin. There are 4 samples per word.
 		NUMBER_OF_HEADER_WORDS: integer := 4; -- must be <= 4
@@ -135,17 +136,19 @@ attribute shreg_extract: string;
 
 constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
 
-constant N: integer := 4 * NUMBER_OF_WORDS_PER_BIN; -- number of complex samples per frequency bin
+constant N: integer := 4 * NUMBER_OF_WORDS_PER_BIN; -- number of complex samples per frequency bin = number of channels per frequency bin
 
 constant NUMBER_OF_CMACS : integer := (N+1)*2;
 
 
--- Get the RPM position of the corr44 cores
-constant corr_rpm: corr_rpm_struct := get_corr_rpm_struct(PLATFORM_ID, N);
+-- Get the relative RPM position of the elements in the corr44 cores for the specified layout
+constant cmac_rpms: cmac44_rpm_coord_struct_array := get_cmac44_rpm_coords_struct_array(PLATFORM_ID, N, RPM_LAYOUT);
 
 -- DSP & BRAM vertical spacing in RPM coordinates
 constant DSP_TILE_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_ID).DSP_TILE_DELTA_RPM_Y;
 constant BRAM_TILE_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_ID).BRAM_TILE_DELTA_RPM_Y;
+constant DSP_BEL_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_ID).DSP_BEL_DELTA_RPM_Y;
+constant BRAM_BEL_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_ID).BRAM_BEL_DELTA_RPM_Y;
 
 signal buf: slv32_array(0 to NUMBER_OF_WORDS_PER_BIN-1);
 signal x: slv8_array(0 to N-1);
@@ -351,14 +354,13 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 -- CMACS are placed in two columns (left & right) of N+1 CMAC44. Each CMAC is 2 DSP high (and 2 BRAM high as well).
 -- CMAC outputs are daisy chained, with data flowing out from CMAC(0)
 cmac: for i in 0 to NUMBER_OF_CMACS-1 generate
+
+begin
 	cmac0: entity work.CMAC44
 		GENERIC map (
 			PLATFORM_ID => PLATFORM_ID,
-			CORR_NUMBER => CORR_NUMBER,
-			DSP_RPM_X => sel((i mod 2)=0, corr_rpm.LEFT_DSP_X(CORR_NUMBER), corr_rpm.RIGHT_DSP_X(CORR_NUMBER)), --,
-			BRAM_RPM_X => sel((i mod 2)=0, corr_rpm.LEFT_BRAM_X(CORR_NUMBER), corr_rpm.RIGHT_BRAM_X(CORR_NUMBER)), --(i mod 2)=1,
-			DSP_RPM_Y => corr_rpm.DSP_BOTTOM_Y(CORR_NUMBER) + (i/2)*DSP_TILE_DELTA_RPM_Y, -- Each CMAC is 1 DSP tile (2 DSP) high
-			BRAM_RPM_Y => corr_rpm.BRAM_BOTTOM_Y(CORR_NUMBER) + (i/2)*BRAM_TILE_DELTA_RPM_Y -- Each CMAC is 1 BRAM tile (2 BRAM) high
+			RPM_NAME => "RPM_CORR" & integer'IMAGE(CORR_NUMBER),
+			RPM_COORDS => cmac_rpms(i) -- relative coordinates of the DSPs, FIFO and BRAM
 			)
 		PORT MAP(
 			s_axis_xy_tvalid             => xy_tvalid,

@@ -88,6 +88,12 @@ architecture Behavioral of CORR44_ARRAY is
 attribute equivalent_register_removal: string;
 attribute shreg_extract: string;
 attribute DONT_TOUCH: string;
+attribute RLOC_ORIGIN : string;
+
+constant N: integer := 4 * NUMBER_OF_WORDS_PER_BIN; -- number of complex samples per frequency bin = number of channels per frequency bin
+
+-- Get the lower left coordinate of each corr44 core
+constant corr44_rpm: corr44_rloc_origins_struct_array := get_corr44_rloc_origins_struct_array(PLATFORM_ID, N);
 
 
 signal s_axis_tdata_reg: slv32_array(0 to NUMBER_OF_CORRELATORS-1); --! input data stream containing the channelized data from every antenna processor. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
@@ -179,17 +185,15 @@ outpipe_proc: process(out_clk)
 
 
 CORRGENi: for i in 0 to NUMBER_OF_CORRELATORS-1 generate
+	-- set the position of the core44 core
+	attribute RLOC_ORIGIN of corr0: label is rpm_to_string(corr44_rpm(i).loc);
+begin
 	corr0: entity work.corr44
 		generic map (
 			PLATFORM_ID             => PLATFORM_ID,
+			RPM_LAYOUT              => corr44_rpm(i).layout,
 			CORR_NUMBER             => i, -- will be used in the packet header and to determine the RPM location of the CORR44 cores
 			NUMBER_OF_WORDS_PER_BIN => NUMBER_OF_WORDS_PER_BIN-- corresponds to the number of clocks per bin
-			--LEFT_DSP_RPM_X          => LEFT_DSP_RPM_X(i),
-			--LEFT_BRAM_RPM_X         => LEFT_BRAM_RPM_X(i),
-			--RIGHT_DSP_RPM_X         => RIGHT_DSP_RPM_X(i),
-			--RIGHT_BRAM_RPM_X        => RIGHT_BRAM_RPM_X(i),
-			--BOTTOM_DSP_RPM_Y        => BOTTOM_DSP_RPM_Y(i),
-			--BOTTOM_BRAM_RPM_Y       => BOTTOM_BRAM_RPM_Y(i)
 			)
 		port map(
 			s_axis_tvalid           => s_axis_tvalid_reg(i),

@@ -32,28 +32,36 @@ library UNIMACRO;
 use unimacro.Vcomponents.all;
 
 
---! Casadable, compact (4+4) bit 512-element complex vector multiplier/accumulator that uses two DSP48E1 and two RAMB16 blocks.
---!
---! The input stream consist of a pair of (4+4) bit complex value presented on each clock on its 16-bit input
---! data bus. Each pair in a frame is multiplied and accumulated in a separate memory location. Up to
---! 512 separate products can be stored.
---!
---! The data is accumulated in a FIFO as a saturated (18+18) bit value. ! When
---! the `last_frame` flag is set, the final accumulated values are transferred
---! in a BRAM readout ! buffer and are read slowly through a 36-bit bus while
---!another integration in is progress. A readout input port allows the CMACs to
---! be connected in a readout chain.
---!
---!
---! See the Entity architecture for more implementation details.
+-- ----------------------------------
+-- CMAC44: (4+4) bit complex vector multiplier-and-accumulate core
+-- ----------------------------------
+-- Casadable, compact (4+4) bit 512-element complex vector
+-- multiplier/accumulator that uses two DSP48E1 and two RAMB16 blocks.
+--
+-- The input stream consist of a pair of (4+4) bit complex value presented on
+-- each clock on its 16-bit input data bus. Each pair in a frame is multiplied
+-- and accumulated in a separate memory location. Up to 512 separate products
+-- can be stored.
+--
+-- The data is accumulated in a FIFO as a saturated (18+18) bit value. ! When
+-- the `last_frame` flag is set, the final accumulated values are transferred
+-- in a BRAM readout ! buffer and are read slowly through a 36-bit bus while
+-- another integration in is progress. A readout input port allows the CMACs
+-- to be connected in a readout chain.
+--
+--
+-- See the Entity architecture for more implementation details.
 entity CMAC44 is
 	GENERIC (
 		PLATFORM_ID: integer;
-		CORR_NUMBER: integer;
-		DSP_RPM_X: integer := 45; -- X position in RPM coordinates
-		BRAM_RPM_X: integer := 34;
-		DSP_RPM_Y: integer := 0;
-		BRAM_RPM_Y: integer := 0
+		RPM_NAME: string; -- name of the RPM set name that identify which correlator the DSPs and BRAMs belong to.
+		RPM_COORDS: cmac44_rpm_coord_struct; -- RPM coordinates of the DSPs and BRAMs
+		DSP_RPM_X: integer := 45; -- X coordinate for both DSP1 and DSP2. They are on top of each other, in the same tile.
+		BRAM_RPM_X: integer := 34; -- X coordinate of BRAM/FIFO. They also are on top of each other, in the same tile.
+		DSP_RPM_Y0: integer := 0; -- Y coordinate of bottom DSP (DSP1)
+		DSP_RPM_Y1: integer := 0; -- Y coordinate of top DSP (DSP2)
+		BRAM_RPM_Y0: integer := 0; -- Y coordinate of bottom BRAM (Accumulator FIFO)
+		BRAM_RPM_Y1: integer := 0 -- Y coordinate of top BRAM (Capture BRAM)
 		);
 	PORT(
 
@@ -101,62 +109,62 @@ entity CMAC44 is
 
 end CMAC44;
 
---! @brief Implementation of the compact (4+4) bit complex multiplier/accumulator.
---!
---! The complex multiplier/accumulator (CMAC) takes advantage of the small bit width if the incoming
---! complex number (4-bit real, 4-bit imaginary) to implement a full complex multiplier, accumulator
---! and readout buffer using two DSP48 and two RAMB18K and a very small amount of logic and routing
---! resources. The CMAC does not require external memory. Many tricks have been used to use the various features and operation modes of the DSP
---! block to minimize the use of fabric logic (such as fabric-based adders) and maximize speed.
---! Since the two DSP and RAM blocks use the same amount of space in an FPGA column, the CMAC can be
---! packed very densely and efficiently in the FPGA.
---!
---! Only one RAMB18K is used as an accumulator, which means we can accumulate the complex product
---! into up to 512 distinct (18+18) complex values. This ultimately sets the limit on how long the
---! products can be integrated before they need to be sent out to prevent saturation. This buffer is
---! implemented as a FIFO, which uses the embedded FIFO hardware associated with a pair of RAMB18K
---! block (i.e. a RAMB36K ), so we do not use fabric resources to implement address counters etc.
---!
---! A separate RAMB18K is used as a capture buffer to store the final sums at the end of the
---! integration period and allow the data to be trickled down through the comm link without
---! interrupting the integration of the next frame (i.e no dead time). It is assumed that the
---! integration period is long enough so that the data can be sent out before a new integration period
---! starts. The capture buffer has the same geometry as the accumulator. It is implemented as a BRAM,
---! not a FIFO, since the FIFO embedded logic is used by the accumulator FIFO. The read logic is
---! simplified compared to a ful-fledged FIFO in order to reduce the logic count.
---!
---!
---! Readout logic
---! -------------
---!
---! The CMAC output is meant to be daisy-chained with other CMACs in order to stream the captured
---! accumulated products of all the units in the chain. Once the first unit of the chain has sent its data, the data
---! from the second CMAC is passed through the first one, and so on. This ensures that the routing needed to readout all the CMACs stays local.
---!
---! Each CMAC has a `send` signal both on the upstream and downstram side to allow some degree of flow
---! control. On the downstream side, the `send` signal indicates a CMAC can send its data, or , when it is finished, it's neighbor's data.
---! The upstram `send` signal is enabled when the CMAC has finished sending its data to tells the neighbor that it can send its own data.
---!
---! The `send` signal **does not** behave exactly as a AXI-S tREADY signal, which
---! *instantaneously* starts or stop data transfer. Implementing this behaviour in a daisy-chained (and
---! pipelined) data path involves more complex logic and data buffering to deal with data that
---! was sent based on delayed tready signal but can no longer be immediately accepted it when it
---! arrives at the sink.
---!
---! Instead, the `send_in` signal is an instruction to start and stop sending data "as soon as
---! possible", meaning that  the data flow can start and stop some time after the signal is asserted.
---! This allows time for the `send_in` signal to propagate up to the targeted data source and for the
---! data to propagate back down through its pipeline stages. In other word, the `send` signal will
---! take effect only after the control and data pipeline latency.
---!
---! Using such a *lazy* flow control scheme greatly simplifies the logic and storage requirements
---! (i.e flops) in each and every of the CMAC modules. However, an elastic buffer with sufficient
---! capacity is required at the end of the readout module to accomodate the time lag between the flow
---! control instruction and the actual effect of the flow. Since  we need to have a FIFO anyways to
---! cope with data width conversion and clock domain crossing, and that FIFO is needed only once
---! for every group of daisy-chained CMAC blocks, the resource usage is totally acceptable.
---!
---!
+-- @brief Implementation of the compact (4+4) bit complex multiplier/accumulator.
+--
+-- The complex multiplier/accumulator (CMAC) takes advantage of the small bit width if the incoming
+-- complex number (4-bit real, 4-bit imaginary) to implement a full complex multiplier, accumulator
+-- and readout buffer using two DSP48 and two RAMB18K and a very small amount of logic and routing
+-- resources. The CMAC does not require external memory. Many tricks have been used to use the various features and operation modes of the DSP
+-- block to minimize the use of fabric logic (such as fabric-based adders) and maximize speed.
+-- Since the two DSP and RAM blocks use the same amount of space in an FPGA column, the CMAC can be
+-- packed very densely and efficiently in the FPGA.
+--
+-- Only one RAMB18K is used as an accumulator, which means we can accumulate the complex product
+-- into up to 512 distinct (18+18) complex values. This ultimately sets the limit on how long the
+-- products can be integrated before they need to be sent out to prevent saturation. This buffer is
+-- implemented as a FIFO, which uses the embedded FIFO hardware associated with a pair of RAMB18K
+-- block (i.e. a RAMB36K ), so we do not use fabric resources to implement address counters etc.
+--
+-- A separate RAMB18K is used as a capture buffer to store the final sums at the end of the
+-- integration period and allow the data to be trickled down through the comm link without
+-- interrupting the integration of the next frame (i.e no dead time). It is assumed that the
+-- integration period is long enough so that the data can be sent out before a new integration period
+-- starts. The capture buffer has the same geometry as the accumulator. It is implemented as a BRAM,
+-- not a FIFO, since the FIFO embedded logic is used by the accumulator FIFO. The read logic is
+-- simplified compared to a ful-fledged FIFO in order to reduce the logic count.
+--
+--
+-- Readout logic
+-- -------------
+--
+-- The CMAC output is meant to be daisy-chained with other CMACs in order to stream the captured
+-- accumulated products of all the units in the chain. Once the first unit of the chain has sent its data, the data
+-- from the second CMAC is passed through the first one, and so on. This ensures that the routing needed to readout all the CMACs stays local.
+--
+-- Each CMAC has a `send` signal both on the upstream and downstram side to allow some degree of flow
+-- control. On the downstream side, the `send` signal indicates a CMAC can send its data, or , when it is finished, it's neighbor's data.
+-- The upstram `send` signal is enabled when the CMAC has finished sending its data to tells the neighbor that it can send its own data.
+--
+-- The `send` signal **does not** behave exactly as a AXI-S tREADY signal, which
+-- *instantaneously* starts or stop data transfer. Implementing this behaviour in a daisy-chained (and
+-- pipelined) data path involves more complex logic and data buffering to deal with data that
+-- was sent based on delayed tready signal but can no longer be immediately accepted it when it
+-- arrives at the sink.
+--
+-- Instead, the `send_in` signal is an instruction to start and stop sending data "as soon as
+-- possible", meaning that  the data flow can start and stop some time after the signal is asserted.
+-- This allows time for the `send_in` signal to propagate up to the targeted data source and for the
+-- data to propagate back down through its pipeline stages. In other word, the `send` signal will
+-- take effect only after the control and data pipeline latency.
+--
+-- Using such a *lazy* flow control scheme greatly simplifies the logic and storage requirements
+-- (i.e flops) in each and every of the CMAC modules. However, an elastic buffer with sufficient
+-- capacity is required at the end of the readout module to accomodate the time lag between the flow
+-- control instruction and the actual effect of the flow. Since  we need to have a FIFO anyways to
+-- cope with data width conversion and clock domain crossing, and that FIFO is needed only once
+-- for every group of daisy-chained CMAC blocks, the resource usage is totally acceptable.
+--
+--
 architecture Behavioral of CMAC44 is
 
 
@@ -243,7 +251,7 @@ signal m_axis_z_out_start_dly: std_logic := '1';
 
 attribute RPM_GRID : string;
 attribute RLOC : string;
-attribute HU_SET : string;
+--attribute HU_SET : string;
 attribute U_SET : string;
 attribute RLOC_ORIGIN : string;
 attribute KEEP_HIERARCHY : string;
@@ -257,232 +265,202 @@ attribute KEEP_HIERARCHY : string;
 constant FPGA_SERIES:integer := PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES;
 
 -- DSP & BRAM vertical spacing in RPM coordinates for this platform
-constant DSP_BEL_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_ID).DSP_BEL_DELTA_RPM_Y;
-constant BRAM_BEL_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_ID).BRAM_BEL_DELTA_RPM_Y;
-
---attribute HU_SET of dsp1, dsp2 : label is "DSP_PAIR";
---attribute HU_SET of acc_fifo0, capture_bram0 : label is "BRAM_PAIR";
-
-attribute U_SET of dsp1, dsp2 : label is "DSP_PAIR" & integer'IMAGE(CORR_NUMBER);
-attribute U_SET of acc_fifo0, capture_bram0 : label is "BRAM_PAIR" & integer'IMAGE(CORR_NUMBER);
---attribute RPM_GRID of dsp1,dsp2, acc_fifo0, capture_bram0: label is "GRID"; -- commented out to use the primitive grid (the normalized one is too irregular for computations)
---attribute RLOC of dsp1 : label is "X0Y0";
---attribute RLOC of dsp2 : label is "X0Y" & integer'IMAGE(DSP_BEL_DELTA_RPM_Y); -- dsp2 is just above dsp1
-
---attribute RLOC of acc_fifo0 : label is "X0Y0";  -- in a RAMB36, the FIFO18 is the lower one
---attribute RLOC of capture_bram0 : label is "X0Y" & integer'IMAGE(BRAM_BEL_DELTA_RPM_Y); -- capture bram is just above acc_fifo0;
---attribute RLOC_ORIGIN of dsp1: label is "X"& integer'IMAGE(DSP_RPM_X) & "Y" & integer'IMAGE(DSP_RPM_Y);
---attribute RLOC_ORIGIN of acc_fifo0: label is "X"& integer'IMAGE(BRAM_RPM_X) & "Y" & integer'IMAGE(BRAM_RPM_Y);
-
---attribute RLOC_ORIGIN of dsp1: label is "DSP48E2_X2Y72"; --"X11Y48";
---attribute RLOC_ORIGIN of acc_fifo0: label is "X2344Y374"; --"X6Y48";
-
-attribute RLOC of dsp1: label is "X"& integer'IMAGE(DSP_RPM_X) & "Y" & integer'IMAGE(DSP_RPM_Y);
-attribute RLOC of dsp2: label is "X"& integer'IMAGE(DSP_RPM_X) & "Y" & integer'IMAGE(DSP_RPM_Y+1);
-attribute RLOC of acc_fifo0: label is "X"& integer'IMAGE(BRAM_RPM_X) & "Y" & integer'IMAGE(BRAM_RPM_Y);
-attribute RLOC of capture_bram0: label is "X"& integer'IMAGE(BRAM_RPM_X) & "Y" & integer'IMAGE(BRAM_RPM_Y+1);
-
-
---attribute RLOC of dsp2 : label is "X0Y1";
---attribute RPM_GRID of Behavioral: architecture is "GRID";
---attribute RPM_GRID of dsp2 : label is "GRID";
---attribute RPM_GRID of acc_fifo0 : label is "GRID";
---attribute RPM_GRID of capture_bram0 : label is "GRID";
 attribute KEEP_HIERARCHY of Behavioral: architecture is "YES";
 --attribute RLOC_ORIGIN of Behavioral: architecture is ORIGIN;
 
---attribute HU_SET of dsp1 : label is "uset0";
---attribute HU_SET of dsp2 : label is "uset0";
---attribute HU_SET of acc_fifo0 : label is "uset0";
---attribute HU_SET of capture_bram0 : label is "uset0";
---attribute KEEP_HIERARCHY of acc_fifo0 : label is "YES";
-
 begin
-
 
 -- First DSP: Implements the multiplier with correction factors, which yields the ac, (ad-bc) and bd terms in its output registers.
 -- a and c are assumed to be unsigned. Corrections are applied by the adder to compensate for overlaps between the bd and (ad-bc) terms. results are presented on the P and PC (calcaded P)  ports.
-dsp1 : DSP48E1
-	generic map (
-		-- Feature Control Attributes: Data Path Selection
-		A_INPUT            => "DIRECT", -- Selects A input source, "DIRECT" (A port) or "CASCADE" (ACIN port)
-		B_INPUT            => "DIRECT", -- Selects B input source, "DIRECT" (B port) or "CASCADE" (BCIN port)
-		USE_DPORT          => FALSE, -- Select D port usage (TRUE or FALSE)
-		USE_MULT           => "MULTIPLY", -- Select multiplier usage ("MULTIPLY", "DYNAMIC", or "NONE")
-		USE_SIMD           => "ONE48", -- SIMD selection ("ONE48", "TWO24", "FOUR12")
-		-- Pattern Detector Attributes: Pattern Detection Configuration
-		AUTORESET_PATDET   => "NO_RESET", -- "NO_RESET", "RESET_MATCH", "RESET_NOT_MATCH"
-		MASK               => X"3fffffffffff", -- 48-bit mask value for pattern detect (1=ignore)
-		PATTERN            => X"000000000000", -- 48-bit pattern match for pattern detect
-		SEL_MASK           => "MASK", -- "C", "MASK", "ROUNDING_MODE1", "ROUNDING_MODE2"
-		SEL_PATTERN        => "PATTERN", -- Select pattern value ("PATTERN" or "C")
-		USE_PATTERN_DETECT => "NO_PATDET", -- Enable pattern detect ("PATDET" or "NO_PATDET")
-		-- Register Control Attributes: Pipeline Register Configuration
-		ACASCREG           => 1, -- Number of pipeline stages between A/ACIN and ACOUT (0, 1 or 2)
-		ADREG              => 1, -- Number of pipeline stages for pre-adder (0 or 1)
-		ALUMODEREG         => 1, -- Number of pipeline stages for ALUMODE (0 or 1)
-		AREG               => 1, -- Number of pipeline stages for A (0, 1 or 2)
-		BCASCREG           => 1, -- Number of pipeline stages between B/BCIN and BCOUT (0, 1 or 2)
-		BREG               => 1, -- Number of pipeline stages for B (0, 1 or 2)
-		CARRYINREG         => 1, -- Number of pipeline stages for CARRYIN (0 or 1)
-		CARRYINSELREG      => 1, -- Number of pipeline stages for CARRYINSEL (0 or 1)
-		CREG               => 1, -- Number of pipeline stages for C (0 or 1)
-		DREG               => 1, -- Number of pipeline stages for D (0 or 1)
-		INMODEREG          => 1, -- Number of pipeline stages for INMODE (0 or 1)
-		MREG               => 1, -- Number of multiplier pipeline stages (0 or 1)
-		OPMODEREG          => 1, -- Number of pipeline stages for OPMODE (0 or 1)
-		PREG               => 1 -- Number of pipeline stages for P (0 or 1)
-	)
-	port map (
-		-- Cascade: 30-bit (each) output: Cascade Ports
-		ACOUT          => open, -- 30-bit output: A port cascade output
-		BCOUT          => open, -- 18-bit output: B port cascade output
-		CARRYCASCOUT   => open, -- 1-bit output: Cascade carry output
-		MULTSIGNOUT    => open, -- 1-bit output: Multiplier sign cascade output
-		PCOUT          => dsp1_pcout, -- 48-bit output: Cascade output
-		P              => dsp1_p, -- 48-bit output: Primary data output
-		-- Control: 1-bit (each) output: Control Inputs/Status Bits
-		OVERFLOW       => open, -- 1-bit output: Overflow in add/acc output
-		PATTERNBDETECT => open, -- 1-bit output: Pattern bar detect output
-		PATTERNDETECT  => open, -- 1-bit output: Pattern detect output
-		UNDERFLOW      => open, -- 1-bit output: Underflow in add/acc output
-		-- Data: 4-bit (each) output: Data Ports
-		CARRYOUT       => open, -- 4-bit output: Carry output
-		-- Cascade: 30-bit (each) input: Cascade Ports
-		ACIN           => (others=> '0'), -- 30-bit input: A cascade data input
-		BCIN           => (others=> '0'), -- 18-bit input: B cascade input
-		CARRYCASCIN    => '0', -- 1-bit input: Cascade carry input
-		MULTSIGNIN     => '0', -- 1-bit input: Multiplier sign input
-		PCIN           => (others=> '0'), -- 48-bit input: P cascade input
-		-- Control: 4-bit (each) input: Control Inputs/Status Bits
-		ALUMODE        => dsp1_alumode, -- 4-bit input: ALU control input
-		CARRYINSEL     => "000", -- 3-bit input: Carry select input
-		CLK            => clk, -- 1-bit input: Clock input
-		INMODE         => "00000", -- 5-bit input: INMODE control input
-		OPMODE         => "0110101", -- 7-bit input: Operation mode input, X/Y=M, P=C
-		-- Data: 30-bit (each) input: Data Ports
-		A              => dsp1_a, -- 30-bit input: A data input
-		B              => dsp1_b, -- 18-bit input: B data input
-		C              => dsp1_c, -- 48-bit input: C data input
-		CARRYIN        => dsp1_cin, -- 1-bit input: Carry input signal
-		D              => (others=> '0'), -- 25-bit input: D data input
-		-- Reset/Clock Enable: 1-bit (each) input: Reset/Clock Enable Inputs
-		CEA1           => '1', -- 1-bit input: Clock enable input for 1st stage AREG
-		CEA2           => '1', -- 1-bit input: Clock enable input for 2nd stage AREG
-		CEAD           => '0', -- 1-bit input: Clock enable input for ADREG
-		CEALUMODE      => '1', -- 1-bit input: Clock enable input for ALUMODE
-		CEB1           => '1', -- 1-bit input: Clock enable input for 1st stage BREG
-		CEB2           => '1', -- 1-bit input: Clock enable input for 2nd stage BREG
-		CEC            => '1', -- 1-bit input: Clock enable input for CREG
-		CECARRYIN      => '1', -- 1-bit input: Clock enable input for CARRYINREG
-		CECTRL         => '1', -- 1-bit input: Clock enable input for OPMODEREG and CARRYINSELREG
-		CED            => '0', -- 1-bit input: Clock enable input for DREG
-		CEINMODE       => '1', -- 1-bit input: Clock enable input for INMODEREG
-		CEM            => '1', -- 1-bit input: Clock enable input for MREG
-		CEP            => '1', -- 1-bit input: Clock enable input for PREG
-		RSTA           => '0', -- 1-bit input: Reset input for AREG
-		RSTALLCARRYIN  => '0', -- 1-bit input: Reset input for CARRYINREG
-		RSTALUMODE     => '0', -- 1-bit input: Reset input for ALUMODEREG
-		RSTB           => '0', -- 1-bit input: Reset input for BREG
-		RSTC           => '0', -- 1-bit input: Reset input for CREG
-		RSTCTRL        => '0', -- 1-bit input: Reset input for OPMODEREG and CARRYINSELREG
-		RSTD           => '0', -- 1-bit input: Reset input for DREG and ADREG
-		RSTINMODE      => '0', -- 1-bit input: Reset input for INMODEREG
-		RSTM           => '0', -- 1-bit input: Reset input for MREG
-		RSTP           => '0' -- 1-bit input: Reset input for PREG
-	);
+blkdsp: block
+	--attribute U_SET of dsp1, dsp2 : label is "CORR" & integer'IMAGE(CORR_NUMBER);
+	attribute RPM_GRID of dsp1: label is "GRID";  -- coordinates in unit of RPM_X and RPM_Y. All element sin the same group will automatically use that grid.
+	attribute U_SET of dsp1, dsp2 : label is RPM_NAME;
+	attribute RLOC of dsp1: label is rpm_to_string(RPM_COORDS.DSP1);
+	attribute RLOC of dsp2: label is rpm_to_string(RPM_COORDS.DSP2);
+begin
+	dsp1 : DSP48E1
+		generic map (
+			-- Feature Control Attributes: Data Path Selection
+			A_INPUT            => "DIRECT", -- Selects A input source, "DIRECT" (A port) or "CASCADE" (ACIN port)
+			B_INPUT            => "DIRECT", -- Selects B input source, "DIRECT" (B port) or "CASCADE" (BCIN port)
+			USE_DPORT          => FALSE, -- Select D port usage (TRUE or FALSE)
+			USE_MULT           => "MULTIPLY", -- Select multiplier usage ("MULTIPLY", "DYNAMIC", or "NONE")
+			USE_SIMD           => "ONE48", -- SIMD selection ("ONE48", "TWO24", "FOUR12")
+			-- Pattern Detector Attributes: Pattern Detection Configuration
+			AUTORESET_PATDET   => "NO_RESET", -- "NO_RESET", "RESET_MATCH", "RESET_NOT_MATCH"
+			MASK               => X"3fffffffffff", -- 48-bit mask value for pattern detect (1=ignore)
+			PATTERN            => X"000000000000", -- 48-bit pattern match for pattern detect
+			SEL_MASK           => "MASK", -- "C", "MASK", "ROUNDING_MODE1", "ROUNDING_MODE2"
+			SEL_PATTERN        => "PATTERN", -- Select pattern value ("PATTERN" or "C")
+			USE_PATTERN_DETECT => "NO_PATDET", -- Enable pattern detect ("PATDET" or "NO_PATDET")
+			-- Register Control Attributes: Pipeline Register Configuration
+			ACASCREG           => 1, -- Number of pipeline stages between A/ACIN and ACOUT (0, 1 or 2)
+			ADREG              => 1, -- Number of pipeline stages for pre-adder (0 or 1)
+			ALUMODEREG         => 1, -- Number of pipeline stages for ALUMODE (0 or 1)
+			AREG               => 1, -- Number of pipeline stages for A (0, 1 or 2)
+			BCASCREG           => 1, -- Number of pipeline stages between B/BCIN and BCOUT (0, 1 or 2)
+			BREG               => 1, -- Number of pipeline stages for B (0, 1 or 2)
+			CARRYINREG         => 1, -- Number of pipeline stages for CARRYIN (0 or 1)
+			CARRYINSELREG      => 1, -- Number of pipeline stages for CARRYINSEL (0 or 1)
+			CREG               => 1, -- Number of pipeline stages for C (0 or 1)
+			DREG               => 1, -- Number of pipeline stages for D (0 or 1)
+			INMODEREG          => 1, -- Number of pipeline stages for INMODE (0 or 1)
+			MREG               => 1, -- Number of multiplier pipeline stages (0 or 1)
+			OPMODEREG          => 1, -- Number of pipeline stages for OPMODE (0 or 1)
+			PREG               => 1 -- Number of pipeline stages for P (0 or 1)
+		)
+		port map (
+			-- Cascade: 30-bit (each) output: Cascade Ports
+			ACOUT          => open, -- 30-bit output: A port cascade output
+			BCOUT          => open, -- 18-bit output: B port cascade output
+			CARRYCASCOUT   => open, -- 1-bit output: Cascade carry output
+			MULTSIGNOUT    => open, -- 1-bit output: Multiplier sign cascade output
+			PCOUT          => dsp1_pcout, -- 48-bit output: Cascade output
+			P              => dsp1_p, -- 48-bit output: Primary data output
+			-- Control: 1-bit (each) output: Control Inputs/Status Bits
+			OVERFLOW       => open, -- 1-bit output: Overflow in add/acc output
+			PATTERNBDETECT => open, -- 1-bit output: Pattern bar detect output
+			PATTERNDETECT  => open, -- 1-bit output: Pattern detect output
+			UNDERFLOW      => open, -- 1-bit output: Underflow in add/acc output
+			-- Data: 4-bit (each) output: Data Ports
+			CARRYOUT       => open, -- 4-bit output: Carry output
+			-- Cascade: 30-bit (each) input: Cascade Ports
+			ACIN           => (others=> '0'), -- 30-bit input: A cascade data input
+			BCIN           => (others=> '0'), -- 18-bit input: B cascade input
+			CARRYCASCIN    => '0', -- 1-bit input: Cascade carry input
+			MULTSIGNIN     => '0', -- 1-bit input: Multiplier sign input
+			PCIN           => (others=> '0'), -- 48-bit input: P cascade input
+			-- Control: 4-bit (each) input: Control Inputs/Status Bits
+			ALUMODE        => dsp1_alumode, -- 4-bit input: ALU control input
+			CARRYINSEL     => "000", -- 3-bit input: Carry select input
+			CLK            => clk, -- 1-bit input: Clock input
+			INMODE         => "00000", -- 5-bit input: INMODE control input
+			OPMODE         => "0110101", -- 7-bit input: Operation mode input, X/Y=M, P=C
+			-- Data: 30-bit (each) input: Data Ports
+			A              => dsp1_a, -- 30-bit input: A data input
+			B              => dsp1_b, -- 18-bit input: B data input
+			C              => dsp1_c, -- 48-bit input: C data input
+			CARRYIN        => dsp1_cin, -- 1-bit input: Carry input signal
+			D              => (others=> '0'), -- 25-bit input: D data input
+			-- Reset/Clock Enable: 1-bit (each) input: Reset/Clock Enable Inputs
+			CEA1           => '1', -- 1-bit input: Clock enable input for 1st stage AREG
+			CEA2           => '1', -- 1-bit input: Clock enable input for 2nd stage AREG
+			CEAD           => '0', -- 1-bit input: Clock enable input for ADREG
+			CEALUMODE      => '1', -- 1-bit input: Clock enable input for ALUMODE
+			CEB1           => '1', -- 1-bit input: Clock enable input for 1st stage BREG
+			CEB2           => '1', -- 1-bit input: Clock enable input for 2nd stage BREG
+			CEC            => '1', -- 1-bit input: Clock enable input for CREG
+			CECARRYIN      => '1', -- 1-bit input: Clock enable input for CARRYINREG
+			CECTRL         => '1', -- 1-bit input: Clock enable input for OPMODEREG and CARRYINSELREG
+			CED            => '0', -- 1-bit input: Clock enable input for DREG
+			CEINMODE       => '1', -- 1-bit input: Clock enable input for INMODEREG
+			CEM            => '1', -- 1-bit input: Clock enable input for MREG
+			CEP            => '1', -- 1-bit input: Clock enable input for PREG
+			RSTA           => '0', -- 1-bit input: Reset input for AREG
+			RSTALLCARRYIN  => '0', -- 1-bit input: Reset input for CARRYINREG
+			RSTALUMODE     => '0', -- 1-bit input: Reset input for ALUMODEREG
+			RSTB           => '0', -- 1-bit input: Reset input for BREG
+			RSTC           => '0', -- 1-bit input: Reset input for CREG
+			RSTCTRL        => '0', -- 1-bit input: Reset input for OPMODEREG and CARRYINSELREG
+			RSTD           => '0', -- 1-bit input: Reset input for DREG and ADREG
+			RSTINMODE      => '0', -- 1-bit input: Reset input for INMODEREG
+			RSTM           => '0', -- 1-bit input: Reset input for MREG
+			RSTP           => '0' -- 1-bit input: Reset input for PREG
+		);
 
--- Second DSP: sums the ad and bd terms, and adds the accumulator output to the (ac+bd) and (ad-bc)
--- terms, with guard bits to allow for overflow detection.
-dsp2 : DSP48E1
-	generic map (
-		-- Feature Control Attributes: Data Path Selection
-		A_INPUT            => "DIRECT", -- Selects A input source, "DIRECT" (A port) or "CASCADE" (ACIN port)
-		B_INPUT            => "DIRECT", -- Selects B input source, "DIRECT" (B port) or "CASCADE" (BCIN port)
-		USE_DPORT          => FALSE, -- Select D port usage (TRUE or FALSE)
-		USE_MULT           => "MULTIPLY", -- Select multiplier usage ("MULTIPLY", "DYNAMIC", or "NONE")
-		USE_SIMD           => "ONE48", -- SIMD selection ("ONE48", "TWO24", "FOUR12")
-		-- Pattern Detector Attributes: Pattern Detection Configuration
-		AUTORESET_PATDET   => "NO_RESET", -- "NO_RESET", "RESET_MATCH", "RESET_NOT_MATCH"
-		MASK               => X"3fffffffffff", -- 48-bit mask value for pattern detect (1=ignore)
-		PATTERN            => X"000000000000", -- 48-bit pattern match for pattern detect
-		SEL_MASK           => "MASK", -- "C", "MASK", "ROUNDING_MODE1", "ROUNDING_MODE2"
-		SEL_PATTERN        => "PATTERN", -- Select pattern value ("PATTERN" or "C")
-		USE_PATTERN_DETECT => "NO_PATDET", -- Enable pattern detect ("PATDET" or "NO_PATDET")
-		-- Register Control Attributes: Pipeline Register Configuration
-		ACASCREG           => 0, -- Number of pipeline stages between A/ACIN and ACOUT (0, 1 or 2)
-		ADREG              => 1, -- Number of pipeline stages for pre-adder (0 or 1)
-		ALUMODEREG         => 1, -- Number of pipeline stages for ALUMODE (0 or 1)
-		AREG               => 0, -- Number of pipeline stages for A (0, 1 or 2)
-		BCASCREG           => 0, -- Number of pipeline stages between B/BCIN and BCOUT (0, 1 or 2)
-		BREG               => 0, -- Number of pipeline stages for B (0, 1 or 2)
-		CARRYINREG         => 1, -- Number of pipeline stages for CARRYIN (0 or 1)
-		CARRYINSELREG      => 1, -- Number of pipeline stages for CARRYINSEL (0 or 1)
-		CREG               => 1, -- Number of pipeline stages for C (0 or 1)
-		DREG               => 1, -- Number of pipeline stages for D (0 or 1)
-		INMODEREG          => 1, -- Number of pipeline stages for INMODE (0 or 1)
-		MREG               => 1, -- Number of multiplier pipeline stages (0 or 1)
-		OPMODEREG          => 1, -- Number of pipeline stages for OPMODE (0 or 1)
-		PREG               => 1 -- Number of pipeline stages for P (0 or 1)
-	)
-	port map (
-		-- Cascade: 30-bit (each) output: Cascade Ports
-		ACOUT          => open, -- 30-bit output: A port cascade output
-		BCOUT          => open, -- 18-bit output: B port cascade output
-		CARRYCASCOUT   => open, -- 1-bit output: Cascade carry output
-		MULTSIGNOUT    => open, -- 1-bit output: Multiplier sign cascade output
-		PCOUT          => open, -- 48-bit output: Cascade output
-		P              => dsp2_p, -- 48-bit output: Primary data output
-		-- Control: 1-bit (each) output: Control Inputs/Status Bits
-		OVERFLOW       => open, -- 1-bit output: Overflow in add/acc output
-		PATTERNBDETECT => open, -- 1-bit output: Pattern bar detect output
-		PATTERNDETECT  => open, -- 1-bit output: Pattern detect output
-		UNDERFLOW      => open, -- 1-bit output: Underflow in add/acc output
-		-- Data: 4-bit (each) output: Data Ports
-		CARRYOUT       => open, -- 4-bit output: Carry output
-		-- Cascade: 30-bit (each) input: Cascade Ports
-		ACIN           => (others=> '0'), -- 30-bit input: A cascade data input
-		BCIN           => (others=> '0'), -- 18-bit input: B cascade input
-		CARRYCASCIN    => '0', -- 1-bit input: Cascade carry input
-		MULTSIGNIN     => '0', -- 1-bit input: Multiplier sign input
-		PCIN           => dsp1_pcout, -- 48-bit input: P cascade input
-		-- Control: 4-bit (each) input: Control Inputs/Status Bits
-		ALUMODE        => "0001", -- 4-bit input: ALU control input:
-		CARRYINSEL     => "000", -- 3-bit input: Carry select input
-		CLK            => clk, -- 1-bit input: Clock input
-		INMODE         => "00000", -- 5-bit input: INMODE control input
-		OPMODE         => dsp2_opmode, -- 7-bit input: Operation mode input
-		-- Data: 30-bit (each) input: Data Ports
-		A              => dsp2_ab(47 downto 18), -- 30-bit input: A data input
-		B              => dsp2_ab(17 downto 0), -- 18-bit input: B data input
-		C              => dsp2_c, -- 48-bit input: C data input
-		CARRYIN        => dsp2_cin, -- 1-bit input: Carry input signal
-		D              => (others=> '0'), -- 25-bit input: D data input
-		-- Reset/Clock Enable: 1-bit (each) input: Reset/Clock Enable Inputs
-		CEA1           => '0', -- 1-bit input: Clock enable input for 1st stage AREG
-		CEA2           => '0', -- 1-bit input: Clock enable input for 2nd stage AREG
-		CEAD           => '0', -- 1-bit input: Clock enable input for ADREG
-		CEALUMODE      => '1', -- 1-bit input: Clock enable input for ALUMODE
-		CEB1           => '0', -- 1-bit input: Clock enable input for 1st stage BREG
-		CEB2           => '0', -- 1-bit input: Clock enable input for 2nd stage BREG
-		CEC            => '1', -- 1-bit input: Clock enable input for CREG
-		CECARRYIN      => '1', -- 1-bit input: Clock enable input for CARRYINREG
-		CECTRL         => '1', -- 1-bit input: Clock enable input for OPMODEREG and CARRYINSELREG
-		CED            => '0', -- 1-bit input: Clock enable input for DREG
-		CEINMODE       => '1', -- 1-bit input: Clock enable input for INMODEREG
-		CEM            => '1', -- 1-bit input: Clock enable input for MREG
-		CEP            => '1', -- 1-bit input: Clock enable input for PREG
-		RSTA           => '0', -- 1-bit input: Reset input for AREG
-		RSTALLCARRYIN  => '0', -- 1-bit input: Reset input for CARRYINREG
-		RSTALUMODE     => '0', -- 1-bit input: Reset input for ALUMODEREG
-		RSTB           => '0', -- 1-bit input: Reset input for BREG
-		RSTC           => '0', -- 1-bit input: Reset input for CREG
-		RSTCTRL        => '0', -- 1-bit input: Reset input for OPMODEREG and CARRYINSELREG
-		RSTD           => '0', -- 1-bit input: Reset input for DREG and ADREG
-		RSTINMODE      => '0', -- 1-bit input: Reset input for INMODEREG
-		RSTM           => '0', -- 1-bit input: Reset input for MREG
-		RSTP           => '0' -- 1-bit input: Reset input for PREG
-	);
+	-- Second DSP: sums the ad and bd terms, and adds the accumulator output to the (ac+bd) and (ad-bc)
+	-- terms, with guard bits to allow for overflow detection.
+	dsp2 : DSP48E1
+		generic map (
+			-- Feature Control Attributes: Data Path Selection
+			A_INPUT            => "DIRECT", -- Selects A input source, "DIRECT" (A port) or "CASCADE" (ACIN port)
+			B_INPUT            => "DIRECT", -- Selects B input source, "DIRECT" (B port) or "CASCADE" (BCIN port)
+			USE_DPORT          => FALSE, -- Select D port usage (TRUE or FALSE)
+			USE_MULT           => "MULTIPLY", -- Select multiplier usage ("MULTIPLY", "DYNAMIC", or "NONE")
+			USE_SIMD           => "ONE48", -- SIMD selection ("ONE48", "TWO24", "FOUR12")
+			-- Pattern Detector Attributes: Pattern Detection Configuration
+			AUTORESET_PATDET   => "NO_RESET", -- "NO_RESET", "RESET_MATCH", "RESET_NOT_MATCH"
+			MASK               => X"3fffffffffff", -- 48-bit mask value for pattern detect (1=ignore)
+			PATTERN            => X"000000000000", -- 48-bit pattern match for pattern detect
+			SEL_MASK           => "MASK", -- "C", "MASK", "ROUNDING_MODE1", "ROUNDING_MODE2"
+			SEL_PATTERN        => "PATTERN", -- Select pattern value ("PATTERN" or "C")
+			USE_PATTERN_DETECT => "NO_PATDET", -- Enable pattern detect ("PATDET" or "NO_PATDET")
+			-- Register Control Attributes: Pipeline Register Configuration
+			ACASCREG           => 0, -- Number of pipeline stages between A/ACIN and ACOUT (0, 1 or 2)
+			ADREG              => 1, -- Number of pipeline stages for pre-adder (0 or 1)
+			ALUMODEREG         => 1, -- Number of pipeline stages for ALUMODE (0 or 1)
+			AREG               => 0, -- Number of pipeline stages for A (0, 1 or 2)
+			BCASCREG           => 0, -- Number of pipeline stages between B/BCIN and BCOUT (0, 1 or 2)
+			BREG               => 0, -- Number of pipeline stages for B (0, 1 or 2)
+			CARRYINREG         => 1, -- Number of pipeline stages for CARRYIN (0 or 1)
+			CARRYINSELREG      => 1, -- Number of pipeline stages for CARRYINSEL (0 or 1)
+			CREG               => 1, -- Number of pipeline stages for C (0 or 1)
+			DREG               => 1, -- Number of pipeline stages for D (0 or 1)
+			INMODEREG          => 1, -- Number of pipeline stages for INMODE (0 or 1)
+			MREG               => 1, -- Number of multiplier pipeline stages (0 or 1)
+			OPMODEREG          => 1, -- Number of pipeline stages for OPMODE (0 or 1)
+			PREG               => 1 -- Number of pipeline stages for P (0 or 1)
+		)
+		port map (
+			-- Cascade: 30-bit (each) output: Cascade Ports
+			ACOUT          => open, -- 30-bit output: A port cascade output
+			BCOUT          => open, -- 18-bit output: B port cascade output
+			CARRYCASCOUT   => open, -- 1-bit output: Cascade carry output
+			MULTSIGNOUT    => open, -- 1-bit output: Multiplier sign cascade output
+			PCOUT          => open, -- 48-bit output: Cascade output
+			P              => dsp2_p, -- 48-bit output: Primary data output
+			-- Control: 1-bit (each) output: Control Inputs/Status Bits
+			OVERFLOW       => open, -- 1-bit output: Overflow in add/acc output
+			PATTERNBDETECT => open, -- 1-bit output: Pattern bar detect output
+			PATTERNDETECT  => open, -- 1-bit output: Pattern detect output
+			UNDERFLOW      => open, -- 1-bit output: Underflow in add/acc output
+			-- Data: 4-bit (each) output: Data Ports
+			CARRYOUT       => open, -- 4-bit output: Carry output
+			-- Cascade: 30-bit (each) input: Cascade Ports
+			ACIN           => (others=> '0'), -- 30-bit input: A cascade data input
+			BCIN           => (others=> '0'), -- 18-bit input: B cascade input
+			CARRYCASCIN    => '0', -- 1-bit input: Cascade carry input
+			MULTSIGNIN     => '0', -- 1-bit input: Multiplier sign input
+			PCIN           => dsp1_pcout, -- 48-bit input: P cascade input
+			-- Control: 4-bit (each) input: Control Inputs/Status Bits
+			ALUMODE        => "0001", -- 4-bit input: ALU control input:
+			CARRYINSEL     => "000", -- 3-bit input: Carry select input
+			CLK            => clk, -- 1-bit input: Clock input
+			INMODE         => "00000", -- 5-bit input: INMODE control input
+			OPMODE         => dsp2_opmode, -- 7-bit input: Operation mode input
+			-- Data: 30-bit (each) input: Data Ports
+			A              => dsp2_ab(47 downto 18), -- 30-bit input: A data input
+			B              => dsp2_ab(17 downto 0), -- 18-bit input: B data input
+			C              => dsp2_c, -- 48-bit input: C data input
+			CARRYIN        => dsp2_cin, -- 1-bit input: Carry input signal
+			D              => (others=> '0'), -- 25-bit input: D data input
+			-- Reset/Clock Enable: 1-bit (each) input: Reset/Clock Enable Inputs
+			CEA1           => '0', -- 1-bit input: Clock enable input for 1st stage AREG
+			CEA2           => '0', -- 1-bit input: Clock enable input for 2nd stage AREG
+			CEAD           => '0', -- 1-bit input: Clock enable input for ADREG
+			CEALUMODE      => '1', -- 1-bit input: Clock enable input for ALUMODE
+			CEB1           => '0', -- 1-bit input: Clock enable input for 1st stage BREG
+			CEB2           => '0', -- 1-bit input: Clock enable input for 2nd stage BREG
+			CEC            => '1', -- 1-bit input: Clock enable input for CREG
+			CECARRYIN      => '1', -- 1-bit input: Clock enable input for CARRYINREG
+			CECTRL         => '1', -- 1-bit input: Clock enable input for OPMODEREG and CARRYINSELREG
+			CED            => '0', -- 1-bit input: Clock enable input for DREG
+			CEINMODE       => '1', -- 1-bit input: Clock enable input for INMODEREG
+			CEM            => '1', -- 1-bit input: Clock enable input for MREG
+			CEP            => '1', -- 1-bit input: Clock enable input for PREG
+			RSTA           => '0', -- 1-bit input: Reset input for AREG
+			RSTALLCARRYIN  => '0', -- 1-bit input: Reset input for CARRYINREG
+			RSTALUMODE     => '0', -- 1-bit input: Reset input for ALUMODEREG
+			RSTB           => '0', -- 1-bit input: Reset input for BREG
+			RSTC           => '0', -- 1-bit input: Reset input for CREG
+			RSTCTRL        => '0', -- 1-bit input: Reset input for OPMODEREG and CARRYINSELREG
+			RSTD           => '0', -- 1-bit input: Reset input for DREG and ADREG
+			RSTINMODE      => '0', -- 1-bit input: Reset input for INMODEREG
+			RSTM           => '0', -- 1-bit input: Reset input for MREG
+			RSTP           => '0' -- 1-bit input: Reset input for PREG
+		);
+end block;
 
 -- Accumulator FIFO
 --
@@ -533,21 +511,37 @@ acc_fifo_rd_en <= first_frame_completed0 and s_axis_xy_tvalid and not rst_reg; -
 --		WREN          => acc_fifo_wr_en -- 1-bit input write enable
 --	);
 
---! @brief Instantiate the accumultor FIFO
---!
---! A built-in FIFO is used to save resources. This means that the other RAMB18 in the tile cannot be used as a FIFO.
---! The FIFO is 36-bit word x 512 words deep, is *NOT* FWFT and has an embedded output register (DO_REG=1).
---!
---! The embedded register greatly improves clock-to-output timing (0.6 ns instead of 1.8 ns). We need this.
---! If the FIFO is configured as a synchronous FIFO (EN_SYN=TRUE), then the additional register would cause the read layency to be 2 clocks, but there would be no uncertainties in the flags.
---! When we use it as an asynchronous FIFO (EN_SYN=FALSE) with RD and WR clocks tied together, we have only one clock read latency but the flags are less accurate.
---! Since we don't need the flags, we'll use the async FIFO to get a 1 clock read latency.
---! (i.e. data appears on the clock after rd_en is high).
---!
---! *** to Update*** We do not need a FWFT FIFO because we know one clock in advance when we need a new value out of the FIFO.
---!
---! NOTE: When EN_SYN=TRUE, then FWFT *must* be FALSE.
+-- ----------------------------------------
+-- Accumulator FIFO
+-- ----------------------------------------
+-- The accumulator FIFO is part of the vector accumulator and stores the gradually accumulating products generated by the multiplier-and-accumulate logic.
+--
+-- The FIFO is used as a circular buffer: the previous accumulated product is
+-- poped out of the FIFO as the newly accumulated one is pushed in. The final
+-- product of the integration period is not stored in the accumulator FIFO bus
+-- is stored in the capture memory, which will be read out slowly as the FIFO
+-- starts a new integration period.
+--
+-- The cumulated products are stored in (36+36i) format, which is the maximum
+-- width of a single FIFOs primitime, and is just about enough to allow for a
+-- sufficiently long integration.
+--
+-- A built-in FIFO is used to save resources. This means that the other RAMB18 in the tile cannot be used as a FIFO.
+-- The FIFO is 36-bit word x 512 words deep, is *NOT* FWFT and has an embedded output register (DO_REG=1).
+--
+-- The embedded register greatly improves clock-to-output timing (0.6 ns instead of 1.8 ns). We need this.
+-- If the FIFO is configured as a synchronous FIFO (EN_SYN=TRUE), then the additional register would cause the read layency to be 2 clocks, but there would be no uncertainties in the flags.
+-- When we use it as an asynchronous FIFO (EN_SYN=FALSE) with RD and WR clocks tied together, we have only one clock read latency but the flags are less accurate.
+-- Since we don't need the flags, we'll use the async FIFO to get a 1 clock read latency.
+-- (i.e. data appears on the clock after rd_en is high).
+--
+-- *** to Update*** We do not need a FWFT FIFO because we know one clock in advance when we need a new value out of the FIFO.
+--
+-- NOTE: When EN_SYN=TRUE, then FWFT *must* be FALSE.
 gen_fifo7: if FPGA_SERIES=FPGA_KINTEX7 generate
+	attribute U_SET of acc_fifo0: label is RPM_NAME;
+	attribute RLOC of acc_fifo0: label is rpm_to_string(RPM_COORDS.FIFO);
+begin
 	acc_fifo0 : FIFO18E1
 		generic map (
 			ALMOST_EMPTY_OFFSET     => X"0080", -- Sets the almost empty threshold
@@ -586,7 +580,10 @@ gen_fifo7: if FPGA_SERIES=FPGA_KINTEX7 generate
 		);
 end generate;
 
---gen_fifoup: if FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
+gen_fifoup: if FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
+	attribute U_SET of acc_fifo0 : label is RPM_NAME;
+	attribute RLOC of acc_fifo0: label is rpm_to_string(RPM_COORDS.FIFO);
+begin
 	acc_fifo0 : FIFO18E2
 		generic map (
 			CLOCK_DOMAINS => "COMMON", -- common clock / synchronous FIFO
@@ -633,12 +630,14 @@ end generate;
 			DIN          => acc_fifo_din(31 downto 0), -- 32-bit input: Data input
 			DINP         => acc_fifo_din(35 downto 32) -- 4-bit input: Parity input
 		);
---end generate;
+end generate;
 
 
 capture_wr_en_vect <= (others=> capture_wr_en4);
 
+-- ----------------------------------------
 -- Data capture BRAM
+-- ----------------------------------------
 --
 -- 512 words x 36 bits (18+18)
 -- We do not use a FIFO, as the embedded FIFO logic is already used and we do not need a full-fledged FIFO which uses more resources.
@@ -653,73 +652,77 @@ capture_wr_en_vect <= (others=> capture_wr_en4);
 --    dina => acc_fifo_din,
 --    douta => capture_dout6
 --  );
+blkbram: block
+	attribute U_SET of capture_bram0: label is RPM_NAME;
+	attribute RLOC of capture_bram0: label is rpm_to_string(RPM_COORDS.BRAM);
+begin
+	capture_bram0 : RAMB18E1
+		generic map (
+			-- Address Collision Mode: "PERFORMANCE" or "DELAYED_WRITE"
+			RDADDR_COLLISION_HWCONFIG => "DELAYED_WRITE",
+			-- Collision check: Values ("ALL", "WARNING_ONLY", "GENERATE_X_ONLY" or "NONE")
+			SIM_COLLISION_CHECK       => "ALL",
+			-- DOA_REG, DOB_REG: Optional output register (0 or 1)
+			DOA_REG                   => 1,
+			DOB_REG                   => 1,
+			RAM_MODE                  => "TDP", -- RAM Mode: "SDP" or "TDP" . We use TDP because we need
+												-- output regs on both A and B ports, but we wire the
+												-- buses as a SDP memory
+			-- READ_WIDTH_A/B, WRITE_WIDTH_A/B: Read/write width per port
+			READ_WIDTH_A              => 18, -- 0-72
+			READ_WIDTH_B              => 18, -- 0-18
+			WRITE_WIDTH_A             => 18, -- 0-18
+			WRITE_WIDTH_B             => 18, -- 0-72
+			-- RSTREG_PRIORITY_A, RSTREG_PRIORITY_B: Reset or enable priority ("RSTREG" or "REGCE")
+			RSTREG_PRIORITY_A         => "REGCE",
+			RSTREG_PRIORITY_B         => "REGCE",
+			-- SRVAL_A, SRVAL_B: Set/reset value for output
+			SRVAL_A                   => X"00000",
+			SRVAL_B                   => X"00000",
+			-- Simulation Device: Must be set to "7SERIES" for simulation behavior
+			SIM_DEVICE                => "7SERIES",
+			-- WriteMode: Value on output upon a write ("WRITE_FIRST", "READ_FIRST", or "NO_CHANGE")
+			WRITE_MODE_A              => "WRITE_FIRST",
+			WRITE_MODE_B              => "WRITE_FIRST"
+		)
+		port map (
+			DOADO            => capture_dout6(15 downto 0), -- 16-bit output: A port data/LSB data
+			DOPADOP          => capture_dout6(17 downto 16), -- 2-bit output: A port parity/LSB parity
+			DOBDO            => capture_dout6(33 downto 18), -- 16-bit output: B port data/MSB data
+			DOPBDOP          => capture_dout6(35 downto 34), -- 2-bit output: B port parity/MSB parity
+			-- Port A Address/Control Signals: 14-bit (each) input: Port A address and control signals (read port
+			-- when RAM_MODE ="SDP")
+			ADDRARDADDR(13 downto 5)      => std_logic_vector(capture_addr4), -- 14-bit input: A port address/Read address
+			ADDRARDADDR(4 downto 0)      => "00000",
+			ADDRBWRADDR(13 downto 5)      => std_logic_vector(capture_addr4), -- 14-bit input: B port address/Write address
+			ADDRBWRADDR(4 downto 0)      => "10000",
 
-capture_bram0 : RAMB18E1
-	generic map (
-		-- Address Collision Mode: "PERFORMANCE" or "DELAYED_WRITE"
-		RDADDR_COLLISION_HWCONFIG => "DELAYED_WRITE",
-		-- Collision check: Values ("ALL", "WARNING_ONLY", "GENERATE_X_ONLY" or "NONE")
-		SIM_COLLISION_CHECK       => "ALL",
-		-- DOA_REG, DOB_REG: Optional output register (0 or 1)
-		DOA_REG                   => 1,
-		DOB_REG                   => 1,
-		RAM_MODE                  => "TDP", -- RAM Mode: "SDP" or "TDP" . We use TDP because we need
-											-- output regs on both A and B ports, but we wire the
-											-- buses as a SDP memory
-		-- READ_WIDTH_A/B, WRITE_WIDTH_A/B: Read/write width per port
-		READ_WIDTH_A              => 18, -- 0-72
-		READ_WIDTH_B              => 18, -- 0-18
-		WRITE_WIDTH_A             => 18, -- 0-18
-		WRITE_WIDTH_B             => 18, -- 0-72
-		-- RSTREG_PRIORITY_A, RSTREG_PRIORITY_B: Reset or enable priority ("RSTREG" or "REGCE")
-		RSTREG_PRIORITY_A         => "REGCE",
-		RSTREG_PRIORITY_B         => "REGCE",
-		-- SRVAL_A, SRVAL_B: Set/reset value for output
-		SRVAL_A                   => X"00000",
-		SRVAL_B                   => X"00000",
-		-- Simulation Device: Must be set to "7SERIES" for simulation behavior
-		SIM_DEVICE                => "7SERIES",
-		-- WriteMode: Value on output upon a write ("WRITE_FIRST", "READ_FIRST", or "NO_CHANGE")
-		WRITE_MODE_A              => "WRITE_FIRST",
-		WRITE_MODE_B              => "WRITE_FIRST"
-	)
-	port map (
-		DOADO            => capture_dout6(15 downto 0), -- 16-bit output: A port data/LSB data
-		DOPADOP          => capture_dout6(17 downto 16), -- 2-bit output: A port parity/LSB parity
-		DOBDO            => capture_dout6(33 downto 18), -- 16-bit output: B port data/MSB data
-		DOPBDOP          => capture_dout6(35 downto 34), -- 2-bit output: B port parity/MSB parity
-		-- Port A Address/Control Signals: 14-bit (each) input: Port A address and control signals (read port
-		-- when RAM_MODE ="SDP")
-		ADDRARDADDR(13 downto 5)      => std_logic_vector(capture_addr4), -- 14-bit input: A port address/Read address
-		ADDRARDADDR(4 downto 0)      => "00000",
-		ADDRBWRADDR(13 downto 5)      => std_logic_vector(capture_addr4), -- 14-bit input: B port address/Write address
-		ADDRBWRADDR(4 downto 0)      => "10000",
+			ENARDEN          => '1', -- 1-bit input: A port enable/Read enable
+			ENBWREN          => '1', -- 1-bit input: B port enable/Write enable
 
-		ENARDEN          => '1', -- 1-bit input: A port enable/Read enable
-		ENBWREN          => '1', -- 1-bit input: B port enable/Write enable
-
-		REGCEAREGCE      => '1', -- 1-bit input: A port register enable/Register enable
-		REGCEB           => '1', -- 1-bit input: B port register enable
+			REGCEAREGCE      => '1', -- 1-bit input: A port register enable/Register enable
+			REGCEB           => '1', -- 1-bit input: B port register enable
 
 
 
-		DIADI            => acc_fifo_din(15 downto 0), -- 16-bit input: A port data/LSB data
-		DIPADIP          => acc_fifo_din(17 downto 16), -- 2-bit input: A port parity/LSB parity
-		DIBDI            => acc_fifo_din(33 downto 18), -- 16-bit input: B port data/MSB data
-		DIPBDIP          => acc_fifo_din(35 downto 34), -- 2-bit input: B port parity/MSB parity
+			DIADI            => acc_fifo_din(15 downto 0), -- 16-bit input: A port data/LSB data
+			DIPADIP          => acc_fifo_din(17 downto 16), -- 2-bit input: A port parity/LSB parity
+			DIBDI            => acc_fifo_din(33 downto 18), -- 16-bit input: B port data/MSB data
+			DIPBDIP          => acc_fifo_din(35 downto 34), -- 2-bit input: B port parity/MSB parity
 
-		WEA               => (others=> capture_wr_en4), -- 2-bit input: A port write enable
-		WEBWE(3 downto 2) => "00", -- 4-bit input: B port write enable/Write enable
-		WEBWE(1 downto 0) => (others=> capture_wr_en4),
+			WEA               => (others=> capture_wr_en4), -- 2-bit input: A port write enable
+			WEBWE(3 downto 2) => "00", -- 4-bit input: B port write enable/Write enable
+			WEBWE(1 downto 0) => (others=> capture_wr_en4),
 
-		CLKARDCLK        => clk, -- 1-bit input: A port clock/Read clock
-		CLKBWRCLK        => clk, -- 1-bit input: B port clock/Write clock
+			CLKARDCLK        => clk, -- 1-bit input: A port clock/Read clock
+			CLKBWRCLK        => clk, -- 1-bit input: B port clock/Write clock
 
-		RSTRAMARSTRAM    => '0', -- 1-bit input: A port set/reset
-		RSTREGARSTREG    => '0', -- 1-bit input: A port register set/reset
-		RSTRAMB          => '0', -- 1-bit input: B port set/reset
-		RSTREGB          => '0' -- 1-bit input: B port register set/reset
-	);
+			RSTRAMARSTRAM    => '0', -- 1-bit input: A port set/reset
+			RSTREGARSTREG    => '0', -- 1-bit input: A port register set/reset
+			RSTRAMB          => '0', -- 1-bit input: B port set/reset
+			RSTREGB          => '0' -- 1-bit input: B port register set/reset
+		);
+end block;
 
 -- Extract a,b,c and d from the AXI4-S input word. These are all 4-bit signed values. This does not require any logic.
 a <= signed(s_axis_xy_tdata(15 downto 12));

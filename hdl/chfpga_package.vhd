@@ -188,10 +188,17 @@ constant PLATFORM_INFO: PLATFORM_INFO_ARRAY:=(
 
 	PLATFORM_ID_MGK7MB => (
 		FPGA_SERIES => FPGA_KINTEX7,
+		-- site spacing in slice coordinates
+		--DSP_TILE_DELTA_RPM_Y => 2, -- was 10
+		--DSP_BEL_DELTA_RPM_Y => 1, -- was 5
+		--BRAM_TILE_DELTA_RPM_Y => 2, -- was 10
+		--BRAM_BEL_DELTA_RPM_Y => 1 -- was 5
+
+		-- site spacing in RPM_GRID coordinates
 		DSP_TILE_DELTA_RPM_Y => 10,
-		DSP_BEL_DELTA_RPM_Y => 5,
+		DSP_BEL_DELTA_RPM_Y => 5, -- DSPs within a tile are spaced by 5 RPM_Y grid units
 		BRAM_TILE_DELTA_RPM_Y => 10,
-		BRAM_BEL_DELTA_RPM_Y => 5
+		BRAM_BEL_DELTA_RPM_Y => 1 -- BRAMs within a tile are spaced by 1 RPM_Y grip unit (yeah, different from DSPs!)
 		),
 
 	PLATFORM_ID_ZCU111 => (
@@ -218,6 +225,8 @@ constant NUMBER_OF_CHANNELIZERS_MAX: INTEGER :=16; -- Maximum number of channeli
 constant NUMBER_OF_ADCS_MAX: INTEGER :=16; -- Maximum number of ADC inputs supported by the system
 constant NUMBER_OF_CORRELATORS_MAX: INTEGER :=8; -- Maximum number of correlators supported by the system
 
+-- maximum number of CMACs in a CORR44 core.  The factor of two is because CORR44 needs to process two vectors at the same time so the results are coming out as fast at the data is pushed in
+constant NUMBER_OF_CMACS_MAX : integer := (NUMBER_OF_CHANNELIZERS_MAX + 1) * 2;
 
 
 --! Basic system configuration
@@ -412,16 +421,34 @@ type SHUFFLE_FRAME_HEADER_STRUCT is
 		TIMESTAMP: std_logic_vector(31 downto 0); -- --! 32-bit frame number of the *first* frame in the packet. The data sampling time relative to the last SYNC event is directly computed from the frame number. Rolls back every ~3h @ 800MSPS, 2048 time samples/frame.
 	end record;
 
--- Structure that describes the position of the correlator primitives in the fabric
-type corr_rpm_struct is record
-		LEFT_DSP_X: integer_array(0 to NUMBER_OF_CORRELATORS_MAX-1);
-		LEFT_BRAM_X: integer_array(0 to NUMBER_OF_CORRELATORS_MAX-1);
-		RIGHT_DSP_X: integer_array(0 to NUMBER_OF_CORRELATORS_MAX-1);
-		RIGHT_BRAM_X: integer_array(0 to NUMBER_OF_CORRELATORS_MAX-1);
-		DSP_BOTTOM_Y: integer_array(0 to NUMBER_OF_CORRELATORS_MAX-1);
-		BRAM_BOTTOM_Y: integer_array(0 to NUMBER_OF_CORRELATORS_MAX-1);
-	end record;
+type rpm_coord_struct is record
+	x: integer;
+	y: integer;
+end record;
+--type rpm_coord_struct_array is array (NATURAL RANGE <>) of rpm_coord_struct;
 
+-- Structure that defines the RPM coordinates of each element (2 DSPs and 2 BRAMs) in a CORR44
+--    - DSP1 computes the product
+--    - DSP2 finalizes/combines the products and adds the previous values
+--    - FIFO is the vecrtor accumulator
+--    - BRAM stores the final accumuled products and trickle them out while the new integration is under way
+type cmac44_rpm_coord_struct is record
+	DSP1, DSP2, FIFO, BRAM: rpm_coord_struct;
+end record;
+
+-- Array that describes the relative location of each CMAC44 elements in a CORR44
+type cmac44_rpm_coord_struct_array is array (NATURAL RANGE 0 to NUMBER_OF_CMACS_MAX -1) of cmac44_rpm_coord_struct;
+
+-- Structure that describes the layout and absolute location a CORR44 core
+-- The positions are absolute RPM_GRID coordinates.
+-- The coordinate specify the lower left corner of the CORR44 core, which can be a DSP, BRAM/FIFO depending on the layout
+type corr44_rloc_origin_struct is record
+	loc: rpm_coord_struct; -- Absolute location of lower left cell (type of site depends on layout)
+	layout: string(1 to 4); -- layout of the CMAC44 (e.g. "BDDB" or "DBBD" )
+end record;
+
+-- Array that describes the layout and absolute positions of the corr44 cores in a CORR44_ARRAY
+type corr44_rloc_origins_struct_array is array (NATURAL RANGE 0 to NUMBER_OF_CORRELATORS_MAX -1) of corr44_rloc_origin_struct;
 
 
 
@@ -488,12 +515,13 @@ FUNCTION struct_to_bytes(s:FRAME_HEADER_STRUCT) return slv8_array; -- Converts a
 
 function struct_to_word(s:SHUFFLE_FRAME_HEADER_STRUCT) return slv32_array; -- Converts a SHUFFLE_FRAME_HEADER structure into a word array
 function word_to_struct(w: slv32_array(0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH-1):= (others=>(others=>'0'))) return SHUFFLE_FRAME_HEADER_STRUCT; -- Converts a word array into a SHUFFLE_FRAME_HEADER structure
-function get_corr_rpm_struct(platform_id:integer; N:integer) return corr_rpm_struct;
 
 --FUNCTION resize(s:signed; constant size:integer) return signed;
 PROCEDURE axis32_write_buffer(buffer_in: in Word32Array; signal stream_out: out AXIS32_DAT_STRUCT; signal clk: in std_logic);
 
-
+function rpm_to_string(rpm: rpm_coord_struct) return string; -- convert a RPM coordinate pair into a "XnYn" string
+function get_cmac44_rpm_coords_struct_array(platform_id: integer; N_CHAN: integer; layout: string) return cmac44_rpm_coord_struct_array; -- returns the locations of the CMAC44 DSPs and BRAMs for a corr44 correlator core with specified layout
+function get_corr44_rloc_origins_struct_array(platform_id:integer; N_CHAN:integer) return corr44_rloc_origins_struct_array; -- returns the layout and absolute location of each corr4 core in a corr44_array
 
 ----------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------
@@ -1121,62 +1149,198 @@ PROCEDURE axis32_write_buffer(buffer_in: in Word32Array; signal stream_out: out 
 --			return;
 --			end if;
 --			i:=i+1;
-  end procedure;
+end procedure;
 
--- Returns a structure that defines the RPM position of the correlator elements in the fabric
--- N: Number of inputs to correlate
-function get_corr_rpm_struct(platform_id:integer; N:integer) return corr_rpm_struct is
-		 	variable rpm: corr_rpm_struct;
-		 	variable fpga_family: integer;
-		 	variable DSP_TILE_DELTA_Y, DSP_X0L, DSP_X0R, DSP_X1L, DSP_X1R, BRAM_X0L, BRAM_X0R, BRAM_X1L, BRAM_X1R, DSP_Y0, DSP_Y1, DSP_Y2, DSP_Y3: integer;
-	 	begin
- 			DSP_TILE_DELTA_Y := PLATFORM_INFO(platform_id).DSP_TILE_DELTA_RPM_Y; --same for BRAM
+------------------------
+-- RPM-related functions
+------------------------
 
-	 		if platform_id = PLATFORM_ID_MGK7MB then
-			 	DSP_X0L:=361;
-			 	DSP_X0R:=381;
-			 	DSP_X1L := 425;
-			 	DSP_X1R := 473;
-			 	BRAM_X0L := 350;
-			 	BRAM_X0R := 394;
-			 	BRAM_X1L := 438;
-			 	BRAM_X1R := 462;
-			 	DSP_Y0 := 0;
-			 	DSP_Y1 := DSP_Y0 + DSP_TILE_DELTA_Y*(N+1); -- :=170 -- A corr44 is two columns of (N+1) CMAC44, each one being DSP tile high
-			 	DSP_Y2 := 450;
-			 	DSP_Y3 := DSP_Y2 + DSP_TILE_DELTA_Y*(N+1); -- =620
 
-				rpm.LEFT_DSP_X    := (DSP_X0L, DSP_X1L, DSP_X0L, DSP_X1L, DSP_X0L, DSP_X1L, DSP_X0L, DSP_X1L );
-				rpm.LEFT_BRAM_X   := (BRAM_X0L, BRAM_X1L, BRAM_X0L, BRAM_X1L, BRAM_X0L, BRAM_X1L, BRAM_X0L, BRAM_X1L );
-				rpm.RIGHT_DSP_X   := (DSP_X0R, DSP_X1R, DSP_X0R, DSP_X1R, DSP_X0R, DSP_X1R, DSP_X0R, DSP_X1R );
-				rpm.RIGHT_BRAM_X  := (BRAM_X0R, BRAM_X1R, BRAM_X0R, BRAM_X1R, BRAM_X0R, BRAM_X1R, BRAM_X0R, BRAM_X1R );
-				rpm.DSP_BOTTOM_Y  := (DSP_Y0, DSP_Y0 , DSP_Y1, DSP_Y1, DSP_Y2, DSP_Y2, DSP_Y3, DSP_Y3);
-				rpm.BRAM_BOTTOM_Y := rpm.DSP_BOTTOM_Y; -- on the K7 BRAM Y coords are the same as DSP Y coords
-				return rpm;
+-- Converts a rpm_coord struct into a "XxYy" string for use in RPM-related attributes
+function rpm_to_string(rpm: rpm_coord_struct) return string is
+begin
+	return "X" & integer'IMAGE(rpm.x) & "Y" & integer'IMAGE(rpm.y);
+end function rpm_to_string;
 
-			elsif platform_id = PLATFORM_ID_ZCU111 then
-				assert N=8 report "Unsupported N for this platform" severity ERROR;
-			 	DSP_X0L := 0;--3;
-			 	DSP_X0R :=1;--4;
-			 	BRAM_X0L  := 0;--2;
-			 	BRAM_X0R  := 1;--3;
-			 	DSP_Y0  := 0;--72;
 
-			 	for i in 0 to NUMBER_OF_CORRELATORS_MAX-1 loop
-					rpm.LEFT_DSP_X(i)    := DSP_X0L;
-					rpm.LEFT_BRAM_X(i)   := BRAM_X0L;
-					rpm.RIGHT_DSP_X(i)   := DSP_X0R;
-					rpm.RIGHT_BRAM_X(i)  := BRAM_X0R;
-					rpm.DSP_BOTTOM_Y(i)  := DSP_Y0 + DSP_TILE_DELTA_Y*(N+1)*i; -- Each CORR44 is (N+1) DSP tile high
-					rpm.BRAM_BOTTOM_Y(i) := DSP_Y0 + DSP_TILE_DELTA_Y*(N+1)*i; -- on the K7 BRAM Y coords are the same as DSP Y coords
-				end loop;
-				return rpm;
 
-			else
-				assert FALSE report "UNSUPPORTED PLATFORM" severity ERROR;
-				return rpm;
-			end if;
-	 	end get_corr_rpm_struct;
+--type corr44_rpm_coord_struct is record
+--	DSP: rpm_coord_struct_array(0 to NUMBER_OF_CMACS_MAX -1);
+--	BRAM: rpm_coord_struct_array(0 to NUMBER_OF_CMACS_MAX -1);
+--end record;
+
+-- Returns a structure that defines the layout of CORR44 core expressed as the relative RPM position of the CMAC44 correlator elements in the fabric
+--
+--    N_CHAN (integer): Number of inputs to correlate
+--    layout (string): Layout to use
+--
+-- For layout = "BDDB" and layout="DBBD", the CORR44 layout is implemented as two columns of DSPs with their associated two columns of BRAMs.
+-- For a N-channel correlator, each CORR44 is N DSP tiles high, or 2*N DSP high.
+-- The layout can be provided for columns ordered as BRAM-DSP-DSP-BRAM (layout="BDDB") or BRAM-DSP-DSP-BRAM (layout="DBBD").
+-- In the first case, the origin (0,0) refer to a FIFO. In the second case, it refers to a DSP.
+function get_cmac44_rpm_coords_struct_array(platform_id: integer; N_CHAN: integer; layout:string) return cmac44_rpm_coord_struct_array is
+ 	variable rpm: cmac44_rpm_coord_struct_array;
+ 	variable fpga_family: integer;
+ 	variable pf_info: PLATFORM_INFO_STRUCT;
+ 	variable DSP_XL, DSP_XR, FIFO_XL, FIFO_XR, DSP_Y0, FIFO_Y0: integer;
+begin
+
+
+	pf_info := PLATFORM_INFO(platform_id);
+
+	if platform_id = PLATFORM_ID_MGK7MB then
+
+	 	--DSP_X0L:=361;
+	 	--DSP_X0R:=381;
+	 	--DSP_X1L := 425;
+	 	--DSP_X1R := 473;
+	 	--FIFO_X0L := 350;
+	 	--FIFO_X0R := 394;
+	 	--BRAM_X1L := 438;
+	 	--BRAM_X1R := 462;
+	 	--DSP_Y0 := 0;
+	 	--DSP_Y1 := DSP_Y0 + DSP_TILE_DELTA_Y*(N+1); -- :=170 -- A corr44 is two columns of (N+1) CMAC44, each one being DSP tile high
+	 	--DSP_Y2 := 450;
+	 	--DSP_Y3 := DSP_Y2 + DSP_TILE_DELTA_Y*(N+1); -- =620
+
+	 	-- Slice coordinates (RPM_GRID not defined).
+	 	-- Does not work: it says capture_bram0 is not on a RAMB site
+	 	--DSP_X0L:=8;
+	 	--DSP_X0R:=9;
+	 	--DSP_X1L := 10;
+	 	--DSP_X1R := 11;
+	 	--FIFO_X0L := 8;
+	 	--FIFO_X0R := 9;
+	 	--BRAM_X1L := 10;
+	 	--BRAM_X1R := 11;
+	 	--DSP_Y0 := 0;
+	 	--DSP_Y1 := DSP_Y0 + DSP_TILE_DELTA_Y*(N+1); -- :=170 -- A corr44 is two columns of (N+1) CMAC44, each one being DSP tile high
+	 	--DSP_Y2 := 36;
+	 	--DSP_Y3 := DSP_Y2 + DSP_TILE_DELTA_Y*(N+1); -- =620
+
+	 	-- using RPM_GRID="GRID" (uses RPM_X and RPM_Y)
+	 	-- Here we use the RPM_X and RPM_Y cooordinates of the leftmost pair of DSP/BRAM columns (BRAM-DSP-DSP-BRAM)
+	 	--DSP_X0L:=45-45;
+	 	--DSP_X0R:=65-45;
+	 	--DSP_X1L := 121-45;
+	 	--DSP_X1R := 141-45;
+	 	--FIFO_X0L := 34-34;
+	 	--FIFO_X0R := 78-34;
+	 	--BRAM_X1L := 110-34;
+	 	--BRAM_X1R := 154-34;
+	 	if layout="BDDB" then
+		 	FIFO_XL := 350-350; -- relative location of the FIFO in left column. This is our origin point.  Should be 0.
+		 	DSP_XL := 361-350; -- relative location of dsp1 on leftmost column.
+		 	DSP_XR := 381-350; -- relative location of dsp1 on rightmost column
+		 	FIFO_XR := 394-350;
+		elsif layout="DBBD" then
+		 	DSP_XL := 425-425; -- relative location of dsp1 on leftmost column. This is our origin point.  Should be 0.
+		 	FIFO_XL := 438-425; -- relative location of the FIFO in left column.
+		 	FIFO_XR := 462-425;
+		 	DSP_XR := 473-425; -- relative location of dsp1 on rightmost column
+		else
+			assert FALSE report "Invalid CORR44 layout CONFIG string";
+		end if;
+
+	 	DSP_Y0 := 0; -- should be zero.
+	 	FIFO_Y0 := 0; -- position of the FIFO, which must be at the bottom
+
+
+	elsif platform_id = PLATFORM_ID_ZCU111 then
+		--assert N_CHAN=8 report "Unsupported N for this platform" severity ERROR;
+	 	DSP_XL := 0;--3;
+	 	DSP_XR :=1;--4;
+	 	FIFO_XL  := 0;--2;
+	 	FIFO_XR  := 1;--3;
+	 	DSP_Y0  := 0;--72;
+	 	FIFO_Y0  := 0;--72;
+
+		--	for i in 0 to NUMBER_OF_CORRELATORS_MAX-1 loop
+		--	rpm(i).DSP1 := (DSP_XL;
+		--	rpm(i).LEFT_BRAM_X   := FIFO_XL;
+		--	rpm(i).RIGHT_DSP_X   := DSP_XR;
+		--	rpm(i).RIGHT_BRAM_X  := FIFO_XR;
+		--	rpm(i).DSP_BOTTOM_Y  := DSP_Y0 + pf_info.DSP_TILE_DELTA_RPM_Y*(N_CHAN+1)*i; -- Each CORR44 is (N+1) DSP tile high
+		--	rpm(i).BRAM_BOTTOM_Y := FIFO_Y0 + pf_info.DSP_TILE_DELTA_RPM_Y*(N_CHAN+1)*i; --
+		--end loop;
+		--return rpm;
+
+	else
+		assert FALSE report "UNSUPPORTED PLATFORM" severity ERROR;
+		return rpm;
+	end if;
+
+	-- The code below assumes a two column layout
+	for i in 0 to NUMBER_OF_CMACS_MAX-1 loop
+		rpm(i).DSP1 := (X => sel((i mod 2)=0, DSP_XL, DSP_XR), Y=> DSP_Y0 + (i/2) * pf_info.DSP_TILE_DELTA_RPM_Y); -- Each CMAC44 is 1 DSP tile (2 DSP) high
+		rpm(i).DSP2 := (X => sel((i mod 2)=0, DSP_XL, DSP_XR), Y=>  DSP_Y0 + (i/2) * pf_info.DSP_TILE_DELTA_RPM_Y + pf_info.DSP_BEL_DELTA_RPM_Y);
+		rpm(i).FIFO := (X => sel((i mod 2)=0, FIFO_XL, FIFO_XR), Y => FIFO_Y0 + (i/2) * pf_info.BRAM_TILE_DELTA_RPM_Y);
+		rpm(i).BRAM := (X => sel((i mod 2)=0, FIFO_XL, FIFO_XR), Y => FIFO_Y0 + (i/2) * pf_info.BRAM_TILE_DELTA_RPM_Y + pf_info.BRAM_BEL_DELTA_RPM_Y);
+	end loop;
+	return rpm;
+
+end function get_cmac44_rpm_coords_struct_array;
+
+
+
+-- Return the platform-specific layout and locations of the corr44 cores
+--
+function get_corr44_rloc_origins_struct_array(platform_id:integer; N_CHAN:integer) return corr44_rloc_origins_struct_array is
+ 	variable locs: corr44_rloc_origins_struct_array;
+ 	variable CORR44_DELTA_Y, X0, X1, Y0, Y1, Y2, Y3: integer;
+
+begin
+
+	CORR44_DELTA_Y := PLATFORM_INFO(platform_id).DSP_TILE_DELTA_RPM_Y * (N_CHAN+1);
+
+	if platform_id = PLATFORM_ID_MGK7MB then
+		-- This is the absolute locations of the CORR44 cores on the 7K420.
+		-- Coordinates are in the RPM_GRID system. They refer to the bottom-left corner of the CORR44, which is a BRAM/FIFO.
+		-- Coordinates provide dby this function must therefore only refer only to FIFO18E1 sites.
+		-- See RPM_X and RPM_Y properties of BRAM sites for those coordinates (in the Vivado Device view).
+		--
+		-- The cores are placed in a 4-high by 2-wide array. A first 4 are in
+		-- a 2x2 array vertically spanning the lower 7 clock regions, and the
+		-- remaining 4 span the upper 7 clock regions.
+		--
+		-- On the Kintex 7, the CMACS are located at the right of the chip,
+		-- and unfortunately, the organization of the DSP and BRAM columns is
+		-- not the same for the leftmost and righmost CMAC44s, so we have so
+		-- specify different CMAC44 layouts. In the left column, we have a
+		-- BRAM-DSP-DSP-BRAM columns ("BDDR" layout), whereas we have a
+		-- DSP-BRAM-BRAM-DSP columns (layout "DBBD" in the right column).
+		--
+		-- A 16-channel CORR44 is 17 DSP tiles (34 DSPs) high. There are 10
+		-- DSPs per clock region. Two CORR44 are 68 DSP high. 7 clock regions
+		-- provide 70 DSPs. Nice fit.
+
+	 	X0 := 350; -- Left colums, BDDB layout, FIFO site
+	 	X1 := 425; -- Right column, DBBD layout, DSP site
+	 	-- Lower CORR44s
+	 	Y0 := 0;
+	 	Y1 := Y0 + CORR44_DELTA_Y; -- :=170 -- A corr44 is two columns of (N+1) CMAC44, each one being DSP tile high
+	 	-- Upper CORR44s
+	 	Y2 := 450;
+	 	Y3 := Y2 + CORR44_DELTA_Y; -- =620
+
+		locs := (
+			0 => (layout => "BDDB", loc => (X0, Y0)),
+			1 => (layout => "DBBD", loc => (X1, Y0)),
+			2 => (layout => "BDDB", loc => (X0, Y1)),
+			3 => (layout => "DBBD", loc => (X1, Y1)),
+			4 => (layout => "BDDB", loc => (X0, Y2)),
+			5 => (layout => "DBBD", loc => (X1, Y2)),
+			6 => (layout => "BDDB", loc => (X0, Y3)),
+			7 => (layout => "DBBD", loc => (X1, Y3)),
+			others => (layout => "unknown", loc => (-1,-1))
+			);
+		return locs;
+	else -- if platform_id
+		assert FALSE report "UNSUPPORTED PLATFORM for correlator" severity ERROR;
+	end if; -- if platform_id
+
+end function;
+
 
 
 end chFPGA_Package;
