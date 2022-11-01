@@ -13,7 +13,7 @@ pipelines:
           - pip
         script: # Modify the commands below to build your repository.
           - DOC_PUBLISH_FOLDER='chfpga/'$BITBUCKET_BRANCH
-          - cd _doc
+          - cd docs
           - pip install -r requirements.txt
           - make html
           - git clone git@bitbucket.org:winterlandcosmology/winterlandcosmology.bitbucket.io.git www
