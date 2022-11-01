@@ -432,6 +432,11 @@ CTRL_ROUTER0: entity work.CTRL_ROUTER
 -- MGT REFERENCE CLOCK BUFFERS
 ----------------------------------
 
+-- We have up to NUMBER_OF_REFCLK reference clocks to clock the GTXes. These are physically assigned to pins so at least one can reach each of the QPLL used in the array.
+-- Every refclk is received by a IBUFDS_GTE2
+-- refclk[0] (aka clk156) is sent to a BUFG to be used as an always-on control logic clock and frequency monitor. The control logic can be spread across multiple clock regions.
+-- refclk[1:n] are send to BUFH to be used only in the frequency monitor located in the bank where it arrives.
+
 --! Instantiate reference clock buffers for each reference clock
 ibuf_gen: for i in 0 to NUMBER_OF_REFCLK-1 generate
 	ibufds0 : IBUFDS_GTE2
@@ -448,22 +453,18 @@ ibuf_gen: for i in 0 to NUMBER_OF_REFCLK-1 generate
 end generate;
 
 
-----------------------------------
--- REFERENCE CLOCK BUFFER
-----------------------------------
--- There is only one per array since all transceivers are clocked by the same reference clock
-
+-- Instantiate BUFG for refclk[0] only
 refclk_bufg0 : BUFG --
 	port map(
 		I => refclk_nobuf(0),
 		O => refclk_buf(0)
 	);
-
+-- Instantiate BUFH for the other refclks
 refclkbuf_gen: for i in 1 to NUMBER_OF_REFCLK-1 generate
 	refclk_bufh0 : BUFH --
 		port map(
-			I => refclk_nobuf(1),
-			O => refclk_buf(1)
+			I => refclk_nobuf(i),
+			O => refclk_buf(i)
 		);
 end generate;
 
