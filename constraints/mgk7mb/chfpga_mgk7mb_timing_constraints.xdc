@@ -81,7 +81,8 @@ set_clock_groups -name REFCLK_GROUP -asynchronous -group [get_clocks -include_ge
 # Frequency counter
 # ----------------
 # Constrain the frequency counter clock. The clock frequency on this net is 1/2 if the measured clock source
-create_clock -period 3.200 -name FREQ_CTR [get_pins */FREQ_CTR0/K7.SRCCLK0/I]
+create_clock -period 3.200 -name FREQ_CTR [get_pins */FREQ_CTR0/K7.SRCCLK0/O]
+# create_generated_clock -name FREQ_CTR -divide_by 2 [get_pins */FREQ_CTR0/K7.SRCCLK0/I] # missing -source argument
 set_clock_groups -name FREQ_CTR_GROUP -asynchronous -group [get_clocks FREQ_CTR]
 
 # Motherboard raw (single-ended) 10 MHz Reference clock
