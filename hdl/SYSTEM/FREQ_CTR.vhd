@@ -70,18 +70,20 @@ signal STATUS_BYTES: slv8_array(0 to 4); -- default value set in the CMD_SLAVE
 
 
 
-signal GATE_CTR: UNSIGNED(31 downto 0):=(others=>'0');
-signal FREQ_CTR: UNSIGNED(31 downto 0):=(others=>'0');
-signal FREQ_CTR_RDY: STD_LOGIC;
-signal FREQ_CTR_START: STD_LOGIC:='0';
+signal gate_ctr: UNSIGNED(31 downto 0) := (others=>'0');
+signal freq_ctr: UNSIGNED(31 downto 0) := (others=>'0');
+signal freq_ctr_rdy: STD_LOGIC;
+signal freq_ctr_rdy_sync: STD_LOGIC;
+signal freq_ctr_start: STD_LOGIC:='0';
+signal freq_ctr_start_sync: STD_LOGIC;
 signal GATE_EN: STD_LOGIC:='0';
-signal FREQ_CTR_SRC_SEL: UNSIGNED(6 downto 0):=(others=>'0');
-signal SRC_CLK: STD_LOGIC;
-signal SRC_CLK_FABRIC: STD_LOGIC;
+signal gate_en_sync: STD_LOGIC;
+signal freq_ctr_src_sel: UNSIGNED(6 downto 0):=(others=>'0');
+signal src_clk: STD_LOGIC;
+signal src_clk_fabric: STD_LOGIC;
 
 signal GATE_PERIOD: unsigned(31 downto 0); -- GATE_PERIOD=40E6 Corresponds to a GATE_PERIOD/CLK200_FREQ= 0.2s second gate time. Since inputs are divided by 2, real frequency is 100*count.
 signal GATE_PERIOD_MINUS_2: unsigned(31 downto 0);
-signal IS_LAST_GATE_VALUE: STD_LOGIC;
 
 begin
 
@@ -90,19 +92,15 @@ GATE_PERIOD(31 downto 0)    <= to_unsigned(CONTROL_BYTES(0 to 3)); -- to_unsigne
 
 -- CONTROL Byte 4
 
-FREQ_CTR_START              <= CONTROL_BYTES(4)(7);
-FREQ_CTR_SRC_SEL            <= unsigned(CONTROL_BYTES(4)(6 downto 0));
+freq_ctr_start              <= CONTROL_BYTES(4)(7);
+freq_ctr_src_sel            <= unsigned(CONTROL_BYTES(4)(6 downto 0));
 
 -- STATUS bytes 0-3
 STATUS_BYTES(0 to 3)        <= to_slv8_array(FREQ_CTR);
--- STATUS_BYTES(1)             <= std_logic_vector(FREQ_CTR(23 downto 16));
--- STATUS_BYTES(2)             <= std_logic_vector(FREQ_CTR(15 downto 8));
--- STATUS_BYTES(3)             <= std_logic_vector(FREQ_CTR(7 downto 0));
 
 -- STATUS bytes 4
-
 STATUS_BYTES(4)(7 downto 1) <= (others=>'0');
-STATUS_BYTES(4)(0)          <= FREQ_CTR_RDY;
+STATUS_BYTES(4)(0)          <= freq_ctr_rdy_sync;
 
 -- Convert clock inputs into a divided by two logic signal
 
@@ -128,7 +126,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 	);
 
 -- Select clock to measure
-SRC_CLK_FABRIC<= CLK_IN_DIV2(to_integer(FREQ_CTR_SRC_SEL));
+src_clk_fabric <= CLK_IN_DIV2(to_integer(freq_ctr_src_sel));
 
 --! Pass the selected signal through a clock buffer to facilitate timing and remove tool complaints
 --! A regional clock BUFR will suffice as the frequency counter is very localized
@@ -139,15 +137,15 @@ K7: if FPGA_SERIES=7 generate
 	-- 			SIM_DEVICE => "7SERIES" -- Specify target device, "VIRTEX4", "VIRTEX5", "VIRTEX6"
 	-- 		)
 	-- 		port map (
-	-- 			I => SRC_CLK_FABRIC, -- Clock buffer input
-	-- 			O => SRC_CLK, -- Clock buffer output
+	-- 			I => src_clk_fabric, -- Clock buffer input
+	-- 			O => src_clk, -- Clock buffer output
 	-- 			CE => '1', -- Clock enable input
 	-- 			CLR => '0'-- Clock buffer reset input
 	-- 		);
 	SRCCLK0 : BUFH
 		port map (
-			I => SRC_CLK_FABRIC,
-			O => SRC_CLK
+			I => src_clk_fabric,
+			O => src_clk
 		);
 
 end generate;
@@ -155,19 +153,46 @@ end generate;
 V6: if FPGA_SERIES=FPGA_VIRTEX6 or FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
 	SRCCLK0 : BUFG
 		port map (
-			O => SRC_CLK, -- 1-bit output: Clock buffer output
-			I => SRC_CLK_FABRIC -- 1-bit input: Clock buffer input
+			I => src_clk_fabric, -- 1-bit input: Clock buffer input
+			O => src_clk -- 1-bit output: Clock buffer output
 		);
 end generate;
 
+-- resynchronize the gate_en signal to the src_clk to make sure we don't mess up the freq_ctr counter operation
+gate_en_cdc: xpm_cdc_single
+	port map (
+	src_clk => clk200, -- optional; required when SRC_INPUT_REG = 1
+	src_in => gate_en,
+	dest_clk => src_clk,
+	dest_out => gate_en_sync
+	);
+
+-- Control signal from clrl_clk to clk200
+freq_start_cdc: xpm_cdc_single
+	port map (
+	src_clk => ctrl_clk, -- optional; required when SRC_INPUT_REG = 1
+	src_in => freq_ctr_start,
+	dest_clk => clk200,
+	dest_out => freq_ctr_start_sync
+	);
+
+-- control signal from clk200 to ctrl_clk
+freq_rdy_cdc: xpm_cdc_single
+	port map (
+	src_clk => clk200, -- optional; required when SRC_INPUT_REG = 1
+	src_in => freq_ctr_rdy,
+	dest_clk => ctrl_clk,
+	dest_out => freq_ctr_rdy_sync
+	);
+
 -- Source clock counter process
-src_ctr_proc: process(SRC_CLK, FREQ_CTR_START)
+src_ctr_proc: process(src_clk, freq_ctr_start_sync)
 	begin
-		if FREQ_CTR_START='0' then -- We need an asynchronous reset to clear the counter even in the absence of the source clock
-				FREQ_CTR<=(others=>'0');
-		elsif rising_edge(SRC_CLK) then
-			if GATE_EN='1' then
-					FREQ_CTR<=FREQ_CTR+1;
+		if freq_ctr_start_sync = '0' then -- We need an asynchronous reset to clear the counter even in the absence of the source clock
+				freq_ctr <= (others=>'0');
+		elsif rising_edge(src_clk) then
+			if gate_en_sync = '1' then
+					freq_ctr <= freq_ctr + 1;
 			end if;
 		end if; -- CLK
 	end process;
@@ -176,31 +201,25 @@ src_ctr_proc: process(SRC_CLK, FREQ_CTR_START)
 ref_ctr_proc: process(CLK200)
 	begin
 		if rising_edge(CLK200) then
-			GATE_PERIOD_MINUS_2<=GATE_PERIOD-2; -- register the gate period to isolate the timing from the SLAVE. We substract 2 to have an accurate count given the pipelinning delays.
+			GATE_PERIOD_MINUS_2 <= GATE_PERIOD - 2; -- register the gate period to isolate the timing from the SLAVE. We substract 2 to have an accurate count given the pipelinning delays.
 
 			-- Create a signal that indicates if we reached the total gate time. This is to simplify the logic and facilitate timing closure.
-
-			if FREQ_CTR_START='0' then
-					GATE_CTR<=(others=>'0');
-					GATE_EN<='1';
-					FREQ_CTR_RDY<='0';
-					IS_LAST_GATE_VALUE<='0';
+			if gate_ctr = GATE_PERIOD_MINUS_2 then
+				GATE_EN <= '0';
+				freq_ctr_rdy <= '1';
 			else
-				if GATE_CTR=GATE_PERIOD_MINUS_2 then
-					IS_LAST_GATE_VALUE<='1';
-				else
-					IS_LAST_GATE_VALUE<='0';
-				end if;
+				GATE_EN <= '1';
+				freq_ctr_rdy <= '0';
+				gate_ctr <= gate_ctr + 1;
+			end if;
 
-				if GATE_EN='1' then
-					if IS_LAST_GATE_VALUE='1' then
-						GATE_EN<='0';
-						FREQ_CTR_RDY<='1';
-					else
-						GATE_CTR<=GATE_CTR+1;
-					end if;
-				end if;
-			end if; -- FREQ_CTR_START
+			-- synchronous reset operrides
+			if freq_ctr_start_sync = '0' then
+				gate_ctr <= (others=>'0');
+				freq_ctr_rdy <= '0';
+				GATE_EN <= '0';
+			end if;
+
 		end if; -- CLK
 	end process;
 
