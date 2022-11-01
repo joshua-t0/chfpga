@@ -134,24 +134,20 @@ begin
 
 --! Instantiate a FIFO at the input port
 
-FIFO0 : entity work.CTRL_FIFO
-  GENERIC MAP (
-		USE_ASYNC_FIFO => FALSE -- we use the same clock on both sides
-		)
+FIFO0 : entity work.CMD_SYNC_FIFO
   PORT MAP (
 		CMD_A_DAT=>CMD_IN_DAT,
 		CMD_A_RDY=>CMD_IN_RDY,
 		RPLY_A_DAT=>RPLY_OUT_DAT,
 		RPLY_A_RDY=>RPLY_OUT_RDY,
-		A_CLK=>CLK,
 
 		CMD_B_DAT=>CMD_IN_DAT_FIFO,
 		CMD_B_RDY=>CMD_IN_RDY_FIFO,
 		RPLY_B_DAT=>RPLY_OUT_DAT_FIFO,
 		RPLY_B_RDY=>RPLY_OUT_RDY_FIFO,
-		B_CLK=>CLK,
 
 		-- System interface
+		CLK => CLK,
 		RST => RST
 		);
 

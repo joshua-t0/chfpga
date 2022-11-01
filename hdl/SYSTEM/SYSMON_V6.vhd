@@ -127,10 +127,7 @@ FAN_PWM<=CONTROL_BYTES_FAN_EN or SYSMON_OVERTEMP or '1';
 --Implement an an asynchronous FIFO to bridge the BSB bus from the ctrl_clk
 --to the sysmon_clk domains to allow the DRP signals will be synchronous to
 --that clock
-FIFO0 : entity work.CTRL_FIFO
-  GENERIC MAP (
-		USE_ASYNC_FIFO=> TRUE
-		)
+FIFO0 : entity work.CMD_ASYNC_FIFO
   PORT MAP (
 		CMD_A_DAT  => ctrl_cmd_in_dat,
 		CMD_A_RDY  => ctrl_cmd_in_rdy,
