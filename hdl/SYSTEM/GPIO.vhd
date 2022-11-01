@@ -662,14 +662,14 @@ STATUS_BYTES(24) <= to_slv(CHANNELIZERS_CLOCK_SOURCE, 8);
 --STATUS_BYTES(25 to 30) <= to_slv8_array(local_mac_addr_int);
 
 -- STATUS Bytes 31-32
-STATUS_BYTES(31) <= slot_sense_ctr(0);
+STATUS_BYTES(31) <= slot_sense_ctr(0); -- is this still used?
 STATUS_BYTES(32) <= slot_sense_ctr(1);
 
 -- STATUS Bytes 33-35
 STATUS_BYTES(33)(7 downto 8-NUMBER_OF_ADC_BOARDS) <= reverse_bits_and_dir(adc_pll_lock);
 STATUS_BYTES(33)(5 downto 2) <= (others=>'0');
-STATUS_BYTES(33)(1) <= udp_tx_overflow;
-STATUS_BYTES(33)(0) <= udp_rx_overflow;
+--STATUS_BYTES(33)(1) <= udp_tx_overflow;
+--STATUS_BYTES(33)(0) <= udp_rx_overflow;
 
 STATUS_BYTES(34) <= cmd_packet_counter;
 STATUS_BYTES(35) <= rply_packet_counter;
@@ -774,14 +774,15 @@ core_reg_rd_value(6) <= "0000000" & fpga_serial_number(56 downto 32); -- (Read o
 
 -- Networking configuration -- Local Rx MAC/IP/PORT numbers
 ------------------------------------------------------------
--- Register 7
+-- Register 7 - FPGA Network interface MAC address
 core_reg_rd_value(7)               <= spi_fpga_local_mac_address(31 downto 0); -- (Read/Write with readback)
 spi_fpga_local_mac_address(31 downto 0)  <= core_reg_wr_value(7);
--- Register 8
+
+-- Register 8 - FPGA Network interface MAC address and listening command port
 core_reg_rd_value(8)               <= spi_fpga_local_mac_address(47 downto 32) & spi_fpga_local_ip_port; -- (Read/Write with readback)
 spi_fpga_local_mac_address(47 downto 32) <= core_reg_wr_value(8)(31 downto 16);
 spi_fpga_local_ip_port                   <= core_reg_wr_value(8)(15 downto 0);
--- Register 9
+-- Register 9  - FPGA Network interface IP address
 core_reg_rd_value(9)               <= spi_fpga_local_ip_address; -- (Read/Write with readback)
 spi_fpga_local_ip_address                <= core_reg_wr_value(9);
 
@@ -825,6 +826,12 @@ core_reg_rd_value(15)(31)          <= ts_compare_enable; -- (Readback)
 core_reg_rd_value(15)(30)          <= ts_force; -- (Readback)
 core_reg_rd_value(15)(27 downto 0) <= core_reg_wr_value(15)(27 downto 0); -- (Readback)
 ts_target.ss                       <= unsigned(core_reg_wr_value(15)(27 downto 0));
+-- (make sure the rest of ts_target is driven to prevent warnings)
+ts_target.c <= (others=>'0');
+ts_target.sbs <= (others=>'0');
+ts_target.recent <= '0';
+ts_target.source <= (others=>'0');
+
 ts_compare_enable                  <= core_reg_wr_value(15)(31);
 ts_force                           <= core_reg_wr_value(15)(30);
 -- Register 16 (_IRIGB_EVENT_CTR_ADDR)
@@ -838,7 +845,7 @@ core_reg_rd_value(17)(31 downto 16) <= (others=>'0'); -- (read-only)
 --core_reg_rd_value(17)(15 downto 8)  <= release_ctr_mon; --unused
 --core_reg_rd_value(17)(7 downto 0)   <= sync_ctr_mon; --unused
 
--- Registers 18 (_BP_BUCK_SYNC_ADDR2)
+-- Registers 18 (_SFP_CONFIG_ADDR)
 
 sfp_config_vector                   <= core_reg_wr_value(18); -- read-write
 core_reg_rd_value(18)               <= core_reg_wr_value(18); -- (Readback)
@@ -851,29 +858,28 @@ core_reg_rd_value(19)(15 downto 0)  <= sfp_status_vector; -- (Read-only)
 udp_stack_reset                     <= core_reg_wr_value(19)(31);
 ctrl_master_reset                   <= core_reg_wr_value(19)(30);
 
--- Networking parameters - TX Channel 0 PORT number
-
--- Register 20 (_REMOTE_IP_PORT_ADDR)
-spi_fpga_ch0_remote_ip_port                 <= core_reg_wr_value(20)(15 downto 0);
---remote_ip_port1                 <= core_reg_wr_value(20)(31 downto 16);
-core_reg_rd_value(20)           <= core_reg_wr_value(20); -- (Readback)
+-- Register 20 (_REMOTE_IP_PORT_ADDR) - FPGA command reply port
+spi_fpga_ch0_remote_ip_port         <= core_reg_wr_value(20)(15 downto 0);
+core_reg_rd_value(20)(15 downto 0)  <= spi_fpga_ch0_remote_ip_port; -- (Readback)
 
 -- Register 21 (_IRIGB_REFCLK_SAMPLE)
-core_reg_rd_value(21)           <= std_logic_vector(refclk_sample(31 downto 0)); -- read
-target_refclk_count(31 downto 0) <= unsigned(core_reg_wr_value(21));
+core_reg_rd_value(21)             <= std_logic_vector(refclk_sample(31 downto 0)); -- read
+target_refclk_count(31 downto 0)  <= unsigned(core_reg_wr_value(21));
+
 -- Register 22 (_IRIGB_REFCLK_SAMPLE2)
-core_reg_rd_value(22)           <= std_logic_vector(refclk_sample(63 downto 32)); -- read
+core_reg_rd_value(22)             <= std_logic_vector(refclk_sample(63 downto 32)); -- read
 target_refclk_count(63 downto 32) <= unsigned(core_reg_wr_value(21));
 
--- Networking parameters - TX Channel 1 MAC/IP/PORT numbers
--- Register 23
+-- Data Channel networking parameters
+
+-- Register 23 - Data packet destination MAC address
 core_reg_rd_value(23)               <= spi_fpga_ch1_remote_mac_address(31 downto 0); -- (Read/Write with readback)
 spi_fpga_ch1_remote_mac_address(31 downto 0)  <= core_reg_wr_value(23);
--- Register 24
+-- Register 24 - Data packet destination MAC address and destination port
 core_reg_rd_value(24)               <= spi_fpga_ch1_remote_mac_address(47 downto 32) & spi_fpga_ch1_remote_ip_port; -- (Read/Write with readback)
 spi_fpga_ch1_remote_mac_address(47 downto 32) <= core_reg_wr_value(24)(31 downto 16);
 spi_fpga_ch1_remote_ip_port                   <= core_reg_wr_value(24)(15 downto 0);
--- Register 25
+-- Register 25 - Data packet destination IP address
 core_reg_rd_value(25)               <= spi_fpga_ch1_remote_ip_address; -- (Read/Write with readback)
 spi_fpga_ch1_remote_ip_address           <= core_reg_wr_value(25);
 
@@ -1225,19 +1231,20 @@ network_setup_proc: process(ctrl_clk)
 			--	local_subarray_reg              <= target_local_subarray;
 			--end if;
 
-
+			-- Network interface addresses
 			local_mac_addr     <= spi_fpga_local_mac_address;
 			local_base_ip_addr <= spi_fpga_local_ip_address;
-			local_base_ip_port <= spi_fpga_local_ip_port;
 			local_subarray     <= (others=>'0');
 
-			-- TX CHannel 0 parameters
-			remote_ip_port0  <= spi_fpga_ch0_remote_ip_port;
+			-- Control Channel(UDP Channel 0) ports
+			local_base_ip_port <= spi_fpga_local_ip_port; -- command listening port
+			-- command reply IP and MAC: hardwired to be the same as the the source addres of the previous incoming command packets
+			remote_ip_port0  <= spi_fpga_ch0_remote_ip_port; -- command reply destination port
 
 			-- TX Channel 1 parameters
-			remote_ip_addr1     <= spi_fpga_ch1_remote_ip_address;
-			remote_mac_addr1    <= spi_fpga_ch1_remote_mac_address;
-			remote_ip_port1     <= spi_fpga_ch1_remote_ip_port;
+			remote_ip_addr1     <= spi_fpga_ch1_remote_ip_address; -- Data packet destination IP addres
+			remote_mac_addr1    <= spi_fpga_ch1_remote_mac_address; -- Data packets destination MAC address
+			remote_ip_port1     <= spi_fpga_ch1_remote_ip_port; -- Data packets destination port
 
 
 			---- Select which networking parameters to use
