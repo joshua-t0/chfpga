@@ -1264,6 +1264,7 @@ gen_eth: if PHY_TYPE /= "NONE" generate
 			rst => udp_stack_rst
 		);
 
+
 end generate;
 
 -- If we don't have an ethernet interface, take the BSB interface directly from the top level entity.
@@ -1271,17 +1272,17 @@ gen_noeth: if PHY_TYPE = "NONE" generate
 	axis_udp_rx_tdata <= s_bsb_axis_tdata;
 	axis_udp_rx_tvalid <= s_bsb_axis_tvalid;
 	axis_udp_rx_tlast <= s_bsb_axis_tlast;
-	s_bsb_axis_tready <= axis_udp_rx_tready;
 
-	m_bsb_axis_tvalid <= axis_udp_tx_tvalid;
-	m_bsb_axis_tdata <= axis_udp_tx_tdata;
-	m_bsb_axis_tlast <= axis_udp_tx_tlast;
-	m_bsb_axis_tuser <= udp0_tx_port;
 	axis_udp_tx_tready <= m_bsb_axis_tready;
 
 	sfp_status_vector_int(0) <= '1'; -- simulate valid link so the blinker will work
-
 end generate;
+-- We also always deive these signals on the output port, weather or not thay are used outside, to prevent warnings of undriven output port
+s_bsb_axis_tready <= axis_udp_rx_tready;
+m_bsb_axis_tvalid <= axis_udp_tx_tvalid;
+m_bsb_axis_tdata <= axis_udp_tx_tdata;
+m_bsb_axis_tlast <= axis_udp_tx_tlast;
+m_bsb_axis_tuser <= udp0_tx_port;
 
 ctrl_master0: entity work.ctrl_master
 	GENERIC MAP (
