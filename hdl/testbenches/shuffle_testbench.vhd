@@ -99,7 +99,7 @@ shuffle0: entity work.bp_shuffle
 		refclk_n => (others=> bp_shuffle_refclk_n),
 
 		-- Control and reply streams
-		CMD_DAT => (TVALID=>'0', TDATA=>(others=>'0'), TLAST=>'0', DUMMY=>'0'),
+		CMD_DAT => (TVALID=>'0', TDATA=>(others=>'0'), TLAST=>'0'),
 		CMD_RDY => open,
 		RPLY_DAT => open,
 		RPLY_RDY=> (TREADY=>'1'),

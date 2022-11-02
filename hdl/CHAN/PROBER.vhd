@@ -143,7 +143,7 @@ signal trig_count: unsigned(7 downto 0) := (others => '0'); -- Counts the number
 -----------------------------
 -- FIFO readout signals
 -----------------------------
-signal out_dat_int: AXIS8_DAT_STRUCT := (DUMMY=>'0', TVALID=>'0', TDATA=>(others => '0'), TLAST=>'0');
+signal out_dat_int: AXIS8_DAT_STRUCT := (TVALID=>'0', TDATA=>(others => '0'), TLAST=>'0');
 signal dest_ready: std_logic;
 signal send_delay_target: unsigned(31 downto 0);
 signal send_delay_ctr: unsigned(31 downto 0); -- 16 bit delay + 16 bits prescaler, counts 125 MHz

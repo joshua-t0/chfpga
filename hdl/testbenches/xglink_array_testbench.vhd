@@ -256,7 +256,7 @@ dut0: entity work.xglink_array
 		clk_out    => clk,
 		areset => CPU_RESET,
 
-		CMD_DAT => (TDATA=> cmd_tdata, TVALID => cmd_tvalid, TLAST => cmd_tlast, DUMMY =>'0'),
+		CMD_DAT => (TDATA=> cmd_tdata, TVALID => cmd_tvalid, TLAST => cmd_tlast),
 		CMD_RDY.TREADY =>cmd_tready,
 		RPLY_DAT => open,
 		RPLY_RDY => (TREADY => '1'),

@@ -149,7 +149,7 @@ dut0: entity work.packetizer
 
 		rst => reset,
 
-		CTRL_CMD_DAT => (TDATA=> (others=>'0'), TVALID => '0', TLAST => '0', DUMMY =>'0'),
+		CTRL_CMD_DAT => (TDATA=> (others=>'0'), TVALID => '0', TLAST => '0'),
 		CTRL_CMD_RDY => open,
 		CTRL_RPLY_DAT => open,
 		CTRL_RPLY_RDY => (TREADY => '1'),

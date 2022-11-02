@@ -272,7 +272,7 @@ type CTRL_ADDR_RANGE is range (CTRL_ADDR_WIDTH-1) downto 0;
 -- AXI4 STREAMING data structure used for the control system (Command and Reply buses)
 type AXIS8_DAT_STRUCT is -- control/data bus used to communicate from  master to slave
 	record
-		DUMMY: std_logic; -- needed to cirvumvent simulator bug on VIvado 2012.4 and 2013.1. Otherwise the control bus doesnot work in simulation.
+		--DUMMY: std_logic; -- needed to cirvumvent simulator bug on VIvado 2012.4 and 2013.1. Otherwise the control bus doesnot work in simulation.
 		TVALID: std_logic; -- indicates that the master is driving a valid value
 		TDATA : std_logic_vector(7 downto 0); -- data from the master
 		TLAST: std_logic; -- indicated that the master is driving the last byte of the frame

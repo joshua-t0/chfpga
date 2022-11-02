@@ -171,7 +171,6 @@ dut0: entity work.chan_crossbar
 		CTRL_CMD_DAT.TDATA => cmd_tdata,
 		CTRL_CMD_DAT.TVALID => cmd_tvalid,
 		CTRL_CMD_DAT.TLAST => cmd_tlast,
-		CTRL_CMD_DAT.DUMMY =>'0',
 		CTRL_CMD_RDY.TREADY =>cmd_tready,
 		CTRL_RPLY_DAT => open,
 		CTRL_RPLY_RDY => (TREADY => '1'),

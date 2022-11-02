@@ -105,10 +105,10 @@ signal chan_reset: std_logic;
 -- signal t2,t3: std_logic;
 
 
-signal udp_rx_dat: AXIS8_DAT_STRUCT := (tvalid=>'0', tdata=>x"00", tlast=>'0', dummy =>'0');
+signal udp_rx_dat: AXIS8_DAT_STRUCT := (tvalid=>'0', tdata=>x"00", tlast=>'0');
 signal udp_rx_rdy: AXIS8_RDY_STRUCT;
 
-signal prb_dat, cmd_dat, rply_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_PROBES-1 downto 0) := (others => (tvalid=>'0', tdata=>x"00", tlast=>'0', dummy =>'0'));
+signal prb_dat, cmd_dat, rply_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_PROBES-1 downto 0) := (others => (tvalid=>'0', tdata=>x"00", tlast=>'0'));
 signal prb_rdy, cmd_rdy, rply_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_PROBES-1 downto 0);
 
 begin
@@ -144,11 +144,10 @@ prober0: entity work.prober
         OUT_RDY => prb_rdy(0),
         OUT_CLK => clk125,
 
-		-- CTRL_CMD_DAT => (TDATA=> cmd_tdata, TVALID => cmd_tvalid, TLAST => cmd_tlast, DUMMY =>'0'),
+		-- CTRL_CMD_DAT => (TDATA=> cmd_tdata, TVALID => cmd_tvalid, TLAST => cmd_tlast),
 		CTRL_CMD_IN_DAT.TDATA  => cmd_dat(0).tdata,
 		CTRL_CMD_IN_DAT.TVALID => cmd_dat(0).tvalid,
 		CTRL_CMD_IN_DAT.TLAST  => cmd_dat(0).tlast,
-		CTRL_CMD_IN_DAT.DUMMY  => '0',
 		CTRL_CMD_IN_RDY.TREADY => cmd_rdy(0).tready,
 
 		CTRL_RPLY_OUT_DAT => rply_dat(0),

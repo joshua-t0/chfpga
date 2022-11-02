@@ -94,7 +94,6 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 		CTRL_CMD_IN_DAT.TDATA => cmd_tdata,
 		CTRL_CMD_IN_DAT.TVALID => cmd_tvalid,
 		CTRL_CMD_IN_DAT.TLAST => cmd_tlast,
-		CTRL_CMD_IN_DAT.DUMMY =>'0',
 		CTRL_CMD_IN_RDY.TREADY =>cmd_tready,
 		CTRL_RPLY_OUT_DAT => RPLY_OUT_DAT,
 		CTRL_RPLY_OUT_RDY => (TREADY => '1'),

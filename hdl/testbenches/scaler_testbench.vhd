@@ -134,11 +134,10 @@ dut0: entity work.scaler
 		clk => out_clk,
 		ant_reset => reset,
 
-		-- CTRL_CMD_DAT => (TDATA=> cmd_tdata, TVALID => cmd_tvalid, TLAST => cmd_tlast, DUMMY =>'0'),
+		-- CTRL_CMD_DAT => (TDATA=> cmd_tdata, TVALID => cmd_tvalid, TLAST => cmd_tlast),
 		CTRL_CMD_IN_DAT.TDATA => cmd_tdata,
 		CTRL_CMD_IN_DAT.TVALID => cmd_tvalid,
 		CTRL_CMD_IN_DAT.TLAST => cmd_tlast,
-		CTRL_CMD_IN_DAT.DUMMY => '0',
 		CTRL_CMD_IN_RDY.TREADY =>cmd_tready,
 
 		CTRL_RPLY_OUT_DAT => open,

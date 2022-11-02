@@ -107,7 +107,7 @@ entity xglink_array is
 
 
 		-- Control and reply streams
-		CMD_DAT: in AXIS8_DAT_STRUCT:= (TDATA=> (others=>'0'), TVALID=>'0', TLAST=>'0', DUMMY =>'0');
+		CMD_DAT: in AXIS8_DAT_STRUCT := (TDATA=> (others=>'0'), TVALID=>'0', TLAST=>'0');
 		CMD_RDY: out AXIS8_RDY_STRUCT;
 		RPLY_DAT: out AXIS8_DAT_STRUCT;
 		RPLY_RDY: in AXIS8_RDY_STRUCT := (TREADY => '1');

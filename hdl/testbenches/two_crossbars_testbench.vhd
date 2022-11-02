@@ -267,11 +267,10 @@ crossbar1: entity work.chan_crossbar
 		clk => out_clk,
 		rst => reset,
 
-		-- CTRL_CMD_DAT => (TDATA=> cmd_tdata1, TVALID => cmd_tvalid1, TLAST => cmd_tlast1, DUMMY =>'0'),
+		-- CTRL_CMD_DAT => (TDATA=> cmd_tdata1, TVALID => cmd_tvalid1, TLAST => cmd_tlast1),
 		CTRL_CMD_DAT.TDATA => cmd_tdata1,
 		CTRL_CMD_DAT.TVALID => cmd_tvalid1,
 		CTRL_CMD_DAT.TLAST => cmd_tlast1,
-		CTRL_CMD_DAT.DUMMY => '0',
 		CTRL_CMD_RDY.TREADY =>cmd_tready1,
 		CTRL_RPLY_DAT => open,
 		CTRL_RPLY_RDY => (TREADY => '1'),
@@ -318,7 +317,7 @@ bp_links0: entity work.xglink_array
 
 		areset => reset,
 
-		CMD_DAT => (TDATA=> cmd_tdata3, TVALID => cmd_tvalid3, TLAST => cmd_tlast3, DUMMY =>'0'),
+		CMD_DAT => (TDATA=> cmd_tdata3, TVALID => cmd_tvalid3, TLAST => cmd_tlast3),
 		CMD_RDY.TREADY =>cmd_tready3,
 		RPLY_DAT => open,
 		RPLY_RDY => (TREADY => '1'),
@@ -369,7 +368,6 @@ crossbar2: entity work.shuffle_crossbar
 		CTRL_CMD_DAT.TDATA => cmd_tdata2,
 		CTRL_CMD_DAT.TVALID => cmd_tvalid2,
 		CTRL_CMD_DAT.TLAST => cmd_tlast2,
-		CTRL_CMD_DAT.DUMMY => '0',
 
 		CTRL_CMD_RDY.TREADY =>cmd_tready2,
 		CTRL_RPLY_DAT => open,

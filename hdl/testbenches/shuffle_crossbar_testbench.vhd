@@ -142,11 +142,10 @@ dut0: entity work.shuffle_crossbar
 		clk =>out_clk,
 		rst => reset,
 
-		-- CTRL_CMD_DAT => (TDATA=> cmd_tdata, TVALID => cmd_tvalid, TLAST => cmd_tlast, DUMMY =>'0'),
+		-- CTRL_CMD_DAT => (TDATA=> cmd_tdata, TVALID => cmd_tvalid, TLAST => cmd_tlast),
 		CTRL_CMD_DAT.TDATA => cmd_tdata,
 		CTRL_CMD_DAT.TVALID => cmd_tvalid,
 		CTRL_CMD_DAT.TLAST => cmd_tlast,
-		CTRL_CMD_DAT.DUMMY => '0',
 
 		CTRL_CMD_RDY.TREADY =>cmd_tready,
 		CTRL_RPLY_DAT => open,

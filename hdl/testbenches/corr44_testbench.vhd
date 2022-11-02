@@ -139,7 +139,7 @@ corr0: entity work.corr44
 		out_clk                  => clk125,
 		out_rst                  => rst,
 
-		cmd_dat => (TDATA=>X"00",TVALID=>'0', TLAST=>'0', DUMMY=>'0'),
+		cmd_dat => (TDATA=>X"00",TVALID=>'0', TLAST=>'0'),
 		cmd_rdy => open,
 		rply_dat => open,
 		rply_rdy => (TREADY=>'1'),

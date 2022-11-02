@@ -374,7 +374,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 
 	PORT MAP(
 		-- Control interface (command and reply stream buses)
-		-- CTRL_CMD_IN_DAT => (TDATA=>xbar_cmd_dat(0).TDATA, TVALID=>xbar_cmd_dat(0).TVALID, TLAST=>xbar_cmd_dat(0).TLAST, DUMMY =>'0'),
+		-- CTRL_CMD_IN_DAT => (TDATA=>xbar_cmd_dat(0).TDATA, TVALID=>xbar_cmd_dat(0).TVALID, TLAST=>xbar_cmd_dat(0).TLAST),
 		CTRL_CMD_IN_DAT => xbar_cmd_dat(0),
 		-- CTRL_CMD_IN_RDY => xbar_cmd_rdy(0), -- does not work in sim
 		CTRL_CMD_IN_RDY.TREADY => xbar_cmd_rdy(0).TREADY, --works in sim
@@ -755,7 +755,7 @@ BIN_SEL_GEN: for i in 0 to NUMBER_OF_BIN_SEL-1 generate
 			shuffle_flags_mask => SHUFFLE_FLAGS_MASK,
 
 			-- Control Interface
-			-- ctrl_cmd_dat=> (TVALID=>xbar_cmd_dat(i+1).TVALID, TDATA=>xbar_cmd_dat(i+1).TDATA, TLAST=>xbar_cmd_dat(i+1).TLAST, DUMMY=>'0'),
+			-- ctrl_cmd_dat=> (TVALID=>xbar_cmd_dat(i+1).TVALID, TDATA=>xbar_cmd_dat(i+1).TDATA, TLAST=>xbar_cmd_dat(i+1).TLAST),
 			ctrl_cmd_dat=> xbar_cmd_dat(i+1),
 			ctrl_cmd_rdy=> xbar_cmd_rdy(i+1),
 			ctrl_rply_dat=> xbar_rply_dat(i+1),
