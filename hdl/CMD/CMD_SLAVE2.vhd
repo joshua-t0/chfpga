@@ -81,9 +81,6 @@ use UNISIM.VComponents.all;
 --!
 --!   NOTE: The even address must be read/write before the odd for the 16-bit (such as DRP) operation to succeed
 --!
---! If USE_ASYNC_FIFO is True, the CONTROL, STATUS and RAM/DRP interface operate on the CLK clock and RST reset.
---! Otherwiser  CLRT_CLK/CTRL_RST are used.
---!
 --!
 --! Possible architectures for a command system
 --! 1) basic bus: 8-bit data in, 8-bit data out, N-bit addr, wen, ren, rack: Assumes the module is alwats ready to accept a word. Does not work with slow write devices (DRP).
@@ -121,7 +118,7 @@ entity CTRL_SLAVE is
 		RAM_DIN : OUT  STD_LOGIC_VECTOR (RAM_DATA_WIDTH-1 downto 0);
 		RAM_DOUT : IN  STD_LOGIC_VECTOR (RAM_DATA_WIDTH-1 downto 0):=(others=>'0');
 		RAM_DOUT_RDY : IN  STD_LOGIC :='0'; -- To interface devices that have a ready pin. Set GLOBAL variable USE_RAM_DOUT_RDY to determine whether this pin is used or not
-		RAM_ADDR : OUT  STD_LOGIC_VECTOR (RAM_ADDR_WIDTH-1 downto 0);
+		RAM_ADDR : OUT  STD_LOGIC_VECTOR (max(RAM_ADDR_WIDTH-1, 0) downto 0); -- max() used to prevent null port warning
 		RAM_WR_EN : OUT  STD_LOGIC;
 		RAM_RD_EN : OUT  STD_LOGIC;
 		RAM_EN : OUT  STD_LOGIC
@@ -186,10 +183,10 @@ architecture Behavioral of CTRL_SLAVE is
 	signal wait_state: std_logic;
 
 
-	signal timeout: std_logic;
-	signal timeout_int: std_logic;
-	signal timeout_reset: std_logic;
-	signal timeout_ctr: unsigned(7 downto 0);
+	--signal timeout: std_logic;
+	--signal timeout_int: std_logic;
+	--signal timeout_reset: std_logic;
+	--signal timeout_ctr: unsigned(7 downto 0);
 	constant dly: time := 10 ps;
 begin
 
@@ -206,14 +203,26 @@ RAM_RDY <=
 CONTROL_BYTES <= CONTROL_BYTES_INT;
 STATUS_BYTES_INT <= STATUS_BYTES;
 
-RAM_ADDR  <= std_logic_vector(addr(RAM_ADDR_WIDTH downto 1)) when RAM_DATA_WIDTH=16 else std_logic_vector(addr(RAM_ADDR_WIDTH-1 downto 0));
-ram_en_int <= RAM_RD_EN_INT or RAM_WR_EN_INT; -- Added for tdevices with EN and WR control signals instead of RD and WR signals
-RAM_WR_EN <= RAM_WR_EN_INT;
-RAM_RD_EN <= RAM_RD_EN_INT;
-RAM_EN    <= ram_en_int;
-RAM_DIN <= RAM_DIN_INT(RAM_DATA_WIDTH-1 downto 0);
+-- Assign internal RAM_ADDR to output
+gen_ram_addr: if RAM_ADDR_WIDTH /= 0 generate
+	RAM_ADDR  <= std_logic_vector(addr(RAM_ADDR_WIDTH downto 1)) when RAM_DATA_WIDTH=16 else std_logic_vector(addr(RAM_ADDR_WIDTH-1 downto 0));
+	RAM_WR_EN <= RAM_WR_EN_INT;
+	RAM_RD_EN <= RAM_RD_EN_INT;
+	RAM_EN    <= ram_en_int;
+	RAM_DIN   <= RAM_DIN_INT(RAM_DATA_WIDTH-1 downto 0);
+end generate;
+gen_noram_addr: if RAM_ADDR_WIDTH = 0 generate -- special case to avoid null assignment warning if we don't use RAM
+	RAM_ADDR  <= (others => '0');
+	RAM_WR_EN <= '0';
+	RAM_RD_EN <= '0';
+	RAM_EN    <= '0';
+	RAM_DIN   <= (others => '0');
+end generate;
 
-timeout <= '1' when timeout_int='1' and timeout_reset = '0' else '0';
+
+ram_en_int <= RAM_RD_EN_INT or RAM_WR_EN_INT; -- Added for tdevices with EN and WR control signals instead of RD and WR signals
+
+--timeout <= '1' when timeout_int='1' and timeout_reset = '0' else '0';
 
 -- Command processor process
 cmd_proc: process(ctrl_clk)
@@ -244,15 +253,15 @@ cmd_proc: process(ctrl_clk)
 			RAM_RD_EN_INT <='0';
 
 			-- Manage timeout counter and flags
-			timeout_reset <= '0'; -- overriden below
-			if timeout_reset='1' then
-				timeout_int <= '0';
-				timeout_ctr <= (others=>'0');
-			elsif signed(timeout_ctr) = -1 then
-				timeout_int <= '1';
-			else
-				timeout_ctr <= timeout_ctr + 1;
-			end if;
+			--timeout_reset <= '0'; -- overriden below
+			--if timeout_reset='1' then
+			--	timeout_int <= '0';
+			--	timeout_ctr <= (others=>'0');
+			--elsif signed(timeout_ctr) = -1 then
+			--	timeout_int <= '1';
+			--else
+			--	timeout_ctr <= timeout_ctr + 1;
+			--end if;
 
 			-- Force a new state if timeout occurs
 			-- if timeout='1' then
@@ -269,7 +278,7 @@ cmd_proc: process(ctrl_clk)
 					count <= shift_left(to_unsigned(1, count'length), to_integer(unsigned(ctrl_cmd_in_dat.TDATA(4 downto 3)))); -- initialize byte counter as 2^COMMAND_COUNT
 					addr(18 downto 16) <= unsigned(ctrl_cmd_in_dat.TDATA(2 downto 0));
 					incr <='1';
-					timeout_reset <= '1'; -- Ignore timeouts while waiting for first command byte
+					--timeout_reset <= '1'; -- Ignore timeouts while waiting for first command byte
 					ctrl_cmd_in_rdy_int.TREADY <= '1'; -- We will always be ready to capture the next byte when it comes
 
 					if ctrl_cmd_in_dat.TVALID='1' and first='1' then
@@ -284,7 +293,7 @@ cmd_proc: process(ctrl_clk)
 					addr(15 downto 8) <= unsigned(ctrl_cmd_in_dat.TDATA);
 
 					if ctrl_cmd_in_dat.TVALID='1' then
-						timeout_reset <= '1';
+						--timeout_reset <= '1';
 						ctrl_cmd_in_rdy_int.TREADY<='1'; -- We will always capture the next byte when it comes
 						if ctrl_cmd_in_dat.TLAST='1' then
 							RX_STATE <= COMMAND_BYTE1;
@@ -299,9 +308,11 @@ cmd_proc: process(ctrl_clk)
 				---------------------
 
 					if  ctrl_cmd_in_dat.TVALID='1' and ctrl_cmd_in_rdy_int.TREADY='1' then -- we use TREADY to determine if we have already obtained a byte.
-						timeout_reset <= '1';
+						--timeout_reset <= '1';
 						addr(7 downto 0) <= unsigned(ctrl_cmd_in_dat.TDATA); -- grab the final byte of the address
-						addr(18 downto ADDR_WIDTH) <= (others=>'0'); -- zero all the address bits we dont need
+						if ADDR_WIDTH <= 18 then -- avoid null assignment warnings
+							addr(18 downto ADDR_WIDTH) <= (others=>'0'); -- zero all the address bits we dont need
+						end if;
 						ctrl_cmd_in_rdy_int.TREADY <= '0'; -- Don't read any incoming byte by default. Will be overriden below as needed.
 					end if;
 
@@ -347,7 +358,7 @@ cmd_proc: process(ctrl_clk)
 						when OPCODE_WRITE_CONTROL | OPCODE_WRITE_CONTROL_MASK=> -- wait for an incoming byte, and write it to the appropriate control byte
 						---------------------
 							if ctrl_cmd_in_dat.TVALID='1' then
-								timeout_reset <= '1';
+								--timeout_reset <= '1';
 								if opcode = OPCODE_WRITE_CONTROL_MASK then -- if in mask mode, write only when you get 2 bytes
 									if is_msb='1' then
 										CONTROL_BYTES_INT(byte_index_var) <= (CONTROL_BYTES_INT(byte_index_var) and not ctrl_cmd_in_dat.TDATA) or (previous_byte and ctrl_cmd_in_dat.TDATA); -- Store byte in control word
@@ -368,7 +379,7 @@ cmd_proc: process(ctrl_clk)
 						-- wait for the reply bus to be ready and send a control byte value. Repeat 'count' times.
 						---------------------
 							if ctrl_rply_out_dat_int.TVALID='0' or ctrl_rply_out_rdy.TREADY='1' then -- if reply channel ready
-								timeout_reset <= '1';
+								--timeout_reset <= '1';
 								ctrl_rply_out_dat_int.TDATA <= CONTROL_BYTES_INT(byte_index_var);
 								ctrl_rply_out_dat_int.TVALID <= '1';
 								ctrl_rply_out_dat_int.TLAST <= '0';
@@ -386,7 +397,7 @@ cmd_proc: process(ctrl_clk)
 						-- wait for the reply bus to be ready and send a status byte value. Repeat 'count' times.
 						---------------------
 							if ctrl_rply_out_dat_int.TVALID='0' or ctrl_rply_out_rdy.TREADY='1' then -- if reply channel ready
-								timeout_reset <= '1';
+								--timeout_reset <= '1';
 								ctrl_rply_out_dat_int.TDATA <= STATUS_BYTES_INT(byte_index_var);
 								ctrl_rply_out_dat_int.TVALID <= '1';
 								ctrl_rply_out_dat_int.TLAST <= '0';
@@ -406,13 +417,14 @@ cmd_proc: process(ctrl_clk)
 							if RAM_ADDR_WIDTH/=0 then --Make sure this block of code is not synthesized if no RAM/DRP access is needed
 
 								if wait_state='0' and ctrl_cmd_in_dat.TVALID='1' then
-									timeout_reset <= '1';
+									--timeout_reset <= '1';
 									if RAM_DATA_WIDTH=16 and is_msb='1' then -- if we are in 16-bit mode and this is the second byte (MSB)
 										RAM_DIN_INT(15 downto 8) <= ctrl_cmd_in_dat.TDATA;
 										RAM_DIN_INT(7 downto 0) <= previous_byte;
 										RAM_WR_EN_INT <='1';
 										addr <= addr + 1;
 									else -- if 8 bit mode, store and write always
+										RAM_DIN_INT(15 downto 8) <= (others => '0'); -- make sure the net is always driven even in 8-bit mode to suppress warnings
 										RAM_DIN_INT(7 downto 0) <= ctrl_cmd_in_dat.TDATA;
 										RAM_WR_EN_INT <='1';
 										if incr='1' then
@@ -453,13 +465,13 @@ cmd_proc: process(ctrl_clk)
 								if ctrl_rply_out_dat_int.TVALID='0' or ctrl_rply_out_rdy.TREADY='1' then -- if reply channel ready
 									if RAM_DATA_WIDTH=16 then
 										if send_msb='1' then -- if send msb
-											timeout_reset <= '1';
+											--timeout_reset <= '1';
 											ctrl_rply_out_dat_int.TVALID <= '1';
 											ctrl_rply_out_dat_int.TDATA <= ram_dout_msb;
 											send_msb <= '0';
 											RAM_RD_EN_INT <= '1'; -- fetch next word
 										elsif RAM_RDY='1' then
-											timeout_reset <= '1';
+											--timeout_reset <= '1';
 											ctrl_rply_out_dat_int.TVALID <= '1';
 											ctrl_rply_out_dat_int.TDATA <= RAM_DOUT(7 downto 0);
 											ram_dout_msb <= RAM_DOUT(15 downto 8); -- store the MSB for later transmission
@@ -467,7 +479,7 @@ cmd_proc: process(ctrl_clk)
 											-- RAM_RD_EN_INT <='0'; -- stop reading while we send the MSB
 										end if;
 									elsif RAM_RDY='1' then
-										timeout_reset <= '1';
+										--timeout_reset <= '1';
 										ctrl_rply_out_dat_int.TVALID <= '1';
 										ctrl_rply_out_dat_int.TDATA <= RAM_DOUT(7 downto 0);
 										RAM_RD_EN_INT <= '1'; -- fetch next byte
@@ -508,7 +520,7 @@ cmd_proc: process(ctrl_clk)
 				RX_STATE<=COMMAND_BYTE1;
 				-- RAM_RD_EN_INT <='0';
 				-- RAM_WR_EN_INT <='0';
-				timeout_reset <= '1';
+				--timeout_reset <= '1';
 				for i in 0 to NUMBER_OF_CONTROL_BYTES-1 loop
 					for j in 0 to 7 loop
 						CONTROL_BYTES_INT(i)(j)<=DEFAULT_CONTROL_BYTES(i*8+7-j); -- Clock the control bytes on the user clock
