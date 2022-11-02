@@ -129,8 +129,10 @@ signal axis_adcdaq_out_reg2 : AXIS32_DAT_STRUCT;
 signal axis_funcgen_out     : AXIS32_DAT_STRUCT;
 signal axis_fft_out         : AXIS72_DAT_STRUCT;
 signal axis_scaler_out      : AXIS32_DAT_STRUCT;
+signal axis_scaler_out_tvalid : std_logic;
 
 signal axis_fifo_out_tvalid : std_logic;
+signal axis_fifo_out_tvalid_not_rst : std_logic;
 signal axis_fifo_out_tdata  : slv32;
 signal axis_fifo_out_tlast  : std_logic;
 signal axis_fifo_out_tuser  : slv4;
@@ -452,13 +454,13 @@ chan_fifo0 : entity work.CHAN_FIFO2
     PORT MAP (
         rst                => fifo_rst, -- asynchronous
         wr_clk             => in_clk,
-        wr_en              => axis_scaler_out.TVALID and not fifo_rst and (not fifo_almost_full or axis_scaler_out.TLAST), -- make sure we don't write during reset
+        wr_en              => axis_scaler_out_tvalid,
         din(31 downto 0)   => axis_scaler_out.TDATA,
         din(32)            => axis_scaler_out.TLAST,
         din(36 downto 33)  => axis_scaler_out.TUSER,
 
         rd_clk             => out_clk,
-        rd_en              => axis_fifo_out_tvalid and not fifo_rst, -- start reading only when there is data. make sure we don't read during reset. In simulation, tying rd_en to '1' causes 'valid' to be invalid.
+        rd_en              => axis_fifo_out_tvalid_not_rst,
         dout(31 downto 0)  => axis_fifo_out_tdata,
         dout(32)           => axis_fifo_out_tlast,
         dout(36 downto 33) => axis_fifo_out_tuser,
@@ -468,7 +470,8 @@ chan_fifo0 : entity work.CHAN_FIFO2
         overflow           => fifo_overflow,
         empty              => open
     );
-
+axis_scaler_out_tvalid <= axis_scaler_out.TVALID and not fifo_rst and (not fifo_almost_full or axis_scaler_out.TLAST); -- make sure we don't write during reset
+axis_fifo_out_tvalid_not_rst <= axis_fifo_out_tvalid and not fifo_rst; -- start reading only when there is data. make sure we don't read during reset. In simulation, tying rd_en to '1' causes 'valid' to be invalid.
 
 
 ---------------------------------------------------------------------
