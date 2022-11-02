@@ -341,7 +341,7 @@ signal gt_gtrxreset_all : slv(0 to NUMBER_OF_GTX-1);
 signal gt_txsequence_in: slv7_array(0 to NUMBER_OF_GTX-1);
 signal gt_rxresetdone_out: slv(0 to NUMBER_OF_GTX-1);
 signal gt_txresetdone_out: slv(0 to NUMBER_OF_GTX-1);
-signal gt_block_lock: slv(0 to NUMBER_OF_GTX-1);
+signal gt_block_lock: slv(0 to NUMBER_OF_GTX-1) := (others => '0'); -- default provided to attempt to squash undriven warnings when there is no RX
 signal quad_sel: std_logic_vector(1 downto 0);
 signal gt_seq_counter: slv8_array(0 to NUMBER_OF_GTX-1); -- counts from 0 to 65
 signal gt_scramble_en: slv(0 to NUMBER_OF_GTX-1);
