@@ -156,7 +156,7 @@ architecture Behavioral of udp_mac_rx is
 	--signal mac_addr_match: std_logic:='0'; -- init not needed, cleared when a new frame begins
 	--signal ip_addr_match: std_logic:='0'; -- init not needed
 	signal ip_addr_broadcast: std_logic;
-	signal mac_addr_broadcast: std_logic;
+	--signal mac_addr_broadcast: std_logic;
 	signal latest_remote_mac_addr_temp: std_logic_vector(47 downto 0);
 	signal latest_remote_ip_addr_temp: std_logic_vector(31 downto 0);
 	signal latest_remote_ip_port_temp: std_logic_vector(15 downto 0);
@@ -382,7 +382,7 @@ rx_back_end: process (RX_CLK, RST)
 						end if;
 						if (rx_data_wide = local_mac_addr or is_broadcast_var='1') then -- if this packet is destined to us (by exact address or by broadcast)
 							--mac_addr_match <= '1';
-							mac_addr_broadcast <= is_broadcast_var;
+							--mac_addr_broadcast <= is_broadcast_var;
 							rx_state_ctr <= (others=>'0');
 							rx_state <= RX_STATE_MAC_SRC_ADDR;
 						else
