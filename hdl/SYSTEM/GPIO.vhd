@@ -529,12 +529,18 @@ ADC_RST                    <= reverse_bits_and_dir(CONTROL_BYTES(0)(NUMBER_OF_AD
 -- CONTROL Byte 1
 CTRL_FLAG_BUCK_CLK_DIV <= UNSIGNED(CONTROL_BYTES(1));
 
-gen_LCD: if IMPLEMENT_LCD generate
 -- CONTROL Byte 2
+gen_LCD: if IMPLEMENT_LCD generate
 LCD_E  <= CONTROL_BYTES(2)(7);
 LCD_RS <= CONTROL_BYTES(2)(6);
 LCD_RW <= CONTROL_BYTES(2)(5);
 LCD_DB <= CONTROL_BYTES(2)(3 downto 0);
+end generate;
+gen_NOLCD: if not IMPLEMENT_LCD generate -- make sure the outputs are driven while the associated CTRL_SLAVE logic is synthesized out
+LCD_E  <= '0';
+LCD_RS <= '0';
+LCD_RW <= '0';
+LCD_DB <= (others => '0');
 end generate;
 
 -- CONTROL Byte 3
@@ -659,7 +665,7 @@ STATUS_BYTES(24) <= to_slv(CHANNELIZERS_CLOCK_SOURCE, 8);
 -- Connect signals to module ports
 
 -- STATUS Bytes 25-30
---STATUS_BYTES(25 to 30) <= to_slv8_array(local_mac_addr_int);
+STATUS_BYTES(25 to 30) <= (others => (others => '0'));
 
 -- STATUS Bytes 31-32
 STATUS_BYTES(31) <= slot_sense_ctr(0); -- is this still used?
