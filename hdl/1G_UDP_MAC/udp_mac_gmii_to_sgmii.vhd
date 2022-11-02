@@ -64,8 +64,6 @@ entity gmii_to_sgmii is
 		signal_detect : in std_logic;                      -- Input from PMD to indicate presence of optical input.
 		mmcm_locked   : out std_logic;
 		reset_done    : out std_logic;
-		tx_reset_done : out std_logic;
-		rx_reset_done : out std_logic;
 
 		clk125        : in std_logic; -- Buffered (BUFG) 125 MHz clock, An independent clock source used for the main GT transceiver reset logic
 		reset         : in std_logic  -- Asynchronous reset for entire core.
@@ -94,8 +92,8 @@ architecture top_level of gmii_to_sgmii is
 	signal rxoutclk_bufh: std_logic;    -- buffered rxoutclk from GT transceiver
 
 	signal resetdone: std_logic;        -- To indicate that the GT transceiver has completed its reset cycle
-	signal tx_reset_done_int: std_logic;        --
-	signal rx_reset_done_int: std_logic;        --
+	--signal tx_reset_done_int: std_logic;        --
+	--signal rx_reset_done_int: std_logic;        --
 	signal mmcm_locked_int: std_logic;  -- MMCM locked signal.
 	signal mmcm_reset: std_logic;       -- MMCM reset signal.
 	signal clkfbout: std_logic;         -- MMCM feedback clock
@@ -114,7 +112,7 @@ architecture top_level of gmii_to_sgmii is
 	attribute DONT_TOUCH of userclk2_nobuf: signal is "yes";
 	attribute DONT_TOUCH of userclk_nobuf: signal is "yes";
 
-  -- PMA reset generation signals for tranceiver
+	-- PMA reset generation signals for tranceiver
 	signal pma_reset_pipe: std_logic_vector(3 downto 0); -- flip-flop pipeline for reset duration stretch
 	signal pma_reset: std_logic;                         -- Synchronous transcevier PMA reset
 	signal init_reset: std_logic := '1';
@@ -164,16 +162,16 @@ FUNCTION sel(b: BOOLEAN; if_true: integer; if_false: integer) return integer is
 
 begin
 
-   -----------------------------------------------------------------------------
-   -- Transceiver Clock Management
-   -----------------------------------------------------------------------------
-   -- Clock circuitry for the GT Transceiver uses a differential input clock.
+	 -----------------------------------------------------------------------------
+	 -- Transceiver Clock Management
+	 -----------------------------------------------------------------------------
+	 -- Clock circuitry for the GT Transceiver uses a differential input clock.
 
 -- Route txoutclk (62.5 MHz) input through a BUFG to send it to the MMCM
 bufg_txoutclk : BUFG
 port map (
-  I         => txoutclk_nobuf,
-  O         => txoutclk_bufg
+	I         => txoutclk_nobuf,
+	O         => txoutclk_bufg
 );
 
 
@@ -274,21 +272,21 @@ port map (
 		);
 
 	 bufh_rxclkout: BUFH
-	 	port map (
-	 		I     => rxoutclk_nobuf,
-	 		O     => rxoutclk_bufh
-	 	);
+		port map (
+			I     => rxoutclk_nobuf,
+			O     => rxoutclk_bufh
+		);
 
 
-   ---- Place the Rx recovered clock on a Global Clock Buffer (it may be possible
-   ---- to switch this for a BUFHCE/BUR and BUFMR combination)
-   --rxrecclkbufg : BUFG port map (
-   --  I   => rxoutclk,
-   --  O   => rxoutclk_buf
-   --);
+	 ---- Place the Rx recovered clock on a Global Clock Buffer (it may be possible
+	 ---- to switch this for a BUFHCE/BUR and BUFMR combination)
+	 --rxrecclkbufg : BUFG port map (
+	 --  I   => rxoutclk,
+	 --  O   => rxoutclk_buf
+	 --);
 
-   --  rxuserclk2 <= rxoutclk_buf;
-   --  rxuserclk  <= rxoutclk_buf;
+	 --  rxuserclk2 <= rxoutclk_buf;
+	 --  rxuserclk  <= rxoutclk_buf;
 
 
 --    -----------------------------------------------------------------------------
@@ -310,24 +308,24 @@ begin
 end process;
 
 
-   -- Create a reset pulse of a decent length
-   process(reset, clk125)
-   begin
-     if reset = '1' or user_reset='1' then
-       pma_reset_pipe <= "1111";
-     elsif rising_edge(clk125) then
-       pma_reset_pipe <= pma_reset_pipe(2 downto 0) & reset;
-     end if;
-   end process;
+	 -- Create a reset pulse of a decent length
+	 process(reset, clk125, user_reset)
+	 begin
+		 if reset = '1' or user_reset='1' then
+			 pma_reset_pipe <= "1111";
+		 elsif rising_edge(clk125) then
+			 pma_reset_pipe <= pma_reset_pipe(2 downto 0) & reset;
+		 end if;
+	 end process;
 
-   --pma_reset <= pma_reset_pipe(3) or init_reset;
-    pma_reset <= pma_reset_pipe(3); -- bypass initial delay. Will cause 3% uplink failure rate
+	 --pma_reset <= pma_reset_pipe(3) or init_reset;
+		pma_reset <= pma_reset_pipe(3); -- bypass initial delay. Will cause 3% uplink failure rate
 
-   tx_reset_done <= tx_reset_done_int;
-   rx_reset_done <= rx_reset_done_int;
-  ------------------------------------------------------------------------------
-  -- Instantiate the Core Block (core wrapper).
-  ------------------------------------------------------------------------------
+	 --tx_reset_done <= tx_reset_done_int;
+	 --rx_reset_done <= rx_reset_done_int;
+	------------------------------------------------------------------------------
+	-- Instantiate the Core Block (core wrapper).
+	------------------------------------------------------------------------------
 	core_wrapper : entity work.gmii_to_sgmii_bridge
 		port map (
 			-- GTX interface
@@ -464,53 +462,53 @@ end process;
 			--gt0_rxmonitorsel_in => (others=>'0')
 
 			);
-   -----------------------------------------------------------------------------
-   -- GMII clock
-   -----------------------------------------------------------------------------
+	 -----------------------------------------------------------------------------
+	 -- GMII clock
+	 -----------------------------------------------------------------------------
 
 	gmii_clk <= userclk2;
 
-   -----------------------------------------------------------------------------
-   -- GMII transmitter clock logic
-   -----------------------------------------------------------------------------
+	 -----------------------------------------------------------------------------
+	 -- GMII transmitter clock logic
+	 -----------------------------------------------------------------------------
 
-   -- Pipeline the TX interface to facilitate routing
-   process (userclk2)
-   begin
-      if rising_edge(userclk2) then
-         gmii_txd_iff    <= gmii_txd;
-         gmii_tx_en_iff  <= gmii_tx_en;
-         gmii_tx_er_iff  <= gmii_tx_er;
+	 -- Pipeline the TX interface to facilitate routing
+	 process (userclk2)
+	 begin
+			if rising_edge(userclk2) then
+				 gmii_txd_iff    <= gmii_txd;
+				 gmii_tx_en_iff  <= gmii_tx_en;
+				 gmii_tx_er_iff  <= gmii_tx_er;
 
-         gmii_txd_int    <= gmii_txd_iff;
-         gmii_tx_en_int  <= gmii_tx_en_iff;
-         gmii_tx_er_int  <= gmii_tx_er_iff;
+				 gmii_txd_int    <= gmii_txd_iff;
+				 gmii_tx_en_int  <= gmii_tx_en_iff;
+				 gmii_tx_er_int  <= gmii_tx_er_iff;
 
-         gmii_rx_dv   <= gmii_rx_dv_int;
-         gmii_rx_er <= gmii_rx_er_int;
-         gmii_rxd <= gmii_rxd_int;
-      end if;
-   end process;
+				 gmii_rx_dv   <= gmii_rx_dv_int;
+				 gmii_rx_er <= gmii_rx_er_int;
+				 gmii_rxd <= gmii_rxd_int;
+			end if;
+	 end process;
 
-   -- status_vector(0) <= resetdone;
-   --status_vector(0) <= resetdone;
-   --status_vector(3 downto 1) <= status_vector_int(3 downto 1);
-   --status_vector(4) <= pma_reset;
-   --status_vector(5) <= mmcm_locked_int;
-   --status_vector(6) <= signal_detect;
-   --status_vector(7) <= tx_reset_done_int;
-   --status_vector(8) <= rx_reset_done_int;
-   --status_vector(9) <= reset;
-   --status_vector(10) <= mmcm_reset;
+	 -- status_vector(0) <= resetdone;
+	 --status_vector(0) <= resetdone;
+	 --status_vector(3 downto 1) <= status_vector_int(3 downto 1);
+	 --status_vector(4) <= pma_reset;
+	 --status_vector(5) <= mmcm_locked_int;
+	 --status_vector(6) <= signal_detect;
+	 --status_vector(7) <= tx_reset_done_int;
+	 --status_vector(8) <= rx_reset_done_int;
+	 --status_vector(9) <= reset;
+	 --status_vector(10) <= mmcm_reset;
 
-   status_vector <= status_vector_int; -- pass the native core stus vector.
+	 status_vector <= status_vector_int; -- pass the native core stus vector.
 
-   basex_or_sgmii <= config_vector(31);
-   an_restart <= config_vector(30);
-   user_reset <= config_vector(29);
-   loss_of_signal <= config_vector(28);
-   config_vector_int <= config_vector(20 downto 16);
-   an_config_vector <= config_vector(15 downto 0);
+	 basex_or_sgmii <= config_vector(31);
+	 an_restart <= config_vector(30);
+	 user_reset <= config_vector(29);
+	 loss_of_signal <= config_vector(28);
+	 config_vector_int <= config_vector(20 downto 16);
+	 an_config_vector <= config_vector(15 downto 0);
 
 
 end top_level;

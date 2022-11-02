@@ -153,7 +153,7 @@ architecture Behavioral of udp_mac_rx is
 	-- signal rx_store_frame: std_logic:='0';
 	-- signal rx_data_fifo_ctr: unsigned(15 downto 0) := (others=>'0'); -- fifo data counter.
 
-	signal mac_addr_match: std_logic:='0'; -- init not needed, cleared when a new frame begins
+	--signal mac_addr_match: std_logic:='0'; -- init not needed, cleared when a new frame begins
 	signal ip_addr_match: std_logic:='0'; -- init not needed
 	signal ip_addr_broadcast: std_logic;
 	signal mac_addr_broadcast: std_logic;
@@ -363,7 +363,7 @@ rx_back_end: process (RX_CLK, RST)
 						if rx_frame_fifo_full='1' or unsigned(local_ip_port)=0 then -- skip the frame if the frame FIFO is full since we won't have room to store it anyway, or if we haven't defined a valid port yet.
 							rx_state <= RX_STATE_SKIP;
 						else
-							mac_addr_match <= '0';
+							--mac_addr_match <= '0';
 							ip_addr_match <= '0';
 							rx_state <= RX_STATE_MAC_DEST_ADDR;
 							rx_state_ctr <= (others=>'0');
@@ -381,7 +381,7 @@ rx_back_end: process (RX_CLK, RST)
 							is_broadcast_var := '0';
 						end if;
 						if (rx_data_wide = local_mac_addr or is_broadcast_var='1') then -- if this packet is destined to us (by exact address or by broadcast)
-							mac_addr_match <= '1';
+							--mac_addr_match <= '1';
 							mac_addr_broadcast <= is_broadcast_var;
 							rx_state_ctr <= (others=>'0');
 							rx_state <= RX_STATE_MAC_SRC_ADDR;

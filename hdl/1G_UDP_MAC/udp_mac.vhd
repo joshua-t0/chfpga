@@ -365,7 +365,6 @@ begin
 				config_vector => config_vector,
 				mmcm_locked   => mmcm_locked,
 				reset_done    => reset_done_int,
-				-- clk200        => clk200,
 				clk125        => clk125,
 				signal_detect => signal_detect,
 				reset         => rst
