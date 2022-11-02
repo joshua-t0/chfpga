@@ -129,7 +129,7 @@ type RPLY_STATE_TYPE is (RPLY_STATE_SCAN, RPLY_STATE_SEND);
 signal RPLY_STATE: RPLY_STATE_TYPE;
 signal RPLY_OVERFLOW: AXIS8_DAT_STRUCT;
 signal RPLY_PORT: integer range 0 to NUMBER_OF_PORTS-1;
-signal RPLY_IN_RDY_INT: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_PORTS-1 downto 0);
+signal RPLY_IN_RDY_INT_TREADY: slv(NUMBER_OF_PORTS-1 downto 0);
 signal RPLY_OUT_DAT_FIFO_INT: AXIS8_DAT_STRUCT;
 
 
@@ -142,16 +142,21 @@ gen_cmd_out: for i in 0 to NUMBER_OF_PORTS-1 generate
 	CMD_OUT_DAT(i).TDATA <= cmd_out_dat_int_tdata(i);
 	CMD_OUT_DAT(i).TVALID <= cmd_out_dat_int_tvalid(i);
 	CMD_OUT_DAT(i).TLAST <= cmd_out_dat_int_tlast(i);
+	RPLY_IN_RDY(i).TREADY <= RPLY_IN_RDY_INT_TREADY(i);
 end generate;
+RPLY_OUT_DAT_FIFO <= RPLY_OUT_DAT_FIFO_INT;
+CMD_IN_RDY_FIFO <= CMD_IN_RDY_FIFO_INT;
+
 
 --! Instantiate a FIFO at the input port
 FIFO0 : entity work.CMD_SYNC_FIFO
   PORT MAP (
+  		-- External command input interface
 		CMD_A_DAT=>CMD_IN_DAT,
 		CMD_A_RDY=>CMD_IN_RDY,
 		RPLY_A_DAT=>RPLY_OUT_DAT,
 		RPLY_A_RDY=>RPLY_OUT_RDY,
-
+		-- FIFO'ed command input
 		CMD_B_DAT=>CMD_IN_DAT_FIFO,
 		CMD_B_RDY=>CMD_IN_RDY_FIFO,
 		RPLY_B_DAT=>RPLY_OUT_DAT_FIFO,
@@ -161,7 +166,6 @@ FIFO0 : entity work.CMD_SYNC_FIFO
 		CLK => CLK,
 		RST => RST
 		);
-CMD_IN_RDY_FIFO <= CMD_IN_RDY_FIFO_INT;
 
 
 cmd_proc: process(CLK,RST)
@@ -308,12 +312,10 @@ cmd_proc: process(CLK,RST)
 
 
 
-RPLY_IN_RDY<=RPLY_IN_RDY_INT;
-RPLY_OUT_DAT_FIFO<=RPLY_OUT_DAT_FIFO_INT;
 
 -- Control replies routing
 -- Monitors N reply buses, and when one is VALID, send the stream to the output until LAST
-rply_proc: process(CLK,RST)
+rply_proc: process(CLK, RST)
 	begin
 
 		if rising_edge(CLK) then
@@ -322,7 +324,7 @@ rply_proc: process(CLK,RST)
 				-- reset buses
 				RPLY_OUT_DAT_FIFO_INT.TVALID<='0';
 				for i in 0 to NUMBER_OF_PORTS-1 loop
-					RPLY_IN_RDY_INT(i).TREADY<='1';
+					RPLY_IN_RDY_INT_TREADY(i) <= '1';
 				end loop;
 
 				-- initialize state machine
@@ -339,14 +341,14 @@ rply_proc: process(CLK,RST)
 					WHEN RPLY_STATE_SCAN => -- If current antenna finished processing, set next state to SEND_CMD and increment antenna number in preparation for the next round
 
 						for i in 0 to NUMBER_OF_PORTS-1 loop
-							RPLY_IN_RDY_INT(i).TREADY<='0'; -- disable TREADY flag after previous state
+							RPLY_IN_RDY_INT_TREADY(i) <= '0'; -- disable TREADY flag after previous state
 						end loop;
 
 						-- find next port ready with a reply
 						for i in 0 to NUMBER_OF_PORTS-1 loop
 	--						if RPLY_IN_DAT(i).TVALID='1' and RPLY_OUT_RDY_FIFO.TREADY='1' then -- if source and destination are ready
 							if RPLY_IN_DAT(i).TVALID='1' then -- if source and destination are ready
-									RPLY_IN_RDY_INT(i).TREADY<='1';
+									RPLY_IN_RDY_INT_TREADY(i) <= '1';
 									RPLY_PORT<=i;
 									RPLY_STATE<=RPLY_STATE_SEND;
 							end if;
@@ -355,11 +357,11 @@ rply_proc: process(CLK,RST)
 					-- Send data from selected source port to the destination port
 					WHEN RPLY_STATE_SEND => --
 
-						RPLY_IN_RDY_INT(RPLY_PORT).TREADY<=RPLY_OUT_RDY_FIFO.TREADY; -- may be overriden below
+						RPLY_IN_RDY_INT_TREADY(RPLY_PORT) <= RPLY_OUT_RDY_FIFO.TREADY; -- may be overriden below
 
 						-- Output the data to the destination
 						if RPLY_OUT_RDY_FIFO.TREADY='1' or RPLY_OUT_DAT_FIFO_INT.TVALID='0' then -- if the bus is ready to receive a new byte
-							if RPLY_IN_DAT(RPLY_PORT).TVALID='1' and RPLY_IN_RDY_INT(RPLY_PORT).TREADY='1' then -- if a new source byte is being read
+							if RPLY_IN_DAT(RPLY_PORT).TVALID='1' and RPLY_IN_RDY_INT_TREADY(RPLY_PORT) = '1' then -- if a new source byte is being read
 								if RPLY_OVERFLOW.TVALID='1' then -- if there was an overflow byte, use it
 									RPLY_OUT_DAT_FIFO_INT<=RPLY_OVERFLOW;
 									RPLY_OVERFLOW<=RPLY_IN_DAT(RPLY_PORT);
@@ -378,7 +380,7 @@ rply_proc: process(CLK,RST)
 								-- if the destination is not ready but we already issued it the TREADY (saying we accepted the transfer), then forward the byte in the overflow.
 							 -- This happens because the TREADy from the destination is registered and arrives late.
 							 -- This is esentially implements a 1 deep FIFO
-							if RPLY_IN_DAT(RPLY_PORT).TVALID='1' and RPLY_IN_RDY_INT(RPLY_PORT).TREADY='1' then  -- otherwise if one is available from the source , send it
+							if RPLY_IN_DAT(RPLY_PORT).TVALID='1' and RPLY_IN_RDY_INT_TREADY(RPLY_PORT) = '1' then  -- otherwise if one is available from the source , send it
 								RPLY_OVERFLOW<=RPLY_IN_DAT(RPLY_PORT);
 							end if;
 						end if;
@@ -387,7 +389,7 @@ rply_proc: process(CLK,RST)
 						-- wait until the last byte of a packet has been read, then disable the TREADY and go back to scanning
 						-- we could move this one cycle earlier to remove latency
 						if RPLY_OUT_DAT_FIFO_INT.TVALID='1' and RPLY_OUT_DAT_FIFO_INT.TLAST='1' and RPLY_OUT_RDY_FIFO.TREADY='1' then -- if we read the last byte of the frame
-								RPLY_IN_RDY_INT(RPLY_PORT).TREADY<='0'; -- stop accepting data because the next state will not process the transfer
+								RPLY_IN_RDY_INT_TREADY(RPLY_PORT) <= '0'; -- stop accepting data because the next state will not process the transfer
 								RPLY_STATE<=RPLY_STATE_SCAN;
 						end if;
 				end case;
