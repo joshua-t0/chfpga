@@ -86,10 +86,10 @@ signal SYSMON_DIN: STD_LOGIC_VECTOR(15 downto 0);
 signal SYSMON_DRDY: STD_LOGIC;
 signal SYSMON_DEN: STD_LOGIC;
 signal SYSMON_WR_EN: STD_LOGIC;
-signal SYSMON_ALM: STD_LOGIC_VECTOR(7 downto 0);
+signal SYSMON_ALM: STD_LOGIC_VECTOR(15 downto 0);
 signal SYSMON_BUSY: STD_LOGIC;
 signal SYSMON_OVERTEMP: STD_LOGIC;
-signal SYSMON_CHANNEL: STD_LOGIC_VECTOR(4 downto 0);
+signal SYSMON_CHANNEL: STD_LOGIC_VECTOR(5 downto 0);
 signal SYSMON_EOC: STD_LOGIC;
 signal SYSMON_EOS: STD_LOGIC;
 
@@ -119,7 +119,7 @@ STATUS_BYTES(0)(0)<=SYSMON_BUSY;
 STATUS_BYTES(1)(7)<=SYSMON_BUSY;
 STATUS_BYTES(1)(6)<=SYSMON_EOS;
 STATUS_BYTES(1)(5)<=SYSMON_EOC;
-STATUS_BYTES(1)(4 downto 0)<=SYSMON_CHANNEL;
+STATUS_BYTES(1)(4 downto 0)<=SYSMON_CHANNEL(4 downto 0);
 
 
 FAN_PWM<=CONTROL_BYTES_FAN_EN or SYSMON_OVERTEMP or '1';
@@ -227,7 +227,7 @@ SYSMON0 : SYSMON
 		BUSY => SYSMON_BUSY, -- 1-bit output ADC busy signal
 		OT => SYSMON_OVERTEMP, -- 1-bit output over temperature alarm
 
-		CHANNEL => SYSMON_CHANNEL, -- 5-bit output channel selection
+		CHANNEL => SYSMON_CHANNEL(4 downto 0), -- 5-bit output channel selection
 		EOC => SYSMON_EOC, -- 1-bit output end of conversion
 		EOS => SYSMON_EOS, -- 1-bit output end of sequence
 		CONVST => '0', -- 1-bit input convert start
@@ -288,11 +288,11 @@ XADC0 : XADC
 		JTAGLOCKED => open, -- 1-bit output DRP port lock
 		JTAGMODIFIED => open, -- 1-bit output JTAG write to DRP
 
-		ALM => SYSMON_ALM, -- 7-bit output alarm for temp, Vccint and Vccaux etc.
+		ALM => SYSMON_ALM(7 downto 0), -- 7-bit output alarm for temp, Vccint and Vccaux etc.
 		BUSY => SYSMON_BUSY, -- 1-bit output ADC busy signal
 		OT => SYSMON_OVERTEMP, -- 1-bit output over temperature alarm
 
-		CHANNEL => SYSMON_CHANNEL, -- 5-bit output channel selection
+		CHANNEL => SYSMON_CHANNEL(4 downto 0), -- 5-bit output channel selection
 		EOC => SYSMON_EOC, -- 1-bit output end of conversion
 		EOS => SYSMON_EOS, -- 1-bit output end of sequence
 		CONVST => '0', -- 1-bit input convert start
@@ -371,14 +371,12 @@ SYSMON_ZUP_GEN: if FPGA_SERIES = FPGA_ULTRASCALEPLUS generate  --Might need more
 		DI => SYSMON_DIN, -- 16-bit input data bus for dynamic reconfig
 		DWE => SYSMON_WR_EN, -- 1-bit input write enable for dynamic reconfig
 
-		ALM(15 downto 8) => open, -- 16-bit output alarm for temp, Vccint and Vccaux
-		ALM(7 downto 0) => SYSMON_ALM, -- 16-bit output alarm for temp, Vccint and Vccaux
+		ALM => SYSMON_ALM(15 downto 0), -- 16-bit output alarm for temp, Vccint and Vccaux
 		BUSY => SYSMON_BUSY, -- 1-bit output ADC busy signal
 		OT => SYSMON_OVERTEMP, -- 1-bit output over temperature alarm
 
         ADC_DATA            => open,
-		CHANNEL(5) => open,
-		CHANNEL(4 downto 0) => SYSMON_CHANNEL, -- 5-bit output channel selection
+		CHANNEL => SYSMON_CHANNEL(5 downto 0), -- 5-bit output channel selection
 		EOC => SYSMON_EOC, -- 1-bit output end of conversion
 		EOS => SYSMON_EOS, -- 1-bit output end of sequence
 		CONVST => '0', -- 1-bit input convert start
