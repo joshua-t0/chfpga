@@ -205,6 +205,7 @@ STATUS_BYTES_INT <= STATUS_BYTES;
 
 -- Assign internal RAM_ADDR to output
 gen_ram_addr: if RAM_ADDR_WIDTH /= 0 generate
+	ram_en_int <= RAM_RD_EN_INT or RAM_WR_EN_INT; -- Added for tdevices with EN and WR control signals instead of RD and WR signals
 	RAM_ADDR  <= std_logic_vector(addr(RAM_ADDR_WIDTH downto 1)) when RAM_DATA_WIDTH=16 else std_logic_vector(addr(RAM_ADDR_WIDTH-1 downto 0));
 	RAM_WR_EN <= RAM_WR_EN_INT;
 	RAM_RD_EN <= RAM_RD_EN_INT;
@@ -217,10 +218,10 @@ gen_noram_addr: if RAM_ADDR_WIDTH = 0 generate -- special case to avoid null ass
 	RAM_RD_EN <= '0';
 	RAM_EN    <= '0';
 	RAM_DIN   <= (others => '0');
+	RAM_DIN_INT <= (others => '0');
 end generate;
 
 
-ram_en_int <= RAM_RD_EN_INT or RAM_WR_EN_INT; -- Added for tdevices with EN and WR control signals instead of RD and WR signals
 
 --timeout <= '1' when timeout_int='1' and timeout_reset = '0' else '0';
 
@@ -244,13 +245,16 @@ cmd_proc: process(ctrl_clk)
 				previous_byte <= ctrl_cmd_in_dat.TDATA;
 			end if;
 
-			ram_rdy_dly1 <= ram_en_int; -- delayed version of RAM_RD_EN used to generate the RAM_DOUT_RDY if the RAM does not provide one
-			ram_rdy_dly2 <= ram_rdy_dly1; -- delayed version of RAM_RD_EN used to generate the RAM_DOUT_RDY if the RAM does not provide one
 
 			byte_index_var := to_integer(unsigned(addr(CONTROL_STATUS_ADDR_WIDTH-1 downto 0))); -- Three bits of the address are used to distinguish between RAM access "1XX", Coontrol "000", Status "010", Sticky "011" . The rest is used to index the control/status bytes.
 
-			RAM_WR_EN_INT <='0'; -- Read/writes are single pulses. Overriden below when needed.
-			RAM_RD_EN_INT <='0';
+			if RAM_ADDR_WIDTH /=0 then -- initialize only when used to prevent warnings
+				ram_rdy_dly1 <= ram_en_int; -- delayed version of RAM_RD_EN used to generate the RAM_DOUT_RDY if the RAM does not provide one
+				ram_rdy_dly2 <= ram_rdy_dly1; -- delayed version of RAM_RD_EN used to generate the RAM_DOUT_RDY if the RAM does not provide one
+				RAM_WR_EN_INT <='0'; -- Read/writes are single pulses. Overriden below when needed.
+				RAM_RD_EN_INT <='0';
+			end if;
+
 
 			-- Manage timeout counter and flags
 			--timeout_reset <= '0'; -- overriden below
@@ -317,8 +321,10 @@ cmd_proc: process(ctrl_clk)
 					end if;
 
 					-- Prepare reply byte in case it is needed
-					is_msb <= '0';
-					send_msb <='0';
+					if RAM_ADDR_WIDTH /=0 and RAM_DATA_WIDTH=16 then -- initialize only when used to prevent warnings
+						send_msb <='0';
+					end if;
+					is_msb <= '0'; -- start with even byte
 					wait_state <= '0'; -- we do not start in a wait state for RAM reads
 					if opcode = OPCODE_WRITE_RAM then
 							incr <='0'; -- don't pre-increment address on the first RAM write: we need it to be stable during the read
