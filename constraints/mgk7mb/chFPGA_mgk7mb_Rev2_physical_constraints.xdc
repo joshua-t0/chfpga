@@ -1072,7 +1072,7 @@ set_operating_conditions -board large
 set_operating_conditions -heatsink high
 set_switching_activity -default_toggle_rate 50.000
 # set_switching_activity -toggle_rate 100.000 -type {bram_enable} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
+# set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all
 set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all 
 set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all 
 set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all 
