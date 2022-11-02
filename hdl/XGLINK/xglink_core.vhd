@@ -64,12 +64,12 @@ entity xglink_core is
 		tx_clk: out std_logic; -- 244.140625 MHz for LINK_SPEED=0, 322.265615 MHz for LINK_SPEED=1.
 		tx_resetdone: out std_logic_vector(0 to NUMBER_OF_TX_LANES-1); --! Indicates that the transmitter is ready to send data
 
-		rx_data: out slv32_array(0 to NUMBER_OF_RX_LANES-1);
-		rx_data_valid: out std_logic_vector(0 to NUMBER_OF_RX_LANES-1); --! Active high when  valid data is  placed on the bus
-		rx_header: out slv2_array(0 to NUMBER_OF_RX_LANES-1);
-		rx_header_valid: out std_logic_vector(0 to NUMBER_OF_RX_LANES-1); --! Indicates when the header is valid. This happen on the first half of each word.
-		rx_clk: out std_logic_vector(0 to NUMBER_OF_RX_LANES-1); --! clock synchronous with the rx data. Recovered from the received link.
-		rx_resetdone: out std_logic_vector(0 to NUMBER_OF_RX_LANES-1); --! Indicates that the receiver is ready to receive data
+		rx_data: out slv32_array(0 to max(NUMBER_OF_RX_LANES-1, 0));
+		rx_data_valid: out std_logic_vector(0 to max(NUMBER_OF_RX_LANES-1, 0)); --! Active high when  valid data is  placed on the bus
+		rx_header: out slv2_array(0 to max(NUMBER_OF_RX_LANES-1, 0));
+		rx_header_valid: out std_logic_vector(0 to max(NUMBER_OF_RX_LANES-1, 0)); --! Indicates when the header is valid. This happen on the first half of each word.
+		rx_clk: out std_logic_vector(0 to max(NUMBER_OF_RX_LANES-1, 0)); --! clock synchronous with the rx data. Recovered from the received link.
+		rx_resetdone: out std_logic_vector(0 to max(NUMBER_OF_RX_LANES-1, 0)); --! Indicates that the receiver is ready to receive data
 
 		control_bytes: out slv8_array(0 to NUMBER_OF_CONTROL_BYTES-1);
 		status_bytes: in slv8_array(0 to NUMBER_OF_STATUS_BYTES-1):=(others=>(others=>'0'));
