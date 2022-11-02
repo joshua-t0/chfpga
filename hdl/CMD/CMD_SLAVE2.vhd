@@ -153,7 +153,7 @@ architecture Behavioral of CTRL_SLAVE is
 	signal ctrl_cmd_in_rdy_int: AXIS8_RDY_STRUCT;
 	signal ctrl_rply_out_dat_int: AXIS8_DAT_STRUCT;
 
-	signal incr: std_logic;
+	signal ram_write_addr_incr: std_logic;
 	signal addr: unsigned(INT_ADDR_WIDTH-1 downto 0); --
 	signal count: unsigned(2**CTRL_CMD_COUNT_WIDTH-1 downto 0);
 	signal opcode: OPCODE_TYPE;
@@ -281,7 +281,6 @@ cmd_proc: process(ctrl_clk)
 					opcode <= ctrl_cmd_in_dat.TDATA(7 downto 5);
 					count <= shift_left(to_unsigned(1, count'length), to_integer(unsigned(ctrl_cmd_in_dat.TDATA(4 downto 3)))); -- initialize byte counter as 2^COMMAND_COUNT
 					addr(18 downto 16) <= unsigned(ctrl_cmd_in_dat.TDATA(2 downto 0));
-					incr <='1';
 					--timeout_reset <= '1'; -- Ignore timeouts while waiting for first command byte
 					ctrl_cmd_in_rdy_int.TREADY <= '1'; -- We will always be ready to capture the next byte when it comes
 
@@ -321,19 +320,21 @@ cmd_proc: process(ctrl_clk)
 					end if;
 
 					-- Prepare reply byte in case it is needed
-					if RAM_ADDR_WIDTH /=0 and RAM_DATA_WIDTH=16 then -- initialize only when used to prevent warnings
-						send_msb <='0';
+
+					-- Initialize RAM access-related signals
+					if RAM_ADDR_WIDTH /=0 then
+						if RAM_DATA_WIDTH=16 then -- initialize only when used to prevent warnings
+							send_msb <='0';
+						end if;
+						ram_write_addr_incr <='0'; -- If we write to RAM, don't increment the address on when we setup the first RAM write as addr is already the target address
 					end if;
+
 					is_msb <= '0'; -- start with even byte
 					wait_state <= '0'; -- we do not start in a wait state for RAM reads
-					if opcode = OPCODE_WRITE_RAM then
-							incr <='0'; -- don't pre-increment address on the first RAM write: we need it to be stable during the read
-					end if;
 
                     -- we use TREADY to determine if we have already obtained a byte
 					if (ctrl_cmd_in_dat.TVALID='1' or ctrl_cmd_in_rdy_int.TREADY='0') and (ctrl_rply_out_dat_int.TVALID='0' or  ctrl_rply_out_rdy.TREADY='1') then -- if the last command byte is available and the reply channel is ready
 						-- Send a dummy reply byte header. The value is not important: it will be replaced by MASTER with a sequence number.
-						-- ctrl_rply_out_dat_int.TDATA <= is_write & incr & "000000";
 						ctrl_rply_out_dat_int.TVALID <= '1';
 
 						if opcode=OPCODE_READ_CONTROL or opcode=OPCODE_READ_STATUS or opcode=OPCODE_READ_RAM  then -- if is_write='0'
@@ -433,10 +434,13 @@ cmd_proc: process(ctrl_clk)
 										RAM_DIN_INT(15 downto 8) <= (others => '0'); -- make sure the net is always driven even in 8-bit mode to suppress warnings
 										RAM_DIN_INT(7 downto 0) <= ctrl_cmd_in_dat.TDATA;
 										RAM_WR_EN_INT <='1';
-										if incr='1' then
+										-- Set the write address along with WR_EN=1 and the data.
+										-- We don't increment the address on the first write of the block, as addr already contains our first target address.
+										-- But we set ram_write_addr_incr=1 so we will increment it when we setup the next write cycles.
+										if ram_write_addr_incr='1' then
 											addr <= addr + 1;
 										end if;
-										incr<='1';
+										ram_write_addr_incr<='1';
 									end if;
 
 									if USE_PIPELINED_RAM_WRITE=FALSE and (RAM_DATA_WIDTH/=16 or is_msb='1') then -- if we need to wait for a ready signal and we actually wrote a byte/word (i.e. not interrupted half-word), then process a wait state. The end of frame will be handled there.
