@@ -247,7 +247,7 @@
               (property RSTREG_PRIORITY_A (string "REGCE") (owner "Xilinx"))
               (property RSTREG_PRIORITY_B (string "REGCE") (owner "Xilinx"))
               (property SIM_COLLISION_CHECK (string "ALL") (owner "Xilinx"))
-              (property SIM_DEVICE (string "VIRTEX6") (owner "Xilinx"))
+
               (property SRVAL_A (string "00000") (owner "Xilinx"))
               (property SRVAL_B (string "00000") (owner "Xilinx"))
               (property WRITE_MODE_A (string "READ_FIRST") (owner "Xilinx"))
