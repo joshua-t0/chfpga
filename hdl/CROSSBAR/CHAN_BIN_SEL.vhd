@@ -909,6 +909,9 @@ fifo_wr_proc: process(clk)
 --!
 --! We use a native fall-through FIFOs to make the logic simpler and reduce the latency.
 
+
+number_of_input_lanes <= shift_left(resize(last_fifo_number-first_fifo_number, number_of_input_lanes'length), 2); --number of input lanes included in the output stream. This is just for populating the header.
+
 -- Build the packet header, to be used by the FIFO readout process
 -- Build the header
 -- Word 0
