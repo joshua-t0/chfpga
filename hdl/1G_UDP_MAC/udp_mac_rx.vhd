@@ -154,7 +154,7 @@ architecture Behavioral of udp_mac_rx is
 	-- signal rx_data_fifo_ctr: unsigned(15 downto 0) := (others=>'0'); -- fifo data counter.
 
 	--signal mac_addr_match: std_logic:='0'; -- init not needed, cleared when a new frame begins
-	signal ip_addr_match: std_logic:='0'; -- init not needed
+	--signal ip_addr_match: std_logic:='0'; -- init not needed
 	signal ip_addr_broadcast: std_logic;
 	signal mac_addr_broadcast: std_logic;
 	signal latest_remote_mac_addr_temp: std_logic_vector(47 downto 0);
@@ -364,7 +364,7 @@ rx_back_end: process (RX_CLK, RST)
 							rx_state <= RX_STATE_SKIP;
 						else
 							--mac_addr_match <= '0';
-							ip_addr_match <= '0';
+							--ip_addr_match <= '0';
 							rx_state <= RX_STATE_MAC_DEST_ADDR;
 							rx_state_ctr <= (others=>'0');
 						end if;
@@ -486,7 +486,7 @@ rx_back_end: process (RX_CLK, RST)
 							is_broadcast_var := '0';
 						end if;
 						if (rx_data_wide(31 downto 0) = local_IP_ADDR) or (is_broadcast_var='1') then
-							ip_addr_match <= '1';
+							--ip_addr_match <= '1';
 							ip_addr_broadcast <= is_broadcast_var;
 							rx_state <= RX_STATE_IP_SRC_PORT;
 							rx_state_ctr <= (others=>'0');

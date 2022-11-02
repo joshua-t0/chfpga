@@ -276,7 +276,7 @@ signal send_data: std_logic;
 signal send_data_flags: std_logic;
 signal send_frame_flags: std_logic;
 signal send_packet_flags: std_logic;
-signal send_odd_data_flags: std_logic;
+--signal send_odd_data_flags: std_logic;
 signal send_strobe: std_logic;
 
 signal number_of_input_lanes: unsigned(4 downto 0); -- Acceptable values: 4,8,12 or 16
@@ -284,8 +284,8 @@ signal number_of_input_lanes: unsigned(4 downto 0); -- Acceptable values: 4,8,12
 signal first_fifo_number: unsigned(1 downto 0); --
 signal last_fifo_number: unsigned(1 downto 0); --
 signal last_fifo_number_int: unsigned(1 downto 0); --
-signal lane_errors: std_logic_vector(15 downto 0); --! Represents errors received for each lane.
-signal half: std_logic;
+--signal lane_errors: std_logic_vector(15 downto 0); --! Represents errors received for each lane.
+--signal half: std_logic;
 
 signal bin_number : unsigned(9 downto 0); -- Up to 1024 bins per frame
 
@@ -1000,8 +1000,8 @@ fifo_rd_proc: process(clk)
 					send_header <='0';
 					send_data <='1';
 					-- fifo_ctr <= (others=>'0');
-					lane_errors <= (others => '0');
-					half <= '0';
+					--lane_errors <= (others => '0');
+					--half <= '0';
 					timestamp_ctr <= timestamp_ctr + frames_per_packet; --! Continuously count frames to provide a timestamp (32 bit counter). NOTE: if the FIFO overflows, we will miscount the frame number. That ia a fatal error.
 					send_strobe <= '0';
 				end if;
@@ -1042,7 +1042,7 @@ fifo_rd_proc: process(clk)
 				-- 	half <= '0';
 				if data_fifo_dout(64)='1' then -- if last data word of the packet, start sending scaler flags
 					send_data <='0';
-					send_odd_data_flags <= '0';
+					--send_odd_data_flags <= '0';
 					if send_flags='1' and bypass_reg='0' then
 						send_data_flags <='1';
 					else
