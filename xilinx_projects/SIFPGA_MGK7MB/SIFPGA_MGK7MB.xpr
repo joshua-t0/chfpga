@@ -114,13 +114,6 @@
           <Attr Name="UsedInImplementation" Val="0"/>
         </CompFileExtendedInfo>
       </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/CMD_FIFO/CMD_FIFO.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../../_Cores/KC705/AXI4S_REG_SLICE/AXI4S_REG_SLICE.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -258,6 +251,13 @@
           <Attr Name="UsedInImplementation" Val="0"/>
         </CompFileExtendedInfo>
       </File>
+      <File Path="$PPRDIR/../../_Cores/KC705/CMD_FIFO/CMD_FIFO.xci">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <File Path="$PPRDIR/../../_Cores/KC705/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -362,7 +362,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/CMD/CTRL_FIFO.vhd">
+      <File Path="$PPRDIR/../../hdl/CMD/CMD_SYNC_FIFO.vhd">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -381,6 +381,12 @@
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CORR/CMAC44.vhd">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../hdl/CMD/CMD_ASYNC_FIFO.vhd">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -643,7 +649,7 @@
           <Attr Name="UsedIn" Val="synthesis"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/ip_package.vhd">
+      <File Path="$PPRDIR/../../hdl/CMD/CTRL_FIFO.vhd">
         <FileInfo>
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -819,13 +825,6 @@
           <Attr Name="UsedInImplementation" Val="0"/>
         </CompFileExtendedInfo>
       </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/CMD_FIFO/CMD_FIFO.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../../_Cores/KC705/AXI4S_REG_SLICE/AXI4S_REG_SLICE.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -839,7 +838,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/CMD/CTRL_FIFO.vhd">
+      <File Path="$PPRDIR/../../hdl/CMD/CMD_SYNC_FIFO.vhd">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -946,7 +945,9 @@
     </Run>
     <Run Id="CHAN_synth_1" Type="Ft3:Synth" SrcSet="CHAN" Part="xc7k420tffg901-2" ConstrsSet="CHAN" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/CHAN_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/CHAN_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/CHAN_synth_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022"/>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
         <Step Id="synth_design"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -976,7 +977,9 @@
     </Run>
     <Run Id="CHAN_impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="CHAN" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="CHAN_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/CHAN_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/CHAN_impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
