@@ -57,6 +57,10 @@ library UNISIM;
 use UNISIM.VComponents.all;
 --! Project libraries
 use work.chFPGA_Package.all; --! Get all component definitions
+use work.chan_package.chan; --! Get chan component
+use work.udp_mac_package.udp_mac; --! Get udp_mac component
+use work.xglink_package.xglink_array; --! Get udp_mac component
+use work.ct_package.shuffle_crossbar; --! Get corner-turn engine components
 
 ----ENTITY DECLARATION ------------------------------------------------------------------------------
 --! @brief
@@ -1186,7 +1190,7 @@ gen_eth: if PHY_TYPE /= "NONE" generate
 	-- local_mac_addr <= to_slv(unsigned(std_logic_vector'(X"12_34_56_78" & local_ip_addr)) + unsigned(GPIO_DIP_SW));
 	-- RX_IP_DEST_ADDR <= to_slv((unsigned'(X"0A_0A") & unsigned(local_ip_addr)) + unsigned(GPIO_DIP_SW));
 	sfp_status_vector <= sfp_status_vector_int;
-	udp_mac0: entity work.udp_mac
+	udp_mac0: udp_mac  -- use component instantitation to defer binding
 		GENERIC MAP(
 			PHY_TYPE=> PHY_TYPE,  -- "GMII": Alaska 881111 PHY,  or "SGMII": SFP module
 			SGMII_CLOCK_SOURCE => SGMII_CLOCK_SOURCE,
@@ -2338,6 +2342,9 @@ CHANGEN: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
 		end process;
 
 	CHANi: CHAN
+		GENERIC MAP (
+			PLATFORM_ID => PLATFORM_ID
+			)
 		PORT MAP(
 
 			-- Channelizer input (on ANT_CLK)
@@ -2530,7 +2537,7 @@ BPSHFGEN: if NUMBER_OF_CROSSBAR_OUTPUTS>0 and NUMBER_OF_BP_PCB_SHUFFLE_LANES+NUM
 		end if;
 	end process;
 
-	bp_shuffle0: entity work.xglink_array
+	bp_shuffle0: xglink_array -- use component instantiation to delay binding in this if-generate block and prevent errors
 		generic map (
 			LINK_SPEED             => 0, -- 0: 7.5 Gb/s (244 MHz word clock), 1: 10 Gb/s (322 MHz word clock)
 			NUMBER_OF_LANES        => NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES,
@@ -2624,7 +2631,7 @@ CROSSBAR2_GEN: if NUMBER_OF_BP_SHUFFLE_LINKS>0 and NUMBER_OF_GPU_LINKS>0 generat
 	TOP_CROSSBAR2_RPLY_RDY<= top_rply_rdy(CROSSBAR2_BASE_PORT);
 	top_rply_dat(CROSSBAR2_BASE_PORT) <= TOP_CROSSBAR2_RPLY_DAT;
 
-	crossbar2: entity work.shuffle_crossbar
+	crossbar2: shuffle_crossbar -- use component instantiation to delay binding in if-generate block and prevent errors during elaboration
 		generic map (
 		 	PLATFORM_ID => PLATFORM_ID,  -- needed to select family-dependent FIFOs
 			NUMBER_OF_INPUT_LANES              => NUMBER_OF_BP_PCB_SHUFFLE_LANES, -- Number of input streams
@@ -2684,7 +2691,7 @@ CROSSBAR2_GEN: if NUMBER_OF_BP_SHUFFLE_LINKS>0 and NUMBER_OF_GPU_LINKS>0 generat
 	TOP_CROSSBAR3_RPLY_RDY<= top_rply_rdy(CROSSBAR3_BASE_PORT);
 	top_rply_dat(CROSSBAR3_BASE_PORT) <= TOP_CROSSBAR3_RPLY_DAT;
 
-	crossbar3: entity work.shuffle_crossbar
+	crossbar3: shuffle_crossbar -- use component instantiation to delay binding in if-generate block and prevent errors during elaboration
 		generic map (
 		 	PLATFORM_ID => PLATFORM_ID,  -- needed to select family-dependent FIFOs
 			NUMBER_OF_INPUT_LANES              => NUMBER_OF_BP_QSFP_SHUFFLE_LANES, -- Number of input streams
