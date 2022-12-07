@@ -396,6 +396,7 @@ frame_clk_out <= s_axis_tvalid(0) and s_axis_tlast(0);
 
 align0: entity work.CHAN_ALIGN
 	generic map (
+		PLATFORM_ID => PLATFORM_ID,
 		NUMBER_OF_LANES => NUMBER_OF_INPUT_LANES
 		-- DATA_TIMEOUT => 2
 	)

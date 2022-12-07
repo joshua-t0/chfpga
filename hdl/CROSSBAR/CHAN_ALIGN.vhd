@@ -31,6 +31,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --!
 entity CHAN_ALIGN is
 	GENERIC (
+		PLATFORM_ID: integer;
 		NUMBER_OF_LANES: INTEGER --! Number of channelizer lanes to align
 		);
 	PORT (
@@ -67,6 +68,8 @@ end CHAN_ALIGN;
 --- ARCHITECTURE DECLARATION and DEFINITION ---------------------
 --! Describes the logic that implement the entity's functionnalities. See this architecture for the implementation details.
 architecture Behavioral of CHAN_ALIGN is
+
+constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
 
 signal s_axis_tfirst: slv(0 to NUMBER_OF_LANES-1);
 signal fifo_din:      slv36_array(0 to NUMBER_OF_LANES-1);
@@ -113,28 +116,51 @@ fifogen: for i in 0 to NUMBER_OF_LANES-1 generate
 	fifo_din(i)(31 downto 0) <= s_axis_tdata(i);
 	fifo_wr_en(i) <= s_axis_tvalid(i) and not fifo_inhibit;
 
-	fifo0: entity work.shuffle_crossbar_align_fifo
-		PORT MAP (
-			din          => fifo_din(i),
-			wr_en        => fifo_wr_en(i),
-			full         => fifo_full(i),
-			overflow     => fifo_overflow(i),
+	ALIGN_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
 
-			dout         => fifo_dout(i),
-			valid        => fifo_tvalid(i),
-			rd_en        => fifo_rd_en(i),
-			empty        => fifo_empty(i),
-			almost_empty => fifo_almost_empty(i),
-			almost_full  => fifo_almost_full(i),
-			data_count => fifo_data_count(i),
-			clk          => clk,
-			srst         => fifo_rst
-		);
+		fifo0: entity work.shuffle_crossbar_align_fifo
+			PORT MAP (
+				din          => fifo_din(i),
+				wr_en        => fifo_wr_en(i),
+				full         => fifo_full(i),
+				overflow     => fifo_overflow(i),
 
-		fifo_tuser(i)(3 downto 1) <= fifo_dout(i)(35 downto 33);
-		fifo_tuser(i)(0)          <= '0';
-		fifo_tlast(i)             <= fifo_dout(i)(32);
-		fifo_tdata(i)             <= fifo_dout(i)(31 downto 0);
+				dout         => fifo_dout(i),
+				valid        => fifo_tvalid(i),
+				rd_en        => fifo_rd_en(i),
+				empty        => fifo_empty(i),
+				almost_empty => fifo_almost_empty(i),
+				almost_full  => fifo_almost_full(i),
+				data_count => fifo_data_count(i),
+				clk          => clk,
+				srst         => fifo_rst
+			);
+	end generate;
+
+	ALIGN_FIFO_USP: if FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
+		fifo0: entity work.shuffle_crossbar_align_fifo_usp
+			PORT MAP (
+				din          => fifo_din(i),
+				wr_en        => fifo_wr_en(i),
+				full         => fifo_full(i),
+				overflow     => fifo_overflow(i),
+
+				dout         => fifo_dout(i),
+				valid        => fifo_tvalid(i),
+				rd_en        => fifo_rd_en(i),
+				empty        => fifo_empty(i),
+				almost_empty => fifo_almost_empty(i),
+				almost_full  => fifo_almost_full(i),
+				data_count => fifo_data_count(i),
+				clk          => clk,
+				srst         => fifo_rst
+			);
+	end generate;
+
+	fifo_tuser(i)(3 downto 1) <= fifo_dout(i)(35 downto 33);
+	fifo_tuser(i)(0)          <= '0';
+	fifo_tlast(i)             <= fifo_dout(i)(32);
+	fifo_tdata(i)             <= fifo_dout(i)(31 downto 0);
 
 	--fifo_rd_en(i) <= fifo_tvalid(i) and not fifo_inhibit;
 	fifo_rd_en(i) <= all_valid;

@@ -45,6 +45,9 @@ entity CHAN is
     --    IMPLEMENT_FFT   : BOOLEAN :=GLOBAL_IMPLEMENT_FFT;
     --    SIM             : BOOLEAN :=GLOBAL_SIM
     --    );
+    GENERIC (
+        PLATFORM_ID  : integer
+        );
 
     PORT (
 
@@ -122,6 +125,8 @@ architecture Behavioral of CHAN is
 constant IMPLEMENT_CHAN  : BOOLEAN :=TRUE; -- (and that woul dbe bad)
 constant IMPLEMENT_FFT   : BOOLEAN :=GLOBAL_IMPLEMENT_FFT;
 constant SIM             : BOOLEAN :=GLOBAL_SIM;
+
+constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
 
 signal axis_adcdaq_out      : AXIS32_DAT_STRUCT; --! input bus from adc, 32-bit wide, using the AXI4-Streaming prototol
 signal axis_adcdaq_out_reg1 : AXIS32_DAT_STRUCT;
@@ -450,26 +455,56 @@ fifo_rst_proc: process(in_clk)
 -- It is more economical to sacrifice a block RAM per channelizer and have the
 -- outputs of all channelizers operate on a single global clock.
 --
-chan_fifo0 : entity work.CHAN_FIFO2
-    PORT MAP (
-        rst                => fifo_rst, -- asynchronous
-        wr_clk             => in_clk,
-        wr_en              => axis_scaler_out_tvalid,
-        din(31 downto 0)   => axis_scaler_out.TDATA,
-        din(32)            => axis_scaler_out.TLAST,
-        din(36 downto 33)  => axis_scaler_out.TUSER,
+DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
 
-        rd_clk             => out_clk,
-        rd_en              => axis_fifo_out_tvalid_not_rst,
-        dout(31 downto 0)  => axis_fifo_out_tdata,
-        dout(32)           => axis_fifo_out_tlast,
-        dout(36 downto 33) => axis_fifo_out_tuser,
-        valid              => axis_fifo_out_tvalid,
-        full               => open,
-        prog_full          => fifo_almost_full,
-        overflow           => fifo_overflow,
-        empty              => open
-    );
+    chan_fifo0 : entity work.CHAN_FIFO2
+        PORT MAP (
+            rst                => fifo_rst, -- asynchronous
+            wr_clk             => in_clk,
+            wr_en              => axis_scaler_out_tvalid,
+            din(31 downto 0)   => axis_scaler_out.TDATA,
+            din(32)            => axis_scaler_out.TLAST,
+            din(36 downto 33)  => axis_scaler_out.TUSER,
+
+            rd_clk             => out_clk,
+            rd_en              => axis_fifo_out_tvalid_not_rst,
+            dout(31 downto 0)  => axis_fifo_out_tdata,
+            dout(32)           => axis_fifo_out_tlast,
+            dout(36 downto 33) => axis_fifo_out_tuser,
+            valid              => axis_fifo_out_tvalid,
+            full               => open,
+            prog_full          => fifo_almost_full,
+            overflow           => fifo_overflow,
+            empty              => open
+        );
+
+end generate;
+
+DATA_FIFO_USP: if FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
+    chan_fifo0 : entity work.CHAN_FIFO2_UP
+        PORT MAP (
+            srst               => fifo_rst, -- asynchronous
+            wr_clk             => in_clk,
+            wr_en              => axis_scaler_out_tvalid,
+            din(31 downto 0)   => axis_scaler_out.TDATA,
+            din(32)            => axis_scaler_out.TLAST,
+            din(36 downto 33)  => axis_scaler_out.TUSER,
+
+            rd_clk             => out_clk,
+            rd_en              => axis_fifo_out_tvalid_not_rst,
+            dout(31 downto 0)  => axis_fifo_out_tdata,
+            dout(32)           => axis_fifo_out_tlast,
+            dout(36 downto 33) => axis_fifo_out_tuser,
+            valid              => axis_fifo_out_tvalid,
+            full               => open,
+            prog_full          => fifo_almost_full,
+            overflow           => fifo_overflow,
+            empty              => open
+        );
+
+end generate;
+
+
 axis_scaler_out_tvalid <= axis_scaler_out.TVALID and not fifo_rst and (not fifo_almost_full or axis_scaler_out.TLAST); -- make sure we don't write during reset
 axis_fifo_out_tvalid_not_rst <= axis_fifo_out_tvalid and not fifo_rst; -- start reading only when there is data. make sure we don't read during reset. In simulation, tying rd_en to '1' causes 'valid' to be invalid.
 
