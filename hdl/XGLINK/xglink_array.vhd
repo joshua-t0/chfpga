@@ -30,109 +30,106 @@ use UNISIM.VComponents.all;
 
 library work;
 use work.chFPGA_Package.all;
---use work.ip_package.all; -- Import definition of components used in this module
 
---! @Brief Implements an array of packet transmitters and receivers using a GTX operating at 7.5Gbps or 10 Gbps.
---! The link is implemented by GTX transceivers configured to operate at 7.5 Gbps if LINK_SPEED=0 or at 10 Gbps if LINK_SPEED=1.
---!
---! The module assumes one or multiple 156.25 MHz reference clocks. 7-Series constraints require a reference input to clock a maximum of 3 QUADS (12 lanes), i.e. the QUAD receiving the referece clock, and the quads above and below.
---! NUMBER_OF_REFCLK indicate how many reference clocks are provided, and QUAD_TO_REFCLK_MAP indicate which reference clock (numbered from 0 to NUMBER_OF_REFCLK-1) is to be used for each quad.
---! Also, the LANE_TO_QUAD_MAP generics specify which quad is associated with each lane.
-
---! *** INPUT (slave AXIS interface)
---! The input is a 32-bit wide, blocking AXI-Streaming interface. Valid data is indicated by tvalid='1'.
---! The data is actually consumed by the module when tready (which is provided by the module) is high.
---! In order to minimize its resource footprint, this module does not implement any FIFO as the flow control is performed entirely by tready, so It is important to change the input data (tdata and tvalid) only when tready='1'.
---! The end of a packet is signaled when tlast='1' on a valid (tvalid='1') word.
---! The start of a packet is implicitely determined as the forst word following the end of a packet.
---! The input data does not have to be contiguous, i.e. we don't have to provide valid data when the transmitter is ready. If no valid data is present, Idle codes will be sent down the link.
---! The transmitter will add a start-of-frame control code at the beginning of the packets, and will add a CRC32 and an end-of-frame code at the end of the packet.
---! The input interface for every transmit lane operate on a single transmit clock, which is generated from the GTX reference clock.
---!
---! *** OUTPUT (master AXIS interface)
---! Each RX lane provides data on its own recovered clock, which is buffered by a BUFH and is therefore available only in the clock region where the receiver is.
---! However, a 512-word deep asynchronous FIFO provides an output data flow on the clock provided by the user on m_axis_rx_clk(i).
---! Typically, every RX clock will be connected to the clock provided by the tranmitter (clk_out) so the logic can operate on a single clock domain.
---! A non-sticky FIFO overflow flag (on the internal rx clock) is available to detect if the FIFO has overflowed.
-
+-- Implements an array of packet transmitters and receivers using a GTX operating at 7.5Gbps or 10 Gbps.
+-- The link is implemented by GTX transceivers configured to operate at 7.5 Gbps if LINK_SPEED=0 or at 10 Gbps if LINK_SPEED=1.
+--
+-- The module assumes one or multiple 156.25 MHz reference clocks. 7-Series constraints require a reference input to clock a maximum of 3 QUADS (12 lanes), i.e. the QUAD receiving the referece clock, and the quads above and below.
+-- NUMBER_OF_REFCLK indicate how many reference clocks are provided, and QUAD_TO_REFCLK_MAP indicate which reference clock (numbered from 0 to NUMBER_OF_REFCLK-1) is to be used for each quad.
+-- Also, the LANE_TO_QUAD_MAP generics specify which quad is associated with each lane.
+--
+-- *** INPUT (slave AXIS interface)
+-- The input is a 32-bit wide, blocking AXI-Streaming interface. Valid data is indicated by tvalid='1'.
+-- The data is actually consumed by the module when tready (which is provided by the module) is high.
+-- In order to minimize its resource footprint, this module does not implement any FIFO as the flow control is performed entirely by tready, so It is important to change the input data (tdata and tvalid) only when tready='1'.
+-- The end of a packet is signaled when tlast='1' on a valid (tvalid='1') word.
+-- The start of a packet is implicitely determined as the forst word following the end of a packet.
+-- The input data does not have to be contiguous, i.e. we don't have to provide valid data when the transmitter is ready. If no valid data is present, Idle codes will be sent down the link.
+-- The transmitter will add a start-of-frame control code at the beginning of the packets, and will add a CRC32 and an end-of-frame code at the end of the packet.
+-- The input interface for every transmit lane operate on a single transmit clock, which is generated from the GTX reference clock.
+--
+-- *** OUTPUT (master AXIS interface)
+-- Each RX lane provides data on its own recovered clock, which is buffered by a BUFH and is therefore available only in the clock region where the receiver is.
+-- However, a 512-word deep asynchronous FIFO provides an output data flow on the clock provided by the user on m_axis_rx_clk(i).
+-- Typically, every RX clock will be connected to the clock provided by the tranmitter (clk_out) so the logic can operate on a single clock domain.
+-- A non-sticky FIFO overflow flag (on the internal rx clock) is available to detect if the FIFO has overflowed.
 entity xglink_array is
-	generic (
-		NUMBER_OF_LANES: integer        := GLOBAL_NUMBER_OF_GPU_LINKS;
-		NUMBER_OF_LANE_GROUPS: integer  := 1;
-		LANE_GROUP_MAP: integerArray    := (0 to GLOBAL_NUMBER_OF_GPU_LINKS=>0);
-		NUMBER_OF_LINKS: integer        := GLOBAL_NUMBER_OF_GPU_LINKS;
-		LANE_TO_LINK_MAP: integerArray  := (0=>0, 1=>1, 2=>2, 3=>3, 4=>4, 5=>5, 6=>6, 7=>7);
-		NUMBER_OF_REFCLK: integer       := GLOBAL_NUMBER_OF_GPU_REFCLKS;
-		LANE_TO_QUAD_MAP: integerArray  := GLOBAL_GPU_CHANNEL_QUAD; --! Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-		QUAD_TO_REFCLK_MAP: integerArray:= GLOBAL_GPU_QUAD_REFCLK; --! Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
-		IMPLEMENT_RX : boolean          := FALSE;
-		LINK_SPEED: integer             := 1; -- 0: 7.5 Gb/s (244 MHz word clock), 1: 10 Gb/s (322 MHz word clock)
-		SIM: boolean                    := FALSE
-		);
-	port (
-		-- GTX interfaces
-		tx_p: out std_logic_vector(0 to NUMBER_OF_LINKS-1);
-		tx_n: out std_logic_vector(0 to NUMBER_OF_LINKS-1);
-		rx_p: in std_logic_vector(0 to NUMBER_OF_LINKS-1);
-		rx_n: in std_logic_vector(0 to NUMBER_OF_LINKS-1);
-		refclk_p : in std_logic_vector(0 to NUMBER_OF_REFCLK-1); --156.250 clock
-		refclk_n : in std_logic_vector(0 to NUMBER_OF_REFCLK-1);
+  generic (
+    NUMBER_OF_LANES: integer        := GLOBAL_NUMBER_OF_GPU_LINKS;
+    NUMBER_OF_LANE_GROUPS: integer  := 1;
+    LANE_GROUP_MAP: integerArray    := (0 to GLOBAL_NUMBER_OF_GPU_LINKS=>0);
+    NUMBER_OF_LINKS: integer        := GLOBAL_NUMBER_OF_GPU_LINKS;
+    LANE_TO_LINK_MAP: integerArray  := (0=>0, 1=>1, 2=>2, 3=>3, 4=>4, 5=>5, 6=>6, 7=>7);
+    NUMBER_OF_REFCLK: integer       := GLOBAL_NUMBER_OF_GPU_REFCLKS;
+    LANE_TO_QUAD_MAP: integerArray  := GLOBAL_GPU_CHANNEL_QUAD; -- Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
+    QUAD_TO_REFCLK_MAP: integerArray:= GLOBAL_GPU_QUAD_REFCLK; -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+    IMPLEMENT_RX : boolean          := FALSE;
+    LINK_SPEED: integer             := 1; -- 0: 7.5 Gb/s (244 MHz word clock), 1: 10 Gb/s (322 MHz word clock)
+    SIM: boolean                    := FALSE
+    );
+  port (
+    -- GTX interfaces
+    tx_p: out std_logic_vector(0 to NUMBER_OF_LINKS-1);
+    tx_n: out std_logic_vector(0 to NUMBER_OF_LINKS-1);
+    rx_p: in std_logic_vector(0 to NUMBER_OF_LINKS-1);
+    rx_n: in std_logic_vector(0 to NUMBER_OF_LINKS-1);
+    refclk_p : in std_logic_vector(0 to NUMBER_OF_REFCLK-1); --156.250 clock
+    refclk_n : in std_logic_vector(0 to NUMBER_OF_REFCLK-1);
 
-		-- TX user interface (AXI-Streaming, blocking, on clk_out)
-		s_axis_tx_tdata: in slv32_array(0 to NUMBER_OF_LANES -1);
-		s_axis_tx_tvalid: in std_logic_vector(0 to NUMBER_OF_LANES -1);
-		s_axis_tx_tlast: in std_logic_vector(0 to NUMBER_OF_LANES -1);
-
-
-		-- RX user interface (AXI-Streaming, non-blocking, on clk_out)
-		m_axis_rx_tdata: out slv32_array(0 to NUMBER_OF_LANES-1);
-		m_axis_rx_tvalid: out std_logic_vector(0 to NUMBER_OF_LANES-1);
-		m_axis_rx_tlast: out std_logic_vector(0 to NUMBER_OF_LANES-1);
-		m_axis_rx_terror: out std_logic_vector(0 to NUMBER_OF_LANES-1); -- active high on TLAST=1 if an error occured in the frame
+    -- TX user interface (AXI-Streaming, blocking, on clk_out)
+    s_axis_tx_tdata: in slv32_array(0 to NUMBER_OF_LANES -1);
+    s_axis_tx_tvalid: in std_logic_vector(0 to NUMBER_OF_LANES -1);
+    s_axis_tx_tlast: in std_logic_vector(0 to NUMBER_OF_LANES -1);
 
 
-		-- Data pipeline clock & resets
-		clk_out: out std_logic; --! Data word clock generated by the GTX: 244 MHz for LINK_SPEED=0, 322 MHz for LINK_SPEED=1
-		areset: in std_logic; --! asynchronous reset
+    -- RX user interface (AXI-Streaming, non-blocking, on clk_out)
+    m_axis_rx_tdata: out slv32_array(0 to NUMBER_OF_LANES-1);
+    m_axis_rx_tvalid: out std_logic_vector(0 to NUMBER_OF_LANES-1);
+    m_axis_rx_tlast: out std_logic_vector(0 to NUMBER_OF_LANES-1);
+    m_axis_rx_terror: out std_logic_vector(0 to NUMBER_OF_LANES-1); -- active high on TLAST=1 if an error occured in the frame
 
 
-		-- Clock monitors
-		refclk_div2: out std_logic_vector(0 to NUMBER_OF_REFCLK-1); -- logic signal toggling at half of the 156.25 MHz reference clock frequency
-		txclk_div2: out std_logic; -- Logic signal toggling at half of the Tx word clock frequency clk_out
-
-		-- Monitor & debugging signals
-		tx_resetdone: out std_logic_vector(0 to NUMBER_OF_LANES-1);
-		rx_resetdone: out std_logic_vector(0 to NUMBER_OF_LANES-1);
-		lane_monitor: out std_logic;
+    -- Data pipeline clock & resets
+    clk_out: out std_logic; -- Data word clock generated by the GTX: 244 MHz for LINK_SPEED=0, 322 MHz for LINK_SPEED=1
+    areset: in std_logic; -- asynchronous reset
 
 
-		-- Control and reply streams
-		CMD_DAT: in AXIS8_DAT_STRUCT := (TDATA=> (others=>'0'), TVALID=>'0', TLAST=>'0');
-		CMD_RDY: out AXIS8_RDY_STRUCT;
-		RPLY_DAT: out AXIS8_DAT_STRUCT;
-		RPLY_RDY: in AXIS8_RDY_STRUCT := (TREADY => '1');
-		CTRL_CLK : IN std_logic := '0'; -- control clock
-		CTRL_RST : in std_logic := '0'
-	 );
-end xglink_array;
+    -- Clock monitors
+    refclk_div2: out std_logic_vector(0 to NUMBER_OF_REFCLK-1); -- logic signal toggling at half of the 156.25 MHz reference clock frequency
+    txclk_div2: out std_logic; -- Logic signal toggling at half of the Tx word clock frequency clk_out
 
-architecture Behavioral of xglink_array is
+    -- Monitor & debugging signals
+    tx_resetdone: out std_logic_vector(0 to NUMBER_OF_LANES-1);
+    rx_resetdone: out std_logic_vector(0 to NUMBER_OF_LANES-1);
+    lane_monitor: out std_logic;
+
+
+    -- Control and reply streams
+    CMD_DAT: in AXIS8_DAT_STRUCT := (TDATA=> (others=>'0'), TVALID=>'0', TLAST=>'0');
+    CMD_RDY: out AXIS8_RDY_STRUCT;
+    RPLY_DAT: out AXIS8_DAT_STRUCT;
+    RPLY_RDY: in AXIS8_RDY_STRUCT := (TREADY => '1');
+    CTRL_CLK : IN std_logic := '0'; -- control clock
+    CTRL_RST : in std_logic := '0'
+   );
+end;
+
+
+architecture Implementation of xglink_array is
 
 -- Attribute definitions
 
-	attribute ASYNC_REG : string;
-	-- attribute shreg_extract: string;
-	attribute dont_touch: string;
+attribute DONT_TOUCH: string;
 
 --- Constants
 
 -- XGLINK_CORE Signals
 
 signal reset_reg: std_logic_vector(0 to NUMBER_OF_LANES-1);
-attribute dont_touch of reset_reg: signal is "true";
+attribute DONT_TOUCH of reset_reg: signal is "true";
 
 signal reset_stats_reg: std_logic_vector(0 to NUMBER_OF_LANES-1);
-attribute dont_touch of reset_stats_reg: signal is "true";
+attribute DONT_TOUCH of reset_stats_reg: signal is "true";
 
 signal xglink_tx_data: slv32_array(0 to NUMBER_OF_LINKS-1);
 signal xglink_tx_header: slv2_array(0 to NUMBER_OF_LINKS-1);
@@ -549,4 +546,4 @@ core0: entity work.xglink_core
  --end generate;
 
 
-end Behavioral;
+end Implementation;

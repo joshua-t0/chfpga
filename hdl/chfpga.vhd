@@ -57,10 +57,10 @@ library UNISIM;
 use UNISIM.VComponents.all;
 --! Project libraries
 use work.chFPGA_Package.all; --! Get all component definitions
-use work.chan_package.chan; --! Get chan component
-use work.udp_mac_package.udp_mac; --! Get udp_mac component
-use work.xglink_package.xglink_array; --! Get udp_mac component
-use work.ct_package.shuffle_crossbar; --! Get corner-turn engine components
+--use work.chan_package.chan; --! Get chan component
+--use work.udp_mac_package.udp_mac; --! Get udp_mac component
+--use work.xglink_package.xglink_array; --! Get udp_mac component
+--use work.ct_package.shuffle_crossbar; --! Get corner-turn engine components
 
 ----ENTITY DECLARATION ------------------------------------------------------------------------------
 --! @brief
@@ -1190,7 +1190,7 @@ gen_eth: if PHY_TYPE /= "NONE" generate
 	-- local_mac_addr <= to_slv(unsigned(std_logic_vector'(X"12_34_56_78" & local_ip_addr)) + unsigned(GPIO_DIP_SW));
 	-- RX_IP_DEST_ADDR <= to_slv((unsigned'(X"0A_0A") & unsigned(local_ip_addr)) + unsigned(GPIO_DIP_SW));
 	sfp_status_vector <= sfp_status_vector_int;
-	udp_mac0: udp_mac  -- use component instantitation to defer binding
+	udp_mac0: entity work.udp_mac  -- use component instantitation to defer binding
 		GENERIC MAP(
 			PHY_TYPE=> PHY_TYPE,  -- "GMII": Alaska 881111 PHY,  or "SGMII": SFP module
 			SGMII_CLOCK_SOURCE => SGMII_CLOCK_SOURCE,
@@ -1207,8 +1207,8 @@ gen_eth: if PHY_TYPE /= "NONE" generate
 			-- User-side streaming interface
 
 			-- UDP outgoing traffic port/channel 0 network parameters
-			remote_mac_addr0 => (others=>'0'), -- Auto detect: Use last incoming packet source mac
-			remote_ip_addr0  => (others=>'0'), -- Auto detect: Use last incoming packet source ip
+			remote_mac_addr0 => slv48'(others=>'0'), -- Auto detect: Use last incoming packet source mac
+			remote_ip_addr0  => slv32'(others=>'0'), -- Auto detect: Use last incoming packet source ip
 			remote_ip_port0  => remote_ip_port0, -- If 0: Use last incoming packet source port number
 
 			-- UDP outgoing traffic port/channel 1 network parameters
@@ -2341,7 +2341,7 @@ CHANGEN: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
 			end if;
 		end process;
 
-	CHANi: CHAN
+	CHANi: entity work.CHAN
 		GENERIC MAP (
 			PLATFORM_ID => PLATFORM_ID
 			)
@@ -2537,13 +2537,13 @@ BPSHFGEN: if NUMBER_OF_CROSSBAR_OUTPUTS>0 and NUMBER_OF_BP_PCB_SHUFFLE_LANES+NUM
 		end if;
 	end process;
 
-	bp_shuffle0: xglink_array -- use component instantiation to delay binding in this if-generate block and prevent errors
+	bp_shuffle0: entity work.xglink_array -- use component instantiation to delay binding in this if-generate block and prevent errors
 		generic map (
 			LINK_SPEED             => 0, -- 0: 7.5 Gb/s (244 MHz word clock), 1: 10 Gb/s (322 MHz word clock)
 			NUMBER_OF_LANES        => NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES,
 			NUMBER_OF_LANE_GROUPS  => 2,
 			-- LANE_GROUP_MAP         => (0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1 => 0, NUMBER_OF_BP_PCB_SHUFFLE_LANES to NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1 => 1),
-			LANE_GROUP_MAP         => (0 to 15 => 0, 16 to 23 => 1),
+			LANE_GROUP_MAP         => IntegerArray'(0 to 15 => 0, 16 to 23 => 1), -- We cast to make sure the synthesizer can unambiguously determine the final type and infer the entity in case the entity file is not needed (if-generate is False) and not included in the project
 			NUMBER_OF_LINKS        => NUMBER_OF_BP_SHUFFLE_LINKS,
 			LANE_TO_LINK_MAP       => BP_SHUFFLE_LANE_MAP,
 			NUMBER_OF_REFCLK       => NUMBER_OF_BP_SHUFFLE_REFCLKS,
@@ -2631,7 +2631,7 @@ CROSSBAR2_GEN: if NUMBER_OF_BP_SHUFFLE_LINKS>0 and NUMBER_OF_GPU_LINKS>0 generat
 	TOP_CROSSBAR2_RPLY_RDY<= top_rply_rdy(CROSSBAR2_BASE_PORT);
 	top_rply_dat(CROSSBAR2_BASE_PORT) <= TOP_CROSSBAR2_RPLY_DAT;
 
-	crossbar2: shuffle_crossbar -- use component instantiation to delay binding in if-generate block and prevent errors during elaboration
+	crossbar2: entity work.shuffle_crossbar -- use component instantiation to delay binding in if-generate block and prevent errors during elaboration
 		generic map (
 		 	PLATFORM_ID => PLATFORM_ID,  -- needed to select family-dependent FIFOs
 			NUMBER_OF_INPUT_LANES              => NUMBER_OF_BP_PCB_SHUFFLE_LANES, -- Number of input streams
@@ -2640,7 +2640,7 @@ CROSSBAR2_GEN: if NUMBER_OF_BP_SHUFFLE_LINKS>0 and NUMBER_OF_GPU_LINKS>0 generat
 			WORDS_PER_BIN_MAX                  => 4,  -- 1st crossbar outputs data for 16 channels max = 4 words
 			BINS_PER_FRAME_MAX                 => 128, -- need 128 bins in case i'm in 16
 			COMBINE_DATA_FLAGS                 => TRUE,
-			SHUFFLE_FLAGS_MASK                 => X"00070000" -- count errors from crossbar 2 only
+			SHUFFLE_FLAGS_MASK                 => slv32'(X"00070000") -- count errors from crossbar 2 only
 			)
 		port map (
 			-- Non-blocking AXI-Streaming input
@@ -2691,7 +2691,7 @@ CROSSBAR2_GEN: if NUMBER_OF_BP_SHUFFLE_LINKS>0 and NUMBER_OF_GPU_LINKS>0 generat
 	TOP_CROSSBAR3_RPLY_RDY<= top_rply_rdy(CROSSBAR3_BASE_PORT);
 	top_rply_dat(CROSSBAR3_BASE_PORT) <= TOP_CROSSBAR3_RPLY_DAT;
 
-	crossbar3: shuffle_crossbar -- use component instantiation to delay binding in if-generate block and prevent errors during elaboration
+	crossbar3: entity work.shuffle_crossbar -- use component instantiation to delay binding in if-generate block and prevent errors during elaboration
 		generic map (
 		 	PLATFORM_ID => PLATFORM_ID,  -- needed to select family-dependent FIFOs
 			NUMBER_OF_INPUT_LANES              => NUMBER_OF_BP_QSFP_SHUFFLE_LANES, -- Number of input streams
@@ -2700,8 +2700,8 @@ CROSSBAR2_GEN: if NUMBER_OF_BP_SHUFFLE_LINKS>0 and NUMBER_OF_GPU_LINKS>0 generat
 			COMBINE_DATA_FLAGS                 => FALSE,
 			WORDS_PER_BIN_MAX                  => 16,
 			BINS_PER_FRAME_MAX                 => 64,
-			BIN_SEL_FIFO_TYPE_MAP              => (0 to 15 => (0 to 1=>0, others=>0)),
-			SHUFFLE_FLAGS_MASK                 => X"70000700" -- Count errors from both crossbars
+			BIN_SEL_FIFO_TYPE_MAP              => integer_16xN_array'(0 to 15 => (0 to 1=>0, others=>0)),
+			SHUFFLE_FLAGS_MASK                 => slv32'(X"70000700") -- Count errors from both crossbars. Use a qualified axpression to ensure type is known.
 
 			)
 		port map (
