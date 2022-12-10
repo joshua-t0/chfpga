@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Root MajorVersion="0" MinorVersion="39">
+<Root MajorVersion="0" MinorVersion="40">
   <CompositeFile CompositeFileTopName="sifpga_zcu111" CanBeSetAsTop="false" CanDisplayChildGraph="true">
     <Description>Composite Fileset</Description>
-    <Generation Name="SYNTHESIS" State="GENERATED" Timestamp="1670633778"/>
-    <Generation Name="IMPLEMENTATION" State="GENERATED" Timestamp="1670633778"/>
-    <Generation Name="SIMULATION" State="GENERATED" Timestamp="1670633778"/>
-    <Generation Name="HW_HANDOFF" State="GENERATED" Timestamp="1670633778"/>
+    <Generation Name="SYNTHESIS" State="GENERATED" Timestamp="1670655467"/>
+    <Generation Name="IMPLEMENTATION" State="GENERATED" Timestamp="1670655467"/>
+    <Generation Name="SIMULATION" State="GENERATED" Timestamp="1670655467"/>
+    <Generation Name="HW_HANDOFF" State="GENERATED" Timestamp="1670655467"/>
     <FileCollection Name="SOURCES" Type="SOURCES">
       <File Name="synth\sifpga_zcu111.vhd" Type="VHDL">
         <Properties IsEditable="false" IsVisible="true" IsNetlistSimulation="false" Timestamp="0" IsTrackable="false" IsStatusTracked="false"/>
