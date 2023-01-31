@@ -38,17 +38,17 @@ use work.chFPGA_Package.all; --! Get all component definitions
  entity clocks is
  	generic (
  		PLATFORM_ID: integer;
- 		CLOCK_SOURCE: string :="SFP_REFCLK"; --! Either "SYSCLK", "SFP_REFCLK"
+ 		CLOCK_SOURCE: string :="SFP_REFCLK"; --! Either "SYSCLK", "SYSCLK_BUFG" or SFP_REFCLK"
  		CHAN_RESET_DELAY: integer := 127;
  		CORR_RESET_DELAY: integer := 63
  		);
 	PORT(
-		-- Clock input: 200 MHz system clock (used if CLOCK_SOURCE = "SYSCLK")
-		SYSCLK_P : IN std_logic; --! Differential 200 MHz clock input from the on-board oscillator
+		-- Clock input: 200 MHz system clock
+		SYSCLK_P : IN std_logic; --! Differential 200 MHz clock input (a BUFDS is instantiated). Used when CLOCK_SOURCE = "SYSCLK"
 		SYSCLK_N : IN std_logic;
+		sysclk_bufg: in std_logic; -- BUFG-buffered 200 MHz clock. Used when CLOCK_SOURCE = "SYSCLK_BUFG"
 
-
-		-- Clock input: 200 MHz system clock (used if CLOCK_SOURCE = "SYSCLK")
+		-- Clock input: 125 MHz system clock (used if CLOCK_SOURCE = "SFP_REFCLK")
 		sfp_refclk_p: in std_logic; --! Differential 125 MHz from the GTX reference clock input
 		sfp_refclk_n: in std_logic;
 		sfp_refclk_nobuf: out std_logic; -- Unbuffered reference clock, used to feed a GTX CPLL/QPLL directly
@@ -108,8 +108,10 @@ attribute DONT_TOUCH: string;
 
 constant FPGA_SERIES:integer := FPGA_SERIES_LIST(PLATFORM_ID);
 
-constant CLKFBOUT_MULT_F: real := sel(CLOCK_SOURCE="SYSCLK",5.000, 8.000);
-constant CLKIN_PERIOD: real := sel(CLOCK_SOURCE="SYSCLK",5.000, 8.000);
+constant IS_SYSCLK: BOOLEAN := CLOCK_SOURCE(1 to 6)="SYSCLK";
+constant CLKFBOUT_MULT_F: real := sel(IS_SYSCLK, 5.000, 8.000); -- input clock multiplication factor to yield a VCO of 1 GHz. (125 MHz * 8 = 200 MHz * 5 = 1 GHz)
+constant CLKIN_PERIOD: real := sel(IS_SYSCLK, 5.000, 8.000);
+constant COMPENSATION: string := "ZHOLD";
 
 signal SYSCLK_NOBUF: STD_LOGIC; --! External 200 MHz buffered by the differential receiver BUFGDS
 signal SYSCLK: STD_LOGIC; --! External 200 MHz clock buffered by BUFG
@@ -245,6 +247,21 @@ use_sysclk: if CLOCK_SOURCE="SYSCLK" generate
 
 end generate;
 
+use_clk200buf: if CLOCK_SOURCE="SYSCLK_BUFG" generate
+	-- We are provided a BUFG-buffered 200 MHz clock
+	--
+--! Instantiate the MMCM that generates other system clocks based on the external 200 MHz.
+--! The core does not instantiate an input BUFG as we already have one to drive logic directly from the clock with minimal jitter (good for 10 MHz reference generation, which requires very low jitter)
+--! The core does not instantiate BUFGs at the outputs of the MMCM. We do it manually above so we can give significant clock-related names t the BUFG instances, which facilitate design analysis and constraining.
+
+	mmcm_clk_in <= sysclk_bufg;
+	CLK200_NOBUF <= CLK200_MMCM_NOBUF; -- take CLK200 from the MMCM
+--	CLK200 <= SYSCLK; -- Use directly the clock input so we have minimum jitter for the Reference Clock generation.
+	sfp_refclk_nobuf <= '0';
+	sfp_refclk_buf <= '0';
+
+end generate;
+
 use_sfp_refclk: if CLOCK_SOURCE="SFP_REFCLK" generate
 
 
@@ -291,7 +308,7 @@ end generate;
 		generic map(
 			BANDWIDTH            => "HIGH",
 			CLKOUT4_CASCADE      => FALSE,
-			COMPENSATION         => "ZHOLD",
+			COMPENSATION         => COMPENSATION,
 			STARTUP_WAIT         => FALSE,
 			DIVCLK_DIVIDE        => 1, -- 200 MHz or 125 MHz PFD
 			CLKFBOUT_MULT_F      => CLKFBOUT_MULT_F, -- 1 GHz VCO
@@ -527,12 +544,21 @@ chan_async_reset <= rst_in or chan_reset_in or chan_pll_reset_in or (not chan_mm
 -- Generate synchronous reset signal for each system clock
 
 corr_async_reset <= rst_in or (not mmcm_locked) or corr_reset_in or corr_sequence_reset;
-corr_clk_reset0: entity work.sync_reset
-	port map(
-		clk => CORR_CLK_INT,
-		async_reset => corr_async_reset,
-		reset_out => corr_reset_out
-		);
+--corr_clk_reset0: entity work.sync_reset
+--	port map(
+--		clk => CORR_CLK_INT,
+--		async_reset => corr_async_reset,
+--		reset_out => corr_reset_out
+--		);
+
+-- Resynchronize the CORR reset to CORR_CLK
+corr_clk_reset0: xpm_cdc_single
+	generic map (SRC_INPUT_REG => 0)
+	port map (
+		src_in => corr_async_reset,
+		dest_clk => CORR_CLK_INT,
+		dest_out => corr_reset_out
+	);
 
 
 end Behavioral;
