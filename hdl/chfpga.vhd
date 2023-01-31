@@ -87,6 +87,7 @@ entity chFPGA is
 		NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer := 4;
 		NUMBER_OF_BP_SHUFFLE_LINKS: integer := 3;
 		NUMBER_OF_BP_SHUFFLE_REFCLKS: integer := 2;
+		BP_LINK_SPEED: integer := 0; -- 0=7.5 Gbps, 1-10Gbps.
 		BP_SHUFFLE_LANE_MAP: integerArray := (0=>-1, 1=>0, 2=>1, 3=>2, 4 to 7 => -1); --
 		BP_SHUFFLE_LANE_TO_QUAD_MAP : integerArray := (0=>0); --! LANE_TO_QUAD_MAP Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
 		BP_SHUFFLE_QUAD_TO_REFCLK_MAP : integerArray := (0=>0); --! QUAD_TO_REFCLK_MAP Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
@@ -2707,7 +2708,7 @@ BPSHFGEN: if NUMBER_OF_CROSSBAR_OUTPUTS>0 and NUMBER_OF_BP_PCB_SHUFFLE_LANES+NUM
 
 	bp_shuffle0: entity work.xglink_array -- use component instantiation to delay binding in this if-generate block and prevent errors
 		generic map (
-			LINK_SPEED             => 0, -- 0: 7.5 Gb/s (244 MHz word clock), 1: 10 Gb/s (322 MHz word clock)
+			LINK_SPEED             => BP_LINK_SPEED, -- 0: 7.5 Gb/s (244 MHz word clock), 1: 10 Gb/s (322 MHz word clock)
 			NUMBER_OF_LANES        => NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES,
 			NUMBER_OF_LANE_GROUPS  => 2,
 			-- LANE_GROUP_MAP         => (0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1 => 0, NUMBER_OF_BP_PCB_SHUFFLE_LANES to NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1 => 1),

@@ -28,6 +28,9 @@
 !/corr_core_testbench/
 !/corr_core_testbench/*
 
+!/chordFPGA_MGK7MB/
+!/chordFPGA_MGK7MB/*
+
 !/chfpga_zcu111/
 !/chfpga_zcu111/*
 

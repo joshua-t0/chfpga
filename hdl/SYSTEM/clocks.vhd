@@ -314,20 +314,20 @@ end generate;
 			CLKFBOUT_MULT_F      => CLKFBOUT_MULT_F, -- 1 GHz VCO
 			CLKFBOUT_PHASE       => 0.000,
 			CLKFBOUT_USE_FINE_PS => FALSE,
-			CLKOUT0_DIVIDE_F     => 5.000, -- 200 MHz
+			CLKOUT0_DIVIDE_F     => 5.000, -- 200 MHz always. Is not dependent on sampling frequency. Used for SPI, SYNC, IRIGB etc.
 			CLKOUT0_PHASE        => 0.000,
 			CLKOUT0_DUTY_CYCLE   => 0.500,
 			CLKOUT0_USE_FINE_PS  => FALSE,
 
-			CLKOUT4_DIVIDE       => 8, -- 125 MHz
+			CLKOUT4_DIVIDE       => 8, -- 125 MHz always. Used for command system.
 			CLKOUT4_PHASE        => 0.000,
 			CLKOUT4_DUTY_CYCLE   => 0.500,
 			CLKOUT4_USE_FINE_PS  => FALSE,
-			CLKOUT5_DIVIDE       => 4, -- 250 MHz
+			CLKOUT5_DIVIDE       => 4, -- 250 MHz always. used for embedded correlator (when present).
 			CLKOUT5_PHASE        => 0.000,
 			CLKOUT5_DUTY_CYCLE   => 0.500,
 			CLKOUT5_USE_FINE_PS  => FALSE,
-			CLKOUT6_DIVIDE       => 16, -- 62.5 MHz
+			CLKOUT6_DIVIDE       => 16, -- 62.5 MHz always. For SYSMON
 			CLKOUT6_PHASE        => 0.000,
 			CLKOUT6_DUTY_CYCLE   => 0.500,
 			CLKOUT6_USE_FINE_PS  => FALSE,
@@ -383,31 +383,31 @@ gen_chanpll_k7: if PLATFORM_ID = PLATFORM_ID_MGK7MB generate
 			COMPENSATION         => "ZHOLD",
 			STARTUP_WAIT         => FALSE,
 			DIVCLK_DIVIDE        => 1, -- 200 MHz or 125 MHz PFD
-			CLKFBOUT_MULT_F      => 5.0, -- 1 GHz VCO
+			CLKFBOUT_MULT_F      => 5.0, -- 5.0 for 1 GHz VCO & 200 MHz out, 3.0 for 600 MHz VCO and 300 MHz out
 			CLKFBOUT_PHASE       => 0.000,
 			CLKFBOUT_USE_FINE_PS => FALSE,
-			CLKOUT0_DIVIDE_F     => 5.000, -- 200 MHz
+			CLKOUT0_DIVIDE_F     => 5.000, -- 5.000 for 200 MHz, 2.000 for 300 MHz
 			CLKOUT0_PHASE        => 0.000,
 			CLKOUT0_DUTY_CYCLE   => 0.500,
 			CLKOUT0_USE_FINE_PS  => FALSE,
 
-			CLKOUT1_DIVIDE       => 5, -- 200 MHz
+			CLKOUT1_DIVIDE       => 5, -- 5 for 200 MHz, 2 for 300 MHz
 			CLKOUT1_PHASE        => 45.000,
 			CLKOUT1_DUTY_CYCLE   => 0.500,
 			CLKOUT1_USE_FINE_PS  => FALSE,
 
-			CLKOUT2_DIVIDE       => 5, -- 200 MHz
+			CLKOUT2_DIVIDE       => 5, -- 5 for 200 MHz, 2 for 300 MHz
 			CLKOUT2_PHASE        => 90.000,
 			CLKOUT2_DUTY_CYCLE   => 0.500,
 			CLKOUT2_USE_FINE_PS  => FALSE,
 
-			CLKOUT3_DIVIDE       => 5, -- 200 MHz
+			CLKOUT3_DIVIDE       => 5, -- 5 for 200 MHz, 2 for 300 MHz
 			CLKOUT3_PHASE        => 135.000,
 			CLKOUT3_DUTY_CYCLE   => 0.500,
 			CLKOUT3_USE_FINE_PS  => FALSE,
 
-			CLKIN1_PERIOD        => 5.000,
-			CLKIN2_PERIOD        => 5.000,
+			CLKIN1_PERIOD        => 5.000, -- 5.000 for 200 MHz, 3.333 for 300 MHz
+			CLKIN2_PERIOD        => 5.000, -- 5.000 for 200 MHz, 3.333 for 300 MHz
 			REF_JITTER1          => 0.010
 			)
 		port map(
