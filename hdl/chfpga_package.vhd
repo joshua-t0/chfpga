@@ -93,6 +93,7 @@ type slv64_array is array (NATURAL RANGE <>) of std_logic_vector(63 downto 0);
 type slv65_array is array (NATURAL RANGE <>) of std_logic_vector(64 downto 0);
 type slv66_array is array (NATURAL RANGE <>) of std_logic_vector(65 downto 0);
 type slv80_array is array (NATURAL RANGE <>) of std_logic_vector(79 downto 0);
+type slv128_array is array (NATURAL RANGE <>) of std_logic_vector(127 downto 0);
 type slv144_array is array (NATURAL RANGE <>) of std_logic_vector(143 downto 0);
 type Word3Array is array (NATURAL RANGE <>) of std_logic_vector(2 downto 0);
 type Word32Array is array (NATURAL RANGE <>) of std_logic_vector(31 downto 0);
@@ -203,9 +204,9 @@ constant PLATFORM_INFO: PLATFORM_INFO_ARRAY:=(
 
 	PLATFORM_ID_ZCU111 => (
 		FPGA_SERIES => FPGA_ULTRASCALEPLUS,
-		DSP_TILE_DELTA_RPM_Y => 2,
+		DSP_TILE_DELTA_RPM_Y => 10,
 		DSP_BEL_DELTA_RPM_Y => 1,
-		BRAM_TILE_DELTA_RPM_Y => 2,
+		BRAM_TILE_DELTA_RPM_Y => 10,
 		BRAM_BEL_DELTA_RPM_Y => 1
 		)
 	);
@@ -301,6 +302,17 @@ type AXIS32_RDY_STRUCT is  -- control bus used to communicate from  slave to mas
 		TREADY: std_logic; -- indicates that the slave device is ready to accept data. The transaction occurs when TREA|DY and TVALID are both '1';
 	end record;
 type AXIS32_RDY_STRUCT_ARRAY is ARRAY (natural range <>) of AXIS32_RDY_STRUCT;
+
+-- 64-bit wide AXI4 STREAMING data structure
+type AXIS64_DAT_STRUCT is -- control/data bus used to communicate from  master to slave
+	record
+		TVALID: std_logic; -- indicates that the master is driving a valid value
+		TDATA : std_logic_vector(63 downto 0); -- data from the master
+		TLAST: std_logic; -- indicated that the master is driving the last byte of the frame
+		TUSER : std_logic_vector(3 downto 0); -- Used to transfer ancilliary information (overflows, frame info etc). Meaning is specific to each bus segments
+	end record;
+type AXIS64_DAT_STRUCT_ARRAY is ARRAY (natural range <>) of AXIS64_DAT_STRUCT;
+
 
 -- 72-bit wide AXI4 STREAMING bus used for the FFT output consisting of two (18+18) bits wide frequency samples
 type AXIS72_DAT_STRUCT is
@@ -1145,13 +1157,37 @@ begin
 
 
 	elsif platform_id = PLATFORM_ID_ZCU111 then
+
+
+	 	if layout="BDDB" then
+		 	FIFO_XL := 3360; -- relative location of the FIFO in left column. This is our origin point.
+		 	DSP_XL := 3520; -- relative location of dsp1 on leftmost column.
+		 	DSP_XR := 3592; -- relative location of dsp1 on rightmost column
+		 	FIFO_XR := 3664;
+		elsif layout="DBBD" then
+		 	DSP_XL := 2840; -- relative location of dsp1 on leftmost column. This is our origin point.
+		 	FIFO_XL := 2872; -- relative location of the FIFO in left column.
+		 	FIFO_XR := 3048;
+		 	DSP_XR := 3120; -- relative location of dsp1 on rightmost column
+		else
+			assert FALSE report "Invalid CORR44 layout CONFIG string";
+		end if;
+
+		FIFO_XL := FIFO_XL - FIFO_XL;
+		DSP_XL := DSP_XL - FIFO_XL;
+		DSP_XR := DSP_XR - FIFO_XL;
+		FIFO_XR := FIFO_XR - FIFO_XL;
+	 	DSP_Y0 := 2; -- bottom.
+	 	FIFO_Y0 := 2; -- position of the FIFO, which must be at the bottom
+
+
 		--assert N_CHAN=8 report "Unsupported N for this platform" severity ERROR;
-	 	DSP_XL := 0;--3;
-	 	DSP_XR :=1;--4;
-	 	FIFO_XL  := 0;--2;
-	 	FIFO_XR  := 1;--3;
-	 	DSP_Y0  := 0;--72;
-	 	FIFO_Y0  := 0;--72;
+	 	--DSP_XL := 0;--3;
+	 	--DSP_XR :=1;--4;
+	 	--FIFO_XL  := 0;--2;
+	 	--FIFO_XR  := 1;--3;
+	 	--DSP_Y0  := 0;--72;
+	 	--FIFO_Y0  := 0;--72;
 
 		--	for i in 0 to NUMBER_OF_CORRELATORS_MAX-1 loop
 		--	rpm(i).DSP1 := (DSP_XL;
