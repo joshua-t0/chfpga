@@ -20,7 +20,7 @@
 -- 2011-07-12 JFC: New structure: ADCDAQ is now within the channelizer
 -- 2012-09-20 JFC: many changes since last entry. Implemented correlator. Cleaned up signals. Add some comments.
 -- 2012-09-23 JFC: implemented programmable CORR and DATA ports. Moved SYSTEM modules in here to simplify the coding.
--- 2012-10-24 JFC: Added separate SYSMON_CLK. Moved many ADC configuration vectors into the GENERICS to allow use for Virtex 7 and Kintex 7.
+-- 2012-10-24 JFC: Added separate sysmon_clk. Moved many ADC configuration vectors into the GENERICS to allow use for Virtex 7 and Kintex 7.
 -- 2013-01-28 JFC: Changed name to chFPGA.vhd (no more V6) because it can be used both for V6 and K7
 -- 2013-01-30 JFC: Added PLATFORM_ID field to allow the Python software to instantiate the appropriate handlers for the specific platform
 --
@@ -97,6 +97,9 @@ entity chFPGA is
 		PHY_TYPE: string; -- "GMII", "SGMII" or "NONE". Determines which ethernet interface to instantiate and connect to the BSB. If NONE, the BSB control interface is connected directly to the top level ports *_bsb_axis_*.
 		SGMII_CLOCK_SOURCE: string := "REFCLK"; --! Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 
+		ADC_TYPE: string := "EV8AQ160"; -- Type of ADC to use.
+									    -- "EV8AQ160": Implements ADCDAQ data acquisiton logic for the EV8AQ160.
+									    -- "AXIS": Data provided over the axis_adc AXI4-Streaming interface
 		--! ADC_IS_DIFFERENTIAL indicates whether each ADC data and clock inputs are single-ended (zero value) or differential (non-zero value).
 		ADC_IS_DIFFERENTIAL: BUFMRIndexArrayArray(0 to NUMBER_OF_ADCS_MAX-1) := (others => (others => 1)); -- All inputs are differential by default unless specified otherwise by the top level
 		--! ADC_INSTANTIATE_PLL determines which ADCDAQ need to instantiate a PLL to provide IOCLK and DIVCLK to ISERDES that are in non-adjacent banks, and to provide a BUFG-buffered global word clock.
@@ -154,10 +157,11 @@ entity chFPGA is
 
 			-- Clock inputs
 			clk10: in std_logic; -- Buffered 10 MHz board reference clock with well known phase relative to the ADC clocks and  all other boards. Used to synchronize ADC startup. Typically synchronous to the IRIGB timestamp signal, but not necessary.
-			SYSCLK_P : in std_logic := '0'; --! 200 MHz unbuffered clock. Used as a master clock if  SYSTEM_CLOCK_SOURCE = "SYSCLK";
+			SYSCLK_P : in std_logic := '0'; --! 200 MHz unbuffered differential clock. Used as a master clock if  SYSTEM_CLOCK_SOURCE = "SYSCLK";
 			SYSCLK_N : in std_logic := '1';
-			sfp_clk_p: in std_logic; --! 125 MHz SFP reference clock, generated on-board using a high quality oscillator. Used as a master clock if  SYSTEM_CLOCK_SOURCE = "SFP_REFCLK"; Also used to synchronize the MGT used to communicate to the SFP.
-			sfp_clk_n: in std_logic;
+			sysclk_bufg: in std_logic := '0';--! BUFG-buffered 200 MHz used as a master clock if  SYSTEM_CLOCK_SOURCE = "SYSCLK_BUFG";
+			sfp_clk_p: in std_logic := '0'; --! 125 MHz SFP reference clock, generated on-board using a high quality oscillator. Used as a master clock if  SYSTEM_CLOCK_SOURCE = "SFP_REFCLK"; Also used to synchronize the MGT used to communicate to the SFP.
+			sfp_clk_n: in std_logic := '1';
 
 			-- Clock monitoring inputs
 			raw_clk10: in std_logic := '0'; -- Buffered 10 MHz reference. Used for upstream clock frequency measurement only.
@@ -275,14 +279,17 @@ entity chFPGA is
 
 
 			------------------------------------
-			-- Direct ADC interface
+			-- AXI-Streaming ADC interface
 			------------------------------------
-
-			adc_axis_tdata: in slv64_array(0 to NUMBER_OF_CHANNELIZERS-1) := (others => (others => '0'));
-			adc_axis_tvalid: in std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1) := (others => '0');
-			adc_axis_clk: in std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1) := (others => '0');
-			adc_clkout: in std_logic_vector(0 to 3) := (others => '0'); -- Clock output of the ADC tiles (for monitoring)
-
+			-- Data bus contains 8x 16-bit words.
+			-- Samples are MSB-aligned in the word.
+			-- First word in the group is in bits 15:0
+			-- AXIS Clock is sampling_frequency / 8
+			adc_axis_tdata: in slv128_array(0 to NUMBER_OF_ADCS-1) := (others => (others => '0'));
+			adc_axis_tvalid: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+			adc_axis_clk: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+			-- Clock output of the ADC tiles (for monitoring)
+			adc_clkout: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
 			------------------------------------
 			-- FMC ADC interface
 			------------------------------------
@@ -336,22 +343,24 @@ entity chFPGA is
 
 			--==== Fast data output (Corner Turn output, 32-bit wide, 322 MHz clock)
 			-- to be implemented
+			-- === Debug port
+			debug_out: out std_logic_vector(31 downto 0);
+			sma_out: out std_logic_vector(0 to 3);
 
 			--==== Direct BSB control interface
 			-- Command input stream
-			s_bsb_axis_tdata: in std_logic_vector(7 downto 0) := (others => '0');
+			s_bsb_axis_tdata: in std_logic_vector(31 downto 0) := (others => '0');
 			s_bsb_axis_tvalid: in std_logic := '0';
 			s_bsb_axis_tlast: in std_logic := '0';
 			s_bsb_axis_tready: out std_logic;
 
 			-- Reply output stream
-			m_bsb_axis_tdata: out std_logic_vector(7 downto 0);
-			m_bsb_axis_tuser: out std_logic_vector(1 downto 0); -- port number, typically "00" for command replies and "01" for data
+			m_bsb_axis_tdata: out std_logic_vector(31 downto 0); -- Data is in bits 7:0, bits 31:30 is "00" for command replies and "01" for data
 			m_bsb_axis_tvalid: out std_logic;
 			m_bsb_axis_tlast: out std_logic;
 			m_bsb_axis_tready: in std_logic := '0';
 
-			bsb_axis_clk : in  std_logic := '0'; -- 125 MHz clock
+			bsb_axis_clk : in  std_logic := '0'; -- BSB bus clock, typically between 100-125 MHz
 			bsb_axis_rst : in  std_logic  := '0'-- synchronous to bsb_axis_clk
 
 			);
@@ -445,7 +454,8 @@ attribute IOB: string;
 -- ==================================================
 
 -- Constants
-constant NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := sel(GLOBAL_IMPLEMENT_FFT, NUMBER_OF_CHANNELIZERS, 0); --! Number of channelizers that have an FFT module
+constant NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := sel(GLOBAL_IMPLEMENT_FFT, 0*NUMBER_OF_CHANNELIZERS+4, 0); --! Number of channelizers that have an FFT module
+constant NUMBER_OF_ADCS_OR_CHANNELIZERS: integer := max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS);
 
 constant FPGA_SERIES: integer :=FPGA_SERIES_LIST(PLATFORM_ID);
 
@@ -476,7 +486,7 @@ constant NUMBER_OF_PROBES: INTEGER :=NUMBER_OF_CHANNELIZERS+NUMBER_OF_CORRELATOR
 constant CHAN_PROBE_BASE_PORT: INTEGER :=0;
 constant CORR_PROBE_BASE_PORT: INTEGER :=NUMBER_OF_CHANNELIZERS; --! Top level address for the first correlator block
 
-constant ADC_INSTANTIATE_IDELAYCTRL: BoolArray(0 to NUMBER_OF_ADCS-1):=(0=>TRUE, others =>FALSE); --! Determines which ADCDAQ instantiates a DELAY controller (calibrator). We need to instantiate only one in the whole design, and the tools will add all the others where needed.
+constant ADC_INSTANTIATE_IDELAYCTRL: BoolArray(0 to NUMBER_OF_ADCS-1) := (0=>TRUE, others =>FALSE); --! Determines which ADCDAQ instantiates a DELAY controller (calibrator). We need to instantiate only one in the whole design, and the tools will add all the others where needed.
 
 
 
@@ -486,15 +496,18 @@ signal clk200: std_logic; --! 200 MHz system clock from the carrier board
 signal CORR_CLK: std_logic; --! Correlator clock, derived from the carrier board.
 signal CORR_CLK_MMCM: std_logic; --! Correlator clock at the output of the MMCM.
 signal CTRL_CLK:   std_logic;
-signal SYSMON_CLK:   std_logic;
+signal sysmon_clk:   std_logic;
 signal frame_clk: std_logic;
 
 signal sysmon_reset: std_logic;
+signal sysmon_user_reset: std_logic;
 signal corr_reset: std_logic;
 signal clk200_reset: std_logic;
 signal clk200_reset_reg: std_logic;
 signal clk125_reset: std_logic;
 signal ctrl_rst: std_logic;
+signal ctrl_reset_pulse: std_logic;
+
 
 signal fmc_mgt_pll_refclk_nobuf: std_logic_vector(0 to NUMBER_OF_ADC_BOARDS*2-1);
 signal fmc_mgt_pll_refclk: std_logic_vector(0 to NUMBER_OF_ADC_BOARDS*2-1);
@@ -504,14 +517,10 @@ signal ALL_RESET: std_logic:='0'; -- Combined hard and soft global reset
 
 signal chan_clk_reset_async: std_logic; --! Channelizer PLL reset from GPIO. asynchronous
 signal chan_reset_async : std_logic; --! User reset for all channelizers, asynchronous
-signal chan_reset_reg : std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1); --! Reset for each channelizer input synchronous to their respective clock
 
 signal CORR_RESET_ASYNC : std_logic; --! user-controlled asynchronous reset for all correlator blocks
 
 
-attribute equivalent_register_removal of chan_reset_reg : signal is "no";
-attribute keep of chan_reset_reg :signal is "true";
-attribute shreg_extract of chan_reset_reg: signal is "no";
 
 
 signal gpio_led_int: std_logic_vector(7 downto 0);
@@ -658,10 +667,10 @@ signal SYS_SYSMON_RPLY_DAT: AXIS8_DAT_STRUCT;
 signal SYS_SYSMON_RPLY_RDY: AXIS8_RDY_STRUCT;
 
 -- Command buses forwarded from the CHANNELIZER to the corresponding ADCDAQ
-signal ADC_CMD_DAT: AXIS8_DAT_STRUCT_ARRAY(max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS)-1 downto 0); -- We need to use max because the channelizer and ADCDAQ comamnd buses are linked.
-signal ADC_CMD_RDY: AXIS8_RDY_STRUCT_ARRAY(max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS)-1 downto 0);
-signal ADC_RPLY_DAT: AXIS8_DAT_STRUCT_ARRAY(max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS)-1 downto 0);
-signal ADC_RPLY_RDY: AXIS8_RDY_STRUCT_ARRAY(max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS)-1 downto 0);
+signal ADC_CMD_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_ADCS_OR_CHANNELIZERS-1 downto 0); -- We need to use max because the channelizer and ADCDAQ comamnd buses are linked.
+signal ADC_CMD_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_ADCS_OR_CHANNELIZERS-1 downto 0);
+signal ADC_RPLY_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_ADCS_OR_CHANNELIZERS-1 downto 0);
+signal ADC_RPLY_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_ADCS_OR_CHANNELIZERS-1 downto 0);
 
 signal CHAN_CMD_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_CHANNELIZERS-1 downto 0); -- We need to use max because the channelizer and ADCDAQ comamnd buses are linked.
 signal CHAN_CMD_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_CHANNELIZERS-1 downto 0);
@@ -688,42 +697,18 @@ signal fmc_refclk: std_logic_vector(0 to NUMBER_OF_ADC_BOARDS-1); --
 signal ADC_SYNC: std_logic_vector(0 to NUMBER_OF_ADC_BOARDS-1);
 
 
--- ADC Signals
-signal ADC_DIVCLK_OUT_BUFG : std_logic_vector(0 to NUMBER_OF_ADCS-1);
-signal ADC_IOCLK_OUT_PLL : std_logic_vector(0 to NUMBER_OF_ADCS-1);
-signal ADC_DIVCLK_OUT_PLL : std_logic_vector(0 to NUMBER_OF_ADCS-1);
-signal ADC_DIVCLK_OUT_BUFR : std_logic_vector(0 to NUMBER_OF_ADCS-1);
 
-signal adc_data_ready : std_logic_vector(0 to NUMBER_OF_ADCS-1);
-signal adc_data_ready_reg1 : std_logic_vector(0 to NUMBER_OF_ADCS-1);
-signal adc_data_ready_reg2 : std_logic_vector(0 to NUMBER_OF_ADCS-1);
-signal adc_send_data : std_logic;
-signal adc_send_data_reg1 : std_logic_vector(0 to NUMBER_OF_ADCS-1);
-signal adc_send_data_reg2 : std_logic_vector(0 to NUMBER_OF_ADCS-1);
-signal adc_send_data_reg3 : std_logic_vector(0 to NUMBER_OF_ADCS-1);
-
-attribute shreg_extract of adc_data_ready_reg1: signal is "no";
-attribute shreg_extract of adc_data_ready_reg2: signal is "no";
-attribute dont_touch of adc_send_data: signal is "yes";
-attribute async_reg of adc_send_data_reg1: signal is "yes";
-attribute equivalent_register_removal of adc_send_data_reg1: signal is "no";
-attribute equivalent_register_removal of adc_send_data_reg2: signal is "no";
-attribute equivalent_register_removal of adc_send_data_reg3: signal is "no";
-attribute shreg_extract of adc_send_data_reg2: signal is "no";
-attribute shreg_extract of adc_send_data_reg3: signal is "no";
-
-signal adc_ioclk : std_logic;
-signal adc_divclk : std_logic;
 signal adc_clk_bufg: std_logic; --! BUFR-buffered ADC clock selected from one of the ADC channels to clock the channelizers
 -- signal ADC_DAT: AXIS32_DAT_STRUCT_ARRAY(0 to NUMBER_OF_ADCS-1);
 --signal ANT_DAT_TIMING_REG3: AXIS32_DAT_STRUCT_ARRAY(NUMBER_OF_CHANNELIZERS_TO_CORRELATE-1 downto 0);
 --signal ANT_RDY: AXIS32_RDY_STRUCT_ARRAY(NUMBER_OF_CHANNELIZERS-1 downto 0);
 
 -- ADC data bus between the ADCDAQ (or top port) to the CHANNELIZER
-signal axis_adc_tdata: slv32_array(0 to max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS)-1);
-signal axis_adc_tvalid: slv(0 to max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS)-1);
-signal axis_adc_tlast: slv(0 to max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS)-1);
-signal axis_adc_tuser: slv4_array(0 to max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS)-1);
+signal axis_adc_tdata8: slv64_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+signal axis_adc_tdata: slv64_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+signal axis_adc_tvalid: slv(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+signal axis_adc_tlast: slv(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+signal axis_adc_tuser: slv4_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
 
 -- attribute S of ADC_DAT: signal is "yes";
 -- attribute DONT_TOUCH of ADC_DAT: signal is "yes";
@@ -733,7 +718,10 @@ signal axis_adc_tuser: slv4_array(0 to max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZER
 -- Channelizer signals
 -----------------------
 constant NUMBER_OF_CHAN_CLOCKS : integer := max(8, max( NUMBER_OF_CHANNELIZERS, NUMBER_OF_ADCS)); -- Number of channelizer clocks. There is a minimum of 8 that are always provided by the clock generator, even if we don't use them all. Also, we need at least one for the ADCs even if there is no channelizer connected to it.
-signal chan_clk : std_logic_vector(0 to NUMBER_OF_CHAN_CLOCKS-1);
+signal chan_clk_pll : std_logic_vector(0 to 7); -- Pll-generated, 7-phase clocks
+signal chan_reset_pll : std_logic_vector(0 to 7); -- reset signals synchronous to the clocks above
+
+signal chan_clk : std_logic_vector(0 to NUMBER_OF_CHAN_CLOCKS-1); -- channelizer clocks
 signal chan_reset : std_logic_vector(0 to NUMBER_OF_CHAN_CLOCKS-1);
 signal chan_clk_src_sel: std_logic;
 --signal chan_clk_rst_in: std_logic;
@@ -986,7 +974,7 @@ signal CTRL_CLK_DIV2: std_logic :='0'; -- Initialization required
 signal chan_clk_div2: std_logic :='0'; -- -- Initialization required
 signal CORR_CLK_DIV2: std_logic :='0';  -- Initialization required
 signal SYSMON_CLK_DIV2: std_logic :='0'; -- Initialization required
-signal adc_clk_div2 : std_logic_vector(0 to max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS)-1); --! 1/2 ADC_CLK frequency generated by logic to feed the frequyency counter without using clock routing ressources
+signal adc_clk_div2 : std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1); --! 1/2 ADC_CLK frequency generated by logic to feed the frequyency counter without using clock routing ressources
 signal adc_clkout_div2 : std_logic_vector(0 to adc_clkout'LENGTH-1); --! 1/2 ADC_CLK frequency generated by the external ADC output
 signal fmc_mgt_pll_refclk_div2: std_logic_vector(0 to max(NUMBER_OF_ADC_BOARDS, 4) - 1); --Need  minimum of four for freq ctr assignments
 signal FMC_REFCLK_DIV2: std_logic_vector(0 to max(NUMBER_OF_ADC_BOARDS, 2) - 1); --Need  minimum of two for freq ctr assignments
@@ -1057,11 +1045,45 @@ signal irigb_gen_out: std_logic;
 signal irigb_before_target: std_logic;
 signal sync_out: std_logic;
 
+signal clk200_ctr: unsigned(15 downto 0);
+signal clk10_ctr: unsigned(7 downto 0);
+signal sysmon_clk_ctr: unsigned(7 downto 0);
+
 begin
+
+-- Generics validation
+assert NUMBER_OF_ADCS>0 and (ADC_TYPE="EV8AQ160" or ADC_TYPE="AXIS") report "ADC_TYPE must be EV8AQ160 or AXIS";
 
 -------------------------------------------------------------------
 -- Instantiate System clocks
 -------------------------------------------------------------------
+
+--debug_out(7 downto 0) <= cmd_packet_counter;
+--debug_out(15 downto 0) <= std_logic_vector(clk200_ctr);
+--debug_out(23 downto 16) <= std_logic_vector(clk10_ctr);
+--debug_out(31 downto 24) <= std_logic_vector(sysmon_clk_ctr);
+--debug_out(16) <= ctrl_rst;
+--debug_out(17) <= cpu_reset;
+--debug_out(18) <= user_reset;
+--debug_out(19) <= clk10_div2;
+--debug_out(20) <= clk200_div2;
+--debug_out(21) <= CTRL_CLK_DIV2;
+--debug_out(22) <= CORR_CLK_DIV2;
+--debug_out(23) <= SYSMON_CLK_DIV2;
+
+--debug_out(24) <= axis_cmd_tvalid;
+--debug_out(25) <= axis_rply_tvalid;
+--debug_out(26) <= top_cmd_dat(0).TVALID;
+--debug_out(27) <= top_rply_dat(0).TVALID;
+sma_out(0) <= clk200;
+sma_out(1) <= clk200_reset;
+sma_out(2) <= clk10;
+sma_out(3) <= sysclk_bufg;
+
+
+
+
+
 
 ALL_RESET<=  cpu_reset or user_reset;
 --end generate; --debug7
@@ -1077,6 +1099,7 @@ CLK0: entity work.CLOCKS
 		-- System clock input
 		SYSCLK_P     => SYSCLK_P, --! differential 200 MHz clock input from CLock-Capable (CC) input pins
 		SYSCLK_N     => SYSCLK_N,
+		sysclk_bufg  => sysclk_bufg,
 		sfp_refclk_p => sfp_clk_p, --! differential 125 MHz clock from GTX reference clock input pins
 		sfp_refclk_n => sfp_clk_n,
 		sfp_refclk_nobuf => sfp_refclk_nobuf, -- Unbuffered sfp reference clock, to be used by the GTX core
@@ -1097,34 +1120,37 @@ CLK0: entity work.CLOCKS
 		corr_reset_in => corr_reset_async,
 		corr_reset_out => CORR_RESET,
 
-		SYSMON_CLK => SYSMON_CLK, -- System monitor clock
+		sysmon_clk => sysmon_clk, -- System monitor clock
 		sysmon_reset_out => sysmon_reset,
 
 		-- Channelizer clocks
 		chan_clk_src_sel => chan_clk_src_sel, -- '0': ADC clock, '1': internal 200 MHz clock
 		chan_pll_reset_in => chan_clk_reset_async, --! resets the channelizer PLL/MMCM (needed whan the clock source is changed)
-		chan_clk => chan_clk(0 to 7), --! Channelizer clocks (7 phases)
+		chan_clk => chan_clk_pll, --! Channelizer clocks (7 phases)
 		chan_reset_in => chan_reset_async,
-		chan_reset_out => chan_reset(0 to 7),
+		chan_reset_out => chan_reset_pll,
 
 		sequence_reset_in => ADCDAQ_RESET, --! starts the channelizer/correlator reset sequence
 		-- Reset
 		RST_IN=>ALL_RESET -- master asynchronous reset
 		);
 
---! Copy the clocks and resets to other channelizers if we have more than the 8 provided by the clock generator
-chclkgen: for i in 8 to NUMBER_OF_CHAN_CLOCKS-1 generate
-	chan_clk(i) <= chan_clk(i mod 8);
-	chan_reset(i) <= chan_reset(i mod 8);
-end generate;
 
 
 ctrl_clk_sel7: if PLATFORM_ID=PLATFORM_ID_MGK7MB generate
 	ctrl_clk <= clk125; -- Control system master clock
+	ctrl_rst_proc: process(ctrl_clk)
+	begin
+		if rising_edge(ctrl_clk) then
+			ctrl_rst <= clk125_reset or ctrl_reset_pulse;
+		end if;
+	end process;
+
 end generate;
 
 ctrl_clk_up: if PLATFORM_ID=PLATFORM_ID_ZCU111 generate
 	ctrl_clk <= bsb_axis_clk; -- Control system master clock
+	ctrl_rst <= bsb_axis_rst or ctrl_reset_pulse;
 end generate;
 
 
@@ -1140,7 +1166,6 @@ clk125pipeproc: process(clk125)
 bsb_rst_proc: process(ctrl_clk)
 	begin
 		if rising_edge(ctrl_clk) then
-			ctrl_rst                <= clk125_reset;
 			top_router_rst          <= ctrl_rst;
 			ctrl_master_rst         <= ctrl_rst or ctrl_master_reset;
 			sys_ctrl_rst            <= ctrl_rst;
@@ -1273,20 +1298,24 @@ end generate;
 
 -- If we don't have an ethernet interface, take the BSB interface directly from the top level entity.
 gen_noeth: if PHY_TYPE = "NONE" generate
-	axis_udp_rx_tdata <= s_bsb_axis_tdata;
+	-- Command bus comes from the external bus
+	axis_udp_rx_tdata <= s_bsb_axis_tdata(7 downto 0);
 	axis_udp_rx_tvalid <= s_bsb_axis_tvalid;
 	axis_udp_rx_tlast <= s_bsb_axis_tlast;
-
+	-- Reply bus TREADY
 	axis_udp_tx_tready <= m_bsb_axis_tready;
-
 	sfp_status_vector_int(0) <= '1'; -- simulate valid link so the blinker will work
 end generate;
+
 -- We also always deive these signals on the output port, weather or not thay are used outside, to prevent warnings of undriven output port
+-- Command bus TREADY
 s_bsb_axis_tready <= axis_udp_rx_tready;
+-- Reply bus
 m_bsb_axis_tvalid <= axis_udp_tx_tvalid;
-m_bsb_axis_tdata <= axis_udp_tx_tdata;
+m_bsb_axis_tdata(31 downto 30) <= udp0_tx_port;
+m_bsb_axis_tdata(29 downto 8) <= (others => '0');
+m_bsb_axis_tdata(7 downto 0) <= axis_udp_tx_tdata;
 m_bsb_axis_tlast <= axis_udp_tx_tlast;
-m_bsb_axis_tuser <= udp0_tx_port;
 
 ctrl_master0: entity work.ctrl_master
 	GENERIC MAP (
@@ -1723,6 +1752,8 @@ GPIO0: entity work.GPIO
 		-- Resets
 --		ADC_DAQ_BUFR_SYNC=>GPIO_BUFR_RST,
 		user_reset         => user_reset,
+		ctrl_reset_pulse   => ctrl_reset_pulse,
+		sysmon_user_reset  => sysmon_user_reset,
 		ADCDAQ_RESET_ASYNC => ADCDAQ_RESET_ASYNC,
 		CHAN_RESET_ASYNC   => chan_reset_async,
 		CORR_RESET_ASYNC   => CORR_RESET_ASYNC,
@@ -1741,7 +1772,7 @@ GPIO0: entity work.GPIO
 		clk200_reset => clk200_reset_reg,
 		clk10 => clk10, -- Backplane reference clock
 
-		DNA_CLK => SYSMON_CLK
+		DNA_CLK => sysmon_clk
 	);
 
 -------------------------------------------------------------------------
@@ -1827,32 +1858,53 @@ SYS_CMD_RDY(MODULE_SYSMON_ADDR) <= SYS_SYSMON_CMD_RDY;
 SYS_SYSMON_RPLY_RDY<= SYS_RPLY_RDY(MODULE_SYSMON_ADDR);
 SYS_RPLY_DAT(MODULE_SYSMON_ADDR) <= SYS_SYSMON_RPLY_DAT;
 
---startSysMonInclude
+debug_out(0) <= SYS_SYSMON_CMD_DAT.TVALID;
+debug_out(1) <= SYS_SYSMON_CMD_DAT.TLAST;
+debug_out(2) <= SYS_SYSMON_CMD_RDY.TREADY;
+debug_out(3) <= SYS_SYSMON_RPLY_DAT.TVALID;
+debug_out(4) <= SYS_SYSMON_RPLY_DAT.TLAST;
+debug_out(5) <= SYS_SYSMON_RPLY_RDY.TREADY;
+debug_out(6) <= CTRL_RST;
+debug_out(7) <= sysmon_ctrl_rst;
+
+debug_out(8) <= SYS_GPIO_CMD_DAT.TVALID;
+debug_out(9) <= SYS_GPIO_CMD_DAT.TLAST;
+debug_out(10) <= SYS_GPIO_CMD_RDY.TREADY;
+debug_out(11) <= SYS_GPIO_RPLY_DAT.TVALID;
+debug_out(12) <= SYS_GPIO_RPLY_DAT.TLAST;
+debug_out(13) <= SYS_GPIO_RPLY_RDY.TREADY;
+
+debug_out(22) <= ctrl_reset_pulse;
+debug_out(23) <= sysmon_user_reset;
+
+debug_out(24) <= sysmon_reset;
+debug_out(25) <= sysmon_clk;
+
 SYSMON0: entity work.SYSMON_XADC
 	GENERIC MAP (
-		PLATFORM_ID=>PLATFORM_ID
+		PLATFORM_ID => PLATFORM_ID
 		)
 	PORT MAP(
 		-- Control interface
-		CTRL_CMD_IN_DAT=> SYS_SYSMON_CMD_DAT,
-		CTRL_CMD_IN_RDY=> SYS_SYSMON_CMD_RDY,
-		CTRL_RPLY_OUT_DAT=> SYS_SYSMON_RPLY_DAT,
-		CTRL_RPLY_OUT_RDY=> SYS_SYSMON_RPLY_RDY,
+		CTRL_CMD_IN_DAT => SYS_SYSMON_CMD_DAT,
+		CTRL_CMD_IN_RDY => SYS_SYSMON_CMD_RDY,
+		CTRL_RPLY_OUT_DAT => SYS_SYSMON_RPLY_DAT,
+		CTRL_RPLY_OUT_RDY => SYS_SYSMON_RPLY_RDY,
 		CTRL_CLK => CTRL_CLK,
-		CTRL_RST => sysmon_ctrl_rst,
+		CTRL_RST => sysmon_ctrl_rst, -- pipelined synchronous reset
 
-		VAUX_CURR_N=>VAUX_CURR_N,
-		VAUX_CURR_P=>VAUX_CURR_P,
-		VAUX_VOLT_N=>VAUX_VOLT_N,
-		VAUX_VOLT_P=>VAUX_VOLT_P,
+		-- Analog inputs
+		VAUX_CURR_N => VAUX_CURR_N,
+		VAUX_CURR_P => VAUX_CURR_P,
+		VAUX_VOLT_N => VAUX_VOLT_N,
+		VAUX_VOLT_P => VAUX_VOLT_P,
 		VP => VP,
 		VN => VN,
-		FAN_PWM => open, -- not used
-		FAN_TACH => '0', -- not used
-		SYSMON_CLK => SYSMON_CLK,
-		SYSMON_RST => sysmon_reset
+
+		--debug_out => debug_out,
+		sysmon_clk => sysmon_clk,
+		SYSMON_RST => sysmon_reset or sysmon_user_reset
 	);
---stopSysMonInclude
 
 ---------------------------------------------------------------------
 -- Frequency counter
@@ -1990,6 +2042,7 @@ clk10div2: process(clk10)
 	begin
 		if rising_edge(clk10) then
 			clk10_div2 <=not clk10_div2;
+			clk10_ctr <= clk10_ctr + 1;
 		end if;
 	end process;
 
@@ -1997,6 +2050,7 @@ clk200div2: process(clk200)
 	begin
 		if rising_edge(clk200) then
 			clk200_div2 <= not clk200_div2;
+			clk200_ctr <= clk200_ctr + 1;
 		end if;
 	end process;
 
@@ -2013,7 +2067,7 @@ ctrlclklogic: process(CTRL_CLK)
 -- Generates a logic signal chan_clk_div2 pulsing at half of the chan_clk frequency. To be used for the frequency counter to measure the channelizer clock frequency generated by the PLL from the selected clock source.
 -- This signal can be routed using standard fabric ressources and does not require a dedicated clock line.
 ---------------------------------------------------------------------
-antclkdiv2: process(chan_clk(0))
+chanclkdiv2: process(chan_clk(0))
 	begin
 		if rising_edge(chan_clk(0)) then
 			chan_clk_div2 <=not chan_clk_div2;
@@ -2036,13 +2090,15 @@ corrclkdiv2: process(CORR_CLK)
 ---------------------------------------------------------------------
 --  Generate SYSMON_CLK_DIV2
 ---------------------------------------------------------------------
---! @brief Generates a logic signal SYSMON_CLK_DIV2 pulsing at half of the SYSMON_CLK frequency. To be used for the frequency counter to measure the System Monitor clock frequency.
+--! @brief Generates a logic signal SYSMON_CLK_DIV2 pulsing at half of the sysmon_clk frequency. To be used for the frequency counter to measure the System Monitor clock frequency.
 --! This signal can be routed using standard fabric ressources and does not require a dedicated clock line.
 ---------------------------------------------------------------------
-sysmonclkdiv2: process(SYSMON_CLK)
+sysmonclkdiv2: process(sysmon_clk)
 	begin
-		if rising_edge(SYSMON_CLK) then
+		if rising_edge(sysmon_clk) then
 			SYSMON_CLK_DIV2<=not SYSMON_CLK_DIV2;
+			sysmon_clk_ctr <= sysmon_clk_ctr + 1;
+
 		end if; -- RST/CLK
 	end process;
 
@@ -2114,150 +2170,258 @@ mgtclk125div2: process(mgt_clk125)
 --end generate; --debug5
 
 --------------------------------------------------------------------
---! Instantiate the ADC Data acquisition logic
----------------------------------------------------------------------
-
+--------------------------------------------------------------------
+-- ADCs
+--------------------------------------------------------------------
+--------------------------------------------------------------------
+-- external interface
+--
+-- adc_clk_bufg: out: BUFG-buffered master clock used by CLOCKS to generate the channelizer clocks
+-- Data interface
+-- 		axis_adc_tdata
+-- 		axis_adc_tvalid
+-- 		axis_adc_tlast
+-- 		axis_adc_tuser
+-- 		chan_clk in: axis_adc clock
+-- 		ADCDAQ_RESET
+-- Others:
+--		adc_clk_div2
+-- EV8AQ160-specific:
+--    Control interface (EV8AQ160 only)
+-- 		ADC_CMD_DAT
+--		ADC_CMD_RDY
+--		ADC_RPLY_DAT
+--		ADC_RPLY_RDY
+--		CTRL_CLK
+--		adcdaq_ctrl_rst_reg
+--    Others
+--		fmc_refclk: Used to sample the clock to perform sync align
+--		clk200: For IODELAYCTRL
 ADCDAQ_RESET <= ADCDAQ_RESET_ASYNC or REFCLK_ADCDAQ_RESET;
-adc_send_data <= and_reduce(adc_data_ready_reg2); -- '1' when all ADCDAQs have data to send. The inputs are all from different clocks, so the output will need to be resynchronized.
 
-ADCGEN: for i in 0 to NUMBER_OF_ADCS-1 generate
+---------------
+-- EV8AQ160 ADC
+---------------
 
-	-- -- Define intermediary signals to eliminate use of indexed record arrays as actuals in the instantiation: this messes up the simulator.
-	-- ADC_DAT(i).TDATA <= axis_adc_tdata(i);
-	-- ADC_DAT(i).TVALID <= axis_adc_tvalid(i);
-	-- ADC_DAT(i).TLAST <= axis_adc_tlast(i);
-	-- ADC_DAT(i).TUSER <= axis_adc_tuser(i);
+EV8AQ160: if ADC_TYPE="EV8AQ160" generate
 
-	adc_send_proc: process(chan_clk(i))
-		begin
-			if rising_edge(chan_clk(i)) then
-				adc_data_ready_reg1(i) <= adc_data_ready(i); -- pipeline all adc_data_ready signals so they can be combined (and_reduce) at a central point
-				adc_data_ready_reg2(i) <= adc_data_ready_reg1(i); -- pipeline
-				adc_send_data_reg1(i) <= adc_send_data; -- ASYNC assignment. Distribute back the send_data from single point to all ADCDAQs.
-				adc_send_data_reg2(i) <= adc_send_data_reg1(i);
-				adc_send_data_reg3(i) <= adc_send_data_reg2(i);
-			end if;
-		end process;
+	signal adc_ioclk : std_logic;
+	signal adc_divclk : std_logic;
 
-	-- ADCDAQ is still implemented if IMPLEMENT_ANT=FALSE, but its IMPLEMENT_ADCDAQ generics is forced  to FALSE to the appropriate differential buffers are instantiated and prevent UCF errors.
-	--	ADC_CLK_OUT_PLL<=ADC_CLK_OUT_PLL_INT;
-	--debug3: if false generate
-	ADCDAQ0: entity work.ADCDAQ
-			GENERIC MAP(
-				IMPLEMENT_ADCDAQ        => TRUE, --
-				PROVIDE_BUFFERED_DIVCLK => ADC_PROVIDE_BUFFERED_DIVCLK(i),
-				USE_EXT_DATA_CLK        => ADC_USE_EXT_DATA_CLK(i), -- Use array to select whether a PLL should be used for this instance.
-				IS_DIFFERENTIAL         => ADC_IS_DIFFERENTIAL(i),
-				INSTANTIATE_PLL         => ADC_INSTANTIATE_PLL(i), --
-				BUFMR_MAP               => ADC_INSTANTIATE_BUFMR(i),
-				INSTANTIATE_IDELAYCTRL  => ADC_INSTANTIATE_IDELAYCTRL(i),
-				SIM                     => SIM
-				)
-			 PORT MAP(
-				-- ADC interface
-				ADC_DATA_H_P => ADC_DATA_P(i),
-				ADC_DATA_H_N => ADC_DATA_N(i),
-				ADC_CLK_H_P  => ADC_CLK_P(i),
-				ADC_CLK_H_N  => ADC_CLK_N(i),
+	signal adc_data_ready : std_logic_vector(0 to NUMBER_OF_ADCS-1);
+	signal adc_data_ready_reg1 : std_logic_vector(0 to NUMBER_OF_ADCS-1);
+	signal adc_data_ready_reg2 : std_logic_vector(0 to NUMBER_OF_ADCS-1);
+	signal adc_send_data : std_logic;
+	signal adc_send_data_reg1 : std_logic_vector(0 to NUMBER_OF_ADCS-1);
+	signal adc_send_data_reg2 : std_logic_vector(0 to NUMBER_OF_ADCS-1);
+	signal adc_send_data_reg3 : std_logic_vector(0 to NUMBER_OF_ADCS-1);
 
-				-- Readout interface
-				-- ADC_OUT_DAT => ADC_DAT(i),
-				m_axis_adc_tdata => axis_adc_tdata(i),
-				m_axis_adc_tvalid => axis_adc_tvalid(i),
-				m_axis_adc_tlast => axis_adc_tlast(i),
-				m_axis_adc_tuser => axis_adc_tuser(i),
-				ADC_CLK => chan_clk(i),
+	attribute shreg_extract of adc_data_ready_reg1: signal is "no";
+	attribute shreg_extract of adc_data_ready_reg2: signal is "no";
+	attribute dont_touch of adc_send_data: signal is "yes";
+	attribute async_reg of adc_send_data_reg1: signal is "yes";
+	attribute equivalent_register_removal of adc_send_data_reg1: signal is "no";
+	attribute equivalent_register_removal of adc_send_data_reg2: signal is "no";
+	attribute equivalent_register_removal of adc_send_data_reg3: signal is "no";
+	attribute shreg_extract of adc_send_data_reg2: signal is "no";
+	attribute shreg_extract of adc_send_data_reg3: signal is "no";
 
-				-- Clock outputs (before PLL)
-
-				DIVCLK_OUT_BUFG => ADC_DIVCLK_OUT_BUFG(i), -- PLL-generated word clock for downstream signal processing (if corresponding ADC_INSTANTIATE_PLL=TRUE)
-				DIVCLK_OUT_BUFR => ADC_DIVCLK_OUT_BUFR(i),
-
-				-- Clock outputs to deserializer logic (generated by PLL if ADC_INSTANTIATE_PLL=TRUE)
-				IOCLK_OUT_PLL => ADC_IOCLK_OUT_PLL(i), -- PLL-generated IOCLK clock (if corresponding ADC_INSTANTIATE_PLL=TRUE)
-				DIVCLK_OUT_PLL => ADC_DIVCLK_OUT_PLL(i), -- PLL-generated DIVCLK (word) clock (if corresponding ADC_INSTANTIATE_PLL=TRUE)
-
-				-- Clock monitor
-				ADC_CLK_OUT_DIV2 => adc_clk_div2(i), -- Word clock divided by 2 in logic for frequency counter
-
-				-- Data alignment signals
-				data_ready => adc_data_ready(i),
-				send_data => adc_send_data_reg3(i),
-
-				-- External data clocks
-				IOCLK_IN => adc_ioclk, -- External IOCLK, used if USE_EXT_DATA_CLK=TRUE
-				DIVCLK_IN => adc_divclk, -- External DIVCLK, used if USE_EXT_DATA_CLK=TRUE
-
-				-- Global synchronization
-				ADCDAQ_RESET => ADCDAQ_RESET,
-
-				-- Control lines
-				CTRL_CMD_IN_DAT=> ADC_CMD_DAT(i),
-				CTRL_CMD_IN_RDY=> ADC_CMD_RDY(i),
-				CTRL_RPLY_OUT_DAT=> ADC_RPLY_DAT(i),
-				CTRL_RPLY_OUT_RDY=> ADC_RPLY_RDY(i),
-				CTRL_CLK => CTRL_CLK,
-				CTRL_RST => adcdaq_ctrl_rst_reg(i),
+	signal adc_divclk_out_bufg : std_logic_vector(0 to NUMBER_OF_ADCS-1);
+	signal adc_ioclk_out_pll : std_logic_vector(0 to NUMBER_OF_ADCS-1);
+	signal adc_divclk_out_pll : std_logic_vector(0 to NUMBER_OF_ADCS-1);
+	signal adc_divclk_out_bufr : std_logic_vector(0 to NUMBER_OF_ADCS-1);
 
 
-				REF_CLK => fmc_refclk(ADC_TO_ADC_BOARD_MAP(i)), -- Used to sample the ADC clock waveform
-				clk200 => clk200 -- Used to clock the IODELAYCTRL
-				);
-
-end generate ADCGEN;
-
-gen_adc_clk: if NUMBER_OF_ADCS > 0 generate
-	-- Selects which ADCDAQ will provides the master clock for the channelizerd
-	adc_clk_bufg <= ADC_DIVCLK_OUT_BUFG(ANT_CLK_SOURCE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
-
-	-- Select which ADCDAQ provides an external clock to other ADCDAQs (used only if USE_EXT_DATA_CLK=TRUE)
-	adc_ioclk <= ADC_IOCLK_OUT_PLL(ANT_CLK_SOURCE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
-	adc_divclk <= ADC_DIVCLK_OUT_PLL(ANT_CLK_SOURCE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
-end generate gen_adc_clk;
-
-
-gen_noev8: if NUMBER_OF_ADCS = 0 generate
-
-	signal adc_word_ctr: frame_word_ctr_array(0 to NUMBER_OF_CHANNELIZERS-1) := (others => (others=>'0')); -- Counts words from 0 to FRAME_LENGTH/4-1
-	signal adc_send_data2: slv(0 to NUMBER_OF_CHANNELIZERS-1); -- indicates when TVALID can be passed on
 
 begin
+
+
+
+	-- Selects which ADCDAQ will provides the master clock for the clock generator module to provide channelizer clocks.
+	adc_clk_bufg <= adc_divclk_out_bufg(ANT_CLK_SOURCE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
+
+	-- Generate channalizer clocks.
+	-- The clocks are taken  8-phase clock derived the MMCM/PLL in clock module
+	-- We resuse the same clocks as needed to cover all the channelizers.
+	chclkgen: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
+		chan_clk(i) <= chan_clk_pll(i mod 8);
+		chan_reset(i) <= chan_reset_pll(i mod 8);
+	end generate;
+
+	adc_send_data <= and_reduce(adc_data_ready_reg2); -- '1' when all ADCDAQs have data to send. The inputs are all from different clocks, so the output will need to be resynchronized.
+
+
+
+	-- Select which ADCDAQ provides an external clock to other ADCDAQs (used only if USE_EXT_DATA_CLK=TRUE)
+	adc_ioclk <= adc_ioclk_out_pll(ANT_CLK_SOURCE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
+	adc_divclk <= adc_divclk_out_pll(ANT_CLK_SOURCE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
+
+	ADCGEN: for i in 0 to NUMBER_OF_ADCS-1 generate
+
+		-- -- Define intermediary signals to eliminate use of indexed record arrays as actuals in the instantiation: this messes up the simulator.
+		-- ADC_DAT(i).TDATA <= axis_adc_tdata(i);
+		-- ADC_DAT(i).TVALID <= axis_adc_tvalid(i);
+		-- ADC_DAT(i).TLAST <= axis_adc_tlast(i);
+		-- ADC_DAT(i).TUSER <= axis_adc_tuser(i);
+
+		-- Generate the adc_send_data which will tells all the ADCs to start
+		-- sending data once all of them have their FIFO half-full
+		adc_send_proc: process(chan_clk(i))
+			begin
+				if rising_edge(chan_clk(i)) then
+					adc_data_ready_reg1(i) <= adc_data_ready(i); -- pipeline all adc_data_ready signals so they can be combined (and_reduce) at a central point
+					adc_data_ready_reg2(i) <= adc_data_ready_reg1(i); -- pipeline
+					adc_send_data_reg1(i) <= adc_send_data; -- ASYNC assignment. Distribute back the send_data from single point to all ADCDAQs.
+					adc_send_data_reg2(i) <= adc_send_data_reg1(i);
+					adc_send_data_reg3(i) <= adc_send_data_reg2(i);
+				end if;
+			end process;
+
+		-- Convert 4x 8-bit ADCDAQ bus to 4x 16-bit bus
+		repack_gen: for i in 0 to 3  generate
+			axis_adc_tdata(i)(16*i+7 downto 16*i) <= axis_adc_tdata8(i)(8*i+7 downto 8*i);
+			axis_adc_tdata(i)(16*i+15 downto 16*i+8) <= (others => axis_adc_tdata8(i)(7)); -- sign extend
+		end generate;
+		-- ADCDAQ is still implemented if IMPLEMENT_ANT=FALSE, but its IMPLEMENT_ADCDAQ generics is forced  to FALSE to the appropriate differential buffers are instantiated and prevent UCF errors.
+		--	ADC_CLK_OUT_PLL<=ADC_CLK_OUT_PLL_INT;
+		--debug3: if false generate
+		ADCDAQ0: entity work.ADCDAQ
+				GENERIC MAP(
+					IMPLEMENT_ADCDAQ        => TRUE, --
+					PROVIDE_BUFFERED_DIVCLK => ADC_PROVIDE_BUFFERED_DIVCLK(i),
+					USE_EXT_DATA_CLK        => ADC_USE_EXT_DATA_CLK(i), -- Use array to select whether a PLL should be used for this instance.
+					IS_DIFFERENTIAL         => ADC_IS_DIFFERENTIAL(i),
+					INSTANTIATE_PLL         => ADC_INSTANTIATE_PLL(i), --
+					BUFMR_MAP               => ADC_INSTANTIATE_BUFMR(i),
+					INSTANTIATE_IDELAYCTRL  => ADC_INSTANTIATE_IDELAYCTRL(i),
+					SIM                     => SIM
+					)
+				 PORT MAP(
+					-- ADC interface
+					ADC_DATA_H_P => ADC_DATA_P(i),
+					ADC_DATA_H_N => ADC_DATA_N(i),
+					ADC_CLK_H_P  => ADC_CLK_P(i),
+					ADC_CLK_H_N  => ADC_CLK_N(i),
+
+					-- Readout interface
+					-- ADC_OUT_DAT => ADC_DAT(i),
+					m_axis_adc_tdata => axis_adc_tdata8(i),
+					m_axis_adc_tvalid => axis_adc_tvalid(i),
+					m_axis_adc_tlast => axis_adc_tlast(i),
+					m_axis_adc_tuser => axis_adc_tuser(i),
+					ADC_CLK => chan_clk(i),
+
+					-- Clock outputs (before PLL)
+
+					DIVCLK_OUT_BUFG => adc_divclk_out_bufg(i), -- PLL-generated word clock for downstream signal processing (if corresponding ADC_INSTANTIATE_PLL=TRUE)
+					DIVCLK_OUT_BUFR => adc_divclk_out_bufr(i),
+
+					-- Clock outputs to deserializer logic (generated by PLL if ADC_INSTANTIATE_PLL=TRUE)
+					IOCLK_OUT_PLL => adc_ioclk_out_pll(i), -- PLL-generated IOCLK clock (if corresponding ADC_INSTANTIATE_PLL=TRUE)
+					DIVCLK_OUT_PLL => adc_divclk_out_pll(i), -- PLL-generated DIVCLK (word) clock (if corresponding ADC_INSTANTIATE_PLL=TRUE)
+
+					-- Clock monitor
+					ADC_CLK_OUT_DIV2 => adc_clk_div2(i), -- Word clock divided by 2 in logic for frequency counter
+
+					-- Data alignment signals
+					data_ready => adc_data_ready(i),
+					send_data => adc_send_data_reg3(i),
+
+					-- External data clocks
+					IOCLK_IN => adc_ioclk, -- External IOCLK, used if USE_EXT_DATA_CLK=TRUE
+					DIVCLK_IN => adc_divclk, -- External DIVCLK, used if USE_EXT_DATA_CLK=TRUE
+
+					-- Global synchronization
+					ADCDAQ_RESET => ADCDAQ_RESET,
+
+					-- Control lines
+					CTRL_CMD_IN_DAT=> ADC_CMD_DAT(i),
+					CTRL_CMD_IN_RDY=> ADC_CMD_RDY(i),
+					CTRL_RPLY_OUT_DAT=> ADC_RPLY_DAT(i),
+					CTRL_RPLY_OUT_RDY=> ADC_RPLY_RDY(i),
+					CTRL_CLK => CTRL_CLK,
+					CTRL_RST => adcdaq_ctrl_rst_reg(i),
+
+
+					REF_CLK => fmc_refclk(ADC_TO_ADC_BOARD_MAP(i)), -- Used to sample the ADC clock waveform
+					clk200 => clk200 -- Used to clock the IODELAYCTRL
+					);
+
+	end generate ADCGEN;
+end generate EV8AQ160;
+
+---------------
+-- EV8AQ160 ADC
+---------------
+
+AXIS_ADC: if ADC_TYPE="AXIS" generate
+
+	signal adc_word_ctr: frame_word_ctr_array(0 to NUMBER_OF_ADCS-1) := (others => (others=>'0')); -- Counts words from 0 to FRAME_LENGTH/4-1
+	signal adc_send_data2: slv(0 to NUMBER_OF_ADCS-1); -- indicates when TVALID can be passed on
+
+begin
+	-- Select clock to be used as a source to generate channelizer clocks
+	-- We don't use the clocks directly, but we use the reset sequencer which use these clocks.
+	-- We should separate the reset sequencer from the clock generator.
 	adc_clk_bufg <= adc_axis_clk(ANT_CLK_SOURCE);
-	-- Note: axis_adc_* length is max(NUMBER_OF_ADC, NUMBER_OF_CHANNELIZERS) and is therefore NUMBER_OF_CHANNELIZERS in this block
+
+	-- Generate channalizer clocks.
+	-- The channelizer clocks are taken directly from the ADC AXIS bus clock.
+	-- The reset is taken from the clock module reset. Since all clocks are based on a SYSCLK_BUFG that feed the clock generator,
+	-- we take chan_reset_pll(0) as a clock for everybody. This clock is sequenced.
+	-- Reset with index 0 is the most in phae with the input clock, and therefore the most in phase with the data clocks.
+	chclkgen: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
+		chan_clk(i) <= adc_axis_clk(i mod NUMBER_OF_ADCS);
+		chan_reset(i) <= chan_reset_pll(0);
+	end generate;
 
 	-- Pipeline and frame the ADC with a TLAST signal and generate the divide-by-two adc clock monitoring signals for the frequency counter
 	-- The first frame is skipped to provide time for the channelizer pipeline modules to complete their reset cycles.
-	gen_noadc_div2: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
-		noadc_div2: process(adc_axis_clk(i))
+	GEN_ADC: for i in 0 to NUMBER_OF_ADCS-1 generate
+		adc_clk_div2_proc: process(adc_clkout(i))
 			begin
-				if rising_edge(adc_axis_clk(i)) then
+				-- Generate a divide-by-2 version of the downscaled sampling clock
+				if rising_edge(adc_clkout(i)) then
 					adc_clk_div2(i) <= not adc_clk_div2(i);
+				end if; -- adc_axis_clk
+		end process;
 
+		adc_proc: process(adc_axis_clk(i))
 
+			variable adc_axis_tdata2, adc_axis_tdata3: slv64;
+
+			begin
+				if rising_edge(chan_clk(i)) then
 					if adc_axis_tvalid(i)='1' then
 						adc_word_ctr(i) <= adc_word_ctr(i) + 1;
 					end if;
 
+					-- ADC data comes in 128-bit bus that contains 8x 16-bit sample words.
+					-- Actual ADC data is 12 or 14 bits, MSB-aligned in each word. First sample is in the lower word.
 
-					-- Saturate and pass on the 4 8-bit samples
+					-- The FFT currently need 4x 8-bit sample bytes, first sample in the upper word
+					-- The following performs the conversion
+
+					-- Downsample the data from 8 samples to 4 samples
 					for j in 0 to 3 loop
-						if ADC_LSB_POSITION < 8 and adc_axis_tdata(i)(16*j+15) = '0' and signed(adc_axis_tdata(i)(16*j+14 downto 16*j+ADC_LSB_POSITION+7)) /= 0 then
-							axis_adc_tdata(i)(8*j+7 downto 8*j) <= X"7F";
-	    					axis_adc_tuser(i)(j) <= '1';
-						elsif ADC_LSB_POSITION < 8 and adc_axis_tdata(i)(16*j+15) = '1' and signed(adc_axis_tdata(i)(16*j+14 downto 16*j+ADC_LSB_POSITION+7)) /= -1 then
-							axis_adc_tdata(i)(8*j+7 downto 8*j) <= X"80";
-	    					axis_adc_tuser(i)(j) <= '1';
-						else
-							axis_adc_tdata(i)(8*j+7 downto 8*j) <= adc_axis_tdata(i)(16*j+ADC_LSB_POSITION+7 downto 16*j+ADC_LSB_POSITION);
-	    					axis_adc_tuser(i)(j) <= '0';
-						end if;
+						adc_axis_tdata2(16*j+15 downto 16*j) := adc_axis_tdata(i)(32*j+15 downto 32*j);
 					end loop;
+
+					-- Invert the order of the words to put the first sample in the MSB
+					for j in 0 to 3 loop
+						adc_axis_tdata3(16*j+15 downto 16*j) := adc_axis_tdata2(16*(3-j)+15 downto 16*(3-j));
+					end loop;
+					-- Assing the data bus and clear overflow flags
+					axis_adc_tdata(i) <= adc_axis_tdata3;
+					axis_adc_tuser(i) <= (others =>'0');
 					axis_adc_tvalid(i) <= adc_axis_tvalid(i) and adc_send_data2(i);
 					axis_adc_tlast(i) <= '0';
+					-- generate TLAST
 					if signed(adc_word_ctr(i))=-1 then
 						axis_adc_tlast(i) <= '1';
 						adc_send_data2(i) <= '1'; -- start setting tvalid to 1
 					end if; -- last word
+					-- Synchronous reset
 					if chan_reset(i)='1' then
 						axis_adc_tvalid(i) <= '0';
 						adc_word_ctr(i) <= (others => '0');
@@ -2265,12 +2429,13 @@ begin
 					end if;
 				end if; -- if clk
 			end process;
-	end generate;
-end generate gen_noev8;
+	end generate GEN_ADC;
+end generate AXIS_ADC;
+
 
 
 ---------------------------------------------------------------------
---  CHANNELIZER
+--  CHANNELIZERS
 ---------------------------------------------------------------------
 
 --------------------------------------------------
@@ -2308,8 +2473,6 @@ chan_router0: entity work.CTRL_ROUTER
 	GENERIC MAP (
 		NUMBER_OF_PORTS=>NUMBER_OF_CHANNELIZERS,
 		ADDRESS_MASK => "----1111------------" --'1': used to generate port index, '-' = don't care,
-		-- PORT_NUMBER_HIGH_BIT=> CTRL_MODULE_NUMBER_RANGE'HIGH,
-		-- PORT_NUMBER_LOW_BIT=> CTRL_MODULE_NUMBER_RANGE'LOW
 	)
 	PORT MAP(
 		-- Master control interface
@@ -2331,9 +2494,13 @@ chan_router0: entity work.CTRL_ROUTER
 
 CHANGEN: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
 
-	--PRB_PORT_OFFSET(CHAN_PROBE_BASE_PORT+i) <= DATA_IP_PORT_OFFSET ; --! Assign the IP port number to be used for the returned data
+	signal chan_reset_reg : std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1); --! Reset for each channelizer input synchronous to their respective clock
+	attribute equivalent_register_removal of chan_reset_reg : signal is "no";
+	attribute keep of chan_reset_reg :signal is "true";
+	attribute shreg_extract of chan_reset_reg: signal is "no";
 
-	--! Pipeline the channel synchronous reset line to the channelizers and correlator inputs
+begin
+	-- Pipeline the channel synchronous resets
 	rst_proc: process(chan_clk(i))
 		begin
 			if rising_edge(chan_clk(i)) then
@@ -2343,7 +2510,8 @@ CHANGEN: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
 
 	CHANi: entity work.CHAN
 		GENERIC MAP (
-			PLATFORM_ID => PLATFORM_ID
+			PLATFORM_ID => PLATFORM_ID,
+			IMPLEMENT_FFT => i<NUMBER_OF_CHANNELIZERS_WITH_FFT
 			)
 		PORT MAP(
 

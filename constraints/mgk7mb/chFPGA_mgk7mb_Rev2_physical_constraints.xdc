@@ -511,7 +511,7 @@ set_property PACKAGE_PIN T23 [get_ports fmca_adc_sync_n]
 set_property IOSTANDARD LVDS_25 [get_ports {fmc?_adc?_?hdp fmc?_adc?_?drp}]
 
 
-set_property LOC BUFMRCE_X0Y6 [get_cells {chfpga0/ADCGEN[0].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y6 [get_cells {chfpga0/EV8AQ160.ADCGEN[0].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN U25 [get_ports fmca_adc0_adrn]
 set_property PACKAGE_PIN T26 [get_ports {fmca_adc0_ahdn[0]}]
 set_property PACKAGE_PIN T27 [get_ports {fmca_adc0_ahdn[1]}]
@@ -530,7 +530,7 @@ set_property PACKAGE_PIN U30 [get_ports {fmca_adc0_bhdn[4]}]
 set_property PACKAGE_PIN W23 [get_ports {fmca_adc0_bhdn[5]}]
 set_property PACKAGE_PIN R25 [get_ports {fmca_adc0_bhdn[6]}]
 set_property PACKAGE_PIN T28 [get_ports {fmca_adc0_bhdn[7]}]
-set_property LOC BUFMRCE_X0Y5 [get_cells {chfpga0/ADCGEN[2].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y5 [get_cells {chfpga0/EV8AQ160.ADCGEN[2].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AD28 [get_ports fmca_adc0_cdrn]
 set_property PACKAGE_PIN AD22 [get_ports {fmca_adc0_chdn[0]}]
 set_property PACKAGE_PIN AK26 [get_ports {fmca_adc0_chdn[1]}]
@@ -540,7 +540,7 @@ set_property PACKAGE_PIN AA25 [get_ports {fmca_adc0_chdn[4]}]
 set_property PACKAGE_PIN AG28 [get_ports {fmca_adc0_chdn[5]}]
 set_property PACKAGE_PIN AC24 [get_ports {fmca_adc0_chdn[6]}]
 set_property PACKAGE_PIN AC30 [get_ports {fmca_adc0_chdn[7]}]
-set_property LOC BUFMRCE_X0Y4 [get_cells {chfpga0/ADCGEN[3].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y4 [get_cells {chfpga0/EV8AQ160.ADCGEN[3].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AB27 [get_ports fmca_adc0_ddrn]
 set_property PACKAGE_PIN AK23 [get_ports {fmca_adc0_dhdn[0]}]
 set_property PACKAGE_PIN AK25 [get_ports {fmca_adc0_dhdn[1]}]
@@ -550,7 +550,7 @@ set_property PACKAGE_PIN AB30 [get_ports {fmca_adc0_dhdn[4]}]
 set_property PACKAGE_PIN AA30 [get_ports {fmca_adc0_dhdn[5]}]
 set_property PACKAGE_PIN AB28 [get_ports {fmca_adc0_dhdn[6]}]
 set_property PACKAGE_PIN W29 [get_ports {fmca_adc0_dhdn[7]}]
-set_property LOC BUFMRCE_X0Y1 [get_cells {chfpga0/ADCGEN[4].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y1 [get_cells {chfpga0/EV8AQ160.ADCGEN[4].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AF16 [get_ports fmca_adc1_adrn]
 set_property PACKAGE_PIN AE19 [get_ports {fmca_adc1_ahdn[0]}]
 set_property PACKAGE_PIN AK14 [get_ports {fmca_adc1_ahdn[1]}]
@@ -560,7 +560,7 @@ set_property PACKAGE_PIN AJ19 [get_ports {fmca_adc1_ahdn[4]}]
 set_property PACKAGE_PIN AB18 [get_ports {fmca_adc1_ahdn[5]}]
 set_property PACKAGE_PIN AE14 [get_ports {fmca_adc1_ahdn[6]}]
 set_property PACKAGE_PIN AA18 [get_ports {fmca_adc1_ahdn[7]}]
-set_property LOC BUFMRCE_X0Y0 [get_cells {chfpga0/ADCGEN[5].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y0 [get_cells {chfpga0/EV8AQ160.ADCGEN[5].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AG17 [get_ports fmca_adc1_bdrn]
 set_property PACKAGE_PIN AD19 [get_ports {fmca_adc1_bhdn[0]}]
 set_property PACKAGE_PIN AH20 [get_ports {fmca_adc1_bhdn[1]}]
@@ -570,7 +570,7 @@ set_property PACKAGE_PIN AG15 [get_ports {fmca_adc1_bhdn[4]}]
 set_property PACKAGE_PIN AD17 [get_ports {fmca_adc1_bhdn[5]}]
 set_property PACKAGE_PIN AH15 [get_ports {fmca_adc1_bhdn[6]}]
 set_property PACKAGE_PIN AJ17 [get_ports {fmca_adc1_bhdn[7]}]
-set_property LOC BUFMRCE_X0Y3 [get_cells {chfpga0/ADCGEN[6].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y3 [get_cells {chfpga0/EV8AQ160.ADCGEN[6].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AG23 [get_ports fmca_adc1_cdrn]
 set_property PACKAGE_PIN AH24 [get_ports {fmca_adc1_chdn[0]}]
 set_property PACKAGE_PIN AG25 [get_ports {fmca_adc1_chdn[1]}]
@@ -626,7 +626,7 @@ set_property PACKAGE_PIN L25 [get_ports fmcb_refclk_m2c_n]
 set_property PACKAGE_PIN U8 [get_ports {fmcb_mgt_pll_refclk_p[0]}]
 set_property PACKAGE_PIN W8 [get_ports {fmcb_mgt_pll_refclk_p[1]}]
 
-set_property LOC BUFMRCE_X0Y10 [get_cells {chfpga0/ADCGEN[8].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y10 [get_cells {chfpga0/EV8AQ160.ADCGEN[8].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN E26 [get_ports fmcb_adc0_adrn]
 set_property PACKAGE_PIN F26 [get_ports {fmcb_adc0_ahdn[0]}]
 set_property PACKAGE_PIN C26 [get_ports {fmcb_adc0_ahdn[1]}]
@@ -644,7 +644,7 @@ set_property PACKAGE_PIN J29 [get_ports {fmcb_adc0_bhdn[4]}]
 set_property PACKAGE_PIN G29 [get_ports {fmcb_adc0_bhdn[5]}]
 set_property PACKAGE_PIN D27 [get_ports {fmcb_adc0_bhdn[6]}]
 set_property PACKAGE_PIN A26 [get_ports {fmcb_adc0_bhdn[7]}]
-set_property LOC BUFMRCE_X0Y13 [get_cells {chfpga0/ADCGEN[10].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y13 [get_cells {chfpga0/EV8AQ160.ADCGEN[10].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN E21 [get_ports fmcb_adc0_cdrn]
 set_property PACKAGE_PIN A16 [get_ports {fmcb_adc0_chdn[0]}]
 set_property PACKAGE_PIN C17 [get_ports {fmcb_adc0_chdn[1]}]
@@ -654,7 +654,7 @@ set_property PACKAGE_PIN A30 [get_ports {fmcb_adc0_chdn[4]}]
 set_property PACKAGE_PIN E19 [get_ports {fmcb_adc0_chdn[5]}]
 set_property PACKAGE_PIN A28 [get_ports {fmcb_adc0_chdn[6]}]
 set_property PACKAGE_PIN D19 [get_ports {fmcb_adc0_chdn[7]}]
-set_property LOC BUFMRCE_X0Y12 [get_cells {chfpga0/ADCGEN[11].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y12 [get_cells {chfpga0/EV8AQ160.ADCGEN[11].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN F21 [get_ports fmcb_adc0_ddrn]
 set_property PACKAGE_PIN A14 [get_ports {fmcb_adc0_dhdn[0]}]
 set_property PACKAGE_PIN B15 [get_ports {fmcb_adc0_dhdn[1]}]
@@ -664,7 +664,7 @@ set_property PACKAGE_PIN A21 [get_ports {fmcb_adc0_dhdn[4]}]
 set_property PACKAGE_PIN B23 [get_ports {fmcb_adc0_dhdn[5]}]
 set_property PACKAGE_PIN C22 [get_ports {fmcb_adc0_dhdn[6]}]
 set_property PACKAGE_PIN D23 [get_ports {fmcb_adc0_dhdn[7]}]
-set_property LOC BUFMRCE_X0Y8 [get_cells {chfpga0/ADCGEN[12].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y8 [get_cells {chfpga0/EV8AQ160.ADCGEN[12].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN L27 [get_ports fmcb_adc1_adrn]
 set_property PACKAGE_PIN L28 [get_ports {fmcb_adc1_ahdn[0]}]
 set_property PACKAGE_PIN P28 [get_ports {fmcb_adc1_ahdn[1]}]
@@ -674,7 +674,7 @@ set_property PACKAGE_PIN K24 [get_ports {fmcb_adc1_ahdn[4]}]
 set_property PACKAGE_PIN P18 [get_ports {fmcb_adc1_ahdn[5]}]
 set_property PACKAGE_PIN L21 [get_ports {fmcb_adc1_ahdn[6]}]
 set_property PACKAGE_PIN M20 [get_ports {fmcb_adc1_ahdn[7]}]
-set_property LOC BUFMRCE_X0Y9 [get_cells {chfpga0/ADCGEN[13].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y9 [get_cells {chfpga0/EV8AQ160.ADCGEN[13].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN M24 [get_ports fmcb_adc1_bdrn]
 set_property PACKAGE_PIN K29 [get_ports {fmcb_adc1_bhdn[0]}]
 set_property PACKAGE_PIN K30 [get_ports {fmcb_adc1_bhdn[1]}]
@@ -684,7 +684,7 @@ set_property PACKAGE_PIN P29 [get_ports {fmcb_adc1_bhdn[4]}]
 set_property PACKAGE_PIN M22 [get_ports {fmcb_adc1_bhdn[5]}]
 set_property PACKAGE_PIN K26 [get_ports {fmcb_adc1_bhdn[6]}]
 set_property PACKAGE_PIN N26 [get_ports {fmcb_adc1_bhdn[7]}]
-set_property LOC BUFMRCE_X0Y15 [get_cells {chfpga0/ADCGEN[14].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y15 [get_cells {chfpga0/EV8AQ160.ADCGEN[14].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN C16 [get_ports fmcb_adc1_cdrn]
 set_property PACKAGE_PIN E16 [get_ports {fmcb_adc1_chdn[0]}]
 set_property PACKAGE_PIN D16 [get_ports {fmcb_adc1_chdn[1]}]
@@ -694,7 +694,7 @@ set_property PACKAGE_PIN H17 [get_ports {fmcb_adc1_chdn[4]}]
 set_property PACKAGE_PIN G14 [get_ports {fmcb_adc1_chdn[5]}]
 set_property PACKAGE_PIN F17 [get_ports {fmcb_adc1_chdn[6]}]
 set_property PACKAGE_PIN A17 [get_ports {fmcb_adc1_chdn[7]}]
-set_property LOC BUFMRCE_X0Y14 [get_cells {chfpga0/ADCGEN[15].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y14 [get_cells {chfpga0/EV8AQ160.ADCGEN[15].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN F15 [get_ports fmcb_adc1_ddrn]
 set_property PACKAGE_PIN J23 [get_ports {fmcb_adc1_dhdn[0]}]
 set_property PACKAGE_PIN F23 [get_ports {fmcb_adc1_dhdn[1]}]
@@ -715,7 +715,7 @@ set_property LOC XADC_X0Y0 [get_cells chfpga0/SYSMON0/SYSMON7_GEN.XADC0]
 
 ### MMCMs ###
 # We need to put the ADCDAQ PLL in the same bank as the BUFR that drives it (Bank 13)
-#set_property LOC MMCME2_ADV_X0Y3 [get_cells {chfpga0/ADCGEN[0].ADCDAQ0/IMPL.USEPLL.PLL0/U0/mmcm_adv_inst}]
+#set_property LOC MMCME2_ADV_X0Y3 [get_cells {chfpga0/EV8AQ160.ADCGEN[0].ADCDAQ0/IMPL.USEPLL.PLL0/U0/mmcm_adv_inst}]
 # The Channelizer MMCM has 2 inputs:  ADCDAQ0 and System MMCM (CLK200). If Tey are there were driven directly (no BUFG) by both the ADCDAQ BUFR and Sysntem MMCM output, . The MMCM must be adjacent, but on a half that has enough BUFGs
 set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/CLK0/gen_chanpll_k7.chan_mmcm0]
 # The system MMCM also drives the Channelizer MMCM, and also needs to be adjacent.
@@ -738,20 +738,20 @@ set_property LOC BUFGCTRL_X0Y19 [get_cells chfpga0/GPUGEN.gpulink0/xglink0/refcl
 
 # CH2
 # NOTE: It is assumed that the ADCDAQ logic is located in the same bank as the clock so it can be clocked out of the BUFR in that region
-set_property LOC BUFR_X0Y4 [get_cells {chfpga0/ADCGEN[2].ADCDAQ0/IMPL.BUFRGEN[1].BUFRn}]
-set_property LOC BUFR_X0Y8 [get_cells {chfpga0/ADCGEN[2].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
+set_property LOC BUFR_X0Y4 [get_cells {chfpga0/EV8AQ160.ADCGEN[2].ADCDAQ0/IMPL.BUFRGEN[1].BUFRn}]
+set_property LOC BUFR_X0Y8 [get_cells {chfpga0/EV8AQ160.ADCGEN[2].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
 
 # CH3
 # NOTE: It is assumed that the ADCDAQ logic is located in the same bank as the clock so it can be clocked out of the BUFR in that region
-set_property LOC BUFR_X0Y5 [get_cells {chfpga0/ADCGEN[3].ADCDAQ0/IMPL.BUFRGEN[1].BUFRn}]
-set_property LOC BUFR_X0Y9 [get_cells {chfpga0/ADCGEN[3].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
+set_property LOC BUFR_X0Y5 [get_cells {chfpga0/EV8AQ160.ADCGEN[3].ADCDAQ0/IMPL.BUFRGEN[1].BUFRn}]
+set_property LOC BUFR_X0Y9 [get_cells {chfpga0/EV8AQ160.ADCGEN[3].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
 
 set_property PACKAGE_PIN F28 [get_ports fmcb_adc0_bdrn]
-set_property LOC BUFR_X0Y22 [get_cells {chfpga0/ADCGEN[9].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
+set_property LOC BUFR_X0Y22 [get_cells {chfpga0/EV8AQ160.ADCGEN[9].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
 
-set_property LOC BUFIO_X0Y27 [get_cells {chfpga0/ADCGEN[14].ADCDAQ0/IMPL.NOEXTCLK.BUFIOGEN[1].BUFIO0}]
+set_property LOC BUFIO_X0Y27 [get_cells {chfpga0/EV8AQ160.ADCGEN[14].ADCDAQ0/IMPL.NOEXTCLK.BUFIOGEN[1].BUFIO0}]
 
-set_property LOC BUFIO_X0Y25 [get_cells {chfpga0/ADCGEN[15].ADCDAQ0/IMPL.NOEXTCLK.BUFIOGEN[0].BUFIO0}]
+set_property LOC BUFIO_X0Y25 [get_cells {chfpga0/EV8AQ160.ADCGEN[15].ADCDAQ0/IMPL.NOEXTCLK.BUFIOGEN[0].BUFIO0}]
 
 
 
@@ -1223,82 +1223,82 @@ resize_pblock [get_pblocks GPU3] -add {RAMB36_X10Y66:RAMB36_X11Y69 RAMB36_X9Y66:
 
 
 create_pblock ADCDAQ0
-add_cells_to_pblock [get_pblocks ADCDAQ0] [get_cells -quiet [list {chfpga0/ADCGEN[0].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ0] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[0].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ0] -add {SLICE_X0Y169:SLICE_X7Y186}
 resize_pblock [get_pblocks ADCDAQ0] -add {RAMB18_X0Y70:RAMB18_X0Y71}
 resize_pblock [get_pblocks ADCDAQ0] -add {RAMB36_X0Y35:RAMB36_X0Y35}
 create_pblock ADCDAQ1
-add_cells_to_pblock [get_pblocks ADCDAQ1] [get_cells -quiet [list {chfpga0/ADCGEN[1].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ1] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[1].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ1] -add {SLICE_X0Y152:SLICE_X7Y168}
 resize_pblock [get_pblocks ADCDAQ1] -add {RAMB18_X0Y68:RAMB18_X0Y69}
 resize_pblock [get_pblocks ADCDAQ1] -add {RAMB36_X0Y34:RAMB36_X0Y34}
 create_pblock ADCDAQ2
-add_cells_to_pblock [get_pblocks ADCDAQ2] [get_cells -quiet [list {chfpga0/ADCGEN[2].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ2] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[2].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ2] -add {SLICE_X0Y125:SLICE_X7Y142 SLICE_X0Y96:SLICE_X7Y97}
 resize_pblock [get_pblocks ADCDAQ2] -add {RAMB18_X0Y50:RAMB18_X0Y51}
 resize_pblock [get_pblocks ADCDAQ2] -add {RAMB36_X0Y25:RAMB36_X0Y25}
 create_pblock ADCDAQ3
-add_cells_to_pblock [get_pblocks ADCDAQ3] [get_cells -quiet [list {chfpga0/ADCGEN[3].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ3] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[3].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ3] -add {SLICE_X0Y98:SLICE_X7Y116}
 resize_pblock [get_pblocks ADCDAQ3] -add {RAMB18_X0Y40:RAMB18_X0Y41}
 resize_pblock [get_pblocks ADCDAQ3] -add {RAMB36_X0Y20:RAMB36_X0Y20}
 create_pblock ADCDAQ4
-add_cells_to_pblock [get_pblocks ADCDAQ4] [get_cells -quiet [list {chfpga0/ADCGEN[4].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ4] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[4].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ4] -add {SLICE_X0Y7:SLICE_X7Y24}
 resize_pblock [get_pblocks ADCDAQ4] -add {RAMB18_X0Y8:RAMB18_X0Y9}
 resize_pblock [get_pblocks ADCDAQ4] -add {RAMB36_X0Y4:RAMB36_X0Y4}
 create_pblock ADCDAQ5
-add_cells_to_pblock [get_pblocks ADCDAQ5] [get_cells -quiet [list {chfpga0/ADCGEN[5].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ5] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[5].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ5] -add {SLICE_X0Y30:SLICE_X7Y49}
 resize_pblock [get_pblocks ADCDAQ5] -add {RAMB18_X0Y18:RAMB18_X0Y19}
 resize_pblock [get_pblocks ADCDAQ5] -add {RAMB36_X0Y9:RAMB36_X0Y9}
 create_pblock ADCDAQ6
-add_cells_to_pblock [get_pblocks ADCDAQ6] [get_cells -quiet [list {chfpga0/ADCGEN[6].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ6] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[6].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ6] -add {SLICE_X0Y57:SLICE_X7Y74}
 resize_pblock [get_pblocks ADCDAQ6] -add {RAMB18_X0Y28:RAMB18_X0Y29}
 resize_pblock [get_pblocks ADCDAQ6] -add {RAMB36_X0Y14:RAMB36_X0Y14}
 create_pblock ADCDAQ7
-add_cells_to_pblock [get_pblocks ADCDAQ7] [get_cells -quiet [list {chfpga0/ADCGEN[7].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ7] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[7].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ7] -add {SLICE_X0Y75:SLICE_X7Y92}
 resize_pblock [get_pblocks ADCDAQ7] -add {RAMB18_X0Y30:RAMB18_X0Y31}
 resize_pblock [get_pblocks ADCDAQ7] -add {RAMB36_X0Y15:RAMB36_X0Y15}
 create_pblock ADCDAQ8
-add_cells_to_pblock [get_pblocks ADCDAQ8] [get_cells -quiet [list {chfpga0/ADCGEN[8].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ8] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[8].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ8] -add {SLICE_X0Y281:SLICE_X7Y298}
 resize_pblock [get_pblocks ADCDAQ8] -add {RAMB18_X0Y118:RAMB18_X0Y119}
 resize_pblock [get_pblocks ADCDAQ8] -add {RAMB36_X0Y59:RAMB36_X0Y59}
 create_pblock ADCDAQ9
-add_cells_to_pblock [get_pblocks ADCDAQ9] [get_cells -quiet [list {chfpga0/ADCGEN[9].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ9] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[9].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ9] -add {SLICE_X0Y257:SLICE_X7Y274}
 resize_pblock [get_pblocks ADCDAQ9] -add {RAMB18_X0Y108:RAMB18_X0Y109}
 resize_pblock [get_pblocks ADCDAQ9] -add {RAMB36_X0Y54:RAMB36_X0Y54}
 create_pblock ADCDAQ10
-add_cells_to_pblock [get_pblocks ADCDAQ10] [get_cells -quiet [list {chfpga0/ADCGEN[10].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ10] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[10].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ10] -add {SLICE_X0Y352:SLICE_X7Y353 SLICE_X0Y299:SLICE_X7Y316}
 resize_pblock [get_pblocks ADCDAQ10] -add {RAMB18_X0Y120:RAMB18_X0Y121}
 resize_pblock [get_pblocks ADCDAQ10] -add {RAMB36_X0Y60:RAMB36_X0Y60}
 create_pblock ADCDAQ11
-add_cells_to_pblock [get_pblocks ADCDAQ11] [get_cells -quiet [list {chfpga0/ADCGEN[11].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ11] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[11].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ11] -add {SLICE_X0Y332:SLICE_X7Y351}
 resize_pblock [get_pblocks ADCDAQ11] -add {RAMB18_X0Y138:RAMB18_X0Y139}
 resize_pblock [get_pblocks ADCDAQ11] -add {RAMB36_X0Y69:RAMB36_X0Y69}
 create_pblock ADCDAQ12
-add_cells_to_pblock [get_pblocks ADCDAQ12] [get_cells -quiet [list {chfpga0/ADCGEN[12].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ12] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[12].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ12] -add {SLICE_X0Y207:SLICE_X7Y224}
 resize_pblock [get_pblocks ADCDAQ12] -add {RAMB18_X0Y88:RAMB18_X0Y89}
 resize_pblock [get_pblocks ADCDAQ12] -add {RAMB36_X0Y44:RAMB36_X0Y44}
 create_pblock ADCDAQ13
-add_cells_to_pblock [get_pblocks ADCDAQ13] [get_cells -quiet [list {chfpga0/ADCGEN[13].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ13] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[13].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ13] -add {SLICE_X0Y225:SLICE_X7Y245}
 resize_pblock [get_pblocks ADCDAQ13] -add {RAMB18_X0Y90:RAMB18_X0Y91}
 resize_pblock [get_pblocks ADCDAQ13] -add {RAMB36_X0Y45:RAMB36_X0Y45}
 create_pblock ADCDAQ14
-add_cells_to_pblock [get_pblocks ADCDAQ14] [get_cells -quiet [list {chfpga0/ADCGEN[14].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ14] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[14].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ14] -add {SLICE_X0Y377:SLICE_X7Y393 SLICE_X0Y330:SLICE_X7Y331}
 resize_pblock [get_pblocks ADCDAQ14] -add {RAMB18_X0Y150:RAMB18_X0Y151}
 resize_pblock [get_pblocks ADCDAQ14] -add {RAMB36_X0Y75:RAMB36_X0Y75}
 create_pblock ADCDAQ15
-add_cells_to_pblock [get_pblocks ADCDAQ15] [get_cells -quiet [list {chfpga0/ADCGEN[15].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ15] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[15].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ15] -add {SLICE_X0Y358:SLICE_X7Y376 SLICE_X0Y328:SLICE_X7Y329}
 resize_pblock [get_pblocks ADCDAQ15] -add {RAMB18_X0Y148:RAMB18_X0Y149}
 resize_pblock [get_pblocks ADCDAQ15] -add {RAMB36_X0Y74:RAMB36_X0Y74}
