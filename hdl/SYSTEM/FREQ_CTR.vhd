@@ -64,6 +64,8 @@ end FREQ_CTR;
 
 architecture Behavioral of FREQ_CTR is
 
+attribute DONT_TOUCH: string;
+
 --- Define Control word and its signals
 signal control_bytes: slv8_array(0 to 4); -- default value set in the CMD_SLAVE
 signal status_bytes: slv8_array(0 to 4); -- default value set in the CMD_SLAVE
@@ -80,6 +82,8 @@ signal gate_en: STD_LOGIC:='0';
 signal gate_en_sync: STD_LOGIC;
 signal freq_ctr_src_sel: UNSIGNED(6 downto 0):=(others=>'0');
 signal src_clk: STD_LOGIC;
+attribute DONT_TOUCH of src_clk: signal is "yes";
+
 signal src_clk_fabric: STD_LOGIC;
 
 signal gate_period: unsigned(31 downto 0); -- gate_period=40E6 Corresponds to a gate_period/CLK200_FREQ= 0.2s second gate time. Since inputs are divided by 2, real frequency is 100*count.
