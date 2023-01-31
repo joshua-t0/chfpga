@@ -65,32 +65,36 @@ RST_N <= not RST;
 
 CMD_FIFO0: entity work.CMD_FIFO
   PORT MAP (
-	 m_aclk => B_CLK,
-	 s_aclk => A_CLK,
-	 s_aresetn => RST_N,
 	 s_axis_tvalid => CMD_A_DAT.TVALID,
 	 s_axis_tready => CMD_A_RDY.TREADY,
 	 s_axis_tdata => CMD_A_DAT.TDATA,
 	 s_axis_tlast => CMD_A_DAT.TLAST,
+	 s_aclk => A_CLK,
+
+	 s_aresetn => RST_N,
+
 	 m_axis_tvalid => CMD_B_DAT.TVALID,
 	 m_axis_tready => CMD_B_RDY.TREADY,
 	 m_axis_tdata => CMD_B_DAT.TDATA,
-	 m_axis_tlast => CMD_B_DAT.TLAST
+	 m_axis_tlast => CMD_B_DAT.TLAST,
+	 m_aclk => B_CLK
   );
 
 RPLY_FIFO0 : entity work.CMD_FIFO
   PORT MAP (
-	 m_aclk => A_CLK,
-	 s_aclk => B_CLK,
-	 s_aresetn => RST_N,
 	 s_axis_tvalid => RPLY_B_DAT.TVALID,
 	 s_axis_tready => RPLY_B_RDY.TREADY,
 	 s_axis_tdata => RPLY_B_DAT.TDATA,
 	 s_axis_tlast => RPLY_B_DAT.TLAST,
+	 s_aclk => B_CLK,
+
+	 s_aresetn => RST_N,
+
 	 m_axis_tvalid => RPLY_A_DAT.TVALID,
 	 m_axis_tready => RPLY_A_RDY.TREADY,
 	 m_axis_tdata => RPLY_A_DAT.TDATA,
-	 m_axis_tlast => RPLY_A_DAT.TLAST
+	 m_axis_tlast => RPLY_A_DAT.TLAST,
+	 m_aclk => A_CLK
   );
 
 end Behavioral;
