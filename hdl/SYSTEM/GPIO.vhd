@@ -234,6 +234,8 @@ entity GPIO is
 		-- User-controlled global resets
 
 		USER_RESET: out std_logic;
+		ctrl_reset_pulse: out std_logic;
+		sysmon_user_reset: out std_logic;
 		ADCDAQ_RESET_ASYNC: out std_logic;
 		CHAN_CLK_RESET_ASYNC: out std_logic;
 		CHAN_RESET_ASYNC: out std_logic;
@@ -430,6 +432,9 @@ signal ts_sample_trig10: std_logic :='0';
 signal ts_sample_trig10_ack: std_logic;
 signal ts_sample_done: std_logic;
 
+
+signal ctrl_reset_trig: std_logic;
+
 --signal bp_buck_sync_wr_dat: std_logic_vector(31 downto 0);
 --signal bp_buck_sync_rd_dat: std_logic_vector(31 downto 0);
 --signal bp_buck_sync_rd_dat_valid: std_logic;
@@ -545,12 +550,15 @@ end generate;
 
 -- CONTROL Byte 3
 USER_RESET <='0';
+--USER_RESET <= CONTROL_BYTES(3)(0);
 BLINKER_RESET       <= CONTROL_BYTES(3)(7);
 CHAN_RESET_ASYNC     <= CONTROL_BYTES(3)(6);
 CORR_RESET_ASYNC    <= CONTROL_BYTES(3)(5);
 -- unused bit 4
 --CORR_IP_PORT_OFFSET <= CONTROL_BYTES(3)(3 downto 2);
 --DATA_IP_PORT_OFFSET <= CONTROL_BYTES(3)(1 downto 0);
+ctrl_reset_trig <= CONTROL_BYTES(3)(4);
+sysmon_user_reset <= CONTROL_BYTES(3)(3);
 
 -- CONTROL Byte 4
 -- CTRL_RPLY_IP_PORT_OFFSET<= CONTROL_BYTES(4)(7 downto 6);
@@ -664,8 +672,11 @@ STATUS_BYTES(22 to 23) <= to_slv8_array(to_slv(PROTOCOL_VERSION, 16));
 STATUS_BYTES(24) <= to_slv(CHANNELIZERS_CLOCK_SOURCE, 8);
 -- Connect signals to module ports
 
--- STATUS Bytes 25-30
-STATUS_BYTES(25 to 30) <= (others => (others => '0'));
+-- STATUS Bytes 25
+STATUS_BYTES(25) <= to_slv(NUMBER_OF_ADCS, 8);
+
+-- STATUS Bytes 26-30
+STATUS_BYTES(26 to 30) <= (others => (others => '0'));
 
 -- STATUS Bytes 31-32
 STATUS_BYTES(31) <= slot_sense_ctr(0); -- is this still used?
@@ -728,6 +739,35 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
         RAM_WR_EN => bsb_core_wr_en,
         RAM_RD_EN => bsb_core_rd_en
 	);
+
+
+-- ctrl_reset pulse generator
+-----------------------------
+-- Generates a long pulse on ctrl_reset_pulse when a low-to-high transition is seen on ctrl_reset_trig.
+-- Operates on ctrl_clk.
+ctrl_reset_blk: block
+	signal ctrl_reset_trig_reg: std_logic;
+	signal ctrl_reset_ctr: unsigned(3 downto 0);
+begin
+	ctrl_reset_proc: process(ctrl_clk)
+	begin
+		if rising_edge(ctrl_clk) then
+			ctrl_reset_trig_reg <= ctrl_reset_trig;
+
+			if signed(ctrl_reset_ctr) = -1 then
+				ctrl_reset_pulse <= '0';
+			else
+				ctrl_reset_ctr <= ctrl_reset_ctr + 1;
+			end if;
+
+			if ctrl_reset_trig='1' and ctrl_reset_trig_reg='0' then
+				ctrl_reset_pulse <= '1';
+				ctrl_reset_ctr <= (others => '0');
+			end if;
+
+		end if; --clk
+	end process;
+end block;
 
 gen_armspi: if IMPLEMENT_ARM_SPI generate
 	arm_spi0: entity work.arm_spi port map (
@@ -1224,75 +1264,29 @@ dna_proc: process(dna_clk)
 network_setup_proc: process(ctrl_clk)
 	begin
 		if rising_edge(ctrl_clk) then
-
+			-- Set the serial_match flag if the programmable target serial matches the FPGA actual serial.
+			-- This flag is disabled (i.e. always true) if if target_network_config_source != 0.
+			-- By broadcasting a write to the target serial and setting target_network_config_source=1,
+			-- subsequent writes to the core registers will occur only on the target FPGA.
+			-- This provides a simple way to setup the UDP networking of the FPGAs without an on-board network-enabled processor, provided we know their serial numbers.
+			-- (The serial number of all FPGAs on the network can be obtain through a broadcast read)
 			serial_match <= to_std_logic(fpga_serial_number = target_fpga_serial_number or target_network_config_source="00");
 
-			-- Load broadcasted networking parameters if the previously received FPGA serial number match our own
-			--target_load_trigger_dly <= target_load_trigger;
-			--if target_load_trigger='1' and target_load_trigger_dly='0' and serial_match='1' then
-			--	local_network_config_source_reg <= target_network_config_source;
-			--	local_base_ip_addr_reg          <= target_local_base_ip_addr;
-			--	local_base_ip_port_reg          <= target_local_base_ip_port;
-			--	local_mac_addr_reg              <= target_local_mac_addr;
-			--	local_subarray_reg              <= target_local_subarray;
-			--end if;
 
-			-- Network interface addresses
+			-- FPGA network interface addresses
 			local_mac_addr     <= spi_fpga_local_mac_address;
 			local_base_ip_addr <= spi_fpga_local_ip_address;
 			local_subarray     <= (others=>'0');
 
-			-- Control Channel(UDP Channel 0) ports
+			-- Control Channel(UDP Channel 0) parameters
 			local_base_ip_port <= spi_fpga_local_ip_port; -- command listening port
-			-- command reply IP and MAC: hardwired to be the same as the the source addres of the previous incoming command packets
+			-- Command reply IP and MAC: hardwired to be the same as the the source addres of the previous incoming command packets
 			remote_ip_port0  <= spi_fpga_ch0_remote_ip_port; -- command reply destination port
 
-			-- TX Channel 1 parameters
+			-- Data Channel (UDP Channel 1) parameters
 			remote_ip_addr1     <= spi_fpga_ch1_remote_ip_address; -- Data packet destination IP addres
 			remote_mac_addr1    <= spi_fpga_ch1_remote_mac_address; -- Data packets destination MAC address
 			remote_ip_port1     <= spi_fpga_ch1_remote_ip_port; -- Data packets destination port
-
-
-			---- Select which networking parameters to use
-			--case local_network_config_source_reg is
-			--	when "00" => -- Network configuration comes from the ARM SPI registers
-			--		-- This is the default configuration unless there is a rising edge on
-			--		-- target_load_trigger is '1' with matching target FPGA serial number
-			--		--
-			--		-- In this configuration, UDP channel 0 (control networking) is set through the
-			--		-- SPI interface, and the UDP channel 1 (usually raw data and correlator data,
-			--		-- but configurable) is set through the IP/PORT/MAC target registers that are
-			--		-- also used for matched-FPGA-serial set-up.
-			--		local_mac_addr     <= spi_fpga_local_mac_address;
-			--		local_base_ip_addr <= spi_fpga_local_ip_address;
-			--		local_base_ip_port <= spi_fpga_local_ip_port;
-			--		local_subarray     <= (others=>'0');
-			--		remote_ip_addr1     <= target_local_base_ip_addr;
-			--		remote_mac_addr1    <= target_local_mac_addr;
-			--	when "01" => -- Network config is from broadcast, MAC is MSB of FPGA serial number
-			--		local_mac_addr     <= (MAC_ADDRESS_OUI_CODE & fpga_serial_number(47 downto 24)); -- Use bytes 3-5 of FPGA serial to set the local MAC address
-			--		local_base_ip_addr <= local_base_ip_addr_reg;
-			--		local_base_ip_port <= local_base_ip_port_reg;
-			--		local_subarray     <= local_subarray_reg;
-			--		remote_mac_addr1     <= (others=>'0'); -- auto-detect
-			--		remote_ip_addr1     <= (others=>'0'); -- auto-detect
-
-			--	when "10" =>-- Network config is from broadcast, MAC is a mix of MSB and LSB of FPGA serial number
-			--		local_mac_addr     <= (MAC_ADDRESS_OUI_CODE & (fpga_serial_number(23 downto 0) xor fpga_serial_number(47 downto 24))); -- Use a mix of FPGA serial number bits to set the local MAC address
-			--		local_base_ip_addr <= local_base_ip_addr_reg;
-			--		local_base_ip_port <= local_base_ip_port_reg;
-			--		local_subarray     <= local_subarray_reg;
-			--		remote_mac_addr1     <= (others=>'0'); -- auto-detect
-			--		remote_ip_addr1     <= (others=>'0'); -- auto-detect
-
-			--	when others => -- Network config is from broadcast, MAC is fully user-defined
-			--		local_mac_addr     <= local_mac_addr_reg ; -- Use a completely user-defined MAC address
-			--		local_base_ip_addr <= local_base_ip_addr_reg;
-			--		local_base_ip_port <= local_base_ip_port_reg;
-			--		local_subarray     <= local_subarray_reg;
-			--		remote_mac_addr1     <= (others=>'0'); -- auto-detect
-			--		remote_ip_addr1     <= (others=>'0'); -- auto-detect
-			--end case;
 
 		end if;
 	end process;
