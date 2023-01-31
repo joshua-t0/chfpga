@@ -46,15 +46,16 @@ entity CHAN is
     --    SIM             : BOOLEAN :=GLOBAL_SIM
     --    );
     GENERIC (
-        PLATFORM_ID  : integer
+        PLATFORM_ID  : integer;
+        IMPLEMENT_FFT   : BOOLEAN :=GLOBAL_IMPLEMENT_FFT
         );
 
     PORT (
 
         --! Input Interface from ADC
-        --! 32-bit wide, using the AXI4-Streaming Prototol
+        --! 64-bit wide (4x 16-bit samples), using the AXI4-Streaming Prototol
 
-        in_dat_tdata    : in slv32;
+        in_dat_tdata    : in slv64;
         in_dat_tvalid   : in std_logic;
         in_dat_tlast    : in std_logic;
         in_dat_tuser    : in slv4;
@@ -123,14 +124,14 @@ end CHAN;
 architecture Behavioral of CHAN is
 
 constant IMPLEMENT_CHAN  : BOOLEAN :=TRUE; -- (and that woul dbe bad)
-constant IMPLEMENT_FFT   : BOOLEAN :=GLOBAL_IMPLEMENT_FFT;
+--constant IMPLEMENT_FFT   : BOOLEAN :=GLOBAL_IMPLEMENT_FFT;
 constant SIM             : BOOLEAN :=GLOBAL_SIM;
 
 constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
 
-signal axis_adcdaq_out      : AXIS32_DAT_STRUCT; --! input bus from adc, 32-bit wide, using the AXI4-Streaming prototol
-signal axis_adcdaq_out_reg1 : AXIS32_DAT_STRUCT;
-signal axis_adcdaq_out_reg2 : AXIS32_DAT_STRUCT;
+signal axis_adcdaq_out      : AXIS64_DAT_STRUCT; --! input bus from adc, 32-bit wide, using the AXI4-Streaming prototol
+signal axis_adcdaq_out_reg1 : AXIS64_DAT_STRUCT;
+signal axis_adcdaq_out_reg2 : AXIS64_DAT_STRUCT;
 signal axis_funcgen_out     : AXIS32_DAT_STRUCT;
 signal axis_fft_out         : AXIS72_DAT_STRUCT;
 signal axis_scaler_out      : AXIS32_DAT_STRUCT;
@@ -416,25 +417,6 @@ SCALER0: entity work.SCALER
     );
 
 
-----------------------
--- FIFO reset process.
-----------------------
--- According to the user manual, for Async FIFOs, reset
--- must be held for 31 clocks of the slowest clk (in_clk) when there is no safety circuit, and there must be no
--- read or write during that period. There does not seem to be a safety circuit from the core generator GUI.
-fifo_rst_proc: process(in_clk)
-    begin
-        if rising_edge(in_clk) then
-            if in_reset_reg ='1' then
-                fifo_rst <= '1';
-                fifo_rst_ctr <= (others => '0'); -- this is a 5-bit counter
-            elsif signed(fifo_rst_ctr) = -1 then
-                fifo_rst <= '0';
-            else
-                fifo_rst_ctr <= fifo_rst_ctr + 1;
-            end if; --reset
-        end if; --clk
-    end process;
 
 ---------------------------------------------------------------------
 -- Instantiate the Channel FIFO
@@ -456,6 +438,29 @@ fifo_rst_proc: process(in_clk)
 -- outputs of all channelizers operate on a single global clock.
 --
 DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
+
+    ----------------------
+    -- FIFO reset process.
+    ----------------------
+    -- According to the user manual, for Async FIFOs, reset
+    -- must be held for 31 clocks of the slowest clk (in_clk) when there is no safety circuit, and there must be no
+    -- read or write during that period. There does not seem to be a safety circuit from the core generator GUI.
+    fifo_rst_proc: process(in_clk)
+        begin
+            if rising_edge(in_clk) then
+                if in_reset_reg ='1' then
+                    fifo_rst <= '1';
+                    fifo_rst_ctr <= (others => '0'); -- this is a 5-bit counter
+                elsif signed(fifo_rst_ctr) = -1 then
+                    fifo_rst <= '0';
+                else
+                    fifo_rst_ctr <= fifo_rst_ctr + 1;
+                end if; --reset
+            end if; --clk
+        end process;
+
+    axis_scaler_out_tvalid <= axis_scaler_out.TVALID and not fifo_rst and (not fifo_almost_full or axis_scaler_out.TLAST); -- make sure we don't write during reset
+    axis_fifo_out_tvalid_not_rst <= axis_fifo_out_tvalid and not fifo_rst; -- start reading only when there is data. make sure we don't read during reset. In simulation, tying rd_en to '1' causes 'valid' to be invalid.
 
     chan_fifo0 : entity work.CHAN_FIFO2
         PORT MAP (
@@ -481,17 +486,35 @@ DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
 end generate;
 
 DATA_FIFO_USP: if FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
+    signal fifo_wr_rst_busy: std_logic;
+    signal fifo_rd_rst_busy: std_logic;
+    signal fifo_wr_en: std_logic;
+    signal fifo_rd_en: std_logic;
+begin
+    ----------------------
+    -- FIFO reset process.
+    ----------------------
+    -- The Ultrascale embedded FIFO has a single reset (srst) synchronous to the write clock.
+    -- The reset for the read clock domain is generated automatically.
+    -- We must not assert wr_en or rd_en during reset, until the  rd/wr_reset_busy is active.
+    -- The reset pulse must be held for at least one write clock.
+    --
+    -- In this implementation we make sure the read and writes are gated by their respective reset busy signals. We therefore avoid clock domain crossing.
+
+    fifo_rst <= in_reset_reg; -- synchronous to write clock
+    fifo_wr_en <= axis_scaler_out.TVALID and not (fifo_rst or fifo_wr_rst_busy) and (not fifo_almost_full or axis_scaler_out.TLAST); -- write clock domain
+    fifo_rd_en <= axis_fifo_out_tvalid and not (fifo_rd_rst_busy); -- start reading only when there is data. make sure we don't read during reset.
     chan_fifo0 : entity work.CHAN_FIFO2_UP
         PORT MAP (
-            srst               => fifo_rst, -- asynchronous
+            srst               => fifo_rst, -- synchronous to the write clock
             wr_clk             => in_clk,
-            wr_en              => axis_scaler_out_tvalid,
+            wr_en              => fifo_wr_en,
             din(31 downto 0)   => axis_scaler_out.TDATA,
             din(32)            => axis_scaler_out.TLAST,
             din(36 downto 33)  => axis_scaler_out.TUSER,
 
             rd_clk             => out_clk,
-            rd_en              => axis_fifo_out_tvalid_not_rst,
+            rd_en              => fifo_rd_en,
             dout(31 downto 0)  => axis_fifo_out_tdata,
             dout(32)           => axis_fifo_out_tlast,
             dout(36 downto 33) => axis_fifo_out_tuser,
@@ -499,14 +522,14 @@ DATA_FIFO_USP: if FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
             full               => open,
             prog_full          => fifo_almost_full,
             overflow           => fifo_overflow,
-            empty              => open
+            empty              => open,
+            wr_rst_busy        => fifo_wr_rst_busy,
+            rd_rst_busy        => fifo_rd_rst_busy
         );
 
 end generate;
 
 
-axis_scaler_out_tvalid <= axis_scaler_out.TVALID and not fifo_rst and (not fifo_almost_full or axis_scaler_out.TLAST); -- make sure we don't write during reset
-axis_fifo_out_tvalid_not_rst <= axis_fifo_out_tvalid and not fifo_rst; -- start reading only when there is data. make sure we don't read during reset. In simulation, tying rd_en to '1' causes 'valid' to be invalid.
 
 
 ---------------------------------------------------------------------
