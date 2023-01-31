@@ -16,7 +16,7 @@
 -- Revision 0.01 - File Created
 --  110708 JFC: Added monitoring of SYSMON's CHANNEL, EOC, EOS. Connected VP/VN and a couple of VAUX
 --  110725 JFC: Modified to use the new 16-bit mode of the CMD_SLAVE
--- 2012-10-18 JFC: Added FIFO on control bus to operate SYSMON at SYSMON_CLK
+-- 2012-10-18 JFC: Added FIFO on control bus to operate SYSMON at sysmon_clk
 -- Additional Comments:
 --
 ----------------------------------------------------------------------------------
@@ -54,11 +54,12 @@ entity SYSMON_XADC is
 
 		-- FPGA FAN signals
 		FAN_PWM: out STD_LOGIC; --! Fan control pin. Can be pulse modulated to produce variable speed (not implemented)
-		FAN_TACH: in STD_LOGIC; --! Fan speed monitor pin. Pulses twice per rotation. Is very glitchy and needs serious debouncing.
+		FAN_TACH: in STD_LOGIC := '0'; --! Fan speed monitor pin. Pulses twice per rotation. Is very glitchy and needs serious debouncing.
 
+		debug_out: out slv32;
 		-- System-level signals
-		SYSMON_CLK: in  STD_LOGIC; --! System monitor clock. Clocks the SYSMON hardware block.
-		SYSMON_RST: in STD_LOGIC -- synchronous to SYSMON_CLK
+		sysmon_clk: in  STD_LOGIC; --! System monitor clock. Clocks the SYSMON hardware block.
+		sysmon_rst: in STD_LOGIC -- synchronous to sysmon_clk
 	);
 
 end SYSMON_XADC;
@@ -69,6 +70,8 @@ architecture Behavioral of SYSMON_XADC is
 constant FPGA_SERIES: integer := PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES;
 
 --- Define Control word and its signals
+signal bsb_rst: std_logic;
+
 signal CONTROL_BYTES: slv8_array(0 to 0); --
 signal STATUS_BYTES: slv8_array(0 to 1);
 
@@ -109,20 +112,20 @@ signal fifo_rply_out_rdy: AXIS8_RDY_STRUCT;
 
 begin
 -- Assign signals to CONTROL and STATUS WORDS
-CONTROL_BYTES_BANK_SEL(0)<=		CONTROL_BYTES(0)(0);
-CONTROL_BYTES_FAN_EN<=			CONTROL_BYTES(0)(1);
+CONTROL_BYTES_BANK_SEL(0) <=	CONTROL_BYTES(0)(0);
+CONTROL_BYTES_FAN_EN <=	CONTROL_BYTES(0)(1);
 
-STATUS_BYTES(0)(7 downto 2)<=SYSMON_ALM(5 downto 0);
-STATUS_BYTES(0)(1)<=SYSMON_OVERTEMP;
-STATUS_BYTES(0)(0)<=SYSMON_BUSY;
+STATUS_BYTES(0)(7 downto 2) <= SYSMON_ALM(5 downto 0);
+STATUS_BYTES(0)(1) <= SYSMON_OVERTEMP;
+STATUS_BYTES(0)(0) <= SYSMON_BUSY;
 
-STATUS_BYTES(1)(7)<=SYSMON_BUSY;
-STATUS_BYTES(1)(6)<=SYSMON_EOS;
-STATUS_BYTES(1)(5)<=SYSMON_EOC;
-STATUS_BYTES(1)(4 downto 0)<=SYSMON_CHANNEL(4 downto 0);
+STATUS_BYTES(1)(7) <= SYSMON_BUSY;
+STATUS_BYTES(1)(6) <= SYSMON_EOS;
+STATUS_BYTES(1)(5) <= SYSMON_EOC;
+STATUS_BYTES(1)(4 downto 0) <= SYSMON_CHANNEL(4 downto 0);
 
 
-FAN_PWM<=CONTROL_BYTES_FAN_EN or SYSMON_OVERTEMP or '1';
+FAN_PWM <= CONTROL_BYTES_FAN_EN or SYSMON_OVERTEMP or '1';
 
 --Implement an an asynchronous FIFO to bridge the BSB bus from the ctrl_clk
 --to the sysmon_clk domains to allow the DRP signals will be synchronous to
@@ -139,10 +142,46 @@ FIFO0 : entity work.CMD_ASYNC_FIFO
 		CMD_B_RDY  => fifo_cmd_in_rdy,
 		RPLY_B_DAT => fifo_rply_out_dat,
 		RPLY_B_RDY => fifo_rply_out_rdy,
-		B_CLK      => SYSMON_CLK,
+		B_CLK      => sysmon_clk,
 
-		RST => ctrl_rst
+		RST => bsb_rst -- clock is asynchronous
 		);
+
+debug_out(0) <=  ctrl_cmd_in_dat.TVALID;
+debug_out(1) <=  ctrl_cmd_in_dat.TLAST;
+debug_out(2) <=  fifo_cmd_in_dat.TVALID;
+debug_out(3) <=  fifo_cmd_in_dat.TLAST;
+debug_out(4) <=  fifo_rply_out_dat.TVALID;
+debug_out(5) <=  fifo_rply_out_dat.TLAST;
+debug_out(6) <=  fifo_rply_out_rdy.TREADY;
+debug_out(7) <=  sysmon_rst;
+debug_out(8) <= SYSMON_DEN;
+debug_out(9) <= SYSMON_WR_EN;
+debug_out(10) <= SYSMON_DRDY;
+debug_out(11) <= ctrl_rply_out_rdy.TREADY;
+debug_out(12) <= fifo_cmd_in_rdy.TREADY;
+debug_out(13) <= ctrl_rst;
+debug_out(14) <= '0';
+debug_out(15) <= '0';
+debug_out(23 downto 16) <= fifo_cmd_in_dat.TDATA;
+debug_out(31 downto 24) <= fifo_rply_out_dat.TDATA;
+
+-- Make sure we capture the ctrl_rst reset of the CTRL_SLAVE
+-- even if the sysmon_clk is not yet active and generate a proper reset when the clock
+-- comes on.
+bsb_reset_inst : xpm_cdc_async_rst
+	generic map (
+	   RST_ACTIVE_HIGH => 1  -- DECIMAL; 0=active low reset, 1=active high reset
+	)
+	port map (
+	   src_arst => ctrl_rst or sysmon_rst,   -- Source asynchronous reset signal.
+	   dest_arst => bsb_rst, -- 1-bit output: src_arst asynchronous reset signal synchronized to destination
+	                           -- clock domain. This output is registered. NOTE: Signal asserts asynchronously
+	                           -- but deasserts synchronously to dest_clk. Width of the reset signal is at least
+	                           -- (DEST_SYNC_FF*dest_clk) period.
+
+	   dest_clk => sysmon_clk   -- 1-bit input: Destination clock.
+	);
 
 
 CTRL_SLAVE0: entity work.CTRL_SLAVE
@@ -162,7 +201,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 		CTRL_RPLY_OUT_DAT => fifo_rply_out_dat,
 		CTRL_RPLY_OUT_RDY => fifo_rply_out_rdy,
 		CTRL_CLK => sysmon_clk,
-		CTRL_RST => ctrl_rst,
+		CTRL_RST => bsb_rst,
 
 		CONTROL_BYTES => CONTROL_BYTES,
 		STATUS_BYTES => STATUS_BYTES,
@@ -214,7 +253,7 @@ SYSMON0 : SYSMON
 		DO => SYSMON_DOUT, -- 16-bit output data bus for dynamic reconfig
 		DRDY => SYSMON_DRDY, -- 1-bit output data ready for dynamic reconfig
 		DADDR => SYSMON_ADDR(6 downto 0), -- 7-bit input address bus for dynamic reconfig
-		DCLK => SYSMON_CLK, -- 1-bit input clock for dynamic reconfig
+		DCLK => sysmon_clk, -- 1-bit input clock for dynamic reconfig
 		DEN => SYSMON_DEN, -- 1-bit input enable for dynamic reconfig
 		DI => SYSMON_DIN, -- 16-bit input data bus for dynamic reconfig
 		DWE => SYSMON_WR_EN, -- 1-bit input write enable for dynamic reconfig
@@ -238,7 +277,7 @@ SYSMON0 : SYSMON
 		VP => VP, -- 1-bit input P-side analog input
 
 
-		RESET => SYSMON_RST -- 1-bit input active high reset
+		RESET => sysmon_rst -- 1-bit input active high reset
 	);
 end generate;
 
@@ -279,7 +318,7 @@ XADC0 : XADC
 		DO => SYSMON_DOUT, -- 16-bit output data bus for dynamic reconfig
 		DRDY => SYSMON_DRDY, -- 1-bit output data ready for dynamic reconfig
 		DADDR => SYSMON_ADDR(6 downto 0), -- 7-bit input address bus for dynamic reconfig
-		DCLK => SYSMON_CLK, -- 1-bit input clock for dynamic reconfig
+		DCLK => sysmon_clk, -- 1-bit input clock for dynamic reconfig
 		DEN => SYSMON_DEN, -- 1-bit input enable for dynamic reconfig
 		DI => SYSMON_DIN, -- 16-bit input data bus for dynamic reconfig
 		DWE => SYSMON_WR_EN, -- 1-bit input write enable for dynamic reconfig
@@ -303,7 +342,7 @@ XADC0 : XADC
 		VP => VP, -- 1-bit input P-side analog input
 
 
-		RESET => SYSMON_RST -- 1-bit input active high reset
+		RESET => sysmon_rst -- 1-bit input active high reset
 	);
 end generate;
 
@@ -366,7 +405,7 @@ SYSMON_ZUP_GEN: if FPGA_SERIES = FPGA_ULTRASCALEPLUS generate  --Might need more
 		DO => SYSMON_DOUT, -- 16-bit output data bus for dynamic reconfig
 		DRDY => SYSMON_DRDY, -- 1-bit output data ready for dynamic reconfig
 		DADDR => SYSMON_ADDR, -- 8-bit input address bus for dynamic reconfig
-		DCLK => SYSMON_CLK, -- 1-bit input clock for dynamic reconfig
+		DCLK => sysmon_clk, -- 1-bit input clock for dynamic reconfig
 		DEN => SYSMON_DEN, -- 1-bit input enable for dynamic reconfig
 		DI => SYSMON_DIN, -- 16-bit input data bus for dynamic reconfig
 		DWE => SYSMON_WR_EN, -- 1-bit input write enable for dynamic reconfig
@@ -391,7 +430,7 @@ SYSMON_ZUP_GEN: if FPGA_SERIES = FPGA_ULTRASCALEPLUS generate  --Might need more
 		I2C_SCLK => '0',         -- 1-bit input: I2C_SCLK input port
 		I2C_SDA => '0',            -- 1-bit input: I2C_SDA input port
 
-		RESET => SYSMON_RST -- 1-bit input active high reset
+		RESET => sysmon_rst -- 1-bit input active high reset
 	);
 end generate;
 
