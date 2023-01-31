@@ -30,3 +30,9 @@
 
 !/chfpga_zcu111/
 !/chfpga_zcu111/*
+
+!/sifpga_zcu111/
+!/sifpga_zcu111/*
+
+!/sifpga_crs/
+!/sifpga_crs/*
