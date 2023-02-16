@@ -78,7 +78,7 @@ entity FFT is
 		-- Input Interface
 		--! Input time stream, implemented as a non-blocking AXI4 Streaming Interface with a 32-bit data bus.
 		--! Each word presents 4 time samples, where the early sample is in the MSB.
-		in_dat  : in AXIS32_DAT_STRUCT;
+		in_dat  : in axis32_dat_struct;
 
 		-- Output Interface
 		--! Output spectrum stream, implemented as a non-blocking AXI4 Streaming interface with a 72 bit bus.
@@ -86,7 +86,7 @@ entity FFT is
 		--! The most significant 36 bits contains the value for the even frequency bins,
 		--! while the lower ones is the value for the odd frequency bin.
 		--! The Most significant bits of a complex values contain the real part.
-		out_dat : out AXIS72_DAT_STRUCT;
+		out_dat : out axis72_dat_struct;
 
 		-- Common Clock and Reset
 		clk     : in  std_logic; --! Processing clock, common to the input and output bus
@@ -108,49 +108,52 @@ end FFT;
 --! Implements the FFT module functionnalities
 architecture Behavioral of FFT is
 
-signal flags_in, flags_out: std_logic_vector(5 downto 0);
+	attribute shreg_extract: string;
+	attribute shreg_extract of out_dat: signal is "no";
+
+	signal flags_in, flags_out: std_logic_vector(5 downto 0);
 
 
-signal fft_pipeline_delay: std_logic_vector(11 downto 0);
-signal fft_measured_pipeline_delay: std_logic_vector(11 downto 0);
-signal sync_reset: std_logic;
+	signal fft_pipeline_delay: std_logic_vector(11 downto 0);
+	signal fft_measured_pipeline_delay: std_logic_vector(11 downto 0);
+	signal sync_reset: std_logic;
 
 
--- FFT block
+	-- FFT block
 
-signal fft_in: AXIS32_DAT_STRUCT;
-signal out_dat_int :AXIS72_DAT_STRUCT;
+	signal fft_in: axis32_dat_struct;
+	signal out_dat_pre :axis72_dat_struct;
 
-signal fft_clk_en: std_logic:='1'; -- init value needed for initial sync
-signal fft_clk_en_buf: std_logic;
-signal delay_clk_en: std_logic;
-signal fft_dout0_int, fft_dout1_int: std_logic_vector(out_dat.TDATA'Length/2-1 downto 0) := (others=>'0');
-signal fft_tdata: std_logic_vector(out_dat.TDATA'RANGE) := (others=>'0');
-signal fft_sync_in: std_logic := '1'; -- init value needed to generate first sync pulse
-signal fft_sync_out: std_logic := '0';
-signal fft_sync_out2: std_logic := '0';
-signal fft_overflow: std_logic := '0';
-signal fft_overflow_sticky: std_logic;
---signal fft_overflow_sticky_dly: std_logic;
-signal fft_tuser: std_logic_vector(out_dat.TUSER'RANGE);
-signal fft_tlast: std_logic;
-signal fft_tvalid: std_logic;
+	signal fft_clk_en: std_logic:='1'; -- init value needed for initial sync
+	signal fft_clk_en_buf: std_logic;
+	signal delay_clk_en: std_logic;
+	signal fft_dout0_int, fft_dout1_int: std_logic_vector(out_dat.TDATA'Length/2-1 downto 0) := (others=>'0');
+	signal fft_tdata: std_logic_vector(out_dat.TDATA'RANGE) := (others=>'0');
+	signal fft_sync_in: std_logic := '1'; -- init value needed to generate first sync pulse
+	signal fft_sync_out: std_logic := '0';
+	signal fft_sync_out2: std_logic := '0';
+	signal fft_overflow: std_logic := '0';
+	signal fft_overflow_sticky: std_logic;
+	--signal fft_overflow_sticky_dly: std_logic;
+	signal fft_tuser: std_logic_vector(out_dat.TUSER'RANGE);
+	signal fft_tlast: std_logic;
+	signal fft_tvalid: std_logic;
 
---- Define Control word and its signals
-signal control_bytes: slv8_array(0 to 6);
-signal status_bytes: slv8_array(0 to 2);
+	--- Define Control word and its signals
+	signal control_bytes: slv8_array(0 to 6);
+	signal status_bytes: slv8_array(0 to 2);
 
-signal bypass_fft: std_logic;
-signal soft_reset: std_logic;
-signal fft_shift_schedule: std_logic_vector(15 downto 0);
-signal overflow_count: unsigned(7 downto 0);
-signal overflow_reset: std_logic;
-signal overflow_force: std_logic;
+	signal bypass_fft: std_logic;
+	signal soft_reset: std_logic;
+	signal fft_shift_schedule: std_logic_vector(15 downto 0);
+	signal overflow_count: unsigned(7 downto 0);
+	signal overflow_reset: std_logic;
+	signal overflow_force: std_logic;
 
-signal sync_period: unsigned(15 downto 0);
-signal sync_frame_ctr: unsigned(sync_period'Range):=(others=>'0'); -- Counts SYNC pulses
-signal sync_period_is_zero: std_logic;
-signal is_last_frame_of_sync_period: std_logic;
+	signal sync_period: unsigned(15 downto 0);
+	signal sync_frame_ctr: unsigned(sync_period'Range):=(others=>'0'); -- Counts SYNC pulses
+	signal sync_period_is_zero: std_logic;
+	signal is_last_frame_of_sync_period: std_logic;
 
 begin
 
@@ -280,29 +283,32 @@ main_proc: process(clk)
 				end if; -- TLAST=1
 			end if; -- TVALID=1
 
+			-- Register the final output. The delay is also used so we can insert the overflow flag on the final word.
+			-- Warning: out_dat.TUSER is overriden below - do not move down
+			-- SHREG_EXTRACT is set to FALSE to prevent the pipeline with the SCALER input from being turned into a shift register.
+			out_dat <= out_dat_pre;
+
 			if IMPLEMENT_FFT=TRUE and bypass_fft='0' then -- if the FFT is being used
 				-- if the FFT module is present and it is not bypassed by software, pass the FFT output to the output
-				out_dat_int.TVALID <= fft_tvalid and fft_clk_en; -- The FFT outputs valid data only of the FFT is clocked AND the data has gone through the pipeline
-				out_dat_int.TLAST <= fft_tlast;
-				out_dat_int.TUSER <= fft_tuser;
-				out_dat_int.TDATA <= fft_tdata;
+				out_dat_pre.TVALID <= fft_tvalid and fft_clk_en; -- The FFT outputs valid data only of the FFT is clocked AND the data has gone through the pipeline
+				out_dat_pre.TLAST <= fft_tlast;
+				out_dat_pre.TUSER <= fft_tuser;
+				out_dat_pre.TDATA <= fft_tdata;
 
-				out_dat <= out_dat_int;
 				-- Insert the FFT overflow flag in the next_to_last Serial flag bit
 				if fft_tlast='1' and fft_tvalid='1' and fft_clk_en='1' then
 					out_dat.TUSER(TUSER_SERIAL_FLAGS_BIT) <= fft_overflow_sticky or fft_overflow or overflow_force; -- add the FFT overflow flag, including the one on TLAST
 				end if;
 			else
 				-- otherwise, just pass the input to the output, adapting the data width.
-				out_dat_int.TVALID <= in_dat.TVALID;
-				out_dat_int.TLAST <= in_dat.TLAST;
-				out_dat_int.TUSER <= in_dat.TUSER;
-				out_dat_int.TDATA <= (others=>'0'); -- all bits are dezo by default unless defined below
+				out_dat_pre.TVALID <= in_dat.TVALID;
+				out_dat_pre.TLAST <= in_dat.TLAST;
+				out_dat_pre.TUSER <= in_dat.TUSER;
+				out_dat_pre.TDATA <= (others=>'0'); -- all bits are dezo by default unless defined below
 				for i in 0 to 3 loop
-					out_dat_int.TDATA(18*i+17 downto 18*i) <= std_logic_vector(resize(signed(in_dat.TDATA(8*i+7 downto 8*i)), 18)); -- make sure to sign extend the byte to the full 18 bits
+					out_dat_pre.TDATA(18*i+17 downto 18*i) <= std_logic_vector(resize(signed(in_dat.TDATA(8*i+7 downto 8*i)), 18)); -- make sure to sign extend the byte to the full 18 bits
 				end loop; -- if FFT is implemented
 
-				out_dat <= out_dat_int;
 			end if;
 
 			-- Synchronous Resets -- overrides only some of the previously assigned signals
@@ -397,7 +403,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 				ce             => delay_clk_en,
 				rst            => sync_reset
 			);
-end generate;
+end generate FFT_GEN;
 
 
 end Behavioral;
