@@ -163,13 +163,14 @@ signal shift: unsigned(3 downto 0);
 -- Control and status bytes
 signal control_bytes: slv8_array(0 to 5); -- default value set in the CMD_SLAVE
 signal status_bytes: slv8_array(0 to 4);
+signal out_dat_int : axis32_dat_struct;    --! Output stream of the function generator
 
 signal fn_sel: FN_TYPE;
 signal ramp_word_ctr: unsigned(LOG2_WORDS_PER_FRAME-1 downto 0) := (others=>'0'); -- Counts words from 0 to FRAME_LENGTH/4-1
 signal ramp_word_ctr_dly: unsigned(LOG2_WORDS_PER_FRAME-1 downto 0) := (others=>'0'); -- Counts words from 0 to FRAME_LENGTH/4-1
 signal ctr: std_logic_vector(LOG2_WORDS_PER_FRAME-1 downto 0) := (others=>'0'); -- Counts words from 0 to FRAME_LENGTH/4-1
 -- signal use_overflow: std_logic;
-signal reset_all: std_logic;
+signal reset_all, reset_all_reg: std_logic;
 signal soft_reset: std_logic:= '0';
 signal number_of_frames: unsigned(7 downto 0); -- Counts words from 0 to FRAME_LENGTH/4-1
 signal frame_ctr: unsigned(22 downto 0); -- Counts words from 0 to FRAME_LENGTH/4-1
@@ -316,7 +317,7 @@ crc32: entity work.xglink_crc32_32
 --! Implements the function generator
 
 -- Set TUSER
-out_dat.TUSER <= (
+out_dat_int.TUSER <= (
     TUSER_ADC_OVERFLOW_BIT => adc_overflow_flag,
     TUSER_CAPTURE_BIT      => capture_flag,
     others                 => '0'
@@ -328,169 +329,177 @@ funcgen_proc: process (clk)
     begin
         if rising_edge(clk) then
             reset_all <= soft_reset or rst;
+            reset_all_reg <= reset_all; -- pipeline
             trig_reg  <= trig;
+            out_dat <= out_dat_int; -- pipeline the output bus. out_dat_int registers are tied to a lot of logic and can't be placed optimally to meet timing at high speeds.
 
-        -- Monitoring
-        if reset_all ='1' then
-            delay_capture_ctr <= (others=> '0');
-            delay_capture_ctr_en <= '1';
-        elsif delay_capture_ctr_en = '1'  then
-            delay_capture_ctr <= delay_capture_ctr + 1;
-            if signed(delay_capture_ctr)=-2 or (in_dat.TVALID='1' and (byte_a(0)='0' or in_dat.TLAST='1')) then
-                delay_capture_ctr_en <= '0';
-            end if;
-        end if;
-
-        --------------------------------------
-        -- Generate an AXIS ramp stream
-        --------------------------------------
-        -- Count ramp words
-        ramp_word_ctr <= ramp_word_ctr + 1;
-        ramp_word_ctr_dly <= ramp_word_ctr;
-        ctr <= std_logic_vector(ramp_word_ctr_dly); -- This is aligned with the RAM output
-
-
-        -- Shift-right the input with sign-extend
-        for j in 0 to 3 loop
-            in_dat_tdata(16*j+15 downto 16*j) <= std_logic_vector(shift_right(signed(in_dat.TDATA(16*j+15 downto 16*j)), to_integer(shift)));
-        end loop;
-        in_dat_tuser <= in_dat.TUSER;
-        in_dat_tvalid <= in_dat.TVALID;
-        in_dat_tlast <= in_dat.TLAST;
-
-        -- Generate a tfirst signal
-        if in_dat_tvalid='1' then
-            adc_tfirst <= in_dat_tlast;
-        end if;
-
-
-        -- Set default TLAST (overriden below)
-        out_dat.TLAST <= '0';
-        if signed(ctr) = -1 then
-            ramp_tfirst <= '1';
-            out_dat.TLAST <= '1';
-            if enable = '1' then
-                if number_of_frames = 0 or (number_of_frames /= 0 and frame_ctr /= number_of_frames) then
-                    send_frame <= '1';
-                    frame_ctr <= frame_ctr + 1; -- can be overriden below
-                else
-                    send_frame <= '0';
+            -- Monitoring
+            if reset_all ='1' then
+                delay_capture_ctr <= (others=> '0');
+                delay_capture_ctr_en <= '1';
+            elsif delay_capture_ctr_en = '1'  then
+                delay_capture_ctr <= delay_capture_ctr + 1;
+                if signed(delay_capture_ctr)=-2 or (in_dat.TVALID='1' and (byte_a(0)='0' or in_dat.TLAST='1')) then
+                    delay_capture_ctr_en <= '0';
                 end if;
             end if;
-        end if;
 
-        if enable = '0' then
-            send_frame <= '0';
-            frame_ctr <= (others=>'0');
-        end if;
+            --------------------------------------
+            -- Generate an AXIS ramp stream
+            --------------------------------------
+            -- Count ramp words
+            ramp_word_ctr <= ramp_word_ctr + 1;
+            ramp_word_ctr_dly <= ramp_word_ctr;
+            ctr <= std_logic_vector(ramp_word_ctr_dly); -- This is aligned with the RAM output
 
-        if (fn_sel = FN_ADC and adc_tfirst='1') or (fn_sel /= FN_ADC and ramp_tfirst='1') then
-            capture_flag <= trig_reg;
-        end if;
 
-        -- Set TDATA
-        case fn_sel is
+            -- Shift-right the input with sign-extend
+            for j in 0 to 3 loop
+                in_dat_tdata(16*j+15 downto 16*j) <= std_logic_vector(shift_right(signed(in_dat.TDATA(16*j+15 downto 16*j)), to_integer(shift)));
+            end loop;
+            in_dat_tuser <= in_dat.TUSER;
+            in_dat_tvalid <= in_dat.TVALID;
+            in_dat_tlast <= in_dat.TLAST;
 
-            when FN_ADC =>
-                if in_dat_tvalid='1' then
-                    -- Cumulate the overflow flags until the end of the frame so the last word indicates if there was an overflow anywhere in the frame.
-                    if adc_tfirst='1' then
-                        adc_overflow_flag <= or_reduce(in_dat_tuser);
+            -- Generate a tfirst signal
+            if in_dat_tvalid='1' then
+                adc_tfirst <= in_dat_tlast;
+            end if;
+
+
+            -- Set default TLAST (overriden below)
+            out_dat_int.TLAST <= '0';
+            if signed(ctr) = -1 then
+                ramp_tfirst <= '1';
+                out_dat_int.TLAST <= '1';
+                if enable = '1' then
+                    if number_of_frames = 0 or (number_of_frames /= 0 and frame_ctr /= number_of_frames) then
+                        send_frame <= '1';
+                        frame_ctr <= frame_ctr + 1; -- can be overriden below
                     else
-                        adc_overflow_flag <= adc_overflow_flag or or_reduce(in_dat_tuser);
+                        send_frame <= '0';
                     end if;
-                end if; -- if TVALID
+                end if;
+            end if;
 
-                -- Detect 8-bit overflow and saturate
-                for j in 0 to 3 loop
-                    -- If the sign bit of the word is 0 but all the bits down and including the MSB of our byte are not 0, saturate to +127
-                    if  in_dat_tdata(16*j+15) = '0' and signed(in_dat_tdata(16*j+15 downto 16*j+7)) /= 0 then
-                        out_dat.TDATA(8*j+7 downto 8*j) <= X"7F";
-                        adc_overflow_flag <= '1';
-                    -- If the sign bit of the word is 1 but all the bits down and including the MSB of our byte are not 1, saturate to -128
-                    elsif in_dat_tdata(16*j+15) = '1' and signed(in_dat_tdata(16*j+15 downto 16*j+7)) /= -1 then
-                        out_dat.TDATA(8*j+7 downto 8*j) <= X"80";
-                        adc_overflow_flag <= '1';
-                    -- There is no saturation
-                    else
-                        out_dat.TDATA(8*j+7 downto 8*j) <= in_dat_tdata(16*j+7 downto 16*j);
-                    end if;
-                end loop;
-                out_dat.TVALID <= in_dat_tvalid;
-                out_dat.TLAST <= in_dat_tlast;
+            if enable = '0' then
+                send_frame <= '0';
+                frame_ctr <= (others=>'0');
+            end if;
 
-            when FN_ADC16 =>
-                -- Pack the 1st and 3rd 16-bit ADC values into the 4-byte output
-                adc_overflow_flag <= '0';
-                out_dat.TDATA(31 downto 16) <= in_dat_tdata(63 downto 48);
-                out_dat.TDATA(15 downto 0) <= in_dat_tdata(31 downto 16);
-                out_dat.TVALID <= in_dat_tvalid;
-                out_dat.TLAST <= in_dat_tlast;
+            if (fn_sel = FN_ADC and adc_tfirst='1') or (fn_sel /= FN_ADC and ramp_tfirst='1') then
+                capture_flag <= trig_reg;
+            end if;
 
-            when FN_RAM =>
-                out_dat.TDATA <= ram_dout; -- Byte at address 0 is in the MSB
-                out_dat.TVALID <= send_frame;
-                adc_overflow_flag <= '0';
+            -- Set TDATA
+            case fn_sel is
 
-            when FN_RAM_NIBBLE4 =>
-                for i in 0 to 3 loop
-                    if frame_ctr(0)='0' then
-                        out_dat.TDATA(8*i+7 downto 8*i+4) <= ram_dout(8*i+3 downto 8*i);
-                    else
-                        out_dat.TDATA(8*i+7 downto 8*i+4) <= ram_dout(8*i+7 downto 8*i+4);
-                    end if;
-                    out_dat.TDATA(8*i+3 downto 8*i) <= "0000";
-                end loop;
-                out_dat.TVALID <= send_frame;
-                adc_overflow_flag <= '0';
+                when FN_ADC =>
+                    if in_dat_tvalid='1' then
+                        -- Cumulate the overflow flags until the end of the frame so the last word indicates if there was an overflow anywhere in the frame.
+                        if adc_tfirst='1' then
+                            adc_overflow_flag <= or_reduce(in_dat_tuser);
+                        else
+                            adc_overflow_flag <= adc_overflow_flag or or_reduce(in_dat_tuser);
+                        end if;
+                    end if; -- if TVALID
+
+                    -- Detect 8-bit overflow and saturate
+                    for j in 0 to 3 loop
+                        -- If the sign bit of the word is 0 but all the bits down and including the MSB of our byte are not 0, saturate to +127
+                        if  in_dat_tdata(16*j+15) = '0' and signed(in_dat_tdata(16*j+15 downto 16*j+7)) /= 0 then
+                            out_dat_int.TDATA(8*j+7 downto 8*j) <= X"7F";
+                            adc_overflow_flag <= '1';
+                        -- If the sign bit of the word is 1 but all the bits down and including the MSB of our byte are not 1, saturate to -128
+                        elsif in_dat_tdata(16*j+15) = '1' and signed(in_dat_tdata(16*j+15 downto 16*j+7)) /= -1 then
+                            out_dat_int.TDATA(8*j+7 downto 8*j) <= X"80";
+                            adc_overflow_flag <= '1';
+                        -- There is no saturation
+                        else
+                            out_dat_int.TDATA(8*j+7 downto 8*j) <= in_dat_tdata(16*j+7 downto 16*j);
+                        end if;
+                    end loop;
+                    out_dat_int.TVALID <= in_dat_tvalid;
+                    out_dat_int.TLAST <= in_dat_tlast;
+
+                when FN_ADC16 =>
+                    -- Pack the 1st and 3rd 16-bit ADC values into the 4-byte output
+                    adc_overflow_flag <= '0';
+                    out_dat_int.TDATA(31 downto 16) <= in_dat_tdata(63 downto 48);
+                    out_dat_int.TDATA(15 downto 0) <= in_dat_tdata(31 downto 16);
+                    out_dat_int.TVALID <= in_dat_tvalid;
+                    out_dat_int.TLAST <= in_dat_tlast;
+
+                when FN_RAM =>
+                    out_dat_int.TDATA <= ram_dout; -- Byte at address 0 is in the MSB
+                    out_dat_int.TVALID <= send_frame;
+                    adc_overflow_flag <= '0';
+
+                when FN_RAM_NIBBLE4 =>
+                    for i in 0 to 3 loop
+                        if frame_ctr(0)='0' then
+                            out_dat_int.TDATA(8*i+7 downto 8*i+4) <= ram_dout(8*i+3 downto 8*i);
+                        else
+                            out_dat_int.TDATA(8*i+7 downto 8*i+4) <= ram_dout(8*i+7 downto 8*i+4);
+                        end if;
+                        out_dat_int.TDATA(8*i+3 downto 8*i) <= "0000";
+                    end loop;
+                    out_dat_int.TVALID <= send_frame;
+                    adc_overflow_flag <= '0';
 
 
-            when FN_NOISE =>
-                for i in 0 to 3 loop
-                    out_dat.TDATA(8*i+7 downto 8*i) <=
-                        (crc_out(8*i+7 downto 8*i) and byte_c) or
-                        ((7 downto 0 => crc_out(8*i+7)) and not byte_c);
-                end loop;
-                out_dat.TVALID <= send_frame;
-                adc_overflow_flag <= '0';
+                when FN_NOISE =>
+                    for i in 0 to 3 loop
+                        out_dat_int.TDATA(8*i+7 downto 8*i) <=
+                            (crc_out(8*i+7 downto 8*i) and byte_c) or
+                            ((7 downto 0 => crc_out(8*i+7)) and not byte_c);
+                    end loop;
+                    out_dat_int.TVALID <= send_frame;
+                    adc_overflow_flag <= '0';
 
-            when FN_FRAME_WORD_CTR_RAM_FLAGS =>
-                out_dat.TDATA <= to_slv(frame_ctr) & ctr;
-                out_dat.TVALID <= send_frame;
-                adc_overflow_flag <= ram_dout(0);
+                when FN_FRAME_WORD_CTR_RAM_FLAGS =>
+                    out_dat_int.TDATA <= to_slv(frame_ctr) & ctr;
+                    out_dat_int.TVALID <= send_frame;
+                    adc_overflow_flag <= ram_dout(0);
 
-            when FN_FRAME8 =>
-                for i in 0 to 3 loop
-                    out_dat.TDATA(8*i+7 downto 8*i) <= to_slv(frame_ctr(7 downto 0));
-                end loop;
-                out_dat.TVALID <= send_frame;
-                adc_overflow_flag <= ram_dout(0);
+                when FN_FRAME8 =>
+                    for i in 0 to 3 loop
+                        out_dat_int.TDATA(8*i+7 downto 8*i) <= to_slv(frame_ctr(7 downto 0));
+                    end loop;
+                    out_dat_int.TVALID <= send_frame;
+                    adc_overflow_flag <= ram_dout(0);
 
-            when FN_FRAME4 =>
-                for i in 0 to 3 loop
-                    out_dat.TDATA(8*i+7 downto 8*i+4) <= to_slv(frame_ctr(3 downto 0));
-                    out_dat.TDATA(8*i+3 downto 8*i) <= "0000";
-                end loop;
-                out_dat.TVALID <= send_frame;
-                adc_overflow_flag <= ram_dout(0);
+                when FN_FRAME4 =>
+                    for i in 0 to 3 loop
+                        out_dat_int.TDATA(8*i+7 downto 8*i+4) <= to_slv(frame_ctr(3 downto 0));
+                        out_dat_int.TDATA(8*i+3 downto 8*i) <= "0000";
+                    end loop;
+                    out_dat_int.TVALID <= send_frame;
+                    adc_overflow_flag <= ram_dout(0);
 
-            when others =>
-                out_dat.TDATA <= (others=>'0');
-        end case;
+                when others =>
+                    out_dat_int.TDATA <= (others=>'0');
+            end case;
 
-        if reset_all='1' then -- Synchronous reset
-            ramp_word_ctr <= (others=>'0');
-            ramp_word_ctr_dly <= (others=>'0');
-            ctr <= (others=>'0');
-            out_dat.TVALID <= '0'; -- needed
-            frame_ctr <= (others=>'0');
-            send_frame <= '0';
-            adc_tfirst <= '1';
-            ramp_tfirst <= '1';
-            trig_reg <= '0';
-            capture_flag <= '0';
-        end if; -- Synchronous RESET
-    end if; -- RST & CLK
+            -- Synchronous resets -- override signals above
+            if reset_all='1' then -- Synchronous reset
+                ramp_word_ctr <= (others=>'0');
+                ramp_word_ctr_dly <= (others=>'0');
+                ctr <= (others=>'0');
+                out_dat_int.TVALID <= '0'; -- needed
+                frame_ctr <= (others=>'0');
+                send_frame <= '0';
+                adc_tfirst <= '1';
+                ramp_tfirst <= '1';
+                trig_reg <= '0';
+                capture_flag <= '0';
+            end if; -- reset_all
+
+            if reset_all_reg='1' then
+                out_dat.TVALID <= '0'; -- needed
+            end if; -- reset_all_reg
+
+        end if; -- CLK
 end process;
 
 end Behavioral;
