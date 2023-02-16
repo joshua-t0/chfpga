@@ -1,6 +1,11 @@
 set_property CONFIG_MODE B_SCAN [current_design]
 set_property BITSTREAM.CONFIG.USR_ACCESS TIMESTAMP [current_design]
 
+set_property CFGBVS VCCO [current_design]
+#where value1 is either VCCO or GND
+set_property CONFIG_VOLTAGE 3.3 [current_design]
+#where value2 is the voltage provided to configuration bank 0
+
 
 ##################################################################
 ##################################################################
