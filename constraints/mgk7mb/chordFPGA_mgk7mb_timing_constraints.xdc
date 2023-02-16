@@ -2,11 +2,12 @@
 # TIMING CONSTRAINTS
 ######################################
 
-# Tell the tool to analyze only the timing when the ADCCLK is selected by the chan_mmcm (as opposed to the internal 200 MHz clock)
-# The following line does this by forcing the CLKINSEL input to '0'
-# 0 =  chan_mmcm output
-# 1 = System 200 MHz
-set_case_analysis 0 [get_pins -hierarchical chan_mmcm0/CLKINSEL]
+# Tell the tool which of the channelizer MMCM clock input to use for timing analysis.
+# The MMCM expects a 200 MHz input clock to produce the desired output clock.
+# For CHORD, we have to use the internal system clock to get a 200 MHz clock, so we set the CLKINSEL input to '1'
+# CLKINSEL=0: use CLKIN2 = 300 MHz ADC clock
+# CLKINSEL=1: use CLKIN1 = 200 MHz system clock
+set_case_analysis 1 [get_pins -hierarchical gen_chanpll_k7.chan_mmcm0/CLKINSEL]
 
 
 # ADC clocks
