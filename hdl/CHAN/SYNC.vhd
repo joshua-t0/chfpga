@@ -1,27 +1,27 @@
 ----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date:    20:05:15 03/26/2011 
--- Design Name: 
--- Module Name:    SYNC - Behavioral 
--- Project Name: 
--- Target Devices: 
--- Tool versions: 
+-- Company:
+-- Engineer:
+--
+-- Create Date:    20:05:15 03/26/2011
+-- Design Name:
+-- Module Name:    SYNC - Behavioral
+-- Project Name:
+-- Target Devices:
+-- Tool versions:
 -- Description: This block performs two functions
---  1) Measure the latency of a CASPER signal processing block (the FPB/FFT) 
+--  1) Measure the latency of a CASPER signal processing block (the FPB/FFT)
 --		The block starts counting clocks after a RESET event until a SYNC oulse is seen at the output of the FFT block.
 --		This assumes that the FFT input SYNC and clock enable is held high during reset.
 --		It seems that holding the SYNC input for more than one clock cycle only generates a single output sync when it is released. We use that to our advantage.
---		The block assumes there are no other SYNC pulses in the FFT pipeline, otherwise that would confuse the readout. RESET does not clear the FFT registers. 
+--		The block assumes there are no other SYNC pulses in the FFT pipeline, otherwise that would confuse the readout. RESET does not clear the FFT registers.
 -- 	If we perform multiple resets in succession or just after a input SYNC signal was received we would get a wrong readout.
 --  2) Implement a delay line to pass control signals with with the specified delay. This is used to pass valid/OVERFLOW/etc signals around the FFT block and reassociate them with the corresponding samples at the output of the FFT.
 --
--- Dependencies: 
+-- Dependencies:
 --
--- Revision: 
+-- Revision:
 -- Revision 0.01 - File Created
--- Additional Comments: 
+-- Additional Comments:
 -- 2012-05-31 JFC: Added Clock Enable (ce)
 --		2012-08-28: Separated delay measurment from the delay line process
 
@@ -49,24 +49,24 @@ entity FFT_DELAY is
 		data_out: out  STD_LOGIC_VECTOR(DATA_WIDTH-1 downto 0);
 		delay: in STD_LOGIC_VECTOR(CTR_WIDTH-1 downto 0);
 		valid: out std_logic:='0';
-		
+
 		clk : in  STD_LOGIC;
 		ce : in  STD_LOGIC;
 		rst : in  STD_LOGIC
 		);
-			  
+
 end FFT_DELAY;
 
 architecture Behavioral of FFT_DELAY is
 
 
-signal delay_ctr: unsigned(CTR_WIDTH-1 downto 0) := (others=>'0');
+signal delay_ctr, delay_ctr_max: unsigned(CTR_WIDTH-1 downto 0) := (others=>'0');
 signal measured_delay_ctr: unsigned(CTR_WIDTH-1 downto 0) := (others=>'0'); --needed
 signal wait_for_sync: std_logic:='1'; -- needed to start looking for SYNC without a reset
 signal counting_delay: std_logic:='0'; -- needed
-signal valid_int: std_logic;
-
-type ram_type is array (0 to 2**CTR_WIDTH) of std_logic_vector(DATA_WIDTH-1 downto 0);
+signal valid_pre, valid_pre2: std_logic;
+signal data_out_pre:  std_logic_vector(DATA_WIDTH-1 downto 0);
+type ram_type is array (0 to 2**CTR_WIDTH-1) of std_logic_vector(DATA_WIDTH-1 downto 0);
 signal ram : ram_type :=(others=>(others=>'0'));
 
 begin
@@ -91,11 +91,11 @@ meas_dly: process(clk)
 					wait_for_sync <= '0';
 					counting_delay <= '1';
 				end if;
-				
+
 				if counting_delay='1' then
 					measured_delay_ctr <= measured_delay_ctr + 1;
 				end if;
-				
+
 				if sync_out='1' and counting_delay='1' then
 					measured_delay <= std_logic_vector(measured_delay_ctr + 1); -- the +1 might generate unnecessary logic. Refactor to optimize (i.e reuse counter adder or delay sync_out).
 					counting_delay <= '0';
@@ -112,31 +112,45 @@ meas_dly: process(clk)
 dly_line: process(clk)
 	begin
 		if rising_edge(clk) then
+			if ce='1' then
+				-- precompute the maximum counter value to avoid a "large" combinatorial adder in the counter enable logic.
+				-- We stop the counter in advance to take into account the logic latencies
+				--    -1 because we count delays from zero, not one
+				--    -1 because this is a synchronous RAM: data comes one clock after address
+				--    -1 to account for the pipeline output register we add after the RAM
+				delay_ctr_max <= unsigned(delay)-3;
+				-- Implement a delay line with specified delay
+				if delay_ctr = delay_ctr_max then --
+					delay_ctr <= (others=>'0');
+					valid_pre2 <= '1';
+				else
+					delay_ctr <= delay_ctr + 1;
+				end if;
+
+				-- the valid flag turns on after we read the data at address zero
+
+				-- RAM read
+				data_out_pre <= ram(to_integer(delay_ctr));
+				valid_pre <= valid_pre2;
+				-- We add an output pipeline register to mitigte the large
+				-- clk-to-output delay of the inferred block RAM.
+				-- Hopefully this extra register will be absorbed in the BRAM.
+				data_out <= data_out_pre;
+				valid <= valid_pre;
+
+				-- RAM write
+				ram(to_integer(delay_ctr)) <= data_in;
+			end if; --ce
+			-- Synchronous resets - overides signals above
 			if rst='1' then
 				delay_ctr <= (others=>'0');
 				valid <= '0';
-				valid_int <= '0';
-			else
---				valid<='0';
-				if ce='1' then
-					-- Implement a delay line with specified delay
-					if delay_ctr = unsigned(delay)-2 then -- -1 to account for the output register implicit to the synchronous RAM, and -1 because we count from zero (not efficient in logic, may need to be refactored)
-						delay_ctr <= (others=>'0');
-						valid_int <= '1';
-					else
-						delay_ctr <= delay_ctr + 1;
-					end if;
-					
-					-- the valid flag turns on after we read the data at address zero
-					
-					data_out <= ram(to_integer(delay_ctr));
-					valid <= valid_int;
-					ram(to_integer(delay_ctr)) <= data_in;
-				end if; --ce
+				valid_pre2 <= '0';
+				valid_pre <= '0';
 			end if; -- rst
 		end if; -- clk
 	end process;
-	
+
 
 end Behavioral;
 
