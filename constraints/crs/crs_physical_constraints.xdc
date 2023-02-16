@@ -115,30 +115,14 @@ set_clock_groups -name BSB_CLK_GROUP -asynchronous -group [get_clocks clk_pl_0]
 set_property IOSTANDARD  LVCMOS33 [get_ports {buck_sync_*}]
 
 set_property PACKAGE_PIN AP5       [get_ports {buck_sync_5v0}] ; # Bank  84 VCC3V3
-
 set_property PACKAGE_PIN AP6       [get_ports {buck_sync_0v85}] ; # Bank  84 VCC3V3
-# set_property IOSTANDARD  LVCMOS33 [get_ports {buck_sync_0v85}] ;
-
 set_property PACKAGE_PIN AR6       [get_ports {buck_sync_3v3}] ; # Bank  84 VCC3V3
-# set_property IOSTANDARD  LVCMOS33 [get_ports {buck_sync_3v3}] ;
-
 set_property PACKAGE_PIN AR7       [get_ports {buck_sync_2v5}] ; # Bank  84 VCC3V3
-# set_property IOSTANDARD  LVCMOS33 [get_ports {buck_sync_2v5}] ;
-
 set_property PACKAGE_PIN AV7       [get_ports {buck_sync_1v8}] ; # Bank  84 VCC3V3
-# set_property IOSTANDARD  LVCMOS33 [get_ports {buck_sync_1v8}] ;
-
 set_property PACKAGE_PIN AU7       [get_ports {buck_sync_1v2a}] ; # Bank  84 VCC3V3
-# set_property IOSTANDARD  LVCMOS33 [get_ports {buck_sync_1v2a}] ;
-
 set_property PACKAGE_PIN AV8       [get_ports {buck_sync_1v2b}] ; # Bank  84 VCC3V3
-# set_property IOSTANDARD  LVCMOS33 [get_ports {buck_sync_1v2b}] ;
-
 set_property PACKAGE_PIN AU8       [get_ports {buck_sync_1v4}] ; # Bank  84 VCC3V3
-# set_property IOSTANDARD  LVCMOS33 [get_ports {buck_sync_1v4}] ;
-
 set_property PACKAGE_PIN AT7       [get_ports {buck_sync_bp}] ; # Bank  84 VCC3V3
-# set_property IOSTANDARD  LVCMOS33 [get_ports {buck_sync_bp}] ;
 
 # #################
 # # SMP (on-board clip-on coax) connectors and testpoints
@@ -155,7 +139,14 @@ set_property IOSTANDARD  LVCMOS33 [get_ports {smp[3]}] ;
 # set_property PACKAGE_PIN F8       [get_ports {tp13}] ; # Bank  87 VCC3V3
 # set_property IOSTANDARD  LVCMOS33 [get_ports {tp13}] ;
 
+# -- GTY QSFP28 ports - Bank 128
+set_property PACKAGE_PIN Y35       [get_ports {qsfp_txp[0]}] ;
+set_property PACKAGE_PIN V35       [get_ports {qsfp_txp[1]}] ;
+set_property PACKAGE_PIN T35       [get_ports {qsfp_txp[2]}] ;
+set_property PACKAGE_PIN R33       [get_ports {qsfp_txp[3]}] ;
 
+# GTY reference clock, 156.25 MHz from fixed PLL, Bank 129
+set_property PACKAGE_PIN W33       [get_ports {clk156_p}]; # GTY_CLK0_P129, Bank 129
 
 # ignore timing between CLK200 and CORR_CLK  domains. This line has to be placed after we have defines the source clock for the two specified derived clocks
 # set_false_path -from [get_clocks CLK200_MMCM_NOBUF] -to [get_clocks {CORR_CLK_NOBUF}]

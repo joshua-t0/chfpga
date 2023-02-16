@@ -1,7 +1,7 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0x54874D42B43F00E5",
+      "boundary_crc": "0xE92318D04E124F22",
       "device": "xczu47dr-ffvg1517-1-i",
       "name": "sifpga_crs",
       "rev_ctrl_bd_flag": "RevCtrlBdOff",
@@ -194,6 +194,22 @@
       },
       "buck_sync_bp": {
         "direction": "O"
+      },
+      "clk156_p": {
+        "direction": "I"
+      },
+      "clk156_n": {
+        "direction": "I"
+      },
+      "qsfp_txp": {
+        "direction": "O",
+        "left": "0",
+        "right": "3"
+      },
+      "qsfp_txn": {
+        "direction": "O",
+        "left": "0",
+        "right": "3"
       }
     },
     "components": {
@@ -5606,6 +5622,22 @@
               }
             }
           },
+          "qsfp_txp": {
+            "direction": "O",
+            "left": "0",
+            "right": "3"
+          },
+          "qsfp_txn": {
+            "direction": "O",
+            "left": "0",
+            "right": "3"
+          },
+          "clk156_p": {
+            "direction": "I"
+          },
+          "clk156_n": {
+            "direction": "I"
+          },
           "debug_out": {
             "direction": "O",
             "left": "31",
@@ -5842,6 +5874,18 @@
           "zynq_ultra_ps_e_0/pl_ps_irq0"
         ]
       },
+      "clk156_n_0_1": {
+        "ports": [
+          "clk156_n",
+          "sifpga_crs_chfpga_0/clk156_n"
+        ]
+      },
+      "clk156_p_0_1": {
+        "ports": [
+          "clk156_p",
+          "sifpga_crs_chfpga_0/clk156_p"
+        ]
+      },
       "rst_ps8_0_96M1_peripheral_aresetn": {
         "ports": [
           "rst_ps8_0_96M1/peripheral_aresetn",
@@ -5931,6 +5975,18 @@
           "sifpga_crs_chfpga_0/debug_out",
           "zynq_ultra_ps_e_0/ftm_gpi",
           "system_ila_0/probe0"
+        ]
+      },
+      "sifpga_crs_chfpga_0_qsfp_txn": {
+        "ports": [
+          "sifpga_crs_chfpga_0/qsfp_txn",
+          "qsfp_txn"
+        ]
+      },
+      "sifpga_crs_chfpga_0_qsfp_txp": {
+        "ports": [
+          "sifpga_crs_chfpga_0/qsfp_txp",
+          "qsfp_txp"
         ]
       },
       "sifpga_crs_chfpga_0_smp_out": {

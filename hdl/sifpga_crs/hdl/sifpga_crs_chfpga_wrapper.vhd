@@ -28,7 +28,7 @@ use work.chFPGA_Package.all; --! Get all component definitions
 --
 --The ports of this top-level entity correspond to physical pins on the Kintex 7 FPGA on that board. The location of these pins are defined in the constraint file.
 entity sifpga_crs_chfpga_wrapper is
-	 generic (
+	generic (
 
 	 		-- NOTE: All generics values must be literals if the module is to be imported in a block diagram
 			PLATFORM_ID: integer                         := 4; --! identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705
@@ -50,8 +50,10 @@ entity sifpga_crs_chfpga_wrapper is
 			NUMBER_OF_BP_SHUFFLE_LINKS: integer          := 0; --! Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
 			NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := 0;
 
+			IMPLEMENT_100G_ETHERNET: boolean             := TRUE; --! If TRUE, a 100G UDP/IP/Ethernet data transmitter is implemented
+
 			NUMBER_OF_GPU_LINKS: integer                 := 0; --! (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
-			NUMBER_OF_GPU_REFCLKS: integer               := 0; --! Number of Reference clocks provided for the 10GE links to the GPU
+			NUMBER_OF_GPU_REFCLKS: integer               := 1; --! Number of Reference clocks provided for the 10GE links to the GPU
 			NUMBER_OF_I2C_PORTS: integer                 := 0;
 			NUMBER_OF_SPI_PORTS: integer                 := 0; -- One port for each FMC
 			--ANT_CLK_SOURCE: integer := 0; -- Indicate which ADC is the source of the antenna processing clock. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
@@ -168,6 +170,18 @@ entity sifpga_crs_chfpga_wrapper is
 			adc2_clkout : in  std_logic; -- ADC 4 and 5
 			adc3_clkout : in  std_logic; -- ADC 6 and 7
 
+
+			--==== 100G Ethernet QSFP28 interface
+
+			qsfp_txp: out std_logic_vector(0 to 3);
+			qsfp_txn: out std_logic_vector(0 to 3);
+			--cge_rx_p: in std_logic_vector(0 to 3) := (others => '0');
+			--cge_rx_n: in std_logic_vector(0 to 3):= (others => '1');
+			-- Gigabit transceiver refrenece clocks (typically 156.25 MHz)
+			clk156_p: in std_logic := '0';
+			clk156_n: in std_logic := '1';
+
+
 			--==== Debug interface
 			debug_out: out std_logic_vector(31 downto 0);
 			smp_out: out std_logic_vector(0 to 3);
@@ -204,8 +218,8 @@ architecture impl of sifpga_crs_chfpga_wrapper is
 	attribute DONT_TOUCH: string;
 
 	ATTRIBUTE X_INTERFACE_INFO : STRING;
-	--ATTRIBUTE X_INTERFACE_INFO of clk125_p: SIGNAL is "xilinx.com:interface:diff_clock:1.0 sysclk125 CLK_P";
-	--ATTRIBUTE X_INTERFACE_INFO of clk125_n: SIGNAL is "xilinx.com:interface:diff_clock:1.0 sysclk125 CLK_N";
+	--ATTRIBUTE X_INTERFACE_INFO of clk156_p: SIGNAL is "xilinx.com:interface:diff_clock:1.0 clk156_p CLK_P";
+	--ATTRIBUTE X_INTERFACE_INFO of clk156_n: SIGNAL is "xilinx.com:interface:diff_clock:1.0 clk156_n CLK_N";
 	ATTRIBUTE X_INTERFACE_PARAMETER : STRING;
 	ATTRIBUTE X_INTERFACE_PARAMETER of clk200_bufg: SIGNAL is "FREQ_HZ 200000000";
 	ATTRIBUTE X_INTERFACE_PARAMETER of clk10_bufg: SIGNAL is "FREQ_HZ 10000000";
@@ -322,8 +336,11 @@ begin
 			NUMBER_OF_CORRELATORS           => NUMBER_OF_CORRELATORS,
 			NUMBER_OF_CROSSBAR_INPUTS       => NUMBER_OF_CROSSBAR_INPUTS,
 			NUMBER_OF_CROSSBAR_OUTPUTS      => NUMBER_OF_CROSSBAR_OUTPUTS,
+
 			NUMBER_OF_GPU_LINKS             => NUMBER_OF_GPU_LINKS,
 			NUMBER_OF_GPU_REFCLKS           => NUMBER_OF_GPU_REFCLKS,
+			IMPLEMENT_100G_ETHERNET         => IMPLEMENT_100G_ETHERNET,
+
 			NUMBER_OF_BP_PCB_SHUFFLE_LANES  => NUMBER_OF_BP_PCB_SHUFFLE_LANES,
 			NUMBER_OF_BP_QSFP_SHUFFLE_LANES => NUMBER_OF_BP_QSFP_SHUFFLE_LANES,
 			NUMBER_OF_BP_SHUFFLE_LINKS      => NUMBER_OF_BP_SHUFFLE_LINKS,
@@ -368,6 +385,11 @@ begin
 			adc_axis_clk => adc_axis_clk(0 to NUMBER_OF_ADCS-1),
 			adc_clkout => adc_clkout(0 to NUMBER_OF_ADCS-1),
 
+			-- 100GE interface
+			cge_tx_p => qsfp_txp,
+			cge_tx_n => qsfp_txn,
+			cge_refclk_p => clk156_p,
+			cge_refclk_n => clk156_n,
 			-- debug bus
 			debug_out => debug_out,
 			sma_out => smp_out,

@@ -35,24 +35,6 @@
       <data key="VT">VR</data>
     </node>
     <node id="n3">
-      <data key="BA">0x00A0020000</data>
-      <data key="BP">C_BASEADDR</data>
-      <data key="HA">0x00A002FFFF</data>
-      <data key="HP">C_HIGHADDR</data>
-      <data key="MA">Data</data>
-      <data key="MX">/zynq_ultra_ps_e_0</data>
-      <data key="MI">M_AXI_HPM0_FPD</data>
-      <data key="MS">SEG_axi_fifo_mm_s_0_Mem0</data>
-      <data key="MV">xilinx.com:ip:zynq_ultra_ps_e:3.4</data>
-      <data key="TM">both</data>
-      <data key="SX">/axi_fifo_mm_s_0</data>
-      <data key="SI">S_AXI</data>
-      <data key="SS">Mem0</data>
-      <data key="SV">xilinx.com:ip:axi_fifo_mm_s:4.2</data>
-      <data key="TU">register</data>
-      <data key="VT">AC</data>
-    </node>
-    <node id="n4">
       <data key="BA">0x00A0040000</data>
       <data key="BP">C_BASEADDR</data>
       <data key="HA">0x00A007FFFF</data>
@@ -70,12 +52,30 @@
       <data key="TU">register</data>
       <data key="VT">AC</data>
     </node>
+    <node id="n4">
+      <data key="BA">0x00A0020000</data>
+      <data key="BP">C_BASEADDR</data>
+      <data key="HA">0x00A002FFFF</data>
+      <data key="HP">C_HIGHADDR</data>
+      <data key="MA">Data</data>
+      <data key="MX">/zynq_ultra_ps_e_0</data>
+      <data key="MI">M_AXI_HPM0_FPD</data>
+      <data key="MS">SEG_axi_fifo_mm_s_0_Mem0</data>
+      <data key="MV">xilinx.com:ip:zynq_ultra_ps_e:3.4</data>
+      <data key="TM">both</data>
+      <data key="SX">/axi_fifo_mm_s_0</data>
+      <data key="SI">S_AXI</data>
+      <data key="SS">Mem0</data>
+      <data key="SV">xilinx.com:ip:axi_fifo_mm_s:4.2</data>
+      <data key="TU">register</data>
+      <data key="VT">AC</data>
+    </node>
     <edge id="e0" source="n1" target="n2"/>
     <edge id="e1" source="n2" target="n0"/>
-    <edge id="e2" source="n4" target="n0">
+    <edge id="e2" source="n3" target="n0">
       <data key="EH">2</data>
     </edge>
-    <edge id="e3" source="n3" target="n0">
+    <edge id="e3" source="n4" target="n0">
       <data key="EH">2</data>
     </edge>
   </graph>
