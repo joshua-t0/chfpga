@@ -30,6 +30,7 @@ use IEEE.NUMERIC_STD.ALL;
 
 library work;
 use work.chFPGA_package.all; -- Get all component definitions
+use work.chFPGA_config.all; -- get platform-specific configurations
 
 -- Uncomment the following library declaration if instantiating any Xilinx primitives in this code.
 library UNISIM;
@@ -37,17 +38,19 @@ use UNISIM.VComponents.all;
 
 --! @brief Implements the chanelizer pipeline, consisting of a function generator (FUNCGEN), FFT module (FFT), scaler (SCALER) and a resynchrozing FIFO (CHAN_FIFO).
 entity CHAN is
-    --GENERIC (
-    --    --! Indicates if the channelizer is implemented. If not, a dummy module will be put in its place.
-    --    --! In this case, an dummy ADCDAQ module is still instantiated to ensure that the LVDS receivers are instantiated
-    --    --! (which would otherwise cause errors unless they were removed from the UCF file)
-    --    IMPLEMENT_CHAN  : BOOLEAN :=TRUE; -- (and that woul dbe bad)
-    --    IMPLEMENT_FFT   : BOOLEAN :=GLOBAL_IMPLEMENT_FFT;
-    --    SIM             : BOOLEAN :=GLOBAL_SIM
-    --    );
     GENERIC (
-        PLATFORM_ID  : integer;
-        IMPLEMENT_FFT   : BOOLEAN :=GLOBAL_IMPLEMENT_FFT
+        -- If this module is to be compiled as an Out-of-context module, it
+        -- should be instantiated using component instantiation, and
+        -- the instanciation and the component definition MUST NOT include the
+        -- GENERICS section. In that case, the defaults defined here will be
+        -- used.
+        --
+        -- For non-OOC usage, this entity can be instantiated with entity instantiation with GENERICS
+
+        PLATFORM_ID     : integer := CONFIG_PLATFORM_ID;-- PLATFORM_ID_MGK7MB; -- This generics is locked to the MGK7MB when using CHAN as an OOC.
+        IMPLEMENT_CHAN  : boolean := TRUE;
+        IMPLEMENT_FFT   : boolean := CONFIG_CHAN_IMPLEMENT_FFT;
+        SIM             : boolean := GLOBAL_SIM
         );
 
     PORT (
@@ -123,19 +126,20 @@ end CHAN;
 --! Implements the channelizer blocks
 architecture Behavioral of CHAN is
 
-constant IMPLEMENT_CHAN  : BOOLEAN :=TRUE; -- (and that woul dbe bad)
 --constant IMPLEMENT_FFT   : BOOLEAN :=GLOBAL_IMPLEMENT_FFT;
-constant SIM             : BOOLEAN :=GLOBAL_SIM;
+--constant SIM             : BOOLEAN :=GLOBAL_SIM;
 
 constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
 
-signal axis_adcdaq_out      : AXIS64_DAT_STRUCT; --! input bus from adc, 32-bit wide, using the AXI4-Streaming prototol
-signal axis_adcdaq_out_reg1 : AXIS64_DAT_STRUCT;
-signal axis_adcdaq_out_reg2 : AXIS64_DAT_STRUCT;
-signal axis_funcgen_out     : AXIS32_DAT_STRUCT;
-signal axis_fft_out         : AXIS72_DAT_STRUCT;
-signal axis_scaler_out      : AXIS32_DAT_STRUCT;
+signal axis_adcdaq_out      : axis64_dat_struct; --! input bus from adc, 32-bit wide, using the AXI4-Streaming prototol
+signal axis_adcdaq_out_reg1 : axis64_dat_struct;
+signal axis_adcdaq_out_reg2 : axis64_dat_struct;
+signal axis_funcgen_out     : axis32_dat_struct;
+signal axis_fft_out         : axis72_dat_struct;
+signal axis_scaler_out      : axis32_dat_struct;
 signal axis_scaler_out_tvalid : std_logic;
+signal axis_prober_in0      : axis32_dat_struct;
+signal axis_prober_in1      : axis32_dat_struct;
 
 signal axis_fifo_out_tvalid : std_logic;
 signal axis_fifo_out_tvalid_not_rst : std_logic;
@@ -149,7 +153,7 @@ signal fifo_rst_ctr : unsigned(4 downto 0);
 signal fifo_rst: std_logic;
 
 
-signal in_reset_reg         : std_logic :='1'; --! added =1 to see if it helps the reset problem
+signal in_reset_adc_reg1, in_reset_adc_reg2, in_reset_funcgen, in_reset_scaler, in_reset_fft, in_reset_fifo, in_reset_prober: std_logic :='1'; --! added =1 to see if it helps the reset problem
 -- signal out_reset_reg: std_logic :='1';
 -- Make sure the pipeline registers are not simplified by the synthesizer so they can be useful in helping meeting timing
 attribute equivalent_register_removal: string;
@@ -158,6 +162,13 @@ attribute equivalent_register_removal of axis_adcdaq_out_reg2: signal is "no";
 attribute shreg_extract: string;
 attribute shreg_extract of axis_adcdaq_out_reg1: signal is "no";
 attribute shreg_extract of axis_adcdaq_out_reg2: signal is "no";
+
+attribute keep: string;
+attribute keep of in_reset_adc_reg1, in_reset_adc_reg2: signal is "true";
+attribute keep of in_reset_funcgen: signal is "true";
+attribute keep of in_reset_scaler: signal is "true";
+attribute keep of in_reset_fft: signal is "true";
+attribute keep of in_reset_prober, in_reset_fifo: signal is "true";
 
 
 -- make sure that the ADCDAQ logic is not removed if nothing is connected downstream
@@ -169,12 +180,12 @@ attribute shreg_extract of axis_adcdaq_out_reg2: signal is "no";
 -- Control bus signals
 constant NUMBER_OF_MODULES  : integer:=7; --! Total number of modules to be implemented. Is used to set the number of ports of the control interface router.
 constant MODULE_ADCDAQ_ADDR : integer:=0; --! Address of the ADC data acquisition module
-constant MODULE_SRCSEL_ADDR : integer:=1; --! (unused) Address of the source selector module
+--constant MODULE_SRCSEL_ADDR : integer:=1; --! (unused) Address of the source selector module
 constant MODULE_FFT_ADDR    : integer:=2; --! Address of the channelizer (FFT) module
 constant MODULE_SCALER_ADDR : integer:=3; --! Address of the scaler module
 constant MODULE_PROBER_ADDR : integer:=4; --! Address of the data capture module
 constant MODULE_FUNCGEN_ADDR: integer:=5; --! Address of the function generator module
-constant MODULE_INJECT_ADDR : integer:=6; --! (unused) Address of the data injection module
+--constant MODULE_INJECT_ADDR : integer:=6; --! (unused) Address of the data injection module
 
 -- UDP Control Command from chfpga
 signal CMD_DAT  : AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_MODULES-1 downto 0);
@@ -285,17 +296,6 @@ CMD_RDY(MODULE_ADCDAQ_ADDR)  <= ADC_CMD_RDY;
 RPLY_DAT(MODULE_ADCDAQ_ADDR) <= ADC_RPLY_DAT;
 ADC_RPLY_RDY                 <= RPLY_RDY(MODULE_ADCDAQ_ADDR);
 
----------------------------------------------------------------------
---! Registers the synchronous reset for distribution across the internal modules
---! Helps meet timing, otherwise the fanout is too large
----------------------------------------------------------------------
-rst_proc: process(in_clk)
-    begin
-        if rising_edge(in_clk) then
-            in_reset_reg <= in_reset;
-        end if;
-    end process;
-
 
 IMPL: if IMPLEMENT_CHAN=TRUE generate
 
@@ -313,19 +313,28 @@ IMPL: if IMPLEMENT_CHAN=TRUE generate
 --!   there will be assignment conflicts to OUT_DAT with the block that handle
 --!   IMPLEMENT_CHAN=FALSE, and that makes the Vivado simulator hang up.
 ---------------------------------------------------------------------
-adcdat_proc: process(in_clk)
+adc_pipe_proc: process(in_clk)
     begin
         if rising_edge(in_clk) then
+            -- Pipeline input data and reset
+            in_reset_adc_reg1 <= in_reset;
             axis_adcdaq_out_reg1 <= axis_adcdaq_out;
-            axis_adcdaq_out_reg2 <= axis_adcdaq_out_reg1;
-            if in_reset_reg='1' then
+            if in_reset_adc_reg1 = '1' then
                 axis_adcdaq_out_reg1.TVALID <= '0';
+            end if;
+
+            -- Pipeline input data and reset again; we have a long distance to cover.
+            in_reset_adc_reg2 <= in_reset_adc_reg1;
+            axis_adcdaq_out_reg2 <= axis_adcdaq_out_reg1;
+            if in_reset_adc_reg2 = '1' then
                 axis_adcdaq_out_reg2.TVALID <= '0';
             end if;
-        lane_monitor(0) <= axis_scaler_out.TVALID xor axis_scaler_out.TLAST;
-        lane_monitor(1) <= axis_fft_out.TVALID xor axis_fft_out.TLAST;
-        lane_monitor(2) <= axis_funcgen_out.TVALID xor axis_funcgen_out.TLAST;
-        lane_monitor(3) <= axis_fifo_out_tvalid xor axis_fifo_out_tlast;
+
+            -- Provide monitoring data
+            lane_monitor(0) <= axis_scaler_out.TVALID xor axis_scaler_out.TLAST;
+            lane_monitor(1) <= axis_fft_out.TVALID xor axis_fft_out.TLAST;
+            lane_monitor(2) <= axis_funcgen_out.TVALID xor axis_funcgen_out.TLAST;
+            lane_monitor(3) <= axis_fifo_out_tvalid xor axis_fifo_out_tlast;
         end if; --clk
     end process;
 
@@ -333,6 +342,15 @@ adcdat_proc: process(in_clk)
 -- Instantiate the FUNCTION GENERATOR
 ---------------------------------------------------------------------
 -- The Function Generator either forwards the ADC data or injects user-programmable arbitrary waveforms
+
+funcgen_pipe_proc: process(in_clk)
+    begin
+        if rising_edge(in_clk) then
+           in_reset_funcgen <= in_reset_adc_reg2;
+        end if;
+    end process;
+
+
 FUNCGEN0: entity work.FUNCGEN
     PORT MAP(
 
@@ -344,7 +362,7 @@ FUNCGEN0: entity work.FUNCGEN
         out_dat => axis_funcgen_out,
 
         clk => in_clk,
-        rst => in_reset_reg,
+        rst => in_reset_funcgen,
 
         -- Control interface
         ctrl_cmd_in_dat   => CMD_DAT(MODULE_FUNCGEN_ADDR),
@@ -359,19 +377,28 @@ FUNCGEN0: entity work.FUNCGEN
 -- Tying up unused control ports so the router will no lock-up
 -- These were for INJECT and SRCSEL modules whose functionnalities have been merged into FUNCGEN
 
-CMD_RDY(MODULE_INJECT_ADDR).TREADY  <= '1'; --! Always accept commands. Those will be ignored.
-RPLY_DAT(MODULE_INJECT_ADDR).TVALID <= '0'; --! Do not send any reply
-RPLY_DAT(MODULE_INJECT_ADDR).TLAST  <= '0'; --! for nice simulations only
-RPLY_DAT(MODULE_INJECT_ADDR).TDATA  <= (others=>'0'); --! for nice simulations only
+--CMD_RDY(MODULE_INJECT_ADDR).TREADY  <= '1'; --! Always accept commands. Those will be ignored.
+--RPLY_DAT(MODULE_INJECT_ADDR).TVALID <= '0'; --! Do not send any reply
+--RPLY_DAT(MODULE_INJECT_ADDR).TLAST  <= '0'; --! for nice simulations only
+--RPLY_DAT(MODULE_INJECT_ADDR).TDATA  <= (others=>'0'); --! for nice simulations only
 
-CMD_RDY(MODULE_SRCSEL_ADDR).TREADY  <= '1'; --! Always accept commands. Those will be ignored.
-RPLY_DAT(MODULE_SRCSEL_ADDR).TVALID <= '0'; --! Do not send any reply
-RPLY_DAT(MODULE_SRCSEL_ADDR).TLAST  <= '0'; --! for nice simulations only
-RPLY_DAT(MODULE_SRCSEL_ADDR).TDATA  <= (others=>'0'); --! for nice simulations only
+--CMD_RDY(MODULE_SRCSEL_ADDR).TREADY  <= '1'; --! Always accept commands. Those will be ignored.
+--RPLY_DAT(MODULE_SRCSEL_ADDR).TVALID <= '0'; --! Do not send any reply
+--RPLY_DAT(MODULE_SRCSEL_ADDR).TLAST  <= '0'; --! for nice simulations only
+--RPLY_DAT(MODULE_SRCSEL_ADDR).TDATA  <= (others=>'0'); --! for nice simulations only
 
 ---------------------------------------------------------------------
 -- Instantiate the FFT Block
 ---------------------------------------------------------------------
+
+-- Pipeline the FFT reset (skip over the funcgen logic)
+fft_pipe_proc: process(in_clk)
+    begin
+        if rising_edge(in_clk) then
+           in_reset_fft <= in_reset_funcgen;
+        end if;
+    end process;
+
 -- This is a wrapper for the CASPER FFT so it can operate with AXI4 Streaming buses.
 -- Also adds a control interface to control the FFT operation.
 FFT0: entity work.FFT
@@ -383,7 +410,7 @@ FFT0: entity work.FFT
         in_dat  => axis_funcgen_out,
         out_dat => axis_fft_out,
         clk     => in_clk,
-        reset   => in_reset_reg,
+        reset   => in_reset_fft,
 
         -- Control interface
         CTRL_CMD_IN_DAT   => CMD_DAT(MODULE_FFT_ADDR),
@@ -398,13 +425,23 @@ FFT0: entity work.FFT
 -- Instantiate the SCALER Block
 ---------------------------------------------------------------------
 -- Applies a complex correction factor to each sample coming out of the FFT and scales the data back to 8 bits or 4 bits format.
+
+
+-- Pipeline the SCALER reset (skip over the fft logic)
+scaler_pipe_proc: process(in_clk)
+    begin
+        if rising_edge(in_clk) then
+           in_reset_scaler <= in_reset_fft;
+        end if;
+    end process;
+
 SCALER0: entity work.SCALER
     PORT MAP(
         -- Input and output interfaces
         in_dat    => axis_fft_out,
         out_dat   => axis_scaler_out,
         clk       => in_clk,
-        reset     => in_reset_reg,
+        reset     => in_reset_scaler,
 
         fifo_overflow => fifo_overflow, -- We ask SCALER to monitor the channel FIFO for us
         -- Control interface
@@ -445,10 +482,12 @@ DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
     -- According to the user manual, for Async FIFOs, reset
     -- must be held for 31 clocks of the slowest clk (in_clk) when there is no safety circuit, and there must be no
     -- read or write during that period. There does not seem to be a safety circuit from the core generator GUI.
-    fifo_rst_proc: process(in_clk)
+    fifo_pipe_proc: process(in_clk)
         begin
             if rising_edge(in_clk) then
-                if in_reset_reg ='1' then
+                in_reset_fifo <= in_reset_scaler;
+
+                if in_reset_fifo ='1' then
                     fifo_rst <= '1';
                     fifo_rst_ctr <= (others => '0'); -- this is a 5-bit counter
                 elsif signed(fifo_rst_ctr) = -1 then
@@ -483,7 +522,7 @@ DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
             empty              => open
         );
 
-end generate;
+end generate DATA_FIFO_K7;
 
 DATA_FIFO_USP: if FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
     signal fifo_wr_rst_busy: std_logic;
@@ -501,7 +540,14 @@ begin
     --
     -- In this implementation we make sure the read and writes are gated by their respective reset busy signals. We therefore avoid clock domain crossing.
 
-    fifo_rst <= in_reset_reg; -- synchronous to write clock
+    fifo_pipe_proc: process(in_clk)
+        begin
+            if rising_edge(in_clk) then
+                in_reset_fifo <= in_reset_scaler;
+            end if; --clk
+        end process;
+
+    fifo_rst <= in_reset_fifo; -- synchronous to write clock
     fifo_wr_en <= axis_scaler_out.TVALID and not (fifo_rst or fifo_wr_rst_busy) and (not fifo_almost_full or axis_scaler_out.TLAST); -- write clock domain
     fifo_rd_en <= axis_fifo_out_tvalid and not (fifo_rd_rst_busy); -- start reading only when there is data. make sure we don't read during reset.
     chan_fifo0 : entity work.CHAN_FIFO2_UP
@@ -556,16 +602,40 @@ out_proc: process(out_clk)
 ---------------------------------------------------------------------
 -- Captures a subset of the FUNGEN or SCALER output and send it over a slow
 -- 8-bit bus that can be connected to the 1G Ethernet packet transmitter.
+
+-- Pipeline the funcgen and scaler signals that are tapped of the main pipeline
+prober_pipe: process(in_clk)
+    begin
+        if rising_edge(in_clk) then
+
+            -- pipeline reset
+            in_reset_prober <= in_reset_funcgen or in_reset_scaler;
+
+            -- Pipeline data from FUNCGEN
+            axis_prober_in0 <= axis_funcgen_out;
+            if in_reset_prober = '1' then
+                axis_prober_in0.TVALID <= '0';
+            end if;
+
+            -- Pipeline data from SCALER
+            axis_prober_in1 <= axis_scaler_out;
+            if in_reset_prober = '1' then
+                axis_prober_in1.TVALID <= '0';
+            end if;
+
+        end if; -- clk
+    end process;
+
 PROBER0: entity work.PROBER
     generic map (
         SIM=>SIM
     )
     port map (
         -- Input data
-        in_dat0   => axis_funcgen_out,
-        in_dat1   => axis_scaler_out,
+        in_dat0   => axis_prober_in0,
+        in_dat1   => axis_prober_in1,
         in_clk    => in_clk, -- both inputs must run on the same clock
-        in_reset  => in_reset_reg, -- both inputs must run on the same reset
+        in_reset  => in_reset_prober, -- both inputs must run on the same reset
 
         -- Output data
         OUT_DAT => PRB_DAT,
