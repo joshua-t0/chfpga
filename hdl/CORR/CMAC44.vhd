@@ -722,7 +722,7 @@ begin
 			RSTRAMB          => '0', -- 1-bit input: B port set/reset
 			RSTREGB          => '0' -- 1-bit input: B port register set/reset
 		);
-end block;
+end block blkbram;
 
 -- Extract a,b,c and d from the AXI4-S input word. These are all 4-bit signed values. This does not require any logic.
 a <= signed(s_axis_xy_tdata(15 downto 12));
