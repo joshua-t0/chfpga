@@ -30,7 +30,7 @@ USE ieee.numeric_std.ALL;
 
 library work;
 USE work.chFPGA_Package.all;
---use work.tb_package.all;
+use work.tb_package.all;
 
 ENTITY cge_testbench IS
 	generic (
@@ -52,39 +52,13 @@ constant REFCLK_PERIOD : time := 6.4 ns; -- 156.25 MHz
 
 
 	signal refclk: std_logic; -- 200 MHz
-	--signal out_clk: std_logic; -- 244 MHz
-
-
-	--signal s_axis_tdata: slv32_array(0 to NUMBER_OF_LANES-1) := (others=> (others=>'0'));
-	--signal s_axis_tvalid: std_logic_vector(0 to NUMBER_OF_LANES-1) := (others=>'0'); -- needed for sim. If, U, data will not start
-	--signal s_axis_tlast: std_logic_vector(0 to NUMBER_OF_LANES-1):= (others=>'0');
-	--signal s_axis_tready: std_logic_vector(0 to NUMBER_OF_LANES-1):=(others=>'1'); -- init needed for sim
-
-	--signal m_axis_fifo_tdata: slv32_array(0 to NUMBER_OF_LANES-1);
-	--signal m_axis_fifo_tvalid: std_logic_vector(0 to NUMBER_OF_LANES-1);
-	--signal m_axis_fifo_tlast: std_logic_vector(0 to NUMBER_OF_LANES-1);
-	--signal m_axis_fifo_tuser: slv4_array(0 to NUMBER_OF_LANES-1);
-	---- signal m_axis_fifo_tready: std_logic_vector(0 to NUMBER_OF_LANES-1);
-
-	--signal m_axis_tdata: slv32_array(0 to NUMBER_OF_LANES-1);
-	--signal m_axis_tvalid: std_logic_vector(0 to NUMBER_OF_LANES-1);
-	--signal m_axis_tlast: std_logic_vector(0 to NUMBER_OF_LANES-1);
-	--signal m_axis_tuser: slv4_array(0 to NUMBER_OF_LANES-1);
-
-	--signal m_axis_global_tvalid: std_logic;
-	--signal m_axis_global_tlast: std_logic;
-	--signal tvalid_error: std_logic_vector(0 to NUMBER_OF_LANES-1);
-
-	--signal fifo_rd_en: std_logic_vector(0 to NUMBER_OF_LANES-1) := (others=> '0');
-	--signal fifo_rst: std_logic;
-	--signal fifo_inhibit: std_logic;
-	--signal fifo_rst_ctr : unsigned(5 downto 0);
-
-	--signal frame_clk: std_logic;
-	--signal first: std_logic := '1';
-	--signal timeout_ctr: unsigned(7 downto 0);
+	signal clk: std_logic;
+	signal rst: std_logic := '1';
 
 	signal txp, txn: std_logic_vector(3 downto 0);
+	signal tdata: std_logic_vector(255 downto 0);
+	signal tlast, tvalid: std_logic := '0';
+
 
 	constant NUMBER_OF_PACKETS : integer :=500;
 
@@ -101,14 +75,13 @@ constant REFCLK_PERIOD : time := 6.4 ns; -- 156.25 MHz
 begin
 
 
-	dut_inst: entity work.cge_test
-		port map (
-			tx_p=> txp,
-			tx_n=> txn,
-			gt_ref_clk_p => refclk,
-			gt_ref_clk_n => not refclk
-		);
-
+	--dut_inst: entity work.cge_test
+	--	port map (
+	--		tx_p=> txp,
+	--		tx_n=> txn,
+	--		gt_ref_clk_p => refclk,
+	--		gt_ref_clk_n => not refclk
+	--	);
 
 
 	refclk_process: process
@@ -118,6 +91,56 @@ begin
 			refclk <= '1';
 			wait for REFCLK_PERIOD/2;
 	   end process;
+
+
+
+	cge0: entity work.cge
+		generic map (
+			IMPLEMENT_PACKET_GENERATOR => TRUE
+		 	)
+		port map (
+			tx_p => txp,
+			tx_n => txn,
+			refclk_p => refclk,
+			refclk_n => not refclk,
+			refclk_out => clk,
+
+			s_axis_tx_tdata => tdata,
+			s_axis_tx_tvalid => tvalid,
+			s_axis_tx_tlast => tlast,
+
+			rst => '0',
+			ctrl_clk => clk, -- used as init_clk
+			ctrl_rst => rst
+		 );
+
+	rst_proc: process(clk)
+	begin
+		if rising_edge(clk) then
+			rst <= '0';
+		end if;
+	end process;
+
+
+	sim_proc: process
+	begin
+
+		wait for 5.5 us;
+		sleep(clk, 1);
+		tdata <= X"0001020304050607202122232425262730313233343536374041424344454647";
+		tlast <= '1';
+		tvalid <='1';
+
+		sleep(clk,1);
+		tlast <= '0';
+
+		sleep(clk,1);
+
+		tvalid <='0';
+		wait;
+	end process;
+
+
 
 
 --rst_proc : process
