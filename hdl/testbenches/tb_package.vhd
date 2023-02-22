@@ -47,7 +47,7 @@ package tb_package is
 	procedure fpga_write_ram(  signal CLK : IN STD_LOGIC;  signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0); signal tvalid: OUT STD_LOGIC; signal tlast: OUT STD_LOGIC;  signal tready: in std_logic; addr: integer; data: slv8_array );
 	procedure fpga_select_bins( signal clk : in STD_LOGIC;  signal tdata: out STD_LOGIC_VECTOR(7 downto 0); signal tvalid: out std_logic; signal tlast: out STD_LOGIC;   signal tready: in std_logic; addr: integer;  first_bin: integer; bin_step: integer; number_of_bins: integer);
 	procedure send_axis32_packet(signal clk: IN std_logic; signal m_axis_tdata: OUT slv32; signal m_axis_tvalid: out std_logic; signal m_axis_tlast: OUT std_logic; signal m_axis_tready: IN std_logic;data: IN slv32_array; period: in integer := 0);
-	procedure sleep (signal clk: IN std_logic; delay: IN integer);
+	procedure sleep (signal clk: IN std_logic; delay: IN integer:= 1);
 	function create_packet(lane,packet,count: in integer) return slv32_array;
 
 
@@ -279,7 +279,7 @@ package body tb_package is
 --! @brief Sends an AXIS32 frame
 	procedure sleep (
 			signal clk: IN std_logic;
-			delay: IN integer
+			delay: IN integer := 1
 			) is
 	begin
 		-- variable tvalid: std_logic :='0';
