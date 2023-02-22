@@ -22,11 +22,12 @@ end entity;
 
 architecture impl of cge_test is
 	signal refclk: std_logic;
+	signal rst: std_logic := '1';
 begin
 
 		cge0: entity work.cge
 		 generic map (
-			IMPLEMENT_MMI => FALSE
+			IMPLEMENT_PACKET_GENERATOR => TRUE
 		 	)
 		port map (
 			tx_p => tx_p,
@@ -36,8 +37,16 @@ begin
 
 			refclk_out => refclk,
 			rst => '0',
-			ctrl_clk => refclk -- used as init_clk
+			ctrl_clk => refclk, -- used as init_clk
+			ctrl_rst => rst
 		 );
+
+		rst_proc: process(refclk)
+		begin
+			if rising_edge(refclk) then
+				rst <= '0';
+			end if;
+		end process;
 
 
 end architecture impl;

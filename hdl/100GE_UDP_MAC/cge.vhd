@@ -16,8 +16,8 @@
 
 
 library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.NUMERIC_STD.ALL;
+use IEEE.std_logic_1164.ALL;
+use IEEE.numeric_std.ALL;
 use IEEE.std_logic_misc.ALL; -- for reduce functions
 
 library UNISIM;
@@ -39,7 +39,7 @@ entity cge is
 		DEFAULT_IP_DEST_PORT: slv16 := X"A028"; -- Destination port used by each lane
 
 		--USE_LITTLE_ENDIAN: boolean := TRUE; --! TRUE: Byte is LSB is transmitted first (i.e. bit 0 of word transmitted first). FALSE: Byte in MSB is transmitted first (i.e. bit 24 of word is transmitted first)
-		IMPLEMENT_MMI: boolean := TRUE;
+		IMPLEMENT_PACKET_GENERATOR: boolean := TRUE; -- if TRUE, the embedded packet generator will be implemented.
 		SIM: boolean := false
 		);
 	port (
@@ -53,10 +53,9 @@ entity cge is
 		refclk_out: out std_logic; -- 156.25 MHz Reference clock output (buffered?)
 		refclk_div2: out std_logic; -- 156.25 MHz reference clock divided by 2
 
-		--s_axis_tx_tdata: in slv32_array(0 to 7) := (others=>(others=>'0')); -- First byte to transmit is in in LSB (i.e first bit transmitted is bit 0)
-		--s_axis_tx_tvalid: in std_logic_vector(0 to 7) := (others=>'0');
-		--s_axis_tx_tlast: in std_logic_vector(0 to 7) := (others=>'0');
-		--s_axis_tx_tready: out std_logic_vector(0 to 7);
+		s_axis_tx_tdata: in std_logic_vector(255 downto 0) := (others=>'0'); -- First byte to transmit is in in LSB (i.e first bit transmitted is bit 0)
+		s_axis_tx_tvalid: in std_logic := '0';
+		s_axis_tx_tlast: in std_logic := '0';
 
 		clk_out: out std_logic; --! 322 MHz clock derived from 100G core. Clocks all user signals
 		rst: in std_logic; -- synchrounous reset
@@ -84,7 +83,7 @@ architecture Behavioral of cge is
 -- Signals
 
 
-	signal control_bytes: slv8_array(0 to 1);
+	signal control_bytes: slv8_array(0 to 3);
 	signal status_bytes: slv8_array(0 to 1);
 
 	signal tx_axis_tdata: std_logic_vector(511 downto 0);
@@ -96,7 +95,7 @@ architecture Behavioral of cge is
 	signal gt_txp_out, gt_txn_out: std_logic_vector(3 downto 0);
 
 	signal drp_out: std_logic_vector(15 downto 0);
-	signal drp_in: std_logic_vector(15 downto 0) := (others =>'0'); -- default needed if IMPLEMENT_MMI=FALSE
+	signal drp_in: std_logic_vector(15 downto 0) := (others =>'0');
 	signal drp_addr: std_logic_vector(9 downto 0):= (others =>'0');
 	signal drp_rdy: std_logic;
 	signal drp_en: std_logic := '0';
@@ -121,9 +120,8 @@ architecture Behavioral of cge is
 	signal refclk_out_int: std_logic;
 	signal usr_tx_reset: std_logic;
 
-	signal send_continuous_pkts: std_logic;
-	signal lbus_tx_rx_restart_in: std_logic;
-	signal simplex_mode_rx_aligned: std_logic;
+	--signal send_continuous_pkts: std_logic;
+	--signal lbus_tx_rx_restart_in: std_logic;
 
 	signal tx_gt_locked_led: std_logic;
 	signal tx_done_led: std_logic;
@@ -157,11 +155,18 @@ architecture Behavioral of cge is
 	signal clk: std_logic;
 
 	-- temporary signals
-		signal s_axis_tx_tdata: slv32_array(0 to 7) := (others=>(others=>'0')); -- First byte to transmit is in in LSB (i.e first bit transmitted is bit 0)
-		signal s_axis_tx_tvalid: std_logic:= '0';
-		signal s_axis_tx_tlast: std_logic := '0';
-		signal s_axis_tx_tready: std_logic := '0';
+	signal axis_tx_tdata: std_logic_vector(255 downto 0); -- First byte to transmit is in in LSB (i.e first bit transmitted is bit 0)
+	signal axis_tx_tvalid: std_logic:= '0';
+	signal axis_tx_tlast: std_logic := '0';
 
+	signal axis_pktgen_tdata: std_logic_vector(255 downto 0);
+	signal axis_pktgen_tvalid: std_logic:= '0';
+	signal axis_pktgen_tlast: std_logic := '0';
+
+	signal number_of_udp_words : unsigned(7 downto 0); -- 32-byte words, not including the padding
+	signal packet_spacing_in_words : unsigned(15 downto 0);
+	signal enable_packet_generator: std_logic;
+	signal enable_packet_generator_reg: std_logic;
 
 begin
 	clk <= clk_out_int;
@@ -183,9 +188,15 @@ begin
 	--cmac_sys_reset <= control_bytes(0)(2);
 	cmac_core_tx_reset <= control_bytes(0)(3);
 
-	send_continuous_pkts <= control_bytes(0)(4);
-	lbus_tx_rx_restart_in <= control_bytes(0)(5);
-	simplex_mode_rx_aligned <= control_bytes(0)(6);
+	--send_continuous_pkts <= control_bytes(0)(4);
+	--lbus_tx_rx_restart_in <= control_bytes(0)(5);
+	--simplex_mode_rx_aligned <= control_bytes(0)(6);
+	enable_packet_generator <= control_bytes(0)(7);
+	-- CONTROL Byte 1
+	number_of_udp_words <= unsigned(control_bytes(1));
+
+	-- CONTROL Byte 2-3
+	packet_spacing_in_words <= to_unsigned(control_bytes(2 to 3));
 
 	--ctl_tx_enable <=  control_bytes(1)(0);
 	--ctl_tx_send_idle <=  control_bytes(1)(1);
@@ -201,7 +212,7 @@ begin
 
 	bsb_mmr0: entity work.CTRL_SLAVE
 		GENERIC MAP (
-			DEFAULT_CONTROL_BYTES=> X"50_00",
+			DEFAULT_CONTROL_BYTES=> X"80_00_0A_00FF",
 			USE_RAM_DOUT_RDY=>TRUE, -- need to wait for the RDY signal on RAM read accesses
 			RAM_DATA_WIDTH => 16,
 			RAM_ADDR_WIDTH => 10, -- GTX DRP Address bus is 8 bits
@@ -309,22 +320,20 @@ fifo_wr_block: block
 	signal is_high_word: std_logic;
 	signal was_tlast: std_logic;
 begin
-	-- Place incoming bytes on the fifo data bus in the right order
-	fifo_wr_tdata_gen: for i in 0 to 7 generate
-		fifo_din(32*i+31 downto 32*i) <= s_axis_tx_tdata(7-i);
-	end generate;
+	-- Place incoming bytes on the fifo data bus
+	fifo_din(255 downto 0) <= axis_tx_tdata;
 	-- save the tlast and tvalid flags
-	fifo_din(32*8) <= s_axis_tx_tlast;
-	fifo_din(32*8+1) <= s_axis_tx_tvalid; -- we store tvalid because we might have dummy writes
+	fifo_din(32*8) <= axis_tx_tlast;
+	fifo_din(32*8+1) <= axis_tx_tvalid; -- we store tvalid because we might have dummy writes
 	-- generate the fifo write signal.
 	--  We force a dummy write if the low word is tlast to make sure to complete the 64-byte output word.
 	-- Otherwise a packet with an odd number of 32-bytes words would not start transmitting until the beginning of the next packet.
 	-- As a protection, we swop writing in the data FIFO if it is almost full, except for the tlast word so we don't desynchronize with the flag fifo
-	fifo_wr_en <= (s_axis_tx_tvalid or (is_high_word and was_tlast)) and (not fifo_almost_full or s_axis_tx_tlast);
+	fifo_wr_en <= (axis_tx_tvalid or (is_high_word and was_tlast)) and (not fifo_almost_full or axis_tx_tlast);
 	-- We indicate we have a complete packet as soon as we get a valid tlast.
 	-- If the last word is on the low word, the last word will be delayed until the dummy word is sent on the next clock,
 	-- so don't assume that valid on the flags fifo means valid data on the data fifo.
-	flag_fifo_wr_en <= s_axis_tx_tvalid and s_axis_tx_tlast;
+	flag_fifo_wr_en <= axis_tx_tvalid and axis_tx_tlast;
 
 	fifo_wr_proc: process(clk)
 	begin
@@ -342,16 +351,30 @@ begin
 				is_high_word <= not is_high_word;
 			end if;
 
-			if s_axis_tx_tvalid='1' then
-				was_tlast <= s_axis_tx_tlast;
+			if axis_tx_tvalid='1' then
+				was_tlast <= axis_tx_tlast;
 			end if;
+
+			enable_packet_generator_reg <= enable_packet_generator; -- pipeline
+			-- Source selection
+			if IMPLEMENT_PACKET_GENERATOR and enable_packet_generator_reg='1' then -- use packet generator data
+				axis_tx_tdata <= axis_pktgen_tdata;
+				axis_tx_tvalid <= axis_pktgen_tvalid;
+				axis_tx_tlast <= axis_pktgen_tlast;
+			else -- use external bus
+				axis_tx_tdata <= s_axis_tx_tdata;
+				axis_tx_tvalid <= s_axis_tx_tvalid;
+				axis_tx_tlast <= s_axis_tx_tlast;
+			end if; -- source select
 		end if; --clk
 	end process fifo_wr_proc;
 end block fifo_wr_block;
+
+
 -------------------------------------------
 -- Packet Generator
 -------------------------------------------
-pkt_gen_blk: block
+pkt_gen_gen: if IMPLEMENT_PACKET_GENERATOR generate
 	-- TX state machine states
 	TYPE TX_STATE_TYPE IS (
 		INIT,
@@ -364,60 +387,59 @@ pkt_gen_blk: block
 	signal word_ctr: unsigned(12 downto 0);
 	signal tdata: std_logic_vector(255 downto 0);
 	signal frame_ctr: unsigned(31 downto 0);
+	signal udp_payload_length: unsigned(15 downto 0);
+	signal ip_packet_length: unsigned(15 downto 0);
+
+
+	-- Compute the IP header checksum, which is the 1's complement of the 1's complement sum of all 16-bit words in the IP header, assuming the checsum field itself is zero.
+	-- 1's complement sum means we add the carry back to the sum (e.g 0 + 1:  0xFFFF+0x0001 = 0x10000 = 0x0001 or 0x0000+0x0001=0x00001=0x0001)
 	function compute_ip_checksum(ip_header: std_logic_vector(20*8-1 downto 0)) return std_logic_vector is
 	    variable sum : unsigned(19 downto 0) := (others => '0'); -- we add 16  16-bit words, so we can have up to 4-bits of overflow
-	    --variable i : integer := 0;
 	begin
 	    for i in 0 to 9 loop -- just cover the IP header words
 	        sum := sum + unsigned(ip_header(i*16+15 downto i*16));
 	    end loop;
-	    --sum := sum + unsigned(pkt_len);
-	    sum := sum + sum(19 downto 16);
-	    return not std_logic_vector(sum(15 downto 0));
+	    sum := sum + sum(19 downto 16); -- add all carries from previous sums to generate a 1's complement sum
+	    return not std_logic_vector(sum(15 downto 0)); -- return the 1's complement of the sum
 	end function;
 
 begin
-	tdata_gen: for i in 0 to 7 generate
-		s_axis_tx_tdata(7-i) <= (tdata(32*i+31 downto 32*i));
-	end generate;
-
 	pkt_gen_proc: process(clk)
-
 		variable mac_header : std_logic_vector(14*8-1 downto 0); -- 14-bytes Ethernet header (excluding preamble)
 		variable ip_header : std_logic_vector(20*8-1 downto 0); -- 20-bytes IP header
 		variable udp_header : std_logic_vector(8*8-1 downto 0); -- 8-bytes UDP header
-		constant number_of_udp_words : integer := 10; -- 32-byte words, not including the padding
-		constant udp_payload_length: integer:=8 + 22 + 32*number_of_udp_words;  -- 22 bytes padding to complete the second 32-byte header word
-		constant ip_packet_length: integer := 20 + udp_payload_length;
-		variable ip_checksum: std_logic_vector(15 downto 0);
+		variable ip_checksum: std_logic_vector(15 downto 0); -- 16-bit checksum of the IP header
 	begin
 		if rising_edge(clk) then
 
+			-- pre-compute the UDP and IP packet lengths
+			udp_payload_length  <= 8 + 22 + shift_left(resize(number_of_udp_words, 16), 5); -- 22 bytes padding to complete the second 32-byte header word
+			ip_packet_length <= 20 + udp_payload_length;
 
 			case tx_state is
 				when INIT =>
-					tdata <= (others => '0');
-					s_axis_tx_tvalid <= '0';
-					s_axis_tx_tlast <= '0';
+					axis_pktgen_tdata <= (others => '0');
+					axis_pktgen_tvalid <= '0';
+					axis_pktgen_tlast <= '0';
 
 					mac_header := DEFAULT_MAC_DEST_ADDR & DEFAULT_MAC_SRC_ADDR & X"0800"; -- dest MAC addr, src MAC addr, ethertype (0x0800=IPv4)
 					ip_header := X"4500" & (X"0000") & X"1234" & X"0000" & X"7F" & X"11" & (X"0000") & DEFAULT_IP_SRC_ADDR & DEFAULT_IP_DEST_ADDR; -- Version/HdrLen/DSCP/ECP flags, IP Len, ID, Flags/Frag offset, TTL, Protocol, IP header checksum, src IP addr, Dest IP Addr
 					udp_header := X"A027" & DEFAULT_IP_DEST_PORT & (X"0000") & X"0000"; -- Src port, dest port, UDP len,  UDP checksum (0=disable)
-					ip_header(18*8-1 downto 16*8) := to_slv(ip_packet_length, 16); -- insert IP length prior to computing checksum
+					ip_header(18*8-1 downto 16*8) := std_logic_vector(ip_packet_length); -- insert IP length prior to computing checksum
 					ip_checksum := compute_ip_checksum(ip_header);
 					ip_header(10*8-1 downto 8*8) := ip_checksum; -- insert IP checksum
-					udp_header(4*8-1 downto 2*8) := to_slv(udp_payload_length, 16); -- insert UDP payload length
+					udp_header(4*8-1 downto 2*8) := std_logic_vector(udp_payload_length); -- insert UDP payload length
 					tx_state <= SEND_HEADER1;
 					frame_ctr <= (others => '0');
 				when SEND_HEADER1 =>
 
-					tdata <= mac_header & ip_header(20*8-1 downto 2*8);
+					axis_pktgen_tdata <= mac_header & ip_header(20*8-1 downto 2*8);
 
-					s_axis_tx_tvalid <= '1';
-					s_axis_tx_tlast <= '0';
+					axis_pktgen_tvalid <= '1';
+					axis_pktgen_tlast <= '0';
 					tx_state <= SEND_HEADER2;
 				when SEND_HEADER2 =>
-					tdata <= ip_header(15 downto 0) & udp_header &
+					axis_pktgen_tdata <= ip_header(15 downto 0) & udp_header &
 					         X"BE_EF_FA_CE_AB_BA" & -- UDP checksum, Start of Udp payload
 					         std_logic_vector(frame_ctr) & X"deadbea7" & -- UDP payload (contd) - filler bytes
 					         X"00_11_22_33_44_55_66_77"; -- UDP payload (contd) - filler bytes
@@ -427,20 +449,20 @@ begin
 
 				when SEND_DATA =>
 					for b in 0 to 31 loop
-						tdata((31-b)*8+7 downto (31-b)*8) <= to_slv(b, 8);
+						axis_pktgen_tdata((31-b)*8+7 downto (31-b)*8) <= to_slv(b, 8);
 					end loop;
 					word_ctr <= word_ctr + 1;
 					if word_ctr = number_of_udp_words -1 then
-						s_axis_tx_tlast <= '1';
+						axis_pktgen_tlast <= '1';
 						tx_state <= SEND_NOTHING;
 					end if;
 
 				when SEND_NOTHING =>
-					tdata <= (others =>'0');
-					s_axis_tx_tvalid <= '0';
-					s_axis_tx_tlast <= '0';
+					axis_pktgen_tdata <= (others =>'0');
+					axis_pktgen_tvalid <= '0';
+					axis_pktgen_tlast <= '0';
 					word_ctr <= word_ctr + 1;
-					if signed(word_ctr(7 downto 0)) = -1 then
+					if word_ctr = packet_spacing_in_words then
 						tx_state <= SEND_HEADER1;
 					end if;
 				end case;
@@ -453,14 +475,17 @@ begin
 
 
 	end process pkt_gen_proc;
-end block pkt_gen_blk;
+end generate pkt_gen_gen;
 
 
 
+-- Reads the FIFO 64-bytes at a time at the CMAC's pace. Readout does not start until there is a full packet in the data FIFO (as indicated by the flags FIFO), to ensure there is no underflow.
+-- We handle cases where a frame ends after the first 32 bytes by sending the low and high words in two separate transactions.
 fifo_rd_block: block
 	signal tvalid0, tvalid1: std_logic;  -- tvalid on the low and high words
 	signal tlast0, tlast1: std_logic;  -- tlast on the low and high words
 	signal is_high_word: std_logic;
+	signal send_half_words: std_logic;
 
 	-- TX state machine states
 	TYPE TX_STATE_TYPE IS (
@@ -479,20 +504,30 @@ begin
 	tvalid0 <= fifo_dout(257+288);
 	tlast1 <= fifo_dout(256);
 	tvalid1 <= fifo_dout(257);
+
+	send_half_words <= tvalid0 and tlast0; -- we send half words if the first (low) half word is valid and is the last word of a packet.
+
 	-- We fetch a new word from the FIFO when
 	--  1) We have a valid word on the FIFO output
 	--  2) The CMAC is consuming the current word (tready=1)
-	--  3) We are NOT sending only the half lower word (because it has a valid tlast)
-	fifo_rd_en <= to_std_logic(fifo_valid='1' and tx_axis_tready='1' and flag_fifo_valid='1' and not (is_high_word='0' and tvalid0='1' and tlast0='1')); -- '1' when a transaction will occur on the next clock
+	--  3) We are NOT sending half words, or if we are, we are sending the high word
+	fifo_rd_en <= to_std_logic(fifo_valid='1' and tx_axis_tready='1' and flag_fifo_valid='1' and (send_half_words='0' or is_high_word='1')); -- '1' when a transaction will occur on the next clock
 	flag_fifo_rd_en <= tx_axis_tvalid and tx_axis_tready and tx_axis_tlast;
-	-- We have a CMAC tvalid flag whenever there is valid data out of the FIFO, since we are either sending the low word or the full word.
+	-- We have a CMAC tvalid flag whenever there is valid data out of the FIFO, since we are either sending the low word, the high word, or the full word.
 	tx_axis_tvalid <= fifo_valid and flag_fifo_valid and (tvalid0 or tvalid1);
-	tx_axis_tlast <= to_std_logic((is_high_word='0' and tvalid0='1' and tlast0='1') or (tvalid1='1' and tlast1='1'));
-	tx_axis_tkeep(31 downto 0) <= (others => '1') when  tvalid0 = '1' else
-	                              (others => '0');
-	tx_axis_tkeep(63 downto 32) <= (others => '1') when  tvalid1 = '1' else
-	                               (others => '0');
+	-- We send the last word if
+	--	1) we are sending half words and the current half word is the last
+	--  2) we are not sending half word and the high (second) half word is the last.
+	tx_axis_tlast <= tlast0 when send_half_words='1' and is_high_word = '0' else -- note: tlast0=1 by definition when send_half_words=1. The synthesizer will simplify that.
+	                 tlast1 when send_half_words='1' and is_high_word = '1' else
+	                 tlast1 when send_half_words='0';
 
+	-- Here we decide which of the bytes we are sending.
+	-- We set the byte-enables of each half word when its respective tvalid=1, and in the case we are sending only half words, only if the current half word is active.
+	tx_axis_tkeep(31 downto 0) <= (others => '1') when  tvalid0='1' and (send_half_words = '0' or is_high_word = '0') else
+	                              (others => '0');
+	tx_axis_tkeep(63 downto 32) <= (others => '1') when  tvalid1='1' and (send_half_words = '0' or is_high_word = '1') else
+	                               (others => '0');
 
 	fifo_rd_proc: process(clk_out_int)
 	begin
@@ -501,12 +536,14 @@ begin
 			-- ``is_high_word`` is used to tell if we are to send the low or high 32 bytes coming out of the FIFO.
 			-- This is used in case there is a TLAST on the low word and the  low and high words needs to be sent separately.
 			-- The variable is set to '0' whenever we read the FIFO, and is increased to 1 whenever a transfer to the CMAC occur.
-			if fifo_rd_en = '1' then
+			if fifo_rd_en = '1' or usr_tx_reset='1' then
 				is_high_word <= '0';
 			elsif  tx_axis_tready = '1' and tx_axis_tvalid = '1' then
 				is_high_word <= '1';
 			end if;
 
+
+			-- Initialization state machine
 			case tx_state is
 
 				when INIT_CMAC =>
@@ -523,18 +560,17 @@ begin
 					--end if;
 
 				when CMAC_LOCKED =>
-					ctl_tx_send_rfi      <= '1';
+					ctl_tx_send_rfi <= '1';
 					tx_gt_locked_led <= '1';
 					tx_state <= CMAC_ALIGNED;
 
-				when CMAC_ALIGNED =>
-
+				when CMAC_ALIGNED => -- wait for reset to complete
 					ctl_tx_send_rfi      <= '0';
 					if fifo_rd_rst_busy='0' then
 						tx_state <= FIFO_READY;
 					end if;
 
-				when FIFO_READY =>
+				when FIFO_READY => -- send data
 					ctl_tx_enable        <= '1';
 					--send_data <= '1';
 			end case;
