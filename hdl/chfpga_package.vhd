@@ -95,6 +95,7 @@ type slv66_array is array (NATURAL RANGE <>) of std_logic_vector(65 downto 0);
 type slv80_array is array (NATURAL RANGE <>) of std_logic_vector(79 downto 0);
 type slv128_array is array (NATURAL RANGE <>) of std_logic_vector(127 downto 0);
 type slv144_array is array (NATURAL RANGE <>) of std_logic_vector(143 downto 0);
+type slv256_array is array (NATURAL RANGE <>) of std_logic_vector(255 downto 0);
 type Word3Array is array (NATURAL RANGE <>) of std_logic_vector(2 downto 0);
 type Word32Array is array (NATURAL RANGE <>) of std_logic_vector(31 downto 0);
 type Word33Array is array (NATURAL RANGE <>) of std_logic_vector(32 downto 0);
