@@ -212,7 +212,7 @@ begin
 
 	bsb_mmr0: entity work.CTRL_SLAVE
 		GENERIC MAP (
-			DEFAULT_CONTROL_BYTES=> X"80_00_0A_00FF",
+			DEFAULT_CONTROL_BYTES=> X"80_0A_00FF",
 			USE_RAM_DOUT_RDY=>TRUE, -- need to wait for the RDY signal on RAM read accesses
 			RAM_DATA_WIDTH => 16,
 			RAM_ADDR_WIDTH => 10, -- GTX DRP Address bus is 8 bits
@@ -315,6 +315,7 @@ data_fifo_inst : entity work.cge_data_fifo
     rd_rst_busy => fifo_rd_rst_busy
   );
 
+fifo_din(287 downto 258) <= (others => '0'); -- don't leave FIFO input floating - critical warnings
 
 fifo_wr_block: block
 	signal is_high_word: std_logic;
@@ -520,7 +521,8 @@ begin
 	--  2) we are not sending half word and the high (second) half word is the last.
 	tx_axis_tlast <= tlast0 when send_half_words='1' and is_high_word = '0' else -- note: tlast0=1 by definition when send_half_words=1. The synthesizer will simplify that.
 	                 tlast1 when send_half_words='1' and is_high_word = '1' else
-	                 tlast1 when send_half_words='0';
+	                 tlast1 when send_half_words='0' else
+	                 '0';
 
 	-- Here we decide which of the bytes we are sending.
 	-- We set the byte-enables of each half word when its respective tvalid=1, and in the case we are sending only half words, only if the current half word is active.

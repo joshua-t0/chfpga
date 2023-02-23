@@ -36,7 +36,7 @@ begin
 			refclk_n => gt_ref_clk_n,
 
 			refclk_out => refclk,
-			rst => '0',
+			rst => rst,
 			ctrl_clk => refclk, -- used as init_clk
 			ctrl_rst => rst
 		 );

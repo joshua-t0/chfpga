@@ -39,3 +39,9 @@
 
 !/sifpga_crs/
 !/sifpga_crs/*
+
+!/cge_tests/
+!/cge_tests/*
+
+!/uram_ct/
+!/uram_ct/*
