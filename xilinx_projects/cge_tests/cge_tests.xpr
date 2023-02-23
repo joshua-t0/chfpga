@@ -136,14 +136,16 @@
     </FileSet>
     <FileSet Name="constrs_1" Type="Constrs" RelSrcDir="$PSRCDIR/constrs_1" RelGenDir="$PGENDIR/constrs_1">
       <Filter Type="Constrs"/>
-      <File Path="$PPRDIR/../CMAC_USP_ex/imports/CMAC_USP_example_top.xdc">
+      <File Path="$PSRCDIR/constrs_1/imports/imports/CMAC_USP_example_top.xdc">
         <FileInfo>
+          <Attr Name="ImportPath" Val="$PPRDIR/CMAC_USP_example_top.xdc"/>
+          <Attr Name="ImportTime" Val="1677111168"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
         </FileInfo>
       </File>
       <Config>
-        <Option Name="TargetConstrsFile" Val="$PPRDIR/../CMAC_USP_ex/imports/CMAC_USP_example_top.xdc"/>
+        <Option Name="TargetConstrsFile" Val="$PSRCDIR/constrs_1/imports/imports/CMAC_USP_example_top.xdc"/>
         <Option Name="ConstrsType" Val="XDC"/>
       </Config>
     </FileSet>

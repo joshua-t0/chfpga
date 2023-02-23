@@ -5,6 +5,7 @@
 /*.ip_user_files
 /*.data/wt
 /*.hw
+/*.gen
 /*.data/cache
 # ignore all run files, except the .bit files 2 directories below
 /*.runs/*
