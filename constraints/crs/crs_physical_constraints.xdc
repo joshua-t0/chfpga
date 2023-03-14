@@ -87,18 +87,16 @@ set_clock_groups -name FREQCTR_GROUP -asynchronous -group [get_clocks FREQCTR_CL
 # create_clock -name GTY_P130 -period 50MHz [get_ports {oscout_p}]
 
 # PL_CLK, Fabric signal processing word clock (programmable, must be ADC sampling freq / 8 samples/word)
-set pin [get_ports {clk200_clk_p}];
-set_property PACKAGE_PIN G17     $pin; # Bank  69 VCC1V8
-set_property IOSTANDARD  LVDS     $pin;
-set_property DIFF_TERM_ADV TERM_100  $pin;
-create_clock -name PL_CLK -period 5 $pin
+set_property PACKAGE_PIN G17 [get_ports {clk200_clk_p[0]}]
+set_property IOSTANDARD LVDS [get_ports {clk200_clk_p[0]}]
+set_property DIFF_TERM_ADV TERM_100 [get_ports {clk200_clk_p[0]}]
+create_clock -period 5.000 -name PL_CLK [get_ports clk200_clk_p]
 
 # SYSREF clock, 0.75 MHz, used to synchronize all the PLLs. A copy of this signal (RF_SYSREF) also goes to the ADC/DACs
-set pin [get_ports {clk10_clk_p}];
-set_property PACKAGE_PIN H18     $pin; # Bank  69 VCC1V8
-set_property IOSTANDARD  LVDS     $pin;
-set_property DIFF_TERM  TRUE     $pin;
-create_clock -name PL_SYSREF -period 100 $pin
+set_property PACKAGE_PIN H18 [get_ports {clk10_clk_p[0]}]
+set_property IOSTANDARD LVDS [get_ports {clk10_clk_p[0]}]
+set_property DIFF_TERM_ADV TERM_100 [get_ports {clk10_clk_p[0]}]
+create_clock -period 100.000 -name PL_SYSREF [get_ports clk10_clk_p]
 
 # # Recovered clock output (not used)
 # set_property PACKAGE_PIN C84     [get_ports {pl_recclk_p}]; # Bank  69 VCC1V8
@@ -139,14 +137,34 @@ set_property IOSTANDARD  LVCMOS33 [get_ports {smp[3]}] ;
 # set_property PACKAGE_PIN F8       [get_ports {tp13}] ; # Bank  87 VCC3V3
 # set_property IOSTANDARD  LVCMOS33 [get_ports {tp13}] ;
 
+# -- QSFP Connector
 # -- GTY QSFP28 ports - Bank 128
-set_property PACKAGE_PIN Y35       [get_ports {qsfp_txp[0]}] ;
-set_property PACKAGE_PIN V35       [get_ports {qsfp_txp[1]}] ;
-set_property PACKAGE_PIN T35       [get_ports {qsfp_txp[2]}] ;
-set_property PACKAGE_PIN R33       [get_ports {qsfp_txp[3]}] ;
+# Note: The pin assignments here overrides the pins assigned in the CMAC IP
+set_property PACKAGE_PIN Y35 [get_ports {qsfp_txp[0]}]; # QSFP Lane 0 - GTY_TX_P0 - TXP0 Bank 128 - GTYX0Y4 (CMAC X0Y0, CMAC X0Y1)
+set_property PACKAGE_PIN V35 [get_ports {qsfp_txp[1]}]; # QSFP Lane 1 - GTY_TX_P1 - TXP1 Bank 128 - GTYX0Y5 (CMAC X0Y0, CMAC X0Y1)
+set_property PACKAGE_PIN T35 [get_ports {qsfp_txp[2]}]; # QSFP Lane 2 - GTY_TX_P2 - TXP2 Bank 128 - GTYX0Y6 (CMAC X0Y0, CMAC X0Y1)
+set_property PACKAGE_PIN R33 [get_ports {qsfp_txp[3]}]; # QSFP Lane 3 - GTY_TX_P3 - TXP3 Bank 128 - GTYX0Y7 (CMAC X0Y0, CMAC X0Y1)
+
+# -- SFP connectors
+#set_property PACKAGE_PIN P35 [get_ports {qsfp_txp[0]}]; # SFP1 - GTY_TX_P4 - TXP0 Bank 129 - GTYX0Y8 (CMAC X0Y0, CMAC X0Y1)
+#set_property PACKAGE_PIN N33 [get_ports {qsfp_txp[1]}]; # SFP2 - GTY_TX_P5 - TXP1 Bank 129 - GTYX0Y9 (CMAC X0Y0, CMAC X0Y1)
+#set_property PACKAGE_PIN L33 [get_ports {qsfp_txp[2]}]; # SFP3 - GTY_TX_P6 - TXP2 Bank 129 - GTYX0Y10 (CMAC X0Y0, CMAC X0Y1)
+#set_property PACKAGE_PIN J33 [get_ports {qsfp_txp[3]}]; # SFP4 - GTY_TX_P7 - TXP3 Bank 129 - GTYX0Y11 (CMAC X0Y0, CMAC X0Y1)
+#set_property PACKAGE_PIN H31 [get_ports {qsfp_txp[0]}]; # SFP5 - GTY_TX_P8 - TXP0 Bank 130 - GTYX0Y12 (CMAC X0Y1)
+#set_property PACKAGE_PIN G33 [get_ports {qsfp_txp[0]}]; # SFP6 - GTY_TX_P9 - TXP1 Bank 130 - GTYX0Y13 (CMAC X0Y1)
+
+# -- Backplane high speed links
+#set_property PACKAGE_PIN F31 [get_ports {qsfp_txp[0]}]; # BP Lane 0 - GTY_TX_P10 - TXP2 Bank 130 - GTYX0Y14 (CMAC X0Y1)
+#set_property PACKAGE_PIN E33 [get_ports {qsfp_txp[0]}]; # BP Lane 1 - GTY_TX_P11 - TXP3 Bank 130 - GTYX0Y15 (CMAC X0Y1)
+#set_property PACKAGE_PIN D31 [get_ports {qsfp_txp[0]}]; # BP Lane 2 - GTY_TX_P12 - TXP0 Bank 131 - GTYX0Y16 (CMAC X0Y1)
+#set_property PACKAGE_PIN C33 [get_ports {qsfp_txp[0]}]; # BP Lane 3 - GTY_TX_P13 - TXP1 Bank 131 - GTYX0Y17 (CMAC X0Y1)
+#set_property PACKAGE_PIN B31 [get_ports {qsfp_txp[0]}]; # BP Lane 4 - GTY_TX_P14 - TXP2 Bank 131 - GTYX0Y18 (CMAC X0Y1)
+#set_property PACKAGE_PIN A33 [get_ports {qsfp_txp[0]}]; # BP Lane 5 - GTY_TX_P15 - TXP3 Bank 131 - GTYX0Y19 (CMAC X0Y1)
+
+
 
 # GTY reference clock, 156.25 MHz from fixed PLL, Bank 129
-set_property PACKAGE_PIN W33       [get_ports {clk156_p}]; # GTY_CLK0_P129, Bank 129
+set_property PACKAGE_PIN W33 [get_ports clk156_p]
 
 # ignore timing between CLK200 and CORR_CLK  domains. This line has to be placed after we have defines the source clock for the two specified derived clocks
 # set_false_path -from [get_clocks CLK200_MMCM_NOBUF] -to [get_clocks {CORR_CLK_NOBUF}]
@@ -161,5 +179,43 @@ set_property PACKAGE_PIN W33       [get_ports {clk156_p}]; # GTY_CLK0_P129, Bank
 #set_property IOSTANDARD  LVCMOS18 [get_ports "CPU_RESET"] ;# Bank  64 VCCO - VCC1V8   - IO_T2U_N12_64
 
 
+########################################
+########################################
+# Floorplanning constraints
+########################################
+########################################
 
 
+
+create_pblock CGE
+add_cells_to_pblock [get_pblocks CGE] [get_cells -quiet [list sifpga_crs_i/sifpga_crs_chfpga_0/U0/chfpga0/CGE_GEN.cge0]]
+resize_pblock [get_pblocks CGE] -add {SLICE_X6Y180:SLICE_X11Y219}
+resize_pblock [get_pblocks CGE] -add {RAMB18_X0Y72:RAMB18_X0Y87}
+resize_pblock [get_pblocks CGE] -add {RAMB36_X0Y36:RAMB36_X0Y43}
+set_property EXCLUDE_PLACEMENT 1 [get_pblocks CGE]
+set_property IS_SOFT FALSE [get_pblocks CGE]
+
+
+
+
+create_pblock CB1
+add_cells_to_pblock [get_pblocks CB1] [get_cells -quiet [list sifpga_crs_i/sifpga_crs_chfpga_0/U0/chfpga0/crossbar0_gen.cburam_gen.uram0]]
+resize_pblock [get_pblocks CB1] -add {SLICE_X15Y180:SLICE_X19Y419 SLICE_X12Y180:SLICE_X14Y199}
+resize_pblock [get_pblocks CB1] -add {RAMB18_X1Y72:RAMB18_X1Y79}
+resize_pblock [get_pblocks CB1] -add {RAMB36_X1Y36:RAMB36_X1Y39}
+resize_pblock [get_pblocks CB1] -add {URAM288_X0Y0:URAM288_X0Y63}
+set_property IS_SOFT FALSE [get_pblocks CB1]
+
+create_pblock CORR
+add_cells_to_pblock [get_pblocks CORR] [get_cells -quiet [list sifpga_crs_i/sifpga_crs_chfpga_0/U0/chfpga0/CORRGEN.corr_array0]]
+resize_pblock [get_pblocks CORR] -add {SLICE_X22Y180:SLICE_X32Y479}
+resize_pblock [get_pblocks CORR] -add {DSP48E2_X2Y72:DSP48E2_X4Y191}
+resize_pblock [get_pblocks CORR] -add {RAMB18_X2Y72:RAMB18_X3Y191}
+resize_pblock [get_pblocks CORR] -add {RAMB36_X2Y36:RAMB36_X3Y95}
+set_property EXCLUDE_PLACEMENT 1 [get_pblocks CORR]
+set_property IS_SOFT FALSE [get_pblocks CORR]
+
+set_property C_CLK_INPUT_FREQ_HZ 300000000 [get_debug_cores dbg_hub]
+set_property C_ENABLE_CLK_DIVIDER false [get_debug_cores dbg_hub]
+set_property C_USER_SCAN_CHAIN 1 [get_debug_cores dbg_hub]
+connect_debug_port dbg_hub/clk [get_nets clk]
