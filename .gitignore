@@ -4,3 +4,5 @@ SP605/
 temp/
 _ISE_Projects/
 *.git
+*.jou
+/*.log
