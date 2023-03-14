@@ -647,12 +647,6 @@ signal TOP_CHAN_CMD_RDY: AXIS8_RDY_STRUCT;
 signal TOP_CHAN_RPLY_DAT: AXIS8_DAT_STRUCT;
 signal TOP_CHAN_RPLY_RDY: AXIS8_RDY_STRUCT;
 
-signal TOP_CROSSBAR1_CMD_DAT: AXIS8_DAT_STRUCT;
-signal TOP_CROSSBAR1_CMD_RDY: AXIS8_RDY_STRUCT;
-signal TOP_CROSSBAR1_RPLY_DAT: AXIS8_DAT_STRUCT;
-signal TOP_CROSSBAR1_RPLY_RDY: AXIS8_RDY_STRUCT;
-
-
 signal top_bp_shuffle_cmd_dat: AXIS8_DAT_STRUCT;
 signal top_bp_shuffle_cmd_rdy: AXIS8_RDY_STRUCT;
 signal top_bp_shuffle_rply_dat: AXIS8_DAT_STRUCT;
@@ -1267,7 +1261,7 @@ gen_eth: if PHY_TYPE /= "NONE" generate
 	-- local_mac_addr <= to_slv(unsigned(std_logic_vector'(X"12_34_56_78" & local_ip_addr)) + unsigned(GPIO_DIP_SW));
 	-- RX_IP_DEST_ADDR <= to_slv((unsigned'(X"0A_0A") & unsigned(local_ip_addr)) + unsigned(GPIO_DIP_SW));
 	sfp_status_vector <= sfp_status_vector_int;
-	udp_mac0: entity work.udp_mac  -- use component instantitation to defer binding
+	udp_mac0: entity work.udp_mac  
 		GENERIC MAP(
 			PHY_TYPE=> PHY_TYPE,  -- "GMII": Alaska 881111 PHY,  or "SGMII": SFP module
 			SGMII_CLOCK_SOURCE => SGMII_CLOCK_SOURCE,
@@ -1449,26 +1443,25 @@ axis_rply_tlast <= UDP_RPLY_DAT.TLAST ;
 UDP_RPLY_RDY.TREADY <= axis_rply_tready;
 
 top_router0: entity work.CTRL_ROUTER
-	GENERIC MAP (
-		NUMBER_OF_PORTS=>NUMBER_OF_PORTS,
+	generic map (
+		NUMBER_OF_PORTS => NUMBER_OF_PORTS,
 		ADDRESS_MASK => "-111----------------" --'1': used to generate port index, '-' = don't care,
-		-- PORT_NUMBER_HIGH_BIT=> CTRL_PORT_NUMBER_RANGE'HIGH,
-		-- PORT_NUMBER_LOW_BIT=> CTRL_PORT_NUMBER_RANGE'LOW
 	)
-	PORT MAP(
-		-- Master control interface
-		CMD_IN_DAT=>  UDP_CMD_DAT,
-		CMD_IN_RDY=>  UDP_CMD_RDY,
-		RPLY_OUT_DAT=> UDP_RPLY_DAT,
-		RPLY_OUT_RDY=> UDP_RPLY_RDY,
+	port map(
+		-- Root interface
 
+		CMD_IN_DAT =>  UDP_CMD_DAT,
+		CMD_IN_RDY =>  UDP_CMD_RDY,
+		RPLY_OUT_DAT => UDP_RPLY_DAT,
+		RPLY_OUT_RDY => UDP_RPLY_RDY,
 
-		CMD_OUT_DAT=> top_cmd_dat,
-		CMD_OUT_RDY=> top_cmd_rdy,
-		RPLY_IN_DAT=> top_rply_dat,
-		RPLY_IN_RDY=> top_rply_rdy,
+		-- Downstream interface
 
-		-- Slave (module) control interface
+		CMD_OUT_DAT => top_cmd_dat,
+		CMD_OUT_RDY => top_cmd_rdy,
+		RPLY_IN_DAT => top_rply_dat,
+		RPLY_IN_RDY => top_rply_rdy,
+
 		CLK => CTRL_CLK,
 		RST => top_router_rst
 	);
@@ -2263,10 +2256,9 @@ EV8AQ160: if ADC_TYPE="EV8AQ160" generate
 	signal adc_divclk_out_bufg : std_logic_vector(0 to NUMBER_OF_ADCS-1);
 	signal adc_ioclk_out_pll : std_logic_vector(0 to NUMBER_OF_ADCS-1);
 	signal adc_divclk_out_pll : std_logic_vector(0 to NUMBER_OF_ADCS-1);
-	signal adc_divclk_out_bufr : std_logic_vector(0 to NUMBER_OF_ADCS-1);
 
-	signal adc_data_ready_reg2 : std_logic_vector(0 to NUMBER_OF_ADCS-1);
-	signal adc_send_data : std_logic;
+	signal adc_data_ready_all : std_logic_vector(0 to NUMBER_OF_ADCS-1);
+	signal adc_send_data_async : std_logic;
 
 
 begin
@@ -2289,7 +2281,7 @@ begin
 	--      before being fed to ADCDAQ. The pipelining will take care of that.
 	--      Physical separation of the pipeling registers makes this a less
 	--      than optimal CDC, but as stated above timing is not critical.
-	adc_send_data <= and_reduce(adc_data_ready_reg2); --
+	adc_send_data_async <= and_reduce(adc_data_ready_all); --
 
 
 
@@ -2300,10 +2292,9 @@ begin
 	ADCGEN: for i in 0 to NUMBER_OF_ADCS-1 generate
 		signal adc_data_ready : std_logic;
 		signal adc_data_ready_reg1 : std_logic;
-		signal adc_send_data_reg : std_logic_vector(2 downto 0);
+		signal adc_send_data: std_logic;
+		signal adc_send_data_reg: std_logic;
 
-		--attribute shreg_extract of adc_data_ready_reg1: signal is "no";
-		--attribute shreg_extract of adc_send_data_reg: signal is "no";
 		attribute keep of adc_data_ready_reg1: signal is "true"; -- prevent equivalent register merging
 		attribute keep of adc_send_data_reg: signal is "true"; -- prevent equivalent register merging
 
@@ -2315,14 +2306,19 @@ begin
 		-- ADC_DAT(i).TLAST <= axis_adc_tlast(i);
 		-- ADC_DAT(i).TUSER <= axis_adc_tuser(i);
 
+		-- Resync adc_send_data_async to the local clock.
+		adc_ready_cdc0: xpm_cdc_single
+			generic map (SRC_INPUT_REG => 0)
+			port map (src_in => adc_send_data_async, dest_clk => chan_clk(i), dest_out => adc_send_data);
+
 		-- Generate the adc_send_data which will tells all the ADCs to start
 		-- sending data once all of them have their FIFO half-full
 		adc_send_proc: process(chan_clk(i))
 		begin
 			if rising_edge(chan_clk(i)) then
 				adc_data_ready_reg1 <= adc_data_ready; -- pipeline all adc_data_ready signals so they can be combined (and_reduce) at a central point
-				adc_data_ready_reg2(i) <= adc_data_ready_reg1; -- pipeline
-				adc_send_data_reg <= adc_send_data & adc_send_data_reg(2 downto 1); -- pipeline AND resync adc_send_data
+				adc_data_ready_all(i) <= adc_data_ready_reg1; -- pipeline
+				adc_send_data_reg <= adc_send_data; -- pipeline AND resync adc_send_data
 			end if;
 		end process;
 
@@ -2362,8 +2358,7 @@ begin
 
 				-- Clock outputs (before PLL)
 
-				DIVCLK_OUT_BUFG => adc_divclk_out_bufg(i), -- PLL-generated word clock for downstream signal processing (if corresponding ADC_INSTANTIATE_PLL=TRUE)
-				DIVCLK_OUT_BUFR => adc_divclk_out_bufr(i),
+				DIVCLK_OUT_BUFG => adc_divclk_out_bufg(i), -- BUFG-buffered word clock derived from the ADC clock (provided if ADC_PROVIDE_BUFFERED_DIVCLK=TRUE)
 
 				-- Clock outputs to deserializer logic (generated by PLL if ADC_INSTANTIATE_PLL=TRUE)
 				IOCLK_OUT_PLL => adc_ioclk_out_pll(i), -- PLL-generated IOCLK clock (if corresponding ADC_INSTANTIATE_PLL=TRUE)
@@ -2374,7 +2369,7 @@ begin
 
 				-- Data alignment signals
 				data_ready => adc_data_ready,
-				send_data => adc_send_data_reg(0),
+				send_data => adc_send_data_reg,
 
 				-- External data clocks
 				IOCLK_IN => adc_ioclk, -- External IOCLK, used if USE_EXT_DATA_CLK=TRUE
@@ -2399,9 +2394,9 @@ begin
 	end generate ADCGEN;
 end generate EV8AQ160;
 
----------------
--- EV8AQ160 ADC
----------------
+-----------------------
+-- AXIS ADC DATA SOURCE
+-----------------------
 
 AXIS_ADC: if ADC_TYPE="AXIS" generate
 
@@ -2650,87 +2645,152 @@ end generate;
 --! Route specified frequency channels from all channelizers to individual streams
 
 
--- Index the command bus into an intermediary signal to mitigate simulator problems with indexing record arrays stright in the instantiation
-TOP_CROSSBAR1_CMD_DAT             <= top_cmd_dat(CROSSBAR1_BASE_PORT);
-top_cmd_rdy(CROSSBAR1_BASE_PORT)  <= TOP_CROSSBAR1_CMD_RDY;
-TOP_CROSSBAR1_RPLY_RDY            <= top_rply_rdy(CROSSBAR1_BASE_PORT);
-top_rply_dat(CROSSBAR1_BASE_PORT) <= TOP_CROSSBAR1_RPLY_DAT;
-
---! Pipeline and connect the channelizer output to the 1st crossbar inputs.
---! The pipelining is there to help meeting timing closure, as we need to route long distance from the channelizer to the first crossbar
-cb1_pipe_proc: process(ct_clk)
-begin
-	if rising_edge(ct_clk) then
-		cb1_reset <= ct_reset_reg;
-		cb1_reset_reg <= cb1_reset;
-		cb1_reset_reg2 <= cb1_reset_reg;
-		for i in 0 to min(NUMBER_OF_CHANNELIZERS-1, NUMBER_OF_CROSSBAR_INPUTS-1) loop
-			axis_crossbar1_in_tdata(i) <= axis_chan_out_tdata(i);
-			axis_crossbar1_in_tuser(i) <= axis_chan_out_tuser(i);
-			axis_crossbar1_in_tlast(i) <= axis_chan_out_tlast(i);
-			axis_crossbar1_in_tvalid(i) <= axis_chan_out_tvalid(i);
-			-- JFC: Why was this commenetd out?
-			if ct_reset_reg = '1' then
-				axis_crossbar1_in_tvalid(i) <= '0';
-			end if;
-
-			axis_crossbar1_in_tdata_reg(i) <= axis_crossbar1_in_tdata(i);
-			axis_crossbar1_in_tuser_reg(i) <= axis_crossbar1_in_tuser(i);
-			axis_crossbar1_in_tlast_reg(i) <= axis_crossbar1_in_tlast(i);
-			axis_crossbar1_in_tvalid_reg(i) <= axis_crossbar1_in_tvalid(i);
-			-- JFC: Why was this commenetd out?
-			if cb1_reset = '1' then
-				axis_crossbar1_in_tvalid_reg(i) <= '0';
-			end if;
-
-			axis_crossbar1_in_tdata_reg2(i) <= axis_crossbar1_in_tdata_reg(i);
-			axis_crossbar1_in_tuser_reg2(i) <= axis_crossbar1_in_tuser_reg(i);
-			axis_crossbar1_in_tlast_reg2(i) <= axis_crossbar1_in_tlast_reg(i);
-			axis_crossbar1_in_tvalid_reg2(i) <= axis_crossbar1_in_tvalid_reg(i);
-			if cb1_reset_reg = '1' then
-				axis_crossbar1_in_tvalid_reg2(i) <= '0';
-			end if;
-
-		end loop;
-	end if;
-end process;
 
 crossbar0_gen: if IMPLEMENT_CROSSBAR1 generate
-	chan_crossbar0: entity work.CHAN_CROSSBAR
-		generic map (
-		 	PLATFORM_ID => PLATFORM_ID,  -- needed to select family-dependent FIFOs
-			NUMBER_OF_INPUT_LANES  => NUMBER_OF_CROSSBAR_INPUTS,
-			NUMBER_OF_OUTPUT_LANES => NUMBER_OF_CROSSBAR_OUTPUTS,
-			-- BINSEL_PBLOCK_MAP => (0 to 4 => 0, 5 to 8 => 1, 9 to 12 => 2, 13 to 15 => 3),
-			BINSEL_PBLOCK_MAP => (0 to 4 => 0, 5 to 8 => 1, 9 to 12 => 1, 13 to 15 => 0),
-			EIGHT_BIT_SUPPORT      => FALSE
-		)
-		port map (
-			-- Input stream from the channelizer (AXI4-streaming, non-blocking, on clk)
-			s_axis_tvalid => axis_crossbar1_in_tvalid_reg2,
-			s_axis_tdata  => axis_crossbar1_in_tdata_reg2,
-			s_axis_tlast  => axis_crossbar1_in_tlast_reg2,
-			s_axis_tuser  => axis_crossbar1_in_tuser_reg2,
 
-			-- Output stream to the shuffle module (AXI4-streaming, non-blocking, on clk)
-			m_axis_tdata  => axis_crossbar1_out_tdata,
-			m_axis_tvalid => axis_crossbar1_out_tvalid,
-			m_axis_tlast  => axis_crossbar1_out_tlast,
-			-- m_axis_tready => axis_crossbar1_out_tready,
+	signal crossbar1_cmd_dat: AXIS8_DAT_STRUCT;
+	signal crossbar1_cmd_rdy: AXIS8_RDY_STRUCT;
+	signal crossbar1_rply_dat: AXIS8_DAT_STRUCT;
+	signal crossbar1_rply_rdy: AXIS8_RDY_STRUCT;
+	constant N_INPUTS: integer := min(NUMBER_OF_CHANNELIZERS-1, NUMBER_OF_CROSSBAR_INPUTS-1);
 
-			frame_clk_out => frame_clk,
-			clk           => ct_clk,
-			rst           => cb1_reset_reg2,
+begin
 
-			lane_monitor => debug2,
-			-- Control interface (command and reply stream buses)
-			ctrl_cmd_dat  => TOP_CROSSBAR1_CMD_DAT,
-			ctrl_cmd_rdy  => TOP_CROSSBAR1_CMD_RDY,
-			ctrl_rply_dat => TOP_CROSSBAR1_RPLY_DAT,
-			ctrl_rply_rdy => TOP_CROSSBAR1_RPLY_RDY,
-			ctrl_clk      => CTRL_CLK,
-			ctrl_rst      => crossbar1_CTRL_RST
+	-- Index the command bus into an intermediary signal to mitigate simulator problems with indexing record arrays stright in the instantiation
+	crossbar1_cmd_dat             <= top_cmd_dat(CROSSBAR1_BASE_PORT);
+	top_cmd_rdy(CROSSBAR1_BASE_PORT)  <= crossbar1_cmd_rdy;
+	crossbar1_rply_rdy            <= top_rply_rdy(CROSSBAR1_BASE_PORT);
+	top_rply_dat(CROSSBAR1_BASE_PORT) <= crossbar1_rply_dat;
+
+	--! Pipeline and connect the channelizer output to the 1st crossbar inputs.
+	--! The pipelining is there to help meeting timing closure, as we need to route long distance from the channelizer to the first crossbar
+	cb1_pipe_proc: process(ct_clk)
+	begin
+		if rising_edge(ct_clk) then
+			-- Pipeline 1
+			cb1_reset <= ct_reset_reg;
+			for i in 0 to N_INPUTS-1 loop
+				axis_crossbar1_in_tdata(i) <= axis_chan_out_tdata(i);
+				axis_crossbar1_in_tuser(i) <= axis_chan_out_tuser(i);
+				axis_crossbar1_in_tlast(i) <= axis_chan_out_tlast(i);
+				axis_crossbar1_in_tvalid(i) <= axis_chan_out_tvalid(i);
+				-- JFC: Why was this commenetd out?
+				if ct_reset_reg = '1' then
+					axis_crossbar1_in_tvalid(i) <= '0';
+				end if;
+			end loop;
+
+			-- Pipeline 2
+			cb1_reset_reg <= cb1_reset;
+			for i in 0 to N_INPUTS-1 loop
+				axis_crossbar1_in_tdata_reg(i) <= axis_crossbar1_in_tdata(i);
+				axis_crossbar1_in_tuser_reg(i) <= axis_crossbar1_in_tuser(i);
+				axis_crossbar1_in_tlast_reg(i) <= axis_crossbar1_in_tlast(i);
+				axis_crossbar1_in_tvalid_reg(i) <= axis_crossbar1_in_tvalid(i);
+				-- JFC: Why was this commenetd out?
+				if cb1_reset = '1' then
+					axis_crossbar1_in_tvalid_reg(i) <= '0';
+				end if;
+			end loop;
+
+			-- Pipeline 3
+			cb1_reset_reg2 <= cb1_reset_reg;
+			for i in 0 to N_INPUTS-1 loop
+				axis_crossbar1_in_tdata_reg2(i) <= axis_crossbar1_in_tdata_reg(i);
+				axis_crossbar1_in_tuser_reg2(i) <= axis_crossbar1_in_tuser_reg(i);
+				axis_crossbar1_in_tlast_reg2(i) <= axis_crossbar1_in_tlast_reg(i);
+				axis_crossbar1_in_tvalid_reg2(i) <= axis_crossbar1_in_tvalid_reg(i);
+				if cb1_reset_reg = '1' then
+					axis_crossbar1_in_tvalid_reg2(i) <= '0';
+				end if;
+			end loop;
+		end if;
+	end process cb1_pipe_proc;
+
+	cbbram_gen: if CROSSBAR1_TYPE = "BRAM" generate
+		chan_crossbar0: entity work.CHAN_CROSSBAR
+			generic map (
+			 	PLATFORM_ID => PLATFORM_ID,  -- needed to select family-dependent FIFOs
+				NUMBER_OF_INPUT_LANES  => NUMBER_OF_CROSSBAR_INPUTS,
+				NUMBER_OF_OUTPUT_LANES => NUMBER_OF_CROSSBAR_OUTPUTS,
+				-- BINSEL_PBLOCK_MAP => (0 to 4 => 0, 5 to 8 => 1, 9 to 12 => 2, 13 to 15 => 3),
+				BINSEL_PBLOCK_MAP => (0 to 4 => 0, 5 to 8 => 1, 9 to 12 => 1, 13 to 15 => 0),
+				EIGHT_BIT_SUPPORT      => FALSE
+			)
+			port map (
+				-- Input stream from the channelizer (AXI4-streaming, non-blocking, on clk)
+				s_axis_tvalid => axis_crossbar1_in_tvalid_reg2,
+				s_axis_tdata  => axis_crossbar1_in_tdata_reg2,
+				s_axis_tlast  => axis_crossbar1_in_tlast_reg2,
+				s_axis_tuser  => axis_crossbar1_in_tuser_reg2,
+
+				-- Output stream to the shuffle module (AXI4-streaming, non-blocking, on clk)
+				m_axis_tdata  => axis_crossbar1_out_tdata,
+				m_axis_tvalid => axis_crossbar1_out_tvalid,
+				m_axis_tlast  => axis_crossbar1_out_tlast,
+				-- m_axis_tready => axis_crossbar1_out_tready,
+
+				frame_clk_out => frame_clk,
+				clk           => ct_clk,
+				rst           => cb1_reset_reg2,
+
+				lane_monitor => debug2,
+				-- Control interface (command and reply stream buses)
+				ctrl_cmd_dat  => crossbar1_cmd_dat,
+				ctrl_cmd_rdy  => crossbar1_cmd_rdy,
+				ctrl_rply_dat => crossbar1_rply_dat,
+				ctrl_rply_rdy => crossbar1_rply_rdy,
+				ctrl_clk      => ctrl_clk,
+				ctrl_rst      => crossbar1_ctrl_rst
 			);
+	end generate cbbram_gen;
+
+	cburam_gen: if CROSSBAR1_TYPE = "URAM" generate
+		signal cb_in_tdata: std_logic_vector(255 downto 0);
+		signal cb_in_tvalid: std_logic;
+		signal cb_in_tlast: std_logic;
+
+		signal cb_out_tdata: std_logic_vector(255 downto 0);
+		signal cb_out_tvalid: std_logic;
+		signal cb_out_tlast: std_logic;
+
+	begin
+
+		-- remap the 8x32-bit buses into a single 256-bit bus, 1st lane on the MSB.
+		tdata_gen: for i in 0 to N_INPUTS-1 generate
+			cb_in_tdata(32*(N_INPUTS-1-i)+31 downto 32*(N_INPUTS-1-i)) <= axis_crossbar1_in_tdata_reg2(i);	
+			axis_crossbar1_out_tdata(i) <= cb_out_tdata(32*(N_INPUTS-1-i)+31 downto 32*(N_INPUTS-1-i));
+			axis_crossbar1_out_tvalid(i) <= cb_out_tvalid;
+			axis_crossbar1_out_tlast(i) <= cb_out_tlast;
+		end generate;
+		cb_in_tvalid <= axis_crossbar1_in_tvalid_reg2(0);
+		cb_in_tlast <= axis_crossbar1_in_tlast_reg2(0);
+
+	    uram0: entity work.uram_ct
+	        port map (
+	        	-- input data bus
+	            s_axis_in_tdata => cb_in_tdata,
+	            s_axis_in_tvalid => cb_in_tvalid,
+	            s_axis_in_tlast=> cb_in_tlast,
+
+	            -- Output data bus
+	            m_axis_out_tdata => cb_out_tdata,
+	            m_axis_out_tvalid => cb_out_tvalid,
+	            m_axis_out_tlast=> cb_out_tlast,
+	    
+	            clk => ct_clk, 
+	            rst => cb1_reset_reg2, -- synchrounous reset
+	  
+	            -- BSB interface
+	            cmd_dat=> crossbar1_cmd_dat,
+	            cmd_rdy => crossbar1_cmd_rdy,
+	            rply_dat => crossbar1_rply_dat,
+	            rply_rdy => crossbar1_rply_rdy,
+	            ctrl_clk => ctrl_clk,
+	            ctrl_rst => crossbar1_ctrl_rst
+	        );
+	end generate cburam_gen;
+
 end generate crossbar0_gen;
 ---------------------------------------------------------------------
 -- BACKPLANE PCB and QSFP DATA LINKS
