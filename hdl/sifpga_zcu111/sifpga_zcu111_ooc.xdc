@@ -10,7 +10,7 @@ create_clock -name adc0_clk_clk_p -period 5 [get_ports adc0_clk_clk_p]
 create_clock -name adc1_clk_clk_p -period 5 [get_ports adc1_clk_clk_p]
 create_clock -name adc2_clk_clk_p -period 5 [get_ports adc2_clk_clk_p]
 create_clock -name adc3_clk_clk_p -period 5 [get_ports adc3_clk_clk_p]
-create_clock -name clk200_clk_p -period 5 [get_ports clk200_clk_p]
-create_clock -name clk10_clk_p -period 3.333 [get_ports clk10_clk_p]
+create_clock -name FPGA_REFCLK_OUT_C_clk_p -period 5 [get_ports FPGA_REFCLK_OUT_C_clk_p]
+create_clock -name SYSREF_FPGA_clk_p -period 3.333 [get_ports SYSREF_FPGA_clk_p]
 
 ################################################################################
