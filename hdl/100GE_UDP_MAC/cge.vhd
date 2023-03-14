@@ -158,6 +158,9 @@ architecture Behavioral of cge is
 	signal flag_fifo_full: std_logic;
 	signal flag_fifo_rd_en: std_logic;
 	signal flag_fifo_valid: std_logic;
+
+	signal tx_reset_done: std_logic;
+
 	signal clk: std_logic;
 
 	-- temporary signals
@@ -231,7 +234,7 @@ begin
 
 	bsb_mmr0: entity work.CTRL_SLAVE
 		GENERIC MAP (
-			DEFAULT_CONTROL_BYTES=> X"00_0A_0FFF",
+			DEFAULT_CONTROL_BYTES=> X"80_FF_0100",
 			USE_RAM_DOUT_RDY=>TRUE, -- need to wait for the RDY signal on RAM read accesses
 			RAM_DATA_WIDTH => 16,
 			RAM_ADDR_WIDTH => 10, -- CMAC DRP Address bus is 10 bits
@@ -319,21 +322,30 @@ begin
 	--  We force a dummy write if the low word is tlast to make sure to complete the 64-byte output word.
 	-- Otherwise a packet with an odd number of 32-bytes words would not start transmitting until the beginning of the next packet.
 	-- As a protection, we swop writing in the data FIFO if it is almost full, except for the tlast word so we don't desynchronize with the flag fifo
-	fifo_wr_en <= (axis_tx_tvalid or (is_high_word and was_tlast)) and (not fifo_almost_full or axis_tx_tlast);
+	fifo_wr_en <= (axis_tx_tvalid or (is_high_word and was_tlast)) and (not fifo_almost_full or axis_tx_tlast) and tx_reset_done;
 	-- We indicate we have a complete packet as soon as we get a valid tlast.
 	-- If the last word is on the low word, the last word will be delayed until the dummy word is sent on the next clock,
 	-- so don't assume that valid on the flags fifo means valid data on the data fifo.
-	flag_fifo_wr_en <= axis_tx_tvalid and axis_tx_tlast;
+	flag_fifo_wr_en <= axis_tx_tvalid and axis_tx_tlast and tx_reset_done;
 
 	fifo_wr_proc: process(clk)
 	begin
 		if rising_edge(clk) then
 
+			fifo_srst <= '0';
 			if usr_tx_reset='1' or rst='1' then -- need to resync to clk
 				fifo_srst <= '1';
-			else
-				fifo_srst <= '0';
+				tx_reset_done <= '0'; -- this stops writing to both FIFOs
 			end if;
+
+			-- Implement a tx_reset_done signal that is '1' when we are ready to write to the FIFO.
+			-- We wait for BOTH the data FIFO ro be ready. The data FIFO has ot sone rst_done signal. 
+			-- The only way to tell when the flag fifo is ready is to look at the full signal going low after a reset.
+			if tx_reset_done = '0' and flag_fifo_full = '0' and fifo_wr_rst_busy = '0' then
+				tx_reset_done <= '1';
+			end if;
+
+			-- Generate sticky overflow signals
 			if fifo_overflow='1' then
 					fifo_overflow_sticky <= '1';
 			end if;
@@ -341,14 +353,6 @@ begin
 					flag_fifo_overflow_sticky <= '1';
 			end if;
 
-			if usr_tx_reset='1' or fifo_wr_rst_busy='1' then
-				is_high_word <= '0';
-				in_frame_ctr <= (others => '0');
-				fifo_overflow_sticky <= '0';
-			elsif fifo_wr_en='1' and fifo_full='0' then
-				is_high_word <= not is_high_word;
-				flag_fifo_overflow_sticky <= '0';
-			end if;
 
 			if axis_tx_tvalid='1' then
 				was_tlast <= axis_tx_tlast;
@@ -366,9 +370,23 @@ begin
 				axis_tx_tlast <= s_axis_tx_tlast;
 			end if; -- source select
 
-			if axis_tx_tvalid <='1' then
+			if axis_tx_tvalid <='1' and axis_tx_tlast='1' then
 				in_frame_ctr <= in_frame_ctr + 1;
 			end if;
+
+			if fifo_wr_en='1' and fifo_full='0' then -- don't toggle is_high_word if the write did not take place 
+				is_high_word <= not is_high_word;
+			end if;
+
+			-- Reset
+			if tx_reset_done = '0' then -- if reset in in progress
+				is_high_word <= '0';
+				in_frame_ctr <= (others => '0');
+				fifo_overflow_sticky <= '0';
+				flag_fifo_overflow_sticky <= '0';
+			end if;
+
+
 		end if; --clk
 	end process fifo_wr_proc;
 end block fifo_wr_block;
@@ -432,7 +450,6 @@ begin
 					axis_pktgen_tdata <= (others => '0');
 					axis_pktgen_tvalid <= '0';
 					axis_pktgen_tlast <= '0';
-					word_ctr <= (others => '0');
 					frame_ctr <= (others => '0');
 					tx_state <= SEND_HEADER1;
 
@@ -440,23 +457,33 @@ begin
 					axis_pktgen_tdata <= mac_header & ip_header(20*8-1 downto 2*8);
 					axis_pktgen_tvalid <= '1';
 					axis_pktgen_tlast <= '0';
+					word_ctr <= (others => '0');
 					tx_state <= SEND_HEADER2;
 				when SEND_HEADER2 =>
 					axis_pktgen_tdata <= ip_header(15 downto 0) & udp_header &
 					         X"BE_EF_FA_CE_AB_BA" & -- UDP checksum, Start of Udp payload
 					         std_logic_vector(frame_ctr) & X"deadbea7" & -- UDP payload (contd) - filler bytes
 					         X"00_11_22_33_44_55_66_77"; -- UDP payload (contd) - filler bytes
+					axis_pktgen_tvalid <= '1';
+					axis_pktgen_tlast <= '0';
 					frame_ctr <= frame_ctr + 1;
+					word_ctr <= word_ctr + 1;
 					tx_state <= SEND_DATA;
 
 				when SEND_DATA =>
 					for b in 0 to 31 loop
 						axis_pktgen_tdata((31-b)*8+7 downto (31-b)*8) <= to_slv(b, 8);
 					end loop;
+					axis_pktgen_tvalid <= '1';
+					axis_pktgen_tlast <= '0';
 					word_ctr <= word_ctr + 1;
-					if word_ctr = number_of_udp_words -1 then
+					if word_ctr = number_of_udp_words then
 						axis_pktgen_tlast <= '1';
-						tx_state <= SEND_NOTHING;
+						if word_ctr = packet_spacing_in_words then
+							tx_state <= SEND_HEADER1;
+						else
+							tx_state <= SEND_NOTHING;
+						end if;
 					end if;
 
 				when SEND_NOTHING =>
@@ -469,7 +496,8 @@ begin
 					end if;
 				end case;
 
-			if usr_tx_reset='1' or fifo_wr_rst_busy = '1' then
+			-- Stay in reset and don't send anything until we the transmitter is fully out of reset. 
+			if tx_reset_done = '0' then
 				tx_state <= INIT;
 			end if;
 
@@ -507,23 +535,25 @@ begin
 	tlast1 <= fifo_dout(256);
 	tvalid1 <= fifo_dout(257);
 
-	send_half_words <= tvalid0 and tlast0; -- we send half words if the first (low) half word is valid and is the last word of a packet.
+	-- send_last_words is '1' when we have to perform two separate transactions, one for on each half word.
+	-- This happens if 1) we have *two* valid half words, and the first half word is is the last word of a packet.
+	send_half_words <= tvalid0 and tlast0 and tvalid1; 
 
 	-- We fetch a new word from the FIFO when
 	--  1) We have a valid word on the FIFO output
 	--  2) The CMAC is consuming the current word (tready=1)
 	--  3) We are NOT sending half words, or if we are, we are sending the high word
 	fifo_rd_en <= to_std_logic(fifo_valid='1' and tx_axis_tready='1' and flag_fifo_valid='1' and (send_half_words='0' or is_high_word='1')); -- '1' when a transaction will occur on the next clock
-	flag_fifo_rd_en <= tx_axis_tvalid and tx_axis_tready and tx_axis_tlast;
+	flag_fifo_rd_en <= tx_axis_tvalid and tx_axis_tready and tx_axis_tlast and flag_fifo_valid;
 	-- We have a CMAC tvalid flag whenever there is valid data out of the FIFO, since we are either sending the low word, the high word, or the full word.
 	tx_axis_tvalid <= fifo_valid and flag_fifo_valid and (tvalid0 or tvalid1);
 	-- We send the last word if
 	--	1) we are sending half words and the current half word is the last
 	--  2) we are not sending half word and the high (second) half word is the last.
 	tx_axis_tlast <= tlast0 when send_half_words='1' and is_high_word = '0' else -- note: tlast0=1 by definition when send_half_words=1. The synthesizer will simplify that.
-	                 tlast1 when send_half_words='1' and is_high_word = '1' else
-	                 tlast1 when send_half_words='0' else
-	                 '0';
+	                 tlast1 when send_half_words='1' and is_high_word = '1' else -- tvalid=1 by definition since send_half_words=1
+	                 (tlast0 and tvalid0) or (tlast1 and tvalid1) when send_half_words='0' else -- if any of the valid half word is the last. Can't be both since send_half_word=0.
+	                 '0'; -- should not happen
 
 	-- Here we decide which of the bytes we are sending.
 	-- We set the byte-enables of each half word when its respective tvalid=1, and in the case we are sending only half words, only if the current half word is active.
@@ -584,7 +614,7 @@ begin
 			if tx_unfout='1' then
 				tx_unfout_sticky <= '1';
 			end if;
-			if tx_axis_tvalid='1' then
+			if tx_axis_tvalid='1' and tx_axis_tvalid='1' then
 				out_frame_ctr <= out_frame_ctr + 1;
 			end if;
 			if usr_tx_reset = '1' then
