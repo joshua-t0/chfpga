@@ -1,13 +1,12 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0xE92318D04E124F22",
+      "boundary_crc": "0xE92318D0FE32BE7E",
       "device": "xczu47dr-ffvg1517-1-i",
       "name": "sifpga_crs",
       "rev_ctrl_bd_flag": "RevCtrlBdOff",
       "synth_flow_mode": "Hierarchical",
-      "tool_version": "2022.1",
-      "validated": "true"
+      "tool_version": "2022.2"
     },
     "design_tree": {
       "adc0_bufg1": "",
@@ -49,6 +48,16 @@
           "FREQ_HZ": {
             "value": "200000000.0"
           }
+        },
+        "port_maps": {
+          "CLK_N": {
+            "physical_name": "adc0_clk_clk_n",
+            "direction": "I"
+          },
+          "CLK_P": {
+            "physical_name": "adc0_clk_clk_p",
+            "direction": "I"
+          }
         }
       },
       "adc1_clk": {
@@ -62,6 +71,16 @@
           },
           "FREQ_HZ": {
             "value": "200000000.0"
+          }
+        },
+        "port_maps": {
+          "CLK_N": {
+            "physical_name": "adc1_clk_clk_n",
+            "direction": "I"
+          },
+          "CLK_P": {
+            "physical_name": "adc1_clk_clk_p",
+            "direction": "I"
           }
         }
       },
@@ -77,6 +96,16 @@
           "FREQ_HZ": {
             "value": "200000000.0"
           }
+        },
+        "port_maps": {
+          "CLK_N": {
+            "physical_name": "adc2_clk_clk_n",
+            "direction": "I"
+          },
+          "CLK_P": {
+            "physical_name": "adc2_clk_clk_p",
+            "direction": "I"
+          }
         }
       },
       "adc3_clk": {
@@ -91,47 +120,137 @@
           "FREQ_HZ": {
             "value": "200000000.0"
           }
+        },
+        "port_maps": {
+          "CLK_N": {
+            "physical_name": "adc3_clk_clk_n",
+            "direction": "I"
+          },
+          "CLK_P": {
+            "physical_name": "adc3_clk_clk_p",
+            "direction": "I"
+          }
         }
       },
       "vin0_01": {
         "mode": "Slave",
         "vlnv_bus_definition": "xilinx.com:interface:diff_analog_io:1.0",
-        "vlnv": "xilinx.com:interface:diff_analog_io_rtl:1.0"
+        "vlnv": "xilinx.com:interface:diff_analog_io_rtl:1.0",
+        "port_maps": {
+          "V_N": {
+            "physical_name": "vin0_01_v_n",
+            "direction": "I"
+          },
+          "V_P": {
+            "physical_name": "vin0_01_v_p",
+            "direction": "I"
+          }
+        }
       },
       "vin0_23": {
         "mode": "Slave",
         "vlnv_bus_definition": "xilinx.com:interface:diff_analog_io:1.0",
-        "vlnv": "xilinx.com:interface:diff_analog_io_rtl:1.0"
+        "vlnv": "xilinx.com:interface:diff_analog_io_rtl:1.0",
+        "port_maps": {
+          "V_N": {
+            "physical_name": "vin0_23_v_n",
+            "direction": "I"
+          },
+          "V_P": {
+            "physical_name": "vin0_23_v_p",
+            "direction": "I"
+          }
+        }
       },
       "vin1_01": {
         "mode": "Slave",
         "vlnv_bus_definition": "xilinx.com:interface:diff_analog_io:1.0",
-        "vlnv": "xilinx.com:interface:diff_analog_io_rtl:1.0"
+        "vlnv": "xilinx.com:interface:diff_analog_io_rtl:1.0",
+        "port_maps": {
+          "V_N": {
+            "physical_name": "vin1_01_v_n",
+            "direction": "I"
+          },
+          "V_P": {
+            "physical_name": "vin1_01_v_p",
+            "direction": "I"
+          }
+        }
       },
       "vin1_23": {
         "mode": "Slave",
         "vlnv_bus_definition": "xilinx.com:interface:diff_analog_io:1.0",
-        "vlnv": "xilinx.com:interface:diff_analog_io_rtl:1.0"
+        "vlnv": "xilinx.com:interface:diff_analog_io_rtl:1.0",
+        "port_maps": {
+          "V_N": {
+            "physical_name": "vin1_23_v_n",
+            "direction": "I"
+          },
+          "V_P": {
+            "physical_name": "vin1_23_v_p",
+            "direction": "I"
+          }
+        }
       },
       "vin2_01": {
         "mode": "Slave",
         "vlnv_bus_definition": "xilinx.com:interface:diff_analog_io:1.0",
-        "vlnv": "xilinx.com:interface:diff_analog_io_rtl:1.0"
+        "vlnv": "xilinx.com:interface:diff_analog_io_rtl:1.0",
+        "port_maps": {
+          "V_N": {
+            "physical_name": "vin2_01_v_n",
+            "direction": "I"
+          },
+          "V_P": {
+            "physical_name": "vin2_01_v_p",
+            "direction": "I"
+          }
+        }
       },
       "vin2_23": {
         "mode": "Slave",
         "vlnv_bus_definition": "xilinx.com:interface:diff_analog_io:1.0",
-        "vlnv": "xilinx.com:interface:diff_analog_io_rtl:1.0"
+        "vlnv": "xilinx.com:interface:diff_analog_io_rtl:1.0",
+        "port_maps": {
+          "V_N": {
+            "physical_name": "vin2_23_v_n",
+            "direction": "I"
+          },
+          "V_P": {
+            "physical_name": "vin2_23_v_p",
+            "direction": "I"
+          }
+        }
       },
       "vin3_01": {
         "mode": "Slave",
         "vlnv_bus_definition": "xilinx.com:interface:diff_analog_io:1.0",
-        "vlnv": "xilinx.com:interface:diff_analog_io_rtl:1.0"
+        "vlnv": "xilinx.com:interface:diff_analog_io_rtl:1.0",
+        "port_maps": {
+          "V_N": {
+            "physical_name": "vin3_01_v_n",
+            "direction": "I"
+          },
+          "V_P": {
+            "physical_name": "vin3_01_v_p",
+            "direction": "I"
+          }
+        }
       },
       "vin3_23": {
         "mode": "Slave",
         "vlnv_bus_definition": "xilinx.com:interface:diff_analog_io:1.0",
-        "vlnv": "xilinx.com:interface:diff_analog_io_rtl:1.0"
+        "vlnv": "xilinx.com:interface:diff_analog_io_rtl:1.0",
+        "port_maps": {
+          "V_N": {
+            "physical_name": "vin3_23_v_n",
+            "direction": "I"
+          },
+          "V_P": {
+            "physical_name": "vin3_23_v_p",
+            "direction": "I"
+          }
+        }
       },
       "clk200": {
         "mode": "Slave",
@@ -144,6 +263,20 @@
           },
           "FREQ_HZ": {
             "value": "200000000"
+          }
+        },
+        "port_maps": {
+          "CLK_P": {
+            "physical_name": "clk200_clk_p",
+            "direction": "I",
+            "left": "0",
+            "right": "0"
+          },
+          "CLK_N": {
+            "physical_name": "clk200_clk_n",
+            "direction": "I",
+            "left": "0",
+            "right": "0"
           }
         }
       },
@@ -158,6 +291,20 @@
           },
           "FREQ_HZ": {
             "value": "300000000"
+          }
+        },
+        "port_maps": {
+          "CLK_P": {
+            "physical_name": "clk10_clk_p",
+            "direction": "I",
+            "left": "0",
+            "right": "0"
+          },
+          "CLK_N": {
+            "physical_name": "clk10_clk_n",
+            "direction": "I",
+            "left": "0",
+            "right": "0"
           }
         }
       }
@@ -216,7 +363,7 @@
       "adc0_bufg1": {
         "vlnv": "xilinx.com:ip:util_ds_buf:2.2",
         "xci_name": "sifpga_crs_adc0_bufg1_0",
-        "xci_path": "sifpga_crs\\ip\\sifpga_crs_adc0_bufg1_0\\sifpga_crs_adc0_bufg1_0.xci",
+        "xci_path": "ip/sifpga_crs_adc0_bufg1_0/sifpga_crs_adc0_bufg1_0.xci",
         "inst_hier_path": "adc0_bufg1",
         "parameters": {
           "C_BUF_TYPE": {
@@ -227,7 +374,7 @@
       "axi_fifo_mm_s_0": {
         "vlnv": "xilinx.com:ip:axi_fifo_mm_s:4.2",
         "xci_name": "sifpga_crs_axi_fifo_mm_s_0_0",
-        "xci_path": "sifpga_crs\\ip\\sifpga_crs_axi_fifo_mm_s_0_0\\sifpga_crs_axi_fifo_mm_s_0_0.xci",
+        "xci_path": "ip/sifpga_crs_axi_fifo_mm_s_0_0/sifpga_crs_axi_fifo_mm_s_0_0.xci",
         "inst_hier_path": "axi_fifo_mm_s_0",
         "parameters": {
           "C_RX_FIFO_DEPTH": {
@@ -258,7 +405,7 @@
       },
       "ps8_0_axi_periph": {
         "vlnv": "xilinx.com:ip:axi_interconnect:2.1",
-        "xci_path": "sifpga_crs\\ip\\sifpga_crs_ps8_0_axi_periph_0\\sifpga_crs_ps8_0_axi_periph_0.xci",
+        "xci_path": "ip/sifpga_crs_ps8_0_axi_periph_0/sifpga_crs_ps8_0_axi_periph_0.xci",
         "inst_hier_path": "ps8_0_axi_periph",
         "xci_name": "sifpga_crs_ps8_0_axi_periph_0",
         "parameters": {
@@ -395,7 +542,7 @@
           "xbar": {
             "vlnv": "xilinx.com:ip:axi_crossbar:2.1",
             "xci_name": "sifpga_crs_xbar_0",
-            "xci_path": "sifpga_crs\\ip\\sifpga_crs_xbar_0\\sifpga_crs_xbar_0.xci",
+            "xci_path": "ip/sifpga_crs_xbar_0/sifpga_crs_xbar_0.xci",
             "inst_hier_path": "ps8_0_axi_periph/xbar",
             "parameters": {
               "NUM_MI": {
@@ -584,7 +731,7 @@
               "auto_ds": {
                 "vlnv": "xilinx.com:ip:axi_dwidth_converter:2.1",
                 "xci_name": "sifpga_crs_auto_ds_0",
-                "xci_path": "ip\\sifpga_crs_auto_ds_0\\sifpga_crs_auto_ds_0.xci",
+                "xci_path": "ip/sifpga_crs_auto_ds_0/sifpga_crs_auto_ds_0.xci",
                 "inst_hier_path": "ps8_0_axi_periph/m01_couplers/auto_ds",
                 "parameters": {
                   "MI_DATA_WIDTH": {
@@ -607,7 +754,7 @@
               "auto_pc": {
                 "vlnv": "xilinx.com:ip:axi_protocol_converter:2.1",
                 "xci_name": "sifpga_crs_auto_pc_0",
-                "xci_path": "ip\\sifpga_crs_auto_pc_0\\sifpga_crs_auto_pc_0.xci",
+                "xci_path": "ip/sifpga_crs_auto_pc_0/sifpga_crs_auto_pc_0.xci",
                 "inst_hier_path": "ps8_0_axi_periph/m01_couplers/auto_pc",
                 "parameters": {
                   "MI_PROTOCOL": {
@@ -716,7 +863,7 @@
               "auto_ds": {
                 "vlnv": "xilinx.com:ip:axi_dwidth_converter:2.1",
                 "xci_name": "sifpga_crs_auto_ds_1",
-                "xci_path": "ip\\sifpga_crs_auto_ds_1\\sifpga_crs_auto_ds_1.xci",
+                "xci_path": "ip/sifpga_crs_auto_ds_1/sifpga_crs_auto_ds_1.xci",
                 "inst_hier_path": "ps8_0_axi_periph/m02_couplers/auto_ds",
                 "parameters": {
                   "MI_DATA_WIDTH": {
@@ -739,7 +886,7 @@
               "auto_pc": {
                 "vlnv": "xilinx.com:ip:axi_protocol_converter:2.1",
                 "xci_name": "sifpga_crs_auto_pc_1",
-                "xci_path": "ip\\sifpga_crs_auto_pc_1\\sifpga_crs_auto_pc_1.xci",
+                "xci_path": "ip/sifpga_crs_auto_pc_1/sifpga_crs_auto_pc_1.xci",
                 "inst_hier_path": "ps8_0_axi_periph/m02_couplers/auto_pc",
                 "parameters": {
                   "MI_PROTOCOL": {
@@ -954,19 +1101,19 @@
       "rst_ps8_0_96M1": {
         "vlnv": "xilinx.com:ip:proc_sys_reset:5.0",
         "xci_name": "sifpga_crs_rst_ps8_0_96M1_0",
-        "xci_path": "sifpga_crs\\ip\\sifpga_crs_rst_ps8_0_96M1_0\\sifpga_crs_rst_ps8_0_96M1_0.xci",
+        "xci_path": "ip/sifpga_crs_rst_ps8_0_96M1_0/sifpga_crs_rst_ps8_0_96M1_0.xci",
         "inst_hier_path": "rst_ps8_0_96M1"
       },
       "rst_ps8_0_96M": {
         "vlnv": "xilinx.com:ip:proc_sys_reset:5.0",
         "xci_name": "sifpga_crs_rst_ps8_0_96M_0",
-        "xci_path": "sifpga_crs\\ip\\sifpga_crs_rst_ps8_0_96M_0\\sifpga_crs_rst_ps8_0_96M_0.xci",
+        "xci_path": "ip/sifpga_crs_rst_ps8_0_96M_0/sifpga_crs_rst_ps8_0_96M_0.xci",
         "inst_hier_path": "rst_ps8_0_96M"
       },
       "usp_rf_data_converter_0": {
         "vlnv": "xilinx.com:ip:usp_rf_data_converter:2.6",
         "xci_name": "sifpga_crs_usp_rf_data_converter_0_0",
-        "xci_path": "sifpga_crs\\ip\\sifpga_crs_usp_rf_data_converter_0_0\\sifpga_crs_usp_rf_data_converter_0_0.xci",
+        "xci_path": "ip/sifpga_crs_usp_rf_data_converter_0_0/sifpga_crs_usp_rf_data_converter_0_0.xci",
         "inst_hier_path": "usp_rf_data_converter_0",
         "parameters": {
           "ADC0_Multi_Tile_Sync": {
@@ -1183,8 +1330,8 @@
       },
       "util_ds_buf_0": {
         "vlnv": "xilinx.com:ip:util_ds_buf:2.2",
-        "xci_name": "sifpga_crs_util_ds_buf_0_1",
-        "xci_path": "ip\\sifpga_crs_util_ds_buf_0_1\\sifpga_crs_util_ds_buf_0_1.xci",
+        "xci_name": "sifpga_crs_util_ds_buf_0_0",
+        "xci_path": "ip/sifpga_crs_util_ds_buf_0_0/sifpga_crs_util_ds_buf_0_0.xci",
         "inst_hier_path": "util_ds_buf_0",
         "parameters": {
           "C_BUF_TYPE": {
@@ -1201,7 +1348,7 @@
       "util_ds_buf_1": {
         "vlnv": "xilinx.com:ip:util_ds_buf:2.2",
         "xci_name": "sifpga_crs_util_ds_buf_1_0",
-        "xci_path": "sifpga_crs\\ip\\sifpga_crs_util_ds_buf_1_0\\sifpga_crs_util_ds_buf_1_0.xci",
+        "xci_path": "ip/sifpga_crs_util_ds_buf_1_0/sifpga_crs_util_ds_buf_1_0.xci",
         "inst_hier_path": "util_ds_buf_1",
         "parameters": {
           "DIFF_CLK_IN_BOARD_INTERFACE": {
@@ -1215,7 +1362,7 @@
       "util_ds_buf_2": {
         "vlnv": "xilinx.com:ip:util_ds_buf:2.2",
         "xci_name": "sifpga_crs_util_ds_buf_2_0",
-        "xci_path": "sifpga_crs\\ip\\sifpga_crs_util_ds_buf_2_0\\sifpga_crs_util_ds_buf_2_0.xci",
+        "xci_path": "ip/sifpga_crs_util_ds_buf_2_0/sifpga_crs_util_ds_buf_2_0.xci",
         "inst_hier_path": "util_ds_buf_2",
         "parameters": {
           "C_BUF_TYPE": {
@@ -1226,7 +1373,7 @@
       "zynq_ultra_ps_e_0": {
         "vlnv": "xilinx.com:ip:zynq_ultra_ps_e:3.4",
         "xci_name": "sifpga_crs_zynq_ultra_ps_e_0_0",
-        "xci_path": "sifpga_crs\\ip\\sifpga_crs_zynq_ultra_ps_e_0_0\\sifpga_crs_zynq_ultra_ps_e_0_0.xci",
+        "xci_path": "ip/sifpga_crs_zynq_ultra_ps_e_0_0/sifpga_crs_zynq_ultra_ps_e_0_0.xci",
         "inst_hier_path": "zynq_ultra_ps_e_0",
         "parameters": {
           "CAN0_BOARD_INTERFACE": {
@@ -2232,7 +2379,11 @@
             "value": "fast"
           },
           "PSU_MIO_TREE_PERIPHERALS": {
-            "value": "Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Feedback Clk#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash##############SPI 0###SPI 0#SPI 0#SPI 0#I2C 1#I2C 1#I2C 0#I2C 0#PMU GPO 4#PMU GPO 5#SD 0#SD 0#SD 0#SD 0#SD 0#SD 0#SD 0##########UART 0#UART 0#########Gem 3#Gem 3#Gem 3#Gem 3#Gem 3#Gem 3#Gem 3#Gem 3#Gem 3#Gem 3#Gem 3#Gem 3#MDIO 3#MDIO 3"
+            "value": [
+              "Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Feedback Clk#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI",
+              "Flash##############SPI 0###SPI 0#SPI 0#SPI 0#I2C 1#I2C 1#I2C 0#I2C 0#PMU GPO 4#PMU GPO 5#SD 0#SD 0#SD 0#SD 0#SD 0#SD 0#SD 0##########UART 0#UART 0#########Gem 3#Gem 3#Gem 3#Gem 3#Gem 3#Gem 3#Gem 3#Gem",
+              "3#Gem 3#Gem 3#Gem 3#Gem 3#MDIO 3#MDIO 3"
+            ]
           },
           "PSU_MIO_TREE_SIGNALS": {
             "value": "sclk_out#miso_mo1#mo2#mo3#mosi_mi0#n_ss_out#clk_for_lpbk#n_ss_out_upper#mo_upper[0]#mo_upper[1]#mo_upper[2]#mo_upper[3]#sclk_out_upper##############sclk_out###n_ss_out[0]#miso#mosi#scl_out#sda_out#scl_out#sda_out#gpo[4]#gpo[5]#sdio0_clk_out#sdio0_cd_n#sdio0_cmd_out#sdio0_data_out[0]#sdio0_data_out[1]#sdio0_data_out[2]#sdio0_data_out[3]##########rxd#txd#########rgmii_tx_clk#rgmii_txd[0]#rgmii_txd[1]#rgmii_txd[2]#rgmii_txd[3]#rgmii_tx_ctl#rgmii_rx_clk#rgmii_rxd[0]#rgmii_rxd[1]#rgmii_rxd[2]#rgmii_rxd[3]#rgmii_rx_ctl#gem3_mdc#gem3_mdio_out"
@@ -4029,10 +4180,24 @@
             "value": "0"
           },
           "PSU__PROTECTION__FPD_SEGMENTS": {
-            "value": "SA:0xFD1A0000; SIZE:1280; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware    |     SA:0xFD000000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware    |     SA:0xFD010000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware    |     SA:0xFD020000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware    |     SA:0xFD030000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware    |     SA:0xFD040000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware    |     SA:0xFD050000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware    |     SA:0xFD610000; SIZE:512; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware    |     SA:0xFD5D0000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware    |    SA:0xFD1A0000 ; SIZE:1280; UNIT:KB; RegionTZ:Secure ; WrAllowed:Read/Write; subsystemId:Secure Subsystem"
+            "value": [
+              "SA:0xFD1A0000; SIZE:1280; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware    |     SA:0xFD000000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU",
+              "Firmware    |     SA:0xFD010000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware    |     SA:0xFD020000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write;",
+              "subsystemId:PMU Firmware    |     SA:0xFD030000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware    |     SA:0xFD040000; SIZE:64; UNIT:KB; RegionTZ:Secure;",
+              "WrAllowed:Read/Write; subsystemId:PMU Firmware    |     SA:0xFD050000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware    |     SA:0xFD610000; SIZE:512; UNIT:KB;",
+              "RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware    |     SA:0xFD5D0000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware    |    SA:0xFD1A0000 ;",
+              "SIZE:1280; UNIT:KB; RegionTZ:Secure ; WrAllowed:Read/Write; subsystemId:Secure Subsystem"
+            ]
           },
           "PSU__PROTECTION__LPD_SEGMENTS": {
-            "value": "SA:0xFF980000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware| SA:0xFF5E0000; SIZE:2560; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware| SA:0xFFCC0000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware| SA:0xFF180000; SIZE:768; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware| SA:0xFF410000; SIZE:640; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware| SA:0xFFA70000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware| SA:0xFF9A0000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware|SA:0xFF5E0000 ; SIZE:2560; UNIT:KB; RegionTZ:Secure ; WrAllowed:Read/Write; subsystemId:Secure Subsystem|SA:0xFFCC0000 ; SIZE:64; UNIT:KB; RegionTZ:Secure ; WrAllowed:Read/Write; subsystemId:Secure Subsystem|SA:0xFF180000 ; SIZE:768; UNIT:KB; RegionTZ:Secure ; WrAllowed:Read/Write; subsystemId:Secure Subsystem|SA:0xFF9A0000 ; SIZE:64; UNIT:KB; RegionTZ:Secure ; WrAllowed:Read/Write; subsystemId:Secure Subsystem"
+            "value": [
+              "SA:0xFF980000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware| SA:0xFF5E0000; SIZE:2560; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware|",
+              "SA:0xFFCC0000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware| SA:0xFF180000; SIZE:768; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware|",
+              "SA:0xFF410000; SIZE:640; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware| SA:0xFFA70000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware|",
+              "SA:0xFF9A0000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware|SA:0xFF5E0000 ; SIZE:2560; UNIT:KB; RegionTZ:Secure ; WrAllowed:Read/Write; subsystemId:Secure",
+              "Subsystem|SA:0xFFCC0000 ; SIZE:64; UNIT:KB; RegionTZ:Secure ; WrAllowed:Read/Write; subsystemId:Secure Subsystem|SA:0xFF180000 ; SIZE:768; UNIT:KB; RegionTZ:Secure ; WrAllowed:Read/Write;",
+              "subsystemId:Secure Subsystem|SA:0xFF9A0000 ; SIZE:64; UNIT:KB; RegionTZ:Secure ; WrAllowed:Read/Write; subsystemId:Secure Subsystem"
+            ]
           },
           "PSU__PROTECTION__MASTERS": {
             "value": "USB1:NonSecure;0|USB0:NonSecure;0|S_AXI_LPD:NA;0|S_AXI_HPC1_FPD:NA;0|S_AXI_HPC0_FPD:NA;0|S_AXI_HP3_FPD:NA;0|S_AXI_HP2_FPD:NA;0|S_AXI_HP1_FPD:NA;0|S_AXI_HP0_FPD:NA;0|S_AXI_ACP:NA;0|S_AXI_ACE:NA;0|SD1:NonSecure;0|SD0:NonSecure;1|SATA1:NonSecure;0|SATA0:NonSecure;0|RPU1:Secure;1|RPU0:Secure;1|QSPI:NonSecure;1|PMU:NA;1|PCIe:NonSecure;0|NAND:NonSecure;0|LDMA:NonSecure;1|GPU:NonSecure;1|GEM3:NonSecure;1|GEM2:NonSecure;0|GEM1:NonSecure;0|GEM0:NonSecure;0|FDMA:NonSecure;1|DP:NonSecure;0|DAP:NA;1|Coresight:NA;1|CSU:NA;1|APU:NA;1"
@@ -4047,7 +4212,10 @@
             "value": "NONE"
           },
           "PSU__PROTECTION__SLAVES": {
-            "value": "LPD;USB3_1_XHCI;FE300000;FE3FFFFF;0|LPD;USB3_1;FF9E0000;FF9EFFFF;0|LPD;USB3_0_XHCI;FE200000;FE2FFFFF;0|LPD;USB3_0;FF9D0000;FF9DFFFF;0|LPD;UART1;FF010000;FF01FFFF;0|LPD;UART0;FF000000;FF00FFFF;1|LPD;TTC3;FF140000;FF14FFFF;1|LPD;TTC2;FF130000;FF13FFFF;1|LPD;TTC1;FF120000;FF12FFFF;1|LPD;TTC0;FF110000;FF11FFFF;1|FPD;SWDT1;FD4D0000;FD4DFFFF;1|LPD;SWDT0;FF150000;FF15FFFF;1|LPD;SPI1;FF050000;FF05FFFF;0|LPD;SPI0;FF040000;FF04FFFF;1|FPD;SMMU_REG;FD5F0000;FD5FFFFF;1|FPD;SMMU;FD800000;FDFFFFFF;1|FPD;SIOU;FD3D0000;FD3DFFFF;1|FPD;SERDES;FD400000;FD47FFFF;1|LPD;SD1;FF170000;FF17FFFF;0|LPD;SD0;FF160000;FF16FFFF;1|FPD;SATA;FD0C0000;FD0CFFFF;0|LPD;RTC;FFA60000;FFA6FFFF;1|LPD;RSA_CORE;FFCE0000;FFCEFFFF;1|LPD;RPU;FF9A0000;FF9AFFFF;1|LPD;R5_TCM_RAM_GLOBAL;FFE00000;FFE3FFFF;1|LPD;R5_1_Instruction_Cache;FFEC0000;FFECFFFF;1|LPD;R5_1_Data_Cache;FFED0000;FFEDFFFF;1|LPD;R5_1_BTCM_GLOBAL;FFEB0000;FFEBFFFF;1|LPD;R5_1_ATCM_GLOBAL;FFE90000;FFE9FFFF;1|LPD;R5_0_Instruction_Cache;FFE40000;FFE4FFFF;1|LPD;R5_0_Data_Cache;FFE50000;FFE5FFFF;1|LPD;R5_0_BTCM_GLOBAL;FFE20000;FFE2FFFF;1|LPD;R5_0_ATCM_GLOBAL;FFE00000;FFE0FFFF;1|LPD;QSPI_Linear_Address;C0000000;DFFFFFFF;1|LPD;QSPI;FF0F0000;FF0FFFFF;1|LPD;PMU_RAM;FFDC0000;FFDDFFFF;1|LPD;PMU_GLOBAL;FFD80000;FFDBFFFF;1|FPD;PCIE_MAIN;FD0E0000;FD0EFFFF;0|FPD;PCIE_LOW;E0000000;EFFFFFFF;0|FPD;PCIE_HIGH2;8000000000;BFFFFFFFFF;0|FPD;PCIE_HIGH1;600000000;7FFFFFFFF;0|FPD;PCIE_DMA;FD0F0000;FD0FFFFF;0|FPD;PCIE_ATTRIB;FD480000;FD48FFFF;0|LPD;OCM_XMPU_CFG;FFA70000;FFA7FFFF;1|LPD;OCM_SLCR;FF960000;FF96FFFF;1|OCM;OCM;FFFC0000;FFFFFFFF;1|LPD;NAND;FF100000;FF10FFFF;0|LPD;MBISTJTAG;FFCF0000;FFCFFFFF;1|LPD;LPD_XPPU_SINK;FF9C0000;FF9CFFFF;1|LPD;LPD_XPPU;FF980000;FF98FFFF;1|LPD;LPD_SLCR_SECURE;FF4B0000;FF4DFFFF;1|LPD;LPD_SLCR;FF410000;FF4AFFFF;1|LPD;LPD_GPV;FE100000;FE1FFFFF;1|LPD;LPD_DMA_7;FFAF0000;FFAFFFFF;1|LPD;LPD_DMA_6;FFAE0000;FFAEFFFF;1|LPD;LPD_DMA_5;FFAD0000;FFADFFFF;1|LPD;LPD_DMA_4;FFAC0000;FFACFFFF;1|LPD;LPD_DMA_3;FFAB0000;FFABFFFF;1|LPD;LPD_DMA_2;FFAA0000;FFAAFFFF;1|LPD;LPD_DMA_1;FFA90000;FFA9FFFF;1|LPD;LPD_DMA_0;FFA80000;FFA8FFFF;1|LPD;IPI_CTRL;FF380000;FF3FFFFF;1|LPD;IOU_SLCR;FF180000;FF23FFFF;1|LPD;IOU_SECURE_SLCR;FF240000;FF24FFFF;1|LPD;IOU_SCNTRS;FF260000;FF26FFFF;1|LPD;IOU_SCNTR;FF250000;FF25FFFF;1|LPD;IOU_GPV;FE000000;FE0FFFFF;1|LPD;I2C1;FF030000;FF03FFFF;1|LPD;I2C0;FF020000;FF02FFFF;1|FPD;GPU;FD4B0000;FD4BFFFF;0|LPD;GPIO;FF0A0000;FF0AFFFF;1|LPD;GEM3;FF0E0000;FF0EFFFF;1|LPD;GEM2;FF0D0000;FF0DFFFF;0|LPD;GEM1;FF0C0000;FF0CFFFF;0|LPD;GEM0;FF0B0000;FF0BFFFF;0|FPD;FPD_XMPU_SINK;FD4F0000;FD4FFFFF;1|FPD;FPD_XMPU_CFG;FD5D0000;FD5DFFFF;1|FPD;FPD_SLCR_SECURE;FD690000;FD6CFFFF;1|FPD;FPD_SLCR;FD610000;FD68FFFF;1|FPD;FPD_DMA_CH7;FD570000;FD57FFFF;1|FPD;FPD_DMA_CH6;FD560000;FD56FFFF;1|FPD;FPD_DMA_CH5;FD550000;FD55FFFF;1|FPD;FPD_DMA_CH4;FD540000;FD54FFFF;1|FPD;FPD_DMA_CH3;FD530000;FD53FFFF;1|FPD;FPD_DMA_CH2;FD520000;FD52FFFF;1|FPD;FPD_DMA_CH1;FD510000;FD51FFFF;1|FPD;FPD_DMA_CH0;FD500000;FD50FFFF;1|LPD;EFUSE;FFCC0000;FFCCFFFF;1|FPD;Display Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD050000;FD05FFFF;1|FPD;DDR_XMPU4_CFG;FD040000;FD04FFFF;1|FPD;DDR_XMPU3_CFG;FD030000;FD03FFFF;1|FPD;DDR_XMPU2_CFG;FD020000;FD02FFFF;1|FPD;DDR_XMPU1_CFG;FD010000;FD01FFFF;1|FPD;DDR_XMPU0_CFG;FD000000;FD00FFFF;1|FPD;DDR_QOS_CTRL;FD090000;FD09FFFF;1|FPD;DDR_PHY;FD080000;FD08FFFF;1|DDR;DDR_LOW;0;7FFFFFFF;1|DDR;DDR_HIGH;800000000;97FFFFFFF;1|FPD;DDDR_CTRL;FD070000;FD070FFF;1|LPD;Coresight;FE800000;FEFFFFFF;1|LPD;CSU_DMA;FFC80000;FFC9FFFF;1|LPD;CSU;FFCA0000;FFCAFFFF;1|LPD;CRL_APB;FF5E0000;FF85FFFF;1|FPD;CRF_APB;FD1A0000;FD2DFFFF;1|FPD;CCI_REG;FD5E0000;FD5EFFFF;1|LPD;CAN1;FF070000;FF07FFFF;0|LPD;CAN0;FF060000;FF06FFFF;0|FPD;APU;FD5C0000;FD5CFFFF;1|LPD;APM_INTC_IOU;FFA20000;FFA2FFFF;1|LPD;APM_FPD_LPD;FFA30000;FFA3FFFF;1|FPD;APM_5;FD490000;FD49FFFF;1|FPD;APM_0;FD0B0000;FD0BFFFF;1|LPD;APM2;FFA10000;FFA1FFFF;1|LPD;APM1;FFA00000;FFA0FFFF;1|LPD;AMS;FFA50000;FFA5FFFF;1|FPD;AFI_5;FD3B0000;FD3BFFFF;1|FPD;AFI_4;FD3A0000;FD3AFFFF;1|FPD;AFI_3;FD390000;FD39FFFF;1|FPD;AFI_2;FD380000;FD38FFFF;1|FPD;AFI_1;FD370000;FD37FFFF;1|FPD;AFI_0;FD360000;FD36FFFF;1|LPD;AFIFM6;FF9B0000;FF9BFFFF;1|FPD;ACPU_GIC;F9010000;F907FFFF;1"
+            "value": [
+              "LPD;USB3_1_XHCI;FE300000;FE3FFFFF;0|LPD;USB3_1;FF9E0000;FF9EFFFF;0|LPD;USB3_0_XHCI;FE200000;FE2FFFFF;0|LPD;USB3_0;FF9D0000;FF9DFFFF;0|LPD;UART1;FF010000;FF01FFFF;0|LPD;UART0;FF000000;FF00FFFF;1|LPD;TTC3;FF140000;FF14FFFF;1|LPD;TTC2;FF130000;FF13FFFF;1|LPD;TTC1;FF120000;FF12FFFF;1|LPD;TTC0;FF110000;FF11FFFF;1|FPD;SWDT1;FD4D0000;FD4DFFFF;1|LPD;SWDT0;FF150000;FF15FFFF;1|LPD;SPI1;FF050000;FF05FFFF;0|LPD;SPI0;FF040000;FF04FFFF;1|FPD;SMMU_REG;FD5F0000;FD5FFFFF;1|FPD;SMMU;FD800000;FDFFFFFF;1|FPD;SIOU;FD3D0000;FD3DFFFF;1|FPD;SERDES;FD400000;FD47FFFF;1|LPD;SD1;FF170000;FF17FFFF;0|LPD;SD0;FF160000;FF16FFFF;1|FPD;SATA;FD0C0000;FD0CFFFF;0|LPD;RTC;FFA60000;FFA6FFFF;1|LPD;RSA_CORE;FFCE0000;FFCEFFFF;1|LPD;RPU;FF9A0000;FF9AFFFF;1|LPD;R5_TCM_RAM_GLOBAL;FFE00000;FFE3FFFF;1|LPD;R5_1_Instruction_Cache;FFEC0000;FFECFFFF;1|LPD;R5_1_Data_Cache;FFED0000;FFEDFFFF;1|LPD;R5_1_BTCM_GLOBAL;FFEB0000;FFEBFFFF;1|LPD;R5_1_ATCM_GLOBAL;FFE90000;FFE9FFFF;1|LPD;R5_0_Instruction_Cache;FFE40000;FFE4FFFF;1|LPD;R5_0_Data_Cache;FFE50000;FFE5FFFF;1|LPD;R5_0_BTCM_GLOBAL;FFE20000;FFE2FFFF;1|LPD;R5_0_ATCM_GLOBAL;FFE00000;FFE0FFFF;1|LPD;QSPI_Linear_Address;C0000000;DFFFFFFF;1|LPD;QSPI;FF0F0000;FF0FFFFF;1|LPD;PMU_RAM;FFDC0000;FFDDFFFF;1|LPD;PMU_GLOBAL;FFD80000;FFDBFFFF;1|FPD;PCIE_MAIN;FD0E0000;FD0EFFFF;0|FPD;PCIE_LOW;E0000000;EFFFFFFF;0|FPD;PCIE_HIGH2;8000000000;BFFFFFFFFF;0|FPD;PCIE_HIGH1;600000000;7FFFFFFFF;0|FPD;PCIE_DMA;FD0F0000;FD0FFFFF;0|FPD;PCIE_ATTRIB;FD480000;FD48FFFF;0|LPD;OCM_XMPU_CFG;FFA70000;FFA7FFFF;1|LPD;OCM_SLCR;FF960000;FF96FFFF;1|OCM;OCM;FFFC0000;FFFFFFFF;1|LPD;NAND;FF100000;FF10FFFF;0|LPD;MBISTJTAG;FFCF0000;FFCFFFFF;1|LPD;LPD_XPPU_SINK;FF9C0000;FF9CFFFF;1|LPD;LPD_XPPU;FF980000;FF98FFFF;1|LPD;LPD_SLCR_SECURE;FF4B0000;FF4DFFFF;1|LPD;LPD_SLCR;FF410000;FF4AFFFF;1|LPD;LPD_GPV;FE100000;FE1FFFFF;1|LPD;LPD_DMA_7;FFAF0000;FFAFFFFF;1|LPD;LPD_DMA_6;FFAE0000;FFAEFFFF;1|LPD;LPD_DMA_5;FFAD0000;FFADFFFF;1|LPD;LPD_DMA_4;FFAC0000;FFACFFFF;1|LPD;LPD_DMA_3;FFAB0000;FFABFFFF;1|LPD;LPD_DMA_2;FFAA0000;FFAAFFFF;1|LPD;LPD_DMA_1;FFA90000;FFA9FFFF;1|LPD;LPD_DMA_0;FFA80000;FFA8FFFF;1|LPD;IPI_CTRL;FF380000;FF3FFFFF;1|LPD;IOU_SLCR;FF180000;FF23FFFF;1|LPD;IOU_SECURE_SLCR;FF240000;FF24FFFF;1|LPD;IOU_SCNTRS;FF260000;FF26FFFF;1|LPD;IOU_SCNTR;FF250000;FF25FFFF;1|LPD;IOU_GPV;FE000000;FE0FFFFF;1|LPD;I2C1;FF030000;FF03FFFF;1|LPD;I2C0;FF020000;FF02FFFF;1|FPD;GPU;FD4B0000;FD4BFFFF;0|LPD;GPIO;FF0A0000;FF0AFFFF;1|LPD;GEM3;FF0E0000;FF0EFFFF;1|LPD;GEM2;FF0D0000;FF0DFFFF;0|LPD;GEM1;FF0C0000;FF0CFFFF;0|LPD;GEM0;FF0B0000;FF0BFFFF;0|FPD;FPD_XMPU_SINK;FD4F0000;FD4FFFFF;1|FPD;FPD_XMPU_CFG;FD5D0000;FD5DFFFF;1|FPD;FPD_SLCR_SECURE;FD690000;FD6CFFFF;1|FPD;FPD_SLCR;FD610000;FD68FFFF;1|FPD;FPD_DMA_CH7;FD570000;FD57FFFF;1|FPD;FPD_DMA_CH6;FD560000;FD56FFFF;1|FPD;FPD_DMA_CH5;FD550000;FD55FFFF;1|FPD;FPD_DMA_CH4;FD540000;FD54FFFF;1|FPD;FPD_DMA_CH3;FD530000;FD53FFFF;1|FPD;FPD_DMA_CH2;FD520000;FD52FFFF;1|FPD;FPD_DMA_CH1;FD510000;FD51FFFF;1|FPD;FPD_DMA_CH0;FD500000;FD50FFFF;1|LPD;EFUSE;FFCC0000;FFCCFFFF;1|FPD;Display",
+              "Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD050000;FD05FFFF;1|FPD;DDR_XMPU4_CFG;FD040000;FD04FFFF;1|FPD;DDR_XMPU3_CFG;FD030000;FD03FFFF;1|FPD;DDR_XMPU2_CFG;FD020000;FD02FFFF;1|FPD;DDR_XMPU1_CFG;FD010000;FD01FFFF;1|FPD;DDR_XMPU0_CFG;FD000000;FD00FFFF;1|FPD;DDR_QOS_CTRL;FD090000;FD09FFFF;1|FPD;DDR_PHY;FD080000;FD08FFFF;1|DDR;DDR_LOW;0;7FFFFFFF;1|DDR;DDR_HIGH;800000000;97FFFFFFF;1|FPD;DDDR_CTRL;FD070000;FD070FFF;1|LPD;Coresight;FE800000;FEFFFFFF;1|LPD;CSU_DMA;FFC80000;FFC9FFFF;1|LPD;CSU;FFCA0000;FFCAFFFF;1|LPD;CRL_APB;FF5E0000;FF85FFFF;1|FPD;CRF_APB;FD1A0000;FD2DFFFF;1|FPD;CCI_REG;FD5E0000;FD5EFFFF;1|LPD;CAN1;FF070000;FF07FFFF;0|LPD;CAN0;FF060000;FF06FFFF;0|FPD;APU;FD5C0000;FD5CFFFF;1|LPD;APM_INTC_IOU;FFA20000;FFA2FFFF;1|LPD;APM_FPD_LPD;FFA30000;FFA3FFFF;1|FPD;APM_5;FD490000;FD49FFFF;1|FPD;APM_0;FD0B0000;FD0BFFFF;1|LPD;APM2;FFA10000;FFA1FFFF;1|LPD;APM1;FFA00000;FFA0FFFF;1|LPD;AMS;FFA50000;FFA5FFFF;1|FPD;AFI_5;FD3B0000;FD3BFFFF;1|FPD;AFI_4;FD3A0000;FD3AFFFF;1|FPD;AFI_3;FD390000;FD39FFFF;1|FPD;AFI_2;FD380000;FD38FFFF;1|FPD;AFI_1;FD370000;FD37FFFF;1|FPD;AFI_0;FD360000;FD36FFFF;1|LPD;AFIFM6;FF9B0000;FF9BFFFF;1|FPD;ACPU_GIC;F9010000;F907FFFF;1"
+            ]
           },
           "PSU__PROTECTION__SUBSYSTEMS": {
             "value": "PMU Firmware:PMU|Secure Subsystem:"
@@ -4580,7 +4748,7 @@
       "system_ila_0": {
         "vlnv": "xilinx.com:ip:system_ila:1.1",
         "xci_name": "sifpga_crs_system_ila_0_0",
-        "xci_path": "ip\\sifpga_crs_system_ila_0_0\\sifpga_crs_system_ila_0_0.xci",
+        "xci_path": "ip/sifpga_crs_system_ila_0_0/sifpga_crs_system_ila_0_0.xci",
         "inst_hier_path": "system_ila_0",
         "parameters": {
           "C_MON_TYPE": {
@@ -4624,7 +4792,7 @@
       "sifpga_crs_chfpga_0": {
         "vlnv": "xilinx.com:module_ref:sifpga_crs_chfpga_wrapper:1.0",
         "xci_name": "sifpga_crs_sifpga_crs_chfpga_0_0",
-        "xci_path": "ip\\sifpga_crs_sifpga_crs_chfpga_0_0\\sifpga_crs_sifpga_crs_chfpga_0_0.xci",
+        "xci_path": "ip/sifpga_crs_sifpga_crs_chfpga_0_0/sifpga_crs_sifpga_crs_chfpga_0_0.xci",
         "inst_hier_path": "sifpga_crs_chfpga_0",
         "reference_info": {
           "ref_type": "hdl",
@@ -4668,18 +4836,6 @@
               "HAS_TLAST": {
                 "value": "0",
                 "value_src": "constant"
-              },
-              "FREQ_HZ": {
-                "value": "200000000",
-                "value_src": "ip_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "ip_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_0_IBUF_OUT",
-                "value_src": "ip_prop"
               }
             },
             "port_maps": {
@@ -4735,18 +4891,6 @@
               "HAS_TLAST": {
                 "value": "0",
                 "value_src": "constant"
-              },
-              "FREQ_HZ": {
-                "value": "200000000",
-                "value_src": "ip_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "ip_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_0_IBUF_OUT",
-                "value_src": "ip_prop"
               }
             },
             "port_maps": {
@@ -4802,18 +4946,6 @@
               "HAS_TLAST": {
                 "value": "0",
                 "value_src": "constant"
-              },
-              "FREQ_HZ": {
-                "value": "200000000",
-                "value_src": "ip_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "ip_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_0_IBUF_OUT",
-                "value_src": "ip_prop"
               }
             },
             "port_maps": {
@@ -4869,18 +5001,6 @@
               "HAS_TLAST": {
                 "value": "0",
                 "value_src": "constant"
-              },
-              "FREQ_HZ": {
-                "value": "200000000",
-                "value_src": "ip_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "ip_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_0_IBUF_OUT",
-                "value_src": "ip_prop"
               }
             },
             "port_maps": {
@@ -4936,18 +5056,6 @@
               "HAS_TLAST": {
                 "value": "0",
                 "value_src": "constant"
-              },
-              "FREQ_HZ": {
-                "value": "200000000",
-                "value_src": "ip_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "ip_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_0_IBUF_OUT",
-                "value_src": "ip_prop"
               }
             },
             "port_maps": {
@@ -5003,18 +5111,6 @@
               "HAS_TLAST": {
                 "value": "0",
                 "value_src": "constant"
-              },
-              "FREQ_HZ": {
-                "value": "200000000",
-                "value_src": "ip_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "ip_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_0_IBUF_OUT",
-                "value_src": "ip_prop"
               }
             },
             "port_maps": {
@@ -5070,18 +5166,6 @@
               "HAS_TLAST": {
                 "value": "0",
                 "value_src": "constant"
-              },
-              "FREQ_HZ": {
-                "value": "200000000",
-                "value_src": "ip_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "ip_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_0_IBUF_OUT",
-                "value_src": "ip_prop"
               }
             },
             "port_maps": {
@@ -5137,18 +5221,6 @@
               "HAS_TLAST": {
                 "value": "0",
                 "value_src": "constant"
-              },
-              "FREQ_HZ": {
-                "value": "200000000",
-                "value_src": "ip_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "ip_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_0_IBUF_OUT",
-                "value_src": "ip_prop"
               }
             },
             "port_maps": {
@@ -5204,14 +5276,6 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
-              },
-              "FREQ_HZ": {
-                "value": "99999001",
-                "value_src": "user_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_zynq_ultra_ps_e_0_0_pl_clk0",
-                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -5271,14 +5335,6 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
-              },
-              "FREQ_HZ": {
-                "value": "99999001",
-                "value_src": "user_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_zynq_ultra_ps_e_0_0_pl_clk0",
-                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -5305,51 +5361,13 @@
         },
         "ports": {
           "cpu_reset_n": {
-            "direction": "I",
-            "parameters": {
-              "POLARITY": {
-                "value": "ACTIVE_LOW",
-                "value_src": "const_prop"
-              }
-            }
+            "direction": "I"
           },
           "clk200_bufg": {
-            "direction": "I",
-            "parameters": {
-              "FREQ_HZ": {
-                "value": "200000000",
-                "value_src": "ip_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "ip_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_0_IBUF_OUT",
-                "value_src": "ip_prop"
-              }
-            }
+            "direction": "I"
           },
           "clk10_bufg": {
-            "direction": "I",
-            "parameters": {
-              "FREQ_HZ": {
-                "value": "300000000",
-                "value_src": "ip_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "ip_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_0_1_IBUF_OUT",
-                "value_src": "ip_prop"
-              },
-              "PortWidth": {
-                "value": "1",
-                "value_src": "default_prop"
-              }
-            }
+            "direction": "I"
           },
           "buck_sync_5v0": {
             "direction": "O"
@@ -5385,18 +5403,6 @@
               "ASSOCIATED_BUSIF": {
                 "value": "adc0_axis",
                 "value_src": "constant"
-              },
-              "FREQ_HZ": {
-                "value": "200000000",
-                "value_src": "ip_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "ip_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_0_IBUF_OUT",
-                "value_src": "ip_prop"
               }
             }
           },
@@ -5407,18 +5413,6 @@
               "ASSOCIATED_BUSIF": {
                 "value": "adc1_axis",
                 "value_src": "constant"
-              },
-              "FREQ_HZ": {
-                "value": "200000000",
-                "value_src": "ip_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "ip_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_0_IBUF_OUT",
-                "value_src": "ip_prop"
               }
             }
           },
@@ -5429,18 +5423,6 @@
               "ASSOCIATED_BUSIF": {
                 "value": "adc2_axis",
                 "value_src": "constant"
-              },
-              "FREQ_HZ": {
-                "value": "200000000",
-                "value_src": "ip_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "ip_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_0_IBUF_OUT",
-                "value_src": "ip_prop"
               }
             }
           },
@@ -5451,18 +5433,6 @@
               "ASSOCIATED_BUSIF": {
                 "value": "adc3_axis",
                 "value_src": "constant"
-              },
-              "FREQ_HZ": {
-                "value": "200000000",
-                "value_src": "ip_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "ip_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_0_IBUF_OUT",
-                "value_src": "ip_prop"
               }
             }
           },
@@ -5473,18 +5443,6 @@
               "ASSOCIATED_BUSIF": {
                 "value": "adc4_axis",
                 "value_src": "constant"
-              },
-              "FREQ_HZ": {
-                "value": "200000000",
-                "value_src": "ip_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "ip_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_0_IBUF_OUT",
-                "value_src": "ip_prop"
               }
             }
           },
@@ -5495,18 +5453,6 @@
               "ASSOCIATED_BUSIF": {
                 "value": "adc5_axis",
                 "value_src": "constant"
-              },
-              "FREQ_HZ": {
-                "value": "200000000",
-                "value_src": "ip_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "ip_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_0_IBUF_OUT",
-                "value_src": "ip_prop"
               }
             }
           },
@@ -5517,18 +5463,6 @@
               "ASSOCIATED_BUSIF": {
                 "value": "adc6_axis",
                 "value_src": "constant"
-              },
-              "FREQ_HZ": {
-                "value": "200000000",
-                "value_src": "ip_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "ip_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_0_IBUF_OUT",
-                "value_src": "ip_prop"
               }
             }
           },
@@ -5539,88 +5473,20 @@
               "ASSOCIATED_BUSIF": {
                 "value": "adc7_axis",
                 "value_src": "constant"
-              },
-              "FREQ_HZ": {
-                "value": "200000000",
-                "value_src": "ip_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "ip_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_0_IBUF_OUT",
-                "value_src": "ip_prop"
               }
             }
           },
           "adc0_clkout": {
-            "direction": "I",
-            "parameters": {
-              "FREQ_HZ": {
-                "value": "100000000",
-                "value_src": "user_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "default_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_usp_rf_data_converter_0_0_clk_adc0",
-                "value_src": "default_prop"
-              }
-            }
+            "direction": "I"
           },
           "adc1_clkout": {
-            "direction": "I",
-            "parameters": {
-              "FREQ_HZ": {
-                "value": "100000000",
-                "value_src": "user_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "default_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_usp_rf_data_converter_0_0_clk_adc1",
-                "value_src": "default_prop"
-              }
-            }
+            "direction": "I"
           },
           "adc2_clkout": {
-            "direction": "I",
-            "parameters": {
-              "FREQ_HZ": {
-                "value": "100000000",
-                "value_src": "user_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "default_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_usp_rf_data_converter_0_0_clk_adc2",
-                "value_src": "default_prop"
-              }
-            }
+            "direction": "I"
           },
           "adc3_clkout": {
-            "direction": "I",
-            "parameters": {
-              "FREQ_HZ": {
-                "value": "100000000",
-                "value_src": "user_prop"
-              },
-              "PHASE": {
-                "value": "0.0",
-                "value_src": "default_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_usp_rf_data_converter_0_0_clk_adc3",
-                "value_src": "default_prop"
-              }
-            }
+            "direction": "I"
           },
           "qsfp_txp": {
             "direction": "O",
@@ -5659,14 +5525,6 @@
               "ASSOCIATED_RESET": {
                 "value": "bsb_axis_rst",
                 "value_src": "constant"
-              },
-              "FREQ_HZ": {
-                "value": "99999001",
-                "value_src": "user_prop"
-              },
-              "CLK_DOMAIN": {
-                "value": "sifpga_crs_zynq_ultra_ps_e_0_0_pl_clk0",
-                "value_src": "default_prop"
               }
             }
           },

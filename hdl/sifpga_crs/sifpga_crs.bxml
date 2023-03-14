@@ -2,55 +2,10 @@
 <Root MajorVersion="0" MinorVersion="40">
   <CompositeFile CompositeFileTopName="sifpga_crs" CanBeSetAsTop="false" CanDisplayChildGraph="true">
     <Description>Composite Fileset</Description>
-    <Generation Name="SYNTHESIS" State="GENERATED" Timestamp="1675619728"/>
-    <Generation Name="IMPLEMENTATION" State="GENERATED" Timestamp="1675619728"/>
-    <Generation Name="SIMULATION" State="GENERATED" Timestamp="1675619728"/>
-    <Generation Name="HW_HANDOFF" State="GENERATED" Timestamp="1675619728"/>
-    <FileCollection Name="SOURCES" Type="SOURCES">
-      <File Name="synth\sifpga_crs.vhd" Type="VHDL">
-        <Properties IsEditable="false" IsVisible="true" IsNetlistSimulation="false" Timestamp="0" IsTrackable="false" IsStatusTracked="false"/>
-        <Library Name="xil_defaultlib"/>
-        <UsedIn Val="SYNTHESIS"/>
-        <ProcessingOrder Val="NORMAL"/>
-      </File>
-      <File Name="sim\sifpga_crs.vhd" Type="VHDL">
-        <Properties IsEditable="false" IsVisible="true" IsNetlistSimulation="false" Timestamp="0" IsTrackable="false" IsStatusTracked="false"/>
-        <Library Name="xil_defaultlib"/>
-        <UsedIn Val="SIMULATION"/>
-        <ProcessingOrder Val="NORMAL"/>
-      </File>
-      <File Name="sifpga_crs_ooc.xdc" Type="XDC">
-        <Properties IsEditable="false" IsVisible="true" IsNetlistSimulation="false" Timestamp="0" IsTrackable="false" IsStatusTracked="false"/>
-        <Library Name="xil_defaultlib"/>
-        <UsedIn Val="SYNTHESIS"/>
-        <UsedIn Val="IMPLEMENTATION"/>
-        <UsedIn Val="OUT_OF_CONTEXT"/>
-        <ProcessingOrder Val="NORMAL"/>
-      </File>
-      <File Name="hw_handoff\sifpga_crs.hwh" Type="HwHandoff">
-        <Properties IsEditable="false" IsVisible="true" IsNetlistSimulation="false" Timestamp="0" IsTrackable="false" IsStatusTracked="false"/>
-        <Library Name="xil_defaultlib"/>
-        <UsedIn Val="HW_HANDOFF"/>
-        <ProcessingOrder Val="NORMAL"/>
-      </File>
-      <File Name="sifpga_crs.bda">
-        <Properties IsEditable="false" IsVisible="true" IsNetlistSimulation="false" Timestamp="0" IsTrackable="false" IsStatusTracked="false"/>
-        <Library Name="xil_defaultlib"/>
-        <UsedIn Val="HW_HANDOFF"/>
-        <ProcessingOrder Val="NORMAL"/>
-      </File>
-      <File Name="synth\sifpga_crs.hwdef">
-        <Properties IsEditable="false" IsVisible="true" IsNetlistSimulation="false" Timestamp="0" IsTrackable="false" IsStatusTracked="false"/>
-        <Library Name="xil_defaultlib"/>
-        <UsedIn Val="HW_HANDOFF"/>
-        <ProcessingOrder Val="NORMAL"/>
-      </File>
-      <File Name="sim\sifpga_crs.protoinst">
-        <Properties IsEditable="false" IsVisible="true" IsNetlistSimulation="false" Timestamp="0" IsTrackable="false" IsStatusTracked="false"/>
-        <Library Name="xil_defaultlib"/>
-        <UsedIn Val="SIMULATION"/>
-        <ProcessingOrder Val="NORMAL"/>
-      </File>
-    </FileCollection>
+    <Generation Name="SYNTHESIS" State="RESET" Timestamp="1678520167"/>
+    <Generation Name="IMPLEMENTATION" State="RESET" Timestamp="1678520167"/>
+    <Generation Name="SIMULATION" State="RESET" Timestamp="1678520167"/>
+    <Generation Name="HW_HANDOFF" State="RESET" Timestamp="1678520167"/>
+    <FileCollection Name="SOURCES" Type="SOURCES"/>
   </CompositeFile>
 </Root>
