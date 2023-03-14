@@ -1,7 +1,7 @@
 Corner-Turn Engine
 ******************
 
-The corner turn engine takes the packets coming out of the F-Engine and reorganizes the data to produce packets that combines the data from all F-Engines but for a subset of the frequency bins. The output of the corner-turn engine is typically sent over the IceBoard QSFP+ links (8x 10 G Ethernet links) to a X Engine.
+The corner turn engine takes the packets coming out of N F-Engine channelizers and regroup the data by frequency bin into M output streams. Each output stream contains data from all N channels but for 1/M frequency bins. The output of the corner-turn engine is typically fed to the high-speed data transmitter (8x 10Gbps Ethernet or 100G Ethernet links) tb be transmitted to a X Engine farm.
 
 The corner turn engine is software-configurable to allow repacketizing of F-Engine data from single board, a single crate, or a pair of crates. It also allow various bypass modes to stream raw channelizer in real time.
 
@@ -13,7 +13,7 @@ The supported modes of operation:
    - `chan4`: Stream the (4+4) bits spectrum from all the 16 channelizers to 8 of the 10G Ethernet ports (6.4 Gbps  data per lane)
    - `corr16`: used to feed the embedded 16-channel firmware correlator, which streams the integrated results through the 1 Gbps Ethernet control port.
 
-The corner-turn operations are performed in six stages:
+The corner-turn operations are performed in five stages:
 
 1) The first crossbar, (channelizer crossbar `chan_crossbar`) takes the output of 16 on-board channelizers, realigned the data frames, exchanges and reorganizes the data between those, packetizes frames into packets with headers, data flags, frame flags, and produce 16 streams of data.
 2) The backplane PCB links transmit 15 of the streams to other boards in the same crate, and receives data from those crates as well. The stream from lane 0 is passed directly to the next stage in the same FPGA.
@@ -69,8 +69,7 @@ Channelizer crossbar
 The crossbar consist of an frame aligner (`CHAN_ALIGN`) and an array of 16 bin
 selectors (`CHAN_BIN_SEL`).
 
-The channelizer frame aliger is pretty simple compared to the post-shuffle
-aligner, as the data it receives is reliable, i.e. there is no possibility of
+The channelizer frame aliger is pretty simple since  the data it receives is reliable, i.e. there is no possibility of
 packet loss or malformed packets since it is coming directly from the
 channelizers. However, each channelizer operates on a separate clock phase,
 and even each channelizer resynchronizes the data to the corner turn clock,
