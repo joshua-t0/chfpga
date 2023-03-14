@@ -81,10 +81,26 @@ set_clock_groups -name REFCLK_GROUP -asynchronous -group [get_clocks -include_ge
 # Frequency counter
 # ----------------
 # Constrain the frequency counter clock. The clock frequency on this net is 1/2 if the measured clock source
+
+# no constraint: Causes  critical warning: no clock reaching counter registers clock inputs
+
 # Reaassigning a clock causes methodology critical warnings
-create_clock -period 3.200 -name FREQ_CTR [get_pins */FREQ_CTR0/K7.SRCCLK0/I]
-# create_generated_clock -name FREQ_CTR -divide_by 2 [get_pins */FREQ_CTR0/K7.SRCCLK0/I] # missing -source argument
-set_clock_groups -name FREQ_CTR_GROUP -asynchronous -group [get_clocks FREQ_CTR]
+
+# The following creates Methogology critical warning - primary clock placed on output or net of clock modifying block
+# Clock appears but Timing is failed because async group is missing (tries to time with clk200). 
+create_clock -period 3.200 -quiet -name FREQ_CTR [get_pins */FREQ_CTR0/K7.SRCCLK0/I] 
+
+# create_clock -period 3.200 -name FREQ_CTR [get_pins */FREQ_CTR0/K7.SRCCLK0/O] # same critical warning 
+
+# create_clock -period 3.200 -name FREQ_CTR [get_nets */FREQ_CTR0/src_clk_fabric] 
+
+
+# The following block does not work: critical warning: no clock reaching counter registers clock inputs
+#create_clock -period 2.500 -name FREQ_CTR 
+#create_generated_clock -name FREQ_CTR -divide_by 2 -source [get_clocks FREQ_CTR] [get_pins */FREQ_CTR0/K7.SRCCLK0/O]
+#set_clock_groups -name FREQ_CTR_GROUP -asynchronous -group [get_clocks FREQ_CTR]
+
+
 
 # Motherboard raw (single-ended) 10 MHz Reference clock
 # -----------------------------------------------------
@@ -238,10 +254,6 @@ set_false_path -to [get_cells -hierarchical -filter {NAME =~ "*/CLK0/*" && ASYNC
 #set_false_path -through [get_ports rst] -to [get_pins inst_fifo_gen/gconvfifo.rf/grf.rf/rstblk/*/CLR]
 
 # set_false_path -from [get_clocks divclk_local_vect_d_3] -to [get_clocks {chan_clk_nobuf[0]}]  # commented out:  resulting cross-domain timing seems easy to meet.
-
-# adc-send_data_reg1 signals come from multiple clocks. Ignore the timing to that register. That register has a ASYNC_REG=True property.
-set_false_path -to [get_pins {chfpga0/ADCGEN[*].adc_send_data_reg1_reg[*]/D}]
-
 
 # create_clock -period 1000.000 -name fmca_spi_sck -waveform {0.000 500.000} [get_ports fmca_spi_sck]
 # set_output_delay -clock [get_clocks fmca_spi_sck] 0.000 [get_ports fmca_spi_mosi]
