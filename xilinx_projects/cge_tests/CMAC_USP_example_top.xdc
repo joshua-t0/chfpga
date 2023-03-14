@@ -123,3 +123,5 @@ resize_pblock [get_pblocks BRAM] -add {SLICE_X7Y180:SLICE_X12Y224}
 resize_pblock [get_pblocks BRAM] -add {RAMB18_X0Y72:RAMB18_X0Y89}
 resize_pblock [get_pblocks BRAM] -add {RAMB36_X0Y36:RAMB36_X0Y44}
 
+
+set_clock_groups -asynchronous -group [get_clocks gt_ref_clk_p]
