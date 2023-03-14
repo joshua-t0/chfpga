@@ -255,10 +255,11 @@ entity ADCDAQ is
 		m_axis_adc_tvalid 	: out std_logic;
 		m_axis_adc_tlast  	: out std_logic;
 		m_axis_adc_tuser 	: out std_logic_vector(3 downto 0);
-		adc_clk 			: in  std_logic; --! Output data FIFO readout clock
 
-		data_ready 	: out  std_logic; --! Indicates when the ADC is ready to start sending data. The data won't start to be pushed out  until send_data is True
-		send_data 	: in  std_logic:= '1'; --! Indicates that we can start sending data on ADC_OUT_DAT. This input signal is used to allow the data transmission to be aligned betweeen all ADC channels.
+		data_ready 	: out std_logic; --! Indicates when the ADC is ready to start sending data. The data won't start to be pushed out until send_data is True. Synchronous to adc_clk;
+		send_data 	: in std_logic:= '1'; --! Indicates that we can start sending data on ADC_OUT_DAT. This input signal is used to allow the data transmission to be aligned betweeen all ADC channels. Synchronous to adc_clk.
+
+		adc_clk 	: in std_logic; --! Clock for the readout interface. Should be the same speed or faster than the  
 
 		-- Output Clocks
 
@@ -266,7 +267,7 @@ entity ADCDAQ is
 		divclk_out_pll 	: out  std_logic; --! PLL-generated divclk clock buffered by BUFG, available if INSTANTIATE_PLL=TRUE. To be used to clock the ISERDES' divclk and FIFO input logic when they are spread in non-adjacent banks
 
 		divclk_out_bufr : out  std_logic; --! 200-MHz divclk generated directly from the ADC clock using a BUFR. Can be fed to a MMCM/PLL in the clocking region covered by the BUFR (to generate channelizer clock). This clock stops when adcdaq_reset is asserted, and starts forwarding the ADC clock immediately when deasserted.
-		divclk_out_bufg : out  std_logic; --! Buffered verison divclk_out_bufg, provided only if PROVIDE_BUFFERED_DIVCLK is TRUE.
+		divclk_out_bufg : out  std_logic; --! Buffered verison divclk_out_bufr, provided only if PROVIDE_BUFFERED_DIVCLK is TRUE.
 		adc_clk_out_div2: out  std_logic:='0'; --! Logic line (not a clock) pulsing at half the local divclk frequency, to be used by the frequency counter (Must be initialized for simulations?)
 
 		-- External clocks

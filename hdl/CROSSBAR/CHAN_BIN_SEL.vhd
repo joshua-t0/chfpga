@@ -122,11 +122,10 @@ entity chan_bin_sel is
 
 		-- bin_number: in std_logic_vector(9 downto 0); -- bin number (0 to 1023), appearing 1 clock before the corresponding data (to allow the RAM to lookup the selection bits, assuming the RAM has 1 clock latency)
 
-		-- Output interface (blocking, i.e. will send new data only when tready=1)
+		-- Output interface (non-blocking AXI4-Streaming)
 		m_axis_tdata:  out slv32;
 		m_axis_tvalid: out std_logic;
 		m_axis_tlast:  out std_logic;
-		-- m_axis_tready: in std_logic;
 
 		clk: in  std_logic; --! Input clock, common to all input and output buses
 		rst: in std_logic; --! reset, synchronous to clk
@@ -146,12 +145,11 @@ end chan_bin_sel;
 --- ARCHITECTURE DECLARATION and DEFINITION ---------------------
 --! Describes the logic that implement the entity's functionnalities. See this architecture for the implementation details.
 --!
---! The writing process waits for all antenna processor to have valid data, and if the filter bit is '1', the data from each antenna is written in their respective FIFO.
+--! The writing process waits for all channels to have valid data, and if the filter bit is '1', the data from each antenna is written in their respective FIFO.
 --! Then the filter RAM 'bit' pointer is incremented.
 --! When the last word of a frame is detected, the pointer is reset, the header is constructed and is written in the HEADER FIFO.
 --! This assumes that all the input data streams are aligned.
 --!
---! When the readout process detects
 architecture Behavioral of chan_bin_sel is
 
 attribute keep_hierarchy : string;
@@ -451,21 +449,23 @@ mask_ram0 : entity work.MASK_RAM
 --! complex values are captured in a holding register and are written
 --! sequentially four at a time in the FIFO.
 --!
+--
+-- All data FIFOs are Embedded FIFOs. They are paired with the DATA flag FIFOs which are BRAM-based.
 --! ** No longer supported** : If EIGHT_BIT_SUPPORT is true, a second FIFO is instantiated. The first
 --! FIFO stores the upper nibbles and the second FIFO stores the lower
 --! nibbles of every complex number. The second FIFO is then used only if
 --! eight-bit mode is selected by software. EIGHT-BIT support is generally disabled to save BRAM resources.
 --!
 --! This FIFO needs to be deep enough to accomodate:
---!   - M*N/4 word, where M is the number of selected bins and N is the
+--!   -( *Not true anymore *) M*N/4 word, where M is the number of selected bins and N is the
 --!     number of input lanes. For 16 output lanes, M is typically
 --!     1024/16=64 and N=16, which corresponds to a depth of 256 words. A
 --!     block RAM offers 512 words. Since the FIFO input is multiplexed by
 --!     4:1, selected 'words' have to be separated by at least 3 non-
 --!     selected 'words'. We therefore cannot select more than 512 words/frame / 4 * 16/4 lanes =512
 --!     words or bins.
---!   - the amount of data that is stored while the data flags and frame
---!     flags are being sent out at the end of the packet.
+--!   - Data is streamed in real time from the FIFO right after the header, without waiting for the end of the packet. Therefore there is no need to store a full packet.
+--!     However, the FIFO must be deep enough to buffer incoming data while the header of the current frame or the flags from the previous frame are sent.
 --!
 --! A 36-bit wide x 512-word deep FIFO fits in a single 18K BRAM.
 --!
@@ -479,32 +479,8 @@ data_fifo_din32(31 downto 0) <= data_fifo_din_sel(31 downto 0); -- lower 4-bits 
 data_fifo_dout(64) <= data_fifo_dout32(32);
 data_fifo_dout(31 downto 0) <= data_fifo_dout32(31 downto 0);
 
--- bram_fifo_gen: if LANE_NUMBER MOD 2 = 0 generate
--- 	data_fifo0 : CHDIST_DATA_FIFO
--- 		port map (
--- 			srst      => reset_all,
--- 			clk      => clk,
 
--- 			din      => data_fifo_din32,
--- 			wr_en    => data_fifo_wr_en,
--- 			full     => data_fifo_full,
 
--- 			rd_en    => data_fifo_rd_en,
--- 			dout     => data_fifo_dout32,
--- 			valid    =>data_fifo_valid,
--- 			empty    => data_fifo_empty,
-
--- 			overflow => data_fifo_overflow
--- 			);
--- 	end generate;
--- embed_fifo_gen: if LANE_NUMBER MOD 2 = 1 generate
-
----------------------------------------------------
--- Data FIFOs
----------------------------------------------------
--- Stores the selected incoming frequency bins
---
--- All data FIFOs are Embedded FIFOs. They are paired with the DATA flag FIFOs which are BRAM-based.
 -- 7-series have only async resets (rst pin) on their embedded FIFOs, ultrascale+ has only synchronous reset (srst)
 DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
 
@@ -889,25 +865,24 @@ fifo_wr_proc: process(clk)
 
 
 -------------------------------
---! FIFO Read Process
+-- FIFO Read Process
 -------------------------------
---! This is a state machine that we implemented explicitely with one-hot states (send_header, send_data, send_data_flags, send_frame_flags, send_packet_flags).
---! We did not let the synthesizer infer the state machine because we need to use the state variables combinatorially to enable the FIFO read enables.
---! Why? Because the synthesizer does not take into account the one-hot nature of the encoding of states when the state variable is used outside the process, and will generate extra logic.
---!
---! The readout of the FIFOS is throttelled by the destination via tready (in other words we have a blobking AXI interface here). The throttelling is used by ALIGN to align the frames.
---! We are very careful to minimize the combinatorial logic depth because the tready signal from the destination combinatorially sets the FIFO read enabled and the state machine operations.
---! Otherwise we would need to implement a 2 word-deep FIFO, and would like to avoid that to minimize resource usage.
---!
---! The output bus uses the standard AXI4 STREAMING protocol
---! The protocol is as follows
---!  1) TVALID indicates when valid data is on the bus.
---!  2) TREADY Indicates when the sink is ready to accept data
---!  3) A transaction occurs when both TVALID and TDATA are HIGH.
---!  4) TVALID is cleared when a transaction occurs (TREADY=1) unness a new word is ready (see below)
---!	 5) The source puts a word on the bus whenever it has one ready and either a) ther is nothing on the bus (TVALID=0) or 2) the current word has been accepted (TREADY=1).
---!
---! We use a native fall-through FIFOs to make the logic simpler and reduce the latency.
+-- This is a state machine that we implemented explicitely with one-hot states (send_header, send_data, send_data_flags, send_frame_flags, send_packet_flags).
+-- We did not let the synthesizer infer the state machine because we need to use the state variables combinatorially to enable the FIFO read enables.
+-- Why? Because the synthesizer does not take into account the one-hot nature of the encoding of states when the state variable is used outside the process, and will generate extra logic.
+--
+-- The readout of the FIFOS is not throttleled by the destination. We assume the destination can always take the data. This simplifies the logic and makes it easier to meet timing.
+--
+-- The output bus uses the standard non-blocking AXI4 STREAMING protocol
+--
+-- We use a native fall-through FIFOs to make the logic simpler and reduce the latency.
+--
+-- Transmission of the header is triggered by the arrival of the first frame
+-- of a packet, so we don't create a long delay between the header and the
+-- data, which will not please the downstream aligners.
+--
+-- Data is sent first after the header until the data for all frames of the packet is completed. So the data is sent as it comes, and the FIFO does not have to store lots of data.
+-- The data flags and frame flags FIFOs, however, are not sent until data is completed, so they must store a full set of flags for one full packet, plus the extra flags that are arriving while the flag FIFOs are emptied.
 
 
 number_of_input_lanes <= shift_left(resize(last_fifo_number-first_fifo_number, number_of_input_lanes'length), 2); --number of input lanes included in the output stream. This is just for populating the header.
@@ -932,15 +907,15 @@ frame_header.TIMESTAMP              <= std_logic_vector(timestamp_ctr(31 downto 
 
 
 -- FIFO Read enables
--- These are derived combinatiorally from the destination tready and state. We use one-hot state machine states to minimize logic depth.
+-- These are derived sirectly from the state machine state. We use one-hot state machine states to minimize logic depth.
 -- We ignore the fifo valid flag because it will just generate an underflow, which we ignore.
 
 
--- data_fifo_rd_en     <= '1' when send_data='1' and fifo_ctr = last_fifo_number and (m_axis_tready='1' or m_axis_tvalid_int='0') else '0';
 data_fifo_rd_en        <= send_data;
 data_flags_fifo_rd_en  <= send_data_flags;
 frame_flags_fifo_rd_en <= send_frame_flags;
 
+-- assign internal bus signals to output port
 m_axis_tdata  <= m_axis_tdata_int;
 m_axis_tvalid <= m_axis_tvalid_int;
 m_axis_tlast  <= m_axis_tlast_int;
@@ -959,20 +934,21 @@ fifo_rd_proc: process(clk)
 			-- SYNCHRONOUS RESET : See the end of the block
 			-------------------------------------
 
-			--------------
-			-- Strobe signal
-			--------------
-			-- Make sure we don't start sending the header until the a frame has come in. Otherwise
-			-- we have crazy stretched out packets (header, long pause, data burst) that messes up
-			-- the packet aligners downstream.
-
 			-- Detect arrival of first word of every incoming frame
 			if s_axis_global_tvalid='1' then
 				s_axis_global_tfirst <= s_axis_global_tlast;
 			end if;
 
-			-- trigger the header transmission as soon as we get an incoming frame (i.e on the first
-			-- word of the incoming frame).
+			--------------
+			-- Strobe signal
+			--------------
+			-- Make sure we don't start sending the header until the first frame of a packet has come in. 
+			-- Otherwise, if we start sending a header just after reset or just when a previous packet is finished, 
+			-- we end up with a crazy stretched-out transmission pattern (header, long pause, data burst when the data finally arrives through the channelizer pipeline).  That messes up
+			-- the packet aligners downstream. The delay between the end of the header and the first data should be short enough to fit within the aligner window.
+			-- Once the first frame is seen and transmission is started, we continuously send data/data flags/frame flags/packet flags until the end of the packet.
+			-- Data transmission could still be irregular beause of bin selection patterns, but it should be handled by the aligner if the pattern is not too extreme.
+
 			if s_axis_global_tvalid='1' and s_axis_global_tfirst='1' and frame_ctr=0 then
 				send_strobe <= '1'; -- zeroed below when header is finished
 			end if;
@@ -999,9 +975,6 @@ fifo_rd_proc: process(clk)
 					header_word_ctr <= (others=>'0'); -- Clear counter in preparation for next header. could be moved up to save logic.
 					send_header <='0';
 					send_data <='1';
-					-- fifo_ctr <= (others=>'0');
-					--lane_errors <= (others => '0');
-					--half <= '0';
 					timestamp_ctr <= timestamp_ctr + frames_per_packet; --! Continuously count frames to provide a timestamp (32 bit counter). NOTE: if the FIFO overflows, we will miscount the frame number. That ia a fatal error.
 					send_strobe <= '0';
 				end if;

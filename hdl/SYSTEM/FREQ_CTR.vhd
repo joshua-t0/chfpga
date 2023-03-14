@@ -35,36 +35,41 @@ use work.chFPGA_Package.all; -- Get all component definitions
 library UNISIM;
 use UNISIM.VComponents.all;
 
---! @brief Implements a frequency counter
---! This module measures the frequency of a signal relative to the ob-board 200 MHz clock.
---! The signal to be measured is a logic line (not a clock line) toggling at half the clock frequency. This signal can be generated easily with a flip-flop and does not require any clocking routing ressources.
---! The gate time is specified by the user to control the resolution of the counter.
---! The accuracy is determined by the accuracy of the reference clock.
+-- Implements a frequency counter
+--
+-- This module measures the frequency of a signal relative to the clk200
+-- clock. The gate time and operation of the frequency counter is controlled
+-- by registers.
+--
+-- The signal to be measured is a logic line (not a clock line) toggling at half the clock frequency. This signal can be generated easily with a flip-flop and does not require any clocking routing ressources.
+-- The gate time is specified by the user to control the resolution of the counter.
+-- The accuracy is determined by the accuracy of the reference clock.
 entity FREQ_CTR is
 	generic (
 		FPGA_SERIES: integer;
-		NUMBER_OF_CLK_IN_PORTS: INTEGER:=8
+		NUMBER_OF_CLK_IN_PORTS: integer := 8
 			);
     port (
 		-- Control interface
-		CTRL_CMD_IN_DAT: in AXIS8_DAT_STRUCT; -- Command stream input, signals from master (Data, Valid, Last)
-		CTRL_CMD_IN_RDY: out AXIS8_RDY_STRUCT; -- Command stream input, signals to master (Ready)
-		CTRL_RPLY_OUT_DAT: out AXIS8_DAT_STRUCT; -- Reply stream output, signals to slave (Data, Valid, Last)
-		CTRL_RPLY_OUT_RDY: in AXIS8_RDY_STRUCT; -- Reply stream output,  signals from slave (Ready)
-		CTRL_CLK: in  STD_LOGIC;
-		CTRL_RST: in std_logic;
+		ctrl_cmd_in_dat: in axis8_dat_struct; -- Command stream input, signals from master (Data, Valid, Last)
+		ctrl_cmd_in_rdy: out axis8_rdy_struct; -- Command stream input, signals to master (Ready)
+		ctrl_rply_out_dat: out axis8_dat_struct; -- Reply stream output, signals to slave (Data, Valid, Last)
+		ctrl_rply_out_rdy: in axis8_rdy_struct; -- Reply stream output,  signals from slave (Ready)
+		ctrl_clk: in  std_logic;
+		ctrl_rst: in std_logic;
 
-		CLK200: in STD_LOGIC; -- Reference clock
-		CLK_IN_DIV2: in STD_LOGIC_VECTOR(0 to NUMBER_OF_CLK_IN_PORTS-1);
+		clk200: in std_logic; -- Reference clock
+		clk_in_div2: in std_logic_vector(0 to NUMBER_OF_CLK_IN_PORTS-1);
 
 		-- System-level signals
-		RST: in STD_LOGIC -- synchronous to CLK200
+		RST: in std_logic -- synchronous to CLK200
 	);
 end FREQ_CTR;
 
 architecture Behavioral of FREQ_CTR is
 
 attribute DONT_TOUCH: string;
+attribute CLOCK_DEDICATED_ROUTE: string;
 
 --- Define Control word and its signals
 signal control_bytes: slv8_array(0 to 4); -- default value set in the CMD_SLAVE
@@ -72,19 +77,21 @@ signal status_bytes: slv8_array(0 to 4); -- default value set in the CMD_SLAVE
 
 
 
-signal gate_ctr: UNSIGNED(31 downto 0) := (others=>'0');
-signal freq_ctr: UNSIGNED(31 downto 0) := (others=>'0');
-signal freq_ctr_rdy: STD_LOGIC;
-signal freq_ctr_rdy_sync: STD_LOGIC;
-signal freq_ctr_start: STD_LOGIC:='0';
-signal freq_ctr_start_sync: STD_LOGIC;
-signal gate_en: STD_LOGIC:='0';
-signal gate_en_sync: STD_LOGIC;
-signal freq_ctr_src_sel: UNSIGNED(6 downto 0):=(others=>'0');
-signal src_clk: STD_LOGIC;
+signal gate_ctr: unsigned(31 downto 0) := (others=>'0');
+signal freq_ctr: unsigned(31 downto 0) := (others=>'0');
+signal freq_ctr_rdy: std_logic;
+signal freq_ctr_rdy_sync: std_logic;
+signal freq_ctr_start: std_logic:='0';
+signal freq_ctr_start_sync: std_logic;
+signal gate_en: std_logic:='0';
+signal gate_en_sync: std_logic;
+signal freq_ctr_src_sel: unsigned(6 downto 0):=(others=>'0');
+signal src_clk: std_logic;
 attribute DONT_TOUCH of src_clk: signal is "yes";
 
-signal src_clk_fabric: STD_LOGIC;
+signal src_clk_fabric: std_logic;
+attribute DONT_TOUCH of src_clk_fabric: signal is "yes";
+attribute CLOCK_DEDICATED_ROUTE of src_clk_fabric: signal is "false";
 
 signal gate_period: unsigned(31 downto 0); -- gate_period=40E6 Corresponds to a gate_period/CLK200_FREQ= 0.2s second gate time. Since inputs are divided by 2, real frequency is 100*count.
 --signal gate_period_minus_1: unsigned(31 downto 0);
