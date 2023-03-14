@@ -66,13 +66,13 @@
     <Option Name="WTVcsLaunchSim" Val="0"/>
     <Option Name="WTRivieraLaunchSim" Val="0"/>
     <Option Name="WTActivehdlLaunchSim" Val="0"/>
-    <Option Name="WTXSimExportSim" Val="383"/>
-    <Option Name="WTModelSimExportSim" Val="383"/>
-    <Option Name="WTQuestaExportSim" Val="383"/>
+    <Option Name="WTXSimExportSim" Val="384"/>
+    <Option Name="WTModelSimExportSim" Val="384"/>
+    <Option Name="WTQuestaExportSim" Val="384"/>
     <Option Name="WTIesExportSim" Val="367"/>
-    <Option Name="WTVcsExportSim" Val="383"/>
-    <Option Name="WTRivieraExportSim" Val="383"/>
-    <Option Name="WTActivehdlExportSim" Val="383"/>
+    <Option Name="WTVcsExportSim" Val="384"/>
+    <Option Name="WTRivieraExportSim" Val="384"/>
+    <Option Name="WTActivehdlExportSim" Val="384"/>
     <Option Name="GenerateIPUpgradeLog" Val="TRUE"/>
     <Option Name="XSimRadix" Val="hex"/>
     <Option Name="XSimTimeUnit" Val="ns"/>
@@ -202,13 +202,6 @@
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/CMD_FIFO/CMD_FIFO.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -717,18 +710,19 @@
     </FileSet>
     <FileSet Name="utils_1" Type="Utils" RelSrcDir="$PSRCDIR/utils_1" RelGenDir="$PGENDIR/utils_1">
       <Filter Type="Utils"/>
+      <File Path="$PSRCDIR/utils_1/imports/impl_Rev2/chFPGA_MGK7MB_Rev2_routed.dcp">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedInSteps" Val="impl_Rev2"/>
+          <Attr Name="AutoDcp" Val="1"/>
+        </FileInfo>
+      </File>
       <Config>
         <Option Name="TopAutoSet" Val="TRUE"/>
       </Config>
     </FileSet>
     <FileSet Name="CHAN" Type="BlockSrcs" RelSrcDir="$PSRCDIR/CHAN" RelGenDir="$PGENDIR/CHAN">
-      <File Path="$PPRDIR/../../_Cores/KC705/CHAN_FIFO2/CHAN_FIFO2.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../../_Cores/KC705/PROBER_FRAME_FIFO/PROBER_FRAME_FIFO.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -737,6 +731,13 @@
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/PROBER_DATA_FIFO/PROBER_DATA_FIFO.xci">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../_Cores/KC705/CHAN_FIFO2/CHAN_FIFO2.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -779,6 +780,12 @@
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/chfpga_package.vhd">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../hdl/chfpga_mgk7mb_config.vhd">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -844,9 +851,32 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PSRCDIR/CHAN/new/CHAN_ooc.xdc">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="out_of_context"/>
+        </FileInfo>
+      </File>
       <Config>
         <Option Name="TopModule" Val="CHAN"/>
         <Option Name="TopRTLFile" Val="$PPRDIR/../../hdl/CHAN/CHAN.vhd"/>
+        <Option Name="ElabLinkDCPs" Val="0"/>
+        <Option Name="ElabLoadTimingContstraints" Val="0"/>
+        <Option Name="dataflowViewerSettings" Val="min_width=16"/>
+        <Option Name="UseBlackboxStub" Val="0"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="gmii_to_sgmii_bridge" Type="BlockSrcs" RelSrcDir="$PSRCDIR/gmii_to_sgmii_bridge" RelGenDir="$PGENDIR/gmii_to_sgmii_bridge">
+      <File Path="$PPRDIR/../../_Cores/KC705/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <Config>
+        <Option Name="TopModule" Val="gmii_to_sgmii_bridge"/>
         <Option Name="ElabLinkDCPs" Val="0"/>
         <Option Name="ElabLoadTimingContstraints" Val="0"/>
         <Option Name="dataflowViewerSettings" Val="min_width=16"/>
@@ -896,7 +926,35 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="impl_Rev2" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="true" WriteIncrSynthDcp="false" State="current" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/impl_Rev2" AutoRQSDir="$PSRCDIR/utils_1/imports/impl_Rev2">
+    <Run Id="gmii_to_sgmii_bridge_synth_1" Type="Ft3:Synth" SrcSet="gmii_to_sgmii_bridge" Part="xc7k420tffg901-2" ConstrsSet="gmii_to_sgmii_bridge" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/gmii_to_sgmii_bridge_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/gmii_to_sgmii_bridge_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/gmii_to_sgmii_bridge_synth_1">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022"/>
+        <Step Id="synth_design"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2022"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="impl_Rev2" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="true" IncrementalCheckpoint="$PSRCDIR/utils_1/imports/impl_Rev2/chFPGA_MGK7MB_Rev2_routed.dcp" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/impl_Rev2" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/impl_Rev2" AutoRQSDir="$PSRCDIR/utils_1/imports/impl_Rev2">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2022"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="CHAN_impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="CHAN" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="CHAN_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/CHAN_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/CHAN_impl_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
@@ -913,7 +971,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="CHAN_impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="CHAN" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="CHAN_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/CHAN_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/CHAN_impl_1">
+    <Run Id="gmii_to_sgmii_bridge_impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="gmii_to_sgmii_bridge" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="gmii_to_sgmii_bridge_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/gmii_to_sgmii_bridge_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/gmii_to_sgmii_bridge_impl_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
