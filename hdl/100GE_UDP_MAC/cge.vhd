@@ -1,4 +1,3 @@
---! @file
 ----------------------------------------------------------------------------------
 -- Company:  McGill University
 -- Engineer: JF CLiche
@@ -9,7 +8,7 @@
 -- Project Name: CHORD
 -- Target Devices: Zynq Ultrascale+ RfSoC
 -- Tool Versions: Vivado 2022.1 +
--- Description: Implements a 100G Ethernet interfaces.
+-- Description: Implements a 100G Ethernet interface.
 --
 --
 ----------------------------------------------------------------------------------
@@ -33,9 +32,11 @@ use work.chFPGA_Package.all;
 entity cge is
 	generic (
 		DEFAULT_MAC_SRC_ADDR: slv48 := X"005d03000000"; -- Source MAC Address to use for each link (Xilinx OUI)
-		DEFAULT_MAC_DEST_ADDR: slv48 := X"00e0edde88a0"; -- Destination MAC address to use by each link. 0xFFFFFFFFFFFF means Ethernet broadcast.
+		--DEFAULT_MAC_DEST_ADDR: slv48 := X"00e0edde88a0"; -- Destination MAC address to use by each link. 0xFFFFFFFFFFFF means Ethernet broadcast.
+		DEFAULT_MAC_DEST_ADDR: slv48 := X"FFFFFFFFFFFF"; -- Destination MAC address to use by each link. 0xFFFFFFFFFFFF means Ethernet broadcast.
 		DEFAULT_IP_SRC_ADDR: slv32 := X"0AC00002"; -- Source IP address used by each link
-		DEFAULT_IP_DEST_ADDR: slv32 := X"0AC00001"; -- Default destination addres used by each link. If DEST_ADDR_MODE=1, the destination adress is determined by a combination of register values and lane number.
+		--DEFAULT_IP_DEST_ADDR: slv32 := X"0AC00001"; -- Default destination addres used by each link. If DEST_ADDR_MODE=1, the destination adress is determined by a combination of register values and lane number.
+		DEFAULT_IP_DEST_ADDR: slv32 := X"FFFFFFFF"; -- Default destination addres used by each link. If DEST_ADDR_MODE=1, the destination adress is determined by a combination of register values and lane number.
 		DEFAULT_IP_DEST_PORT: slv16 := X"A028"; -- Destination port used by each lane
 
 		--USE_LITTLE_ENDIAN: boolean := TRUE; --! TRUE: Byte is LSB is transmitted first (i.e. bit 0 of word transmitted first). FALSE: Byte in MSB is transmitted first (i.e. bit 24 of word is transmitted first)
@@ -84,7 +85,7 @@ architecture Behavioral of cge is
 
 
 	signal control_bytes: slv8_array(0 to 3);
-	signal status_bytes: slv8_array(0 to 1);
+	signal status_bytes: slv8_array(0 to 2);
 
 	signal tx_axis_tdata: std_logic_vector(511 downto 0);
 	signal tx_axis_tvalid: std_logic;
@@ -124,13 +125,15 @@ architecture Behavioral of cge is
 	--signal lbus_tx_rx_restart_in: std_logic;
 
 	signal tx_gt_locked_led: std_logic;
-	signal tx_done_led: std_logic;
-	signal tx_busy_led: std_logic;
+--	signal tx_done_led: std_logic;
+--	signal tx_busy_led: std_logic;
 
 	signal tx_preamblein: std_logic_vector(55 downto 0) := (others =>'0');
 
 	signal tx_ovfout: std_logic;
 	signal tx_unfout: std_logic;
+	signal tx_ovfout_sticky: std_logic;
+	signal tx_unfout_sticky: std_logic;
 
 	-- Data FIFO signals
 	signal fifo_srst: std_logic;
@@ -140,15 +143,18 @@ architecture Behavioral of cge is
 	signal fifo_dout: std_logic_vector(288*2-1 DOWNTO 0);
 	signal fifo_full: std_logic;
 	signal fifo_overflow: std_logic;
+	signal fifo_overflow_sticky: std_logic;
 	signal fifo_empty:STD_LOGIC;
 	signal fifo_valid: std_logic;
 	signal fifo_almost_full: std_logic;
 	signal fifo_wr_rst_busy: std_logic;
 	signal fifo_rd_rst_busy: std_logic;
 
+
 	-- Flag FIFO signals
 	signal flag_fifo_wr_en: std_logic;
 	signal flag_fifo_overflow: std_logic;
+	signal flag_fifo_overflow_sticky: std_logic;
 	signal flag_fifo_full: std_logic;
 	signal flag_fifo_rd_en: std_logic;
 	signal flag_fifo_valid: std_logic;
@@ -167,6 +173,8 @@ architecture Behavioral of cge is
 	signal packet_spacing_in_words : unsigned(15 downto 0);
 	signal enable_packet_generator: std_logic;
 	signal enable_packet_generator_reg: std_logic;
+	signal in_frame_ctr: unsigned(7 downto 0);
+	signal out_frame_ctr: unsigned(7 downto 0);
 
 begin
 	clk <= clk_out_int;
@@ -185,7 +193,7 @@ begin
 
 	cmac_reset_tx_datapath <= control_bytes(0)(0);
 	cmac_reset_rx_datapath <= control_bytes(0)(1);
-	--cmac_sys_reset <= control_bytes(0)(2);
+	cmac_sys_reset <= control_bytes(0)(2);
 	cmac_core_tx_reset <= control_bytes(0)(3);
 
 	--send_continuous_pkts <= control_bytes(0)(4);
@@ -206,16 +214,27 @@ begin
 
 	---- STATUS Byte 0
 
-	status_bytes(0)(0) <= tx_gt_locked_led;
-	status_bytes(0)(1) <= tx_done_led;
-	status_bytes(0)(2) <= tx_busy_led;
+	status_bytes(0) <= ( 
+		0 => tx_gt_locked_led,
+		1 => tx_ovfout_sticky,
+		2 => tx_unfout_sticky,
+		3 => fifo_overflow_sticky,
+		4 => flag_fifo_overflow_sticky,
+		5 => ctrl_rst, -- will always read 0
+		6 => rst,
+		7 => usr_tx_reset -- CMAC out of reset
+		);
+
+	---- STATUS Byte 1
+	status_bytes(1) <= std_logic_vector(in_frame_ctr);
+	status_bytes(2) <= std_logic_vector(out_frame_ctr);
 
 	bsb_mmr0: entity work.CTRL_SLAVE
 		GENERIC MAP (
-			DEFAULT_CONTROL_BYTES=> X"80_0A_00FF",
+			DEFAULT_CONTROL_BYTES=> X"00_0A_0FFF",
 			USE_RAM_DOUT_RDY=>TRUE, -- need to wait for the RDY signal on RAM read accesses
 			RAM_DATA_WIDTH => 16,
-			RAM_ADDR_WIDTH => 10, -- GTX DRP Address bus is 8 bits
+			RAM_ADDR_WIDTH => 10, -- CMAC DRP Address bus is 10 bits
 			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), -- Number of bits in the control word
 			NUMBER_OF_STATUS_BYTES => status_bytes'Length(1) -- Number of bits in the status word.
 		)
@@ -242,36 +261,6 @@ begin
 			-- RST => areset
 		);
 
-
---pkt_gen: entity work.cmac_usp_axis_pkt_gen
---	PORT  MAP (
---		clk => clk_out_int,
---		reset => usr_tx_reset,
---		sys_reset => cmac_sys_reset, -- input
---		send_continuous_pkts => send_continuous_pkts,
---		lbus_tx_rx_restart_in => lbus_tx_rx_restart_in,
---		ctl_tx_enable => ctl_tx_enable,
---		ctl_tx_test_pattern => ctl_tx_test_pattern,
---		ctl_tx_send_idle => ctl_tx_send_idle,
---		ctl_tx_send_lfi => ctl_tx_send_lfi,
---		ctl_tx_send_rfi => ctl_tx_send_rfi,
---		--tx_reset => open, -- not used, set to '0'
---		tx_gt_locked_led => tx_gt_locked_led,
---		simplex_mode_rx_aligned => simplex_mode_rx_aligned,
---		tx_done_led => tx_done_led,
---		tx_busy_led => tx_busy_led,
---		tx_preamblein => tx_preamblein,
---		tx_axis_tready => tx_axis_tready,
---		tx_axis_tvalid => tx_axis_tvalid,
---		tx_axis_tdata => tx_axis_tdata,
---		tx_axis_tlast => tx_axis_tlast,
---		tx_axis_tkeep => tx_axis_tkeep,
---		tx_axis_tuser => tx_axis_tuser,
---		tx_ovfout => tx_ovfout,
---		tx_unfou => tx_unfout
-
---    );
-
 refclk_div2_proc: process(refclk_out_int)
 	begin
 		if rising_edge(refclk_out_int) then
@@ -279,7 +268,7 @@ refclk_div2_proc: process(refclk_out_int)
 		end if; -- clk
 end process;
 
-falg_fifo_inst : entity work.cge_flag_fifo
+flag_fifo_inst : entity work.cge_flag_fifo
   PORT MAP (
     rst => fifo_srst,
     wr_clk => clk,
@@ -340,16 +329,25 @@ begin
 	begin
 		if rising_edge(clk) then
 
-			if usr_tx_reset='1' then -- need to resync to clk
+			if usr_tx_reset='1' or rst='1' then -- need to resync to clk
 				fifo_srst <= '1';
 			else
 				fifo_srst <= '0';
 			end if;
+			if fifo_overflow='1' then
+					fifo_overflow_sticky <= '1';
+			end if;
+			if flag_fifo_overflow='1' then
+					flag_fifo_overflow_sticky <= '1';
+			end if;
 
 			if usr_tx_reset='1' or fifo_wr_rst_busy='1' then
 				is_high_word <= '0';
+				in_frame_ctr <= (others => '0');
+				fifo_overflow_sticky <= '0';
 			elsif fifo_wr_en='1' and fifo_full='0' then
 				is_high_word <= not is_high_word;
+				flag_fifo_overflow_sticky <= '0';
 			end if;
 
 			if axis_tx_tvalid='1' then
@@ -367,6 +365,10 @@ begin
 				axis_tx_tvalid <= s_axis_tx_tvalid;
 				axis_tx_tlast <= s_axis_tx_tlast;
 			end if; -- source select
+
+			if axis_tx_tvalid <='1' then
+				in_frame_ctr <= in_frame_ctr + 1;
+			end if;
 		end if; --clk
 	end process fifo_wr_proc;
 end block fifo_wr_block;
@@ -417,25 +419,25 @@ begin
 			udp_payload_length  <= 8 + 22 + shift_left(resize(number_of_udp_words, 16), 5); -- 22 bytes padding to complete the second 32-byte header word
 			ip_packet_length <= 20 + udp_payload_length;
 
+			mac_header := DEFAULT_MAC_DEST_ADDR & DEFAULT_MAC_SRC_ADDR & X"0800"; -- dest MAC addr, src MAC addr, ethertype (0x0800=IPv4)
+			ip_header := X"4500" & (X"0000") & X"1234" & X"0000" & X"7F" & X"11" & (X"0000") & DEFAULT_IP_SRC_ADDR & DEFAULT_IP_DEST_ADDR; -- Version/HdrLen/DSCP/ECP flags, IP Len, ID, Flags/Frag offset, TTL, Protocol, IP header checksum, src IP addr, Dest IP Addr
+			udp_header := X"A027" & DEFAULT_IP_DEST_PORT & (X"0000") & X"0000"; -- Src port, dest port, UDP len,  UDP checksum (0=disable)
+			ip_header(18*8-1 downto 16*8) := std_logic_vector(ip_packet_length); -- insert IP length prior to computing checksum
+			ip_checksum := compute_ip_checksum(ip_header);
+			ip_header(10*8-1 downto 8*8) := ip_checksum; -- insert IP checksum
+			udp_header(4*8-1 downto 2*8) := std_logic_vector(udp_payload_length); -- insert UDP payload length
+	
 			case tx_state is
 				when INIT =>
 					axis_pktgen_tdata <= (others => '0');
 					axis_pktgen_tvalid <= '0';
 					axis_pktgen_tlast <= '0';
-
-					mac_header := DEFAULT_MAC_DEST_ADDR & DEFAULT_MAC_SRC_ADDR & X"0800"; -- dest MAC addr, src MAC addr, ethertype (0x0800=IPv4)
-					ip_header := X"4500" & (X"0000") & X"1234" & X"0000" & X"7F" & X"11" & (X"0000") & DEFAULT_IP_SRC_ADDR & DEFAULT_IP_DEST_ADDR; -- Version/HdrLen/DSCP/ECP flags, IP Len, ID, Flags/Frag offset, TTL, Protocol, IP header checksum, src IP addr, Dest IP Addr
-					udp_header := X"A027" & DEFAULT_IP_DEST_PORT & (X"0000") & X"0000"; -- Src port, dest port, UDP len,  UDP checksum (0=disable)
-					ip_header(18*8-1 downto 16*8) := std_logic_vector(ip_packet_length); -- insert IP length prior to computing checksum
-					ip_checksum := compute_ip_checksum(ip_header);
-					ip_header(10*8-1 downto 8*8) := ip_checksum; -- insert IP checksum
-					udp_header(4*8-1 downto 2*8) := std_logic_vector(udp_payload_length); -- insert UDP payload length
-					tx_state <= SEND_HEADER1;
+					word_ctr <= (others => '0');
 					frame_ctr <= (others => '0');
+					tx_state <= SEND_HEADER1;
+
 				when SEND_HEADER1 =>
-
 					axis_pktgen_tdata <= mac_header & ip_header(20*8-1 downto 2*8);
-
 					axis_pktgen_tvalid <= '1';
 					axis_pktgen_tlast <= '0';
 					tx_state <= SEND_HEADER2;
@@ -444,7 +446,6 @@ begin
 					         X"BE_EF_FA_CE_AB_BA" & -- UDP checksum, Start of Udp payload
 					         std_logic_vector(frame_ctr) & X"deadbea7" & -- UDP payload (contd) - filler bytes
 					         X"00_11_22_33_44_55_66_77"; -- UDP payload (contd) - filler bytes
-					word_ctr <= (others => '0');
 					frame_ctr <= frame_ctr + 1;
 					tx_state <= SEND_DATA;
 
@@ -577,8 +578,20 @@ begin
 					--send_data <= '1';
 			end case;
 
+			if tx_ovfout='1' then
+				tx_ovfout_sticky <= '1';
+			end if;
+			if tx_unfout='1' then
+				tx_unfout_sticky <= '1';
+			end if;
+			if tx_axis_tvalid='1' then
+				out_frame_ctr <= out_frame_ctr + 1;
+			end if;
 			if usr_tx_reset = '1' then
 				tx_state <= INIT_CMAC;
+				tx_ovfout_sticky <= '0';
+				tx_unfout_sticky <= '0';
+				out_frame_ctr <= (others => '0');
 			end if;
 
 		end if; --clk
