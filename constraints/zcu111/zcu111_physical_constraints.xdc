@@ -19,7 +19,7 @@ set_clock_groups -name CLK_PL0_GROUP -asynchronous -group [get_clocks clk_pl_0]
 # SMA clock input
 ########################################
 #set_property PACKAGE_PIN T32      [get_ports "USER_SMA_MGT_CLOCK_C_N"] ;# Bank 130 - MGTREFCLK1N_130
-#set_property PACKAGE_PIN T31      [get_ports "USER_SMA_MGT_CLOCK_C_P"] ;# Bank 130 - MGTREFCLK1P_130
+# set_property PACKAGE_PIN T31      [get_ports clk156_p] ;# Bank 130 - MGTREFCLK1P_130
 
 
 ########################################
@@ -50,15 +50,9 @@ create_clock -name CLK200 -period 5 [get_ports {FPGA_REFCLK_OUT_C_clk_p*}]
 #set_property IOSTANDARD  LVDS     [get_ports "CLK_100_N"] ;# Bank  64 VCCO - VCC1V8   - IO_L11N_T1U_N9_GC_64
 #set_property PACKAGE_PIN AM15     [get_ports "CLK_100_P"] ;# Bank  64 VCCO - VCC1V8   - IO_L11P_T1U_N8_GC_64
 #set_property IOSTANDARD  LVDS     [get_ports "CLK_100_P"] ;# Bank  64 VCCO - VCC1V8   - IO_L11P_T1U_N8_GC_64
-set_property PACKAGE_PIN AM17     [get_ports {CLK_125_clk_n}] ;# Bank  64 VCCO - VCC1V8   - IO_L12N_T1U_N11_GC_64
-set_property IOSTANDARD  LVDS     [get_ports {CLK_125_clk_n}] ;# Bank  64 VCCO - VCC1V8   - IO_L12N_T1U_N11_GC_64
-set_property PACKAGE_PIN AL17     [get_ports {CLK_125_clk_p}] ;# Bank  64 VCCO - VCC1V8   - IO_L12P_T1U_N10_GC_64
-set_property IOSTANDARD  LVDS     [get_ports {CLK_125_clk_p}] ;# Bank  64 VCCO - VCC1V8   - IO_L12P_T1U_N10_GC_64
-create_clock -name CLK125 -period 8 [get_ports {CLK_125_clk_p}]
-set_clock_groups -name CLK125_GROUP -asynchronous -group [get_clocks -include_generated_clocks CLK125]
 
 # ignore timing between CLK200 and CORR_CLK  domains. This line has to be placed after we have defines the source clock for the two specified derived clocks
-set_false_path -from [get_clocks CLK200_MMCM_NOBUF] -to [get_clocks {CORR_CLK_NOBUF}]
+set_false_path -from [get_clocks CLK200_MMCM_NOBUF] -to [get_clocks CORR_CLK_NOBUF]
 
 ########################################
 # SI570 programmable user PLL, default 300 MHz
@@ -73,7 +67,7 @@ set_false_path -from [get_clocks CLK200_MMCM_NOBUF] -to [get_clocks {CORR_CLK_NO
 ########################################
 # Right frequency for 10G Ethernet
 #set_property PACKAGE_PIN V32      [get_ports "USER_MGT_SI570_CLOCK_C_N"] ;# Bank 129 - MGTREFCLK1N_129
-#set_property PACKAGE_PIN V31      [get_ports "USER_MGT_SI570_CLOCK_C_P"] ;# Bank 129 - MGTREFCLK1P_129
+set_property PACKAGE_PIN V31 [get_ports clk156_p]
 
 ########################################
 # SI5381A Clock recovery PLL
@@ -260,10 +254,10 @@ set_property IOSTANDARD  LVCMOS18 [get_ports "gpio_led*"]
 #set_property PACKAGE_PIN V36      [get_ports "SFP1_TX_N"] ;# Bank 128 - MGTYTXN1_128
 #set_property PACKAGE_PIN T36      [get_ports "SFP2_TX_N"] ;# Bank 128 - MGTYTXN2_128
 #set_property PACKAGE_PIN R34      [get_ports "SFP3_TX_N"] ;# Bank 128 - MGTYTXN3_128
-#set_property PACKAGE_PIN Y35      [get_ports "SFP0_TX_P"] ;# Bank 128 - MGTYTXP0_128
-#set_property PACKAGE_PIN V35      [get_ports "SFP1_TX_P"] ;# Bank 128 - MGTYTXP1_128
-#set_property PACKAGE_PIN T35      [get_ports "SFP2_TX_P"] ;# Bank 128 - MGTYTXP2_128
-#set_property PACKAGE_PIN R33      [get_ports "SFP3_TX_P"] ;# Bank 128 - MGTYTXP3_128
+set_property PACKAGE_PIN Y35 [get_ports {qsfp_txp[0]}]
+set_property PACKAGE_PIN V35 [get_ports {qsfp_txp[1]}]
+set_property PACKAGE_PIN T35 [get_ports {qsfp_txp[2]}]
+set_property PACKAGE_PIN R33 [get_ports {qsfp_txp[3]}]
 #set_property PACKAGE_PIN K12      [get_ports "SFP2_TX_DISABLE_B"] ;# Bank  68 VCCO - VCC1V2   - IO_L7N_T1L_N1_QBC_AD13N_68
 #set_property IOSTANDARD  LVCMOS12 [get_ports "SFP2_TX_DISABLE_B"] ;# Bank  68 VCCO - VCC1V2   - IO_L7N_T1L_N1_QBC_AD13N_68
 #set_property PACKAGE_PIN G12      [get_ports "SFP0_TX_DISABLE_B"] ;# Bank  68 VCCO - VCC1V2   - IO_L13N_T2L_N1_GC_QBC_68
@@ -1219,3 +1213,11 @@ set_property IOSTANDARD  LVCMOS18 [get_ports "gpio_led*"]
 
 
 
+
+create_pblock CGE
+add_cells_to_pblock [get_pblocks CGE] [get_cells -quiet [list sifpga_zcu111_i/sifpga_zcu111_chfpga_0/U0/chfpga0/CGE_GEN.cge0]]
+resize_pblock [get_pblocks CGE] -add {SLICE_X0Y181:SLICE_X11Y283}
+resize_pblock [get_pblocks CGE] -add {DSP48E2_X0Y74:DSP48E2_X0Y111}
+resize_pblock [get_pblocks CGE] -add {RAMB18_X0Y74:RAMB18_X0Y111}
+resize_pblock [get_pblocks CGE] -add {RAMB36_X0Y37:RAMB36_X0Y55}
+set_property EXCLUDE_PLACEMENT 1 [get_pblocks CGE]
