@@ -54,7 +54,7 @@ use IEEE.NUMERIC_STD.ALL;
 use IEEE.std_logic_misc.ALL; -- for and_reduce
 
 library UNISIM;
-use UNISIM.VComponents.all;
+use UNISIM.vcomponents.all;
 --! Project libraries
 use work.chFPGA_Package.all; --! Get all component definitions
 --use work.chan_package.chan; --! Get chan component
@@ -79,7 +79,8 @@ entity chFPGA is
 		NUMBER_OF_CHANNELIZERS: INTEGER :=NUMBER_OF_CHANNELIZERS_MAX; --! Number of channelizers to be implemented
 		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := NUMBER_OF_CHANNELIZERS_MAX;
 		NUMBER_OF_CROSSBAR_INPUTS : integer := GLOBAL_NUMBER_OF_CHANNELIZERS_TO_CORRELATE;
-		NUMBER_OF_CROSSBAR_OUTPUTS : integer;
+		NUMBER_OF_CROSSBAR_OUTPUTS : integer; -- number of CROSSBAR1 output lanes. Shoul dbe 8 for URAM-based CROSSBAR1.
+		CROSSBAR1_TYPE: string := "BRAM"; -- "BRAM" or "URAM"
 		NUMBER_OF_CORRELATORS: INTEGER :=8; --! Number of correlator blocks (XMUL+ACC) to be implemented
 --		NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER :=GLOBAL_NUMBER_OF_CHANNELIZERS_TO_CORRELATE; --! Number of channelizers to be correlated for each frequency channel. This is hard coded for now. Determines how many channelizer streams are fed to the CORR modules, and how many multipliers to implement in parallel in the CORR module.
 		-- Data offloading links
@@ -3145,10 +3146,10 @@ end generate GPUGEN;
 ---------------------------------------------------------
 CGE_GEN: if IMPLEMENT_100G_ETHERNET generate
 
-	signal axis_cge_tdata: slv32_array(0 to 7); -- First byte to transmit is in in LSB (i.e first bit transmitted is bit 0)
-	signal axis_cge_tvalid: std_logic_vector(0 to 7);
-	signal axis_cge_tlast: std_logic_vector(0 to 7);
-	signal axis_cge_tready: std_logic_vector(0 to 7);
+	signal axis_cge_tdata: std_logic_vector(255 downto 0); -- First byte to transmit is in in MSB (i.e first bit transmitted is bit 0)
+	signal axis_cge_tvalid: std_logic;
+	signal axis_cge_tlast: std_logic;
+--	signal axis_cge_tready: std_logic_vector(0 to 7);
 	signal cge_reset, cge_reset_reg: std_logic;
 
 	signal cge_cmd_dat: AXIS8_DAT_STRUCT;
@@ -3156,15 +3157,28 @@ CGE_GEN: if IMPLEMENT_100G_ETHERNET generate
 	signal cge_rply_dat: AXIS8_DAT_STRUCT;
 	signal cge_rply_rdy: AXIS8_RDY_STRUCT;
 
+	signal cge_ctrl_rst, cge_ctrl_rst_reg: std_logic;
+
 
 begin
 
 	-- Index the system control buses as a separate signal here , because the simulator will flag errors
 	--  if we index it directly on the instantiation
 	cge_cmd_dat<= top_cmd_dat(GPU_LINK_BASE_PORT);
-	top_cmd_rdy(GPU_LINK_BASE_PORT) <= CGE_CMD_RDY;
+	top_cmd_rdy(GPU_LINK_BASE_PORT) <= cge_cmd_rdy;
 	cge_rply_rdy<= top_rply_rdy(GPU_LINK_BASE_PORT);
 	top_rply_dat(GPU_LINK_BASE_PORT) <= CGE_RPLY_DAT;
+
+
+	-- Pipeline the BSB resets to help them propagate across the chip
+	bsb_rst_proc: process(ctrl_clk)
+		begin
+			if rising_edge(ctrl_clk) then
+				cge_ctrl_rst            <= ctrl_rst;
+				cge_ctrl_rst_reg        <= cge_ctrl_rst;
+			end if; -- RST/CLK
+		end process;
+
 
 	-- Pipeline the 2nd crossbar output (non-blocking AXI-Streaming bus) to the input to the GPU link blocks to facilitate routing
 	cge_pipe_proc: process(ct_clk)
@@ -3173,30 +3187,19 @@ begin
 				cge_reset <= ct_reset_reg;
 				cge_reset_reg <= cge_reset;
 
+                axis_cge_tvalid <= axis_crossbar1_out_tvalid(0);
+                axis_cge_tlast <= axis_crossbar1_out_tlast(0);
+                if cge_reset = '1' then
+                    axis_cge_tvalid <= '0';
+                end if;
 				for i in 0 to NUMBER_OF_CHANNELIZERS-1 loop
-					axis_cge_tdata(i) <= axis_chan_out_tdata(i);
-					axis_cge_tvalid(i) <= axis_chan_out_tvalid(i);
-					axis_cge_tlast(i) <= axis_chan_out_tlast(i);
-					if cge_reset = '1' then
-						axis_cge_tvalid(i) <= '0';
-					end if;
+					axis_cge_tdata(32*(7-i)+31 downto 32*(7-i)) <= axis_crossbar1_out_tdata(i);
 				end loop;
 			end if;
 		end process;
 
  -- Use COMPONENT instantiation if this is synthesized as an out-of-context module
 	cge0: entity work.cge
-		-- generic map (
-		-- 	NUMBER_OF_CHANNELS    => NUMBER_OF_GPU_LINKS,
-		-- 	NUMBER_OF_REFCLK      => NUMBER_OF_GPU_REFCLKS,
-		-- 	CHANNEL_QUAD          => GPU_CHANNEL_QUAD, --! Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-		-- 	QUAD_REFCLK           => GPU_QUAD_REFCLK, --! Indicates which qua is associated each reference clock.
-		-- 	DEFAULT_MAC_SRC_ADDR  => (0 to NUMBER_OF_GPU_LINKS-1=> X"123456789ABC"),
-		-- 	DEFAULT_MAC_DEST_ADDR => (0 to NUMBER_OF_GPU_LINKS-1=> X"FFFFFFFFFFFF"),
-		-- 	DEFAULT_IP_SRC_ADDR   => (0 to NUMBER_OF_GPU_LINKS-1=> X"0A0A0A0B"),
-		-- 	DEFAULT_IP_DEST_ADDR  => (0 to NUMBER_OF_GPU_LINKS-1=> X"0A0A0A0A"),
-		-- 	DEFAULT_IP_DEST_PORT  => (0 to NUMBER_OF_GPU_LINKS-1=> X"A028")
-		-- 	)
 		port map (
 			tx_p => cge_tx_p,
 			tx_n => cge_tx_n,
@@ -3213,7 +3216,7 @@ begin
 			s_axis_tx_tdata  => axis_cge_tdata,
 			s_axis_tx_tvalid => axis_cge_tvalid,
 			s_axis_tx_tlast  => axis_cge_tlast,
-			s_axis_tx_tready => axis_cge_tready, -- data is always been sent, independent on whether the transmitter is ready or not. W ehave to set out data rate right to avoid overflows.
+
 			clk_out    => cge_txclk, --! 322 MHz generated by the core to clock all user interface signals.
 
 			rst => cge_reset,
@@ -3225,7 +3228,7 @@ begin
 			RPLY_DAT => cge_rply_dat,
 			RPLY_RDY => cge_rply_rdy,
 			CTRL_CLK => ctrl_clk,
-			CTRL_RST => gpu_ctrl_rst_reg
+			CTRL_RST => cge_ctrl_rst_reg
 		 );
 
 
