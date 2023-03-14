@@ -42,8 +42,9 @@ entity sifpga_crs_chfpga_wrapper is
 			NUMBER_OF_ADCS: integer                      := 8; -- Number of ADC inputs
 			ADC_TYPE: string                             := "AXIS"; -- ADC data is provided through the axis_adc port
 			NUMBER_OF_CHANNELIZERS:integer               := 8;  --!(Typ. =16)  (0-NUMBER_OF_ADCS) Number of channelizer blocks to be implemented
-			NUMBER_OF_CROSSBAR_INPUTS: integer           := 4; --! (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
-			NUMBER_OF_CROSSBAR_OUTPUTS: integer          := 4; --! (Typ. =16): Number of repacked data streams to feed to the corrleator or GPU links
+			NUMBER_OF_CROSSBAR_INPUTS: integer           := 8; --! (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
+			NUMBER_OF_CROSSBAR_OUTPUTS: integer          := 8; --! (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
+			CROSSBAR1_TYPE: string                       := "URAM"; -- "BRAM" or "URAM"
 			NUMBER_OF_CORRELATORS: integer               := 4; --! Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
 			NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := 0;
 			NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := 0;
@@ -336,7 +337,7 @@ begin
 			NUMBER_OF_CORRELATORS           => NUMBER_OF_CORRELATORS,
 			NUMBER_OF_CROSSBAR_INPUTS       => NUMBER_OF_CROSSBAR_INPUTS,
 			NUMBER_OF_CROSSBAR_OUTPUTS      => NUMBER_OF_CROSSBAR_OUTPUTS,
-
+			CROSSBAR1_TYPE                  => CROSSBAR1_TYPE,
 			NUMBER_OF_GPU_LINKS             => NUMBER_OF_GPU_LINKS,
 			NUMBER_OF_GPU_REFCLKS           => NUMBER_OF_GPU_REFCLKS,
 			IMPLEMENT_100G_ETHERNET         => IMPLEMENT_100G_ETHERNET,
