@@ -52,13 +52,14 @@ entity cge is
 		refclk_n : in std_logic;
 
 		refclk_out: out std_logic; -- 156.25 MHz Reference clock output (buffered?)
-		refclk_div2: out std_logic; -- 156.25 MHz reference clock divided by 2
+		--refclk_div2: out std_logic; -- 156.25 MHz reference clock divided by 2
 
 		s_axis_tx_tdata: in std_logic_vector(255 downto 0) := (others=>'0'); -- First byte to transmit is in in LSB (i.e first bit transmitted is bit 0)
 		s_axis_tx_tvalid: in std_logic := '0';
 		s_axis_tx_tlast: in std_logic := '0';
+		clk: in std_logic; -- axis bus clock
 
-		clk_out: out std_logic; --! 322 MHz clock derived from 100G core. Clocks all user signals
+		clk322_out: out std_logic; --! 322 MHz clock derived from 100G core. Clocks all user signals
 		rst: in std_logic; -- synchrounous reset
 		--init_clk: in std_logic; -- continuous clock
 
@@ -84,8 +85,8 @@ architecture Behavioral of cge is
 -- Signals
 
 
-	signal control_bytes: slv8_array(0 to 3);
-	signal status_bytes: slv8_array(0 to 2);
+	signal control_bytes: slv8_array(0 to 5);
+	signal status_bytes: slv8_array(0 to 5);
 
 	signal tx_axis_tdata: std_logic_vector(511 downto 0);
 	signal tx_axis_tvalid: std_logic;
@@ -119,7 +120,9 @@ architecture Behavioral of cge is
 	signal refclk_div2_int: std_logic;
 
 	signal refclk_out_int: std_logic;
-	signal usr_tx_reset: std_logic;
+	signal usr_tx_reset: std_logic; -- registered CMAC reset output
+	signal usr_tx_reset_pre: std_logic;  -- non-registered version of the CMAC usr_tx_rst
+
 
 	--signal send_continuous_pkts: std_logic;
 	--signal lbus_tx_rx_restart_in: std_logic;
@@ -147,6 +150,7 @@ architecture Behavioral of cge is
 	signal fifo_empty:STD_LOGIC;
 	signal fifo_valid: std_logic;
 	signal fifo_almost_full: std_logic;
+	signal fifo_almost_full_reg: std_logic;
 	signal fifo_wr_rst_busy: std_logic;
 	signal fifo_rd_rst_busy: std_logic;
 
@@ -161,7 +165,7 @@ architecture Behavioral of cge is
 
 	signal tx_reset_done: std_logic;
 
-	signal clk: std_logic;
+--	signal clk: std_logic;
 
 	-- temporary signals
 	signal axis_tx_tdata: std_logic_vector(255 downto 0); -- First byte to transmit is in in LSB (i.e first bit transmitted is bit 0)
@@ -178,11 +182,15 @@ architecture Behavioral of cge is
 	signal enable_packet_generator_reg: std_logic;
 	signal in_frame_ctr: unsigned(7 downto 0);
 	signal out_frame_ctr: unsigned(7 downto 0);
+	signal packet_length: unsigned(15 downto 0);
+	signal capture_byte_number: unsigned(15 downto 0);
+	signal capture_byte: std_logic_vector(7 downto 0);
+	signal capture_tlast: std_logic;
 
 begin
-	clk <= clk_out_int;
-	clk_out <= clk_out_int;
-	refclk_div2 <= refclk_div2_int;
+	--clk <= clk_out_int;
+	clk322_out <= clk_out_int;
+	--refclk_div2 <= refclk_div2_int;
 	refclk_out <= refclk_out_int;
 	tx_p <= reverse_bits_and_dir(gt_txp_out);
 	tx_n <= reverse_bits_and_dir(gt_txn_out);
@@ -215,6 +223,9 @@ begin
 	--ctl_tx_send_lfi <=  control_bytes(1)(3);
 	--ctl_tx_test_pattern <=  control_bytes(1)(4);
 
+	-- CONTROL Byte 4-5
+	capture_byte_number <= to_unsigned(control_bytes(4 to 5));
+
 	---- STATUS Byte 0
 
 	status_bytes(0) <= ( 
@@ -223,18 +234,24 @@ begin
 		2 => tx_unfout_sticky,
 		3 => fifo_overflow_sticky,
 		4 => flag_fifo_overflow_sticky,
-		5 => ctrl_rst, -- will always read 0
+		5 => capture_tlast, -- will always read 0
 		6 => rst,
-		7 => usr_tx_reset -- CMAC out of reset
+		7 => usr_tx_reset -- reset signal from CMAC
 		);
 
-	---- STATUS Byte 1
+	---- STATUS Byte 1-2
 	status_bytes(1) <= std_logic_vector(in_frame_ctr);
 	status_bytes(2) <= std_logic_vector(out_frame_ctr);
 
+	---- STATUS Byte 3-4
+	status_bytes(3 to 4) <= to_slv8_array(packet_length);
+
+	status_bytes(5) <= capture_byte;
+
+
 	bsb_mmr0: entity work.CTRL_SLAVE
 		GENERIC MAP (
-			DEFAULT_CONTROL_BYTES=> X"80_FF_0100",
+			DEFAULT_CONTROL_BYTES=> X"00_FF_0100_0000",
 			USE_RAM_DOUT_RDY=>TRUE, -- need to wait for the RDY signal on RAM read accesses
 			RAM_DATA_WIDTH => 16,
 			RAM_ADDR_WIDTH => 10, -- CMAC DRP Address bus is 10 bits
@@ -264,12 +281,6 @@ begin
 			-- RST => areset
 		);
 
-refclk_div2_proc: process(refclk_out_int)
-	begin
-		if rising_edge(refclk_out_int) then
-			refclk_div2_int <= not refclk_div2_int;
-		end if; -- clk
-end process;
 
 flag_fifo_inst : entity work.cge_flag_fifo
   PORT MAP (
@@ -287,6 +298,15 @@ flag_fifo_inst : entity work.cge_flag_fifo
     valid => flag_fifo_valid
   );
 
+-- Independent clock Builtin FWFT FIFO, 288-bit input data width, 576-bit output data width, with output register, latency=0 on USP
+-- Prog full must be < MAX_DEPTH-2 to compensate for the delayed prog_full signal.
+-- We need 8 RAMB36 minimum because the output width of each BRAM is 72 bits max. Each BRAM is 36-bit x 1k.
+-- Total memory is 8*4kbytes = 32 kBytes minimum. 
+-- We to store 1 full frame (8k), plus a little additional space to store the next incoming frame while the first one is sent out. 
+-- So we have too much memory, but we can't make it smaller due to the wide output width.
+--
+-- The speed of the FIFO seems to be limited by the fact that  it combinatorially combines the FULL signals of every cell to gate WR_EN, and the PROG_FULL is a "or" combination of PROG_FULL from every cell, as is the EMPTY signal (which generates VALID).
+-- This is probably because this is an async FIFO, and not all cells might capture the data on the same clock, so we use the worst of all cell.   
 data_fifo_inst : entity work.cge_data_fifo
   PORT MAP (
     srst => fifo_srst, -- synchronous to wr_clk
@@ -307,11 +327,13 @@ data_fifo_inst : entity work.cge_data_fifo
     rd_rst_busy => fifo_rd_rst_busy
   );
 
-fifo_din(287 downto 258) <= (others => '0'); -- don't leave FIFO input floating - critical warnings
+fifo_din(287 downto 258) <= (others => '0'); -- don't leave the unused FIFO data inputs floating: critical warnings
 
 fifo_wr_block: block
 	signal is_high_word: std_logic;
 	signal was_tlast: std_logic;
+	signal usr_tx_reset_resync: std_logic;
+	signal word_ctr: unsigned(15 downto 0);
 begin
 	-- Place incoming bytes on the fifo data bus
 	fifo_din(255 downto 0) <= axis_tx_tdata;
@@ -321,19 +343,34 @@ begin
 	-- generate the fifo write signal.
 	--  We force a dummy write if the low word is tlast to make sure to complete the 64-byte output word.
 	-- Otherwise a packet with an odd number of 32-bytes words would not start transmitting until the beginning of the next packet.
-	-- As a protection, we swop writing in the data FIFO if it is almost full, except for the tlast word so we don't desynchronize with the flag fifo
-	fifo_wr_en <= (axis_tx_tvalid or (is_high_word and was_tlast)) and (not fifo_almost_full or axis_tx_tlast) and tx_reset_done;
+	-- As a (maybe unnecessary) protection, we stop writing in the data FIFO if it is almost full, except for the tlast word so we don't desynchronize with the flag fifo
+	fifo_wr_en <= (axis_tx_tvalid or (is_high_word and was_tlast)) and (not fifo_almost_full_reg or axis_tx_tlast) and tx_reset_done;
 	-- We indicate we have a complete packet as soon as we get a valid tlast.
 	-- If the last word is on the low word, the last word will be delayed until the dummy word is sent on the next clock,
 	-- so don't assume that valid on the flags fifo means valid data on the data fifo.
 	flag_fifo_wr_en <= axis_tx_tvalid and axis_tx_tlast and tx_reset_done;
 
+
+	-- Synchronize the manual trigger signal to the 10 MHz clock 
+	man_trig_cdc0: xpm_cdc_single
+		generic map (SRC_INPUT_REG => 0)
+		port map (src_in => usr_tx_reset, src_clk => '0', dest_clk => clk, dest_out => usr_tx_reset_resync);
+
 	fifo_wr_proc: process(clk)
+		variable byte: integer;
 	begin
 		if rising_edge(clk) then
 
+			-- register the almost_full flag to cut down the combinatorial path between the FIFO output (almost_full) all the way back into the FIFO input (fifo_wr_en).
+			-- The generated FIFO core combinatorially "or" the prog_full from all BRAMs internally
+			-- In addition to this, the wr_en is combinatorially contitional to all 8 "full" flags.
+			-- Thise causes long tracks (from top to bottom) and 4-deep combinatorial logic, which makes it hard to meet timing at 375 MHz. 
+			--
+			-- Since the almost_full signal arrives late, we configure the RAM to trigger it at DEPTH-2 or before so we will always have room to write the TLAST word. 
+			fifo_almost_full_reg <= fifo_almost_full;
+
 			fifo_srst <= '0';
-			if usr_tx_reset='1' or rst='1' then -- need to resync to clk
+			if usr_tx_reset_resync='1' or rst='1' then -- need to resync to clk
 				fifo_srst <= '1';
 				tx_reset_done <= '0'; -- this stops writing to both FIFOs
 			end if;
@@ -346,7 +383,7 @@ begin
 			end if;
 
 			-- Generate sticky overflow signals
-			if fifo_overflow='1' then
+			if fifo_almost_full_reg='1' then
 					fifo_overflow_sticky <= '1';
 			end if;
 			if flag_fifo_overflow='1' then
@@ -354,9 +391,6 @@ begin
 			end if;
 
 
-			if axis_tx_tvalid='1' then
-				was_tlast <= axis_tx_tlast;
-			end if;
 
 			enable_packet_generator_reg <= enable_packet_generator; -- pipeline
 			-- Source selection
@@ -370,8 +404,19 @@ begin
 				axis_tx_tlast <= s_axis_tx_tlast;
 			end if; -- source select
 
-			if axis_tx_tvalid <='1' and axis_tx_tlast='1' then
-				in_frame_ctr <= in_frame_ctr + 1;
+			if axis_tx_tvalid='1' then
+				was_tlast <= axis_tx_tlast;
+				word_ctr <= word_ctr + 1;
+				if word_ctr = capture_byte_number(15 downto 5) then
+					byte := to_integer(not capture_byte_number(4 downto 0));
+					capture_byte <= axis_tx_tdata(8*byte+7 downto 8*byte);
+					capture_tlast <= axis_tx_tlast;
+				end if;
+				if axis_tx_tlast = '1' then
+					in_frame_ctr <= in_frame_ctr + 1;
+					packet_length <= word_ctr;
+					word_ctr <= (others => '0');
+				end if;
 			end if;
 
 			if fifo_wr_en='1' and fifo_full='0' then -- don't toggle is_high_word if the write did not take place 
@@ -383,6 +428,7 @@ begin
 				is_high_word <= '0';
 				in_frame_ctr <= (others => '0');
 				fifo_overflow_sticky <= '0';
+				word_ctr <= (others => '0');
 				flag_fifo_overflow_sticky <= '0';
 			end if;
 
@@ -405,9 +451,9 @@ pkt_gen_gen: if IMPLEMENT_PACKET_GENERATOR generate
 		SEND_NOTHING); -- States of the TX state machine
 
 	signal tx_state: TX_STATE_TYPE;
-	signal word_ctr: unsigned(12 downto 0);
+	signal word_ctr: unsigned(15 downto 0);
 	signal tdata: std_logic_vector(255 downto 0);
-	signal frame_ctr: unsigned(31 downto 0);
+	signal frame_ctr: unsigned(63 downto 0);
 	signal udp_payload_length: unsigned(15 downto 0);
 	signal ip_packet_length: unsigned(15 downto 0);
 
@@ -461,12 +507,12 @@ begin
 					tx_state <= SEND_HEADER2;
 				when SEND_HEADER2 =>
 					axis_pktgen_tdata <= ip_header(15 downto 0) & udp_header &
-					         X"BE_EF_FA_CE_AB_BA" & -- UDP checksum, Start of Udp payload
-					         std_logic_vector(frame_ctr) & X"deadbea7" & -- UDP payload (contd) - filler bytes
-					         X"00_11_22_33_44_55_66_77"; -- UDP payload (contd) - filler bytes
+					         X"BEEF_FACE_ABBA_0000" & -- UDP checksum, Start of Udp payload
+					         reverse_bytes(std_logic_vector(frame_ctr)) &  -- UDP payload (contd) - filler bytes
+					         X"00_11_22_33_44_55"; -- UDP payload (contd) - filler bytes
 					axis_pktgen_tvalid <= '1';
 					axis_pktgen_tlast <= '0';
-					frame_ctr <= frame_ctr + 1;
+					frame_ctr <= frame_ctr + 16;
 					word_ctr <= word_ctr + 1;
 					tx_state <= SEND_DATA;
 
@@ -565,7 +611,7 @@ begin
 	fifo_rd_proc: process(clk_out_int)
 	begin
 		if rising_edge(clk_out_int) then
-
+			usr_tx_reset <= usr_tx_reset_pre; -- register the reset signal to help deal with the large fanout
 			-- ``is_high_word`` is used to tell if we are to send the low or high 32 bytes coming out of the FIFO.
 			-- This is used in case there is a TLAST on the low word and the  low and high words needs to be sent separately.
 			-- The variable is set to '0' whenever we read the FIFO, and is increased to 1 whenever a transfer to the CMAC occur.
@@ -654,7 +700,7 @@ CMAC_INST: entity work.CMAC_USP
     ctl_tx_send_rfi => ctl_tx_send_rfi, -- trnasmit only remote fault indicator
     ctl_tx_send_lfi => ctl_tx_send_lfi, -- transmit only local fault indicator
     ctl_tx_test_pattern => ctl_tx_test_pattern,-- send test pattern (scrambled IDLEs),
-
+		ctl_tx_rsfec_enable => ctl_tx_enable,
     -- AXI4-Streaming data interface
     tx_axis_tready => tx_axis_tready,
     tx_axis_tvalid => tx_axis_tvalid,
@@ -676,7 +722,7 @@ CMAC_INST: entity work.CMAC_USP
     sys_reset => cmac_sys_reset, -- reset input to the CMAC core
     core_tx_reset => cmac_core_tx_reset, -- TX reset input to the core
 
-    usr_tx_reset => usr_tx_reset, -- out. Is 1 when the GTY has finished initializing and the CMAC core is taken out of reset. Use to reset user tx logic.
+    usr_tx_reset => usr_tx_reset_pre, -- out. Is 1 when the GTY has finished initializing and the CMAC core is taken out of reset. Use to reset user tx logic.
 
     -- stats
     --stat_tx_bad_fcs => stat_tx_bad_fcs,
