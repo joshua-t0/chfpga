@@ -19,13 +19,9 @@ package chan_package is
 ----------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------
 COMPONENT CHAN is
-  GENERIC (
-        PLATFORM_ID : integer
-        );
-
   PORT (
 
-    in_dat_tdata: in slv32;
+    in_dat_tdata: in slv64;
     in_dat_tvalid: in std_logic;
     in_dat_tlast: in std_logic;
     in_dat_tuser: in slv4;
@@ -98,27 +94,6 @@ COMPONENT CHAN is
     -- System
     );
 end COMPONENT;
-
-
-
---COMPONENT simple_pfb_v2
---  port (
---    ce_1: in std_logic;
---    clk_1: in std_logic;
---    in0: in std_logic_vector(7 downto 0);
---    in1: in std_logic_vector(7 downto 0);
---    in2: in std_logic_vector(7 downto 0);
---    in3: in std_logic_vector(7 downto 0);
---    shift: in std_logic_vector(10 downto 0);
---    sync_in: in std_logic;
---    out1: out std_logic_vector(35 downto 0);
---    out2: out std_logic_vector(35 downto 0);
---    overflow: out std_logic;
---    sync_out: out std_logic
---  );
---END COMPONENT;
-
-
 
 
 end chan_package;

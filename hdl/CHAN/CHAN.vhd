@@ -31,7 +31,7 @@ use IEEE.NUMERIC_STD.ALL;
 library work;
 use work.chFPGA_package.all; -- Get all component definitions
 use work.chFPGA_config.all; -- get platform-specific configurations
-
+ 
 -- Uncomment the following library declaration if instantiating any Xilinx primitives in this code.
 library UNISIM;
 use UNISIM.VComponents.all;
