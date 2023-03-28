@@ -41,7 +41,7 @@ entity SYSMON_XADC is
 		ctrl_rply_out_dat: out AXIS8_DAT_STRUCT; --! Reply stream output, signals to slave (Data, Valid, Last)
 		ctrl_rply_out_rdy: in AXIS8_RDY_STRUCT; --! Reply stream output,  signals from slave (Ready)
 		ctrl_clk: in  STD_LOGIC;
-		CTRL_RST: in std_logic;
+		ctrl_rst: in std_logic;
 
 		--  Current and voltage monitors
 		VAUX_CURR_N : in  STD_LOGIC;
@@ -56,7 +56,7 @@ entity SYSMON_XADC is
 		FAN_PWM: out STD_LOGIC; --! Fan control pin. Can be pulse modulated to produce variable speed (not implemented)
 		FAN_TACH: in STD_LOGIC := '0'; --! Fan speed monitor pin. Pulses twice per rotation. Is very glitchy and needs serious debouncing.
 
-		debug_out: out slv32;
+		--debug_out: out slv32;
 		-- System-level signals
 		sysmon_clk: in  STD_LOGIC; --! System monitor clock. Clocks the SYSMON hardware block.
 		sysmon_rst: in STD_LOGIC -- synchronous to sysmon_clk
@@ -78,9 +78,9 @@ signal STATUS_BYTES: slv8_array(0 to 1);
 signal CONTROL_BYTES_BANK_SEL: STD_LOGIC_VECTOR(0 downto 0);
 signal CONTROL_BYTES_FAN_EN: STD_LOGIC;
 
-
-
-
+signal ctrl_cmd_in_rdy_int: AXIS8_RDY_STRUCT;
+signal ctrl_rply_out_dat_int: AXIS8_DAT_STRUCT;
+	
 
 -- SYSMON signals
 signal SYSMON_DOUT: STD_LOGIC_VECTOR(15 downto 0);
@@ -127,62 +127,63 @@ STATUS_BYTES(1)(4 downto 0) <= SYSMON_CHANNEL(4 downto 0);
 
 FAN_PWM <= CONTROL_BYTES_FAN_EN or SYSMON_OVERTEMP or '1';
 
+ctrl_cmd_in_rdy <= ctrl_cmd_in_rdy_int;
+ctrl_rply_out_dat <= ctrl_rply_out_dat_int;
+
 --Implement an an asynchronous FIFO to bridge the BSB bus from the ctrl_clk
 --to the sysmon_clk domains to allow the DRP signals will be synchronous to
 --that clock
 FIFO0 : entity work.CMD_ASYNC_FIFO
   PORT MAP (
-		CMD_A_DAT  => ctrl_cmd_in_dat,
-		CMD_A_RDY  => ctrl_cmd_in_rdy,
-		RPLY_A_DAT => ctrl_rply_out_dat,
-		RPLY_A_RDY => ctrl_rply_out_rdy,
-		A_CLK      => ctrl_clk,
+		cmd_a_dat  => ctrl_cmd_in_dat,
+		cmd_a_rdy  => ctrl_cmd_in_rdy_int,
+		rply_a_dat => ctrl_rply_out_dat_int,
+		rply_a_rdy => ctrl_rply_out_rdy,
+		a_clk      => ctrl_clk,
 
-		CMD_B_DAT  => fifo_cmd_in_dat,
-		CMD_B_RDY  => fifo_cmd_in_rdy,
-		RPLY_B_DAT => fifo_rply_out_dat,
-		RPLY_B_RDY => fifo_rply_out_rdy,
-		B_CLK      => sysmon_clk,
+		cmd_b_dat  => fifo_cmd_in_dat,
+		cmd_b_rdy  => fifo_cmd_in_rdy,
+		rply_b_dat => fifo_rply_out_dat,
+		rply_b_rdy => fifo_rply_out_rdy,
+		b_clk      => sysmon_clk,
+		b_rst_out  => bsb_rst,
 
-		RST => bsb_rst -- clock is asynchronous
+		rst => ctrl_rst -- Asynchronous. The module internally extends the pulse for a number of A_CLK and B_CLK when they come. 
 		);
 
-debug_out(0) <=  ctrl_cmd_in_dat.TVALID;
-debug_out(1) <=  ctrl_cmd_in_dat.TLAST;
-debug_out(2) <=  fifo_cmd_in_dat.TVALID;
-debug_out(3) <=  fifo_cmd_in_dat.TLAST;
-debug_out(4) <=  fifo_rply_out_dat.TVALID;
-debug_out(5) <=  fifo_rply_out_dat.TLAST;
-debug_out(6) <=  fifo_rply_out_rdy.TREADY;
-debug_out(7) <=  sysmon_rst;
-debug_out(8) <= SYSMON_DEN;
-debug_out(9) <= SYSMON_WR_EN;
-debug_out(10) <= SYSMON_DRDY;
-debug_out(11) <= ctrl_rply_out_rdy.TREADY;
-debug_out(12) <= fifo_cmd_in_rdy.TREADY;
-debug_out(13) <= ctrl_rst;
-debug_out(14) <= '0';
-debug_out(15) <= '0';
-debug_out(23 downto 16) <= fifo_cmd_in_dat.TDATA;
-debug_out(31 downto 24) <= fifo_rply_out_dat.TDATA;
+--debug_out(0) <=  ctrl_cmd_in_dat.TVALID;
+--debug_out(1) <=  ctrl_cmd_in_dat.TLAST;
+--debug_out(2) <=  ctrl_cmd_in_rdy_int.TREADY;
+--debug_out(3) <=  ctrl_rply_out_dat_int.TVALID;
+--debug_out(4) <=  ctrl_rply_out_dat_int.TLAST;
+--debug_out(5) <= ctrl_rply_out_rdy.TREADY;
+--debug_out(6) <=  fifo_cmd_in_dat.TVALID;
+--debug_out(7) <=  fifo_cmd_in_dat.TLAST;
+--debug_out(8) <=  fifo_cmd_in_rdy.TREADY;
+--debug_out(9) <=  fifo_rply_out_dat.TVALID;
+--debug_out(10) <=  fifo_rply_out_dat.TLAST;
+--debug_out(11) <=  fifo_rply_out_rdy.TREADY;
+--debug_out(12) <=  sysmon_rst;
+--debug_out(13) <= ctrl_rst;
+--debug_out(14) <= bsb_rst;
+--debug_out(15) <= sysmon_clk;
 
--- Make sure we capture the ctrl_rst reset of the CTRL_SLAVE
--- even if the sysmon_clk is not yet active and generate a proper reset when the clock
--- comes on.
-bsb_reset_inst : xpm_cdc_async_rst
-	generic map (
-	   RST_ACTIVE_HIGH => 1  -- DECIMAL; 0=active low reset, 1=active high reset
-	)
-	port map (
-	   src_arst => ctrl_rst or sysmon_rst,   -- Source asynchronous reset signal.
-	   dest_arst => bsb_rst, -- 1-bit output: src_arst asynchronous reset signal synchronized to destination
-	                           -- clock domain. This output is registered. NOTE: Signal asserts asynchronously
-	                           -- but deasserts synchronously to dest_clk. Width of the reset signal is at least
-	                           -- (DEST_SYNC_FF*dest_clk) period.
+---- Make sure we capture the ctrl_rst reset of the CTRL_SLAVE
+---- even if the sysmon_clk is not yet active and generate a proper reset when the clock
+---- comes on.
+--bsb_reset_inst : xpm_cdc_async_rst
+--	generic map (
+--	   RST_ACTIVE_HIGH => 1  -- DECIMAL; 0=active low reset, 1=active high reset
+--	)
+--	port map (
+--	   src_arst => ctrl_rst or sysmon_rst,   -- Source asynchronous reset signal.
+--	   dest_arst => bsb_rst, -- 1-bit output: src_arst asynchronous reset signal synchronized to destination
+--	                           -- clock domain. This output is registered. NOTE: Signal asserts asynchronously
+--	                           -- but deasserts synchronously to dest_clk. Width of the reset signal is at least
+--	                           -- (DEST_SYNC_FF*dest_clk) period.
 
-	   dest_clk => sysmon_clk   -- 1-bit input: Destination clock.
-	);
-
+--	   dest_clk => sysmon_clk   -- 1-bit input: Destination clock.
+--	);
 
 CTRL_SLAVE0: entity work.CTRL_SLAVE
 	GENERIC MAP (
