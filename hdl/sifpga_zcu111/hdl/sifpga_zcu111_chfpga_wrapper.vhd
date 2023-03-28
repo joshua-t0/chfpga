@@ -32,35 +32,47 @@ entity sifpga_zcu111_chfpga_wrapper is
 
 	 		-- NOTE: All generics values must be literals if the module is to be imported in a block diagram
 			PLATFORM_ID: integer                         := 4; --! identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705
-			UDP_MAC_PRESENT: boolean                     := FALSE; --! Indicates if the Ethernet interface is to be implemented (sets the DYMMY flag on the MAC).
-			BLINKER_PRESENT: boolean                     := TRUE; --! Indicates if the LED flasher is to be implemented by setting the DUMMY flag of the BLINKER module
-			SYSTEM_CLOCK_SOURCE: string                  := "SYSCLK_BUFG"; --! System reference clock surce: "SYSCLK": 200 MHz unbuffered differential clock from sysclk_p/n, "SYSCLK_BUFG": 200 MHz BUFG-Buffered clock from sysclk_bufg, "SFP_REFCLK": 125 MHz clock from the GTX reference clock
+
+			SYSTEM_CLOCK_SOURCE: string                  := "CLK10_BUFG"; --! System reference clock surce: "SYSCLK": 200 MHz unbuffered differential clock from sysclk_p/n, "SYSCLK_BUFG": 200 MHz BUFG-Buffered clock from sysclk_bufg, "SFP_REFCLK": 125 MHz clock from the GTX reference clock
+			SYSTEM_CLOCK_FREQ: integer                   := 10; -- System reference clock frequency, in MHz *** Is an integer because IP packager does not support real. ***
+			CHAN_CLK_SOURCE: string                      := "ADC"; -- Channelizer clock comes directly from the ADC
+			CT_CLK_SOURCE: string                        := "ADC_CLK";
+
+			-- Control interface config
 			PHY_TYPE: string                             := "NONE"; -- "GMII" or "SGMII"
 			SGMII_CLOCK_SOURCE: string                   := "REFCLK"; --! Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 			--IMPLEMENT_ADCDAQ: boolean                    := FALSE; -- use ADC data directly from adc_axis_* ports.
+
+			-- ADC config
 			NUMBER_OF_ADC_BOARDS: integer                := 0; -- No REFCLK module
 			NUMBER_OF_ADCS: integer                      := 8; --! Number of ADC Data acquisition blocks to implement
 			ADC_TYPE: string                             := "AXIS"; -- ADC data is provided through the axis_adc port
+
+			-- Channelizer config
 			NUMBER_OF_CHANNELIZERS:integer               := 8;  --!(Typ. =16)  (0-NUMBER_OF_ADCS) Number of channelizer blocks to be implemented
+
+
+			-- Corner-turn config
+			CROSSBAR1_TYPE: string                       := "URAM"; -- "BRAM" or "URAM"
 			NUMBER_OF_CROSSBAR_INPUTS: integer           := 8; --! (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
 			NUMBER_OF_CROSSBAR_OUTPUTS: integer          := 8; --! (Typ. =16): Number of repacked data streams to feed to the corrleator or GPU links
-			CROSSBAR1_TYPE: string                       := "URAM"; -- "BRAM" or "URAM"
-			NUMBER_OF_CORRELATORS: integer               := 4; --! Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
+			NUMBER_OF_CORRELATORS: integer               := 0; --! Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
 			NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := 0;
 			NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := 0;
 			NUMBER_OF_BP_SHUFFLE_LINKS: integer          := 0; --! Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
 			NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := 0;
 
+			-- Real-time data offload config
 			IMPLEMENT_100G_ETHERNET: boolean             := TRUE; --! If TRUE, a 100G UDP/IP/Ethernet data transmitter is implemented
-
 			NUMBER_OF_GPU_LINKS: integer                 := 0; --! (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
 			NUMBER_OF_GPU_REFCLKS: integer               := 1; --! Number of Reference clocks provided for the 10GE links to the GPU
-			NUMBER_OF_I2C_PORTS: integer                 := 0;
-			NUMBER_OF_SPI_PORTS: integer                 := 0; -- One port for each FMC
 			--ANT_CLK_SOURCE: integer := 0; -- Indicate which ADC is the source of the antenna processing clock. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
 
-			--GPU_CHANNEL_QUAD: IntegerArray := GLOBAL_GPU_CHANNEL_QUAD; -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1
-			--GPU_QUAD_REFCLK: IntegerArray := GLOBAL_GPU_QUAD_REFCLK; -- Both QUAD0 and QUAD1 use refclk(0)
+			-- Peripheral config
+			BLINKER_PRESENT: boolean                     := TRUE; --! Indicates if the LED flasher is to be implemented by setting the DUMMY flag of the BLINKER module
+			NUMBER_OF_I2C_PORTS: integer                 := 0;
+			NUMBER_OF_SPI_PORTS: integer                 := 0; -- One port for each FMC
+
 			SIM: boolean := FALSE--! Indicates this is running as a simulation. Used to accelerate simulations
 
 	);
@@ -357,15 +369,29 @@ begin
 	chfpga0: entity work.chfpga
 		GENERIC MAP(
 			PLATFORM_ID                     => PLATFORM_ID,
-			BLINKER_PRESENT                 => BLINKER_PRESENT,
+
+			-- Clocking config
 			SYSTEM_CLOCK_SOURCE             => SYSTEM_CLOCK_SOURCE,
+			SYSTEM_CLOCK_FREQ               => real(SYSTEM_CLOCK_FREQ),
+			CHAN_CLK_SOURCE                 => CHAN_CLK_SOURCE,
+			CT_CLK_SOURCE                   => CT_CLK_SOURCE,
+
+			-- Control interface config
 			PHY_TYPE                        => PHY_TYPE,
 			SGMII_CLOCK_SOURCE              => SGMII_CLOCK_SOURCE,
-			--IMPLEMENT_ADCDAQ                => IMPLEMENT_ADCDAQ,
+
+			-- ADC config
 			NUMBER_OF_ADCS                  => NUMBER_OF_ADCS,
 			ADC_TYPE                        => ADC_TYPE,
+
+			-- Channelizer config
 			NUMBER_OF_CHANNELIZERS          => NUMBER_OF_CHANNELIZERS,
+
+
+			-- Correlator config
 			NUMBER_OF_CORRELATORS           => NUMBER_OF_CORRELATORS,
+
+			-- Corner-turn engine config
 			NUMBER_OF_CROSSBAR_INPUTS       => NUMBER_OF_CROSSBAR_INPUTS,
 			NUMBER_OF_CROSSBAR_OUTPUTS      => NUMBER_OF_CROSSBAR_OUTPUTS,
 			CROSSBAR1_TYPE                  => CROSSBAR1_TYPE,
@@ -379,6 +405,9 @@ begin
 			--BP_SHUFFLE_LANE_MAP             => BP_SHUFFLE_LANE_MAP,
 			--BP_SHUFFLE_LANE_TO_QUAD_MAP     => BP_SHUFFLE_LANE_TO_QUAD_MAP,
 			--BP_SHUFFLE_QUAD_TO_REFCLK_MAP   => BP_SHUFFLE_QUAD_TO_REFCLK_MAP,
+
+			-- Peripherals
+			BLINKER_PRESENT                 => BLINKER_PRESENT,
 			NUMBER_OF_I2C_PORTS             => NUMBER_OF_I2C_PORTS,
 			NUMBER_OF_SPI_PORTS             => NUMBER_OF_SPI_PORTS,
 			NUMBER_OF_ADC_BOARDS            => NUMBER_OF_ADC_BOARDS,
