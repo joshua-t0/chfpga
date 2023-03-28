@@ -26,18 +26,18 @@ set_clock_groups -name CLK_PL0_GROUP -asynchronous -group [get_clocks clk_pl_0]
 # LMK04208 PLL output 0
 ########################################
 ### Output 0: PL SYSREF (10 MHz for us). Used to synchronize the ADCs
-set_property PACKAGE_PIN AK16     [get_ports {SYSREF_FPGA_clk_n[0]}] ;# Bank  64 VCCO - VCC1V8   - IO_L14N_T2L_N3_GC_64
-set_property IOSTANDARD  LVDS     [get_ports {SYSREF_FPGA_clk_n[0]}] ;# Bank  64 VCCO - VCC1V8   - IO_L14N_T2L_N3_GC_64
-set_property PACKAGE_PIN AK17     [get_ports {SYSREF_FPGA_clk_p[0]}] ;# Bank  64 VCCO - VCC1V8   - IO_L14P_T2L_N2_GC_64
-set_property IOSTANDARD  LVDS     [get_ports {SYSREF_FPGA_clk_p[0]}] ;# Bank  64 VCCO - VCC1V8   - IO_L14P_T2L_N2_GC_64
-create_clock -name CLK10 -period 100 [get_ports {SYSREF_FPGA_clk_p[0]}]
+set_property IOSTANDARD LVDS [get_ports {SYSREF_FPGA_clk_n[0]}]
+set_property PACKAGE_PIN AK17 [get_ports {SYSREF_FPGA_clk_p[0]}]
+set_property PACKAGE_PIN AK16 [get_ports {SYSREF_FPGA_clk_n[0]}]
+set_property IOSTANDARD LVDS [get_ports {SYSREF_FPGA_clk_p[0]}]
+create_clock -period 100.000 -name CLK10 [get_ports {SYSREF_FPGA_clk_p[0]}]
 ### Output 1: DAC_SYSREF (10 MHz synchronization), connected to RFDC dedicated pins
 ### Output 2: PL FPGA_REFCLK (200 MHz ADC word clock for us)
-set_property PACKAGE_PIN AL15     [get_ports {FPGA_REFCLK_OUT_C_clk_n*}] ;# Bank  64 VCCO - VCC1V8   - IO_L13N_T2L_N1_GC_QBC_64
-set_property IOSTANDARD  LVDS     [get_ports {FPGA_REFCLK_OUT_C_clk_n*}] ;# Bank  64 VCCO - VCC1V8   - IO_L13N_T2L_N1_GC_QBC_64
-set_property PACKAGE_PIN AL16     [get_ports {FPGA_REFCLK_OUT_C_clk_p*}] ;# Bank  64 VCCO - VCC1V8   - IO_L13P_T2L_N0_GC_QBC_64
-set_property IOSTANDARD  LVDS     [get_ports {FPGA_REFCLK_OUT_C_clk_p*}] ;# Bank  64 VCCO - VCC1V8   - IO_L13P_T2L_N0_GC_QBC_64
-create_clock -name CLK200 -period 5 [get_ports {FPGA_REFCLK_OUT_C_clk_p*}]
+set_property PACKAGE_PIN AL15 [get_ports FPGA_REFCLK_OUT_C_clk_n*]
+set_property IOSTANDARD LVDS [get_ports FPGA_REFCLK_OUT_C_clk_n*]
+set_property PACKAGE_PIN AL16 [get_ports FPGA_REFCLK_OUT_C_clk_p*]
+set_property IOSTANDARD LVDS [get_ports FPGA_REFCLK_OUT_C_clk_p*]
+create_clock -period 2.666 -name PL_CLK [get_ports FPGA_REFCLK_OUT_C_clk_p*]
 ### Output 3: SYNC to the LMX2594 (10 MHz)
 ### Output 4: Clock reference for the LMK2594 (122.88 MHz for us)
 ### Output 5: SMA output (10 MHz for us)
@@ -111,15 +111,15 @@ set_property PACKAGE_PIN V31 [get_ports clk156_p]
 # LEDs & Switches
 ########################################
 
-set_property PACKAGE_PIN AR13     [get_ports "gpio_led[0]"] ;# Bank  64 VCCO - VCC1V8   - IO_L7N_T1L_N1_QBC_AD13N_64
-set_property PACKAGE_PIN AP13     [get_ports "gpio_led[1]"] ;# Bank  64 VCCO - VCC1V8   - IO_L7P_T1L_N0_QBC_AD13P_64
-set_property PACKAGE_PIN AR16     [get_ports "gpio_led[2]"] ;# Bank  64 VCCO - VCC1V8   - IO_L8N_T1L_N3_AD5N_64
-set_property PACKAGE_PIN AP16     [get_ports "gpio_led[3]"] ;# Bank  64 VCCO - VCC1V8   - IO_L8P_T1L_N2_AD5P_64
-set_property PACKAGE_PIN AP15     [get_ports "gpio_led[4]"] ;# Bank  64 VCCO - VCC1V8   - IO_T1U_N12_64
-set_property PACKAGE_PIN AN16     [get_ports "gpio_led[5]"] ;# Bank  64 VCCO - VCC1V8   - IO_L10N_T1U_N7_QBC_AD4N_64
-set_property PACKAGE_PIN AN17     [get_ports "gpio_led[6]"] ;# Bank  64 VCCO - VCC1V8   - IO_L10P_T1U_N6_QBC_AD4P_64
-set_property PACKAGE_PIN AV15     [get_ports "gpio_led[7]"] ;# Bank  64 VCCO - VCC1V8   - IO_L2P_T0L_N2_64
-set_property IOSTANDARD  LVCMOS18 [get_ports "gpio_led*"]
+set_property PACKAGE_PIN AR13 [get_ports {gpio_led[0]}]
+set_property PACKAGE_PIN AP13 [get_ports {gpio_led[1]}]
+set_property PACKAGE_PIN AR16 [get_ports {gpio_led[2]}]
+set_property PACKAGE_PIN AP16 [get_ports {gpio_led[3]}]
+set_property PACKAGE_PIN AP15 [get_ports {gpio_led[4]}]
+set_property PACKAGE_PIN AN16 [get_ports {gpio_led[5]}]
+set_property PACKAGE_PIN AN17 [get_ports {gpio_led[6]}]
+set_property PACKAGE_PIN AV15 [get_ports {gpio_led[7]}]
+set_property IOSTANDARD LVCMOS18 [get_ports gpio_led*]
 
 # Constraints already provided by the GPIO IP block
 #set_property PACKAGE_PIN AN16     [get_ports "GPIO_LED_5_LS"] ;# Bank  64 VCCO - VCC1V8   - IO_L10N_T1U_N7_QBC_AD4N_64
