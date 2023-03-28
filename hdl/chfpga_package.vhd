@@ -62,6 +62,7 @@ subtype slv64 is std_logic_vector(63 downto 0);
 subtype slv65 is std_logic_vector(64 downto 0);
 subtype slv72 is std_logic_vector(71 downto 0);
 subtype slv80 is std_logic_vector(79 downto 0);
+subtype slv112 is std_logic_vector(111 downto 0);
 subtype slv144 is std_logic_vector(143 downto 0);
 type ByteArray8 is array (0 to 7) of std_logic_vector(7 downto 0);
 type ByteArray is array (NATURAL RANGE <>) of std_logic_vector(7 downto 0);
@@ -93,6 +94,7 @@ type slv64_array is array (NATURAL RANGE <>) of std_logic_vector(63 downto 0);
 type slv65_array is array (NATURAL RANGE <>) of std_logic_vector(64 downto 0);
 type slv66_array is array (NATURAL RANGE <>) of std_logic_vector(65 downto 0);
 type slv80_array is array (NATURAL RANGE <>) of std_logic_vector(79 downto 0);
+type slv112_array is array (NATURAL RANGE <>) of std_logic_vector(111 downto 0);
 type slv128_array is array (NATURAL RANGE <>) of std_logic_vector(127 downto 0);
 type slv144_array is array (NATURAL RANGE <>) of std_logic_vector(143 downto 0);
 type slv256_array is array (NATURAL RANGE <>) of std_logic_vector(255 downto 0);
@@ -538,85 +540,85 @@ function get_corr44_rloc_origins_struct_array(platform_id:integer; N_CHAN:intege
 
 
 
-component CHAN is
-    --GENERIC (
-    --    --! Indicates if the channelizer is implemented. If not, a dummy module will be put in its place.
-    --    --! In this case, an dummy ADCDAQ module is still instantiated to ensure that the LVDS receivers are instantiated
-    --    --! (which would otherwise cause errors unless they were removed from the UCF file)
-    --    IMPLEMENT_CHAN  : BOOLEAN :=TRUE; -- (and that woul dbe bad)
-    --    IMPLEMENT_FFT   : BOOLEAN :=GLOBAL_IMPLEMENT_FFT;
-    --    SIM             : BOOLEAN :=GLOBAL_SIM
-    --    );
-    --GENERIC (
-    --    PLATFORM_ID  : integer := PLATFORM_ID_MGK7MB; -- This generics is locked to the MGK7MB when using CHAN as an OOC. Have not foud a way to assign a globally static value from the parent level yet
-    --    IMPLEMENT_FFT   : BOOLEAN :=GLOBAL_IMPLEMENT_FFT
-    --    );
+--component CHAN is
+--    --GENERIC (
+--    --    --! Indicates if the channelizer is implemented. If not, a dummy module will be put in its place.
+--    --    --! In this case, an dummy ADCDAQ module is still instantiated to ensure that the LVDS receivers are instantiated
+--    --    --! (which would otherwise cause errors unless they were removed from the UCF file)
+--    --    IMPLEMENT_CHAN  : BOOLEAN :=TRUE; -- (and that woul dbe bad)
+--    --    IMPLEMENT_FFT   : BOOLEAN :=GLOBAL_IMPLEMENT_FFT;
+--    --    SIM             : BOOLEAN :=GLOBAL_SIM
+--    --    );
+--    --GENERIC (
+--    --    PLATFORM_ID  : integer := PLATFORM_ID_MGK7MB; -- This generics is locked to the MGK7MB when using CHAN as an OOC. Have not foud a way to assign a globally static value from the parent level yet
+--    --    IMPLEMENT_FFT   : BOOLEAN :=GLOBAL_IMPLEMENT_FFT
+--    --    );
 
-    PORT (
+--    PORT (
 
-        --! Input Interface from ADC
-        --! 64-bit wide (4x 16-bit samples), using the AXI4-Streaming Prototol
+--        --! Input Interface from ADC
+--        --! 64-bit wide (4x 16-bit samples), using the AXI4-Streaming Prototol
 
-        in_dat_tdata    : in slv64;
-        in_dat_tvalid   : in std_logic;
-        in_dat_tlast    : in std_logic;
-        in_dat_tuser    : in slv4;
-        in_clk          : in std_logic; --! Input and signal processing clock
-        in_reset        : in std_logic; --! Resets all the channelizer modules,
-                                        --! except ADCDAQ. Must be synchronous to in_clk.
+--        in_dat_tdata    : in slv64;
+--        in_dat_tvalid   : in std_logic;
+--        in_dat_tlast    : in std_logic;
+--        in_dat_tuser    : in slv4;
+--        in_clk          : in std_logic; --! Input and signal processing clock
+--        in_reset        : in std_logic; --! Resets all the channelizer modules,
+--                                        --! except ADCDAQ. Must be synchronous to in_clk.
 
-        --! Output Interface
-        --! Output Data Stream in 32bit AXI4-Streaming
+--        --! Output Interface
+--        --! Output Data Stream in 32bit AXI4-Streaming
 
-        out_dat_tdata   : out slv32;
-        out_dat_tvalid  : out std_logic;
-        out_dat_tlast   : out std_logic;
-        out_dat_tuser   : out slv4;
-        out_clk         : in  std_logic;
-        out_reset       : in  std_logic;
+--        out_dat_tdata   : out slv32;
+--        out_dat_tvalid  : out std_logic;
+--        out_dat_tlast   : out std_logic;
+--        out_dat_tuser   : out slv4;
+--        out_clk         : in  std_logic;
+--        out_reset       : in  std_logic;
 
-        --! Common data interface signals
-        --! Global trigger/capture signal.
-        --! Indicates to SRCSEL when to start flagging the incoming frames the data capture.
+--        --! Common data interface signals
+--        --! Global trigger/capture signal.
+--        --! Indicates to SRCSEL when to start flagging the incoming frames the data capture.
 
-        trig            : in  std_logic;
-        lane_monitor    : out std_logic_vector(3 downto 0);
+--        trig            : in  std_logic;
+--        lane_monitor    : out std_logic_vector(3 downto 0);
 
-        --! UDP Command Control Interface (command and reply stream buses)
+--        --! UDP Command Control Interface (command and reply stream buses)
 
-        ctrl_cmd_tdata  : in  std_logic_vector(7 downto 0);
-        ctrl_cmd_tvalid : in  std_logic;
-        ctrl_cmd_tlast  : in  std_logic;
-        ctrl_cmd_tready : out std_logic;
+--        ctrl_cmd_tdata  : in  std_logic_vector(7 downto 0);
+--        ctrl_cmd_tvalid : in  std_logic;
+--        ctrl_cmd_tlast  : in  std_logic;
+--        ctrl_cmd_tready : out std_logic;
 
-        ctrl_rply_tdata : out std_logic_vector(7 downto 0);
-        ctrl_rply_tvalid: out std_logic;
-        ctrl_rply_tlast : out std_logic;
-        ctrl_rply_tready: in  std_logic;
-        ctrl_clk        : in  std_logic;
-        ctrl_rst        : in  std_logic;
+--        ctrl_rply_tdata : out std_logic_vector(7 downto 0);
+--        ctrl_rply_tvalid: out std_logic;
+--        ctrl_rply_tlast : out std_logic;
+--        ctrl_rply_tready: in  std_logic;
+--        ctrl_clk        : in  std_logic;
+--        ctrl_rst        : in  std_logic;
 
-        --! Control Interface to be hooked-up  to the corresponding ADCDAQ module
+--        --! Control Interface to be hooked-up  to the corresponding ADCDAQ module
 
-        adc_cmd_tdata   : out std_logic_vector(7 downto 0);
-        adc_cmd_tvalid  : out std_logic;
-        adc_cmd_tlast   : out std_logic;
-        adc_cmd_tready  : in  std_logic;
+--        adc_cmd_tdata   : out std_logic_vector(7 downto 0);
+--        adc_cmd_tvalid  : out std_logic;
+--        adc_cmd_tlast   : out std_logic;
+--        adc_cmd_tready  : in  std_logic;
 
-        adc_rply_tdata  : in  std_logic_vector(7 downto 0);
-        adc_rply_tvalid : in  std_logic;
-        adc_rply_tlast  : in  std_logic;
-        adc_rply_tready : out std_logic;
+--        adc_rply_tdata  : in  std_logic_vector(7 downto 0);
+--        adc_rply_tvalid : in  std_logic;
+--        adc_rply_tlast  : in  std_logic;
+--        adc_rply_tready : out std_logic;
 
-        -- Data Probe Interface
+--        -- Data Probe Interface
 
-        prb_tdata       : out std_logic_vector(7 downto 0);
-        prb_tvalid      : out std_logic;
-        prb_tlast       : out std_logic;
-        prb_tready      : in  std_logic;
-        PRB_CLK         : in  std_logic --! Data capture clock
-        );
-end component CHAN;
+--        prb_tdata       : out std_logic_vector(7 downto 0);
+--        prb_tvalid      : out std_logic;
+--        prb_tlast       : out std_logic;
+--        prb_tready      : in  std_logic;
+--        PRB_CLK         : in  std_logic --! Data capture clock
+--        );
+--end component CHAN;
 
 
 
