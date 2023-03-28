@@ -1,7 +1,7 @@
 --Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
 ----------------------------------------------------------------------------------
 --Tool Version: Vivado v.2022.2 (lin64) Build 3671981 Fri Oct 14 04:59:54 MDT 2022
---Date        : Mon Mar 13 01:29:56 2023
+--Date        : Tue Mar 28 11:38:21 2023
 --Host        : twiddlebug running 64-bit Ubuntu 22.04.1 LTS
 --Command     : generate_target sifpga_zcu111_wrapper.bd
 --Design      : sifpga_zcu111_wrapper

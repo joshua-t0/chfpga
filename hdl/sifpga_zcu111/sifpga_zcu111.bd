@@ -1,7 +1,7 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0x42524FA3FFC8CDC7",
+      "boundary_crc": "0x42524FA3615CA552",
       "device": "xczu28dr-ffvg1517-2-e",
       "name": "sifpga_zcu111",
       "rev_ctrl_bd_flag": "RevCtrlBdOff",
@@ -276,7 +276,7 @@
             "value_src": "default"
           },
           "FREQ_HZ": {
-            "value": "200000000"
+            "value": "375000000"
           }
         },
         "port_maps": {
@@ -4521,7 +4521,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "200000000",
+                "value": "375000000",
                 "value_src": "ip_prop"
               },
               "PHASE": {
@@ -4588,7 +4588,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "200000000",
+                "value": "375000000",
                 "value_src": "ip_prop"
               },
               "PHASE": {
@@ -4655,7 +4655,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "200000000",
+                "value": "375000000",
                 "value_src": "ip_prop"
               },
               "PHASE": {
@@ -4722,7 +4722,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "200000000",
+                "value": "375000000",
                 "value_src": "ip_prop"
               },
               "PHASE": {
@@ -4789,7 +4789,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "200000000",
+                "value": "375000000",
                 "value_src": "ip_prop"
               },
               "PHASE": {
@@ -4856,7 +4856,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "200000000",
+                "value": "375000000",
                 "value_src": "ip_prop"
               },
               "PHASE": {
@@ -4923,7 +4923,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "200000000",
+                "value": "375000000",
                 "value_src": "ip_prop"
               },
               "PHASE": {
@@ -4990,7 +4990,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "200000000",
+                "value": "375000000",
                 "value_src": "ip_prop"
               },
               "PHASE": {
@@ -5173,7 +5173,7 @@
             "direction": "I",
             "parameters": {
               "FREQ_HZ": {
-                "value": "200000000",
+                "value": "375000000",
                 "value_src": "ip_prop"
               },
               "PHASE": {
@@ -5212,7 +5212,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "200000000",
+                "value": "375000000",
                 "value_src": "ip_prop"
               },
               "PHASE": {
@@ -5234,7 +5234,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "200000000",
+                "value": "375000000",
                 "value_src": "ip_prop"
               },
               "PHASE": {
@@ -5256,7 +5256,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "200000000",
+                "value": "375000000",
                 "value_src": "ip_prop"
               },
               "PHASE": {
@@ -5278,7 +5278,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "200000000",
+                "value": "375000000",
                 "value_src": "ip_prop"
               },
               "PHASE": {
@@ -5300,7 +5300,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "200000000",
+                "value": "375000000",
                 "value_src": "ip_prop"
               },
               "PHASE": {
@@ -5322,7 +5322,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "200000000",
+                "value": "375000000",
                 "value_src": "ip_prop"
               },
               "PHASE": {
@@ -5344,7 +5344,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "200000000",
+                "value": "375000000",
                 "value_src": "ip_prop"
               },
               "PHASE": {
@@ -5366,7 +5366,7 @@
                 "value_src": "constant"
               },
               "FREQ_HZ": {
-                "value": "200000000",
+                "value": "375000000",
                 "value_src": "ip_prop"
               },
               "PHASE": {
