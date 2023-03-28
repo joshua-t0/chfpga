@@ -138,7 +138,6 @@ architecture Behavioral of CTRL_SLAVE is
 	signal RAM_WR_EN_INT: std_logic := '0'; -- init for sim only to prevent contamination of RAM first byte
 	signal RAM_DIN_INT: std_logic_vector(15 downto 0);
 
-	constant CONTROL_STATUS_ADDR_WIDTH: integer := width(max(NUMBER_OF_CONTROL_BYTES, NUMBER_OF_STATUS_BYTES));
 	constant INT_ADDR_WIDTH: integer :=19;
 
 	subtype OPCODE_TYPE is std_logic_vector(2 downto 0);
@@ -228,6 +227,8 @@ end generate;
 -- Command processor process
 cmd_proc: process(ctrl_clk)
 	variable byte_index_var: integer range 0 to max(NUMBER_OF_STATUS_BYTES, NUMBER_OF_CONTROL_BYTES)-1;
+	constant CONTROL_STATUS_ADDR_WIDTH: integer := width(max(NUMBER_OF_CONTROL_BYTES, NUMBER_OF_STATUS_BYTES));
+
 	-- variable opcode_var: OPCODE_TYPE;
 
 	begin
@@ -245,8 +246,9 @@ cmd_proc: process(ctrl_clk)
 				previous_byte <= ctrl_cmd_in_dat.TDATA;
 			end if;
 
-
-			byte_index_var := to_integer(unsigned(addr(CONTROL_STATUS_ADDR_WIDTH-1 downto 0))); -- Three bits of the address are used to distinguish between RAM access "1XX", Coontrol "000", Status "010", Sticky "011" . The rest is used to index the control/status bytes.
+			-- `byte_index_var` is the address of the byte to be accessed within the CONTROL or STATUS pages, as an integer.
+			-- Those are just the applicable LSBs of the address word. 
+			byte_index_var := to_integer(unsigned(addr(CONTROL_STATUS_ADDR_WIDTH-1 downto 0))); 
 
 			if RAM_ADDR_WIDTH /=0 then -- initialize only when used to prevent warnings
 				ram_rdy_dly1 <= ram_en_int; -- delayed version of RAM_RD_EN used to generate the RAM_DOUT_RDY if the RAM does not provide one
@@ -295,10 +297,10 @@ cmd_proc: process(ctrl_clk)
 				---------------------
 					addr(15 downto 8) <= unsigned(ctrl_cmd_in_dat.TDATA);
 
-					if ctrl_cmd_in_dat.TVALID='1' then
+					if ctrl_cmd_in_dat.TVALID = '1' then
 						--timeout_reset <= '1';
-						ctrl_cmd_in_rdy_int.TREADY<='1'; -- We will always capture the next byte when it comes
-						if ctrl_cmd_in_dat.TLAST='1' then
+						ctrl_cmd_in_rdy_int.TREADY <= '1'; -- We will always capture the next byte when it comes
+						if ctrl_cmd_in_dat.TLAST = '1' then
 							RX_STATE <= COMMAND_BYTE1;
 						else
 							RX_STATE <= COMMAND_BYTE3;
@@ -310,7 +312,7 @@ cmd_proc: process(ctrl_clk)
 				when COMMAND_BYTE3 =>
 				---------------------
 
-					if  ctrl_cmd_in_dat.TVALID='1' and ctrl_cmd_in_rdy_int.TREADY='1' then -- we use TREADY to determine if we have already obtained a byte.
+					if  ctrl_cmd_in_dat.TVALID = '1' and ctrl_cmd_in_rdy_int.TREADY = '1' then -- we use TREADY to determine if we have already obtained a byte.
 						--timeout_reset <= '1';
 						addr(7 downto 0) <= unsigned(ctrl_cmd_in_dat.TDATA); -- grab the final byte of the address
 						if ADDR_WIDTH <= 18 then -- avoid null assignment warnings
@@ -322,9 +324,9 @@ cmd_proc: process(ctrl_clk)
 					-- Prepare reply byte in case it is needed
 
 					-- Initialize RAM access-related signals
-					if RAM_ADDR_WIDTH /=0 then
-						if RAM_DATA_WIDTH=16 then -- initialize only when used to prevent warnings
-							send_msb <='0';
+					if RAM_ADDR_WIDTH /= 0 then
+						if RAM_DATA_WIDTH = 16 then -- initialize only when used to prevent warnings
+							send_msb <= '0';
 						end if;
 						ram_write_addr_incr <='0'; -- If we write to RAM, don't increment the address on when we setup the first RAM write as addr is already the target address
 					end if;
@@ -332,7 +334,10 @@ cmd_proc: process(ctrl_clk)
 					is_msb <= '0'; -- start with even byte
 					wait_state <= '0'; -- we do not start in a wait state for RAM reads
 
-                    -- we use TREADY to determine if we have already obtained a byte
+					-- We send a dummy reply byte as soon as the last byte of the command has been received.
+					-- We'll stay in this state until we can put the reply byte on the bus.  
+                    -- We have received the last command byte either when it arrived on this clock (TVALID=1) or it was received earlier and TREADY was set to 0.
+                    -- We can put a byte on the reply bus either if there is no byte on the bus (TREADY=0) or if there is a byte but is being consumed on this clock (TREADY=1)
 					if (ctrl_cmd_in_dat.TVALID='1' or ctrl_cmd_in_rdy_int.TREADY='0') and (ctrl_rply_out_dat_int.TVALID='0' or  ctrl_rply_out_rdy.TREADY='1') then -- if the last command byte is available and the reply channel is ready
 						-- Send a dummy reply byte header. The value is not important: it will be replaced by MASTER with a sequence number.
 						ctrl_rply_out_dat_int.TVALID <= '1';
