@@ -37,65 +37,105 @@ entity CMD_ASYNC_FIFO is
 		);
      PORT (
 		-- Command streams from single slave input to multiple master outputs
-		CMD_A_DAT: in AXIS8_DAT_STRUCT;
-		CMD_A_RDY: out AXIS8_RDY_STRUCT;
-		RPLY_A_DAT: out AXIS8_DAT_STRUCT;
-		RPLY_A_RDY: in AXIS8_RDY_STRUCT;
-		A_CLK: in STD_LOGIC;
+		cmd_a_dat: in AXIS8_DAT_STRUCT;
+		cmd_a_rdy: out AXIS8_RDY_STRUCT;
+		rply_a_dat: out AXIS8_DAT_STRUCT;
+		rply_a_rdy: in AXIS8_RDY_STRUCT;
+		a_clk: in STD_LOGIC;
 
-		CMD_B_DAT: out AXIS8_DAT_STRUCT;
-		CMD_B_RDY: in AXIS8_RDY_STRUCT;
-		RPLY_B_DAT: in AXIS8_DAT_STRUCT;
-		RPLY_B_RDY: out AXIS8_RDY_STRUCT;
-		B_CLK: in STD_LOGIC;
+		cmd_b_dat: out AXIS8_DAT_STRUCT;
+		cmd_b_rdy: in AXIS8_RDY_STRUCT;
+		rply_b_dat: in AXIS8_DAT_STRUCT;
+		rply_b_rdy: out AXIS8_RDY_STRUCT;
+		b_clk: in std_logic;
 
 		-- System interface
-		RST : in  STD_LOGIC
+		rst: in std_logic;
+		a_rst_out: out std_logic; -- extended reset pulse synchronous to a_clk
+		b_rst_out: out std_logic -- extended reset pulse synchronous to b_clk
 		);
+
 end CMD_ASYNC_FIFO;
 
 
 architecture Behavioral of CMD_ASYNC_FIFO is
 
-signal RST_N: std_logic;
+signal rst_n: std_logic;
+signal a_rst, b_rst: std_logic;
+signal a_rst_ctr, b_rst_ctr: unsigned(2 downto 0); -- reset will be at least 8 clk long
 
 begin
 
-RST_N <= not RST;
-
+-- CMD_FIFO generated with the FIFO generator
+-- Type AXI Stream, Independent clock, 1 TDATA BYTE, no other flags except TLAST, Distributed RAM, Depth=16 (minimum)
+-- Latency is 4WR + 1 RD clk. 
 CMD_FIFO0: entity work.CMD_FIFO
   PORT MAP (
-	 s_axis_tvalid => CMD_A_DAT.TVALID,
-	 s_axis_tready => CMD_A_RDY.TREADY,
-	 s_axis_tdata => CMD_A_DAT.TDATA,
-	 s_axis_tlast => CMD_A_DAT.TLAST,
-	 s_aclk => A_CLK,
+	 s_axis_tvalid => cmd_a_dat.TVALID,
+	 s_axis_tready => cmd_a_rdy.TREADY,
+	 s_axis_tdata => cmd_a_dat.TDATA,
+	 s_axis_tlast => cmd_a_dat.TLAST,
+	 s_aclk => a_clk,
 
-	 s_aresetn => RST_N,
+	 s_aresetn => rst_n,
 
-	 m_axis_tvalid => CMD_B_DAT.TVALID,
-	 m_axis_tready => CMD_B_RDY.TREADY,
-	 m_axis_tdata => CMD_B_DAT.TDATA,
-	 m_axis_tlast => CMD_B_DAT.TLAST,
+	 m_axis_tvalid => cmd_b_dat.TVALID,
+	 m_axis_tready => cmd_b_rdy.TREADY,
+	 m_axis_tdata => cmd_b_dat.TDATA,
+	 m_axis_tlast => cmd_b_dat.TLAST,
 	 m_aclk => B_CLK
   );
 
 RPLY_FIFO0 : entity work.CMD_FIFO
   PORT MAP (
-	 s_axis_tvalid => RPLY_B_DAT.TVALID,
-	 s_axis_tready => RPLY_B_RDY.TREADY,
-	 s_axis_tdata => RPLY_B_DAT.TDATA,
-	 s_axis_tlast => RPLY_B_DAT.TLAST,
+	 s_axis_tvalid => rply_b_dat.TVALID,
+	 s_axis_tready => rply_b_rdy.TREADY,
+	 s_axis_tdata => rply_b_dat.TDATA,
+	 s_axis_tlast => rply_b_dat.TLAST,
 	 s_aclk => B_CLK,
 
-	 s_aresetn => RST_N,
+	 s_aresetn => rst_n,
 
-	 m_axis_tvalid => RPLY_A_DAT.TVALID,
-	 m_axis_tready => RPLY_A_RDY.TREADY,
-	 m_axis_tdata => RPLY_A_DAT.TDATA,
-	 m_axis_tlast => RPLY_A_DAT.TLAST,
-	 m_aclk => A_CLK
+	 m_axis_tvalid => rply_a_dat.TVALID,
+	 m_axis_tready => rply_a_rdy.TREADY,
+	 m_axis_tdata => rply_a_dat.TDATA,
+	 m_axis_tlast => rply_a_dat.TLAST,
+	 m_aclk => a_clk
   );
+
+-- we have to make sure that the RST signal stays active until there has been a few clocks on both a_clk and B_CLK to make sure the FIFO is reset properly. 
+arst_proc: process(a_clk, rst)
+begin
+	if RST = '1' then 
+		a_rst_ctr <= (others => '0');
+		a_rst <= '1';
+	elsif rising_edge(a_clk) then
+		if signed(a_rst_ctr) = -1 then
+			a_rst <= '0';
+		else
+			a_rst_ctr <= a_rst_ctr + 1;
+		end if;
+	end if;
+end process;
+
+brst_proc: process(b_clk, rst)
+begin
+	if rst = '1' then 
+		b_rst_ctr <= (others => '0');
+		b_rst <= '1';
+	elsif rising_edge(b_clk) then
+		if signed(b_rst_ctr) = -1 then
+			b_rst <= '0';
+		else
+			b_rst_ctr <= b_rst_ctr + 1;
+		end if;
+	end if;
+end process;
+
+a_rst_out <= a_rst;
+b_rst_out <= b_rst;
+rst_n <= not (a_rst or b_rst); -- rst_n is asynchronous, we don't have to worry about resyncing
+
 
 end Behavioral;
 
