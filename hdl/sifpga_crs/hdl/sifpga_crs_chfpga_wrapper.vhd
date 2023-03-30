@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------------------
---! Top-level file to implement siFPGA on the crs Zynq RfSOC board
+-- Top-level file to implement siFPGA on the crs Zynq RfSOC board
 -- Company: McGill University
 -- Engineer: JF Cliche
 --
@@ -10,15 +10,15 @@
 
 ---  LIBRARY DECLARATIONS -------------------------------------------------------------------------------
 
---! Standard libraries
+-- Standard libraries
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 library UNISIM;
 use UNISIM.VComponents.all;
---! Project libraries
-use work.chFPGA_Package.all; --! Get all component definitions
+-- Project libraries
+use work.chFPGA_Package.all; -- Get all component definitions
 
 ----ENTITY DECLARATION --------
 -- This is the _top level entity of the data acquisition/channelizer/correlator firmware.
@@ -31,37 +31,56 @@ entity sifpga_crs_chfpga_wrapper is
 	generic (
 
 	 		-- NOTE: All generics values must be literals if the module is to be imported in a block diagram
-			PLATFORM_ID: integer                         := 4; --! identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705
-			UDP_MAC_PRESENT: boolean                     := FALSE; --! Indicates if the Ethernet interface is to be implemented (sets the DYMMY flag on the MAC).
-			BLINKER_PRESENT: boolean                     := TRUE; --! Indicates if the LED flasher is to be implemented by setting the DUMMY flag of the BLINKER module
-			SYSTEM_CLOCK_SOURCE: string                  := "SYSCLK_BUFG"; --! System reference clock surce: "SYSCLK": 200 MHz unbuffered differential clock from sysclk_p/n, "SYSCLK_BUFG": 200 MHz BUFG-Buffered clock from sysclk_bufg, "SFP_REFCLK": 125 MHz clock from the GTX reference clock
+			PLATFORM_ID: integer                         := 4; -- identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705
+
+			-- Clocking config
+
+			SYSTEM_CLOCK_SOURCE: string                  := "SYSCLK_BUFG"; -- System reference clock surce: "SYSCLK": 200 MHz unbuffered differential clock from sysclk_p/n, "SYSCLK_BUFG": 200 MHz BUFG-Buffered clock from sysclk_bufg, "SFP_REFCLK": 125 MHz clock from the GTX reference clock
+			SYSTEM_CLOCK_FREQ: integer                   := 250; -- System reference clock frequency, in MHz *** Is an integer because IP packager does not support real. ***
+			CHAN_CLK_SOURCE: string                      := "ADC"; -- Channelizer clock comes directly from the ADC
+			CT_CLK_SOURCE: string                        := "ADC_CLK"; -- corner-turn clock source
+
 			PHY_TYPE: string                             := "NONE"; -- "GMII" or "SGMII"
-			SGMII_CLOCK_SOURCE: string                   := "REFCLK"; --! Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
+			SGMII_CLOCK_SOURCE: string                   := "REFCLK"; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
+
+			-- ADC config
 			--IMPLEMENT_ADCDAQ: boolean                    := FALSE; -- use ADC data directly from adc_axis_* ports.
-			NUMBER_OF_ADC_BOARDS: integer                := 0; -- No REFCLK module
-			NUMBER_OF_ADCS: integer                      := 8; -- Number of ADC inputs
 			ADC_TYPE: string                             := "AXIS"; -- ADC data is provided through the axis_adc port
-			NUMBER_OF_CHANNELIZERS:integer               := 8;  --!(Typ. =16)  (0-NUMBER_OF_ADCS) Number of channelizer blocks to be implemented
-			NUMBER_OF_CROSSBAR_INPUTS: integer           := 8; --! (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
-			NUMBER_OF_CROSSBAR_OUTPUTS: integer          := 8; --! (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
+			NUMBER_OF_ADCS: integer                      := 8; -- Number of ADC inputs
+
+			NUMBER_OF_ADC_BOARDS: integer                := 0; -- No REFCLK module
+
+			-- Channelizer config
+			NUMBER_OF_CHANNELIZERS:integer               := 8;  --(Typ. =16)  (0-NUMBER_OF_ADCS) Number of channelizer blocks to be implemented
+
+			-- Corner-turn engine config
 			CROSSBAR1_TYPE: string                       := "URAM"; -- "BRAM" or "URAM"
-			NUMBER_OF_CORRELATORS: integer               := 4; --! Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
+			NUMBER_OF_CROSSBAR_INPUTS: integer           := 8; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
+			NUMBER_OF_CROSSBAR_OUTPUTS: integer          := 8; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
+			NUMBER_OF_CORRELATORS: integer               := 0; -- Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
 			NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := 0;
 			NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := 0;
-			NUMBER_OF_BP_SHUFFLE_LINKS: integer          := 0; --! Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
+			NUMBER_OF_BP_SHUFFLE_LINKS: integer          := 0; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
 			NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := 0;
 
-			IMPLEMENT_100G_ETHERNET: boolean             := TRUE; --! If TRUE, a 100G UDP/IP/Ethernet data transmitter is implemented
+			-- Real-time data offload link config
+			IMPLEMENT_100G_ETHERNET: boolean             := TRUE; -- If TRUE, a 100G UDP/IP/Ethernet data transmitter is implemented
 
-			NUMBER_OF_GPU_LINKS: integer                 := 0; --! (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
-			NUMBER_OF_GPU_REFCLKS: integer               := 1; --! Number of Reference clocks provided for the 10GE links to the GPU
-			NUMBER_OF_I2C_PORTS: integer                 := 0;
-			NUMBER_OF_SPI_PORTS: integer                 := 0; -- One port for each FMC
+			NUMBER_OF_GPU_LINKS: integer                 := 0; -- (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
+			NUMBER_OF_GPU_REFCLKS: integer               := 1; -- Number of Reference clocks provided for the 10GE links to the GPU
 			--ANT_CLK_SOURCE: integer := 0; -- Indicate which ADC is the source of the antenna processing clock. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
 
 			--GPU_CHANNEL_QUAD: IntegerArray := GLOBAL_GPU_CHANNEL_QUAD; -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1
 			--GPU_QUAD_REFCLK: IntegerArray := GLOBAL_GPU_QUAD_REFCLK; -- Both QUAD0 and QUAD1 use refclk(0)
-			SIM: boolean := FALSE--! Indicates this is running as a simulation. Used to accelerate simulations
+
+			-- Peripheral config
+
+			BLINKER_PRESENT: boolean                     := TRUE; -- Indicates if the LED flasher is to be implemented by setting the DUMMY flag of the BLINKER module
+			NUMBER_OF_I2C_PORTS: integer                 := 0;
+			NUMBER_OF_SPI_PORTS: integer                 := 0; -- One port for each FMC
+
+
+			SIM: boolean := FALSE-- Indicates this is running as a simulation. Used to accelerate simulations
 
 	);
     PORT (
@@ -70,30 +89,8 @@ entity sifpga_crs_chfpga_wrapper is
 			------------------------------------
 
 			-- Reset line
-			cpu_reset_n: in std_logic; --! Hardware reset generated by the board
+			cpu_reset_n: in std_logic; -- Hardware reset generated by the board
 
-
-			--raw_clk10: in std_logic; -- 10 MHz Board clock reference (From primary clock buffer, no PLL. Single-ended. Not.
-			--mgt_clk10_p: in std_logic; --! 10 MHz backplane reference clock (From PLL in Bypass mode). Used for synchronizing ADCs.
-			--mgt_clk10_n: in std_logic;
-			--mgt_clk100_p: in std_logic; --! 100 MHz MGT reference clock (From PLL). Used only with frequency counter for connectivity tests.
-			--mgt_clk100_n: in std_logic;
-			--mgt_clk200_p: in std_logic; --! 200 MHz MGT reference clock (From PLL). Used only with frequency counter for connectivity tests.
-			--mgt_clk200_n: in std_logic;
-			--mgt_clk125_p: in std_logic; --! 125 MHz MGT reference clock (From PLL). Used only with frequency counter for connectivity tests.
-			--mgt_clk125_n: in std_logic;
-
---			bp_io: out  std_logic_vector(8 downto 0); --! Backplane IO
-			--sma_a: inout std_logic; -- sync out
-			--sma_b_fpga_led2: inout std_logic; -- LED2
-			--bp_time_p: in std_logic; -- Time_P
-			--bp_time_n: in std_logic; -- Time_N
-			--bp_trig_p: in std_logic; -- Trig_P (used as Sync in)
-			--bp_trig_n: in std_logic; -- Trig_N
-			--bp_gpio_int: inout std_logic;
-			--bp_buck_sync: inout std_logic;
-			--fpga_led1_bp_sma: inout std_logic; -- FPGA LED1 & Backplane SMA
-			--gpio_led: out std_logic_vector(7 downto 0);
 
 			-- System clocks
 			clk200_bufg: in std_logic;
@@ -103,7 +100,6 @@ entity sifpga_crs_chfpga_wrapper is
 
 
 			-- Buck Sync signals
-
 			buck_sync_5v0: out std_logic;
 			buck_sync_0v85: out std_logic;
 			buck_sync_3v3: out std_logic;
@@ -132,37 +128,37 @@ entity sifpga_crs_chfpga_wrapper is
 			adc1_axis_tdata : in  std_logic_vector (127 downto 0);
 			adc1_axis_tvalid : in  std_logic;
 			adc1_axis_tready : out  std_logic;
-			adc1_axis_clk : in  std_logic; --! data clock
+			adc1_axis_clk : in  std_logic; -- data clock
 			-- ADC2 signals
 			adc2_axis_tdata : in  std_logic_vector (127 downto 0);
 			adc2_axis_tvalid : in  std_logic;
 			adc2_axis_tready : out  std_logic;
-			adc2_axis_clk : in  std_logic; --! data clock
+			adc2_axis_clk : in  std_logic; -- data clock
 			-- ADC3 signals
 			adc3_axis_tdata : in  std_logic_vector (127 downto 0);
 			adc3_axis_tvalid : in  std_logic;
 			adc3_axis_tready : out  std_logic;
-			adc3_axis_clk : in  std_logic; --! data clock
+			adc3_axis_clk : in  std_logic; -- data clock
 			-- ADC4 signals
 			adc4_axis_tdata : in  std_logic_vector (127 downto 0);
 			adc4_axis_tvalid : in  std_logic;
 			adc4_axis_tready : out  std_logic;
-			adc4_axis_clk : in  std_logic; --! data clock
+			adc4_axis_clk : in  std_logic; -- data clock
 			-- ADC5 signals
 			adc5_axis_tdata : in  std_logic_vector (127 downto 0);
 			adc5_axis_tvalid : in  std_logic;
 			adc5_axis_tready : out  std_logic;
-			adc5_axis_clk : in  std_logic; --! data clock
+			adc5_axis_clk : in  std_logic; -- data clock
 			-- ADC6 signals
 			adc6_axis_tdata : in  std_logic_vector (127 downto 0);
 			adc6_axis_tvalid : in  std_logic;
 			adc6_axis_tready : out  std_logic;
-			adc6_axis_clk : in  std_logic; --! data clock
+			adc6_axis_clk : in  std_logic; -- data clock
 			-- ADC7 signals
 			adc7_axis_tdata : in  std_logic_vector (127 downto 0);
 			adc7_axis_tvalid : in  std_logic;
 			adc7_axis_tready : out  std_logic;
-			adc7_axis_clk : in  std_logic; --! data clock
+			adc7_axis_clk : in  std_logic; -- data clock
 			-- ADC tile output clocks.
 			-- These are divided version of the RF sampling clocks.
 			-- They are used for monitoring only, as they are not guaranteed to be present until initialized.
@@ -209,21 +205,21 @@ entity sifpga_crs_chfpga_wrapper is
 end entity sifpga_crs_chfpga_wrapper;
 
 ---------- chFPGA implementation ------
---! Implements the chFPGA CHIME PoC Data acquisition/channelizer/corrrlator for the KC705 evaluation board (equipped with a Kintex 7 7K355 FPGA).
---! This simply instantiate the generic chFPGA code with the appropriate generics for that hardware platform.
---!
+-- Implements the chFPGA CHIME PoC Data acquisition/channelizer/corrrlator for the KC705 evaluation board (equipped with a Kintex 7 7K355 FPGA).
+-- This simply instantiate the generic chFPGA code with the appropriate generics for that hardware platform.
+--
 architecture impl of sifpga_crs_chfpga_wrapper is
 	-- SIGNALS
 
 	attribute IOB: string;
 	attribute DONT_TOUCH: string;
-
 	ATTRIBUTE X_INTERFACE_INFO : STRING;
-	--ATTRIBUTE X_INTERFACE_INFO of clk156_p: SIGNAL is "xilinx.com:interface:diff_clock:1.0 clk156_p CLK_P";
-	--ATTRIBUTE X_INTERFACE_INFO of clk156_n: SIGNAL is "xilinx.com:interface:diff_clock:1.0 clk156_n CLK_N";
 	ATTRIBUTE X_INTERFACE_PARAMETER : STRING;
+
 	ATTRIBUTE X_INTERFACE_PARAMETER of clk200_bufg: SIGNAL is "FREQ_HZ 200000000";
 	ATTRIBUTE X_INTERFACE_PARAMETER of clk10_bufg: SIGNAL is "FREQ_HZ 10000000";
+
+
 
 	-- Vectors representing the ADC inputs.
 	-- Length is hard coded to the fixed number of inputs provided in the top level port.
@@ -237,11 +233,9 @@ architecture impl of sifpga_crs_chfpga_wrapper is
 	--signal clk10_nobuf, clk10: std_logic;
 	signal buck_sync: std_logic_vector(0 to 15);
 
-
-
 begin
 
-	cpu_reset <= not cpu_reset_n; --! Reset is active LOW on the ICEBoard
+	cpu_reset <= not cpu_reset_n; -- Reset is active LOW on the ICEBoard
 
 
 	buck_sync_5v0 <= buck_sync(0);
@@ -254,22 +248,6 @@ begin
 	buck_sync_1v4 <= buck_sync(7);
 	buck_sync_bp <= buck_sync(8);
 
-
-	--IBUFGDS0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
-	--	generic map(
-	--		DIFF_TERM => TRUE
-	--	)
-	--	port map (
-	--		I=>clk10_p,
-	--		IB=>clk10_n,
-	--		O=>clk10_nobuf
-	--	);
-
-	--bufg_clk10 : BUFG
-	--	port map (
-	--		I => clk10_nobuf,
-	--		O => clk10
-	--	);
 
 	adc_axis_tdata <= (
 	    adc0_axis_tdata,
@@ -327,8 +305,13 @@ begin
 	chfpga0: entity work.chfpga
 		GENERIC MAP(
 			PLATFORM_ID                     => PLATFORM_ID,
-			BLINKER_PRESENT                 => BLINKER_PRESENT,
+
+			-- Clocking config
 			SYSTEM_CLOCK_SOURCE             => SYSTEM_CLOCK_SOURCE,
+			SYSTEM_CLOCK_FREQ               => real(SYSTEM_CLOCK_FREQ),
+			CHAN_CLK_SOURCE                 => CHAN_CLK_SOURCE,
+			CT_CLK_SOURCE                   => CT_CLK_SOURCE,
+
 			PHY_TYPE                        => PHY_TYPE,
 			SGMII_CLOCK_SOURCE              => SGMII_CLOCK_SOURCE,
 			ADC_TYPE                        => ADC_TYPE,
@@ -349,6 +332,9 @@ begin
 			--BP_SHUFFLE_LANE_MAP             => BP_SHUFFLE_LANE_MAP,
 			--BP_SHUFFLE_LANE_TO_QUAD_MAP     => BP_SHUFFLE_LANE_TO_QUAD_MAP,
 			--BP_SHUFFLE_QUAD_TO_REFCLK_MAP   => BP_SHUFFLE_QUAD_TO_REFCLK_MAP,
+
+			-- Peripherals
+			BLINKER_PRESENT                 => BLINKER_PRESENT,
 			NUMBER_OF_I2C_PORTS             => NUMBER_OF_I2C_PORTS,
 			NUMBER_OF_SPI_PORTS             => NUMBER_OF_SPI_PORTS,
 			NUMBER_OF_ADC_BOARDS            => NUMBER_OF_ADC_BOARDS,
