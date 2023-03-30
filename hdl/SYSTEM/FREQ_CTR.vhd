@@ -35,6 +35,9 @@ use work.chFPGA_Package.all; -- Get all component definitions
 library UNISIM;
 use UNISIM.VComponents.all;
 
+Library xpm;
+use xpm.vcomponents.all;
+
 -- Implements a frequency counter
 --
 -- This module measures the frequency of a signal relative to the clk200
@@ -82,7 +85,8 @@ signal freq_ctr: unsigned(31 downto 0) := (others=>'0');
 signal freq_ctr_rdy: std_logic;
 signal freq_ctr_rdy_sync: std_logic;
 signal freq_ctr_start: std_logic:='0';
-signal freq_ctr_start_sync: std_logic;
+signal freq_ctr_start_clk200: std_logic;
+signal freq_ctr_start_srcclk: std_logic;
 signal gate_en: std_logic:='0';
 signal gate_en_sync: std_logic;
 signal freq_ctr_src_sel: unsigned(6 downto 0):=(others=>'0');
@@ -177,34 +181,45 @@ gate_en_cdc: xpm_cdc_single
 	dest_out => gate_en_sync
 	);
 
+-- resynchronize the  freq_ctr reset signal
+gate_rst_cdc: xpm_cdc_async_rst
+	generic map (
+		RST_ACTIVE_HIGH => 0
+	)
+	port map (
+		src_arst => freq_ctr_start, -- resets when '0'
+		dest_clk => src_clk,
+		dest_arst => freq_ctr_start_srcclk
+	);
+
 -- Control signal from clrl_clk to clk200
 freq_start_cdc: xpm_cdc_single
 	port map (
-	src_clk => ctrl_clk, -- optional; required when SRC_INPUT_REG = 1
-	src_in => freq_ctr_start,
-	dest_clk => clk200,
-	dest_out => freq_ctr_start_sync
+		src_clk => ctrl_clk, -- optional; required when SRC_INPUT_REG = 1
+		src_in => freq_ctr_start,
+		dest_clk => clk200,
+		dest_out => freq_ctr_start_clk200
 	);
 
 -- control signal from clk200 to ctrl_clk
 freq_rdy_cdc: xpm_cdc_single
 	port map (
-	src_clk => clk200, -- optional; required when SRC_INPUT_REG = 1
-	src_in => freq_ctr_rdy,
-	dest_clk => ctrl_clk,
-	dest_out => freq_ctr_rdy_sync
+		src_clk => clk200, -- optional; required when SRC_INPUT_REG = 1
+		src_in => freq_ctr_rdy,
+		dest_clk => ctrl_clk,
+		dest_out => freq_ctr_rdy_sync
 	);
 
 -- Source clock counter process
 --
--- When freq_ctr_start_sync goes down to 0 on the CLK200 edge, gate counter is asynchronously reset, even if there is no src_clk.
--- When freq_cctr_start_sync goes up, We are certain that  the counter is zero, and gate_en_sync is also zero assuming 1) there is a src_clk and 2) freq_ctr_start_sync was held low long enough for gate_en_sync to propagate through the synchronizer.
+-- When freq_ctr_start_clk200 goes down to 0 on the CLK200 edge, gate counter is asynchronously reset, even if there is no src_clk.
+-- When freq_cctr_start_sync goes up, We are certain that  the counter is zero, and gate_en_sync is also zero assuming 1) there is a src_clk and 2) freq_ctr_start_clk200 was held low long enough for gate_en_sync to propagate through the synchronizer.
 -- Since gate_en_sync is zero when  freq_cctr_start_sync goes up, we don't have to worry that any part of the counter will start counting anomalously.
 -- Eventually, the gate_en signal will propagate to gate_en_sync (on the src_clk clk) and count will start.
 -- If gate_en is held high for time T, gate_en_sync will also be held high for the same time, plus or minus a src_clk cycle, since the synchronizer latency is fixed.
-src_ctr_proc: process(src_clk, freq_ctr_start_sync)
+src_ctr_proc: process(src_clk, freq_ctr_start_srcclk)
 	begin
-		if freq_ctr_start_sync = '0' then -- We need an asynchronous reset to clear the counter even in the absence of the source clock
+		if freq_ctr_start_srcclk = '0' then -- We need an asynchronous reset to clear the counter even in the absence of the source clock
 				freq_ctr <= (others=>'0');
 		elsif rising_edge(src_clk) then
 			if gate_en_sync = '1' then
@@ -217,8 +232,8 @@ src_ctr_proc: process(src_clk, freq_ctr_start_sync)
 --
 -- Generates a gate_en pulse of the desired length in terms of the clk200 clock cycles.
 -- gate_period=N will generate a gate_en of N clk200 cycles long.
--- freq_ctr_rdy is cleared when freq_ctr_start_sync=0, and is set when the gate period is complete. freq_ctr will stabilize a few stc_slk later after gate_en has time to propagate through the synchronizer.
--- freq_ctr_start_sync is resynchronized to clk200 to make sure all the internal registers of the gate counter start at the same time.
+-- freq_ctr_rdy is cleared when freq_ctr_start_clk200=0, and is set when the gate period is complete. freq_ctr will stabilize a few stc_slk later after gate_en has time to propagate through the synchronizer.
+-- freq_ctr_start_clk200 is resynchronized to clk200 to make sure all the internal registers of the gate counter start at the same time.
 ref_ctr_proc: process(CLK200)
 	begin
 		if rising_edge(CLK200) then
@@ -235,7 +250,7 @@ ref_ctr_proc: process(CLK200)
 			end if;
 
 			-- synchronous reset operrides
-			if freq_ctr_start_sync = '0' then
+			if freq_ctr_start_clk200 = '0' then
 				gate_ctr <= (others=>'0');
 				freq_ctr_rdy <= '0';
 				gate_en <= '0';
