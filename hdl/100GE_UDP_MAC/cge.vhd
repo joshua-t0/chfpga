@@ -22,6 +22,9 @@ use IEEE.std_logic_misc.ALL; -- for reduce functions
 library UNISIM;
 use UNISIM.VComponents.all;
 
+Library xpm;
+use xpm.vcomponents.all;
+
 library work;
 use work.chFPGA_Package.all;
 --use work.ip_package.all; -- Import definition of components used in this module
