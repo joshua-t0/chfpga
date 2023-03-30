@@ -62,6 +62,7 @@ entity xge_array is
 
 		refclk_div2: out std_logic_vector(0 to NUMBER_OF_REFCLK-1); -- 156.25 MHz reference clock
 		txclk_div2: out std_logic; -- Tx word clock
+		clk322_out: out std_logic; -- Tx word clock
 
 		s_axis_tx_tdata: in slv32_array(0 to NUMBER_OF_TX_LANES-1); -- First byte to transmit is in in LSB (i.e first bit transmitted is bit 0)
 		s_axis_tx_tvalid: in std_logic_vector(0 to NUMBER_OF_TX_LANES-1);
@@ -121,6 +122,7 @@ architecture Behavioral of xge_array is
 	signal test_tvalid: std_logic;
 	signal test_tlast: std_logic;
 	signal test_tdata: slv32;
+	signal test_frame_ctr: unsigned(31 downto 0);
 	signal frame_ctr: unsigned(7 downto 0);
 	signal test_packet_length: unsigned(15 downto 0);
 	signal test_packet_period: unsigned(15 downto 0);
@@ -130,6 +132,7 @@ architecture Behavioral of xge_array is
 
 begin
 
+clk322_out <= xglink_tx_clk; 
 
 link_enable <='1';
 
@@ -163,18 +166,21 @@ begin
 			frame_ctr <= frame_ctr + 1;
 		end if;
 
-		test_tdata <= std_logic_vector(resize(test_packet_ctr, test_tdata'LENGTH));
+		--test_tdata <= std_logic_vector(resize(test_packet_ctr, test_tdata'LENGTH));
+		test_tdata <= std_logic_vector(test_frame_ctr);
 		test_tlast <= '0';
 
 		-- Generate test pattern
 		if link_enable='0' or xglink_tx_resetdone(0)='0' then
 			test_packet_ctr <= (others=>'0');
+			test_frame_ctr <= (others => '0'); 
 			test_tvalid<='0';
 		else
 
 			if test_packet_ctr = test_packet_period then
 				test_packet_ctr <= (others=>'0');
 				test_tlast <= '1';
+				test_frame_ctr <= test_frame_ctr + 1;
 			else
 				test_packet_ctr <= test_packet_ctr + 1;
 				if test_packet_ctr = test_packet_length then
