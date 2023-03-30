@@ -1512,7 +1512,7 @@ begin
 
 	top_router0: entity work.CTRL_ROUTER
 		generic map (
-			PBLOCK => "SYSTEM",
+			TARGET_PBLOCK => "SYSTEM",
 			NUMBER_OF_PORTS => NUMBER_OF_PORTS,
 			ADDRESS_MASK => "-111----------------" --'1': used to generate port index, '-' = don't care,
 		)
@@ -3158,6 +3158,7 @@ GPUGEN: if NUMBER_OF_GPU_LINKS > 0 generate
 	signal gpu_rply_dat: AXIS8_DAT_STRUCT;
 	signal gpu_rply_rdy: AXIS8_RDY_STRUCT;
     signal axis_gpu_clk: std_logic_vector(axis_gpu_tdata'RANGE);
+    signal clk322: std_logic;
 
 begin
 	-- Index the system control buses as a separate signal here , because the simulator will make errors if we index it directly on the instantiation
@@ -3210,6 +3211,7 @@ begin
 			-- Clock monitors to be fed to the frequency counter
 			refclk_div2 => gpu_refclk_div2,
 			txclk_div2 => gpu_txclk_div2,
+			clk322_out => clk322,
 
 			-- input data interface
 			s_axis_tx_tdata  => axis_gpu_tdata,
