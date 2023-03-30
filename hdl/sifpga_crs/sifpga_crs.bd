@@ -1,12 +1,13 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0xE92318D0FE32BE7E",
+      "boundary_crc": "0x2EE54B72E727AC5B",
       "device": "xczu47dr-ffvg1517-1-i",
       "name": "sifpga_crs",
       "rev_ctrl_bd_flag": "RevCtrlBdOff",
       "synth_flow_mode": "Hierarchical",
-      "tool_version": "2022.2"
+      "tool_version": "2022.2",
+      "validated": "true"
     },
     "design_tree": {
       "adc0_bufg1": "",
@@ -33,6 +34,8 @@
       "util_ds_buf_2": "",
       "zynq_ultra_ps_e_0": "",
       "system_ila_0": "",
+      "adc0_bufg2": "",
+      "util_ds_buf_3": "",
       "sifpga_crs_chfpga_0": ""
     },
     "interface_ports": {
@@ -262,7 +265,7 @@
             "value_src": "default"
           },
           "FREQ_HZ": {
-            "value": "200000000"
+            "value": "250000000"
           }
         },
         "port_maps": {
@@ -290,7 +293,7 @@
             "value_src": "default"
           },
           "FREQ_HZ": {
-            "value": "300000000"
+            "value": "10000000"
           }
         },
         "port_maps": {
@@ -302,6 +305,34 @@
           },
           "CLK_N": {
             "physical_name": "clk10_clk_n",
+            "direction": "I",
+            "left": "0",
+            "right": "0"
+          }
+        }
+      },
+      "pl": {
+        "mode": "Slave",
+        "vlnv_bus_definition": "xilinx.com:interface:diff_clock:1.0",
+        "vlnv": "xilinx.com:interface:diff_clock_rtl:1.0",
+        "parameters": {
+          "CAN_DEBUG": {
+            "value": "false",
+            "value_src": "default"
+          },
+          "FREQ_HZ": {
+            "value": "375000000"
+          }
+        },
+        "port_maps": {
+          "CLK_P": {
+            "physical_name": "pl_clk_p",
+            "direction": "I",
+            "left": "0",
+            "right": "0"
+          },
+          "CLK_N": {
+            "physical_name": "pl_clk_n",
             "direction": "I",
             "left": "0",
             "right": "0"
@@ -1120,25 +1151,25 @@
             "value": "false"
           },
           "ADC0_Outclk_Freq": {
-            "value": "100.000"
+            "value": "93.750"
           },
           "ADC0_PLL_Enable": {
             "value": "false"
           },
           "ADC0_Refclk_Freq": {
-            "value": "1600.000"
+            "value": "3000.000"
           },
           "ADC0_Sampling_Rate": {
-            "value": "1.6"
+            "value": "3"
           },
           "ADC1_Outclk_Freq": {
-            "value": "100.000"
+            "value": "93.750"
           },
           "ADC1_Refclk_Freq": {
-            "value": "1600.000"
+            "value": "3000.000"
           },
           "ADC1_Sampling_Rate": {
-            "value": "1.6"
+            "value": "3"
           },
           "ADC224_En": {
             "value": "true"
@@ -1153,22 +1184,22 @@
             "value": "true"
           },
           "ADC2_Outclk_Freq": {
-            "value": "100.000"
+            "value": "93.750"
           },
           "ADC2_Refclk_Freq": {
-            "value": "1600.000"
+            "value": "3000.000"
           },
           "ADC2_Sampling_Rate": {
-            "value": "1.6"
+            "value": "3"
           },
           "ADC3_Outclk_Freq": {
-            "value": "100.000"
+            "value": "93.750"
           },
           "ADC3_Refclk_Freq": {
-            "value": "1600.000"
+            "value": "3000.000"
           },
           "ADC3_Sampling_Rate": {
-            "value": "1.6"
+            "value": "3"
           },
           "ADC_Coarse_Mixer_Freq00": {
             "value": "3"
@@ -1207,7 +1238,7 @@
             "value": "1"
           },
           "ADC_Nyquist00": {
-            "value": "1"
+            "value": "0"
           },
           "ADC_OBS_Decimation_Mode00": {
             "value": "1"
@@ -1303,22 +1334,22 @@
             "value": "false"
           },
           "mADC_Nyquist00": {
-            "value": "1"
+            "value": "0"
           },
           "mADC_Nyquist02": {
             "value": "1"
           },
           "mADC_Outclk_Freq": {
-            "value": "100.000"
+            "value": "93.750"
           },
           "mADC_PLL_Enable": {
             "value": "false"
           },
           "mADC_Refclk_Freq": {
-            "value": "1600.000"
+            "value": "3000.000"
           },
           "mADC_Sampling_Rate": {
-            "value": "1.6"
+            "value": "3"
           },
           "mADC_Slice00_Enable": {
             "value": "true"
@@ -4789,6 +4820,31 @@
           }
         }
       },
+      "adc0_bufg2": {
+        "vlnv": "xilinx.com:ip:util_ds_buf:2.2",
+        "xci_name": "sifpga_crs_adc0_bufg1_1",
+        "xci_path": "ip/sifpga_crs_adc0_bufg1_1/sifpga_crs_adc0_bufg1_1.xci",
+        "inst_hier_path": "adc0_bufg2",
+        "parameters": {
+          "C_BUF_TYPE": {
+            "value": "BUFG"
+          }
+        }
+      },
+      "util_ds_buf_3": {
+        "vlnv": "xilinx.com:ip:util_ds_buf:2.2",
+        "xci_name": "sifpga_crs_util_ds_buf_1_1",
+        "xci_path": "ip/sifpga_crs_util_ds_buf_1_1/sifpga_crs_util_ds_buf_1_1.xci",
+        "inst_hier_path": "util_ds_buf_3",
+        "parameters": {
+          "DIFF_CLK_IN_BOARD_INTERFACE": {
+            "value": "Custom"
+          },
+          "USE_BOARD_FLOW": {
+            "value": "true"
+          }
+        }
+      },
       "sifpga_crs_chfpga_0": {
         "vlnv": "xilinx.com:module_ref:sifpga_crs_chfpga_wrapper:1.0",
         "xci_name": "sifpga_crs_sifpga_crs_chfpga_0_0",
@@ -4836,6 +4892,18 @@
               "HAS_TLAST": {
                 "value": "0",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "375000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value_src": "ip_prop"
               }
             },
             "port_maps": {
@@ -4891,6 +4959,18 @@
               "HAS_TLAST": {
                 "value": "0",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "375000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value_src": "ip_prop"
               }
             },
             "port_maps": {
@@ -4946,6 +5026,18 @@
               "HAS_TLAST": {
                 "value": "0",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "375000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value_src": "ip_prop"
               }
             },
             "port_maps": {
@@ -5001,6 +5093,18 @@
               "HAS_TLAST": {
                 "value": "0",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "375000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value_src": "ip_prop"
               }
             },
             "port_maps": {
@@ -5056,6 +5160,18 @@
               "HAS_TLAST": {
                 "value": "0",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "375000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value_src": "ip_prop"
               }
             },
             "port_maps": {
@@ -5111,6 +5227,18 @@
               "HAS_TLAST": {
                 "value": "0",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "375000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value_src": "ip_prop"
               }
             },
             "port_maps": {
@@ -5166,6 +5294,18 @@
               "HAS_TLAST": {
                 "value": "0",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "375000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value_src": "ip_prop"
               }
             },
             "port_maps": {
@@ -5221,6 +5361,18 @@
               "HAS_TLAST": {
                 "value": "0",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "375000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value_src": "ip_prop"
               }
             },
             "port_maps": {
@@ -5276,6 +5428,14 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "99999001",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_zynq_ultra_ps_e_0_0_pl_clk0",
+                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -5335,6 +5495,14 @@
               "HAS_TLAST": {
                 "value": "1",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "99999001",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_zynq_ultra_ps_e_0_0_pl_clk0",
+                "value_src": "default_prop"
               }
             },
             "port_maps": {
@@ -5361,13 +5529,51 @@
         },
         "ports": {
           "cpu_reset_n": {
-            "direction": "I"
+            "direction": "I",
+            "parameters": {
+              "POLARITY": {
+                "value": "ACTIVE_LOW",
+                "value_src": "const_prop"
+              }
+            }
           },
           "clk200_bufg": {
-            "direction": "I"
+            "direction": "I",
+            "parameters": {
+              "FREQ_HZ": {
+                "value": "250000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_util_ds_buf_1_0_IBUF_OUT",
+                "value_src": "ip_prop"
+              }
+            }
           },
           "clk10_bufg": {
-            "direction": "I"
+            "direction": "I",
+            "parameters": {
+              "FREQ_HZ": {
+                "value": "10000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_util_ds_buf_0_0_IBUF_OUT",
+                "value_src": "ip_prop"
+              },
+              "PortWidth": {
+                "value": "1",
+                "value_src": "default_prop"
+              }
+            }
           },
           "buck_sync_5v0": {
             "direction": "O"
@@ -5403,6 +5609,18 @@
               "ASSOCIATED_BUSIF": {
                 "value": "adc0_axis",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "375000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value_src": "ip_prop"
               }
             }
           },
@@ -5413,6 +5631,18 @@
               "ASSOCIATED_BUSIF": {
                 "value": "adc1_axis",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "375000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value_src": "ip_prop"
               }
             }
           },
@@ -5423,6 +5653,18 @@
               "ASSOCIATED_BUSIF": {
                 "value": "adc2_axis",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "375000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value_src": "ip_prop"
               }
             }
           },
@@ -5433,6 +5675,18 @@
               "ASSOCIATED_BUSIF": {
                 "value": "adc3_axis",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "375000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value_src": "ip_prop"
               }
             }
           },
@@ -5443,6 +5697,18 @@
               "ASSOCIATED_BUSIF": {
                 "value": "adc4_axis",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "375000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value_src": "ip_prop"
               }
             }
           },
@@ -5453,6 +5719,18 @@
               "ASSOCIATED_BUSIF": {
                 "value": "adc5_axis",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "375000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value_src": "ip_prop"
               }
             }
           },
@@ -5463,6 +5741,18 @@
               "ASSOCIATED_BUSIF": {
                 "value": "adc6_axis",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "375000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value_src": "ip_prop"
               }
             }
           },
@@ -5473,20 +5763,88 @@
               "ASSOCIATED_BUSIF": {
                 "value": "adc7_axis",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "375000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value_src": "ip_prop"
               }
             }
           },
           "adc0_clkout": {
-            "direction": "I"
+            "direction": "I",
+            "parameters": {
+              "FREQ_HZ": {
+                "value": "93750000",
+                "value_src": "user_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "default_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_usp_rf_data_converter_0_0_clk_adc0",
+                "value_src": "default_prop"
+              }
+            }
           },
           "adc1_clkout": {
-            "direction": "I"
+            "direction": "I",
+            "parameters": {
+              "FREQ_HZ": {
+                "value": "93750000",
+                "value_src": "user_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "default_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_usp_rf_data_converter_0_0_clk_adc1",
+                "value_src": "default_prop"
+              }
+            }
           },
           "adc2_clkout": {
-            "direction": "I"
+            "direction": "I",
+            "parameters": {
+              "FREQ_HZ": {
+                "value": "93750000",
+                "value_src": "user_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "default_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_usp_rf_data_converter_0_0_clk_adc2",
+                "value_src": "default_prop"
+              }
+            }
           },
           "adc3_clkout": {
-            "direction": "I"
+            "direction": "I",
+            "parameters": {
+              "FREQ_HZ": {
+                "value": "93750000",
+                "value_src": "user_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "default_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_usp_rf_data_converter_0_0_clk_adc3",
+                "value_src": "default_prop"
+              }
+            }
           },
           "qsfp_txp": {
             "direction": "O",
@@ -5525,6 +5883,14 @@
               "ASSOCIATED_RESET": {
                 "value": "bsb_axis_rst",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "99999001",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "sifpga_crs_zynq_ultra_ps_e_0_0_pl_clk0",
+                "value_src": "default_prop"
               }
             }
           },
@@ -5582,6 +5948,12 @@
         "interface_ports": [
           "clk200",
           "util_ds_buf_1/CLK_IN_D"
+        ]
+      },
+      "diff_clock_rtl_2": {
+        "interface_ports": [
+          "pl",
+          "util_ds_buf_3/CLK_IN_D"
         ]
       },
       "ps8_0_axi_periph_M01_AXI": {
@@ -5710,12 +6082,17 @@
       "adc0_bufg1_BUFG_O": {
         "ports": [
           "adc0_bufg1/BUFG_O",
+          "sifpga_crs_chfpga_0/clk200_bufg"
+        ]
+      },
+      "adc0_bufg2_BUFG_O": {
+        "ports": [
+          "adc0_bufg2/BUFG_O",
           "rst_ps8_0_96M1/slowest_sync_clk",
           "usp_rf_data_converter_0/m0_axis_aclk",
           "usp_rf_data_converter_0/m1_axis_aclk",
           "usp_rf_data_converter_0/m2_axis_aclk",
           "usp_rf_data_converter_0/m3_axis_aclk",
-          "sifpga_crs_chfpga_0/clk200_bufg",
           "sifpga_crs_chfpga_0/adc0_axis_clk",
           "sifpga_crs_chfpga_0/adc1_axis_clk",
           "sifpga_crs_chfpga_0/adc2_axis_clk",
@@ -5887,6 +6264,12 @@
         "ports": [
           "util_ds_buf_1/IBUF_OUT",
           "adc0_bufg1/BUFG_I"
+        ]
+      },
+      "util_ds_buf_1_IBUF_OUT1": {
+        "ports": [
+          "util_ds_buf_3/IBUF_OUT",
+          "adc0_bufg2/BUFG_I"
         ]
       },
       "util_ds_buf_2_BUFG_O": {
