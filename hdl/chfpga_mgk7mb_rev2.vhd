@@ -33,41 +33,21 @@ use work.chFPGA_Package.all; --! Get all component definitions
 entity chFPGA_MGK7MB_Rev2 is
 	 generic (
 			PLATFORM_ID: INTEGER                         := PLATFORM_ID_MGK7MB; --! identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705
-			UDP_MAC_PRESENT: BOOLEAN                     := TRUE; --! Indicates if the Ethernet interface is to be implemented (sets the DYMMY flag on the MAC). Used for debugging only.
-			BLINKER_PRESENT: BOOLEAN                     := TRUE; --! Indicates if the LED flasher is to be implemented by setting the DUMMY flag of the BLINKER module
+
+			-- Clocking config
 			SYSTEM_CLOCK_SOURCE: string                  := "SFP_REFCLK"; --!"SYSCLK": the 200 MHz clock will be taken from sysclk_p/n (CC pins) or "SFP_REFCLK": the system clock is 125 MHz from the GTX reference clock
+			SYSTEM_CLOCK_FREQ: real                      := 125.0; -- System reference clock frequency, in MHz *** IP packager does not support real. Defined as constant below ***
+			CHAN_CLK_SOURCE: string                      := "MMCM"; -- Channelizer clock comes from the multi-phase MMCM
+			CHAN_CLK_FREQ: real                          := 200.0; -- MHz. 200.0 or 300.0 are supported.
+			CT_CLK_SOURCE: string                        := "BP_SHUFFLE_TXCLK"; -- corner-turn operates on backplane GTY word clock (~244 MHz)
+
+			-- BSB interface config
 			PHY_TYPE: string                             := "SGMII"; -- "GMII" or "SGMII"
 			SGMII_CLOCK_SOURCE: string                   := "REFCLK"; --! Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
-			NUMBER_OF_ADCS: INTEGER                      := 16; --! Number of ADC Data acquisition blocks to implement
-			NUMBER_OF_CHANNELIZERS:INTEGER               := 16;  --!(Typ. =16)  (0-NUMBER_OF_ADCS) Number of antenna processing blocks to be implemented
-			NUMBER_OF_CROSSBAR_INPUTS: integer           := 16; --! (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
-			NUMBER_OF_CROSSBAR_OUTPUTS: integer          := 16; --! (Typ. =16): Number of repacked data streams to feed to the corrleator or GPU links
-			NUMBER_OF_CORRELATORS: INTEGER               := 0; --! (0-NUMBER_OF_REORDER_OUTPUTS) Number of correlator blocks (CH_DIST+CORR+ACC) to be implemented if IMPLEMENT_CORR=TRUE
-			NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER := GLOBAL_NUMBER_OF_CHANNELIZERS_TO_CORRELATE; --! (3 - NUMBER_OF_CHANNELIZERS) Number of channelizers outputs to be correlated for each frequency channel. This is hard coded for now. Determines how many antenna streams are fed to the CORR_BLOCK modules, and how many multipliers to implement in parallel in the CORR module.
-			NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := 16;
-			NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := 8;
-			NUMBER_OF_BP_SHUFFLE_LINKS: integer          := 19; --! Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
-			NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := 2;
-			BP_SHUFFLE_LANE_MAP: integerArray            := ( -- Associate the concatenated BP PCB and QUAD lanes to GTX links. -1 means a bypass lane.
-			                                                -- Backplane PCB Lanes
-			                                                 0=>-1, -- Bypass lane
-			                                                 1=>0, 2=> 1, 3 => 2, 4 =>3,  5 =>4,  6 =>5,  7 =>6, 8=>7,
-			                                                 9=>8, 10=>9, 11=>10, 12=>11, 13=>12, 14=>13, 15=>14,
-			                                                -- Backplane QUAD Lanes
-			                                                 16 to 19=>-1, -- Bypass lane
-			                                                 20=>15, 21=>16, 22=>17, 23=>18
-			                                                );
-			BP_SHUFFLE_LANE_TO_QUAD_MAP : integerArray   := (0 to 3=>0, 4 to 7=>1, 8 to 11=> 2, 12 to 14 => 3, 15 to 18=> 4); --!  Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-			BP_SHUFFLE_QUAD_TO_REFCLK_MAP : integerArray := (0 => 1, 1 => 0, 2 => 0, 3=> 1, 4 => 1); --! Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_BP_SHUFFLE_REFCLK-1).
 
-			NUMBER_OF_GPU_LINKS: integer                 := GLOBAL_NUMBER_OF_GPU_LINKS; --! (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
-			NUMBER_OF_GPU_REFCLKS: integer               := GLOBAL_NUMBER_OF_GPU_REFCLKS; --! Number of Reference clocks provided for the 10GE links to the GPU
-			NUMBER_OF_I2C_PORTS: integer                 := 1;
-			NUMBER_OF_SPI_PORTS: integer                 := 2; -- One port for each FMC
-			NUMBER_OF_ADC_BOARDS: integer                := 2; -- One SYNC for each FMC
-			-- IMPLEMENT_ANT: BoolArray(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(others=>TRUE); --! Selects for which antenna a processing pipeline is implemented
-			-- IMPLEMENT_FFT: BoolArray(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(others=>TRUE); --! Selects if the FFT block is implemented for each antenna (otherwise the timestream go through directly)
-			-- IMPLEMENT_CORR: BoolArray(0 to NUMBER_OF_CORRELATORS_MAX-1):=(0 to 7=>TRUE, others=>FALSE); --! Indicates if the correlator blocks are to be implemented
+			-- ADC config
+			ADC_TYPE: string                             := "EV8AQ160"; -- ADC data is provided through the axis_adc port
+			NUMBER_OF_ADCS: INTEGER                      := 16; --! Number of ADC Data acquisition blocks to implement
 
 			--! ADC_IS_DIFFERNTIAL indicates whether each ADC data and clock inputs are single-ended (zero value) or differential (non-zero value).
 			-- For Rev2 board
@@ -113,8 +93,52 @@ entity chFPGA_MGK7MB_Rev2 is
 				--! CH7: Data and clock all in same bank 18. Clock is on a SRCC pin, so we cannot use BUFMR to equalize delays.
 			ANT_CLK_SOURCE: integer :=0; -- Indicate which ADC is the source of the antenna processing clock. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
 
+
+			-- Channelizer config
+			NUMBER_OF_CHANNELIZERS:INTEGER               := 16;  --!(Typ. =16)  (0-NUMBER_OF_ADCS) Number of antenna processing blocks to be implemented
+
+			-- Corner-turn engine config
+			CROSSBAR1_TYPE: string                       := "BRAM"; -- "BRAM" or "URAM"
+			NUMBER_OF_CROSSBAR_INPUTS: integer           := 16; --! (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
+			NUMBER_OF_CROSSBAR_OUTPUTS: integer          := 16; --! (Typ. =16): Number of repacked data streams to feed to the corrleator or GPU links
+			NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := 16;
+			NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := 8;
+			NUMBER_OF_BP_SHUFFLE_LINKS: integer          := 19; --! Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
+			NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := 2;
+			BP_SHUFFLE_LANE_MAP: integerArray            := ( -- Associate the concatenated BP PCB and QUAD lanes to GTX links. -1 means a bypass lane.
+			                                                -- Backplane PCB Lanes
+			                                                 0=>-1, -- Bypass lane
+			                                                 1=>0, 2=> 1, 3 => 2, 4 =>3,  5 =>4,  6 =>5,  7 =>6, 8=>7,
+			                                                 9=>8, 10=>9, 11=>10, 12=>11, 13=>12, 14=>13, 15=>14,
+			                                                -- Backplane QUAD Lanes
+			                                                 16 to 19=>-1, -- Bypass lane
+			                                                 20=>15, 21=>16, 22=>17, 23=>18
+			                                                );
+			BP_SHUFFLE_LANE_TO_QUAD_MAP : integerArray   := (0 to 3=>0, 4 to 7=>1, 8 to 11=> 2, 12 to 14 => 3, 15 to 18=> 4); --!  Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
+			BP_SHUFFLE_QUAD_TO_REFCLK_MAP : integerArray := (0 => 1, 1 => 0, 2 => 0, 3=> 1, 4 => 1); --! Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_BP_SHUFFLE_REFCLK-1).
+
+			-- Correlator config
+			NUMBER_OF_CORRELATORS: INTEGER               := 0; --! (0-NUMBER_OF_REORDER_OUTPUTS) Number of correlator blocks (CH_DIST+CORR+ACC) to be implemented if IMPLEMENT_CORR=TRUE
+			NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER := GLOBAL_NUMBER_OF_CHANNELIZERS_TO_CORRELATE; --! (3 - NUMBER_OF_CHANNELIZERS) Number of channelizers outputs to be correlated for each frequency channel. This is hard coded for now. Determines how many antenna streams are fed to the CORR_BLOCK modules, and how many multipliers to implement in parallel in the CORR module.
+
+			-- Real-time data offload config
+			IMPLEMENT_100G_ETHERNET: boolean             := FALSE; -- If TRUE, a 100G UDP/IP/Ethernet data transmitter is implemented
+			NUMBER_OF_GPU_LINKS: integer                 := GLOBAL_NUMBER_OF_GPU_LINKS; --! (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
+			NUMBER_OF_GPU_REFCLKS: integer               := GLOBAL_NUMBER_OF_GPU_REFCLKS; --! Number of Reference clocks provided for the 10GE links to the GPU
 			GPU_CHANNEL_QUAD: IntegerArray := GLOBAL_GPU_CHANNEL_QUAD; -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1
 			GPU_QUAD_REFCLK: IntegerArray := GLOBAL_GPU_QUAD_REFCLK; -- Both QUAD0 and QUAD1 use refclk(0)
+
+			-- Peripheral config
+			NUMBER_OF_ADC_BOARDS: integer                := 2; -- One SYNC for each FMC
+			NUMBER_OF_I2C_PORTS: integer                 := 1;
+			NUMBER_OF_SPI_PORTS: integer                 := 2; -- One port for each FMC
+			-- IMPLEMENT_ANT: BoolArray(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(others=>TRUE); --! Selects for which antenna a processing pipeline is implemented
+			-- IMPLEMENT_FFT: BoolArray(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(others=>TRUE); --! Selects if the FFT block is implemented for each antenna (otherwise the timestream go through directly)
+			-- IMPLEMENT_CORR: BoolArray(0 to NUMBER_OF_CORRELATORS_MAX-1):=(0 to 7=>TRUE, others=>FALSE); --! Indicates if the correlator blocks are to be implemented
+			BLINKER_PRESENT: BOOLEAN                     := TRUE; --! Indicates if the LED flasher is to be implemented by setting the DUMMY flag of the BLINKER module
+
+
+
 			SIM: BOOLEAN := GLOBAL_SIM--! Indicates this is running as a simulation. Used to accelerate simulations
 
 	);
@@ -891,17 +915,40 @@ bufr_rawclk10 : BUFR
 	chfpga0: entity work.chFPGA
 		GENERIC MAP(
 			PLATFORM_ID                     => PLATFORM_ID,
-			BLINKER_PRESENT                 => BLINKER_PRESENT,
+
+			-- clocks
 			SYSTEM_CLOCK_SOURCE             => SYSTEM_CLOCK_SOURCE,
+			SYSTEM_CLOCK_FREQ               => SYSTEM_CLOCK_FREQ,
+			CHAN_CLK_SOURCE                 => CHAN_CLK_SOURCE,
+			CHAN_CLK_FREQ 					=> CHAN_CLK_FREQ,
+			CT_CLK_SOURCE                   => CT_CLK_SOURCE,
+
+			-- BSB interface
 			PHY_TYPE                        => PHY_TYPE,
 			SGMII_CLOCK_SOURCE              => SGMII_CLOCK_SOURCE,
+
+			-- ADC config
+			ADC_TYPE                        => ADC_TYPE,
 			NUMBER_OF_ADCS                  => NUMBER_OF_ADCS,
+
+			ADC_IS_DIFFERENTIAL             => ADC_IS_DIFFERENTIAL,
+			ADC_PROVIDE_BUFFERED_DIVCLK     => ADC_PROVIDE_BUFFERED_DIVCLK,
+			ADC_INSTANTIATE_PLL             => ADC_INSTANTIATE_PLL,
+			ADC_USE_EXT_DATA_CLK            => ADC_USE_EXT_DATA_CLK,
+			ADC_INSTANTIATE_BUFMR           => ADC_INSTANTIATE_BUFMR,
+			ANT_CLK_SOURCE                  => ANT_CLK_SOURCE,
+
+			-- Channelizer config
 			NUMBER_OF_CHANNELIZERS          => NUMBER_OF_CHANNELIZERS,
+
+			-- Correlator config
 			NUMBER_OF_CORRELATORS           => NUMBER_OF_CORRELATORS,
+
+			-- Corner-turn engine config
+			CROSSBAR1_TYPE                  => CROSSBAR1_TYPE,
 			NUMBER_OF_CROSSBAR_INPUTS       => NUMBER_OF_CROSSBAR_INPUTS,
 			NUMBER_OF_CROSSBAR_OUTPUTS      => NUMBER_OF_CROSSBAR_OUTPUTS,
-			NUMBER_OF_GPU_LINKS             => NUMBER_OF_GPU_LINKS,
-			NUMBER_OF_GPU_REFCLKS           => NUMBER_OF_GPU_REFCLKS,
+
 			NUMBER_OF_BP_PCB_SHUFFLE_LANES  => NUMBER_OF_BP_PCB_SHUFFLE_LANES,
 			NUMBER_OF_BP_QSFP_SHUFFLE_LANES => NUMBER_OF_BP_QSFP_SHUFFLE_LANES,
 			NUMBER_OF_BP_SHUFFLE_LINKS      => NUMBER_OF_BP_SHUFFLE_LINKS,
@@ -909,20 +956,23 @@ bufr_rawclk10 : BUFR
 			BP_SHUFFLE_LANE_MAP             => BP_SHUFFLE_LANE_MAP,
 			BP_SHUFFLE_LANE_TO_QUAD_MAP     => BP_SHUFFLE_LANE_TO_QUAD_MAP,
 			BP_SHUFFLE_QUAD_TO_REFCLK_MAP   => BP_SHUFFLE_QUAD_TO_REFCLK_MAP,
+
+			-- Real-time Data offload config
+			IMPLEMENT_100G_ETHERNET         => IMPLEMENT_100G_ETHERNET,
+			NUMBER_OF_GPU_LINKS             => NUMBER_OF_GPU_LINKS,
+			NUMBER_OF_GPU_REFCLKS           => NUMBER_OF_GPU_REFCLKS,
+			GPU_CHANNEL_QUAD                => GPU_CHANNEL_QUAD,
+			GPU_QUAD_REFCLK                 => GPU_QUAD_REFCLK,
+
+			-- Peripheral config
+			BLINKER_PRESENT                 => BLINKER_PRESENT,
 			NUMBER_OF_I2C_PORTS             => NUMBER_OF_I2C_PORTS,
 			NUMBER_OF_SPI_PORTS             => NUMBER_OF_SPI_PORTS,
 			NUMBER_OF_ADC_BOARDS            => NUMBER_OF_ADC_BOARDS,
 			-- IMPLEMENT_ANT                =>IMPLEMENT_ANT, -- Selects for which antenna a processing pipeline is implemented
 			-- IMPLEMENT_FFT                =>IMPLEMENT_FFT, -- Selects if the FFT block is implemented for each antenna (otherwise the timestream go through directly)
 			-- IMPLEMENT_CORR               =>IMPLEMENT_CORR,
-			ADC_IS_DIFFERENTIAL             => ADC_IS_DIFFERENTIAL,
-			ADC_PROVIDE_BUFFERED_DIVCLK     => ADC_PROVIDE_BUFFERED_DIVCLK,
-			ADC_INSTANTIATE_PLL             => ADC_INSTANTIATE_PLL,
-			ADC_USE_EXT_DATA_CLK            => ADC_USE_EXT_DATA_CLK,
-			ADC_INSTANTIATE_BUFMR           => ADC_INSTANTIATE_BUFMR,
-			ANT_CLK_SOURCE                  => ANT_CLK_SOURCE,
-			GPU_CHANNEL_QUAD                => GPU_CHANNEL_QUAD,
-			GPU_QUAD_REFCLK                 => GPU_QUAD_REFCLK,
+
 			SIM                             => SIM
 			)
 		PORT MAP(
