@@ -3174,14 +3174,15 @@ begin
 				gpu_reset <= ct_reset_reg;
 				gpu_reset_reg <= gpu_reset;
 
-				for i in 0 to NUMBER_OF_GPU_LINKS-1 loop
-					axis_gpu_tdata(i) <= axis_crossbar3_out_tdata(i);
-					axis_gpu_tvalid(i) <= axis_crossbar3_out_tvalid(i);
-					axis_gpu_tlast(i) <= axis_crossbar3_out_tlast(i);
-					if gpu_reset = '1' then
-						axis_gpu_tvalid(i) <= '0';
-					end if;
-				end loop;
+				--  ** patch  below
+				--for i in 0 to NUMBER_OF_GPU_LINKS-1 loop
+				--	axis_gpu_tdata(i) <= axis_crossbar3_out_tdata(i);
+				--	axis_gpu_tvalid(i) <= axis_crossbar3_out_tvalid(i);
+				--	axis_gpu_tlast(i) <= axis_crossbar3_out_tlast(i);
+				--	if gpu_reset = '1' then
+				--		axis_gpu_tvalid(i) <= '0';
+				--	end if;
+				--end loop;
 			end if;
 		end process;
     axis_gpu_clk <= std_logic_vector'(axis_gpu_tdata'RANGE=> ct_clk);
@@ -3218,7 +3219,7 @@ begin
 			s_axis_tx_tvalid => axis_gpu_tvalid,
 			s_axis_tx_tlast  => axis_gpu_tlast,
 			s_axis_tx_tready => open, -- data is always been sent, independent on whether the transmitter is ready or not. W ehave to set out data rate right to avoid overflows.
-			s_axis_tx_clk => axis_gpu_clk, 
+			s_axis_tx_clk => (others => clk322), -- ** patch . was axis_gpu_clk, 
 			areset => gpu_reset_reg, --async input, so we can use the channel reset
 
 			CMD_DAT => gpu_cmd_dat,
