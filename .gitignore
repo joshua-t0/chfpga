@@ -3,6 +3,7 @@ Archives/
 SP605/
 temp/
 _ISE_Projects/
+.Xil
 *.git
 *.jou
 /*.log
