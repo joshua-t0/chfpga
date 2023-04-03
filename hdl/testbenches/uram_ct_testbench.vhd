@@ -32,7 +32,7 @@ ARCHITECTURE behavior OF uram_ct_testbench IS
    -- constant CLK_PERIOD : time := 3.2 ns;
 
 constant CLK_PERIOD : time := 1000000/375 * 1 ps; -- 375 MHz
-constant CTRL_CLK_PERIOD : time := 4 ns; --
+constant CTRL_CLK_PERIOD : time := 10 ns; --
 
 
 	--Inputs
@@ -129,6 +129,11 @@ begin
 
         variable data: std_logic_vector(255 downto 0);
         variable addr, eop, eot: integer;
+        variable hdr: slv8_array(0 to 63):= to_slv8_array(std_logic_vector'(
+            X"FFFFFFFFFFFF_010203040506_0800_4500_0000_1234_0000_7F11_0000_0A0A0A82_0A0A0A0A_A027_A028_0000_0000_BEEFFACEABBA_00000000_deadbea7_0011223344556677"
+            ));
+        variable dat: slv8_array(0 to 127);
+            
 	begin
 
 		-- wait for init and synchronize to clock
@@ -145,28 +150,66 @@ begin
         -- Program the packet playlist
 
         -- Enable playlist write
-        fpga_write_control(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, addr=> 0, data => 32);
-        sleep(clk, 10);
-        addr := 0;
-        for pkt in 0 to 127 loop
-            for bin in 0 to 63 loop
-                if bin=0 or bin >10 then
-                    eop:= 0;
-                    eot:= 0;
-                    if bin=63 then
-                        eop:= 1;
-                        if pkt=127 then
-                            eot:=1;
-                        end if;
-                    end if;
+--        fpga_write_control(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
+--                           addr=> 0, data => 32);
+--        sleep(clk, 10);
+--        addr := 0;
+--        for pkt in 0 to 127 loop
+--            for bin in 0 to 63 loop
+--                if bin=0 or bin >10 then
+--                    eop:= 0;
+--                    eot:= 0;
+--                    if bin=63 then
+--                        eop:= 1;
+--                        if pkt=127 then
+--                            eot:=1;
+--                        end if;
+--                    end if;
     
-                    fpga_write_ram(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
-                                   addr=> addr*2, data => to_slv8_array(to_unsigned(bin*128 + pkt + 8192 + 16384*eop+32768*eot,16)));
-                    addr := addr + 1;
-                end if; --bin=0 or > 10
-            end loop; --bin
-        end loop; --pkt    
-        
+--                    fpga_write_ram(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
+--                                   addr=> addr*2, data => to_slv8_array(to_unsigned(bin*128 + pkt + 8192 + 16384*eop+32768*eot,16)));
+--                    addr := addr + 1;
+--                end if; --bin=0 or > 10
+--            end loop; --bin
+--        end loop; --pkt    
+ 
+         -- Select Playlist RAM
+         fpga_write_control(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
+                           addr=> 0, data => 32);
+        -- Program playlist RAM
+        fpga_write_ram(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
+                       addr=> 0, data => to_slv8_array(std_logic_vector'(X"0000_6001_0000_E001")));
+        -- Set repeat period
+         fpga_write_control(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
+                           addr=> 2, data => 100, nbytes=> 4);
+        -- Program playlist RAM
+        -- Bin 0 - header
+        for frame in 0 to 8-1 loop
+            -- Select data RAM & frame
+            fpga_write_control(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
+                               addr=> 0, data => frame);
+            fpga_write_ram(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
+                       addr=> 0, data => hdr(8*frame to 8*frame+7));
+        end loop;
+        -- Bin 1 data
+        for i in 0 to 127 loop
+            dat(i) := to_slv(i,8); 
+           end loop;
+        for frame in 0 to 16-1 loop
+            fpga_write_control(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
+                               addr=> 0, data => frame);
+            fpga_write_ram(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
+                           addr=> 8*1, data => dat(8*frame to 8*frame+7));
+        end loop;
+        -- TX Reset
+        fpga_write_control(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
+                           addr=> 1, data => 16#76#);
+        fpga_write_control(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
+                           addr=> 1, data => 16#66#);
+ 
+        sleep(ctrl_clk, 10);
+        wait;
+
         if USE_CHAN_DATA then
             -- enable channelizer write
             fpga_write_control(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, addr=> 0, data => 128);
