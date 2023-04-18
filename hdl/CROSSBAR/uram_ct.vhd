@@ -483,13 +483,6 @@ begin
 	        variable end_of_packet: std_logic;
 	        variable end_of_transmission: std_logic;
 	              
-	        function shift_right(x:slv2_array)  return slv2_array is
-	        	variable r: slv2_array(x'RANGE);
-	       	begin
-	        	r(x'LEFT-1 downto 0) := x(x'LEFT downto 1);
-				r(x'LEFT) := (others=>'0');
-				return r;
-			end function;
 		begin -- process		
 
 			debug_out(0) <=  busy;

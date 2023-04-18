@@ -521,6 +521,10 @@ function bitwidth(value: integer) return integer;--! Computes the minimum number
 function shift_left(i:std_logic_vector; n: integer) return std_logic_vector; -- shift left a STD_LOGIC_VECTOR
 function shift_left(ARG:slv8_array; COUNT: natural) return slv8_array; -- shift left a byte array
 function shift_right(i:std_logic_vector; n: integer) return std_logic_vector; -- shift right a STD_LOGIC_VECTOR with zero padding from the left
+function shift_right(x:slv2_array)  return slv2_array; -- shift right a slv2_array. 
+function shift_right(x:slv3_array)  return slv3_array; -- shift right a slv3_array.
+function shift_right(x:slv4_array)  return slv4_array; -- shift right a slv4_array.
+
 function cmplx(re, im:integer) return complex; -- Create a complex value out of two integer values
 function cmplx(re, im:signed) return complex; -- Create a complex value out of two signed values
 
@@ -1110,6 +1114,30 @@ function shift_right(i:std_logic_vector; n: integer) return std_logic_vector is 
 	begin
 		return std_logic_vector(shift_right(unsigned(i), n));
 	end function;
+
+function shift_right(x:slv2_array)  return slv2_array is
+	variable r: slv2_array(x'RANGE);
+	begin
+	r(x'LEFT-1 downto 0) := x(x'LEFT downto 1);
+	r(x'LEFT) := (others=>'0');
+	return r;
+end function;
+
+function shift_right(x:slv3_array)  return slv3_array is
+	variable r: slv3_array(x'RANGE);
+	begin
+	r(x'LEFT-1 downto 0) := x(x'LEFT downto 1);
+	r(x'LEFT) := (others=>'0');
+	return r;
+end function;
+
+function shift_right(x:slv4_array)  return slv4_array is
+	variable r: slv4_array(x'RANGE);
+	begin
+	r(x'LEFT-1 downto 0) := x(x'LEFT downto 1);
+	r(x'LEFT) := (others=>'0');
+	return r;
+end function;
 
 
 function cmplx(re, im:integer) return complex is -- Create a complex value out of two integer values
