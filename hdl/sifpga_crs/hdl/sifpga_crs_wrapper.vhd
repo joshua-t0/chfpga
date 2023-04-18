@@ -1,7 +1,7 @@
 --Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
 ----------------------------------------------------------------------------------
 --Tool Version: Vivado v.2022.2 (lin64) Build 3671981 Fri Oct 14 04:59:54 MDT 2022
---Date        : Fri Mar 31 18:16:02 2023
+--Date        : Mon Apr 17 18:03:57 2023
 --Host        : twiddlebug running 64-bit Ubuntu 22.04.2 LTS
 --Command     : generate_target sifpga_crs_wrapper.bd
 --Design      : sifpga_crs_wrapper
@@ -36,6 +36,7 @@ entity sifpga_crs_wrapper is
     clk156_p : in STD_LOGIC;
     clk200_clk_n : in STD_LOGIC_VECTOR ( 0 to 0 );
     clk200_clk_p : in STD_LOGIC_VECTOR ( 0 to 0 );
+    led7b : out STD_LOGIC_VECTOR ( 7 downto 0 );
     pl_clk_n : in STD_LOGIC_VECTOR ( 0 to 0 );
     pl_clk_p : in STD_LOGIC_VECTOR ( 0 to 0 );
     qsfp_txn : out STD_LOGIC_VECTOR ( 0 to 3 );
@@ -106,7 +107,8 @@ architecture STRUCTURE of sifpga_crs_wrapper is
     clk156_p : in STD_LOGIC;
     clk156_n : in STD_LOGIC;
     qsfp_txp : out STD_LOGIC_VECTOR ( 0 to 3 );
-    qsfp_txn : out STD_LOGIC_VECTOR ( 0 to 3 )
+    qsfp_txn : out STD_LOGIC_VECTOR ( 0 to 3 );
+    led7b : out STD_LOGIC_VECTOR ( 7 downto 0 )
   );
   end component sifpga_crs;
 begin
@@ -135,6 +137,7 @@ sifpga_crs_i: component sifpga_crs
       clk156_p => clk156_p,
       clk200_clk_n(0) => clk200_clk_n(0),
       clk200_clk_p(0) => clk200_clk_p(0),
+      led7b(7 downto 0) => led7b(7 downto 0),
       pl_clk_n(0) => pl_clk_n(0),
       pl_clk_p(0) => pl_clk_p(0),
       qsfp_txn(0 to 3) => qsfp_txn(0 to 3),
