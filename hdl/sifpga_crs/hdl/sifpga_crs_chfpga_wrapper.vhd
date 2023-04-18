@@ -178,6 +178,9 @@ entity sifpga_crs_chfpga_wrapper is
 			clk156_p: in std_logic := '0';
 			clk156_n: in std_logic := '1';
 
+			--=== LEDs
+
+			led7b: out std_logic_vector(7 downto 0); -- bits 7:0: dp, g, f, e, d, c, b, a
 
 			--==== Debug interface
 			debug_out: out std_logic_vector(31 downto 0);
@@ -186,19 +189,19 @@ entity sifpga_crs_chfpga_wrapper is
 			--==== BSB control interface
 
 			-- Command input stream
-			s_bsb_axis_tdata: in std_logic_vector(31 downto 0) := (others => '0');
-			s_bsb_axis_tvalid: in std_logic := '0';
-			s_bsb_axis_tlast: in std_logic := '0';
-			s_bsb_axis_tready: out std_logic;
+			s_axis_bsb_tdata: in std_logic_vector(7 downto 0) := (others => '0');
+			s_axis_bsb_tvalid: in std_logic := '0';
+			s_axis_bsb_tlast: in std_logic := '0';
+			s_axis_bsb_tready: out std_logic;
 
 			-- Reply output stream
-			m_bsb_axis_tdata: out std_logic_vector(31 downto 0);
-			m_bsb_axis_tvalid: out std_logic;
-			m_bsb_axis_tlast: out std_logic;
-			m_bsb_axis_tready: in std_logic := '1';
+			m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+			m_axis_bsb_tvalid: out std_logic;
+			m_axis_bsb_tlast: out std_logic;
+			m_axis_bsb_tready: in std_logic := '1';
 
-			bsb_axis_clk : in  std_logic := '0'; -- 125 MHz clock
-			bsb_axis_rst : in  std_logic := '0' -- synchronous to bsb_axis_clk
+			axis_bsb_clk : in  std_logic := '0'; -- 125 MHz clock
+			axis_bsb_aresetn : in  std_logic := '1' -- synchronous to bsb_axis_clk
 
 
 		);
@@ -232,6 +235,7 @@ architecture impl of sifpga_crs_chfpga_wrapper is
 	signal cpu_reset: std_logic;
 	--signal clk10_nobuf, clk10: std_logic;
 	signal buck_sync: std_logic_vector(0 to 15);
+	signal gpio_led: std_logic_vector(7 downto 0);
 
 begin
 
@@ -248,6 +252,8 @@ begin
 	buck_sync_1v4 <= buck_sync(7);
 	buck_sync_bp <= buck_sync(8);
 
+
+	led7b <= gpio_led;
 
 	adc_axis_tdata <= (
 	    adc0_axis_tdata,
@@ -372,29 +378,34 @@ begin
 			adc_axis_clk => adc_axis_clk(0 to NUMBER_OF_ADCS-1),
 			adc_clkout => adc_clkout(0 to NUMBER_OF_ADCS-1),
 
+			-- LEDs
+
+			gpio_led => gpio_led,
+
 			-- 100GE interface
 			cge_tx_p => qsfp_txp,
 			cge_tx_n => qsfp_txn,
 			cge_refclk_p => clk156_p,
 			cge_refclk_n => clk156_n,
+
 			-- debug bus
 			debug_out => debug_out,
 			sma_out => smp_out,
 
 			-- Command input stream
-			s_bsb_axis_tdata => s_bsb_axis_tdata,
-			s_bsb_axis_tvalid => s_bsb_axis_tvalid,
-			s_bsb_axis_tlast => s_bsb_axis_tlast,
-			s_bsb_axis_tready => s_bsb_axis_tready,
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
 
 			-- Reply output stream
-			m_bsb_axis_tdata => m_bsb_axis_tdata,
-			m_bsb_axis_tvalid => m_bsb_axis_tvalid,
-			m_bsb_axis_tlast => m_bsb_axis_tlast,
-			m_bsb_axis_tready => m_bsb_axis_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
 
-			bsb_axis_clk => bsb_axis_clk,
-			bsb_axis_rst => bsb_axis_rst
+			axis_bsb_clk => axis_bsb_clk,
+			axis_bsb_rst => not axis_bsb_aresetn
 
 			);
 
