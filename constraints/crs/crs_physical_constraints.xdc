@@ -140,6 +140,23 @@ set_property IOSTANDARD LVCMOS33 [get_ports {smp[2]}]
 set_property PACKAGE_PIN B8 [get_ports {smp[3]}]
 set_property IOSTANDARD LVCMOS33 [get_ports {smp[3]}]
 
+
+# #############################################
+# # LED signals
+# #############################################
+
+set_property IOSTANDARD LVCMOS33 [get_ports led7b*]
+
+set_property PACKAGE_PIN A6 [get_ports {led7b[0]}]; # a
+set_property PACKAGE_PIN A9 [get_ports {led7b[1]}]; # b
+set_property PACKAGE_PIN A7 [get_ports {led7b[2]}]; # c
+set_property PACKAGE_PIN B5 [get_ports {led7b[3]}]; # d
+set_property PACKAGE_PIN C5 [get_ports {led7b[4]}]; # e
+set_property PACKAGE_PIN C6 [get_ports {led7b[5]}]; # f
+set_property PACKAGE_PIN A5 [get_ports {led7b[6]}]; # g (central bar)
+set_property PACKAGE_PIN A10 [get_ports {led7b[7]}]; # dp (decimal point)
+
+
 # set_property PACKAGE_PIN F8       [get_ports {tp13}] ; # Bank  87 VCC3V3
 # set_property IOSTANDARD  LVCMOS33 [get_ports {tp13}] ;
 
