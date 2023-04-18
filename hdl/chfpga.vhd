@@ -87,7 +87,7 @@ entity chFPGA is
 
 		-- BSB Monitor and control interface
 
-		PHY_TYPE: string; -- "GMII", "SGMII" or "NONE". Determines which ethernet interface to instantiate and connect to the BSB. If NONE, the BSB control interface is connected directly to the top level ports *_bsb_axis_*.
+		PHY_TYPE: string; -- "GMII", "SGMII" or "NONE". Determines which ethernet interface to instantiate and connect to the BSB. If NONE, the BSB control interface is connected directly to the top level ports *_axis_bsb_*.
 		SGMII_CLOCK_SOURCE: string := "REFCLK"; --! Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 
 		-- ADC configuration
@@ -407,19 +407,22 @@ entity chFPGA is
 
 			--==== Direct BSB control interface
 			-- Command input stream
-			s_bsb_axis_tdata: in std_logic_vector(31 downto 0) := (others => '0');
-			s_bsb_axis_tvalid: in std_logic := '0';
-			s_bsb_axis_tlast: in std_logic := '0';
-			s_bsb_axis_tready: out std_logic;
+			s_axis_bsb_tdata: in std_logic_vector(7 downto 0) := (others => '0');
+			s_axis_bsb_tvalid: in std_logic := '0';
+			s_axis_bsb_tlast: in std_logic := '0';
+			s_axis_bsb_tready: out std_logic;
 
 			-- Reply output stream
-			m_bsb_axis_tdata: out std_logic_vector(31 downto 0); -- Data is in bits 7:0, bits 31:30 is "00" for command replies and "01" for data
-			m_bsb_axis_tvalid: out std_logic;
-			m_bsb_axis_tlast: out std_logic;
-			m_bsb_axis_tready: in std_logic := '0';
+			m_axis_bsb_tdata: out std_logic_vector(7 downto 0); -- Data is in bits 7:0, bits 31:30 is "00" for command replies and "01" for data
+			m_axis_bsb_tvalid: out std_logic;
+			m_axis_bsb_tlast: out std_logic;
+			m_axis_bsb_tready: in std_logic := '0';
 
-			bsb_axis_clk : in  std_logic := '0'; -- BSB bus clock, typically between 100-125 MHz
-			bsb_axis_rst : in  std_logic  := '0'-- synchronous to bsb_axis_clk
+			axis_bsb_clk : in  std_logic := '0'; -- BSB bus clock, typically between 100-125 MHz
+			axis_bsb_rst : in  std_logic  := '0'-- synchronous to axis_bsb_clk
+
+			--==== Slow data streaming interface (raw capture and correlator outputs)
+
 
 			);
 end chFPGA;
@@ -1196,8 +1199,8 @@ ctrl_clk_up: if PLATFORM_ID=PLATFORM_ID_ZCU111 generate
 	signal rst_ctr: unsigned(3 downto 0) := (others => '0'); -- init required
 begin
 
-	ctrl_clk <= bsb_axis_clk; -- Control system master clock
-	ctrl_rst <= bsb_axis_rst or ctrl_reset_pulse or rst_pulse; -- see pulse generator below
+	ctrl_clk <= axis_bsb_clk; -- Control system master clock
+	ctrl_rst <= axis_bsb_rst or ctrl_reset_pulse or rst_pulse; -- see pulse generator below
 
 	-- generate a BSB reset pulse upon FPGA startup
 	bsb_rst_proc: process(ctrl_clk)
@@ -1399,23 +1402,23 @@ end generate;
 -- If we don't have an ethernet interface, take the BSB interface directly from the top level entity.
 gen_noeth: if PHY_TYPE = "NONE" generate
 	-- Command bus comes from the external bus
-	axis_udp_rx_tdata <= s_bsb_axis_tdata(7 downto 0);
-	axis_udp_rx_tvalid <= s_bsb_axis_tvalid;
-	axis_udp_rx_tlast <= s_bsb_axis_tlast;
+	axis_udp_rx_tdata <= s_axis_bsb_tdata;
+	axis_udp_rx_tvalid <= s_axis_bsb_tvalid;
+	axis_udp_rx_tlast <= s_axis_bsb_tlast;
 	-- Reply bus TREADY
-	axis_udp_tx_tready <= m_bsb_axis_tready;
+	axis_udp_tx_tready <= m_axis_bsb_tready;
 	sfp_status_vector_int(0) <= '1'; -- simulate valid link so the blinker will work
 end generate;
 
 -- We also always deive these signals on the output port, weather or not thay are used outside, to prevent warnings of undriven output port
 -- Command bus TREADY
-s_bsb_axis_tready <= axis_udp_rx_tready;
+s_axis_bsb_tready <= axis_udp_rx_tready;
 -- Reply bus
-m_bsb_axis_tvalid <= axis_udp_tx_tvalid;
-m_bsb_axis_tdata(31 downto 30) <= udp0_tx_port;
-m_bsb_axis_tdata(29 downto 8) <= (others => '0');
-m_bsb_axis_tdata(7 downto 0) <= axis_udp_tx_tdata;
-m_bsb_axis_tlast <= axis_udp_tx_tlast;
+m_axis_bsb_tvalid <= axis_udp_tx_tvalid;
+--m_axis_bsb_tdata(31 downto 30) <= udp0_tx_port;
+--m_axis_bsb_tdata(29 downto 8) <= (others => '0');
+m_axis_bsb_tdata <= axis_udp_tx_tdata;
+m_axis_bsb_tlast <= axis_udp_tx_tlast;
 
 ctrl_master0: entity work.ctrl_master
 	GENERIC MAP (
