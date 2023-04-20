@@ -4191,7 +4191,7 @@
         "inst_hier_path": "system_ila_0",
         "parameters": {
           "C_MON_TYPE": {
-            "value": "INTERFACE"
+            "value": "MIX"
           },
           "C_NUM_MONITOR_SLOTS": {
             "value": "4"
@@ -5513,7 +5513,8 @@
       "axi_dma_0_M_AXI_MM2S": {
         "interface_ports": [
           "axi_dma_0/M_AXI_MM2S",
-          "zynq_ultra_ps_e_0/S_AXI_HP0_FPD"
+          "zynq_ultra_ps_e_0/S_AXI_HP0_FPD",
+          "system_ila_0/SLOT_0_AXI"
         ]
       },
       "axi_dma_0_M_AXI_S2MM": {
@@ -5802,6 +5803,12 @@
         "ports": [
           "sifpga_crs_chfpga_0/buck_sync_bp",
           "buck_sync_bp"
+        ]
+      },
+      "sifpga_crs_chfpga_0_debug_out": {
+        "ports": [
+          "sifpga_crs_chfpga_0/debug_out",
+          "system_ila_0/probe0"
         ]
       },
       "sifpga_crs_chfpga_0_led7b": {

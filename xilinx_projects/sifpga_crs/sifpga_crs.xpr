@@ -426,6 +426,9 @@
         <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_sifpga_crs_chfpga_0_0/sifpga_crs_sifpga_crs_chfpga_0_0.xci">
           <Proxy FileSetName="sifpga_crs_sifpga_crs_chfpga_0_0"/>
         </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_system_ila_0_0/sifpga_crs_system_ila_0_0.xci">
+          <Proxy FileSetName="sifpga_crs_system_ila_0_0"/>
+        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/sifpga_crs/hdl/sifpga_crs_wrapper.vhd">
         <FileInfo>
@@ -587,6 +590,14 @@
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
+    <FileSet Name="sifpga_crs_system_ila_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/sifpga_crs_system_ila_0_0" RelGenDir="$PGENDIR/sifpga_crs_system_ila_0_0">
+      <Config>
+        <Option Name="TopModule" Val="sifpga_crs_system_ila_0_0"/>
+        <Option Name="ElabLoadTimingContstraints" Val="0"/>
+        <Option Name="dataflowViewerSettings" Val="min_width=16"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
   </FileSets>
   <Simulators>
     <Simulator Name="XSim">
@@ -725,6 +736,18 @@
       <RQSFiles/>
     </Run>
     <Run Id="sifpga_crs_sifpga_crs_chfpga_0_0_synth_1" Type="Ft3:Synth" SrcSet="sifpga_crs_sifpga_crs_chfpga_0_0" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="sifpga_crs_sifpga_crs_chfpga_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/sifpga_crs_sifpga_crs_chfpga_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/sifpga_crs_sifpga_crs_chfpga_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/sifpga_crs_sifpga_crs_chfpga_0_0_synth_1">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
+        <Step Id="synth_design"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2022"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="sifpga_crs_system_ila_0_0_synth_1" Type="Ft3:Synth" SrcSet="sifpga_crs_system_ila_0_0" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="sifpga_crs_system_ila_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/sifpga_crs_system_ila_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/sifpga_crs_system_ila_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/sifpga_crs_system_ila_0_0_synth_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022">
           <Desc>Vivado Synthesis Defaults</Desc>
@@ -931,6 +954,25 @@
       <RQSFiles/>
     </Run>
     <Run Id="sifpga_crs_sifpga_crs_chfpga_0_0_impl_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="sifpga_crs_sifpga_crs_chfpga_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="sifpga_crs_sifpga_crs_chfpga_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/sifpga_crs_sifpga_crs_chfpga_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/sifpga_crs_sifpga_crs_chfpga_0_0_impl_1">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2022"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="sifpga_crs_system_ila_0_0_impl_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="sifpga_crs_system_ila_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="sifpga_crs_system_ila_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/sifpga_crs_system_ila_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/sifpga_crs_system_ila_0_0_impl_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
           <Desc>Default settings for Implementation.</Desc>
