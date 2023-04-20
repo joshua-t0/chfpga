@@ -1116,6 +1116,25 @@ assert NUMBER_OF_ADCS>0 and (ADC_TYPE="EV8AQ160" or ADC_TYPE="AXIS") report "ADC
 --debug_out(25) <= axis_rply_tvalid;
 --debug_out(26) <= top_cmd_dat(0).TVALID;
 --debug_out(27) <= top_rply_dat(0).TVALID;
+
+debug_out(3 downto 0) <= cmd_packet_counter(3 downto 0);
+debug_out(7 downto 4) <= rply_packet_counter(3 downto 0);
+--debug_out(23 downto 16) <= SYS_GPIO_CMD_DAT.TDATA;
+--debug_out(31 downto 24) <= SYS_GPIO_RPLY_DAT.TDATA;
+debug_out(16) <= SYS_GPIO_CMD_DAT.TVALID;
+debug_out(17) <= SYS_GPIO_CMD_DAT.TLAST;
+debug_out(18) <= SYS_GPIO_CMD_RDY.TREADY;
+debug_out(19) <= SYS_GPIO_RPLY_DAT.TVALID;
+debug_out(20) <= SYS_GPIO_RPLY_DAT.TLAST;
+debug_out(21) <= SYS_GPIO_RPLY_RDY.TREADY;
+
+
+debug_out(28) <= axis_cmd_tvalid;
+debug_out(29) <= axis_cmd_tready;
+debug_out(30) <= axis_rply_tvalid;
+debug_out(31) <= axis_rply_tready;
+
+
 sma_out(0) <= clk200;
 sma_out(1) <= clk200_reset;
 sma_out(2) <= clk10;
@@ -1489,7 +1508,7 @@ ctrl_master0: entity work.ctrl_master
 --! |  7 | 0x70000  | (unused)                           |             |
 --stopLiteralInclude
 
-bsbrtr_blk: block 
+top_router_blk: block 
 
 	attribute TARGET_PBLOCK of top_router0: label is "SYSTEM"; -- assign top router to SYSTEM Pblock
 
@@ -1498,8 +1517,11 @@ bsbrtr_blk: block
 	signal UDP_CMD_RDY: AXIS8_RDY_STRUCT;
 	signal UDP_RPLY_DAT: AXIS8_DAT_STRUCT;
 	signal UDP_RPLY_RDY: AXIS8_RDY_STRUCT;
+	signal cmd_overflow: std_logic;
 
 begin
+
+debug_out(8) <= cmd_overflow;
 
 
 	UDP_CMD_DAT.TDATA <= axis_cmd_tdata;
@@ -1534,10 +1556,12 @@ begin
 			RPLY_IN_DAT => top_rply_dat,
 			RPLY_IN_RDY => top_rply_rdy,
 
+			cmd_overflow => cmd_overflow,
+
 			CLK => ctrl_clk,
 			RST => top_router_rst
 		);
-end block bsbrtr_blk;
+end block top_router_blk;
 
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
@@ -1576,6 +1600,12 @@ begin
 	top_sys_rply_rdy <= top_rply_rdy(SYSTEM_BASE_PORT);
 	top_rply_dat(SYSTEM_BASE_PORT) <= top_sys_rply_dat;
 
+debug_out(22) <= top_sys_cmd_dat.TVALID;
+debug_out(23) <= top_sys_cmd_dat.TLAST;
+debug_out(24) <= top_sys_cmd_rdy.TREADY;
+debug_out(25) <= top_sys_rply_dat.TVALID;
+debug_out(26) <= top_sys_rply_dat.TLAST;
+debug_out(27) <= top_sys_rply_rdy.TREADY;
 
 	---------------------------------------------------------------------
 	--! System command interface router
@@ -1986,27 +2016,6 @@ SYS_CMD_RDY(MODULE_SYSMON_ADDR) <= SYS_SYSMON_CMD_RDY;
 SYS_SYSMON_RPLY_RDY<= SYS_RPLY_RDY(MODULE_SYSMON_ADDR);
 SYS_RPLY_DAT(MODULE_SYSMON_ADDR) <= SYS_SYSMON_RPLY_DAT;
 
---debug_out(0) <= SYS_SYSMON_CMD_DAT.TVALID;
---debug_out(1) <= SYS_SYSMON_CMD_DAT.TLAST;
---debug_out(2) <= SYS_SYSMON_CMD_RDY.TREADY;
---debug_out(3) <= SYS_SYSMON_RPLY_DAT.TVALID;
---debug_out(4) <= SYS_SYSMON_RPLY_DAT.TLAST;
---debug_out(5) <= SYS_SYSMON_RPLY_RDY.TREADY;
---debug_out(6) <= CTRL_RST;
---debug_out(7) <= sysmon_ctrl_rst;
-
---debug_out(8) <= SYS_GPIO_CMD_DAT.TVALID;
---debug_out(9) <= SYS_GPIO_CMD_DAT.TLAST;
---debug_out(10) <= SYS_GPIO_CMD_RDY.TREADY;
---debug_out(11) <= SYS_GPIO_RPLY_DAT.TVALID;
---debug_out(12) <= SYS_GPIO_RPLY_DAT.TLAST;
---debug_out(13) <= SYS_GPIO_RPLY_RDY.TREADY;
-
---debug_out(22) <= ctrl_reset_pulse;
---debug_out(23) <= sysmon_user_reset;
-
---debug_out(24) <= sysmon_reset;
---debug_out(25) <= sysmon_clk;
 sysmon_reset_all <=  sysmon_reset or sysmon_user_reset;
 SYSMON0: entity work.SYSMON_XADC
 	GENERIC MAP (
@@ -2874,7 +2883,7 @@ begin
 	            clk => ct_clk, 
 	            rst => cb1_reset_reg2, -- synchrounous reset
 	  
-		  		debug_out => debug_out,
+		  		--debug_out => debug_out,
 
 	            -- BSB interface
 	            cmd_dat=> crossbar1_cmd_dat,
