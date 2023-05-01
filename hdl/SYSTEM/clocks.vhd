@@ -246,7 +246,7 @@ begin
 				ODIV2 => open
 			);
 		end generate;
-		gen_bufgteup: if PLATFORM_ID = PLATFORM_ID_ZCU111 generate
+		gen_bufgteup: if PLATFORM_ID = PLATFORM_ID_ZCU111 or PLATFORM_ID = PLATFORM_ID_CRS generate
 			ibufds_mgtpllrefclk : IBUFDS
 				port map (
 				I     => sfp_refclk_p,

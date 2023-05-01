@@ -5,6 +5,6 @@ library work;
 use work.chFPGA_package.all;
 
 package chfpga_config is
-	constant CONFIG_PLATFORM_ID: integer := PLATFORM_ID_ZCU111;
+	constant CONFIG_PLATFORM_ID: integer := PLATFORM_ID_CRS;
 	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean := FALSE;
 end chfpga_config;

@@ -138,6 +138,7 @@ constant PLATFORM_ID_KC705: integer :=1;
 constant PLATFORM_ID_UNUSED: integer :=2;
 constant PLATFORM_ID_MGK7MB: integer :=3;
 constant PLATFORM_ID_ZCU111: integer :=4;
+constant PLATFORM_ID_CRS: integer :=5;
 
 -- Platform information structure
 type PLATFORM_INFO_STRUCT is
@@ -165,7 +166,7 @@ constant FPGA_ULTRASCALE: integer := 8;
 constant FPGA_ULTRASCALEPLUS: integer := 9;
 
 -- Define platform-specific constants
-constant PLATFORM_INFO: PLATFORM_INFO_ARRAY:=(
+constant PLATFORM_INFO: PLATFORM_INFO_ARRAY := (
 	PLATFORM_ID_ML605 => (
 		FPGA_SERIES => FPGA_VIRTEX6,
 		DSP_TILE_DELTA_RPM_Y => 0, -- to be defined of ever needed again
@@ -211,7 +212,17 @@ constant PLATFORM_INFO: PLATFORM_INFO_ARRAY:=(
 		DSP_BEL_DELTA_RPM_Y => 1,
 		BRAM_TILE_DELTA_RPM_Y => 10,
 		BRAM_BEL_DELTA_RPM_Y => 1
+		),
+
+
+	PLATFORM_ID_CRS => (
+		FPGA_SERIES => FPGA_ULTRASCALEPLUS,
+		DSP_TILE_DELTA_RPM_Y => 10,
+		DSP_BEL_DELTA_RPM_Y => 1,
+		BRAM_TILE_DELTA_RPM_Y => 10,
+		BRAM_BEL_DELTA_RPM_Y => 1
 		)
+
 	);
 
 
@@ -221,7 +232,8 @@ constant FPGA_SERIES_LIST: IntegerArray:=(
 	PLATFORM_ID_KC705 => FPGA_KINTEX7,
 	PLATFORM_ID_UNUSED => FPGA_KINTEX7,
 	PLATFORM_ID_MGK7MB => FPGA_KINTEX7,
-	PLATFORM_ID_ZCU111 => FPGA_ULTRASCALEPLUS
+	PLATFORM_ID_ZCU111 => FPGA_ULTRASCALEPLUS,
+	PLATFORM_ID_CRS => FPGA_ULTRASCALEPLUS
 	);
 
 -- Hardware-related constants
@@ -1269,7 +1281,7 @@ begin
 	 	FIFO_Y0 := 0; -- position of the FIFO, which must be at the bottom
 
 
-	elsif platform_id = PLATFORM_ID_ZCU111 then
+	elsif platform_id = PLATFORM_ID_ZCU111 or platform_id = PLATFORM_ID_CRS then
 
 
 	 	if layout="BDDB" then

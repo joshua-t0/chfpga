@@ -1213,7 +1213,7 @@ ctrl_clk_sel7: if PLATFORM_ID=PLATFORM_ID_MGK7MB generate
 
 end generate;
 
-ctrl_clk_up: if PLATFORM_ID=PLATFORM_ID_ZCU111 generate
+ctrl_clk_usp: if PLATFORM_ID=PLATFORM_ID_ZCU111 or PLATFORM_ID=PLATFORM_ID_CRS generate
 	signal rst_pulse: std_logic := '1';
 	signal rst_ctr: unsigned(3 downto 0) := (others => '0'); -- init required
 begin
@@ -1234,7 +1234,7 @@ begin
 			end if;
 		end if; -- RST/CLK
 	end process;
-end generate;
+end generate ctrl_clk_usp;
 
 
 -- Pipeline clk125 reset
@@ -2049,7 +2049,7 @@ SYSMON0: entity work.SYSMON_XADC
 --!   Measures the toggling frequency of a number of logic signals.
 freq_ctr_in_vect(0 to adc_clk_div2'LENGTH-1) <= adc_clk_div2;
 
-gen_adc_clk_monup: if PLATFORM_ID=PLATFORM_ID_ZCU111 generate
+gen_adc_clk_monup: if PLATFORM_ID=PLATFORM_ID_ZCU111 or PLATFORM_ID=PLATFORM_ID_CRS generate
 
 	gen_adc_clkoutdiv2i: for i in 0 to adc_clkout'LENGTH-1 generate
 
