@@ -22,6 +22,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 use work.chFPGA_Package.all; -- Get all component definitions
+use work.chFPGA_config.all; -- Get all component definitions
 
 library UNISIM;
 use UNISIM.VComponents.all;
@@ -40,7 +41,7 @@ use UNISIM.VComponents.all;
 -- Location of each CMAC44
 entity CORR44 is
 	generic (
-		PLATFORM_ID: integer := PLATFORM_ID_ZCU111; -- necessary to select the DSP RPM spacing and instantiate the proper DSP and FIFO primitives
+		PLATFORM_ID: integer := CONFIG_PLATFORM_ID; -- necessary to select the DSP RPM spacing and instantiate the proper DSP and FIFO primitives
 		RPM_LAYOUT: string; -- Name of the layout of the correlator DSP, BRAM and FIFO elements  (e.g. "BDDB" or "DBBD")
 		CORR_NUMBER: integer := 0; -- used for packet header and to determine the CORR44 RPM locations
 		NUMBER_OF_WORDS_PER_BIN: integer := 4; -- also corresponds to the number of clocks per bin. There are 4 samples per word.
