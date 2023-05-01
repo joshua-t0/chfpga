@@ -262,7 +262,7 @@ entity sifpga_zcu111_chfpga_wrapper is
 			m_bsb_axis_tready: in std_logic := '1';
 
 			bsb_axis_clk : in  std_logic; -- 125 MHz clock
-			bsb_axis_rst : in  std_logic -- synchronous to bsb_axis_clk
+			bsb_axis_aresetn : in  std_logic -- synchronous to bsb_axis_clk
 
 
 		);
@@ -462,7 +462,7 @@ begin
 			m_bsb_axis_tready => m_bsb_axis_tready,
 			
 			bsb_axis_clk => bsb_axis_clk,
-			bsb_axis_rst => bsb_axis_rst
+			bsb_axis_rst => not bsb_axis_aresetn
 
 			);
 
