@@ -19,6 +19,7 @@ library UNISIM;
 use UNISIM.VComponents.all;
 -- Project libraries
 use work.chFPGA_Package.all; -- Get all component definitions
+use work.chFPGA_config.all; --Get platform-specific configuration definitions
 
 ----ENTITY DECLARATION --------
 -- This is the _top level entity of the data acquisition/channelizer/correlator firmware.
@@ -26,12 +27,15 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --   - IO ports to the FPGA pins, including constraints
 --   - ADC streams
 --
---The ports of this top-level entity correspond to physical pins on the Kintex 7 FPGA on that board. The location of these pins are defined in the constraint file.
+--The ports of this top-level entity correspond to physical pins on the FPGA on that board. 
+-- The location of these pins are defined in the constraint file.
 entity sifpga_crs_chfpga_wrapper is
 	generic (
 
 	 		-- NOTE: All generics values must be literals if the module is to be imported in a block diagram
-			PLATFORM_ID: integer                         := 4; -- identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705
+			PLATFORM_ID: integer                         := 5; -- =CONFIG_PLATFORM_ID = PLATFORM_ID_CRS. 
+															   -- Identifies the type of platform on which the firmware is running. 
+															   -- Has to be an integer (not a constant name) for the IP integrator 
 
 			-- Clocking config
 
@@ -253,7 +257,9 @@ begin
 	buck_sync_bp <= buck_sync(8);
 
 
-	led7b <= gpio_led;
+	led7b(5 downto 0) <= gpio_led(6 downto 1); -- a-f segments (forming a circle)
+	led7b(6) <= '0'; -- central g segment
+	led7b(7) <= '0'; -- decimal point
 
 	adc_axis_tdata <= (
 	    adc0_axis_tdata,
