@@ -57,6 +57,9 @@ entity GPIO is
 		NUMBER_OF_CHANNELIZERS: INTEGER; --! Number of antenna processing blocks that are implemented
 		CHANNELIZERS_CLOCK_SOURCE: INTEGER; --! ADC channel from which the channelizers clocks are derived
 		NUMBER_OF_CHANNELIZERS_WITH_FFT: INTEGER; --! Number of antenna processing blocks with an FFT module
+		ADC_SAMPLES_PER_FRAME: integer;
+		ADC_SAMPLES_PER_WORD: integer;
+		ADC_BITS_PER_SAMPLE: integer;
 		NUMBER_OF_CROSSBAR_INPUTS: integer;
 		NUMBER_OF_CROSSBAR_OUTPUTS: integer;
 		NUMBER_OF_BP_SHUFFLE_LINKS: integer;
@@ -252,6 +255,10 @@ architecture Behavioral of GPIO is
 attribute async_reg : string;
 
 constant FPGA_SERIES:integer := PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES;
+constant WORDS_PER_FRAME: integer := ADC_SAMPLES_PER_FRAME / ADC_SAMPLES_PER_WORD;
+constant LOG2_WORDS_PER_FRAME: integer := integer_log2(WORDS_PER_FRAME); --! Number of words per frame. One word is 4 8-bit time samples or 2 8+8-bits frequency samples.
+constant LOG2_SAMPLES_PER_FRAME: integer := integer_log2(ADC_SAMPLES_PER_FRAME);
+constant LOG2_SAMPLES_PER_WORD: integer := integer_log2(ADC_SAMPLES_PER_WORD);
 
 --signal CLK: std_logic;
 signal CLK_CTR: UNSIGNED(7 downto 0):=(others=>'0'); -- Divides the ADC clock by up to 255
@@ -632,11 +639,13 @@ irigb_delay       <= CONTROL_BYTES(50)(4 downto 0);
 STATUS_BYTES(0)(7)          <= USER_DATA_VALID;
 STATUS_BYTES(0)(6 downto 0) <= to_slv(COOKIE, 7);
 
--- STATUS Byte 1
-STATUS_BYTES(1) <= to_slv(LOG2_FRAME_LENGTH,8);
+-- STATUS Byte 1 - ADC data frame geometry
+STATUS_BYTES(1)(4 downto 0) <= to_slv(LOG2_SAMPLES_PER_FRAME, 5); -- 16384=14
+STATUS_BYTES(1)(7 downto 5) <= to_slv(LOG2_SAMPLES_PER_WORD, 3); -- 2: 4 samples/word, 3: 8 samples/word
 
 -- STATUS Byte 2
 STATUS_BYTES(2) <= to_slv(NUMBER_OF_CHANNELIZERS, 8);
+
 
 -- STATUS Byte 3
 STATUS_BYTES(3) <= to_slv(NUMBER_OF_CORRELATORS,8);
@@ -648,19 +657,13 @@ STATUS_BYTES(4) <= to_slv(NUMBER_OF_CHANNELIZERS_TO_CORRELATE, 8);
 STATUS_BYTES(5) <= to_slv(NUMBER_OF_CHANNELIZERS_WITH_FFT,8);
 STATUS_BYTES(6) <= to_slv(NUMBER_OF_GPU_LINKS,8);
 
--- bitgen: for i in 0 to 7 generate
--- -- 	STATUS_BYTES(4)(i)<='1' when IMPLEMENT_ANT(i)=TRUE else '0';
--- 	STATUS_BYTES(5)(i)<='1' when IMPLEMENT_FFT(i+8)=TRUE else '0';
--- 	STATUS_BYTES(6)(i)<='1' when IMPLEMENT_FFT(i)=TRUE else '0';
--- end generate;
-
 -- STATUS Bytes 7-10
-STATUS_BYTES(7 to 10) <= to_slv8_array(firmware_timestamp);
+STATUS_BYTES(7 to 10) <= to_slv8_array(firmware_timestamp);  -- ** ToDo: still used by Python, but redundant with core regs. 
 
 -- STATUS Bytes 11
-STATUS_BYTES(11)<=to_slv(PLATFORM_ID,8);
+STATUS_BYTES(11) <= to_slv(PLATFORM_ID, 8);
 
--- STATUS Bytes 12-19
+-- STATUS Bytes 12-19: FPGA serial number
 STATUS_BYTES(12)(7 downto 1) <= (others=>'0');
 STATUS_BYTES(12)(0) <= fpga_serial_number(56);
 STATUS_BYTES(13 to 19) <= to_slv8_array(fpga_serial_number(55 downto 0));
@@ -675,8 +678,11 @@ STATUS_BYTES(24) <= to_slv(CHANNELIZERS_CLOCK_SOURCE, 8);
 -- STATUS Bytes 25
 STATUS_BYTES(25) <= to_slv(NUMBER_OF_ADCS, 8);
 
--- STATUS Bytes 26-30
-STATUS_BYTES(26 to 30) <= (others => (others => '0'));
+-- STATUS Bytes 26
+STATUS_BYTES(26) <= to_slv(ADC_BITS_PER_SAMPLE, 8);
+
+-- STATUS Bytes 27-30
+STATUS_BYTES(27 to 30) <= (others => (others => '0'));
 
 -- STATUS Bytes 31-32
 STATUS_BYTES(31) <= slot_sense_ctr(0); -- is this still used?

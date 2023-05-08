@@ -62,6 +62,7 @@ use xpm.vcomponents.all;
 --! Project libraries
 use work.chFPGA_Package.all; --! Get all component definitions
 use work.chan_package.all; --! Get chan component
+use work.chFPGA_config.all; --! Get implementation-specific definitions
 --use work.udp_mac_package.udp_mac; --! Get udp_mac component
 --use work.xglink_package.xglink_array; --! Get udp_mac component
 --use work.ct_package.shuffle_crossbar; --! Get corner-turn engine components
@@ -96,6 +97,10 @@ entity chFPGA is
 									    -- "EV8AQ160": Implements ADCDAQ data acquisiton logic for the EV8AQ160.
 									    -- "AXIS": Data provided over the axis_adc AXI4-Streaming interface
 		NUMBER_OF_ADCS: INTEGER := NUMBER_OF_ADCS_MAX; --! Number of ADC data acquisition blocks (ADCDAQ) to be implemented. If 0, the channelizers ar fed directly from the adc_axis* bus.
+
+		ADC_SAMPLES_PER_FRAME: integer := CONFIG_ADC_SAMPLES_PER_FRAME;
+		ADC_SAMPLES_PER_WORD: integer := CONFIG_ADC_SAMPLES_PER_WORD;
+		ADC_BITS_PER_SAMPLE: integer := CONFIG_ADC_BITS_PER_SAMPLE;
 
 		-- EV8AQ160 ADC data acquisition logic configuration
 
@@ -516,6 +521,9 @@ attribute TARGET_PBLOCK: string;
 -- ==================================================
 
 -- Constants
+
+constant ADC_BITS_PER_WORD: integer := ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPLE;
+
 --constant NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := sel(GLOBAL_IMPLEMENT_FFT, 0*NUMBER_OF_CHANNELIZERS+4, 0); --! Number of channelizers that have an FFT module
 constant NUMBER_OF_ADCS_OR_CHANNELIZERS: integer := max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS);
 constant IMPLEMENT_CROSSBAR1: boolean := NUMBER_OF_CROSSBAR_INPUTS>0 and NUMBER_OF_CROSSBAR_OUTPUTS>0;
@@ -734,11 +742,13 @@ signal ADC_SYNC: std_logic_vector(0 to NUMBER_OF_ADC_BOARDS-1);
 signal adc_clk: std_logic; -- buffered ADC clock
 
 -- ADC data bus between the ADCDAQ (or top port) to the CHANNELIZER
-signal axis_adc_tdata8: slv32_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
-signal axis_adc_tdata: slv64_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
-signal axis_adc_tvalid: slv(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
-signal axis_adc_tlast: slv(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
-signal axis_adc_tuser: slv4_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+type adc_tdata_array is array (NATURAL RANGE <>) of std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
+type adc_tuser_array is array (NATURAL RANGE <>) of std_logic_vector(ADC_SAMPLES_PER_WORD-1 downto 0);
+
+signal axis_adc_tdata: adc_tdata_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+signal axis_adc_tuser: adc_tuser_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+signal axis_adc_tvalid: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+signal axis_adc_tlast: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
 
 -- attribute S of ADC_DAT: signal is "yes";
 -- attribute DONT_TOUCH of ADC_DAT: signal is "yes";
@@ -1771,6 +1781,9 @@ GPIO0: entity work.GPIO
 		CHANNELIZERS_CLOCK_SOURCE => ANT_CLK_SOURCE,
 		NUMBER_OF_CHANNELIZERS => NUMBER_OF_CHANNELIZERS,
 		NUMBER_OF_CHANNELIZERS_WITH_FFT => NUMBER_OF_CHANNELIZERS_WITH_FFT,
+		ADC_SAMPLES_PER_FRAME => ADC_SAMPLES_PER_FRAME,
+		ADC_SAMPLES_PER_WORD => ADC_SAMPLES_PER_WORD,
+		ADC_BITS_PER_SAMPLE => ADC_BITS_PER_SAMPLE,
 		NUMBER_OF_BP_SHUFFLE_LINKS => NUMBER_OF_BP_PCB_SHUFFLE_LANES,
 		NUMBER_OF_CROSSBAR_INPUTS => NUMBER_OF_CROSSBAR_INPUTS,
 		NUMBER_OF_CROSSBAR_OUTPUTS => NUMBER_OF_CROSSBAR_OUTPUTS,
@@ -2348,6 +2361,7 @@ EV8AQ160: if ADC_TYPE="EV8AQ160" generate
 	signal adc_ioclk_out_pll : std_logic_vector(0 to NUMBER_OF_ADCS-1);
 	signal adc_divclk_out_pll : std_logic_vector(0 to NUMBER_OF_ADCS-1);
 
+	signal axis_adc_tdata8: slv32_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
 	signal adc_data_ready_all : std_logic_vector(0 to NUMBER_OF_ADCS-1);
 	signal adc_send_data_async : std_logic;
 
@@ -2483,8 +2497,9 @@ end generate EV8AQ160;
 -----------------------
 
 AXIS_ADC: if ADC_TYPE="AXIS" generate
+	constant WORDS_PER_FRAME: integer := ADC_SAMPLES_PER_FRAME / ADC_SAMPLES_PER_WORD;
+	constant LOG2_WORDS_PER_FRAME : integer := integer_log2(WORDS_PER_FRAME);
 
-	signal adc_word_ctr: frame_word_ctr_array(0 to NUMBER_OF_ADCS-1) := (others => (others=>'0')); -- Counts words from 0 to FRAME_LENGTH/4-1
 	signal adc_send_data2: slv(0 to NUMBER_OF_ADCS-1); -- indicates when TVALID can be passed on
 
 begin
@@ -2497,6 +2512,8 @@ begin
 	-- Pipeline and frame the ADC with a TLAST signal and generate the divide-by-two adc clock monitoring signals for the frequency counter
 	-- The first frame is skipped to provide time for the channelizer pipeline modules to complete their reset cycles.
 	GEN_ADC: for i in 0 to NUMBER_OF_ADCS-1 generate
+			signal adc_word_ctr: unsigned(LOG2_WORDS_PER_FRAME-1 downto 0) := (others=>'0'); -- Counts words in frame
+	begin
 		adc_clk_div2_proc: process(adc_clkout(i))
 			begin
 				-- Generate a divide-by-2 version of the downscaled sampling clock

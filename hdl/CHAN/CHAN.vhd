@@ -50,6 +50,8 @@ entity CHAN is
         PLATFORM_ID     : integer := CONFIG_PLATFORM_ID;-- PLATFORM_ID_MGK7MB; -- This generics is locked to the MGK7MB when using CHAN as an OOC.
         IMPLEMENT_CHAN  : boolean := TRUE;
         IMPLEMENT_FFT   : boolean := CONFIG_CHAN_IMPLEMENT_FFT;
+        ADC_BITS_PER_SAMPLE: integer := CONFIG_ADC_BITS_PER_SAMPLE;
+        ADC_SAMPLES_PER_WORD: integer := CONFIG_ADC_SAMPLES_PER_WORD;
         SIM             : boolean := GLOBAL_SIM
         );
 
@@ -58,10 +60,10 @@ entity CHAN is
         --! Input Interface from ADC
         --! 64-bit wide (4x 16-bit samples), using the AXI4-Streaming Prototol
 
-        in_dat_tdata    : in slv64;
+        in_dat_tdata    : in std_logic_vector(ADC_BITS_PER_SAMPLE * ADC_SAMPLES_PER_WORD-1 downto 0);
         in_dat_tvalid   : in std_logic;
         in_dat_tlast    : in std_logic;
-        in_dat_tuser    : in slv4;
+        in_dat_tuser    : in std_logic_vector(ADC_SAMPLES_PER_WORD-1 downto 0);
         in_clk          : in std_logic; --! Input and signal processing clock
         in_reset        : in std_logic; --! Resets all the channelizer modules,
                                         --! except ADCDAQ. Must be synchronous to in_clk.
@@ -130,6 +132,7 @@ architecture Behavioral of CHAN is
 --constant SIM             : BOOLEAN :=GLOBAL_SIM;
 
 constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
+constant ADC_BITS_PER_WORD: integer := ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPLE;
 
 signal axis_adcdaq_out      : axis64_dat_struct; --! input bus from adc, 32-bit wide, using the AXI4-Streaming prototol
 signal axis_adcdaq_out_reg1 : axis64_dat_struct;
