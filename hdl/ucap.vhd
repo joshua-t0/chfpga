@@ -65,7 +65,7 @@ architecture Behavioral of ucap is
     subtype int8 is integer range 0 to 7;
     type int8_array is array (NATURAL RANGE <>) of int8;
 
-    signal mode: std_logic_vector(1 downto 0) := "00";
+    signal mode: std_logic_vector(1 downto 0) := "11"; -- "00": 8-channel, "01": 4-channel, "10": 2-channel, "11": 1-channel
     signal chan_sel_map : slv3_array(0 to 3) := ("000", "001", "010", "011");
 
     signal sel: slv3_array(0 to 3);        
@@ -106,7 +106,7 @@ begin
 		begin
 --			ram_dout(col)(64*row + 63 downto 64*row) <= ram_dout_word;
             din_gen: for j in 0 to 7 generate
-                   ram_din_word(16*j+15 downto 16*j) <= "00" & ram_din(i)(14*j+13 downto 14*j);
+                   ram_din_word(16*j+15 downto 16*j) <= ram_din(i)(14*j+13 downto 14*j) & "00";
             end generate;	           
 --			ram_din_word <= ram_din(64*col + 63 downto 64*col);
 --			ram_wr_byte_en_word <= ram_wr_byte_en(8*col+7 downto 8*col);
@@ -170,7 +170,7 @@ begin
 		signal frame: unsigned(3 downto 0);
 		signal word_ctr: unsigned(10 downto 0); -- Counts group of 8 samples. 14-3=11 bits (16k samples / 8 = 2k clocks/frame). 
 		signal period_ctr: unsigned(23 downto 0);
-		signal period: unsigned(23 downto 0):= to_unsigned(2*16+10-1, 24); -- 2 frames * 16 bytes, 183105=1s
+		signal period: unsigned(23 downto 0):= to_unsigned(183105, 24); -- 2 frames * 16 bytes, 3000e6/16384 = 183105.46875 =1s, max period = 91.6s
         signal capture_en: std_logic;
         signal mux_mode: std_logic;
 	begin
@@ -201,6 +201,7 @@ begin
 						end if;
 						if period_ctr = period then
 							capture_en <= '1'; 
+							period_ctr <= (others => '0');
 						end if;
 					end if;                
 				end if;
