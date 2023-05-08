@@ -8,6 +8,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.chfpga_package.all;
+use work.chfpga_config.all;
 
 -------- udp_mac package ------------
 --! Defines the chan entity as a component so we can  defer binding in conditional if-generate blocks and prevent elaboration errors
@@ -21,77 +22,60 @@ package chan_package is
 COMPONENT CHAN is
   PORT (
 
-    in_dat_tdata: in slv64;
+    in_dat_tdata: in std_logic_vector(CONFIG_ADC_BITS_PER_SAMPLE * CONFIG_ADC_SAMPLES_PER_WORD -1  downto 0);
+    in_dat_tuser: in std_logic_vector(CONFIG_ADC_SAMPLES_PER_WORD -1 downto 0);
     in_dat_tvalid: in std_logic;
     in_dat_tlast: in std_logic;
-    in_dat_tuser: in slv4;
-    in_reset: in std_logic; --! Resets all the antenna processor modules, except ADCDAQ. Must be synchronous to ANT_CLK.
-    in_clk : in  STD_LOGIC; --! Data processing clock for all the Antenna processing pipeline
+    in_reset: in std_logic; -- Resets all the antenna processor modules, except ADCDAQ. Must be synchronous to ANT_CLK.
+    in_clk : in  std_logic; -- input interface clock, also used for data processing
 
-    -- Data processing clock
 
     -- Output interface
---    OUT_DAT : out  AXIS32_DAT_STRUCT; --! Output data stream
-    out_dat_tdata: out slv32;
+    out_dat_tdata: out std_logic_vector(31 downto 0);
+    out_dat_tuser: out std_logic_vector(3 downto 0);
     out_dat_tvalid: out std_logic;
     out_dat_tlast: out std_logic;
-    out_dat_tuser: out slv4;
     out_clk: in std_logic;
     out_reset: in std_logic;
 
     -- System level signals
-    TRIG : in  STD_LOGIC; --! Global trigger/capture signal. Indicates to SRCSEL when to start flagging the incoming frames the data capture.
---    ADC_DAQ_BUFR_SYNC: in STD_LOGIC;
---    ADC_DAQ_SERDES_SYNC: in STD_LOGIC;
+    trig : in  std_logic; --! Global trigger/capture signal. 
     lane_monitor: out std_logic_vector(3 downto 0);
 
     -- Control interface (command and reply stream buses)
---    CTRL_CMD_IN_DAT: in AXIS8_DAT_STRUCT;
---    CTRL_CMD_IN_RDY: out AXIS8_RDY_STRUCT;
     ctrl_cmd_tdata: in std_logic_vector(7 downto 0);
     ctrl_cmd_tvalid: in std_logic;
     ctrl_cmd_tlast: in std_logic;
     ctrl_cmd_tready: out std_logic;
-
---    CTRL_RPLY_OUT_DAT: out AXIS8_DAT_STRUCT;
---    CTRL_RPLY_OUT_RDY: in AXIS8_RDY_STRUCT;
     ctrl_rply_tdata: out std_logic_vector(7 downto 0);
     ctrl_rply_tvalid: out std_logic;
     ctrl_rply_tlast: out std_logic;
     ctrl_rply_tready: in std_logic;
 
-    CTRL_CLK : in  STD_LOGIC;
-    CTRL_RST : in  STD_LOGIC; --! Global asynchronous RESET, activated at power-up.
+    ctrl_clk : in  STD_LOGIC;
+    ctrl_rst : in  STD_LOGIC; --! Global asynchronous RESET, activated at power-up.
 
     -- Control interface to be hooked-up  to the corresponding ADCDAQ module
-    -- ADC_CMD_DAT: out AXIS8_DAT_STRUCT;
-    -- ADC_CMD_RDY: in AXIS8_RDY_STRUCT;
-    -- ADC_RPLY_DAT: in AXIS8_DAT_STRUCT;
-    -- ADC_RPLY_RDY: out AXIS8_RDY_STRUCT;
     adc_cmd_tdata: out std_logic_vector(7 downto 0);
     adc_cmd_tvalid: out std_logic;
     adc_cmd_tlast: out std_logic;
     adc_cmd_tready: in std_logic;
-
---    adc_RPLY_OUT_DAT: out AXIS8_DAT_STRUCT;
---    adc_RPLY_OUT_RDY: out AXIS8_RDY_STRUCT;
     adc_rply_tdata: in std_logic_vector(7 downto 0);
     adc_rply_tvalid: in std_logic;
     adc_rply_tlast: in std_logic;
     adc_rply_tready: out std_logic;
 
-    -- Data Probe interface
-    -- PRB_DAT: out AXIS8_DAT_STRUCT; --! Data capture bus (AXI4 Streaming)
-    -- PRB_RDY: in AXIS8_RDY_STRUCT;
+    m_axis_cap_tdata: out std_logic_vector(CONFIG_ADC_BITS_PER_SAMPLE * CONFIG_ADC_SAMPLES_PER_WORD-1 downto 0);
+    m_axis_cap_tvalid: out std_logic;
+    m_axis_cap_tlast: out std_logic;
+
+
+    -- Data Capture interface
     prb_tdata: out std_logic_vector(7 downto 0);
     prb_tvalid: out std_logic;
     prb_tlast: out std_logic;
     prb_tready: in std_logic;
-
-
-    PRB_CLK : in  STD_LOGIC  --! Data capture clock
-
-    -- System
+    prb_clk : in  STD_LOGIC  --! Data capture clock
     );
 end COMPONENT;
 
