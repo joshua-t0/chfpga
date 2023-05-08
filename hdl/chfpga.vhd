@@ -424,9 +424,14 @@ entity chFPGA is
 			m_axis_bsb_tready: in std_logic := '0';
 
 			axis_bsb_clk : in  std_logic := '0'; -- BSB bus clock, typically between 100-125 MHz
-			axis_bsb_rst : in  std_logic  := '0'-- synchronous to axis_bsb_clk
+			axis_bsb_rst : in  std_logic  := '0';-- synchronous to axis_bsb_clk
 
-			--==== Slow data streaming interface (raw capture and correlator outputs)
+			--==== Data capture streaming interface (for slow raw data capture and correlator outputs)
+	        m_axis_cap_tdata: out std_logic_vector(7 downto 0);
+			m_axis_cap_tvalid: out std_logic;
+			m_axis_cap_tlast: out std_logic; 
+			m_axis_cap_tready: in std_logic;
+			axis_cap_clk: in std_logic
 
 
 			);
@@ -749,6 +754,10 @@ signal axis_adc_tdata: adc_tdata_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
 signal axis_adc_tuser: adc_tuser_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
 signal axis_adc_tvalid: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
 signal axis_adc_tlast: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+
+signal axis_cap_tdata: adc_tdata_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+signal axis_cap_tvalid: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+signal axis_cap_tlast: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
 
 -- attribute S of ADC_DAT: signal is "yes";
 -- attribute DONT_TOUCH of ADC_DAT: signal is "yes";
@@ -1549,7 +1558,7 @@ debug_out(8) <= cmd_overflow;
 		generic map (
 			TARGET_PBLOCK => "SYSTEM",
 			NUMBER_OF_PORTS => NUMBER_OF_PORTS,
-			ADDRESS_MASK => "-111----------------" --'1': used to generate port index, '-' = don't care,
+			ADDRESS_MASK => "111----------------" --'1': used to generate port index, '-' = don't care,
 		)
 		port map(
 			-- Root interface
@@ -1624,7 +1633,7 @@ debug_out(27) <= top_sys_rply_rdy.TREADY;
 	sys_router0: entity work.CTRL_ROUTER
 		GENERIC MAP (
 			NUMBER_OF_PORTS => NUMBER_OF_SYS_MODULES,
-			ADDRESS_MASK => "----1111------------" --'1': used to generate port index, '-' = don't care,
+			ADDRESS_MASK => "---1111------------" --'1': used to generate port index, '-' = don't care,
 			-- PORT_NUMBER_HIGH_BIT=> CTRL_MODULE_NUMBER_RANGE'HIGH,
 			-- PORT_NUMBER_LOW_BIT=> CTRL_MODULE_NUMBER_RANGE'LOW
 		)
@@ -2420,10 +2429,11 @@ begin
 			end if;
 		end process;
 
-		-- Convert 4x 8-bit ADCDAQ bus to 4x 16-bit bus
-		repack_gen: for j in 0 to 3  generate
-			axis_adc_tdata(i)(16*j+7 downto 16*j) <= axis_adc_tdata8(i)(8*j+7 downto 8*j);
-			axis_adc_tdata(i)(16*j+15 downto 16*j+8) <= (others => axis_adc_tdata8(i)(7)); -- sign extend
+		-- Convert 4x 8-bit ADCDAQ bus samples to th elower 4 words of the 8x 16-bit bus
+		repack_gen: for j in 0 to 3  generate -- hard coded to 3 samples per word
+			axis_adc_tdata(i)(16*j+15 downto 16*j+8) <= axis_adc_tdata8(i)(8*j+7 downto 8*j); -- left aligg data to the MSB
+			--axis_adc_tdata(i)(16*j+7 downto 16*j) <= (others => axis_adc_tdata8(i)(7)); -- sign extend
+			axis_adc_tdata(i)(16*j+7 downto 16*j) <= (others => '0'); -- zero the MSBs
 		end generate;
 		-- ADCDAQ is still implemented if IMPLEMENT_ANT=FALSE, but its IMPLEMENT_ADCDAQ generics is forced  to FALSE to the appropriate differential buffers are instantiated and prevent UCF errors.
 		--	ADC_CLK_OUT_PLL<=ADC_CLK_OUT_PLL_INT;
@@ -2524,12 +2534,12 @@ begin
 
 		adc_proc: process(chan_clk(i))
 
-			variable adc_axis_tdata2, adc_axis_tdata3: slv64;
+			variable adc_axis_tdata2, adc_axis_tdata3: std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
 
 			begin
 				if rising_edge(chan_clk(i)) then
 					if adc_axis_tvalid(i)='1' then
-						adc_word_ctr(i) <= adc_word_ctr(i) + 1;
+						adc_word_ctr <= adc_word_ctr + 1;
 					end if;
 
 					-- ADC data comes in 128-bit bus that contains 8x 16-bit sample words.
@@ -2538,29 +2548,29 @@ begin
 					-- The FFT currently need 4x 8-bit sample bytes, first sample in the upper word
 					-- The following performs the conversion
 
-					-- Downsample the data from 8 samples to 4 samples
-					for j in 0 to 3 loop
-						adc_axis_tdata2(16*j+15 downto 16*j) := adc_axis_tdata(i)(32*j+15 downto 32*j);
-					end loop;
-
+					-- Extract the ADC words fof this channel
+					--for j in 0 to 7 loop
+					--	adc_axis_tdata2(16*j+15 downto 16*j) := adc_axis_tdata(i)(16*j+15 downto 16*j);
+					--end loop;
+					adc_axis_tdata2 := adc_axis_tdata(i);
 					-- Invert the order of the words to put the first sample in the MSB
-					for j in 0 to 3 loop
-						adc_axis_tdata3(16*j+15 downto 16*j) := adc_axis_tdata2(16*(3-j)+15 downto 16*(3-j));
+					for j in 0 to 7 loop
+						adc_axis_tdata3(16*j+15 downto 16*j) := adc_axis_tdata2(16*(7-j)+15 downto 16*(7-j));
 					end loop;
-					-- Assing the data bus and clear overflow flags
+					-- Passing the data bus and clear overflow flags
 					axis_adc_tdata(i) <= adc_axis_tdata3;
 					axis_adc_tuser(i) <= (others =>'0');
 					axis_adc_tvalid(i) <= adc_axis_tvalid(i) and adc_send_data2(i);
 					axis_adc_tlast(i) <= '0';
 					-- generate TLAST
-					if signed(adc_word_ctr(i))=-1 then
+					if all_ones(adc_word_ctr) then
 						axis_adc_tlast(i) <= '1';
 						adc_send_data2(i) <= '1'; -- start setting tvalid to 1
 					end if; -- last word
 					-- Synchronous reset
 					if chan_reset(i)='1' then
 						axis_adc_tvalid(i) <= '0';
-						adc_word_ctr(i) <= (others => '0');
+						adc_word_ctr <= (others => '0');
 						adc_send_data2(i) <= '0';
 					end if;
 				end if; -- if clk
@@ -2727,7 +2737,13 @@ begin
 			adc_RPLY_tlast  => ADC_RPLY_DAT(i).TLAST,
 			adc_RPLY_tready => ADC_RPLY_RDY(i).TREADY,
 
-			-- Data capture interface
+			-- Data capture mux port
+	        m_axis_cap_tdata => axis_cap_tdata(i),
+	        m_axis_cap_tvalid => axis_cap_tvalid(i),
+	        m_axis_cap_tlast => axis_cap_tlast(i),
+
+
+			-- Streaming data capture interface
 			PRB_tdata  => axis_prb_tdata(i),
 			PRB_tvalid => axis_prb_tvalid(i),
 			PRB_tlast  => axis_prb_tlast(i),
@@ -3287,9 +3303,9 @@ begin
 
 	-- Index the system control buses as a separate signal here , because the simulator will flag errors
 	--  if we index it directly on the instantiation
-	cge_cmd_dat<= top_cmd_dat(GPU_LINK_BASE_PORT);
+	cge_cmd_dat <= top_cmd_dat(GPU_LINK_BASE_PORT);
 	top_cmd_rdy(GPU_LINK_BASE_PORT) <= cge_cmd_rdy;
-	cge_rply_rdy<= top_rply_rdy(GPU_LINK_BASE_PORT);
+	cge_rply_rdy <= top_rply_rdy(GPU_LINK_BASE_PORT);
 	top_rply_dat(GPU_LINK_BASE_PORT) <= CGE_RPLY_DAT;
 
 
@@ -3374,7 +3390,53 @@ begin
 
 end generate CGE_GEN;
 
+-----------------------------
+-- UCAP - Global raw data capture
+----------------------------- 
+ucap_blk0: block
 
+	signal axis_cap_reg1_tdata: adc_tdata_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+	signal axis_cap_reg1_tvalid: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+	signal axis_cap_reg1_tlast: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+
+	signal axis_cap_reg1_tdata112: slv112_array(0 to NUMBER_OF_ADCS-1);
+
+begin
+	-- Pipeline the Muxed Capture data bus
+ 	pipe_proc: process(chan_clk(0))
+	begin
+		if rising_edge(chan_clk(0)) then
+			axis_cap_reg1_tdata <= axis_cap_tdata;
+			axis_cap_reg1_tvalid <= axis_cap_tvalid;
+			axis_cap_reg1_tlast <= axis_cap_tlast;
+		end if;
+	end process;
+
+	remap0: for i in 0 to NUMBER_OF_ADCS-1 generate
+    	remap1: for j in 0 to 7 generate
+    		axis_cap_reg1_tdata112(i)(14*j+13 downto 14*j) <= axis_cap_reg1_tdata(i)(16*j+15 downto 16*j+2); -- *** fix to take into account BITS_PER_SAMPLES
+	   end generate;
+	end generate;
+
+	ucap0: entity work.ucap
+	    port map ( 
+
+	        s_axis_tdata => axis_cap_reg1_tdata112,
+	        s_axis_tvalid => axis_cap_reg1_tvalid,
+	        s_axis_tlast=> axis_cap_reg1_tlast,
+
+	        m_axis_bsb_tdata => m_axis_cap_tdata,
+			m_axis_bsb_tvalid=> m_axis_cap_tvalid,
+			m_axis_bsb_tlast => m_axis_cap_tlast, 
+			m_axis_bsb_tready => m_axis_cap_tready,
+	        bsb_clk => axis_cap_clk,
+	        
+	        clk=> chan_clk(0),
+	        rst=> chan_reset(0)
+	        
+	    
+	    );
+end block ucap_blk0;
 ---------------------------------------------------------------------
 --  Correlator
 ---------------------------------------------------------------------
@@ -3399,81 +3461,81 @@ begin
 	--PRB_PORT_OFFSET(CORR_PROBE_BASE_PORT + NUMBER_OF_CORRELATORS-1 downto CORR_PROBE_BASE_PORT) <= (others => CORR_IP_PORT_OFFSET); --! Assign the IP port number to be used for the returned data
  	--! Pipeline and replicate the correlator data reset input to facilitate routing and timing closure.
  	corrrst_proc: process(ct_clk)
- 		begin
- 			if rising_edge(ct_clk) then
- 				corr_reset_reg1 <= ct_reset_reg;
- 			end if;
- 		end process;
+	begin
+		if rising_edge(ct_clk) then
+			corr_reset_reg1 <= ct_reset_reg;
+		end if;
+	end process;
 
- 		-- Connect the correlator inputs and outputs
- 		CORR_PRB_GEN: for i in 0 to NUMBER_OF_CORRELATORS-1 generate
- 			-- input bus. 1:1 connection between each correlator and crossbar output. Pipeling in the module.
-			axis_corr_in_tvalid(i)                 <= axis_crossbar1_out_tvalid(i);
-			axis_corr_in_tlast(i)                  <= axis_crossbar1_out_tlast(i);
-			axis_corr_in_tdata(i)                  <= axis_crossbar1_out_tdata(i);
-			-- output bus. Connects to the probe port
-			axis_prb_tdata(CORR_PROBE_BASE_PORT+i)  <= axis_corr_out_tdata(i);
-			axis_prb_tvalid(CORR_PROBE_BASE_PORT+i) <= axis_corr_out_tvalid(i);
-			axis_prb_tlast(CORR_PROBE_BASE_PORT+i)  <= axis_corr_out_tlast(i);
-			axis_corr_out_tready(i)                 <= axis_prb_tready(CORR_PROBE_BASE_PORT+i);
- 		end generate;
+		-- Connect the correlator inputs and outputs
+		CORR_PRB_GEN: for i in 0 to NUMBER_OF_CORRELATORS-1 generate
+			-- input bus. 1:1 connection between each correlator and crossbar output. Pipeling in the module.
+		axis_corr_in_tvalid(i)                 <= axis_crossbar1_out_tvalid(i);
+		axis_corr_in_tlast(i)                  <= axis_crossbar1_out_tlast(i);
+		axis_corr_in_tdata(i)                  <= axis_crossbar1_out_tdata(i);
+		-- output bus. Connects to the probe port
+		axis_prb_tdata(CORR_PROBE_BASE_PORT+i)  <= axis_corr_out_tdata(i);
+		axis_prb_tvalid(CORR_PROBE_BASE_PORT+i) <= axis_corr_out_tvalid(i);
+		axis_prb_tlast(CORR_PROBE_BASE_PORT+i)  <= axis_corr_out_tlast(i);
+		axis_corr_out_tready(i)                 <= axis_prb_tready(CORR_PROBE_BASE_PORT+i);
+		end generate;
 
- 		-- Extract the control interface
-		corr_cmd_dat<= top_cmd_dat(CORR_BASE_PORT);
-	 	top_cmd_rdy(CORR_BASE_PORT) <= corr_cmd_rdy;
-	 	corr_rply_rdy<= top_rply_rdy(CORR_BASE_PORT);
-	 	top_rply_dat(CORR_BASE_PORT) <= corr_rply_dat;
+		-- Extract the control interface
+	corr_cmd_dat <= top_cmd_dat(CORR_BASE_PORT);
+ 	top_cmd_rdy(CORR_BASE_PORT) <= corr_cmd_rdy;
+ 	corr_rply_rdy <= top_rply_rdy(CORR_BASE_PORT);
+ 	top_rply_dat(CORR_BASE_PORT) <= corr_rply_dat;
 
 
-		corr_array0: entity work.corr44_array
-			generic map (
-				PLATFORM_ID             => PLATFORM_ID, -- needed to determine the RPM spacing of the DSP and BRAM elements and choose the right primitives
-				NUMBER_OF_CORRELATORS   => NUMBER_OF_CORRELATORS,
-				NUMBER_OF_WORDS_PER_BIN => NUMBER_OF_CROSSBAR_INPUTS/4 -- Is hardwired as a generics to simplify logic. Also corresponds to the number of clocks per bin.
-				-- Position of each correlator (using the RPM grid)
-				--LEFT_DSP_RPM_X          => (361, 425, 361, 425, 361, 425, 361, 425 ),
-				--LEFT_BRAM_RPM_X         => (350, 438, 350, 438, 350, 438, 350, 438 ),
-				--RIGHT_DSP_RPM_X         => (381, 473, 381, 473, 381, 473, 381, 473 ),
-				--RIGHT_BRAM_RPM_X        => (394, 462, 394, 462, 394, 462, 394, 462 ),
-				--BOTTOM_DSP_RPM_Y        => (0, 0 , 170, 170, 450, 450, 620, 620),
-				--BOTTOM_BRAM_RPM_Y       => (0, 0 , 170, 170, 450, 450, 620, 620)
+	corr_array0: entity work.corr44_array
+		generic map (
+			PLATFORM_ID             => PLATFORM_ID, -- needed to determine the RPM spacing of the DSP and BRAM elements and choose the right primitives
+			NUMBER_OF_CORRELATORS   => NUMBER_OF_CORRELATORS,
+			NUMBER_OF_WORDS_PER_BIN => NUMBER_OF_CROSSBAR_INPUTS/4 -- Is hardwired as a generics to simplify logic. Also corresponds to the number of clocks per bin.
+			-- Position of each correlator (using the RPM grid)
+			--LEFT_DSP_RPM_X          => (361, 425, 361, 425, 361, 425, 361, 425 ),
+			--LEFT_BRAM_RPM_X         => (350, 438, 350, 438, 350, 438, 350, 438 ),
+			--RIGHT_DSP_RPM_X         => (381, 473, 381, 473, 381, 473, 381, 473 ),
+			--RIGHT_BRAM_RPM_X        => (394, 462, 394, 462, 394, 462, 394, 462 ),
+			--BOTTOM_DSP_RPM_Y        => (0, 0 , 170, 170, 450, 450, 620, 620),
+			--BOTTOM_BRAM_RPM_Y       => (0, 0 , 170, 170, 450, 450, 620, 620)
 
-				--LEFT_DSP_RPM_X          => corr_rpm.LEFT_DSP_X,
-				--LEFT_BRAM_RPM_X         => corr_rpm.LEFT_BRAM_X,
-				--RIGHT_DSP_RPM_X         => corr_rpm.RIGHT_DSP_X,
-				--RIGHT_BRAM_RPM_X        => corr_rpm.RIGHT_BRAM_X,
-				--BOTTOM_DSP_RPM_Y        => corr_rpm.DSP_BOTTOM_Y,
-				--BOTTOM_BRAM_RPM_Y       => corr_rpm.BRAM_BOTTOM_Y
-				)
-			port map(
-				-- Input data interface (AXI4-Streaning, 16-bit wide, non-blocking)
+			--LEFT_DSP_RPM_X          => corr_rpm.LEFT_DSP_X,
+			--LEFT_BRAM_RPM_X         => corr_rpm.LEFT_BRAM_X,
+			--RIGHT_DSP_RPM_X         => corr_rpm.RIGHT_DSP_X,
+			--RIGHT_BRAM_RPM_X        => corr_rpm.RIGHT_BRAM_X,
+			--BOTTOM_DSP_RPM_Y        => corr_rpm.DSP_BOTTOM_Y,
+			--BOTTOM_BRAM_RPM_Y       => corr_rpm.BRAM_BOTTOM_Y
+			)
+		port map(
+			-- Input data interface (AXI4-Streaning, 16-bit wide, non-blocking)
 
-				s_axis_tvalid           => axis_corr_in_tvalid,
-				s_axis_tlast            => axis_corr_in_tlast,
-				s_axis_tdata            => axis_corr_in_tdata,
+			s_axis_tvalid           => axis_corr_in_tvalid,
+			s_axis_tlast            => axis_corr_in_tlast,
+			s_axis_tdata            => axis_corr_in_tdata,
 
-				in_clk                  => ct_clk,
-				in_rst                  => corr_reset_reg1,
+			in_clk                  => ct_clk,
+			in_rst                  => corr_reset_reg1,
 
-				-- Correlated data output interface (AXI4-Streaning, 8-bit wide, blocking)
+			-- Correlated data output interface (AXI4-Streaning, 8-bit wide, blocking)
 
-				m_axis_data_out_tdata   => axis_corr_out_tdata,
-				m_axis_data_out_tvalid  => axis_corr_out_tvalid,
-				m_axis_data_out_tlast   => axis_corr_out_tlast,
-				m_axis_data_out_tready  => axis_corr_out_tready,
+			m_axis_data_out_tdata   => axis_corr_out_tdata,
+			m_axis_data_out_tvalid  => axis_corr_out_tvalid,
+			m_axis_data_out_tlast   => axis_corr_out_tlast,
+			m_axis_data_out_tready  => axis_corr_out_tready,
 
-				out_clk                 => ctrl_clk,
-				out_rst                 => ctrl_rst,
+			out_clk                 => ctrl_clk,
+			out_rst                 => ctrl_rst,
 
-				-- Control interface
+			-- Control interface
 
-				CMD_DAT  => corr_cmd_dat,
-				CMD_RDY  => corr_cmd_rdy,
-				RPLY_DAT => corr_rply_dat,
-				RPLY_RDY => corr_rply_rdy,
-				CTRL_CLK => ctrl_clk,
-				CTRL_RST => ctrl_rst
-				);
+			CMD_DAT  => corr_cmd_dat,
+			CMD_RDY  => corr_cmd_rdy,
+			RPLY_DAT => corr_rply_dat,
+			RPLY_RDY => corr_rply_rdy,
+			CTRL_CLK => ctrl_clk,
+			CTRL_RST => ctrl_rst
+			);
 
 end generate CORRGEN; -- if NUMBER_OF_CORR >0
 
