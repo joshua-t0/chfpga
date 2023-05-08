@@ -33,11 +33,11 @@ USE work.chFPGA_Package.all;
 use work.tb_package.all;
 
 ENTITY funcgen_testbench IS
--- 	generic (
--- 		NUMBER_OF_INPUT_LANES: integer := 16; -- Must be a multiple of 4
--- 		NUMBER_OF_OUTPUT_LANES: integer := 1;
--- 		COMBINE_DATA_FLAGS: boolean := true
--- 		);
+ 	generic (
+ 		BITS_PER_SAMPLE: integer := 16; 
+ 		SAMPLES_PER_WORD: integer := 8;
+ 		SAMPLES_PER_FRAME: integer := 16384
+ 		);
 END funcgen_testbench;
 
 
@@ -45,43 +45,44 @@ ARCHITECTURE behavior OF funcgen_testbench IS
 
    -- Clock period definitions
 
-constant IN_CLK_PERIOD : time := 5 ns; -- 200 MHz
-constant OUT_CLK_PERIOD : time := 4.096 ns; -- 244 MHz
-constant CLK125_period : time := 8 ns;
+	constant IN_CLK_PERIOD : time := 5 ns; -- 200 MHz
+	--constant OUT_CLK_PERIOD : time := 4.096 ns; -- 244 MHz
+	constant CLK125_period : time := 8 ns;
 
 	-- SYSTEM Port modules
-	constant CROSSBAR_BASE_ADDR      : integer := 16#60000#; -- # CROSSBAR top address
-	constant CROSSBAR_ADDR_INCREMENT : integer := 16#00800#; --
-	constant CROSSBAR_BIN_SEL0_ADDR: integer :=CROSSBAR_BASE_ADDR + 1*CROSSBAR_ADDR_INCREMENT;
-	constant CROSSBAR_BIN_SEL1_ADDR: integer :=CROSSBAR_BASE_ADDR + 2*CROSSBAR_ADDR_INCREMENT;
+	--constant CROSSBAR_BASE_ADDR      : integer := 16#60000#; -- # CROSSBAR top address
+	--constant CROSSBAR_ADDR_INCREMENT : integer := 16#00800#; --
+	--constant CROSSBAR_BIN_SEL0_ADDR: integer :=CROSSBAR_BASE_ADDR + 1*CROSSBAR_ADDR_INCREMENT;
+	--constant CROSSBAR_BIN_SEL1_ADDR: integer :=CROSSBAR_BASE_ADDR + 2*CROSSBAR_ADDR_INCREMENT;
 
 	--Inputs
-	signal reset : std_logic := '0';
-
-
+    subtype sample is std_logic_vector(BITS_PER_SAMPLE-1 downto 0); 
+    type sample_array is array (0 to SAMPLES_PER_FRAME-1) of sample;
+    constant BYTES_PER_FRAME: integer := BITS_PER_SAMPLE/8*SAMPLES_PER_FRAME;
 	signal clk: std_logic; --
 	signal out_clk: std_logic; --
 	signal clk125: std_logic; --
 	signal frame_clk_in: std_logic;
 
-	signal s_axis_tdata: slv32;
+	signal s_axis_tdata: std_logic_vector(BITS_PER_SAMPLE*SAMPLES_PER_WORD-1 downto 0);
 	signal s_axis_tvalid: std_logic; -- needed for sim. If, U, data will not start
 	signal s_axis_tlast: std_logic;
 	signal s_axis_tready: std_logic:='1'; -- init needed for sim
 
 
 
-	signal m_axis_tdata: slv32;
+	signal m_axis_tdata: std_logic_vector(BITS_PER_SAMPLE*SAMPLES_PER_WORD-1 downto 0);
 	signal m_axis_tvalid: std_logic;
 	signal m_axis_tlast: std_logic;
-	signal m_axis_tuser: slv4;
+	signal m_axis_tuser: std_logic_vector(3 downto 0);
 
 	signal cmd_tdata: slv8;
 	signal cmd_tvalid: std_logic;
 	signal cmd_tlast: std_logic;
 	signal cmd_tready: std_logic;
 
-	signal chan_reset: std_logic;
+	signal ctrl_rst: std_logic;
+	signal rst: std_logic;
 	-- constant NUMBER_OF_PACKETS : integer :=5;
 	-- type lane_config_type is array (0 to NUMBER_OF_INPUT_LANES-1) of integer_array(0 to NUMBER_OF_PACKETS-1);
 	-- -- back to back frames, same length, aligned within timeout
@@ -115,19 +116,24 @@ begin
 
 
 funcgen0: entity work.funcgen
+    generic map (
+ 		BITS_PER_SAMPLE => BITS_PER_SAMPLE, 
+ 		SAMPLES_PER_WORD => SAMPLES_PER_WORD,
+ 		SAMPLES_PER_FRAME => SAMPLES_PER_FRAME
+)
 	port map (
-		in_dat.tdata  => s_axis_tdata,
-		in_dat.tvalid => s_axis_tvalid,
-		in_dat.tlast  => s_axis_tlast,
-		in_dat.tuser  => "0101", --(ADC overflows)
+		s_axis_adc_tdata  => s_axis_tdata,
+		s_axis_adc_tvalid => s_axis_tvalid,
+		s_axis_adc_tlast  => s_axis_tlast,
+		s_axis_adc_tuser  => (others => '0'), --(ADC overflows)
 
-		out_dat.tdata  => m_axis_tdata,
-		out_dat.tvalid => m_axis_tvalid,
-		out_dat.tlast  => m_axis_tlast,
-		out_dat.tuser  => m_axis_tuser,
+		m_axis_adc_tdata  => m_axis_tdata,
+		m_axis_adc_tvalid => m_axis_tvalid,
+		m_axis_adc_tlast  => m_axis_tlast,
+		m_axis_adc_tuser  => m_axis_tuser,
 
 		clk => clk,
-		rst => chan_reset,
+		rst => rst,
 
 		-- CTRL_CMD_DAT => (TDATA=> cmd_tdata, TVALID => cmd_tvalid, TLAST => cmd_tlast),
 		CTRL_CMD_IN_DAT.TDATA => cmd_tdata,
@@ -139,7 +145,7 @@ funcgen0: entity work.funcgen
 		CTRL_RPLY_OUT_RDY => (TREADY => '1'),
 
 		CTRL_CLK => clk125,
-		CTRL_RST => reset
+		CTRL_RST => ctrl_rst
 	);
 
 clk_process :process
@@ -166,14 +172,22 @@ stim_proc : process
 	-- variable actual_number_of_input_lanes: integer := 16;
 	variable func: integer :=0; -- 0=adc, 1=ram, 2=noise, 3=ctr
 	variable ram_page: integer :=0; --
-	variable pattern: slv8_array(0 to 2047);
+	variable pattern: sample_array;
+	variable bytes: slv8_array(0 to BYTES_PER_FRAME-1);
+	variable page_slv: std_logic_vector(6 downto 0);
+	variable cmd_byte: std_logic_vector(7 downto 0);
 	begin
 
-		reset <= '1';
-		chan_reset <= '1';
+        -- pulse the resets
+		rst <= '1';
+		ctrl_rst <= '1';
+		sleep(clk125, 10); 
+		ctrl_rst <= '0';
 		sleep(clk, 10);
-		reset <= '0';
+		rst <= '0';
+
 		sleep(clk125, 10); -- make sure we start command transmission on a CLK125 edge or we will lose some data
+
 		fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 3, 5); -- Send 5 frames
 
 		-- -- Program buffer
@@ -181,18 +195,25 @@ stim_proc : process
 		-- fpga_write_ram(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 511, (0=>X"01"));
 
 		for i in pattern'range loop
-			pattern(i) := to_slv(i,8);
+			pattern(i) := to_slv(i,BITS_PER_SAMPLE);
+            bytes(2*i to 2*i+1) := to_slv8_array(pattern(i));
 		end loop;
-		fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, 2#00000000#); -- Make sure we use page 0
-		fpga_write_ram(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, pattern); -- write all 2048 bytes at once.
 
+        for page in 0 to (bytes'length)/512  -1 loop
+            page_slv := to_slv(page, page_slv'length);
+            cmd_byte := "00" & page_slv(2 downto 0) & "000";
+    		fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, to_integer(unsigned(cmd_byte))); -- Make sure we use page 0
+            cmd_byte := page_slv(6 downto 3) & "0000";
+    		fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 5, to_integer(unsigned(cmd_byte))); -- Make sure we use page 0
+       		fpga_write_ram(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, bytes(512*page to 512*(page+1)-1)); -- write all 2048 bytes at once.
+        end loop;
 		sleep(clk,20);
-		chan_reset <= '0';
+--		chan_reset <= '0';
 
-		for i in 3 downto 0 loop
+		for i in 0 downto 0 loop
 			sleep(clk125, 10); -- make sure we start command transmission on a CLK125 edge or we will lose some data
-			fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, 2#00000000# + i); --
-			fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, 2#01000000# + i); -- source=funcgen, enable=1
+			fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, 2#00000001# ); --
+			fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, 2#01000001# ); -- source=funcgen, enable=1
 			sleep(clk,512*7);
 		end loop;
 		-- fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, 2#01000000# + 1); -- source=funcgen, enable=1
@@ -209,7 +230,7 @@ stim_proc : process
 		sleep(clk,20);
 		-- sleep(clk,start_delay(i));
 		for j in 0 to 10 loop
-			send_axis32_packet(clk, s_axis_tdata, s_axis_tvalid, s_axis_tlast, s_axis_tready, create_packet(16#FA#, j ,625)); -- 512*244/200=625 clocks = actual duration of  the incoming frames
+--			send_axis32_packet(clk, s_axis_tdata, s_axis_tvalid, s_axis_tlast, s_axis_tready, create_packet(16#FA#, j ,625)); -- 512*244/200=625 clocks = actual duration of  the incoming frames
 			-- sleep(clk,1);
 		end loop;
 		wait;
