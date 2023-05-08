@@ -25,7 +25,7 @@ use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.ALL;
 use IEEE.math_real.all; -- needed for ceil()
 use IEEE.math_complex.all;
-
+use IEEE.STD_LOGIC_MISC.ALL; -- for or_reduce()
 -------- chFPGA Package ------------
 --! @brief Defines the system-level constants and data types, declares the components used in the system, and provide support functions and procedures
 package chFPGA_Package is
@@ -529,6 +529,9 @@ function to_unsigned(i:slv8_array; n: integer) return unsigned; -- concatenate b
 function to_unsigned(i:slv8_array) return unsigned; -- concatenate bytes in a slv8_array and return them as an unsigned
 function to_unsigned(i:std_logic) return unsigned; -- converts a std_logic into a one element unsigned
 function repeat( V: std_logic_vector; N: natural) return std_logic_vector; --! Concatenates a vector N times
+function log2(v: integer) return real; -- Returns the log2 of an integer as a real (overloads the library log2())
+function integer_log2(v: integer) return integer; -- Returns the log2 of an integer as an integer
+function integer_log2(v: real) return integer; -- Returns the log2 of areal as an integer
 function width(len: integer) return integer; --! computes the minimum number of bits needed to represent len-1
 function bitwidth(value: integer) return integer;--! Computes the minimum number of bits needed to represent value
 function shift_left(i:std_logic_vector; n: integer) return std_logic_vector; -- shift left a STD_LOGIC_VECTOR
@@ -537,7 +540,8 @@ function shift_right(i:std_logic_vector; n: integer) return std_logic_vector; --
 function shift_right(x:slv2_array)  return slv2_array; -- shift right a slv2_array. 
 function shift_right(x:slv3_array)  return slv3_array; -- shift right a slv3_array.
 function shift_right(x:slv4_array)  return slv4_array; -- shift right a slv4_array.
-
+function all_ones(v: std_logic_vector) return boolean; -- Return TRUE if all bits are '1'.
+function all_ones(v: unsigned) return boolean; -- Return TRUE if all bits are '1'.
 function cmplx(re, im:integer) return complex; -- Create a complex value out of two integer values
 function cmplx(re, im:signed) return complex; -- Create a complex value out of two signed values
 
@@ -1093,6 +1097,37 @@ function repeat( V: std_logic_vector; N: natural) return std_logic_vector is
 		end loop;
 		return result;
 	end repeat;
+
+--Returns TRUE if all bits are '1'
+function all_ones(v: std_logic_vector) return boolean is
+	begin
+		return and_reduce(v) = '1';
+	end function;
+
+
+--Returns TRUE if all bits are '1'
+function all_ones(v: unsigned) return boolean is
+	begin
+		return all_ones(std_logic_vector(v));
+	end function;
+
+--Returns the log2 of a integer as a real value
+function log2(v: integer) return real is
+	begin
+		return log2(real(v));
+	end function;
+
+--Returns the log2 of a integer as an integer
+function integer_log2(v: integer) return integer is
+	begin
+		return integer(log2(real(v)));
+	end function;
+
+--Returns the log2 of a real as an integer
+function integer_log2(v: real) return integer is
+	begin
+		return integer(log2(v));
+	end function;
 
 --! Compute the number of bits needed to represent `len` values (from 0 to len-1)
 function width(len: integer) return integer is
