@@ -205,8 +205,14 @@ entity sifpga_crs_chfpga_wrapper is
 			m_axis_bsb_tready: in std_logic := '1';
 
 			axis_bsb_clk : in  std_logic := '0'; -- 125 MHz clock
-			axis_bsb_aresetn : in  std_logic := '1' -- synchronous to bsb_axis_clk
+			axis_bsb_aresetn : in  std_logic := '1'; -- synchronous to bsb_axis_clk
 
+			-- Data capture stream
+			m_axis_cap_tdata: out std_logic_vector(7 downto 0);
+			m_axis_cap_tvalid: out std_logic;
+			m_axis_cap_tlast: out std_logic;
+			m_axis_cap_tready: in std_logic := '1';
+			axis_cap_clk: in std_logic
 
 		);
 end entity sifpga_crs_chfpga_wrapper;
@@ -411,7 +417,15 @@ begin
 			m_axis_bsb_tready => m_axis_bsb_tready,
 
 			axis_bsb_clk => axis_bsb_clk,
-			axis_bsb_rst => not axis_bsb_aresetn
+			axis_bsb_rst => not axis_bsb_aresetn,
+
+			-- Data capture interface
+			m_axis_cap_tdata => m_axis_cap_tdata,
+			m_axis_cap_tvalid => m_axis_cap_tvalid,
+			m_axis_cap_tlast => m_axis_cap_tlast,
+			m_axis_cap_tready => m_axis_cap_tready,
+
+			axis_cap_clk => axis_cap_clk
 
 			);
 
