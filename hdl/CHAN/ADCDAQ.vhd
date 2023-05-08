@@ -229,6 +229,7 @@ use UNISIM.VComponents.all;
 --!
 entity ADCDAQ is
 	GENERIC (
+		SAMPLES_PER_FRAME       : integer = 2048; -- Number of samples per frame, used to packetize the output data stream
 		IMPLEMENT_ADCDAQ 		: BOOLEAN:= TRUE; --! Indicates if the block is to be implemented. If False, a dummy module will be generated but the I/Os will be preserved.
 		INSTANTIATE_IDELAYCTRL 	: BOOLEAN:= TRUE;  --! Indicates if this module implements a IDELAYCTRL. Only one of the DAQ modules needs to implemt it. The tools will generate and place the other ones automatically.
 		INSTANTIATE_PLL 		: BOOLEAN:= FALSE; --! Indicates if this module instantiate a PLL to generate a I/O and a word clock.
@@ -344,7 +345,8 @@ constant NUMBER_OF_BUFIO: integer := BUFIO_INDEX_MAX-BUFIO_INDEX_MIN+1;
 
 -- Determines whether we need to instantiate a BUFMR at all.
 constant INSTANTIATE_BUFMR: BOOLEAN := (BUFR_INDEX_MIN >= 0) or (BUFIO_INDEX_MIN >= 0);
-
+constant WORDS_PER_FRAME: integer := SAMPLES_PER_FRAME / 4;
+constant LOG2_WORDS_PER_FRAME : integer := integer_log2(WORDS_PER_FRAME);
 -- Clock
 signal clka: std_logic; -- ADC 400 MHz clock after differential receiver
 signal clka_dly: std_logic; -- ADC 400 MHz clock  after delay and before BUFMR
