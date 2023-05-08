@@ -271,7 +271,7 @@ prb_RDY.tready <= prb_tready;
 CTRL_ROUTER0: entity work.CTRL_ROUTER
     GENERIC MAP (
         NUMBER_OF_PORTS=>NUMBER_OF_MODULES,
-        ADDRESS_MASK => "--------111---------" --'1': used to generate port index, '-' = don't care,
+        ADDRESS_MASK => "-------111---------" --'1': used to generate port index, '-' = don't care,
     )
     PORT MAP(
         -- Master control interface

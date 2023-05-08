@@ -2595,7 +2595,7 @@ top_rply_dat(CHAN_BASE_PORT) <= TOP_CHAN_RPLY_DAT;
 chan_router0: entity work.CTRL_ROUTER
 	GENERIC MAP (
 		NUMBER_OF_PORTS=>NUMBER_OF_CHANNELIZERS,
-		ADDRESS_MASK => "----1111------------" --'1': used to generate port index, '-' = don't care,
+		ADDRESS_MASK => "---1111------------" --'1': used to generate port index, '-' = don't care,
 	)
 	PORT MAP(
 		-- Master control interface

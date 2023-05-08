@@ -250,7 +250,7 @@ rst_proc: process(clk)
 crossbar_router0: entity work.CTRL_ROUTER
 	GENERIC MAP (
 		NUMBER_OF_PORTS => NUMBER_OF_OUTPUT_LANES+1,
-		ADDRESS_MASK => "----11111-----------" --'1': used to generate port index, '-' = don't care,
+		ADDRESS_MASK => "---11111-----------" --'1': used to generate port index, '-' = don't care,
 	)
 	PORT MAP(
 		-- Master control interface

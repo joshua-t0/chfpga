@@ -91,7 +91,7 @@ entity CTRL_SLAVE is
 		DEFAULT_CONTROL_BYTES: std_logic_vector := X"00000000"; --! Vector of bits to initialize the control register to a known value
 		NUMBER_OF_CONTROL_BYTES: integer        := 1; --! Number of bytes in the control word
 		NUMBER_OF_STATUS_BYTES: integer         := 1; --! Number of bytes in the status word.
-		ADDR_WIDTH: integer                     := 19; --! Number of command address bits available to this module (all other bits are zeroed, useful to have large RAM address buses)
+		ADDR_WIDTH: integer                     := 19; --! Number of command address bits available to this module (max 19).  Used to clear all other address bits (needed when RAM address buses is larger than decoded address range)
 		RAM_DATA_WIDTH: integer                 := 8; --! Either 8 or 16 bits
 		RAM_ADDR_WIDTH: integer                 := 0; --! Number of bits in the RAB/DRP adress bus. A velue of 0 removes most of the RAM/DRP access logic.
 		USE_PIPELINED_RAM_WRITE: boolean        := TRUE;
@@ -138,9 +138,12 @@ architecture Behavioral of CTRL_SLAVE is
 	signal RAM_WR_EN_INT: std_logic := '0'; -- init for sim only to prevent contamination of RAM first byte
 	signal RAM_DIN_INT: std_logic_vector(15 downto 0);
 
-	constant INT_ADDR_WIDTH: integer :=19;
+	-- Width of the internal addres counter. We decode a minimum of 19 bits from the command (24 bits - 3 command bts - 2 length bits).
+	-- For RAM write operations, we could write arbitrary long buffers, but in practice we are limited 
+	-- by packet or buffer sizes (e.g. 1K sub-jumbo frame), so we never can fill 19-bits (512K) worth of data in one transaction.     
+	constant INT_ADDR_WIDTH: integer := CTRL_CMD_ADDR_WIDTH; 
 
-	subtype OPCODE_TYPE is std_logic_vector(2 downto 0);
+	subtype OPCODE_TYPE is std_logic_vector(CTRL_CMD_OPCODE_WIDTH-1 downto 0);
 	constant OPCODE_WRITE_CONTROL: OPCODE_TYPE        := "100";
 	constant OPCODE_WRITE_CONTROL_MASK: OPCODE_TYPE   := "101";
 	constant OPCODE_NOP: OPCODE_TYPE                  := "110";
@@ -154,7 +157,7 @@ architecture Behavioral of CTRL_SLAVE is
 
 	signal ram_write_addr_incr: std_logic;
 	signal addr: unsigned(INT_ADDR_WIDTH-1 downto 0); --
-	signal count: unsigned(2**CTRL_CMD_COUNT_WIDTH-1 downto 0);
+	signal count: unsigned(2**CTRL_CMD_COUNT_WIDTH-1 downto 0); -- counts bytes specified in the WIDTH field of the command (0=>1, 1=>2, 2=>4, 3->8).
 	signal opcode: OPCODE_TYPE;
 	signal previous_byte: std_logic_vector(7 downto 0);
 
@@ -315,8 +318,8 @@ cmd_proc: process(ctrl_clk)
 					if  ctrl_cmd_in_dat.TVALID = '1' and ctrl_cmd_in_rdy_int.TREADY = '1' then -- we use TREADY to determine if we have already obtained a byte.
 						--timeout_reset <= '1';
 						addr(7 downto 0) <= unsigned(ctrl_cmd_in_dat.TDATA); -- grab the final byte of the address
-						if ADDR_WIDTH <= 18 then -- avoid null assignment warnings
-							addr(18 downto ADDR_WIDTH) <= (others=>'0'); -- zero all the address bits we dont need
+						if ADDR_WIDTH <= INT_ADDR_WIDTH-1 then -- avoid null assignment warnings
+							addr(INT_ADDR_WIDTH-1 downto ADDR_WIDTH) <= (others=>'0'); -- zero all the address bits we dont need
 						end if;
 						ctrl_cmd_in_rdy_int.TREADY <= '0'; -- Don't read any incoming byte by default. Will be overriden below as needed.
 					end if;

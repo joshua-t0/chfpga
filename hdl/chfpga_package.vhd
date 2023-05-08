@@ -259,28 +259,29 @@ constant GLOBAL_GPU_QUAD_REFCLK: IntegerArray := (0 to 1=>0); -- Both QUAD0 and 
 
 
 
-constant FRAME_LENGTH: integer:= 2048; --! 2048 time samples per frame (1024 frame samples per frame)
-constant LOG2_FRAME_LENGTH: integer :=11; --! Number of time samples per frame. 2^11 = 2048 time samples per frame
-constant LOG2_FREQ_SAMPLES_PER_FRAME: integer :=LOG2_FRAME_LENGTH-1; --! Number of frequency samples per frame. 1/2 of the time samples as we discard negative frequencies
-constant LOG2_WORDS_PER_FRAME: integer :=LOG2_FRAME_LENGTH-2; --! Number of words per frame. One word is 4 8-bit time samples or 2 8+8-bits frequency samples.
+--constant FRAME_LENGTH: integer:= 2048; --! 2048 time samples per frame (1024 frame samples per frame)
+--constant LOG2_FRAME_LENGTH: integer :=11; --! Number of time samples per frame. 2^11 = 2048 time samples per frame
+--constant LOG2_FREQ_SAMPLES_PER_FRAME: integer :=LOG2_FRAME_LENGTH-1; --! Number of frequency samples per frame. 1/2 of the time samples as we discard negative frequencies
+--constant LOG2_WORDS_PER_FRAME: integer :=LOG2_FRAME_LENGTH-2; --! Number of words per frame. One word is 4 8-bit time samples or 2 8+8-bits frequency samples.
 
-type frame_word_ctr_array is array (natural range <>) of unsigned(LOG2_WORDS_PER_FRAME-1 downto 0);
+--type frame_word_ctr_array is array (natural range <>) of unsigned(LOG2_WORDS_PER_FRAME-1 downto 0);
 
 --	Control bus parameters
 constant CTRL_CMD_BYTE_LENGTH: integer :=3; --! Number of bytes in the command word
-constant CTRL_CMD_WORD_WIDTH: integer :=CTRL_CMD_BYTE_LENGTH*8; --! Number of bits in the command word
+constant CTRL_CMD_WORD_WIDTH: integer := CTRL_CMD_BYTE_LENGTH * 8; --! Number of bits in the command word
 constant CTRL_CMD_BYTE_COUNT_WIDTH: integer :=2; --! number of bits requird to count the number of bytes in a command
-constant CTRL_CMD_DIR_BIT: integer:=23;
-constant CTRL_CMD_INCR_BIT: integer:=22;
+--constant CTRL_CMD_DIR_BIT: integer:=23;
+--constant CTRL_CMD_INCR_BIT: integer:=22;
+constant CTRL_CMD_OPCODE_WIDTH: integer :=3; --! Number of bits in the opcode
 constant CTRL_CMD_COUNT_WIDTH: integer:=2;
-constant CTRL_CMD_COUNT_LSB: integer:=20;
-type CTRL_CMD_COUNT_RANGE is range (CTRL_CMD_COUNT_LSB+CTRL_CMD_COUNT_WIDTH-1) downto CTRL_CMD_COUNT_LSB;
-constant CTRL_ADDR_WIDTH: INTEGER :=20; --! Total numbe rof address bits. The address is in the LSBs of the command word (i.e. downto 0)
+--constant CTRL_CMD_COUNT_LSB: integer:=20;
+--type CTRL_CMD_COUNT_RANGE is range (CTRL_CMD_COUNT_LSB+CTRL_CMD_COUNT_WIDTH-1) downto CTRL_CMD_COUNT_LSB;
+constant CTRL_CMD_ADDR_WIDTH: integer := CTRL_CMD_WORD_WIDTH - CTRL_CMD_OPCODE_WIDTH - CTRL_CMD_COUNT_WIDTH; --! Total number of address bits. The address is in the LSBs of the command word (i.e. downto 0)
 --constant CTRL_PORT_NUMBER_WIDTH: INTEGER :=5; --! Number of address bits used for port number
 --constant CTRL_MODULE_NUMBER_WIDTH: INTEGER :=3; --! Number of address bits used for module number
 --constant CTRL_MODULE_ADDR_WIDTH: INTEGER :=CTRL_ADDR_WIDTH-CTRL_PORT_NUMBER_WIDTH-CTRL_MODULE_NUMBER_WIDTH; -- Number of address bits used within a module
-constant CTRL_MODULE_ADDR_WIDTH: INTEGER := 10; -- Number of address bits used within a module
-type CTRL_ADDR_RANGE is range (CTRL_ADDR_WIDTH-1) downto 0;
+--constant CTRL_MODULE_ADDR_WIDTH: INTEGER := 10; -- Number of address bits used within a module
+--type CTRL_ADDR_RANGE is range (CTRL_ADDR_WIDTH-1) downto 0;
 
 -- subtype CTRL_PORT_NUMBER_RANGE is integer RANGE (CTRL_ADDR_WIDTH-1) downto CTRL_ADDR_WIDTH-CTRL_PORT_NUMBER_WIDTH; --
 -- subtype CTRL_MODULE_NUMBER_RANGE is integer RANGE (CTRL_ADDR_WIDTH-CTRL_PORT_NUMBER_WIDTH-1) downto CTRL_ADDR_WIDTH-CTRL_PORT_NUMBER_WIDTH-CTRL_MODULE_NUMBER_WIDTH; --

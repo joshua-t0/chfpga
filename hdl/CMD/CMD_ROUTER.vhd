@@ -40,7 +40,7 @@ use work.chFPGA_Package.all;
 entity CTRL_ROUTER is
 	generic(
 		NUMBER_OF_PORTS: INTEGER :=8;
-		ADDRESS_MASK: std_logic_vector(CTRL_ADDR_WIDTH-1 downto 0);
+		ADDRESS_MASK: std_logic_vector(CTRL_CMD_ADDR_WIDTH-1 downto 0);
 		TARGET_PBLOCK: string := "" -- generic passed as searchable node property in implementation 
 		);
     PORT (

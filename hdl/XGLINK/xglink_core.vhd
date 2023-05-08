@@ -406,7 +406,7 @@ end process;
 CTRL_ROUTER0: entity work.CTRL_ROUTER
 	generic map (
 		NUMBER_OF_PORTS=> NUMBER_OF_MODULES,
-		ADDRESS_MASK => "----11111-----------" --'1': used to generate port index, '-' = don't care,
+		ADDRESS_MASK => "---11111-----------" --'1': used to generate port index, '-' = don't care,
 	)
 	port map(
 		-- Master control interface
