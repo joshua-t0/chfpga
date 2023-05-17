@@ -402,11 +402,11 @@ begin
             -- Read bus B
           ADDR_WIDTH_B => 13,               -- same
           READ_DATA_WIDTH_B => 16,         -- 8 byte (64 bits) wide read bus
-          --CASCADE_HEIGHT => 4,             -- We castade 4 URAM
+          --CASCADE_HEIGHT => 0,             -- Auto detect
           --MEMORY_OPTIMIZATION => "true",   -- String
           MEMORY_SIZE => 16*8192,         -- 64-bit word * 4096 words/URAM * 4 URAMs
           --MESSAGE_CONTROL => 0,            -- DECIMAL
-          READ_LATENCY_B => 1,             -- Needs to be >= of cascade height to allow registering. Synthesis ask for more than 4 to have full pipelining (4 is partial).
+          READ_LATENCY_B => 1,             -- Needs to be >= of cascade height to allow registering.
           --READ_RESET_VALUE_B => "0",       -- String
           --RST_MODE_A => "SYNC",            -- String
           --RST_MODE_B => "SYNC",            -- String
