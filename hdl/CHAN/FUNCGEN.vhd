@@ -40,12 +40,12 @@ use work.chFPGA_Package.all; -- Get all component definitions
 -- ---------
 --
 -- The data from the ADC is provided to the `s_axis_adc_*` port , which is a non-blocking AXI4-Streaming
--- bus. ``SAMPLES_PER_WORD`` ADC samples are packed into the data word in `s_axis_adx_tdata`, each sample being ``BITS_PER_SAMPLE``-bit wide.
+-- bus. ``ADC_SAMPLES_PER_WORD`` ADC samples are packed into the data word in `s_axis_adx_tdata`, each sample being ``ADC_BITS_PER_SAMPLE``-bit wide.
 -- The first sample is stored in
 -- the MSB of the word, and each sample is stored as a big endian value. This order facilitate visualizing data in simulation (incoming samples are read left to right in the word).
 -- The input bus from the ADC contains the usual AXI-S TVALID and TLAST lines to frame the data in the packet.
 --
--- Additionaly, the ``SAMPLES_PER_WORD``-bit wide TUSER signal provides a saturation flag for each of the sample in the word. 
+-- Additionaly, the ``ADC_SAMPLES_PER_WORD``-bit wide TUSER signal provides a saturation flag for each of the sample in the word. 
 -- The leftmost (MSB) bit correspond to the saturation sample of the sample in the MSB of the word (i.e. first sample).
 --
 --
@@ -111,9 +111,9 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --
 entity FUNCGEN is
     GENERIC (
-        SAMPLES_PER_WORD: integer := 8;
-        BITS_PER_SAMPLE: integer := 16;
-        SAMPLES_PER_FRAME: integer := 16384;
+        ADC_SAMPLES_PER_WORD: integer := 8;
+        ADC_BITS_PER_SAMPLE: integer := 16;
+        ADC_SAMPLES_PER_FRAME: integer := 16384;
         IMPLEMENT_DELAY_CAPTURE: boolean := FALSE
     );
     PORT (
@@ -121,14 +121,14 @@ entity FUNCGEN is
         --in_dat  : in AXIS64_DAT_STRUCT;     --! Data stream from the ADC.
 
         -- ADC data input stream (AXI-Streaming, non blocking)
-        s_axis_adc_tdata: in std_logic_vector(SAMPLES_PER_WORD*BITS_PER_SAMPLE-1 downto 0);
+        s_axis_adc_tdata: in std_logic_vector(ADC_SAMPLES_PER_WORD*ADC_BITS_PER_SAMPLE-1 downto 0);
         s_axis_adc_tvalid: in std_logic;
-        s_axis_adc_tuser: in std_logic_vector(SAMPLES_PER_WORD-1 downto 0); --  Contain an overflow bit flag for group of samples.
+        s_axis_adc_tuser: in std_logic_vector(ADC_SAMPLES_PER_WORD-1 downto 0); --  Contain an overflow bit flag for group of samples.
         s_axis_adc_tlast: in std_logic;
         trig    : in std_logic := '1';
 
         -- Output data interface
-        m_axis_adc_tdata: out std_logic_vector(SAMPLES_PER_WORD*BITS_PER_SAMPLE-1 downto 0);
+        m_axis_adc_tdata: out std_logic_vector(ADC_SAMPLES_PER_WORD*ADC_BITS_PER_SAMPLE-1 downto 0);
         m_axis_adc_tvalid: out std_logic;
         m_axis_adc_tuser: out std_logic_vector(3 downto 0); --  Contain an overflow bit flag for group of samples.
         m_axis_adc_tlast: out std_logic;
@@ -159,21 +159,21 @@ constant FN_FRAME4                   : FN_TYPE:="101"; -- Current frame number i
 constant FN_RAM_NIBBLE4              : FN_TYPE:="110"; -- Current frame number in the upper 4-bit of each sample (lower bits are zero)
 constant FN_ADC16                    : FN_TYPE:="111"; -- *deprecated* Send ADC sample as 16-bit values, MSB first
 
-constant WORDS_PER_FRAME: integer := SAMPLES_PER_FRAME / SAMPLES_PER_WORD;
+constant WORDS_PER_FRAME: integer := ADC_SAMPLES_PER_FRAME / ADC_SAMPLES_PER_WORD;
 constant LOG2_WORDS_PER_FRAME: integer := integer_log2(WORDS_PER_FRAME); --! Number of words per frame. One word is 4 8-bit time samples or 2 8+8-bits frequency samples.
-constant LOG2_SAMPLES_PER_FRAME: integer := integer_log2(SAMPLES_PER_FRAME);
-constant BYTES_PER_SAMPLE: integer := integer(ceil(real(BITS_PER_SAMPLE) / 8.0));
-constant BYTES_PER_FRAME: integer := SAMPLES_PER_FRAME * BYTES_PER_SAMPLE;
+constant LOG2_ADC_SAMPLES_PER_FRAME: integer := integer_log2(ADC_SAMPLES_PER_FRAME);
+constant BYTES_PER_SAMPLE: integer := integer(ceil(real(ADC_BITS_PER_SAMPLE) / 8.0));
+constant BYTES_PER_FRAME: integer := ADC_SAMPLES_PER_FRAME * BYTES_PER_SAMPLE;
 constant LOG2_BYTES_PER_FRAME: integer := integer_log2(BYTES_PER_FRAME);
 constant CMD_ADDR_WIDTH: integer := 9; -- Number of usable address bits in the command (the upper bits have been used for routing)
-constant BITS_PER_WORD: integer := SAMPLES_PER_WORD * BITS_PER_SAMPLE;
+constant BITS_PER_WORD: integer := ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPLE;
 
-signal in_dat_tdata: std_logic_vector(SAMPLES_PER_WORD*BITS_PER_SAMPLE-1 downto 0);
-signal in_dat_tuser: std_logic_vector(SAMPLES_PER_WORD-1 downto 0);
+signal in_dat_tdata: std_logic_vector(ADC_SAMPLES_PER_WORD*ADC_BITS_PER_SAMPLE-1 downto 0);
+signal in_dat_tuser: std_logic_vector(ADC_SAMPLES_PER_WORD-1 downto 0);
 signal in_dat_tvalid: std_logic;
 signal in_dat_tlast: std_logic;
 
-signal out_dat_tdata: std_logic_vector(SAMPLES_PER_WORD*BITS_PER_SAMPLE-1 downto 0);
+signal out_dat_tdata: std_logic_vector(ADC_SAMPLES_PER_WORD*ADC_BITS_PER_SAMPLE-1 downto 0);
 signal out_dat_tuser: std_logic_vector(3 downto 0);
 signal out_dat_tvalid: std_logic;
 signal out_dat_tlast: std_logic;
@@ -223,7 +223,7 @@ signal ram_addr: std_logic_vector(LOG2_WORDS_PER_FRAME-1 downto 0);
 -- Intermediary RAM output words used to repack the word in the extected format. 
 -- We make sure the those are a multiple of 8 bits so the packing order of the input bytes 
 -- into the output word is easier to understand.   
-signal ram_dout_int1, ram_dout_int2: std_logic_vector(8*BYTES_PER_SAMPLE*SAMPLES_PER_WORD-1 downto 0);
+signal ram_dout_int1, ram_dout_int2: std_logic_vector(8*BYTES_PER_SAMPLE*ADC_SAMPLES_PER_WORD-1 downto 0);
 -- RAM Output word, in the same packing format as the function generator input/output word.
 signal ram_dout: std_logic_vector(BITS_PER_WORD-1 downto 0);
 signal crc_in: std_logic_vector(31 downto 0);
@@ -321,8 +321,8 @@ ram_ctrl_addr_paged(CMD_ADDR_WIDTH-1 downto 0) <= ram_ctrl_addr(8 downto 0);
 ram_addr <= std_logic_vector(ramp_word_ctr);
 -- reorder RAM output word so samples appear in the expected order with the expected width
 ram_dout_int2 <= reverse_bytes(ram_dout_int1); -- reorder so byte 0 is in the MSB of word 0
-reorder_gen: for j in 0 to SAMPLES_PER_WORD-1 generate
-    ram_dout(BITS_PER_SAMPLE*(j+1)-1 downto BITS_PER_SAMPLE*j) <= ram_dout_int2(8*BYTES_PER_SAMPLE*(j+1)-1 downto 8*BYTES_PER_SAMPLE*(j+1)-BITS_PER_SAMPLE);
+reorder_gen: for j in 0 to ADC_SAMPLES_PER_WORD-1 generate
+    ram_dout(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) <= ram_dout_int2(8*BYTES_PER_SAMPLE*(j+1)-1 downto 8*BYTES_PER_SAMPLE*(j+1)-ADC_BITS_PER_SAMPLE);
 end generate;
 
 
@@ -352,7 +352,7 @@ out_dat_tuser <= (
 funcgen_proc: process (clk)
     -- variable out_dat_var: std_logic_vector(31 downto 0);
     -- variable word_ctr: std_logic_vector(ramp_word_ctr'range);
-    variable temp_tdata: std_logic_vector(SAMPLES_PER_WORD*BITS_PER_SAMPLE-1 downto 0);
+    variable temp_tdata: std_logic_vector(ADC_SAMPLES_PER_WORD*ADC_BITS_PER_SAMPLE-1 downto 0);
     variable int_shift: integer; 
     begin
         if rising_edge(clk) then
@@ -378,8 +378,8 @@ funcgen_proc: process (clk)
 
 
             -- Shift-right the input with sign-extend
-            for j in 0 to SAMPLES_PER_WORD-1 loop
-                in_dat_tdata(BITS_PER_SAMPLE*(j+1)-1 downto BITS_PER_SAMPLE*j) <= std_logic_vector(shift_right(signed(s_axis_adc_tdata(BITS_PER_SAMPLE*(j+1)-1 downto BITS_PER_SAMPLE*j)), int_shift));
+            for j in 0 to ADC_SAMPLES_PER_WORD-1 loop
+                in_dat_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) <= std_logic_vector(shift_right(signed(s_axis_adc_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j)), int_shift));
             end loop;
             in_dat_tuser <= s_axis_adc_tuser;
             in_dat_tvalid <= s_axis_adc_tvalid;
@@ -462,11 +462,11 @@ funcgen_proc: process (clk)
                 -- Data is aligned on the 4 MSBs of each sample. 
                 when FN_RAM_NIBBLE4 =>
                     out_dat_tdata <= (others => '0');
-                    for i in 0 to SAMPLES_PER_WORD-1 loop
+                    for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
                         if frame_ctr(0)='0' then
-                            out_dat_tdata(BITS_PER_SAMPLE*(i+1)-1 downto BITS_PER_SAMPLE*(i+1)-4) <= ram_dout(BITS_PER_SAMPLE*i+3 downto BITS_PER_SAMPLE*i);
+                            out_dat_tdata(ADC_BITS_PER_SAMPLE*(i+1)-1 downto ADC_BITS_PER_SAMPLE*(i+1)-4) <= ram_dout(ADC_BITS_PER_SAMPLE*i+3 downto ADC_BITS_PER_SAMPLE*i);
                         else
-                            out_dat_tdata(BITS_PER_SAMPLE*(i+1)-1 downto BITS_PER_SAMPLE*(i+1)-4) <= ram_dout(BITS_PER_SAMPLE*i+7 downto BITS_PER_SAMPLE*i+4);
+                            out_dat_tdata(ADC_BITS_PER_SAMPLE*(i+1)-1 downto ADC_BITS_PER_SAMPLE*(i+1)-4) <= ram_dout(ADC_BITS_PER_SAMPLE*i+7 downto ADC_BITS_PER_SAMPLE*i+4);
                         end if;
                     end loop;
                     out_dat_tvalid <= send_frame;
@@ -478,11 +478,11 @@ funcgen_proc: process (clk)
                     temp_tdata := (others => '0');
                     -- First distribute the 32 bits of the PRBS to the MSBs of every sample
                     for i in 0 to 31 loop
-                        temp_tdata(BITS_PER_SAMPLE*((i MOD SAMPLES_PER_WORD)+1)-1-integer(SAMPLES_PER_WORD/32)) := crc_out(i);
+                        temp_tdata(ADC_BITS_PER_SAMPLE*((i MOD ADC_SAMPLES_PER_WORD)+1)-1-integer(ADC_SAMPLES_PER_WORD/32)) := crc_out(i);
                     end loop;
                     -- shift right the samples
-                    for j in 0 to SAMPLES_PER_WORD-1 loop
-                        temp_tdata(BITS_PER_SAMPLE*(j+1)-1 downto BITS_PER_SAMPLE*j) := std_logic_vector(shift_right(signed(temp_tdata(BITS_PER_SAMPLE*(j+1)-1 downto BITS_PER_SAMPLE*j)), int_shift));
+                    for j in 0 to ADC_SAMPLES_PER_WORD-1 loop
+                        temp_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) := std_logic_vector(shift_right(signed(temp_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j)), int_shift));
                     end loop;
                     out_dat_tdata <= temp_tdata;
                     out_dat_tvalid <= send_frame;
@@ -496,8 +496,8 @@ funcgen_proc: process (clk)
 
                 -- Send the LSBs of the frame counter on every sample of the frame 
                 when FN_FRAME8 =>
-                    for i in 0 to SAMPLES_PER_WORD-1 loop
-                        out_dat_tdata(BITS_PER_SAMPLE*(i+1)-1 downto BITS_PER_SAMPLE*i) <= to_slv(frame_ctr(BITS_PER_SAMPLE-1 downto 0));
+                    for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
+                        out_dat_tdata(ADC_BITS_PER_SAMPLE*(i+1)-1 downto ADC_BITS_PER_SAMPLE*i) <= to_slv(frame_ctr(ADC_BITS_PER_SAMPLE-3 downto 0)) & "00";
                     end loop;
                     out_dat_tvalid <= send_frame;
                     adc_overflow_flag <= ram_dout(0);
@@ -505,8 +505,8 @@ funcgen_proc: process (clk)
                 -- Send the 4 LSBs of the frame counter on the upper 4 MSBs of each sample in the frame
                 when FN_FRAME4 =>
                     out_dat_tdata <= (others => '0');
-                    for i in 0 to SAMPLES_PER_WORD-1 loop
-                        out_dat_tdata(BITS_PER_SAMPLE*(i+1)-1 downto BITS_PER_SAMPLE*(i+1)-4) <= to_slv(frame_ctr(3 downto 0));
+                    for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
+                        out_dat_tdata(ADC_BITS_PER_SAMPLE*(i+1)-1 downto ADC_BITS_PER_SAMPLE*(i+1)-4) <= to_slv(frame_ctr(3 downto 0));
                     end loop;
                     out_dat_tvalid <= send_frame;
                     adc_overflow_flag <= ram_dout(0);

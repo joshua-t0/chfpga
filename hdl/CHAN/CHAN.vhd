@@ -52,6 +52,7 @@ entity CHAN is
         IMPLEMENT_FFT   : boolean := CONFIG_CHAN_IMPLEMENT_FFT;
         ADC_BITS_PER_SAMPLE: integer := CONFIG_ADC_BITS_PER_SAMPLE;
         ADC_SAMPLES_PER_WORD: integer := CONFIG_ADC_SAMPLES_PER_WORD;
+        ADC_SAMPLES_PER_FRAME: integer := CONFIG_ADC_SAMPLES_PER_FRAME;
         SIM             : boolean := GLOBAL_SIM
         );
 
@@ -403,6 +404,11 @@ begin
     ---------------------------------------------------------------------
     -- The Function Generator either forwards the ADC data or injects user-programmable arbitrary waveforms
     FUNCGEN0: entity work.FUNCGEN
+        generic map (
+            ADC_BITS_PER_SAMPLE => ADC_BITS_PER_SAMPLE,
+            ADC_SAMPLES_PER_WORD => ADC_SAMPLES_PER_WORD,
+            ADC_SAMPLES_PER_FRAME => ADC_SAMPLES_PER_FRAME
+        )
         PORT MAP(
 
             -- Input from the ADC
