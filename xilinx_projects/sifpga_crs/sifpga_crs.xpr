@@ -393,35 +393,35 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_axi_dma_0_0/sifpga_crs_axi_dma_0_0.xci">
-          <Proxy FileSetName="sifpga_crs_axi_dma_0_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_util_ds_buf_2_0/sifpga_crs_util_ds_buf_2_0.xci">
-          <Proxy FileSetName="sifpga_crs_util_ds_buf_2_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_util_ds_buf_1_0/sifpga_crs_util_ds_buf_1_0.xci">
-          <Proxy FileSetName="sifpga_crs_util_ds_buf_1_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_usp_rf_data_converter_0_0/sifpga_crs_usp_rf_data_converter_0_0.xci">
-          <Proxy FileSetName="sifpga_crs_usp_rf_data_converter_0_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_rst_ps8_0_96M_0/sifpga_crs_rst_ps8_0_96M_0.xci">
-          <Proxy FileSetName="sifpga_crs_rst_ps8_0_96M_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_util_ds_buf_0_0/sifpga_crs_util_ds_buf_0_0.xci">
-          <Proxy FileSetName="sifpga_crs_util_ds_buf_0_0"/>
-        </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_adc0_bufg1_0/sifpga_crs_adc0_bufg1_0.xci">
           <Proxy FileSetName="sifpga_crs_adc0_bufg1_0"/>
         </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_rst_ps8_0_96M1_0/sifpga_crs_rst_ps8_0_96M1_0.xci">
           <Proxy FileSetName="sifpga_crs_rst_ps8_0_96M1_0"/>
         </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_axi_dma_0_1/sifpga_crs_axi_dma_0_1.xci">
-          <Proxy FileSetName="sifpga_crs_axi_dma_0_1"/>
+        <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_rst_ps8_0_96M_0/sifpga_crs_rst_ps8_0_96M_0.xci">
+          <Proxy FileSetName="sifpga_crs_rst_ps8_0_96M_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_usp_rf_data_converter_0_0/sifpga_crs_usp_rf_data_converter_0_0.xci">
+          <Proxy FileSetName="sifpga_crs_usp_rf_data_converter_0_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_util_ds_buf_0_0/sifpga_crs_util_ds_buf_0_0.xci">
+          <Proxy FileSetName="sifpga_crs_util_ds_buf_0_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_util_ds_buf_1_0/sifpga_crs_util_ds_buf_1_0.xci">
+          <Proxy FileSetName="sifpga_crs_util_ds_buf_1_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_util_ds_buf_2_0/sifpga_crs_util_ds_buf_2_0.xci">
+          <Proxy FileSetName="sifpga_crs_util_ds_buf_2_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_axi_dma_0_0/sifpga_crs_axi_dma_0_0.xci">
+          <Proxy FileSetName="sifpga_crs_axi_dma_0_0"/>
         </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_zynq_ultra_ps_e_0_0/sifpga_crs_zynq_ultra_ps_e_0_0.xci">
           <Proxy FileSetName="sifpga_crs_zynq_ultra_ps_e_0_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_axi_dma_0_1/sifpga_crs_axi_dma_0_1.xci">
+          <Proxy FileSetName="sifpga_crs_axi_dma_0_1"/>
         </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="sifpga_crs.bd" FileRelPathName="ip/sifpga_crs_sifpga_crs_chfpga_0_0/sifpga_crs_sifpga_crs_chfpga_0_0.xci">
           <Proxy FileSetName="sifpga_crs_sifpga_crs_chfpga_0_0"/>
@@ -430,16 +430,6 @@
       <File Path="$PPRDIR/../../hdl/sifpga_crs/hdl/sifpga_crs_wrapper.vhd">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/CRS/FUNCGEN_RAM/FUNCGEN_RAM.xci">
-        <FileInfo>
-          <Attr Name="AutoDisabled" Val="1"/>
-          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/CRS/FUNCGEN_RAM/FUNCGEN_RAM.xci"/>
-          <Attr Name="ImportTime" Val="1670654939"/>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>

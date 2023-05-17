@@ -567,6 +567,12 @@
           "mADC_Bypass_BG_Cal02": {
             "value": "true"
           },
+          "mADC_CalOpt_Mode00": {
+            "value": "2"
+          },
+          "mADC_CalOpt_Mode02": {
+            "value": "2"
+          },
           "mADC_Coarse_Mixer_Freq00": {
             "value": "3"
           },
