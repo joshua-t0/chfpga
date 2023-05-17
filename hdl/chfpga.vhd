@@ -531,20 +531,21 @@ constant ADC_BITS_PER_WORD: integer := ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPL
 
 --constant NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := sel(GLOBAL_IMPLEMENT_FFT, 0*NUMBER_OF_CHANNELIZERS+4, 0); --! Number of channelizers that have an FFT module
 constant NUMBER_OF_ADCS_OR_CHANNELIZERS: integer := max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS);
-constant IMPLEMENT_CROSSBAR1: boolean := NUMBER_OF_CROSSBAR_INPUTS>0 and NUMBER_OF_CROSSBAR_OUTPUTS>0;
-constant IMPLEMENT_CROSSBAR2_AND_CROSSBAR3: boolean := IMPLEMENT_CROSSBAR1 and NUMBER_OF_BP_SHUFFLE_LINKS>0;
+constant IMPLEMENT_CROSSBAR1: boolean := NUMBER_OF_CROSSBAR_INPUTS > 0 and NUMBER_OF_CROSSBAR_OUTPUTS > 0;
+constant IMPLEMENT_CROSSBAR2_AND_CROSSBAR3: boolean := IMPLEMENT_CROSSBAR1 and NUMBER_OF_BP_SHUFFLE_LINKS > 0;
 constant FPGA_SERIES: integer :=FPGA_SERIES_LIST(PLATFORM_ID);
 
 -- Top level memory-mapped address ranges
 constant SYSTEM_BASE_PORT    : integer := 0; --! Top level address for the SYSTEM subsystem
 constant CHAN_BASE_PORT      : integer := 1; --! Top-level address channelizers subsystem (which also includes the ADCs).
-constant CROSSBAR1_BASE_PORT : integer := 2; --! Top-level address channelizers subsystem (which also includes the ADCs).
-constant GPU_LINK_BASE_PORT  : integer := 3; --! Top level address for the GPU link sybsystem
-constant CROSSBAR3_BASE_PORT : integer := 4; --! Top level address for the 3rd crossbar subsystem.
+constant CROSSBAR1_BASE_PORT : integer := 2; --! Top-level address of the CT-Engine 1st crossbar.
+constant GPU_LINK_BASE_PORT  : integer := 3; --! Top level address for the GPU link subsystem
+constant CROSSBAR3_BASE_PORT : integer := 4; --! Top level address of the CT-Engine 3rd crossbar subsystem.
 constant CORR_BASE_PORT      : integer := 4; --! Top level address for the correlator subsystem (exclusive with the 2nd and 3rd crossbar)
-constant BP_SHUFFLE_BASE_PORT: integer := 5; --! Top level address for the backplane shuffle subsystem.
-constant CROSSBAR2_BASE_PORT : integer := 6; --! Top-level address channelizers subsystem (which also includes the ADCs).
-constant NUMBER_OF_PORTS     : integer := 7; --! Total number of top-level subsystems to be addressed.
+constant BP_SHUFFLE_BASE_PORT: integer := 5; --! Top level address of the CT-Engine backplane shuffle subsystem.
+constant CROSSBAR2_BASE_PORT : integer := 6; --! Top-level address of the CT-Engine 2nd crossbar
+constant UCAP_BASE_PORT      : integer := 7; --! Top-level address for the UltraRAM-based data capture engine.
+constant NUMBER_OF_PORTS     : integer := 8; --! Total number of top-level subsystems to be addressed.
 
 -- SYSTEM modules definition
 
@@ -558,9 +559,9 @@ constant NUMBER_OF_SYS_MODULES: INTEGER :=6;
 
 
 -- Capture
-constant NUMBER_OF_PROBES: INTEGER :=NUMBER_OF_CHANNELIZERS+NUMBER_OF_CORRELATORS; --! Number of data probes (data transsmission channels) that need to be send back to the host computer through the Ethernet
-constant CHAN_PROBE_BASE_PORT: INTEGER :=0;
-constant CORR_PROBE_BASE_PORT: INTEGER :=NUMBER_OF_CHANNELIZERS; --! Top level address for the first correlator block
+constant NUMBER_OF_PROBES: INTEGER := NUMBER_OF_CHANNELIZERS+NUMBER_OF_CORRELATORS; --! Number of data probes (data transsmission channels) that need to be send back to the host computer through the Ethernet
+constant CHAN_PROBE_BASE_PORT: INTEGER := 0;
+constant CORR_PROBE_BASE_PORT: INTEGER := NUMBER_OF_CHANNELIZERS; --! Top level address for the first correlator block
 
 constant ADC_INSTANTIATE_IDELAYCTRL: BoolArray(0 to NUMBER_OF_ADCS-1) := (0=>TRUE, others =>FALSE); --! Determines which ADCDAQ instantiates a DELAY controller (calibrator). We need to instantiate only one in the whole design, and the tools will add all the others where needed.
 
@@ -1524,7 +1525,7 @@ ctrl_master0: entity work.ctrl_master
 --! |  4 | 0x40000  | Crossbar 3                         |             |
 --! |  5 | 0x50000  | BP Shuffle                         |             |
 --! |  6 | 0x60000  | Crossbar 2                         |             |
---! |  7 | 0x70000  | (unused)                           |             |
+--! |  7 | 0x70000  | UCAP                               |             |
 --stopLiteralInclude
 
 top_router_blk: block 
@@ -3306,7 +3307,7 @@ begin
 	cge_cmd_dat <= top_cmd_dat(GPU_LINK_BASE_PORT);
 	top_cmd_rdy(GPU_LINK_BASE_PORT) <= cge_cmd_rdy;
 	cge_rply_rdy <= top_rply_rdy(GPU_LINK_BASE_PORT);
-	top_rply_dat(GPU_LINK_BASE_PORT) <= CGE_RPLY_DAT;
+	top_rply_dat(GPU_LINK_BASE_PORT) <= cge_rply_dat;
 
 
 	-- Pipeline the BSB resets to help them propagate across the chip
@@ -3379,12 +3380,12 @@ begin
 			--areset => gpu_reset_reg, --async input, so we can use the channel reset
 
 			-- BSB interface
-			CMD_DAT => cge_cmd_dat,
-			CMD_RDY => cge_cmd_rdy,
-			RPLY_DAT => cge_rply_dat,
-			RPLY_RDY => cge_rply_rdy,
-			CTRL_CLK => ctrl_clk,
-			CTRL_RST => cge_ctrl_rst_reg
+			cmd_dat => cge_cmd_dat,
+			cmd_rdy => cge_cmd_rdy,
+			rply_dat => cge_rply_dat,
+			rply_rdy => cge_rply_rdy,
+			ctrl_clk => ctrl_clk,
+			ctrl_rst => cge_ctrl_rst_reg
 		 );
 
 
@@ -3395,13 +3396,34 @@ end generate CGE_GEN;
 ----------------------------- 
 ucap_blk0: block
 
+	signal ucap_cmd_dat: AXIS8_DAT_STRUCT;
+	signal ucap_cmd_rdy: AXIS8_RDY_STRUCT;
+	signal ucap_rply_dat: AXIS8_DAT_STRUCT;
+	signal ucap_rply_rdy: AXIS8_RDY_STRUCT;
+
 	signal axis_cap_reg1_tdata: adc_tdata_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
 	signal axis_cap_reg1_tvalid: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
 	signal axis_cap_reg1_tlast: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
 
 	signal axis_cap_reg1_tdata112: slv112_array(0 to NUMBER_OF_ADCS-1);
+	signal ucap_ctrl_rst, ucap_ctrl_rst_reg: std_logic;
 
 begin
+
+	ucap_cmd_dat <= top_cmd_dat(UCAP_BASE_PORT);
+	top_cmd_rdy(UCAP_BASE_PORT) <= ucap_cmd_rdy;
+	ucap_rply_rdy <= top_rply_rdy(UCAP_BASE_PORT);
+	top_rply_dat(UCAP_BASE_PORT) <= ucap_rply_dat;
+
+	-- Pipeline the BSB reset
+	bsb_rst_proc: process(ctrl_clk)
+		begin
+			if rising_edge(ctrl_clk) then
+				ucap_ctrl_rst            <= ctrl_rst;
+				ucap_ctrl_rst_reg        <= ucap_ctrl_rst;
+			end if; -- RST/CLK
+		end process;
+
 	-- Pipeline the Muxed Capture data bus
  	pipe_proc: process(chan_clk(0))
 	begin
@@ -3414,13 +3436,17 @@ begin
 
 	remap0: for i in 0 to NUMBER_OF_ADCS-1 generate
     	remap1: for j in 0 to 7 generate
-    		axis_cap_reg1_tdata112(i)(14*j+13 downto 14*j) <= axis_cap_reg1_tdata(i)(16*j+15 downto 16*j+2); -- *** fix to take into account BITS_PER_SAMPLES
+    		axis_cap_reg1_tdata112(i)(14*(j+1)-1 downto 14*j) <= axis_cap_reg1_tdata(i)(16*(j+1)-1 downto 16*(j+1)-14); -- *** fix to take into account BITS_PER_SAMPLES
 	   end generate;
 	end generate;
 
 	ucap0: entity work.ucap
+		generic map (
+            ADC_BITS_PER_SAMPLE => ADC_BITS_PER_SAMPLE,
+            ADC_SAMPLES_PER_WORD => ADC_SAMPLES_PER_WORD,
+            ADC_SAMPLES_PER_FRAME => ADC_SAMPLES_PER_FRAME
+			)
 	    port map ( 
-
 	        s_axis_tdata => axis_cap_reg1_tdata112,
 	        s_axis_tvalid => axis_cap_reg1_tvalid,
 	        s_axis_tlast=> axis_cap_reg1_tlast,
@@ -3432,7 +3458,15 @@ begin
 	        bsb_clk => axis_cap_clk,
 	        
 	        clk=> chan_clk(0),
-	        rst=> chan_reset(0)
+	        rst=> chan_reset(0),
+
+			-- BSB interface
+			CMD_DAT => ucap_cmd_dat,
+			CMD_RDY => ucap_cmd_rdy,
+			RPLY_DAT => ucap_rply_dat,
+			RPLY_RDY => ucap_rply_rdy,
+			CTRL_CLK => ctrl_clk,
+			CTRL_RST => ucap_ctrl_rst_reg
 	        
 	    
 	    );
