@@ -147,14 +147,14 @@ set_property IOSTANDARD LVCMOS33 [get_ports {smp[3]}]
 
 set_property IOSTANDARD LVCMOS33 [get_ports led7b*]
 
-set_property PACKAGE_PIN A6 [get_ports {led7b[0]}]; # a
-set_property PACKAGE_PIN A9 [get_ports {led7b[1]}]; # b
-set_property PACKAGE_PIN A7 [get_ports {led7b[2]}]; # c
-set_property PACKAGE_PIN B5 [get_ports {led7b[3]}]; # d
-set_property PACKAGE_PIN C5 [get_ports {led7b[4]}]; # e
-set_property PACKAGE_PIN C6 [get_ports {led7b[5]}]; # f
-set_property PACKAGE_PIN A5 [get_ports {led7b[6]}]; # g (central bar)
-set_property PACKAGE_PIN A10 [get_ports {led7b[7]}]; # dp (decimal point)
+set_property PACKAGE_PIN A6 [get_ports {led7b[0]}]
+set_property PACKAGE_PIN A9 [get_ports {led7b[1]}]
+set_property PACKAGE_PIN A7 [get_ports {led7b[2]}]
+set_property PACKAGE_PIN B5 [get_ports {led7b[3]}]
+set_property PACKAGE_PIN C5 [get_ports {led7b[4]}]
+set_property PACKAGE_PIN C6 [get_ports {led7b[5]}]
+set_property PACKAGE_PIN A5 [get_ports {led7b[6]}]
+set_property PACKAGE_PIN A10 [get_ports {led7b[7]}]
 
 
 # set_property PACKAGE_PIN F8       [get_ports {tp13}] ; # Bank  87 VCC3V3
@@ -222,13 +222,14 @@ set_property IS_SOFT FALSE [get_pblocks CGE]
 
 
 
-create_pblock CB1
-add_cells_to_pblock [get_pblocks CB1] [get_cells -quiet [list sifpga_crs_i/sifpga_crs_chfpga_0/U0/chfpga0/crossbar0_gen.cburam_gen.uram0]]
-resize_pblock [get_pblocks CB1] -add {SLICE_X15Y180:SLICE_X19Y419 SLICE_X12Y180:SLICE_X14Y199}
-resize_pblock [get_pblocks CB1] -add {RAMB18_X1Y72:RAMB18_X1Y79}
-resize_pblock [get_pblocks CB1] -add {RAMB36_X1Y36:RAMB36_X1Y39}
-resize_pblock [get_pblocks CB1] -add {URAM288_X0Y0:URAM288_X0Y63}
-set_property IS_SOFT FALSE [get_pblocks CB1]
+create_pblock UCORN
+add_cells_to_pblock [get_pblocks UCORN] [get_cells -quiet [list sifpga_crs_i/sifpga_crs_chfpga_0/U0/chfpga0/crossbar0_gen.cburam_gen.uram0]]
+resize_pblock [get_pblocks UCORN] -add {SLICE_X15Y180:SLICE_X19Y419 SLICE_X12Y180:SLICE_X14Y199}
+resize_pblock [get_pblocks UCORN] -add {RAMB18_X1Y72:RAMB18_X1Y79}
+resize_pblock [get_pblocks UCORN] -add {RAMB36_X1Y36:RAMB36_X1Y39}
+resize_pblock [get_pblocks UCORN] -add {URAM288_X0Y0:URAM288_X0Y63}
+set_property EXCLUDE_PLACEMENT 1 [get_pblocks UCORN]
+set_property IS_SOFT FALSE [get_pblocks UCORN]
 
 create_pblock CORR
 resize_pblock [get_pblocks CORR] -add {SLICE_X22Y180:SLICE_X32Y479}
@@ -253,11 +254,18 @@ set_property EXCLUDE_PLACEMENT 1 [get_pblocks ADC]
 # add_cells_to_pblock [get_pblocks SYSTEM] [get_cells * -hier -filter TARGET_PBLOCK==SYSTEM]
 
 create_pblock SYSTEM
-add_cells_to_pblock [get_pblocks SYSTEM] [get_cells * -hier -filter TARGET_PBLOCK==SYSTEM]
 resize_pblock [get_pblocks SYSTEM] -add {CLOCKREGION_X1Y1:CLOCKREGION_X1Y1}
 set_property EXCLUDE_PLACEMENT 1 [get_pblocks SYSTEM]
 
 
+
+
+create_pblock UCAP
+add_cells_to_pblock [get_pblocks UCAP] [get_cells -quiet [list sifpga_crs_i/sifpga_crs_chfpga_0/U0/chfpga0/ucap_blk0.ucap0]]
+resize_pblock [get_pblocks UCAP] -add {SLICE_X15Y420:SLICE_X21Y479}
+resize_pblock [get_pblocks UCAP] -add {DSP48E2_X1Y168:DSP48E2_X1Y191}
+resize_pblock [get_pblocks UCAP] -add {URAM288_X0Y64:URAM288_X0Y79}
+set_property EXCLUDE_PLACEMENT 1 [get_pblocks UCAP]
 
 set_property C_CLK_INPUT_FREQ_HZ 300000000 [get_debug_cores dbg_hub]
 set_property C_ENABLE_CLK_DIVIDER false [get_debug_cores dbg_hub]
