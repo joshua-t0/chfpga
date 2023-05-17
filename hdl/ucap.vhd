@@ -412,6 +412,7 @@ begin
 	    wr_proc: process(clk)
 		    variable frame_header: FRAME_HEADER_STRUCT;
             variable chan_int: integer range 0 to 7;
+            variable chan_sel_int: integer range 0 to 3;
             variable byte_int: integer range 0 to 15;
 		    variable frame_header_bytes: slv8_array(0 to FRAME_HEADER_BYTE_LENGTH-1); 
 		    variable timestamp_incr: unsigned(3 downto 0);
@@ -480,8 +481,6 @@ begin
     	                end if; -- HEADER or DATA ready to be sent
 	            end case;
 
-
-
 	            -- Prepare the frame information. 
 	            -- The header info is used in the data processor machine below. 
 	            -- The signals used to build the header (high bits of byte_ctr, timestamp) changes with the RAM read address, 
@@ -490,14 +489,32 @@ begin
 	            -- but we have finished reading the header well before its value changes again.
 	            frame_header.PROBE_ID := X"A0";
 	            frame_header.PROBE_ID(0) := '0'; -- current_source(0);
-	            frame_header.STREAM_ID := "0000000000" & std_logic_vector(pkt_ctr); --stream_id;
+	            --frame_header.STREAM_ID := "0000000000" & std_logic_vector(pkt_ctr); --stream_id;
 	            frame_header.SERIAL_FLAGS := "0000"; -- serial_flags(2 downto 0) & in_dat(source).TUSER(TUSER_SERIAL_FLAGS_BIT);
-	            frame_header.FLAGS := "0000"; --frame_flags or in_dat(source).TUSER;
+	            frame_header.FLAGS := mode & std_logic_vector(pkt_ctr(1 downto 0)); --mode and subframe number;
 	            -- Override the capture flag withthe overflow flags so we know  from the packet header if somewhing is amiss with the stream
 	            --frame_header.FLAGS(TUSER_CAPTURE_BIT) := data_fifo_overflow_sticky or header_fifo_overflow_sticky;
 	            frame_header.TIMESTAMP := std_logic_vector(capture_timestamp);
+	            -- Set the STREAM ID. Format is: 4-bit frame , 4-bit crate, 4-bit slot, 4-bit channel
+				frame_header.STREAM_ID := (others => '0');
+	            case mode is
+	                when  "00" => -- 8 channel mode (pkt ctr = 3 bit chan, 1 bit seq, 2 bit subframe)
+			            frame_header.STREAM_ID(12) := pkt_ctr(2);
+			            frame_header.STREAM_ID(2 downto 0) := std_logic_vector(pkt_ctr(5 downto 3));
+	                when "01" => -- 4-channel mode   (pkt ctr = 2 bit chan, 2 bit seq, 2 bit subframe)
+			            frame_header.STREAM_ID(13 downto 12) := std_logic_vector(pkt_ctr(3 downto 2));
+			            frame_header.STREAM_ID(2 downto 0) := chan_sel(to_integer(pkt_ctr(5 downto 4)));
+	                when "10" => -- 2-channel mode (pkt ctr = 1 bit chan, 3 bit seq, 2 bit subframe)
+			            frame_header.STREAM_ID(14 downto 12) := std_logic_vector(pkt_ctr(4 downto 2));
+			            frame_header.STREAM_ID(2 downto 0) := chan_sel(to_integer(pkt_ctr(5 downto 5)));
+	                when "11" => -- 1-channel mode (pkt ctr =  4 bit seq, 2 bit subframe)
+			            frame_header.STREAM_ID(15 downto 12) := std_logic_vector(pkt_ctr(5 downto 2));
+			            frame_header.STREAM_ID(2 downto 0) := chan_sel(0);
+                    when others =>
+                        assert False report "Unhandled mode";
+	            end case;		        
                 -- Convert to an array of bytes
-		        frame_header_bytes := struct_to_bytes(frame_header);
+	            frame_header_bytes := struct_to_bytes(frame_header);
 
                 -- RAM data processor
                 --

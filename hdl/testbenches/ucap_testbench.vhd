@@ -21,8 +21,10 @@ use work.tb_package.all;
 
 ENTITY ucap_testbench IS
 	generic (
-		USE_CHAN_DATA: boolean := TRUE -- minimum to fit bits on lane monitor source 0
-		);
+ 		BITS_PER_SAMPLE: integer := 16; 
+ 		SAMPLES_PER_WORD: integer := 8;
+ 		SAMPLES_PER_FRAME: integer := 16384
+ 		);
 END ucap_testbench;
 
 
@@ -33,7 +35,7 @@ ARCHITECTURE behavior OF ucap_testbench IS
 
 constant CLK_PERIOD : time := 1000000/375 * 1 ps; -- 375 MHz
 constant BSB_CLK_PERIOD : time := 10 ns; --
-
+constant WORDS_PER_FRAME : integer:= SAMPLES_PER_FRAME/SAMPLES_PER_WORD;
 
 	--Inputs
 	--signal reset : std_logic := '0';
@@ -42,6 +44,7 @@ constant BSB_CLK_PERIOD : time := 10 ns; --
 	signal clk: std_logic; -- 200 MHz
 	signal rst: std_logic := '1';
 	signal bsb_clk: std_logic; -- 200 MHz
+	signal bsb_rst: std_logic := '1';
 
 	signal tlast_in, tvalid_in: std_logic;
 	signal tdata_in: slv112_array(0 to 7);
@@ -76,13 +79,14 @@ begin
 
 
 	UCAP: entity work.ucap
-		--generic map (
-		--	IMPLEMENT_PACKET_GENERATOR => TRUE
-		-- 	)
+        generic map (
+            ADC_BITS_PER_SAMPLE => BITS_PER_SAMPLE,
+            ADC_SAMPLES_PER_WORD => SAMPLES_PER_WORD,
+            ADC_SAMPLES_PER_FRAME => SAMPLES_PER_FRAME,
+            SIM => TRUE
+        )
 		port map (
 
-            mode => "00",
-            chan_sel_map => ("000", "001", "010", "011"),
 
 			s_axis_tdata => tdata_in, -- First byte to transmit is in in most significant byte
 			s_axis_tvalid => (others => tvalid_in),
@@ -96,7 +100,9 @@ begin
     
 
 			clk=> clk,
-			rst => rst
+			rst => rst,
+			ctrl_clk => bsb_clk,
+			ctrl_rst => bsb_rst
 		 );
 
 
@@ -112,27 +118,27 @@ begin
 		tvalid_in <='0';
 		tlast_in <= '0';
 		rst <= '1';
-		-- wait a bit
+		bsb_rst <= '1';
+		sleep(bsb_clk, 10);
+		bsb_rst <= '0';
+		sleep(bsb_clk, 10);
 		sleep(clk, 10);
-
-		-- release reset
 		rst <= '0';
-		sleep(clk);
+        sleep(clk, 10); 
 
-
-        sleep(clk, 10); --let the wripe propagate through the FIFO and opcode decoding
         -- send channelizer data
-        for frame in 0 to 15 loop
-            for word in 0 to 2048-1 loop
+        for frame in 0 to 1500 loop
+            for word in 0 to WORDS_PER_FRAME-1 loop
                 for chan in 0 to 7 loop
-                    for sample in 0 to 7 loop 
-                        tdata_in(chan)((7-sample)*14+13 downto (7-sample)*14) <=  to_slv(word*8+sample, 14);
+                    for sample in 0 to SAMPLES_PER_WORD-1 loop 
+--                        tdata_in(chan)((7-sample)*14+13 downto (7-sample)*14) <=  to_slv(word*8+sample, 14);
+                        tdata_in(chan)((7-sample)*14+13 downto (7-sample)*14) <=  to_slv(frame, 14);
                     end loop; -- sample
                 end loop; --ch
                 tvalid_in <='1';
                 tlast_in <= '0';
 
-                if word=2047 then
+                if word=WORDS_PER_FRAME-1 then
                     tlast_in <= '1';
                 end if;
                 sleep(clk);
