@@ -41,6 +41,12 @@ use work.chFPGA_Package.all; --! Get all component definitions
 --  Frames are captured Every N frames.
 
 entity ucap is
+	generic (
+	    ADC_BITS_PER_SAMPLE: integer;
+        ADC_SAMPLES_PER_WORD: integer;
+        ADC_SAMPLES_PER_FRAME: integer;
+        SIM: boolean := FALSE
+	);
     port ( 
 
         s_axis_tdata: in slv112_array(0 to 7);
@@ -54,7 +60,15 @@ entity ucap is
         bsb_clk: in std_logic;
         
         clk: in std_logic;
-        rst: in std_logic -- synchronous to clk
+        rst: in std_logic; -- synchronous to clk
+
+		-- Control and reply streams
+		cmd_dat: in axis8_dat_struct := (TDATA=>(others=>'0'), TVALID=>'0', TLAST=>'0');
+		cmd_rdy: out axis8_rdy_struct;
+		rply_dat: out axis8_dat_struct;
+		rply_rdy: in axis8_rdy_struct := (TREADY=>'0');
+		ctrl_clk : IN std_logic := '0'; -- control clock
+		ctrl_rst : in std_logic := '0'
         
     
     );
@@ -65,10 +79,17 @@ architecture Behavioral of ucap is
     subtype int8 is integer range 0 to 7;
     type int8_array is array (NATURAL RANGE <>) of int8;
 
+	signal control_bytes: slv8_array(0 to 4);
+	signal status_bytes: slv8_array(0 to 0);
+
+
     signal mode: std_logic_vector(1 downto 0) := "11"; -- "00": 8-channel, "01": 4-channel, "10": 2-channel, "11": 1-channel
     signal chan_sel_map : slv3_array(0 to 3) := ("000", "001", "010", "011");
+    -- data rate ratio: 3000 Gsps * 2 bytes/sample * 2 frames/capture * 8 channel / 100 Mbyte readout = 960.
+	signal period: unsigned(23 downto 0); -- 2 frames * 16 bytes, 3000e6/16384 = 183105.46875 =1s, max period = 91.6s
+	signal user_reset, user_reset_reg: std_logic;
 
-    signal sel: slv3_array(0 to 3);        
+    signal chan_sel: slv3_array(0 to 3);        
     signal data_out: slv112_array(0 to 8);
 	signal ram_wr_addr, ram_rd_addr: std_logic_vector(11 downto 0);
 	signal ram_din: slv112_array(0 to 7);
@@ -80,7 +101,8 @@ architecture Behavioral of ucap is
 	signal overrun: std_logic;
 
 	signal frame_max: unsigned(3 downto 0);
-	signal send_trig: std_logic;
+	signal readout_trig: std_logic;
+	signal capture_timestamp: unsigned(47 downto 0);
 
 	signal fifo_in_tdata: std_logic_vector(7 downto 0); 
 	signal fifo_in_tvalid: std_logic;
@@ -90,6 +112,44 @@ architecture Behavioral of ucap is
 	signal fifo_overflow_sticky: std_logic;
 
 begin
+
+	bsb_regs0: entity work.CTRL_SLAVE
+		GENERIC MAP (
+			DEFAULT_CONTROL_BYTES=> X"C8_1A" & to_slv(sel(SIM, 1024, 183105), 24),
+			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), -- Number of bits in the control word
+			NUMBER_OF_STATUS_BYTES => status_bytes'Length(1) -- Number of bits in the status word.
+		)
+		PORT MAP(
+
+			control_bytes => control_bytes,
+			status_bytes => status_bytes,
+
+			ctrl_cmd_in_dat=>   cmd_dat,
+			ctrl_cmd_in_rdy=>   cmd_rdy,
+			ctrl_rply_out_dat=> rply_dat,
+			ctrl_rply_out_rdy=> rply_rdy,
+			ctrl_clk => ctrl_clk,
+			ctrl_rst => ctrl_rst
+		);
+
+	-- CONTROL byte 0 -1 : mode and chan_sel
+
+	mode <= control_bytes(0)(7 downto 6); -- "00": 8-channel mode, "01": 4-channel, "10": 2-channel, "11": 1-channel
+	chan_sel_map(0) <= control_bytes(0)(2 downto 0);
+	chan_sel_map(1) <= control_bytes(0)(5 downto 3);
+
+	user_reset <= control_bytes(1)(7);
+
+	chan_sel_map(2) <= control_bytes(1)(2 downto 0);
+	chan_sel_map(3) <= control_bytes(1)(5 downto 3);
+
+	-- CONTROL bytes 2-4: capture period
+	period <= to_unsigned(control_bytes(2 to 4));
+
+	-- STATUS byte 0
+	status_bytes(0)(0) <= fifo_overflow_sticky;
+	status_bytes(0)(1) <= overrun;
+
 
 
     -- Generate 8 URAM buffers, each 16-byte wide (128 bit wide) x 4096 words
@@ -167,10 +227,10 @@ begin
 	end generate uram_gen;
 
 	wr_blk: block
+		signal timestamp: unsigned(47 downto 0);
 		signal frame: unsigned(3 downto 0);
 		signal word_ctr: unsigned(10 downto 0); -- Counts group of 8 samples. 14-3=11 bits (16k samples / 8 = 2k clocks/frame). 
 		signal period_ctr: unsigned(23 downto 0);
-		signal period: unsigned(23 downto 0):= to_unsigned(183105, 24); -- 2 frames * 16 bytes, 3000e6/16384 = 183105.46875 =1s, max period = 91.6s
         signal capture_en: std_logic;
         signal mux_mode: std_logic;
 	begin
@@ -184,9 +244,9 @@ begin
 	            -- for i in 0 to 7 loop
 	            --    m_axis_tdata(i) <= ram_dout(i)(111 downto 0);
 	            --end loop;
-
+	            user_reset_reg <= user_reset;
 	            tvalid := '0';
-	            send_trig <= '0'; -- overriden below
+	            readout_trig <= '0'; -- overriden below
 				if s_axis_tvalid(0)='1' then
 					tvalid := capture_en;
 					word_ctr <= word_ctr + 1;
@@ -194,23 +254,28 @@ begin
 						word_ctr <= (others => '0');
 						frame <= frame + 1;
 						period_ctr <= period_ctr + 1;
+						timestamp <= timestamp + 1;
 						if frame = frame_max then
                             frame <= (others => '0');
 							capture_en <= '0'; 
-							send_trig <= capture_en;
+							readout_trig <= capture_en;
 						end if;
 						if period_ctr = period then
 							capture_en <= '1'; 
+                            frame <= (others => '0');
 							period_ctr <= (others => '0');
+							capture_timestamp <= timestamp + 1; -- reuse earlier timestamp+1 logic
 						end if;
 					end if;                
 				end if;
 
-				if rst='1' then
+				if rst = '1' or user_reset_reg = '1' then
 					word_ctr <= (others => '0');
 					capture_en <= '1'; 
 					frame <= (others => '0');
 					period_ctr <= (others => '0');
+                    timestamp <= (others => '0'); -- needed for the first frame header
+                    capture_timestamp <= (others => '0'); -- needed if we reset with capture_en=1
 				end if; --rst
 
 
@@ -220,16 +285,16 @@ begin
 	            -- directly.  This mux allows us to implement all other modes.
 	            -- 
 	            -- This mux logic selects the following:
-	            --    - Even buffers (i = 0,2,4,6) can select any of the 8 input, as described in sel(i/2)
+	            --    - Even buffers (i = 0,2,4,6) can select any of the 8 input, as described in chan_sel(i/2)
 	            --    - Odd buffers (i = 1,3,5,7) can select either the corresponding input (i) (mux_mode=0) or the same data as the even buffer (mux_mode=1)
-	            --  8 channels mode: mux_mode=0. sel(i) = i/2. We ignore the selection map. Buffers 0-7 : input 0-7
-	            --  4 channels mode: mux_mode=1. Buffers 0-1: sel(0), 2-3: sel(1), 4-5: sel(2), 6-7: sel(3).  
-	            --  2 channelw mode: mux_mode=1. Buffers 0-3: sel(0), 4-7: sel(1). 
-	            --  1 channel mode: mux_mode=1. Buffers 0-7: sel(0) 
+	            --  8 channels mode: mux_mode=0. chan_sel(i) = i/2. We ignore the selection map. Buffers 0-7 : input 0-7
+	            --  4 channels mode: mux_mode=1. Buffers 0-1: chan_sel(0), 2-3: chan_sel(1), 4-5: chan_sel(2), 6-7: chan_sel(3).  
+	            --  2 channelw mode: mux_mode=1. Buffers 0-3: chan_sel(0), 4-7: chan_sel(1). 
+	            --  1 channel mode: mux_mode=1. Buffers 0-7: chan_sel(0) 
 				--
 				-- The synthesizer is not smart
 				-- enough to know that the 8-channel mode can be implemented with properly
-				-- selected sel() values, and it we tell it that it should use the inputs directly, it will infer additional 2:1 muxes to bypass the 8:1 mux.
+				-- selected chan_sel() values, and it we tell it that it should use the inputs directly, it will infer additional 2:1 muxes to bypass the 8:1 mux.
 				--
 				-- For the 2- or 1- channel mode, the logic provide more
 				-- flexibility than needed, but trying to exploit that in
@@ -252,14 +317,14 @@ begin
 	            case mode is
 	                when  "00" => -- 8 channel mode
 	                    for i in 0 to 3 loop
-		                	sel(i) <= to_slv(2*i, 3); -- force selection of same channel for even buffers. Ignore user selection map.
+		                	chan_sel(i) <= to_slv(2*i, 3); -- force selection of same channel for even buffers. Ignore user selection map.
 	                    end loop;
 	                	mux_mode <= '0'; -- force selection of same channel for odd buffers
 	                	ram_wr_en <= (others => tvalid); -- we write data to all buffers
 	                	frame_max <= "0001"; -- 2-1 frames
 	                when "01" => -- 4-channel mode  (1833 LUT with 8 channel mod)e  
 	                    for i in 0 to 3 loop
-		                	sel(i) <= chan_sel_map(i); -- Use the 4 channels provided by the user
+		                	chan_sel(i) <= chan_sel_map(i); -- Use the 4 channels provided by the user
 	                    end loop;
 	                	mux_mode <= '1'; -- Odd buffer use the same channel as even buffer 
 	                	frame_max <= "0011"; -- 4-1 frames
@@ -268,7 +333,7 @@ begin
 		                end loop;
 	                when "10" => -- 2-channel mode 
 	                    for i in 0 to 3 loop
-		                	sel(i) <= chan_sel_map(i/2); -- Use the first 2 channels provided by the user
+		                	chan_sel(i) <= chan_sel_map(i/2); -- Use the first 2 channels provided by the user
 	                    end loop;
 	                	mux_mode <= '1'; -- Odd buffer use the same channel as even buffer 
 	                	frame_max <= "0111"; -- 8-1 frames
@@ -277,7 +342,7 @@ begin
 		                end loop;
 	                when "11" => -- 1-channel mode 
 	                    for i in 0 to 3 loop
-		                	sel(i) <= chan_sel_map(i/4); -- Use only the first channel provided by the user
+		                	chan_sel(i) <= chan_sel_map(i/4); -- Use only the first channel provided by the user
 	                    end loop;
 	                	mux_mode <= '1'; -- Odd buffer use the same channel as even buffer 
 	                	frame_max <= "1111"; -- 16-1 frames
@@ -299,10 +364,10 @@ begin
 	            -- 	M8+M4+M2+M1: want to use 2525 LUTs
 
 	            for i in 0 to 3 loop
-		           sel_i := to_integer(unsigned(sel(i)));
+		           sel_i := to_integer(unsigned(chan_sel(i)));
 
 	               if mux_mode = '0' then -- Assign input channel x to buffer x
-	                   ram_din(2*i)(111 downto 0) <= s_axis_tdata(sel_i); -- When mux_mode=0, sel(i) is forced to 2*i. We don't assign the input directly becasue the synthesizer would infer an additional mux, which is redundant.
+	                   ram_din(2*i)(111 downto 0) <= s_axis_tdata(sel_i); -- When mux_mode=0, chan_sel(i) is forced to 2*i. We don't assign the input directly becasue the synthesizer would infer an additional mux, which is redundant.
 	                   ram_din(2*i+1)(111 downto 0) <= s_axis_tdata(2*i+1);
 	               else -- Select the same even and odd input channel for each buffe rpair  
 	                   ram_din(2*i)(111 downto 0) <= s_axis_tdata(sel_i);
@@ -318,7 +383,6 @@ begin
 	-- Read and stream out
 	----------------------
 	rd_blk: block
-		signal timestamp: unsigned(47 downto 0);
         -- byte counter
         --   18:15: frame number( 4 bits, 16 frames/capture,  counts both frame and channels. We always have a total of 16 frames from 1, 2,4, or 8 channels.)
         --   14:4: word number (11 bits, 16384/8=2048 words)
@@ -365,6 +429,10 @@ begin
                 data_tvalid <= shift_right(data_tvalid, 1);
                 data_tlast<= shift_right(data_tlast, 1);
 
+                -- detect overrun, i.e. we are asked to start a new readout before the previous one is finished
+                if send_state /= SEND_WAIT and readout_trig='1' then
+                	overrun <= '1';
+                end if;
 
                 -- RAM Read sequencer
                 --
@@ -373,9 +441,10 @@ begin
                 -- The full threshold MUST be set so the fifo can accomodate a few extra writes after fifo_full is raised
 	            case send_state is
 	            	when SEND_WAIT =>
+	            		-- data_tvalid =0, header_tvalid = 0, data_tlast = x.
                         header_byte_ctr <= 0;
-	            		if send_trig='1' then
-                        	data_tlast(data_tlast'LEFT) <= '1'; -- clear pkt_ctr
+	            		if readout_trig='1' then
+                        	--data_tlast(data_tlast'LEFT) <= '1'; -- clear pkt_ctr
                             send_state <= SEND_HEADER;
 	            		end if;
                     when SEND_HEADER =>
@@ -426,7 +495,7 @@ begin
 	            frame_header.FLAGS := "0000"; --frame_flags or in_dat(source).TUSER;
 	            -- Override the capture flag withthe overflow flags so we know  from the packet header if somewhing is amiss with the stream
 	            --frame_header.FLAGS(TUSER_CAPTURE_BIT) := data_fifo_overflow_sticky or header_fifo_overflow_sticky;
-	            frame_header.TIMESTAMP := std_logic_vector(timestamp);
+	            frame_header.TIMESTAMP := std_logic_vector(capture_timestamp);
                 -- Convert to an array of bytes
 		        frame_header_bytes := struct_to_bytes(frame_header);
 
@@ -445,7 +514,7 @@ begin
                 --      0 1 1: Send last header byte, byte =0 
                 --      1 X 0: Send data byte, byte += 1 
                 --      1 0 1: Send last data byte, byte=0, pkt+=1
-                --      1 1 1: Send last data byte of last packet, byte=0, pkt=0, timestamp+=N
+                --      1 1 1: Send last data byte of last packet, byte=0, pkt=0
                 -- 
                 fifo_in_tvalid <= '0';
                 fifo_in_tlast <= '0';
@@ -474,29 +543,28 @@ begin
                         if header_tvalid(0) = '1' then
                             pkt_ctr <= (others => '0');
                             -- increment timestamp by the number of frames sent
-                            timestamp_incr := shift_left("0010", to_integer(unsigned(mode)));
-              		        timestamp <= timestamp + timestamp_incr;
+                            --timestamp_incr := shift_left("0010", to_integer(unsigned(mode)));
+              		        --timestamp <= timestamp + timestamp_incr;
                         end if;
                     end if;
                 end if; 
 
                 -- keep track of fifo overflows
-                if fifo_overflow='1' then
+                if fifo_overflow = '1' then
                     fifo_overflow_sticky <= '1';
                 end if;
 
                 -- synchronous reset
-	            if rst='1' then
+	            if rst = '1' or user_reset_reg = '1'  then
                     fifo_overflow_sticky <= '0';
                     data_tvalid <= (others => '0');
                     header_tvalid <= (others => '0');
 	                fifo_in_tvalid <= '0'; -- needed
 	                byte_ctr <= (others => '0');
 	                send_state <= SEND_WAIT; -- needed to make sure we start with header transmission
-                    timestamp <= (others => '0'); -- needed for the first frame header
                     byte <= (others=> '0'); -- needed for the first frame header transmission 
                     pkt_ctr <= (others=> '0'); -- needed for the first frame header transmission 
-
+                    overrun <= '0';
 	            end if; -- reset
 		           
 	        end if; --clk
@@ -511,7 +579,7 @@ begin
         signal fifo_rd_en: std_logic;
         signal fifo_rd_rst_busy: std_logic;
         signal fifo_wr_rst_busy: std_logic;
-        signal rst_resync: std_logic;
+        signal fifo_rst: std_logic;
         
 --        type line is access string;
         use std.textio.all;
@@ -532,6 +600,7 @@ begin
         
     begin    
 
+    	fifo_rst <= rst  or user_reset_reg;
         fifo_din <= fifo_in_tlast & fifo_in_tdata;
         fifo_wr_en <= fifo_in_tvalid and not (rst or fifo_wr_rst_busy);
 
@@ -540,13 +609,6 @@ begin
         m_axis_bsb_tvalid <= fifo_data_valid;
         fifo_rd_en <= m_axis_bsb_tready and not fifo_rd_rst_busy and fifo_data_valid; -- valid in included to prevent reads during resets
 
---        fifo_rst_cdc0: xpm_cdc_async_rst
---            generic map (RST_ACTIVE_HIGH => 1)
---            port map (
---                src_arst => rst,
---                dest_clk => bsb_clk,
---                dest_arst => rst_resync
---            );
             
        -- BSB FIFO
        -- There is a considerable delay between the time the read  side sees there is data on the write side (4-5 slow clocks, which is equivalent to 16-20 fast clocks).
@@ -576,7 +638,7 @@ begin
               prog_full =>  fifo_full,
               overflow =>   fifo_overflow,
               wr_clk =>     clk,
-              rst => rst,                     -- synchronous to wr_clk. 
+              rst =>        fifo_rst,         -- synchronous to wr_clk. 
         
               dout =>       fifo_dout,
               data_valid => fifo_data_valid,       
