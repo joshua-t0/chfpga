@@ -61,7 +61,7 @@ entity GPIO is
 		ADC_SAMPLES_PER_WORD: integer;
 		ADC_BITS_PER_SAMPLE: integer;
 		NUMBER_OF_CROSSBAR_INPUTS: integer;
-		NUMBER_OF_CROSSBAR_OUTPUTS: integer;
+		NUMBER_OF_CROSSBAR1_OUTPUTS: integer;
 		NUMBER_OF_BP_SHUFFLE_LINKS: integer;
 		NUMBER_OF_GPU_LINKS: integer;
 		NUMBER_OF_CORRELATORS: INTEGER; --! Number of correlator blocks (CH_DIST+CORR+ACC) that are implemented if IMPLEMENT_CORR=TRUE
@@ -502,7 +502,7 @@ begin
 --! |         |12-19| 63:57| (unused)                    | |
 --! |         |     | 56:0 | FPGA_DNA                    | FPGA unique serial number |
 --! |         | 20  | 7:0  | NUMBER_OF_CROSSBAR_INPUTS   | Indicates how many channelizers are connected to the crossbar inputs. Those will be channeizers 0 to N-1|
---! |         | 21  | 7:0  | NUMBER_OF_CROSSBAR_OUTPUTS  | Indicates the number of crossbar outputs. Those outputs feed the GPU links and the FPGA correlators (if implemented).
+--! |         | 21  | 7:0  | NUMBER_OF_CROSSBAR1_OUTPUTS | Indicates the number of crossbar1 outputs. Those outputs feed the GPU links and the FPGA correlators (if implemented).
 --! |         |22-23| 15:0 | PROTOCOL_VERSION            | 16-bit value indicating the protocol version. A change in the version means that some change is needed on host control software. |
 --! |         | 24  | 7:0  | CHANNELIZERS_CLOCK_SOURCE   | ADC channel from which the channelizer clocks are derived. Useful to know if we should expect the clock to be missing and use alternate internal clock.
 --! |         |25-30|      | (unused)                    | |
@@ -669,7 +669,7 @@ STATUS_BYTES(12)(0) <= fpga_serial_number(56);
 STATUS_BYTES(13 to 19) <= to_slv8_array(fpga_serial_number(55 downto 0));
 
 STATUS_BYTES(20) <= to_slv(NUMBER_OF_CROSSBAR_INPUTS, 8);
-STATUS_BYTES(21) <= to_slv(NUMBER_OF_CROSSBAR_OUTPUTS, 8);
+STATUS_BYTES(21) <= to_slv(NUMBER_OF_CROSSBAR1_OUTPUTS, 8);
 
 STATUS_BYTES(22 to 23) <= to_slv8_array(to_slv(PROTOCOL_VERSION, 16));
 STATUS_BYTES(24) <= to_slv(CHANNELIZERS_CLOCK_SOURCE, 8);

@@ -128,7 +128,7 @@ entity chFPGA is
 
 		CROSSBAR1_TYPE: string := "BRAM"; -- "BRAM" or "URAM"
 		NUMBER_OF_CROSSBAR_INPUTS : integer := GLOBAL_NUMBER_OF_CHANNELIZERS_TO_CORRELATE;
-		NUMBER_OF_CROSSBAR_OUTPUTS : integer; -- number of CROSSBAR1 output lanes. Shoul dbe 8 for URAM-based CROSSBAR1.
+		NUMBER_OF_CROSSBAR1_OUTPUTS : integer; -- number of CROSSBAR1 output lanes. Should be 8 for URAM-based CROSSBAR1.
 		NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer := 4;
 		NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer := 4;
 		NUMBER_OF_BP_SHUFFLE_LINKS: integer := 3;
@@ -531,7 +531,7 @@ constant ADC_BITS_PER_WORD: integer := ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPL
 
 --constant NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := sel(GLOBAL_IMPLEMENT_FFT, 0*NUMBER_OF_CHANNELIZERS+4, 0); --! Number of channelizers that have an FFT module
 constant NUMBER_OF_ADCS_OR_CHANNELIZERS: integer := max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS);
-constant IMPLEMENT_CROSSBAR1: boolean := NUMBER_OF_CROSSBAR_INPUTS > 0 and NUMBER_OF_CROSSBAR_OUTPUTS > 0;
+constant IMPLEMENT_CROSSBAR1: boolean := NUMBER_OF_CROSSBAR_INPUTS > 0 and NUMBER_OF_CROSSBAR1_OUTPUTS > 0;
 constant IMPLEMENT_CROSSBAR2_AND_CROSSBAR3: boolean := IMPLEMENT_CROSSBAR1 and NUMBER_OF_BP_SHUFFLE_LINKS > 0;
 constant FPGA_SERIES: integer :=FPGA_SERIES_LIST(PLATFORM_ID);
 
@@ -835,10 +835,10 @@ signal cb1_reset: std_logic;
 signal cb1_reset_reg: std_logic;
 signal cb1_reset_reg2: std_logic;
 
-signal axis_crossbar1_out_tdata: slv32_array(0 to NUMBER_OF_CROSSBAR_OUTPUTS-1);
-signal axis_crossbar1_out_tvalid: slv(0 to NUMBER_OF_CROSSBAR_OUTPUTS-1);
-signal axis_crossbar1_out_tlast: slv(0 to NUMBER_OF_CROSSBAR_OUTPUTS-1);
--- signal axis_crossbar1_out_tready: slv(0 to NUMBER_OF_CROSSBAR_OUTPUTS-1);
+signal axis_crossbar1_out_tdata: slv32_array(0 to NUMBER_OF_CROSSBAR1_OUTPUTS-1);
+signal axis_crossbar1_out_tvalid: slv(0 to NUMBER_OF_CROSSBAR1_OUTPUTS-1);
+signal axis_crossbar1_out_tlast: slv(0 to NUMBER_OF_CROSSBAR1_OUTPUTS-1);
+-- signal axis_crossbar1_out_tready: slv(0 to NUMBER_OF_CROSSBAR1_OUTPUTS-1);
 
 -----------------------
 -- Backplane PCB & QUAD shuffle signals
@@ -1796,7 +1796,7 @@ GPIO0: entity work.GPIO
 		ADC_BITS_PER_SAMPLE => ADC_BITS_PER_SAMPLE,
 		NUMBER_OF_BP_SHUFFLE_LINKS => NUMBER_OF_BP_PCB_SHUFFLE_LANES,
 		NUMBER_OF_CROSSBAR_INPUTS => NUMBER_OF_CROSSBAR_INPUTS,
-		NUMBER_OF_CROSSBAR_OUTPUTS => NUMBER_OF_CROSSBAR_OUTPUTS,
+		NUMBER_OF_CROSSBAR1_OUTPUTS => NUMBER_OF_CROSSBAR1_OUTPUTS,
 		NUMBER_OF_GPU_LINKS => NUMBER_OF_GPU_LINKS,
 		NUMBER_OF_CORRELATORS => NUMBER_OF_CORRELATORS,
 		NUMBER_OF_CHANNELIZERS_TO_CORRELATE => NUMBER_OF_CROSSBAR_INPUTS,
@@ -2846,7 +2846,7 @@ begin
 			generic map (
 			 	PLATFORM_ID => PLATFORM_ID,  -- needed to select family-dependent FIFOs
 				NUMBER_OF_INPUT_LANES  => NUMBER_OF_CROSSBAR_INPUTS,
-				NUMBER_OF_OUTPUT_LANES => NUMBER_OF_CROSSBAR_OUTPUTS,
+				NUMBER_OF_OUTPUT_LANES => NUMBER_OF_CROSSBAR1_OUTPUTS,
 				-- BINSEL_PBLOCK_MAP => (0 to 4 => 0, 5 to 8 => 1, 9 to 12 => 2, 13 to 15 => 3),
 				BINSEL_PBLOCK_MAP => (0 to 4 => 0, 5 to 8 => 1, 9 to 12 => 1, 13 to 15 => 0),
 				EIGHT_BIT_SUPPORT      => FALSE
