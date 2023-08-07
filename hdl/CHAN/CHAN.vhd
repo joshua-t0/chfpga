@@ -64,7 +64,7 @@ entity CHAN is
         in_dat_tdata    : in std_logic_vector(ADC_BITS_PER_SAMPLE * ADC_SAMPLES_PER_WORD-1 downto 0);
         in_dat_tvalid   : in std_logic;
         in_dat_tlast    : in std_logic;
-        in_dat_tuser    : in std_logic_vector(ADC_SAMPLES_PER_WORD-1 downto 0);
+        in_dat_tuser    : in std_logic_vector(ADC_SAMPLES_PER_WORD-1 downto 0);  -- ADC saturation flags (one per sample)
         in_clk          : in std_logic; --! Input and signal processing clock
         in_reset        : in std_logic; --! Resets all the channelizer modules,
                                         --! except ADCDAQ. Must be synchronous to in_clk.
