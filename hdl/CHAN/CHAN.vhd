@@ -446,12 +446,13 @@ fft_blk: block
    
 begin
 
-    -- Temporary hack to connect 128-bit FUNCEN to 32-bit FFT. Signals are not valid.
+    -- Temporary hack to connect 128-bit FUNCGEN to 32-bit FFT. Signals are not valid.
+    narrow_fft_gen: if ADC_BITS_PER_WORD /= 32 generate
     axis_funcgen_out_tdata32 <= axis_funcgen_out_tdata(127 downto 120) & 
                                 axis_funcgen_out_tdata(95 downto 88) &
                                 axis_funcgen_out_tdata(63 downto 56) &
                                 axis_funcgen_out_tdata(31 downto 24);
-   
+    end generate;   
 
     -- Pipeline the FFT reset (skip over the funcgen logic)
     fft_pipe_proc: process(in_clk)
