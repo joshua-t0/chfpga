@@ -120,7 +120,7 @@ entity chFPGA is
 		ADC_TO_ADC_BOARD_MAP: IntegerArray(0 to NUMBER_OF_ADCS_MAX-1):=(0 to 7 => 0, 8 to 15 => 1);
 
 		-- F-Engine config
-
+        CAPTURE_TYPE: string := "BRAM"; -- "BRAM": BRAM-based in-channelizer capture engine; "URAM": URAM-based centralized UCAP capture engine. 
 		NUMBER_OF_CHANNELIZERS: INTEGER :=NUMBER_OF_CHANNELIZERS_MAX; --! Number of channelizers to be implemented
 		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := NUMBER_OF_CHANNELIZERS_MAX;
 
@@ -430,8 +430,8 @@ entity chFPGA is
 	        m_axis_cap_tdata: out std_logic_vector(7 downto 0);
 			m_axis_cap_tvalid: out std_logic;
 			m_axis_cap_tlast: out std_logic; 
-			m_axis_cap_tready: in std_logic;
-			axis_cap_clk: in std_logic
+			m_axis_cap_tready: in std_logic := '0';
+			axis_cap_clk: in std_logic := '0'
 
 
 			);
@@ -2430,12 +2430,14 @@ begin
 			end if;
 		end process;
 
-		-- Convert 4x 8-bit ADCDAQ bus samples to th elower 4 words of the 8x 16-bit bus
-		repack_gen: for j in 0 to 3  generate -- hard coded to 3 samples per word
-			axis_adc_tdata(i)(16*j+15 downto 16*j+8) <= axis_adc_tdata8(i)(8*j+7 downto 8*j); -- left aligg data to the MSB
-			--axis_adc_tdata(i)(16*j+7 downto 16*j) <= (others => axis_adc_tdata8(i)(7)); -- sign extend
-			axis_adc_tdata(i)(16*j+7 downto 16*j) <= (others => '0'); -- zero the MSBs
-		end generate;
+		-- Convert 4x 8-bit ADCDAQ bus samples to the lower 4 words of the 8x 16-bit bus
+--		repack_gen: for j in 0 to 3  generate -- hard coded to 3 samples per word
+--			axis_adc_tdata(i)(16*j+15 downto 16*j+8) <= axis_adc_tdata8(i)(8*j+7 downto 8*j); -- left aligg data to the MSB
+--			--axis_adc_tdata(i)(16*j+7 downto 16*j) <= (others => axis_adc_tdata8(i)(7)); -- sign extend
+--			axis_adc_tdata(i)(16*j+7 downto 16*j) <= (others => '0'); -- zero the MSBs
+--		end generate;
+        axis_adc_tdata(i) <= axis_adc_tdata8(i);
+
 		-- ADCDAQ is still implemented if IMPLEMENT_ANT=FALSE, but its IMPLEMENT_ADCDAQ generics is forced  to FALSE to the appropriate differential buffers are instantiated and prevent UCF errors.
 		--	ADC_CLK_OUT_PLL<=ADC_CLK_OUT_PLL_INT;
 		--debug3: if false generate
@@ -3394,7 +3396,7 @@ end generate CGE_GEN;
 -----------------------------
 -- UCAP - Global raw data capture
 ----------------------------- 
-ucap_blk0: block
+ucap_gen: if CAPTURE_TYPE = "URAM" generate
 
 	signal ucap_cmd_dat: AXIS8_DAT_STRUCT;
 	signal ucap_cmd_rdy: AXIS8_RDY_STRUCT;
@@ -3434,11 +3436,11 @@ begin
 		end if;
 	end process;
 
-	remap0: for i in 0 to NUMBER_OF_ADCS-1 generate
-    	remap1: for j in 0 to 7 generate
-    		axis_cap_reg1_tdata112(i)(14*(j+1)-1 downto 14*j) <= axis_cap_reg1_tdata(i)(16*(j+1)-1 downto 16*(j+1)-14); -- *** fix to take into account BITS_PER_SAMPLES
-	   end generate;
-	end generate;
+--	remap0: for i in 0 to NUMBER_OF_ADCS-1 generate
+--    	remap1: for j in 0 to 7 generate
+--    		axis_cap_reg1_tdata112(i)(14*(j+1)-1 downto 14*j) <= axis_cap_reg1_tdata(i)(16*(j+1)-1 downto 16*(j+1)-14); -- *** fix to take into account BITS_PER_SAMPLES
+--	   end generate;
+--	end generate;
 
 	ucap0: entity work.ucap
 		generic map (
@@ -3447,7 +3449,7 @@ begin
             ADC_SAMPLES_PER_FRAME => ADC_SAMPLES_PER_FRAME
 			)
 	    port map ( 
-	        s_axis_tdata => axis_cap_reg1_tdata112,
+	        s_axis_tdata => axis_cap_reg1_tdata,
 	        s_axis_tvalid => axis_cap_reg1_tvalid,
 	        s_axis_tlast=> axis_cap_reg1_tlast,
 
@@ -3470,7 +3472,7 @@ begin
 	        
 	    
 	    );
-end block ucap_blk0;
+end generate ucap_gen;
 ---------------------------------------------------------------------
 --  Correlator
 ---------------------------------------------------------------------
