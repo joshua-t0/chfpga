@@ -102,8 +102,14 @@ type Word3Array is array (NATURAL RANGE <>) of std_logic_vector(2 downto 0);
 type Word32Array is array (NATURAL RANGE <>) of std_logic_vector(31 downto 0);
 type Word33Array is array (NATURAL RANGE <>) of std_logic_vector(32 downto 0);
 type BoolArray is array (natural range <>) of BOOLEAN;
+type u2_array is array (NATURAL RANGE <>) of unsigned(1 downto 0);
+type u3_array is array (NATURAL RANGE <>) of unsigned(2 downto 0);
 type u4_array is array (NATURAL RANGE <>) of unsigned(3 downto 0);
 type u8_array is array (NATURAL RANGE <>) of unsigned(7 downto 0);
+type u9_array is array (NATURAL RANGE <>) of unsigned(8 downto 0);
+type u10_array is array (NATURAL RANGE <>) of unsigned(9 downto 0);
+type u11_array is array (NATURAL RANGE <>) of unsigned(10 downto 0);
+type u12_array is array (NATURAL RANGE <>) of unsigned(11 downto 0);
 type u13_array is array (NATURAL RANGE <>) of unsigned(12 downto 0);
 type u16_array is array (NATURAL RANGE <>) of unsigned(15 downto 0);
 type u24_array is array (NATURAL RANGE <>) of unsigned(23 downto 0);
@@ -542,6 +548,8 @@ function shift_right(x:slv3_array)  return slv3_array; -- shift right a slv3_arr
 function shift_right(x:slv4_array)  return slv4_array; -- shift right a slv4_array.
 function all_ones(v: std_logic_vector) return boolean; -- Return TRUE if all bits are '1'.
 function all_ones(v: unsigned) return boolean; -- Return TRUE if all bits are '1'.
+function all_zeros(v: std_logic_vector) return boolean; -- Return TRUE if all bits are '0'.
+function all_zeros(v: unsigned) return boolean; -- Return TRUE if all bits are '0'.
 function cmplx(re, im:integer) return complex; -- Create a complex value out of two integer values
 function cmplx(re, im:signed) return complex; -- Create a complex value out of two signed values
 
@@ -1109,6 +1117,19 @@ function all_ones(v: std_logic_vector) return boolean is
 function all_ones(v: unsigned) return boolean is
 	begin
 		return all_ones(std_logic_vector(v));
+	end function;
+
+--Returns TRUE if all bits are 'o'
+function all_zeros(v: std_logic_vector) return boolean is
+	begin
+		return or_reduce(v) = '0';
+	end function;
+
+
+--Returns TRUE if all bits are 'o'
+function all_zeros(v: unsigned) return boolean is
+	begin
+		return all_zeros(std_logic_vector(v));
 	end function;
 
 --Returns the log2 of a integer as a real value
