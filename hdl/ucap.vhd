@@ -42,18 +42,30 @@ use work.chFPGA_Package.all; --! Get all component definitions
 
 entity ucap is
 	generic (
+	    NUMBER_OF_CHANNELS: integer := 8; -- Warning: current design works only with NUMBER_OF_CHANNELS = 8
+	    NUMBER_OF_SOURCES : integer := 2; -- Warning; current design works only with NUMBER_OF_SOURCES = 2
+
 	    ADC_BITS_PER_SAMPLE: integer;
         ADC_SAMPLES_PER_WORD: integer;
         ADC_SAMPLES_PER_FRAME: integer;
         SIM: boolean := FALSE
 	);
     port ( 
+        -- Input data buses
 
-        s_axis_tdata: in slv112_array(0 to 7);
-        s_axis_tvalid: in std_logic_vector(0 to 7);
-        s_axis_tlast: in std_logic_vector(0 to 7);
+        s_axis_tdata: in slv112_array(0 to NUMBER_OF_CHANNELS-1);
+        s_axis_tvalid: in std_logic_vector(0 to NUMBER_OF_SOURCES - 1); -- common to all channels
+        s_axis_tlast: in std_logic_vector(0 to NUMBER_OF_SOURCES - 1); -- common to all channels
+--        s_axis_tuser: in std_logic_vector(0 to 0); -- bit 0: current source
 
-        m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+        -- Remote mux control
+
+        source_sel_out: out std_logic_vector(0 to NUMBER_OF_SOURCES - 1); -- data source request
+        source_sel_in: in std_logic_vector(0 to NUMBER_OF_SOURCES - 1); -- curent data source on tdata
+
+        -- Output data bus
+
+        m_axis_bsb_tdata: out std_logic_vector(7 downto 0); -- 8-bit output bus
 		m_axis_bsb_tvalid: out std_logic;
 		m_axis_bsb_tlast: out std_logic;
 		m_axis_bsb_tready: in std_logic := '1';
@@ -62,7 +74,7 @@ entity ucap is
         clk: in std_logic;
         rst: in std_logic; -- synchronous to clk
 
-		-- Control and reply streams
+		-- BSB Control interface
 		cmd_dat: in axis8_dat_struct := (TDATA=>(others=>'0'), TVALID=>'0', TLAST=>'0');
 		cmd_rdy: out axis8_rdy_struct;
 		rply_dat: out axis8_dat_struct;
@@ -76,33 +88,36 @@ end ucap;
 
 architecture Behavioral of ucap is
 
-    subtype int8 is integer range 0 to 7;
+    subtype int8 is integer range 0 to NUMBER_OF_CHANNELS-1;
     type int8_array is array (NATURAL RANGE <>) of int8;
 
-	signal control_bytes: slv8_array(0 to 4);
+
+
+	signal control_bytes: slv8_array(0 to 8);
 	signal status_bytes: slv8_array(0 to 0);
 
 
     signal mode: std_logic_vector(1 downto 0) := "11"; -- "00": 8-channel, "01": 4-channel, "10": 2-channel, "11": 1-channel
-    signal chan_sel_map : slv3_array(0 to 3) := ("000", "001", "010", "011");
+    signal chan_sel_map : u3_array(0 to 3) := ("000", "001", "010", "011");
     -- data rate ratio: 3000 Gsps * 2 bytes/sample * 2 frames/capture * 8 channel / 100 Mbyte readout = 960.
-	signal period: unsigned(23 downto 0); -- 2 frames * 16 bytes, 3000e6/16384 = 183105.46875 =1s, max period = 91.6s
+	signal base_period: u24_array(0 to NUMBER_OF_SOURCES-1); -- 2 frames * 16 bytes, 3000e6/16384 = 183105.46875 =1s, max period = 91.6s
+    signal sub_period: unsigned(4 downto 0);
 	signal user_reset, user_reset_reg: std_logic;
 
-    signal chan_sel: slv3_array(0 to 3);        
-    signal data_out: slv112_array(0 to 8);
-	signal ram_wr_addr, ram_rd_addr: std_logic_vector(11 downto 0);
-	signal ram_din: slv112_array(0 to 7);
-	signal ram_dout: slv128_array(0 to 7); -- one for each column;
-	signal ram_wr_en: std_logic_vector(0 to 7);  -- one for each row
+    signal chan_sel: u3_array(0 to NUMBER_OF_CHANNELS/2-1);        
+    signal data_out: slv112_array(0 to NUMBER_OF_CHANNELS-1);
+	signal ram_wr_addr, ram_rd_addr: slv12_array(0 to NUMBER_OF_CHANNELS-1);
+	signal ram_din: slv112_array(0 to NUMBER_OF_CHANNELS-1);
+	signal ram_dout: slv128_array(0 to NUMBER_OF_CHANNELS-1); -- one for each column;
+	signal ram_wr_en: std_logic_vector(0 to NUMBER_OF_CHANNELS-1);  -- one for each row
 --	signal ram_wr_byte_en: std_logic_vector(31 downto 0);  -- enable for each of the 32 bytes across the row
-	signal ram_rd_en: std_logic_vector(0 to 7);  -- one for each column
+	signal ram_rd_en: std_logic_vector(0 to NUMBER_OF_CHANNELS-1);  -- one for each column
 	signal wr_bank: std_logic; -- 2 banks
 	signal overrun: std_logic;
 
-	signal frame_max: unsigned(3 downto 0);
-	signal readout_trig: std_logic;
-	signal capture_timestamp: unsigned(47 downto 0);
+	signal frame_max: unsigned(3 downto 0); -- currently limited to 16. Depends on memory depth (frames/uram block) x number of channels.
+	signal readout_trig: std_logic_vector(0 to NUMBER_OF_CHANNELS-1); -- pulse indicating when a channel is ready to be readout
+	signal capture_timestamp: u48_array(0 to NUMBER_OF_SOURCES-1);
 
 	signal fifo_in_tdata: std_logic_vector(7 downto 0); 
 	signal fifo_in_tvalid: std_logic;
@@ -132,19 +147,22 @@ begin
 			ctrl_rst => ctrl_rst
 		);
 
-	-- CONTROL byte 0 -1 : mode and chan_sel
+	-- CONTROL byte 0 -1 : mode and channel selection
 
-	mode <= control_bytes(0)(7 downto 6); -- "00": 8-channel mode, "01": 4-channel, "10": 2-channel, "11": 1-channel
-	chan_sel_map(0) <= control_bytes(0)(2 downto 0);
-	chan_sel_map(1) <= control_bytes(0)(5 downto 3);
+	mode            <= control_bytes(0)(7 downto 6); -- "00": 8-channel mode, "01": 4-channel, "10": 2-channel, "11": 1-channel
+	chan_sel_map(1) <= unsigned(control_bytes(0)(5 downto 3));
+	chan_sel_map(0) <= unsigned(control_bytes(0)(2 downto 0));
 
-	user_reset <= control_bytes(1)(7);
+	user_reset      <= control_bytes(1)(7);
+	chan_sel_map(3) <= unsigned(control_bytes(1)(5 downto 3));
+	chan_sel_map(2) <= unsigned(control_bytes(1)(2 downto 0));
 
-	chan_sel_map(2) <= control_bytes(1)(2 downto 0);
-	chan_sel_map(3) <= control_bytes(1)(5 downto 3);
+	-- CONTROL bytes 2-7: base capture period
+	base_period(0) <= to_unsigned(control_bytes(2 to 4));
+	base_period(1) <= to_unsigned(control_bytes(5 to 7));
 
-	-- CONTROL bytes 2-4: capture period
-	period <= to_unsigned(control_bytes(2 to 4));
+	-- CONTROL bytes 8: capture subperiod
+	sub_period <= unsigned(control_bytes(8)(4 downto 0));
 
 	-- STATUS byte 0
 	status_bytes(0)(0) <= fifo_overflow_sticky;
@@ -159,7 +177,7 @@ begin
     --   8 frames from 2 channels (mode "10")
     --   16 frames from 1 channel (mode "11")
     --
-	uram_gen: for i in 0 to 7 generate
+	uram_gen: for i in 0 to NUMBER_OF_CHANNELS-1 generate
 --			signal ram_dout_word: std_logic_vector(63 downto 0);
 			signal ram_din_word: std_logic_vector(127 downto 0);
 --			signal ram_wr_byte_en_word: std_logic_vector(7 downto 0);
@@ -186,7 +204,7 @@ begin
 			      READ_DATA_WIDTH_B => 128,         -- 8 byte (64 bits) wide read bus
 			      --CASCADE_HEIGHT => 4,             -- We castade 4 URAM
 			      --MEMORY_OPTIMIZATION => "true",   -- String
-			      MEMORY_SIZE => 128*4096,         -- 128-bit word * 4096 words/URAM
+			      MEMORY_SIZE => 128 * 4096,         -- 128-bit word * 4096 words/URAM
 			      --MESSAGE_CONTROL => 0,            -- DECIMAL
 			      READ_LATENCY_B => 4,             -- Needs to be >= of cascade height to allow registering. Synthesis ask for more than 4 to have full pipelining (4 is partial).
 			      --READ_RESET_VALUE_B => "0",       -- String
@@ -203,13 +221,13 @@ begin
 				port map (
 					-- Write port
 					dina => ram_din_word,
-					addra => ram_wr_addr,
+					addra => ram_wr_addr(i),
 					ena => ram_wr_en(i),
 					wea => "1",
 
 					-- read port
 					doutb => ram_dout(i),
-					addrb => ram_rd_addr,
+					addrb => ram_rd_addr(i),
 					enb => ram_rd_en(i),
 
 					-- clock and reset
@@ -226,58 +244,101 @@ begin
 
 	end generate uram_gen;
 
+    -- Write block: writes data to memory
+    --
+    -- External interfaces:
+    --  - capture_timestamp: timestamp of the first frame of the capture
+    --  - readout_trig: single pulse indicating that the memory can be readout
 	wr_blk: block
-		signal timestamp: unsigned(47 downto 0);
-		signal frame: unsigned(3 downto 0);
-		signal word_ctr: unsigned(10 downto 0); -- Counts group of 8 samples. 14-3=11 bits (16k samples / 8 = 2k clocks/frame). 
-		signal period_ctr: unsigned(23 downto 0);
-        signal capture_en: std_logic;
+		signal timestamp: u48_array(0 to NUMBER_OF_SOURCES-1);
+		signal period_ctr: u24_array(0 to NUMBER_OF_SOURCES-1);
+
+  		signal frame: u4_array(0 to NUMBER_OF_SOURCES-1); -- we count up to 16 frames in 1 channel mode (2 frames/memory block * 8 memory blocks)
+		signal word_ctr: u11_array(0 to NUMBER_OF_SOURCES-1); -- Counts group of 8 samples. 14-3=11 bits (16k samples / 8 = 2k clocks/frame). 
+  	    signal capture_en: std_logic_vector(0 to NUMBER_OF_SOURCES-1);
         signal mux_mode: std_logic;
 	begin
 
 	    wr_proc: process(clk)
 	        variable sel_i: int8;        
-		    variable tvalid: std_logic;
+		    variable tvalid: std_logic_vector(0 to NUMBER_OF_SOURCES-1); -- word currently on the bus shall be stored
+		    variable src: integer range 0 to NUMBER_OF_SOURCES-1;
+            variable capture_trig: std_logic_vector(0 to NUMBER_OF_SOURCES-1);
+            variable N: integer; -- number of captured channels in current mode
+            variable K: integer; -- number of memory blocks per channel in current mode
+            variable K_WIDTH: integer; -- number of bits needed to represent the memory block for each channel
+            constant FRAMES_PER_BLOCK: integer := 2; -- number of frames that can be stored by each memory block. *Do not change: This parameter is implicitely hardcoded in some logic such as the memory enable and memory address.
 	    begin
 	        if rising_edge(clk) then
+
+	        	-- Register user reset
+	            user_reset_reg <= user_reset;
+
+	            -- Generate capture trigger (capture_trig(i))  for each sources
+	            --
+	            -- These triggers are generated continuously in parallel, independent of which source is selected, 
+	            -- so we can keep track of the frame number
+	            --
+	            -- capture_trig(i) is active high when the first word of the first frame of a captue burst is currently present on the bus. 
+--	        	for i in 0 to NUMBER_OF_SOURCES-1 loop
+--	        		if s_axis_tuser(i) = '1' then -- true on the last word of every frame
+--	        			timestamp(i) <= timestamp(i) + 1;
+--	        			period_ctr(i) <= period_ctr(i) + 1;
+--	        			if period_ctr(i) = base_period(i) then
+--	        				period_ctr(i) <= (others => '0');
+--	        			end if;
+--	        			capture_trig(i) := '0';
+--	        			if all_zeros(period_ctr(i)(to_integer(sub_period) downto 0)) then
+--	        				capture_trig(i) := '1';
+--	        			end if;
+--	        		end if;
+--	        	end loop; -- source
 
 	            -- for i in 0 to 7 loop
 	            --    m_axis_tdata(i) <= ram_dout(i)(111 downto 0);
 	            --end loop;
-	            user_reset_reg <= user_reset;
-	            tvalid := '0';
-	            readout_trig <= '0'; -- overriden below
-				if s_axis_tvalid(0)='1' then
-					tvalid := capture_en;
-					word_ctr <= word_ctr + 1;
-					if s_axis_tlast(0) = '1' then
-						word_ctr <= (others => '0');
-						frame <= frame + 1;
-						period_ctr <= period_ctr + 1;
-						timestamp <= timestamp + 1;
-						if frame = frame_max then
-                            frame <= (others => '0');
-							capture_en <= '0'; 
-							readout_trig <= capture_en;
-						end if;
-						if period_ctr = period then
-							capture_en <= '1'; 
-                            frame <= (others => '0');
-							period_ctr <= (others => '0');
-							capture_timestamp <= timestamp + 1; -- reuse earlier timestamp+1 logic
-						end if;
-					end if;                
-				end if;
+	        	for src in 0 to NUMBER_OF_SOURCES-1 loop
+		            tvalid(src) := '0';
+--		            readout_trig(src) <= '0'; -- single clock pulse signal, overriden below
+					if s_axis_tvalid(src)='1' then
+						tvalid(src) := capture_en(src);
+						word_ctr(src) <= word_ctr(src) + 1;
+						if s_axis_tlast(src) = '1' then
+							word_ctr(src) <= (others => '0');
+							frame(src) <= frame(src) + 1;
+							period_ctr(src) <= period_ctr(src) + 1;
+							timestamp(src) <= timestamp(src) + 1;
+							if frame(src) = frame_max then
+	                            frame(src) <= (others => '0');
+								capture_en(src) <= '0';
+								-- Pulse the readout_trig bit for each channel who has this source selected
+                                for i in 0 to NUMBER_OF_CHANNELS-1 loop
+                                    if to_integer(to_unsigned(source_sel_in(i))) = src then
+           								readout_trig(i) <= capture_en(src);
+           						    end if;
+           						end loop;
+							end if;
+							if period_ctr(src) = base_period(src) or all_ones(period_ctr(src)(to_integer(sub_period) downto 0)) then
+								capture_en(src) <= '1'; 
+	                            frame(src) <= (others => '0');
+								period_ctr(src) <= (others => '0');
+								capture_timestamp(src) <= timestamp(src) + 1; -- reuse earlier timestamp+1 logic
+							end if;
+						end if;                
+					end if;
 
-				if rst = '1' or user_reset_reg = '1' then
-					word_ctr <= (others => '0');
-					capture_en <= '1'; 
-					frame <= (others => '0');
-					period_ctr <= (others => '0');
-                    timestamp <= (others => '0'); -- needed for the first frame header
-                    capture_timestamp <= (others => '0'); -- needed if we reset with capture_en=1
-				end if; --rst
-
+					if rst = '1' or user_reset_reg = '1' then
+                        -- block-local signals
+						word_ctr(src) <= (others => '0');
+						capture_en(src) <= '1'; -- capture the first frame coming out of reset
+						frame(src) <= (others => '0');
+						period_ctr(src) <= (others => '0');
+	                    timestamp(src) <= (others => '0'); -- needed for the first frame header
+                        -- external signals under the control of this block
+	                    readout_trig(src) <= '0';
+	                    capture_timestamp(src) <= (others => '0'); -- needed if we reset with capture_en=1
+					end if; --rst
+				end loop; -- source
 
 	            -- The muxing of the input data to the data buffers is done
 	            -- with a 4-channel mux modified with an additional 2:1 mux to allow
@@ -312,44 +373,74 @@ begin
 				-- way to make it smaller. This is good enough.
 
 	            -- Prepare the input muxing signals to simplify the control lines that will go into the large input muxing network  
-	           	ram_wr_addr <= frame(0) & std_logic_vector(word_ctr); -- 14-3 bits + 1 bit = 12 bits, 4k words/URAM
+--	           	ram_wr_addr <= frame(0) & std_logic_vector(word_ctr); -- 14-3 bits + 1 bit = 12 bits, 4k words/URAM
 	          	ram_wr_en <= (others => '0'); -- overriden below to select which buffer is write-enabled depending on the mode and frame number
-	            case mode is
-	                when  "00" => -- 8 channel mode
-	                    for i in 0 to 3 loop
-		                	chan_sel(i) <= to_slv(2*i, 3); -- force selection of same channel for even buffers. Ignore user selection map.
-	                    end loop;
-	                	mux_mode <= '0'; -- force selection of same channel for odd buffers
-	                	ram_wr_en <= (others => tvalid); -- we write data to all buffers
-	                	frame_max <= "0001"; -- 2-1 frames
-	                when "01" => -- 4-channel mode  (1833 LUT with 8 channel mod)e  
-	                    for i in 0 to 3 loop
-		                	chan_sel(i) <= chan_sel_map(i); -- Use the 4 channels provided by the user
-	                    end loop;
-	                	mux_mode <= '1'; -- Odd buffer use the same channel as even buffer 
-	                	frame_max <= "0011"; -- 4-1 frames
-	                    for i in 0 to 3 loop -- 4 channel pairs
-		                	ram_wr_en(2*i + to_integer(frame(1 downto 1))) <= tvalid; -- depending on the frame number, we write in either buffer 0 or 1 of each pair
-		                end loop;
-	                when "10" => -- 2-channel mode 
-	                    for i in 0 to 3 loop
-		                	chan_sel(i) <= chan_sel_map(i/2); -- Use the first 2 channels provided by the user
-	                    end loop;
-	                	mux_mode <= '1'; -- Odd buffer use the same channel as even buffer 
-	                	frame_max <= "0111"; -- 8-1 frames
-	                    for i in 0 to 1 loop -- 4 channel pairs
-		                	ram_wr_en(4*i + to_integer(frame(2 downto 1))) <= tvalid; -- depending on the frame number, we write in buffer 0, 1, 2 or 3   of each group of 4 buffers
-		                end loop;
-	                when "11" => -- 1-channel mode 
-	                    for i in 0 to 3 loop
-		                	chan_sel(i) <= chan_sel_map(i/4); -- Use only the first channel provided by the user
-	                    end loop;
-	                	mux_mode <= '1'; -- Odd buffer use the same channel as even buffer 
-	                	frame_max <= "1111"; -- 16-1 frames
-	                	ram_wr_en(to_integer(frame(3 downto 1))) <= tvalid; -- depending on the frame number, we write in one of buffer 0-7 
-                    when others =>
-                        assert False report "Unhandled mode";
-	            end case;
+	            if mode = "00" then -- 8 channel mode
+                    N := 8; -- capturing 8 channels
+                    K := NUMBER_OF_CHANNELS / N; -- 2 memory blocks per channel
+                    -- Setup the input channel muxes
+                    mux_mode <= '0'; -- force selection of same channel for odd buffers
+                    for i in 0 to NUMBER_OF_CHANNELS/2-1 loop -- set the input source for each channel pair
+                        chan_sel(i) <= to_unsigned(2*i/K, 3); -- force selection of same channel for even buffers. Ignore user selection map.
+                    end loop;
+                    -- Set the maximum frame number per channel
+                    frame_max <= to_unsigned(FRAMES_PER_BLOCK*K-1, 4); -- mode 0: 2 frames
+
+                    -- Set the RAM address and enable lines
+                    for i in 0 to NUMBER_OF_CHANNELS-1 loop -- For each channel 
+                        sel_i := i;
+                        src := to_integer(to_unsigned(source_sel_in(sel_i))); -- data source associated ith the channel
+                        ram_wr_en(i) <= tvalid(src); -- 
+                        ram_wr_addr(i) <= frame(src)(0) & std_logic_vector(word_ctr(src)) ; -- 1  bit + (14-3) bits = 12 bits, 4k words/URAM
+                        -- Generate the ram readout triggers signals based on the channel triggers, mode and mux settings
+                        if readout_trig(sel_i) = '1' then
+                            ram_readout_trig(i) <= not ram_readout_trig(i);
+                        end if;
+                    end loop;
+
+                else -- 2-, 4-, or 8-channel modes
+
+                    -- Derive the basic readoit parameters
+                    if mode = "01" then
+                        N := 4; -- capturing 4 channels
+                    elsif mode = "10" then
+                        N := 2; -- capturing 2 channels
+                    else
+                        N := 1; -- capturing 1 channel
+                    end if;
+                    K := NUMBER_OF_CHANNELS / N; -- memory blocks per channel (2 in mode 1, 4 in mode 2, 8 in mode 3)
+                    K_WIDTH := integer_log2(K); -- Number of bits to represent the block number (1 in mode 1, 2 in mode 2, 3 in mode 3)
+                    
+                    
+                    -- Set the source for each channel-pair mux
+                    --   mode 1: (map(0), map(1), map(2), map(3)), 
+                    --   mode 2: (map(0), map(0), map(1), map(1)), 
+                    --   mode 3: (map(0), map(0), map(0), map(0))
+                    mux_mode <= '1'; -- Odd buffer use the same channel as even buffer 
+                    for i in 0 to NUMBER_OF_CHANNELS/2-1 loop -- one mux per channel pair
+                        chan_sel(i) <= chan_sel_map(2*i/K); 
+                    end loop;
+
+                    -- Set the maximum frame number stored for each channel
+                    frame_max <= to_unsigned(FRAMES_PER_BLOCK*K-1, 4); -- mode 1: 4 frames, mode 2: 8 frames, mode 3: 16 frames   
+
+                    -- Set the memory enable and address
+                    for i in 0 to N-1 loop -- 4 groups of 2 channels
+                        sel_i := to_integer(chan_sel_map(i)); -- integer representation of user-selected selected channel number
+                        src := to_integer(to_unsigned(source_sel_in(sel_i))); -- integer representation of the source for that channel
+                        -- Enable the one memory block to that will receive the data for each channel
+                        -- based on the current frame number
+                        ram_wr_en(K*i + to_integer(frame(src)(K_WIDTH downto 1))) <= tvalid(src); 
+                        -- Set the write address for the memory blocks for each channel. 
+                        -- All blocks have the same address, but only one was enabled above.
+                        -- The address depends on the word counter and the last bit of the frame counter (since there are 2 frames per memory) 
+                        ram_wr_addr(K*i to K*(i+1)-1) <= (others => frame(src)(0) & std_logic_vector(word_ctr(src))); -- 14-3 bits + 1 bit = 12 bits, 4k words/URAM
+                        if readout_trig(sel_i) = '1' then
+                            ram_readout_trig(K*i to K*(i+1)-1) <= not ram_readout_trig(K*i to K*(i+1)-1);
+                        end if;
+                    end loop;
+    
+                end if;
 		  
 	            -- Mux the 8 input channels to the 8 buffers.
 	            --
@@ -369,7 +460,7 @@ begin
 	               if mux_mode = '0' then -- Assign input channel x to buffer x
 	                   ram_din(2*i)(111 downto 0) <= s_axis_tdata(sel_i); -- When mux_mode=0, chan_sel(i) is forced to 2*i. We don't assign the input directly becasue the synthesizer would infer an additional mux, which is redundant.
 	                   ram_din(2*i+1)(111 downto 0) <= s_axis_tdata(2*i+1);
-	               else -- Select the same even and odd input channel for each buffe rpair  
+	               else -- Select the same even and odd input channel for each buffer pair  
 	                   ram_din(2*i)(111 downto 0) <= s_axis_tdata(sel_i);
 	                   ram_din(2*i+1)(111 downto 0) <= s_axis_tdata(sel_i);
 	               end if;
