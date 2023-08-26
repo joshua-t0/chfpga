@@ -47,13 +47,20 @@ entity CHAN is
         --
         -- For non-OOC usage, this entity can be instantiated with entity instantiation with GENERICS
 
-        PLATFORM_ID     : integer := CONFIG_PLATFORM_ID;-- PLATFORM_ID_MGK7MB; -- This generics is locked to the MGK7MB when using CHAN as an OOC.
-        IMPLEMENT_CHAN  : boolean := TRUE;
-        IMPLEMENT_FFT   : boolean := CONFIG_CHAN_IMPLEMENT_FFT;
-        ADC_BITS_PER_SAMPLE: integer := CONFIG_ADC_BITS_PER_SAMPLE;
-        ADC_SAMPLES_PER_WORD: integer := CONFIG_ADC_SAMPLES_PER_WORD;
-        ADC_SAMPLES_PER_FRAME: integer := CONFIG_ADC_SAMPLES_PER_FRAME;
-        SIM             : boolean := GLOBAL_SIM
+        PLATFORM_ID     : integer          := CONFIG_PLATFORM_ID;-- PLATFORM_ID_MGK7MB; -- This generics is locked to the MGK7MB when using CHAN as an OOC.
+        IMPLEMENT_CHAN  : boolean          := TRUE;
+        IMPLEMENT_FFT   : boolean          := CONFIG_CHAN_IMPLEMENT_FFT;
+        ADC_BITS_PER_SAMPLE: integer       := CONFIG_ADC_BITS_PER_SAMPLE;
+        ADC_SAMPLES_PER_WORD: integer      := CONFIG_ADC_SAMPLES_PER_WORD;
+        ADC_SAMPLES_PER_FRAME: integer     := CONFIG_ADC_SAMPLES_PER_FRAME;
+        ADC_BITS_PER_WORD: integer         := ADC_BITS_PER_SAMPLE * ADC_SAMPLES_PER_WORD;
+        SCALER_USE_COMPLEX_GAINS: boolean  := CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS;
+        SCALER_COEFF_BITS_PER_BIN: integer := sel(SCALER_USE_COMPLEX_GAINS, 16+16, 16); -- use wither 16-bit real gains or (16+16i) bit complex gains 
+        NUMBER_OF_CAPTURE_SOURCES: integer := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES;
+        OUT_BITS_PER_WORD: integer         := 32; -- Width of the output data bus 
+        CAPTURE_TYPE: string               := CONFIG_CHAN_CAPTURE_TYPE; -- "URAM" or "BRAM"
+        CAPTURE_BITS_PER_WORD: integer     := sel(CAPTURE_TYPE="URAM", 128, 32); -- If we use URAM capture (which has a 128-bit bus), have the scaler output be the same width so we can get more FFT resolution when the scaler is bypassed.
+        SIM: boolean                       := GLOBAL_SIM
         );
 
     PORT (
@@ -61,7 +68,7 @@ entity CHAN is
         --! Input Interface from ADC
         --! 64-bit wide (4x 16-bit samples), using the AXI4-Streaming Prototol
 
-        in_dat_tdata    : in std_logic_vector(ADC_BITS_PER_SAMPLE * ADC_SAMPLES_PER_WORD-1 downto 0);
+        in_dat_tdata    : in std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
         in_dat_tvalid   : in std_logic;
         in_dat_tlast    : in std_logic;
         in_dat_tuser    : in std_logic_vector(ADC_SAMPLES_PER_WORD-1 downto 0);  -- ADC saturation flags (one per sample)
@@ -72,10 +79,11 @@ entity CHAN is
         -- Output Interface
         -- Output Data Stream in 32bit AXI4-Streaming, Non-blocking
         -- 4x (4+4 bits) or 8x4-bit
-        out_dat_tdata   : out std_logic_vector(31 downto 0);
+        out_dat_tdata   : out std_logic_vector(OUT_BITS_PER_WORD-1 downto 0);
         out_dat_tvalid  : out std_logic;
         out_dat_tlast   : out std_logic;
         out_dat_tuser   : out std_logic_vector(3 downto 0);
+
         out_clk         : in  std_logic;
         out_reset       : in  std_logic;
 
@@ -112,10 +120,12 @@ entity CHAN is
         adc_rply_tlast  : in  std_logic;
         adc_rply_tready : out std_logic;
 
-        -- Data Probe Interface
-        m_axis_cap_tdata: out std_logic_vector(ADC_BITS_PER_SAMPLE * ADC_SAMPLES_PER_WORD-1 downto 0);
-        m_axis_cap_tvalid: out std_logic;
-        m_axis_cap_tlast: out std_logic;
+        -- Data capture interface
+        cap_source_req: in std_logic;
+        cap_source_ack: out std_logic;
+        m_axis_cap_tdata: out std_logic_vector(CAPTURE_BITS_PER_WORD-1 downto 0);
+        m_axis_cap_tvalid: out std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES - 1);
+        m_axis_cap_tlast: out std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES - 1);
 
 
         prb_tdata       : out std_logic_vector(7 downto 0);
@@ -141,8 +151,14 @@ attribute dont_touch: string;
 --constant IMPLEMENT_FFT   : BOOLEAN :=GLOBAL_IMPLEMENT_FFT;
 --constant SIM             : BOOLEAN :=GLOBAL_SIM;
 
-constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
-constant ADC_BITS_PER_WORD: integer := ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPLE;
+constant FPGA_SERIES: integer          := FPGA_SERIES_LIST(PLATFORM_ID);
+constant FFT_BITS_PER_BIN: integer     := 18+18; -- Re and Im parts combined
+constant FFT_BINS_PER_WORD: integer    := ADC_SAMPLES_PER_WORD / 2;
+constant FFT_BITS_PER_WORD: integer    := FFT_BITS_PER_BIN * FFT_BINS_PER_WORD;
+constant FFT_BINS_PER_FRAME :integer   := ADC_SAMPLES_PER_FRAME/2;
+constant SCALER_BITS_PER_WORD: integer := CAPTURE_BITS_PER_WORD;
+constant SCALER_BITS_PER_BIN: integer  := SCALER_BITS_PER_WORD / FFT_BINS_PER_WORD; -- Note: scaler output is always 4+4 or 8+8 bits when not bypassed.  
+constant OUT_BITS_PER_BIN: integer     := OUT_BITS_PER_WORD / FFT_BINS_PER_WORD;
 
 signal axis_funcgen_out_tdata: std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
 signal axis_funcgen_out_tuser: std_logic_vector(3 downto 0);
@@ -150,15 +166,35 @@ signal axis_funcgen_out_tvalid: std_logic;
 signal axis_funcgen_out_tlast: std_logic;
 
 
-signal axis_fft_out         : axis72_dat_struct;
-signal axis_scaler_out      : axis32_dat_struct;
-signal axis_scaler_out_tvalid : std_logic;
+signal axis_fft_out_tdata: std_logic_vector(FFT_BITS_PER_WORD-1 downto 0);
+signal axis_fft_out_tuser: std_logic_vector(3 downto 0);
+signal axis_fft_out_tvalid: std_logic;
+signal axis_fft_out_tlast: std_logic;
 
+--signal axis_fft_out         : axis72_dat_struct;
+
+
+signal axis_scaler_out      : axis32_dat_struct;
+
+signal axis_scaler_out_tdata: std_logic_vector(SCALER_BITS_PER_WORD-1 downto 0);
+signal axis_scaler_out_tvalid : std_logic;
+signal axis_scaler_out_tlast : std_logic;
+signal axis_scaler_out_tuser: std_logic_vector(3 downto 0);
+
+
+signal axis_fifo_in_tdata: std_logic_vector(OUT_BITS_PER_WORD-1 downto 0);
+signal axis_fifo_in_tvalid: std_logic;
+signal axis_fifo_in_tlast: std_logic;
+signal axis_fifo_in_tuser: std_logic_vector(3 downto 0);
+
+
+signal axis_fifo_out_tdata  : std_logic_vector(OUT_BITS_PER_WORD-1 downto 0);
 signal axis_fifo_out_tvalid : std_logic;
 signal axis_fifo_out_tvalid_not_rst : std_logic;
-signal axis_fifo_out_tdata  : slv32;
 signal axis_fifo_out_tlast  : std_logic;
-signal axis_fifo_out_tuser  : slv4;
+signal axis_fifo_out_tuser  : std_logic_vector(3 downto 0);
+
+
 signal fifo_overflow        : std_logic;
 signal fifo_almost_full     : std_logic;
 
@@ -378,13 +414,9 @@ begin
                 axis_adc_reg2_tvalid <= '0';
             end if;
 
-            -- **temp hack** send funcgen output to capture port
-            m_axis_cap_tdata <= axis_funcgen_out_tdata;
-            m_axis_cap_tvalid <= axis_funcgen_out_tvalid;
-            m_axis_cap_tlast <= axis_funcgen_out_tlast;
             -- Provide monitoring data
-            lane_monitor(0) <= axis_scaler_out.TVALID xor axis_scaler_out.TLAST;
-            lane_monitor(1) <= axis_fft_out.TVALID xor axis_fft_out.TLAST;
+            lane_monitor(0) <= axis_scaler_out_tvalid xor axis_scaler_out_tlast;
+            lane_monitor(1) <= axis_fft_out_tvalid xor axis_fft_out_tlast;
             lane_monitor(2) <= axis_funcgen_out_tvalid xor axis_funcgen_out_tlast;
             lane_monitor(3) <= axis_fifo_out_tvalid xor axis_fifo_out_tlast;
         end if; --clk
@@ -475,7 +507,10 @@ begin
                 TUSER => axis_funcgen_out_tuser, 
                 TVALID => axis_funcgen_out_tvalid,
                 TLAST => axis_funcgen_out_tlast),
-            out_dat => axis_fft_out,
+            out_dat.TDATA => axis_fft_out_tdata(71 downto 0), -- ** hack to allow compiling with the old FFT ***
+                out_dat.TVALID => axis_fft_out_tvalid,
+                out_dat.TLAST => axis_fft_out_tlast,
+                out_dat.TUSER => axis_fft_out_tuser,
             clk     => in_clk,
             reset   => in_reset_fft,
 
@@ -505,10 +540,27 @@ begin
         end process;
 
     SCALER0: entity work.SCALER
+        generic map (
+            FFT_BITS_PER_BIN => FFT_BITS_PER_BIN, -- Real + Imaginary part
+            FFT_BINS_PER_WORD => FFT_BINS_PER_WORD, -- half the number of ADC samples per word because the FFT drops half the spectrum (the negative frequencies) 
+            FFT_BINS_PER_FRAME => FFT_BINS_PER_FRAME, -- same comment
+            USE_COMPLEX_GAINS => SCALER_USE_COMPLEX_GAINS,
+            COEFF_BITS_PER_BIN => SCALER_COEFF_BITS_PER_BIN, -- typically 16 or 16+16. Includes both real and imaginary part. If USE_COMPLEX_GAINS=TRUE, half the bits are used for real and half for imaginary. Must be multiple of 8 as it is configured byte-wise.
+            OUT_BITS_PER_BIN => SCALER_BITS_PER_BIN
+            )
         PORT MAP(
-            -- Input and output interfaces
-            in_dat    => axis_fft_out,
-            out_dat   => axis_scaler_out,
+            -- Input data from the FFT
+            s_axis_in_tdata => axis_fft_out_TDATA,
+            s_axis_in_tvalid => axis_fft_out_TVALID,
+            s_axis_in_tlast => axis_fft_out_TLAST,
+            s_axis_in_tuser => axis_fft_out_TUSER, 
+
+            -- Output data
+            m_axis_out_tdata => axis_scaler_out_tdata,
+            m_axis_out_tvalid => axis_scaler_out_tvalid,
+            m_axis_out_tlast => axis_scaler_out_tlast,
+            m_axis_out_tuser => axis_scaler_out_tuser,
+
             clk       => in_clk,
             reset     => in_reset_scaler,
 
@@ -543,8 +595,21 @@ end block scaler_blk;
 -- It is more economical to sacrifice a block RAM per channelizer and have the
 -- outputs of all channelizers operate on a single global clock.
 --
-DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
 
+-- Remap the scaler output to the FFT input. The FFT width matches the output width, but the scaler output may be wider so we can capture more of teh FFT bits in bypass mode.
+FIFO_REMAP_GEN: for i in 0 to FFT_BINS_PER_WORD*2-1 generate
+    assert i<10 report str(i) & " "& str(axis_fifo_in_tdata'length) severity failure;
+    axis_fifo_in_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto i*OUT_BITS_PER_BIN/2) <= axis_scaler_out_tdata((i+1)*SCALER_BITS_PER_BIN/2-1 downto (i+1)*SCALER_BITS_PER_BIN/2-OUT_BITS_PER_BIN/2);
+end generate;
+axis_fifo_in_tvalid <= axis_scaler_out_tvalid and not fifo_rst and (not fifo_almost_full or axis_scaler_out_tlast); -- make sure we don't write during reset
+axis_fifo_in_tlast <= axis_scaler_out_tlast;
+axis_fifo_in_tuser <= axis_scaler_out_tuser;
+
+
+DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
+    signal fifo_wr_en: std_logic;
+    signal fifo_rd_en: std_logic;
+begin
     ----------------------
     -- FIFO reset process.
     ----------------------
@@ -567,20 +632,21 @@ DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
             end if; --clk
         end process;
 
-    axis_scaler_out_tvalid <= axis_scaler_out.TVALID and not fifo_rst and (not fifo_almost_full or axis_scaler_out.TLAST); -- make sure we don't write during reset
-    axis_fifo_out_tvalid_not_rst <= axis_fifo_out_tvalid and not fifo_rst; -- start reading only when there is data. make sure we don't read during reset. In simulation, tying rd_en to '1' causes 'valid' to be invalid.
+    fifo_rd_en <= axis_fifo_out_tvalid and not fifo_rst; -- start reading only when there is data. make sure we don't read during reset. In simulation, tying rd_en to '1' causes 'valid' to be invalid.
+    fifo_wr_en <= axis_fifo_in_tvalid and not fifo_rst and (not fifo_almost_full or axis_scaler_out_tlast); -- make sure we don't write during reset
 
+    -- FIFO is asynchronous, 37 bit wide (32-bit tdata, 4-bit tuser, 1 bit tlast), FWFT, zero latency
     chan_fifo0 : entity work.CHAN_FIFO2
         PORT MAP (
             rst                => fifo_rst, -- asynchronous
             wr_clk             => in_clk,
-            wr_en              => axis_scaler_out_tvalid,
-            din(31 downto 0)   => axis_scaler_out.TDATA,
-            din(32)            => axis_scaler_out.TLAST,
-            din(36 downto 33)  => axis_scaler_out.TUSER,
+            wr_en              => fifo_wr_en,
+            din(31 downto 0)   => axis_fifo_in_tdata,
+            din(32)            => axis_fifo_in_tlast,
+            din(36 downto 33)  => axis_fifo_in_tuser,
 
             rd_clk             => out_clk,
-            rd_en              => axis_fifo_out_tvalid_not_rst,
+            rd_en              => fifo_rd_en,
             dout(31 downto 0)  => axis_fifo_out_tdata,
             dout(32)           => axis_fifo_out_tlast,
             dout(36 downto 33) => axis_fifo_out_tuser,
@@ -591,9 +657,7 @@ DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
             empty              => open
         );
 
-end generate DATA_FIFO_K7;
-
-DATA_FIFO_USP: if FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
+elsif FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
     signal fifo_wr_rst_busy: std_logic;
     signal fifo_rd_rst_busy: std_logic;
     signal fifo_wr_en: std_logic;
@@ -617,16 +681,16 @@ begin
         end process;
 
     fifo_rst <= in_reset_fifo; -- synchronous to write clock
-    fifo_wr_en <= axis_scaler_out.TVALID and not (fifo_rst or fifo_wr_rst_busy) and (not fifo_almost_full or axis_scaler_out.TLAST); -- write clock domain
+    fifo_wr_en <= axis_fifo_in_tvalid and not (fifo_rst or fifo_wr_rst_busy) and (not fifo_almost_full or axis_fifo_in_tlast); -- write clock domain
     fifo_rd_en <= axis_fifo_out_tvalid and not (fifo_rd_rst_busy); -- start reading only when there is data. make sure we don't read during reset.
     chan_fifo0 : entity work.CHAN_FIFO2_UP
         PORT MAP (
             srst               => fifo_rst, -- synchronous to the write clock
             wr_clk             => in_clk,
             wr_en              => fifo_wr_en,
-            din(31 downto 0)   => axis_scaler_out.TDATA,
-            din(32)            => axis_scaler_out.TLAST,
-            din(36 downto 33)  => axis_scaler_out.TUSER,
+            din(31 downto 0)   => axis_fifo_in_tdata,
+            din(32)            => axis_fifo_in_tlast,
+            din(36 downto 33)  => axis_fifo_in_tuser,
 
             rd_clk             => out_clk,
             rd_en              => fifo_rd_en,
@@ -669,96 +733,124 @@ out_proc: process(out_clk)
 ---------------------------------------------------------------------
 -- DATA CAPTURE
 ---------------------------------------------------------------------
--- Captures a subset of the FUNGEN or SCALER output data, packetizes it with a header, and send it over a slow
--- 8-bit AXI Streaming bus.
+-- Captures a subset of the FUNGEN or SCALER output data for transmission over a slower link. There are 2 types of capture engines:
+--   CAPTURE_TYPE = "BRAM": The capture engine is local to the channelizer and uses BRAM for storage. Each channelozer has its own capture engine (PROBER)
+--        This is typically for application that have small frame sizes or on devices that don't have higher density UltraRAM.
+--   CAPTURE_TYPE = "URAM": There us a centralized capture engine that uses UltraRAM to free up BRAM memory for other uses (such as the FFT). 
+--        The channelizer only implements the mux that selects the data source, and passes on the selected data to the capture port.  
+--
 cap_blk: block
+    signal axis_cap0_tdata: slv_array(0 to NUMBER_OF_CAPTURE_SOURCES-1)(CAPTURE_BITS_PER_WORD-1 downto 0);
+    signal axis_cap0_tuser: slv_array(0 to NUMBER_OF_CAPTURE_SOURCES-1)(3 downto 0);
+    signal axis_cap0_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
+    signal axis_cap0_tlast: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
 
-    signal axis_cap0_tdata: std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
-    signal axis_cap0_tuser: std_logic_vector(3 downto 0);
-    signal axis_cap0_tvalid: std_logic;
-    signal axis_cap0_tlast: std_logic;
+    constant CAPTURE_BITS_PER_SAMPLE: integer := CAPTURE_BITS_PER_WORD / ADC_SAMPLES_PER_WORD;
+    constant LEN: integer := minimum(CAPTURE_BITS_PER_SAMPLE, ADC_BITS_PER_SAMPLE);
 
-    signal axis_cap1_tdata: std_logic_vector(31 downto 0);
-    signal axis_cap1_tuser: std_logic_vector(3 downto 0);
-    signal axis_cap1_tvalid: std_logic;
-    signal axis_cap1_tlast: std_logic;
-
-    -- Prober output stream
-    signal PRB_DAT: AXIS8_DAT_STRUCT; --! Data capture bus (AXI4 Streaming)
-    signal PRB_RDY: AXIS8_RDY_STRUCT;
- 
 begin
 
-    -- Connect capture streams to top level port
-    prb_tdata <= prb_DAT.tdata;
-    prb_tvalid <= prb_DAT.tvalid;
-    prb_tlast <= prb_DAT.tlast;
-    prb_RDY.tready <= prb_tready;
 
     -- Pipeline the funcgen and scaler signals that are tapped of the main pipeline
-    prober_pipe: process(in_clk)
+    cap_pipe_proc: process(in_clk)
         begin
             if rising_edge(in_clk) then
 
                 -- pipeline reset
                 in_reset_prober <= in_reset_funcgen or in_reset_scaler;
 
-                -- Pipeline data from FUNCGEN
-                axis_cap0_tdata <= axis_funcgen_out_tdata;
-                axis_cap0_tuser <= axis_funcgen_out_tuser;
-                axis_cap0_tvalid <= axis_funcgen_out_tvalid;
-                axis_cap0_tlast <= axis_funcgen_out_tlast;
+                -- Pipeline data from FUNCGEN. Repack the ADC samples on the MSB of the capture samples.
+
+                axis_cap0_tdata(0) <= (others => '0');
+                for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
+                    axis_cap0_tdata(0)((i+1)*CAPTURE_BITS_PER_SAMPLE-1 downto (i+1)*CAPTURE_BITS_PER_SAMPLE-LEN) <= axis_funcgen_out_tdata((i+1)*ADC_BITS_PER_SAMPLE-1 downto (i+1)*ADC_BITS_PER_SAMPLE-LEN);
+                end loop;
+                axis_cap0_tuser(0) <= axis_funcgen_out_tuser;
+                axis_cap0_tvalid(0) <= axis_funcgen_out_tvalid;
+                axis_cap0_tlast(0) <= axis_funcgen_out_tlast;
 
                 if in_reset_prober = '1' then
-                    axis_cap0_tvalid <= '0';
+                    axis_cap0_tvalid(0) <= '0';
                 end if;
 
-                -- Pipeline data from SCALER
-                axis_cap1_tdata <= axis_scaler_out.TDATA;
-                axis_cap1_tuser <= axis_scaler_out.TUSER;
-                axis_cap1_tvalid <= axis_scaler_out.TVALID;
-                axis_cap1_tlast <= axis_scaler_out.TLAST;
+                -- Pipeline data from SCALER. 
+                axis_cap0_tdata(1) <= axis_scaler_out_tdata; -- Scaler output width was already made equal to the capture width.
+                axis_cap0_tuser(1) <= axis_scaler_out_tuser;
+                axis_cap0_tvalid(1) <= axis_scaler_out_tvalid;
+                axis_cap0_tlast(1) <= axis_scaler_out_tlast;
 
                 if in_reset_prober = '1' then
-                    axis_cap1_tvalid <= '0';
+                    axis_cap0_tvalid(1) <= '0';
                 end if;
 
             end if; -- clk
         end process;
+    -- Block-RAM-based local capture engine
+    cap_gen: if CAPTURE_TYPE = "BRAM" generate
+    
+         -- Slow output data stream
+        signal PRB_DAT: AXIS8_DAT_STRUCT; 
+        signal PRB_RDY: AXIS8_RDY_STRUCT;
+     
+    begin
+    
+        -- Connect capture streams to top level port
+        prb_tdata <= prb_DAT.tdata;
+        prb_tvalid <= prb_DAT.tvalid;
+        prb_tlast <= prb_DAT.tlast;
+        prb_RDY.tready <= prb_tready;
 
-    PROBER0: entity work.PROBER
-        generic map (
-            SIM=>SIM
-        )
-        port map (
-            -- Input data
-            in_dat0   => (
-                TDATA => axis_cap0_tdata(31 downto 0), --*** Temporary hack *** 
-                TUSER => axis_cap0_tuser, 
-                TVALID => axis_cap0_tvalid,
-                TLAST => axis_cap0_tlast),
-            in_dat1   => (
-                TDATA => axis_cap1_tdata, 
-                TUSER => axis_cap1_tuser, 
-                TVALID => axis_cap1_tvalid,
-                TLAST => axis_cap1_tlast),
-            in_clk    => in_clk, -- both inputs must run on the same clock
-            in_reset  => in_reset_prober, -- both inputs must run on the same reset
-
-            -- Output data streams
-            OUT_DAT => PRB_DAT,
-            OUT_RDY => PRB_RDY,
-            OUT_CLK => PRB_CLK,
-
-            -- Control interface
-            CTRL_CMD_IN_DAT   => CMD_DAT(MODULE_PROBER_ADDR),
-            CTRL_CMD_IN_RDY   => CMD_RDY(MODULE_PROBER_ADDR),
-            CTRL_RPLY_OUT_DAT => RPLY_DAT(MODULE_PROBER_ADDR),
-            CTRL_RPLY_OUT_RDY => RPLY_RDY(MODULE_PROBER_ADDR),
-            CTRL_CLK          => CTRL_CLK,
-            CTRL_RST          => CTRL_RST
-        );
+        -- Instantiate the local capture module 
+        PROBER0: entity work.PROBER
+            generic map (
+                SIM=>SIM
+            )
+            port map (
+                -- Input data
+                in_dat0   => (
+                    TDATA => axis_cap0_tdata(0), 
+                    TUSER => axis_cap0_tuser(0), 
+                    TVALID => axis_cap0_tvalid(0),
+                    TLAST => axis_cap0_tlast(0)),
+                in_dat1   => (
+                    TDATA => axis_cap0_tdata(1), 
+                    TUSER => axis_cap0_tuser(1), 
+                    TVALID => axis_cap0_tvalid(1),
+                    TLAST => axis_cap0_tlast(1)),
+                in_clk    => in_clk, -- both inputs must run on the same clock
+                in_reset  => in_reset_prober, -- both inputs must run on the same reset
+    
+                -- Output data streams
+                OUT_DAT => PRB_DAT,
+                OUT_RDY => PRB_RDY,
+                OUT_CLK => PRB_CLK,
+    
+                -- Control interface
+                CTRL_CMD_IN_DAT   => CMD_DAT(MODULE_PROBER_ADDR),
+                CTRL_CMD_IN_RDY   => CMD_RDY(MODULE_PROBER_ADDR),
+                CTRL_RPLY_OUT_DAT => RPLY_DAT(MODULE_PROBER_ADDR),
+                CTRL_RPLY_OUT_RDY => RPLY_RDY(MODULE_PROBER_ADDR),
+                CTRL_CLK          => CTRL_CLK,
+                CTRL_RST          => CTRL_RST
+            );
+    
+    elsif CAPTURE_TYPE = "URAM" generate
+         cap_proc: process(in_clk)
+            begin
+                if rising_edge(in_clk) then
+                    cap_source_ack <= cap_source_req;
+                    m_axis_cap_tdata <= axis_cap0_tdata(0) when cap_source_req = '0' else
+                                        axis_cap0_tdata(1);
+                    m_axis_cap_tlast <= axis_cap0_tlast;
+                    m_axis_cap_tvalid <= axis_cap0_tvalid;
+                end if; -- clk
+            end process;
+    else generate
+        assert FALSE report "Unsupported CAPTURE_TYPE" & CAPTURE_TYPE severity FAILURE;
+    end generate cap_gen;
+    
 end block cap_blk;
+
 end generate IMPL_GEN; -- IMPLEMENT_CHAN=TRUE
 
 
@@ -773,10 +865,10 @@ NOIMPL_GEN: if IMPLEMENT_CHAN=FALSE generate
     --! Force the command interface to accept and ignore any command and to reply nothing.
     --! Skip the ADCDAQ module because it is always implemented.
     MODn:   for i in MODULE_ADCDAQ_ADDR+1 to NUMBER_OF_MODULES-1 generate
-                CMD_RDY(i).TREADY<= '1'; --! Always accept commands. Those will be ignored.
-                RPLY_DAT(i).TVALID<='0'; --! Do not send any reply
-                RPLY_DAT(i).TLAST<='0'; -- for nice simulations only
-                RPLY_DAT(i).TDATA<=(others=>'0'); -- for nice simulations only
+                CMD_RDY(i).TREADY <= '1'; --! Always accept commands. Those will be ignored.
+                RPLY_DAT(i).TVALID <= '0'; --! Do not send any reply
+                RPLY_DAT(i).TLAST <= '0'; -- for nice simulations only
+                RPLY_DAT(i).TDATA <= (others=>'0'); -- for nice simulations only
     end generate;
 end generate NOIMPL_GEN; -- IMPLEMENT_CHAN=FALSE
 
