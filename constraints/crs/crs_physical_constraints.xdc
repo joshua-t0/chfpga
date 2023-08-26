@@ -261,11 +261,64 @@ set_property EXCLUDE_PLACEMENT 1 [get_pblocks SYSTEM]
 
 
 create_pblock UCAP
-add_cells_to_pblock [get_pblocks UCAP] [get_cells -quiet [list sifpga_crs_i/sifpga_crs_chfpga_0/U0/chfpga0/ucap_blk0.ucap0]]
+add_cells_to_pblock [get_pblocks UCAP] [get_cells -quiet [list sifpga_crs_i/sifpga_crs_chfpga_0/U0/chfpga0/cap_gen.ucap0]]
 resize_pblock [get_pblocks UCAP] -add {SLICE_X15Y420:SLICE_X21Y479}
 resize_pblock [get_pblocks UCAP] -add {DSP48E2_X1Y168:DSP48E2_X1Y191}
 resize_pblock [get_pblocks UCAP] -add {URAM288_X0Y64:URAM288_X0Y79}
 set_property EXCLUDE_PLACEMENT 1 [get_pblocks UCAP]
+
+
+create_pblock CHAN0
+add_cells_to_pblock [get_pblocks CHAN0] [get_cells -quiet [list {sifpga_crs_i/sifpga_crs_chfpga_0/U0/chfpga0/CHANGEN[0].CHANi}]]
+resize_pblock [get_pblocks CHAN0] -add {SLICE_X24Y420:SLICE_X115Y479}
+resize_pblock [get_pblocks CHAN0] -add {DSP48E2_X2Y168:DSP48E2_X22Y191}
+resize_pblock [get_pblocks CHAN0] -add {RAMB18_X2Y168:RAMB18_X10Y191}
+resize_pblock [get_pblocks CHAN0] -add {RAMB36_X2Y84:RAMB36_X10Y95}
+
+create_pblock CHAN1
+add_cells_to_pblock [get_pblocks CHAN1] [get_cells -quiet [list {sifpga_crs_i/sifpga_crs_chfpga_0/U0/chfpga0/CHANGEN[1].CHANi}]]
+resize_pblock [get_pblocks CHAN1] -add {SLICE_X24Y360:SLICE_X118Y419}
+resize_pblock [get_pblocks CHAN1] -add {DSP48E2_X2Y144:DSP48E2_X22Y167}
+resize_pblock [get_pblocks CHAN1] -add {RAMB18_X2Y144:RAMB18_X11Y167}
+resize_pblock [get_pblocks CHAN1] -add {RAMB36_X2Y72:RAMB36_X11Y83}
+create_pblock CHAN2
+add_cells_to_pblock [get_pblocks CHAN2] [get_cells -quiet [list {sifpga_crs_i/sifpga_crs_chfpga_0/U0/chfpga0/CHANGEN[2].CHANi}]]
+resize_pblock [get_pblocks CHAN2] -add {SLICE_X24Y300:SLICE_X118Y360}
+resize_pblock [get_pblocks CHAN2] -add {DSP48E2_X2Y120:DSP48E2_X22Y143}
+resize_pblock [get_pblocks CHAN2] -add {RAMB18_X2Y120:RAMB18_X11Y143}
+resize_pblock [get_pblocks CHAN2] -add {RAMB36_X2Y60:RAMB36_X11Y71}
+create_pblock CHAN3
+add_cells_to_pblock [get_pblocks CHAN3] [get_cells -quiet [list {sifpga_crs_i/sifpga_crs_chfpga_0/U0/chfpga0/CHANGEN[3].CHANi}]]
+resize_pblock [get_pblocks CHAN3] -add {SLICE_X24Y240:SLICE_X118Y299}
+resize_pblock [get_pblocks CHAN3] -add {DSP48E2_X2Y96:DSP48E2_X22Y119}
+resize_pblock [get_pblocks CHAN3] -add {RAMB18_X2Y96:RAMB18_X11Y119}
+resize_pblock [get_pblocks CHAN3] -add {RAMB36_X2Y48:RAMB36_X11Y59}
+create_pblock CHAN4
+add_cells_to_pblock [get_pblocks CHAN4] [get_cells -quiet [list {sifpga_crs_i/sifpga_crs_chfpga_0/U0/chfpga0/CHANGEN[4].CHANi}]]
+resize_pblock [get_pblocks CHAN4] -add {SLICE_X24Y180:SLICE_X111Y239}
+resize_pblock [get_pblocks CHAN4] -add {DSP48E2_X2Y72:DSP48E2_X21Y95}
+resize_pblock [get_pblocks CHAN4] -add {RAMB18_X2Y72:RAMB18_X10Y95}
+resize_pblock [get_pblocks CHAN4] -add {RAMB36_X2Y36:RAMB36_X10Y47}
+create_pblock CHAN5
+add_cells_to_pblock [get_pblocks CHAN5] [get_cells -quiet [list {sifpga_crs_i/sifpga_crs_chfpga_0/U0/chfpga0/CHANGEN[5].CHANi}]]
+resize_pblock [get_pblocks CHAN5] -add {SLICE_X22Y120:SLICE_X110Y179}
+resize_pblock [get_pblocks CHAN5] -add {BUFG_PS_X0Y48:BUFG_PS_X0Y71}
+resize_pblock [get_pblocks CHAN5] -add {DSP48E2_X2Y48:DSP48E2_X21Y71}
+resize_pblock [get_pblocks CHAN5] -add {RAMB18_X2Y48:RAMB18_X10Y71}
+resize_pblock [get_pblocks CHAN5] -add {RAMB36_X2Y24:RAMB36_X10Y35}
+create_pblock CHAN6
+add_cells_to_pblock [get_pblocks CHAN6] [get_cells -quiet [list {sifpga_crs_i/sifpga_crs_chfpga_0/U0/chfpga0/CHANGEN[6].CHANi}]]
+resize_pblock [get_pblocks CHAN6] -add {SLICE_X38Y60:SLICE_X111Y119}
+resize_pblock [get_pblocks CHAN6] -add {DSP48E2_X7Y24:DSP48E2_X21Y47}
+resize_pblock [get_pblocks CHAN6] -add {RAMB18_X4Y24:RAMB18_X10Y47}
+resize_pblock [get_pblocks CHAN6] -add {RAMB36_X4Y12:RAMB36_X10Y23}
+create_pblock CHAN7
+add_cells_to_pblock [get_pblocks CHAN7] [get_cells -quiet [list {sifpga_crs_i/sifpga_crs_chfpga_0/U0/chfpga0/CHANGEN[7].CHANi}]]
+resize_pblock [get_pblocks CHAN7] -add {SLICE_X61Y0:SLICE_X111Y59}
+resize_pblock [get_pblocks CHAN7] -add {DSP48E2_X10Y0:DSP48E2_X21Y23}
+resize_pblock [get_pblocks CHAN7] -add {RAMB18_X6Y0:RAMB18_X10Y23}
+resize_pblock [get_pblocks CHAN7] -add {RAMB36_X6Y0:RAMB36_X10Y11}
+
 
 set_property C_CLK_INPUT_FREQ_HZ 300000000 [get_debug_cores dbg_hub]
 set_property C_ENABLE_CLK_DIVIDER false [get_debug_cores dbg_hub]
