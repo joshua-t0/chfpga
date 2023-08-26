@@ -121,6 +121,7 @@ entity chFPGA is
 
 		-- F-Engine config
         CAPTURE_TYPE: string := "BRAM"; -- "BRAM": BRAM-based in-channelizer capture engine; "URAM": URAM-based centralized UCAP capture engine. 
+        NUMBER_OF_CAPTURE_SOURCES: integer := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES;
 		NUMBER_OF_CHANNELIZERS: INTEGER :=NUMBER_OF_CHANNELIZERS_MAX; --! Number of channelizers to be implemented
 		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := NUMBER_OF_CHANNELIZERS_MAX;
 
@@ -748,17 +749,19 @@ signal ADC_SYNC: std_logic_vector(0 to NUMBER_OF_ADC_BOARDS-1);
 signal adc_clk: std_logic; -- buffered ADC clock
 
 -- ADC data bus between the ADCDAQ (or top port) to the CHANNELIZER
-type adc_tdata_array is array (NATURAL RANGE <>) of std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
-type adc_tuser_array is array (NATURAL RANGE <>) of std_logic_vector(ADC_SAMPLES_PER_WORD-1 downto 0);
+--type adc_tdata_array is array (NATURAL RANGE <>) of std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
+--type adc_tuser_array is array (NATURAL RANGE <>) of std_logic_vector(ADC_SAMPLES_PER_WORD-1 downto 0);
 
-signal axis_adc_tdata: adc_tdata_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
-signal axis_adc_tuser: adc_tuser_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+signal axis_adc_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(ADC_BITS_PER_WORD-1 downto 0);
+signal axis_adc_tuser: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(ADC_SAMPLES_PER_WORD-1 downto 0);
 signal axis_adc_tvalid: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
 signal axis_adc_tlast: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
 
-signal axis_cap_tdata: adc_tdata_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
-signal axis_cap_tvalid: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
-signal axis_cap_tlast: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+signal axis_cap_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(ADC_BITS_PER_WORD-1 downto 0);
+signal axis_cap_tvalid: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(0 to NUMBER_OF_CAPTURE_SOURCES-1);
+signal axis_cap_tlast: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(0 to NUMBER_OF_CAPTURE_SOURCES-1);
+signal cap_source_req: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+signal cap_source_ack: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
 
 -- attribute S of ADC_DAT: signal is "yes";
 -- attribute DONT_TOUCH of ADC_DAT: signal is "yes";
@@ -1753,7 +1756,7 @@ gpio_user_mux_signals <= ( -- source of the USER--controlled SMA output
 	7 => irigb_gen_out,
 	8 => gpio_led_int(4), -- heartbeat LED
 	9 => gpio_led_int(7), -- out of phase heartbeat LED
-	10 => adc_clk_div2(4*to_integer(unsigned(user_bit))), --was debug1. Modifiied to debug ADC clock output instabilities
+	10 => adc_clk_div2(4*to_integer(unsigned(user_bit))), --was debug1. Modified to debug ADC clock output instabilities
 	11 => debug2,
 	12 => user_bit(0),
 	13 => user_bit(1),
@@ -2168,14 +2171,15 @@ gen_refclk: if NUMBER_OF_ADC_BOARDS /= 0 generate
 			ADC_SYNC_N => ADC_SYNC_N,
 
 			clk10 => clk10, -- Backplane reference clock
-			clk10_out => clk10_out,
 			-- Sync source signals
-			sync_in(0) => bp_trig_in, -- Corresponds to source #2
-			sync_in(1) => refclk_irigb_sync_in, -- Corresponds to source #3
-			sync_in(2) => bp_time_in, -- Corresponds to source #4
-			sync_in(3) => bp_gpio_int_in, -- Corresponds to source #5
-			sync_in(4) => user_mux_in(0), -- Corresponds to source #6 - sma_a
-			sync_in(5) => user_mux_in(1), -- Corresponds to source #7 - sma_b
+			sync_in => (0 => bp_trig_in, -- Corresponds to source #2 in REFCLK
+						1 => refclk_irigb_sync_in, -- Corresponds to source #3
+						2 => bp_time_in, -- Corresponds to source #4
+						3 => bp_gpio_int_in, -- Corresponds to source #5
+						4 => user_mux_in(0), -- Corresponds to source #6 - sma_a
+						5 => user_mux_in(1) -- Corresponds to source #7 - sma_b
+						), 
+			clk10_out => clk10_out,
 
 			sync_out => sync_out,
 
@@ -2514,6 +2518,8 @@ AXIS_ADC: if ADC_TYPE="AXIS" generate
 	constant LOG2_WORDS_PER_FRAME : integer := integer_log2(WORDS_PER_FRAME);
 
 	signal adc_send_data2: slv(0 to NUMBER_OF_ADCS-1); -- indicates when TVALID can be passed on
+	signal adc_tdata: slv128_array(0 to NUMBER_OF_ADCS-1);
+	signal adc_tvalid: std_logic_vector(0 to NUMBER_OF_ADCS-1);
 
 begin
 	-- Select clock to be used as a source to generate channelizer clocks
@@ -2537,33 +2543,28 @@ begin
 
 		adc_proc: process(chan_clk(i))
 
-			variable adc_axis_tdata2, adc_axis_tdata3: std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
+--			variable adc_axis_tdata3: std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
 
 			begin
 				if rising_edge(chan_clk(i)) then
-					if adc_axis_tvalid(i)='1' then
+				    -- pipeline the ADC data. The ADCs are on the right side of the RfSoC, and some logic may end up on the left.
+				    adc_tdata(i) <= adc_axis_tdata(i);
+				    adc_tvalid(i) <= adc_axis_tvalid(i);
+				    
+					if adc_tvalid(i)='1' then
 						adc_word_ctr <= adc_word_ctr + 1;
 					end if;
 
 					-- ADC data comes in 128-bit bus that contains 8x 16-bit sample words.
 					-- Actual ADC data is 12 or 14 bits, MSB-aligned in each word. First sample is in the lower word.
 
-					-- The FFT currently need 4x 8-bit sample bytes, first sample in the upper word
-					-- The following performs the conversion
-
-					-- Extract the ADC words fof this channel
-					--for j in 0 to 7 loop
-					--	adc_axis_tdata2(16*j+15 downto 16*j) := adc_axis_tdata(i)(16*j+15 downto 16*j);
-					--end loop;
-					adc_axis_tdata2 := adc_axis_tdata(i);
 					-- Invert the order of the words to put the first sample in the MSB
 					for j in 0 to 7 loop
-						adc_axis_tdata3(16*j+15 downto 16*j) := adc_axis_tdata2(16*(7-j)+15 downto 16*(7-j));
+						axis_adc_tdata(i)(16*j+15 downto 16*j) <= adc_tdata(i)(16*(7-j)+15 downto 16*(7-j));
 					end loop;
 					-- Passing the data bus and clear overflow flags
-					axis_adc_tdata(i) <= adc_axis_tdata3;
 					axis_adc_tuser(i) <= (others =>'0');
-					axis_adc_tvalid(i) <= adc_axis_tvalid(i) and adc_send_data2(i);
+					axis_adc_tvalid(i) <= adc_tvalid(i) and adc_send_data2(i);
 					axis_adc_tlast(i) <= '0';
 					-- generate TLAST
 					if all_ones(adc_word_ctr) then
@@ -2573,6 +2574,7 @@ begin
 					-- Synchronous reset
 					if chan_reset(i)='1' then
 						axis_adc_tvalid(i) <= '0';
+						adc_tvalid(i) <= '0';
 						adc_word_ctr <= (others => '0');
 						adc_send_data2(i) <= '0';
 					end if;
@@ -2744,7 +2746,9 @@ begin
 	        m_axis_cap_tdata => axis_cap_tdata(i),
 	        m_axis_cap_tvalid => axis_cap_tvalid(i),
 	        m_axis_cap_tlast => axis_cap_tlast(i),
-
+            cap_source_req => cap_source_req(i),
+            cap_source_ack => cap_source_ack(i),
+        
 
 			-- Streaming data capture interface
 			PRB_tdata  => axis_prb_tdata(i),
@@ -3396,22 +3400,40 @@ end generate CGE_GEN;
 -----------------------------
 -- UCAP - Global raw data capture
 ----------------------------- 
-ucap_gen: if CAPTURE_TYPE = "URAM" generate
+cap_gen: if CAPTURE_TYPE = "BRAM" generate
+    -- Nothing to do: capture logic in self-contained in CHAN
 
+elsif CAPTURE_TYPE = "URAM" generate
 	signal ucap_cmd_dat: AXIS8_DAT_STRUCT;
 	signal ucap_cmd_rdy: AXIS8_RDY_STRUCT;
 	signal ucap_rply_dat: AXIS8_DAT_STRUCT;
 	signal ucap_rply_rdy: AXIS8_RDY_STRUCT;
 
-	signal axis_cap_reg1_tdata: adc_tdata_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
-	signal axis_cap_reg1_tvalid: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
-	signal axis_cap_reg1_tlast: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+	signal axis_ucap_reg1_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(ADC_BITS_PER_WORD-1 downto 0);
+	signal axis_ucap_reg1_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
+	signal axis_ucap_reg1_tlast: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
+    attribute shreg_extract of axis_ucap_reg1_tdata,axis_ucap_reg1_tvalid,axis_ucap_reg1_tlast: signal is "no";
 
-	signal axis_cap_reg1_tdata112: slv112_array(0 to NUMBER_OF_ADCS-1);
+	signal axis_ucap_reg2_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(ADC_BITS_PER_WORD-1 downto 0);
+	signal axis_ucap_reg2_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
+	signal axis_ucap_reg2_tlast: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
+    attribute shreg_extract of axis_ucap_reg2_tdata,axis_ucap_reg2_tvalid,axis_ucap_reg2_tlast: signal is "no";
+
+    signal ucap_source_req1:std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1); -- data source request for each channel
+    signal ucap_source_ack1: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1); -- curent data source on tdata for each channel
+    signal ucap_source_ack2: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1); -- curent data source on tdata for each channel
+    attribute shreg_extract of ucap_source_ack1,ucap_source_ack2: signal is "no";
+
+	signal axis_cap_reg1_tdata112: slv_array(0 to NUMBER_OF_ADCS-1)(ADC_BITS_PER_WORD-1 downto 0);
 	signal ucap_ctrl_rst, ucap_ctrl_rst_reg: std_logic;
-
+    signal ucap_clk: std_logic;
+    signal ucap_rst: std_logic;
 begin
 
+
+    ucap_clk <= chan_clk(0);
+    ucap_rst <= chan_reset(0);
+    
 	ucap_cmd_dat <= top_cmd_dat(UCAP_BASE_PORT);
 	top_cmd_rdy(UCAP_BASE_PORT) <= ucap_cmd_rdy;
 	ucap_rply_rdy <= top_rply_rdy(UCAP_BASE_PORT);
@@ -3427,20 +3449,22 @@ begin
 		end process;
 
 	-- Pipeline the Muxed Capture data bus
- 	pipe_proc: process(chan_clk(0))
+ 	pipe_proc: process(ucap_clk)
 	begin
-		if rising_edge(chan_clk(0)) then
-			axis_cap_reg1_tdata <= axis_cap_tdata;
-			axis_cap_reg1_tvalid <= axis_cap_tvalid;
-			axis_cap_reg1_tlast <= axis_cap_tlast;
+		if rising_edge(ucap_clk) then
+			axis_ucap_reg1_tdata <= axis_cap_tdata;
+			axis_ucap_reg1_tvalid <= axis_cap_tvalid(0); -- all channels are assumed to be synchronous
+			axis_ucap_reg1_tlast <= axis_cap_tlast(0);
+			cap_source_req <= ucap_source_req1;
+			ucap_source_ack1 <= cap_source_ack;
+
+            axis_ucap_reg2_tdata <= axis_ucap_reg1_tdata;
+            axis_ucap_reg2_tvalid <= axis_ucap_reg1_tvalid;
+            axis_ucap_reg2_tlast <= axis_ucap_reg1_tlast;
+			ucap_source_ack2 <= ucap_source_ack1;
+
 		end if;
 	end process;
-
---	remap0: for i in 0 to NUMBER_OF_ADCS-1 generate
---    	remap1: for j in 0 to 7 generate
---    		axis_cap_reg1_tdata112(i)(14*(j+1)-1 downto 14*j) <= axis_cap_reg1_tdata(i)(16*(j+1)-1 downto 16*(j+1)-14); -- *** fix to take into account BITS_PER_SAMPLES
---	   end generate;
---	end generate;
 
 	ucap0: entity work.ucap
 		generic map (
@@ -3449,9 +3473,11 @@ begin
             ADC_SAMPLES_PER_FRAME => ADC_SAMPLES_PER_FRAME
 			)
 	    port map ( 
-	        s_axis_tdata => axis_cap_reg1_tdata,
-	        s_axis_tvalid => axis_cap_reg1_tvalid,
-	        s_axis_tlast=> axis_cap_reg1_tlast,
+	        s_axis_tdata => axis_ucap_reg2_tdata,
+	        s_axis_tvalid => axis_ucap_reg2_tvalid,
+	        s_axis_tlast=> axis_ucap_reg2_tlast,
+            source_sel_out => ucap_source_req1,
+            source_sel_in => ucap_source_ack2,
 
 	        m_axis_bsb_tdata => m_axis_cap_tdata,
 			m_axis_bsb_tvalid=> m_axis_cap_tvalid,
@@ -3459,8 +3485,8 @@ begin
 			m_axis_bsb_tready => m_axis_cap_tready,
 	        bsb_clk => axis_cap_clk,
 	        
-	        clk=> chan_clk(0),
-	        rst=> chan_reset(0),
+	        clk=> ucap_clk,
+	        rst=> ucap_rst,
 
 			-- BSB interface
 			CMD_DAT => ucap_cmd_dat,
@@ -3469,10 +3495,11 @@ begin
 			RPLY_RDY => ucap_rply_rdy,
 			CTRL_CLK => ctrl_clk,
 			CTRL_RST => ucap_ctrl_rst_reg
-	        
-	    
 	    );
-end generate ucap_gen;
+
+else generate
+    assert FALSE report "Unsupported CAPTURE_TYPE" severity FAILURE;	       
+end generate cap_gen;
 ---------------------------------------------------------------------
 --  Correlator
 ---------------------------------------------------------------------
