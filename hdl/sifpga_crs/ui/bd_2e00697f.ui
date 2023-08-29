@@ -1,7 +1,7 @@
 {
    "ActiveEmotionalView":"Default View",
-   "Default View_ScaleFactor":"0.289461",
-   "Default View_TopLeft":"722,-525",
+   "Default View_ScaleFactor":"0.302846",
+   "Default View_TopLeft":"-238,-149",
    "ExpandedHierarchyInLayout":"",
    "guistr":"# # String gsaved with Nlview 7.0r4  2019-12-20 bk=1.5203 VDI=41 GEI=36 GUI=JA:10.0 TLS
 #  -string -flagsOSRD
@@ -51,16 +51,16 @@ preplace inst system_ila_0 -pg 1 -lvl 5 -x 3000 -y 900 -defaultsOSRD
 preplace inst smartconnect_0 -pg 1 -lvl 4 -x 2600 -y 1060 -defaultsOSRD
 preplace inst axi_dma_1 -pg 1 -lvl 1 -x 870 -y 1280 -defaultsOSRD
 preplace inst sifpga_crs_chfpga_0 -pg 1 -lvl 6 -x 3430 -y 440 -defaultsOSRD
-preplace netloc adc0_bufg1_BUFG_O 1 5 1 3160J 360n
-preplace netloc adc0_bufg2_BUFG_O 1 3 3 2360 320 2850 -20 3250
-preplace netloc axi_dma_0_mm2s_introut 1 1 1 1050 760n
-preplace netloc axi_dma_0_s2mm_introut 1 1 1 1060 780n
-preplace netloc axi_dma_1_s2mm_introut 1 1 1 1080 800n
-preplace netloc clk156_n_0_1 1 0 6 -170J -40 NJ -40 NJ -40 NJ -40 NJ -40 3230J
-preplace netloc clk156_p_0_1 1 0 6 -120J -30 NJ -30 NJ -30 NJ -30 NJ -30 3220J
-preplace netloc rst_ps8_0_96M1_peripheral_aresetn 1 4 1 2860 380n
-preplace netloc rst_ps8_0_96M_peripheral_aresetn 1 3 1 2400 1080n
-preplace netloc rst_ps8_0_96M_peripheral_aresetn1 1 0 6 -170 900 N 900 N 900 2390 960 2830 -10 3190
+preplace netloc adc0_bufg1_BUFG_O 1 5 1 3090J 360n
+preplace netloc adc0_bufg2_BUFG_O 1 3 3 2250 320 2760 -20 3180
+preplace netloc axi_dma_0_mm2s_introut 1 1 1 940 760n
+preplace netloc axi_dma_0_s2mm_introut 1 1 1 950 780n
+preplace netloc axi_dma_1_s2mm_introut 1 1 1 970 800n
+preplace netloc clk156_n_0_1 1 0 6 -170J -40 NJ -40 NJ -40 NJ -40 NJ -40 3160J
+preplace netloc clk156_p_0_1 1 0 6 -120J -30 NJ -30 NJ -30 NJ -30 NJ -30 3150J
+preplace netloc rst_ps8_0_96M1_peripheral_aresetn 1 4 1 2770 380n
+preplace netloc rst_ps8_0_96M_peripheral_aresetn 1 3 1 2290 1080n
+preplace netloc rst_ps8_0_96M_peripheral_aresetn1 1 0 6 -170 900 N 900 N 900 2280 960 2740 -10 3120
 preplace netloc rst_ps8_0_96M_peripheral_reset 1 3 1 NJ 1320
 preplace netloc sifpga_crs_chfpga_0_buck_sync_0v85 1 6 1 NJ 350
 preplace netloc sifpga_crs_chfpga_0_buck_sync_1v2a 1 6 1 NJ 430
@@ -71,45 +71,45 @@ preplace netloc sifpga_crs_chfpga_0_buck_sync_2v5 1 6 1 NJ 390
 preplace netloc sifpga_crs_chfpga_0_buck_sync_3v3 1 6 1 NJ 370
 preplace netloc sifpga_crs_chfpga_0_buck_sync_5v0 1 6 1 NJ 330
 preplace netloc sifpga_crs_chfpga_0_buck_sync_bp 1 6 1 NJ 490
-preplace netloc sifpga_crs_chfpga_0_debug_out 1 4 3 2860 1030 NJ 1030 3600
-preplace netloc sifpga_crs_chfpga_0_led7b 1 6 1 3630 540n
-preplace netloc sifpga_crs_chfpga_0_qsfp_txn 1 6 1 3630J 310n
+preplace netloc sifpga_crs_chfpga_0_debug_out 1 4 3 2770 1030 NJ 1030 3510
+preplace netloc sifpga_crs_chfpga_0_led7b 1 6 1 3540 540n
+preplace netloc sifpga_crs_chfpga_0_qsfp_txn 1 6 1 3540J 310n
 preplace netloc sifpga_crs_chfpga_0_qsfp_txp 1 6 1 NJ 510
-preplace netloc sifpga_crs_chfpga_0_smp_out 1 6 1 3630J 570n
-preplace netloc usp_rf_data_converter_0_clk_adc0 1 5 1 3210 330n
-preplace netloc usp_rf_data_converter_0_clk_adc1 1 5 1 3200 350n
-preplace netloc usp_rf_data_converter_0_clk_adc2 1 5 1 3180 370n
-preplace netloc usp_rf_data_converter_0_clk_adc3 1 5 1 3150 390n
-preplace netloc util_ds_buf_0_IBUF_OUT 1 4 1 2820J 690n
-preplace netloc util_ds_buf_1_IBUF_OUT 1 4 1 2860J 590n
+preplace netloc sifpga_crs_chfpga_0_smp_out 1 6 1 3540J 570n
+preplace netloc usp_rf_data_converter_0_clk_adc0 1 5 1 3140 330n
+preplace netloc usp_rf_data_converter_0_clk_adc1 1 5 1 3130 350n
+preplace netloc usp_rf_data_converter_0_clk_adc2 1 5 1 3110 370n
+preplace netloc usp_rf_data_converter_0_clk_adc3 1 5 1 3080 390n
+preplace netloc util_ds_buf_0_IBUF_OUT 1 4 1 2730J 690n
+preplace netloc util_ds_buf_1_IBUF_OUT 1 4 1 2770J 590n
 preplace netloc util_ds_buf_1_IBUF_OUT1 1 2 1 NJ 360
-preplace netloc util_ds_buf_2_BUFG_O 1 5 1 3260J 380n
-preplace netloc xlconcat_0_dout 1 2 1 1660 780n
-preplace netloc zynq_ultra_ps_e_0_pl_clk0 1 0 6 -140 970 N 970 1670 960 2380 950 2810 0 3170
-preplace netloc zynq_ultra_ps_e_0_pl_resetn0 1 2 2 1680J 950 2360
+preplace netloc util_ds_buf_2_BUFG_O 1 5 1 3190J 380n
+preplace netloc xlconcat_0_dout 1 2 1 1590 780n
+preplace netloc zynq_ultra_ps_e_0_pl_clk0 1 0 6 -140 970 N 970 1600 960 2270 950 2720 0 3100
+preplace netloc zynq_ultra_ps_e_0_pl_resetn0 1 2 2 1610J 950 2250
 preplace netloc adc0_clk_1 1 0 5 NJ 80 NJ 80 NJ 80 NJ 80 NJ
 preplace netloc adc1_clk_1 1 0 5 NJ 100 NJ 100 NJ 100 NJ 100 NJ
 preplace netloc adc2_clk_1 1 0 5 NJ 120 NJ 120 NJ 120 NJ 120 NJ
 preplace netloc adc3_clk_1 1 0 5 NJ 140 NJ 140 NJ 140 NJ 140 NJ
-preplace netloc axi_dma_0_M_AXIS_MM2S 1 1 5 1070 870 N 870 N 870 2850 580 3140
-preplace netloc axi_dma_0_M_AXI_MM2S 1 1 4 N 1030 1650 840 N 840 N
-preplace netloc axi_dma_1_M_AXI_S2MM 1 1 2 1090 1040 N
+preplace netloc axi_dma_0_M_AXIS_MM2S 1 1 5 960 870 N 870 N 870 2760 580 3070
+preplace netloc axi_dma_0_M_AXI_MM2S 1 1 4 N 1030 1580 840 N 840 N
+preplace netloc axi_dma_1_M_AXI_S2MM 1 1 2 980 1040 N
 preplace netloc default_sysclk1_300mhz_1 1 0 4 NJ 690 NJ 690 NJ 690 NJ
 preplace netloc diff_clock_rtl_1 1 0 4 NJ 590 NJ 590 NJ 590 NJ
 preplace netloc diff_clock_rtl_2 1 0 2 NJ 360 NJ
-preplace netloc sifpga_crs_chfpga_0_m_axis_bsb 1 0 7 -150 910 N 910 N 910 N 910 2850 1020 N 1020 3610
-preplace netloc sifpga_crs_chfpga_0_m_axis_cap 1 0 7 -160 920 N 920 N 920 N 920 2800 1040 N 1040 3620
-preplace netloc smartconnect_0_M00_AXI 1 0 5 -120 930 N 930 N 930 N 930 2790
-preplace netloc smartconnect_0_M01_AXI 1 4 1 2840 60n
-preplace netloc smartconnect_0_M02_AXI 1 0 5 -130 940 N 940 N 940 N 940 2780
-preplace netloc usp_rf_data_converter_0_m00_axis 1 5 1 3140 160n
-preplace netloc usp_rf_data_converter_0_m02_axis 1 5 1 3140 180n
-preplace netloc usp_rf_data_converter_0_m10_axis 1 5 1 3140 200n
-preplace netloc usp_rf_data_converter_0_m12_axis 1 5 1 3180 220n
-preplace netloc usp_rf_data_converter_0_m20_axis 1 5 1 3200 240n
-preplace netloc usp_rf_data_converter_0_m22_axis 1 5 1 3200 260n
-preplace netloc usp_rf_data_converter_0_m30_axis 1 5 1 3240 280n
-preplace netloc usp_rf_data_converter_0_m32_axis 1 5 1 3240 300n
+preplace netloc sifpga_crs_chfpga_0_m_axis_bsb 1 0 7 -150 910 N 910 N 910 N 910 2760 1020 N 1020 3520
+preplace netloc sifpga_crs_chfpga_0_m_axis_cap 1 0 7 -160 920 N 920 N 920 N 920 2710 1040 N 1040 3530
+preplace netloc smartconnect_0_M00_AXI 1 0 5 -120 930 N 930 N 930 N 930 2700
+preplace netloc smartconnect_0_M01_AXI 1 4 1 2750 60n
+preplace netloc smartconnect_0_M02_AXI 1 0 5 -130 940 N 940 N 940 N 940 2690
+preplace netloc usp_rf_data_converter_0_m00_axis 1 5 1 3070 160n
+preplace netloc usp_rf_data_converter_0_m02_axis 1 5 1 3070 180n
+preplace netloc usp_rf_data_converter_0_m10_axis 1 5 1 3070 200n
+preplace netloc usp_rf_data_converter_0_m12_axis 1 5 1 3110 220n
+preplace netloc usp_rf_data_converter_0_m20_axis 1 5 1 3130 240n
+preplace netloc usp_rf_data_converter_0_m22_axis 1 5 1 3130 260n
+preplace netloc usp_rf_data_converter_0_m30_axis 1 5 1 3170 280n
+preplace netloc usp_rf_data_converter_0_m32_axis 1 5 1 3170 300n
 preplace netloc vin0_01_1 1 0 5 NJ 160 NJ 160 NJ 160 NJ 160 NJ
 preplace netloc vin0_23_1 1 0 5 NJ 180 NJ 180 NJ 180 NJ 180 NJ
 preplace netloc vin1_01_1 1 0 5 NJ 200 NJ 200 NJ 200 NJ 200 NJ
@@ -118,9 +118,9 @@ preplace netloc vin2_01_1 1 0 5 NJ 240 NJ 240 NJ 240 NJ 240 NJ
 preplace netloc vin2_23_1 1 0 5 NJ 260 NJ 260 NJ 260 NJ 260 NJ
 preplace netloc vin3_01_1 1 0 5 NJ 280 NJ 280 NJ 280 NJ 280 NJ
 preplace netloc vin3_23_1 1 0 5 NJ 300 NJ 300 NJ 300 NJ 300 NJ
-preplace netloc zynq_ultra_ps_e_0_M_AXI_HPM0_FPD 1 3 2 2370 880 N
+preplace netloc zynq_ultra_ps_e_0_M_AXI_HPM0_FPD 1 3 2 2260 880 N
 levelinfo -pg 1 -190 870 1520 2050 2600 3000 3430 3650
-pagesize -pg 1 -db -bbox -sgen -310 -270 3820 1920
+pagesize -pg 1 -db -bbox -sgen -240 -270 3700 1920
 "
 }
 {

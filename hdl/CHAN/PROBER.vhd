@@ -75,144 +75,133 @@ end PROBER;
 architecture Behavioral of PROBER is
 
 
------------------------------------------------------------------------
--- Attributes
------------------------------------------------------------------------
+    -----------------------------------------------------------------------
+    -- Attributes
+    -----------------------------------------------------------------------
 
-attribute equivalent_register_removal: string;
-attribute shreg_extract: string;
+    attribute equivalent_register_removal: string;
+    attribute shreg_extract: string;
+    attribute async_reg: string;
 
------------------------------------------------------------------------
--- Signals
------------------------------------------------------------------------
-signal in_dat: AXIS32_DAT_STRUCT_ARRAY(0 to NUMBER_OF_INPUTS-1);
-signal in_dat_reg: AXIS32_DAT_STRUCT; --! Registered Input data bus
-signal trig_reg: std_logic;
+    -----------------------------------------------------------------------
+    -- Constants
+    -----------------------------------------------------------------------
+    constant DEFAULT_BURST_PERIOD: std_logic_vector(23 downto 0) := sel(SIM, X"000004", X"05f5e1");
 
-attribute equivalent_register_removal of in_dat_reg: signal is "no";
-attribute shreg_extract of in_dat_reg: signal is "no";
+    -----------------------------------------------------------------------
+    -- Signals
+    -----------------------------------------------------------------------
+    signal in_dat: AXIS32_DAT_STRUCT_ARRAY(0 to NUMBER_OF_INPUTS-1);
+    signal in_dat_reg: AXIS32_DAT_STRUCT; --! Registered Input data bus
+    signal trig_reg: std_logic;
 
-
--- Header FIFO signals
-
-signal header_fifo_rd_en    : std_logic:='0';
-signal header_fifo_wr_en    : std_logic:='0';
-signal header_fifo_empty    : std_logic;
-signal header_fifo_full     : std_logic;
-signal header_fifo_almost_full : std_logic;
-signal header_fifo_valid    : std_logic;
-signal header_fifo_overflow : std_logic;
-signal header_fifo_overflow_sticky: std_logic;
-signal header_fifo_din      : std_logic_vector(8 downto 0) := (others => '0'); -- initialization for nice simulations
-signal header_fifo_dout     : std_logic_vector(8 downto 0);
-
--- DATA FIFO signals
-
-signal data_fifo_rd_en      : std_logic:='0';
-signal data_fifo_wr_en      : std_logic:='0';
-signal data_fifo_empty      : std_logic;
-signal data_fifo_valid      : std_logic;
-signal data_fifo_full     : std_logic;
-signal data_fifo_almost_full : std_logic;
-signal data_fifo_overflow   : std_logic;
-signal data_fifo_overflow_sticky: std_logic;
-signal data_fifo_din        : std_logic_vector(35 downto 0) := (others => '0'); -- initialization for nice simulations
-signal data_fifo_dout       : std_logic_vector(8 downto 0);
-
--- global signals
---signal FIFO_RESET_ALL: std_logic;
-
---signal DATA_FIFO_OUT_DAT: AXIS8_DAT_STRUCT;
---signal DATA_FIFO_OUT_RDY: AXIS8_RDY_STRUCT;
-
------------------------------
--- FIFO writing logic signals
------------------------------
-
-signal frame_flags: std_logic_vector(3 downto 0);
-
--- Frame counters
-signal frame_ctr: u48_array(0 to NUMBER_OF_INPUTS-1);
-
--- Header bytes & counter
-signal frame_header_ctr: integer range 0 to FRAME_HEADER_BYTE_LENGTH;
-signal frame_header_bytes: slv8_array(0 to FRAME_HEADER_BYTE_LENGTH-1); --
-
-signal trig_count: unsigned(7 downto 0) := (others => '0'); -- Counts the number of frames that has been captured.
-
------------------------------
--- FIFO readout signals
------------------------------
-signal out_dat_int: AXIS8_DAT_STRUCT := (TVALID=>'0', TDATA=>(others => '0'), TLAST=>'0');
-signal dest_ready: std_logic;
-signal send_delay_target: unsigned(31 downto 0);
-signal send_delay_ctr: unsigned(31 downto 0); -- 16 bit delay + 16 bits prescaler, counts 125 MHz
-
-type SEND_STATE_TYPE IS (
-    SEND_DELAY,
-    SEND_HEADER,
-    SEND_DATA);
-signal send_state: SEND_STATE_TYPE;
+    attribute equivalent_register_removal of in_dat_reg: signal is "no";
+    attribute shreg_extract of in_dat_reg: signal is "no";
 
 
+    -- Header FIFO signals
 
--- Control and status bytes
-signal control_bytes: slv8_array(0 to 14); -- default value set in the CMD_SLAVE
-signal status_bytes: slv8_array(0 to 1);
+    signal header_fifo_rd_en    : std_logic:='0';
+    signal header_fifo_wr_en    : std_logic:='0';
+    signal header_fifo_empty    : std_logic;
+    signal header_fifo_full     : std_logic;
+    signal header_fifo_almost_full : std_logic;
+    signal header_fifo_valid    : std_logic;
+    signal header_fifo_overflow : std_logic;
+    signal header_fifo_overflow_sticky: std_logic;
+    signal header_fifo_din      : std_logic_vector(8 downto 0) := (others => '0'); -- initialization for nice simulations
+    signal header_fifo_dout     : std_logic_vector(8 downto 0);
 
---signal burst_length_reg: unsigned(1 downto 0); --
+    -- DATA FIFO signals
 
---signal number_of_bursts: unsigned(7 downto 0); -- total number of bursts to capture
+    signal data_fifo_rd_en      : std_logic:='0';
+    signal data_fifo_wr_en      : std_logic:='0';
+    signal data_fifo_empty      : std_logic;
+    signal data_fifo_valid      : std_logic;
+    signal data_fifo_full     : std_logic;
+    signal data_fifo_almost_full : std_logic;
+    signal data_fifo_overflow   : std_logic;
+    signal data_fifo_overflow_sticky: std_logic;
+    signal data_fifo_din        : std_logic_vector(35 downto 0) := (others => '0'); -- initialization for nice simulations
+    signal data_fifo_dout       : std_logic_vector(8 downto 0);
 
--- Offset and period
-signal primary_period: u24_array(0 to NUMBER_OF_INPUTS-1);
---signal burst_period_reg: unsigned(primary_period'RANGE) := (others => '0'); -- registered version of the primary_period minus one used to determine the end of the loop
-signal primary_period_ctr: u24_array(0 to NUMBER_OF_INPUTS-1); -- Counts frames within a burst.
-signal capture_offset: unsigned(23 downto 0);
---signal capture_offset_reg: unsigned(primary_period'RANGE);
+    -- global signals
+    --signal FIFO_RESET_ALL: std_logic;
 
---signal trig: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
-signal offset_done: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
+    --signal DATA_FIFO_OUT_DAT: AXIS8_DAT_STRUCT;
+    --signal DATA_FIFO_OUT_RDY: AXIS8_RDY_STRUCT;
 
--- Number of consecutive frames in a burst
-signal burst_length: unsigned(1 downto 0); -- number of consecutives frames in a burst
-signal burst_ctr: UNSIGNED(burst_length'Range) := (others => '0'); -- Counts SYNC psignal SYNC_SAMPLE_MISMATCH: std_logic :=  '0';
+    -----------------------------
+    -- FIFO writing logic signals
+    -----------------------------
 
---signal probe_id: std_logic_vector(7 downto 0);
-signal stream_id: std_logic_vector(15 downto 0);
---signal continuous_transmission: std_logic;
-signal new_source: unsigned(0 downto 0);
-signal current_source: unsigned(0 downto 0);
-signal inhibit_data: std_logic; -- inhibit data while transitionning from one source to the other
-signal in_dat_reg_tvalid: std_logic;
-signal overflow_hold: std_logic;
+    signal frame_flags: std_logic_vector(3 downto 0);
 
---signal secondary_trig: std_logic;
---signal secondary_trig_active: std_logic;
---signal secondary_period: unsigned(23 downto 0);
-signal sub_period: unsigned(4 downto 0);
+    -- Frame counters
+    signal frame_ctr: u48_array(0 to NUMBER_OF_INPUTS-1);
 
---signal is_last_frame_of_period: std_logic;
---signal is_last_frame_of_burst: std_logic;
---signal is_last_burst: std_logic;
---signal burst_active: std_logic := '0';
+    -- Header bytes & counter
+    signal frame_header_ctr: integer range 0 to FRAME_HEADER_BYTE_LENGTH;
+    signal frame_header_bytes: slv8_array(0 to FRAME_HEADER_BYTE_LENGTH-1); --
+
+    signal trig_count: unsigned(7 downto 0) := (others => '0'); -- Counts the number of frames that has been captured.
+
+    -----------------------------
+    -- FIFO readout signals
+    -----------------------------
+    signal out_dat_int: AXIS8_DAT_STRUCT := (TVALID=>'0', TDATA=>(others => '0'), TLAST=>'0');
+    signal dest_ready: std_logic;
+    signal send_delay_target: unsigned(31 downto 0);
+    signal send_delay_ctr: unsigned(31 downto 0); -- 16 bit delay + 16 bits prescaler, counts 125 MHz
+
+    type SEND_STATE_TYPE IS (
+        SEND_DELAY,
+        SEND_HEADER,
+        SEND_DATA);
+    signal send_state: SEND_STATE_TYPE;
 
 
 
-signal soft_reset: std_logic;
-signal fifo_reset: std_logic;
-signal reset_all: std_logic;
-signal serial_flags: std_logic_vector(2 downto 0);
-signal fifo_reset_reg: std_logic;
+    -- Control and status bytes
+    signal control_bytes: slv8_array(0 to 14); -- default value set in the CMD_SLAVE
+    signal status_bytes: slv8_array(0 to 1);
 
--- These signals require previous signals to be defined
+    --signal burst_length_reg: unsigned(1 downto 0); --
 
-constant DEFAULT_BURST_PERIOD: std_logic_vector(23 downto 0) := sel(SIM,x"000004",X"05f5e1");
+    --signal number_of_bursts: unsigned(7 downto 0); -- total number of bursts to capture
 
-signal out_rst: std_logic;
+    -- Offset and period
+    signal primary_period: u24_array(0 to NUMBER_OF_INPUTS-1);
+    signal primary_period_ctr: u24_array(0 to NUMBER_OF_INPUTS-1); -- Counts frames within a burst.
+    signal capture_offset: unsigned(23 downto 0);
 
-attribute ASYNC_REG: string;
-attribute ASYNC_REG of out_rst: signal is "true"; -- used to resync the soft_reset (in_clk domain) to the OUT_CLK domain.
+    signal offset_done: std_logic_vector(0 to NUMBER_OF_INPUTS-1);
+
+    -- Number of consecutive frames in a burst
+    signal burst_length: unsigned(1 downto 0); -- number of consecutives frames in a burst
+    signal burst_ctr: UNSIGNED(burst_length'Range) := (others => '0'); -- Counts SYNC psignal SYNC_SAMPLE_MISMATCH: std_logic :=  '0';
+
+    signal stream_id: std_logic_vector(15 downto 0);
+    signal new_source: unsigned(0 downto 0);
+    signal current_source: unsigned(0 downto 0);
+    signal inhibit_data: std_logic; -- inhibit data while transitionning from one source to the other
+    signal in_dat_reg_tvalid: std_logic;
+    signal overflow_hold: std_logic;
+
+    signal sub_period: unsigned(4 downto 0);
+
+    signal soft_reset: std_logic;
+    signal fifo_reset: std_logic;
+    signal reset_all: std_logic;
+    signal serial_flags: std_logic_vector(2 downto 0);
+    signal fifo_reset_reg: std_logic;
+
+    -- These signals require previous signals to be defined
+
+
+    signal out_rst: std_logic;
+
+    attribute ASYNC_REG of out_rst: signal is "true"; -- used to resync the soft_reset (in_clk domain) to the OUT_CLK domain.
 
 
 begin

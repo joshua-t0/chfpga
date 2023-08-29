@@ -43,7 +43,7 @@ entity REFCLK is
 		CTRL_CMD_IN_RDY: out AXIS8_RDY_STRUCT; --! Command stream input, signals to master (Ready)
 		CTRL_RPLY_OUT_DAT: out AXIS8_DAT_STRUCT; --! Reply stream output, signals to slave (Data, Valid, Last)
 		CTRL_RPLY_OUT_RDY: in AXIS8_RDY_STRUCT; --! Reply stream output,  signals from slave (Ready)
-		CTRL_CLK: in  STD_LOGIC;
+		CTRL_CLK: in  std_logic;
 		CTRL_RST: in std_logic;
 
 		-- FMC reference clock
@@ -64,9 +64,9 @@ entity REFCLK is
 
 		adcdaq_reset: out std_logic; --! Resets the ADCDAQ upon a SYNC event
 
-		clk200: in STD_LOGIC;
+		clk200: in std_logic;
 		-- System-level signals
-		RST: in STD_LOGIC -- synchronous to clk200
+		rst: in std_logic -- synchronous to clk200
 	);
 
 end REFCLK;
@@ -78,31 +78,31 @@ attribute dont_touch: string;
 attribute IOB: string;
 attribute ASYNC_REG: string;
 
-constant FPGA_SERIES: integer :=FPGA_SERIES_LIST(PLATFORM_ID);
+constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
 
 --- Define Control word and its signals
 --signal CONTROL_WORD: STD_LOGIC_VECTOR(47 downto 0); -- default value set in the CMD_SLAVE
 signal control_bytes: slv8_array(0 to 2); -- default value set in the CMD_SLAVE
 signal status_bytes: slv8_array(0 to 2); -- default value set in the CMD_SLAVE
 
---signal fmc_clk200_nobuf: STD_LOGIC;
---signal fmc_clk200_int: STD_LOGIC;
+--signal fmc_clk200_nobuf: std_logic;
+--signal fmc_clk200_int: std_logic;
 signal fmc_refclk_buf: std_logic_vector(0 to NUMBER_OF_MEZZANINES-1);
 signal fmc_refclk_dly: std_logic_vector(0 to NUMBER_OF_MEZZANINES-1);
 signal fmc_refclk_int: std_logic_vector(0 to NUMBER_OF_MEZZANINES-1);
-signal FMC_REFCLK_BUFR: STD_LOGIC;
+signal FMC_REFCLK_BUFR: std_logic;
 signal fmc_refclk_div2_int: std_logic_vector(0 to NUMBER_OF_MEZZANINES-1) := (others=>'0'); -- Initialization required
 signal fmc_refclk_sel: std_logic;
 
-signal FMC_REFCLK_SAMPLE: STD_LOGIC;
-signal FMC_REFCLK_PREVIOUS: STD_LOGIC;
+signal fmc_refclk_sample: std_logic;
+signal fmc_refclk_previous: std_logic;
 
--- signal clk10: STD_LOGIC; -- Fabric-generated 10 MHz clock
+-- signal clk10: std_logic; -- Fabric-generated 10 MHz clock
 -- Make sure the net anem is preserved so it can be sued in defining constraints
 -- attribute DONT_TOUCH of clk10: signal is "yes";
 
---signal EXT_SYNC_OUT: STD_LOGIC;
--- signal EXT_SYNC_IN: STD_LOGIC;
+--signal EXT_SYNC_OUT: std_logic;
+-- signal EXT_SYNC_IN: std_logic;
 signal adc_sync: std_logic_vector(0 to NUMBER_OF_MEZZANINES-1);
 attribute IOB of adc_sync: signal is "true"; -- Make sure the ADC SYNC registers are placed in the IO block
 signal adc_sync_pre: std_logic;
@@ -248,9 +248,9 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 -- 10 MHz reference clock generation and buffer
 -------------------------------------------------------------------------
 
-clk10gen_proc: process(clk200,RST)
+clk10gen_proc: process(clk200,rst)
 	begin
-		if RST='1' then
+		if rst='1' then
 			clk200_counter<=(others=>'0');
 			remote_sync_dly<='0';
 			remote_sync_oneshot<='0';
@@ -286,7 +286,7 @@ clk10gen_proc: process(clk200,RST)
 --				EXT_SYNC_OUT<=local_sync or remote_sync;
 --			end if;
 
-		end if; --RST/CLK
+		end if; --rst/CLK
 	end process;
 
 
@@ -367,7 +367,7 @@ gensync: for i in 0 to NUMBER_OF_MEZZANINES-1 generate
 			C => CTRL_CLK, -- 1-bit Clock input (Must be connected for variable mode)
 			INC => '0', -- 1-bit Increment / Decrement tap delay
 			CE => '0', -- 1-bit Active high enable increment/decrement function
-			RST => refclk_delay_rst_dly -- 1-bit Active high, synchronous reset, resets delay chain to IDELAY_VALUE/
+			rst => refclk_delay_rst_dly -- 1-bit Active high, synchronous reset, resets delay chain to IDELAY_VALUE/
 
 		);
 
@@ -431,7 +431,7 @@ gensync: for i in 0 to NUMBER_OF_MEZZANINES-1 generate
 
 	--! The state machine requests a SYNC on the motherboard 10 MHz rising
 	--! edge. The reference clock sent to the mezzanine *is inverted* relative
-	--! to the motherboard reference. The Mezzanine send a copy of its
+	--! to the motherboard reference. The Mezzanine sends a copy of its
 	--! internal 10 MHz used to lock the PLL. The 10 MHz is therefore approximately an
 	--! inverted version of the motherboard 10 MHz, plus or minus a small
 	--! delay.
@@ -467,35 +467,41 @@ end generate;
 
 
 -------------------------------------------------------------------------
---! SYNC recovery
+-- SYNC recovery
 -------------------------------------------------------------------------
---! Detects sync events based on the duty cycle of the 10MHz REFCLK
-sync_det_proc: process(clk200,RST)
+-- Detects sync events based on the duty cycle of the 10MHz REFCLK
+--
+-- We sample the 10 MHz reference clock with the internal 200 MHz clock. There are 20 samples per REFCLK (10 high, 10 low for a 50 % duty cycle.)
+-- We enable the rcovered_sync signal when a high pulse of the 10 MHz clock is 8 samples or less (<=40% duty cycle).
+-- Since we detect the high time, the position of the rising edge is not affected by the pulse width modulation. 
+-- Devices that are sensitive to the rising edge (such as PLLs) should therefore not be affected by the scheme. 
+sync_det_proc: process(clk200, rst)
 	begin
-		if RST='1' then
-			refclk_counter<=(others=>'0');
-			recovered_sync<='0';
-			FMC_REFCLK_PREVIOUS<='0';
+		if rst='1' then
+			refclk_counter <= (others=>'0');
+			recovered_sync <= '0';
+			fmc_refclk_previous <= '0';
 
 		elsif rising_edge(clk200) then
-			FMC_REFCLK_SAMPLE <= clk10;
-			FMC_REFCLK_PREVIOUS <= FMC_REFCLK_SAMPLE;
+			-- sample the 10 MHz reference clock with the internal 200 MHz clock.
+			fmc_refclk_sample <= clk10;
+			fmc_refclk_previous <= fmc_refclk_sample;
 
 			-- count how many 200 MHz cycles the 10 MHz stays high
-			if FMC_REFCLK_SAMPLE='0' then
-				refclk_counter<=(others=>'0');
-			elsif SIGNED(refclk_counter)/=-1 then -- if not maximum count value possible, increase counter
-				refclk_counter<=refclk_counter+1;
+			if fmc_refclk_sample = '0' then
+				refclk_counter <= (others => '0');
+			elsif signed(refclk_counter) /= -1 then -- if not maximum count value possible, increase counter
+				refclk_counter <= refclk_counter + 1;
 			end if;
-
-			if FMC_REFCLK_SAMPLE='0' and FMC_REFCLK_PREVIOUS='1' then
-				if refclk_counter<=8 then
-					recovered_sync<='1';
+			-- On the falling edge of the reference clock, set recovered_sync if the clock has stayed high for less than 8 samples. 
+			if fmc_refclk_sample='0' and fmc_refclk_previous='1' then
+				if refclk_counter <= 8 then
+					recovered_sync <= '1';
 				else
-					recovered_sync<='0';
+					recovered_sync <= '0';
 				end if;
 			end if;
-		end if; --RST/CLK
+		end if; --rst/CLK
 	end process;
 
 syncout_proc: process(clk10)
@@ -522,10 +528,10 @@ sync_source_vect <= (
 	7=> sync_in(5)
 	);
 
-clksync: process(clk10, RST)
+clksync: process(clk10, rst)
 	begin
 		-- The reset is asynchonous to make sure it is executed even in the absence of the Reference Clock.
-		if RST='1' then
+		if rst='1' then
 			sync_state <= SYNC_STATE_IDLE;
 			adc_sync_pre <= '0';
 			adcdaq_reset_int <= '0';
@@ -555,32 +561,32 @@ clksync: process(clk10, RST)
 			else
 				-- Warning: Because adc_sync is to be implemented on a IOB, it must be assigned a new value on every clock to prevent the inferring of a memory element that is implemented by feeding he output back to the input. Reading the output is not possible from the IOB.
 				if (sync='1' and sync_dly='0') or (local_sync_reg='1' and local_sync_dly='0') then --! reset the ADCDAQ SERDES and enable the SYNC line to stop the ADC clock
-					sync_done<='0';
+					sync_done <= '0';
 					sync_event_ctr <= sync_event_ctr + 1;
-					sync_state <=SYNC_STATE_STABILIZE_PLL;
+					sync_state <= SYNC_STATE_STABILIZE_PLL;
 					sync_ctr <= (others=>'0'); -- clear counter for the next phase
 
 				elsif sync_state=SYNC_STATE_STABILIZE_PLL then -- wait for the ADC PLL to stabilize after the change of duty cycle of the clock to ensure we get a reliable timing relative to the 1600 MHz clock
 					sync_ctr <= sync_ctr+1;
-					if (SIM=FALSE and SIGNED(sync_ctr)=-1) or (SIM=TRUE and sync_ctr=16-1) then
+					if (SIM=FALSE and signed(sync_ctr)=-1) or (SIM=TRUE and sync_ctr=16-1) then
 						adcdaq_reset_int <= '1';
 						adc_sync_pre <= '1';
 						sync_state <= SYNC_STATE_ADCDAQ_RESET_RELEASE;
 					end if;
 
 				elsif sync_state=SYNC_STATE_ADCDAQ_RESET_RELEASE then -- Releases the ADCDAQ reset
-					adcdaq_reset_int<='0'; -- statement for clarity only
+					adcdaq_reset_int <= '0'; -- statement for clarity only
 					adc_sync_pre <= '1';
-					sync_state<=SYNC_STATE_SYNC_RELEASE;
+					sync_state <= SYNC_STATE_SYNC_RELEASE;
 
 				elsif sync_state=SYNC_STATE_SYNC_RELEASE then -- Disable the SYNC line, which starts the ADC clock
-					adcdaq_reset_int<='0'; -- statement for clarity only
+					adcdaq_reset_int <= '0'; -- statement for clarity only
 					adc_sync_pre <= '0'; -- statement for clarity only
 					sync_done <= '1';
 					sync_state <= SYNC_STATE_IDLE;
 				end if;
 			end if;
-		end if; -- RST/CLK
+		end if; -- rst/CLK
 	end process;
 
 

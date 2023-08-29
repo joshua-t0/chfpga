@@ -66,6 +66,11 @@ subtype slv112 is std_logic_vector(111 downto 0);
 subtype slv144 is std_logic_vector(143 downto 0);
 type ByteArray8 is array (0 to 7) of std_logic_vector(7 downto 0);
 type ByteArray is array (NATURAL RANGE <>) of std_logic_vector(7 downto 0);
+
+type slv_array is array (NATURAL RANGE <>) of std_logic_vector; -- VHDL2008 only
+type signed_array is array (NATURAL RANGE <>) of signed; -- VHDL2008 only
+type unsigned_array is array (NATURAL RANGE <>) of unsigned; -- VHDL2008 only
+
 type slv2_array is array (NATURAL RANGE <>) of std_logic_vector(1 downto 0);
 type slv3_array is array (NATURAL RANGE <>) of std_logic_vector(2 downto 0);
 type slv4_array is array (NATURAL RANGE <>) of std_logic_vector(3 downto 0);
@@ -102,8 +107,14 @@ type Word3Array is array (NATURAL RANGE <>) of std_logic_vector(2 downto 0);
 type Word32Array is array (NATURAL RANGE <>) of std_logic_vector(31 downto 0);
 type Word33Array is array (NATURAL RANGE <>) of std_logic_vector(32 downto 0);
 type BoolArray is array (natural range <>) of BOOLEAN;
+type u2_array is array (NATURAL RANGE <>) of unsigned(1 downto 0);
+type u3_array is array (NATURAL RANGE <>) of unsigned(2 downto 0);
 type u4_array is array (NATURAL RANGE <>) of unsigned(3 downto 0);
 type u8_array is array (NATURAL RANGE <>) of unsigned(7 downto 0);
+type u9_array is array (NATURAL RANGE <>) of unsigned(8 downto 0);
+type u10_array is array (NATURAL RANGE <>) of unsigned(9 downto 0);
+type u11_array is array (NATURAL RANGE <>) of unsigned(10 downto 0);
+type u12_array is array (NATURAL RANGE <>) of unsigned(11 downto 0);
 type u13_array is array (NATURAL RANGE <>) of unsigned(12 downto 0);
 type u16_array is array (NATURAL RANGE <>) of unsigned(15 downto 0);
 type u24_array is array (NATURAL RANGE <>) of unsigned(23 downto 0);
@@ -528,6 +539,7 @@ function to_unsigned(i:ByteArray) return unsigned; -- concatenate bytes in a Byt
 function to_unsigned(i:slv8_array; n: integer) return unsigned; -- concatenate bytes in a ByteAray and return them as a n-bit unsigned
 function to_unsigned(i:slv8_array) return unsigned; -- concatenate bytes in a slv8_array and return them as an unsigned
 function to_unsigned(i:std_logic) return unsigned; -- converts a std_logic into a one element unsigned
+function str(i:integer) return string; -- converts integer to a string. Allows expressions, contrary to to_string().
 function repeat( V: std_logic_vector; N: natural) return std_logic_vector; --! Concatenates a vector N times
 function log2(v: integer) return real; -- Returns the log2 of an integer as a real (overloads the library log2())
 function integer_log2(v: integer) return integer; -- Returns the log2 of an integer as an integer
@@ -540,8 +552,14 @@ function shift_right(i:std_logic_vector; n: integer) return std_logic_vector; --
 function shift_right(x:slv2_array)  return slv2_array; -- shift right a slv2_array. 
 function shift_right(x:slv3_array)  return slv3_array; -- shift right a slv3_array.
 function shift_right(x:slv4_array)  return slv4_array; -- shift right a slv4_array.
+function any_one(v: std_logic_vector) return boolean; -- Return TRUE if any bit is '1'.
+function any_one(v: unsigned) return boolean; -- Return TRUE if any bit is '1'.
+function any_zero(v: std_logic_vector) return boolean; -- Return TRUE if any bit is '1'.
+function any_zero(v: unsigned) return boolean; -- Return TRUE if any bit is '1'.
 function all_ones(v: std_logic_vector) return boolean; -- Return TRUE if all bits are '1'.
 function all_ones(v: unsigned) return boolean; -- Return TRUE if all bits are '1'.
+function all_zeros(v: std_logic_vector) return boolean; -- Return TRUE if all bits are '0'.
+function all_zeros(v: unsigned) return boolean; -- Return TRUE if all bits are '0'.
 function cmplx(re, im:integer) return complex; -- Create a complex value out of two integer values
 function cmplx(re, im:signed) return complex; -- Create a complex value out of two signed values
 
@@ -959,6 +977,11 @@ FUNCTION to_unsigned(i:slv8_array) return unsigned is -- concatenated bytes in a
 		return to_unsigned(i,8*i'Length);
 	end to_unsigned;
 
+FUNCTION str(i:integer) return string is -- converts integer to a string. Allows expressions, contrary to to_string().
+	begin
+		return to_string(i);
+	end str;
+
 -- Return the Raw data capture frame header structure as a byte array
 FUNCTION struct_to_bytes(s:FRAME_HEADER_STRUCT) return slv8_array is
 	variable b: slv8_array(0 to FRAME_HEADER_BYTE_LENGTH - 1);
@@ -1098,17 +1121,54 @@ function repeat( V: std_logic_vector; N: natural) return std_logic_vector is
 		return result;
 	end repeat;
 
+--Returns TRUE if any bit is '1'
+function any_one(v: std_logic_vector) return boolean is
+	begin
+		return or(v) = '1';
+	end function;
+
+--Returns TRUE if any bits is '1'
+function any_one(v: unsigned) return boolean is
+	begin
+		return or(v) = '1';
+	end function;
+
+--Returns TRUE if any bit is '0'
+function any_zero(v: std_logic_vector) return boolean is
+	begin
+		return and(v) = '0';
+	end function;
+
+--Returns TRUE if any bit is '0'
+function any_zero(v: unsigned) return boolean is
+	begin
+		return and(v) = '0';
+	end function;
+
 --Returns TRUE if all bits are '1'
 function all_ones(v: std_logic_vector) return boolean is
 	begin
-		return and_reduce(v) = '1';
+		return and(v) = '1';
 	end function;
 
 
 --Returns TRUE if all bits are '1'
 function all_ones(v: unsigned) return boolean is
 	begin
-		return all_ones(std_logic_vector(v));
+		return and(v) = '1';
+	end function;
+
+--Returns TRUE if all bits are 'o'
+function all_zeros(v: std_logic_vector) return boolean is
+	begin
+		return or(v) = '0';
+	end function;
+
+
+--Returns TRUE if all bits are 'o'
+function all_zeros(v: unsigned) return boolean is
+	begin
+		return or(v) = '0';
 	end function;
 
 --Returns the log2 of a integer as a real value
@@ -1161,7 +1221,17 @@ end function;
 function shift_right(i:std_logic_vector; n: integer) return std_logic_vector is  -- shift right a STD_LOGIC_VECTOR with zero padding on the left
 	begin
 		return std_logic_vector(shift_right(unsigned(i), n));
+
 	end function;
+
+
+function shift_right(x:slv_array)  return slv_array is
+	variable r: slv_array(x'RANGE);
+	begin
+	r(x'LEFT-1 downto 0) := x(x'LEFT downto 1);
+	r(x'LEFT) := (others=>'0');
+	return r;
+end function;
 
 function shift_right(x:slv2_array)  return slv2_array is
 	variable r: slv2_array(x'RANGE);

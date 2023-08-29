@@ -18,9 +18,9 @@
 --  See Git repository for further logs
 ----------------------------------------------------------------------------------
 library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.NUMERIC_STD.ALL;
-use IEEE.STD_LOGIC_MISC.ALL; -- for or_reduce()
+use IEEE.std_logic_1164.ALL;
+use IEEE.numeric_std.ALL;
+use IEEE.std_logic_misc.ALL; -- for or_reduce()
 use IEEE.math_real.all; -- log2, ceil
 
 library UNISIM;
@@ -110,13 +110,13 @@ use work.chFPGA_Package.all; -- Get all component definitions
 -- but needs to be tested.
 --
 entity FUNCGEN is
-    GENERIC (
+    generic (
         ADC_SAMPLES_PER_WORD: integer := 8;
         ADC_BITS_PER_SAMPLE: integer := 16;
         ADC_SAMPLES_PER_FRAME: integer := 16384;
         IMPLEMENT_DELAY_CAPTURE: boolean := FALSE
     );
-    PORT (
+    port (
 
         --in_dat  : in AXIS64_DAT_STRUCT;     --! Data stream from the ADC.
 

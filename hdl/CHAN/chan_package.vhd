@@ -20,6 +20,14 @@ package chan_package is
 ----------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------
 COMPONENT CHAN is
+    GENERIC (
+        ADC_BITS_PER_SAMPLE: integer := CONFIG_ADC_BITS_PER_SAMPLE;
+        ADC_SAMPLES_PER_WORD: integer := CONFIG_ADC_SAMPLES_PER_WORD;
+        ADC_SAMPLES_PER_FRAME: integer := CONFIG_ADC_SAMPLES_PER_FRAME;
+        ADC_BITS_PER_WORD: integer := ADC_BITS_PER_SAMPLE * ADC_SAMPLES_PER_WORD;
+        NUMBER_OF_CAPTURE_SOURCES: integer := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES
+        );
+
   PORT (
 
     in_dat_tdata: in std_logic_vector(CONFIG_ADC_BITS_PER_SAMPLE * CONFIG_ADC_SAMPLES_PER_WORD -1  downto 0);
@@ -65,9 +73,12 @@ COMPONENT CHAN is
     adc_rply_tlast: in std_logic;
     adc_rply_tready: out std_logic;
 
-    m_axis_cap_tdata: out std_logic_vector(CONFIG_ADC_BITS_PER_SAMPLE * CONFIG_ADC_SAMPLES_PER_WORD-1 downto 0);
-    m_axis_cap_tvalid: out std_logic;
-    m_axis_cap_tlast: out std_logic;
+    -- packet capture interface
+    cap_source_req: in std_logic;
+    cap_source_ack: out std_logic;
+    m_axis_cap_tdata: out std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
+    m_axis_cap_tvalid: out std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES - 1);
+    m_axis_cap_tlast: out std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES - 1);
 
 
     -- Data Capture interface
