@@ -105,33 +105,25 @@
 
 
 # -- GTY QSFP28 ports - Bank 128
- set_property PACKAGE_PIN Y35       [get_ports {tx_p[0]}] ;
- set_property PACKAGE_PIN V35       [get_ports {tx_p[1]}] ;
- set_property PACKAGE_PIN T35       [get_ports {tx_p[2]}] ;
- set_property PACKAGE_PIN R33       [get_ports {tx_p[3]}] ;
 
 # GTY reference clock, 156.25 MHz from fixed PLL, Bank 129
-set_property PACKAGE_PIN W33 [get_ports gt_ref_clk_p]
 #create_clock -name refclk -period 6.4 [get_ports {gt_ref_clk_p}] # already defined by core
 
-set_property PACKAGE_PIN G17 [get_ports {pl_clk_p}]
-set_property IOSTANDARD LVDS [get_ports {pl_clk_p}]
-set_property DIFF_TERM_ADV TERM_100 [get_ports {pl_clk_p}]
-create_clock -period 2.666 -name PL_CLK [get_ports pl_clk_p]; # 375 MHz
 
 # DDR4_CLK, used as a 200 MHz system clock
-set_property PACKAGE_PIN H23 [get_ports {clk100_p}]
-set_property IOSTANDARD LVDS [get_ports {clk100_p}]
-set_property DIFF_TERM_ADV TERM_100 [get_ports {clk100_p}]
-create_clock -period 5 -name CLK200_CLK [get_ports clk100_p]; # 200 MHz
 
 
 
-create_pblock BRAM
-add_cells_to_pblock [get_pblocks BRAM] [get_cells -quiet [list cge0/data_fifo_inst cge0/falg_fifo_inst]]
-resize_pblock [get_pblocks BRAM] -add {SLICE_X7Y180:SLICE_X12Y224}
-resize_pblock [get_pblocks BRAM] -add {RAMB18_X0Y72:RAMB18_X0Y89}
-resize_pblock [get_pblocks BRAM] -add {RAMB36_X0Y36:RAMB36_X0Y44}
 
 
 #set_clock_groups -asynchronous -group [get_clocks gt_ref_clk_p]
+
+create_pblock FFT
+add_cells_to_pblock [get_pblocks FFT] -top
+resize_pblock [get_pblocks FFT] -add {SLICE_X22Y421:SLICE_X110Y479}
+resize_pblock [get_pblocks FFT] -add {DSP48E2_X2Y170:DSP48E2_X21Y191}
+resize_pblock [get_pblocks FFT] -add {RAMB18_X2Y170:RAMB18_X10Y191}
+resize_pblock [get_pblocks FFT] -add {RAMB36_X2Y85:RAMB36_X10Y95}
+set_property EXCLUDE_PLACEMENT 1 [get_pblocks FFT]
+set_property IS_SOFT FALSE [get_pblocks FFT]
+create_clock -period 2.500 -name ctrl_clk -waveform {0.000 1.250} [get_ports ctrl_clk]
