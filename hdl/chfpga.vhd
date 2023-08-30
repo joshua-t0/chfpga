@@ -3412,12 +3412,12 @@ elsif CAPTURE_TYPE = "URAM" generate
 	signal axis_ucap_reg1_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(ADC_BITS_PER_WORD-1 downto 0);
 	signal axis_ucap_reg1_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
 	signal axis_ucap_reg1_tlast: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
-    attribute shreg_extract of axis_ucap_reg1_tdata,axis_ucap_reg1_tvalid,axis_ucap_reg1_tlast: signal is "no";
+    attribute shreg_extract of axis_ucap_reg1_tdata,axis_ucap_reg1_tvalid,axis_ucap_reg1_tlast: signal is "no"; -- needed to prevent pipeline registers to be combined into shoft registers
 
 	signal axis_ucap_reg2_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(ADC_BITS_PER_WORD-1 downto 0);
 	signal axis_ucap_reg2_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
 	signal axis_ucap_reg2_tlast: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
-    attribute shreg_extract of axis_ucap_reg2_tdata,axis_ucap_reg2_tvalid,axis_ucap_reg2_tlast: signal is "no";
+    attribute shreg_extract of axis_ucap_reg2_tdata,axis_ucap_reg2_tvalid,axis_ucap_reg2_tlast: signal is "no"; -- needed to prevent pipeline registers to be combined into shoft registers
 
     signal ucap_source_req1:std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1); -- data source request for each channel
     signal ucap_source_ack1: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1); -- curent data source on tdata for each channel
