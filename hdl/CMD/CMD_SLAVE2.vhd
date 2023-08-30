@@ -144,13 +144,13 @@ architecture Behavioral of CTRL_SLAVE is
 	constant INT_ADDR_WIDTH: integer := CTRL_CMD_ADDR_WIDTH; 
 
 	subtype OPCODE_TYPE is std_logic_vector(CTRL_CMD_OPCODE_WIDTH-1 downto 0);
-	constant OPCODE_WRITE_CONTROL: OPCODE_TYPE        := "100";
-	constant OPCODE_WRITE_CONTROL_MASK: OPCODE_TYPE   := "101";
-	constant OPCODE_NOP: OPCODE_TYPE                  := "110";
-	constant OPCODE_WRITE_RAM: OPCODE_TYPE            := "111";
-	constant OPCODE_READ_CONTROL: OPCODE_TYPE         := "000";
-	constant OPCODE_READ_STATUS: OPCODE_TYPE          := "010";
-	constant OPCODE_READ_RAM: OPCODE_TYPE             := "011";
+	constant OPCODE_WRITE_CONTROL: OPCODE_TYPE        := "100"; -- write control bytes
+	constant OPCODE_WRITE_CONTROL_MASK: OPCODE_TYPE   := "101"; -- write control bytes with masks
+	constant OPCODE_NOP: OPCODE_TYPE                  := "110"; -- NOP
+	constant OPCODE_WRITE_RAM: OPCODE_TYPE            := "111"; -- write RAM/DRP bytes or 16-bit words
+	constant OPCODE_READ_CONTROL: OPCODE_TYPE         := "000"; -- read 2^N control bytes
+	constant OPCODE_READ_STATUS: OPCODE_TYPE          := "010"; -- read 2^N status bytes
+	constant OPCODE_READ_RAM: OPCODE_TYPE             := "011"; -- read 2^N RAM/DRP bytes or 16-bit words
 
 	signal ctrl_cmd_in_rdy_int: AXIS8_RDY_STRUCT;
 	signal ctrl_rply_out_dat_int: AXIS8_DAT_STRUCT;
