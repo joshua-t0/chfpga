@@ -6,9 +6,9 @@ use work.chFPGA_package.all;
 
 package chfpga_config is
 	constant CONFIG_PLATFORM_ID: integer := PLATFORM_ID_CRS;
-	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean := FALSE;
+	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean := TRUE;
 	constant CONFIG_ADC_SAMPLES_PER_WORD: integer := 8; -- we pack 8 samples per word
-	constant CONFIG_ADC_BITS_PER_SAMPLE: integer := 16;
+	constant CONFIG_ADC_BITS_PER_SAMPLE: integer := 14;
 	constant CONFIG_ADC_SAMPLES_PER_FRAME: integer := 16384;
 	constant CONFIG_CHAN_CAPTURE_TYPE: string := "URAM"; 
 	constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer := 2; 
