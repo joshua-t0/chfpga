@@ -474,17 +474,17 @@ end block funcgen_blk;
 -- Instantiate the FFT Block
 ---------------------------------------------------------------------
 fft_blk: block
-    signal axis_funcgen_out_tdata32: std_logic_vector(31 downto 0);
+    --signal axis_funcgen_out_tdata32: std_logic_vector(31 downto 0);
    
 begin
 
-    -- Temporary hack to connect 128-bit FUNCGEN to 32-bit FFT. Signals are not valid.
-    narrow_fft_gen: if ADC_BITS_PER_WORD /= 32 generate
-    axis_funcgen_out_tdata32 <= axis_funcgen_out_tdata(127 downto 120) & 
-                                axis_funcgen_out_tdata(95 downto 88) &
-                                axis_funcgen_out_tdata(63 downto 56) &
-                                axis_funcgen_out_tdata(31 downto 24);
-    end generate;   
+    ---- Temporary hack to connect 128-bit FUNCGEN to 32-bit FFT. Signals are not valid.
+    --narrow_fft_gen: if ADC_BITS_PER_WORD /= 32 generate
+    --axis_funcgen_out_tdata32 <= axis_funcgen_out_tdata(127 downto 120) & 
+    --                            axis_funcgen_out_tdata(95 downto 88) &
+    --                            axis_funcgen_out_tdata(63 downto 56) &
+    --                            axis_funcgen_out_tdata(31 downto 24);
+    --end generate;   
 
     -- Pipeline the FFT reset (skip over the funcgen logic)
     fft_pipe_proc: process(in_clk)
@@ -502,15 +502,28 @@ begin
             )
         PORT MAP(
             -- Input and output interfaces
-            in_dat  => (
-                TDATA => axis_funcgen_out_tdata32, 
-                TUSER => axis_funcgen_out_tuser, 
-                TVALID => axis_funcgen_out_tvalid,
-                TLAST => axis_funcgen_out_tlast),
-            out_dat.TDATA => axis_fft_out_tdata(71 downto 0), -- ** hack to allow compiling with the old FFT ***
-                out_dat.TVALID => axis_fft_out_tvalid,
-                out_dat.TLAST => axis_fft_out_tlast,
-                out_dat.TUSER => axis_fft_out_tuser,
+            --in_dat  => (
+            --    TDATA => axis_funcgen_out_tdata32, 
+            --    TUSER => axis_funcgen_out_tuser, 
+            --    TVALID => axis_funcgen_out_tvalid,
+            --    TLAST => axis_funcgen_out_tlast),
+            --    out_dat.TDATA => axis_fft_out_tdata(71 downto 0), -- ** hack to allow compiling with the old FFT ***
+            --    out_dat.TVALID => axis_fft_out_tvalid,
+            --    out_dat.TLAST => axis_fft_out_tlast,
+            --    out_dat.TUSER => axis_fft_out_tuser,
+
+            -- Input stream from funcgen
+            s_axis_in_dat_tdata  => axis_funcgen_out_tdata,
+            s_axis_in_dat_tvalid => axis_funcgen_out_tvalid,
+            s_axis_in_dat_tlast  => axis_funcgen_out_tlast,
+            s_axis_in_dat_tuser  => axis_funcgen_out_tuser,
+
+            -- Output stream to scaler
+            m_axis_out_dat_tdata  => axis_fft_out_tdata,
+            m_axis_out_dat_tvalid => axis_fft_out_tvalid,
+            m_axis_out_dat_tlast  => axis_fft_out_tlast,
+            m_axis_out_dat_tuser  => axis_fft_out_tuser,
+
             clk     => in_clk,
             reset   => in_reset_fft,
 
