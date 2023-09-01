@@ -1,0 +1,16 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+--------------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version      : Vivado v.2022.2 (lin64) Build 3671981 Fri Oct 14 04:59:54 MDT 2022
+| Date              : Fri Sep  1 11:48:10 2023
+| Host              : twiddlebug running 64-bit Ubuntu 22.04.2 LTS
+| Command           : report_bus_skew -warn_on_violation -file CHAN_bus_skew_routed.rpt -pb CHAN_bus_skew_routed.pb -rpx CHAN_bus_skew_routed.rpx
+| Design            : CHAN
+| Device            : xczu47dr-ffvg1517
+| Speed File        : -1  PRODUCTION 1.32 01-31-2021
+| Temperature Grade : I
+--------------------------------------------------------------------------------------------------------------------------------------------------
+
+Bus Skew Report
+
+No bus skew constraints
+

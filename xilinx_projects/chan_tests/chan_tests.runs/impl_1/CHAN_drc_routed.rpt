@@ -1,0 +1,120 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2022.2 (lin64) Build 3671981 Fri Oct 14 04:59:54 MDT 2022
+| Date         : Fri Sep  1 11:47:55 2023
+| Host         : twiddlebug running 64-bit Ubuntu 22.04.2 LTS
+| Command      : report_drc -file CHAN_drc_routed.rpt -pb CHAN_drc_routed.pb -rpx CHAN_drc_routed.rpx
+| Design       : CHAN
+| Device       : xczu47dr-ffvg1517-1-i
+| Speed File   : -1
+| Design State : Fully Routed
+------------------------------------------------------------------------------------------------------
+
+Report DRC
+
+Table of Contents
+-----------------
+1. REPORT SUMMARY
+2. REPORT DETAILS
+
+1. REPORT SUMMARY
+-----------------
+            Netlist: netlist
+          Floorplan: design_1
+      Design limits: <entire design considered>
+           Ruledeck: default
+             Max violations: <unlimited>
+             Violations found: 15
++-----------+----------+------------------------+------------+
+| Rule      | Severity | Description            | Violations |
++-----------+----------+------------------------+------------+
+| DPIP-2    | Warning  | Input pipelining       | 5          |
+| DPOP-3    | Warning  | PREG Output pipelining | 1          |
+| DPOP-4    | Warning  | MREG Output pipelining | 8          |
+| RTSTAT-10 | Warning  | No routable loads      | 1          |
++-----------+----------+------------------------+------------+
+
+2. REPORT DETAILS
+-----------------
+DPIP-2#1 Warning
+Input pipelining  
+DSP IMPL_GEN.fft_blk.FFT0/FFT_GEN.fftype_gen.FFT0/U0/fft_pfb_struct/fft_wideband_real/fft_biplex_real_4x/biplex_core/fft_stage_11/butterfly_direct/twiddle_x0/bus_mult/mult1/imim/op_mem_65_20_reg[1] input IMPL_GEN.fft_blk.FFT0/FFT_GEN.fftype_gen.FFT0/U0/fft_pfb_struct/fft_wideband_real/fft_biplex_real_4x/biplex_core/fft_stage_11/butterfly_direct/twiddle_x0/bus_mult/mult1/imim/op_mem_65_20_reg[1]/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-2#2 Warning
+Input pipelining  
+DSP IMPL_GEN.fft_blk.FFT0/FFT_GEN.fftype_gen.FFT0/U0/fft_pfb_struct/fft_wideband_real/fft_biplex_real_4x/biplex_core/fft_stage_11/butterfly_direct/twiddle_x0/bus_mult/mult1/imre/op_mem_65_20_reg[1] input IMPL_GEN.fft_blk.FFT0/FFT_GEN.fftype_gen.FFT0/U0/fft_pfb_struct/fft_wideband_real/fft_biplex_real_4x/biplex_core/fft_stage_11/butterfly_direct/twiddle_x0/bus_mult/mult1/imre/op_mem_65_20_reg[1]/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-2#3 Warning
+Input pipelining  
+DSP IMPL_GEN.fft_blk.FFT0/FFT_GEN.fftype_gen.FFT0/U0/fft_pfb_struct/fft_wideband_real/fft_biplex_real_4x/biplex_core/fft_stage_11/butterfly_direct/twiddle_x0/bus_mult/mult2/imim/op_mem_65_20_reg[1] input IMPL_GEN.fft_blk.FFT0/FFT_GEN.fftype_gen.FFT0/U0/fft_pfb_struct/fft_wideband_real/fft_biplex_real_4x/biplex_core/fft_stage_11/butterfly_direct/twiddle_x0/bus_mult/mult2/imim/op_mem_65_20_reg[1]/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-2#4 Warning
+Input pipelining  
+DSP IMPL_GEN.fft_blk.FFT0/FFT_GEN.fftype_gen.FFT0/U0/fft_pfb_struct/fft_wideband_real/fft_biplex_real_4x/biplex_core/fft_stage_11/butterfly_direct/twiddle_x0/bus_mult/mult2/imre/op_mem_65_20_reg[1] input IMPL_GEN.fft_blk.FFT0/FFT_GEN.fftype_gen.FFT0/U0/fft_pfb_struct/fft_wideband_real/fft_biplex_real_4x/biplex_core/fft_stage_11/butterfly_direct/twiddle_x0/bus_mult/mult2/imre/op_mem_65_20_reg[1]/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-2#5 Warning
+Input pipelining  
+DSP IMPL_GEN.fft_blk.FFT0/FFT_GEN.fftype_gen.FFT0/U0/fft_pfb_struct/pfb_fir_real/pol1_in2_tap3/mult/op_mem_65_20_reg[1] input IMPL_GEN.fft_blk.FFT0/FFT_GEN.fftype_gen.FFT0/U0/fft_pfb_struct/pfb_fir_real/pol1_in2_tap3/mult/op_mem_65_20_reg[1]/B[17:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPOP-3#1 Warning
+PREG Output pipelining  
+DSP IMPL_GEN.scaler_blk.SCALER0/scaled_data_tdata0 output IMPL_GEN.scaler_blk.SCALER0/scaled_data_tdata0/P[47:0] is not pipelined (PREG=0). Pipelining the DSP48 output will improve performance and often saves power so it is suggested whenever possible to fully pipeline this function.  If this DSP48 function was inferred, it is suggested to describe an additional register stage after this function.  If the DSP48 was instantiated in the design, it is suggested to set the PREG attribute to 1.
+Related violations: <none>
+
+DPOP-4#1 Warning
+MREG Output pipelining  
+DSP IMPL_GEN.scaler_blk.SCALER0/scaled_data_tdata0 multiplier stage IMPL_GEN.scaler_blk.SCALER0/scaled_data_tdata0/P[47:0] is not pipelined (MREG=0). Pipelining the multiplier function will improve performance and will save significant power so it is suggested whenever possible to fully pipeline this function.  If this multiplier was inferred, it is suggested to describe an additional register stage after this function.  If there is no registered adder/accumulator following the multiply function, two pipeline stages are suggested to allow both the MREG and PREG registers to be used.  If the DSP48 was instantiated in the design, it is suggested to set both the MREG and PREG attributes to 1 when performing multiply functions.
+Related violations: <none>
+
+DPOP-4#2 Warning
+MREG Output pipelining  
+DSP IMPL_GEN.scaler_blk.SCALER0/scaled_data_tdata0__0 multiplier stage IMPL_GEN.scaler_blk.SCALER0/scaled_data_tdata0__0/P[47:0] is not pipelined (MREG=0). Pipelining the multiplier function will improve performance and will save significant power so it is suggested whenever possible to fully pipeline this function.  If this multiplier was inferred, it is suggested to describe an additional register stage after this function.  If there is no registered adder/accumulator following the multiply function, two pipeline stages are suggested to allow both the MREG and PREG registers to be used.  If the DSP48 was instantiated in the design, it is suggested to set both the MREG and PREG attributes to 1 when performing multiply functions.
+Related violations: <none>
+
+DPOP-4#3 Warning
+MREG Output pipelining  
+DSP IMPL_GEN.scaler_blk.SCALER0/scaled_data_tdata0__1 multiplier stage IMPL_GEN.scaler_blk.SCALER0/scaled_data_tdata0__1/P[47:0] is not pipelined (MREG=0). Pipelining the multiplier function will improve performance and will save significant power so it is suggested whenever possible to fully pipeline this function.  If this multiplier was inferred, it is suggested to describe an additional register stage after this function.  If there is no registered adder/accumulator following the multiply function, two pipeline stages are suggested to allow both the MREG and PREG registers to be used.  If the DSP48 was instantiated in the design, it is suggested to set both the MREG and PREG attributes to 1 when performing multiply functions.
+Related violations: <none>
+
+DPOP-4#4 Warning
+MREG Output pipelining  
+DSP IMPL_GEN.scaler_blk.SCALER0/scaled_data_tdata0__2 multiplier stage IMPL_GEN.scaler_blk.SCALER0/scaled_data_tdata0__2/P[47:0] is not pipelined (MREG=0). Pipelining the multiplier function will improve performance and will save significant power so it is suggested whenever possible to fully pipeline this function.  If this multiplier was inferred, it is suggested to describe an additional register stage after this function.  If there is no registered adder/accumulator following the multiply function, two pipeline stages are suggested to allow both the MREG and PREG registers to be used.  If the DSP48 was instantiated in the design, it is suggested to set both the MREG and PREG attributes to 1 when performing multiply functions.
+Related violations: <none>
+
+DPOP-4#5 Warning
+MREG Output pipelining  
+DSP IMPL_GEN.scaler_blk.SCALER0/scaled_data_tdata0__3 multiplier stage IMPL_GEN.scaler_blk.SCALER0/scaled_data_tdata0__3/P[47:0] is not pipelined (MREG=0). Pipelining the multiplier function will improve performance and will save significant power so it is suggested whenever possible to fully pipeline this function.  If this multiplier was inferred, it is suggested to describe an additional register stage after this function.  If there is no registered adder/accumulator following the multiply function, two pipeline stages are suggested to allow both the MREG and PREG registers to be used.  If the DSP48 was instantiated in the design, it is suggested to set both the MREG and PREG attributes to 1 when performing multiply functions.
+Related violations: <none>
+
+DPOP-4#6 Warning
+MREG Output pipelining  
+DSP IMPL_GEN.scaler_blk.SCALER0/scaled_data_tdata0__4 multiplier stage IMPL_GEN.scaler_blk.SCALER0/scaled_data_tdata0__4/P[47:0] is not pipelined (MREG=0). Pipelining the multiplier function will improve performance and will save significant power so it is suggested whenever possible to fully pipeline this function.  If this multiplier was inferred, it is suggested to describe an additional register stage after this function.  If there is no registered adder/accumulator following the multiply function, two pipeline stages are suggested to allow both the MREG and PREG registers to be used.  If the DSP48 was instantiated in the design, it is suggested to set both the MREG and PREG attributes to 1 when performing multiply functions.
+Related violations: <none>
+
+DPOP-4#7 Warning
+MREG Output pipelining  
+DSP IMPL_GEN.scaler_blk.SCALER0/scaled_data_tdata0__5 multiplier stage IMPL_GEN.scaler_blk.SCALER0/scaled_data_tdata0__5/P[47:0] is not pipelined (MREG=0). Pipelining the multiplier function will improve performance and will save significant power so it is suggested whenever possible to fully pipeline this function.  If this multiplier was inferred, it is suggested to describe an additional register stage after this function.  If there is no registered adder/accumulator following the multiply function, two pipeline stages are suggested to allow both the MREG and PREG registers to be used.  If the DSP48 was instantiated in the design, it is suggested to set both the MREG and PREG attributes to 1 when performing multiply functions.
+Related violations: <none>
+
+DPOP-4#8 Warning
+MREG Output pipelining  
+DSP IMPL_GEN.scaler_blk.SCALER0/scaled_data_tdata0__6 multiplier stage IMPL_GEN.scaler_blk.SCALER0/scaled_data_tdata0__6/P[47:0] is not pipelined (MREG=0). Pipelining the multiplier function will improve performance and will save significant power so it is suggested whenever possible to fully pipeline this function.  If this multiplier was inferred, it is suggested to describe an additional register stage after this function.  If there is no registered adder/accumulator following the multiply function, two pipeline stages are suggested to allow both the MREG and PREG registers to be used.  If the DSP48 was instantiated in the design, it is suggested to set both the MREG and PREG attributes to 1 when performing multiply functions.
+Related violations: <none>
+
+RTSTAT-10#1 Warning
+No routable loads  
+194 net(s) have no routable loads. The problem bus(es) and/or net(s) are CTRL_ROUTER0/FIFO0/FIFOGEN_SYNC.RPLY_FIFO0/inst/axis_interconnect_0/inst_mi_datapath[0].dynamic_datapath_mi/gen_register_slice.axis_register_slice_0/axisc_register_slice_0/storage_data1_reg[8]_0[8:0],
+CTRL_ROUTER0/adc_cmd_tdata[7:0],
+IMPL_GEN.fft_blk.FFT0/m_axis_out_dat_tuser_reg[3]_0[1],
+IMPL_GEN.fft_blk.FFT0/m_axis_out_dat_tuser_reg[3]_0[2], cap_source_ack,
+lane_monitor[3:0], m_axis_cap_tdata[127:0], m_axis_cap_tlast[0:1],
+m_axis_cap_tvalid[0:1], out_dat_tdata[31:0], out_dat_tlast,
+out_dat_tuser[3:0], out_dat_tvalid.
+Related violations: <none>
+
+

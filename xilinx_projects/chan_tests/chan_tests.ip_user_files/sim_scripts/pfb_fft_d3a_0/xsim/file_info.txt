@@ -1,0 +1,2 @@
+pfb_fft_d3a_0_sim_netlist.vhdl,vhdl,xil_defaultlib,../../../../chan_tests.gen/sources_1/ip/pfb_fft_d3a_0/pfb_fft_d3a_0_sim_netlist.vhdl,
+glbl.v,Verilog,xil_defaultlib,glbl.v
