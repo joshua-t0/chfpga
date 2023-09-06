@@ -97,7 +97,7 @@ architecture impl of ucap is
     subtype int8 is integer range 0 to NUMBER_OF_CHANNELS-1; -- used for channel and buffer indexing
 
 
-	signal control_bytes: slv8_array(0 to 8);
+	signal control_bytes: slv8_array(0 to 9);
 	signal status_bytes: slv8_array(0 to 0);
 
     -- control and status signals
@@ -140,7 +140,7 @@ begin
     
 	bsb_regs0: entity work.CTRL_SLAVE
 		GENERIC MAP (
-			DEFAULT_CONTROL_BYTES=> X"08_1A_001000_002000_0F",
+			DEFAULT_CONTROL_BYTES=> X"08_1A_001000_002000_0F_00",
 			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), -- Number of bits in the control word
 			NUMBER_OF_STATUS_BYTES => status_bytes'Length(1) -- Number of bits in the status word.
 		)
@@ -172,6 +172,9 @@ begin
 
 	-- CONTROL bytes 8: capture subperiod
 	sub_period <= unsigned(control_bytes(8)(4 downto 0));
+
+	-- CONTROL bytes 8: capture subperiod
+	source_sel_out <= control_bytes(9);
 
 	-- STATUS byte 0
 	status_bytes(0)(0) <= fifo_overflow_sticky;
