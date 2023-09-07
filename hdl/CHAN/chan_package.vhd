@@ -25,7 +25,9 @@ COMPONENT CHAN is
         ADC_SAMPLES_PER_WORD: integer := CONFIG_ADC_SAMPLES_PER_WORD;
         ADC_SAMPLES_PER_FRAME: integer := CONFIG_ADC_SAMPLES_PER_FRAME;
         ADC_BITS_PER_WORD: integer := ADC_BITS_PER_SAMPLE * ADC_SAMPLES_PER_WORD;
-        NUMBER_OF_CAPTURE_SOURCES: integer := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES
+        IMPLEMENT_FFT: boolean; -- no default value since we only want one channelizer with an FFT for now, as defined in chfpga and the config.
+        NUMBER_OF_CAPTURE_SOURCES: integer := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES;
+        CAPTURE_BITS_PER_WORD: integer := CONFIG_CAPTURE_BITS_PER_WORD
         );
 
   PORT (
@@ -76,7 +78,7 @@ COMPONENT CHAN is
     -- packet capture interface
     cap_source_req: in std_logic;
     cap_source_ack: out std_logic;
-    m_axis_cap_tdata: out std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
+    m_axis_cap_tdata: out std_logic_vector(CAPTURE_BITS_PER_WORD-1 downto 0);
     m_axis_cap_tvalid: out std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES - 1);
     m_axis_cap_tlast: out std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES - 1);
 
