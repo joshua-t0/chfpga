@@ -50,6 +50,7 @@ entity CHAN is
         PLATFORM_ID     : integer          := CONFIG_PLATFORM_ID;-- PLATFORM_ID_MGK7MB; -- This generics is locked to the MGK7MB when using CHAN as an OOC.
         IMPLEMENT_CHAN  : boolean          := TRUE;
         IMPLEMENT_FFT   : boolean          := CONFIG_CHAN_IMPLEMENT_FFT;
+        FFT_TYPE        : string           := CONFIG_FFT_TYPE;
         ADC_BITS_PER_SAMPLE: integer       := CONFIG_ADC_BITS_PER_SAMPLE;
         ADC_SAMPLES_PER_WORD: integer      := CONFIG_ADC_SAMPLES_PER_WORD;
         ADC_SAMPLES_PER_FRAME: integer     := CONFIG_ADC_SAMPLES_PER_FRAME;
@@ -59,7 +60,7 @@ entity CHAN is
         NUMBER_OF_CAPTURE_SOURCES: integer := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES;
         OUT_BITS_PER_WORD: integer         := 32; -- Width of the output data bus 
         CAPTURE_TYPE: string               := CONFIG_CHAN_CAPTURE_TYPE; -- "URAM" or "BRAM"
-        CAPTURE_BITS_PER_WORD: integer     := sel(CAPTURE_TYPE="URAM", 128, 32); -- If we use URAM capture (which has a 128-bit bus), have the scaler output be the same width so we can get more FFT resolution when the scaler is bypassed.
+        CAPTURE_BITS_PER_WORD: integer     := CONFIG_CAPTURE_BITS_PER_WORD; -- sel(CAPTURE_TYPE="URAM", 128, 32); -- If we use URAM capture (which has a 128-bit bus), have the scaler output be the same width so we can get more FFT resolution when the scaler is bypassed.
         SIM: boolean                       := GLOBAL_SIM
         );
 
@@ -498,7 +499,8 @@ begin
     -- Also adds a control interface to control the FFT operation.
     FFT0: entity work.FFT
         GENERIC MAP (
-            IMPLEMENT_FFT=>IMPLEMENT_FFT
+            IMPLEMENT_FFT=>IMPLEMENT_FFT,
+            FFT_TYPE=>FFT_TYPE
             )
         PORT MAP(
             -- Input and output interfaces
