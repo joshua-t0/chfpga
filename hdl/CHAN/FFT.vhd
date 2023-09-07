@@ -176,8 +176,9 @@ architecture Behavioral of FFT is
 	signal fft_sync_in: std_logic := '1'; -- init value needed to generate first sync pulse
 	signal fft_sync_out: std_logic := '0';
 	signal fft_sync_out2: std_logic := '0';
-	-- signal fft_overflow: std_logic := '0';
-	signal fft_overflow: std_logic_vector(FFT_OVERFLOW_BITLENGTH-1 downto 0) := (others=>'0');
+	signal fft_overflow: std_logic := '0';
+	signal fft_overflow_d3a: std_logic_vector(1 downto 0) := (others=>'0'); -- temporary hack --fixme
+	-- signal fft_overflow: std_logic_vector(FFT_OVERFLOW_BITLENGTH-1 downto 0) := (others=>'0');
 	signal fft_overflow_sticky: std_logic;
 	signal fft_overflow_sticky_dly: std_logic;
 	signal fft_tuser: std_logic_vector(m_axis_out_dat_tuser'RANGE);
@@ -294,8 +295,8 @@ main_proc: process(clk)
 			-- Parameterization of fft_overflow: check that fft_overflow is not '0' (CHIME) or '00' (D3A/CHORD)
 			if overflow_reset='1' then
 				overflow_count <= (others=>'0');
-			-- elsif fft_tvalid='1' and fft_clk_en='1' and (fft_overflow='1' or overflow_force='1') and signed(overflow_count)/=-1 then
-			elsif fft_tvalid='1' and fft_clk_en='1' and (fft_overflow/=(fft_overflow'range => '0') or overflow_force='1') and signed(overflow_count)/=-1 then
+			elsif fft_tvalid='1' and fft_clk_en='1' and (fft_overflow='1' or overflow_force='1') and signed(overflow_count)/=-1 then
+			-- elsif fft_tvalid='1' and fft_clk_en='1' and (fft_overflow/=(fft_overflow'range => '0') or overflow_force='1') and signed(overflow_count)/=-1 then
 				overflow_count <= overflow_count + 1;
 			end if;
 
@@ -308,8 +309,8 @@ main_proc: process(clk)
 			if fft_tvalid='1' and fft_clk_en='1' and fft_tlast='1' then
 				fft_overflow_sticky <= '0';
 				--fft_overflow_sticky_dly <= fft_overflow_sticky_int or fft_overflow;
-			-- elsif fft_tvalid='1' and fft_clk_en='1' and (fft_overflow='1' or overflow_force='1') then
-			elsif fft_tvalid='1' and fft_clk_en='1' and (fft_overflow/=(fft_overflow'range => '0') or overflow_force='1') then
+			elsif fft_tvalid='1' and fft_clk_en='1' and (fft_overflow='1' or overflow_force='1') then
+			-- elsif fft_tvalid='1' and fft_clk_en='1' and (fft_overflow/=(fft_overflow'range => '0') or overflow_force='1') then
 				fft_overflow_sticky <= '1';
 			end if;
 
@@ -445,6 +446,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 	-- out1 is the next, etc.
 	
 	elsif FFT_TYPE = "D3A" generate
+	
 		FFT0: entity work.pfb_fft_d3a_0
 			PORT MAP(
 				sync_in(0)  => fft_sync_in,
@@ -464,10 +466,11 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 				out3 	 => fft_dout3_int,
 
 				shift    => fft_shift_schedule(13 downto 0),
---				of_x0 => (0 => fft_overflow, others => open),--fixme
-				clk    => clk
+				of_x0    => fft_overflow_d3a, -- (0 => fft_overflow, others => open),--fixme
+				clk      => clk
 			);
---        fft_overflow <= '0';
+			
+        fft_overflow <= or fft_overflow_d3a;
 		fft_tdata <= (fft_dout0_int & fft_dout1_int & fft_dout2_int & fft_dout3_int);
 
 	end generate fftype_gen;
