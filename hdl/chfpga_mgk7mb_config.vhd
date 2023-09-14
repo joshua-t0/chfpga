@@ -10,4 +10,7 @@ package chfpga_config is
 	constant CONFIG_ADC_SAMPLES_PER_WORD: integer := 4; 
 	constant CONFIG_ADC_BITS_PER_SAMPLE: integer := 8;
 	constant CONFIG_ADC_SAMPLES_PER_FRAME: integer := 2048;
+	constant CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS: boolean := TRUE;
+	constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer := 2;
+	constant CONFIG_CHAN_CAPTURE_TYPE: string := "BRAM";
 end chfpga_config;
