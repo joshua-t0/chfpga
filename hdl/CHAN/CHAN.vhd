@@ -50,7 +50,7 @@ entity CHAN is
         PLATFORM_ID     : integer          := CONFIG_PLATFORM_ID;-- PLATFORM_ID_MGK7MB; -- This generics is locked to the MGK7MB when using CHAN as an OOC.
         IMPLEMENT_CHAN  : boolean          := TRUE;
         IMPLEMENT_FFT   : boolean          := CONFIG_CHAN_IMPLEMENT_FFT;
-        FFT_TYPE        : string           := CONFIG_FFT_TYPE;
+        FFT_TYPE        : string           := CONFIG_CHAN_FFT_TYPE;
         ADC_BITS_PER_SAMPLE: integer       := CONFIG_ADC_BITS_PER_SAMPLE;
         ADC_SAMPLES_PER_WORD: integer      := CONFIG_ADC_SAMPLES_PER_WORD;
         ADC_SAMPLES_PER_FRAME: integer     := CONFIG_ADC_SAMPLES_PER_FRAME;
@@ -500,7 +500,10 @@ begin
     FFT0: entity work.FFT
         GENERIC MAP (
             IMPLEMENT_FFT=>IMPLEMENT_FFT,
-            FFT_TYPE=>FFT_TYPE
+            FFT_TYPE=>FFT_TYPE,
+            ADC_BITS_PER_SAMPLE => ADC_BITS_PER_SAMPLE,
+		    ADC_SAMPLES_PER_WORD => ADC_SAMPLES_PER_WORD,
+		    FFT_BITS_PER_BIN => FFT_BITS_PER_BIN
             )
         PORT MAP(
             -- Input and output interfaces
