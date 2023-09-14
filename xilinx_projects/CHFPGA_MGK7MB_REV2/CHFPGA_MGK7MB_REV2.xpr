@@ -761,7 +761,7 @@
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CHAN/FFT.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
