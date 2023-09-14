@@ -45,3 +45,6 @@
 
 !/uram_ct/
 !/uram_ct/*
+
+!/chan_tests/
+!/chan_tests/*

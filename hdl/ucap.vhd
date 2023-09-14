@@ -50,12 +50,13 @@ entity ucap is
         ADC_SAMPLES_PER_WORD: integer := 8;
         ADC_SAMPLES_PER_FRAME: integer := 16384;
         ADC_BITS_PER_WORD: integer := ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPLE;
+        CAPTURE_BITS_PER_WORD: integer := 128;
         SIM: boolean := FALSE
 	);
     port ( 
         -- Input data buses
 
-        s_axis_tdata: in slv_array(0 to NUMBER_OF_CHANNELS-1)(ADC_BITS_PER_WORD -1 downto 0);
+        s_axis_tdata: in slv_array(0 to NUMBER_OF_CHANNELS-1)(CAPTURE_BITS_PER_WORD -1 downto 0);
         s_axis_tvalid: in std_logic_vector(0 to NUMBER_OF_SOURCES - 1); -- common to all channels
         s_axis_tlast: in std_logic_vector(0 to NUMBER_OF_SOURCES - 1); -- common to all channels
 --        s_axis_tuser: in std_logic_vector(0 to 0); -- bit 0: current source
@@ -118,7 +119,7 @@ architecture impl of ucap is
     
     -- RAM signals
 	signal ram_wr_addr, ram_rd_addr: slv12_array(0 to NUMBER_OF_BUFFERS-1);
-	signal ram_din: slv_array(0 to NUMBER_OF_BUFFERS-1)(ADC_BITS_PER_WORD -1 downto 0);
+	signal ram_din: slv_array(0 to NUMBER_OF_BUFFERS-1)(CAPTURE_BITS_PER_WORD -1 downto 0);
 	signal ram_dout: slv128_array(0 to NUMBER_OF_BUFFERS-1); -- one for each column;
 	signal ram_wr_en: std_logic_vector(0 to NUMBER_OF_BUFFERS-1);  -- one for each row
 --	signal ram_wr_byte_en: std_logic_vector(31 downto 0);  -- enable for each of the 32 bytes across the row
@@ -458,11 +459,11 @@ begin
 		           chan_int := to_integer(unsigned(chan_pair_sel(i)));
 
 	               if mux_mode = '0' then -- Assign input channel x to buffer x
-	                   ram_din(2*i)(ADC_BITS_PER_WORD-1 downto 0) <= s_axis_tdata(chan_int); -- When mux_mode=0, chan_pair_sel(i) is forced to 2*i. We don't assign the input directly becasue the synthesizer would infer an additional mux, which is redundant.
-	                   ram_din(2*i+1)(ADC_BITS_PER_WORD-1 downto 0) <= s_axis_tdata(2*i+1);
+	                   ram_din(2*i)(CAPTURE_BITS_PER_WORD-1 downto 0) <= s_axis_tdata(chan_int); -- When mux_mode=0, chan_pair_sel(i) is forced to 2*i. We don't assign the input directly becasue the synthesizer would infer an additional mux, which is redundant.
+	                   ram_din(2*i+1)(CAPTURE_BITS_PER_WORD-1 downto 0) <= s_axis_tdata(2*i+1);
 	               else -- Select the same even and odd input channel for each buffer pair  
-	                   ram_din(2*i)(ADC_BITS_PER_WORD-1 downto 0) <= s_axis_tdata(chan_int);
-	                   ram_din(2*i+1)(ADC_BITS_PER_WORD-1 downto 0) <= s_axis_tdata(chan_int);
+	                   ram_din(2*i)(CAPTURE_BITS_PER_WORD-1 downto 0) <= s_axis_tdata(chan_int);
+	                   ram_din(2*i+1)(CAPTURE_BITS_PER_WORD-1 downto 0) <= s_axis_tdata(chan_int);
 	               end if;
 	            end loop;
 

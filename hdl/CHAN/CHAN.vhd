@@ -50,6 +50,7 @@ entity CHAN is
         PLATFORM_ID     : integer          := CONFIG_PLATFORM_ID;-- PLATFORM_ID_MGK7MB; -- This generics is locked to the MGK7MB when using CHAN as an OOC.
         IMPLEMENT_CHAN  : boolean          := TRUE;
         IMPLEMENT_FFT   : boolean          := CONFIG_CHAN_IMPLEMENT_FFT;
+        FFT_TYPE        : string           := CONFIG_FFT_TYPE;
         ADC_BITS_PER_SAMPLE: integer       := CONFIG_ADC_BITS_PER_SAMPLE;
         ADC_SAMPLES_PER_WORD: integer      := CONFIG_ADC_SAMPLES_PER_WORD;
         ADC_SAMPLES_PER_FRAME: integer     := CONFIG_ADC_SAMPLES_PER_FRAME;
@@ -59,7 +60,7 @@ entity CHAN is
         NUMBER_OF_CAPTURE_SOURCES: integer := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES;
         OUT_BITS_PER_WORD: integer         := 32; -- Width of the output data bus 
         CAPTURE_TYPE: string               := CONFIG_CHAN_CAPTURE_TYPE; -- "URAM" or "BRAM"
-        CAPTURE_BITS_PER_WORD: integer     := sel(CAPTURE_TYPE="URAM", 128, 32); -- If we use URAM capture (which has a 128-bit bus), have the scaler output be the same width so we can get more FFT resolution when the scaler is bypassed.
+        CAPTURE_BITS_PER_WORD: integer     := CONFIG_CAPTURE_BITS_PER_WORD; -- sel(CAPTURE_TYPE="URAM", 128, 32); -- If we use URAM capture (which has a 128-bit bus), have the scaler output be the same width so we can get more FFT resolution when the scaler is bypassed.
         SIM: boolean                       := GLOBAL_SIM
         );
 
@@ -474,17 +475,17 @@ end block funcgen_blk;
 -- Instantiate the FFT Block
 ---------------------------------------------------------------------
 fft_blk: block
-    signal axis_funcgen_out_tdata32: std_logic_vector(31 downto 0);
+    --signal axis_funcgen_out_tdata32: std_logic_vector(31 downto 0);
    
 begin
 
-    -- Temporary hack to connect 128-bit FUNCGEN to 32-bit FFT. Signals are not valid.
-    narrow_fft_gen: if ADC_BITS_PER_WORD /= 32 generate
-    axis_funcgen_out_tdata32 <= axis_funcgen_out_tdata(127 downto 120) & 
-                                axis_funcgen_out_tdata(95 downto 88) &
-                                axis_funcgen_out_tdata(63 downto 56) &
-                                axis_funcgen_out_tdata(31 downto 24);
-    end generate;   
+    ---- Temporary hack to connect 128-bit FUNCGEN to 32-bit FFT. Signals are not valid.
+    --narrow_fft_gen: if ADC_BITS_PER_WORD /= 32 generate
+    --axis_funcgen_out_tdata32 <= axis_funcgen_out_tdata(127 downto 120) & 
+    --                            axis_funcgen_out_tdata(95 downto 88) &
+    --                            axis_funcgen_out_tdata(63 downto 56) &
+    --                            axis_funcgen_out_tdata(31 downto 24);
+    --end generate;   
 
     -- Pipeline the FFT reset (skip over the funcgen logic)
     fft_pipe_proc: process(in_clk)
@@ -498,19 +499,33 @@ begin
     -- Also adds a control interface to control the FFT operation.
     FFT0: entity work.FFT
         GENERIC MAP (
-            IMPLEMENT_FFT=>IMPLEMENT_FFT
+            IMPLEMENT_FFT=>IMPLEMENT_FFT,
+            FFT_TYPE=>FFT_TYPE
             )
         PORT MAP(
             -- Input and output interfaces
-            in_dat  => (
-                TDATA => axis_funcgen_out_tdata32, 
-                TUSER => axis_funcgen_out_tuser, 
-                TVALID => axis_funcgen_out_tvalid,
-                TLAST => axis_funcgen_out_tlast),
-            out_dat.TDATA => axis_fft_out_tdata(71 downto 0), -- ** hack to allow compiling with the old FFT ***
-                out_dat.TVALID => axis_fft_out_tvalid,
-                out_dat.TLAST => axis_fft_out_tlast,
-                out_dat.TUSER => axis_fft_out_tuser,
+            --in_dat  => (
+            --    TDATA => axis_funcgen_out_tdata32, 
+            --    TUSER => axis_funcgen_out_tuser, 
+            --    TVALID => axis_funcgen_out_tvalid,
+            --    TLAST => axis_funcgen_out_tlast),
+            --    out_dat.TDATA => axis_fft_out_tdata(71 downto 0), -- ** hack to allow compiling with the old FFT ***
+            --    out_dat.TVALID => axis_fft_out_tvalid,
+            --    out_dat.TLAST => axis_fft_out_tlast,
+            --    out_dat.TUSER => axis_fft_out_tuser,
+
+            -- Input stream from funcgen
+            s_axis_in_dat_tdata  => axis_funcgen_out_tdata,
+            s_axis_in_dat_tvalid => axis_funcgen_out_tvalid,
+            s_axis_in_dat_tlast  => axis_funcgen_out_tlast,
+            s_axis_in_dat_tuser  => axis_funcgen_out_tuser,
+
+            -- Output stream to scaler
+            m_axis_out_dat_tdata  => axis_fft_out_tdata,
+            m_axis_out_dat_tvalid => axis_fft_out_tvalid,
+            m_axis_out_dat_tlast  => axis_fft_out_tlast,
+            m_axis_out_dat_tuser  => axis_fft_out_tuser,
+
             clk     => in_clk,
             reset   => in_reset_fft,
 

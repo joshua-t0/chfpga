@@ -398,8 +398,8 @@
       },
       "pl_clk_rst": {
         "vlnv": "xilinx.com:ip:proc_sys_reset:5.0",
-        "xci_name": "sifpga_crs_rst_ps8_0_96M1_0",
-        "xci_path": "ip/sifpga_crs_rst_ps8_0_96M1_0/sifpga_crs_rst_ps8_0_96M1_0.xci",
+        "xci_name": "sifpga_crs_pl_clk_rst_0",
+        "xci_path": "ip/sifpga_crs_pl_clk_rst_0/sifpga_crs_pl_clk_rst_0.xci",
         "inst_hier_path": "pl_clk_rst"
       },
       "rst_ps8_0_96M": {
@@ -676,8 +676,8 @@
       },
       "adc0_bufg2": {
         "vlnv": "xilinx.com:ip:util_ds_buf:2.2",
-        "xci_name": "sifpga_crs_adc0_bufg1_1",
-        "xci_path": "ip/sifpga_crs_adc0_bufg1_1/sifpga_crs_adc0_bufg1_1.xci",
+        "xci_name": "sifpga_crs_adc0_bufg2_0",
+        "xci_path": "ip/sifpga_crs_adc0_bufg2_0/sifpga_crs_adc0_bufg2_0.xci",
         "inst_hier_path": "adc0_bufg2",
         "parameters": {
           "C_BUF_TYPE": {
@@ -687,8 +687,8 @@
       },
       "util_ds_buf_3": {
         "vlnv": "xilinx.com:ip:util_ds_buf:2.2",
-        "xci_name": "sifpga_crs_util_ds_buf_1_1",
-        "xci_path": "ip/sifpga_crs_util_ds_buf_1_1/sifpga_crs_util_ds_buf_1_1.xci",
+        "xci_name": "sifpga_crs_util_ds_buf_3_0",
+        "xci_path": "ip/sifpga_crs_util_ds_buf_3_0/sifpga_crs_util_ds_buf_3_0.xci",
         "inst_hier_path": "util_ds_buf_3",
         "parameters": {
           "DIFF_CLK_IN_BOARD_INTERFACE": {
@@ -4445,8 +4445,8 @@
       },
       "axi_dma_1": {
         "vlnv": "xilinx.com:ip:axi_dma:7.1",
-        "xci_name": "sifpga_crs_axi_dma_0_1",
-        "xci_path": "ip/sifpga_crs_axi_dma_0_1/sifpga_crs_axi_dma_0_1.xci",
+        "xci_name": "sifpga_crs_axi_dma_1_0",
+        "xci_path": "ip/sifpga_crs_axi_dma_1_0/sifpga_crs_axi_dma_1_0.xci",
         "inst_hier_path": "axi_dma_1",
         "parameters": {
           "c_addr_width": {
@@ -4556,7 +4556,7 @@
                 "value_src": "ip_prop"
               },
               "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value": "sifpga_crs_util_ds_buf_3_0_IBUF_OUT",
                 "value_src": "ip_prop"
               }
             },
@@ -4623,7 +4623,7 @@
                 "value_src": "ip_prop"
               },
               "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value": "sifpga_crs_util_ds_buf_3_0_IBUF_OUT",
                 "value_src": "ip_prop"
               }
             },
@@ -4690,7 +4690,7 @@
                 "value_src": "ip_prop"
               },
               "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value": "sifpga_crs_util_ds_buf_3_0_IBUF_OUT",
                 "value_src": "ip_prop"
               }
             },
@@ -4757,7 +4757,7 @@
                 "value_src": "ip_prop"
               },
               "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value": "sifpga_crs_util_ds_buf_3_0_IBUF_OUT",
                 "value_src": "ip_prop"
               }
             },
@@ -4824,7 +4824,7 @@
                 "value_src": "ip_prop"
               },
               "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value": "sifpga_crs_util_ds_buf_3_0_IBUF_OUT",
                 "value_src": "ip_prop"
               }
             },
@@ -4891,7 +4891,7 @@
                 "value_src": "ip_prop"
               },
               "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value": "sifpga_crs_util_ds_buf_3_0_IBUF_OUT",
                 "value_src": "ip_prop"
               }
             },
@@ -4958,7 +4958,7 @@
                 "value_src": "ip_prop"
               },
               "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value": "sifpga_crs_util_ds_buf_3_0_IBUF_OUT",
                 "value_src": "ip_prop"
               }
             },
@@ -5025,7 +5025,7 @@
                 "value_src": "ip_prop"
               },
               "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value": "sifpga_crs_util_ds_buf_3_0_IBUF_OUT",
                 "value_src": "ip_prop"
               }
             },
@@ -5340,7 +5340,7 @@
                 "value_src": "ip_prop"
               },
               "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value": "sifpga_crs_util_ds_buf_3_0_IBUF_OUT",
                 "value_src": "ip_prop"
               }
             }
@@ -5362,7 +5362,7 @@
                 "value_src": "ip_prop"
               },
               "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value": "sifpga_crs_util_ds_buf_3_0_IBUF_OUT",
                 "value_src": "ip_prop"
               }
             }
@@ -5384,7 +5384,7 @@
                 "value_src": "ip_prop"
               },
               "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value": "sifpga_crs_util_ds_buf_3_0_IBUF_OUT",
                 "value_src": "ip_prop"
               }
             }
@@ -5406,7 +5406,7 @@
                 "value_src": "ip_prop"
               },
               "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value": "sifpga_crs_util_ds_buf_3_0_IBUF_OUT",
                 "value_src": "ip_prop"
               }
             }
@@ -5428,7 +5428,7 @@
                 "value_src": "ip_prop"
               },
               "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value": "sifpga_crs_util_ds_buf_3_0_IBUF_OUT",
                 "value_src": "ip_prop"
               }
             }
@@ -5450,7 +5450,7 @@
                 "value_src": "ip_prop"
               },
               "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value": "sifpga_crs_util_ds_buf_3_0_IBUF_OUT",
                 "value_src": "ip_prop"
               }
             }
@@ -5472,7 +5472,7 @@
                 "value_src": "ip_prop"
               },
               "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value": "sifpga_crs_util_ds_buf_3_0_IBUF_OUT",
                 "value_src": "ip_prop"
               }
             }
@@ -5494,7 +5494,7 @@
                 "value_src": "ip_prop"
               },
               "CLK_DOMAIN": {
-                "value": "sifpga_crs_util_ds_buf_1_1_IBUF_OUT",
+                "value": "sifpga_crs_util_ds_buf_3_0_IBUF_OUT",
                 "value_src": "ip_prop"
               }
             }

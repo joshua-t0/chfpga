@@ -112,7 +112,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 entity FUNCGEN is
     generic (
         ADC_SAMPLES_PER_WORD: integer := 8;
-        ADC_BITS_PER_SAMPLE: integer := 16;
+        ADC_BITS_PER_SAMPLE: integer := 14;
         ADC_SAMPLES_PER_FRAME: integer := 16384;
         IMPLEMENT_DELAY_CAPTURE: boolean := FALSE
     );
@@ -585,9 +585,9 @@ end generate delaycap_gen;
       ADDR_WIDTH_A => LOG2_BYTES_PER_FRAME,             
       READ_LATENCY_A => 2,             -- DECIMAL
 
-      WRITE_DATA_WIDTH_B => BITS_PER_WORD,
-      BYTE_WRITE_WIDTH_B => BITS_PER_WORD,
-      READ_DATA_WIDTH_B => BITS_PER_WORD,
+      WRITE_DATA_WIDTH_B => 8*BYTES_PER_SAMPLE*ADC_SAMPLES_PER_WORD, -- BITS_PER_WORD,
+      BYTE_WRITE_WIDTH_B => 8*BYTES_PER_SAMPLE*ADC_SAMPLES_PER_WORD, --BITS_PER_WORD,
+      READ_DATA_WIDTH_B => 8*BYTES_PER_SAMPLE*ADC_SAMPLES_PER_WORD, --BITS_PER_WORD,
       ADDR_WIDTH_B => LOG2_WORDS_PER_FRAME,
       READ_LATENCY_B => 2,             -- DECIMAL
 

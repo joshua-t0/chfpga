@@ -1,3 +1,7 @@
+=================
+--- C H I M E ---
+=================
+
 PFB/FFT for CHIME channelizer.
 ==========================
 
@@ -61,3 +65,128 @@ To balance DSP and BRAM usage:
    - Specify multiplier use: Enabled
    - Multiplier specification: [1,1,1,1,1,1,1,1,1,1,1] (one '1' for each stage). Implements all multipliers in DSP48s
    - DSP48s in butetrfly: Disable: We want to use slice logic for this, otherwise additional DSP48s will be used.
+
+
+===================================================================
+
+=============
+--- D 3 A ---
+=============
+
+PFB/FFT for the D3A channelizer.
+================================
+
+Date created: August 16, 2023
+Author: Ian Hendricksen
+Project: CHORD F-Engine (RFSoC-based)
+
+The PFB/FFT used for D3A was generated using the Casper toolset on the Twiddlebug machine in R232 at McGill.
+The design of the PFB/FFT is nearly identical to that used for CHIME, though modified for the increased ADC 
+resolution and sampling rate of the RFSoC. 
+
+Note that the PFB/FFT for D3A only corresponds to that for a single analog input. The PFB can be made biplex
+and share coefficients to save BRAM, which will likely be done for CHORD, but this will require more extensive
+changes to the FFT wrapper, so is left for future work.
+
+The toolset corresponds to:
+   - MATLAB __
+   - 
+
+To generate the VHDL:
+   - Launch MATLAB with the Casper tools by going to ~/<your path>/casper/mlib_devel and execute the following in the terminal
+      $ ./startsg
+   - Launch Simulink
+   - Open ~/<your path>/chfpgalite/ip_library/FFT/D3A_PFB_FFT/fft_pfb.slx
+   - Click on the system generator (red Xilinx Sigma symbol), set the path for the generated files, and click "Generate"
+
+!!!!! @IH - update the above !!!!!
+
+PFB configuration
+==============
+
+Size of PFB: 2^14 = 16,384 points
+Taps: 4
+Window: Hamming
+Number of simultaneous inputs (samples processed per clock): 8
+Make biplex? FALSE
+Input bitwidth: 14
+Output bitwidth: 18
+Coefficient bitwidth: 18
+Use distributed memory for coeffs: FALSE
+Add latency: 1
+Mult latency: 2
+BRAM latency: 2
+Fanout latency: 1
+Convert latency: 1
+Quantization behavior: Round (unbiased: even values)
+Bin width scaling (normal=1): 1
+Multiplier specification: 2 (behavioral)
+Fold adders into DSPs: TRUE
+Adder implementation: fabric
+Share coefficients between polarizations: FALSE
+
+FFT configuration
+==============
+
+--Basic--
+
+Number of simultaneous streams: 1
+Size of FFT: 2^14 = 16,384 points
+Number of simultaneous inputs: 2^3 = 8
+Input bitwidth: 18
+Input binary point: 17
+Coefficient bitwidth: 18
+Unscramble output (i.e., put channels in canonical order): TRUE
+Asynchronous operation: FALSE
+Floating point: FALSE
+
+--Latency--
+
+Add latency: 1
+Mult latency: 2
+BRAM latency: 2
+Convert latency: 1
+Input latency: 0
+Latency between biplexes and fft_direct: 0
+Add interface pipeline latency: 0
+CMult pipeline latency: 0
+
+--Implementation--
+
+Quantization behavior: Round (unbiased: even values)
+Overflow behavior: Wrap
+Number of bits above which to store stage’s delays in BRAM: 2^9 bits
+Number of bits above which to store stage’s coefficients in BRAM: 2^9 bits
+BRAM sharing in coeff storage: TRUE
+Store a fraction of coeff factors where useful: TRUE
+Generate coeffs with multipliers where useful: TRUE
+Number calibration locations when generating coeffs: 2^1 = 2
+Feedback rotation vector resolution: 25
+Multiplier impl: 2 (behavioral)
+Maximum fanout: 4
+Bitgrowth instead of shifting: FALSE
+Max bits to grow to: 18
+Hardcode shift schedule: FALSE
+DSP48 adders in butterfly: FALSE
+
+
+===================================================================
+
+=================
+--- C H O R D ---
+=================
+
+PFB/FFT for CHORD channelizer.
+==========================
+
+
+
+PFB configuration
+==============
+
+
+
+
+FFT Configuration
+==============
+

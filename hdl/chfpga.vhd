@@ -122,8 +122,9 @@ entity chFPGA is
 		-- F-Engine config
         CAPTURE_TYPE: string := "BRAM"; -- "BRAM": BRAM-based in-channelizer capture engine; "URAM": URAM-based centralized UCAP capture engine. 
         NUMBER_OF_CAPTURE_SOURCES: integer := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES;
-		NUMBER_OF_CHANNELIZERS: INTEGER :=NUMBER_OF_CHANNELIZERS_MAX; --! Number of channelizers to be implemented
-		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := NUMBER_OF_CHANNELIZERS_MAX;
+		NUMBER_OF_CHANNELIZERS: INTEGER := NUMBER_OF_CHANNELIZERS_MAX; --! Number of channelizers to be implemented
+		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT;
+		CAPTURE_BITS_PER_WORD: integer := CONFIG_CAPTURE_BITS_PER_WORD; -- number of bits in the words captured by capture engine
 
 		-- Corner-turn engine config
 
@@ -757,7 +758,7 @@ signal axis_adc_tuser: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(ADC_SAMP
 signal axis_adc_tvalid: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
 signal axis_adc_tlast: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
 
-signal axis_cap_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(ADC_BITS_PER_WORD-1 downto 0);
+signal axis_cap_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(CAPTURE_BITS_PER_WORD-1 downto 0);
 signal axis_cap_tvalid: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(0 to NUMBER_OF_CAPTURE_SOURCES-1);
 signal axis_cap_tlast: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(0 to NUMBER_OF_CAPTURE_SOURCES-1);
 signal cap_source_req: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
@@ -2554,14 +2555,18 @@ begin
 					if adc_tvalid(i)='1' then
 						adc_word_ctr <= adc_word_ctr + 1;
 					end if;
+					
+					-- The following is deprecated. The ADC data should come in a bus according to the number of
+					-- ADC bits. The appropriate number of zero bits should be added if capturing with UCAP engine.
 
 					-- ADC data comes in 128-bit bus that contains 8x 16-bit sample words.
 					-- Actual ADC data is 12 or 14 bits, MSB-aligned in each word. First sample is in the lower word.
 
 					-- Invert the order of the words to put the first sample in the MSB
-					for j in 0 to 7 loop
-						axis_adc_tdata(i)(16*j+15 downto 16*j) <= adc_tdata(i)(16*(7-j)+15 downto 16*(7-j));
-					end loop;
+					-- for j in 0 to 7 loop
+					-- 	axis_adc_tdata(i)(16*j+15 downto 16*j) <= adc_tdata(i)(16*(7-j)+15 downto 16*(7-j));
+					-- end loop;
+					
 					-- Passing the data bus and clear overflow flags
 					axis_adc_tuser(i) <= (others =>'0');
 					axis_adc_tvalid(i) <= adc_tvalid(i) and adc_send_data2(i);
@@ -2689,10 +2694,10 @@ begin
 	end process;
 
 	CHANi: component work.chan_package.CHAN
-		--GENERIC MAP (
-		--	--PLATFORM_ID => PLATFORM_ID
-		--	--IMPLEMENT_FFT => i < NUMBER_OF_CHANNELIZERS_WITH_FFT
-		--	)
+		GENERIC MAP (
+			--PLATFORM_ID => PLATFORM_ID
+			IMPLEMENT_FFT => i < NUMBER_OF_CHANNELIZERS_WITH_FFT
+			)
 		PORT MAP(
 			-- Channelizer input (on ANT_CLK)
 			in_dat_tdata  => axis_adc_tdata(i),
@@ -3409,12 +3414,12 @@ elsif CAPTURE_TYPE = "URAM" generate
 	signal ucap_rply_dat: AXIS8_DAT_STRUCT;
 	signal ucap_rply_rdy: AXIS8_RDY_STRUCT;
 
-	signal axis_ucap_reg1_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(ADC_BITS_PER_WORD-1 downto 0);
+	signal axis_ucap_reg1_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(CAPTURE_BITS_PER_WORD-1 downto 0);
 	signal axis_ucap_reg1_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
 	signal axis_ucap_reg1_tlast: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
     attribute shreg_extract of axis_ucap_reg1_tdata,axis_ucap_reg1_tvalid,axis_ucap_reg1_tlast: signal is "no"; -- needed to prevent pipeline registers to be combined into shoft registers
 
-	signal axis_ucap_reg2_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(ADC_BITS_PER_WORD-1 downto 0);
+	signal axis_ucap_reg2_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(CAPTURE_BITS_PER_WORD-1 downto 0);
 	signal axis_ucap_reg2_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
 	signal axis_ucap_reg2_tlast: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
     attribute shreg_extract of axis_ucap_reg2_tdata,axis_ucap_reg2_tvalid,axis_ucap_reg2_tlast: signal is "no"; -- needed to prevent pipeline registers to be combined into shoft registers

@@ -60,7 +60,7 @@ entity sifpga_crs_chfpga_wrapper is
 			-- Corner-turn engine config
 			CROSSBAR1_TYPE: string                       := "URAM"; -- "BRAM" or "URAM"
 			NUMBER_OF_CROSSBAR_INPUTS: integer           := 8; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
-			NUMBER_OF_CROSSBAR1_OUTPUTS: integer          := 8; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
+			NUMBER_OF_CROSSBAR1_OUTPUTS: integer         := 8; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
 			NUMBER_OF_CORRELATORS: integer               := 0; -- Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
 			NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := 0;
 			NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := 0;
