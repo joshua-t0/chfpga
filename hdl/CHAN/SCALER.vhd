@@ -527,12 +527,12 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             m_axis_dout_tdata => scaled_data_odd_tdata
           );
 
-
-          scaled_data_tdata(4*FFT_BITS_PER_BIN/2-1 downto 3*FFT_BITS_PER_BIN/2) <= scaled_data_even_tdata(34 downto 0); -- Re(N)
-          scaled_data_tdata(3*FFT_BITS_PER_BIN/2-1 downto 2*FFT_BITS_PER_BIN/2) <= scaled_data_even_tdata(74 downto 40); -- Im(N)
-          scaled_data_tdata(2*FFT_BITS_PER_BIN/2-1 downto 1*FFT_BITS_PER_BIN/2) <= scaled_data_odd_tdata(34 downto 0); -- Re(N+1)
-          scaled_data_tdata(1*FFT_BITS_PER_BIN/2-1 downto 0*FFT_BITS_PER_BIN/2) <= scaled_data_odd_tdata(74 downto 40); -- Im(N+1)
-    else generate -- no complex gains
+          -- remap the CMUL output into the scaled_data vector (order from MSB to LSB: Re(N), Im(N), Re(N+1), Im(N+1))
+          scaled_data_tdata(4*INTEGER_WIDTH - 1 downto 3*INTEGER_WIDTH) <= scaled_data_even_tdata(34 downto 0); -- Re(N)
+          scaled_data_tdata(3*INTEGER_WIDTH - 1 downto 2*INTEGER_WIDTH) <= scaled_data_even_tdata(74 downto 40); -- Im(N)
+          scaled_data_tdata(2*INTEGER_WIDTH - 1 downto 1*INTEGER_WIDTH) <= scaled_data_odd_tdata(34 downto 0); -- Re(N+1)
+          scaled_data_tdata(1*INTEGER_WIDTH - 1 downto 0*INTEGER_WIDTH) <= scaled_data_odd_tdata(74 downto 40); -- Im(N+1)
+    else generate -- if no complex gains
 
             signal coeff_reg: std_logic_vector(COEFF_BITS_PER_WORD-1 downto 0);
             signal fft_reg_tdata: std_logic_vector(FFT_BITS_PER_WORD-1 downto 0);
