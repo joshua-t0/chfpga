@@ -78,9 +78,9 @@ entity FFT is
 		ADC_SAMPLES_PER_WORD   : integer := 8; -- CHIME: 4, D3A/CHORD: 8
 		ADC_BITS_PER_WORD	   : integer := ADC_BITS_PER_SAMPLE * ADC_SAMPLES_PER_WORD;
 		FFT_BITS_PER_BIN 	   : integer := 18+18; -- real + imaginary
-		FFT_BINS_PER_WORD 	   : integer := 4; -- CHIME: 2, D3A/CHORD: 4
-		FFT_BITS_PER_WORD 	   : integer := FFT_BITS_PER_BIN * FFT_BINS_PER_WORD;
-		FFT_OVERFLOW_BITLENGTH : integer := 2 -- CHIME: 1, D3A/CHORD: 2. Needed since D3A/CHORD FFT overflow signal is 2 bits for some reason
+		FFT_BINS_PER_WORD 	   : integer := ADC_SAMPLES_PER_WORD / 2; -- CHIME: 2, D3A/CHORD: 4. -- we divide by 2 because the FFT outputs only the positive frequencies
+		FFT_BITS_PER_WORD 	   : integer := FFT_BITS_PER_BIN * FFT_BINS_PER_WORD
+--		FFT_OVERFLOW_BITLENGTH : integer := 2 -- CHIME: 1, D3A/CHORD: 2. Needed since D3A/CHORD FFT overflow signal is 2 bits for some reason
 		);
 	port (
 		-- I/O interfaces
