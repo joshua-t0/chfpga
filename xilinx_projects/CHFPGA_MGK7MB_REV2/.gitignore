@@ -2,7 +2,6 @@
 *.dcp
 *.filter
 /*.cache
-/*.cache/*
 /*.ip_user_files
 /*.data/wt
 /*.hw
@@ -17,4 +16,4 @@
 /CHFPGA_MGK7MB_REV2.sim/
 /CHFPGA_MGK7MB_REV2.srcs/
 *.log
-*.dcp
+
