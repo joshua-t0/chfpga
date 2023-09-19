@@ -122,8 +122,8 @@ entity CHAN is
         adc_rply_tready : out std_logic;
 
         -- Data capture interface
-        cap_source_req: in std_logic;
-        cap_source_ack: out std_logic;
+        cap_source_req: in std_logic; -- requested data capture source (0 or 1). The actual source switch will happen on a frame boundary and will be reflected by `cap_source_ack`
+        cap_source_ack: out std_logic; -- Current source (0 or 1) for the captured data. This is synchronous to the m_axis_cap tdata/tvalud/tlast. 
         m_axis_cap_tdata: out std_logic_vector(CAPTURE_BITS_PER_WORD-1 downto 0);
         m_axis_cap_tvalid: out std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES - 1);
         m_axis_cap_tlast: out std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES - 1);
@@ -854,11 +854,14 @@ begin
     
     elsif CAPTURE_TYPE = "URAM" generate
          cap_proc: process(in_clk)
+                variable src: integer range 0 to 1;
             begin
                 if rising_edge(in_clk) then
                     cap_source_ack <= cap_source_req;
-                    m_axis_cap_tdata <= axis_cap0_tdata(0) when cap_source_req = '0' else
-                                        axis_cap0_tdata(1);
+                    -- Select the data bus to pass on to the capture output
+                    src := to_integer(to_unsigned(cap_source_ack));
+                    m_axis_cap_tdata <= axis_cap0_tdata(src); 
+                    -- Pass the tlast * tvalid for *all* sources so UCAP can continuously track the frame numbers
                     m_axis_cap_tlast <= axis_cap0_tlast;
                     m_axis_cap_tvalid <= axis_cap0_tvalid;
                 end if; -- clk
