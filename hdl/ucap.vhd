@@ -46,11 +46,11 @@ entity ucap is
 	    NUMBER_OF_CHANNELS: integer := 8; -- Warning: current design works only with NUMBER_OF_CHANNELS = 8
 	    NUMBER_OF_SOURCES : integer := 2; -- Warning; current design works only with NUMBER_OF_SOURCES = 2
 
-	    ADC_BITS_PER_SAMPLE: integer := 14;
-        ADC_SAMPLES_PER_WORD: integer := 8;
-        ADC_SAMPLES_PER_FRAME: integer := 16384;
-        ADC_BITS_PER_WORD: integer := ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPLE;
-        CAPTURE_BITS_PER_WORD: integer := 128;
+--	    ADC_BITS_PER_SAMPLE: integer := 14;
+--        ADC_SAMPLES_PER_WORD: integer := 8;
+--        ADC_SAMPLES_PER_FRAME: integer := 16384;
+--        ADC_BITS_PER_WORD: integer := ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPLE;
+        CAPTURE_BITS_PER_WORD: integer := 128; -- must be a multiple of 8 bits
         SIM: boolean := FALSE
 	);
     port ( 
@@ -82,7 +82,7 @@ entity ucap is
 		cmd_rdy: out axis8_rdy_struct;
 		rply_dat: out axis8_dat_struct;
 		rply_rdy: in axis8_rdy_struct := (TREADY=>'0');
-		ctrl_clk : IN std_logic := '0'; -- control clock
+		ctrl_clk : in std_logic := '0'; -- control clock
 		ctrl_rst : in std_logic := '0'
         
     
@@ -99,7 +99,7 @@ architecture impl of ucap is
 
 
 	signal control_bytes: slv8_array(0 to 9);
-	signal status_bytes: slv8_array(0 to 0);
+	signal status_bytes: slv8_array(0 to 2);
 
     -- control and status signals
     signal mode: std_logic_vector(1 downto 0) := "11"; -- "00": 8-channel, "01": 4-channel, "10": 2-channel, "11": 1-channel
@@ -120,7 +120,7 @@ architecture impl of ucap is
     -- RAM signals
 	signal ram_wr_addr, ram_rd_addr: slv12_array(0 to NUMBER_OF_BUFFERS-1);
 	signal ram_din: slv_array(0 to NUMBER_OF_BUFFERS-1)(CAPTURE_BITS_PER_WORD -1 downto 0);
-	signal ram_dout: slv128_array(0 to NUMBER_OF_BUFFERS-1); -- one for each column;
+	signal ram_dout: slv_array(0 to NUMBER_OF_BUFFERS-1)(CAPTURE_BITS_PER_WORD -1 downto 0); -- one for each column;
 	signal ram_wr_en: std_logic_vector(0 to NUMBER_OF_BUFFERS-1);  -- one for each row
 --	signal ram_wr_byte_en: std_logic_vector(31 downto 0);  -- enable for each of the 32 bytes across the row
 	signal ram_rd_en: std_logic_vector(0 to NUMBER_OF_BUFFERS-1);  -- one for each column
@@ -141,7 +141,7 @@ begin
     
 	bsb_regs0: entity work.CTRL_SLAVE
 		GENERIC MAP (
-			DEFAULT_CONTROL_BYTES=> X"08_1A_001000_002000_0F_00",
+			DEFAULT_CONTROL_BYTES=> X"08_1A_02cb41_02cb41_1F_00",
 			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), -- Number of bits in the control word
 			NUMBER_OF_STATUS_BYTES => status_bytes'Length(1) -- Number of bits in the status word.
 		)
@@ -174,12 +174,14 @@ begin
 	-- CONTROL bytes 8: capture subperiod
 	sub_period <= unsigned(control_bytes(8)(4 downto 0));
 
-	-- CONTROL bytes 8: capture subperiod
+	-- CONTROL bytes 9: source selection
 	source_sel_out <= control_bytes(9);
 
 	-- STATUS byte 0
 	status_bytes(0)(0) <= fifo_overflow_sticky;
 	status_bytes(0)(1) <= overrun;
+	status_bytes(0)(2) <= rst; --debug
+	status_bytes(0)(3) <= user_reset_reg; -- debug
 
 
     ------------------------------------------------------------
@@ -194,16 +196,16 @@ begin
     --   16 frames from 1 channel (mode "11")
     --
 	uram_gen: for i in 0 to NUMBER_OF_BUFFERS-1 generate
-	        constant RAM_WORD_WIDTH: integer := 128; -- must be a multiple of 8 bits since the readout is done byte-wise
-			constant RAM_BITS_PER_SAMPLE: integer := RAM_WORD_WIDTH / ADC_SAMPLES_PER_WORD; -- typically 16 bits/sample in RAM for 8 samples/word
-			signal ram_din_word: std_logic_vector(RAM_WORD_WIDTH-1 downto 0);
+--	        constant RAM_WORD_WIDTH: integer := CAPTURE_BITS_PER_WORD; -- must be a multiple of 8 bits since the readout is done byte-wise
+--			constant RAM_BITS_PER_SAMPLE: integer := RAM_WORD_WIDTH / ADC_SAMPLES_PER_WORD; -- typically 16 bits/sample in RAM for 8 samples/word
+			signal ram_din_word: std_logic_vector(CAPTURE_BITS_PER_WORD-1 downto 0);
 		begin
-		    -- Remap the input word into the 128-bit URAM word.
-		    -- We realign each ADC sample on the left of each RAM sample, padding the rightmost bits with '0'
-            din_gen: for j in 0 to ADC_SAMPLES_PER_WORD-1 generate
-                   ram_din_word(RAM_BITS_PER_SAMPLE*(j+1)-1 downto RAM_BITS_PER_SAMPLE*j) <= (ram_din(i)(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j), others => '0');
-            end generate;	           
-
+--		    -- Remap the input word into the 128-bit URAM word.
+--		    -- We realign each ADC sample on the left of each RAM sample, padding the rightmost bits with '0'
+--            din_gen: for j in 0 to ADC_SAMPLES_PER_WORD-1 generate
+--                   ram_din_word(RAM_BITS_PER_SAMPLE*(j+1)-1 downto RAM_BITS_PER_SAMPLE*j) <= (ram_din(i)(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j), others => '0');
+--            end generate;	           
+            ram_din_word <= ram_din(i);
 		   	-- xpm_memory_sdpram: Simple Dual Port RAM
 		   	-- Xilinx Parameterized Macro, version 2022.1
 		   	-- UltraRAM primitive is organized as 4K x 72 bits.
@@ -214,14 +216,14 @@ begin
 			      MEMORY_PRIMITIVE => "ultra",      -- force the use of UltraRAM
                     -- write bus A
 			      ADDR_WIDTH_A => 12,               -- 4k (12 bits) per URAM
-			      WRITE_DATA_WIDTH_A => RAM_WORD_WIDTH,        -- 8 byte (64 bits) wide write bus
-			      BYTE_WRITE_WIDTH_A => RAM_WORD_WIDTH,          -- We use 8-bit-wide-byte-enabled write, i.e. we have 8 byte enable bits
+			      WRITE_DATA_WIDTH_A => CAPTURE_BITS_PER_WORD,        -- 8 byte (64 bits) wide write bus
+			      BYTE_WRITE_WIDTH_A => CAPTURE_BITS_PER_WORD,          -- We use 8-bit-wide-byte-enabled write, i.e. we have 8 byte enable bits
                     -- Read bus B
 			      ADDR_WIDTH_B => 12,               -- same
-			      READ_DATA_WIDTH_B => RAM_WORD_WIDTH,         -- 8 byte (64 bits) wide read bus
+			      READ_DATA_WIDTH_B => CAPTURE_BITS_PER_WORD,         -- 8 byte (64 bits) wide read bus
 			      --CASCADE_HEIGHT => 4,             -- We castade 4 URAM
 			      --MEMORY_OPTIMIZATION => "true",   -- String
-			      MEMORY_SIZE => 128 * 4096,         -- 128-bit word * 4096 words/URAM
+			      MEMORY_SIZE => CAPTURE_BITS_PER_WORD * 4096,         -- 128-bit word * 4096 words/URAM
 			      --MESSAGE_CONTROL => 0,            -- DECIMAL
 			      READ_LATENCY_B => RAM_LATENCY,     -- Needs to be >= of cascade height to allow registering. Synthesis ask for more than 4 to have full pipelining (4 is partial).
 			      --READ_RESET_VALUE_B => "0",       -- String
@@ -325,6 +327,7 @@ begin
 						end if;                
 					end if;
 
+
 					if rst = '1' or user_reset_reg = '1' then
                         -- block-local signals
 						word_ctr(src) <= (others => '0');
@@ -337,6 +340,9 @@ begin
 	                    capture_timestamp(src) <= (others => '0'); -- needed if we reset with capture_en=1
 					end if; --rst
 				end loop; -- source
+
+status_bytes(1) <= std_logic_vector(period_ctr(0)(7 downto 0));
+status_bytes(2) <= std_logic_vector(source_sel_in);
 
 	            -- The muxing of the input data to the data buffers is done
 	            -- with a 4-channel mux modified with an additional 2:1 mux to allow
