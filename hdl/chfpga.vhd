@@ -753,11 +753,13 @@ signal adc_clk: std_logic; -- buffered ADC clock
 --type adc_tdata_array is array (NATURAL RANGE <>) of std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
 --type adc_tuser_array is array (NATURAL RANGE <>) of std_logic_vector(ADC_SAMPLES_PER_WORD-1 downto 0);
 
+-- ADC data bus, shared between the channelizers and the corner turn engine or the correlator
 signal axis_adc_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(ADC_BITS_PER_WORD-1 downto 0);
 signal axis_adc_tuser: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(ADC_SAMPLES_PER_WORD-1 downto 0);
 signal axis_adc_tvalid: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
 signal axis_adc_tlast: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
 
+-- Data capture bus, shared between the channelizers and UCAP instance
 signal axis_cap_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(CAPTURE_BITS_PER_WORD-1 downto 0);
 signal axis_cap_tvalid: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(0 to NUMBER_OF_CAPTURE_SOURCES-1);
 signal axis_cap_tlast: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(0 to NUMBER_OF_CAPTURE_SOURCES-1);
@@ -2562,12 +2564,13 @@ begin
 					-- ADC data comes in 128-bit bus that contains 8x 16-bit sample words.
 					-- Actual ADC data is 12 or 14 bits, MSB-aligned in each word. First sample is in the lower word.
 
-					-- Invert the order of the words to put the first sample in the MSB
-					-- for j in 0 to 7 loop
-					-- 	axis_adc_tdata(i)(16*j+15 downto 16*j) <= adc_tdata(i)(16*(7-j)+15 downto 16*(7-j));
-					-- end loop;
+					-- Repack the ADC samples in a Nsamples x Nbits_per_samples word and also 
+					-- invert the order of the words to put the first sample in the MSB of the word
+					 for j in 0 to ADC_SAMPLES_PER_WORD-1 loop
+					 	axis_adc_tdata(i)(ADC_BITS_PER_SAMPLE*(j+1) -1 downto ADC_BITS_PER_SAMPLE*j) <= adc_tdata(i)(16*(ADC_SAMPLES_PER_WORD-j)-1 downto 16*(ADC_SAMPLES_PER_WORD-j)-ADC_BITS_PER_SAMPLE);
+					 end loop;
 					
-					-- Passing the data bus and clear overflow flags
+					-- Pass the data bus and clear overflow flags
 					axis_adc_tuser(i) <= (others =>'0');
 					axis_adc_tvalid(i) <= adc_tvalid(i) and adc_send_data2(i);
 					axis_adc_tlast(i) <= '0';
@@ -2683,7 +2686,7 @@ CHANGEN: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
 	attribute equivalent_register_removal of chan_reset_reg : signal is "no";
 	attribute keep of chan_reset_reg :signal is "true";
 	attribute shreg_extract of chan_reset_reg: signal is "no";
-
+	attribute DONT_TOUCH of CHANi: label is "true"; -- don't optimize through cell boundaries
 begin
 	-- Pipeline the channel synchronous resets
 	rst_proc: process(chan_clk(i))
@@ -3433,6 +3436,8 @@ elsif CAPTURE_TYPE = "URAM" generate
 	signal ucap_ctrl_rst, ucap_ctrl_rst_reg: std_logic;
     signal ucap_clk: std_logic;
     signal ucap_rst: std_logic;
+
+    attribute DONT_TOUCH of ucap0: label is "true"; -- don't optimize through cell boundaries
 begin
 
 
@@ -3473,9 +3478,10 @@ begin
 
 	ucap0: entity work.ucap
 		generic map (
-            ADC_BITS_PER_SAMPLE => ADC_BITS_PER_SAMPLE,
-            ADC_SAMPLES_PER_WORD => ADC_SAMPLES_PER_WORD,
-            ADC_SAMPLES_PER_FRAME => ADC_SAMPLES_PER_FRAME
+			CAPTURE_BITS_PER_WORD => CAPTURE_BITS_PER_WORD
+            --ADC_BITS_PER_SAMPLE => ADC_BITS_PER_SAMPLE,
+            --ADC_SAMPLES_PER_WORD => ADC_SAMPLES_PER_WORD,
+            --ADC_SAMPLES_PER_FRAME => ADC_SAMPLES_PER_FRAME
 			)
 	    port map ( 
 	        s_axis_tdata => axis_ucap_reg2_tdata,
