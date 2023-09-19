@@ -247,6 +247,7 @@ architecture impl of sifpga_crs_chfpga_wrapper is
 	signal buck_sync: std_logic_vector(0 to 15);
 	signal gpio_led: std_logic_vector(7 downto 0);
 
+attribute DONT_TOUCH of chfpga0: label is "true";
 begin
 
 	cpu_reset <= not cpu_reset_n; -- Reset is active LOW on the ICEBoard
