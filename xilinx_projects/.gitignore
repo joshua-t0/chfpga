@@ -34,6 +34,9 @@
 !/chfpga_zcu111/
 !/chfpga_zcu111/*
 
+!/chfpga_zcu111_3/
+/chfpga_zcu111_3/*
+# !/chfpga_zcu111_3/*.xpr
 !/sifpga_zcu111/
 !/sifpga_zcu111/*
 
@@ -48,3 +51,5 @@
 
 !/chan_tests/
 !/chan_tests/*
+
+!*.xpr
