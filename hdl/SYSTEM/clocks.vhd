@@ -556,7 +556,8 @@ begin
 	end generate gen_chanpll_k7;
 
 	-- For the ZCU111, we just send the already-buffered single ADC clock to all channel clocks
-	gen_chanpll_up: if CHAN_CLK_SOURCE /= "MMCM" generate
+	assert CHAN_CLK_SOURCE /= "MMCM" or CHAN_CLK_SOURCE /= "ADC" report "CHAN clock source is not MMCM or ADC" severity FAILURE;
+	gen_chanpll_up: if CHAN_CLK_SOURCE = "ADC"  generate
 		chan_clk_int <= (others => adc_clk);
 		chan_mmcm_locked <= '1'; --make sure the RESETs don't wait on the inexistent MMCM locked signal
 	end generate;

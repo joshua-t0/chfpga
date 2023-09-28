@@ -524,7 +524,7 @@ attribute IOB: string;
 attribute TARGET_PBLOCK: string;
 
 -- ==================================================
--- ========== SIGNALS ==============================
+-- ========== SIGNALS ===============================
 -- ==================================================
 
 -- Constants
@@ -1173,7 +1173,7 @@ ALL_RESET<=  cpu_reset or user_reset;
 --end generate; --debug7
 
 --! Instantiate the system clock generator that generates the local 200 MHz and 125 MHz from the external 200 MHz lines
-CLK0: entity work.CLOCKS
+CLK0: entity work.CLOCKS 
 	generic map (
 		PLATFORM_ID => PLATFORM_ID,
 		CLOCK_SOURCE => SYSTEM_CLOCK_SOURCE, -- "SYSCLK", "SYSCLK_BUFG", "SFP_REFCLK" or "CLK10_BUFG"
@@ -3534,7 +3534,8 @@ begin
 			corr_reset_reg1 <= ct_reset_reg;
 		end if;
 	end process;
-
+--        For search: corr input, corr output
+		assert NUMBER_OF_CORRELATORS > 0 report "Number of correlators cannot be 0 for SIFPGA";
 		-- Connect the correlator inputs and outputs
 		CORR_PRB_GEN: for i in 0 to NUMBER_OF_CORRELATORS-1 generate
 			-- input bus. 1:1 connection between each correlator and crossbar output. Pipeling in the module.
