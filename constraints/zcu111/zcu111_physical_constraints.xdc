@@ -9,7 +9,7 @@ set_property BITSTREAM.CONFIG.USR_ACCESS TIMESTAMP [current_design]
 # Frequency counter
 # ----------------
 # Constrain the frequency counter clock. The clock frequency on this net is 1/2 if the measured clock source
-create_clock -period 3.200 -name FREQ_CTR [get_pins */*/*/*/FREQ_CTR0/V6.SRCCLK0/I]
+create_clock -period 3.200 -name FREQ_CTR [get_pins chfpga0/FREQ_CTR0/V6.SRCCLK0/I]
 set_clock_groups -name FREQ_CTR_GROUP -asynchronous -group [get_clocks FREQ_CTR]
 
 # 100 MHz clock provided by the PS to the PL is not in phase with any other clock
@@ -26,15 +26,15 @@ set_clock_groups -name CLK_PL0_GROUP -asynchronous -group [get_clocks clk_pl_0]
 # LMK04208 PLL output 0
 ########################################
 ### Output 0: PL SYSREF (10 MHz for us). Used to synchronize the ADCs
-set_property IOSTANDARD LVDS [get_ports {SYSREF_FPGA_clk_n[0]}]
+#set_property IOSTANDARD LVDS [get_ports {SYSREF_FPGA_clk_n[0]}]
 set_property PACKAGE_PIN AK17 [get_ports {SYSREF_FPGA_clk_p[0]}]
-set_property PACKAGE_PIN AK16 [get_ports {SYSREF_FPGA_clk_n[0]}]
+#set_property PACKAGE_PIN AK16 [get_ports {SYSREF_FPGA_clk_n[0]}]
 set_property IOSTANDARD LVDS [get_ports {SYSREF_FPGA_clk_p[0]}]
 create_clock -period 100.000 -name CLK10 [get_ports {SYSREF_FPGA_clk_p[0]}]
 ### Output 1: DAC_SYSREF (10 MHz synchronization), connected to RFDC dedicated pins
-### Output 2: PL FPGA_REFCLK (200 MHz ADC word clock for us)
-set_property PACKAGE_PIN AL15 [get_ports FPGA_REFCLK_OUT_C_clk_n*]
-set_property IOSTANDARD LVDS [get_ports FPGA_REFCLK_OUT_C_clk_n*]
+### Output 2: PL FPGA_REFCLK (375 MHz ADC word clock for us)
+#set_property PACKAGE_PIN AL15 [get_ports FPGA_REFCLK_OUT_C_clk_n*]
+#set_property IOSTANDARD LVDS [get_ports FPGA_REFCLK_OUT_C_clk_n*]
 set_property PACKAGE_PIN AL16 [get_ports FPGA_REFCLK_OUT_C_clk_p*]
 set_property IOSTANDARD LVDS [get_ports FPGA_REFCLK_OUT_C_clk_p*]
 create_clock -period 2.666 -name PL_CLK [get_ports FPGA_REFCLK_OUT_C_clk_p*]
@@ -1215,7 +1215,7 @@ set_property PACKAGE_PIN R33 [get_ports {qsfp_txp[3]}]
 
 
 create_pblock CGE
-add_cells_to_pblock [get_pblocks CGE] [get_cells -quiet [list sifpga_zcu111_i/sifpga_zcu111_chfpga_0/U0/chfpga0/CGE_GEN.cge0]]
+add_cells_to_pblock [get_pblocks CGE] [get_cells -quiet [list chfpga0/CGE_GEN.cge0]]
 resize_pblock [get_pblocks CGE] -add {SLICE_X0Y181:SLICE_X11Y283}
 resize_pblock [get_pblocks CGE] -add {DSP48E2_X0Y74:DSP48E2_X0Y111}
 resize_pblock [get_pblocks CGE] -add {RAMB18_X0Y74:RAMB18_X0Y111}

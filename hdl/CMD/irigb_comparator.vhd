@@ -10,7 +10,7 @@ entity irigb_comparator is
 		current_ts: in irigb;
 		target_ts: in irigb;
 		compare_en: in std_logic;
-		force: in std_logic;
+		force_sync: in std_logic;
 
 		before_target: out std_logic; -- Is '1' when current time is before the target time, and '0' when it is equal of after. There is 7 clocks latency compared to current time input.
 
@@ -53,7 +53,7 @@ begin
 			compare_en_sync2 <= compare_en_sync1;
 
 			-- Resynchronize the force signal to the 200 MHz clock
-			force_sync1 <= force;
+			force_sync1 <= force_sync;
 			force_sync2 <= force_sync1;
 
 			-- Resynchronize the target timestamp to the 200 MHz clock

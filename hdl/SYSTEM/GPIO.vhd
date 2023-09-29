@@ -989,7 +989,7 @@ irigb_comparator0: entity work.irigb_comparator
 		current_ts    => ts,
 		target_ts     => ts_target,
 		compare_en    => ts_compare_enable,
-		force         => ts_force,
+		force_sync         => ts_force,
 		before_target => ts_before_target, -- Is '1' when current time is before the target time, and '0' when it is equal of after. There is 7 clocks latency compared to current time input.
 		clk_200mhz    => clk200
 	);
