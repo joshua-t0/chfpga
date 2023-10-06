@@ -204,7 +204,7 @@ begin
 
 
 
-zynq: entity work.zynq_usp
+zynq: entity work.zynq_tcpipe_zcu111
     port map (
 
     -- ADC sampling clocks
@@ -278,12 +278,14 @@ zynq: entity work.zynq_usp
     s_axis_bsb_tdata => axis_bsb_rply_tdata,
     s_axis_bsb_tvalid => axis_bsb_rply_tvalid,
     s_axis_bsb_tlast => axis_bsb_rply_tlast,
+    s_axis_bsb_tready => axis_bsb_rply_tready,
     s_axis_bsb_tkeep => (others => '1'),
     
     -- Capture data stream from the FPGA to the ARM
     s_axis_cap_tdata => axis_cap_tdata,
     s_axis_cap_tvalid => axis_cap_tvalid,
     s_axis_cap_tlast => axis_cap_tlast,
+    s_axis_cap_tready => axis_cap_tready,
     s_axis_cap_tkeep => (others => '1'),
     
     -- BSB & CAP clock and reset

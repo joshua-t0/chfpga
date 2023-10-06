@@ -421,14 +421,18 @@ type COMPLEX48_STRUCT_ARRAY is array (NATURAL RANGE <>) of COMPLEX48_STRUCT;
 constant FRAME_HEADER_BYTE_LENGTH: integer := 10; -- Number of 32-bit words taken by a header
 type FRAME_HEADER_STRUCT is
 	record  -- In transmission order (bytewise)
+		-- Byte 0
 		PROBE_ID: std_logic_vector(7 downto 0); -- 1 byte, user-defined. Generally a cookie, but can be used by user to convey more info (e.g. extend the number of channels)
+		-- Bytes 1-2
 		STREAM_ID: std_logic_vector(15 downto 0); --! 16 bit value used to uniquely define the data stream and lookup . Defined as listed below:
 			--! Bits 15-12 (4 bits). Software defined. Identifies the data source (0 = adc/funcgen, 1=fft/scaler).
 			--! Bits 12-8 (4 bits). Software defined. Identifies the crate_number.
 			--! Bits 7-4 (4 bits). Software defined. Identifies slot number (zero-based).
 			--! Bits 3-0 (4 bits). Hardware defined. Identifies the 10Gb/s lane (1st shuffle has 15 lanes, 2nd shuffle has 4 lanes, GPU link has 8 lanes).
+		-- Byte 3
 		SERIAL_FLAGS: std_logic_vector(3 downto 0); -- last 4 bits of the TUSER_SERIAL_FLAGS_BIT field (meaning depends on the data source)
 		FLAGS: std_logic_vector(3 downto 0); -- 4 bits: aggregated TUSER bits at the input source
+		-- Bytes 4-9
 		TIMESTAMP: std_logic_vector(47 downto 0); --6 bytes (48 bits), system-defined
 	end record;
 

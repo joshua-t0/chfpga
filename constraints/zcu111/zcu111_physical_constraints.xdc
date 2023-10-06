@@ -52,7 +52,6 @@ create_clock -period 2.666 -name PL_CLK [get_ports FPGA_REFCLK_OUT_C_clk_p*]
 #set_property IOSTANDARD  LVDS     [get_ports "CLK_100_P"] ;# Bank  64 VCCO - VCC1V8   - IO_L11P_T1U_N8_GC_64
 
 # ignore timing between CLK200 and CORR_CLK  domains. This line has to be placed after we have defines the source clock for the two specified derived clocks
-set_false_path -from [get_clocks CLK200_MMCM_NOBUF] -to [get_clocks CORR_CLK_NOBUF]
 
 ########################################
 # SI570 programmable user PLL, default 300 MHz
@@ -1221,3 +1220,9 @@ resize_pblock [get_pblocks CGE] -add {DSP48E2_X0Y74:DSP48E2_X0Y111}
 resize_pblock [get_pblocks CGE] -add {RAMB18_X0Y74:RAMB18_X0Y111}
 resize_pblock [get_pblocks CGE] -add {RAMB36_X0Y37:RAMB36_X0Y55}
 set_property EXCLUDE_PLACEMENT 1 [get_pblocks CGE]
+
+set_property DIFF_TERM_ADV TERM_100 [get_ports {FPGA_REFCLK_OUT_C_clk_p[0]}]
+set_property C_CLK_INPUT_FREQ_HZ 300000000 [get_debug_cores dbg_hub]
+set_property C_ENABLE_CLK_DIVIDER false [get_debug_cores dbg_hub]
+set_property C_USER_SCAN_CHAIN 1 [get_debug_cores dbg_hub]
+connect_debug_port dbg_hub/clk [get_nets aclk]
