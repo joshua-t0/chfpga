@@ -24,6 +24,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 use work.chFPGA_Package.all; -- Get all component definitions
+use work.chFPGA_config.all; -- get platform-specific configurations
 
 library UNISIM;
 use UNISIM.VComponents.all;
@@ -79,7 +80,8 @@ entity FFT is
 		ADC_BITS_PER_WORD	   : integer := ADC_BITS_PER_SAMPLE * ADC_SAMPLES_PER_WORD;
 		FFT_BITS_PER_BIN 	   : integer := 18+18; -- real + imaginary
 		FFT_BINS_PER_WORD 	   : integer := ADC_SAMPLES_PER_WORD / 2; -- CHIME: 2, D3A/CHORD: 4. -- we divide by 2 because the FFT outputs only the positive frequencies
-		FFT_BITS_PER_WORD 	   : integer := FFT_BITS_PER_BIN * FFT_BINS_PER_WORD
+		FFT_BITS_PER_WORD 	   : integer := FFT_BITS_PER_BIN * FFT_BINS_PER_WORD;
+		FFT_DELAY_BITS         : integer := CONFIG_FFT_CTR_WIDTH -- CHIME: 12, D3A/CHORD: 14
 --		FFT_OVERFLOW_BITLENGTH : integer := 2 -- CHIME: 1, D3A/CHORD: 2. Needed since D3A/CHORD FFT overflow signal is 2 bits for some reason
 		);
 	port (
@@ -147,8 +149,8 @@ architecture Behavioral of FFT is
 	signal flags_in, flags_out: std_logic_vector(5 downto 0);
 
 
-	signal fft_pipeline_delay: std_logic_vector(11 downto 0);
-	signal fft_measured_pipeline_delay: std_logic_vector(11 downto 0);
+	signal fft_pipeline_delay: std_logic_vector(FFT_DELAY_BITS - 1 downto 0);
+	signal fft_measured_pipeline_delay: std_logic_vector(FFT_DELAY_BITS - 1 downto 0);
 	signal sync_reset: std_logic;
 
 
@@ -241,8 +243,8 @@ sync_period <= to_unsigned(control_bytes(3 to 4));
 -- CONTROL Bytes 5-6
 fft_pipeline_delay <= to_slv(control_bytes(5 to 6),fft_pipeline_delay'LENGTH);
 
--- STATUS Byte 0-1
-status_bytes(0 to 1) <= ("0000" & fft_measured_pipeline_delay(11 downto 8), fft_measured_pipeline_delay(7 downto 0));
+-- STATUS Byte 0-1 
+status_bytes(0 to 1) <= to_slv8_array(resize(fft_measured_pipeline_delay, 16)); -- fft_measured_pipeline_delay(11 downto 8), fft_measured_pipeline_delay(7 downto 0));
 
 -- STATUS Byte 2
 status_bytes(2) <= std_logic_vector(overflow_count);
