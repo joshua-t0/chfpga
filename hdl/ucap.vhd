@@ -175,7 +175,7 @@ begin
 	sub_period <= unsigned(control_bytes(8)(4 downto 0));
 
 	-- CONTROL bytes 9: source selection
-	source_sel_out <= control_bytes(9);
+	source_sel_out <= control_bytes(9)(7 downto 0);
 
 	-- STATUS byte 0
 	status_bytes(0)(0) <= fifo_overflow_sticky;
