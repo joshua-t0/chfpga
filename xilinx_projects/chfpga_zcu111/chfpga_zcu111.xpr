@@ -109,6 +109,29 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/../../_Cores/ZCU111/cge_data_fifo_1/cge_data_fifo.xci">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../_Cores/ZCU111/cge_flag_fifo/cge_flag_fifo.xci">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../_Cores/ZCU111/CMD_FIFO/CMD_FIFO.xci">
+        <FileInfo>
+          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/ZCU111/CMD_FIFO/CMD_FIFO.xci"/>
+          <Attr Name="ImportTime" Val="1670654932"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <File Path="$PPRDIR/../../_Cores/ZCU111/PROBER_FRAME_FIFO/PROBER_FRAME_FIFO.xci">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/ZCU111/PROBER_FRAME_FIFO/PROBER_FRAME_FIFO.xci"/>
@@ -145,51 +168,10 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../_Cores/ZCU111/SCALER_COEFF_RAM/SCALER_COEFF_RAM.xci">
-        <FileInfo>
-          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/ZCU111/SCALER_COEFF_RAM/SCALER_COEFF_RAM.xci"/>
-          <Attr Name="ImportTime" Val="1670654942"/>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../../_Cores/ZCU111/FFT2_1/FFT2.xci">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/ZCU111/FFT2_1/FFT2.xci"/>
           <Attr Name="ImportTime" Val="1667441597"/>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/ZCU111/FUNCGEN_RAM/FUNCGEN_RAM.xci">
-        <FileInfo>
-          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/ZCU111/FUNCGEN_RAM/FUNCGEN_RAM.xci"/>
-          <Attr Name="ImportTime" Val="1670654939"/>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/ZCU111/cge_data_fifo_1/cge_data_fifo.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/ZCU111/cge_flag_fifo/cge_flag_fifo.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/ZCU111/CMD_FIFO/CMD_FIFO.xci">
-        <FileInfo>
-          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/ZCU111/CMD_FIFO/CMD_FIFO.xci"/>
-          <Attr Name="ImportTime" Val="1670654932"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -369,12 +351,6 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/SYSTEM/reset_sync.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../../hdl/SYSTEM/clocks.vhd">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -405,29 +381,20 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_rst_ps8_0_96M1_0/sifpga_zcu111_rst_ps8_0_96M1_0.xci">
-          <Proxy FileSetName="sifpga_zcu111_rst_ps8_0_96M1_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_rst_ps8_0_96M_0/sifpga_zcu111_rst_ps8_0_96M_0.xci">
-          <Proxy FileSetName="sifpga_zcu111_rst_ps8_0_96M_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_usp_rf_data_converter_0_0/sifpga_zcu111_usp_rf_data_converter_0_0.xci">
-          <Proxy FileSetName="sifpga_zcu111_usp_rf_data_converter_0_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_util_ds_buf_0_0/sifpga_zcu111_util_ds_buf_0_0.xci">
-          <Proxy FileSetName="sifpga_zcu111_util_ds_buf_0_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_util_ds_buf_1_0/sifpga_zcu111_util_ds_buf_1_0.xci">
-          <Proxy FileSetName="sifpga_zcu111_util_ds_buf_1_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_util_ds_buf_2_0/sifpga_zcu111_util_ds_buf_2_0.xci">
-          <Proxy FileSetName="sifpga_zcu111_util_ds_buf_2_0"/>
+        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_sifpga_zcu111_chfpga_0_0/sifpga_zcu111_sifpga_zcu111_chfpga_0_0.xci">
+          <Proxy FileSetName="sifpga_zcu111_sifpga_zcu111_chfpga_0_0"/>
         </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_zynq_ultra_ps_e_0_0/sifpga_zcu111_zynq_ultra_ps_e_0_0.xci">
           <Proxy FileSetName="sifpga_zcu111_zynq_ultra_ps_e_0_0"/>
         </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_sifpga_zcu111_chfpga_0_0/sifpga_zcu111_sifpga_zcu111_chfpga_0_0.xci">
-          <Proxy FileSetName="sifpga_zcu111_sifpga_zcu111_chfpga_0_0"/>
+        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_util_ds_buf_2_0/sifpga_zcu111_util_ds_buf_2_0.xci">
+          <Proxy FileSetName="sifpga_zcu111_util_ds_buf_2_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_util_ds_buf_1_0/sifpga_zcu111_util_ds_buf_1_0.xci">
+          <Proxy FileSetName="sifpga_zcu111_util_ds_buf_1_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_util_ds_buf_0_0/sifpga_zcu111_util_ds_buf_0_0.xci">
+          <Proxy FileSetName="sifpga_zcu111_util_ds_buf_0_0"/>
         </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_adc0_bufg1_0/sifpga_zcu111_adc0_bufg1_0.xci">
           <Proxy FileSetName="sifpga_zcu111_adc0_bufg1_0"/>
@@ -438,9 +405,45 @@
         <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_xbar_0/sifpga_zcu111_xbar_0.xci">
           <Proxy FileSetName="sifpga_zcu111_xbar_0"/>
         </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_rst_ps8_0_96M1_0/sifpga_zcu111_rst_ps8_0_96M1_0.xci">
+          <Proxy FileSetName="sifpga_zcu111_rst_ps8_0_96M1_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_rst_ps8_0_96M_0/sifpga_zcu111_rst_ps8_0_96M_0.xci">
+          <Proxy FileSetName="sifpga_zcu111_rst_ps8_0_96M_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="sifpga_zcu111.bd" FileRelPathName="ip/sifpga_zcu111_usp_rf_data_converter_0_0/sifpga_zcu111_usp_rf_data_converter_0_0.xci">
+          <Proxy FileSetName="sifpga_zcu111_usp_rf_data_converter_0_0"/>
+        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/sifpga_zcu111/hdl/sifpga_zcu111_wrapper.vhd">
         <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../_Cores/ZCU111/SCALER_COEFF_RAM/SCALER_COEFF_RAM.xci">
+        <FileInfo>
+          <Attr Name="AutoDisabled" Val="1"/>
+          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/ZCU111/SCALER_COEFF_RAM/SCALER_COEFF_RAM.xci"/>
+          <Attr Name="ImportTime" Val="1670654942"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../_Cores/ZCU111/FUNCGEN_RAM/FUNCGEN_RAM.xci">
+        <FileInfo>
+          <Attr Name="AutoDisabled" Val="1"/>
+          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/ZCU111/FUNCGEN_RAM/FUNCGEN_RAM.xci"/>
+          <Attr Name="ImportTime" Val="1670654939"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../hdl/SYSTEM/reset_sync.vhd">
+        <FileInfo>
+          <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
@@ -737,14 +740,11 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="sifpga_zcu111_sifpga_zcu111_chfpga_0_0_synth_1" Type="Ft3:Synth" SrcSet="sifpga_zcu111_sifpga_zcu111_chfpga_0_0" Part="xczu28dr-ffvg1517-2-e" ConstrsSet="sifpga_zcu111_sifpga_zcu111_chfpga_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/sifpga_zcu111_sifpga_zcu111_chfpga_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/sifpga_zcu111_sifpga_zcu111_chfpga_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/sifpga_zcu111_sifpga_zcu111_chfpga_0_0_synth_1">
+    <Run Id="sifpga_zcu111_sifpga_zcu111_chfpga_0_0_synth_1" Type="Ft3:Synth" SrcSet="sifpga_zcu111_sifpga_zcu111_chfpga_0_0" Part="xczu28dr-ffvg1517-2-e" ConstrsSet="sifpga_zcu111_sifpga_zcu111_chfpga_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/sifpga_zcu111_sifpga_zcu111_chfpga_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/sifpga_zcu111_sifpga_zcu111_chfpga_0_0_synth_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design"/>
       </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2022"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
@@ -956,9 +956,7 @@
     </Run>
     <Run Id="sifpga_zcu111_sifpga_zcu111_chfpga_0_0_impl_1" Type="Ft2:EntireDesign" Part="xczu28dr-ffvg1517-2-e" ConstrsSet="sifpga_zcu111_sifpga_zcu111_chfpga_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="sifpga_zcu111_sifpga_zcu111_chfpga_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/sifpga_zcu111_sifpga_zcu111_chfpga_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/sifpga_zcu111_sifpga_zcu111_chfpga_0_0_impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
