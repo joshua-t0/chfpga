@@ -104,9 +104,9 @@ entity UCORR44 is
 		-- im: out signed(17 downto 0);
 		--re2: out signed(17 downto 0);
 		--im2: out signed(17 downto 0);
-		rd_err: out std_logic;
-		wr_err: out std_logic;
-		readout_err: out std_logic;
+--		rd_err: out std_logic;
+--		wr_err: out std_logic;
+--		readout_err: out std_logic;
 
 		clk : in std_logic; -- clock
 		rst : in std_logic -- rst
@@ -230,51 +230,236 @@ architecture impl of UCORR44 is
 	signal ram_wr_en: std_logic :='0';
 	signal ram_rd_en: std_logic :='0';
 
-	--signal acc_fifo_wr_en: std_logic :='0';
-	--signal acc_fifo_rd_en: std_logic :='0';
-	--signal acc_fifo_full: std_logic;
-	--signal ram_dout_complex: complex;
-	--signal ram_din_complex: complex;
-	--signal acc_fifo_rderr: std_logic;
-	--signal acc_fifo_wrerr: std_logic;
-	--signal acc_fifo_empty: std_logic;
-	--signal acc_fifo_wrcount: std_logic_vector(12 downto 0) := (others =>'0'); -- for sims: make sure MSB is set to zero if we don't assign it
-	--signal acc_fifo_rdcount: std_logic_vector(12 downto 0) := (others =>'0');
-	--signal acc_fifo_rd_error: std_logic;
-	--signal acc_fifo_wr_error: std_logic;
-
-
-	--signal capture_addr4: unsigned(8 downto 0):=(others=>'1');
-	--signal capture_dout6: std_logic_vector(35 downto 0);
-	--signal capture_wr_en4: std_logic:='0';
-	--signal capture_rd_en4, capture_rd_en5, capture_rd_en6: std_logic:='0';
-	--signal capture_wr_en_vect: std_logic_vector(0 downto 0):="0";
-
 	signal tvalid1, tvalid2, tvalid3, tvalid4: std_logic:='0';
 	signal tlast1, tlast2, tlast3, tlast4: std_logic;
-	signal tfirst1, tfirst2: std_logic:='0';
+	signal first_word1, first_word2: std_logic:='1'; -- first word of frame
 	signal last_frame1, last_frame2, last_frame3, last_frame4: std_logic;
-	signal tfirst3: std_logic :='1';
-	--signal first_frame_completed0: std_logic :='0'; --init needed
-	--signal first_frame_completed1: std_logic :='0'; --init needed
-	--signal first_frame_completed2: std_logic :='0'; --init needed
-	signal first_frame2: std_logic :='1'; --init needed
-	signal readout_enable4, readout_enable5, readout_enable6: std_logic := '0';
-	signal send: std_logic := '0';
-	signal started: std_logic := '0';
-	signal m_axis_z_out_start_dly: std_logic := '1';
+	signal first_frame1, first_frame2: std_logic :='1'; --init needed
 
 
 	-- Relative Placed Macro constraints
 
 
 begin
-	-- Map input pairs
 
-	-- First DSP: Implements the multiplier with correction factors, which yields the ac, (ad-bc) and bd terms in its output registers.
-	-- a and c are assumed to be unsigned. Corrections are applied by the adder to compensate for overlaps between the bd and (ad-bc) terms. results are presented on the P and PC (calcaded P)  ports.
+	ctrl_blk : block
 
-	dsp_gen: for i in 0 to P generate
+        signal frame_max: unsigned(3 downto 0); -- currently limited to 16. Depends on memory depth (frames/uram block) x number of channels.
+
+  		signal frame: unsigned(11 downto 0); -- 4096 frame integration
+		signal word_ctr: unsigned(10 downto 0); -- 2048 words/frame. 
+		signal ro_word_ctr: unsigned(10 downto 0); -- readout word counter. 2048 words/frame. 
+  	    signal capture_en: std_logic; -- '1' when tdata shall be written to RAM when tvalid=1
+    	signal src_readout_trig: std_logic; -- pulse indicating when a source is ready to be read
+  		--signal ram_rd_acc_addr: std_logic_vector(10 downto 0); -- accumulator bank read address
+--  		signal ram_rd_acc_addr: std_logic_vector(10 downto 0); -- readout bank read address
+  		signal ram_wr_acc_addr: std_logic_vector(10 downto 0); -- readout bank read address
+  		--signal ram_rd_ro_addr: std_logic_vector(10 downto 0); -- readout bank read address
+--    	signal acc_rd_bank: std_logic; -- Accumulator bank for reading previous accumulated value
+    	signal wr_bank: std_logic; -- Accumulator bank for writing new accumulated value
+
+		signal bytes: slv8_array(0 to FRAME_HEADER_BYTE_LENGTH + P * BYTES_PER_PRODUCT-1); -- readout buffer: header + products
+		signal byte_ctr: integer range 0 to bytes'LENGTH;
+		signal ro_busy: std_logic := '0'; -- memory readout busy
+		signal dc_busy: std_logic := '0'; -- daisy chain readout busy
+		signal send_local_data: std_logic := '0';
+
+	begin
+
+--		ram_rd_acc_addr <= word_ctr;
+		ram_rd_addr <= (not wr_bank) & std_logic_vector(ro_word_ctr) when frame=0 else
+		               wr_bank & std_logic_vector(word_ctr);
+		ram_wr_addr <= wr_bank & ram_wr_acc_addr;
+		wr_proc: process(clk)
+		    variable frame_header: FRAME_HEADER_STRUCT := (PROBE_ID => X"CF", others => (others =>'0'));
+		begin
+			if rising_edge(clk) then
+				rst_reg <= rst;
+
+
+--				if rst_reg then
+--					rd_err <= '0';
+--					wr_err <= '0';
+--				end if;
+
+				-------------
+				-- CLOCK 1 - sign-corrected data is clocked into the DSP1 A & B registers, and we register sign and zero flags
+				-------------
+
+
+				-- Write state machine: count words and frames, and set the done signal
+	            src_readout_trig <= '0'; -- single clock pulse signal, overriden below
+				if s_axis_tvalid then
+					word_ctr <= word_ctr + 1;
+					if s_axis_tlast then
+						word_ctr <= (others => '0');
+						frame <= frame + 1;
+						if all_ones(frame) then
+	                        frame <= (others => '0'); -- restart the readout from word 0
+							ro_busy <= '1'; 
+--                            z_in_tready <= '0'; -- we won't be processing cascade inputs
+							ro_word_ctr <= (others => '0');
+							--capture_en <= '0';
+						end if;
+					end if;                
+				end if;
+
+                -- pipeline the control signals
+				tvalid1 <= s_axis_tvalid;
+				tlast1 <= s_axis_tlast;
+				first_word1 <= to_std_logic(word_ctr=0); -- first word of frame
+				last_frame1 <= to_std_logic(all_ones(frame)); -- last frame of accumulation
+                first_frame1 <= to_std_logic(all_zeros(frame)); -- last frame of accumulation
+
+				-------------
+				-- CLOCK 2: The product is clocked in the M=XY register of DSP1, and we clock the correction in the C=Z register.
+				-- We also present the FIFO output back into the C input of the DSP2.
+				-------------
+
+                -- pipeline the control signals
+				tvalid2 <= tvalid1;
+				tlast2 <= tlast1;
+				first_word2 <= first_word1;
+				last_frame2 <= last_frame1;
+				first_frame2 <= first_frame1;
+
+				-------------
+				-- CLOCK 3: Register the pre-accumulation product (DSP1 sum XY+Z) in DSP1.P and RAM output in DSP2.C. 
+				-- If frame 0, capture new readout products when needed.
+				-------------
+
+                -- pipeline the control signals
+				tvalid3 <= tvalid2;
+				tlast3 <= tlast2;
+				last_frame3 <= last_frame2;
+--				z_in_tready <= '0' when cc_done='1' and ro_done='0'
+
+                -- Clear valid flag if output word is transferred
+                if z_out_tready then
+                    z_out_tvalid <= '0';
+                end if;
+                
+				if dc_busy='0' and ro_busy='1' then
+					-- Clear tvalid when we read out byte. Is overriden below if a new byte is available.
+					z_out_tlast <= '0';
+					z_out_tdata <= bytes(0);
+
+					if (z_out_tready='1' or z_out_tvalid='0')  and byte_ctr /= bytes'LENGTH then
+						z_out_tvalid <= '1';
+						if byte_ctr = bytes'LENGTH-1 then -- tlast when last byte.
+							z_out_tlast <= '1';
+							if all_ones(ro_word_ctr) then
+								ro_busy <='0';
+							end if;
+						end if;
+						bytes(0 to bytes'LENGTH-2) <= bytes(1 to bytes'LENGTH-1);
+						byte_ctr <= byte_ctr + 1;
+					end if;
+				else -- sending cascade input data
+					if z_in_tvalid='1' then
+						dc_busy <= '1';
+						if z_in_tlast then
+							dc_busy <= '0';
+						end if;
+					end if;
+					z_in_tready <= to_std_logic((z_out_tready='1' or z_out_tvalid='0') and z_in_tready='1');
+					if (z_out_tready='1' or z_out_tvalid='0') and z_in_tvalid='1' and z_in_tready='1' then
+					   z_out_tvalid <= z_in_tvalid;
+					   z_out_tdata <= z_in_tdata;
+					   z_out_tlast <= z_in_tlast;
+					end if;
+				end if; -- if local data
+
+				-- Load the readout bytes if the first word (word 0) is present on the RAM output (first_word2='1') and
+				-- if we are sending the last byte ((z_out_tready='1' and byte_ctr = 1)) or if all bytes have been sent (byte_ctr=0)
+				if first_word2='1' and ((z_out_tready='1' and byte_ctr=1) or byte_ctr=0) then
+
+					-- Store the header in the bytes buffer
+					frame_header.STREAM_ID(12 downto 2) := std_logic_vector(ro_word_ctr);
+					frame_header.STREAM_ID(1 downto 0) := "00"; -- Will be bin number (0-3)
+					frame_header.TIMESTAMP := (others => '0'); 
+					bytes(0 to FRAME_HEADER_BYTE_LENGTH) <= struct_to_bytes(frame_header);
+					-- Store the product bytes in the bytes buffer
+					for i in 0 to P-1 loop
+						bytes(FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT*(i+1)-1 downto FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT*i) <= to_slv8_array(resize(unsigned(ram_dout(i)),8*BYTES_PER_PRODUCT));
+					end loop;
+					-- Now that we have captured this readout word, move on to the next one.
+					-- we won't have another tfirst for a while so we are guaranteed that the address will hav epropageted for the next readout. 
+					ro_word_ctr <= ro_word_ctr + 1; 
+					-- Start the data transmisison unless readout is completed
+					if ro_busy then
+						byte_ctr <= bytes'LENGTH; -- signify we now have data to send
+					end if;
+				end if;
+
+				-------------
+				-- CLOCK 4: Register the accumulated product in DSP2.P and set the RAM wr_en signal if data is valid. 
+				-------------
+
+                --= pipeline control signals
+				tvalid4 <= tvalid3;
+				tlast4 <= tlast3; -- last word
+				last_frame4 <= last_frame3; -- last frame
+				ram_wr_en <= tvalid3; -- write the data
+
+				-------------
+				-- CLOCK 5:  Increment write address once data has been written. Switch write bank if last frame is completed.
+				-------------
+
+				-- Increment ram write address post-write
+				if tvalid4 then
+					ram_wr_acc_addr <= std_logic_vector(unsigned(ram_wr_acc_addr) + 1);  
+					if tlast4 then
+						ram_wr_acc_addr <= (others => '0');
+					end if;
+					if last_frame4 then
+						wr_bank <= not wr_bank;
+					end if;
+				end if;
+
+
+
+				-- Synchronous resets (overrides signals above)
+				if rst_reg = '1' then
+					word_ctr <= (others => '0');
+					frame <= (others => '0');
+					ro_busy <= '0'; 
+
+					tvalid1 <= '0';
+					tvalid2 <= '0';
+					tvalid3 <= '0';
+					tvalid4 <= '0';
+
+
+					wr_bank <= '0';
+					ram_wr_acc_addr <= (others => '0');
+
+--					first_frame2 <= '1';
+--					last_frame4 <= '0';
+				end if;
+
+			end if; -- CLK
+		end process wr_proc;
+
+	end block ctrl_blk;
+
+
+    -----------------------------
+	-- DSPs
+	-----------------------------
+    -- Implement a complex multiplier and accumulator (CMAC) for each product. Each CMAC consist of a DSP pair.
+    --
+	-- The first DSP implements the multiplier with correction factors, which yields the ac, (ad-bc) and bd terms in its output registers.
+	-- a and c are assumed to be unsigned. Corrections are applied by the adder to compensate for overlaps between the bd and (ad-bc) terms. 
+	-- results are presented on the P and PC (calcaded P)  ports.
+	--
+	-- The second DSP adds `ad` and `-bc` to form the real part the product, and  adds the previously accumulated Re and Im parts from the RAM.
+	-- The output of DSP2 is saturated if the sum overflows, of if the value from the RAM was already overflown. The saturated product is then 
+	-- written back to the accumulator RAM.
+	--
+	
+
+	dsp_gen: for i in 0 to P-1 generate
 		--attribute U_SET of dsp1, dsp2 : label is "CORR" & integer'IMAGE(CORR_NUMBER);
 		attribute RPM_GRID of dsp1: label is "GRID";  -- coordinates in unit of RPM_X and RPM_Y. All element sin the same group will automatically use that grid.
 		attribute U_SET of dsp1, dsp2 : label is RPM_NAME;
@@ -415,7 +600,7 @@ begin
 		-- AB = ((im & 0x7FFFF) << 29) | (( bin_to_int(p, 8) & 0x7FFFF)<<9) |(bit(p, 25) << 8)  # im, 9 bits, sign extended to 19 bits, in AB[47:29]. bd, 8 bits, is sign extended to 19 bits and is in AB[27:9].
 		-- dsp2_c(47 downto 29) <= (others=>'0'); -- im
 		dsp2_c(47 downto 30) <= ram_dout(i)(17 downto 0); -- im
-		dsp2_c(29 downto 28) <= "00"; -- guard bit
+		dsp2_c(29 downto 28) <= "00"; -- guard bits
 		dsp2_c(27) <= ram_dout(i)(35);
 		dsp2_c(26 downto 9) <= ram_dout(i)(35 downto 18); -- im
 		dsp2_c(8 downto 0) <= (others=>'0');
@@ -611,7 +796,7 @@ begin
 		begin
 			if rising_edge(CLK) then
 				-------------
-				-- STAGE 1 - sign-corrected data is clocked into the DSP1 A & B registers, and we register sign and zero flags
+				-- CLOCK 1 - sign-corrected data is clocked into the DSP1 A & B registers, and we register sign and zero flags
 				-------------
 
 				-- We need to compensate for these sign inversions so the result have the correct sign
@@ -635,14 +820,10 @@ begin
 				c1_zero <= to_std_logic(c=0);
 				d1_zero <= to_std_logic(d=0);
 
-				------------------------
-				-- STAGE 2
-				--------------------------------------------------------------------
-				-- No external DSP action
 
 				-------------
-				-- STAGE 3: Register the pre-accumulation product in DSP1.P and previous acuumulated value from RAM in DSP2.C.
-				-- Here, we set a flag indicating if the RAM value is saturated, so we can force saturation of the sum back to ram.
+				-- CLOCK 3: Register the  saturation flags based on the ram output while that output is registered in DSP2.C
+				-- The flags will be used to force saturation of the sum output.
 				-------------
 
 
@@ -657,7 +838,7 @@ begin
 					ram_dout(i)(17 downto 0) =	"100000000000000000"));
 
 				-------------
-				-- STAGE 4: Register the post-accumulation result in DSP2.P
+				-- CLOCK 4: Register the post-accumulation result in DSP2.P
 				-------------
 
 				-- pipeline the sign bits
@@ -668,9 +849,6 @@ begin
 				im_sat4 <= im_sat3;
 				dsp2_ab_im_sign4 <= dsp2_ab(47); -- register the AB sign bit
 
-				----------------------------------------------------------------
-				-- STAGE 5: Register sum in RAM
-				----------------------------------------------------------------
 
 			end if; -- clk
 		end process dsp_proc;
@@ -691,7 +869,9 @@ begin
 
 	end generate dsp_gen;
 
-	-- Generate RAM blocks
+    -----------------------------
+	-- RAM blocks
+	-----------------------------
 	-- We have 1 block for each 2 CMUL since ultraRAM bus width is fixed at 72 bits, so we can
 	-- store two (18+18) bit products for each ram.
 
@@ -751,425 +931,6 @@ begin
 
 --ready <= '1' when (m_axis_z_out_tvalid='0' or m_axis_z_out_tready='1') and last_byte='1' and (z_in_done='1' or CASCADED=FALSE) else '0';
 
-	wr_blk : block
-
-        signal frame_max: unsigned(3 downto 0); -- currently limited to 16. Depends on memory depth (frames/uram block) x number of channels.
-
-  		signal frame: unsigned(11 downto 0); -- 4096 frame integration
-		signal word_ctr: unsigned(10 downto 0); -- 2048 words/frame. 
-		signal ro_word_ctr: unsigned(10 downto 0); -- readout word counter. 2048 words/frame. 
-  	    signal capture_en: std_logic; -- '1' when tdata shall be written to RAM when tvalid=1
-    	signal src_readout_trig: std_logic; -- pulse indicating when a source is ready to be read
-  		--signal ram_rd_acc_addr: std_logic_vector(10 downto 0); -- accumulator bank read address
---  		signal ram_rd_acc_addr: std_logic_vector(10 downto 0); -- readout bank read address
-  		signal ram_wr_acc_addr: std_logic_vector(10 downto 0); -- readout bank read address
-  		--signal ram_rd_ro_addr: std_logic_vector(10 downto 0); -- readout bank read address
-    	signal acc_rd_bank: std_logic; -- Accumulator bank for reading previous accumulated value
-    	signal acc_wr_bank: std_logic; -- Accumulator bank for writing new accumulated value
-
-		signal bytes: slv8_array(0 to FRAME_HEADER_BYTE_LENGTH + P * BYTES_PER_PRODUCT-1); -- readout buffer: header + products
-		signal byte_ctr: integer range 0 to bytes'LENGTH;
-		signal ro_done: std_logic := '0';
-		signal send_local_data: std_logic := '0';
-
-	begin
-
---		ram_rd_acc_addr <= word_ctr;
-		ram_rd_addr <= (not acc_rd_bank) & std_logic_vector(ro_word_ctr) when frame=0 else
-		               acc_rd_bank & std_logic_vector(word_ctr);
-		ram_wr_addr <= acc_wr_bank & ram_wr_acc_addr;
-		wr_proc: process(clk)
-		    variable frame_header: FRAME_HEADER_STRUCT := (PROBE_ID => X"CF", others => (others =>'0'));
-		begin
-			if rising_edge(clk) then
-				rst_reg <= rst;
-
-
-				-- FIFO sticky error flags
---				rd_err <= rd_err or acc_fifo_rderr;
---				wr_err <= wr_err or acc_fifo_wrerr;
-
-				if rst_reg then
-					rd_err <= '0';
-					wr_err <= '0';
-				end if;
-
-
-	            ---- Prepare the frame information. 
-	            ---- The header info is used in the data processor machine below. 
-	            ---- The signals used to build the header (high bits of read_seq_byte_ctr, timestamp) changes with the RAM read address, 
-	            ---- i.e. a few clocks before the frame header data it is actually used.
-	            ---- Since we  have plenty of data to send before the next header is processed, 
-	            ---- but we have finished reading the header well before its value changes again.
-	            --frame_header.PROBE_ID := X"CF";
-	            ----frame_header.PROBE_ID(0) := src; -- current source;
-	            --frame_header.SERIAL_FLAGS := "0000"; -- serial_flags(2 downto 0) & in_dat(source).TUSER(TUSER_SERIAL_FLAGS_BIT);
-	            --frame_header.FLAGS := "0000";
-	            ----frame_header.FLAGS(TUSER_CAPTURE_BIT) := data_fifo_overflow_sticky or header_fifo_overflow_sticky;
-	            --frame_header.TIMESTAMP := std_logic_vector(capture_timestamp(src_int));
-	            ---- Set the STREAM ID. Format is: 4-bit frame , 4-bit crate, 4-bit slot, 4-bit channel
-				--frame_header.STREAM_ID(12 downto 2) := pkt_ctr;
-				--frame_header.STREAM_ID(1 downto 0) := "00"; -- Will be bin number (0-3)
-				--frame_header.TIMESTAMP := (others => '0'); 
-                ---- Convert to an array of bytes
-	            ----frame_header_bytes := struct_to_bytes(frame_header);
-
-
-				-- Write state machine
-	            src_readout_trig <= '0'; -- single clock pulse signal, overriden below
-				if s_axis_tvalid then
-					word_ctr <= word_ctr + 1;
-					if s_axis_tlast then
-						word_ctr <= (others => '0');
-						frame <= frame + 1;
-						--first_frame_completed0 <= '1';   						
-						--period_ctr <= period_ctr + 1;
-						--timestamp <= timestamp + 1;
-						if all_ones(frame) then
-	                        frame <= (others => '0');
-							-- start the readout from word 0
-							ro_done <= '0'; 
-							ro_word_ctr <= (others => '0');
-							--capture_en <= '0';
-						end if;
-						--if period_ctr = base_period or signed(period_ctr(to_integer(sub_period) downto 0)) = -1 then
-						--	capture_en <= '1'; 
-	                    --    frame <= (others => '0');
-						--	period_ctr <= (others => '0');
-						--	capture_timestamp <= timestamp + 1; -- reuse earlier timestamp+1 logic
-						--end if;
-					end if;                
-				end if;
-
-
-				if rst_reg then
-	                -- block-local signals
-					word_ctr <= (others => '0');
-					--capture_en <= '1'; -- capture the first frame coming out of reset
-					frame <= (others => '0');
-					--first_frame_completed0 <= '0';
-					--period_ctr <= (others => '0');
-	                --timestamp <= (others => '0'); -- needed for the first frame header
-	                -- external signals under the control of this block
-	                src_readout_trig <= '0';
-					ro_done <= '1'; 
-	                --capture_timestamp <= (others => '0'); -- needed if we reset with capture_en=1
-				end if; --rst
-
-
-
-
-				-------------
-				-- STAGE 1 - sign-corrected data is clocked into the DSP1 A & B registers, and we register sign and zero flags
-				-------------
-
-				-- Framing signals
-
-				tvalid1 <= s_axis_tvalid;
-				tfirst1 <= to_std_logic(frame=0); -- first word of frame
-				tlast1 <= s_axis_tlast;
-				last_frame1 <= s_axis_last_frame;
-
-				-- Indicate when the first_reg frame is completed, and is used to start reading the FIFO.
-				-- Once the readout is started, it continues indefinitely. Since we push data in as fast as
-				-- we pull data out, we'll never overflow nor underflow by design.
-				-- We need to present the FIFO output to the DSP2 C input on stage 2,
-				-- but the FIFO read out has a latency of 1 clock, so we set this signal one stage
-				-- earlier. We do not want the FIFO to be FWFT because the
-				if tvalid1='1' and tlast1='1' then
-					--first_frame_completed1 <= '1';
-				end if;
-
-				-- Reset overrides
-				if rst_reg = '1' then
-					tvalid1 <= '0';
-					tfirst1 <= '1';
-					--first_frame_completed1 <= '0';
-				end if;
-
-				-------------
-				-- STAGE 2: The product is clocked in the M=XY register of DSP1, and we clock the correction in the C=Z register.
-				-- We also present the FIFO output back into the C input of the DSP2.
-				-------------
-
-				tvalid2 <= tvalid1;
-				tfirst2 <= tfirst1;
-				tlast2 <= tlast1;
-				last_frame2 <= last_frame1;
-
-
-				if tvalid2='1' and tlast2='1' then
-					first_frame2 <= last_frame2; -- used to tell when DSP2 needs to start a new accumulation (C=0)
-					--first_frame_completed2 <= '1'; -- used to when to start reading out data from the FWFT FIFO
-				end if;
-
-
-				-- Reset overrides
-				if rst_reg = '1' then
-					tvalid2 <= '0';
-					first_frame2 <= '1';
-					--first_frame_completed2 <= '0';
-				end if;
-
-				-------------
-				-- STAGE 3: Register the pre-accumulation product (DSP1 sum XY+Z) in DSP1.P and RAM output in DSP2.C. 
-				-- If frame 0, capture new readout products when needed.
-				-------------
-
-				tvalid3 <= tvalid2;
-				tlast3 <= tlast2;
-				last_frame3 <= last_frame2;
-
-				if tvalid3='1' then -- We create a tfirst flag, which will be used to detect the first
-					                -- word of the last frame in the next state
-					tfirst3 <= tlast3;
-				end if;
-
-
-
-				else
-
-
-				if send_local_data='1' and ro_done='0' then
-					-- Clear tvalid when we read out byte. Is overriden below if a new byte is available.
-					z_out_tvalid <= '0';
-					z_out_tlast <= '0';
-					z_in_tready <= '0';
-					z_out_tdata <= bytes(0);
-
-					if z_out_tready='1'  and byte_ctr /= bytes'LENGTH then
-						z_out_tvalid <= '1';
-						if byte_ctr = bytes'LENGTH-1 then -- tlast when last byte.
-							z_out_tlast <= '1';
-							if all_ones(ro_word_ctr) then
-								ro_done <='1';
-							end if;
-						end if;
-						bytes(0 to bytes'LENGTH-2) <= bytes(1 to bytes'LENGTH-1);
-						byte_ctr <= byte_ctr + 1;
-					end if;
-				else -- sending remote data
-					z_out_tdata <= z_in_tdata;
-					z_out_tvalid <= z_in_tvalid;
-					z_out_tlast <= z_in_tlast;
-					z_in_tready <= not send_local_data;
-					if z_in_tvalid='1' then
-						send_local_data <= '1';
-						if z_in_tlast then
-							send_local_data <= '0';
-						end if;
-					end if;
-				end if; -- if local data
-
-				-- Load the readout bytes if we are sending the last byte or if all bytes have been sent
-				if tfirst2='1' and ((z_out_tready='1' and byte_ctr = P-1) or byte_ctr=P) then
-
-					-- Store the header in the bytes buffer
-					frame_header.STREAM_ID(12 downto 2) := std_logic_vector(ro_word_ctr);
-					frame_header.STREAM_ID(1 downto 0) := "00"; -- Will be bin number (0-3)
-					frame_header.TIMESTAMP := (others => '0'); 
-					bytes(0 to FRAME_HEADER_BYTE_LENGTH) <= struct_to_bytes(frame_header);
-					-- Store the product bytes in the bytes buffer
-					for i in 0 to P-1 loop
-						bytes(FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT*(i+1)-1 downto FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT*i) <= to_slv8_array(resize(unsigned(ram_dout(i)),8*BYTES_PER_PRODUCT));
-					end loop;
-					-- Now that we have captured this readout word, move on to the next one.
-					-- we won't have another tfirst for a while so we are guaranteed that the address will hav epropageted for the next readout. 
-					ro_word_ctr <= ro_word_ctr + 1; 
-					-- Start the data transmisison unless readout is completed
-					if not ro_done then
-						byte_ctr <= 0; -- signify we now have data to send
-					end if;
-				end if;
-
-
-				-- Reset overrides
-				if rst_reg = '1' then
-					tvalid3 <= '0';
-					tfirst3 <= '1';
-				end if;
-
-				-------------
-				-- STAGE 4: Register the accumulated product in DSP2.P and set the RAM wr_en signal if data is valid. 
-				-------------
-
-
-				tvalid4 <= tvalid3;
-				tlast4 <= tlast3; -- last word
-				ram_wr_en <= tvalid3; -- write the data
-				last_frame4 <= last_frame3; -- last frame
-
-
-
-				---- Clock in the new BRAM address
-				---- This state machine operates in two modes:
-				----  1) Capture state (readout_enable=0): If we are receiving data from the last frame to
-				----     be integrated, store that data into the capture BRAM. We switch into capture mode
-				----     whenever we receive such data, and readout operations are aborted even if it was
-				----     not completed (meaning it is possible we quit readout mode without sending the
-				----     `last` word, which could create frames without end). We switch to readout when we
-				----     write the last word to be captured. We also immediately set the `read` flag if
-				----     the `send` flag is set.
-				----  2) Readout state: (readout_enable=1): Whenever the `send` flag is set, we set the
-				----     `rd_en` flag, which propagate down and will indicate that a valid word is
-				----     present. We **decrement** the address counter after a word was read (rd_en=1) to
-				----     prepare for the next readout. If the address is zero, the last word have already
-				----     been read, we leave the readout mode. By decrementing the counter, we do not need
-				----     to have a register tell us how many words we need to read out; this is given by
-				----     the length of the captured frame, which is assumed to be the same as every frame.
-				----
-				---- `readout_enable` is always high when rd_en is high.
-				----capture_wr_en4 <= '0'; -- overriden below when there is data to be written to BRAM
-				----capture_rd_en4 <= '0'; -- overriden below when we can read data from BRAM
-				---- CAPTURE STATE
-
-				--if tvalid3='1' and  last_frame3='1' then -- if we have valid data from the last frame of the integration period
-				--	if readout_enable4='1' then  -- If we start storing a new frame while we are still rading out the previous frame, flag an error
-				--		readout_err <= '1';
-				--	end if;
-				--	readout_enable4 <= '0'; -- stop readout of the BRAM if it is still in progress
-				--	capture_wr_en4 <= '1'; -- write the word to the capture BRAM
-				--	if tfirst3='1' then -- if the first word of the last frame of the integration period
-				--		capture_addr4 <= (others=>'0'); -- start writing data at address 0 on the next clock
-				--	else
-				--		capture_addr4 <= capture_addr4 + 1;-- otherwise increment the address
-				--	end if;
-				--	if tlast3='1' then -- if we are writing the last word of the last frame
-				--		readout_enable4 <= '1';  -- go into readout state
-				--		capture_rd_en4 <= send; -- immediately start a read if the destination is ready.
-				--											 -- We don't have to, but since we can read the first readout word at the same time
-				--											 -- we write the last capture word, why not save a cycle?
-				--	end if;
-				---- READOUT STATE
-				--elsif  readout_enable4='1' then -- if we are in the capture state
-				--	capture_rd_en4 <= send; -- read the data at the current address if the sink is ready to accept it
-				--	if capture_rd_en4='1' then -- if we previously read a word, decrement the address counter
-				--		capture_addr4 <= capture_addr4 - 1;
-				--		if capture_addr4 = 0 then -- but if we just read the word at address zero, stop the readout
-				--			readout_enable4 <= '0'; -- The end of the readout state also indicates that the last word was sent down the pipeline in the previous clock.
-				--			capture_rd_en4 <= '0'; -- we finished reading the last word. Dont read address -1, even if `send` is still high.
-				--		end if;
-				--	end if;
-				--end if;
-
-				-- Reset overrides
-				if rst_reg = '1' then
-					tvalid4 <= '0';
-					tlast4 <= '0';
-					last_frame4 <= '0';
-					--readout_enable4 <= '0';
-					--readout_err <= '0';
-				end if;
-
-				-------------
-				-- STAGE 5:  Increment write address once data has been written. Switch write bank if last frame is completed.
-				-------------
-
-				-- Increment ram write address post-write
-				if tvalid4 then
-					ram_wr_acc_addr <= std_logic_vector(unsigned(ram_wr_acc_addr) + 1);  
-					if tlast4 then
-						ram_wr_acc_addr <= (others => '0');
-					end if;
-					if last_frame4 then
-						acc_wr_bank <= not acc_wr_bank;
-					end if;
-				end if;
-
-
-				--capture_rd_en5 <= capture_rd_en4;
-				--readout_enable5 <= readout_enable4;
-
-				-- Reset overrides
-				if rst_reg = '1' then
-					acc_wr_bank <= '0';
-					ram_wr_acc_addr <= (others => '0');
-					--capture_rd_en5 <= '0';
-					--readout_enable5 <= '0';
-				end if;
-
-
-
-
-
-
-				-------------
-				-- STAGE 6: Read word comes out of BRAM
-				-------------
---				capture_rd_en6 <= capture_rd_en5; -- means we have valid data coming out of BRAM
---				readout_enable6 <= readout_enable5;
-
-				-- Reset overrides
---				if rst_reg = '1' then
---					capture_rd_en6 <= '0';
---					readout_enable6 <= '0';
---				end if;
-
-				-------------
-				-- STAGE 7: Readout data comes out of CMAC
-				-------------
-				-- We register the output here. This takes lots of FFs (well, 36), but we don't want a
-				-- combinatorial tata path through all the daisy-chained CMACs. That will kill out
-				-- maximum operating frequency. (although we could register every CMAC out of two or
-				-- three, if FF scarcity was really an issue; another option would be to stream the data
-				-- out on an 8-bit bus, but that is not compatible with the possible use of 10G
-				-- downlinks)
-
---				m_axis_z_out_start_dly <= m_axis_z_out_start;
---				--if m_axis_z_out_send='0' then
---				if readout_enable6 = '1' and readout_enable5='0' then
---					started <= '0';
---				elsif m_axis_z_out_start='1' and m_axis_z_out_start_dly='0' then
---					started <= '1';
---				end if;
-
---				send <= started and m_axis_z_out_send;
-
---				s_axis_z_in_start <= '0';
---				if readout_enable6 = '1' then
---					m_axis_z_out_local_data <= '1'; -- data is coming from this CMAC
---					m_axis_z_out_tdata <= capture_dout6;
---					m_axis_z_out_tvalid <= capture_rd_en6;
---					s_axis_z_in_send <= '0'; -- Don't let the following CMAC send data; we are busy sending our own.
-
---					-- We terminate of the frame when de detect we will leave the readout mode on the
---					-- next clock. When this happens, we force sending a final word with the *last* flag
---					-- enabled. Unless the readout was interrupted before it is finished, the current
---					-- word should be valid (rd_en=1) and be the last word of the frame anyway. However,
---					-- if the readout was interrupted, a dummy word with the *last* flag will be sent,
---					-- but at least we won't end up with an unterminated stream that will confuse the
---					-- hell out of the downstream logic. This way the data transmit logic has a chance
---					-- of recovering naturally if a bad config was used and then corrected.
---					m_axis_z_out_tlast <= '0'; -- overriden below
---					if readout_enable5 = '0' then
---						m_axis_z_out_tvalid <= '1';
---						m_axis_z_out_tlast <= '1';
---						s_axis_z_in_start <= '1';
---					end if;
---				else
---					-- m_axis_z_out_tdata <= capture_dout_padded(to_integer(byte_ctr5)*8+7 downto to_integer(byte_ctr5)*8);
---					m_axis_z_out_local_data <= '0'; -- data is coming from the daisy-chained CMAC
---					m_axis_z_out_tdata <= s_axis_z_in_tdata;
---					m_axis_z_out_tvalid <= s_axis_z_in_tvalid;
---					m_axis_z_out_tlast <= s_axis_z_in_tlast;
---					s_axis_z_in_send <= m_axis_z_out_send;
---				end if;
-
---				if rst_reg = '1' then
---					started <= '0';
---					send <= '0';
---					m_axis_z_out_tvalid <='0';
---					s_axis_z_in_send <= '0';
---					m_axis_z_out_local_data <= '0';
---					s_axis_z_in_start <= '0';
---					m_axis_z_out_start_dly <= '1';
---				end if;
-
-
-			end if; -- CLK
-		end process wr_proc;
-
-	end block wr_blk;
 
 
 end impl;
