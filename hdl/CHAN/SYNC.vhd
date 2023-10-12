@@ -30,6 +30,8 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
+use work.chFPGA_config.all; -- get platform-specific configurations
+
 -- Uncomment the following library declaration if instantiating
 -- any Xilinx primitives in this code.
 library UNISIM;
@@ -37,7 +39,7 @@ use UNISIM.VComponents.all;
 
 entity FFT_DELAY is
 	generic (
-		CTR_WIDTH: INTEGER := 12; -- number of bits of the delay line. Max delay = 2^CTR_WIDTH
+		CTR_WIDTH: INTEGER := CONFIG_FFT_CTR_WIDTH; -- number of bits of the delay line. Max delay = 2^CTR_WIDTH
 		DATA_WIDTH: INTEGER := 4 -- number of flag bits to propagate through the delay line.
 		);
    port (
