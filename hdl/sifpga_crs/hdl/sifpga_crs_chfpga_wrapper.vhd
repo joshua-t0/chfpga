@@ -44,6 +44,11 @@ entity sifpga_crs_chfpga_wrapper is
 			CHAN_CLK_SOURCE: string                      := "ADC"; -- Channelizer clock comes directly from the ADC
 			CT_CLK_SOURCE: string                        := "ADC_CLK"; -- corner-turn clock source
 
+			-- Buck synchronization
+
+			BUCK_SYNC_ENABLE: boolean                    := False; -- default state of the buck sync enable at startup
+			BUCK_CLK_DIVIDE_FACTOR: integer              := 12; -- Buck frequency is 200MHz/16/BUCK_CLK_DIVIDE_FACTOR, 12=> 1.0416 MHz, 17 => 0.73529 MHz, 24=>0.5208333 MHz
+
 			PHY_TYPE: string                             := "NONE"; -- "GMII" or "SGMII"
 			SGMII_CLOCK_SOURCE: string                   := "REFCLK"; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 
@@ -330,6 +335,9 @@ begin
 			SYSTEM_CLOCK_FREQ               => real(SYSTEM_CLOCK_FREQ),
 			CHAN_CLK_SOURCE                 => CHAN_CLK_SOURCE,
 			CT_CLK_SOURCE                   => CT_CLK_SOURCE,
+
+			BUCK_SYNC_ENABLE => BUCK_SYNC_ENABLE,
+			BUCK_CLK_DIVIDE_FACTOR => BUCK_CLK_DIVIDE_FACTOR,
 
 			PHY_TYPE                        => PHY_TYPE,
 			SGMII_CLOCK_SOURCE              => SGMII_CLOCK_SOURCE,

@@ -68,6 +68,7 @@ entity GPIO is
 		NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER; --! Number of antennas to be correlated for each frequency channel. This is hard coded for now. Determines how many antenna streams are fed to the CORR_BLOCK modules, and how many multipliers to implement in parallel in the CORR module.
 		NUMBER_OF_ADC_BOARDS: integer := 1;
 		NUMBER_OF_BUCK_SYNC_LINES: integer :=16;
+		BUCK_SYNC_ENABLE: boolean := True; -- default state of the buck sync enable at startup
 		BUCK_CLK_DIVIDE_FACTOR: INTEGER :=12; -- Buck frequency is 200MHz/BUCK_CLK_DIVIDE_FACTOR/16
 		MAC_ADDRESS_OUI_CODE: std_logic_vector(23 downto 0) := X"000A35"; -- Xilinx OUI code used to identify the first 3 bytes of the MAC address
 		NUMBER_OF_USER_SMA_SIGNALS: integer := 8;
@@ -542,17 +543,16 @@ ADC_RST                    <= reverse_bits_and_dir(CONTROL_BYTES(0)(NUMBER_OF_AD
 CTRL_FLAG_BUCK_CLK_DIV <= UNSIGNED(CONTROL_BYTES(1));
 
 -- CONTROL Byte 2
-gen_LCD: if IMPLEMENT_LCD generate
-LCD_E  <= CONTROL_BYTES(2)(7);
-LCD_RS <= CONTROL_BYTES(2)(6);
-LCD_RW <= CONTROL_BYTES(2)(5);
-LCD_DB <= CONTROL_BYTES(2)(3 downto 0);
-end generate;
-gen_NOLCD: if not IMPLEMENT_LCD generate -- make sure the outputs are driven while the associated CTRL_SLAVE logic is synthesized out
-LCD_E  <= '0';
-LCD_RS <= '0';
-LCD_RW <= '0';
-LCD_DB <= (others => '0');
+lcd_gen: if IMPLEMENT_LCD generate
+	LCD_E  <= CONTROL_BYTES(2)(7);
+	LCD_RS <= CONTROL_BYTES(2)(6);
+	LCD_RW <= CONTROL_BYTES(2)(5);
+	LCD_DB <= CONTROL_BYTES(2)(3 downto 0);
+else generate-- make sure the outputs are driven while the associated CTRL_SLAVE logic is synthesized out
+	LCD_E  <= '0';
+	LCD_RS <= '0';
+	LCD_RW <= '0';
+	LCD_DB <= (others => '0');
 end generate;
 
 -- CONTROL Byte 3
@@ -720,9 +720,11 @@ STATUS_BYTES(37)(7) <= serial_match; -- debug
 --! Instantiates a memory-mapped interface to the control and status bytes
 CTRL_SLAVE0: entity work.CTRL_SLAVE
 	GENERIC MAP (
-		NUMBER_OF_CONTROL_BYTES=>CONTROL_BYTES'Length(1), -- Length of array in the first dimension: number of bytes
-		NUMBER_OF_STATUS_BYTES=>STATUS_BYTES'Length(1),
-		DEFAULT_CONTROL_BYTES=> (X"50" & to_slv(BUCK_CLK_DIVIDE_FACTOR,8) & X"00_65_14_FEDCBA9876543210_000000000000_00000000_A028_0000000000000000_00_00000000_0002faf0_0005f5e1_00_00_00_89_00"),
+		NUMBER_OF_CONTROL_BYTES => CONTROL_BYTES'Length(1), -- Length of array in the first dimension: number of bytes
+		NUMBER_OF_STATUS_BYTES => STATUS_BYTES'Length(1),
+		DEFAULT_CONTROL_BYTES => ('0' & to_std_logic(BUCK_SYNC_ENABLE) & "01" & -- Byte 0
+			                      to_slv(BUCK_CLK_DIVIDE_FACTOR,8) & 
+			                      X"00_65_14_FEDCBA9876543210_000000000000_00000000_A028_0000000000000000_00_00000000_0002faf0_0005f5e1_00_00_00_89_00"),
         RAM_DATA_WIDTH          => 8, -- 8 or 16 bits
         RAM_ADDR_WIDTH          => 5+2,  -- 6 bits (32 register words) + 2 bits (4 bytes per word)
         RAM_LATENCY             => 1
