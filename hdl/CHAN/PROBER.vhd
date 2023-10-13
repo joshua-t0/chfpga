@@ -192,6 +192,7 @@ architecture Behavioral of PROBER is
 
     signal soft_reset: std_logic;
     signal fifo_reset: std_logic;
+    signal scaler_user_flags: std_logic;
     signal reset_all: std_logic;
     signal serial_flags: std_logic_vector(2 downto 0);
     signal fifo_reset_reg: std_logic;
@@ -219,7 +220,8 @@ begin
 --! | CONTROL |  0  |  7   | Soft reset           |                |
 --! |         |     |  6   | fifo_reset           |                |
 --! |         |     |  5   | input source         |                |
---! |         |     | 4:2  | (unused)             |                |
+--! |         |     | 4:3  | (unused)             |                |
+--! |         |     |  2   | scaler_user_flags    | If True, returns user flags in last 4 bits captured from scaler |
 --! |         |     | 1:0  | burst_length         | Number of consecutive frames in a burst (1-3, limited to 2 max by data FIFO depth)|
 --! |         | 1-3 | 23:0 | capture_offset(23:0) | Number of frames to skip before starting the capture (multiplied by 256)|
 --! |         | 4-6 | 23:0 | primary_period(0)    |                |
@@ -242,6 +244,7 @@ begin
 soft_reset <= control_bytes(0)(7);
 fifo_reset <= control_bytes(0)(6);
 new_source <= unsigned(control_bytes(0)(5 downto 5));
+scaler_user_flags <= control_bytes(0)(2);
 burst_length <= unsigned(control_bytes(0)(1 downto 0));
 -- Burst from an iceboard of 16 channels ~250uS
 -- Make roughly twice the burst time so run at half max speed.
@@ -291,7 +294,8 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
     GENERIC MAP (
         NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --
         NUMBER_OF_STATUS_BYTES => status_bytes'Length(1), --
-        DEFAULT_CONTROL_BYTES => (X"00_000000" & DEFAULT_BURST_PERIOD & X"0000_0000" & DEFAULT_BURST_PERIOD & X"17") -- reset=0, burst length=1, burst period=1s @ 800 MHz/2048 samples, burst number = 0 (infinite), Probe ID=0xAA (unassigned yet)
+        -- 04 is equal to 00000100, setting scaler_user_flags <= control_bytes(0)(2) <= '1'
+        DEFAULT_CONTROL_BYTES => (X"04_000000" & DEFAULT_BURST_PERIOD & X"0000_0000" & DEFAULT_BURST_PERIOD & X"17") -- reset=0, burst length=1, burst period=1s @ 800 MHz/2048 samples, burst number = 0 (infinite), Probe ID=0xAA (unassigned yet)
         )
     PORT MAP(
         -- Control interface (command and reply stream buses)
@@ -372,22 +376,31 @@ in_dat(1) <= in_dat1;
 -- The FIFO will be read one 9-bit byte at a time. The MSB is read first.
 -- The extra bit on each byte is zero, except for the LSB , where it indicate whether this is the last byte
 
+
 -- Byte 0 (first to come out if the FIFO)
 data_fifo_din(35) <= '0';
 data_fifo_din(34 downto 31) <= in_dat_reg.TDATA(31 downto 28);
-data_fifo_din(30 downto 27) <= in_dat_reg.TUSER when current_source=1 else in_dat_reg.TDATA(27 downto 24);
+data_fifo_din(30 downto 27) <= in_dat_reg.TUSER when ((current_source=1) and 
+                                                    (scaler_user_flags='1')) else 
+                               in_dat_reg.TDATA(27 downto 24);
 -- Byte 1
 data_fifo_din(26) <= '0';
 data_fifo_din(25 downto 22) <= in_dat_reg.TDATA(23 downto 20);
-data_fifo_din(21 downto 18) <= in_dat_reg.TUSER when current_source=1 else in_dat_reg.TDATA(19 downto 16);
+data_fifo_din(21 downto 18) <= in_dat_reg.TUSER when ((current_source=1) and 
+                                                    (scaler_user_flags='1')) else 
+                               in_dat_reg.TDATA(19 downto 16);
 -- Byte 2
 data_fifo_din(17) <= '0';
 data_fifo_din(16 downto 13) <= in_dat_reg.TDATA(15 downto 12);
-data_fifo_din(12 downto 9) <= in_dat_reg.TUSER when current_source=1 else in_dat_reg.TDATA(11 downto 8);
+data_fifo_din(12 downto 9) <= in_dat_reg.TUSER when ((current_source=1) and 
+                                                    (scaler_user_flags='1')) else 
+                              in_dat_reg.TDATA(11 downto 8);
 -- Byte 3 (last to come out if the FIFO)
 data_fifo_din(8) <= in_dat_reg.TLAST; -- this is bit 8 of the last byte to be read out of the FIFO for each word written in
 data_fifo_din(7 downto 4) <= in_dat_reg.TDATA(7 downto 4);
-data_fifo_din(3 downto 0) <= in_dat_reg.TUSER when current_source=1 else in_dat_reg.TDATA(3 downto 0);
+data_fifo_din(3 downto 0) <= in_dat_reg.TUSER when ((current_source=1) and 
+                                                    (scaler_user_flags='1')) else 
+                             in_dat_reg.TDATA(3 downto 0);
 
 data_fifo_wr_en <= to_std_logic(in_dat_reg.TVALID='1' and (trig_reg='1' or burst_ctr /= 0) and (data_fifo_almost_full='0' or in_dat_reg.TLAST='1'));
 ------------------------------------
