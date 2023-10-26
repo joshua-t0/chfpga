@@ -55,7 +55,6 @@ use UNISIM.VComponents.all;
 entity udp_mac is
 	GENERIC (
 		PHY_TYPE: string; -- -- "GMII": Alaska 881111 PHY,  or "SGMII": SFP module
-		SGMII_CLOCK_SOURCE: string; --! *** NOT USED *** Selects the 125MHz clock source; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 		BROADCAST_IP_PORT: integer;-- ! Port on which broadcast requests and replies are made. This is fixed as it is used to discover the boards on the network and configure them.
 		SIM: boolean := FALSE --
 		);
@@ -86,7 +85,7 @@ entity udp_mac is
 		phy_txclk : in std_logic:='0';-- Clock provided by the phy to clock the TX bus. We use clk125 instead for this purpose.
 		phy_txer : out std_logic;
 		phy_reset_l : out std_logic;
-		phy_txc_gtxclk : out std_logic; -- Clock synchronous to the TX bus provided to the PHY
+		phy_txc_gtxclk : out std_logic; -- Clock synchronous to the TX bus provided to the PHY. Is clk125.
 		phy_txctl_txen : out std_logic;
 		phy_txd : out std_logic_vector(7 downto 0);
 
@@ -273,110 +272,92 @@ begin
 		);
 
 
-	gmiigen: if PHY_TYPE="GMII" generate
-		-- bridge between mac GMII output and GMII I/Os (forces some buffer instantiation)
+	phy_gen: case PHY_TYPE generate
+		when "GMII" =>
+			-- bridge between mac GMII output and GMII I/Os (forces some buffer instantiation)
 
-		phy_reset_l       <= gmii_reset_l; -- pass the active low reset signal
+			phy_reset_l       <= gmii_reset_l; -- pass the active low reset signal
 
-		-- TX bus
+			-- TX bus
 
-		gmii_txclk     <= clk125; -- clock  the TX outputs of the MAC with clk125
-		phy_txc_gtxclk <= clk125; -- pass  the 125 MHz TX data clock to the PHY
-		phy_txctl_txen <= gmii_txen;
-		phy_txd        <= gmii_txd;
-		phy_txer       <= gmii_txer;
-		reset_done_int <= '1';
+			gmii_txclk     <= clk125; -- clock  the TX outputs of the MAC with clk125
+			phy_txc_gtxclk <= clk125; -- pass  the 125 MHz TX data clock to the PHY
+			phy_txctl_txen <= gmii_txen;
+			phy_txd        <= gmii_txd;
+			phy_txer       <= gmii_txer;
+			reset_done_int <= '1';
 
-		-- RX bus signals
+			-- RX bus signals
 
-		-- Instantiate a clock buffer to launch a copy of the RX clock into the FPGA fabric
-		rxclk_bufg_inst : bufg
-			port map (
-				i => phy_rxclk,
-				o => gmii_rxclk
-				);
+			-- Instantiate a clock buffer to launch a copy of the RX clock into the FPGA fabric
+			rxclk_bufg_inst : bufg
+				port map (
+					i => phy_rxclk,
+					o => gmii_rxclk
+					);
 
-		-- Clock the received data.
-		rx_data_clocking: process(gmii_rxclk)
-			begin
-				if rising_edge(gmii_rxclk) then
-					gmii_rxdv <= phy_rxctrl_rxdv;
-					gmii_rxd <= phy_rxd;
-				end if;
-			end process;
+			-- Clock the received data.
+			rx_data_clocking: process(gmii_rxclk)
+				begin
+					if rising_edge(gmii_rxclk) then
+						gmii_rxdv <= phy_rxctrl_rxdv;
+						gmii_rxd <= phy_rxd;
+					end if;
+				end process;
 
-		sfp_tx_p <='Z';
-		sfp_tx_n <='Z';
-	end generate;
+			sfp_tx_p <='Z';
+			sfp_tx_n <='Z';
 
-	sgmiigen: if PHY_TYPE="SGMII" generate
+		when "SGMII" =>
 
-		-- Implement the reference clock buffer
-		-- gtrefclk is routed to the tranceiver.
-		-- ibufds_gtrefclk : IBUFDS_GTE2
-		-- 	port map (
-		-- 		I     => sfp_clk_p,
-		-- 		IB    => sfp_clk_n,
-		-- 		CEB   => '0',
-		-- 		O     => gtrefclk_buf_i,
-		-- 		ODIV2 => open
-		-- 	);
+			gmii_txclk <= gmii_clk; -- use the clock provided by the SGMII core (userclk2) for the GMII TX bus
+			gmii_rxclk <= gmii_clk; -- use the clock provided by the SGMII core (userclk2) for the GMII RX bus
 
-		-- bufg_gtrefclk : BUFG
-		-- 	port map (
-		-- 		I => gtrefclk_buf_i,
-		-- 		O => gtrefclk
-		-- 	);
+			-- sfp_refclk <= gtrefclk; -- pass the GTX reference clock
 
-		-- refclk_sel <= sfp_refclk when SGMII_CLOCK_SOURCE="REFCLK" else clk125;
+			sgmii0: entity work.gmii_to_sgmii
+				generic map (
+					SIM => SIM
+					)
+				port map (
+					-- Tranceiver Interface
+					gtrefclk_nobuf   => sfp_refclk_nobuf,
+					gtrefclk_buf     => sfp_refclk_buf,
+					txp              => sfp_tx_p,
+					txn              => sfp_tx_n,
+					rxp              => sfp_rx_p,
+					rxn              => sfp_rx_n,
 
-		gmii_txclk <= gmii_clk; -- use the clock provided by the SGMII core (userclk2) for the GMII TX bus
-		gmii_rxclk <= gmii_clk; -- use the clock provided by the SGMII core (userclk2) for the GMII RX bus
+					-- GMII Interface (client MAC <=> PCS)
+					gmii_clk   => gmii_clk,   -- clock for both the TX and RX GMII bus provided by the core.
 
-		-- sfp_refclk <= gtrefclk; -- pass the GTX reference clock
+					gmii_txd   => gmii_txd,
+					gmii_tx_en => gmii_txen,
+					gmii_tx_er => gmii_txer,
 
-		sgmii0: entity work.gmii_to_sgmii
-			generic map (
-				SIM => SIM
-				)
-			port map (
-				-- Tranceiver Interface
-				gtrefclk_nobuf   => sfp_refclk_nobuf,
-				gtrefclk_buf     => sfp_refclk_buf,
-				txp              => sfp_tx_p,
-				txn              => sfp_tx_n,
-				rxp              => sfp_rx_p,
-				rxn              => sfp_rx_n,
+					gmii_rxd   => gmii_rxd,
+					gmii_rx_dv => gmii_rxdv,
+					gmii_rx_er => open,
 
-				-- GMII Interface (client MAC <=> PCS)
-				gmii_clk   => gmii_clk,   -- clock for both the TX and RX GMII bus provided by the core.
+					-- General IO's
+					---------------
+					status_vector => status_vector,
+					config_vector => config_vector,
+					mmcm_locked   => mmcm_locked,
+					reset_done    => reset_done_int,
+					clk125        => clk125,
+					signal_detect => signal_detect,
+					reset         => rst
+					);
 
-				gmii_txd   => gmii_txd,
-				gmii_tx_en => gmii_txen,
-				gmii_tx_er => gmii_txer,
-
-				gmii_rxd   => gmii_rxd,
-				gmii_rx_dv => gmii_rxdv,
-				gmii_rx_er => open,
-
-				-- General IO's
-				---------------
-				status_vector => status_vector,
-				config_vector => config_vector,
-				mmcm_locked   => mmcm_locked,
-				reset_done    => reset_done_int,
-				clk125        => clk125,
-				signal_detect => signal_detect,
-				reset         => rst
-				);
-
-			-- Instantiate dummy signals for the unused phy ports
-			phy_txer       <='0';
-			phy_reset_l    <='1';
-			phy_txc_gtxclk <= clk125;
-			phy_txctl_txen <='0';
-			phy_txd        <=(others=>'0');
-
+				-- Instantiate dummy signals for the unused phy ports
+				phy_txer       <='0';
+				phy_reset_l    <='1';
+				phy_txc_gtxclk <= clk125;
+				phy_txctl_txen <='0';
+				phy_txd        <=(others=>'0');
+		when others =>
+			assert FALSE report "Invalid PHY type" severity FAILURE;
 		end generate;
 
 end IMPL;
