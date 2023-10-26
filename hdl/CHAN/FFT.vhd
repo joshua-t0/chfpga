@@ -379,7 +379,9 @@ main_proc: process(clk)
 				-- for i in 0 to 3 loop
 				for i in 0 to ADC_SAMPLES_PER_WORD-1 loop -- parameterized
 					-- out_dat_pre.TDATA(18*i+17 downto 18*i) <= std_logic_vector(resize(signed(in_dat.TDATA(8*i+7 downto 8*i)), 18)); -- make sure to sign extend the byte to the full 18 bits
-					out_dat_pre_tdata(18*i+17 downto 18*i) <= std_logic_vector(resize(signed(s_axis_in_dat_tdata(ADC_BITS_PER_SAMPLE*i+(ADC_BITS_PER_SAMPLE - 1) downto ADC_BITS_PER_SAMPLE*i)), 18));
+					--out_dat_pre_tdata(18*i+17 downto 18*i) <= std_logic_vector(resize(signed(s_axis_in_dat_tdata(ADC_BITS_PER_SAMPLE*i+(ADC_BITS_PER_SAMPLE - 1) downto ADC_BITS_PER_SAMPLE*i)), 18));
+					-- Forward the adc word to the *upper* bits of the FFT output word 
+					out_dat_pre_tdata((i+1)*FFT_BITS_PER_BIN/2-1 downto (i+1)*FFT_BITS_PER_BIN/2 - ADC_BITS_PER_SAMPLE) <= s_axis_in_dat_tdata((i+1)*ADC_BITS_PER_SAMPLE -1 downto i*ADC_BITS_PER_SAMPLE);
 				end loop; -- if FFT is implemented
 
 			end if;
