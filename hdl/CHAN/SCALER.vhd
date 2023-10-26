@@ -292,10 +292,10 @@ post_scaler_left_shift <= control_bytes(0)(4 downto 0);
 assert gain_table_page'LENGTH <= gain_table_page_padded'LENGTH report "Not enough register space for gain_table_page (have "&str(gain_table_page_padded'LENGTH)&" but need " & str(gain_table_page'LENGTH) & ")" severity FAILURE;
 gain_table_page_padded(gain_table_page'RANGE) <= gain_table_page; -- Padded page vector to acount for different page sizes. Will cause errors if we exceed the number of bits we can assign to the control registers.
 
-gain_table_page_padded(5) <= control_bytes(1)(7);
-use_offset_binary <= control_bytes(1)(6);
-gain_table_page_padded(4) <= control_bytes(1)(5);
-next_gain_bank    <= control_bytes(1)(4);
+gain_table_page_padded(5)          <= control_bytes(1)(7);
+use_offset_binary                  <= control_bytes(1)(6);
+gain_table_page_padded(4)          <= control_bytes(1)(5);
+next_gain_bank                     <= control_bytes(1)(4);
 gain_table_page_padded(3 downto 0) <= control_bytes(1)(3 downto 0);
 
 
@@ -772,9 +772,9 @@ scaler_proc: process(clk)
 
             -- Stage 3e: Assign outputs
             if bypass_scaler then
-                -- In bypass mode, we forward the last 8 bit of every real and imaginary components to the output
+                -- In bypass mode, we forward the upper N bits of the FFT integers to the upper N bits of the output integer
                 for i in 0 to INTEGERS_PER_WORD-1 loop
-                    m_axis_out_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto i*OUT_BITS_PER_BIN/2) <= s_axis_in_tdata(i*FFT_BITS_PER_BIN/2 + OUT_BITS_PER_BIN/2 - 1 downto i*FFT_BITS_PER_BIN/2);
+                    m_axis_out_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto i*OUT_BITS_PER_BIN/2) <= s_axis_in_tdata((i+1)*FFT_BITS_PER_BIN/2 - 1 downto (i+1)*FFT_BITS_PER_BIN/2 - OUT_BITS_PER_BIN/2);
                 end loop;
                 m_axis_out_tlast <= s_axis_in_tlast;
                 m_axis_out_tvalid <= s_axis_in_tvalid;
