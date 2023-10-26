@@ -156,7 +156,7 @@ signal status_bytes: slv8_array(0 to 7);
 
 signal bypass_scaler: std_logic;
 signal soft_reset: std_logic;
-signal post_scaler_left_shift: std_logic_vector(4 downto 0); -- can shift up to 31 bits left
+signal post_scaler_left_shift, post_scaler_left_shift_reg: std_logic_vector(4 downto 0); -- can shift up to 31 bits left
 
 signal stage1_word: signed_array(0 to INTEGERS_PER_WORD-1)(INTEGER_WIDTH-1 downto 0);
 signal stage1_sign: std_logic_vector(0 to INTEGERS_PER_WORD-1); --! Indicates the sign of each of the 4 numbers in the incoming word
@@ -625,11 +625,12 @@ scaler_proc: process(clk)
 
             -- RESET:  See at the bottom of this process
 
+            post_scaler_left_shift_reg <= post_scaler_left_shift;
             ----------
             -- Scaling
             ----------
             -- convert shift value into an integer
-            shift_left_value_var := to_integer(unsigned(post_scaler_left_shift)); 
+            shift_left_value_var := to_integer(unsigned(post_scaler_left_shift_reg)); 
 
             -- PIPELINE STAGE 1: Implement a barrel shifter to
             -- shift-left the read/imaginary parts of the products and
