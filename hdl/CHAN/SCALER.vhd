@@ -686,10 +686,16 @@ scaler_proc: process(clk)
                         if round_down_var = '1' then
                             stage2_word(i)(4) <= '0';
                         end if;
-                        -- Detect saturations
-                        if msb(stage1_word(i), 5) = "01111" then --if the rounding causes a positive value to overflow
+                        -- Detect post-rounding saturations to be applied on next pipeline stage
+                        -- First: if the rounding causes a positive value to overflow (rounds 7.5 to -8)
+                        if msb(stage1_word(i), 5) = "01111" then -- If we have a tie, convergent rounding would make the number even, but it's already even after rounding, so the test is the same for normal and convergent rounding.
                             stage2_overflow(i) <= '1';-- the rounding will cause a overflow
-                        elsif symmetric_saturation='1' and ( msb(stage1_word(i), 5) = "10000" or round_down_var = '1') then --if the rounding causes a negative value to overflow
+                        -- Second, if the rounding adds 0.5, so we can never overflow a negative value. 
+                        -- Instead, here we check that the value is not -8 after rounding, so we can saturate to -7 if symmetric saturation is enabled
+                        -- We check for 2 conditions. 
+                        --     a) we had -8.0 prior to rounding, so we are still -8 after rounding. 
+                        --     b) We were -7.5 and rounded back down to -8 by convergent rounding 
+                        elsif symmetric_saturation='1' and ( msb(stage1_word(i), 5) = "10000" or (msb(stage1_word(i), 5) = "10001" and round_down_var = '1')) then --if the rounding causes a negative value to overflow
                             stage2_overflow(i) <= '1';-- the rounded value will exceed -7
                         end if;
                     else -- no rounding (i.e truncate)
@@ -707,10 +713,10 @@ scaler_proc: process(clk)
                         if round_down_var = '1' then
                             stage2_word(i)(0) <= '0';
                         end if;
-                        -- Detect saturations
+                        -- Detect saturations to be applied on next pipeline stage 
                         if msb(stage1_word(i), 9) = "011111111" then --if the rounding causes a positive value to overflow
                             stage2_overflow(i) <= '1';-- the rounding will cause a overflow
-                        elsif symmetric_saturation='1' and ( msb(stage1_word(i), 9) = "100000000" or round_down_var = '1') then --if the rounding causes a negative value to overflow
+                        elsif symmetric_saturation='1' and ( msb(stage1_word(i), 9) = "100000000" or (msb(stage1_word(i), 9) = "100000001" and round_down_var = '1')) then --if the rounding causes a negative value to overflow
                             stage2_overflow(i) <= '1';-- the rounded value will exceed -7
                         end if;
                     else -- no rounding (i.e. truncate)
