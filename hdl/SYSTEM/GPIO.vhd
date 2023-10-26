@@ -722,7 +722,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 	GENERIC MAP (
 		NUMBER_OF_CONTROL_BYTES => CONTROL_BYTES'Length(1), -- Length of array in the first dimension: number of bytes
 		NUMBER_OF_STATUS_BYTES => STATUS_BYTES'Length(1),
-		DEFAULT_CONTROL_BYTES => ('0' & to_std_logic(BUCK_SYNC_ENABLE) & "01" & -- Byte 0
+		DEFAULT_CONTROL_BYTES => ('0' & to_std_logic(BUCK_SYNC_ENABLE) & "010000" & -- Byte 0
 			                      to_slv(BUCK_CLK_DIVIDE_FACTOR,8) & 
 			                      X"00_65_14_FEDCBA9876543210_000000000000_00000000_A028_0000000000000000_00_00000000_0002faf0_0005f5e1_00_00_00_89_00"),
         RAM_DATA_WIDTH          => 8, -- 8 or 16 bits
