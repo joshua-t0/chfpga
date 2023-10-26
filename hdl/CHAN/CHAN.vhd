@@ -159,7 +159,7 @@ constant FFT_BITS_PER_WORD: integer    := FFT_BITS_PER_BIN * FFT_BINS_PER_WORD;
 constant FFT_BINS_PER_FRAME :integer   := ADC_SAMPLES_PER_FRAME/2;
 constant SCALER_BITS_PER_WORD: integer := CAPTURE_BITS_PER_WORD;
 constant SCALER_BITS_PER_BIN: integer  := SCALER_BITS_PER_WORD / FFT_BINS_PER_WORD; -- Note: scaler output is always 4+4 or 8+8 bits when not bypassed.  
-constant OUT_BITS_PER_BIN: integer     := OUT_BITS_PER_WORD / FFT_BINS_PER_WORD;
+constant OUT_BITS_PER_BIN: integer     := OUT_BITS_PER_WORD / FFT_BINS_PER_WORD;  -- 16 for CHIME, 8 for CHORD
 
 signal axis_funcgen_out_tdata: std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
 signal axis_funcgen_out_tuser: std_logic_vector(3 downto 0);
@@ -615,14 +615,22 @@ end block scaler_blk;
 --
 
 -- Remap the scaler output to the FFT input. The FFT width matches the output width, but the scaler output may be wider so we can capture more of teh FFT bits in bypass mode.
+temp:block
+    signal cnt: unsigned(3 downto 0);
+begin
+    process(in_clk) begin
+         cnt <= cnt + 4 when rising_edge(in_clk);
+    end process;
+
 FIFO_REMAP_GEN: for i in 0 to FFT_BINS_PER_WORD*2-1 generate
-    assert i<10 report str(i) & " "& str(axis_fifo_in_tdata'length) severity failure;
     axis_fifo_in_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto i*OUT_BITS_PER_BIN/2) <= axis_scaler_out_tdata((i+1)*SCALER_BITS_PER_BIN/2-1 downto (i+1)*SCALER_BITS_PER_BIN/2-OUT_BITS_PER_BIN/2);
 end generate;
+--axis_fifo_in_tdata <= slv(cnt) & "0000" & slv(cnt+1) & "0000" & slv(cnt+2) & "0000" & slv(cnt+3) & "0000";
+
 axis_fifo_in_tvalid <= axis_scaler_out_tvalid and not fifo_rst and (not fifo_almost_full or axis_scaler_out_tlast); -- make sure we don't write during reset
 axis_fifo_in_tlast <= axis_scaler_out_tlast;
 axis_fifo_in_tuser <= axis_scaler_out_tuser;
-
+end block;
 
 DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
     signal fifo_wr_en: std_logic;
