@@ -73,7 +73,12 @@ entity ucap is
 		m_axis_bsb_tlast: out std_logic;
 		m_axis_bsb_tready: in std_logic := '1';
         bsb_clk: in std_logic;
-        
+
+		s_axis_stream_in_data: in std_logic_vector(7 downto 0) := X"00";        
+		s_axis_stream_in_tvalid: in std_logic := '0';
+		s_axis_stream_in_tlast: in std_logic := '0';
+		s_axis_stream_in_tready: out std_logic := '0';
+
         clk: in std_logic;
         rst: in std_logic; -- synchronous to clk
 
@@ -109,6 +114,7 @@ architecture impl of ucap is
     signal sub_period: unsigned(4 downto 0);
 	signal user_reset, user_reset_reg: std_logic;
 	signal overrun: std_logic;
+    signal output_source_sel: std_logic;
 
     -- Signals used for both write and read processes
     signal chan_pair_sel: u3_array(0 to NUMBER_OF_CHANNEL_PAIRS-1);        
@@ -126,14 +132,23 @@ architecture impl of ucap is
 	signal ram_rd_en: std_logic_vector(0 to NUMBER_OF_BUFFERS-1);  -- one for each column
 
     -- BSB FIFO signals
-	signal fifo_in_tdata: std_logic_vector(7 downto 0); 
-	signal fifo_in_tvalid: std_logic;
-	signal fifo_in_tlast: std_logic;
+	signal fifo_in_tdata: slv_array(0 to 1)(7 downto 0); 
+	signal fifo_in_tvalid: std_logic_vector(0 to 1);
+	signal fifo_in_tlast: std_logic_vector(0 to 1);
+	signal fifo_in_tready: std_logic_vector(0 to 1);
 	signal fifo_full: std_logic;
 	signal fifo_overflow: std_logic;
 	signal fifo_overflow_sticky: std_logic;
 
 begin
+
+
+	-- temporary hack to send the aux input to the FIFO
+	fifo_in_tdata(1) <= s_axis_stream_in_data;
+	fifo_in_tvalid(1) <= s_axis_stream_in_tvalid;
+	fifo_in_tlast(1) <= s_axis_stream_in_tlast;
+	s_axis_stream_in_tready <= fifo_in_tready(1);
+	fifo_in_tready <= (others => not fifo_full);
 
     --------------------------------------------
     -- Memory mapped registers
@@ -164,6 +179,7 @@ begin
 	chan_sel_map(0) <= unsigned(control_bytes(0)(2 downto 0));
 
 	user_reset      <= control_bytes(1)(7);
+    output_source_sel   <= control_bytes(1)(6);
 	chan_sel_map(3) <= unsigned(control_bytes(1)(5 downto 3));
 	chan_sel_map(2) <= unsigned(control_bytes(1)(2 downto 0));
 
@@ -679,15 +695,15 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
                 --    - header_tvalid(0) HV: Send a header byte. A 0 to 1 transition indicates a new header. 
                 --    - data_tvalid(0) DV: Send RAM data
                 --    - data_tlast(0): L This is the last byte of a group
-                fifo_in_tvalid <= '0';
-                fifo_in_tlast <= '0';
+                fifo_in_tvalid(0) <= '0';
+                fifo_in_tlast(0) <= '0';
                 case read_proc_op(0) is
                 
                     when READ_PROC_SEND_HEADER | READ_PROC_SEND_LAST_HEADER =>
                         -- Send the data as per the instructions from the control signals
                         byte_int := to_integer(read_proc_byte_ctr); -- Read in natural array order
-                        fifo_in_tdata <= frame_header_bytes(byte_int);
-                        fifo_in_tvalid <= '1';
+                        fifo_in_tdata(0) <= frame_header_bytes(byte_int);
+                        fifo_in_tvalid(0) <= '1';
                         read_proc_byte_ctr <= read_proc_byte_ctr + 1;
                         if read_proc_op(0) = READ_PROC_SEND_LAST_HEADER then
                             read_proc_byte_ctr <= (others => '0');
@@ -697,11 +713,11 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
                         -- get the right byte from the right data buffer
                         -- The logic implies a combinatorial 16x 8:1 mux followed by  8x 16:1 mux. Might limit logic speed.  
                         byte_int := to_integer(not read_proc_byte_ctr); -- invert bits to read from MSB to LSB
-                        fifo_in_tdata <= ram_dout(to_integer(buf))(8*byte_int+7 downto 8*byte_int);
-                        fifo_in_tvalid <= '1';
+                        fifo_in_tdata(0) <= ram_dout(to_integer(buf))(8*byte_int+7 downto 8*byte_int);
+                        fifo_in_tvalid(0) <= '1';
                         read_proc_byte_ctr <= read_proc_byte_ctr + 1;
                         if read_proc_op(0) = READ_PROC_SEND_LAST_PACKET_DATA or read_proc_op(0) = READ_PROC_SEND_LAST_DATA then
-                            fifo_in_tlast <= '1';
+                            fifo_in_tlast(0) <= '1';
                             read_proc_byte_ctr <= (others => '0');
                             read_proc_pkt_ctr <= read_proc_pkt_ctr + 1;
                             if read_proc_op(0) = READ_PROC_SEND_LAST_DATA then
@@ -723,7 +739,7 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
                     fifo_overflow_sticky <= '0';
 --                    data_tvalid <= (others => '0');
 --                    header_tvalid <= (others => '0');
-	                fifo_in_tvalid <= '0'; -- needed
+	                fifo_in_tvalid(0) <= '0'; -- needed
 	                read_seq_byte_ctr <= (others => '0');
 	                read_seq_state <= READ_SEQ_WAIT; -- needed to make sure we start with header transmission
                     read_proc_byte_ctr <= (others=> '0'); -- needed for the first frame header transmission 
@@ -743,7 +759,7 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
         signal fifo_rd_rst_busy: std_logic;
         signal fifo_wr_rst_busy: std_logic;
         signal fifo_rst: std_logic;
-        
+        signal output_source: integer range 0 to 1;
 --        type line is access string;
         use std.textio.all;
         use ieee.std_logic_textio;
@@ -762,10 +778,10 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
         end function;
         
     begin    
-
+        output_source <= to_integer(to_unsigned(output_source_sel));
     	fifo_rst <= rst  or user_reset_reg;
-        fifo_din <= fifo_in_tlast & fifo_in_tdata;
-        fifo_wr_en <= fifo_in_tvalid and not (rst or fifo_wr_rst_busy);
+        fifo_din <= fifo_in_tlast(output_source) & fifo_in_tdata(output_source);
+        fifo_wr_en <= fifo_in_tvalid(output_source) and not (rst or fifo_wr_rst_busy);
 
         m_axis_bsb_tdata <= fifo_dout(7 downto 0);
         m_axis_bsb_tlast <= fifo_dout(8);
@@ -783,9 +799,9 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
        fifo0 : xpm_fifo_async
            generic map (
               FIFO_MEMORY_TYPE => "auto", -- String
-              FIFO_WRITE_DEPTH => 32,   -- DECIMAL. 16 is the minimum
+              FIFO_WRITE_DEPTH => 512,   -- DECIMAL. 16 is the minimum
               FULL_RESET_VALUE => 1,      -- DECIMAL
-              PROG_FULL_THRESH => 12,     -- DECIMAL 11 has overflows
+              PROG_FULL_THRESH => 256,     -- DECIMAL 11 has overflows
               READ_DATA_WIDTH => 9,      -- DECIMAL
               READ_MODE => "fwft",         -- String
         --      RELATED_CLOCKS => 0,        -- DECIMAL
