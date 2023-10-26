@@ -176,6 +176,7 @@ signal stage2_tuser: std_logic_vector(3 downto 0);
 signal four_bits: std_logic;
 signal symmetric_saturation: std_logic;
 signal zero_on_saturation: std_logic;
+signal force_gain_to_one: std_logic;
 
 signal rounding_mode: std_logic_vector(1 downto 0);
 constant ROUNDING_MODE_TRUNCATE: std_logic_vector(1 downto 0):= "00";
@@ -304,6 +305,7 @@ symmetric_saturation         <= control_bytes(2)(6);
 zero_on_saturation           <= control_bytes(2)(5);
 synchronize_gain_bank_switch <= control_bytes(2)(4);
 fifo_overflow_reset          <= control_bytes(2)(3);
+force_gain_to_one            <= control_bytes(2)(2);
 rounding_mode                <= control_bytes(2)(1 downto 0);
 
 -- CONTROL Byte 3-5
@@ -484,13 +486,14 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             assert FALSE report "Complex gains are currently only supported with 2 bins per word" severity FAILURE;
         end generate;
 
-        -- fft data format:     MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
-        -- gain storage format: MSB->LSB: Re(N+1), Im(N+1), Re(N),   Im(N)
+        -- fft data word:     MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
+        -- gain word: MSB->LSB: Re(N+1), Im(N+1), Re(N),   Im(N)
         -- single multiplier product format: Im, Re 
-        -- Final scaled output format: Re(N), Im(N), Re(N+1), Im(N+1)
+        -- Final scaled output format: MSB->LSB: Re(N), Im(N), Re(N+1), Im(N+1)
 
         -- Select gain coefficient for the even bin
-        coeff_even_din <= (coeff_ram_dout(15 downto 0) & coeff_ram_dout(31 downto 16)); -- Im:Re
+        coeff_even_din <= std_logic_vector(to_signed(0, 16)) & std_logic_vector(to_signed(1, 16)) when force_gain_to_one else
+                          (coeff_ram_dout(15 downto 0) & coeff_ram_dout(31 downto 16)); -- Im:Re
         cmul0_a_tdata <= ("000000" & in_dat_dly2_tdata(2*18+17 downto 2*18+0) & "000000" & in_dat_dly2_tdata(3*18+17 downto 3*18+0)); -- Im:Re, padded for byte align
         -- Instantiate complex multiplier for the even bin
         -- Data packing: byte-aligned, imaginary in the high bits
@@ -510,7 +513,8 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
           );
 
         -- Instantiate complex multiplier for the odd bin
-        coeff_odd_din <= (coeff_ram_dout(32+15 downto 32+0) & coeff_ram_dout(32+31 downto 32+16));
+         coeff_odd_din <= std_logic_vector(to_signed(0, 16)) & std_logic_vector(to_signed(1, 16)) when force_gain_to_one else    
+                          (coeff_ram_dout(32+15 downto 32+0) & coeff_ram_dout(32+31 downto 32+16));
         cmul1_a_tdata <= ("000000" & in_dat_dly2_tdata(0*18+17 downto 0*18+0) & "000000" & in_dat_dly2_tdata(1*18+17 downto 1*18+0));
         cmul1: entity work.SCALER_CMUL
           PORT MAP (
@@ -534,6 +538,8 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
           scaled_data_tdata(1*INTEGER_WIDTH - 1 downto 0*INTEGER_WIDTH) <= scaled_data_odd_tdata(74 downto 40); -- Im(N+1)
     else generate -- if no complex gains
 
+
+
             signal coeff_reg: std_logic_vector(COEFF_BITS_PER_WORD-1 downto 0);
             signal fft_reg_tdata: std_logic_vector(FFT_BITS_PER_WORD-1 downto 0);
             signal fft_reg_tvalid: std_logic;
@@ -542,9 +548,10 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             
         begin
 
-            -- fft data format:     MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
-            -- gain storage format: MSB->LSB: Re(N+1), Im(N+1), Re(N),   Im(N) 
-            -- product data format:     MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
+            -- fft data format:                    MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
+            -- gain storage format (Complex gain): MSB->LSB: Re(N+1), Im(N+1), Re(N),   Im(N) 
+            -- gain storage format (Real gain):    MSB->LSB:                   Re(N+1), Re(N) 
+            -- product data format:                MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
 
             mul_proc: process (clk) 
                 variable fft_re, fft_im: signed(FFT_BITS_PER_BIN/2-1 downto 0);
@@ -554,7 +561,11 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 if rising_edge(clk) then
                         -- Pipeline the gain and fft values. These registers should be absorbed as the input registers 
                         -- of the DSP48 block and should greatly help with timing closure.
-                        coeff_reg <= coeff_ram_dout;
+                        for i in 0 to FFT_BINS_PER_WORD-1 loop
+                            coeff_reg((i+1)*COEFF_BITS_PER_BIN-1 downto i*COEFF_BITS_PER_BIN) <= 
+                                std_logic_vector(to_signed(1, COEFF_BITS_PER_BIN)) when force_gain_to_one else -- debug: force gain to 1
+                                coeff_ram_dout((i+1)*COEFF_BITS_PER_BIN-1 downto i*COEFF_BITS_PER_BIN);
+                        end loop;
                         fft_reg_tdata <= in_dat_dly2_tdata;
                         -- Make sure the control signals are delayed as much as the data
                         fft_reg_tvalid <= in_dat_dly2_tvalid;
