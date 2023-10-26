@@ -35,8 +35,11 @@ use UNISIM.VComponents.all;
 library xpm;
 use xpm.vcomponents.all;
 
+
+
+
 -- ----------------------------------
--- CMAC44: (4+4) bit complex vector multiplier-and-accumulate core
+-- UCMAC44: (4+4) bit complex vector multiplier-and-accumulate core
 -- ----------------------------------
 -- Casadable, compact (4+4) bit 512-element complex vector
 -- multiplier/accumulator that uses two DSP48E1 and two RAMB16 blocks.
@@ -56,57 +59,41 @@ use xpm.vcomponents.all;
 -- See the Entity architecture for more implementation details.
 entity UCORR44 is
 	GENERIC (
-		PLATFORM_ID: integer;
+		PLATFORM_ID: integer := PLATFORM_ID_CRS;
 		N: integer :=8; -- Number of analog channels to correlate
-		P: integer := (N*(N+1)/2); -- number of products - do not change: computed form N
-		RPM_NAME: string; -- name of the RPM set name that identify which correlator the DSPs and BRAMs belong to.
-		RPM_COORDS: cmac44_rpm_coord_struct -- RPM coordinates of the DSPs and BRAMs
+		CORR_NUMBER: integer; -- correlator number to be used in packet headers
+--		INTEG_PERIOD_MAX: integer := 65535;
+		NBINS_TO_READOUT: integer := 2048; -- maximum number of bins that will be read and sent
+--		IMPLEMENT_AUTOCORR_ONLY: boolean := TRUE; -- If true, sends only autocorrelations 
+		P: integer := (N*(N+1)/2); -- number of products - do not change: computed from N
+		URAM_MAX: integer := P/2 - 2
+--		RPM_NAME: string := "CORR0"; -- name of the RPM set name that identify which correlator the DSPs and BRAMs belong to.
+--		RPM_COORDS: cmac44_rpm_coord_struct -- RPM coordinates of the DSPs and BRAMs
 		);
 	PORT(
 
-		-- Input X & Y streams to be multiplied/accumulated. AXI4-Streaming, non-blocking.
-
-		s_axis_tvalid: in std_logic;
+		-- Data be correlated & integrated. N channels (N bytes). AXI4-Streaming, non-blocking.
+		s_axis_tdata: in slv_array(0 to N-1)(7 downto 0); -- Contains both (4+4) bit
 		s_axis_tlast: in std_logic;
-		s_axis_last_frame: in std_logic; -- Is high during all VALID words of the last frame to be integrated
-		s_axis_tdata: in slv_array(N-1 downto 0)(7 downto 0); -- Contains both (4+4) bit
-		--complex
-		--numbers to be multiplied together.  x_re:x_im:y_re:y_im
+		s_axis_tvalid: in std_logic;
 
 
-		-- Byte-serialized Data output 
+        integ_period: in std_logic_vector(15 downto 0);
+        autocorr_only: in std_logic := '1';
+	    no_accum: in std_logic := '1'; -- when '1', there is no accumulation: only th elast product of the accumulation period is kept.
 
+        overrun: out std_logic;
+        
+		-- Byte-serialized cascadable data input/outputs, AXI-Streaming, 8-bit, sloppy blocking via `send` 
 		z_out_tdata: out std_logic_vector(7 downto 0);
 		z_out_tlast: out std_logic;
 		z_out_tvalid: out std_logic;
-		z_out_tready: in std_logic := '0'; -- for sims
-		--m_axis_out_start: in std_logic := '0';
-		--m_axis_out_send: in std_logic := '1'; -- Tells this CMAC to start or stop sending data as soon as possible (i.e. after the latency of the control/data pipeline). This is **not** the AXI-S tready, which acts immediately.
-		--m_axis_out_local_data: out std_logic := '0'; -- '1': data is coming from this CMAC, '0': data is coming from the daisy-chained CMAC.
-
+		z_out_send: in std_logic := '0'; -- for sims
 
 		z_in_tdata: in std_logic_vector(7 downto 0) := (others => '0');
 		z_in_tlast: in std_logic := '0';
 		z_in_tvalid: in std_logic := '0'; -- for sims
-		z_in_tready: out std_logic := '0'; -- for sims
-
-		-- Data input from the neighboring CMAC
-
-		--s_axis_z_in_tdata: in std_logic_vector(35 downto 0) := (others=>'0');
-		--s_axis_z_in_tlast: in std_logic := '0';
-		--s_axis_z_in_tvalid: in std_logic := '0';
-		--s_axis_z_in_send: out std_logic := '0'; -- Tells the next node it should start or stop sending data as soon as possible
-		--s_axis_z_in_start: out std_logic;
-
-		-- Debugging outputs
-		no_accum: in std_logic := '0';
-		-- re: out signed(17 downto 0);
-		-- im: out signed(17 downto 0);
-		--re2: out signed(17 downto 0);
-		--im2: out signed(17 downto 0);
---		rd_err: out std_logic;
---		wr_err: out std_logic;
---		readout_err: out std_logic;
+		z_in_send: out std_logic := '0'; -- for sims
 
 		clk : in std_logic; -- clock
 		rst : in std_logic -- rst
@@ -114,6 +101,7 @@ entity UCORR44 is
 		);
 
 end UCORR44;
+
 
 -- @brief Implementation of the compact (4+4) bit complex multiplier/accumulator.
 --
@@ -186,7 +174,7 @@ architecture impl of UCORR44 is
 	-- Constants
 	--constant P: integer := (N * (N + 1))/2; -- i.e. number of products
 	constant BYTES_PER_PRODUCT: integer := 5; -- (18+18) bits + 4 extra bits = 40 bits = 5 bytes
-	constant BYTES_PER_RO_WORD: integer := BYTES_PER_PRODUCT * P;
+--	constant BYTES_PER_RO_WORD: integer := BYTES_PER_PRODUCT * P;
 	--constant DSP_LEFT: boolean := FALSE;
 	--constant DSP1_RLOC: string := sel(DSP_LEFT, "X65Y0", "X45Y0");
 	--constant FIFO_RLOC: string := sel(DSP_LEFT, "X78Y0", "X34Y0");
@@ -197,7 +185,7 @@ architecture impl of UCORR44 is
 
 	constant s_axis_xconj: std_logic := '0'; -- when '1', uses the complex conjugate of the x
 	constant s_axis_yconj: std_logic := '1'; -- when '1', uses the complex conjugate of the y
-
+    
 	-- Function to compute the (i,j) coordinate of each elemenent in the product vector
 	-- Exemple for N=4: (0,0), (0,1), (0,2), (0,3), (1,1), (1,2), (1,3), (2,2), (2,3), (3,3) 
 	type tuple_array is array (NATURAL range <>) of integer_vector(0 to 1);
@@ -228,7 +216,7 @@ architecture impl of UCORR44 is
 	signal ram_wr_addr: std_logic_vector(11 downto 0); -- 12 bits = 4096 words
 	signal ram_rd_addr: std_logic_vector(11 downto 0); -- 12 bits = 4096 words
 	signal ram_wr_en: std_logic :='0';
-	signal ram_rd_en: std_logic :='0';
+	signal ram_rd_en: std_logic :='1';
 
 	signal tvalid1, tvalid2, tvalid3, tvalid4: std_logic:='0';
 	signal tlast1, tlast2, tlast3, tlast4: std_logic;
@@ -240,47 +228,47 @@ architecture impl of UCORR44 is
 	-- Relative Placed Macro constraints
 
 
+
 begin
 
 	ctrl_blk : block
 
-        signal frame_max: unsigned(3 downto 0); -- currently limited to 16. Depends on memory depth (frames/uram block) x number of channels.
+--        signal frame_max: unsigned(3 downto 0); -- currently limited to 16. Depends on memory depth (frames/uram block) x number of channels.
 
-  		signal frame: unsigned(11 downto 0); -- 4096 frame integration
-		signal word_ctr: unsigned(10 downto 0); -- 2048 words/frame. 
-		signal ro_word_ctr: unsigned(10 downto 0); -- readout word counter. 2048 words/frame. 
-  	    signal capture_en: std_logic; -- '1' when tdata shall be written to RAM when tvalid=1
-    	signal src_readout_trig: std_logic; -- pulse indicating when a source is ready to be read
+  		signal frame: unsigned(15 downto 0); -- 11-bits wide: 2048 integ, 12-bits wide: 4096 frame integration
+		signal rd_word_ctr1: unsigned(10 downto 0); -- 2048 words/frame. 
+		signal ro_word_ctr1: unsigned(10 downto 0); -- readout word counter. 2048 words/frame. 
+--  	    signal capture_en: std_logic; -- '1' when tdata shall be written to RAM when tvalid=1
+--    	signal src_readout_trig: std_logic; -- pulse indicating when a source is ready to be read
   		--signal ram_rd_acc_addr: std_logic_vector(10 downto 0); -- accumulator bank read address
 --  		signal ram_rd_acc_addr: std_logic_vector(10 downto 0); -- readout bank read address
-  		signal ram_wr_acc_addr: std_logic_vector(10 downto 0); -- readout bank read address
+  		signal wr_word_ctr5: unsigned(10 downto 0); -- readout bank read address
   		--signal ram_rd_ro_addr: std_logic_vector(10 downto 0); -- readout bank read address
 --    	signal acc_rd_bank: std_logic; -- Accumulator bank for reading previous accumulated value
-    	signal wr_bank: std_logic; -- Accumulator bank for writing new accumulated value
+    	signal acc_bank1, acc_bank5: std_logic; -- Accumulator bank
 
 		signal bytes: slv8_array(0 to FRAME_HEADER_BYTE_LENGTH + P * BYTES_PER_PRODUCT-1); -- readout buffer: header + products
+--		signal send_byte: std_logic_vector(0 to FRAME_HEADER_BYTE_LENGTH + P * BYTES_PER_PRODUCT-1); -- Indicates whether we send the byte or not
 		signal byte_ctr: integer range 0 to bytes'LENGTH;
 		signal ro_busy: std_logic := '0'; -- memory readout busy
 		signal dc_busy: std_logic := '0'; -- daisy chain readout busy
-		signal send_local_data: std_logic := '0';
-
+--		signal send_local_data: std_logic := '0';
+		signal timestamp, first_timestamp: unsigned(47 downto 0);
+        -- signal overrun: std_logic;
 	begin
 
 --		ram_rd_acc_addr <= word_ctr;
-		ram_rd_addr <= (not wr_bank) & std_logic_vector(ro_word_ctr) when frame=0 else
-		               wr_bank & std_logic_vector(word_ctr);
-		ram_wr_addr <= wr_bank & ram_wr_acc_addr;
+		ram_rd_addr <= (not acc_bank1) & std_logic_vector(ro_word_ctr1) when rd_word_ctr1=0 else
+		               acc_bank1 & std_logic_vector(rd_word_ctr1);
+		ram_wr_addr <= acc_bank5 & std_logic_vector(wr_word_ctr5);
+
 		wr_proc: process(clk)
 		    variable frame_header: FRAME_HEADER_STRUCT := (PROBE_ID => X"CF", others => (others =>'0'));
+		    variable prod: integer range 0 to N; -- counts autocorr products (not N-1 because last increment?)
+		    variable prod_bytes: slv8_array(0 to BYTES_PER_PRODUCT-1);
 		begin
 			if rising_edge(clk) then
 				rst_reg <= rst;
-
-
---				if rst_reg then
---					rd_err <= '0';
---					wr_err <= '0';
---				end if;
 
 				-------------
 				-- CLOCK 1 - sign-corrected data is clocked into the DSP1 A & B registers, and we register sign and zero flags
@@ -288,17 +276,24 @@ begin
 
 
 				-- Write state machine: count words and frames, and set the done signal
-	            src_readout_trig <= '0'; -- single clock pulse signal, overriden below
+--	            src_readout_trig <= '0'; -- single clock pulse signal, overriden below
 				if s_axis_tvalid then
-					word_ctr <= word_ctr + 1;
+					rd_word_ctr1 <= rd_word_ctr1 + 1;
 					if s_axis_tlast then
-						word_ctr <= (others => '0');
+						rd_word_ctr1 <= (others => '0');
 						frame <= frame + 1;
-						if all_ones(frame) then
+                        timestamp <= timestamp + 1;
+						if frame=unsigned(integ_period) then -- if last frame of the integration period
 	                        frame <= (others => '0'); -- restart the readout from word 0
-							ro_busy <= '1'; 
+                            if ro_busy then
+                                overrun <= '1';
+                            end if;
+							ro_busy <= '1'; -- start the readout
+							z_in_send <= '0'; -- tell the upstream cascaded correlators we stop accepting data
+							acc_bank1 <= not acc_bank1;
+							first_timestamp <= timestamp+1;
 --                            z_in_tready <= '0'; -- we won't be processing cascade inputs
-							ro_word_ctr <= (others => '0');
+							ro_word_ctr1 <= to_unsigned(1, ro_word_ctr1'LENGTH);
 							--capture_en <= '0';
 						end if;
 					end if;                
@@ -307,10 +302,9 @@ begin
                 -- pipeline the control signals
 				tvalid1 <= s_axis_tvalid;
 				tlast1 <= s_axis_tlast;
-				first_word1 <= to_std_logic(word_ctr=0); -- first word of frame
-				last_frame1 <= to_std_logic(all_ones(frame)); -- last frame of accumulation
+				first_word1 <= to_std_logic(rd_word_ctr1=0); -- first word of frame
+				last_frame1 <= to_std_logic(frame=unsigned(integ_period)); -- last frame of accumulation
                 first_frame1 <= to_std_logic(all_zeros(frame)); -- last frame of accumulation
-
 				-------------
 				-- CLOCK 2: The product is clocked in the M=XY register of DSP1, and we clock the correction in the C=Z register.
 				-- We also present the FIFO output back into the C input of the DSP2.
@@ -322,6 +316,13 @@ begin
 				first_word2 <= first_word1;
 				last_frame2 <= last_frame1;
 				first_frame2 <= first_frame1;
+
+--				if tvalid1 and tlast1 then
+--					timestamp <= timestamp + 1;
+--					if first_frame1 then
+--						first_timestamp <= timestamp;
+--					end if;
+--				end if;
 
 				-------------
 				-- CLOCK 3: Register the pre-accumulation product (DSP1 sum XY+Z) in DSP1.P and RAM output in DSP2.C. 
@@ -335,60 +336,83 @@ begin
 --				z_in_tready <= '0' when cc_done='1' and ro_done='0'
 
                 -- Clear valid flag if output word is transferred
-                if z_out_tready then
-                    z_out_tvalid <= '0';
-                end if;
-                
-				if dc_busy='0' and ro_busy='1' then
-					-- Clear tvalid when we read out byte. Is overriden below if a new byte is available.
-					z_out_tlast <= '0';
-					z_out_tdata <= bytes(0);
+                z_out_tvalid <= '0';
+                z_in_send <= z_out_send;
 
-					if (z_out_tready='1' or z_out_tvalid='0')  and byte_ctr /= bytes'LENGTH then
-						z_out_tvalid <= '1';
-						if byte_ctr = bytes'LENGTH-1 then -- tlast when last byte.
-							z_out_tlast <= '1';
-							if all_ones(ro_word_ctr) then
-								ro_busy <='0';
-							end if;
-						end if;
-						bytes(0 to bytes'LENGTH-2) <= bytes(1 to bytes'LENGTH-1);
-						byte_ctr <= byte_ctr + 1;
-					end if;
-				else -- sending cascade input data
-					if z_in_tvalid='1' then
+                -- Clear tvalid. Is overriden below if a new byte is available.
+
+                if ro_busy then -- if readout in in progress
+                    z_in_send <= '0';
+                    z_out_tdata <= bytes(0);
+                    z_out_tlast <= '0';
+                    z_out_tvalid <= '0';
+                    if byte_ctr /= 0 and z_out_send='1' then -- if we have a byte to send and we are allowed to send it
+                        z_out_tvalid <= '1';
+                        if byte_ctr = 1 then -- tlast when last byte.
+                            z_out_tlast <= '1';
+                            ro_word_ctr1 <= ro_word_ctr1 + 1; 
+                            if ro_word_ctr1 = NBINS_TO_READOUT-1 then
+                                ro_busy <='0';
+                            end if;
+                        end if;
+                        bytes(0 to bytes'LENGTH-2) <= bytes(1 to bytes'LENGTH-1);
+--                        send_byte(0 to send_byte'LENGTH-2) <= send_byte(1 to send_byte'LENGTH-1);
+                        byte_ctr <= byte_ctr - 1;
+                     end if;
+                else -- sending cascade input data
+                    z_out_tvalid <= z_in_tvalid;
+                    z_out_tdata <= z_in_tdata;
+                    z_out_tlast <= z_in_tlast;
+                    if z_in_tvalid='1' then
 						dc_busy <= '1';
 						if z_in_tlast then
 							dc_busy <= '0';
+							z_in_send <= '0';
 						end if;
-					end if;
-					z_in_tready <= to_std_logic((z_out_tready='1' or z_out_tvalid='0') and z_in_tready='1');
-					if (z_out_tready='1' or z_out_tvalid='0') and z_in_tvalid='1' and z_in_tready='1' then
-					   z_out_tvalid <= z_in_tvalid;
-					   z_out_tdata <= z_in_tdata;
-					   z_out_tlast <= z_in_tlast;
 					end if;
 				end if; -- if local data
 
 				-- Load the readout bytes if the first word (word 0) is present on the RAM output (first_word2='1') and
 				-- if we are sending the last byte ((z_out_tready='1' and byte_ctr = 1)) or if all bytes have been sent (byte_ctr=0)
-				if first_word2='1' and ((z_out_tready='1' and byte_ctr=1) or byte_ctr=0) then
+				if first_word2='1' and byte_ctr=0 then
 
 					-- Store the header in the bytes buffer
-					frame_header.STREAM_ID(12 downto 2) := std_logic_vector(ro_word_ctr);
-					frame_header.STREAM_ID(1 downto 0) := "00"; -- Will be bin number (0-3)
-					frame_header.TIMESTAMP := (others => '0'); 
-					bytes(0 to FRAME_HEADER_BYTE_LENGTH) <= struct_to_bytes(frame_header);
+					frame_header.STREAM_ID(12 downto 2) := std_logic_vector(ro_word_ctr1);
+					frame_header.STREAM_ID(1 downto 0) := to_slv(CORR_NUMBER, 2); -- Will be bin number (0-3)
+					frame_header.TIMESTAMP := std_logic_vector(first_timestamp); 
+                    frame_header.FLAGS(0) := overrun;
+                    frame_header.FLAGS(1) := autocorr_only;
+					bytes(0 to FRAME_HEADER_BYTE_LENGTH-1) <= struct_to_bytes(frame_header);
+--					send_byte(0 to FRAME_HEADER_BYTE_LENGTH-1) <= (others => '1');
 					-- Store the product bytes in the bytes buffer
-					for i in 0 to P-1 loop
-						bytes(FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT*(i+1)-1 downto FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT*i) <= to_slv8_array(resize(unsigned(ram_dout(i)),8*BYTES_PER_PRODUCT));
-					end loop;
-					-- Now that we have captured this readout word, move on to the next one.
-					-- we won't have another tfirst for a while so we are guaranteed that the address will hav epropageted for the next readout. 
-					ro_word_ctr <= ro_word_ctr + 1; 
-					-- Start the data transmisison unless readout is completed
-					if ro_busy then
-						byte_ctr <= bytes'LENGTH; -- signify we now have data to send
+
+                    -- Capture the RAM outputs, slice them in 5-byte products,  and store them in the shift register 
+                    prod := 0;
+                    for i in 0 to P-1 loop
+                        prod_bytes := to_slv8_array(reverse_bytes(std_logic_vector(resize(unsigned(ram_dout(i)), 8 * BYTES_PER_PRODUCT))));
+                        bytes(FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT*i to FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT*(i+1)-1) <= prod_bytes;
+                        -- Override the lower product bytes with the autocorrelation products if the feature is soft-enabled 
+                        if input_map(i)(0) = input_map(i)(1) then -- if this is an autocorrelation product
+                            if autocorr_only='1' then 
+                                bytes(FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT*prod to FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT*(prod+1)-1) <= prod_bytes;
+                            end if;
+                            prod := prod + 1;
+                        end if;
+                    end loop;
+
+                    if ro_busy then
+                        -- Now that we have captured this readout word, move on to the next one.
+                        -- we won't have another tfirst for a while so we are guaranteed that the address will hav epropageted for the next readout. 
+--                        ro_word_ctr1 <= ro_word_ctr1 + 1; -- this could be outside the if condition to save logic but is confusing in sims 
+                        -- Start the data transmisison unless readout is completed
+--                        if ro_word_ctr1 /= 0 then -- don't send bin 0 since the cycle is used for readout instead of accumulation
+                        
+                        -- set the byte counter to signify we now have data to send
+                        if autocorr_only = '1' then
+                            byte_ctr <= FRAME_HEADER_BYTE_LENGTH + N * BYTES_PER_PRODUCT;
+                        else
+                            byte_ctr <= FRAME_HEADER_BYTE_LENGTH + P * BYTES_PER_PRODUCT; 
+                        end if;
 					end if;
 				end if;
 
@@ -408,12 +432,12 @@ begin
 
 				-- Increment ram write address post-write
 				if tvalid4 then
-					ram_wr_acc_addr <= std_logic_vector(unsigned(ram_wr_acc_addr) + 1);  
+					wr_word_ctr5 <= wr_word_ctr5 + 1;  
 					if tlast4 then
-						ram_wr_acc_addr <= (others => '0');
+						wr_word_ctr5 <= (others => '0');
 					end if;
-					if last_frame4 then
-						wr_bank <= not wr_bank;
+					if tlast4 and last_frame4 then
+						acc_bank5 <= not acc_bank5;
 					end if;
 				end if;
 
@@ -421,9 +445,13 @@ begin
 
 				-- Synchronous resets (overrides signals above)
 				if rst_reg = '1' then
-					word_ctr <= (others => '0');
+					rd_word_ctr1 <= (others => '0');
 					frame <= (others => '0');
 					ro_busy <= '0'; 
+                    overrun <= '0';
+
+                    timestamp <= (others => '0');
+                    first_timestamp <= (others => '0');
 
 					tvalid1 <= '0';
 					tvalid2 <= '0';
@@ -431,8 +459,9 @@ begin
 					tvalid4 <= '0';
 
 
-					wr_bank <= '0';
-					ram_wr_acc_addr <= (others => '0');
+					acc_bank1 <= '0';
+					acc_bank5 <= '0';
+					wr_word_ctr5 <= (others => '0');
 
 --					first_frame2 <= '1';
 --					last_frame4 <= '0';
@@ -462,7 +491,7 @@ begin
 	dsp_gen: for i in 0 to P-1 generate
 		--attribute U_SET of dsp1, dsp2 : label is "CORR" & integer'IMAGE(CORR_NUMBER);
 		attribute RPM_GRID of dsp1: label is "GRID";  -- coordinates in unit of RPM_X and RPM_Y. All element sin the same group will automatically use that grid.
-		attribute U_SET of dsp1, dsp2 : label is RPM_NAME;
+--		attribute U_SET of dsp1, dsp2 : label is RPM_NAME;
 		--attribute RLOC of dsp1: label is rpm_to_string(RPM_COORDS.DSP1);
 		--attribute RLOC of dsp2: label is rpm_to_string(RPM_COORDS.DSP2);
 
@@ -510,11 +539,12 @@ begin
 
 	begin
 
-		-- Extract a,b,c and d from the AXI4-S input word. These are all 4-bit signed values. This does not require any logic.
-		a <= signed(s_axis_tdata(input_map(0)(i))(7 downto 4)); -- Re
-		b <= signed(s_axis_tdata(input_map(0)(i))(3 downto 0)); -- Im
-		c <= signed(s_axis_tdata(input_map(1)(i))(7 downto 4)); -- Re
-		d <= signed(s_axis_tdata(input_map(1)(i))(3 downto 0)); -- Im
+        -- We want to compute the product of (a+jb)*(c-jd)
+		-- Extract a,b,c and d from the AXI4-S input word. These are all 4-bit signed values. This does not require any logic, just wiring.
+		a <= signed(s_axis_tdata(input_map(i)(0))(7 downto 4)); -- Re
+		b <= signed(s_axis_tdata(input_map(i)(0))(3 downto 0)); -- Im
+		c <= signed(s_axis_tdata(input_map(i)(1))(7 downto 4)); -- Re
+		d <= signed(s_axis_tdata(input_map(i)(1))(3 downto 0)); -- Im
 
 
 		-- Make sure that a and c are always positive. If a was negative and is negated, then negate b so
@@ -875,9 +905,10 @@ begin
 	-- We have 1 block for each 2 CMUL since ultraRAM bus width is fixed at 72 bits, so we can
 	-- store two (18+18) bit products for each ram.
 
-	ram_gen: for i in 0 to P/2 generate
+	ram_gen: for i in 0 to P/2 - 1 generate
 			signal ram_din_word: std_logic_vector(71 downto 0);
 			signal ram_dout_word: std_logic_vector(71 downto 0);
+			constant MEM_TYPE: string := sel(i < URAM_MAX, "utra", "block");
 	begin
         -- combine the din from 2 CMAC in to the ram din
 		ram_din_word <= ram_din(2*i) & ram_din(2*i+1); 
@@ -885,9 +916,13 @@ begin
 		ram_dout(2*i) <= ram_dout_word(71 downto 36);
 		ram_dout(2*i+1) <= ram_dout_word(35 downto 0);
 
+        -- Implement RAM for a pair of CMACs.
+        -- For URAM, 
+        --   LATENCY=2 and write_mode=write_first gives the error: [Synth 8-6058] Synth Error: [XPM_MEMORY 40-9] READ_LATENCY_B (2) specifies fewer than 3 stages, but simple dual port RAM configurations targeting UltraRAM and using write-first mode for port B must use a read latency of at least 3 for port B.   ["/tools/Xilinx/Vivado/2022.2/data/ip/xpm/xpm_memory/hdl/xpm_memory.sv":588]
+        --   LATENCY=2 and write mode=read_first works.
 	   	ram0 : xpm_memory_sdpram
 		   	generic map (
-		      MEMORY_PRIMITIVE => "ultra",      -- force the use of UltraRAM
+		      MEMORY_PRIMITIVE => MEM_TYPE,      -- force the use of UltraRAM ("ultra") or Block RAM ("block")
                 -- write bus A
 		      ADDR_WIDTH_A => 12,               -- 4k (12 bits) per URAM
 		      WRITE_DATA_WIDTH_A => 72,        -- 2 x (18+18) bits wide write bus
@@ -899,7 +934,7 @@ begin
 		      READ_LATENCY_B => 2,     -- Needs to be >= of cascade height to allow registering. Synthesis ask for more than 4 to have full pipelining (4 is partial).
 		      SIM_ASSERT_CHK => 1,             -- DECIMAL; 0=disable simulation messages, 1=enable simulation messages
 		      --USE_EMBEDDED_CONSTRAINT => 0,    -- DECIMAL
-		      WRITE_MODE_B => "write_first",     -- URAM is either read_first or write_first
+		      WRITE_MODE_B => "read_first",     -- URAM is either read_first or write_first. Need read_first to allow a latency of 2.
 		      WRITE_PROTECT => 1               -- DECIMAL
 			)
 			port map (
