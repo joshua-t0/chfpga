@@ -152,14 +152,31 @@ entity chfpga_crs is
         vin3_23_v_n : in std_logic;
         vin3_23_v_p : in std_logic
         );
+        -- Don't put a DONT_TOUCH attribute to this entity: we need qsfp_tx/rx to be removed if unused
+--    attribute DONT_TOUCH: string;
+--    attribute DONT_TOUCH of chfpga_crs: entity is "true";
 
+--PROCEDURE disable_io(port_in: in std_logic) is
+--        attribute io_buffer_type of port_in: signal is "none"; 
+--	begin
+--end procedure;
 
 end entity;
 
 
 architecture impl of chfpga_crs is
+    attribute io_buffer_type : string;
 
-    attribute DONT_TOUCH: string;
+
+    -- Tell the tools not to infer buffers and autoplace IO ports for the following if the ports are not connected
+    -- If 100GE is not implemented, the placer assigns random IOs to these ports, and since those have no specifiec IO standard, the bitstream
+    -- fails its DRC.
+    -- "None" tells the tools not to implement an IO port. "OBUF" implements the IO port.
+    --  In the case of "OBUF", it looks like the output buffer is adapted to the type of output such as a transceiver output etc.
+    attribute io_buffer_type of qsfp_txp, qsfp_txn: signal is sel(GPU_LINK_TYPE="100GE", "OBUF", "NONE"); 
+    attribute io_buffer_type of clk156_p, clk156_n: signal is sel(GPU_LINK_TYPE="100GE", "IBUF", "NONE"); 
+
+
     -- BSB & CAP AXIS clock (100 MHz)
     signal aclk: std_logic; 
 
@@ -207,11 +224,30 @@ architecture impl of chfpga_crs is
     signal buck_sync: std_logic_vector(0 to 15);
     signal gpio_led: std_logic_vector(7 downto 0);
     signal buck_sync_0v85_div2: std_logic;
+    signal sma_irig: std_logic;
 
-    attribute DONT_TOUCH of chfpga0: label is "true";
+--    attribute DONT_TOUCH of chfpga0: label is "true";
+
+    signal qsfp_txp_int, qsfp_txn_int: std_logic_vector(0 to 3);
+
 
 begin
 
+--test: if True generate
+--        attribute io_buffer_type : string;
+--begin
+--        attribute io_buffer_type of qsfp_txp, qsfp_txn: signal is "none"; 
+--end;
+
+---- Connect the QSFP IO ports only if the 100GE module is used.
+---- Otherwise the defaut po
+--qsfp_gen: if GPU_LINK_TYPE = "100GE" generate
+--        qsfp_txp <= qsfp_txp_int;
+--        qsfp_txn <= qsfp_txn_int;
+--end generate;
+
+--    qsfp_txp <= qsfp_txp_dummy;
+--    qsfp_txn <= qsfp_txn_dummy;
 		sysref_ibufds0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
 			generic map(DIFF_TERM => TRUE)
 			port map (
