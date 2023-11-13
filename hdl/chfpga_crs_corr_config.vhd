@@ -18,7 +18,7 @@ package chfpga_config is
 	constant CONFIG_CHAN_CAPTURE_TYPE: string := "URAM"; 
 	constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer := 2; 
 	constant CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS: boolean:= FALSE; 
-	constant CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := 1; -- only implement one channelizer with an FFT for now
+	constant CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := 8;
 	constant CONFIG_CAPTURE_BITS_PER_WORD: integer := sel(CONFIG_CHAN_CAPTURE_TYPE="URAM", 128, 32);
 
     -- Corner-turn engine configuration
@@ -36,9 +36,9 @@ package chfpga_config is
 	constant CONFIG_NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := 0;
 
     -- 10/100G Ethernet Real-time data offload links configuration
-    constant CONFIG_GPU_LINK_TYPE: string := "100GE";
-	constant CONFIG_NUMBER_OF_GPU_LINKS: integer                 := 0; -- (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
-	constant CONFIG_NUMBER_OF_GPU_REFCLKS: integer               := 1; -- Number of Reference clocks provided for the 10GE links to the GPU
+    constant CONFIG_GPU_LINK_TYPE: string := "NONE";
+	constant CONFIG_NUMBER_OF_GPU_LINKS: integer                 := 0; -- Number of 10G or 100G Ethernet lanes to connecto to the GPUs (one QSFP is 4 lanes)
+	constant CONFIG_NUMBER_OF_GPU_REFCLKS: integer               := 1; -- Number of Reference clocks provided for the 10GE/100GE transmitter
 
 
 
