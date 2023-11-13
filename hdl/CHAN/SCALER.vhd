@@ -151,103 +151,103 @@ architecture Behavioral of SCALER is
     signal in_dat_dly2_tlast    : std_logic;
     signal in_dat_dly2_tuser    : std_logic_vector(3 downto 0);  -- 
 
---signal IN_DAT_DLY1: AXIS72_DAT_STRUCT; --!
---signal IN_DAT_DLY2: AXIS72_DAT_STRUCT; --!
+    --signal IN_DAT_DLY1: AXIS72_DAT_STRUCT; --!
+    --signal IN_DAT_DLY2: AXIS72_DAT_STRUCT; --!
 
---- Define Control word and its signals
-signal control_bytes: slv8_array(0 to 9); -- default value set in the CMD_SLAVE
-signal status_bytes: slv8_array(0 to 7);
+    --- Define Control word and its signals
+    signal control_bytes: slv8_array(0 to 9); -- default value set in the CMD_SLAVE
+    signal status_bytes: slv8_array(0 to 7);
 
-signal bypass_scaler: std_logic;
-signal soft_reset: std_logic;
-signal post_scaler_left_shift, post_scaler_left_shift_reg: std_logic_vector(4 downto 0); -- can shift up to 31 bits left
+    signal bypass_scaler: std_logic;
+    signal soft_reset: std_logic;
+    signal post_scaler_left_shift, post_scaler_left_shift_reg: std_logic_vector(4 downto 0); -- can shift up to 31 bits left
 
-signal stage1_word: signed_array(0 to INTEGERS_PER_WORD-1)(INTEGER_WIDTH-1 downto 0);
-signal stage1_sign: std_logic_vector(0 to INTEGERS_PER_WORD-1); --! Indicates the sign of each of the 4 numbers in the incoming word
-signal stage1_overflow: std_logic_vector(0 to INTEGERS_PER_WORD-1);
-signal stage1_tvalid: std_logic;
-signal stage1_tlast: std_logic;
-signal stage1_tuser: std_logic_vector(3 downto 0);
+    signal stage1_word: signed_array(0 to INTEGERS_PER_WORD-1)(INTEGER_WIDTH-1 downto 0);
+    signal stage1_sign: std_logic_vector(0 to INTEGERS_PER_WORD-1); --! Indicates the sign of each of the 4 numbers in the incoming word
+    signal stage1_overflow: std_logic_vector(0 to INTEGERS_PER_WORD-1);
+    signal stage1_tvalid: std_logic;
+    signal stage1_tlast: std_logic;
+    signal stage1_tuser: std_logic_vector(3 downto 0);
 
-signal stage2_word: signed_array(0 to INTEGERS_PER_WORD-1)(7 downto 0);
-signal stage2_sign: std_logic_vector(0 to INTEGERS_PER_WORD-1); --! Indicates the sign of each of the 4 numbers in the incoming word
-signal stage2_overflow: std_logic_vector(0 to INTEGERS_PER_WORD-1);
-signal stage2_tvalid: std_logic;
-signal stage2_tlast: std_logic;
-signal stage2_tuser: std_logic_vector(3 downto 0);
+    signal stage2_word: signed_array(0 to INTEGERS_PER_WORD-1)(7 downto 0);
+    signal stage2_sign: std_logic_vector(0 to INTEGERS_PER_WORD-1); --! Indicates the sign of each of the 4 numbers in the incoming word
+    signal stage2_overflow: std_logic_vector(0 to INTEGERS_PER_WORD-1);
+    signal stage2_tvalid: std_logic;
+    signal stage2_tlast: std_logic;
+    signal stage2_tuser: std_logic_vector(3 downto 0);
 
--- Control signals
-signal four_bits: std_logic;
-signal symmetric_saturation: std_logic;
-signal zero_on_saturation: std_logic;
-signal force_gain_to_one: std_logic;
+    -- Control signals
+    signal four_bits: std_logic;
+    signal symmetric_saturation: std_logic;
+    signal zero_on_saturation: std_logic;
+    signal force_gain_to_one: std_logic;
 
-signal rounding_mode: std_logic_vector(1 downto 0);
-constant ROUNDING_MODE_TRUNCATE: std_logic_vector(1 downto 0):= "00";
-constant ROUNDING_MODE_ROUND: std_logic_vector(1 downto 0):= "01";
-constant ROUNDING_MODE_CONVERGENT_ROUND: std_logic_vector(1 downto 0):= "10";
+    signal rounding_mode: std_logic_vector(1 downto 0);
+    constant ROUNDING_MODE_TRUNCATE: std_logic_vector(1 downto 0):= "00";
+    constant ROUNDING_MODE_ROUND: std_logic_vector(1 downto 0):= "01";
+    constant ROUNDING_MODE_CONVERGENT_ROUND: std_logic_vector(1 downto 0):= "10";
 
-signal gain_table_page : std_logic_vector(LOG2_NUMBER_OF_COEFF_PAGES-1 downto 0); -- 4 bits, used only to read/write the gain table from the control interface. Includes pages.
-signal gain_table_page_padded : std_logic_vector(5 downto 0); -- largest gain_table_page vector that can fit in the control registers
+    signal gain_table_page : std_logic_vector(LOG2_NUMBER_OF_COEFF_PAGES-1 downto 0); -- 4 bits, used only to read/write the gain table from the control interface. Includes pages.
+    signal gain_table_page_padded : std_logic_vector(5 downto 0); -- largest gain_table_page vector that can fit in the control registers
 
--- Gain coefficient memory signals
-signal coeff_ram_ctrl_addr: std_logic_vector(BSB_RAM_ADDR_WIDTH-1 downto 0); -- limited by BSB
-signal coeff_ram_ctrl_addr_int: std_logic_vector(LOG2_COEFF_BYTES_PER_FRAME+LOG2_NUMBER_OF_COEFF_BANKS-1 downto 0); -- there are two gain table in memory (2 pages)
--- signal coeff_ram_ctrl_rd_en: std_logic;
-signal coeff_ram_ctrl_wr_en: std_logic;
---signal coeff_ram_ctrl_wr_en_vect: std_logic_vector(0 downto 0);
-signal coeff_ram_ctrl_din: std_logic_vector(7 downto 0);
-signal coeff_ram_ctrl_dout: std_logic_vector(7 downto 0);
-signal coeff_ram_addr: std_logic_vector(LOG2_COEFF_WORDS_PER_FRAME+LOG2_NUMBER_OF_COEFF_BANKS-1 downto 0);
+    -- Gain coefficient memory signals
+    signal coeff_ram_ctrl_addr: std_logic_vector(BSB_RAM_ADDR_WIDTH-1 downto 0); -- limited by BSB
+    signal coeff_ram_ctrl_addr_int: std_logic_vector(LOG2_COEFF_BYTES_PER_FRAME+LOG2_NUMBER_OF_COEFF_BANKS-1 downto 0); -- there are two gain table in memory (2 pages)
+    -- signal coeff_ram_ctrl_rd_en: std_logic;
+    signal coeff_ram_ctrl_wr_en: std_logic;
+    --signal coeff_ram_ctrl_wr_en_vect: std_logic_vector(0 downto 0);
+    signal coeff_ram_ctrl_din: std_logic_vector(7 downto 0);
+    signal coeff_ram_ctrl_dout: std_logic_vector(7 downto 0);
+    signal coeff_ram_addr: std_logic_vector(LOG2_COEFF_WORDS_PER_FRAME+LOG2_NUMBER_OF_COEFF_BANKS-1 downto 0);
 
-signal word_ctr: unsigned(LOG2_FFT_WORDS_PER_FRAME-1 downto 0); -- 10 bits
-signal frame_ctr: unsigned(31 downto 0); -- 10 bits
-signal use_offset_binary: std_logic;
+    signal word_ctr: unsigned(LOG2_FFT_WORDS_PER_FRAME-1 downto 0); -- 10 bits
+    signal frame_ctr: unsigned(31 downto 0); -- 10 bits
+    signal use_offset_binary: std_logic;
 
-signal next_gain_bank: std_logic; -- 1 bit
-signal gain_bank_switch_frame_number: std_logic_vector(31 downto 0);
-signal current_gain_bank: std_logic;
-signal synchronize_gain_bank_switch: std_logic;
-
-
--- Multiplier output
-signal scaled_data_tvalid: std_logic;
-signal scaled_data_tuser: std_logic_vector(3 downto 0);
-signal scaled_data_tlast: std_logic;
-signal scaled_data_tdata: std_logic_vector(INTEGER_WIDTH*INTEGERS_PER_WORD-1 downto 0);
+    signal next_gain_bank: std_logic; -- 1 bit
+    signal gain_bank_switch_frame_number: std_logic_vector(31 downto 0);
+    signal current_gain_bank: std_logic;
+    signal synchronize_gain_bank_switch: std_logic;
 
 
-signal coeff_ram_dout: std_logic_vector(COEFF_BITS_PER_WORD-1 downto 0);
+    -- Multiplier output
+    signal scaled_data_tvalid: std_logic;
+    signal scaled_data_tuser: std_logic_vector(3 downto 0);
+    signal scaled_data_tlast: std_logic;
+    signal scaled_data_tdata: std_logic_vector(INTEGER_WIDTH*INTEGERS_PER_WORD-1 downto 0);
 
-signal stats_frame_count: unsigned(23 downto 0); -- Number of frames to include in stats
-signal stats_frame_ctr: unsigned(23 downto 0);
 
-signal scaler_overflow_ctr: unsigned(15 downto 0);
-signal adc_overflow_ctr: unsigned(15 downto 0);
+    signal coeff_ram_dout: std_logic_vector(COEFF_BITS_PER_WORD-1 downto 0);
 
-signal stats_scaler_overflows: unsigned(15 downto 0);
-signal stats_adc_overflows: unsigned(15 downto 0);
+    signal stats_frame_count: unsigned(23 downto 0); -- Number of frames to include in stats
+    signal stats_frame_ctr: unsigned(23 downto 0);
 
-signal stats_capture: std_logic;
-signal stats_first_frame: std_logic;
-signal stats_ready: std_logic;
+    signal scaler_overflow_ctr: unsigned(15 downto 0);
+    signal adc_overflow_ctr: unsigned(15 downto 0);
 
-signal delay_capture_ctr: unsigned(15 downto 0);
-signal delay_capture_ctr_en: std_logic :='0';
+    signal stats_scaler_overflows: unsigned(15 downto 0);
+    signal stats_adc_overflows: unsigned(15 downto 0);
 
-signal fifo_overflow_reset: std_logic;
-signal fifo_overflow_sticky: std_logic;
+    signal stats_capture: std_logic;
+    signal stats_first_frame: std_logic;
+    signal stats_ready: std_logic;
 
--- 3  33  22 22      11
--- 4  10  76 43      65      87      0
--- ---========--------========--------
---                  IIIIIIIIIIIIIIIIII  - 18 bit input from the FFT
---                    SSSSSSSSSSSSSSSS  - 16 bit gain
--- PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP  - 35 bit product
--- 00001
--- 4444
--- 000000001
--- 88888888
+    signal delay_capture_ctr: unsigned(15 downto 0);
+    signal delay_capture_ctr_en: std_logic :='0';
+
+    signal fifo_overflow_reset: std_logic;
+    signal fifo_overflow_sticky: std_logic;
+
+    -- 3  33  22 22      11
+    -- 4  10  76 43      65      87      0
+    -- ---========--------========--------
+    --                  IIIIIIIIIIIIIIIIII  - 18 bit input from the FFT
+    --                    SSSSSSSSSSSSSSSS  - 16 bit gain
+    -- PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP  - 35 bit product
+    -- 00001
+    -- 4444
+    -- 000000001
+    -- 88888888
 begin
 
 -----------------------------------------------------------------------------------
@@ -578,18 +578,18 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 variable re_lsb, im_lsb: integer;
             begin
                 if rising_edge(clk) then
-                        -- Pipeline the gain and fft values. These registers should be absorbed as the input registers 
-                        -- of the DSP48 block and should greatly help with timing closure.
-                        for i in 0 to FFT_BINS_PER_WORD-1 loop
-                            coeff_reg((i+1)*COEFF_BITS_PER_BIN-1 downto i*COEFF_BITS_PER_BIN) <= 
-                                std_logic_vector(to_signed(1, COEFF_BITS_PER_BIN)) when force_gain_to_one else -- debug: force gain to 1
-                                coeff_ram_dout((i+1)*COEFF_BITS_PER_BIN-1 downto i*COEFF_BITS_PER_BIN);
-                        end loop;
-                        fft_reg_tdata <= in_dat_dly2_tdata;
-                        -- Make sure the control signals are delayed as much as the data
-                        fft_reg_tvalid <= in_dat_dly2_tvalid;
-                        fft_reg_tlast <= in_dat_dly2_tlast;
-                        fft_reg_tuser <= in_dat_dly2_tuser;
+                    -- Pipeline the gain and fft values. These registers should be absorbed as the input registers 
+                    -- of the DSP48 block and should greatly help with timing closure.
+                    for i in 0 to FFT_BINS_PER_WORD-1 loop
+                        coeff_reg((i+1)*COEFF_BITS_PER_BIN-1 downto i*COEFF_BITS_PER_BIN) <= 
+                            std_logic_vector(to_signed(1, COEFF_BITS_PER_BIN)) when force_gain_to_one else -- debug: force gain to 1
+                            coeff_ram_dout((i+1)*COEFF_BITS_PER_BIN-1 downto i*COEFF_BITS_PER_BIN);
+                    end loop;
+                    fft_reg_tdata <= in_dat_dly2_tdata;
+                    -- Make sure the control signals are delayed as much as the data
+                    fft_reg_tvalid <= in_dat_dly2_tvalid;
+                    fft_reg_tlast <= in_dat_dly2_tlast;
+                    fft_reg_tuser <= in_dat_dly2_tuser;
                     for i in FFT_BINS_PER_WORD-1 downto 0 loop
                         -- Extract the single real gain to be applied to both the Re and Im part 
                         gain := signed(coeff_reg((FFT_BINS_PER_WORD-i)*COEFF_BITS_PER_BIN-1 downto (FFT_BINS_PER_WORD-i-1)*COEFF_BITS_PER_BIN));
@@ -847,7 +847,7 @@ scaler_proc: process(clk)
             --out_dat.TDATA <= (others =>'0'); // as for debugging
 
             -- Computes how many clocks it takes for the first frame to arrive after reset
-            if reset ='1' then
+            if rst_reg ='1' then
                 delay_capture_ctr <= (others=> '0');
                 delay_capture_ctr_en <= '1';
             elsif delay_capture_ctr_en = '1'  then
@@ -858,7 +858,7 @@ scaler_proc: process(clk)
             end if;
 
             -- If we reset, override key signals only
-            if soft_reset='1' or reset='1' then
+            if rst_reg='1' then
                 -- IN_DAT_TIMING_REG.TVALID<='0'; --needed
                 stage1_tvalid <= '0'; --needed
                 stage2_tvalid <= '0'; --needed
@@ -882,13 +882,13 @@ stat_proc: process(clk)
         if rising_edge(clk) then
 
             -- Channel FIFO overflow monitoring
-            if soft_reset='1' or reset='1' or fifo_overflow_reset='1' then
+            if rst_reg='1' or fifo_overflow_reset='1' then
                 fifo_overflow_sticky <= '0';
             elsif fifo_overflow='1' then
                 fifo_overflow_sticky <= '1';
             end if;
 
-            if soft_reset='1' or reset='1' then
+            if rst_reg='1' then
                 stats_ready <= '0';
                 stats_frame_ctr <= (0=>'1', others=>'0');
                 stats_first_frame <= '1';
