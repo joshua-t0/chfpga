@@ -2784,14 +2784,46 @@ CHANGEN: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
 	attribute equivalent_register_removal of chan_reset_reg : signal is "no";
 	attribute keep of chan_reset_reg :signal is "true";
 	attribute shreg_extract of chan_reset_reg: signal is "no";
+	attribute DONT_TOUCH of chan_reset_reg: signal is "true";
+
+	signal chan_ctrl_rst: std_logic;
+	signal chan_ctrl_rst_reg: std_logic;
+	attribute DONT_TOUCH of chan_ctrl_rst, chan_ctrl_rst_reg: signal is "true";
+	
+	signal axis_adc_tdata_reg: slv_array(0 to NUMBER_OF_CHANNELIZERS-1)(ADC_BITS_PER_WORD-1 downto 0);
+	signal axis_adc_tvalid_reg: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1);
+	signal axis_adc_tlast_reg: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1);
+    signal axis_adc_tuser_reg: slv_array(0 to NUMBER_OF_CHANNELIZERS-1)(ADC_SAMPLES_PER_WORD-1 downto 0);
+
+    attribute shreg_extract of axis_adc_tdata_reg, axis_adc_tvalid_reg, axis_adc_tlast_reg, axis_adc_tuser_reg: signal is "no";
+
 	attribute DONT_TOUCH of CHANi: label is "true"; -- don't optimize through cell boundaries
+
 begin
+
+	-- Pipeline the BSB reset
+	bsb_rst_proc: process(ctrl_clk)
+	begin
+		if rising_edge(ctrl_clk) then
+			chan_ctrl_rst <= ctrl_rst;
+			chan_ctrl_rst_reg <= chan_ctrl_rst;			
+		end if;
+	end process;
+
 	-- Pipeline the channel synchronous resets
 	rst_proc: process(chan_clk(i))
 	begin
 		if rising_edge(chan_clk(i)) then
 			chan_reset_reg(i) <= chan_reset(i);
-		end if;
+
+            axis_adc_tdata_reg(i) <= axis_adc_tdata(i);
+            axis_adc_tvalid_reg(i) <= axis_adc_tvalid(i);
+            axis_adc_tlast_reg(i) <= axis_adc_tlast(i);
+            axis_adc_tuser_reg(i) <= axis_adc_tuser(i);
+            if chan_reset(i)='1' then
+                axis_adc_tvalid_reg(i) <='0';
+            end if;
+        end if; -- clk
 	end process;
 
 	CHANi: component work.chan_package.CHAN
@@ -2801,10 +2833,10 @@ begin
 			)
 		PORT MAP(
 			-- Channelizer input (on ANT_CLK)
-			in_dat_tdata  => axis_adc_tdata(i),
-			in_dat_tvalid => axis_adc_tvalid(i),
-			in_dat_tlast  => axis_adc_tlast(i),
-			in_dat_tuser  => axis_adc_tuser(i),
+			in_dat_tdata  => axis_adc_tdata_reg(i),
+			in_dat_tvalid => axis_adc_tvalid_reg(i),
+			in_dat_tlast  => axis_adc_tlast_reg(i),
+			in_dat_tuser  => axis_adc_tuser_reg(i),
 			in_reset => chan_reset_reg(i),
 			in_clk => chan_clk(i), -- input and signal processing clock
 
@@ -2834,7 +2866,7 @@ begin
 			ctrl_rply_tready => CHAN_RPLY_RDY(i).TREADY,
 
 			CTRL_CLK => CTRL_CLK,
-			CTRL_RST => chan_ctrl_rst_reg(i),
+			CTRL_RST => chan_ctrl_rst_reg,
 
 			-- ADCDAQ Control interface
 
