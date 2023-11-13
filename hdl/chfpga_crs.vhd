@@ -120,6 +120,10 @@ entity chfpga_crs is
         -- User connectors
         smp : out std_logic_vector ( 0 to 3 );
 
+        -- IRIG-B signal
+        sma_irig_p: in std_logic;
+        sma_irig_n: in std_logic;
+
         -- ADC sampling clocks
         adc0_clk_clk_n : in std_logic;
         adc0_clk_clk_p : in std_logic;
@@ -266,6 +270,16 @@ begin
     buck_sync_1v2b <= buck_sync(6);
     buck_sync_1v4 <= buck_sync(7);
     buck_sync_bp <= buck_sync(8);
+
+    -- IRIG time signal
+    irig_ibufds0 : IBUFDS -- Instantiate a differential (LVDS) input pad pair
+        generic map(DIFF_TERM => TRUE)
+        port map (
+            I => sma_irig_p,
+            IB => sma_irig_n,
+            O => sma_irig
+        );
+
 
     -- 7-segment display
     led7b(5 downto 0) <= gpio_led(6 downto 1); -- a-f segments (forming a circle)
@@ -453,6 +467,10 @@ zynq: entity work.zynq_tcpipe_crs
 
             -- Buck sync
             buck_sync => buck_sync,
+
+            -- Time signal
+
+            bp_time_in => sma_irig,
 
             -- ADC inputs
             adc_axis_tdata => adc_axis_tdata(0 to NUMBER_OF_ADCS-1),
