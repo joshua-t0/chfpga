@@ -1434,7 +1434,6 @@ begin
 
 	debug_out(8) <= cmd_overflow;
 
-
 	UDP_CMD_DAT.TDATA <= axis_cmd_tdata;
 	UDP_CMD_DAT.TVALID <= axis_cmd_tvalid;
 	UDP_CMD_DAT.TLAST <= axis_cmd_tlast;
@@ -2926,14 +2925,49 @@ end generate;
 
 crossbar0_gen: if IMPLEMENT_CROSSBAR1 generate
 
+	constant N_INPUTS: integer := min(NUMBER_OF_CHANNELIZERS, NUMBER_OF_CROSSBAR_INPUTS);
+
 	signal crossbar1_cmd_dat: AXIS8_DAT_STRUCT;
 	signal crossbar1_cmd_rdy: AXIS8_RDY_STRUCT;
 	signal crossbar1_rply_dat: AXIS8_DAT_STRUCT;
 	signal crossbar1_rply_rdy: AXIS8_RDY_STRUCT;
-	constant N_INPUTS: integer := min(NUMBER_OF_CHANNELIZERS, NUMBER_OF_CROSSBAR_INPUTS);
 
+	signal axis_crossbar1_in_tdata_reg: slv32_array(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
+	signal axis_crossbar1_in_tuser_reg: slv4_array(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
+	signal axis_crossbar1_in_tvalid_reg: slv(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
+	signal axis_crossbar1_in_tlast_reg: slv(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
+
+	signal axis_crossbar1_in_tdata_reg2: slv32_array(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
+	signal axis_crossbar1_in_tuser_reg2: slv4_array(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
+	signal axis_crossbar1_in_tvalid_reg2: slv(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
+	signal axis_crossbar1_in_tlast_reg2: slv(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
+
+	attribute shreg_extract of axis_crossbar1_in_tdata_reg: signal is "no";
+	attribute shreg_extract of axis_crossbar1_in_tuser_reg: signal is "no";
+	attribute shreg_extract of axis_crossbar1_in_tvalid_reg: signal is "no";
+	attribute shreg_extract of axis_crossbar1_in_tlast_reg: signal is "no";
+
+	attribute shreg_extract of axis_crossbar1_in_tdata_reg2: signal is "no";
+	attribute shreg_extract of axis_crossbar1_in_tuser_reg2: signal is "no";
+	attribute shreg_extract of axis_crossbar1_in_tvalid_reg2: signal is "no";
+	attribute shreg_extract of axis_crossbar1_in_tlast_reg2: signal is "no";
+
+    signal crossbar1_ctrl_rst: std_logic;
+    attribute DONT_TOUCH of crossbar1_ctrl_rst: signal is "true";
+
+	signal cb1_reset: std_logic;
+	signal cb1_reset_reg: std_logic;
+	signal cb1_reset_reg2: std_logic;
+    attribute DONT_TOUCH of cb1_reset, cb1_reset_reg, cb1_reset_reg2 : signal is "true";
 begin
 
+    bsb_rst_proc: process (ctrl_clk)
+    begin
+        if rising_edge(ctrl_clk) then
+            crossbar1_ctrl_rst  <= ctrl_rst;
+        end if;
+    end process;
+        
 	-- Index the command bus into an intermediary signal to mitigate simulator problems with indexing record arrays stright in the instantiation
 	crossbar1_cmd_dat             <= top_cmd_dat(CROSSBAR1_BASE_PORT);
 	top_cmd_rdy(CROSSBAR1_BASE_PORT)  <= crossbar1_cmd_rdy;
@@ -2985,8 +3019,9 @@ begin
 		end if;
 	end process cb1_pipe_proc;
 
-	cbbram_gen: if CROSSBAR1_TYPE = "BRAM" generate
-		chan_crossbar0: entity work.CHAN_CROSSBAR
+	cb1_gen: case CROSSBAR1_TYPE generate
+	   when "BRAM" =>
+	       chan_crossbar0: entity work.CHAN_CROSSBAR
 			generic map (
 			 	PLATFORM_ID => PLATFORM_ID,  -- needed to select family-dependent FIFOs
 				NUMBER_OF_INPUT_LANES  => NUMBER_OF_CROSSBAR_INPUTS,
@@ -3008,7 +3043,7 @@ begin
 				m_axis_tlast  => axis_crossbar1_out_tlast,
 				-- m_axis_tready => axis_crossbar1_out_tready,
 
-				frame_clk_out => frame_clk,
+				frame_clk_out => open,
 				clk           => ct_clk,
 				rst           => cb1_reset_reg2,
 
@@ -3021,58 +3056,60 @@ begin
 				ctrl_clk      => ctrl_clk,
 				ctrl_rst      => crossbar1_ctrl_rst
 			);
-	end generate cbbram_gen;
-
-	cburam_gen: if CROSSBAR1_TYPE = "URAM" generate
-		signal cb_in_tdata: std_logic_vector(255 downto 0);
-		signal cb_in_tvalid: std_logic;
-		signal cb_in_tlast: std_logic;
-
-		signal cb_out_tdata: std_logic_vector(255 downto 0);
-		signal cb_out_tvalid: std_logic;
-		signal cb_out_tlast: std_logic;
-
-	begin
-
-		-- remap the 8x32-bit buses into a single 256-bit bus, 1st lane on the MSB.
-		tdata_gen: for i in 0 to 7 generate
-			cb_in_tdata(32*(7-i)+31 downto 32*(7-i)) <= axis_crossbar1_in_tdata_reg2(i);	
-			axis_crossbar1_out_tdata(i) <= cb_out_tdata(32*(7-i)+31 downto 32*(7-i));
-			--axis_crossbar1_out_tvalid(i) <= cb_out_tvalid;
-			--axis_crossbar1_out_tlast(i) <= cb_out_tlast;
-		end generate;
-		axis_crossbar1_out_tvalid(0) <= cb_out_tvalid;
-		axis_crossbar1_out_tlast(0) <= cb_out_tlast;
-		cb_in_tvalid <= axis_crossbar1_in_tvalid_reg2(0);
-		cb_in_tlast <= axis_crossbar1_in_tlast_reg2(0);
-
-	    uram0: entity work.uram_ct
-	        port map (
-	        	-- input data bus
-	            s_axis_in_tdata => cb_in_tdata,
-	            s_axis_in_tvalid => cb_in_tvalid,
-	            s_axis_in_tlast=> cb_in_tlast,
-
-	            -- Output data bus
-	            m_axis_out_tdata => uct_tdata,
-	            m_axis_out_tvalid => uct_tvalid,
-	            m_axis_out_tlast=> uct_tlast,
-	    
-	            clk => ct_clk, 
-	            rst => cb1_reset_reg2, -- synchrounous reset
-	  
-		  		--debug_out => debug_out,
-
-	            -- BSB interface
-	            cmd_dat=> crossbar1_cmd_dat,
-	            cmd_rdy => crossbar1_cmd_rdy,
-	            rply_dat => crossbar1_rply_dat,
-	            rply_rdy => crossbar1_rply_rdy,
-	            ctrl_clk => ctrl_clk,
-	            ctrl_rst => crossbar1_ctrl_rst
-	        );
-	end generate cburam_gen;
-
+        when uram_case:"URAM" =>
+            signal cb_in_tdata: std_logic_vector(255 downto 0);
+            signal cb_in_tvalid: std_logic;
+            signal cb_in_tlast: std_logic;
+    
+            signal cb_out_tdata: std_logic_vector(255 downto 0);
+            signal cb_out_tvalid: std_logic;
+            signal cb_out_tlast: std_logic;
+    
+        begin
+    
+            -- remap the 8x32-bit buses into a single 256-bit bus, 1st lane on the MSB.
+            tdata_gen: for i in 0 to 7 generate
+                cb_in_tdata(32*(7-i)+31 downto 32*(7-i)) <= axis_crossbar1_in_tdata_reg2(i);	
+                axis_crossbar1_out_tdata(i) <= cb_out_tdata(32*(7-i)+31 downto 32*(7-i));
+                --axis_crossbar1_out_tvalid(i) <= cb_out_tvalid;
+                --axis_crossbar1_out_tlast(i) <= cb_out_tlast;
+            end generate;
+            axis_crossbar1_out_tvalid(0) <= cb_out_tvalid;
+            axis_crossbar1_out_tlast(0) <= cb_out_tlast;
+            cb_in_tvalid <= axis_crossbar1_in_tvalid_reg2(0);
+            cb_in_tlast <= axis_crossbar1_in_tlast_reg2(0);
+    
+            uram0: entity work.uram_ct
+                port map (
+                    -- input data bus
+                    s_axis_in_tdata => cb_in_tdata,
+                    s_axis_in_tvalid => cb_in_tvalid,
+                    s_axis_in_tlast=> cb_in_tlast,
+    
+                    -- Output data bus
+                    m_axis_out_tdata => uct_tdata,
+                    m_axis_out_tvalid => uct_tvalid,
+                    m_axis_out_tlast=> uct_tlast,
+            
+                    clk => ct_clk, 
+                    rst => cb1_reset_reg2, -- synchrounous reset
+          
+                    --debug_out => debug_out,
+    
+                    -- BSB interface
+                    cmd_dat=> crossbar1_cmd_dat,
+                    cmd_rdy => crossbar1_cmd_rdy,
+                    rply_dat => crossbar1_rply_dat,
+                    rply_rdy => crossbar1_rply_rdy,
+                    ctrl_clk => ctrl_clk,
+                    ctrl_rst => crossbar1_ctrl_rst
+                );
+        end uram_case;
+    
+        when others =>
+            assert FALSE report "Invalid CROSSBAR1_TYPE" severity FAILURE;
+    
+    end generate cb1_gen;
 end generate crossbar0_gen;
 ---------------------------------------------------------------------
 -- BACKPLANE PCB and QSFP DATA LINKS
@@ -3170,37 +3207,36 @@ BPSHFGEN: if IMPLEMENT_CROSSBAR2_AND_CROSSBAR3 generate
 end generate BPSHFGEN;
 
 ---------------------------------------------------------------------
--- CROSSBAR 2
+-- CROSSBARS 2 & 3
 ---------------------------------------------------------------------
 
--- Pipeline the backplane PCB shuffle output to the shuffle crossbar input
-crossbar2_in_pipe_proc: process(ct_clk)
-	begin
-		if rising_edge(ct_clk) then
-			axis_crossbar2_in_reset <= ct_reset_reg;
-			axis_crossbar2_in_reset_reg <= axis_crossbar2_in_reset;
+CROSSBAR23_GEN: if IMPLEMENT_CROSSBAR2_AND_CROSSBAR3 generate
 
-			for i in 0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1 loop
-					axis_crossbar2_in_tdata(i)  <= axis_bp_shuffle_out_tdata(i);
-					axis_crossbar2_in_tvalid(i) <= axis_bp_shuffle_out_tvalid(i);
-					axis_crossbar2_in_tlast(i)  <= axis_bp_shuffle_out_tlast(i);
-			end loop;
-			if ct_reset_reg = '1' then
-				axis_crossbar2_in_tvalid <= (others=>'0');
-			end if;
+    signal axis_crossbar2_in_reset: std_logic;
+    signal axis_crossbar2_in_reset_reg: std_logic;
+    attribute shreg_extract of axis_crossbar2_in_reset_reg: signal is "no";
 
-			axis_crossbar2_in_tdata_reg  <= axis_crossbar2_in_tdata;
-			axis_crossbar2_in_tvalid_reg <= axis_crossbar2_in_tvalid;
-			axis_crossbar2_in_tlast_reg  <= axis_crossbar2_in_tlast;
-			if axis_crossbar2_in_reset = '1' then
-				axis_crossbar2_in_tvalid_reg <= (others=>'0');
-			end if;
+    signal axis_crossbar2_in_tdata_reg: slv32_array(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1);
+    signal axis_crossbar2_in_tvalid_reg: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1);
+    signal axis_crossbar2_in_tlast_reg: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1);
+    
+    attribute shreg_extract of axis_crossbar2_in_tdata_reg: signal is "no";
+    attribute shreg_extract of axis_crossbar2_in_tvalid_reg: signal is "no";
+    attribute shreg_extract of axis_crossbar2_in_tlast_reg: signal is "no";
 
-		end if;
-	end process;
-
-CROSSBAR2_GEN: if IMPLEMENT_CROSSBAR2_AND_CROSSBAR3 generate
-
+    signal axis_crossbar2_in_tdata: slv32_array(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1);
+    signal axis_crossbar2_in_tvalid: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1);
+    signal axis_crossbar2_in_tlast: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1);
+    
+   
+    signal axis_crossbar3_in_tdata: slv32_array(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
+    signal axis_crossbar3_in_tvalid: slv(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
+    signal axis_crossbar3_in_tlast: slv(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
+    
+    signal axis_crossbar3_reset: std_logic;
+    signal axis_crossbar3_reset_reg: std_logic;
+    signal axis_crossbar3_reset_reg2: std_logic;
+            
 	signal crossbar2_cmd_dat: AXIS8_DAT_STRUCT;
 	signal crossbar2_cmd_rdy: AXIS8_RDY_STRUCT;
 	signal crossbar2_rply_dat: AXIS8_DAT_STRUCT;
@@ -3212,14 +3248,60 @@ CROSSBAR2_GEN: if IMPLEMENT_CROSSBAR2_AND_CROSSBAR3 generate
 	signal crossbar3_rply_dat: AXIS8_DAT_STRUCT;
 	signal crossbar3_rply_rdy: AXIS8_RDY_STRUCT;
 
+    signal crossbar2_ctrl_rst: std_logic;
+    signal crossbar3_ctrl_rst: std_logic;
+
+    attribute DONT_TOUCH of crossbar2_ctrl_rst: signal is "true";
+attribute DONT_TOUCH of crossbar3_ctrl_rst: signal is "true";
 
 begin
-
+    -- select the crossbar 2 & 3 BSB bus
 	crossbar2_cmd_dat<= top_cmd_dat(CROSSBAR2_BASE_PORT);
 	top_cmd_rdy(CROSSBAR2_BASE_PORT) <= crossbar2_cmd_rdy;
 	crossbar2_rply_rdy<= top_rply_rdy(CROSSBAR2_BASE_PORT);
 	top_rply_dat(CROSSBAR2_BASE_PORT) <= crossbar2_rply_dat;
+	
+	crossbar3_cmd_dat<= top_cmd_dat(CROSSBAR3_BASE_PORT);
+	top_cmd_rdy(CROSSBAR3_BASE_PORT) <= crossbar3_cmd_rdy;
+	crossbar3_rply_rdy<= top_rply_rdy(CROSSBAR3_BASE_PORT);
+	top_rply_dat(CROSSBAR3_BASE_PORT) <= crossbar3_rply_dat;
 
+
+	-- pipeline the bsb resets
+    bsb_rst_proc: process (ctrl_clk)
+    begin
+        if rising_edge(ctrl_clk) then
+            crossbar2_ctrl_rst  <= ctrl_rst;
+			crossbar3_ctrl_rst  <= ctrl_rst;
+        end if;
+    end process;
+
+    -- Pipeline the backplane PCB shuffle output to the shuffle crossbar input
+    crossbar2_in_pipe_proc: process(ct_clk)
+        begin
+            if rising_edge(ct_clk) then
+                axis_crossbar2_in_reset <= ct_reset_reg;
+                axis_crossbar2_in_reset_reg <= axis_crossbar2_in_reset;
+    
+                for i in 0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1 loop
+                        axis_crossbar2_in_tdata(i)  <= axis_bp_shuffle_out_tdata(i);
+                        axis_crossbar2_in_tvalid(i) <= axis_bp_shuffle_out_tvalid(i);
+                        axis_crossbar2_in_tlast(i)  <= axis_bp_shuffle_out_tlast(i);
+                end loop;
+                if ct_reset_reg = '1' then
+                    axis_crossbar2_in_tvalid <= (others=>'0');
+                end if;
+    
+                axis_crossbar2_in_tdata_reg  <= axis_crossbar2_in_tdata;
+                axis_crossbar2_in_tvalid_reg <= axis_crossbar2_in_tvalid;
+                axis_crossbar2_in_tlast_reg  <= axis_crossbar2_in_tlast;
+                if axis_crossbar2_in_reset = '1' then
+                    axis_crossbar2_in_tvalid_reg <= (others=>'0');
+                end if;
+    
+            end if;
+        end process;
+    
 	crossbar2: entity work.shuffle_crossbar -- use component instantiation to delay binding in if-generate block and prevent errors during elaboration
 		generic map (
 		 	PLATFORM_ID => PLATFORM_ID,  -- needed to select family-dependent FIFOs
@@ -3244,7 +3326,6 @@ begin
 			m_axis_tlast  => axis_crossbar2_out_tlast,
 			-- m_axis_tready => axis_crossbar2_out_tready,
 
-			-- frame_clk_in => frame_clk,
 			clk => ct_clk,
 			rst => axis_crossbar2_in_reset_reg,
 
@@ -3275,10 +3356,6 @@ begin
 		end if;
 	end process;
 
-	crossbar3_cmd_dat<= top_cmd_dat(CROSSBAR3_BASE_PORT);
-	top_cmd_rdy(CROSSBAR3_BASE_PORT) <= crossbar3_cmd_rdy;
-	crossbar3_rply_rdy<= top_rply_rdy(CROSSBAR3_BASE_PORT);
-	top_rply_dat(CROSSBAR3_BASE_PORT) <= crossbar3_rply_dat;
 
 	crossbar3: entity work.shuffle_crossbar -- use component instantiation to delay binding in if-generate block and prevent errors during elaboration
 		generic map (
@@ -3306,7 +3383,6 @@ begin
 			m_axis_tlast  => axis_crossbar3_out_tlast,
 			-- m_axis_tready => axis_crossbar2_out_tready,
 
-			-- frame_clk_in => frame_clk,
 			clk => ct_clk,
 			rst => axis_crossbar3_reset_reg,
 
@@ -3319,7 +3395,7 @@ begin
 			ctrl_rst => crossbar3_CTRL_RST
 		);
 
-end generate CROSSBAR2_GEN;
+end generate CROSSBAR23_GEN;
 
 -- If there are no shuffle links, connect directly to the output of the 1st crossbar if there are aly lanes there
 -- Note: There should be at least as many 1st crossbar outputs as the number of GPU lanes.
@@ -3341,7 +3417,7 @@ end generate CROSSBAR2_GEN;
 -- ! Implements an array of 10G Ethernet transmitters to send data off to the GPUs.
 -- ! We have 8x 10G Links connected on the two QSFP+ connectors on the motherboard.
 
-GPUGEN: if NUMBER_OF_GPU_LINKS > 0 generate
+GPU_GEN: if IMPLEMENT_GPU_LINKS generate
 
 	signal gpu_cmd_dat: AXIS8_DAT_STRUCT;
 	signal gpu_cmd_rdy: AXIS8_RDY_STRUCT;
@@ -3350,6 +3426,10 @@ GPUGEN: if NUMBER_OF_GPU_LINKS > 0 generate
     signal axis_gpu_clk: std_logic_vector(axis_gpu_tdata'RANGE);
     signal clk322: std_logic;
 
+    -- Pipelined bsb resets
+    signal gpu_ctrl_rst: std_logic;
+    signal gpu_ctrl_rst_reg: std_logic;
+    attribute DONT_TOUCH of gpu_ctrl_rst, gpu_ctrl_rst_reg: signal is "true";    
 begin
 	-- Index the system control buses as a separate signal here , because the simulator will make errors if we index it directly on the instantiation
 	gpu_cmd_dat<= top_cmd_dat(GPU_LINK_BASE_PORT);
@@ -3357,6 +3437,14 @@ begin
 	gpu_rply_rdy<= top_rply_rdy(GPU_LINK_BASE_PORT);
 	top_rply_dat(GPU_LINK_BASE_PORT) <= gpu_rply_dat;
 
+    rst_proc: process (ctrl_clk)
+    begin
+        if rising_edge(ctrl_clk) then
+            gpu_ctrl_rst <= ctrl_rst;
+            gpu_ctrl_rst_reg <= gpu_ctrl_rst;
+        end if;
+    end process;
+    
 	-- Pipeline the 2nd crossbar output (non-blocking AXI-Streaming bus) to the input to the GPU link blocks to facilitate routing
 	gpulinkinpipe_proc: process(ct_clk)
 		begin
@@ -3381,48 +3469,48 @@ begin
 
         when "10GE" =>
             gpulink0: entity work.xge_array
-		-- generic map (
-		-- 	NUMBER_OF_CHANNELS    => NUMBER_OF_GPU_LINKS,
-		-- 	NUMBER_OF_REFCLK      => NUMBER_OF_GPU_REFCLKS,
-		-- 	CHANNEL_QUAD          => GPU_CHANNEL_QUAD, --! Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-		-- 	QUAD_REFCLK           => GPU_QUAD_REFCLK, --! Indicates which qua is associated each reference clock.
-		-- 	DEFAULT_MAC_SRC_ADDR  => (0 to NUMBER_OF_GPU_LINKS-1=> X"123456789ABC"),
-		-- 	DEFAULT_MAC_DEST_ADDR => (0 to NUMBER_OF_GPU_LINKS-1=> X"FFFFFFFFFFFF"),
-		-- 	DEFAULT_IP_SRC_ADDR   => (0 to NUMBER_OF_GPU_LINKS-1=> X"0A0A0A0B"),
-		-- 	DEFAULT_IP_DEST_ADDR  => (0 to NUMBER_OF_GPU_LINKS-1=> X"0A0A0A0A"),
-		-- 	DEFAULT_IP_DEST_PORT  => (0 to NUMBER_OF_GPU_LINKS-1=> X"A028")
-		-- 	)
-		port map (
-			tx_p => xge_tx_p,
-			tx_n => xge_tx_n,
-			rx_p => xge_rx_p,
-			rx_n => xge_rx_n,
-			refclk_p => xge_refclk_p,
-			refclk_n => xge_refclk_n,
-			-- core_status => open,
-			-- resetdone => open,
-
-			-- Clock monitors to be fed to the frequency counter
-			refclk_div2 => gpu_refclk_div2,
-			txclk_div2 => gpu_txclk_div2,
-			clk322_out => clk322,
-
-			-- input data interface
-			s_axis_tx_tdata  => axis_gpu_tdata,
-			s_axis_tx_tvalid => axis_gpu_tvalid,
-			s_axis_tx_tlast  => axis_gpu_tlast,
-			s_axis_tx_tready => open, -- data is always been sent, independent on whether the transmitter is ready or not. W ehave to set out data rate right to avoid overflows.
-			s_axis_tx_clk => (others => clk322), -- ** patch . was axis_gpu_clk, 
-			areset => gpu_reset_reg, --async input, so we can use the channel reset
-
-			CMD_DAT => gpu_cmd_dat,
-			CMD_RDY => gpu_cmd_rdy,
-			RPLY_DAT => gpu_rply_dat,
-			RPLY_RDY => gpu_rply_rdy,
-			CTRL_CLK => CTRL_CLK,
-			CTRL_RST => gpu_ctrl_rst_reg
-		 );
-
+                -- generic map (
+                -- 	NUMBER_OF_CHANNELS    => NUMBER_OF_GPU_LINKS,
+                -- 	NUMBER_OF_REFCLK      => NUMBER_OF_GPU_REFCLKS,
+                -- 	CHANNEL_QUAD          => GPU_CHANNEL_QUAD, --! Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
+                -- 	QUAD_REFCLK           => GPU_QUAD_REFCLK, --! Indicates which qua is associated each reference clock.
+                -- 	DEFAULT_MAC_SRC_ADDR  => (0 to NUMBER_OF_GPU_LINKS-1=> X"123456789ABC"),
+                -- 	DEFAULT_MAC_DEST_ADDR => (0 to NUMBER_OF_GPU_LINKS-1=> X"FFFFFFFFFFFF"),
+                -- 	DEFAULT_IP_SRC_ADDR   => (0 to NUMBER_OF_GPU_LINKS-1=> X"0A0A0A0B"),
+                -- 	DEFAULT_IP_DEST_ADDR  => (0 to NUMBER_OF_GPU_LINKS-1=> X"0A0A0A0A"),
+                -- 	DEFAULT_IP_DEST_PORT  => (0 to NUMBER_OF_GPU_LINKS-1=> X"A028")
+                -- 	)
+                port map (
+                    tx_p => xge_tx_p,
+                    tx_n => xge_tx_n,
+                    rx_p => xge_rx_p,
+                    rx_n => xge_rx_n,
+                    refclk_p => xge_refclk_p,
+                    refclk_n => xge_refclk_n,
+                    -- core_status => open,
+                    -- resetdone => open,
+        
+                    -- Clock monitors to be fed to the frequency counter
+                    refclk_div2 => gpu_refclk_div2,
+                    txclk_div2 => gpu_txclk_div2,
+                    clk322_out => clk322,
+        
+                    -- input data interface
+                    s_axis_tx_tdata  => axis_gpu_tdata,
+                    s_axis_tx_tvalid => axis_gpu_tvalid,
+                    s_axis_tx_tlast  => axis_gpu_tlast,
+                    s_axis_tx_tready => open, -- data is always been sent, independent on whether the transmitter is ready or not. W ehave to set out data rate right to avoid overflows.
+                    s_axis_tx_clk => (others => clk322), -- ** patch . was axis_gpu_clk, 
+                    areset => gpu_reset_reg, --async input, so we can use the channel reset
+        
+                    CMD_DAT => gpu_cmd_dat,
+                    CMD_RDY => gpu_cmd_rdy,
+                    RPLY_DAT => gpu_rply_dat,
+                    RPLY_RDY => gpu_rply_rdy,
+                    CTRL_CLK => CTRL_CLK,
+                    CTRL_RST => gpu_ctrl_rst_reg
+                 );
+        
         when cge_case:"100GE" =>
             ---------------------------------------------------------
             -- 100G Ethernet Interface
