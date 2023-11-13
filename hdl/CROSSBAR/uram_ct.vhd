@@ -473,6 +473,32 @@ begin
 		rd_bank <= (not wr_bank) and tx_toggle_bank;
 		play_ram_rd_en <= busy;
 	
+	
+        debug_out(0) <=  busy;
+        debug_out(1) <=  play_ram_rd_rdy;
+        debug_out(3 downto 2) <= std_logic_vector(frame_ctr);
+        debug_out(4) <= rd_bank;
+        debug_out(5) <= play_ram_rd_en;
+--			debug_out(7 downto 6) <= col_pre;
+        --debug_out(5) <= rply_rdy.TREADY;
+
+
+        --debug_out(6) <=  cmd_dat_int.TVALID;
+        --debug_out(7) <=  cmd_dat_int.TLAST;
+        --debug_out(8) <= cmd_rdy_int.TREADY;
+        --debug_out(9) <= rply_dat_int.TVALID;
+        --debug_out(10) <= rply_dat_int.TLAST;
+        --debug_out(11) <= rply_rdy_int.TREADY;
+
+        --debug_out(12) <=  ctrl_rst;
+        --debug_out(13) <= rst;
+        --debug_out(14) <= '0'; --bsb_rst;
+        --debug_out(15) <= '0';
+        debug_out(15 downto 8) <= std_logic_vector(play_ram_rd_addr(7 downto 0));
+        debug_out(31 downto 16) <= play_ram_dout;
+
+
+
 		ram_rd_proc: process(clk)
 			--variable frame: std_logic_vector(1 downto 0);
 			variable bin: std_logic_vector(12 downto 0);
@@ -484,33 +510,6 @@ begin
 	        variable end_of_transmission: std_logic;
 	              
 		begin -- process		
-
-			debug_out(0) <=  busy;
-			debug_out(1) <=  play_ram_rd_rdy;
-			debug_out(3 downto 2) <= std_logic_vector(frame_ctr);
-			debug_out(4) <= rd_bank;
-			debug_out(5) <= play_ram_rd_en;
---			debug_out(7 downto 6) <= col_pre;
-			--debug_out(5) <= rply_rdy.TREADY;
-
-
-			--debug_out(6) <=  cmd_dat_int.TVALID;
-			--debug_out(7) <=  cmd_dat_int.TLAST;
-			--debug_out(8) <= cmd_rdy_int.TREADY;
-			--debug_out(9) <= rply_dat_int.TVALID;
-			--debug_out(10) <= rply_dat_int.TLAST;
-			--debug_out(11) <= rply_rdy_int.TREADY;
-
-			--debug_out(12) <=  ctrl_rst;
-			--debug_out(13) <= rst;
-			--debug_out(14) <= '0'; --bsb_rst;
-			--debug_out(15) <= '0';
-			debug_out(15 downto 8) <= std_logic_vector(play_ram_rd_addr(7 downto 0));
-			debug_out(31 downto 16) <= play_ram_dout;
-
-
-
-
 			if rising_edge(clk) then
 
 				-- Generate read address and enable signals
