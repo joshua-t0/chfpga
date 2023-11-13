@@ -152,7 +152,7 @@ entity chFPGA is
 
 		-- Data offload configuration
 
-		IMPLEMENT_100G_ETHERNET: BOOLEAN :=FALSE; --! If TRUE, a 100G UDP/IP/Ethernet data transmitter is implemented
+		GPU_LINK_TYPE: STRING := "10GE"; --! If TRUE, a 100G UDP/IP/Ethernet data transmitter is implemented
 
 		NUMBER_OF_GPU_LINKS: integer := GLOBAL_NUMBER_OF_GPU_LINKS;
 		NUMBER_OF_GPU_REFCLKS: integer := GLOBAL_NUMBER_OF_GPU_REFCLKS;
@@ -540,6 +540,7 @@ constant ADC_BITS_PER_WORD: integer := ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPL
 constant NUMBER_OF_ADCS_OR_CHANNELIZERS: integer := max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS);
 constant IMPLEMENT_CROSSBAR1: boolean := NUMBER_OF_CROSSBAR_INPUTS > 0 and NUMBER_OF_CROSSBAR1_OUTPUTS > 0;
 constant IMPLEMENT_CROSSBAR2_AND_CROSSBAR3: boolean := IMPLEMENT_CROSSBAR1 and NUMBER_OF_BP_SHUFFLE_LINKS > 0;
+constant IMPLEMENT_GPU_LINKS: boolean := NUMBER_OF_GPU_LINKS > 0 and GPU_LINK_TYPE /= "NONE";
 constant IMPLEMENT_CORR: boolean := NUMBER_OF_CORRELATORS > 0 and CORR_TYPE /= "NONE";
 constant FPGA_SERIES: integer :=FPGA_SERIES_LIST(PLATFORM_ID);
 
@@ -3255,8 +3256,11 @@ begin
 			end if;
 		end process;
     axis_gpu_clk <= std_logic_vector'(axis_gpu_tdata'RANGE=> ct_clk);
- -- Use COMPONENT instantiation if this is synthesized as an out-of-context module
-	gpulink0: entity work.xge_array
+ 
+    gpu_sel_gen: case GPU_LINK_TYPE generate
+
+        when "10GE" =>
+            gpulink0: entity work.xge_array
 		-- generic map (
 		-- 	NUMBER_OF_CHANNELS    => NUMBER_OF_GPU_LINKS,
 		-- 	NUMBER_OF_REFCLK      => NUMBER_OF_GPU_REFCLKS,
@@ -3299,50 +3303,22 @@ begin
 			CTRL_RST => gpu_ctrl_rst_reg
 		 );
 
+        when cge_case:"100GE" =>
+            ---------------------------------------------------------
+            -- 100G Ethernet Interface
+            ---------------------------------------------------------
+            signal axis_cge_tdata: std_logic_vector(255 downto 0); -- First byte to transmit is in in MSB (i.e first bit transmitted is bit 0)
+            signal axis_cge_tvalid: std_logic;
+            signal axis_cge_tlast: std_logic;
+        --	signal axis_cge_tready: std_logic_vector(0 to 7);
+            signal cge_reset, cge_reset_reg: std_logic;
+        
+            signal refclk, refclk_div2:std_logic;
+        
+        begin
 
-end generate GPUGEN;
-
----------------------------------------------------------
----------------------------------------------------------
--- 100G Ethernet Interface
----------------------------------------------------------
----------------------------------------------------------
-CGE_GEN: if IMPLEMENT_100G_ETHERNET generate
-
-	signal axis_cge_tdata: std_logic_vector(255 downto 0); -- First byte to transmit is in in MSB (i.e first bit transmitted is bit 0)
-	signal axis_cge_tvalid: std_logic;
-	signal axis_cge_tlast: std_logic;
---	signal axis_cge_tready: std_logic_vector(0 to 7);
-	signal cge_reset, cge_reset_reg: std_logic;
-
-	signal cge_cmd_dat: AXIS8_DAT_STRUCT;
-	signal cge_cmd_rdy: AXIS8_RDY_STRUCT;
-	signal cge_rply_dat: AXIS8_DAT_STRUCT;
-	signal cge_rply_rdy: AXIS8_RDY_STRUCT;
-
-	signal cge_ctrl_rst, cge_ctrl_rst_reg: std_logic;
-	signal refclk, refclk_div2:std_logic;
-
-begin
-
-	-- Index the system control buses as a separate signal here , because the simulator will flag errors
-	--  if we index it directly on the instantiation
-	cge_cmd_dat <= top_cmd_dat(GPU_LINK_BASE_PORT);
-	top_cmd_rdy(GPU_LINK_BASE_PORT) <= cge_cmd_rdy;
-	cge_rply_rdy <= top_rply_rdy(GPU_LINK_BASE_PORT);
-	top_rply_dat(GPU_LINK_BASE_PORT) <= cge_rply_dat;
-
-
-	-- Pipeline the BSB resets to help them propagate across the chip
-	bsb_rst_proc: process(ctrl_clk)
-		begin
-			if rising_edge(ctrl_clk) then
-				cge_ctrl_rst            <= ctrl_rst;
-				cge_ctrl_rst_reg        <= cge_ctrl_rst;
-			end if; -- RST/CLK
-		end process;
-
-
+ 
+        
 	-- Pipeline the 2nd crossbar output (non-blocking AXI-Streaming bus) to the input to the GPU link blocks to facilitate routing
 	cge_pipe_proc: process(ct_clk)
 		begin
@@ -3400,19 +3376,23 @@ begin
 
 			rst => cge_reset,
 			--clk200 => clk200,
-			--areset => gpu_reset_reg, --async input, so we can use the channel reset
+                    --areset => gpu_reset_reg, --async input, so we can use the channel reset
+        
+                    -- BSB interface
+                    cmd_dat => gpu_cmd_dat,
+                    cmd_rdy => gpu_cmd_rdy,
+                    rply_dat => gpu_rply_dat,
+                    rply_rdy => gpu_rply_rdy,
+                    ctrl_clk => ctrl_clk,
+                    ctrl_rst => gpu_ctrl_rst_reg
+                 );
+        end cge_case;
 
-			-- BSB interface
-			cmd_dat => cge_cmd_dat,
-			cmd_rdy => cge_cmd_rdy,
-			rply_dat => cge_rply_dat,
-			rply_rdy => cge_rply_rdy,
-			ctrl_clk => ctrl_clk,
-			ctrl_rst => cge_ctrl_rst_reg
-		 );
+        when others =>
+            assert FALSE report "Invalid GPU_LINK_TYPE" severity FAILURE;
 
-
-end generate CGE_GEN;
+    end generate gpu_sel_gen;        
+end generate GPU_GEN;
 
 -----------------------------
 -- UCAP - Global raw data capture
