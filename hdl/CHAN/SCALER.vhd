@@ -562,7 +562,16 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             -- gain storage format (Complex gain): MSB->LSB: Re(N+1), Im(N+1), Re(N),   Im(N) 
             -- gain storage format (Real gain):    MSB->LSB:                   Re(N+1), Re(N) 
             -- product data format:                MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
-
+            --
+            -- BRAM storage format: (16bit gain words are is stored little-endian)
+            --                -----------------------------------------------
+            --                 7          0 7         0 7        0 7       0
+            --     BSB bytes: |    2N+3    |   2N+2    | 2N + 1   |   2N    |
+            --                | MSB G(N+1) | LSB G(N+1)| MSB G(N) | LSB G(N) 
+            --                -----------------------------------------------
+            --                31        24 23      16 15       8 7       0
+            --     COeff:     |           G(N+1)      |        G(N)          |
+            --                ---------------------------------------------
             mul_proc: process (clk) 
                 variable fft_re, fft_im: signed(FFT_BITS_PER_BIN/2-1 downto 0);
                 variable gain: signed(COEFF_BITS_PER_BIN-1 downto 0);
