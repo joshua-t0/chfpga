@@ -326,7 +326,7 @@ entity chFPGA is
 			-- 100G Ethernet Interfaces
 			------------------------------------
 
-			cge_tx_p: out std_logic_vector(0 to 3);
+			cge_tx_p: out std_logic_vector(0 to 3); -- don't specify a default value, otherwise it will force inferring a OBUF and will prevent the port from being removed if the port is not used in some configs
 			cge_tx_n: out std_logic_vector(0 to 3);
 			--cge_rx_p: in std_logic_vector(0 to 3) := (others => '0');
 			--cge_rx_n: in std_logic_vector(0 to 3):= (others => '1');
@@ -944,14 +944,7 @@ signal axis_gpu_tlast: slv(0 to NUMBER_OF_GPU_LINKS-1);
 -- CORR signals
 -----------------------
 
-signal axis_corr_in_tdata: slv32_array(0 to NUMBER_OF_CORRELATORS-1);
-signal axis_corr_in_tvalid: slv(0 to NUMBER_OF_CORRELATORS-1);
-signal axis_corr_in_tlast: slv(0 to NUMBER_OF_CORRELATORS-1);
 
-signal axis_corr_out_tdata: slv8_array(0 to NUMBER_OF_CORRELATORS-1);
-signal axis_corr_out_tvalid: slv(0 to NUMBER_OF_CORRELATORS-1);
-signal axis_corr_out_tlast: slv(0 to NUMBER_OF_CORRELATORS-1);
-signal axis_corr_out_tready: slv(0 to NUMBER_OF_CORRELATORS-1);
 
 
 -----------------------
@@ -3510,12 +3503,13 @@ end generate cap_gen;
 --! We try to use multiple registered stages and multiple output to ease the timing closure, although the synthesizer might remove some of those extra redundant registers.
 -- top_cmd_rdy(CORR_BASE_PORT).TREADY <= 'H';
 
-CORRGEN: if NUMBER_OF_CORRELATORS>0 generate
+CORRGEN: if IMPLEMENT_CORR generate
 
 	signal corr_cmd_dat: AXIS8_DAT_STRUCT; -- shared with CROSSBAR3
 	signal corr_cmd_rdy: AXIS8_RDY_STRUCT;
 	signal corr_rply_dat: AXIS8_DAT_STRUCT;
 	signal corr_rply_rdy: AXIS8_RDY_STRUCT;
+
 
 	signal corr_reset_reg1: std_logic;
 	attribute DONT_TOUCH of corr_reset_reg1: signal is "true";
@@ -3523,6 +3517,13 @@ CORRGEN: if NUMBER_OF_CORRELATORS>0 generate
 begin
 	--PRB_PORT_OFFSET(CORR_PROBE_BASE_PORT + NUMBER_OF_CORRELATORS-1 downto CORR_PROBE_BASE_PORT) <= (others => CORR_IP_PORT_OFFSET); --! Assign the IP port number to be used for the returned data
  	--! Pipeline and replicate the correlator data reset input to facilitate routing and timing closure.
+
+   -- Extract the control interface
+    corr_cmd_dat <= top_cmd_dat(CORR_BASE_PORT);
+    top_cmd_rdy(CORR_BASE_PORT) <= corr_cmd_rdy;
+    corr_rply_rdy <= top_rply_rdy(CORR_BASE_PORT);
+    top_rply_dat(CORR_BASE_PORT) <= corr_rply_dat;
+
  	corrrst_proc: process(ct_clk)
 	begin
 		if rising_edge(ct_clk) then
