@@ -585,546 +585,516 @@ end chFPGA_Package;
 
 package body chFPGA_Package is
 
---! function bit_reverse
+--! Same as reverse_bits_and_dir()
 --! Reverses both the left-right bit order and the direction of the vector.
 FUNCTION bit_reverse(s1:std_logic_vector) return std_logic_vector is
-  --    variable rr : std_logic_vector(s1'high downto s1'low);
-  -- begin
-  --   for ii in s1'high downto s1'low loop
-  --     rr(ii) := s1(s1'high-ii);
-  --   end loop;
-  --   return rr;
-  -- end bit_reverse;
 	variable result: std_logic_vector(s1'REVERSE_RANGE);
-	--	alias aa: std_logic_vector(s1'RANGE) is s1;
-	begin
-		for i in s1'RANGE loop
-			result(i) := s1(i);
-		end loop;
-		return result;
-	end bit_reverse;
+begin
+	for i in s1'RANGE loop
+		result(i) := s1(i);
+	end loop;
+	return result;
+end bit_reverse;
 
 --! reverses the order of the bits but yield a vector indexed in the same direction
 --! i.e. x(3 downto 0) := "1100"; y(3 downto 0) = reverse_bits_same_dir(x) = "0011"
 FUNCTION reverse_bits_same_dir(s1:std_logic_vector) return std_logic_vector is
 	variable result: std_logic_vector(s1'RANGE);
-	alias s1_rev: std_logic_vector(s1'REVERSE_RANGE) is s1;
-	begin
-		for i in s1'RANGE loop
-			-- result(i) := s1_rev(i);
-			result(i) := s1(s1'LOW + (s1'HIGH-i)); -- alternate way to do it without alias
-		end loop;
-		return result;
-	end reverse_bits_same_dir;
+begin
+	for i in s1'RANGE loop
+		result(i) := s1(s1'LOW + (s1'HIGH-i)); -- alternate way to do it without alias
+	end loop;
+	return result;
+end reverse_bits_same_dir;
 
---! reverses the order of the bits but yield a vector indexed in the same direction
---! i.e. x(3 downto 0) := "1100"; y(0 downto 3) = reverse_bits_same_dir(x) = "0011"
+-- Reverses the order of the bits but yield a vector indexed in the opposite direction
+-- i.e. x(3 downto 0) := "1100"; y(0 downto 3) = reverse_bits_same_dir(x) = "0011"
 FUNCTION reverse_bits_and_dir(s1:std_logic_vector) return std_logic_vector is
 	variable result: std_logic_vector(s1'REVERSE_RANGE);
-	begin
-		for i in s1'RANGE loop
-			result(i) := s1(i);
-		end loop;
-		return result;
-	end reverse_bits_and_dir;
+begin
+	for i in s1'RANGE loop
+		result(i) := s1(i);
+	end loop;
+	return result;
+end reverse_bits_and_dir;
 
 
 FUNCTION reverse_bytes(s1:std_logic_vector) return std_logic_vector is
      variable rr : std_logic_vector(s1'high downto s1'low);
 	 variable num_bytes: integer;
-	begin
-	  num_bytes := s1'LENGTH/8;
-	  for i in 0 to (num_bytes-1) loop
-		rr(8*i+7+s1'low downto 8*i+s1'low) := s1(8*(num_bytes-1-i)+7+s1'low downto 8*(num_bytes-1-i)+s1'low);
-	  end loop;
-		return rr;
-	end reverse_bytes;
+begin
+  num_bytes := s1'LENGTH/8;
+  for i in 0 to (num_bytes-1) loop
+	rr(8*i+7+s1'low downto 8*i+s1'low) := s1(8*(num_bytes-1-i)+7+s1'low downto 8*(num_bytes-1-i)+s1'low);
+  end loop;
+	return rr;
+end reverse_bytes;
 
 
 FUNCTION lsb(s1:unsigned; width:integer:=8) return unsigned is
-  begin
-    return s1(width-1 downto 0);
-  end lsb;
+begin
+	return s1(width-1 downto 0);
+end lsb;
 
 FUNCTION lsb(s1:std_logic_vector; width:integer:=8) return std_logic_vector is
-  begin
-    return s1(width-1 downto 0);
-  end lsb;
+begin
+	return s1(width-1 downto 0);
+end lsb;
 
 FUNCTION msb(s1:signed; width:integer:=8) return signed is
-  begin
-    return s1(s1'LENGTH-1 downto s1'LENGTH-width);
-  end msb;
+begin
+	return s1(s1'LENGTH-1 downto s1'LENGTH-width);
+end msb;
 
 FUNCTION msb(s1:std_logic_vector; width:integer:=8) return std_logic_vector is
-  begin
-    return s1(s1'LENGTH-1 downto s1'LENGTH-width);
-  end msb;
+begin
+	return s1(s1'LENGTH-1 downto s1'LENGTH-width);
+end msb;
 
 FUNCTION sign_bit(i:signed) return std_logic is --
-  	begin
-  		return i(i'LENGTH-1);
-  	end sign_bit;
+begin
+	return i(i'LENGTH-1);
+end sign_bit;
 
 FUNCTION sign_bit(i:unsigned) return std_logic is --
-	begin
-		return i(i'LENGTH-1);
-	end sign_bit;
+begin
+	return i(i'LENGTH-1);
+end sign_bit;
 
 FUNCTION sign_bit(i:std_logic_vector) return std_logic is --
-	begin
-		return i(i'LENGTH-1);
-	end sign_bit;
+begin
+	return i(i'LENGTH-1);
+end sign_bit;
 
 -- stolen from std_numeric
 function MAX(LEFT, RIGHT: INTEGER) return INTEGER is
-  begin
-    if LEFT > RIGHT then return LEFT;
-    else return RIGHT;
-    end if;
-  end MAX;
+begin
+	if LEFT > RIGHT then 
+		return LEFT;
+	else 
+		return RIGHT;
+	end if;
+end MAX;
 
 function MAX(vin: IntegerArray) return INTEGER is
-		variable vout: integer;
-		begin
-			vout := INTEGER'LOW;
-			for j in 0 to vin'Length-1 loop
-				if 	vin(j) > vout then
-					vout := vin(j);
-				end if;
-			end loop;
-			return vout;
-		end MAX;
+	variable vout: integer;
+begin
+	vout := INTEGER'LOW;
+	for j in 0 to vin'Length-1 loop
+		if 	vin(j) > vout then
+			vout := vin(j);
+		end if;
+	end loop;
+	return vout;
+end MAX;
 
 function MIN(vin: IntegerArray) return INTEGER is
-		variable vout: integer;
-		begin
-			vout := INTEGER'HIGH;
-			for j in 0 to vin'Length-1 loop
-				if 	vin(j) < vout then
-					vout := vin(j);
-				end if;
-			end loop;
-			return vout;
-		end MIN;
+	variable vout: integer;
+begin
+	vout := INTEGER'HIGH;
+	for j in 0 to vin'Length-1 loop
+		if 	vin(j) < vout then
+			vout := vin(j);
+		end if;
+	end loop;
+	return vout;
+end MIN;
 
 -- stolen from std_numeric
 function MIN(LEFT, RIGHT: INTEGER) return INTEGER is
-  begin
-    if LEFT < RIGHT then return LEFT;
-    else return RIGHT;
-    end if;
-  end MIN;
+begin
+	if LEFT < RIGHT then 
+		return LEFT;
+	else 
+		return RIGHT;
+	end if;
+end MIN;
 
 function min(LEFT, RIGHT: unsigned) return unsigned is
-  begin
-    if LEFT < RIGHT then return LEFT;
-    else return RIGHT;
-    end if;
-  end min;
+begin
+	if LEFT < RIGHT then 
+		return LEFT;
+	else 
+		return RIGHT;
+	end if;
+end min;
 
 FUNCTION to_std_logic(i:boolean) return std_logic is -- converts boot to std_logic
-	begin
-		if i then
-			return '1';
-		else
-			return '0';
-		end if;
-	end to_std_logic;
+begin
+	if i then
+		return '1';
+	else
+		return '0';
+	end if;
+end to_std_logic;
 
 FUNCTION to_slv(i:integer; n: integer) return std_logic_vector is -- converts integer to standard_logic_vector with specified numbe rof bits
-	begin
-		return std_logic_vector(to_unsigned(i,n));
-	end to_slv;
+begin
+	return std_logic_vector(to_unsigned(i,n));
+end to_slv;
 
 FUNCTION to_slv(r:real; n: integer) return std_logic_vector is -- converts real to std_logic_vector with specified numbe rof bits
-	begin
-		return std_logic_vector(to_signed(integer(r), n));
-	end to_slv;
+begin
+	return std_logic_vector(to_signed(integer(r), n));
+end to_slv;
 
 FUNCTION to_slv(i:unsigned) return std_logic_vector is -- converts unsigned to STD_LOGIC_VECTOR
-	begin
-		return std_logic_vector(i);
-	end to_slv;
+begin
+	return std_logic_vector(i);
+end to_slv;
 
 FUNCTION to_slv(i:unsigned; n: integer) return std_logic_vector is -- resizes and converts unsigned to STD_LOGIC_VECTOR
-	begin
-		return std_logic_vector(resize(i,n));
-	end to_slv;
+begin
+	return std_logic_vector(resize(i,n));
+end to_slv;
 
 FUNCTION resize(i:std_logic_vector; n: integer) return std_logic_vector is -- resizes a STD_LOGIC_VECTOR. Truncates or adds zero padding.
-	begin
-		return std_logic_vector(resize(unsigned(i),n));
-	end resize;
+begin
+	return std_logic_vector(resize(unsigned(i),n));
+end resize;
 
 FUNCTION to_slv(i:ByteArray; n: integer) return std_logic_vector is -- concatenate bytes in a ByteAray and return them as a n bit STD_LOGIC_VECTOR
 	variable v:std_logic_vector(n-1 downto 0);
 	variable ix: integer;
-	begin
-		v:=(others=>'0'); -- clear all bits by default in case we ask for more bits than there are in the byte array
-		ix:=i'Right;
-		for j in 0 to n-1 loop
-			if i'Ascending then
-				v(j):=i(ix-j/8)(j mod 8);
-			else
-				v(j):=i(ix+j/8)(j mod 8);
-			end if;
-		end loop;
-		return v;
-	end to_slv;
+begin
+	v := (others=>'0'); -- clear all bits by default in case we ask for more bits than there are in the byte array
+	ix := i'Right;
+	for j in 0 to n-1 loop
+		if i'Ascending then
+			v(j) := i(ix-j/8)(j mod 8);
+		else
+			v(j) := i(ix+j/8)(j mod 8);
+		end if;
+	end loop;
+	return v;
+end to_slv;
 
 FUNCTION to_slv(i:slv8_array; n: integer) return std_logic_vector is -- concatenate bytes in a slv8_array and return them as a n bit STD_LOGIC_VECTOR
 	variable v:std_logic_vector(n-1 downto 0);
 	variable ix: integer;
-	begin
-		v:=(others=>'0'); -- clear all bits by default in case we ask for more bits than there are in the byte array
-		ix:=i'Right;
-		for j in 0 to n-1 loop
-			if i'Ascending then
-				v(j):=i(ix-j/8)(j mod 8);
-			else
-				v(j):=i(ix+j/8)(j mod 8);
-			end if;
-		end loop;
-		return v;
-	end to_slv;
+begin
+	v:=(others=>'0'); -- clear all bits by default in case we ask for more bits than there are in the byte array
+	ix:=i'Right;
+	for j in 0 to n-1 loop
+		if i'Ascending then
+			v(j):=i(ix-j/8)(j mod 8);
+		else
+			v(j):=i(ix+j/8)(j mod 8);
+		end if;
+	end loop;
+	return v;
+end to_slv;
 
 FUNCTION to_slv8_array(i:std_logic_vector) return slv8_array is -- split a slv in a slv8_array in the Big Endian order (result(0) is the MSB). The slv is treated as unsigned and is zero padded to the next multiple of 8 bits.
 	variable N: integer := (i'LENGTH+7)/8;
 	variable v: slv8_array(0 to N-1);
 	variable ii: std_logic_vector(N*8-1 downto 0) := resize(i, N * 8); -- zero padded to multiple of 8 bits
-	begin
-		v:=(others=>(others=>'0')); -- clear all bytes by default
-		for j in 0 to N-1 loop
-			v(j):=ii((N-j)*8-1 downto (N-j)*8-8);
-		end loop;
-		return v;
-	end to_slv8_array;
+begin
+	v:=(others=>(others=>'0')); -- clear all bytes by default
+	for j in 0 to N-1 loop
+		v(j):=ii((N-j)*8-1 downto (N-j)*8-8);
+	end loop;
+	return v;
+end to_slv8_array;
 
 FUNCTION to_slv8_array(i:unsigned) return slv8_array is -- split a unsigned in a slv8_array. The SLV length must be multiples of 8 bits.
-	begin
-		return to_slv8_array(std_logic_vector(i));
-	end to_slv8_array;
+begin
+	return to_slv8_array(std_logic_vector(i));
+end to_slv8_array;
 
 FUNCTION to_slv8_array_le(i:slv32_array) return slv8_array is -- split a slv32_array byte-wise in a slv8_array in the Little Endian order i(0)(7 downto 0)) is in result(0).
 	variable N: integer := i'LENGTH; -- number of words
 	variable v: slv8_array(0 to 4*N-1);
-	begin
-		for j in 0 to N-1 loop
-			for k in 0 to 3 loop
-				v(4*j+k):=i(j)(k*8+7 downto k*8);
-			end loop;
+begin
+	for j in 0 to N-1 loop
+		for k in 0 to 3 loop
+			v(4*j+k):=i(j)(k*8+7 downto k*8);
 		end loop;
-		return v;
-	end to_slv8_array_le;
+	end loop;
+	return v;
+end to_slv8_array_le;
 
 FUNCTION to_ByteArray(i:slv8_array) return ByteArray is -- Convert slv8_array to ByteArray (for legacy compatibility).
 	variable v:ByteArray(i'range);
-	begin
-		for j in i'range loop
-			v(j):=i(j);
-		end loop;
-		return v;
-	end to_ByteArray;
+begin
+	for j in i'range loop
+		v(j):=i(j);
+	end loop;
+	return v;
+end to_ByteArray;
 
 FUNCTION to_ByteArray(i:std_logic_vector) return ByteArray is -- split a slv in ia ByteArray.
-	begin
-		return to_ByteArray(to_slv8_array(i));
-	end to_ByteArray;
+begin
+	return to_ByteArray(to_slv8_array(i));
+end to_ByteArray;
 
 FUNCTION to_ByteArray(i:unsigned) return ByteArray is -- split a unsigned in ia ByteArray. The SLV length must be multiples of 8 bits.
-	begin
-		return to_ByteArray(std_logic_vector(i));
-	end to_ByteArray;
+begin
+	return to_ByteArray(std_logic_vector(i));
+end to_ByteArray;
 
 FUNCTION to_slv(i:ByteArray) return std_logic_vector is -- concatenate bytes in a ByteAray and return them as a STD_LOGIC_VECTOR
-	begin
-		return to_slv(i,8*i'Length);
-	end to_slv;
+begin
+	return to_slv(i,8*i'Length);
+end to_slv;
 
 FUNCTION to_slv(i:slv8_array) return std_logic_vector is -- concatenate bytes in a ByteAray and return them as a STD_LOGIC_VECTOR
-	begin
-		return to_slv(i,8*i'Length);
-	end to_slv;
-
---	variable v:std_logic_vector(8*i'Length-1 downto 0);
---	variable ix: integer;
---	begin
---		ix:=i'Left;
---		for j in i'Length-1 downto 0 loop
---			v(8*j-1 downto 8*j):=i(ix);
---			if i'Ascending then
---				ix:=ix+1;
---			else
---				ix:=ix-1;
---			end if;
---		end loop;
---		return v;
---	end to_slv;
-
+begin
+	return to_slv(i,8*i'Length);
+end to_slv;
 
 FUNCTION to_slv(i:std_logic) return std_logic_vector is -- converts a std_logic into a one element vector
 	variable v: std_logic_vector(0 downto 0);
-	begin
-		v(0) := i;
-		return v;
-	end to_slv;
+begin
+	v(0) := i;
+	return v;
+end to_slv;
 
 FUNCTION to_unsigned(i:std_logic) return unsigned is -- converts a std_logic into a one element unsigned
 	variable v: unsigned(0 downto 0);
-	begin
-		v(0) := i;
-		return v;
-	end to_unsigned;
+begin
+	v(0) := i;
+	return v;
+end to_unsigned;
 
 FUNCTION to_unsigned(i:ByteArray; n: integer) return unsigned is -- concatenated bytes in a ByteAray and return them as a unsigned
-	begin
-		return unsigned(to_slv(i,n));
-	end to_unsigned;
+begin
+	return unsigned(to_slv(i,n));
+end to_unsigned;
 
 FUNCTION to_unsigned(i:ByteArray) return unsigned is -- concatenated bytes in a ByteAray and return them as a unsigned
-	begin
-		return to_unsigned(i,8*i'Length);
-	end to_unsigned;
+begin
+	return to_unsigned(i,8*i'Length);
+end to_unsigned;
 
 FUNCTION to_unsigned(i:slv8_array; n: integer) return unsigned is -- concatenated bytes in a ByteAray and return them as a unsigned
-	begin
-		return unsigned(to_slv(i,n));
-	end to_unsigned;
+begin
+	return unsigned(to_slv(i,n));
+end to_unsigned;
 
 FUNCTION to_unsigned(i:slv8_array) return unsigned is -- concatenated bytes in a ByteAray and return them as a unsigned
-	begin
-		return to_unsigned(i,8*i'Length);
-	end to_unsigned;
+begin
+	return to_unsigned(i,8*i'Length);
+end to_unsigned;
 
 FUNCTION str(i:integer) return string is -- converts integer to a string. Allows expressions, contrary to to_string().
-	begin
-		return to_string(i);
-	end str;
+begin
+	return to_string(i);
+end str;
 
 -- Return the Raw data capture frame header structure as a byte array
 FUNCTION struct_to_bytes(s:FRAME_HEADER_STRUCT) return slv8_array is
 	variable b: slv8_array(0 to FRAME_HEADER_BYTE_LENGTH - 1);
 	variable w: std_logic_vector(8 * FRAME_HEADER_BYTE_LENGTH - 1 downto 0);
-	begin
-		w := s.PROBE_ID & s.STREAM_ID & s.SERIAL_FLAGS & s.FLAGS & s.TIMESTAMP;
-		for i in 0 to FRAME_HEADER_BYTE_LENGTH-1 loop
-			b(i) := w(8 * (FRAME_HEADER_BYTE_LENGTH - i) - 1 downto 8 * (FRAME_HEADER_BYTE_LENGTH - i - 1));
-		end loop;
-		return b;
-	end struct_to_bytes;
-
--- FUNCTION word_to_struct(w: Word32Array) return FRAME_HEADER_STRUCT is
--- 	variable s : FRAME_HEADER_STRUCT;
--- 	begin
--- 		s.ID:=w(0)(31 downto 16);
--- 		s.FLAGS:=w(0)(15 downto 12);
--- 		s.WORD_LENGTH:=w(0)(11 downto 0);
--- 		s.TIMESTAMP:=w(1);
--- 		return s;
--- 	end word_to_struct;
-
+begin
+	w := s.PROBE_ID & s.STREAM_ID & s.SERIAL_FLAGS & s.FLAGS & s.TIMESTAMP;
+	for i in 0 to FRAME_HEADER_BYTE_LENGTH-1 loop
+		b(i) := w(8 * (FRAME_HEADER_BYTE_LENGTH - i) - 1 downto 8 * (FRAME_HEADER_BYTE_LENGTH - i - 1));
+	end loop;
+	return b;
+end struct_to_bytes;
 
 FUNCTION struct_to_word(s:SHUFFLE_FRAME_HEADER_STRUCT) return slv32_array is
 	variable w : slv32_array(0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH-1);
-	begin
-		w(0):= (s.STREAM_ID & s.PROTOCOL_VERSION & s.HEADER_LENGTH_IN_WORDS & s.COOKIE );
-		w(1):= (s.ENCODING & s.NUMBER_OF_FRAMES & s.NUMBER_OF_BINS & s.NUMBER_OF_ANTENNAS);
-		w(2):= s.ANCILLARY_DATA;
-		w(3):= s.TIMESTAMP;
-		return w;
-	end struct_to_word;
+begin
+	w(0):= (s.STREAM_ID & s.PROTOCOL_VERSION & s.HEADER_LENGTH_IN_WORDS & s.COOKIE );
+	w(1):= (s.ENCODING & s.NUMBER_OF_FRAMES & s.NUMBER_OF_BINS & s.NUMBER_OF_ANTENNAS);
+	w(2):= s.ANCILLARY_DATA;
+	w(3):= s.TIMESTAMP;
+	return w;
+end struct_to_word;
 
 FUNCTION word_to_struct(w: slv32_array(0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH-1) := (others=>(others=>'0'))) return SHUFFLE_FRAME_HEADER_STRUCT is
 	-- We use an constrained array as parameter 'w' so we can use s=word_to_struct((word_index=>word)) to easily  extract fields from a single word in the strcuture
 	variable s : SHUFFLE_FRAME_HEADER_STRUCT;
-	begin
-		-- Word 0
-		s.STREAM_ID              := w(0)(31 downto 16);
-		s.PROTOCOL_VERSION       := w(0)(15 downto 12);
-		s.HEADER_LENGTH_IN_WORDS := w(0)(11 downto 8);
-		s.COOKIE                 := w(0)(7 downto 0);
-		-- Word 1
-		s.ENCODING           := w(1)(31 downto 28);
-		s.NUMBER_OF_FRAMES   := w(1)(27 downto 24);
-		s.NUMBER_OF_BINS     := w(1)(23 downto 12);
-		s.NUMBER_OF_ANTENNAS := w(1)(11 downto 0);
-		-- Word 2
-		s.ANCILLARY_DATA := w(2);
-		-- Word 3
-		s.TIMESTAMP := w(3);
-		return s;
-	end word_to_struct;
+begin
+	-- Word 0
+	s.STREAM_ID              := w(0)(31 downto 16);
+	s.PROTOCOL_VERSION       := w(0)(15 downto 12);
+	s.HEADER_LENGTH_IN_WORDS := w(0)(11 downto 8);
+	s.COOKIE                 := w(0)(7 downto 0);
+	-- Word 1
+	s.ENCODING           := w(1)(31 downto 28);
+	s.NUMBER_OF_FRAMES   := w(1)(27 downto 24);
+	s.NUMBER_OF_BINS     := w(1)(23 downto 12);
+	s.NUMBER_OF_ANTENNAS := w(1)(11 downto 0);
+	-- Word 2
+	s.ANCILLARY_DATA := w(2);
+	-- Word 3
+	s.TIMESTAMP := w(3);
+	return s;
+end word_to_struct;
 
 FUNCTION sel(b: BOOLEAN; if_true: std_logic; if_false: std_logic) return std_logic is
-	begin
-		if b then
-			return if_true;
-		else
-			return if_false;
-		end if;
-	end sel;
+begin
+	if b then
+		return if_true;
+	else
+		return if_false;
+	end if;
+end sel;
 
 FUNCTION sel(b: BOOLEAN; if_true: std_logic_vector; if_false: std_logic_vector) return std_logic_vector is
-	begin
-		if b then
-			return if_true;
-		else
-			return if_false;
-		end if;
-	end sel;
+begin
+	if b then
+		return if_true;
+	else
+		return if_false;
+	end if;
+end sel;
 
 FUNCTION sel(b: BOOLEAN; if_true: slv32_array; if_false: slv32_array) return slv32_array is
-	begin
-		if b then
-			return if_true;
-		else
-			return if_false;
-		end if;
-	end sel;
+begin
+	if b then
+		return if_true;
+	else
+		return if_false;
+	end if;
+end sel;
 
 FUNCTION sel(b: BOOLEAN; if_true: real; if_false: real) return real is
-	begin
-		if b then
-			return if_true;
-		else
-			return if_false;
-		end if;
-	end sel;
+begin
+	if b then
+		return if_true;
+	else
+		return if_false;
+	end if;
+end sel;
 
 FUNCTION sel(b: BOOLEAN; if_true: string; if_false: string) return string is
-	begin
-		if b then
-			return if_true;
-		else
-			return if_false;
-		end if;
-	end sel;
+begin
+	if b then
+		return if_true;
+	else
+		return if_false;
+	end if;
+end sel;
 
 FUNCTION sel(b: BOOLEAN; if_true: integer; if_false: integer) return integer is
-	begin
-		if b then
-			return if_true;
-		else
-			return if_false;
-		end if;
-	end sel;
+begin
+	if b then
+		return if_true;
+	else
+		return if_false;
+	end if;
+end sel;
 
 FUNCTION sel(b: BOOLEAN; if_true: time; if_false: time) return time is
-	begin
-		if b then
-			return if_true;
-		else
-			return if_false;
-		end if;
-	end sel;
+begin
+	if b then
+		return if_true;
+	else
+		return if_false;
+	end if;
+end sel;
 
 FUNCTION sel(b: std_logic; if_true: std_logic_vector; if_false: std_logic_vector) return std_logic_vector is
-	begin
-		if b='1' then
-			return if_true;
-		elsif b='0' then
-			return if_false;
-		else
-			report "Test value in sel(test_value, if_true, if_false) is neither '0' or '1'" severity failure;
-			return if_false;
-		end if;
-	end sel;
+begin
+	if b='1' then
+		return if_true;
+	elsif b='0' then
+		return if_false;
+	else
+		report "Test value in sel(test_value, if_true, if_false) is neither '0' or '1'" severity failure;
+		return if_false;
+	end if;
+end sel;
 
 function repeat( V: std_logic_vector; N: natural) return std_logic_vector is
 	constant L: natural := V'length;
 	variable result: std_logic_vector(0 to N*L - 1);
-	begin
-		for i in 0 to N-1 loop
-			result(i*L to i*L + L - 1) := V;
-		end loop;
-		return result;
-	end repeat;
+begin
+	for i in 0 to N-1 loop
+		result(i*L to i*L + L - 1) := V;
+	end loop;
+	return result;
+end repeat;
 
 --Returns TRUE if any bit is '1'
 function any_one(v: std_logic_vector) return boolean is
-	begin
-		return or(v) = '1';
-	end function;
+begin
+	return or(v) = '1';
+end function;
 
 --Returns TRUE if any bits is '1'
 function any_one(v: unsigned) return boolean is
-	begin
-		return or(v) = '1';
-	end function;
+begin
+	return or(v) = '1';
+end function;
 
 --Returns TRUE if any bit is '0'
 function any_zero(v: std_logic_vector) return boolean is
-	begin
-		return and(v) = '0';
-	end function;
+begin
+	return and(v) = '0';
+end function;
 
 --Returns TRUE if any bit is '0'
 function any_zero(v: unsigned) return boolean is
-	begin
-		return and(v) = '0';
-	end function;
+begin
+	return and(v) = '0';
+end function;
 
 --Returns TRUE if all bits are '1'
 function all_ones(v: std_logic_vector) return boolean is
-	begin
-		return and(v) = '1';
-	end function;
+begin
+	return and(v) = '1';
+end function;
 
 
 --Returns TRUE if all bits are '1'
 function all_ones(v: unsigned) return boolean is
-	begin
-		return and(v) = '1';
-	end function;
+begin
+	return and(v) = '1';
+end function;
 
 --Returns TRUE if all bits are 'o'
 function all_zeros(v: std_logic_vector) return boolean is
-	begin
-		return or(v) = '0';
-	end function;
+begin
+	return or(v) = '0';
+end function;
 
 
 --Returns TRUE if all bits are 'o'
 function all_zeros(v: unsigned) return boolean is
-	begin
-		return or(v) = '0';
-	end function;
+begin
+	return or(v) = '0';
+end function;
 
 --Returns the log2 of a integer as a real value
 function log2(v: integer) return real is
-	begin
-		return log2(real(v));
-	end function;
+begin
+	return log2(real(v));
+end function;
 
 --Returns the log2 of a integer as an integer
 function integer_log2(v: integer) return integer is
-	begin
-		return integer(log2(real(v)));
-	end function;
+begin
+	return integer(log2(real(v)));
+end function;
 
 --Returns the log2 of a real as an integer
 function integer_log2(v: real) return integer is
-	begin
-		return integer(log2(v));
-	end function;
+begin
+	return integer(log2(v));
+end function;
 
 --! Compute the number of bits needed to represent `len` values (from 0 to len-1)
 function width(len: integer) return integer is
-	begin
-		return integer(ceil(log2(real(len))));
-	end function;
+begin
+	return integer(ceil(log2(real(len))));
+end function;
 
 --! Compute the number of bits needed to represent 'value'
 function bitwidth(value: integer) return integer is
-	begin
-		return integer(ceil(log2(real(value+1))));
-	end function;
+begin
+	return integer(ceil(log2(real(value+1))));
+end function;
 
-function shift_left(i:std_logic_vector; n: integer) return std_logic_vector is  -- shift left a STD_LOGIC_VECTOR
-	begin
-		return std_logic_vector(shift_left(unsigned(i), n));
-	end function;
+-- shift left a STD_LOGIC_VECTOR
+function shift_left(i:std_logic_vector; n: integer) return std_logic_vector is  
+begin
+	return std_logic_vector(shift_left(unsigned(i), n));
+end function;
 
 
 function shift_left(ARG:slv8_array; COUNT: natural) return slv8_array is -- shift left a byte array
@@ -1138,16 +1108,16 @@ begin
 	return RESULT;
 end function;
 
-function shift_right(i:std_logic_vector; n: integer) return std_logic_vector is  -- shift right a STD_LOGIC_VECTOR with zero padding on the left
-	begin
-		return std_logic_vector(shift_right(unsigned(i), n));
-
-	end function;
+-- shift right a STD_LOGIC_VECTOR with zero padding on the left
+function shift_right(i:std_logic_vector; n: integer) return std_logic_vector is  
+begin
+	return std_logic_vector(shift_right(unsigned(i), n));
+end function;
 
 
 function shift_right(x:slv_array)  return slv_array is
 	variable r: slv_array(x'RANGE);
-	begin
+begin
 	r(x'LEFT-1 downto 0) := x(x'LEFT downto 1);
 	r(x'LEFT) := (others=>'0');
 	return r;
@@ -1155,7 +1125,7 @@ end function;
 
 function shift_right(x:slv2_array)  return slv2_array is
 	variable r: slv2_array(x'RANGE);
-	begin
+begin
 	r(x'LEFT-1 downto 0) := x(x'LEFT downto 1);
 	r(x'LEFT) := (others=>'0');
 	return r;
@@ -1163,7 +1133,7 @@ end function;
 
 function shift_right(x:slv3_array)  return slv3_array is
 	variable r: slv3_array(x'RANGE);
-	begin
+begin
 	r(x'LEFT-1 downto 0) := x(x'LEFT downto 1);
 	r(x'LEFT) := (others=>'0');
 	return r;
@@ -1171,7 +1141,7 @@ end function;
 
 function shift_right(x:slv4_array)  return slv4_array is
 	variable r: slv4_array(x'RANGE);
-	begin
+begin
 	r(x'LEFT-1 downto 0) := x(x'LEFT downto 1);
 	r(x'LEFT) := (others=>'0');
 	return r;
@@ -1190,23 +1160,23 @@ end function;
 
 PROCEDURE axis32_write_buffer(buffer_in: in Word32Array; signal stream_out: out AXIS32_DAT_STRUCT; signal clk: in std_logic) is
 	variable i : integer:=0;
-	begin
-		for i in 0 to buffer_in'LENGTH-1 loop
-			stream_out.TDATA<=buffer_in(i);
-			stream_out.TVALID<='1';
-			if i=buffer_in'LENGTH-1 then
-				stream_out.TLAST<='1';
-			else
-				stream_out.TLAST<='0';
-			end if;
-			wait until rising_edge(CLK);
-			wait for 1 ps; -- make sure the other processes do not see the changes on the same clock
+begin
+	for i in 0 to buffer_in'LENGTH-1 loop
+		stream_out.TDATA<=buffer_in(i);
+		stream_out.TVALID<='1';
+		if i=buffer_in'LENGTH-1 then
+			stream_out.TLAST<='1';
+		else
+			stream_out.TLAST<='0';
+		end if;
+		wait until rising_edge(CLK);
+		wait for 1 ps; -- make sure the other processes do not see the changes on the same clock
 --		end if; -- CLK
-		end loop;
+	end loop;
 --			if i=buffer_in'LENGTH then
 --		wait until rising_edge(CLK);
 --		wait for 1 ps; -- make sure the other processes do not see the changes on the same clock
-		stream_out.TVALID<='0';
+	stream_out.TVALID<='0';
 --			return;
 --			end if;
 --			i:=i+1;
