@@ -1181,20 +1181,20 @@ begin
 
 	-- Generate a corner-turn engine reset synchronous to ct_clk
 	-- we use the clock generator corr_reset as a source since it is properly sequences but we resync it to ct_clk.
-ct_reset_cdc0: xpm_cdc_single
-	generic map (SRC_INPUT_REG => 0)
-	port map (
-	    src_clk => '0',
-		src_in => corr_reset,
-		dest_clk => ct_clk,
-		dest_out => ct_reset_pre
-	);
+	ct_reset_cdc0: xpm_cdc_single
+		generic map (SRC_INPUT_REG => 0)
+		port map (
+		    src_clk => '0',
+			src_in => corr_reset,
+			dest_clk => ct_clk,
+			dest_out => ct_reset_pre
+		);
 
--- Generate corner-turn engine root reset signals
-ct_reset_pipe_proc: process(ct_clk)
-begin
-	if rising_edge(ct_clk) then
-		ct_reset <= ct_reset_pre;
+	-- Generate corner-turn engine root reset signals
+	ct_reset_pipe_proc: process(ct_clk)
+	begin
+		if rising_edge(ct_clk) then
+			ct_reset <= ct_reset_pre;
 			ct_reset_reg <= ct_reset; -- pipeline
 		end if;
 	end process;
@@ -2429,39 +2429,39 @@ adc_gen: case ADC_TYPE generate
         signal adc_ioclk : std_logic;
         signal adc_divclk : std_logic;
         signal adc_divclk_out_bufg : std_logic_vector(0 to NUMBER_OF_ADCS-1);
-	signal adc_ioclk_out_pll : std_logic_vector(0 to NUMBER_OF_ADCS-1);
-	signal adc_divclk_out_pll : std_logic_vector(0 to NUMBER_OF_ADCS-1);
-
-	signal axis_adc_tdata8: slv32_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
-	signal adc_data_ready_all : std_logic_vector(0 to NUMBER_OF_ADCS-1);
-	signal adc_send_data_async : std_logic;
-
-
-begin
-	-- Selects which ADCDAQ will provides the master clock for the clock generator module to provide channelizer clocks.
-	adc_clk <= adc_divclk_out_bufg(ANT_CLK_SOURCE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
-
-
-	-- Generate a global ``send_data`` signal that is '1' when all ADCs have data to send.
-	-- The inputs are all from different clocks
-	--   1) Since we do a AND operation and all signals are zero after reset, the outputs should be stable at zero until all inputs are '1'
-	--   2) Even if a channelizer started reading one or two clocks after the others, the packets are realigned at the end of the channelizers
-	--   3) The adc_send_data should be resynchronized to its clock domain
-	--      before being fed to ADCDAQ. The pipelining will take care of that.
-	--      Physical separation of the pipeling registers makes this a less
-	--      than optimal CDC, but as stated above timing is not critical.
-	adc_send_data_async <= and_reduce(adc_data_ready_all); --
-
-
-
-	-- Select which ADCDAQ provides an external clock to other ADCDAQs (used only if USE_EXT_DATA_CLK=TRUE)
-	adc_ioclk <= adc_ioclk_out_pll(ANT_CLK_SOURCE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
-	adc_divclk <= adc_divclk_out_pll(ANT_CLK_SOURCE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
-
-	ADCGEN: for i in 0 to NUMBER_OF_ADCS-1 generate
-		signal adc_data_ready : std_logic;
-		signal adc_data_ready_reg1 : std_logic;
-		signal adc_send_data: std_logic;
+        signal adc_ioclk_out_pll : std_logic_vector(0 to NUMBER_OF_ADCS-1);
+        signal adc_divclk_out_pll : std_logic_vector(0 to NUMBER_OF_ADCS-1);
+    
+        signal axis_adc_tdata8: slv32_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+        signal adc_data_ready_all : std_logic_vector(0 to NUMBER_OF_ADCS-1);
+        signal adc_send_data_async : std_logic;
+    
+    
+    begin
+        -- Selects which ADCDAQ will provides the master clock for the clock generator module to provide channelizer clocks.
+        adc_clk <= adc_divclk_out_bufg(ANT_CLK_SOURCE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
+    
+    
+        -- Generate a global ``send_data`` signal that is '1' when all ADCs have data to send.
+        -- The inputs are all from different clocks
+        --   1) Since we do a AND operation and all signals are zero after reset, the outputs should be stable at zero until all inputs are '1'
+        --   2) Even if a channelizer started reading one or two clocks after the others, the packets are realigned at the end of the channelizers
+        --   3) The adc_send_data should be resynchronized to its clock domain
+        --      before being fed to ADCDAQ. The pipelining will take care of that.
+        --      Physical separation of the pipeling registers makes this a less
+        --      than optimal CDC, but as stated above timing is not critical.
+        adc_send_data_async <= and_reduce(adc_data_ready_all); --
+    
+    
+    
+        -- Select which ADCDAQ provides an external clock to other ADCDAQs (used only if USE_EXT_DATA_CLK=TRUE)
+        adc_ioclk <= adc_ioclk_out_pll(ANT_CLK_SOURCE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
+        adc_divclk <= adc_divclk_out_pll(ANT_CLK_SOURCE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
+    
+        ADCGEN: for i in 0 to NUMBER_OF_ADCS-1 generate
+            signal adc_data_ready : std_logic;
+            signal adc_data_ready_reg1 : std_logic;
+            signal adc_send_data: std_logic;
             signal adc_send_data_reg: std_logic;
     
             attribute keep of adc_data_ready_reg1: signal is "true"; -- prevent equivalent register merging
@@ -2492,85 +2492,85 @@ begin
             adc_ready_cdc0: xpm_cdc_single
                 generic map (SRC_INPUT_REG => 0)
                 port map (src_clk => '0', src_in => adc_send_data_async, dest_clk => chan_clk(i), dest_out => adc_send_data);
-
-		-- Generate the adc_send_data which will tells all the ADCs to start
-		-- sending data once all of them have their FIFO half-full
-		adc_send_proc: process(chan_clk(i))
-		begin
-			if rising_edge(chan_clk(i)) then
-				adc_data_ready_reg1 <= adc_data_ready; -- pipeline all adc_data_ready signals so they can be combined (and_reduce) at a central point
-				adc_data_ready_all(i) <= adc_data_ready_reg1; -- pipeline
-				adc_send_data_reg <= adc_send_data; -- pipeline AND resync adc_send_data
-			end if;
-		end process;
-
-		-- Convert 4x 8-bit ADCDAQ bus samples to the lower 4 words of the 8x 16-bit bus
---		repack_gen: for j in 0 to 3  generate -- hard coded to 3 samples per word
---			axis_adc_tdata(i)(16*j+15 downto 16*j+8) <= axis_adc_tdata8(i)(8*j+7 downto 8*j); -- left aligg data to the MSB
---			--axis_adc_tdata(i)(16*j+7 downto 16*j) <= (others => axis_adc_tdata8(i)(7)); -- sign extend
---			axis_adc_tdata(i)(16*j+7 downto 16*j) <= (others => '0'); -- zero the MSBs
---		end generate;
-        axis_adc_tdata(i) <= axis_adc_tdata8(i);
-
-		-- ADCDAQ is still implemented if IMPLEMENT_ANT=FALSE, but its IMPLEMENT_ADCDAQ generics is forced  to FALSE to the appropriate differential buffers are instantiated and prevent UCF errors.
-		--	ADC_CLK_OUT_PLL<=ADC_CLK_OUT_PLL_INT;
-		--debug3: if false generate
-		ADCDAQ0: entity work.ADCDAQ
-			GENERIC MAP(
-				IMPLEMENT_ADCDAQ        => TRUE, --
-				PROVIDE_BUFFERED_DIVCLK => ADC_PROVIDE_BUFFERED_DIVCLK(i),
-				USE_EXT_DATA_CLK        => ADC_USE_EXT_DATA_CLK(i), -- Use array to select whether a PLL should be used for this instance.
-				IS_DIFFERENTIAL         => ADC_IS_DIFFERENTIAL(i),
-				INSTANTIATE_PLL         => ADC_INSTANTIATE_PLL(i), --
-				BUFMR_MAP               => ADC_INSTANTIATE_BUFMR(i),
-				INSTANTIATE_IDELAYCTRL  => ADC_INSTANTIATE_IDELAYCTRL(i),
-				SIM                     => SIM
-				)
-			PORT MAP(
-				-- ADC interface
-				ADC_DATA_H_P => ADC_DATA_P(i),
-				ADC_DATA_H_N => ADC_DATA_N(i),
-				ADC_CLK_H_P  => ADC_CLK_P(i),
-				ADC_CLK_H_N  => ADC_CLK_N(i),
-
-				-- Readout interface
-				-- ADC_OUT_DAT => ADC_DAT(i),
-				m_axis_adc_tdata => axis_adc_tdata8(i),
-				m_axis_adc_tvalid => axis_adc_tvalid(i),
-				m_axis_adc_tlast => axis_adc_tlast(i),
-				m_axis_adc_tuser => axis_adc_tuser(i),
-				ADC_CLK => chan_clk(i),
-
-				-- Clock outputs (before PLL)
-
-				DIVCLK_OUT_BUFG => adc_divclk_out_bufg(i), -- BUFG-buffered word clock derived from the ADC clock (provided if ADC_PROVIDE_BUFFERED_DIVCLK=TRUE)
-
-				-- Clock outputs to deserializer logic (generated by PLL if ADC_INSTANTIATE_PLL=TRUE)
-				IOCLK_OUT_PLL => adc_ioclk_out_pll(i), -- PLL-generated IOCLK clock (if corresponding ADC_INSTANTIATE_PLL=TRUE)
-				DIVCLK_OUT_PLL => adc_divclk_out_pll(i), -- PLL-generated DIVCLK (word) clock (if corresponding ADC_INSTANTIATE_PLL=TRUE)
-
-				-- Clock monitor
-				ADC_CLK_OUT_DIV2 => adc_clk_div2(i), -- Word clock divided by 2 in logic for frequency counter
-
-				-- Data alignment signals
-				data_ready => adc_data_ready,
-				send_data => adc_send_data_reg,
-
-				-- External data clocks
-				IOCLK_IN => adc_ioclk, -- External IOCLK, used if USE_EXT_DATA_CLK=TRUE
-				DIVCLK_IN => adc_divclk, -- External DIVCLK, used if USE_EXT_DATA_CLK=TRUE
-
-				-- Global synchronization
-				ADCDAQ_RESET => ADCDAQ_RESET,
-
-				-- Control lines
-				CTRL_CMD_IN_DAT=> ADC_CMD_DAT(i),
-				CTRL_CMD_IN_RDY=> ADC_CMD_RDY(i),
-				CTRL_RPLY_OUT_DAT=> ADC_RPLY_DAT(i),
-				CTRL_RPLY_OUT_RDY=> ADC_RPLY_RDY(i),
-				CTRL_CLK => CTRL_CLK,
-				CTRL_RST => adcdaq_ctrl_rst_reg(i),
-
+    
+            -- Generate the adc_send_data which will tells all the ADCs to start
+            -- sending data once all of them have their FIFO half-full
+            adc_send_proc: process(chan_clk(i))
+            begin
+                if rising_edge(chan_clk(i)) then
+                    adc_data_ready_reg1 <= adc_data_ready; -- pipeline all adc_data_ready signals so they can be combined (and_reduce) at a central point
+                    adc_data_ready_all(i) <= adc_data_ready_reg1; -- pipeline
+                    adc_send_data_reg <= adc_send_data; -- pipeline AND resync adc_send_data
+                end if;
+            end process;
+    
+            -- Convert 4x 8-bit ADCDAQ bus samples to the lower 4 words of the 8x 16-bit bus
+    --		repack_gen: for j in 0 to 3  generate -- hard coded to 3 samples per word
+    --			axis_adc_tdata(i)(16*j+15 downto 16*j+8) <= axis_adc_tdata8(i)(8*j+7 downto 8*j); -- left aligg data to the MSB
+    --			--axis_adc_tdata(i)(16*j+7 downto 16*j) <= (others => axis_adc_tdata8(i)(7)); -- sign extend
+    --			axis_adc_tdata(i)(16*j+7 downto 16*j) <= (others => '0'); -- zero the MSBs
+    --		end generate;
+            axis_adc_tdata(i) <= axis_adc_tdata8(i);
+    
+            -- ADCDAQ is still implemented if IMPLEMENT_ANT=FALSE, but its IMPLEMENT_ADCDAQ generics is forced  to FALSE to the appropriate differential buffers are instantiated and prevent UCF errors.
+            --	ADC_CLK_OUT_PLL<=ADC_CLK_OUT_PLL_INT;
+            --debug3: if false generate
+            ADCDAQ0: entity work.ADCDAQ
+                GENERIC MAP(
+                    IMPLEMENT_ADCDAQ        => TRUE, --
+                    PROVIDE_BUFFERED_DIVCLK => ADC_PROVIDE_BUFFERED_DIVCLK(i),
+                    USE_EXT_DATA_CLK        => ADC_USE_EXT_DATA_CLK(i), -- Use array to select whether a PLL should be used for this instance.
+                    IS_DIFFERENTIAL         => ADC_IS_DIFFERENTIAL(i),
+                    INSTANTIATE_PLL         => ADC_INSTANTIATE_PLL(i), --
+                    BUFMR_MAP               => ADC_INSTANTIATE_BUFMR(i),
+                    INSTANTIATE_IDELAYCTRL  => ADC_INSTANTIATE_IDELAYCTRL(i),
+                    SIM                     => SIM
+                    )
+                PORT MAP(
+                    -- ADC interface
+                    ADC_DATA_H_P => ADC_DATA_P(i),
+                    ADC_DATA_H_N => ADC_DATA_N(i),
+                    ADC_CLK_H_P  => ADC_CLK_P(i),
+                    ADC_CLK_H_N  => ADC_CLK_N(i),
+    
+                    -- Readout interface
+                    -- ADC_OUT_DAT => ADC_DAT(i),
+                    m_axis_adc_tdata => axis_adc_tdata8(i),
+                    m_axis_adc_tvalid => axis_adc_tvalid(i),
+                    m_axis_adc_tlast => axis_adc_tlast(i),
+                    m_axis_adc_tuser => axis_adc_tuser(i),
+                    ADC_CLK => chan_clk(i),
+    
+                    -- Clock outputs (before PLL)
+    
+                    DIVCLK_OUT_BUFG => adc_divclk_out_bufg(i), -- BUFG-buffered word clock derived from the ADC clock (provided if ADC_PROVIDE_BUFFERED_DIVCLK=TRUE)
+    
+                    -- Clock outputs to deserializer logic (generated by PLL if ADC_INSTANTIATE_PLL=TRUE)
+                    IOCLK_OUT_PLL => adc_ioclk_out_pll(i), -- PLL-generated IOCLK clock (if corresponding ADC_INSTANTIATE_PLL=TRUE)
+                    DIVCLK_OUT_PLL => adc_divclk_out_pll(i), -- PLL-generated DIVCLK (word) clock (if corresponding ADC_INSTANTIATE_PLL=TRUE)
+    
+                    -- Clock monitor
+                    ADC_CLK_OUT_DIV2 => adc_clk_div2(i), -- Word clock divided by 2 in logic for frequency counter
+    
+                    -- Data alignment signals
+                    data_ready => adc_data_ready,
+                    send_data => adc_send_data_reg,
+    
+                    -- External data clocks
+                    IOCLK_IN => adc_ioclk, -- External IOCLK, used if USE_EXT_DATA_CLK=TRUE
+                    DIVCLK_IN => adc_divclk, -- External DIVCLK, used if USE_EXT_DATA_CLK=TRUE
+    
+                    -- Global synchronization
+                    ADCDAQ_RESET => ADCDAQ_RESET,
+    
+                    -- Control lines
+                    CTRL_CMD_IN_DAT=> ADC_CMD_DAT(i),
+                    CTRL_CMD_IN_RDY=> ADC_CMD_RDY(i),
+                    CTRL_RPLY_OUT_DAT=> ADC_RPLY_DAT(i),
+                    CTRL_RPLY_OUT_RDY=> ADC_RPLY_RDY(i),
+                    CTRL_CLK => CTRL_CLK,
+                    CTRL_RST => adcdaq_ctrl_rst_reg(i),
+    
     
                     REF_CLK => fmc_refclk(ADC_TO_ADC_BOARD_MAP(i)), -- Used to sample the ADC clock waveform
                     clk200 => clk200 -- Used to clock the IODELAYCTRL
@@ -2632,8 +2632,8 @@ begin
                         
                         -- The following is deprecated. The ADC data should come in a bus according to the number of
                         -- ADC bits. The appropriate number of zero bits should be added if capturing with UCAP engine.
-
-					-- ADC data comes in 128-bit bus that contains 8x 16-bit sample words.
+    
+                        -- ADC data comes in 128-bit bus that contains 8x 16-bit sample words.
                         -- Actual ADC data is 12 or 14 bits, MSB-aligned in each word. First sample is in the lower word.
     
                         -- Repack the ADC samples in a Nsamples x Nbits_per_samples word and also 
@@ -2729,20 +2729,20 @@ begin
 			NUMBER_OF_PORTS=>NUMBER_OF_CHANNELIZERS,
 			ADDRESS_MASK => "---1111------------" --'1': used to generate port index, '-' = don't care,
 		)
-	PORT MAP(
-		-- Master control interface
-		CMD_IN_DAT   => TOP_CHAN_CMD_DAT,
-		CMD_IN_RDY   => TOP_CHAN_CMD_RDY,
-		RPLY_OUT_DAT => TOP_CHAN_RPLY_DAT,
-		RPLY_OUT_RDY => TOP_CHAN_RPLY_RDY,
+		PORT MAP(
+			-- Master control interface
+			CMD_IN_DAT   => TOP_CHAN_CMD_DAT,
+			CMD_IN_RDY   => TOP_CHAN_CMD_RDY,
+			RPLY_OUT_DAT => TOP_CHAN_RPLY_DAT,
+			RPLY_OUT_RDY => TOP_CHAN_RPLY_RDY,
 
-		CMD_OUT_DAT=> CHAN_CMD_DAT,
-		CMD_OUT_RDY=> CHAN_CMD_RDY,
-		RPLY_IN_DAT=> CHAN_RPLY_DAT,
-		RPLY_IN_RDY=> CHAN_RPLY_RDY,
+			CMD_OUT_DAT=> CHAN_CMD_DAT,
+			CMD_OUT_RDY=> CHAN_CMD_RDY,
+			RPLY_IN_DAT=> CHAN_RPLY_DAT,
+			RPLY_IN_RDY=> CHAN_RPLY_RDY,
 
-		-- Slave (module) control interface
-		CLK => CTRL_CLK,
+			-- Slave (module) control interface
+			CLK => CTRL_CLK,
 			RST => chan_router_ctrl_rst
 		);
 end block chan_router_blk;
@@ -3527,63 +3527,63 @@ begin
 
  
         
-	-- Pipeline the 2nd crossbar output (non-blocking AXI-Streaming bus) to the input to the GPU link blocks to facilitate routing
-	cge_pipe_proc: process(ct_clk)
-		begin
-			if rising_edge(ct_clk) then
-				cge_reset <= ct_reset_reg;
-				cge_reset_reg <= cge_reset;
-
-                axis_cge_tvalid <= axis_crossbar1_out_tvalid(0);
-                axis_cge_tlast <= axis_crossbar1_out_tlast(0);
-                if cge_reset = '1' then
-                    axis_cge_tvalid <= '0';
-                end if;
-				for i in 0 to 8-1 loop
-					axis_cge_tdata(32*(7-i)+31 downto 32*(7-i)) <= axis_crossbar1_out_tdata(i);
-				end loop;
-			end if;
-		end process;
-
-	refclk_div2_proc: process(refclk)
-		begin
-			if rising_edge(refclk) then
-				refclk_div2 <= not refclk_div2;
-			end if; -- clk
-	end process;
-	gpu_refclk_div2(0) <= refclk_div2;
-
-	clk322_div2_proc: process(cge_clk322)
-		begin
-			if rising_edge(cge_clk322) then
-				cge_clk322_div2 <= not cge_clk322_div2;
-			end if; -- clk
-	end process;
-
- -- Use COMPONENT instantiation if this is synthesized as an out-of-context module
-	cge0: entity work.cge
-		port map (
-			tx_p => cge_tx_p,
-			tx_n => cge_tx_n,
-			refclk_p => cge_refclk_p,
-			refclk_n => cge_refclk_n,
-
-			-- internal clock monitors
-			refclk_out => refclk,
-			clk322_out    => cge_clk322, --! 322 MHz generated by the core to clock all user interface signals.
-
-			-- input data interface
-			--s_axis_tx_tdata  => axis_cge_tdata,
-			--s_axis_tx_tvalid => axis_cge_tvalid,
-			--s_axis_tx_tlast  => axis_cge_tlast,
-			s_axis_tx_tdata  => uct_tdata,
-			s_axis_tx_tvalid => uct_tvalid,
-			s_axis_tx_tlast  => uct_tlast,
-			clk => ct_clk,
-
-
-			rst => cge_reset,
-			--clk200 => clk200,
+            -- Pipeline the 2nd crossbar output (non-blocking AXI-Streaming bus) to the input to the GPU link blocks to facilitate routing
+            cge_pipe_proc: process(ct_clk)
+                begin
+                    if rising_edge(ct_clk) then
+                        cge_reset <= ct_reset_reg;
+                        cge_reset_reg <= cge_reset;
+        
+                        axis_cge_tvalid <= axis_crossbar1_out_tvalid(0);
+                        axis_cge_tlast <= axis_crossbar1_out_tlast(0);
+                        if cge_reset = '1' then
+                            axis_cge_tvalid <= '0';
+                        end if;
+                        for i in 0 to 8-1 loop
+                            axis_cge_tdata(32*(7-i)+31 downto 32*(7-i)) <= axis_crossbar1_out_tdata(i);
+                        end loop;
+                    end if;
+                end process;
+        
+            refclk_div2_proc: process(refclk)
+                begin
+                    if rising_edge(refclk) then
+                        refclk_div2 <= not refclk_div2;
+                    end if; -- clk
+            end process;
+            gpu_refclk_div2(0) <= refclk_div2;
+        
+            clk322_div2_proc: process(cge_clk322)
+                begin
+                    if rising_edge(cge_clk322) then
+                        cge_clk322_div2 <= not cge_clk322_div2;
+                    end if; -- clk
+            end process;
+        
+         -- Use COMPONENT instantiation if this is synthesized as an out-of-context module
+            cge0: entity work.cge
+                port map (
+                    tx_p => cge_tx_p,
+                    tx_n => cge_tx_n,
+                    refclk_p => cge_refclk_p,
+                    refclk_n => cge_refclk_n,
+        
+                    -- internal clock monitors
+                    refclk_out => refclk,
+                    clk322_out    => cge_clk322, --! 322 MHz generated by the core to clock all user interface signals.
+        
+                    -- input data interface
+                    --s_axis_tx_tdata  => axis_cge_tdata,
+                    --s_axis_tx_tvalid => axis_cge_tvalid,
+                    --s_axis_tx_tlast  => axis_cge_tlast,
+                    s_axis_tx_tdata  => uct_tdata,
+                    s_axis_tx_tvalid => uct_tvalid,
+                    s_axis_tx_tlast  => uct_tlast,
+                    clk => ct_clk,
+        
+        
+                    rst => cge_reset,
+                    --clk200 => clk200,
                     --areset => gpu_reset_reg, --async input, so we can use the channel reset
         
                     -- BSB interface
@@ -3605,108 +3605,124 @@ end generate GPU_GEN;
 -----------------------------
 -- UCAP - Global raw data capture
 ----------------------------- 
-cap_gen: if CAPTURE_TYPE = "BRAM" generate
+cap_gen: case CAPTURE_TYPE generate
+    when "BRAM" => 
     -- Nothing to do: capture logic in self-contained in CHAN
-
-elsif CAPTURE_TYPE = "URAM" generate
-	signal ucap_cmd_dat: AXIS8_DAT_STRUCT;
-	signal ucap_cmd_rdy: AXIS8_RDY_STRUCT;
-	signal ucap_rply_dat: AXIS8_DAT_STRUCT;
-	signal ucap_rply_rdy: AXIS8_RDY_STRUCT;
-
-	signal axis_ucap_reg1_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(CAPTURE_BITS_PER_WORD-1 downto 0);
-	signal axis_ucap_reg1_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
-	signal axis_ucap_reg1_tlast: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
-    attribute shreg_extract of axis_ucap_reg1_tdata,axis_ucap_reg1_tvalid,axis_ucap_reg1_tlast: signal is "no"; -- needed to prevent pipeline registers to be combined into shoft registers
-
-	signal axis_ucap_reg2_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(CAPTURE_BITS_PER_WORD-1 downto 0);
-	signal axis_ucap_reg2_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
-	signal axis_ucap_reg2_tlast: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
-    attribute shreg_extract of axis_ucap_reg2_tdata,axis_ucap_reg2_tvalid,axis_ucap_reg2_tlast: signal is "no"; -- needed to prevent pipeline registers to be combined into shoft registers
-
-    signal ucap_source_req1:std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1); -- data source request for each channel
-    signal ucap_source_ack1: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1); -- curent data source on tdata for each channel
-    signal ucap_source_ack2: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1); -- curent data source on tdata for each channel
-    attribute shreg_extract of ucap_source_ack1,ucap_source_ack2: signal is "no";
-
-	signal axis_cap_reg1_tdata112: slv_array(0 to NUMBER_OF_ADCS-1)(ADC_BITS_PER_WORD-1 downto 0);
-	signal ucap_ctrl_rst, ucap_ctrl_rst_reg: std_logic;
-    signal ucap_clk: std_logic;
-    signal ucap_rst: std_logic;
-
-    attribute DONT_TOUCH of ucap0: label is "true"; -- don't optimize through cell boundaries
-begin
-
-
-    ucap_clk <= chan_clk(0);
-    ucap_rst <= chan_reset(0);
+    when uram_case: "URAM" =>
+        signal ucap_cmd_dat: AXIS8_DAT_STRUCT;
+        signal ucap_cmd_rdy: AXIS8_RDY_STRUCT;
+        signal ucap_rply_dat: AXIS8_DAT_STRUCT;
+        signal ucap_rply_rdy: AXIS8_RDY_STRUCT;
     
-	ucap_cmd_dat <= top_cmd_dat(UCAP_BASE_PORT);
-	top_cmd_rdy(UCAP_BASE_PORT) <= ucap_cmd_rdy;
-	ucap_rply_rdy <= top_rply_rdy(UCAP_BASE_PORT);
-	top_rply_dat(UCAP_BASE_PORT) <= ucap_rply_dat;
+        signal axis_ucap_reg1_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(CAPTURE_BITS_PER_WORD-1 downto 0);
+        signal axis_ucap_reg1_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
+        signal axis_ucap_reg1_tlast: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
+        attribute shreg_extract of axis_ucap_reg1_tdata,axis_ucap_reg1_tvalid,axis_ucap_reg1_tlast: signal is "no"; -- needed to prevent pipeline registers to be combined into shoft registers
+    
+        signal axis_ucap_reg2_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(CAPTURE_BITS_PER_WORD-1 downto 0);
+        signal axis_ucap_reg2_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
+        signal axis_ucap_reg2_tlast: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
+        attribute shreg_extract of axis_ucap_reg2_tdata,axis_ucap_reg2_tvalid,axis_ucap_reg2_tlast: signal is "no"; -- needed to prevent pipeline registers to be combined into shoft registers
+    
+        signal ucap_source_req1:std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1); -- data source request for each channel
+        signal ucap_source_ack1: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1); -- curent data source on tdata for each channel
+        signal ucap_source_ack2: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1); -- curent data source on tdata for each channel
+        attribute shreg_extract of ucap_source_ack1,ucap_source_ack2: signal is "no";
+    
+        signal axis_cap_reg1_tdata112: slv_array(0 to NUMBER_OF_ADCS-1)(ADC_BITS_PER_WORD-1 downto 0);
+        signal ucap_ctrl_rst, ucap_ctrl_rst_reg: std_logic;
+        signal ucap_clk: std_logic;
+        signal ucap_rst, ucap_rst_reg: std_logic;
+        attribute DONT_TOUCH of ucap_rst, ucap_rst_reg: signal is "true";    
+        attribute equivalent_register_removal of ucap_rst, ucap_rst_reg: signal is "no";
+	    attribute keep of ucap_rst, ucap_rst_reg :signal is "true";
+        
+        attribute DONT_TOUCH of ucap0: label is "true"; -- don't optimize through cell boundaries
+    begin
+    
+    
+        ucap_clk <= chan_clk(0);
+        -- Pipeline the reset signal. ADC logic and UCAP (which uses Ultraram) are at opposite sides of the FPGA on the Ultrascale+.
+        process(ucap_clk) begin
+            if rising_edge(ucap_clk) then
+                ucap_rst <= chan_reset(0);
+                ucap_rst_reg <= ucap_rst;
+            end if;
+        end process;
+        
+        ucap_cmd_dat <= top_cmd_dat(UCAP_BASE_PORT);
+        top_cmd_rdy(UCAP_BASE_PORT) <= ucap_cmd_rdy;
+        ucap_rply_rdy <= top_rply_rdy(UCAP_BASE_PORT);
+        top_rply_dat(UCAP_BASE_PORT) <= ucap_rply_dat;
+    
+        -- Pipeline the BSB reset
+        bsb_rst_proc: process(ctrl_clk)
+            begin
+                if rising_edge(ctrl_clk) then
+                    ucap_ctrl_rst            <= ctrl_rst;
+                    ucap_ctrl_rst_reg        <= ucap_ctrl_rst;
+                end if; -- RST/CLK
+            end process;
+    
+        -- Pipeline the Muxed Capture data bus
+        pipe_proc: process(ucap_clk)
+        begin
+            if rising_edge(ucap_clk) then
+                axis_ucap_reg1_tdata <= axis_cap_tdata;
+                axis_ucap_reg1_tvalid <= axis_cap_tvalid(0); -- all channels are assumed to be synchronous
+                axis_ucap_reg1_tlast <= axis_cap_tlast(0);
+                cap_source_req <= ucap_source_req1;
+                ucap_source_ack1 <= cap_source_ack;
+    
+                axis_ucap_reg2_tdata <= axis_ucap_reg1_tdata;
+                axis_ucap_reg2_tvalid <= axis_ucap_reg1_tvalid;
+                axis_ucap_reg2_tlast <= axis_ucap_reg1_tlast;
+                ucap_source_ack2 <= ucap_source_ack1;
+    
+            end if;
+        end process;
+    
+        ucap0: entity work.ucap
+            generic map (
+                CAPTURE_BITS_PER_WORD => CAPTURE_BITS_PER_WORD
+                --ADC_BITS_PER_SAMPLE => ADC_BITS_PER_SAMPLE,
+                --ADC_SAMPLES_PER_WORD => ADC_SAMPLES_PER_WORD,
+                --ADC_SAMPLES_PER_FRAME => ADC_SAMPLES_PER_FRAME
+                )
+            port map ( 
+                s_axis_tdata => axis_ucap_reg2_tdata,
+                s_axis_tvalid => axis_ucap_reg2_tvalid,
+                s_axis_tlast=> axis_ucap_reg2_tlast,
+                source_sel_out => ucap_source_req1,
+                source_sel_in => ucap_source_ack2,
+    
+                m_axis_bsb_tdata => m_axis_cap_tdata,
+                m_axis_bsb_tvalid=> m_axis_cap_tvalid,
+                m_axis_bsb_tlast => m_axis_cap_tlast, 
+                m_axis_bsb_tready => m_axis_cap_tready,
+                bsb_clk => axis_cap_clk,
+                
+                s_axis_stream_in_data => axis_ucap_in_tdata,        
+		        s_axis_stream_in_tvalid=> axis_ucap_in_tvalid,
+		        s_axis_stream_in_tlast=> axis_ucap_in_tlast,
+		        s_axis_stream_in_tready=> axis_ucap_in_tready,
 
-	-- Pipeline the BSB reset
-	bsb_rst_proc: process(ctrl_clk)
-		begin
-			if rising_edge(ctrl_clk) then
-				ucap_ctrl_rst            <= ctrl_rst;
-				ucap_ctrl_rst_reg        <= ucap_ctrl_rst;
-			end if; -- RST/CLK
-		end process;
+                clk=> ucap_clk,
+                rst=> ucap_rst_reg,
+    
+                -- BSB interface
+                CMD_DAT => ucap_cmd_dat,
+                CMD_RDY => ucap_cmd_rdy,
+                RPLY_DAT => ucap_rply_dat,
+                RPLY_RDY => ucap_rply_rdy,
+                CTRL_CLK => ctrl_clk,
+                CTRL_RST => ucap_ctrl_rst_reg
+            );
+    end uram_case;
 
-	-- Pipeline the Muxed Capture data bus
- 	pipe_proc: process(ucap_clk)
-	begin
-		if rising_edge(ucap_clk) then
-			axis_ucap_reg1_tdata <= axis_cap_tdata;
-			axis_ucap_reg1_tvalid <= axis_cap_tvalid(0); -- all channels are assumed to be synchronous
-			axis_ucap_reg1_tlast <= axis_cap_tlast(0);
-			cap_source_req <= ucap_source_req1;
-			ucap_source_ack1 <= cap_source_ack;
+    when others =>
+        assert FALSE report "Unsupported CAPTURE_TYPE" severity FAILURE;	       
 
-            axis_ucap_reg2_tdata <= axis_ucap_reg1_tdata;
-            axis_ucap_reg2_tvalid <= axis_ucap_reg1_tvalid;
-            axis_ucap_reg2_tlast <= axis_ucap_reg1_tlast;
-			ucap_source_ack2 <= ucap_source_ack1;
-
-		end if;
-	end process;
-
-	ucap0: entity work.ucap
-		generic map (
-			CAPTURE_BITS_PER_WORD => CAPTURE_BITS_PER_WORD
-            --ADC_BITS_PER_SAMPLE => ADC_BITS_PER_SAMPLE,
-            --ADC_SAMPLES_PER_WORD => ADC_SAMPLES_PER_WORD,
-            --ADC_SAMPLES_PER_FRAME => ADC_SAMPLES_PER_FRAME
-			)
-	    port map ( 
-	        s_axis_tdata => axis_ucap_reg2_tdata,
-	        s_axis_tvalid => axis_ucap_reg2_tvalid,
-	        s_axis_tlast=> axis_ucap_reg2_tlast,
-            source_sel_out => ucap_source_req1,
-            source_sel_in => ucap_source_ack2,
-
-	        m_axis_bsb_tdata => m_axis_cap_tdata,
-			m_axis_bsb_tvalid=> m_axis_cap_tvalid,
-			m_axis_bsb_tlast => m_axis_cap_tlast, 
-			m_axis_bsb_tready => m_axis_cap_tready,
-	        bsb_clk => axis_cap_clk,
-	        
-	        clk=> ucap_clk,
-	        rst=> ucap_rst,
-
-			-- BSB interface
-			CMD_DAT => ucap_cmd_dat,
-			CMD_RDY => ucap_cmd_rdy,
-			RPLY_DAT => ucap_rply_dat,
-			RPLY_RDY => ucap_rply_rdy,
-			CTRL_CLK => ctrl_clk,
-			CTRL_RST => ucap_ctrl_rst_reg
-	    );
-
-else generate
-    assert FALSE report "Unsupported CAPTURE_TYPE" severity FAILURE;	       
 end generate cap_gen;
 ---------------------------------------------------------------------
 --  Correlator
