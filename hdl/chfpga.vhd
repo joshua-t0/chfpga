@@ -125,9 +125,9 @@ entity chFPGA is
 		ADC_TO_ADC_BOARD_MAP: IntegerArray(0 to NUMBER_OF_ADCS_MAX-1):=(0 to 7 => 0, 8 to 15 => 1);
 
 		-- F-Engine config
+		NUMBER_OF_CHANNELIZERS: INTEGER := NUMBER_OF_CHANNELIZERS_MAX; --! Number of channelizers to be implemented
         CAPTURE_TYPE: string := "BRAM"; -- "BRAM": BRAM-based in-channelizer capture engine; "URAM": URAM-based centralized UCAP capture engine. 
         NUMBER_OF_CAPTURE_SOURCES: integer := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES;
-		NUMBER_OF_CHANNELIZERS: INTEGER := NUMBER_OF_CHANNELIZERS_MAX; --! Number of channelizers to be implemented
 		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT;
 		CAPTURE_BITS_PER_WORD: integer := CONFIG_CAPTURE_BITS_PER_WORD; -- number of bits in the words captured by capture engine
 
@@ -148,7 +148,7 @@ entity chFPGA is
 		-- Correlator config
         CORR_TYPE: string                            := "CORR44"; -- "CORR44" or "UCORR44"
 		NUMBER_OF_CORRELATORS: INTEGER :=8; --! Number of correlator blocks (XMUL+ACC) to be implemented
-		--		NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER :=GLOBAL_NUMBER_OF_CHANNELIZERS_TO_CORRELATE; --! Number of channelizers to be correlated for each frequency channel. This is hard coded for now. Determines how many channelizer streams are fed to the CORR modules, and how many multipliers to implement in parallel in the CORR module.
+		NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER := NUMBER_OF_CHANNELIZERS; --! Number of channelizers to be correlated for each frequency channel. This is hard coded for now. Determines how many channelizer streams are fed to the CORR modules, and how many multipliers to implement in parallel in the CORR module.
 
 
 		-- Data offload configuration
