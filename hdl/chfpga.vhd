@@ -94,7 +94,6 @@ entity chFPGA is
 		-- BSB Monitor and control interface
 
 		PHY_TYPE: string; -- "GMII", "SGMII" or "NONE". Determines which ethernet interface to instantiate and connect to the BSB. If NONE, the BSB control interface is connected directly to the top level ports *_axis_bsb_*.
-		SGMII_CLOCK_SOURCE: string := "REFCLK"; --! Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 
 		-- ADC configuration
 
