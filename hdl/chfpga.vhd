@@ -952,11 +952,6 @@ signal udp_rx_overflow: std_logic;
 
 -- signal bp_shuffle_lock: std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS-1);
 
-signal pwm_out: std_logic;
-signal pps_out: std_logic;
-signal irigb_gen_out: std_logic;
-signal irigb_before_target: std_logic;
-signal sync_out: std_logic;
 
 signal clk200_ctr: unsigned(15 downto 0);
 signal clk10_ctr: unsigned(7 downto 0);
@@ -2426,15 +2421,15 @@ end block refclk_blk;
 --		clk200: For IODELAYCTRL
 ADCDAQ_RESET <= ADCDAQ_RESET_ASYNC or REFCLK_ADCDAQ_RESET;
 
----------------
--- EV8AQ160 ADC
----------------
 
-EV8AQ160: if ADC_TYPE="EV8AQ160" generate
-
-	signal adc_ioclk : std_logic;
-	signal adc_divclk : std_logic;
-	signal adc_divclk_out_bufg : std_logic_vector(0 to NUMBER_OF_ADCS-1);
+adc_gen: case ADC_TYPE generate
+    ---------------
+    -- EV8AQ160 ADC
+    ---------------
+    when EV8AQ160_case:"EV8AQ160" =>
+        signal adc_ioclk : std_logic;
+        signal adc_divclk : std_logic;
+        signal adc_divclk_out_bufg : std_logic_vector(0 to NUMBER_OF_ADCS-1);
 	signal adc_ioclk_out_pll : std_logic_vector(0 to NUMBER_OF_ADCS-1);
 	signal adc_divclk_out_pll : std_logic_vector(0 to NUMBER_OF_ADCS-1);
 
@@ -2468,23 +2463,36 @@ begin
 		signal adc_data_ready : std_logic;
 		signal adc_data_ready_reg1 : std_logic;
 		signal adc_send_data: std_logic;
-		signal adc_send_data_reg: std_logic;
+            signal adc_send_data_reg: std_logic;
+    
+            attribute keep of adc_data_ready_reg1: signal is "true"; -- prevent equivalent register merging
+            attribute keep of adc_send_data_reg: signal is "true"; -- prevent equivalent register merging
 
-		attribute keep of adc_data_ready_reg1: signal is "true"; -- prevent equivalent register merging
-		attribute keep of adc_send_data_reg: signal is "true"; -- prevent equivalent register merging
+			signal adcdaq_ctrl_rst: std_logic_vector(0 to NUMBER_OF_ADCS-1);
+		    signal adcdaq_ctrl_rst_reg: std_logic_vector(0 to NUMBER_OF_ADCS-1);
+			attribute DONT_TOUCH of adcdaq_ctrl_rst, adcdaq_ctrl_rst_reg: signal is "true";
 
-	begin
+        begin
+    
+            -- -- Define intermediary signals to eliminate use of indexed record arrays as actuals in the instantiation: this messes up the simulator.
+            -- ADC_DAT(i).TDATA <= axis_adc_tdata(i);
+            -- ADC_DAT(i).TVALID <= axis_adc_tvalid(i);
+            -- ADC_DAT(i).TLAST <= axis_adc_tlast(i);
+            -- ADC_DAT(i).TUSER <= axis_adc_tuser(i);
 
-		-- -- Define intermediary signals to eliminate use of indexed record arrays as actuals in the instantiation: this messes up the simulator.
-		-- ADC_DAT(i).TDATA <= axis_adc_tdata(i);
-		-- ADC_DAT(i).TVALID <= axis_adc_tvalid(i);
-		-- ADC_DAT(i).TLAST <= axis_adc_tlast(i);
-		-- ADC_DAT(i).TUSER <= axis_adc_tuser(i);
+            -- pipeline the bsb reset signals
+			rst_proc: process (ctrl_clk)
+			begin
+				if rising_edge(ctrl_clk) then
+					adcdaq_ctrl_rst <= (others => ctrl_rst);
+					adcdaq_ctrl_rst_reg  <= adcdaq_ctrl_rst;
+				end if;
+			end process;
 
-		-- Resync adc_send_data_async to the local clock.
-		adc_ready_cdc0: xpm_cdc_single
-			generic map (SRC_INPUT_REG => 0)
-			port map (src_clk => '0', src_in => adc_send_data_async, dest_clk => chan_clk(i), dest_out => adc_send_data);
+            -- Resync adc_send_data_async to the local clock.
+            adc_ready_cdc0: xpm_cdc_single
+                generic map (SRC_INPUT_REG => 0)
+                port map (src_clk => '0', src_in => adc_send_data_async, dest_clk => chan_clk(i), dest_out => adc_send_data);
 
 		-- Generate the adc_send_data which will tells all the ADCs to start
 		-- sending data once all of them have their FIFO half-full
@@ -2564,92 +2572,98 @@ begin
 				CTRL_CLK => CTRL_CLK,
 				CTRL_RST => adcdaq_ctrl_rst_reg(i),
 
+    
+                    REF_CLK => fmc_refclk(ADC_TO_ADC_BOARD_MAP(i)), -- Used to sample the ADC clock waveform
+                    clk200 => clk200 -- Used to clock the IODELAYCTRL
+                );
+    
+        end generate ADCGEN;
+    end EV8AQ160_case;
 
-				REF_CLK => fmc_refclk(ADC_TO_ADC_BOARD_MAP(i)), -- Used to sample the ADC clock waveform
-				clk200 => clk200 -- Used to clock the IODELAYCTRL
-			);
-
-	end generate ADCGEN;
-end generate EV8AQ160;
-
------------------------
--- AXIS ADC DATA SOURCE
------------------------
-
-AXIS_ADC: if ADC_TYPE="AXIS" generate
-	constant WORDS_PER_FRAME: integer := ADC_SAMPLES_PER_FRAME / ADC_SAMPLES_PER_WORD;
-	constant LOG2_WORDS_PER_FRAME : integer := integer_log2(WORDS_PER_FRAME);
-
-	signal adc_send_data2: slv(0 to NUMBER_OF_ADCS-1); -- indicates when TVALID can be passed on
-	signal adc_tdata: slv128_array(0 to NUMBER_OF_ADCS-1);
-	signal adc_tvalid: std_logic_vector(0 to NUMBER_OF_ADCS-1);
-
-begin
-	-- Select clock to be used as a source to generate channelizer clocks
-	-- We don't use the clocks directly, but we use the reset sequencer which use these clocks.
-	-- We should separate the reset sequencer from the clock generator.
-	adc_clk <= adc_axis_clk(ANT_CLK_SOURCE);
-
-
-	-- Pipeline and frame the ADC with a TLAST signal and generate the divide-by-two adc clock monitoring signals for the frequency counter
-	-- The first frame is skipped to provide time for the channelizer pipeline modules to complete their reset cycles.
-	GEN_ADC: for i in 0 to NUMBER_OF_ADCS-1 generate
-			signal adc_word_ctr: unsigned(LOG2_WORDS_PER_FRAME-1 downto 0) := (others=>'0'); -- Counts words in frame
-	begin
-		adc_clk_div2_proc: process(adc_clkout(i))
-			begin
-				-- Generate a divide-by-2 version of the downscaled sampling clock
-				if rising_edge(adc_clkout(i)) then
-					adc_clk_div2(i) <= not adc_clk_div2(i);
-				end if; -- adc_axis_clk
-		end process;
-
-		adc_proc: process(chan_clk(i))
-
---			variable adc_axis_tdata3: std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
-
-			begin
-				if rising_edge(chan_clk(i)) then
-				    -- pipeline the ADC data. The ADCs are on the right side of the RfSoC, and some logic may end up on the left.
-				    adc_tdata(i) <= adc_axis_tdata(i);
-				    adc_tvalid(i) <= adc_axis_tvalid(i);
-				    
-					if adc_tvalid(i)='1' then
-						adc_word_ctr <= adc_word_ctr + 1;
-					end if;
-					
-					-- The following is deprecated. The ADC data should come in a bus according to the number of
-					-- ADC bits. The appropriate number of zero bits should be added if capturing with UCAP engine.
+    when axis_case:"AXIS" =>
+        -----------------------
+        -- AXIS ADC DATA SOURCE
+        -----------------------
+        
+        constant WORDS_PER_FRAME: integer := ADC_SAMPLES_PER_FRAME / ADC_SAMPLES_PER_WORD;
+        constant LOG2_WORDS_PER_FRAME : integer := integer_log2(WORDS_PER_FRAME);
+    
+        signal adc_send_data2: slv(0 to NUMBER_OF_ADCS-1); -- indicates when TVALID can be passed on
+        signal axis_adc_tdata_reg: slv128_array(0 to NUMBER_OF_ADCS-1);
+        signal axis_adc_tvalid_reg: std_logic_vector(0 to NUMBER_OF_ADCS-1);
+    
+    begin
+        -- Select clock to be used as a source to generate channelizer clocks
+        -- We don't use the clocks directly, but we use the reset sequencer which use these clocks.
+        -- We should separate the reset sequencer from the clock generator.
+        adc_clk <= adc_axis_clk(ANT_CLK_SOURCE);
+    
+    
+        -- Pipeline and frame the ADC with a TLAST signal and generate the divide-by-two adc clock monitoring signals for the frequency counter
+        -- The first frame is skipped to provide time for the channelizer pipeline modules to complete their reset cycles.
+        GEN_ADC: for i in 0 to NUMBER_OF_ADCS-1 generate
+                signal adc_word_ctr: unsigned(LOG2_WORDS_PER_FRAME-1 downto 0) := (others=>'0'); -- Counts words in frame
+                signal chan_reset_reg: std_logic;
+                attribute DONT_TOUCH of chan_reset_reg: signal is "true";
+        begin
+            adc_clk_div2_proc: process(adc_clkout(i))
+                begin
+                    -- Generate a divide-by-2 version of the downscaled sampling clock
+                    if rising_edge(adc_clkout(i)) then
+                        adc_clk_div2(i) <= not adc_clk_div2(i);
+                    end if; -- adc_axis_clk
+            end process;
+    
+            adc_proc: process(chan_clk(i))
+    
+    --			variable adc_axis_tdata3: std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
+    
+                begin
+                    if rising_edge(chan_clk(i)) then
+                    
+                        chan_reset_reg <= chan_reset(i);
+                        -- pipeline the ADC data. The ADCs are on the right side of the RfSoC, and some logic may end up on the left.
+                        axis_adc_tdata_reg(i) <= adc_axis_tdata(i);
+                        axis_adc_tvalid_reg(i) <= adc_axis_tvalid(i);
+    
+                        
+                        if axis_adc_tvalid_reg(i)='1' then
+                            adc_word_ctr <= adc_word_ctr + 1;
+                        end if;
+                        
+                        -- The following is deprecated. The ADC data should come in a bus according to the number of
+                        -- ADC bits. The appropriate number of zero bits should be added if capturing with UCAP engine.
 
 					-- ADC data comes in 128-bit bus that contains 8x 16-bit sample words.
-					-- Actual ADC data is 12 or 14 bits, MSB-aligned in each word. First sample is in the lower word.
-
-					-- Repack the ADC samples in a Nsamples x Nbits_per_samples word and also 
-					-- invert the order of the words to put the first sample in the MSB of the word
-					 for j in 0 to ADC_SAMPLES_PER_WORD-1 loop
-					 	axis_adc_tdata(i)(ADC_BITS_PER_SAMPLE*(j+1) -1 downto ADC_BITS_PER_SAMPLE*j) <= adc_tdata(i)(16*(ADC_SAMPLES_PER_WORD-j)-1 downto 16*(ADC_SAMPLES_PER_WORD-j)-ADC_BITS_PER_SAMPLE);
-					 end loop;
-					
-					-- Pass the data bus and clear overflow flags
-					axis_adc_tuser(i) <= (others =>'0');
-					axis_adc_tvalid(i) <= adc_tvalid(i) and adc_send_data2(i);
-					axis_adc_tlast(i) <= '0';
-					-- generate TLAST
-					if all_ones(adc_word_ctr) then
-						axis_adc_tlast(i) <= '1';
-						adc_send_data2(i) <= '1'; -- start setting tvalid to 1
-					end if; -- last word
-					-- Synchronous reset
-					if chan_reset(i)='1' then
-						axis_adc_tvalid(i) <= '0';
-						adc_tvalid(i) <= '0';
-						adc_word_ctr <= (others => '0');
-						adc_send_data2(i) <= '0';
-					end if;
-				end if; -- if clk
-			end process;
-	end generate GEN_ADC;
-end generate AXIS_ADC;
+                        -- Actual ADC data is 12 or 14 bits, MSB-aligned in each word. First sample is in the lower word.
+    
+                        -- Repack the ADC samples in a Nsamples x Nbits_per_samples word and also 
+                        -- invert the order of the words to put the first sample in the MSB of the word
+                         for j in 0 to ADC_SAMPLES_PER_WORD-1 loop
+                            axis_adc_tdata(i)(ADC_BITS_PER_SAMPLE*(j+1) -1 downto ADC_BITS_PER_SAMPLE*j) <= axis_adc_tdata_reg(i)(16*(ADC_SAMPLES_PER_WORD-j)-1 downto 16*(ADC_SAMPLES_PER_WORD-j)-ADC_BITS_PER_SAMPLE);
+                         end loop;
+                        
+                        -- Pass the data bus and clear overflow flags
+                        axis_adc_tuser(i) <= (others =>'0');
+                        axis_adc_tvalid(i) <= axis_adc_tvalid_reg(i) and adc_send_data2(i);
+                        axis_adc_tlast(i) <= '0';
+                        -- generate TLAST
+                        if all_ones(adc_word_ctr) then
+                            axis_adc_tlast(i) <= '1';
+                            adc_send_data2(i) <= '1'; -- start setting tvalid to 1
+                        end if; -- last word
+                        -- Synchronous reset
+                        if chan_reset_reg then
+                            axis_adc_tvalid(i) <= '0';
+                            axis_adc_tvalid_reg(i) <= '0';
+                            adc_word_ctr <= (others => '0');
+                            adc_send_data2(i) <= '0';
+                        end if;
+                    end if; -- if clk
+                end process;
+        end generate GEN_ADC;
+    end axis_case;
+end generate adc_gen; -- case ADC_TYPE
 
 
 
@@ -2686,17 +2700,36 @@ end generate AXIS_ADC;
 --! | 13 | Base + 0x1A000  | CHAN 13      |             |
 --! | 14 | Base + 0x1C000  | CHAN 14      |             |
 --! | 15 | Base + 0x1E000  | CHAN 15      |             |
+chan_router_blk: block
 
-TOP_CHAN_CMD_DAT<= top_cmd_dat(CHAN_BASE_PORT);
-top_cmd_rdy(CHAN_BASE_PORT) <= TOP_CHAN_CMD_RDY;
-TOP_CHAN_RPLY_RDY<= top_rply_rdy(CHAN_BASE_PORT);
-top_rply_dat(CHAN_BASE_PORT) <= TOP_CHAN_RPLY_DAT;
+	signal TOP_CHAN_CMD_DAT: AXIS8_DAT_STRUCT;
+	signal TOP_CHAN_CMD_RDY: AXIS8_RDY_STRUCT;
+	signal TOP_CHAN_RPLY_DAT: AXIS8_DAT_STRUCT;
+	signal TOP_CHAN_RPLY_RDY: AXIS8_RDY_STRUCT;
 
-chan_router0: entity work.CTRL_ROUTER
-	GENERIC MAP (
-		NUMBER_OF_PORTS=>NUMBER_OF_CHANNELIZERS,
-		ADDRESS_MASK => "---1111------------" --'1': used to generate port index, '-' = don't care,
-	)
+	signal chan_router_ctrl_rst: std_logic;
+	attribute DONT_TOUCH of chan_router_ctrl_rst: signal is "true";
+
+begin
+	TOP_CHAN_CMD_DAT<= top_cmd_dat(CHAN_BASE_PORT);
+	top_cmd_rdy(CHAN_BASE_PORT) <= TOP_CHAN_CMD_RDY;
+	TOP_CHAN_RPLY_RDY<= top_rply_rdy(CHAN_BASE_PORT);
+	top_rply_dat(CHAN_BASE_PORT) <= TOP_CHAN_RPLY_DAT;
+
+	-- Pipeline the BSB reset
+	bsb_rst_proc: process(ctrl_clk)
+	begin
+		if rising_edge(ctrl_clk) then
+			chan_router_ctrl_rst <= ctrl_rst;
+		end if;
+	end process;
+
+
+	chan_router0: entity work.CTRL_ROUTER
+		GENERIC MAP (
+			NUMBER_OF_PORTS=>NUMBER_OF_CHANNELIZERS,
+			ADDRESS_MASK => "---1111------------" --'1': used to generate port index, '-' = don't care,
+		)
 	PORT MAP(
 		-- Master control interface
 		CMD_IN_DAT   => TOP_CHAN_CMD_DAT,
@@ -2711,34 +2744,39 @@ chan_router0: entity work.CTRL_ROUTER
 
 		-- Slave (module) control interface
 		CLK => CTRL_CLK,
-		RST => chan_router_ctrl_rst
-	);
+			RST => chan_router_ctrl_rst
+		);
+end block chan_router_blk;
 
 -- Generate channalizer clocks.
-chanclk_mmcm_gen:if CHAN_CLK_SOURCE="MMCM" generate
-	-- The clocks are taken  8-phase clock derived the MMCM/PLL in clock module
-	-- We resuse the same clocks as needed to cover all the channelizers.
-	chclkgen: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
-		chan_clk(i) <= chan_clk_pll(i mod 8);
-		chan_reset(i) <= chan_reset_pll(i mod 8);
-	end generate;
-end generate;
+chan_clk_gen:case CHAN_CLK_SOURCE generate
+    when "MMCM"  =>
+        -- The clocks are taken  8-phase clock derived the MMCM/PLL in clock module
+        -- We resuse the same clocks as needed to cover all the channelizers.
+        chclkgen: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
+            chan_clk(i) <= chan_clk_pll(i mod 8);
+            chan_reset(i) <= chan_reset_pll(i mod 8);
+        end generate;
 
-
-chanclk_adc_gen:if CHAN_CLK_SOURCE="ADC" generate
-	-- Generate channalizer clocks.
-	-- The channelizer clocks are taken directly from the ADC AXIS bus clock.
-	-- The reset is taken from the clock module reset becaused it is properly sequenced with the other resets, but we resync it to the adc clk.
-    signal chan_reset_resync: std_logic;
-begin
-	adcrst_cdc0: xpm_cdc_single
-		generic map (SRC_INPUT_REG => 0)
-		port map (src_clk => '0', src_in => chan_reset_pll(0), dest_clk => adc_clk, dest_out => chan_reset_resync);
-	chclkgen: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
-		chan_clk(i) <= adc_clk;
-		chan_reset(i) <= chan_reset_resync;
-	end generate;
-end generate;
+    when adc_case:"ADC" =>
+        -- Generate channalizer clocks.
+        -- The channelizer clocks are taken directly from the ADC AXIS bus clock.
+        -- The reset is taken from the clock module reset becaused it is properly sequenced with the other resets, but we resync it to the adc clk.
+        signal chan_reset_resync: std_logic;
+    begin
+        adcrst_cdc0: xpm_cdc_single
+            generic map (SRC_INPUT_REG => 0)
+            port map (src_clk => '0', src_in => chan_reset_pll(0), dest_clk => adc_clk, dest_out => chan_reset_resync);
+        chclkgen: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
+            chan_clk(i) <= adc_clk;
+            chan_reset(i) <= chan_reset_resync;
+        end generate;
+    end adc_case;
+    
+    when others =>
+    
+        assert FALSE report "Invalid CHAN_CLK_SOURCE" severity FAILURE;
+end generate chan_clk_gen;
 
 CHANGEN: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
 
