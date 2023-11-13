@@ -136,6 +136,10 @@ architecture Behavioral of SCALER is
     constant LOG2_NUMBER_OF_COEFF_BANKS: integer := integer_log2(NUMBER_OF_COEFF_BANKS);
     constant LOG2_NUMBER_OF_COEFF_PAGES: integer := LOG2_COEFF_BYTES_PER_FRAME + LOG2_NUMBER_OF_COEFF_BANKS - BSB_RAM_ADDR_WIDTH; -- width of the page register for byte-wise access to both banks
 
+
+    -- pipelined reset
+    signal rst_reg: std_logic;
+
     -- Data bus pipeline to compensate for RAM_LATENCY
     signal in_dat_dly1_tdata    : std_logic_vector(FFT_BITS_PER_WORD-1 downto 0);
     signal in_dat_dly1_tvalid   : std_logic;
@@ -586,6 +590,12 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                     scaled_data_tlast <= fft_reg_tlast;
                     scaled_data_tuser <= fft_reg_tuser;
                 end if;
+
+                    if rst_reg='1' then
+                        fft_reg_tvalid <= '0';
+                        scaled_data_tvalid_pre <= '0';
+                    end if; -- rst
+
             end process;
     end generate mul_gen;
 
@@ -606,6 +616,7 @@ scaler_proc: process(clk)
     begin
         if rising_edge(clk) then
 
+            rst_reg <= soft_reset or reset;
 
             -- Count the bin numbers to address the coefficient RAM
             if s_axis_in_tvalid='1' then
@@ -618,6 +629,7 @@ scaler_proc: process(clk)
                     end if;
                 end if;
             end if;
+
 
             -- Pipeline the data to compensate for the RAM access latency to
             -- the coefficients arrive at the same time as their corresponding
