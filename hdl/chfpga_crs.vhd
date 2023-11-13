@@ -429,7 +429,12 @@ zynq: entity work.zynq_tcpipe_crs
 
     );
 
-
+    smp(0) <= axis_cap_tvalid;
+    smp(1) <= axis_cap_tlast;
+    smp(2) <= axis_cap_tready;
+    smp(3) <= aclk;
+    
+    
     adc_clkout(1) <= adc_clkout(0);
     adc_clkout(3) <= adc_clkout(2);
     adc_clkout(5) <= adc_clkout(4);
@@ -526,7 +531,7 @@ zynq: entity work.zynq_tcpipe_crs
 
             -- debug bus
 --            debug_out => debug_out,
-            sma_out => smp,
+            sma_out => open, --smp,
 
             -- Command input stream
             s_axis_bsb_tdata => axis_bsb_cmd_tdata,
