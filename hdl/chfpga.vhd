@@ -422,12 +422,12 @@ entity chFPGA is
 			s_axis_bsb_tdata: in std_logic_vector(7 downto 0) := (others => '0');
 			s_axis_bsb_tvalid: in std_logic := '0';
 			s_axis_bsb_tlast: in std_logic := '0';
-			s_axis_bsb_tready: out std_logic;
+			s_axis_bsb_tready: out std_logic :=  '0';
 
 			-- Reply output stream
-			m_axis_bsb_tdata: out std_logic_vector(7 downto 0); -- Data is in bits 7:0, bits 31:30 is "00" for command replies and "01" for data
-			m_axis_bsb_tvalid: out std_logic;
-			m_axis_bsb_tlast: out std_logic;
+			m_axis_bsb_tdata: out std_logic_vector(7 downto 0) := X"00"; -- Data is in bits 7:0, bits 31:30 is "00" for command replies and "01" for data
+			m_axis_bsb_tvalid: out std_logic := '0';
+			m_axis_bsb_tlast: out std_logic := '0';
 			m_axis_bsb_tready: in std_logic := '0';
 
 			axis_bsb_clk : in  std_logic := '0'; -- BSB bus clock, typically between 100-125 MHz
