@@ -3699,21 +3699,40 @@ end generate CORRGEN; -- if NUMBER_OF_CORR >0
 -----------------------------------------------------------------------
 ---- LED blinking, for a comfortable user experience
 -----------------------------------------------------------------------
-BLINKER_RESET_ALL <= sys_ctrl_rst_reg or BLINKER_RESET;
-blinker_rst <= BLINKER_RESET_ALL or (not sfp_status_vector_int(0)); -- do not blink if Link Status = 0
-blinker_kick <= axis_udp_rx_tvalid and axis_udp_rx_tlast; -- blink faster when packets are received
-gpio_led <= gpio_led_int;
---blinker_leds <= gpio_led_int;
-BLINKER0: entity work.BLINKER
-		GENERIC MAP(
-			DUMMY => not BLINKER_PRESENT,
-			PING_PONG => PLATFORM_ID=PLATFORM_ID_ZCU111 or PLATFORM_ID=PLATFORM_ID_KC705 or PLATFORM_ID=PLATFORM_ID_ML605 -- We have 8 LEDS on these platform to perform a nice light show
-			)
-	PORT MAP(
-		RST => blinker_rst, -- do not blink if Link Status = 0
-		CLK => ctrl_clk,
-		LEDS=> gpio_led_int,
-		kick => blinker_kick -- blink faster when packets are received
-	);
+blinker_blk: block
+	signal bsb_rst_reg1, bsb_rst_reg2: std_logic;
+	attribute DONT_TOUCH of bsb_rst_reg1, bsb_rst_reg2: signal is "true";
+	signal blinker_reset_all: std_logic; --!
+	signal blinker_rst: std_logic;
+	signal blinker_kick: std_logic;
+begin
+
+	-- Pipeline reset signal
+	bsb_rst_proc: process(ctrl_clk)
+	begin
+		if rising_edge(ctrl_clk) then
+			bsb_rst_reg1 <= ctrl_rst;
+			bsb_rst_reg2 <= bsb_rst_reg1;
+		end if;
+	end process;
+
+	blinker_reset_all <= bsb_rst_reg2 or blinker_reset;
+	blinker_rst <= blinker_reset_all or (not sfp_status_vector_int(0)); -- do not blink if Link Status = 0
+	blinker_kick <= axis_udp_rx_tvalid and axis_udp_rx_tlast; -- blink faster when packets are received
+    --	gpio_led <= gpio_led_int;
+	--blinker_leds <= gpio_led_int;
+	BLINKER0: entity work.BLINKER
+			GENERIC MAP(
+				DUMMY => not BLINKER_PRESENT,
+				PING_PONG => PLATFORM_ID=PLATFORM_ID_ZCU111 or PLATFORM_ID=PLATFORM_ID_KC705 or PLATFORM_ID=PLATFORM_ID_ML605 -- We have 8 LEDS on these platform to perform a nice light show
+				)
+		PORT MAP(
+			RST => blinker_rst, -- do not blink if Link Status = 0
+			CLK => ctrl_clk,
+			LEDS=> gpio_led,
+			kick => blinker_kick -- blink faster when packets are received
+		);
+end block blinker_blk;
+
 end Behavioral;
 
