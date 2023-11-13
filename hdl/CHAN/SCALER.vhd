@@ -549,6 +549,12 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             signal fft_reg_tvalid: std_logic;
             signal fft_reg_tlast: std_logic;
             signal fft_reg_tuser: std_logic_vector(3 downto 0);
+
+            signal scaled_data_tdata_pre: std_logic_vector(INTEGER_WIDTH*INTEGERS_PER_WORD-1 downto 0);
+            signal scaled_data_tvalid_pre: std_logic;
+            signal scaled_data_tuser_pre: std_logic_vector(3 downto 0);
+            signal scaled_data_tlast_pre: std_logic;
+
             
         begin
 
@@ -576,26 +582,36 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         fft_reg_tlast <= in_dat_dly2_tlast;
                         fft_reg_tuser <= in_dat_dly2_tuser;
                     for i in FFT_BINS_PER_WORD-1 downto 0 loop
+                        -- Extract the single real gain to be applied to both the Re and Im part 
                         gain := signed(coeff_reg((FFT_BINS_PER_WORD-i)*COEFF_BITS_PER_BIN-1 downto (FFT_BINS_PER_WORD-i-1)*COEFF_BITS_PER_BIN));
+                        -- Compute the bit position of the lsb of the Re and Im integer in fft input and extract them
                         re_lsb := i*FFT_BITS_PER_BIN + FFT_BITS_PER_BIN/2;
                         im_lsb := i*FFT_BITS_PER_BIN;
                         fft_re := signed(fft_reg_tdata(re_lsb + FFT_BITS_PER_BIN/2-1 downto re_lsb)); -- we must use dly2 signals which are synchronized with the gain coefficient
                         fft_im := signed(fft_reg_tdata(im_lsb + FFT_BITS_PER_BIN/2-1 downto im_lsb));
+                        -- COmpute lsb osition of the Re and Im product in the output word
                         re_lsb := 2*i*INTEGER_WIDTH + INTEGER_WIDTH;
                         im_lsb := 2*i*INTEGER_WIDTH;
-                        scaled_data_tdata(re_lsb + INTEGER_WIDTH-1 downto re_lsb) <= std_logic_vector(resize(gain * fft_re, INTEGER_WIDTH));
-                        scaled_data_tdata(im_lsb + INTEGER_WIDTH-1 downto im_lsb) <= std_logic_vector(resize(gain * fft_im, INTEGER_WIDTH));
+                        -- Perform the multiplication
+                        scaled_data_tdata_pre(re_lsb + INTEGER_WIDTH-1 downto re_lsb) <= std_logic_vector(resize(gain * fft_re, INTEGER_WIDTH));
+                        scaled_data_tdata_pre(im_lsb + INTEGER_WIDTH-1 downto im_lsb) <= std_logic_vector(resize(gain * fft_im, INTEGER_WIDTH));
                     end loop;
-                    scaled_data_tvalid <= fft_reg_tvalid;
-                    scaled_data_tlast <= fft_reg_tlast;
-                    scaled_data_tuser <= fft_reg_tuser;
-                end if;
+                    scaled_data_tvalid_pre <= fft_reg_tvalid;
+                    scaled_data_tlast_pre <= fft_reg_tlast;
+                    scaled_data_tuser_pre <= fft_reg_tuser;
+
+                    -- Pipeline output: the previous register stage seems to be moved in the DSP
+                    scaled_data_tdata <= scaled_data_tdata_pre;
+                    scaled_data_tlast <= scaled_data_tlast_pre;
+                    scaled_data_tvalid <= scaled_data_tvalid_pre;
+                    scaled_data_tuser <= scaled_data_tuser_pre;
 
                     if rst_reg='1' then
                         fft_reg_tvalid <= '0';
                         scaled_data_tvalid_pre <= '0';
                     end if; -- rst
 
+                end if; --clk
             end process;
     end generate mul_gen;
 
