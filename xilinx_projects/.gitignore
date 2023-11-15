@@ -43,6 +43,10 @@
 !/sifpga_crs/
 !/sifpga_crs/*
 
+
+!/chfpga_crs/
+!/chfpga_crs/*
+
 !/cge_tests/
 !/cge_tests/*
 
