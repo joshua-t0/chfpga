@@ -63,8 +63,8 @@ use work.chFPGA_Package.all; -- Get all component definitions
 
         -- SFP clock outputs
 
-		sfp_refclk_nobuf: out std_logic; -- Unbuffered reference clock, used to feed a GTX CPLL/QPLL directly
-		sfp_refclk_buf: out std_logic; -- BUFG-buffered reference clock, used to feed the MMCM and SGMII core reset logic
+		sfp_refclk_nobuf: out std_logic := '0'; -- Unbuffered reference clock, used to feed a GTX CPLL/QPLL directly
+		sfp_refclk_buf: out std_logic := '0'; -- BUFG-buffered reference clock, used to feed the MMCM and SGMII core reset logic
 
 		-- System clock outputs
 
@@ -203,78 +203,79 @@ begin
 	---------------------
 
 
-	use_sysclk: if CLOCK_SOURCE = "SYSCLK" generate
+	clksel_gen: case CLOCK_SOURCE generate
 
-		-- Implement LVDS differential receiver
-		IBUFGDS0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
-			generic map(
-				DIFF_TERM => TRUE
-			)
-			port map (
-				I => sysclk_p,
-				IB => sysclk_n,
-				O => sysclk_nobuf
-			);
-
-		-- Feed the sysclk to the MMCM input through a BUFG
-		sysclk_bufg0 : BUFG
-					port map (
-						I => sysclk_nobuf, -- Clock buffer input
-						O => mmcm_clk_in -- Clock buffer output
-					);
-	end generate;
-
-	use_clk200buf: if CLOCK_SOURCE="SYSCLK_BUFG" generate
-		-- We are provided a BUFG-buffered 200 MHz clock
-		mmcm_clk_in <= sysclk_bufg;
-	end generate;
-
-	use_clk10buf: if CLOCK_SOURCE="CLK10_BUFG" generate
-		-- We are provided a BUFG-buffered 10 MHz clock
-		mmcm_clk_in <= clk10_bufg;
-	end generate;
-
-	use_sfp_refclk: if CLOCK_SOURCE="SFP_REFCLK" generate
-
-		gen_bufgte7: if FPGA_SERIES = FPGA_KINTEX7 generate
-		ibufds_gtrefclk : IBUFDS_GTE2
-			port map (
-				I     => sfp_refclk_p,
-				IB    => sfp_refclk_n,
-				CEB   => '0',
-				O     => sfp_refclk_nobuf_int,
-				ODIV2 => open
-			);
-		end generate;
-		gen_bufgteup: if PLATFORM_ID = PLATFORM_ID_ZCU111 or PLATFORM_ID = PLATFORM_ID_CRS generate
-			ibufds_mgtpllrefclk : IBUFDS
+ 		when "SYSCLK" =>
+			-- Implement LVDS differential receiver
+			IBUFGDS0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
+				generic map(
+					DIFF_TERM => TRUE
+				)
 				port map (
-				I     => sfp_refclk_p,
-				IB    => sfp_refclk_n,
-				O     => sfp_refclk_nobuf_int
+					I => sysclk_p,
+					IB => sysclk_n,
+					O => sysclk_nobuf
 				);
-		end generate;
 
-		-- We use a BUFG to reach the MMCM from the refclk to the MMCM
-		-- We have to use a BUFG because this clock is also used to clock the SGMII reset logic and GTX, 
-		-- which resides in another clock region that the REFCLK input.
+			-- Feed the sysclk to the MMCM input through a BUFG
+			sysclk_bufg0 : BUFG
+						port map (
+							I => sysclk_nobuf, -- Clock buffer input
+							O => mmcm_clk_in -- Clock buffer output
+						);
 
-		bufg_gtrefclk : BUFG
-			port map (
-				I => sfp_refclk_nobuf_int,
-				O => sfp_refclk_buf_int
-			);
+		when "SYSCLK_BUFG" =>
+			-- We are provided a BUFG-buffered 200 MHz clock
+			mmcm_clk_in <= sysclk_bufg;
 
-		mmcm_clk_in <= sfp_refclk_buf_int;
-		sfp_refclk_nobuf <= sfp_refclk_nobuf_int;
-		sfp_refclk_buf <= sfp_refclk_buf_int;
+		when "CLK10_BUFG" =>
+			-- We are provided a BUFG-buffered 10 MHz clock
+			mmcm_clk_in <= clk10_bufg;
+
+ 		when "SFP_REFCLK" =>
+
+			gen_bufgte7: if FPGA_SERIES = FPGA_KINTEX7 generate
+			ibufds_gtrefclk : IBUFDS_GTE2
+				port map (
+					I     => sfp_refclk_p,
+					IB    => sfp_refclk_n,
+					CEB   => '0',
+					O     => sfp_refclk_nobuf_int,
+					ODIV2 => open
+				);
+			end generate;
+			gen_bufgteup: if PLATFORM_ID = PLATFORM_ID_ZCU111 or PLATFORM_ID = PLATFORM_ID_CRS generate
+				ibufds_mgtpllrefclk : IBUFDS
+					port map (
+					I     => sfp_refclk_p,
+					IB    => sfp_refclk_n,
+					O     => sfp_refclk_nobuf_int
+					);
+			end generate;
+
+			-- We use a BUFG to reach the MMCM from the refclk to the MMCM
+			-- We have to use a BUFG because this clock is also used to clock the SGMII reset logic and GTX, 
+			-- which resides in another clock region that the REFCLK input.
+
+			bufg_gtrefclk : BUFG
+				port map (
+					I => sfp_refclk_nobuf_int,
+					O => sfp_refclk_buf_int
+				);
+
+			mmcm_clk_in <= sfp_refclk_buf_int;
+			sfp_refclk_nobuf <= sfp_refclk_nobuf_int;
+			sfp_refclk_buf <= sfp_refclk_buf_int;
+
+		when others =>
+			assert FALSE report "Invalid clock source" severity FAILURE;
 	end generate;
 
 	-- Make sure the sfp output clocks are driven even if we don't have the sfp inputs
-	no_use_sfp_refclk: if CLOCK_SOURCE/="SFP_REFCLK" generate
-		sfp_refclk_nobuf <= '0';
-		sfp_refclk_buf <= '0';
-	end generate;
+	--no_use_sfp_refclk: if CLOCK_SOURCE/="SFP_REFCLK" generate
+	--	sfp_refclk_nobuf <= '0';
+	--	sfp_refclk_buf <= '0';
+	--end generate;
 
 	-- Instantiate BUFG that is in the feedback path. This ensures that the clock outputs after the BUFGs are aligned with the MMCM clock input
 	CLKFB_BUFG : BUFG
@@ -450,115 +451,116 @@ begin
 
 
 	-- for the Iceboard, generate a 8-phase clock based on either the 200 MHz ADC clock or the 200 MHz system clock
-	gen_chanpll_k7: if CHAN_CLK_SOURCE = "MMCM" generate
+	gen_chanpll_k7: case CHAN_CLK_SOURCE generate
 
-		--constant IS_200MHZ: BOOLEAN := CHAN_CLK_FREQ /= "300MHZ";
-		constant CHAN_MMCM_VCO_FREQ: real := sel(CHAN_CLK_FREQ=200.0, 1000.0, 600.0); -- CHAN MMCM VCO frequency, in MHz
-		constant CHAN_MMCM_CLKIN_FREQ: real := 200.0; -- CHAN MMCM input frequency, in MHz. Always taken from the 200 MHz clock
-		constant CHAN_MMCM_CLKIN_PERIOD: real := 1000.0 / CHAN_MMCM_CLKIN_FREQ; -- period in ns
-		constant CHAN_MMCM_MULT_F: real := CHAN_MMCM_VCO_FREQ / CHAN_MMCM_CLKIN_FREQ; -- input clock multiplication for che channelizer VCO (200MHz * 5 = 1 GHz for  a 200 MHz output clock, 200MHz*3=600 MHz for a 300 output clock)
-		constant CHAN_MMCM_DIV: integer := integer(CHAN_MMCM_VCO_FREQ / CHAN_CLK_FREQ); -- Fractional divider to obtain the chan_clk frequency
+		when mmcm_case: "MMCM" =>
+			--constant IS_200MHZ: BOOLEAN := CHAN_CLK_FREQ /= "300MHZ";
+			constant CHAN_MMCM_VCO_FREQ: real := sel(CHAN_CLK_FREQ=200.0, 1000.0, 600.0); -- CHAN MMCM VCO frequency, in MHz
+			constant CHAN_MMCM_CLKIN_FREQ: real := 200.0; -- CHAN MMCM input frequency, in MHz. Always taken from the 200 MHz clock
+			constant CHAN_MMCM_CLKIN_PERIOD: real := 1000.0 / CHAN_MMCM_CLKIN_FREQ; -- period in ns
+			constant CHAN_MMCM_MULT_F: real := CHAN_MMCM_VCO_FREQ / CHAN_MMCM_CLKIN_FREQ; -- input clock multiplication for che channelizer VCO (200MHz * 5 = 1 GHz for  a 200 MHz output clock, 200MHz*3=600 MHz for a 300 output clock)
+			constant CHAN_MMCM_DIV: integer := integer(CHAN_MMCM_VCO_FREQ / CHAN_CLK_FREQ); -- Fractional divider to obtain the chan_clk frequency
 
-		signal chan_mmcm_clkin1: std_logic;
-		signal chan_mmcm_clkin2: std_logic;
+			signal chan_mmcm_clkin1: std_logic;
+			signal chan_mmcm_clkin2: std_logic;
 
-		signal chan_clk_fb: std_logic;
-		signal chan_clk_nobuf: std_logic_vector(7 downto 0);
-		attribute DONT_TOUCH of chan_clk_nobuf: signal is "yes"; -- preserve the net name so we can use it in the timing constraints
+			signal chan_clk_fb: std_logic;
+			signal chan_clk_nobuf: std_logic_vector(7 downto 0);
+			attribute DONT_TOUCH of chan_clk_nobuf: signal is "yes"; -- preserve the net name so we can use it in the timing constraints
+		begin
+			-- Select the input clocks of the channelizer MMCM.
+			-- The MMCM parameters assume the clocks are at 200 MHz.
+			chan_mmcm_clkin1 <= clk200_int;
+			chan_mmcm_clkin2 <= adc_clk when CHAN_CLK_FREQ=200.0 else clk200_int; -- we can use the ADC word clock if it is 200 MHz, otherwise we can't
 
-	begin
+			chan_mmcm0 : MMCME2_ADV
+				generic map(
+					BANDWIDTH            => "HIGH",
+					CLKOUT4_CASCADE      => FALSE,
+					COMPENSATION         => "ZHOLD",
+					STARTUP_WAIT         => FALSE,
+					DIVCLK_DIVIDE        => 1, -- 200 MHz or 125 MHz PFD
+					CLKFBOUT_MULT_F      => CHAN_MMCM_MULT_F, -- 5.0 for 1 GHz VCO & 200 MHz out, 3.0 for 600 MHz VCO and 300 MHz out
+					CLKFBOUT_PHASE       => 0.000,
+					CLKFBOUT_USE_FINE_PS => FALSE,
+					CLKOUT0_DIVIDE_F     => real(CHAN_MMCM_DIV), -- 5.000 for 200 MHz, 2.000 for 300 MHz
+					CLKOUT0_PHASE        => 0.000,
+					CLKOUT0_DUTY_CYCLE   => 0.500,
+					CLKOUT0_USE_FINE_PS  => FALSE,
 
-		-- Select the input clocks of the channelizer MMCM.
-		-- The MMCM parameters assume the clocks are at 200 MHz.
-		chan_mmcm_clkin1 <= clk200_int;
-		chan_mmcm_clkin2 <= adc_clk when CHAN_CLK_FREQ=200.0 else clk200_int; -- we can use the ADC word clock if it is 200 MHz, otherwise we can't
+					CLKOUT1_DIVIDE       => CHAN_MMCM_DIV, -- 5 for 200 MHz, 2 for 300 MHz
+					CLKOUT1_PHASE        => 45.000,
+					CLKOUT1_DUTY_CYCLE   => 0.500,
+					CLKOUT1_USE_FINE_PS  => FALSE,
 
+					CLKOUT2_DIVIDE       => CHAN_MMCM_DIV, -- 5 for 200 MHz, 2 for 300 MHz
+					CLKOUT2_PHASE        => 90.000,
+					CLKOUT2_DUTY_CYCLE   => 0.500,
+					CLKOUT2_USE_FINE_PS  => FALSE,
 
-		chan_mmcm0 : MMCME2_ADV
-			generic map(
-				BANDWIDTH            => "HIGH",
-				CLKOUT4_CASCADE      => FALSE,
-				COMPENSATION         => "ZHOLD",
-				STARTUP_WAIT         => FALSE,
-				DIVCLK_DIVIDE        => 1, -- 200 MHz or 125 MHz PFD
-				CLKFBOUT_MULT_F      => CHAN_MMCM_MULT_F, -- 5.0 for 1 GHz VCO & 200 MHz out, 3.0 for 600 MHz VCO and 300 MHz out
-				CLKFBOUT_PHASE       => 0.000,
-				CLKFBOUT_USE_FINE_PS => FALSE,
-				CLKOUT0_DIVIDE_F     => real(CHAN_MMCM_DIV), -- 5.000 for 200 MHz, 2.000 for 300 MHz
-				CLKOUT0_PHASE        => 0.000,
-				CLKOUT0_DUTY_CYCLE   => 0.500,
-				CLKOUT0_USE_FINE_PS  => FALSE,
+					CLKOUT3_DIVIDE       => CHAN_MMCM_DIV, -- 5 for 200 MHz, 2 for 300 MHz
+					CLKOUT3_PHASE        => 135.000,
+					CLKOUT3_DUTY_CYCLE   => 0.500,
+					CLKOUT3_USE_FINE_PS  => FALSE,
 
-				CLKOUT1_DIVIDE       => CHAN_MMCM_DIV, -- 5 for 200 MHz, 2 for 300 MHz
-				CLKOUT1_PHASE        => 45.000,
-				CLKOUT1_DUTY_CYCLE   => 0.500,
-				CLKOUT1_USE_FINE_PS  => FALSE,
+					CLKIN1_PERIOD        => CHAN_MMCM_CLKIN_PERIOD, -- 5.000 for 200 MHz
+					CLKIN2_PERIOD        => CHAN_MMCM_CLKIN_PERIOD, -- 5.000 for 200 MHz
+					REF_JITTER1          => 0.010
+				)
+				port map(
+				-- Output clocks
+					CLKFBOUT            => chan_clk_fb,
+					CLKOUT0             => chan_clk_nobuf(0),
+					CLKOUT0B            => chan_clk_nobuf(4),
+					CLKOUT1             => chan_clk_nobuf(1),
+					CLKOUT1B            => chan_clk_nobuf(5),
+					CLKOUT2             => chan_clk_nobuf(2),
+					CLKOUT2B            => chan_clk_nobuf(6),
+					CLKOUT3             => chan_clk_nobuf(3),
+					CLKOUT3B            => chan_clk_nobuf(7),
 
-				CLKOUT2_DIVIDE       => CHAN_MMCM_DIV, -- 5 for 200 MHz, 2 for 300 MHz
-				CLKOUT2_PHASE        => 90.000,
-				CLKOUT2_DUTY_CYCLE   => 0.500,
-				CLKOUT2_USE_FINE_PS  => FALSE,
+					-- Input clock & control
+					CLKFBIN             => chan_clk_fb,
+					CLKIN1              => chan_mmcm_clkin1, -- used when CLKINSEL='1'. Can use CLK200_MMCM_NOBUF if adjacent to sys_mmcm, 
+					CLKIN2              => chan_mmcm_clkin2, -- used when CLKINSEL='0'. If there is no bufg, this mmcm needs to be adjacent to the adc mmcm
+					CLKINSEL            => chan_clk_src_sel,
+					-- Ports for dynamic reconfiguration
+					DADDR               => (others => '0'),
+					DCLK                => '0',
+					DEN                 => '0',
+					DI                  => (others => '0'),
+					DO                  => open,
+					DRDY                => open,
+					DWE                 => '0',
+					-- Ports for dynamic phase shift
+					PSCLK               => '0',
+					PSEN                => '0',
+					PSINCDEC            => '0',
+					PSDONE              => open,
+					-- Other control and status signals
+					LOCKED              => chan_mmcm_locked,
+					CLKINSTOPPED        => open,
+					CLKFBSTOPPED        => open,
+					PWRDWN              => '0',
+					RST                 => chan_pll_reset_in
+				);
+			-- instantiate BUFG for each clock output
+			gen_chanbufg: for i in 0 to 7 generate
+				chan_bufg0 : BUFG
+							port map (
+								I => chan_clk_nobuf(i), -- Clock buffer input
+								O => chan_clk_int(i) -- Clock buffer output
+							);
+			end generate gen_chanbufg;
+		end mmcm_case;
 
-				CLKOUT3_DIVIDE       => CHAN_MMCM_DIV, -- 5 for 200 MHz, 2 for 300 MHz
-				CLKOUT3_PHASE        => 135.000,
-				CLKOUT3_DUTY_CYCLE   => 0.500,
-				CLKOUT3_USE_FINE_PS  => FALSE,
+		when  "ADC" => -- The channelizer clock is taken directly from the `adc_clock` signal
+			-- For the ZCU111, we just send the already-buffered single ADC clock to all channel clocks
+			chan_clk_int <= (others => adc_clk);
+			chan_mmcm_locked <= '1'; --make sure the RESETs don't wait on the inexistent MMCM locked signal
 
-				CLKIN1_PERIOD        => CHAN_MMCM_CLKIN_PERIOD, -- 5.000 for 200 MHz
-				CLKIN2_PERIOD        => CHAN_MMCM_CLKIN_PERIOD, -- 5.000 for 200 MHz
-				REF_JITTER1          => 0.010
-			)
-			port map(
-			-- Output clocks
-				CLKFBOUT            => chan_clk_fb,
-				CLKOUT0             => chan_clk_nobuf(0),
-				CLKOUT0B            => chan_clk_nobuf(4),
-				CLKOUT1             => chan_clk_nobuf(1),
-				CLKOUT1B            => chan_clk_nobuf(5),
-				CLKOUT2             => chan_clk_nobuf(2),
-				CLKOUT2B            => chan_clk_nobuf(6),
-				CLKOUT3             => chan_clk_nobuf(3),
-				CLKOUT3B            => chan_clk_nobuf(7),
-
-				-- Input clock & control
-				CLKFBIN             => chan_clk_fb,
-				CLKIN1              => chan_mmcm_clkin1, -- used when CLKINSEL='1'. Can use CLK200_MMCM_NOBUF if adjacent to sys_mmcm, 
-				CLKIN2              => chan_mmcm_clkin2, -- used when CLKINSEL='0'. If there is no bufg, this mmcm needs to be adjacent to the adc mmcm
-				CLKINSEL            => chan_clk_src_sel,
-				-- Ports for dynamic reconfiguration
-				DADDR               => (others => '0'),
-				DCLK                => '0',
-				DEN                 => '0',
-				DI                  => (others => '0'),
-				DO                  => open,
-				DRDY                => open,
-				DWE                 => '0',
-				-- Ports for dynamic phase shift
-				PSCLK               => '0',
-				PSEN                => '0',
-				PSINCDEC            => '0',
-				PSDONE              => open,
-				-- Other control and status signals
-				LOCKED              => chan_mmcm_locked,
-				CLKINSTOPPED        => open,
-				CLKFBSTOPPED        => open,
-				PWRDWN              => '0',
-				RST                 => chan_pll_reset_in
-			);
-
-		gen_chanbufg: for i in 0 to 7 generate
-			chan_bufg0 : BUFG
-						port map (
-							I => chan_clk_nobuf(i), -- Clock buffer input
-							O => chan_clk_int(i) -- Clock buffer output
-						);
-		end generate gen_chanbufg;
-	end generate gen_chanpll_k7;
-
-	-- For the ZCU111, we just send the already-buffered single ADC clock to all channel clocks
-	gen_chanpll_up: if CHAN_CLK_SOURCE /= "MMCM" generate
-		chan_clk_int <= (others => adc_clk);
-		chan_mmcm_locked <= '1'; --make sure the RESETs don't wait on the inexistent MMCM locked signal
+		when others =>
+			assert FALSE report "Invalid channelizer clock source" severity FAILURE;
 	end generate;
 
 	-- Assign channelizer clock to output port.
@@ -579,13 +581,6 @@ begin
         );
 	clk200_reset_out <= clk200_reset_out_int;
 
---	clk200_reset0: entity work.sync_reset
---		port map(
---			clk => clk200_int,
---			async_reset => clk200_reset_async,
---			reset_out => clk200_reset_out_int
---			);
-
 	clk125_reset_async <= rst_in or (not mmcm_locked);
     clk125_reset_cdc0: xpm_cdc_async_rst
         generic map (RST_ACTIVE_HIGH => 1)
@@ -595,13 +590,6 @@ begin
             dest_arst => clk125_reset_out
         );
 
---	clk125_reset0: entity work.sync_reset
---		port map(
---			clk => clk125_int,
---			async_reset => clk125_reset_async,
---			reset_out => clk125_reset_out
---			);
-
 	sysmon_reset_async <= rst_in or (not mmcm_locked);
     sysmon_reset_cdc0: xpm_cdc_async_rst
         generic map (RST_ACTIVE_HIGH => 1)
@@ -610,13 +598,6 @@ begin
             dest_clk => sysmon_clk_int,
             dest_arst => sysmon_reset_out
         );
-
---	sysmon_clk_reset0: entity work.sync_reset
---		port map(
---			clk => sysmon_clk_int,
---			async_reset => sysmon_reset_async,
---			reset_out => sysmon_reset_out
---			);
 
 	---------------------
 	-- Reset sequencer
