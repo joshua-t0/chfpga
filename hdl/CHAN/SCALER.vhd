@@ -155,7 +155,7 @@ architecture Behavioral of SCALER is
     --signal IN_DAT_DLY2: AXIS72_DAT_STRUCT; --!
 
     --- Define Control word and its signals
-    signal control_bytes: slv8_array(0 to 9); -- default value set in the CMD_SLAVE
+    signal control_bytes: slv8_array(0 to 10); -- default value set in the CMD_SLAVE
     signal status_bytes: slv8_array(0 to 7);
 
     signal bypass_scaler: std_logic;
@@ -203,6 +203,7 @@ architecture Behavioral of SCALER is
     signal word_ctr: unsigned(LOG2_FFT_WORDS_PER_FRAME-1 downto 0); -- 10 bits
     signal frame_ctr: unsigned(31 downto 0); -- 10 bits
     signal use_offset_binary: std_logic;
+    signal data_type: std_logic_vector(1 downto 0);
 
     signal next_gain_bank: std_logic; -- 1 bit
     signal gain_bank_switch_frame_number: std_logic_vector(31 downto 0);
@@ -318,6 +319,9 @@ stats_frame_count <= to_unsigned(control_bytes(3 to 5));
 -- CONTROL Byte 6-9
 gain_bank_switch_frame_number <= to_slv(control_bytes(6 to 9));
 
+-- CONTROL Byte 10
+data_type                <= control_bytes(10)(1 downto 0); -- "00": scaled data, "01": 1+0j if any saturation, "10": 1+0j or 0+1j if positive or negative saturation respectively
+
 -- STATUS Byte 0
 status_bytes(0)(7)   <= stats_ready;
 status_bytes(0)(6)   <= current_gain_bank;
@@ -350,7 +354,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
     GENERIC MAP (
         NUMBER_OF_CONTROL_BYTES=>control_bytes'Length(1), -- Number of bits in the control word
         NUMBER_OF_STATUS_BYTES=>status_bytes'Length(1), -- Number of bits in the status word.
-        DEFAULT_CONTROL_BYTES=> X"21_60_02_05F5E1_00000000", -- post_scaler_left_shift=1, (if FFT input is a constant 1, bin 0 will be = 1)
+        DEFAULT_CONTROL_BYTES=> X"21_60_02_05F5E1_00000000_00", -- post_scaler_left_shift=1, (if FFT input is a constant 1, bin 0 will be = 1)
         RAM_ADDR_WIDTH => BSB_RAM_ADDR_WIDTH,
         RAM_LATENCY=> RAM_LATENCY
         )
@@ -823,11 +827,35 @@ scaler_proc: process(clk)
                 end if;
                 m_axis_out_tuser(TUSER_SCALER_LOW_OVERFLOW_BIT) <= '0';
                 m_axis_out_tuser(TUSER_SCALER_HIGH_OVERFLOW_BIT) <= '0';
-            else
+            else -- no bypass
                 m_axis_out_tdata <= (others => '0'); -- overriden below
-                len := minimum(OUT_BITS_PER_BIN/2, 8); -- copy at most 8 bits to the output, or less if the ouutput word is narrower
-                for i in 0 to INTEGERS_PER_WORD-1 loop
-                    m_axis_out_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto (i+1)*OUT_BITS_PER_BIN/2-len) <= std_logic_vector(OUT_WORD_VAR(i)(7 downto 8-len)); -- MSB->LSB: 3,2,1,0 = Re(N), Im(N), Re(N+1), Im(N+1)
+                len := minimum(OUT_BITS_PER_BIN/2, 8); -- copy at most 8 bits to the output, or less if the output word is narrower
+                for i in 0 to INTEGERS_PER_WORD/2-1 loop
+                    case data_type is
+                        when "00" =>
+                           m_axis_out_tdata((2*i+1)*OUT_BITS_PER_BIN/2-1 downto (2*i+1)*OUT_BITS_PER_BIN/2-len) <= std_logic_vector(OUT_WORD_VAR(2*i)(7 downto 8-len)); -- MSB->LSB: 3,2,1,0 = Re(N), Im(N), Re(N+1), Im(N+1)
+                           m_axis_out_tdata((2*i+2)*OUT_BITS_PER_BIN/2-1 downto (2*i+2)*OUT_BITS_PER_BIN/2-len) <= std_logic_vector(OUT_WORD_VAR(2*i+1)(7 downto 8-len)); -- MSB->LSB: 3,2,1,0 = Re(N), Im(N), Re(N+1), Im(N+1)
+                        when "01" =>
+                            if  stage2_overflow(2*i)='1' or stage2_overflow(2*i+1)='1' then
+                                m_axis_out_tdata((2*i+2)*OUT_BITS_PER_BIN/2-4) <= '1'; -- set LSB of upper 4 bits, Re only
+                            end if;
+                        when "10" =>
+                            if  stage2_overflow(2*i+1)='1' then -- Re overflow
+                                if stage2_sign(2*i+1)='0' then -- if positive Re overflow set output to 1+0j
+                                    m_axis_out_tdata((2*i+2)*OUT_BITS_PER_BIN/2-4) <= '1'; -- set LSB of upper 4 bits of Re part
+                                else -- if negative Re overflow, set output to 0+1j
+                                    m_axis_out_tdata((2*i+1)*OUT_BITS_PER_BIN/2-4) <= '1'; -- set LSB of upper 4 bits of Im part
+                                end if; 
+                            end if;
+                        when "11" =>
+                            if  stage2_overflow(2*i)='1' then -- Im overflow 
+                                if stage2_sign(2*i)='0' then -- if positive Im overflow set output to 1+0j
+                                    m_axis_out_tdata((2*i+2)*OUT_BITS_PER_BIN/2-4) <= '1'; -- set LSB of upper 4 bits of Re part
+                                else -- if negative Im overflow, set output to 0+1j
+                                    m_axis_out_tdata((2*i+1)*OUT_BITS_PER_BIN/2-4) <= '1'; -- set LSB of upper 4 bits of Im part
+                                end if; 
+                            end if;
+                    end case;
                 end loop;
                 m_axis_out_tuser <= stage2_tuser; -- pass on the USER bits
                 -- insert the current bank in the TLAST-2 serial flag bit (TLAST-0 (stage2_tlast): ADC overflow, TLAST-1 (stage1_tlast) = FFT overflow, TLAST-2 (scaled_data_even_tlast) = gain bank)
@@ -837,6 +865,7 @@ scaler_proc: process(clk)
                     m_axis_out_tuser(TUSER_SERIAL_FLAGS_BIT) <= stage2_tuser(TUSER_SERIAL_FLAGS_BIT);
                 end if;
                 -- Set the scaler overflow bits in the user data
+                -- Warning: works only if we have 2 bins/word. To be fixed if these bits are to be used downstream. 
                 m_axis_out_tuser(TUSER_SCALER_LOW_OVERFLOW_BIT) <= stage2_overflow(0) or stage2_overflow(1); -- Overflow for the low word is when either its real or imaginary value overflows
                 m_axis_out_tuser(TUSER_SCALER_HIGH_OVERFLOW_BIT) <= stage2_overflow(2) or stage2_overflow(3); -- Overflow for the low word is when either its real or imaginary value overflows
                 m_axis_out_tlast <= stage2_tlast;
