@@ -152,6 +152,10 @@ entity GPIO is
 		-- ADC mezzanine control signals
 
 		ADC_RST: out std_logic_vector(0 to NUMBER_OF_ADC_BOARDS-1);
+		adc_cal_freeze: out std_logic_vector(0 to 7);
+		adc_cal_frozen: in std_logic_vector(0 to 7) := (others => '0');
+		adc_cal_signal_detect: in std_logic_vector(0 to 7) := (others => '0');
+		
 		adc_pll_lock: in std_logic_vector(0 to NUMBER_OF_ADC_BOARDS-1); --! Lock signal for the ADC PLL on each mezzanine
 
 		-- LCD (on some evaluation boards)
@@ -202,6 +206,7 @@ entity GPIO is
 		clk200: in std_logic; --! 200 MHz clock, used for many things
 		clk200_reset: in std_logic; --!
 		clk10: in std_logic; --! 10 MHZ reference clock, in phase for every board in the system
+		clk10_sel: out std_logic;
 		dna_clk: in std_logic; --! DNA port clock (max 97 MHz)
 
 		-- PWM signal
@@ -337,13 +342,12 @@ signal target_network_config_source: std_logic_vector(1 downto 0);
 --signal target_local_base_ip_addr: std_logic_vector(31 downto 0);
 --signal _base_ip_port: std_logic_vector(15 downto 0);
 
-signal serial_match: std_logic; -- indicates if the FPGA serial number matches the target serial number
+signal core_reg_wr_en: std_logic; -- indicates if the FPGA serial number matches the target serial number
 
 signal bsb_core_din: std_logic_vector(7 downto 0);
 signal bsb_core_dout: std_logic_vector(7 downto 0);
 signal bsb_core_addr: std_logic_vector(6 downto 0); -- 5 bit word number (max 32 registers) + 2 bits (4 bytes per word)
 signal bsb_core_wr_en: std_logic;
-signal bsb_core_wr_en_masked: std_logic;
 signal bsb_core_rd_en: std_logic;
 
 -- Network parameters from the core registers
@@ -530,7 +534,7 @@ begin
 
 
 
--- CONTROL Byte 0
+-- CONTROL Byte 0: Buco converter sync enable, channelizer clock source, various resets 
 CTRL_FLAG_GLOBAL_TRIG      <= CONTROL_BYTES(0)(7);
 CTRL_FLAG_BUCK_SYNC_ENABLE <= CONTROL_BYTES(0)(6);
 CHAN_CLK_RESET_ASYNC       <= CONTROL_BYTES(0)(5);
@@ -539,10 +543,10 @@ ADCDAQ_RESET_ASYNC         <= CONTROL_BYTES(0)(3);
 ADC_RST                    <= reverse_bits_and_dir(CONTROL_BYTES(0)(NUMBER_OF_ADC_BOARDS-1 downto 0));
 
 
--- CONTROL Byte 1
+-- CONTROL Byte 1: Buck converter switching frequency control
 CTRL_FLAG_BUCK_CLK_DIV <= UNSIGNED(CONTROL_BYTES(1));
 
--- CONTROL Byte 2
+-- CONTROL Byte 2: LCD control
 lcd_gen: if IMPLEMENT_LCD generate
 	LCD_E  <= CONTROL_BYTES(2)(7);
 	LCD_RS <= CONTROL_BYTES(2)(6);
@@ -555,44 +559,35 @@ else generate-- make sure the outputs are driven while the associated CTRL_SLAVE
 	LCD_DB <= (others => '0');
 end generate;
 
--- CONTROL Byte 3
+-- CONTROL Byte 3: Various reset and clock selection controls
 USER_RESET <='0';
---USER_RESET <= CONTROL_BYTES(3)(0);
 BLINKER_RESET       <= CONTROL_BYTES(3)(7);
-CHAN_RESET_ASYNC     <= CONTROL_BYTES(3)(6);
+CHAN_RESET_ASYNC    <= CONTROL_BYTES(3)(6);
 CORR_RESET_ASYNC    <= CONTROL_BYTES(3)(5);
--- unused bit 4
---CORR_IP_PORT_OFFSET <= CONTROL_BYTES(3)(3 downto 2);
---DATA_IP_PORT_OFFSET <= CONTROL_BYTES(3)(1 downto 0);
-ctrl_reset_trig <= CONTROL_BYTES(3)(4);
-sysmon_user_reset <= CONTROL_BYTES(3)(3);
+ctrl_reset_trig     <= CONTROL_BYTES(3)(4);
+sysmon_user_reset   <= CONTROL_BYTES(3)(3);
+clk10_sel           <= CONTROL_BYTES(3)(2); 
+--USER_RESET <= CONTROL_BYTES(3)(0);
 
--- CONTROL Byte 4
--- CTRL_RPLY_IP_PORT_OFFSET<= CONTROL_BYTES(4)(7 downto 6);
+-- CONTROL Byte 4: UDP data throttling control
 HOST_FRAME_READ_RATE    <= CONTROL_BYTES(4)(4 downto 0);
 
 gen_sw_sync: if IMPLEMENT_SWITCHER_SYNC generate
--- CONTROL bytes 5-12
+-- CONTROL bytes 5-12: Buck converter phases (8 phases)
 BUCK_PHASE <= to_slv(CONTROL_BYTES(5 to 12));
 end generate;
 
--- CONTROL bytes 13-18
---target_local_mac_addr <= to_slv(CONTROL_BYTES(13 to 18));
+-- CONTROL bytes 13: ADC calibration freeze control
+adc_cal_freeze <= reverse_bits_and_dir(CONTROL_BYTES(13));
 
--- CONTROL bytes 19-22
---target_local_base_ip_addr <= to_slv(CONTROL_BYTES(19 to 22));
+-- CONTROL bytes 14-24: Unused
 
--- CONTROL bytes 23-24
---target_local_base_ip_port <= to_slv(CONTROL_BYTES(23 to 24));
-
--- CONTROL bytes 25-32
+-- CONTROL bytes 25-32: Target serial number
 target_fpga_serial_number(56) <= CONTROL_BYTES(25)(0);
 target_fpga_serial_number(55 downto 0) <= to_slv(CONTROL_BYTES(26 to 32));
 
--- CONTROL byte 33
---target_load_trigger          <= CONTROL_BYTES(33)(7);
-target_network_config_source <= CONTROL_BYTES(33)(3 downto 2);
---target_local_subarray        <= CONTROL_BYTES(33)(1 downto 0);
+-- CONTROL byte 33: serial-based core register write control 
+target_network_config_source <= CONTROL_BYTES(33)(3 downto 2); --"00": core reg write always enabled; "01", "10" or "11": core reg write only when target serial matches the FPGA's serial
 
 
 
@@ -601,13 +596,12 @@ pwm_offset <= to_unsigned(CONTROL_BYTES(34 to 37));
 pwm_high_time <= to_unsigned(CONTROL_BYTES(38 to 41));
 pwm_period <= to_unsigned(CONTROL_BYTES(42 to 45));
 
--- CONTROL byte 46
+-- CONTROL byte 46: PWM reset, IO for QC tests, user output mux control 
 pwm_soft_reset <= CONTROL_BYTES(46)(7);
 bp_gpio_int_oe <= CONTROL_BYTES(46)(4);
 user_mux_source(0) <= CONTROL_BYTES(46)(3 downto 0);
 
--- CONTROL byte 47
-
+-- CONTROL byte 47: IO's for QC tests
 uart_tx_oe   <= CONTROL_BYTES(47)(7);
 uart_tx_out  <= CONTROL_BYTES(47)(6);
 uart_rx_oe   <= CONTROL_BYTES(47)(5);
@@ -617,7 +611,7 @@ arm_irq_out  <= CONTROL_BYTES(47)(0);
 gpio_rst_out <= CONTROL_BYTES(47)(2);
 arm_irq_oe   <= CONTROL_BYTES(47)(1);
 
--- CONTROL byte 48
+-- CONTROL byte 48 -- User output mux control, various IO's for QC tests
 user_mux_source(3) <= CONTROL_BYTES(48)(7 downto 4);
 gpio_irq_oe        <= CONTROL_BYTES(48)(3);
 gpio_irq_out       <= CONTROL_BYTES(48)(2);
@@ -625,7 +619,7 @@ flash_cs_oe        <= CONTROL_BYTES(48)(1);
 flash_cs_out       <= CONTROL_BYTES(48)(0);
 
 
--- CONTROL byte 49
+-- CONTROL byte 49 -- User output mux control
 user_mux_source(2) <= CONTROL_BYTES(49)(7 downto 4);
 user_mux_source(1) <= CONTROL_BYTES(49)(3 downto 0);
 
@@ -660,7 +654,7 @@ STATUS_BYTES(6) <= to_slv(NUMBER_OF_GPU_LINKS,8);
 -- STATUS Bytes 7-10
 STATUS_BYTES(7 to 10) <= to_slv8_array(firmware_timestamp);  -- ** ToDo: still used by Python, but redundant with core regs. 
 
--- STATUS Bytes 11
+-- STATUS Bytes 11: Platform ID
 STATUS_BYTES(11) <= to_slv(PLATFORM_ID, 8);
 
 -- STATUS Bytes 12-19: FPGA serial number
@@ -681,8 +675,14 @@ STATUS_BYTES(25) <= to_slv(NUMBER_OF_ADCS, 8);
 -- STATUS Bytes 26
 STATUS_BYTES(26) <= to_slv(ADC_BITS_PER_SAMPLE, 8);
 
--- STATUS Bytes 27-30
-STATUS_BYTES(27 to 30) <= (others => (others => '0'));
+-- STATUS Bytes 27: ADC calibration frozen flags (for 8 ADCs)
+STATUS_BYTES(27)  <= reverse_bits_and_dir(adc_cal_frozen);
+
+-- STATUS Bytes 28: ADC calibration signal detect flags (for 8 ADCs)
+STATUS_BYTES(28)  <= reverse_bits_and_dir(adc_cal_signal_detect);
+
+-- STATUS Bytes 29-30
+STATUS_BYTES(29 to 30) <= (others => (others => '0'));
 
 -- STATUS Bytes 31-32
 STATUS_BYTES(31) <= slot_sense_ctr(0); -- is this still used?
@@ -711,7 +711,7 @@ STATUS_BYTES(37)(3) <= uart_tx_in;
 STATUS_BYTES(37)(4) <= flash_cs_in;
 STATUS_BYTES(37)(5) <= gpio_irq_in;
 STATUS_BYTES(37)(6) <= bp_gpio_int_in;
-STATUS_BYTES(37)(7) <= serial_match; -- debug
+STATUS_BYTES(37)(7) <= core_reg_wr_en; -- debug
 
 
 -----------------------------------------------------------------------------------
@@ -829,15 +829,15 @@ core_reg_rd_value(6) <= "0000000" & fpga_serial_number(56 downto 32); -- (Read o
 -- Networking configuration -- Local Rx MAC/IP/PORT numbers
 ------------------------------------------------------------
 -- Register 7 - FPGA Network interface MAC address
-core_reg_rd_value(7)               <= spi_fpga_local_mac_address(31 downto 0); -- (Read/Write with readback)
+core_reg_rd_value(7)                     <= spi_fpga_local_mac_address(31 downto 0); -- (Read/Write with readback)
 spi_fpga_local_mac_address(31 downto 0)  <= core_reg_wr_value(7);
 
 -- Register 8 - FPGA Network interface MAC address and listening command port
-core_reg_rd_value(8)               <= spi_fpga_local_mac_address(47 downto 32) & spi_fpga_local_ip_port; -- (Read/Write with readback)
+core_reg_rd_value(8)                     <= spi_fpga_local_mac_address(47 downto 32) & spi_fpga_local_ip_port; -- (Read/Write with readback)
 spi_fpga_local_mac_address(47 downto 32) <= core_reg_wr_value(8)(31 downto 16);
 spi_fpga_local_ip_port                   <= core_reg_wr_value(8)(15 downto 0);
 -- Register 9  - FPGA Network interface IP address
-core_reg_rd_value(9)               <= spi_fpga_local_ip_address; -- (Read/Write with readback)
+core_reg_rd_value(9)                     <= spi_fpga_local_ip_address; -- (Read/Write with readback)
 spi_fpga_local_ip_address                <= core_reg_wr_value(9);
 
 -- IRIG-B timestamp registers
@@ -937,7 +937,6 @@ spi_fpga_ch1_remote_ip_port                   <= core_reg_wr_value(24)(15 downto
 core_reg_rd_value(25)               <= spi_fpga_ch1_remote_ip_address; -- (Read/Write with readback)
 spi_fpga_ch1_remote_ip_address           <= core_reg_wr_value(25);
 
-bsb_core_wr_en_masked <= bsb_core_wr_en and serial_match;
 core_regs0: entity work.register_array
 	generic map(
 		ADDRESS_MASK => X"000000" & "------XX",
@@ -961,7 +960,7 @@ core_regs0: entity work.register_array
 		din => bsb_core_din,
 		dout => bsb_core_dout,
 		addr => bsb_core_addr,
-		wr_en => bsb_core_wr_en_masked, -- write only if we match the serial number
+		wr_en => bsb_core_wr_en and core_reg_wr_en, -- write only if we match the serial number
 		rd_en => bsb_core_rd_en,
 
 		-- Register interface
@@ -1316,13 +1315,16 @@ dna_proc: process(dna_clk)
 network_setup_proc: process(ctrl_clk)
 	begin
 		if rising_edge(ctrl_clk) then
-			-- Set the serial_match flag if the programmable target serial matches the FPGA actual serial.
-			-- This flag is disabled (i.e. always true) if if target_network_config_source != 0.
-			-- By broadcasting a write to the target serial and setting target_network_config_source=1,
-			-- subsequent writes to the core registers will occur only on the target FPGA.
-			-- This provides a simple way to setup the UDP networking of the FPGAs without an on-board network-enabled processor, provided we know their serial numbers.
-			-- (The serial number of all FPGAs on the network can be obtain through a broadcast read)
-			serial_match <= to_std_logic(fpga_serial_number = target_fpga_serial_number or target_network_config_source="00");
+			-- Set core_reg_wr_en to conditionally enable writing to the core registers.
+			-- When target_network_config_source="00", core register writes are always allowed.
+			-- When target_network_config_source/="00", core register writes are allowed only if the target FPGA serial number matches the actual FPGA serial number. 
+			-- This feature allows the networking parameters of one specific board to be configured by 
+			--   1) broadcast a write command to configure the target board FPGA serial number and set target_network_config_source to "01"
+            --   2) broadcast write commands to set the networking parameters; only the target board will accept the configuration
+			-- The serial number of all FPGAs on the network can be obtain through a broadcast read command. Further board information (board model, serial number, slot number etc) can be obtained from GPIO and I2C acceses.
+			-- This provides a simple way to setup the networking parameters of the FPGAs without requiring an on-board network-enabled processor.
+
+			core_reg_wr_en <= to_std_logic(fpga_serial_number = target_fpga_serial_number or target_network_config_source="00");
 
 
 			-- FPGA network interface addresses
