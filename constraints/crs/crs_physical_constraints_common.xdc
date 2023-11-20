@@ -17,15 +17,15 @@ create_clock -period 5.000 -name FREQ_CTR_CLK [get_pins chfpga0/freq_ctr_blk.FRE
 ####################
 # Backplane signals
 ####################
-# # IRIG-B
-# set_property PACKAGE_PIN K19     [get_ports {bp_irig_p}]; # Bank  69 VCC1V8
-# set_property IOSTANDARD  LVDS     [get_ports {bp_irig_p}];
+# IRIG-B
+set_property PACKAGE_PIN K19 [get_ports bp_irig_p]
+set_property IOSTANDARD LVDS [get_ports bp_irig_p]
 
-# # Backplane clock (copy fed to the HMC7044)
-# set_property PACKAGE_PIN H17     [get_ports {pl_bp_clk_10mhz_p}]; # Bank  69 VCC1V8
-# set_property IOSTANDARD  LVDS     [get_ports {pl_bp_clk_10mhz_p}];
-# create_clock -name PL_BP_CLK10 -period 10MHz [get_ports {pl_bp_clk_10mhz_p}]
-
+# Backplane 10 MHz reference clock (copy of the signal fed to the HMC7044)
+set_property PACKAGE_PIN H17 [get_ports bp_clk10_p]
+set_property IOSTANDARD LVDS [get_ports bp_clk10_p]
+create_clock -period 100.000 -name PL_BP_CLK10 [get_ports bp_clk10_p]
+set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets clk10_ibufds1/O]
 # # GPIO pins
 # set_property PACKAGE_PIN C23     [get_ports {bp_gpio_p[1]}]; # Bank  57 VCC1V8
 # set_property IOSTANDARD  LVDS     [get_ports {bp_gpio_p[1]}];
@@ -43,10 +43,11 @@ set_property IOSTANDARD LVDS [get_ports sma_irig_p]
 # # Aux signal
 # set_property PACKAGE_PIN H11     [get_ports {sma_aux_p}]; # Bank  57 VCC1V8
 # set_property IOSTANDARD  LVDS     [get_ports {sma_aux_p}];
-# # 10 MHz clock signal (copy fed to the HMC7044 input)
-# set_property PACKAGE_PIN J11     [get_ports {pl_sma_clk_10mhz_p}]; # Bank  57 VCC1V8
-# set_property IOSTANDARD  LVDS     [get_ports {pl_sma_clk_10mhz_p}];
-# create_clock -name PL_SMA_CLK10 -period 10MHz [get_ports {pl_sma_clk_10mhz_p}]
+
+# 10 MHz clock signal (copy fed to the HMC7044 input)
+set_property PACKAGE_PIN J11 [get_ports sma_clk10_p]
+set_property IOSTANDARD LVDS [get_ports sma_clk10_p]
+create_clock -period 100.000 -name SMA_CLK10 [get_ports sma_clk10_p]
 
 ###############################################################
 # Primary clocks from AD9574 (Always present, non-programmable)
@@ -84,28 +85,33 @@ set_property IOSTANDARD LVDS [get_ports sma_irig_p]
 # set_property PACKAGE_PIN U33      [get_ports {gty_clk0_p130}] ; # GTY Bank  130, REFCLK0
 # create_clock -name GTY_P130 -period 125MHz [get_ports {gty_clk0_p130}]
 
-# # Output from the HMC7044 PLL1  (50 MHz, always phase-aligned with the 10 MHz reference clock)
-# set_property PACKAGE_PIN J19     [get_ports {oscout_p}]; # Bank  69 VCC1V8
-# set_property IOSTANDARD  LVDS     [get_ports {oscout_p}];
-# create_clock -name GTY_P130 -period 50MHz [get_ports {oscout_p}]
+# Output from the HMC7044 PLL1  (50 MHz, always phase-aligned with the SMA or BP 10 MHz reference clock when present)
+set_property PACKAGE_PIN J19 [get_ports oscout_p];  # Bank 69
+set_property IOSTANDARD LVDS [get_ports oscout_p]
+set_property DIFF_TERM_ADV TERM_100 [get_ports oscout_p]
+create_clock -period 20.000 -name OSCOUT [get_ports oscout_p]
 
 # PL_CLK (Bank 69), Fabric signal processing word clock (programmable, must be ADC sampling freq / 8 samples/word)
-set_property PACKAGE_PIN G17 [get_ports {pl_clk_p[0]}]
-set_property IOSTANDARD LVDS [get_ports {pl_clk_p[0]}]
-set_property DIFF_TERM_ADV TERM_100 [get_ports {pl_clk_p[0]}]
-create_clock -period 2.666 -name PL_CLK [get_ports pl_clk_p]
+# 3000 MSPS/ 8 = 375 MHz
+set_property PACKAGE_PIN G17 [get_ports plclk_p]; # Bank 69
+set_property IOSTANDARD LVDS [get_ports plclk_p]
+set_property DIFF_TERM_ADV TERM_100 [get_ports plclk_p]
+create_clock -period 2.666 -name PL_CLK [get_ports plclk_p]
 
-# SYSREF clock (Bank 69), 0.75 MHz, used to synchronize all the PLLs. A copy of this signal (RF_SYSREF) also goes to the ADC/DACs
-set_property PACKAGE_PIN H18 [get_ports {clk10_clk_p[0]}]
-set_property IOSTANDARD LVDS [get_ports {clk10_clk_p[0]}]
-set_property DIFF_TERM_ADV TERM_100 [get_ports {clk10_clk_p[0]}]
-create_clock -period 100.000 -name PL_SYSREF [get_ports clk10_clk_p]
-
+# SYSREF clock (Bank 69), 2.5 MHz, used to synchronize all the ADC logic. The equivalent of this signal (RF_SYSREF) also goes directly to the ADC/DACs bank.
+# This signal is not treated as a clock, but rather a signal that is synchronized to PLCLK.
+set_property PACKAGE_PIN H18 [get_ports pl_sysref_p]
+set_property IOSTANDARD LVDS [get_ports pl_sysref_p]
+set_property DIFF_TERM_ADV TERM_100 [get_ports pl_sysref_p]
+#create_clock -period 400.000 -name PL_SYSREF [get_ports pl_sysref_p]
+#set_input_delay -clock [get_clocks PL_CLK] 0.0 [get_ports pl_sysref_p]
+set_input_delay -max -clock [get_clocks PL_CLK] 0.1 [get_ports pl_sysref_p]
+set_input_delay -min -clock [get_clocks PL_CLK] -0.1 [get_ports pl_sysref_p]
 # DDR4_CLK (Bank 67), used as a 250 MHz system clock
-set_property PACKAGE_PIN H23 [get_ports {clk200_clk_p[0]}]
-set_property IOSTANDARD LVDS [get_ports {clk200_clk_p[0]}]
-set_property DIFF_TERM_ADV TERM_100 [get_ports {clk200_clk_p[0]}]
-create_clock -period 4.000 -name CLK200_CLK [get_ports {clk200_clk_p[0]}]
+set_property PACKAGE_PIN H23 [get_ports sysclk_p]
+set_property IOSTANDARD LVDS [get_ports sysclk_p]
+set_property DIFF_TERM_ADV TERM_100 [get_ports sysclk_p]
+create_clock -period 4.000 -name CLK200_CLK [get_ports sysclk_p]
 
 # # Recovered clock output (not used)
 # set_property PACKAGE_PIN C84     [get_ports {pl_recclk_p}]; # Bank  69 VCC1V8
@@ -114,6 +120,7 @@ create_clock -period 4.000 -name CLK200_CLK [get_ports {clk200_clk_p[0]}]
 # 100 MHz clock provided by the PS to the PL is not in phase with any other clock
 set_clock_groups -name BSB_CLK_GROUP -asynchronous -group [get_clocks clk_pl_0]
 
+# Programmable PLL SYNC input
 
 # #############################################
 # # Buck SYNC signals
@@ -529,6 +536,7 @@ resize_pblock [get_pblocks SCALER7] -add {SLICE_X26Y0:SLICE_X34Y34}
 resize_pblock [get_pblocks SCALER7] -add {DSP48E2_X3Y0:DSP48E2_X4Y13}
 resize_pblock [get_pblocks SCALER7] -add {RAMB18_X2Y0:RAMB18_X3Y13}
 resize_pblock [get_pblocks SCALER7] -add {RAMB36_X2Y0:RAMB36_X3Y6}
+
 
 
 
