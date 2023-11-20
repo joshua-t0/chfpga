@@ -209,12 +209,13 @@ entity chFPGA is
 
 			-- Clock inputs
 			clk10: in std_logic; -- BUFG-Buffered 10 MHz board reference clock with well known phase relative to the ADC clocks and  all other boards. Used to synchronize ADC startup. Typically synchronous to the IRIGB timestamp signal, but not necessary.
-			SYSCLK_P : in std_logic := '0'; --! 200 MHz unbuffered differential clock. Used as a master clock if  SYSTEM_CLOCK_SOURCE = "SYSCLK";
-			SYSCLK_N : in std_logic := '1';
+			clk10_sel: out std_logic; -- Reference clock selection signal
+			sysclk_p : in std_logic := '0'; --! 200 MHz unbuffered differential clock. Used as a master clock if  SYSTEM_CLOCK_SOURCE = "SYSCLK";
+			sysclk_n : in std_logic := '1';
 			sysclk_bufg: in std_logic := '0';--! BUFG-buffered 200 MHz used as a master clock if  SYSTEM_CLOCK_SOURCE = "SYSCLK_BUFG";
 			sfp_clk_p: in std_logic := '0'; --! 125 MHz SFP reference clock, generated on-board using a high quality oscillator. Used as a master clock if  SYSTEM_CLOCK_SOURCE = "SFP_REFCLK"; Also used to synchronize the MGT used to communicate to the SFP.
 			sfp_clk_n: in std_logic := '1';
-
+            oscout: in std_logic := '0'; -- BUFG-buffered External PLL VCO clock
 			-- Clock monitoring inputs
 			raw_clk10: in std_logic := '0'; -- Buffered 10 MHz reference. Used for upstream clock frequency measurement only.
 			mgt_clk100: in std_logic := '0'; -- Buffered MGT 100 MHz reference clock. Used by Frequency counter to debug connectivity
@@ -360,6 +361,12 @@ entity chFPGA is
 			adc_axis_clk: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
 			-- Clock output of the ADC tiles (for monitoring)
 			adc_clkout: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+			-- PL SYSREF
+			adc_sysref: in std_logic := '0'; -- PL_SYSREF, reclocked through adc_axis_clk (plclk)
+			adc_cal_frozen: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+			adc_cal_freeze: out std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+			adc_cal_signal_detect: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+
 			------------------------------------
 			-- FMC ADC interface
 			------------------------------------
@@ -1570,6 +1577,7 @@ end block;
 ---------------------------------------------------------------------
 -- GPIO interface instantiation
 ---------------------------------------------------------------------
+--  Controls the global hardware lines and system registers like the ADC RESET, LCD, Buck Regulators  etc.
 gpio_blk: block
 	signal gpio_event_ctr_en: std_logic;
 	signal gpio_event_ctr_inc: std_logic;
@@ -1619,7 +1627,6 @@ gpio_blk: block
 
 
 begin
-	--!   Controls the global hardware lines and system registers like the ADC RESET, LCD, Buck Regulators  etc.
 
 	-- Index the system control buses as a separate signal here , because the simulator will make errors if we index it directly on the instantiation
 	SYS_GPIO_CMD_DAT<= SYS_CMD_DAT(MODULE_GPIO_ADDR);
@@ -1670,31 +1677,34 @@ begin
 				RST => irigb_delay_reset -- 1-bit Active high, synchronous reset, resets delay chain to IDELAY_VALUE/
 
 			);
-		end generate timedelay_gen;
+	else generate
+		bp_time_io_dly <= bp_time_in; -- bypass the delay element
+	end generate timedelay_gen;
 
 
-		-- Pipeline backplane sync and trig signals to allow them to propagate across the chip
-		-- The IRIG-B decoder uses these signals and is clocked by clk200
-		bp_trig_sync_proc: process(clk200)
-			begin
-				if rising_edge(clk200) then
-					bp_time_io_reg <= bp_time_io_dly;
-					bp_time_reg <= bp_time_io_reg;
-					bp_trig_io_reg <= bp_trig_in;
-					bp_trig_reg <= bp_trig_io_reg;
-				end if; -- RST/CLK
-			end process;
+	-- Pipeline backplane time (IRIG-B) and trig signals to allow them to propagate across the chip
+	-- The IRIG-B decoder uses these signals and is clocked by clk200
+	bp_trig_sync_proc: process(clk200)
+	begin
+		if rising_edge(clk200) then
+			bp_time_io_reg <= bp_time_io_dly; -- this is registered on the IO pad for optimal timing predictability
+			bp_time_reg <= bp_time_io_reg;
+			bp_trig_io_reg <= bp_trig_in; -- this is registered on the IO pad for optimal timing predictability
+			bp_trig_reg <= bp_trig_io_reg;
+		end if; -- RST/CLK
+	end process;
 
-	gpio_irib_mux_in <= ( -- source for the IRIG-B signals
-		0 => bp_trig_reg,
-		1 => bp_time_reg,
-		2 => irigb_gen_out,
-		3 => bp_gpio_int_in,
+	-- Sources for the IRIG-B signals
+	gpio_irib_mux_in <= ( 
+		0 => bp_trig_reg, -- backplane trig signal
+		1 => bp_time_reg, -- backplane time signal
+		2 => irigb_gen_out, -- internal IRIG-B generator
+		3 => bp_gpio_int_in, -- backplane interrupt line (connects to every board in a crate)
 		4 => user_mux_in(0), -- sma_a
 		5 => user_mux_in(1), -- led2_sma_b
 		6 => user_mux_in(2), -- led1_bp_sma
 		7 => user_mux_in(3)
-		); -- Backplane GPIO_INT signal
+		); 
 
 
 	gpio_user_mux_signals <= ( -- source of the USER--controlled SMA output
@@ -1877,7 +1887,9 @@ begin
 			-- Mezzanine ADC & PLL Interface
 			ADC_RST => ADC_RST,
 			adc_pll_lock => adc_pll_lock,
-
+            adc_cal_frozen => adc_cal_frozen,
+            adc_cal_freeze => adc_cal_freeze,
+            adc_cal_signal_detect => adc_cal_signal_detect,
 			-- LCD
 			LCD_DB=>LCD_DB,
 			LCD_E =>LCD_E,
@@ -1910,6 +1922,7 @@ begin
 			clk200 => clk200,
 			clk200_reset => clk200_reset_reg,
 			clk10 => clk10, -- Backplane reference clock
+            clk10_sel => clk10_sel, -- reference clock selector signal
 
 			DNA_CLK => sysmon_clk
 		);
@@ -2074,15 +2087,15 @@ end block sysmon_blk;
 --!   Measures the toggling frequency of a number of logic signals.
 freq_ctr_blk: block
 	-- Frequency counter-related signals and constants
-	constant NUMBER_OF_FREQ_CTR_PORTS: integer:= 39;
+	constant NUMBER_OF_FREQ_CTR_PORTS: integer := 40;
 	signal freq_ctr_in_vect: std_logic_vector(0 to NUMBER_OF_FREQ_CTR_PORTS-1);
-	signal sfp_refclk_div2: std_logic:= '0'; --init required for sims
-	signal clk10_div2: std_logic:= '0'; --init required for sims
-	signal clk200_div2: std_logic:='0'; -- Initialization required
-	signal CTRL_CLK_DIV2: std_logic :='0'; -- Initialization required
-	signal chan_clk_div2: std_logic :='0'; -- -- Initialization required
-	signal CORR_CLK_DIV2: std_logic :='0';  -- Initialization required
-	signal SYSMON_CLK_DIV2: std_logic :='0'; -- Initialization required
+	signal sfp_refclk_div2: std_logic := '0'; --init required for sims
+	signal clk10_div2: std_logic := '0'; --init required for sims
+	signal clk200_div2: std_logic := '0'; -- Initialization required
+	signal CTRL_CLK_DIV2: std_logic := '0'; -- Initialization required
+	signal chan_clk_div2: std_logic := '0'; -- -- Initialization required
+	signal CORR_CLK_DIV2: std_logic := '0';  -- Initialization required
+	signal SYSMON_CLK_DIV2: std_logic := '0'; -- Initialization required
 
 	signal raw_clk10_div2: std_logic := '0'; -- Initialization required for sims
 	signal mgt_clk100_div2: std_logic := '0'; -- Initialization required for sims
@@ -2090,6 +2103,7 @@ freq_ctr_blk: block
 	signal mgt_clk125_div2: std_logic := '0'; -- Initialization required for sims
 	signal ct_clk_div2: std_logic;
 	signal fan_tach_div2: std_logic;
+    signal oscout_div2: std_logic;
 
 	signal bsb_rst_reg1, bsb_rst_reg2: std_logic;
 	attribute DONT_TOUCH of bsb_rst_reg1, bsb_rst_reg2: signal is "true";
@@ -2125,14 +2139,14 @@ begin
 	sfprefclkdiv2: process(sfp_refclk_buf)
 	begin
 		if rising_edge(sfp_refclk_buf) then
-			sfp_refclk_div2 <=not sfp_refclk_div2;
+			sfp_refclk_div2 <= not sfp_refclk_div2;
 		end if;
 	end process;
 
 	clk10div2: process(clk10)
 	begin
 		if rising_edge(clk10) then
-			clk10_div2 <=not clk10_div2;
+			clk10_div2 <= not clk10_div2;
 			clk10_ctr <= clk10_ctr + 1;
 		end if;
 	end process;
@@ -2148,7 +2162,7 @@ begin
 	ctrlclklogic: process(CTRL_CLK)
 	begin
 		if rising_edge(CTRL_CLK) then
-			CTRL_CLK_DIV2<=not CTRL_CLK_DIV2;
+			CTRL_CLK_DIV2 <= not CTRL_CLK_DIV2;
 		end if;
 	end process;
 
@@ -2160,6 +2174,13 @@ begin
 		end if; -- clk
 	end process;
 
+	oscoutdiv2: process(oscout)
+	begin
+		if rising_edge(oscout) then
+			oscout_div2 <= not oscout_div2;
+		end if;
+	end process;
+
 	---------------------------------------------------------------------
 	--  Generate chan_clk_div2
 	---------------------------------------------------------------------
@@ -2169,7 +2190,7 @@ begin
 	chanclkdiv2: process(chan_clk(0))
 	begin
 		if rising_edge(chan_clk(0)) then
-			chan_clk_div2 <=not chan_clk_div2;
+			chan_clk_div2 <= not chan_clk_div2;
 		end if; -- RST/CLK
 	end process;
 
@@ -2182,7 +2203,7 @@ begin
 	corrclkdiv2: process(CORR_CLK)
 	begin
 		if rising_edge(CORR_CLK) then
-			CORR_CLK_DIV2<=not CORR_CLK_DIV2;
+			CORR_CLK_DIV2 <= not CORR_CLK_DIV2;
 		end if; -- RST/CLK
 	end process;
 
@@ -2195,37 +2216,36 @@ begin
 	sysmonclkdiv2: process(sysmon_clk)
 	begin
 		if rising_edge(sysmon_clk) then
-			SYSMON_CLK_DIV2<=not SYSMON_CLK_DIV2;
+			SYSMON_CLK_DIV2 <= not SYSMON_CLK_DIV2;
 			sysmon_clk_ctr <= sysmon_clk_ctr + 1;
-
 		end if; -- RST/CLK
 	end process;
 
 	rawclk10div2: process(raw_clk10)
 	begin
 		if rising_edge(raw_clk10) then
-			raw_clk10_div2<=not raw_clk10_div2;
+			raw_clk10_div2 <= not raw_clk10_div2;
 		end if; -- RST/CLK
 	end process;
 
 	mgtclk100div2: process(mgt_clk100)
 	begin
 		if rising_edge(mgt_clk100) then
-			mgt_clk100_div2<=not mgt_clk100_div2;
+			mgt_clk100_div2 <= not mgt_clk100_div2;
 		end if; -- RST/CLK
 	end process;
 
 	mgtclk200div2: process(mgt_clk200)
 	begin
 		if rising_edge(mgt_clk200) then
-			mgt_clk200_div2<=not mgt_clk200_div2;
+			mgt_clk200_div2 <= not mgt_clk200_div2;
 		end if; -- RST/CLK
 	end process;
 
 	mgtclk125div2: process(mgt_clk125)
 	begin
 		if rising_edge(mgt_clk125) then
-			mgt_clk125_div2 <=not mgt_clk125_div2;
+			mgt_clk125_div2 <= not mgt_clk125_div2;
 		end if; -- RST/CLK
 	end process;
 	--end generate; --debug5
@@ -2266,6 +2286,8 @@ begin
 	gen_freq38: if NUMBER_OF_BP_SHUFFLE_REFCLKS > 1 generate
 		freq_ctr_in_vect(38) <= bp_shuffle_refclk_div2(1); -- MGT
 	end generate;
+
+    freq_ctr_in_vect(39) <= oscout_div2;
 
 	FREQ_CTR0: entity work.FREQ_CTR
 		GENERIC MAP(
