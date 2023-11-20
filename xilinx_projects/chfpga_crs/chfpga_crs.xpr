@@ -124,7 +124,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/zynq_usp/zynq_tcpipe_crs/zynq_tcpipe_crs.bd">
+      <File Path="$PPRDIR/../../hdl/TCPIPE/zynq_tcpipe_crs/zynq_tcpipe_crs.bd">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -341,7 +341,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/ucap.vhd">
+      <File Path="$PPRDIR/../../hdl/CHAN/ucap.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
