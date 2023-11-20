@@ -30,7 +30,7 @@ entity chfpga_crs is
 
         -- Clocking config
         SYSTEM_CLOCK_SOURCE: string                  := "SYSCLK_BUFG"; -- System reference clock surce: "SYSCLK": 200 MHz unbuffered differential clock from sysclk_p/n, "SYSCLK_BUFG": 200 MHz BUFG-Buffered clock from sysclk_bufg, "SFP_REFCLK": 125 MHz clock from the GTX reference clock
-        SYSTEM_CLOCK_FREQ: real                   := 250.0; -- System reference clock frequency, in MHz. Used to select the system PLL divider/multiplier factors.
+        SYSTEM_CLOCK_FREQ: real                      := 250.0; -- System reference clock frequency, in MHz. Used to select the system PLL divider/multiplier factors.
         CHAN_CLK_SOURCE: string                      := "ADC"; -- Clock sources for the system PLL. Here, Channelizer clock comes directly from the ADC
         CT_CLK_SOURCE: string                        := "ADC_CLK"; -- corner-turn clock source
 
@@ -47,7 +47,7 @@ entity chfpga_crs is
         NUMBER_OF_ADCS: integer                      := CONFIG_NUMBER_OF_ADCS; -- Number of ADC inputs
 
         -- Mezzanines
-        NUMBER_OF_ADC_BOARDS: integer                := 0; -- No REFCLK module
+        NUMBER_OF_ADC_BOARDS: integer                := 0; -- No mezzanine, therefore no associated clocks etc.
 
         -- Channelizer configuration
         NUMBER_OF_CHANNELIZERS:integer               := CONFIG_NUMBER_OF_ADCS;  --(Typ. =16)  (0-NUMBER_OF_ADCS) Number of channelizer blocks to be implemented
@@ -81,13 +81,40 @@ entity chfpga_crs is
     );
 
     port (
-        -- 10 MHz reference clock from programmable PLL
-        clk10_clk_n : in std_logic_vector(0 to 0);
-        clk10_clk_p : in std_logic_vector(0 to 0);
+
+        -- Copy of the 10 MHz SMA reference clock that feeds the programmable PLL
+        sma_clk10_n : in std_logic;
+        sma_clk10_p : in std_logic;
+ 
+
+        -- Copy of the 10 MHz Backplane reference clock that feeds the programmable PLL
+        bp_clk10_n : in std_logic;
+        bp_clk10_p : in std_logic;
+
+
+        -- 50 MHz VXCO frequency from programmable PLL (output of PLL1). Is in phase with the external 10 MHz reference clocks.
+        oscout_n : in std_logic;
+        oscout_p : in std_logic;
+
 
         -- 375 MHz processing clock form programmable PLL
-        pl_clk_n : in std_logic_vector(0 to 0);
-        pl_clk_p : in std_logic_vector(0 to 0);
+        plclk_n : in std_logic;
+        plclk_p : in std_logic;
+
+        -- SYSREF clock from programmable PLL - used to synchronize the ADCs
+        rf_sysref_n : in std_logic;
+        rf_sysref_p : in std_logic;
+
+        pl_sysref_n : in std_logic;
+        pl_sysref_p : in std_logic;
+
+
+        -- 250 MHz system clock from programmable PLL. Used as source to generate internal clocks using MMCM. 
+        sysclk_n : in std_logic;
+        sysclk_p : in std_logic;
+
+
+
 
         -- 100G Ethernet 
 
@@ -98,9 +125,6 @@ entity chfpga_crs is
         qsfp_txn : out std_logic_vector(0 to 3);
         qsfp_txp : out std_logic_vector(0 to 3);
 
-        -- 250 MHz system clock from programmable PLL. Used as source to generate internal clocks using MMCM. 
-        clk200_clk_n : in std_logic_vector(0 to 0);
-        clk200_clk_p : in std_logic_vector(0 to 0);
 
         -- Buck sync signals
 
@@ -115,14 +139,17 @@ entity chfpga_crs is
         buck_sync_bp : out std_logic;
 
         -- LEDs (PL's 7-segment display)
-        led7b : out std_logic_vector ( 7 downto 0 );
+        led7b : out std_logic_vector (7 downto 0);
 
         -- User connectors
-        smp : out std_logic_vector ( 0 to 3 );
+        smp : out std_logic_vector (0 to 3);
 
-        -- IRIG-B signal
+        -- IRIG-B signals
         sma_irig_p: in std_logic;
         sma_irig_n: in std_logic;
+
+        bp_irig_p: in std_logic;
+        bp_irig_n: in std_logic;
 
         -- ADC sampling clocks
         adc0_clk_clk_n : in std_logic;
@@ -153,20 +180,13 @@ entity chfpga_crs is
         vin3_23_v_p : in std_logic
         );
         -- Don't put a DONT_TOUCH attribute to this entity: we need qsfp_tx/rx to be removed if unused
---    attribute DONT_TOUCH: string;
---    attribute DONT_TOUCH of chfpga_crs: entity is "true";
-
---PROCEDURE disable_io(port_in: in std_logic) is
---        attribute io_buffer_type of port_in: signal is "none"; 
---	begin
---end procedure;
-
 end entity;
 
 
 architecture impl of chfpga_crs is
     attribute io_buffer_type : string;
-
+    attribute IOB: string;
+    attribute dont_touch: string;
 
     -- Tell the tools not to infer buffers and autoplace IO ports for the following if the ports are not connected
     -- If 100GE is not implemented, the placer assigns random IOs to these ports, and since those have no specifiec IO standard, the bitstream
@@ -175,7 +195,7 @@ architecture impl of chfpga_crs is
     --  In the case of "OBUF", it looks like the output buffer is adapted to the type of output such as a transceiver output etc.
     attribute io_buffer_type of qsfp_txp, qsfp_txn: signal is sel(GPU_LINK_TYPE="100GE", "OBUF", "NONE"); 
     attribute io_buffer_type of clk156_p, clk156_n: signal is sel(GPU_LINK_TYPE="100GE", "IBUF", "NONE"); 
-
+--    attribute dont_touch of plclk_bufg0, plclk_bufg1: label is "true";
 
     -- BSB & CAP AXIS clock (100 MHz)
     signal aclk: std_logic; 
@@ -184,13 +204,25 @@ architecture impl of chfpga_crs is
     signal plclk_nobuf: std_logic; 
     signal plclk_bufg: std_logic; 
 
-    -- System Reference clock (10 MHz) 
-    signal sysref_nobuf: std_logic; 
-    signal sysref_bufg: std_logic; 
+    -- PLL VCXO clock (50 MHz) 
+    signal oscout_nobuf: std_logic; 
+    signal oscout_bufg: std_logic; 
+
+    -- System Reference clock (Submultiple of ADC sampling clock/16, < 10 MHz)
+    -- Used to calibrate the ADC latency 
+    signal pl_sysref, pl_sysref_pre, pl_sysref_reg, pl_sysref_clk, pl_sysref_clk_nobuf: std_logic; 
+    attribute IOB of pl_sysref_reg :signal is "true"; -- make sure PL_SYSREF is registered in the IOB to ensure the best and reproducible timing
+
+    --signal sysref_bufg: std_logic; 
 
     -- System clock (250 MHz) 
-    signal clk200_nobuf: std_logic; 
-    signal clk200_bufg: std_logic; 
+    signal sysclk_nobuf: std_logic; 
+    signal sysclk_bufg: std_logic; 
+
+    -- 10 MHz reference clocks
+    signal sma_clk10_nobuf, bp_clk10_nobuf: std_logic; 
+    signal clk10_bufg: std_logic; 
+    signal clk10_sel: std_logic; 
 
     -- Vectors representing the ADC inputs.
     -- Length is hard coded to the fixed number of inputs provided in the top level port.
@@ -199,7 +231,9 @@ architecture impl of chfpga_crs is
     signal adc_axis_tvalid: std_logic_vector(0 to 7);
     signal adc_axis_clk: std_logic_vector(0 to 7);
     signal adc_clkout: std_logic_vector(0 to 7);
-
+    signal adc_cal_frozen: std_logic_vector(0 to 7);
+    signal adc_cal_freeze: std_logic_vector(0 to 7);
+    signal adc_cal_signal_detect: std_logic_vector(0 to 7);
 
     signal axis_bsb_cmd_tdata: std_logic_vector(7 downto 0);
     signal axis_bsb_cmd_tvalid: std_logic;
@@ -224,69 +258,148 @@ architecture impl of chfpga_crs is
     signal buck_sync: std_logic_vector(0 to 15);
     signal gpio_led: std_logic_vector(7 downto 0);
     signal buck_sync_0v85_div2: std_logic;
-    signal sma_irig: std_logic;
-
---    attribute DONT_TOUCH of chfpga0: label is "true";
+    signal sma_irig, bp_irig: std_logic;
 
     signal qsfp_txp_int, qsfp_txn_int: std_logic_vector(0 to 3);
 
 
 begin
 
---test: if True generate
---        attribute io_buffer_type : string;
---begin
---        attribute io_buffer_type of qsfp_txp, qsfp_txn: signal is "none"; 
---end;
+    clk10_ibufds0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
+        generic map(DIFF_TERM => TRUE)
+        port map (
+            I => sma_clk10_p,
+            IB => sma_clk10_n,
+            O => sma_clk10_nobuf
+        );
 
----- Connect the QSFP IO ports only if the 100GE module is used.
----- Otherwise the defaut po
---qsfp_gen: if GPU_LINK_TYPE = "100GE" generate
---        qsfp_txp <= qsfp_txp_int;
---        qsfp_txn <= qsfp_txn_int;
---end generate;
+    clk10_ibufds1 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
+        generic map(DIFF_TERM => TRUE)
+        port map (
+            I => bp_clk10_p,
+            IB => bp_clk10_n,
+            O => bp_clk10_nobuf
+        );
 
---    qsfp_txp <= qsfp_txp_dummy;
---    qsfp_txn <= qsfp_txn_dummy;
-		sysref_ibufds0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
-			generic map(DIFF_TERM => TRUE)
-			port map (
-				I => clk10_clk_p(0),
-				IB => clk10_clk_n(0),
-				O => sysref_nobuf
-			);
-		sysref_bufg0 : BUFG
-            port map (
-                I => sysref_nobuf, -- Clock buffer input
-                O => sysref_bufg-- Clock buffer output
-            );
+    clk10_ibuf0 : BUFGMUX
+        generic map (
+           CLK_SEL_TYPE => "ASYNC"  -- ASYNC, SYNC
+        )
+        port map (
+           I0 => sma_clk10_nobuf, -- 1-bit input: Clock input (S=0)
+           I1 => bp_clk10_nobuf, -- 1-bit input: Clock input (S=1)
+           O => clk10_bufg,   -- 1-bit output: Clock output
+           S => clk10_sel    -- 1-bit input: Clock select
+        );
 
-        clk200_ibufds0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
-            generic map(DIFF_TERM => TRUE)
-            port map (
-                I => clk200_clk_p(0),
-                IB => clk200_clk_n(0),
-                O => clk200_nobuf
-            );
-        clk200_bufg0 : BUFG
-            port map (
-                I => clk200_nobuf, -- Clock buffer input
-                O => clk200_bufg-- Clock buffer output
-            );
+	sysref_ibufds0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
+		generic map(DIFF_TERM => TRUE)
+		port map (
+			I => pl_sysref_p,
+			IB => pl_sysref_n,
+			O => pl_sysref
+		);
 
-		plclk_ibufds0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
-			generic map(DIFF_TERM => TRUE)
-			port map (
-				I => pl_clk_p(0),
-				IB => pl_clk_n(0),
-				O => plclk_nobuf
-			);
-		plclk_bufg0 : BUFG
-            port map (
-                I => plclk_nobuf, -- Clock buffer input
-                O => plclk_bufg-- Clock buffer output
-            );
+    -- Register SYSREF
+    -- This is required for the Multi-Converter synchronization
+    sysref0_proc: process (pl_sysref_clk)
+    begin
+        if rising_edge(pl_sysref_clk) then
+            pl_sysref_pre <= pl_sysref;
+        end if;
+    end process;
 
+    sysref1_proc: process (plclk_bufg)
+    begin
+        if rising_edge(plclk_bufg) then
+            pl_sysref_reg <= pl_sysref_pre;
+        end if;
+    end process;
+
+    clk200_ibufds0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
+        generic map(DIFF_TERM => TRUE)
+        port map (
+            I => sysclk_p,
+            IB => sysclk_n,
+            O => sysclk_nobuf
+        );
+    sysclk_bufg0 : BUFG
+        port map (
+            I => sysclk_nobuf, -- Clock buffer input
+            O => sysclk_bufg-- Clock buffer output
+        );
+
+	plclk_ibufds0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
+		generic map(DIFF_TERM => TRUE)
+		port map (
+			I => plclk_p,
+			IB => plclk_n,
+			O => plclk_nobuf
+		);
+
+
+	oscout_ibufds0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
+		generic map(DIFF_TERM => TRUE)
+		port map (
+			I => oscout_p,
+			IB => oscout_n,
+			O => oscout_nobuf
+		);
+	oscout_bufg0 : BUFG
+        port map (
+            I => oscout_nobuf, -- Clock buffer input
+            O => oscout_bufg-- Clock buffer output
+        );
+mmcm_blk: block
+    signal mmcm_fb_nobuf, mmcm_fb_bufg: std_logic;
+    signal plclk_mmcm_nobuf: std_logic;
+begin
+	fb_bufg0 : BUFG
+        port map (
+            I => mmcm_fb_nobuf, -- Clock buffer input
+            O => mmcm_fb_bufg-- Clock buffer output
+        );
+	plclk_bufg0 : BUFG
+        port map (
+            I => plclk_mmcm_nobuf, -- Clock buffer input
+            O => plclk_bufg-- Clock buffer output
+        );
+
+	plsysclk_bufg0 : BUFG
+        port map (
+            I => pl_sysref_clk_nobuf, -- Clock buffer input
+            O => pl_sysref_clk-- Clock buffer output
+        );
+
+    mmcm0 : MMCME4_BASE
+        generic map(
+            BANDWIDTH            => "HIGH",
+            DIVCLK_DIVIDE        => 1, -- 
+            CLKFBOUT_MULT_F      => 4.000, --2 to 128. VCO = 600-1600 MHz
+--            CLKFBOUT_PHASE       => 0.000,
+            CLKOUT0_DIVIDE_F     => 4.000, -- 200 MHz always. Is not dependent on sampling frequency. Used for SPI, SYNC, IRIGB etc.
+            CLKOUT0_PHASE        => 45.0,
+--            CLKOUT0_DUTY_CYCLE   => 0.500,
+            CLKOUT1_DIVIDE => 8,
+            CLKOUT1_PHASE        => 90.0,
+            CLKIN1_PERIOD        => 1.0/375.0*1000.0,
+            REF_JITTER1          => 0.010
+            )
+        port map(
+        -- Output clocks
+            CLKOUT0             => plclk_mmcm_nobuf,
+            CLKOUT1             => pl_sysref_clk_nobuf,
+            CLKFBOUT            => mmcm_fb_nobuf,
+            -- Input clock control
+            CLKFBIN             => mmcm_fb_bufg,
+            CLKIN1              => plclk_nobuf,
+            -- Other control and status signals
+--            LOCKED              => open,
+            PWRDWN              => '0',
+            RST                 => '0'
+        );
+end block mmcm_blk;
+			
     -- Buck sync
 
     bucksyncdiv_proc: process (buck_sync(1))
@@ -317,6 +430,16 @@ begin
         );
 
 
+    -- IRIG time signal
+    irig_ibufds1 : IBUFDS -- Instantiate a differential (LVDS) input pad pair
+        generic map(DIFF_TERM => TRUE)
+        port map (
+            I => bp_irig_p,
+            IB => bp_irig_n,
+            O => bp_irig
+        );
+
+
     -- 7-segment display
     led7b(5 downto 0) <= gpio_led(6 downto 1); -- a-f segments (forming a circle)
     led7b(6) <= '0'; -- central g segment
@@ -336,13 +459,13 @@ zynq: entity work.zynq_tcpipe_crs
     adc2_clk_clk_p => adc2_clk_clk_p,
     adc3_clk_clk_n => adc3_clk_clk_n,
     adc3_clk_clk_p => adc3_clk_clk_p,
+    rf_sysref_diff_p => rf_sysref_p,
+    rf_sysref_diff_n => rf_sysref_n,
     
---      clk156_n => clk156_n,
---      clk156_p => clk156_p,
---      gpio_led(7 downto 0) => gpio_led(7 downto 0),
---      qsfp_txn(0 to 3) => qsfp_txn(0 to 3),
---      qsfp_txp(0 to 3) => qsfp_txp(0 to 3),
-
+    user_sysref => pl_sysref_reg, -- PL SYSREF resynchronized to PLCLK
+    
+    
+    
     -- ADC analog inputs
     vin0_01_v_n => vin0_01_v_n,
     vin0_01_v_p => vin0_01_v_p,
@@ -389,6 +512,35 @@ zynq: entity work.zynq_tcpipe_crs
 
     -- Buffered ADC data word clock. Must be fs/8.
     pl_clk => plclk_bufg,
+
+    -- ADC calibration control
+    
+    adc0_cal_converter01_cal_frozen => adc_cal_frozen(0),
+    adc0_cal_converter23_cal_frozen => adc_cal_frozen(1),
+    adc1_cal_converter01_cal_frozen => adc_cal_frozen(2),
+    adc1_cal_converter23_cal_frozen => adc_cal_frozen(3),
+    adc2_cal_converter01_cal_frozen => adc_cal_frozen(4),
+    adc2_cal_converter23_cal_frozen => adc_cal_frozen(5),
+    adc3_cal_converter01_cal_frozen => adc_cal_frozen(6),
+    adc3_cal_converter23_cal_frozen => adc_cal_frozen(7),
+
+    adc0_cal_converter01_int_cal_freeze => adc_cal_freeze(0),
+    adc0_cal_converter23_int_cal_freeze => adc_cal_freeze(1),
+    adc1_cal_converter01_int_cal_freeze => adc_cal_freeze(2),
+    adc1_cal_converter23_int_cal_freeze => adc_cal_freeze(3),
+    adc2_cal_converter01_int_cal_freeze => adc_cal_freeze(4),
+    adc2_cal_converter23_int_cal_freeze => adc_cal_freeze(5),
+    adc3_cal_converter01_int_cal_freeze => adc_cal_freeze(6),
+    adc3_cal_converter23_int_cal_freeze => adc_cal_freeze(7),
+
+    adc0_cal_converter01_signal_detect => adc_cal_signal_detect(0),
+    adc0_cal_converter23_signal_detect => adc_cal_signal_detect(1),
+    adc1_cal_converter01_signal_detect => adc_cal_signal_detect(2),
+    adc1_cal_converter23_signal_detect => adc_cal_signal_detect(3),
+    adc2_cal_converter01_signal_detect => adc_cal_signal_detect(4),
+    adc2_cal_converter23_signal_detect => adc_cal_signal_detect(5),
+    adc3_cal_converter01_signal_detect => adc_cal_signal_detect(6),
+    adc3_cal_converter23_signal_detect => adc_cal_signal_detect(7),
 
     -- ADC clock monitoring (Fs/8 or Fs/16)
     clk_adc0_0 => adc_clkout(0),
@@ -501,10 +653,13 @@ zynq: entity work.zynq_tcpipe_crs
             cpu_reset    => not cpu_reset_n,
 
             -- Reference clock
-            clk10 => sysref_bufg, -- Buffered (BUFG) 10 MHz differential reference clock
-
+            clk10 => clk10_bufg, -- Buffered (BUFG) 10 MHz differential reference clock
+            clk10_sel => clk10_sel,
+            
+            -- PLL VCXO
+            oscout => oscout_bufg,
             -- System clock
-            sysclk_bufg => clk200_bufg,
+            sysclk_bufg => sysclk_bufg,
 
             -- Buck sync
             buck_sync => buck_sync,
@@ -512,12 +667,17 @@ zynq: entity work.zynq_tcpipe_crs
             -- Time signal
 
             bp_time_in => sma_irig,
+            bp_trig_in => bp_irig,
 
             -- ADC inputs
             adc_axis_tdata => adc_axis_tdata(0 to NUMBER_OF_ADCS-1),
             adc_axis_tvalid => adc_axis_tvalid(0 to NUMBER_OF_ADCS-1),
             adc_axis_clk => (0 to NUMBER_OF_ADCS-1 => plclk_bufg),
+            adc_sysref => pl_sysref_reg,
             adc_clkout => adc_clkout(0 to NUMBER_OF_ADCS-1),
+            adc_cal_frozen => adc_cal_frozen(0 to NUMBER_OF_ADCS-1),
+            adc_cal_freeze => adc_cal_freeze(0 to NUMBER_OF_ADCS-1),
+            adc_cal_signal_detect => adc_cal_signal_detect(0 to NUMBER_OF_ADCS-1),
 
             -- LEDs
 
