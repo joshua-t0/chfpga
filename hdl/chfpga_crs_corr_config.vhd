@@ -28,7 +28,7 @@ package chfpga_config is
 
 
     constant CONFIG_CORR_TYPE: string                            := "UCORR44";
-	constant CONFIG_NUMBER_OF_CORRELATORS: integer               := 4; -- Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
+	constant CONFIG_NUMBER_OF_CORRELATORS: integer               := CONFIG_ADC_SAMPLES_PER_WORD/2; -- One correlator per bin in the FFT output word
 
 	constant CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := 0;
 	constant CONFIG_NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := 0;
