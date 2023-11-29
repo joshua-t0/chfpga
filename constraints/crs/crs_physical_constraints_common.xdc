@@ -67,10 +67,6 @@ create_clock -period 100.000 -name SMA_CLK10 [get_ports sma_clk10_p]
 ##########################################################################
 # Secondary clocks from HMC7044 PLL (Programmable, not defined at powerup)
 ##########################################################################
-# # Sync control line
-# set_property PACKAGE_PIN D19       [get_ports {hmc7044_sync}] ; # Bank  69  VCC1V8
-# set_property IOSTANDARD  LVCMOS18 [get_ports {hmc7044_sync}] ;# Bank  87 VCCO - VCC1V8   - IO_L2P_AD14P_87
-
 # DAC and ADC reference clock (programmable, fixed connections).
 # set_property PACKAGE_PIN N5      [get_ports {rf_clk_p229}] ; # DAC_CLK_P_230
 # set_property PACKAGE_PIN AF5      [get_ports {rf_clk_p224}] ; # ADC_CLK_P_224
@@ -86,10 +82,17 @@ create_clock -period 100.000 -name SMA_CLK10 [get_ports sma_clk10_p]
 # create_clock -name GTY_P130 -period 125MHz [get_ports {gty_clk0_p130}]
 
 # Output from the HMC7044 PLL1  (50 MHz, always phase-aligned with the SMA or BP 10 MHz reference clock when present)
-set_property PACKAGE_PIN J19 [get_ports oscout_p];  # Bank 69
-set_property IOSTANDARD LVDS [get_ports oscout_p]
-set_property DIFF_TERM_ADV TERM_100 [get_ports oscout_p]
-create_clock -period 20.000 -name OSCOUT [get_ports oscout_p]
+set_property PACKAGE_PIN J19 [get_ports pll_oscout_p];  # Bank 69
+set_property IOSTANDARD LVDS [get_ports pll_oscout_p]
+set_property DIFF_TERM_ADV TERM_100 [get_ports pll_oscout_p]
+create_clock -period 20.000 -name OSCOUT [get_ports pll_oscout_p]
+
+ # PLL Sync control line, synchronus to OSCOUT
+set_property PACKAGE_PIN D19       [get_ports {pll_sync}] ; # Bank  69 HP VCC1V8
+set_property IOSTANDARD  LVCMOS18 [get_ports {pll_sync}] ;# Bank  87 VCCO - VCC1V8   - IO_L2P_AD14P_87
+set_property SLEW FAST [get_ports {pll_sync}]
+set_property DRIVE 12 [get_ports {pll_sync}] ;# Drive is 12 mA Max for HP bank
+set_input_delay -min -clock [get_clocks OSCOUT] 0.300 [get_ports pll_sync] ;# SYNC setup time > 0.3 ns
 
 # PL_CLK (Bank 69), Fabric signal processing word clock (programmable, must be ADC sampling freq / 8 samples/word)
 # 3000 MSPS/ 8 = 375 MHz
@@ -105,13 +108,14 @@ set_property IOSTANDARD LVDS [get_ports pl_sysref_p]
 set_property DIFF_TERM_ADV TERM_100 [get_ports pl_sysref_p]
 #create_clock -period 400.000 -name PL_SYSREF [get_ports pl_sysref_p]
 #set_input_delay -clock [get_clocks PL_CLK] 0.0 [get_ports pl_sysref_p]
-set_input_delay -max -clock [get_clocks PL_CLK] 0.1 [get_ports pl_sysref_p]
-set_input_delay -min -clock [get_clocks PL_CLK] -0.1 [get_ports pl_sysref_p]
-# DDR4_CLK (Bank 67), used as a 250 MHz system clock
+set_input_delay -max -clock [get_clocks PL_CLK] 0.015 [get_ports pl_sysref_p]
+set_input_delay -min -clock [get_clocks PL_CLK] -0.015 [get_ports pl_sysref_p]
+
+# DDR4_CLK (Bank 67), used as a 10 MHz system clock
 set_property PACKAGE_PIN H23 [get_ports sysclk_p]
 set_property IOSTANDARD LVDS [get_ports sysclk_p]
 set_property DIFF_TERM_ADV TERM_100 [get_ports sysclk_p]
-create_clock -period 4.000 -name CLK200_CLK [get_ports sysclk_p]
+create_clock -period 100.000 -name SYS_CLK [get_ports sysclk_p]
 
 # # Recovered clock output (not used)
 # set_property PACKAGE_PIN C84     [get_ports {pl_recclk_p}]; # Bank  69 VCC1V8
