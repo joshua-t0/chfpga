@@ -30,7 +30,7 @@ entity chfpga_crs is
 
         -- Clocking config
         SYSTEM_CLOCK_SOURCE: string                  := "SYSCLK_BUFG"; -- System reference clock surce: "SYSCLK": 200 MHz unbuffered differential clock from sysclk_p/n, "SYSCLK_BUFG": 200 MHz BUFG-Buffered clock from sysclk_bufg, "SFP_REFCLK": 125 MHz clock from the GTX reference clock
-        SYSTEM_CLOCK_FREQ: real                      := 250.0; -- System reference clock frequency, in MHz. Used to select the system PLL divider/multiplier factors.
+        SYSTEM_CLOCK_FREQ: real                      := 10.0; -- System reference clock frequency, in MHz. Used to select the system PLL divider/multiplier factors.
         CHAN_CLK_SOURCE: string                      := "ADC"; -- Clock sources for the system PLL. Here, Channelizer clock comes directly from the ADC
         CT_CLK_SOURCE: string                        := "ADC_CLK"; -- corner-turn clock source
 
@@ -92,10 +92,10 @@ entity chfpga_crs is
         bp_clk10_p : in std_logic;
 
 
-        -- 50 MHz VXCO frequency from programmable PLL (output of PLL1). Is in phase with the external 10 MHz reference clocks.
-        oscout_n : in std_logic;
-        oscout_p : in std_logic;
-
+        -- 50 MHz VCXO frequency from programmable PLL (output of PLL1). Is in phase with the external 10 MHz reference clocks.
+        pll_oscout_n : in std_logic;
+        pll_oscout_p : in std_logic;
+        pll_sync: out std_logic;
 
         -- 375 MHz processing clock form programmable PLL
         plclk_n : in std_logic;
@@ -205,13 +205,14 @@ architecture impl of chfpga_crs is
     signal plclk_bufg: std_logic; 
 
     -- PLL VCXO clock (50 MHz) 
-    signal oscout_nobuf: std_logic; 
-    signal oscout_bufg: std_logic; 
-
+    signal pll_oscout_nobuf: std_logic; 
+    signal pll_oscout_bufg: std_logic; 
+    signal pll_sync10, pll_sync50_pre1,pll_sync50_pre2,pll_sync50_pre3: std_logic;
     -- System Reference clock (Submultiple of ADC sampling clock/16, < 10 MHz)
     -- Used to calibrate the ADC latency 
-    signal pl_sysref, pl_sysref_pre, pl_sysref_reg, pl_sysref_clk, pl_sysref_clk_nobuf: std_logic; 
-    attribute IOB of pl_sysref_reg :signal is "true"; -- make sure PL_SYSREF is registered in the IOB to ensure the best and reproducible timing
+    signal pl_sysref, pl_sysref_pre, pl_sysref_pre2, pl_sysref_reg: std_logic; 
+--    attribute IOB of pl_sysref_reg :signal is "true"; -- make sure PL_SYSREF is registered in the IOB to ensure the best and reproducible timing
+    attribute dont_touch of pl_sysref_pre, pl_sysref_pre2, pl_sysref_reg: signal is "true";
 
     --signal sysref_bufg: std_logic; 
 
@@ -261,7 +262,7 @@ architecture impl of chfpga_crs is
     signal sma_irig, bp_irig: std_logic;
 
     signal qsfp_txp_int, qsfp_txn_int: std_logic_vector(0 to 3);
-
+    signal irigb_reg:std_logic;
 
 begin
 
@@ -302,21 +303,16 @@ begin
 
     -- Register SYSREF
     -- This is required for the Multi-Converter synchronization
-    sysref0_proc: process (pl_sysref_clk)
-    begin
-        if rising_edge(pl_sysref_clk) then
-            pl_sysref_pre <= pl_sysref;
-        end if;
-    end process;
-
-    sysref1_proc: process (plclk_bufg)
+    sysref0_proc: process (plclk_bufg)
     begin
         if rising_edge(plclk_bufg) then
-            pl_sysref_reg <= pl_sysref_pre;
+            pl_sysref_pre <= pl_sysref;
+            pl_sysref_pre2 <= pl_sysref_pre;
+            pl_sysref_reg <= pl_sysref_pre2;
         end if;
     end process;
 
-    clk200_ibufds0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
+    sysclk_ibufds0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
         generic map(DIFF_TERM => TRUE)
         port map (
             I => sysclk_p,
@@ -329,6 +325,38 @@ begin
             O => sysclk_bufg-- Clock buffer output
         );
 
+
+	oscout_ibufds0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
+		generic map(DIFF_TERM => TRUE)
+		port map (
+			I => pll_oscout_p,
+			IB => pll_oscout_n,
+			O => pll_oscout_nobuf
+		);
+	oscout_bufg0 : BUFG
+        port map (
+            I => pll_oscout_nobuf, -- Clock buffer input
+            O => pll_oscout_bufg-- Clock buffer output
+        );
+
+    pllsync0_proc: process (pll_oscout_bufg)
+    begin
+        if falling_edge(pll_oscout_bufg) then
+            pll_sync50_pre1 <= pll_sync10;
+            pll_sync50_pre2 <= pll_sync50_pre1;
+            pll_sync50_pre3 <= pll_sync50_pre2;
+            pll_sync <= pll_sync50_pre3;
+        end if;
+--        if rising_edge(pll_oscout_bufg) then
+--        end if;
+    end process;
+
+
+mmcm_blk: block
+    signal mmcm_fb_nobuf, mmcm_fb_bufg: std_logic;
+    signal plclk_mmcm_nobuf: std_logic;
+begin
+    -- PLCLK input buffer
 	plclk_ibufds0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
 		generic map(DIFF_TERM => TRUE)
 		port map (
@@ -338,22 +366,6 @@ begin
 		);
 
 
-	oscout_ibufds0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
-		generic map(DIFF_TERM => TRUE)
-		port map (
-			I => oscout_p,
-			IB => oscout_n,
-			O => oscout_nobuf
-		);
-	oscout_bufg0 : BUFG
-        port map (
-            I => oscout_nobuf, -- Clock buffer input
-            O => oscout_bufg-- Clock buffer output
-        );
-mmcm_blk: block
-    signal mmcm_fb_nobuf, mmcm_fb_bufg: std_logic;
-    signal plclk_mmcm_nobuf: std_logic;
-begin
 	fb_bufg0 : BUFG
         port map (
             I => mmcm_fb_nobuf, -- Clock buffer input
@@ -365,32 +377,22 @@ begin
             O => plclk_bufg-- Clock buffer output
         );
 
-	plsysclk_bufg0 : BUFG
-        port map (
-            I => pl_sysref_clk_nobuf, -- Clock buffer input
-            O => pl_sysref_clk-- Clock buffer output
-        );
 
     mmcm0 : MMCME4_BASE
         generic map(
             BANDWIDTH            => "HIGH",
             DIVCLK_DIVIDE        => 1, -- 
             CLKFBOUT_MULT_F      => 4.000, --2 to 128. VCO = 600-1600 MHz
---            CLKFBOUT_PHASE       => 0.000,
             CLKOUT0_DIVIDE_F     => 4.000, -- 200 MHz always. Is not dependent on sampling frequency. Used for SPI, SYNC, IRIGB etc.
-            CLKOUT0_PHASE        => 45.0,
---            CLKOUT0_DUTY_CYCLE   => 0.500,
-            CLKOUT1_DIVIDE => 8,
-            CLKOUT1_PHASE        => 90.0,
+            CLKOUT0_PHASE        => 45.0/4.0*6.0, -- phase to allow PL_SYSREF to be captured in a nearby Fabric FF
             CLKIN1_PERIOD        => 1.0/375.0*1000.0,
             REF_JITTER1          => 0.010
             )
         port map(
-        -- Output clocks
+            -- Output clocks
             CLKOUT0             => plclk_mmcm_nobuf,
-            CLKOUT1             => pl_sysref_clk_nobuf,
             CLKFBOUT            => mmcm_fb_nobuf,
-            -- Input clock control
+            -- Input clocks control
             CLKFBIN             => mmcm_fb_bufg,
             CLKIN1              => plclk_nobuf,
             -- Other control and status signals
@@ -439,6 +441,15 @@ end block mmcm_blk;
             O => bp_irig
         );
 
+
+    -- Register SYSREF
+    -- This is required for the Multi-Converter synchronization
+    irigb_proc: process (plclk_bufg)
+    begin
+        if rising_edge(plclk_bufg) then
+            irigb_reg <= sma_irig when clk10_sel else bp_irig;
+        end if;
+    end process;
 
     -- 7-segment display
     led7b(5 downto 0) <= gpio_led(6 downto 1); -- a-f segments (forming a circle)
@@ -581,10 +592,13 @@ zynq: entity work.zynq_tcpipe_crs
 
     );
 
-    smp(0) <= axis_cap_tvalid;
-    smp(1) <= axis_cap_tlast;
-    smp(2) <= axis_cap_tready;
-    smp(3) <= aclk;
+    smp(0) <= clk10_bufg;
+    smp(1) <= pll_oscout_bufg;
+--    smp(2) <= pll_sync; -- Ch4/green trace
+--    smp(2) <= sysclk_bufg;
+    smp(2) <= irigb_reg;
+    
+    smp(3) <= plclk_bufg;
     
     
     adc_clkout(1) <= adc_clkout(0);
@@ -657,7 +671,8 @@ zynq: entity work.zynq_tcpipe_crs
             clk10_sel => clk10_sel,
             
             -- PLL VCXO
-            oscout => oscout_bufg,
+            pll_oscout => pll_oscout_bufg,
+            pll_sync => pll_sync10, -- sync signal approximately synchronous to pll_oscout. Will be rtimed on the falline edge then rising edge of pll_oscout.
             -- System clock
             sysclk_bufg => sysclk_bufg,
 
