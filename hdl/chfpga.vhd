@@ -215,7 +215,10 @@ entity chFPGA is
 			sysclk_bufg: in std_logic := '0';--! BUFG-buffered 200 MHz used as a master clock if  SYSTEM_CLOCK_SOURCE = "SYSCLK_BUFG";
 			sfp_clk_p: in std_logic := '0'; --! 125 MHz SFP reference clock, generated on-board using a high quality oscillator. Used as a master clock if  SYSTEM_CLOCK_SOURCE = "SFP_REFCLK"; Also used to synchronize the MGT used to communicate to the SFP.
 			sfp_clk_n: in std_logic := '1';
-            oscout: in std_logic := '0'; -- BUFG-buffered External PLL VCO clock
+
+            -- External PLL
+            pll_oscout: in std_logic := '0'; -- BUFG-buffered External PLL VCXO clock
+            pll_sync: out std_logic; -- PLL sync signal approximately synchronous to pll_oscout. Will be retimed on the falling edge and then then the rising edge of pll_oscout.
 			-- Clock monitoring inputs
 			raw_clk10: in std_logic := '0'; -- Buffered 10 MHz reference. Used for upstream clock frequency measurement only.
 			mgt_clk100: in std_logic := '0'; -- Buffered MGT 100 MHz reference clock. Used by Frequency counter to debug connectivity
@@ -1857,12 +1860,18 @@ begin
 			event_ctr_inc => gpio_event_ctr_inc_reg,
 			event_ctr_reset => gpio_event_ctr_reset_reg,
 
+   
 			-- PWM Generator (generates Frame-aligned PWM waveform)
 			pwm_clk => chan_clk(0),
 			pwm_ctr_en => gpio_pwm_ctr_en_reg,
 			pwm_reset => gpio_event_ctr_reset_reg, -- just a register version of chan(0) reset
 			pwm_out => pwm_out, -- To user output mux
 
+
+            -- External pll
+            
+            pll_sync => pll_sync,
+            
 			-- User muxed outputs
 			user_mux_in => gpio_user_mux_signals,
 			user_mux_out => user_mux_out_int,
@@ -2103,7 +2112,7 @@ freq_ctr_blk: block
 	signal mgt_clk125_div2: std_logic := '0'; -- Initialization required for sims
 	signal ct_clk_div2: std_logic;
 	signal fan_tach_div2: std_logic;
-    signal oscout_div2: std_logic;
+    signal pll_oscout_div2: std_logic;
 
 	signal bsb_rst_reg1, bsb_rst_reg2: std_logic;
 	attribute DONT_TOUCH of bsb_rst_reg1, bsb_rst_reg2: signal is "true";
@@ -2174,10 +2183,10 @@ begin
 		end if; -- clk
 	end process;
 
-	oscoutdiv2: process(oscout)
+	oscoutdiv2: process(pll_oscout)
 	begin
-		if rising_edge(oscout) then
-			oscout_div2 <= not oscout_div2;
+		if rising_edge(pll_oscout) then
+			pll_oscout_div2 <= not pll_oscout_div2;
 		end if;
 	end process;
 
@@ -2287,7 +2296,7 @@ begin
 		freq_ctr_in_vect(38) <= bp_shuffle_refclk_div2(1); -- MGT
 	end generate;
 
-    freq_ctr_in_vect(39) <= oscout_div2;
+    freq_ctr_in_vect(39) <= pll_oscout_div2;
 
 	FREQ_CTR0: entity work.FREQ_CTR
 		GENERIC MAP(
