@@ -209,6 +209,10 @@ entity GPIO is
 		clk10_sel: out std_logic;
 		dna_clk: in std_logic; --! DNA port clock (max 97 MHz)
 
+        -- External PLL control
+        
+        pll_sync: out std_logic;
+
 		-- PWM signal
 
 		pwm_clk: in std_logic;
@@ -444,6 +448,9 @@ signal ts_sample_trig10: std_logic :='0';
 signal ts_sample_trig10_ack: std_logic;
 signal ts_sample_done: std_logic;
 
+-- External PLL
+signal pll_sync_pre: std_logic;
+
 
 signal ctrl_reset_trig: std_logic;
 
@@ -567,6 +574,7 @@ CORR_RESET_ASYNC    <= CONTROL_BYTES(3)(5);
 ctrl_reset_trig     <= CONTROL_BYTES(3)(4);
 sysmon_user_reset   <= CONTROL_BYTES(3)(3);
 clk10_sel           <= CONTROL_BYTES(3)(2); 
+pll_sync_pre        <= CONTROL_BYTES(3)(1); 
 --USER_RESET <= CONTROL_BYTES(3)(0);
 
 -- CONTROL Byte 4: UDP data throttling control
@@ -619,11 +627,11 @@ flash_cs_oe        <= CONTROL_BYTES(48)(1);
 flash_cs_out       <= CONTROL_BYTES(48)(0);
 
 
--- CONTROL byte 49 -- User output mux control
+-- CONTROL byte 49 -- User output 1 & 2 mux control
 user_mux_source(2) <= CONTROL_BYTES(49)(7 downto 4);
 user_mux_source(1) <= CONTROL_BYTES(49)(3 downto 0);
 
--- CONTROL byte 50
+-- CONTROL byte 50 -- User bits, IRIG-B delay control
 user_bit(1)       <= CONTROL_BYTES(50)(7);
 user_bit(0)       <= CONTROL_BYTES(50)(6);
 irigb_delay_reset <= CONTROL_BYTES(50)(5);
@@ -723,8 +731,19 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 		NUMBER_OF_CONTROL_BYTES => CONTROL_BYTES'Length(1), -- Length of array in the first dimension: number of bytes
 		NUMBER_OF_STATUS_BYTES => STATUS_BYTES'Length(1),
 		DEFAULT_CONTROL_BYTES => ('0' & to_std_logic(BUCK_SYNC_ENABLE) & "010000" & -- Byte 0
-			                      to_slv(BUCK_CLK_DIVIDE_FACTOR,8) & 
-			                      X"00_65_14_FEDCBA9876543210_000000000000_00000000_A028_0000000000000000_00_00000000_0002faf0_0005f5e1_00_00_00_89_00"),
+			                      to_slv(BUCK_CLK_DIVIDE_FACTOR,8) & -- Byte 1
+			                      X"00" & -- Byte 2: LCD
+			                      X"60" & -- Byte 3: Reset and clock control 
+			                      X"14" & -- Byte 4: HOST_FRAME_READ_RATE
+			                      X"FEDCBA9876543210" & -- Bytes 5-12: Buck sync phases
+			                      X"00" & -- Byte 13: ADC cal freeze
+			                      X"0000000000_00000000_A028" & -- Bytes 14-24: Unused
+			                      X"0000000000000000" & -- Bytes 25-32: Target FPGA ID
+			                      X"00" & --Byte 33: Core reg write mode
+			                      X"00000000_0002faf0_0005f5e1" & -- Bytes 34-45: PWM offset/high time/period
+			                      X"00_00_00" &
+			                      X"89" & -- Byte 49 -- User output 1 & 2 mux control
+			                      X"00"), -- Byte 50: User bits, IRIG-B delay control
         RAM_DATA_WIDTH          => 8, -- 8 or 16 bits
         RAM_ADDR_WIDTH          => 5+2,  -- 6 bits (32 register words) + 2 bits (4 bytes per word)
         RAM_LATENCY             => 1
@@ -1228,6 +1247,14 @@ begin
 			end if; --CLK
 		end process;
 end block;
+
+
+-- PLL sync
+
+-- Resynchronize pll_sync_pre bitfield to the clk10 reference clock so it is roughly aligned to pll_oscout
+pll_sync_cdc0: xpm_cdc_single
+    generic map (SRC_INPUT_REG => 1)
+    port map (src_clk => ctrl_clk, src_in => pll_sync_pre, dest_clk => clk10, dest_out => pll_sync);
 
 --! User muxed output selection
 user_gen: for i in 0 to 3 generate
