@@ -28,7 +28,6 @@ library xpm;
 use xpm.vcomponents.all;
 
 use work.chFPGA_Package.all; -- Get all component definitions
-
 -------- ENTITY DECLARATION ---------------------
 
 -- Scales the FFT output into (8+8) bits or (4+4) bits complex values
@@ -95,7 +94,7 @@ entity SCALER is
         reset   : in  std_logic; --! clk-synchronous reset
 
         -- Channel FIFO monitoring
-        fifo_overflow   : in std_logic;
+        fifo_overflow   : in std_logic:= '0'; -- Used to monitor the channelizer FIFO since it does not haveits own BSB registers.
 
         -- Control Interface (command and reply stream buses)
         CTRL_CMD_IN_DAT     : in  AXIS8_DAT_STRUCT;
@@ -295,7 +294,7 @@ post_scaler_left_shift <= control_bytes(0)(4 downto 0);
 
 -- CONTROL Byte 1
 assert gain_table_page'LENGTH <= gain_table_page_padded'LENGTH report "Not enough register space for gain_table_page (have "&str(gain_table_page_padded'LENGTH)&" but need " & str(gain_table_page'LENGTH) & ")" severity FAILURE;
-gain_table_page_padded(gain_table_page'RANGE) <= gain_table_page; -- Padded page vector to acount for different page sizes. Will cause errors if we exceed the number of bits we can assign to the control registers.
+gain_table_page <= gain_table_page_padded(gain_table_page'RANGE); -- Padded page vector to acount for different number of pages. Will cause errors if we exceed the number of bits we can assign to the control registers.
 
 gain_table_page_padded(5)          <= control_bytes(1)(7);
 use_offset_binary                  <= control_bytes(1)(6);
@@ -478,6 +477,10 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
 
             );
     -- Implement the gain multipliers for both the REAL-only or complex gains configurations
+    -- 
+    ---------------
+    -- COMPLEX gains
+    ---------------
     mul_gen: if USE_COMPLEX_GAINS generate
 
         signal scaled_data_even_tdata: slv80;
@@ -544,88 +547,90 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
           scaled_data_tdata(3*INTEGER_WIDTH - 1 downto 2*INTEGER_WIDTH) <= scaled_data_even_tdata(74 downto 40); -- Im(N)
           scaled_data_tdata(2*INTEGER_WIDTH - 1 downto 1*INTEGER_WIDTH) <= scaled_data_odd_tdata(34 downto 0); -- Re(N+1)
           scaled_data_tdata(1*INTEGER_WIDTH - 1 downto 0*INTEGER_WIDTH) <= scaled_data_odd_tdata(74 downto 40); -- Im(N+1)
+    
+    ---------------
+    -- REAL gains
+    ---------------
     else generate -- if no complex gains
 
+        signal coeff_reg: std_logic_vector(COEFF_BITS_PER_WORD-1 downto 0);
+        signal fft_reg_tdata: std_logic_vector(FFT_BITS_PER_WORD-1 downto 0);
+        signal fft_reg_tvalid: std_logic;
+        signal fft_reg_tlast: std_logic;
+        signal fft_reg_tuser: std_logic_vector(3 downto 0);
 
-
-            signal coeff_reg: std_logic_vector(COEFF_BITS_PER_WORD-1 downto 0);
-            signal fft_reg_tdata: std_logic_vector(FFT_BITS_PER_WORD-1 downto 0);
-            signal fft_reg_tvalid: std_logic;
-            signal fft_reg_tlast: std_logic;
-            signal fft_reg_tuser: std_logic_vector(3 downto 0);
-
-            signal scaled_data_tdata_pre: std_logic_vector(INTEGER_WIDTH*INTEGERS_PER_WORD-1 downto 0);
-            signal scaled_data_tvalid_pre: std_logic;
-            signal scaled_data_tuser_pre: std_logic_vector(3 downto 0);
-            signal scaled_data_tlast_pre: std_logic;
+        signal scaled_data_tdata_pre: std_logic_vector(INTEGER_WIDTH*INTEGERS_PER_WORD-1 downto 0);
+        signal scaled_data_tvalid_pre: std_logic;
+        signal scaled_data_tuser_pre: std_logic_vector(3 downto 0);
+        signal scaled_data_tlast_pre: std_logic;
 
             
+    begin
+
+        -- fft data format:                    MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
+        -- gain storage format (Complex gain): MSB->LSB: Re(N+1), Im(N+1), Re(N),   Im(N) 
+        -- gain storage format (Real gain):    MSB->LSB:                   Re(N+1), Re(N) 
+        -- product data format:                MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
+        --
+        -- BRAM storage format: (16bit gain words are is stored little-endian)
+        --                -----------------------------------------------
+        --                 7          0 7         0 7        0 7       0
+        --     BSB bytes: |    2N+3    |   2N+2    | 2N + 1   |   2N    |
+        --                | MSB G(N+1) | LSB G(N+1)| MSB G(N) | LSB G(N) 
+        --                -----------------------------------------------
+        --                31        24 23      16 15       8 7       0
+        --     COeff:     |           G(N+1)      |        G(N)          |
+        --                ---------------------------------------------
+        mul_proc: process (clk) 
+            variable fft_re, fft_im: signed(FFT_BITS_PER_BIN/2-1 downto 0);
+            variable gain: signed(COEFF_BITS_PER_BIN-1 downto 0);
+            variable re_lsb, im_lsb: integer;
         begin
+            if rising_edge(clk) then
+                -- Pipeline the gain and fft values. These registers should be absorbed as the input registers 
+                -- of the DSP48 block and should greatly help with timing closure.
+                for i in 0 to FFT_BINS_PER_WORD-1 loop
+                    coeff_reg((i+1)*COEFF_BITS_PER_BIN-1 downto i*COEFF_BITS_PER_BIN) <= 
+                        std_logic_vector(to_signed(1, COEFF_BITS_PER_BIN)) when force_gain_to_one else -- debug: force gain to 1
+                        coeff_ram_dout((i+1)*COEFF_BITS_PER_BIN-1 downto i*COEFF_BITS_PER_BIN);
+                end loop;
+                fft_reg_tdata <= in_dat_dly2_tdata;
+                -- Make sure the control signals are delayed as much as the data
+                fft_reg_tvalid <= in_dat_dly2_tvalid;
+                fft_reg_tlast <= in_dat_dly2_tlast;
+                fft_reg_tuser <= in_dat_dly2_tuser;
+                for i in FFT_BINS_PER_WORD-1 downto 0 loop
+                    -- Extract the single real gain to be applied to both the Re and Im part 
+                    gain := signed(coeff_reg((FFT_BINS_PER_WORD-i)*COEFF_BITS_PER_BIN-1 downto (FFT_BINS_PER_WORD-i-1)*COEFF_BITS_PER_BIN));
+                    -- Compute the bit position of the lsb of the Re and Im integer in fft input and extract them
+                    re_lsb := i*FFT_BITS_PER_BIN + FFT_BITS_PER_BIN/2;
+                    im_lsb := i*FFT_BITS_PER_BIN;
+                    fft_re := signed(fft_reg_tdata(re_lsb + FFT_BITS_PER_BIN/2-1 downto re_lsb)); -- we must use dly2 signals which are synchronized with the gain coefficient
+                    fft_im := signed(fft_reg_tdata(im_lsb + FFT_BITS_PER_BIN/2-1 downto im_lsb));
+                    -- COmpute lsb osition of the Re and Im product in the output word
+                    re_lsb := 2*i*INTEGER_WIDTH + INTEGER_WIDTH;
+                    im_lsb := 2*i*INTEGER_WIDTH;
+                    -- Perform the multiplication
+                    scaled_data_tdata_pre(re_lsb + INTEGER_WIDTH-1 downto re_lsb) <= std_logic_vector(resize(gain * fft_re, INTEGER_WIDTH));
+                    scaled_data_tdata_pre(im_lsb + INTEGER_WIDTH-1 downto im_lsb) <= std_logic_vector(resize(gain * fft_im, INTEGER_WIDTH));
+                end loop;
+                scaled_data_tvalid_pre <= fft_reg_tvalid;
+                scaled_data_tlast_pre <= fft_reg_tlast;
+                scaled_data_tuser_pre <= fft_reg_tuser;
 
-            -- fft data format:                    MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
-            -- gain storage format (Complex gain): MSB->LSB: Re(N+1), Im(N+1), Re(N),   Im(N) 
-            -- gain storage format (Real gain):    MSB->LSB:                   Re(N+1), Re(N) 
-            -- product data format:                MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
-            --
-            -- BRAM storage format: (16bit gain words are is stored little-endian)
-            --                -----------------------------------------------
-            --                 7          0 7         0 7        0 7       0
-            --     BSB bytes: |    2N+3    |   2N+2    | 2N + 1   |   2N    |
-            --                | MSB G(N+1) | LSB G(N+1)| MSB G(N) | LSB G(N) 
-            --                -----------------------------------------------
-            --                31        24 23      16 15       8 7       0
-            --     COeff:     |           G(N+1)      |        G(N)          |
-            --                ---------------------------------------------
-            mul_proc: process (clk) 
-                variable fft_re, fft_im: signed(FFT_BITS_PER_BIN/2-1 downto 0);
-                variable gain: signed(COEFF_BITS_PER_BIN-1 downto 0);
-                variable re_lsb, im_lsb: integer;
-            begin
-                if rising_edge(clk) then
-                    -- Pipeline the gain and fft values. These registers should be absorbed as the input registers 
-                    -- of the DSP48 block and should greatly help with timing closure.
-                    for i in 0 to FFT_BINS_PER_WORD-1 loop
-                        coeff_reg((i+1)*COEFF_BITS_PER_BIN-1 downto i*COEFF_BITS_PER_BIN) <= 
-                            std_logic_vector(to_signed(1, COEFF_BITS_PER_BIN)) when force_gain_to_one else -- debug: force gain to 1
-                            coeff_ram_dout((i+1)*COEFF_BITS_PER_BIN-1 downto i*COEFF_BITS_PER_BIN);
-                    end loop;
-                    fft_reg_tdata <= in_dat_dly2_tdata;
-                    -- Make sure the control signals are delayed as much as the data
-                    fft_reg_tvalid <= in_dat_dly2_tvalid;
-                    fft_reg_tlast <= in_dat_dly2_tlast;
-                    fft_reg_tuser <= in_dat_dly2_tuser;
-                    for i in FFT_BINS_PER_WORD-1 downto 0 loop
-                        -- Extract the single real gain to be applied to both the Re and Im part 
-                        gain := signed(coeff_reg((FFT_BINS_PER_WORD-i)*COEFF_BITS_PER_BIN-1 downto (FFT_BINS_PER_WORD-i-1)*COEFF_BITS_PER_BIN));
-                        -- Compute the bit position of the lsb of the Re and Im integer in fft input and extract them
-                        re_lsb := i*FFT_BITS_PER_BIN + FFT_BITS_PER_BIN/2;
-                        im_lsb := i*FFT_BITS_PER_BIN;
-                        fft_re := signed(fft_reg_tdata(re_lsb + FFT_BITS_PER_BIN/2-1 downto re_lsb)); -- we must use dly2 signals which are synchronized with the gain coefficient
-                        fft_im := signed(fft_reg_tdata(im_lsb + FFT_BITS_PER_BIN/2-1 downto im_lsb));
-                        -- COmpute lsb osition of the Re and Im product in the output word
-                        re_lsb := 2*i*INTEGER_WIDTH + INTEGER_WIDTH;
-                        im_lsb := 2*i*INTEGER_WIDTH;
-                        -- Perform the multiplication
-                        scaled_data_tdata_pre(re_lsb + INTEGER_WIDTH-1 downto re_lsb) <= std_logic_vector(resize(gain * fft_re, INTEGER_WIDTH));
-                        scaled_data_tdata_pre(im_lsb + INTEGER_WIDTH-1 downto im_lsb) <= std_logic_vector(resize(gain * fft_im, INTEGER_WIDTH));
-                    end loop;
-                    scaled_data_tvalid_pre <= fft_reg_tvalid;
-                    scaled_data_tlast_pre <= fft_reg_tlast;
-                    scaled_data_tuser_pre <= fft_reg_tuser;
+                -- Pipeline output: the previous register stage seems to be moved in the DSP
+                scaled_data_tdata <= scaled_data_tdata_pre;
+                scaled_data_tlast <= scaled_data_tlast_pre;
+                scaled_data_tvalid <= scaled_data_tvalid_pre;
+                scaled_data_tuser <= scaled_data_tuser_pre;
 
-                    -- Pipeline output: the previous register stage seems to be moved in the DSP
-                    scaled_data_tdata <= scaled_data_tdata_pre;
-                    scaled_data_tlast <= scaled_data_tlast_pre;
-                    scaled_data_tvalid <= scaled_data_tvalid_pre;
-                    scaled_data_tuser <= scaled_data_tuser_pre;
+                if rst_reg='1' then
+                    fft_reg_tvalid <= '0';
+                    scaled_data_tvalid_pre <= '0';
+                end if; -- rst
 
-                    if rst_reg='1' then
-                        fft_reg_tvalid <= '0';
-                        scaled_data_tvalid_pre <= '0';
-                    end if; -- rst
-
-                end if; --clk
-            end process;
+            end if; --clk
+        end process;
     end generate mul_gen;
 
 
@@ -790,7 +795,7 @@ scaler_proc: process(clk)
             -- Stage 3b: Zero Re/Im pairs on overflows
             if zero_on_saturation='1' then
                 for i in 0 to FFT_BINS_PER_WORD-1 loop
-                    if stage2_overflow(2*i to 2*i+1)/="00" then
+                    if stage2_overflow(2*i to 2*i+1) /= "00" then
                         OUT_WORD_VAR(2*i) := X"00";
                         OUT_WORD_VAR(2*i+1) := X"00";
                     end if;
@@ -805,30 +810,55 @@ scaler_proc: process(clk)
             end if;
 
             -- Stage 3d: Clear lower nibble in 4-bit mode
-            if four_bits='1' or EIGHT_BIT_SUPPORT=FALSE then
+            if four_bits='1' or EIGHT_BIT_SUPPORT = FALSE then
                 for i in 0 to INTEGERS_PER_WORD-1 loop
                     OUT_WORD_VAR(i)(3 downto 0) := "0000";
                 end loop;
             end if;
 
             -- Stage 3e: Assign outputs
+
+            -- Set defaults in case we don't assign them below
+            m_axis_out_tdata<= (others => '0');
+            m_axis_out_tuser <= (others => '0');
+            m_axis_out_tlast <= '0';
+            m_axis_out_tvalid <= '0';
+ 
             if bypass_scaler then
-                -- In bypass mode, we forward the upper N bits of the FFT integers to the upper N bits of the output integer
-                for i in 0 to INTEGERS_PER_WORD-1 loop
-                    m_axis_out_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto i*OUT_BITS_PER_BIN/2) <= s_axis_in_tdata((i+1)*FFT_BITS_PER_BIN/2 - 1 downto (i+1)*FFT_BITS_PER_BIN/2 - OUT_BITS_PER_BIN/2);
-                end loop;
-                m_axis_out_tlast <= s_axis_in_tlast;
-                m_axis_out_tvalid <= s_axis_in_tvalid;
-                m_axis_out_tuser(TUSER_CAPTURE_BIT) <= s_axis_in_tuser(TUSER_CAPTURE_BIT);
-                if s_axis_in_tlast='1' then
-                    m_axis_out_tuser(TUSER_ADC_OVERFLOW_BIT) <= s_axis_in_tuser(TUSER_ADC_OVERFLOW_BIT);
-                else
-                    m_axis_out_tuser(TUSER_ADC_OVERFLOW_BIT) <= current_gain_bank;
-                end if;
-                m_axis_out_tuser(TUSER_SCALER_LOW_OVERFLOW_BIT) <= '0';
-                m_axis_out_tuser(TUSER_SCALER_HIGH_OVERFLOW_BIT) <= '0';
+                case data_type is
+                    when "00" => --send input
+                        -- We forward the upper N bits of the FFT integers to the upper N bits of the output integer
+                        for i in 0 to INTEGERS_PER_WORD-1 loop
+                            m_axis_out_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto i*OUT_BITS_PER_BIN/2) <= 
+                                msb(s_axis_in_tdata, OUT_BITS_PER_BIN/2);
+                        end loop;
+                        m_axis_out_tlast <= s_axis_in_tlast;
+                        m_axis_out_tvalid <= s_axis_in_tvalid;
+                        m_axis_out_tuser(TUSER_CAPTURE_BIT) <= s_axis_in_tuser(TUSER_CAPTURE_BIT);
+                        if s_axis_in_tlast='1' then
+                            m_axis_out_tuser(TUSER_ADC_OVERFLOW_BIT) <= s_axis_in_tuser(TUSER_ADC_OVERFLOW_BIT);
+                        else
+                            m_axis_out_tuser(TUSER_ADC_OVERFLOW_BIT) <= current_gain_bank;
+                        end if;
+                        m_axis_out_tuser(TUSER_SCALER_LOW_OVERFLOW_BIT) <= '0';
+                        m_axis_out_tuser(TUSER_SCALER_HIGH_OVERFLOW_BIT) <= '0';
+
+                    when "01" =>
+                        -- We pass the upper bits of the the shifted product with saturation
+                        for i in 0 to INTEGERS_PER_WORD-1 loop
+                            m_axis_out_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto i*OUT_BITS_PER_BIN/2) <= 
+--                                (OUT_BITS_PER_BIN/2-1 => '1', others =>'0') when stage1_overflow(i)='1' and stage1_sign(i)='1' else
+--                                (OUT_BITS_PER_BIN/2-1 => '0', others =>'1') when stage1_overflow(i)='1' and stage1_sign(i)='0' else
+                                X"8000" when stage1_overflow(i)='1' and stage1_sign(i)='1' else
+                                X"7FFF" when stage1_overflow(i)='1' and stage1_sign(i)='0' else
+                                msb(std_logic_vector(stage1_word(i)), OUT_BITS_PER_BIN/2);
+                        end loop;
+                        m_axis_out_tlast <= stage1_tlast;
+                        m_axis_out_tvalid <= stage1_tvalid;
+                    when others=>
+                        assert FALSE report "Unhandled data type case" severity FAILURE;
+                end case;
             else -- no bypass
-                m_axis_out_tdata <= (others => '0'); -- overriden below
                 len := minimum(OUT_BITS_PER_BIN/2, 8); -- copy at most 8 bits to the output, or less if the output word is narrower
                 for i in 0 to INTEGERS_PER_WORD/2-1 loop
                     case data_type is
@@ -855,6 +885,8 @@ scaler_proc: process(clk)
                                     m_axis_out_tdata((2*i+1)*OUT_BITS_PER_BIN/2-4) <= '1'; -- set LSB of upper 4 bits of Im part
                                 end if; 
                             end if;
+                        when others=>
+                            assert FALSE report "Unhandled data type case" severity FAILURE;
                     end case;
                 end loop;
                 m_axis_out_tuser <= stage2_tuser; -- pass on the USER bits
