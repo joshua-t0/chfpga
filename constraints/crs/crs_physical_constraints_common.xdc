@@ -82,21 +82,21 @@ create_clock -period 100.000 -name SMA_CLK10 [get_ports sma_clk10_p]
 # create_clock -name GTY_P130 -period 125MHz [get_ports {gty_clk0_p130}]
 
 # Output from the HMC7044 PLL1  (50 MHz, always phase-aligned with the SMA or BP 10 MHz reference clock when present)
-set_property PACKAGE_PIN J19 [get_ports pll_oscout_p];  # Bank 69
+set_property PACKAGE_PIN J19 [get_ports pll_oscout_p]
 set_property IOSTANDARD LVDS [get_ports pll_oscout_p]
 set_property DIFF_TERM_ADV TERM_100 [get_ports pll_oscout_p]
 create_clock -period 20.000 -name OSCOUT [get_ports pll_oscout_p]
 
- # PLL Sync control line, synchronus to OSCOUT
-set_property PACKAGE_PIN D19       [get_ports {pll_sync}] ; # Bank  69 HP VCC1V8
-set_property IOSTANDARD  LVCMOS18 [get_ports {pll_sync}] ;# Bank  87 VCCO - VCC1V8   - IO_L2P_AD14P_87
-set_property SLEW FAST [get_ports {pll_sync}]
-set_property DRIVE 12 [get_ports {pll_sync}] ;# Drive is 12 mA Max for HP bank
+# PLL Sync control line, synchronus to OSCOUT
+set_property PACKAGE_PIN D19 [get_ports pll_sync]
+set_property IOSTANDARD LVCMOS18 [get_ports pll_sync]
+set_property SLEW FAST [get_ports pll_sync]
+set_property DRIVE 12 [get_ports pll_sync]
 set_input_delay -min -clock [get_clocks OSCOUT] 0.300 [get_ports pll_sync] ;# SYNC setup time > 0.3 ns
 
 # PL_CLK (Bank 69), Fabric signal processing word clock (programmable, must be ADC sampling freq / 8 samples/word)
 # 3000 MSPS/ 8 = 375 MHz
-set_property PACKAGE_PIN G17 [get_ports plclk_p]; # Bank 69
+set_property PACKAGE_PIN G17 [get_ports plclk_p]
 set_property IOSTANDARD LVDS [get_ports plclk_p]
 set_property DIFF_TERM_ADV TERM_100 [get_ports plclk_p]
 create_clock -period 2.666 -name PL_CLK [get_ports plclk_p]
@@ -108,8 +108,8 @@ set_property IOSTANDARD LVDS [get_ports pl_sysref_p]
 set_property DIFF_TERM_ADV TERM_100 [get_ports pl_sysref_p]
 #create_clock -period 400.000 -name PL_SYSREF [get_ports pl_sysref_p]
 #set_input_delay -clock [get_clocks PL_CLK] 0.0 [get_ports pl_sysref_p]
-set_input_delay -max -clock [get_clocks PL_CLK] 0.015 [get_ports pl_sysref_p]
-set_input_delay -min -clock [get_clocks PL_CLK] -0.015 [get_ports pl_sysref_p]
+set_input_delay -clock [get_clocks PL_CLK] -max 0.015 [get_ports pl_sysref_p]
+set_input_delay -clock [get_clocks PL_CLK] -min -0.015 [get_ports pl_sysref_p]
 
 # DDR4_CLK (Bank 67), used as a 10 MHz system clock
 set_property PACKAGE_PIN H23 [get_ports sysclk_p]
@@ -375,8 +375,8 @@ set_property IS_SOFT FALSE [get_pblocks DEBUG]
 
 create_pblock SCALER0
 add_cells_to_pblock [get_pblocks SCALER0] [get_cells -quiet [list {chfpga0/CHANGEN[0].CHANi/IMPL_GEN.DATA_FIFO_K7.chan_fifo0} {chfpga0/CHANGEN[0].CHANi/IMPL_GEN.scaler_blk.SCALER0}]]
-resize_pblock [get_pblocks SCALER0] -add {SLICE_X26Y420:SLICE_X34Y454}
-resize_pblock [get_pblocks SCALER0] -add {DSP48E2_X3Y168:DSP48E2_X4Y181}
+resize_pblock [get_pblocks SCALER0] -add {SLICE_X26Y420:SLICE_X35Y454}
+resize_pblock [get_pblocks SCALER0] -add {DSP48E2_X3Y168:DSP48E2_X5Y181}
 resize_pblock [get_pblocks SCALER0] -add {RAMB18_X2Y168:RAMB18_X3Y181}
 resize_pblock [get_pblocks SCALER0] -add {RAMB36_X2Y84:RAMB36_X3Y90}
 
@@ -442,56 +442,56 @@ resize_pblock [get_pblocks PFB7] -add {RAMB36_X10Y4:RAMB36_X11Y11 RAMB36_X6Y0:RA
 
 create_pblock FUNCGEN0
 add_cells_to_pblock [get_pblocks FUNCGEN0] [get_cells -quiet [list {chfpga0/CHANGEN[0].CHANi/IMPL_GEN.funcgen_blk.FUNCGEN0}]]
-resize_pblock [get_pblocks FUNCGEN0] -add {SLICE_X106Y420:SLICE_X112Y439}
+resize_pblock [get_pblocks FUNCGEN0] -add {SLICE_X105Y420:SLICE_X112Y439}
 resize_pblock [get_pblocks FUNCGEN0] -add {DSP48E2_X21Y168:DSP48E2_X21Y175}
 resize_pblock [get_pblocks FUNCGEN0] -add {RAMB18_X10Y168:RAMB18_X11Y175}
 resize_pblock [get_pblocks FUNCGEN0] -add {RAMB36_X10Y84:RAMB36_X11Y87}
 set_property IS_SOFT FALSE [get_pblocks FUNCGEN0]
 create_pblock FUNCGEN1
 add_cells_to_pblock [get_pblocks FUNCGEN1] [get_cells -quiet [list {chfpga0/CHANGEN[1].CHANi/IMPL_GEN.funcgen_blk.FUNCGEN0}]]
-resize_pblock [get_pblocks FUNCGEN1] -add {SLICE_X106Y360:SLICE_X112Y379}
+resize_pblock [get_pblocks FUNCGEN1] -add {SLICE_X105Y360:SLICE_X112Y379}
 resize_pblock [get_pblocks FUNCGEN1] -add {DSP48E2_X21Y144:DSP48E2_X21Y151}
 resize_pblock [get_pblocks FUNCGEN1] -add {RAMB18_X10Y144:RAMB18_X11Y151}
 resize_pblock [get_pblocks FUNCGEN1] -add {RAMB36_X10Y72:RAMB36_X11Y75}
 set_property IS_SOFT FALSE [get_pblocks FUNCGEN1]
 create_pblock FUNCGEN2
 add_cells_to_pblock [get_pblocks FUNCGEN2] [get_cells -quiet [list {chfpga0/CHANGEN[2].CHANi/IMPL_GEN.funcgen_blk.FUNCGEN0}]]
-resize_pblock [get_pblocks FUNCGEN2] -add {SLICE_X106Y300:SLICE_X112Y319}
+resize_pblock [get_pblocks FUNCGEN2] -add {SLICE_X105Y300:SLICE_X112Y319}
 resize_pblock [get_pblocks FUNCGEN2] -add {DSP48E2_X21Y120:DSP48E2_X21Y127}
 resize_pblock [get_pblocks FUNCGEN2] -add {RAMB18_X10Y120:RAMB18_X11Y127}
 resize_pblock [get_pblocks FUNCGEN2] -add {RAMB36_X10Y60:RAMB36_X11Y63}
 set_property IS_SOFT FALSE [get_pblocks FUNCGEN2]
 create_pblock FUNCGEN3
 add_cells_to_pblock [get_pblocks FUNCGEN3] [get_cells -quiet [list {chfpga0/CHANGEN[3].CHANi/IMPL_GEN.funcgen_blk.FUNCGEN0}]]
-resize_pblock [get_pblocks FUNCGEN3] -add {SLICE_X106Y240:SLICE_X112Y259}
+resize_pblock [get_pblocks FUNCGEN3] -add {SLICE_X105Y240:SLICE_X112Y259}
 resize_pblock [get_pblocks FUNCGEN3] -add {DSP48E2_X21Y96:DSP48E2_X21Y103}
 resize_pblock [get_pblocks FUNCGEN3] -add {RAMB18_X10Y96:RAMB18_X11Y103}
 resize_pblock [get_pblocks FUNCGEN3] -add {RAMB36_X10Y48:RAMB36_X11Y51}
 set_property IS_SOFT FALSE [get_pblocks FUNCGEN3]
 create_pblock FUNCGEN4
 add_cells_to_pblock [get_pblocks FUNCGEN4] [get_cells -quiet [list {chfpga0/CHANGEN[4].CHANi/IMPL_GEN.funcgen_blk.FUNCGEN0}]]
-resize_pblock [get_pblocks FUNCGEN4] -add {SLICE_X106Y180:SLICE_X112Y199}
+resize_pblock [get_pblocks FUNCGEN4] -add {SLICE_X105Y180:SLICE_X112Y199}
 resize_pblock [get_pblocks FUNCGEN4] -add {DSP48E2_X21Y72:DSP48E2_X21Y79}
 resize_pblock [get_pblocks FUNCGEN4] -add {RAMB18_X10Y72:RAMB18_X11Y79}
 resize_pblock [get_pblocks FUNCGEN4] -add {RAMB36_X10Y36:RAMB36_X11Y39}
 set_property IS_SOFT FALSE [get_pblocks FUNCGEN4]
 create_pblock FUNCGEN5
 add_cells_to_pblock [get_pblocks FUNCGEN5] [get_cells -quiet [list {chfpga0/CHANGEN[5].CHANi/IMPL_GEN.funcgen_blk.FUNCGEN0}]]
-resize_pblock [get_pblocks FUNCGEN5] -add {SLICE_X106Y120:SLICE_X112Y139}
+resize_pblock [get_pblocks FUNCGEN5] -add {SLICE_X105Y120:SLICE_X112Y139}
 resize_pblock [get_pblocks FUNCGEN5] -add {DSP48E2_X21Y48:DSP48E2_X21Y55}
 resize_pblock [get_pblocks FUNCGEN5] -add {RAMB18_X10Y48:RAMB18_X11Y55}
 resize_pblock [get_pblocks FUNCGEN5] -add {RAMB36_X10Y24:RAMB36_X11Y27}
 set_property IS_SOFT FALSE [get_pblocks FUNCGEN5]
 create_pblock FUNCGEN6
 add_cells_to_pblock [get_pblocks FUNCGEN6] [get_cells -quiet [list {chfpga0/CHANGEN[6].CHANi/IMPL_GEN.funcgen_blk.FUNCGEN0}]]
-resize_pblock [get_pblocks FUNCGEN6] -add {SLICE_X106Y60:SLICE_X112Y84}
+resize_pblock [get_pblocks FUNCGEN6] -add {SLICE_X105Y60:SLICE_X112Y84}
 resize_pblock [get_pblocks FUNCGEN6] -add {DSP48E2_X21Y24:DSP48E2_X21Y33}
 resize_pblock [get_pblocks FUNCGEN6] -add {RAMB18_X10Y24:RAMB18_X11Y33}
 resize_pblock [get_pblocks FUNCGEN6] -add {RAMB36_X10Y12:RAMB36_X11Y16}
 set_property IS_SOFT FALSE [get_pblocks FUNCGEN6]
 create_pblock FUNCGEN7
 add_cells_to_pblock [get_pblocks FUNCGEN7] [get_cells -quiet [list {chfpga0/CHANGEN[7].CHANi/IMPL_GEN.funcgen_blk.FUNCGEN0}]]
-resize_pblock [get_pblocks FUNCGEN7] -add {SLICE_X106Y0:SLICE_X112Y19}
+resize_pblock [get_pblocks FUNCGEN7] -add {SLICE_X105Y0:SLICE_X112Y19}
 resize_pblock [get_pblocks FUNCGEN7] -add {DSP48E2_X21Y0:DSP48E2_X21Y7}
 resize_pblock [get_pblocks FUNCGEN7] -add {RAMB18_X10Y0:RAMB18_X11Y7}
 resize_pblock [get_pblocks FUNCGEN7] -add {RAMB36_X10Y0:RAMB36_X11Y3}
@@ -500,46 +500,48 @@ set_property IS_SOFT FALSE [get_pblocks FUNCGEN7]
 
 create_pblock SCALER1
 add_cells_to_pblock [get_pblocks SCALER1] [get_cells -quiet [list {chfpga0/CHANGEN[1].CHANi/IMPL_GEN.scaler_blk.SCALER0}]]
-resize_pblock [get_pblocks SCALER1] -add {SLICE_X26Y360:SLICE_X34Y394}
-resize_pblock [get_pblocks SCALER1] -add {DSP48E2_X3Y144:DSP48E2_X4Y157}
+resize_pblock [get_pblocks SCALER1] -add {SLICE_X26Y360:SLICE_X35Y394}
+resize_pblock [get_pblocks SCALER1] -add {DSP48E2_X3Y144:DSP48E2_X5Y157}
 resize_pblock [get_pblocks SCALER1] -add {RAMB18_X2Y144:RAMB18_X3Y157}
 resize_pblock [get_pblocks SCALER1] -add {RAMB36_X2Y72:RAMB36_X3Y78}
 create_pblock SCALER2
 add_cells_to_pblock [get_pblocks SCALER2] [get_cells -quiet [list {chfpga0/CHANGEN[2].CHANi/IMPL_GEN.scaler_blk.SCALER0}]]
-resize_pblock [get_pblocks SCALER2] -add {SLICE_X26Y300:SLICE_X34Y334}
-resize_pblock [get_pblocks SCALER2] -add {DSP48E2_X3Y120:DSP48E2_X4Y133}
+resize_pblock [get_pblocks SCALER2] -add {SLICE_X26Y300:SLICE_X35Y334}
+resize_pblock [get_pblocks SCALER2] -add {DSP48E2_X3Y120:DSP48E2_X5Y133}
 resize_pblock [get_pblocks SCALER2] -add {RAMB18_X2Y120:RAMB18_X3Y133}
 resize_pblock [get_pblocks SCALER2] -add {RAMB36_X2Y60:RAMB36_X3Y66}
 create_pblock SCALER3
 add_cells_to_pblock [get_pblocks SCALER3] [get_cells -quiet [list {chfpga0/CHANGEN[3].CHANi/IMPL_GEN.scaler_blk.SCALER0}]]
-resize_pblock [get_pblocks SCALER3] -add {SLICE_X26Y240:SLICE_X34Y274}
-resize_pblock [get_pblocks SCALER3] -add {DSP48E2_X3Y96:DSP48E2_X4Y109}
+resize_pblock [get_pblocks SCALER3] -add {SLICE_X26Y240:SLICE_X35Y274}
+resize_pblock [get_pblocks SCALER3] -add {DSP48E2_X3Y96:DSP48E2_X5Y109}
 resize_pblock [get_pblocks SCALER3] -add {RAMB18_X2Y96:RAMB18_X3Y109}
 resize_pblock [get_pblocks SCALER3] -add {RAMB36_X2Y48:RAMB36_X3Y54}
 create_pblock SCALER4
 add_cells_to_pblock [get_pblocks SCALER4] [get_cells -quiet [list {chfpga0/CHANGEN[4].CHANi/IMPL_GEN.scaler_blk.SCALER0}]]
-resize_pblock [get_pblocks SCALER4] -add {SLICE_X26Y180:SLICE_X34Y214}
-resize_pblock [get_pblocks SCALER4] -add {DSP48E2_X3Y72:DSP48E2_X4Y85}
+resize_pblock [get_pblocks SCALER4] -add {SLICE_X26Y180:SLICE_X35Y214}
+resize_pblock [get_pblocks SCALER4] -add {DSP48E2_X3Y72:DSP48E2_X5Y85}
 resize_pblock [get_pblocks SCALER4] -add {RAMB18_X2Y72:RAMB18_X3Y85}
 resize_pblock [get_pblocks SCALER4] -add {RAMB36_X2Y36:RAMB36_X3Y42}
 create_pblock SCALER5
 add_cells_to_pblock [get_pblocks SCALER5] [get_cells -quiet [list {chfpga0/CHANGEN[5].CHANi/IMPL_GEN.scaler_blk.SCALER0}]]
-resize_pblock [get_pblocks SCALER5] -add {SLICE_X26Y120:SLICE_X34Y154}
-resize_pblock [get_pblocks SCALER5] -add {DSP48E2_X3Y48:DSP48E2_X4Y61}
+resize_pblock [get_pblocks SCALER5] -add {SLICE_X26Y120:SLICE_X35Y154}
+resize_pblock [get_pblocks SCALER5] -add {DSP48E2_X3Y48:DSP48E2_X5Y61}
 resize_pblock [get_pblocks SCALER5] -add {RAMB18_X2Y48:RAMB18_X3Y61}
 resize_pblock [get_pblocks SCALER5] -add {RAMB36_X2Y24:RAMB36_X3Y30}
 create_pblock SCALER6
 add_cells_to_pblock [get_pblocks SCALER6] [get_cells -quiet [list {chfpga0/CHANGEN[6].CHANi/IMPL_GEN.scaler_blk.SCALER0}]]
-resize_pblock [get_pblocks SCALER6] -add {SLICE_X26Y60:SLICE_X34Y94}
-resize_pblock [get_pblocks SCALER6] -add {DSP48E2_X3Y24:DSP48E2_X4Y37}
+resize_pblock [get_pblocks SCALER6] -add {SLICE_X26Y60:SLICE_X35Y94}
+resize_pblock [get_pblocks SCALER6] -add {DSP48E2_X3Y24:DSP48E2_X5Y37}
 resize_pblock [get_pblocks SCALER6] -add {RAMB18_X2Y24:RAMB18_X3Y37}
 resize_pblock [get_pblocks SCALER6] -add {RAMB36_X2Y12:RAMB36_X3Y18}
 create_pblock SCALER7
 add_cells_to_pblock [get_pblocks SCALER7] [get_cells -quiet [list {chfpga0/CHANGEN[7].CHANi/IMPL_GEN.scaler_blk.SCALER0}]]
-resize_pblock [get_pblocks SCALER7] -add {SLICE_X26Y0:SLICE_X34Y34}
-resize_pblock [get_pblocks SCALER7] -add {DSP48E2_X3Y0:DSP48E2_X4Y13}
+resize_pblock [get_pblocks SCALER7] -add {SLICE_X26Y0:SLICE_X35Y34}
+resize_pblock [get_pblocks SCALER7] -add {DSP48E2_X3Y0:DSP48E2_X5Y13}
 resize_pblock [get_pblocks SCALER7] -add {RAMB18_X2Y0:RAMB18_X3Y13}
 resize_pblock [get_pblocks SCALER7] -add {RAMB36_X2Y0:RAMB36_X3Y6}
+
+
 
 
 
