@@ -5,8 +5,8 @@
 --
 -- Create Date:   17:23:04 11/17/2010
 -- Design Name:
--- Module Name:   C:/Xilinx/work/CHIME/SP605_test2/ADCDAQ/ADC_IOSERDES_testbench.vhd
--- Project Name:  ADCDAQ
+-- Module Name:   
+-- Project Name:  
 -- Target Device:
 -- Tool versions:
 -- Description:
@@ -34,7 +34,7 @@ use work.tb_package.all;
 
 ENTITY funcgen_testbench IS
  	generic (
- 		BITS_PER_SAMPLE: integer := 16; 
+ 		BITS_PER_SAMPLE: integer := 14; 
  		SAMPLES_PER_WORD: integer := 8;
  		SAMPLES_PER_FRAME: integer := 16384
  		);
@@ -83,43 +83,14 @@ ARCHITECTURE behavior OF funcgen_testbench IS
 
 	signal ctrl_rst: std_logic;
 	signal rst: std_logic;
-	-- constant NUMBER_OF_PACKETS : integer :=5;
-	-- type lane_config_type is array (0 to NUMBER_OF_INPUT_LANES-1) of integer_array(0 to NUMBER_OF_PACKETS-1);
-	-- -- back to back frames, same length, aligned within timeout
-	-- -- constant start_delay: integer_array := (4,0,2);
-	-- -- constant interpacket_delay: integer_array := (0,0,0);
-	-- -- constant packet_length: integer_array := (8,8,8);
 
-	-- -- -- back to back frames, same length, aligned within timeout except missing frame
-	-- -- constant PL: integer := 20;
-	-- -- constant PP: integer := 22;
-	-- -- constant start_delay: integer_array          := (0=> 4,          1=> 0,          2=> 2);
-	-- -- constant packet_length: lane_config_type     := (0=>(others=>PL), 1=>(1=>0, others=>PL), 2=>(others=>PL));
-	-- -- constant packet_period: lane_config_type     := (others=> (others=>PP));
-
-	-- constant PL: integer := 20;
-	-- constant PP: integer := 22;
-	-- constant start_delay: integer_array          := (0=> 0,          1=> 6,          2=> 0);
-	-- constant packet_length: lane_config_type     := (0=>(others=>PL), 1=>(1=>0, others=>PL), 2=>(others=>PL));
-	-- constant packet_period: lane_config_type     := (others=> (others=>PP));
-
-
-	-- signal t1: slv8;
-	-- signal t2,t3: std_logic;
 begin
-
-
-
--- data(0) <= (X"A0A0A0A0", X"A1A1A1A1", X"A2A2A2A2", X"A3A3A3A3", X"A4A4A4A4", X"A5A5A5A5", X"A6A6A6A6", X"A7A7A7A7");
-
-
-
 
 funcgen0: entity work.funcgen
     generic map (
- 		BITS_PER_SAMPLE => BITS_PER_SAMPLE, 
- 		SAMPLES_PER_WORD => SAMPLES_PER_WORD,
- 		SAMPLES_PER_FRAME => SAMPLES_PER_FRAME
+ 		ADC_BITS_PER_SAMPLE => BITS_PER_SAMPLE, 
+ 		ADC_SAMPLES_PER_WORD => SAMPLES_PER_WORD,
+ 		ADC_SAMPLES_PER_FRAME => SAMPLES_PER_FRAME
 )
 	port map (
 		s_axis_adc_tdata  => s_axis_tdata,
@@ -176,6 +147,9 @@ stim_proc : process
 	variable bytes: slv8_array(0 to BYTES_PER_FRAME-1);
 	variable page_slv: std_logic_vector(6 downto 0);
 	variable cmd_byte: std_logic_vector(7 downto 0);
+	constant MODE:std_logic_vector(2 downto 0) := "010"; -- "010": Noise
+	constant NFRAMES: integer := 0; -- 0= infinite
+	constant SHIFT: integer := 5;
 	begin
 
         -- pulse the resets
@@ -188,34 +162,42 @@ stim_proc : process
 
 		sleep(clk125, 10); -- make sure we start command transmission on a CLK125 edge or we will lose some data
 
-		fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 3, 5); -- Send 5 frames
-
+    
 		-- -- Program buffer
 		-- fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, 2#00000000# + ram_page * 8); -- source=funcgen, enable=1, select last page of ram
 		-- fpga_write_ram(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 511, (0=>X"01"));
 
-		for i in pattern'range loop
-			pattern(i) := to_slv(i,BITS_PER_SAMPLE);
-            bytes(2*i to 2*i+1) := to_slv8_array(pattern(i));
-		end loop;
+        if MODE="001" then
+            for i in pattern'range loop
+                pattern(i) := to_slv(i,BITS_PER_SAMPLE);
+                bytes(2*i to 2*i+1) := to_slv8_array(pattern(i));
+            end loop;
+    
+            for page in 0 to (bytes'length)/512  -1 loop
+                page_slv := to_slv(page, page_slv'length);
+                cmd_byte := "00" & page_slv(2 downto 0) & "000";
+                fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, cmd_byte); -- Make sure we use page 0
+                cmd_byte := page_slv(6 downto 3) & "0000";
+                fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 5, cmd_byte); -- Make sure we use page 0
+                fpga_write_ram(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, bytes(512*page to 512*(page+1)-1)); -- write all 2048 bytes at once.
+            end loop;
+    --		chan_reset <= '0';
+        end if; -- mode
+        
+        -- Set number of frames
+		fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 3, NFRAMES); -- Send 5 frames
+    
+        -- Set the shift factor
+		fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 5, SHIFT); 
+    
+        -- Set the mode
+        sleep(clk125, 10); -- make sure we start command transmission on a CLK125 edge or we will lose some data
+        fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, "00000" & MODE ); --
+        fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, "01000" & MODE ); 
 
-        for page in 0 to (bytes'length)/512  -1 loop
-            page_slv := to_slv(page, page_slv'length);
-            cmd_byte := "00" & page_slv(2 downto 0) & "000";
-    		fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, to_integer(unsigned(cmd_byte))); -- Make sure we use page 0
-            cmd_byte := page_slv(6 downto 3) & "0000";
-    		fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 5, to_integer(unsigned(cmd_byte))); -- Make sure we use page 0
-       		fpga_write_ram(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, bytes(512*page to 512*(page+1)-1)); -- write all 2048 bytes at once.
-        end loop;
-		sleep(clk,20);
---		chan_reset <= '0';
 
-		for i in 0 downto 0 loop
-			sleep(clk125, 10); -- make sure we start command transmission on a CLK125 edge or we will lose some data
-			fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, 2#00000001# ); --
-			fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, 2#01000001# ); -- source=funcgen, enable=1
+
 			sleep(clk,512*7);
-		end loop;
 		-- fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, 2#01000000# + 1); -- source=funcgen, enable=1
 
 		-- for i in 0 to NUMBER_OF_OUTPUT_LANES-1 loop

@@ -476,10 +476,16 @@ funcgen_proc: process (clk)
                 -- The 32-bit bits of the PNRG is distributed on the MSB of all samples, and the samples are right-shifted by the value in byte_c.  
                 when FN_NOISE =>
                     temp_tdata := (others => '0');
-                    -- First distribute the 32 bits of the PRBS to the MSBs of every sample
-                    for i in 0 to 31 loop
-                        temp_tdata(ADC_BITS_PER_SAMPLE*((i MOD ADC_SAMPLES_PER_WORD)+1)-1-integer(ADC_SAMPLES_PER_WORD/32)) := crc_out(i);
+
+                    -- We assign the ADC_BITS_PER_SAMPLE most significant bits of the PRBS word to each sample after rotating the word by 32/ADC_SAMPLES_PER_WORD bits for each sample.
+                    -- Only top 32/ADC_SAMPLES_PER_WORD bits are truely random. The remaining bits are somewhat correlated between samples.              
+                    for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
+                        temp_tdata(ADC_BITS_PER_SAMPLE*(i+1)-1 downto ADC_BITS_PER_SAMPLE*i) := msb(std_logic_vector(rotate_left(unsigned(crc_out), i*crc_out'LENGTH/ADC_SAMPLES_PER_WORD)), ADC_BITS_PER_SAMPLE);
                     end loop;
+--                    -- First distribute the 32 bits of the PRBS to the MSBs of every sample
+--                    for i in 0 to 31 loop
+--                        temp_tdata(ADC_BITS_PER_SAMPLE*((i MOD ADC_SAMPLES_PER_WORD)+1)-1-integer(i / ADC_SAMPLES_PER_WORD)) := crc_out(i);
+--                    end loop;
                     -- shift right the samples
                     for j in 0 to ADC_SAMPLES_PER_WORD-1 loop
                         temp_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) := std_logic_vector(shift_right(signed(temp_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j)), int_shift));
