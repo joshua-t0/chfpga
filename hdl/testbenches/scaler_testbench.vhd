@@ -3,10 +3,10 @@
 -- Company:
 -- Engineer:
 --
--- Create Date:   17:23:04 11/17/2010
+-- Create Date:   
 -- Design Name:
--- Module Name:   C:/Xilinx/work/CHIME/SP605_test2/ADCDAQ/ADC_IOSERDES_testbench.vhd
--- Project Name:  ADCDAQ
+-- Module Name:   
+-- Project Name:  
 -- Target Device:
 -- Tool versions:
 -- Description:
@@ -29,15 +29,18 @@ USE ieee.std_logic_1164.ALL;
 USE ieee.numeric_std.ALL;
 
 library work;
-USE work.chFPGA_Package.all;
+USE work.chfpga_package.all;
 use work.tb_package.all;
 
 ENTITY scaler_testbench IS
--- 	generic (
--- 		NUMBER_OF_INPUT_LANES: integer := 16; -- Must be a multiple of 4
--- 		NUMBER_OF_OUTPUT_LANES: integer := 1;
--- 		COMBINE_DATA_FLAGS: boolean := true
--- 		);
+ 	generic (
+       FFT_BITS_PER_BIN: integer := 18+18; -- Real + Imaginary part
+        FFT_BINS_PER_WORD: integer := 4;
+        FFT_BINS_PER_FRAME: integer:= 8192;
+        USE_COMPLEX_GAINS: boolean := FALSE;
+        COEFF_BITS_PER_BIN: integer := 16; -- typically 16 or 16+16. Includes both real and imaginary part. If USE_COMPLEX_GAINS=TRUE, half the bits are used for real and half for imaginary. Must be multiple of 8 as it is configured byte-wise.
+        OUT_BITS_PER_BIN: integer := 16+16 -- minimum is 4+4, but can be increased to use 8-bit mode or get more of the input data in bypass mode for capture purposes.
+   		);
 END scaler_testbench;
 
 
@@ -49,11 +52,11 @@ constant IN_CLK_PERIOD : time := 5 ns; -- 200 MHz
 constant OUT_CLK_PERIOD : time := 4.096 ns; -- 244 MHz
 constant CLK125_period : time := 8 ns;
 
-	-- SYSTEM Port modules
-	constant CROSSBAR_BASE_ADDR      : integer := 16#60000#; -- # CROSSBAR top address
-	constant CROSSBAR_ADDR_INCREMENT : integer := 16#00800#; --
-	constant CROSSBAR_BIN_SEL0_ADDR: integer :=CROSSBAR_BASE_ADDR + 1*CROSSBAR_ADDR_INCREMENT;
-	constant CROSSBAR_BIN_SEL1_ADDR: integer :=CROSSBAR_BASE_ADDR + 2*CROSSBAR_ADDR_INCREMENT;
+	constant FFT_BITS_PER_WORD: integer := FFT_BITS_PER_BIN * FFT_BINS_PER_WORD; -- # CROSSBAR top address
+	constant OUT_BITS_PER_WORD: integer := OUT_BITS_PER_BIN * FFT_BINS_PER_WORD; -- # CROSSBAR top address
+--	constant CROSSBAR_ADDR_INCREMENT : integer := 16#00800#; --
+--	constant CROSSBAR_BIN_SEL0_ADDR: integer :=CROSSBAR_BASE_ADDR + 1*CROSSBAR_ADDR_INCREMENT;
+--	constant CROSSBAR_BIN_SEL1_ADDR: integer :=CROSSBAR_BASE_ADDR + 2*CROSSBAR_ADDR_INCREMENT;
 
 	--Inputs
 	signal reset : std_logic := '0';
@@ -64,17 +67,12 @@ constant CLK125_period : time := 8 ns;
 	signal clk125: std_logic; --
 	signal frame_clk_in: std_logic;
 
-	signal s_axis_tdata: slv32;
+	signal s_axis_tdata: std_logic_vector(FFT_BITS_PER_WORD-1 downto 0);
 	signal s_axis_tvalid: std_logic; -- needed for sim. If, U, data will not start
 	signal s_axis_tlast: std_logic;
 	signal s_axis_tready: std_logic:='1'; -- init needed for sim
 
-
-	signal s_axis_tdata_int: slv72;
-	signal s_axis_tvalid_int: std_logic; -- needed for sim. If, U, data will not start
-	signal s_axis_tlast_int: std_logic;
-
-	signal m_axis_tdata: slv32;
+	signal m_axis_tdata: std_logic_vector(OUT_BITS_PER_WORD-1 downto 0);
 	signal m_axis_tvalid: std_logic;
 	signal m_axis_tlast: std_logic;
 	signal m_axis_tuser: slv4;
@@ -84,55 +82,36 @@ constant CLK125_period : time := 8 ns;
 	signal cmd_tlast: std_logic;
 	signal cmd_tready: std_logic;
 
-	-- constant NUMBER_OF_PACKETS : integer :=5;
-	-- type lane_config_type is array (0 to NUMBER_OF_INPUT_LANES-1) of integer_array(0 to NUMBER_OF_PACKETS-1);
-	-- -- back to back frames, same length, aligned within timeout
-	-- -- constant start_delay: integer_array := (4,0,2);
-	-- -- constant interpacket_delay: integer_array := (0,0,0);
-	-- -- constant packet_length: integer_array := (8,8,8);
 
-	-- -- -- back to back frames, same length, aligned within timeout except missing frame
-	-- -- constant PL: integer := 20;
-	-- -- constant PP: integer := 22;
-	-- -- constant start_delay: integer_array          := (0=> 4,          1=> 0,          2=> 2);
-	-- -- constant packet_length: lane_config_type     := (0=>(others=>PL), 1=>(1=>0, others=>PL), 2=>(others=>PL));
-	-- -- constant packet_period: lane_config_type     := (others=> (others=>PP));
-
-	-- constant PL: integer := 20;
-	-- constant PP: integer := 22;
-	-- constant start_delay: integer_array          := (0=> 0,          1=> 6,          2=> 0);
-	-- constant packet_length: lane_config_type     := (0=>(others=>PL), 1=>(1=>0, others=>PL), 2=>(others=>PL));
-	-- constant packet_period: lane_config_type     := (others=> (others=>PP));
-
-
-	-- signal t1: slv8;
-	-- signal t2,t3: std_logic;
 begin
 
 
 
--- data(0) <= (X"A0A0A0A0", X"A1A1A1A1", X"A2A2A2A2", X"A3A3A3A3", X"A4A4A4A4", X"A5A5A5A5", X"A6A6A6A6", X"A7A7A7A7");
-
-
-s_axis_tdata_int <= (others=>'0');
-s_axis_tvalid_int <= s_axis_tvalid;
-s_axis_tlast_int <= s_axis_tlast;
-
 
 dut0: entity work.scaler
+    generic map (
+        FFT_BITS_PER_BIN => FFT_BITS_PER_BIN, -- Real + Imaginary part
+        FFT_BINS_PER_WORD=> FFT_BINS_PER_WORD,
+        FFT_BINS_PER_FRAME => FFT_BINS_PER_FRAME,
+        USE_COMPLEX_GAINS => USE_COMPLEX_GAINS,
+        COEFF_BITS_PER_BIN => COEFF_BITS_PER_BIN, -- typically 16 or 16+16. Includes both real and imaginary part. If USE_COMPLEX_GAINS=TRUE, half the bits are used for real and half for imaginary. Must be multiple of 8 as it is configured byte-wise.
+        OUT_BITS_PER_BIN=> OUT_BITS_PER_BIN -- minimum is 4+4, but can be increased to use 8-bit mode or get more of the input data in bypass mode for capture purposes.
+  )
 	port map (
-		IN_DAT.tdata  => s_axis_tdata_int,
-		IN_DAT.tvalid => s_axis_tvalid_int,
-		IN_DAT.tlast  => s_axis_tlast_int,
-		IN_DAT.tuser  => "0101", --(ADC overflow, scaler even, scaler odd, FFT overflow)
 
-		OUT_DAT.tdata  => m_axis_tdata,
-		OUT_DAT.tvalid => m_axis_tvalid,
-		OUT_DAT.tlast  => m_axis_tlast,
-		OUT_DAT.tuser  => m_axis_tuser,
+
+		s_axis_in_tdata  => s_axis_tdata,
+		s_axis_in_tvalid => s_axis_tvalid,
+		s_axis_in_tlast  => s_axis_tlast,
+		s_axis_in_tuser  => "0101", --(ADC overflow, scaler even, scaler odd, FFT overflow)
+
+		m_axis_out_tdata  => m_axis_tdata,
+		m_axis_out_tvalid => m_axis_tvalid,
+		m_axis_out_tlast  => m_axis_tlast,
+		m_axis_out_tuser  => m_axis_tuser,
 
 		clk => out_clk,
-		ant_reset => reset,
+		reset => reset,
 
 		-- CTRL_CMD_DAT => (TDATA=> cmd_tdata, TVALID => cmd_tvalid, TLAST => cmd_tlast),
 		CTRL_CMD_IN_DAT.TDATA => cmd_tdata,
@@ -147,13 +126,13 @@ dut0: entity work.scaler
 		CTRL_RST => reset
 	);
 
-in_clk_process :process
-   begin
-		in_clk <= '0';
-		wait for IN_CLK_PERIOD/2;
-		in_clk <= '1';
-		wait for IN_CLK_PERIOD/2;
-   end process;
+--in_clk_process :process
+--   begin
+--		in_clk <= '0';
+--		wait for IN_CLK_PERIOD/2;
+--		in_clk <= '1';
+--		wait for IN_CLK_PERIOD/2;
+--   end process;
 
 out_clk_process :process
    begin
@@ -177,11 +156,46 @@ stim_proc : process
 	-- variable number_of_words_per_bin: integer :=4;
 	-- variable actual_number_of_input_lanes: integer := 16;
 	-- variable number_of_frames_per_packet: integer :=4;
+	variable gains: slv_array(0 to FFT_BINS_PER_FRAME-1)(COEFF_BITS_PER_BIN-1 downto 0);
+	variable gain_bytes:slv_array(0 to 2*FFT_BINS_PER_FRAME-1)(7 downto 0); -- valid for 16 bits per coeff, real coeff only
+	variable page_bits: std_logic_vector(5 downto 0); -- 16384 coeff bytes/page (+14 bits), 2 pages (+1 bit), 512 bytes/page (-9 bits) = 6 bits
+    constant SCALER_PAGE_REG: integer := 1; 
+    constant SCALER_POSTSCALER_REG: integer := 0;
+    variable data_words: slv_array(0 to FFT_BINS_PER_FRAME/4-1)(FFT_BITS_PER_WORD-1 downto 0); -- for 4 bins per word only
+    variable sub_word: integer;
 	begin
 		reset <= '1';
 		sleep(out_clk, 10);
 		reset <= '0';
 		sleep(clk125, 10); -- make sure we start command transmission on a CLK125 edge or we will lose some data
+
+
+        -- Create gain table - Valid for REAL gains only.
+        for i in 0 to FFT_BINS_PER_FRAME-1 loop
+            gains(i) := std_logic_vector(to_signed(4090 + (i MOD 20), COEFF_BITS_PER_BIN));
+            gain_bytes(2*i) := gains(i)(7 downto 0); -- LSB first
+            gain_bytes(2*i+1) := gains(i)(15 downto 8); 
+        end loop;
+        
+        -- Program the gain table
+        for page in 0 to 2*FFT_BINS_PER_FRAME/512-1 loop
+            page_bits := to_slv(page, page_bits'LENGTH);
+		    fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, SCALER_PAGE_REG, 
+		      std_logic_vector'(page_bits(5 downto 5) & "0" & page_bits(4 downto 4) & "0" & page_bits(3 downto 0))); -- Set the number of words to select
+--		      std_logic_vector'(page_bits(5 downto 5) & "0000000") ); -- Set the number of words to select
+            fpga_write_ram(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, gain_bytes(512*page to 512*(page+1)-1));
+
+            -- Set the page registers
+        end loop;            
+        -- Set log gain
+        fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, SCALER_POSTSCALER_REG, 18 + 32);
+        -- Create Test data vector. For 4 bins per word only, 18+18 bits per bin
+        for i in 0 to FFT_BINS_PER_FRAME-1 loop
+            sub_word := 3-(i mod 4); -- first bin in upper 36 bits of word
+            data_words(i/4)(36*sub_word+35 downto 36*sub_word+18) := std_logic_vector(to_signed(-4,18)); -- Re in upper 18 bits of bin
+            data_words(i/4)(36*sub_word+17 downto 36*sub_word+0) := std_logic_vector(to_signed(-4,18)); -- Im in lower 18 bits of bin
+        end loop;
+
 		-- fpga_write(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, CROSSBAR_BASE_ADDR + 0, 0); --
 
 		-- for i in 0 to NUMBER_OF_OUTPUT_LANES-1 loop
@@ -192,11 +206,12 @@ stim_proc : process
 		-- 	-- wait for 2*64*SYSCLK_period; -- prevent the buffers from overflowing by allowing time to send the ethernet framing
 		-- 	-- fpga_read(       clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, CROSSBAR_BIN_SEL0_ADDR + 16#200#, 3); -- Re-read the first 8 bytes of the map for debugging
 		-- end loop;
+		sleep(clk125, 10); -- make sure we start command transmission on a CLK125 edge or we will lose some data
 
 		sleep(out_clk,20);
 		-- sleep(clk,start_delay(i));
 		for j in 0 to 100 loop
-			send_axis32_packet(out_clk, s_axis_tdata, s_axis_tvalid, s_axis_tlast, s_axis_tready, create_packet(16#FA#,j,625)); -- 512*244/200=625 clocks = actual duration of  the incoming frames
+			send_axis_packet(out_clk, s_axis_tdata, s_axis_tvalid, s_axis_tlast, s_axis_tready, data_words); -- 512*244/200=625 clocks = actual duration of  the incoming frames
 			-- sleep(clk,1);
 		end loop;
 		wait;
