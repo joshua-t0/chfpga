@@ -1,0 +1,47 @@
+CASPER Installation and Use on Twiddlebug
+=========================================
+
+Installation
+------------
+
+Clone the CASPER tools with the m2021a branch:
+
+	git clone -b m2021a https://github.com/casper-astro/mlib_devel
+
+Make a virtual environment (IMPORTANT: this -must- be python3.8!):
+	
+	python3.8 -m venv casper_venv # must be 3.8
+
+Source the environment:
+
+	source /<path>/casper_venv/bin/activate
+
+Install requirements within mlib_devel:
+
+	cd /<path>/mlib_devel
+	pip3 install -r requirements.txt
+
+Switch to tbuser:
+	
+	su tbuser # enter password (it's tbuser)
+
+Copy the Xilinx license:
+	
+	sudo cp Xilinx2.lic /home/<your_user>/.Xilinx
+
+Copy the startsg.local file from tbuser:
+
+	sudo cp startsg.local /home/<your_user>/path/to/casper/mlib_devel
+
+Take ownership of the copied file:
+
+	sudo chown /<path>/startsg.local
+	sudo chgrp /<path>/startsg.local # optional?
+
+Once Installed
+--------------
+
+Open MATLAB with
+
+	cd /path/to/mlib_devel
+	./startsg
