@@ -1,5 +1,4 @@
 ----------------------------------------------------------------------------------
---! @file
 -- Company: McGill University
 -- Engineer: JF Cliche
 --
@@ -7,9 +6,9 @@
 -- Design Name      : CHAN
 -- Module Name      : CHAN - Behavioral
 -- Project Name     : CHIME
--- Target Devices   : Kintex 7
--- Tool versions    : Vivado 2013.3 - 2016.2
--- Description      : Channelizer block
+-- Target Devices   : Kintex 7, UltrascalePlus
+-- Tool versions    : Vivado 2013.3 - 2022.2
+-- Description      : Channelizer module
 --
 -- Dependencies:
 --
@@ -203,15 +202,14 @@ signal fifo_rst_ctr : unsigned(4 downto 0);
 signal fifo_rst: std_logic;
 
 
-signal in_reset_funcgen, in_reset_scaler, in_reset_fft, in_reset_fifo, in_reset_prober: std_logic :='1'; --! added =1 to see if it helps the reset problem
+--signal in_reset_prober: std_logic :='1'; --! added =1 to see if it helps the reset problem
 -- signal out_reset_reg: std_logic :='1';
 -- Make sure the pipeline registers are not simplified by the synthesizer so they can be useful in helping meeting timing
+signal funcgen_reset_out: std_logic;
+signal fft_reset_out: std_logic;
+signal scaler_reset_out: std_logic;
 
-
-attribute keep of in_reset_funcgen: signal is "true";
-attribute keep of in_reset_scaler: signal is "true";
-attribute keep of in_reset_fft: signal is "true";
-attribute keep of in_reset_prober, in_reset_fifo: signal is "true";
+attribute keep of funcgen_reset_out, fft_reset_out, scaler_reset_out: signal is "true";
 
 
 -- make sure that the ADCDAQ logic is not removed if nothing is connected downstream
@@ -367,6 +365,9 @@ funcgen_blk: BLOCK
     attribute dont_touch of axis_adc_reg2_tdata, axis_adc_reg2_tuser, axis_adc_reg2_tvalid, axis_adc_reg2_tlast: signal is "true";
     attribute dont_touch of in_reset_adc_reg2: signal is "true";
 
+    signal funcgen_reset_in: std_logic;
+    attribute keep of funcgen_reset_in: signal is "true";
+
     --attribute equivalent_register_removal of axis_adc_reg1: signal is "no";
     --attribute equivalent_register_removal of axis_adcdaq_out_reg2: signal is "no";
     --attribute shreg_extract of axis_adc_reg1: signal is "no";
@@ -374,19 +375,19 @@ funcgen_blk: BLOCK
 begin
 
     ---------------------------------------------------------------------
-    --! Propagates the ADCDAQ output through a couple of registers to facilitate timing between the ADCDAQ and FUNCGEN
-    --! Helps meet timing, since the bus can take two stops to route across the chip.
+    -- Propagates the ADCDAQ output through a couple of registers to facilitate timing between the ADCDAQ and FUNCGEN
+    -- Helps meet timing, since the bus can take two stops to route across the chip.
     -- Placement of this logic should not be constrained.
-    --!
-    --! Also pipeline and forwards key debugging signals for external moinitoring.
-    --!
-    --! NOTE:  only TVALID is affected by the synchronous RESET line, not the
-    --!    entire bus. This is because that reset would 1) drive a large load and
-    --!    2) be routed to all the registers and will make timing harder to meet.
-    --1
-    --! NOTE: This process is implemented only when IMPLEMENT_CHAN=TRUE, otherwise
-    --!   there will be assignment conflicts to OUT_DAT with the block that handle
-    --!   IMPLEMENT_CHAN=FALSE, and that makes the Vivado simulator hang up.
+    --
+    -- Also pipeline and forwards key debugging signals for external moinitoring.
+    --
+    -- NOTE:  only TVALID is affected by the synchronous RESET line, not the
+    --    entire bus. This is because that reset would 1) drive a large load and
+    --    2) be routed to all the registers and will make timing harder to meet.
+    --
+    -- NOTE: This process is implemented only when IMPLEMENT_CHAN=TRUE, otherwise
+    --   there will be assignment conflicts to OUT_DAT with the block that handle
+    --   IMPLEMENT_CHAN=FALSE, and that makes the Vivado simulator hang up.
     ---------------------------------------------------------------------
     adc_pipe_proc: process(in_clk)
     begin
@@ -415,6 +416,9 @@ begin
                 axis_adc_reg2_tvalid <= '0';
             end if;
 
+            funcgen_reset_in <= in_reset_adc_reg2;
+            funcgen_reset_out <= funcgen_reset_in; 
+
             -- Provide monitoring data
             lane_monitor(0) <= axis_scaler_out_tvalid xor axis_scaler_out_tlast;
             lane_monitor(1) <= axis_fft_out_tvalid xor axis_fft_out_tlast;
@@ -427,7 +431,6 @@ begin
     funcgen_pipe_proc: process(in_clk)
         begin
             if rising_edge(in_clk) then
-               in_reset_funcgen <= in_reset_adc_reg2;
             end if;
         end process;
 
@@ -458,7 +461,7 @@ begin
             m_axis_adc_tlast => axis_funcgen_out_tlast,
 
             clk => in_clk,
-            rst => in_reset_funcgen,
+            rst => funcgen_reset_in,
 
             -- Control interface
             ctrl_cmd_in_dat   => CMD_DAT(MODULE_FUNCGEN_ADDR),
@@ -475,23 +478,27 @@ end block funcgen_blk;
 -- Instantiate the FFT Block
 ---------------------------------------------------------------------
 fft_blk: block
-    --signal axis_funcgen_out_tdata32: std_logic_vector(31 downto 0);
-   
+    signal axis_fft_in_tdata: std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
+    signal axis_fft_in_tuser: std_logic_vector(3 downto 0);
+    signal axis_fft_in_tvalid: std_logic;
+    signal axis_fft_in_tlast: std_logic;
+    signal fft_reset_in: std_logic;
+    attribute keep of  fft_reset_in: signal is "true";
+
 begin
-
-    ---- Temporary hack to connect 128-bit FUNCGEN to 32-bit FFT. Signals are not valid.
-    --narrow_fft_gen: if ADC_BITS_PER_WORD /= 32 generate
-    --axis_funcgen_out_tdata32 <= axis_funcgen_out_tdata(127 downto 120) & 
-    --                            axis_funcgen_out_tdata(95 downto 88) &
-    --                            axis_funcgen_out_tdata(63 downto 56) &
-    --                            axis_funcgen_out_tdata(31 downto 24);
-    --end generate;   
-
     -- Pipeline the FFT reset (skip over the funcgen logic)
     fft_pipe_proc: process(in_clk)
         begin
             if rising_edge(in_clk) then
-               in_reset_fft <= in_reset_funcgen;
+                fft_reset_in <= funcgen_reset_out;
+ 
+                axis_fft_in_tdata <= axis_funcgen_out_tdata;
+                axis_fft_in_tuser <= axis_funcgen_out_tuser;
+                axis_fft_in_tlast <= axis_funcgen_out_tlast;
+                axis_fft_in_tvalid <= axis_funcgen_out_tvalid;
+                axis_fft_in_tvalid <= '0' when funcgen_reset_out;
+                
+                fft_reset_out <= fft_reset_in;
             end if;
         end process;
 
@@ -518,10 +525,10 @@ begin
             --    out_dat.TUSER => axis_fft_out_tuser,
 
             -- Input stream from funcgen
-            s_axis_in_dat_tdata  => axis_funcgen_out_tdata,
-            s_axis_in_dat_tvalid => axis_funcgen_out_tvalid,
-            s_axis_in_dat_tlast  => axis_funcgen_out_tlast,
-            s_axis_in_dat_tuser  => axis_funcgen_out_tuser,
+            s_axis_in_dat_tdata  => axis_fft_in_tdata,
+            s_axis_in_dat_tvalid => axis_fft_in_tvalid,
+            s_axis_in_dat_tlast  => axis_fft_in_tlast,
+            s_axis_in_dat_tuser  => axis_fft_in_tuser,
 
             -- Output stream to scaler
             m_axis_out_dat_tdata  => axis_fft_out_tdata,
@@ -530,7 +537,7 @@ begin
             m_axis_out_dat_tuser  => axis_fft_out_tuser,
 
             clk     => in_clk,
-            reset   => in_reset_fft,
+            reset   => fft_reset_in,
 
             -- Control interface
             CTRL_CMD_IN_DAT   => CMD_DAT(MODULE_FFT_ADDR),
@@ -548,14 +555,31 @@ end block fft_blk;
 ---------------------------------------------------------------------
 -- Applies a complex correction factor to each sample coming out of the FFT and scales the data back to 8 bits or 4 bits format.
 scaler_blk: block
+    signal axis_scaler_in_tdata: std_logic_vector(FFT_BITS_PER_WORD-1 downto 0);
+    signal axis_scaler_in_tuser: std_logic_vector(3 downto 0);
+    signal axis_scaler_in_tvalid: std_logic;
+    signal axis_scaler_in_tlast: std_logic;
+    signal scaler_reset_in: std_logic;
+    attribute keep of  scaler_reset_in: signal is "true";
+
+--    signal funcgen_reset_out: std_logic;
+
 begin
     -- Pipeline the SCALER reset (skip over the fft logic)
     scaler_pipe_proc: process(in_clk)
-        begin
-            if rising_edge(in_clk) then
-               in_reset_scaler <= in_reset_fft;
-            end if;
-        end process;
+    begin
+        if rising_edge(in_clk) then
+           scaler_reset_in <= fft_reset_out;
+
+            axis_scaler_in_tdata <= axis_fft_out_tdata;
+            axis_scaler_in_tuser <= axis_fft_out_tuser;
+            axis_scaler_in_tlast <= axis_fft_out_tlast;
+            axis_scaler_in_tvalid <= axis_fft_out_tvalid;
+            axis_scaler_in_tvalid <= '0' when fft_reset_out;
+
+            scaler_reset_out <= scaler_reset_in;
+        end if;
+    end process;
 
     SCALER0: entity work.SCALER
         generic map (
@@ -568,10 +592,10 @@ begin
             )
         PORT MAP(
             -- Input data from the FFT
-            s_axis_in_tdata => axis_fft_out_TDATA,
-            s_axis_in_tvalid => axis_fft_out_TVALID,
-            s_axis_in_tlast => axis_fft_out_TLAST,
-            s_axis_in_tuser => axis_fft_out_TUSER, 
+            s_axis_in_tdata => axis_scaler_in_TDATA,
+            s_axis_in_tvalid => axis_scaler_in_TVALID,
+            s_axis_in_tlast => axis_scaler_in_TLAST,
+            s_axis_in_tuser => axis_scaler_in_TUSER, 
 
             -- Output data
             m_axis_out_tdata => axis_scaler_out_tdata,
@@ -580,7 +604,7 @@ begin
             m_axis_out_tuser => axis_scaler_out_tuser,
 
             clk       => in_clk,
-            reset     => in_reset_scaler,
+            reset     => scaler_reset_in,
 
             fifo_overflow => fifo_overflow, -- We ask SCALER to monitor the channel FIFO for us
             -- Control interface
@@ -615,125 +639,124 @@ end block scaler_blk;
 --
 
 -- Remap the scaler output to the FFT input. The FFT width matches the output width, but the scaler output may be wider so we can capture more of teh FFT bits in bypass mode.
-temp:block
-    signal cnt: unsigned(3 downto 0);
+fifo_blk:block
+    signal fifo_reset_in: std_logic;
+    attribute keep of  fifo_reset_in: signal is "true";
+
 begin
-    process(in_clk) begin
-         cnt <= cnt + 4 when rising_edge(in_clk);
+    FIFO_REMAP_GEN: for i in 0 to FFT_BINS_PER_WORD*2-1 generate
+        axis_fifo_in_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto i*OUT_BITS_PER_BIN/2) <= axis_scaler_out_tdata((i+1)*SCALER_BITS_PER_BIN/2-1 downto (i+1)*SCALER_BITS_PER_BIN/2-OUT_BITS_PER_BIN/2);
+    end generate;
+    --axis_fifo_in_tdata <= slv(cnt) & "0000" & slv(cnt+1) & "0000" & slv(cnt+2) & "0000" & slv(cnt+3) & "0000";
+    
+    axis_fifo_in_tvalid <= axis_scaler_out_tvalid and not fifo_rst and (not fifo_almost_full or axis_scaler_out_tlast); -- make sure we don't write during reset
+    axis_fifo_in_tlast <= axis_scaler_out_tlast;
+    axis_fifo_in_tuser <= axis_scaler_out_tuser;
+
+    rst_proc: process(in_clk)
+    begin
+        if rising_edge(in_clk) then
+            fifo_reset_in <= scaler_reset_out;
+        end if;
     end process;
 
-FIFO_REMAP_GEN: for i in 0 to FFT_BINS_PER_WORD*2-1 generate
-    axis_fifo_in_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto i*OUT_BITS_PER_BIN/2) <= axis_scaler_out_tdata((i+1)*SCALER_BITS_PER_BIN/2-1 downto (i+1)*SCALER_BITS_PER_BIN/2-OUT_BITS_PER_BIN/2);
-end generate;
---axis_fifo_in_tdata <= slv(cnt) & "0000" & slv(cnt+1) & "0000" & slv(cnt+2) & "0000" & slv(cnt+3) & "0000";
+    
+    DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
+        signal fifo_wr_en: std_logic;
+        signal fifo_rd_en: std_logic;
+    begin
+        ----------------------
+        -- FIFO reset process.
+        ----------------------
+        -- According to the user manual, for Async FIFOs, reset
+        -- must be held for 31 clocks of the slowest clk (in_clk) when there is no safety circuit, and there must be no
+        -- read or write during that period. There does not seem to be a safety circuit from the core generator GUI.
+        fifo_pipe_proc: process(in_clk)
+            begin
+                if rising_edge(in_clk) then
+   
+                    if fifo_reset_in = '1' then
+                        fifo_rst <= '1';
+                        fifo_rst_ctr <= (others => '0'); -- this is a 5-bit counter
+                    elsif signed(fifo_rst_ctr) = -1 then
+                        fifo_rst <= '0';
+                    else
+                        fifo_rst_ctr <= fifo_rst_ctr + 1;
+                    end if; --reset
+                end if; --clk
+            end process;
+    
+        fifo_rd_en <= axis_fifo_out_tvalid and not fifo_rst; -- start reading only when there is data. make sure we don't read during reset. In simulation, tying rd_en to '1' causes 'valid' to be invalid.
+        fifo_wr_en <= axis_fifo_in_tvalid and not fifo_rst and (not fifo_almost_full or axis_scaler_out_tlast); -- make sure we don't write during reset
+    
+        -- FIFO is asynchronous, 37 bit wide (32-bit tdata, 4-bit tuser, 1 bit tlast), FWFT, zero latency
+        chan_fifo0 : entity work.CHAN_FIFO2
+            PORT MAP (
+                rst                => fifo_rst, -- asynchronous
+                wr_clk             => in_clk,
+                wr_en              => fifo_wr_en,
+                din(31 downto 0)   => axis_fifo_in_tdata,
+                din(32)            => axis_fifo_in_tlast,
+                din(36 downto 33)  => axis_fifo_in_tuser,
+    
+                rd_clk             => out_clk,
+                rd_en              => fifo_rd_en,
+                dout(31 downto 0)  => axis_fifo_out_tdata,
+                dout(32)           => axis_fifo_out_tlast,
+                dout(36 downto 33) => axis_fifo_out_tuser,
+                valid              => axis_fifo_out_tvalid,
+                full               => open,
+                prog_full          => fifo_almost_full,
+                overflow           => fifo_overflow,
+                empty              => open
+            );
+    
+    elsif FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
+        signal fifo_wr_rst_busy: std_logic;
+        signal fifo_rd_rst_busy: std_logic;
+        signal fifo_wr_en: std_logic;
+        signal fifo_rd_en: std_logic;
+    begin
+        ----------------------
+        -- FIFO reset process.
+        ----------------------
+        -- The Ultrascale embedded FIFO has a single reset (srst) synchronous to the write clock.
+        -- The reset for the read clock domain is generated automatically.
+        -- We must not assert wr_en or rd_en during reset, until the  rd/wr_reset_busy is active.
+        -- The reset pulse must be held for at least one write clock.
+        --
+        -- In this implementation we make sure the read and writes are gated by their respective reset busy signals. We therefore avoid clock domain crossing.
+    
+     
+        fifo_rst <= fifo_reset_in; -- synchronous to write clock
+        fifo_wr_en <= axis_fifo_in_tvalid and not (fifo_rst or fifo_wr_rst_busy) and (not fifo_almost_full or axis_fifo_in_tlast); -- write clock domain
+        fifo_rd_en <= axis_fifo_out_tvalid and not (fifo_rd_rst_busy); -- start reading only when there is data. make sure we don't read during reset.
+        chan_fifo0 : entity work.CHAN_FIFO2_UP
+            PORT MAP (
+                srst               => fifo_rst, -- synchronous to the write clock
+                wr_clk             => in_clk,
+                wr_en              => fifo_wr_en,
+                din(31 downto 0)   => axis_fifo_in_tdata,
+                din(32)            => axis_fifo_in_tlast,
+                din(36 downto 33)  => axis_fifo_in_tuser,
+    
+                rd_clk             => out_clk,
+                rd_en              => fifo_rd_en,
+                dout(31 downto 0)  => axis_fifo_out_tdata,
+                dout(32)           => axis_fifo_out_tlast,
+                dout(36 downto 33) => axis_fifo_out_tuser,
+                valid              => axis_fifo_out_tvalid,
+                full               => open,
+                prog_full          => fifo_almost_full,
+                overflow           => fifo_overflow,
+                empty              => open,
+                wr_rst_busy        => fifo_wr_rst_busy,
+                rd_rst_busy        => fifo_rd_rst_busy
+            );
+    
+    end generate;
 
-axis_fifo_in_tvalid <= axis_scaler_out_tvalid and not fifo_rst and (not fifo_almost_full or axis_scaler_out_tlast); -- make sure we don't write during reset
-axis_fifo_in_tlast <= axis_scaler_out_tlast;
-axis_fifo_in_tuser <= axis_scaler_out_tuser;
-end block;
-
-DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
-    signal fifo_wr_en: std_logic;
-    signal fifo_rd_en: std_logic;
-begin
-    ----------------------
-    -- FIFO reset process.
-    ----------------------
-    -- According to the user manual, for Async FIFOs, reset
-    -- must be held for 31 clocks of the slowest clk (in_clk) when there is no safety circuit, and there must be no
-    -- read or write during that period. There does not seem to be a safety circuit from the core generator GUI.
-    fifo_pipe_proc: process(in_clk)
-        begin
-            if rising_edge(in_clk) then
-                in_reset_fifo <= in_reset_scaler;
-
-                if in_reset_fifo ='1' then
-                    fifo_rst <= '1';
-                    fifo_rst_ctr <= (others => '0'); -- this is a 5-bit counter
-                elsif signed(fifo_rst_ctr) = -1 then
-                    fifo_rst <= '0';
-                else
-                    fifo_rst_ctr <= fifo_rst_ctr + 1;
-                end if; --reset
-            end if; --clk
-        end process;
-
-    fifo_rd_en <= axis_fifo_out_tvalid and not fifo_rst; -- start reading only when there is data. make sure we don't read during reset. In simulation, tying rd_en to '1' causes 'valid' to be invalid.
-    fifo_wr_en <= axis_fifo_in_tvalid and not fifo_rst and (not fifo_almost_full or axis_scaler_out_tlast); -- make sure we don't write during reset
-
-    -- FIFO is asynchronous, 37 bit wide (32-bit tdata, 4-bit tuser, 1 bit tlast), FWFT, zero latency
-    chan_fifo0 : entity work.CHAN_FIFO2
-        PORT MAP (
-            rst                => fifo_rst, -- asynchronous
-            wr_clk             => in_clk,
-            wr_en              => fifo_wr_en,
-            din(31 downto 0)   => axis_fifo_in_tdata,
-            din(32)            => axis_fifo_in_tlast,
-            din(36 downto 33)  => axis_fifo_in_tuser,
-
-            rd_clk             => out_clk,
-            rd_en              => fifo_rd_en,
-            dout(31 downto 0)  => axis_fifo_out_tdata,
-            dout(32)           => axis_fifo_out_tlast,
-            dout(36 downto 33) => axis_fifo_out_tuser,
-            valid              => axis_fifo_out_tvalid,
-            full               => open,
-            prog_full          => fifo_almost_full,
-            overflow           => fifo_overflow,
-            empty              => open
-        );
-
-elsif FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
-    signal fifo_wr_rst_busy: std_logic;
-    signal fifo_rd_rst_busy: std_logic;
-    signal fifo_wr_en: std_logic;
-    signal fifo_rd_en: std_logic;
-begin
-    ----------------------
-    -- FIFO reset process.
-    ----------------------
-    -- The Ultrascale embedded FIFO has a single reset (srst) synchronous to the write clock.
-    -- The reset for the read clock domain is generated automatically.
-    -- We must not assert wr_en or rd_en during reset, until the  rd/wr_reset_busy is active.
-    -- The reset pulse must be held for at least one write clock.
-    --
-    -- In this implementation we make sure the read and writes are gated by their respective reset busy signals. We therefore avoid clock domain crossing.
-
-    fifo_pipe_proc: process(in_clk)
-        begin
-            if rising_edge(in_clk) then
-                in_reset_fifo <= in_reset_scaler;
-            end if; --clk
-        end process;
-
-    fifo_rst <= in_reset_fifo; -- synchronous to write clock
-    fifo_wr_en <= axis_fifo_in_tvalid and not (fifo_rst or fifo_wr_rst_busy) and (not fifo_almost_full or axis_fifo_in_tlast); -- write clock domain
-    fifo_rd_en <= axis_fifo_out_tvalid and not (fifo_rd_rst_busy); -- start reading only when there is data. make sure we don't read during reset.
-    chan_fifo0 : entity work.CHAN_FIFO2_UP
-        PORT MAP (
-            srst               => fifo_rst, -- synchronous to the write clock
-            wr_clk             => in_clk,
-            wr_en              => fifo_wr_en,
-            din(31 downto 0)   => axis_fifo_in_tdata,
-            din(32)            => axis_fifo_in_tlast,
-            din(36 downto 33)  => axis_fifo_in_tuser,
-
-            rd_clk             => out_clk,
-            rd_en              => fifo_rd_en,
-            dout(31 downto 0)  => axis_fifo_out_tdata,
-            dout(32)           => axis_fifo_out_tlast,
-            dout(36 downto 33) => axis_fifo_out_tuser,
-            valid              => axis_fifo_out_tvalid,
-            full               => open,
-            prog_full          => fifo_almost_full,
-            overflow           => fifo_overflow,
-            empty              => open,
-            wr_rst_busy        => fifo_wr_rst_busy,
-            rd_rst_busy        => fifo_rd_rst_busy
-        );
-
-end generate;
-
+end block fifo_blk;
 
 
 
@@ -770,6 +793,8 @@ cap_blk: block
     signal axis_cap0_tuser: slv_array(0 to NUMBER_OF_CAPTURE_SOURCES-1)(3 downto 0);
     signal axis_cap0_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
     signal axis_cap0_tlast: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
+    signal prober_reset_in: std_logic;
+    attribute keep of prober_reset_in: signal is "true";
 
     constant CAPTURE_BITS_PER_SAMPLE: integer := CAPTURE_BITS_PER_WORD / ADC_SAMPLES_PER_WORD;
     constant LEN: integer := minimum(CAPTURE_BITS_PER_SAMPLE, ADC_BITS_PER_SAMPLE);
@@ -783,7 +808,7 @@ begin
             if rising_edge(in_clk) then
 
                 -- pipeline reset
-                in_reset_prober <= in_reset_funcgen or in_reset_scaler;
+                prober_reset_in <= funcgen_reset_out or scaler_reset_out;
 
                 -- Pipeline data from FUNCGEN. Repack the ADC samples on the MSB of the capture samples.
 
@@ -795,7 +820,7 @@ begin
                 axis_cap0_tvalid(0) <= axis_funcgen_out_tvalid;
                 axis_cap0_tlast(0) <= axis_funcgen_out_tlast;
 
-                if in_reset_prober = '1' then
+                if prober_reset_in = '1' then
                     axis_cap0_tvalid(0) <= '0';
                 end if;
 
@@ -805,7 +830,7 @@ begin
                 axis_cap0_tvalid(1) <= axis_scaler_out_tvalid;
                 axis_cap0_tlast(1) <= axis_scaler_out_tlast;
 
-                if in_reset_prober = '1' then
+                if prober_reset_in = '1' then
                     axis_cap0_tvalid(1) <= '0';
                 end if;
 
@@ -844,7 +869,7 @@ begin
                     TVALID => axis_cap0_tvalid(1),
                     TLAST => axis_cap0_tlast(1)),
                 in_clk    => in_clk, -- both inputs must run on the same clock
-                in_reset  => in_reset_prober, -- both inputs must run on the same reset
+                in_reset  => prober_reset_in, -- both inputs must run on the same reset
     
                 -- Output data streams
                 OUT_DAT => PRB_DAT,
