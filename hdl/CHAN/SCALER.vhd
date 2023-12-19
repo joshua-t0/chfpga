@@ -722,7 +722,7 @@ scaler_proc: process(clk)
             stage2_tlast   <= stage1_tlast;
             stage2_tuser   <= stage1_tuser;
             for i in 0 to INTEGERS_PER_WORD-1 loop
-                stage2_sign(i) <= stage1_sign(i);
+                stage2_sign(i) <= stage1_sign(i); 
                 stage2_overflow(i) <= stage1_overflow(i);
                 if four_bits = '1' or EIGHT_BIT_SUPPORT = FALSE then
                     if rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND or rounding_mode = ROUNDING_MODE_ROUND then -- if rounding
