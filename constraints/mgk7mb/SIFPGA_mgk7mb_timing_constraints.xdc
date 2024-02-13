@@ -99,9 +99,10 @@ create_clock -period 8.000 -name SFP_CLK [get_ports sfp_clk_p]
 create_clock -period 8.000 -name arm_spi_virt_clk
 
 # Make unrelated MMCM-generated system clocks independent from the other clocks
-set_clock_groups -name CLK125_GROUP -asynchronous -group [get_clocks -include_generated_clocks {arm_spi_virt_clk CLK125_NOBUF}]
-set_clock_groups -name SYSMON_CLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks SYSMON_CLK_NOBUF]
-set_clock_groups -name CORR_CLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks CORR_CLK_NOBUF]
+set_clock_groups -name ARM_SPI_CLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks arm_spi_virt_clk]
+set_clock_groups -name CLK125_GROUP -asynchronous -group [get_clocks -include_generated_clocks clk125_nobuf]
+set_clock_groups -name SYSMON_CLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks sysmon_clk_nobuf]
+set_clock_groups -name CORR_CLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks corr_clk_nobuf]
 
 # Vivado 2016.2 does not seem to automatically create GTX TXOUTCLK clocks
 # Belay that. No, it's defined in the sgmii xdc file. For some reason a previous compile ignored that.
@@ -222,7 +223,7 @@ set_false_path -from [get_ports {arm_irq_n bp_buck_sync cpu_reset_n flash_spi_cs
 
 # Ignore path from the internal 200 MHz to the channel clock 0
 # There is one path between the IRIG-B output and the event capture register used to capture the frame number (on chan clock)  and IRIG-B time (on clk200)
-set_false_path -from [get_clocks CLK200_MMCM_NOBUF] -to [get_clocks {chan_clk_nobuf[0]}]
+#set_false_path -from [get_clocks CLK200_MMCM_NOBUF] -to [get_clocks {chan_clk_nobuf[0]}]
 
 
 # Eliminate paths ending to synchronizing registers in the clock module (CLK0)
@@ -233,7 +234,7 @@ set_false_path -to [get_cells -hierarchical -filter {NAME =~ "*/CLK0/*" && ASYNC
 # set_false_path -from [get_clocks divclk_local_d_3] -to [get_clocks {chan_clk_nobuf[0]}]
 
 # adc-send_data_reg1 signals come from multiple clocks. Ignore the timing to that register. That register has a ASYNC_REG=True property.
-set_false_path -to [get_pins {chfpga0/ADCGEN[*].adc_send_data_reg1_reg[*]/D}]
+#set_false_path -to [get_pins {chfpga0/ADCGEN[*].adc_send_data_reg1_reg[*]/D}]
 
 
 # create_clock -period 1000.000 -name fmca_spi_sck -waveform {0.000 500.000} [get_ports fmca_spi_sck]

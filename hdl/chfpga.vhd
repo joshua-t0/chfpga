@@ -536,7 +536,7 @@ attribute IOB: string;
 attribute TARGET_PBLOCK: string;
 
 -- ==================================================
--- ========== SIGNALS ==============================
+-- ========== SIGNALS ===============================
 -- ==================================================
 
 -- Constants
@@ -1057,7 +1057,7 @@ ALL_RESET<=  cpu_reset or user_reset;
 --end generate; --debug7
 
 --! Instantiate the system clock generator that generates the local 200 MHz and 125 MHz from the external 200 MHz lines
-CLK0: entity work.CLOCKS
+CLK0: entity work.CLOCKS 
 	generic map (
 		PLATFORM_ID => PLATFORM_ID,
 		CLOCK_SOURCE => SYSTEM_CLOCK_SOURCE, -- "SYSCLK", "SYSCLK_BUFG", "SFP_REFCLK" or "CLK10_BUFG"

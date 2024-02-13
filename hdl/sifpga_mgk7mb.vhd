@@ -33,9 +33,15 @@ use work.chFPGA_Package.all; --! Get all component definitions
 entity SIFPGA_MGK7MB is
 	 generic (
 			PLATFORM_ID: INTEGER                         := PLATFORM_ID_MGK7MB; --! identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705
-			UDP_MAC_PRESENT: BOOLEAN                     := TRUE; --! Indicates if the Ethernet interface is to be implemented (sets the DYMMY flag on the MAC). Used for debugging only.
-			BLINKER_PRESENT: BOOLEAN                     := TRUE; --! Indicates if the LED flasher is to be implemented by setting the DUMMY flag of the BLINKER module
+--			UDP_MAC_PRESENT: BOOLEAN                     := TRUE; --! Indicates if the Ethernet interface is to be implemented (sets the DYMMY flag on the MAC). Used for debugging only.
+			BLINKER_PRESENT: BOOLEAN                     := TRUE; --! Indicates if the LED flasher is to  be implemented by setting the DUMMY flag of the BLINKER module
 			SYSTEM_CLOCK_SOURCE: string                  := "SFP_REFCLK"; --!"SYSCLK": the 200 MHz clock will be taken from sysclk_p/n (CC pins) or "SFP_REFCLK": the system clock is 125 MHz from the GTX reference clock
+--			New from refactored version:----------------
+			SYSTEM_CLOCK_FREQ: real                      := 125.0; -- System reference clock frequency, in MHz *** IP packager does not support real. Defined as constant below ***
+			CHAN_CLK_SOURCE: string                      := "MMCM"; -- Channelizer clock comes from the multi-phase MMCM
+			CHAN_CLK_FREQ: real                          := 200.0; -- MHz. 200.0 or 300.0 are supported.
+			CT_CLK_SOURCE: string                        := "CORR_CLK"; -- corner-turn operates on backplane GTY word clock (~244 MHz)
+--          -------------------------------------------- 
 			PHY_TYPE: string                             := "SGMII"; -- "GMII" or "SGMII"
 			SGMII_CLOCK_SOURCE: string                   := "REFCLK"; --! Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 			NUMBER_OF_ADCS: INTEGER                      := 16; --! Number of ADC Data acquisition blocks to implement
@@ -892,15 +898,22 @@ bufr_rawclk10 : BUFR
 	chfpga0: entity work.chFPGA
 		GENERIC MAP(
 			PLATFORM_ID                     => PLATFORM_ID,
-			BLINKER_PRESENT                 => BLINKER_PRESENT,
+			
+			-- clocks
 			SYSTEM_CLOCK_SOURCE             => SYSTEM_CLOCK_SOURCE,
+			SYSTEM_CLOCK_FREQ               => SYSTEM_CLOCK_FREQ,
+			CHAN_CLK_SOURCE                 => CHAN_CLK_SOURCE,
+			CHAN_CLK_FREQ 					=> CHAN_CLK_FREQ,
+			CT_CLK_SOURCE                   => CT_CLK_SOURCE,
+			
+			BLINKER_PRESENT                 => BLINKER_PRESENT,
 			PHY_TYPE                        => PHY_TYPE,
 			SGMII_CLOCK_SOURCE              => SGMII_CLOCK_SOURCE,
 			NUMBER_OF_ADCS                  => NUMBER_OF_ADCS,
 			NUMBER_OF_CHANNELIZERS          => NUMBER_OF_CHANNELIZERS,
 			NUMBER_OF_CORRELATORS           => NUMBER_OF_CORRELATORS,
 			NUMBER_OF_CROSSBAR_INPUTS       => NUMBER_OF_CROSSBAR_INPUTS,
-			NUMBER_OF_CROSSBAR_OUTPUTS      => NUMBER_OF_CROSSBAR_OUTPUTS,
+			NUMBER_OF_CROSSBAR1_OUTPUTS      => NUMBER_OF_CROSSBAR_OUTPUTS,
 			NUMBER_OF_GPU_LINKS             => NUMBER_OF_GPU_LINKS,
 			NUMBER_OF_GPU_REFCLKS           => NUMBER_OF_GPU_REFCLKS,
 			NUMBER_OF_BP_PCB_SHUFFLE_LANES  => NUMBER_OF_BP_PCB_SHUFFLE_LANES,

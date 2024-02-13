@@ -55,13 +55,13 @@ entity CMAC44 is
 	GENERIC (
 		PLATFORM_ID: integer;
 		RPM_NAME: string; -- name of the RPM set name that identify which correlator the DSPs and BRAMs belong to.
-		RPM_COORDS: cmac44_rpm_coord_struct; -- RPM coordinates of the DSPs and BRAMs
-		DSP_RPM_X: integer := 45; -- X coordinate for both DSP1 and DSP2. They are on top of each other, in the same tile.
-		BRAM_RPM_X: integer := 34; -- X coordinate of BRAM/FIFO. They also are on top of each other, in the same tile.
-		DSP_RPM_Y0: integer := 0; -- Y coordinate of bottom DSP (DSP1)
-		DSP_RPM_Y1: integer := 0; -- Y coordinate of top DSP (DSP2)
-		BRAM_RPM_Y0: integer := 0; -- Y coordinate of bottom BRAM (Accumulator FIFO)
-		BRAM_RPM_Y1: integer := 0 -- Y coordinate of top BRAM (Capture BRAM)
+		RPM_COORDS: cmac44_rpm_coord_struct -- RPM coordinates of the DSPs and BRAMs
+--		DSP_RPM_X: integer := 45; -- X coordinate for both DSP1 and DSP2. They are on top of each other, in the same tile.
+--		BRAM_RPM_X: integer := 34; -- X coordinate of BRAM/FIFO. They also are on top of each other, in the same tile.
+--		DSP_RPM_Y0: integer := 0; -- Y coordinate of bottom DSP (DSP1)
+--		DSP_RPM_Y1: integer := 0; -- Y coordinate of top DSP (DSP2)
+--		BRAM_RPM_Y0: integer := 0; -- Y coordinate of bottom BRAM (Accumulator FIFO)
+--		BRAM_RPM_Y1: integer := 0 -- Y coordinate of top BRAM (Capture BRAM)
 		);
 	PORT(
 
