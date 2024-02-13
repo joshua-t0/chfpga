@@ -14,7 +14,7 @@ package chfpga_config is
 	constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer := 2;
 	constant CONFIG_CHAN_CAPTURE_TYPE: string := "BRAM";
 	constant CONFIG_CHAN_FFT_TYPE: string := "CHIME";
-	constant CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := 1; -- only implement one channelizer with an FFT for now
+	constant CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := 16; -- only implement one channelizer with an FFT for now
 	constant CONFIG_CAPTURE_BITS_PER_WORD: integer := 32;
 
 end chfpga_config;
