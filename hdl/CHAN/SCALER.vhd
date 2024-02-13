@@ -830,7 +830,7 @@ scaler_proc: process(clk)
                         -- We forward the upper N bits of the FFT integers to the upper N bits of the output integer
                         for i in 0 to INTEGERS_PER_WORD-1 loop
                             m_axis_out_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto i*OUT_BITS_PER_BIN/2) <= 
-                                msb(s_axis_in_tdata, OUT_BITS_PER_BIN/2);
+                                s_axis_in_tdata((i+1)*FFT_BITS_PER_BIN/2-1 downto (i+1)*FFT_BITS_PER_BIN/2 - OUT_BITS_PER_BIN/2);
                         end loop;
                         m_axis_out_tlast <= s_axis_in_tlast;
                         m_axis_out_tvalid <= s_axis_in_tvalid;
