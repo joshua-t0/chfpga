@@ -888,10 +888,7 @@ signal gpu_reset_reg: std_logic;
 
 
 
-signal sys_ctrl_rst: std_logic;
 
-
-signal refclk_ctrl_rst: std_logic;
 
 
 
@@ -901,9 +898,7 @@ signal bp_shuffle_ctrl_rst_reg: std_logic;
 
 
 
-attribute DONT_TOUCH of sys_ctrl_rst: signal is "true";
 
-attribute DONT_TOUCH of refclk_ctrl_rst: signal is "true";
 attribute DONT_TOUCH of bp_shuffle_ctrl_rst: signal is "true";
 attribute DONT_TOUCH of bp_shuffle_ctrl_rst_reg: signal is "true";
 
@@ -1156,10 +1151,6 @@ end generate bsb_clk_sel;
 bsb_rst_proc: process(ctrl_clk)
 	begin
 		if rising_edge(ctrl_clk) then
-			sys_ctrl_rst            <= ctrl_rst;
-			
-			refclk_ctrl_rst         <= ctrl_rst;
-			
 			bp_shuffle_ctrl_rst     <= ctrl_rst;
 			bp_shuffle_ctrl_rst_reg <= bp_shuffle_ctrl_rst;
 		end if; -- RST/CLK
@@ -1190,7 +1181,7 @@ begin
 
 
 	-- Generate a corner-turn engine reset synchronous to ct_clk
-	-- we use the clock generator corr_reset as a source since it is properly sequences but we resync it to ct_clk.
+	-- we use the clock generator corr_reset as a source since it is properly sequenced but we resync it to ct_clk.
 	ct_reset_cdc0: xpm_cdc_single
 		generic map (SRC_INPUT_REG => 0)
 		port map (
@@ -1582,6 +1573,10 @@ end block;
 ---------------------------------------------------------------------
 --  Controls the global hardware lines and system registers like the ADC RESET, LCD, Buck Regulators  etc.
 gpio_blk: block
+
+	signal gpio_rst: std_logic;
+	attribute DONT_TOUCH of gpio_rst: signal is "true";
+
 	signal gpio_event_ctr_en: std_logic;
 	signal gpio_event_ctr_inc: std_logic;
 	signal gpio_event_ctr_en_reg: std_logic;
@@ -1643,6 +1638,14 @@ begin
 		if rising_edge(ctrl_clk) then
 			bsb_rst_reg1 <= ctrl_rst;
 			bsb_rst_reg2 <= bsb_rst_reg1;
+		end if;
+	end process;
+
+    -- Pipeline the clk200 reset
+	gpio_rst_proc: process(clk200)
+	begin
+		if rising_edge(clk200) then
+			gpio_rst <= clk200_reset_reg;
 		end if;
 	end process;
 
@@ -1929,7 +1932,7 @@ begin
 
 			-- Clocks
 			clk200 => clk200,
-			clk200_reset => clk200_reset_reg,
+			clk200_reset => gpio_rst,
 			clk10 => clk10, -- Backplane reference clock
             clk10_sel => clk10_sel, -- reference clock selector signal
 
@@ -1950,6 +1953,8 @@ gen_spi: if NUMBER_OF_SPI_PORTS > 0 generate
 
 	signal bsb_rst_reg1, bsb_rst_reg2: std_logic;
 	attribute DONT_TOUCH of bsb_rst_reg1, bsb_rst_reg2: signal is "true";
+	signal spi_rst: std_logic;
+	attribute DONT_TOUCH of spi_rst: signal is "true";
 
 begin
 	-- Reset output signal that can be used by some boards to reset SPI devices.
@@ -1964,6 +1969,14 @@ begin
 		if rising_edge(ctrl_clk) then
 			bsb_rst_reg1 <= ctrl_rst;
 			bsb_rst_reg2 <= bsb_rst_reg1;
+		end if;
+	end process;
+
+    -- Pipeline the clk200 reset
+	spi_rst_proc: process(clk200)
+	begin
+		if rising_edge(clk200) then
+			spi_rst <= clk200_reset_reg;
 		end if;
 	end process;
 
@@ -1990,7 +2003,7 @@ begin
 
 			clk200 => clk200,
 
-			RST => clk200_reset_reg
+			rst => spi_rst
 		);
 end generate gen_spi;
 
@@ -2000,7 +2013,10 @@ end generate gen_spi;
 gen_i2c: if NUMBER_OF_I2C_PORTS > 0 generate
 	signal bsb_rst_reg1, bsb_rst_reg2: std_logic;
 	attribute DONT_TOUCH of bsb_rst_reg1, bsb_rst_reg2: signal is "true";
-begin	
+	signal i2c_rst: std_logic;
+	attribute DONT_TOUCH of i2c_rst: signal is "true";
+begin
+    -- Pipeline the BSB reset	
 	bsb_rst_proc: process(ctrl_clk)
 	begin
 		if rising_edge(ctrl_clk) then
@@ -2009,12 +2025,20 @@ begin
 		end if;
 	end process;
 
+    -- Pipeline the clk200 reset
+	i2c_rst_proc: process(clk200)
+	begin
+		if rising_edge(clk200) then
+			i2c_rst <= clk200_reset_reg;
+		end if;
+	end process;
+
 	I2C0: entity work.I2C
 		GENERIC MAP (
 			NUMBER_OF_PORTS => NUMBER_OF_I2C_PORTS
 		)
 		PORT MAP(
-			-- Control interface
+			-- BSB Control interface
 			CTRL_CMD_IN_DAT=> SYS_CMD_DAT(MODULE_I2C_ADDR),
 			CTRL_CMD_IN_RDY=> SYS_CMD_RDY(MODULE_I2C_ADDR),
 			CTRL_RPLY_OUT_DAT=> SYS_RPLY_DAT(MODULE_I2C_ADDR),
@@ -2028,7 +2052,7 @@ begin
 
 			-- System interfaces
 			clk200 => clk200,
-			RST => clk200_reset_reg
+			rst => i2c_rst
 		);
 
 end generate gen_i2c;
@@ -2038,6 +2062,9 @@ end generate gen_i2c;
 ---------------------------------------------------------------------
 --!   Accesses the FPGA`s system monitors, which measures the FPGA core voltages, temperature and a few external analog lines.
 sysmon_blk: block
+	signal sysmon_rst: std_logic;
+	attribute DONT_TOUCH of sysmon_rst: signal is "true";
+
 	signal SYS_SYSMON_CMD_DAT: AXIS8_DAT_STRUCT;
 	signal SYS_SYSMON_CMD_RDY: AXIS8_RDY_STRUCT;
 	signal SYS_SYSMON_RPLY_DAT: AXIS8_DAT_STRUCT;
@@ -2054,6 +2081,7 @@ begin
 	SYS_CMD_RDY(MODULE_SYSMON_ADDR) <= SYS_SYSMON_CMD_RDY;
 	SYS_SYSMON_RPLY_RDY<= SYS_RPLY_RDY(MODULE_SYSMON_ADDR);
 	SYS_RPLY_DAT(MODULE_SYSMON_ADDR) <= SYS_SYSMON_RPLY_DAT;
+-- Pipeline the BSB resets to help them propagate across the chip
 
 	bsb_rst_proc: process(ctrl_clk)
 	begin
@@ -2324,7 +2352,31 @@ end block freq_ctr_blk;
 --! Implements the LVDS ADC SYNC output to the FMC board
 
 refclk_blk: block
+    signal refclk_ctrl_rst: std_logic;
+    attribute DONT_TOUCH of refclk_ctrl_rst: signal is "true";
+
+    signal refclk_rst: std_logic;
+	attribute DONT_TOUCH of refclk_rst: signal is "true";
+
 begin
+
+    -- Pipeline the BSB resets to help them propagate across the chip
+    bsb_rst_proc: process(ctrl_clk)
+	begin
+		if rising_edge(ctrl_clk) then
+			refclk_ctrl_rst <= ctrl_rst;
+		end if; -- RST/CLK
+	end process;
+
+   -- Pipeline the clk200 reset
+	refclk_rst_proc: process(clk200)
+	begin
+		if rising_edge(clk200) then
+			refclk_rst <= clk200_reset_reg;
+		end if;
+	end process;
+
+
 	refclk_irigb_sync_in <= not irigb_before_target;
 	REFCLK0: entity work.REFCLK
 		GENERIC MAP (
@@ -2362,12 +2414,10 @@ begin
 
 			sync_out => sync_out,
 
-	--		SERDES_RST=>REFCLK_SERDES_RST,
-	--		BUFR_RST=>REFCLK_BUFR_RST,
 			ADCDAQ_RESET => REFCLK_ADCDAQ_RESET,
 
 			clk200 => clk200,
-			RST => clk200_reset_reg
+			RST => refclk_rst
 		);
 
 	-- Implement Mezzanine refclk clock buffers
@@ -2653,11 +2703,11 @@ adc_gen: case ADC_TYPE generate
                 attribute DONT_TOUCH of chan_reset_reg: signal is "true";
         begin
             adc_clk_div2_proc: process(adc_clkout(i))
-                begin
-                    -- Generate a divide-by-2 version of the downscaled sampling clock
-                    if rising_edge(adc_clkout(i)) then
-                        adc_clk_div2(i) <= not adc_clk_div2(i);
-                    end if; -- adc_axis_clk
+            begin
+                -- Generate a divide-by-2 version of the downscaled sampling clock
+                if rising_edge(adc_clkout(i)) then
+                    adc_clk_div2(i) <= not adc_clk_div2(i);
+                end if; -- adc_axis_clk
             end process;
     
             adc_proc: process(chan_clk(i))
@@ -2699,7 +2749,7 @@ adc_gen: case ADC_TYPE generate
                             adc_send_data2(i) <= '1'; -- start setting tvalid to 1
                         end if; -- last word
                         -- Synchronous reset
-                        if chan_reset_reg then
+                        if chan_reset_reg or adcdaq_reset_reg then
                             axis_adc_tvalid(i) <= '0';
                             axis_adc_tvalid_reg(i) <= '0';
                             adc_word_ctr <= (others => '0');
