@@ -44,6 +44,8 @@ ARCHITECTURE behavior OF cge_testbench IS
    -- Clock period definitions
    -- constant CLK_PERIOD : time := 3.2 ns;
 
+constant CLK_PERIOD : time := 2.5 ns; -- 400 MHz
+constant BSB_CLK_PERIOD : time := 8 ns; -- 125 MHz
 constant REFCLK_PERIOD : time := 6.4 ns; -- 156.25 MHz
 
 
@@ -51,9 +53,9 @@ constant REFCLK_PERIOD : time := 6.4 ns; -- 156.25 MHz
 	--signal reset : std_logic := '0';
 
 
-	signal refclk: std_logic; -- 200 MHz
-	signal clk: std_logic;
-	signal rst: std_logic := '1';
+	signal refclk: std_logic; 
+	signal clk, ctrl_clk: std_logic;
+	signal rst, ctrl_rst: std_logic := '1';
 
 	signal txp, txn: std_logic_vector(3 downto 0);
 	signal tdata: std_logic_vector(255 downto 0);
@@ -92,6 +94,21 @@ begin
 			wait for REFCLK_PERIOD/2;
 	   end process;
 
+	clk_process: process
+	   begin
+			clk <= '0';
+			wait for CLK_PERIOD/2;
+			clk <= '1';
+			wait for CLK_PERIOD/2;
+	   end process;
+
+	bsb_clk_process: process
+	   begin
+			ctrl_clk <= '0';
+			wait for BSB_CLK_PERIOD/2;
+			ctrl_clk <= '1';
+			wait for BSB_CLK_PERIOD/2;
+	   end process;
 
 
 	cge0: entity work.cge
@@ -103,29 +120,35 @@ begin
 			tx_n => txn,
 			refclk_p => refclk,
 			refclk_n => not refclk,
-			refclk_out => clk,
-
+			refclk_out => open,
+            clk => clk,
+            
 			s_axis_tx_tdata => tdata,
 			s_axis_tx_tvalid => tvalid,
 			s_axis_tx_tlast => tlast,
 
-			rst => '0',
-			ctrl_clk => clk, -- used as init_clk
-			ctrl_rst => rst
+			rst => rst,
+			ctrl_clk => ctrl_clk,
+			ctrl_rst => ctrl_rst
 		 );
 
-	rst_proc: process(clk)
-	begin
-		if rising_edge(clk) then
-			rst <= '0';
-		end if;
-	end process;
+--	rst_proc: process(clk)
+--	begin
+--		if rising_edge(clk) then
+--			rst <= '0';
+--		end if;
+--	end process;
 
 
 	sim_proc: process
 	begin
-
-		wait for 5.5 us;
+        ctrl_rst <= '1';
+        rst <= '1';
+        wait for 1.5 us; -- make sure the GTY PLL is locked and CLK322 is active
+		sleep(ctrl_clk, 10);
+        ctrl_rst <= '0';
+		sleep(clk, 10);
+        rst <= '0';
 		sleep(clk, 1);
 		tdata <= X"0001020304050607202122232425262730313233343536374041424344454647";
 		tlast <= '1';
