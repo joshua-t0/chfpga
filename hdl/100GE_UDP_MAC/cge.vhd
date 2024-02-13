@@ -142,11 +142,11 @@ architecture Behavioral of cge is
 	signal tx_unfout_sticky: std_logic;
 
 	-- Data FIFO signals
-	signal fifo_srst: std_logic;
-	signal fifo_din: std_logic_vector(288-1 DOWNTO 0);
-	signal fifo_wr_en: std_logic;
+	signal fifo_srst: std_logic := '1'; -- init for sims
+	signal fifo_din: std_logic_vector(256+2-1 DOWNTO 0);
+	signal fifo_wr_en: std_logic := '0'; -- init for sims
 	signal fifo_rd_en: std_logic;
-	signal fifo_dout: std_logic_vector(288*2-1 DOWNTO 0);
+	signal fifo_dout: std_logic_vector(512+4-1 DOWNTO 0);
 	signal fifo_full: std_logic;
 	signal fifo_overflow: std_logic;
 	signal fifo_overflow_sticky: std_logic;
@@ -254,7 +254,7 @@ begin
 
 	bsb_mmr0: entity work.CTRL_SLAVE
 		GENERIC MAP (
-			DEFAULT_CONTROL_BYTES=> X"00_FF_0100_0000",
+			DEFAULT_CONTROL_BYTES=> X"80_11_0020_0000",
 			USE_RAM_DOUT_RDY=>TRUE, -- need to wait for the RDY signal on RAM read accesses
 			RAM_DATA_WIDTH => 16,
 			RAM_ADDR_WIDTH => 10, -- CMAC DRP Address bus is 10 bits
@@ -285,22 +285,73 @@ begin
 		);
 
 
-flag_fifo_inst : entity work.cge_flag_fifo
-  PORT MAP (
-    rst => fifo_srst,
-    wr_clk => clk,
-    wr_en => flag_fifo_wr_en,
-    din => "0",
-    overflow => flag_fifo_overflow,
-    full => flag_fifo_full,
+--flag_fifo0 : entity work.cge_flag_fifo
+--  PORT MAP (
+--    rst => fifo_srst,
+--    wr_clk => clk,
+--    wr_en => flag_fifo_wr_en,
+--    din => "0",
+--    overflow => flag_fifo_overflow,
+--    full => flag_fifo_full,
 
-    rd_clk => clk_out_int,
-    rd_en => flag_fifo_rd_en,
-    dout => open,
-    empty => open,
-    valid => flag_fifo_valid
-  );
+--    rd_clk => clk_out_int,
+--    rd_en => flag_fifo_rd_en,
+--    dout => open,
+--    empty => open,
+--    valid => flag_fifo_valid
+--  );
 
+flag_fifo0: xpm_fifo_async
+    generic map (
+    --   CASCADE_HEIGHT => 0,        -- DECIMAL
+    --   CDC_SYNC_STAGES => 2,       -- DECIMAL
+    --   DOUT_RESET_VALUE => "0",    -- String
+    --   ECC_MODE => "no_ecc",       -- String
+       FIFO_MEMORY_TYPE => "dist", -- String
+       READ_MODE => "fwft",         -- String
+       FIFO_READ_LATENCY => 0,     --must be 0 for READ_MODE=fwft
+       WRITE_DATA_WIDTH => 1,     -- DECIMAL
+       FIFO_WRITE_DEPTH => 16,   -- Write: 256+2 x 1024, Read: 512+2 x 512  (8x RAMB36)
+       READ_DATA_WIDTH => 1,      -- DECIMAL
+       FULL_RESET_VALUE => 0,      -- DECIMAL
+    --   PROG_EMPTY_THRESH => 10,    -- DECIMAL
+--       PROG_FULL_THRESH => 1017,     -- Value must be between 9 and 1017
+    --   RD_DATA_COUNT_WIDTH => 1,   -- DECIMAL
+    --   RELATED_CLOCKS => 0,        -- DECIMAL
+       SIM_ASSERT_CHK => 1,        -- DECIMAL; 0=disable simulation messages, 1=enable simulation messages
+       USE_ADV_FEATURES => "1001", -- bit [0: overflow], [1:prog_full], 2:wr_count, 3:almost_full, 8:underflow, 9:prog_empty, 10:rd_count, 11: almost_empty, [12:valid] 
+    --   WAKEUP_TIME => 0,           -- DECIMAL
+       WR_DATA_COUNT_WIDTH => 11    -- Not needed
+    )
+    port map (
+    
+       rst => fifo_srst,               -- Reset, synchronous to wr_clk. 
+    
+       -- Write domain
+       wr_clk => clk,                  -- Write clock
+       din => "0",                -- Write Data: 
+       wr_en => flag_fifo_wr_en,            -- Write Enable: Must be held active-low when rst or wr_rst_busy is active high.
+       full => flag_fifo_full,              -- Full Flag:  Write requests are ignored when the FIFO is full.
+--       prog_full => fifo_almost_full,  -- Programmable Full: asserted when the number of words in the FIFO is greater than or equal to the programmable full threshold 
+       overflow => flag_fifo_overflow,      -- Overflow: This signal indicates that a write request was rejected because fifo was FULL
+--       wr_rst_busy => fifo_wr_rst_busy,-- Write Reset Busy: Active-High indicator that the FIFO write domain is currently in a reset state.
+    --   almost_full => fifo_almost_full, -- Asserted when the FIFO is one write from FULL
+    
+        -- Read domain
+       rd_clk => clk_out_int,          -- Read clock
+       rd_en => flag_fifo_rd_en,            -- 1-bit input: Read Enable: Must be held low when rd_rst_busy is active high.
+       dout => open,              -- Read Data
+       data_valid => flag_fifo_valid,       -- Read Data Valid: High when data is available on dout.
+       empty => open,            -- Empty Flag: High when FIFO is empty. Read requests are ignored.
+    --   almost_empty => almost_empty, -- Almost Empty : Asserted when there is only one more read before EMPTY.
+    --   prog_empty => prog_empty,     -- Programmable Empty: High when number of words in the FIFO is less than or equal to the empty threshold value. 
+--       rd_rst_busy => fifo_rd_rst_busy,-- Read Reset Busy: Active-High indicator that the FIFO read domain is currently in a reset state.
+    
+       injectdbiterr => '0', -- Double Bit Error Injection: Injects a double bit error
+       injectsbiterr => '0', -- Single Bit Error Injection: Injects a single bit error 
+       sleep => '0'         -- Dynamic power saving: If sleep is High, the memory/fifo block is in power saving mode.
+    );
+    
 -- Independent clock Builtin FWFT FIFO, 288-bit input data width, 576-bit output data width, with output register, latency=0 on USP
 -- Prog full must be < MAX_DEPTH-2 to compensate for the delayed prog_full signal.
 -- We need 8 RAMB36 minimum because the output width of each BRAM is 72 bits max. Each BRAM is 36-bit x 1k.
@@ -310,27 +361,78 @@ flag_fifo_inst : entity work.cge_flag_fifo
 --
 -- The speed of the FIFO seems to be limited by the fact that  it combinatorially combines the FULL signals of every cell to gate WR_EN, and the PROG_FULL is a "or" combination of PROG_FULL from every cell, as is the EMPTY signal (which generates VALID).
 -- This is probably because this is an async FIFO, and not all cells might capture the data on the same clock, so we use the worst of all cell.   
-data_fifo_inst : entity work.cge_data_fifo
-  PORT MAP (
-    srst => fifo_srst, -- synchronous to wr_clk
-    wr_clk => clk,
-    din => fifo_din,
-    wr_en => fifo_wr_en,
-    full => fifo_full,
-    prog_full => fifo_almost_full,
-    overflow => fifo_overflow,
-    wr_rst_busy => fifo_wr_rst_busy,
+--data_fifo_inst : entity work.cge_data_fifo
+--  PORT MAP (
+--    srst => fifo_srst, -- synchronous to wr_clk
+--    wr_clk => clk,
+--    din => fifo_din,
+--    wr_en => fifo_wr_en,
+--    full => fifo_full,
+--    prog_full => fifo_almost_full,
+--    overflow => fifo_overflow,
+--    wr_rst_busy => fifo_wr_rst_busy,
 
-    rd_clk => clk_out_int,
-    rd_en => fifo_rd_en,
-    dout => fifo_dout,
-    valid => fifo_valid,
-    empty => fifo_empty,
-    --prog_empty => fifo_prog_empty,
-    rd_rst_busy => fifo_rd_rst_busy
-  );
+--    rd_clk => clk_out_int,
+--    rd_en => fifo_rd_en,
+--    dout => fifo_dout,
+--    valid => fifo_valid,
+--    empty => fifo_empty,
+--    --prog_empty => fifo_prog_empty,
+--    rd_rst_busy => fifo_rd_rst_busy
+--  );
 
-fifo_din(287 downto 258) <= (others => '0'); -- don't leave the unused FIFO data inputs floating: critical warnings
+-- FIFO is 256x1024 in, 512x512 out, 8xBRAM36, Need to use at least 8 RAMB36 to acheive the output bus width (512 bits + 2 TVALID + 2 TLAST). 72bits*8 = 576 bits.
+data_fifo0: xpm_fifo_async
+    generic map (
+    --   CASCADE_HEIGHT => 0,        -- DECIMAL
+    --   CDC_SYNC_STAGES => 2,       -- DECIMAL
+    --   DOUT_RESET_VALUE => "0",    -- String
+    --   ECC_MODE => "no_ecc",       -- String
+    --   FIFO_MEMORY_TYPE => "auto", -- String
+       READ_MODE => "fwft",         -- String
+       FIFO_READ_LATENCY => 0,     --must be 0 for READ_MODE=fwft
+       WRITE_DATA_WIDTH => 256+2,     -- DECIMAL
+       FIFO_WRITE_DEPTH => 1024,   -- Write: 256+2 x 1024, Read: 512+2 x 512  (8x RAMB36)
+       READ_DATA_WIDTH => 512+4,      -- DECIMAL
+       FULL_RESET_VALUE => 0,      -- DECIMAL
+    --   PROG_EMPTY_THRESH => 10,    -- DECIMAL
+       PROG_FULL_THRESH => 1017,     -- Value must be between 9 and 1017
+    --   RD_DATA_COUNT_WIDTH => 1,   -- DECIMAL
+    --   RELATED_CLOCKS => 0,        -- DECIMAL
+       SIM_ASSERT_CHK => 1,        -- DECIMAL; 0=disable simulation messages, 1=enable simulation messages
+       USE_ADV_FEATURES => "1003", -- bit [0: overflow], [1:prog_full], 2:wr_count, 3:almost_full, 8:underflow, 9:prog_empty, 10:rd_count, 11: almost_empty, [12:valid] 
+    --   WAKEUP_TIME => 0,           -- DECIMAL
+       WR_DATA_COUNT_WIDTH => 11    -- Not needed
+    )
+    port map (
+    
+       rst => fifo_srst,               -- Reset, synchronous to wr_clk. 
+    
+       -- Write domain
+       wr_clk => clk,                  -- Write clock
+       din => fifo_din,                -- Write Data: 
+       wr_en => fifo_wr_en,            -- Write Enable: Must be held active-low when rst or wr_rst_busy is active high.
+       full => fifo_full,              -- Full Flag:  Write requests are ignored when the FIFO is full.
+       prog_full => fifo_almost_full,  -- Programmable Full: asserted when the number of words in the FIFO is greater than or equal to the programmable full threshold 
+       overflow => fifo_overflow,      -- Overflow: This signal indicates that a write request was rejected because fifo was FULL
+       wr_rst_busy => fifo_wr_rst_busy,-- Write Reset Busy: Active-High indicator that the FIFO write domain is currently in a reset state.
+    --   almost_full => fifo_almost_full, -- Asserted when the FIFO is one write from FULL
+    
+        -- Read domain
+       rd_clk => clk_out_int,          -- Read clock
+       rd_en => fifo_rd_en,            -- 1-bit input: Read Enable: Must be held low when rd_rst_busy is active high.
+       dout => fifo_dout,              -- Read Data
+       data_valid => fifo_valid,       -- Read Data Valid: High when data is available on dout.
+       empty => fifo_empty,            -- Empty Flag: High when FIFO is empty. Read requests are ignored.
+    --   almost_empty => almost_empty, -- Almost Empty : Asserted when there is only one more read before EMPTY.
+    --   prog_empty => prog_empty,     -- Programmable Empty: High when number of words in the FIFO is less than or equal to the empty threshold value. 
+       rd_rst_busy => fifo_rd_rst_busy,-- Read Reset Busy: Active-High indicator that the FIFO read domain is currently in a reset state.
+    
+       injectdbiterr => '0', -- Double Bit Error Injection: Injects a double bit error
+       injectsbiterr => '0', -- Single Bit Error Injection: Injects a single bit error 
+       sleep => '0'         -- Dynamic power saving: If sleep is High, the memory/fifo block is in power saving mode.
+    );
+--fifo_din(287 downto 258) <= (others => '0'); -- don't leave the unused FIFO data inputs floating: critical warnings
 
 fifo_wr_block: block
 	signal is_high_word: std_logic;
@@ -341,8 +443,8 @@ begin
 	-- Place incoming bytes on the fifo data bus
 	fifo_din(255 downto 0) <= axis_tx_tdata;
 	-- save the tlast and tvalid flags
-	fifo_din(32*8) <= axis_tx_tlast;
-	fifo_din(32*8+1) <= axis_tx_tvalid; -- we store tvalid because we might have dummy writes
+	fifo_din(256+0) <= axis_tx_tlast;
+	fifo_din(256+1) <= axis_tx_tvalid; -- we store tvalid because we might have dummy writes
 	-- generate the fifo write signal.
 	--  We force a dummy write if the low word is tlast to make sure to complete the 64-byte output word.
 	-- Otherwise a packet with an odd number of 32-bytes words would not start transmitting until the beginning of the next packet.
@@ -576,13 +678,13 @@ fifo_rd_block: block
 	signal tx_state: TX_STATE_TYPE := INIT_CMAC; -- Initialization needed
 
 begin
-	tx_axis_tdata(255 downto 0) <= reverse_bytes(fifo_dout(288+255 downto 288)); -- reverse byte order so that the first byte transmitted is byte 0
-	tx_axis_tdata(511 downto 256) <= reverse_bytes(fifo_dout(255 downto 0));
+	tx_axis_tdata(255 downto 0) <= reverse_bytes(fifo_dout(255 downto 0)); -- reverse byte order so that the first byte transmitted is byte 0
+	tx_axis_tdata(511 downto 256) <= reverse_bytes(fifo_dout(513 downto 258));
 	--tx_axis_tdata <= reverse_bytes(std_logic_vector'(fifo_dout(288+255 downto 288) & fifo_dout(255 downto 0))); -- reverse byte order so that the first byte transmitted is byte 0
-	tlast0 <= fifo_dout(256+288);
-	tvalid0 <= fifo_dout(257+288);
-	tlast1 <= fifo_dout(256);
-	tvalid1 <= fifo_dout(257);
+	tlast0 <= fifo_dout(256);
+	tvalid0 <= fifo_dout(257);
+	tlast1 <= fifo_dout(514);
+	tvalid1 <= fifo_dout(515);
 
 	-- send_last_words is '1' when we have to perform two separate transactions, one for on each half word.
 	-- This happens if 1) we have *two* valid half words, and the first half word is is the last word of a packet.

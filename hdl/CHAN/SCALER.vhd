@@ -722,7 +722,7 @@ scaler_proc: process(clk)
             stage2_tlast   <= stage1_tlast;
             stage2_tuser   <= stage1_tuser;
             for i in 0 to INTEGERS_PER_WORD-1 loop
-                stage2_sign(i) <= stage1_sign(i);
+                stage2_sign(i) <= stage1_sign(i); 
                 stage2_overflow(i) <= stage1_overflow(i);
                 if four_bits = '1' or EIGHT_BIT_SUPPORT = FALSE then
                     if rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND or rounding_mode = ROUNDING_MODE_ROUND then -- if rounding
@@ -830,7 +830,7 @@ scaler_proc: process(clk)
                         -- We forward the upper N bits of the FFT integers to the upper N bits of the output integer
                         for i in 0 to INTEGERS_PER_WORD-1 loop
                             m_axis_out_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto i*OUT_BITS_PER_BIN/2) <= 
-                                msb(s_axis_in_tdata, OUT_BITS_PER_BIN/2);
+                                s_axis_in_tdata((i+1)*FFT_BITS_PER_BIN/2-1 downto (i+1)*FFT_BITS_PER_BIN/2 - OUT_BITS_PER_BIN/2);
                         end loop;
                         m_axis_out_tlast <= s_axis_in_tlast;
                         m_axis_out_tvalid <= s_axis_in_tvalid;

@@ -1250,11 +1250,7 @@ end block;
 
 
 -- PLL sync
-
--- Resynchronize pll_sync_pre bitfield to the clk10 reference clock so it is roughly aligned to pll_oscout
-pll_sync_cdc0: xpm_cdc_single
-    generic map (SRC_INPUT_REG => 1)
-    port map (src_clk => ctrl_clk, src_in => pll_sync_pre, dest_clk => clk10, dest_out => pll_sync);
+pll_sync <= pll_sync_pre;
 
 --! User muxed output selection
 user_gen: for i in 0 to 3 generate

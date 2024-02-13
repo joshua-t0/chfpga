@@ -1,7 +1,7 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0xD1D0009C9BB553F3",
+      "boundary_crc": "0xD1D0009C4A996EAE",
       "device": "xczu47dr-ffvg1517-1-i",
       "name": "zynq_tcpipe_crs",
       "rev_ctrl_bd_flag": "RevCtrlBdOff",
@@ -1548,7 +1548,7 @@
             "value_src": "default_prop"
           },
           "FREQ_HZ": {
-            "value": "93750000",
+            "value": "100000000",
             "value_src": "user_prop"
           },
           "FREQ_TOLERANCE_HZ": {
@@ -1574,7 +1574,7 @@
             "value_src": "default_prop"
           },
           "FREQ_HZ": {
-            "value": "93750000",
+            "value": "100000000",
             "value_src": "user_prop"
           },
           "FREQ_TOLERANCE_HZ": {
@@ -1600,7 +1600,7 @@
             "value_src": "default_prop"
           },
           "FREQ_HZ": {
-            "value": "93750000",
+            "value": "100000000",
             "value_src": "user_prop"
           },
           "FREQ_TOLERANCE_HZ": {
@@ -1626,7 +1626,7 @@
             "value_src": "default_prop"
           },
           "FREQ_HZ": {
-            "value": "93750000",
+            "value": "100000000",
             "value_src": "user_prop"
           },
           "FREQ_TOLERANCE_HZ": {
@@ -2149,28 +2149,28 @@
             "value": "true"
           },
           "ADC0_Outclk_Freq": {
-            "value": "93.750"
+            "value": "100.000"
           },
           "ADC0_PLL_Enable": {
             "value": "false"
           },
           "ADC0_Refclk_Freq": {
-            "value": "3000.000"
+            "value": "3200.000"
           },
           "ADC0_Sampling_Rate": {
-            "value": "3"
+            "value": "3.2"
           },
           "ADC1_Multi_Tile_Sync": {
             "value": "true"
           },
           "ADC1_Outclk_Freq": {
-            "value": "93.750"
+            "value": "100.000"
           },
           "ADC1_Refclk_Freq": {
-            "value": "3000.000"
+            "value": "3200.000"
           },
           "ADC1_Sampling_Rate": {
-            "value": "3"
+            "value": "3.2"
           },
           "ADC224_En": {
             "value": "true"
@@ -2188,25 +2188,25 @@
             "value": "true"
           },
           "ADC2_Outclk_Freq": {
-            "value": "93.750"
+            "value": "100.000"
           },
           "ADC2_Refclk_Freq": {
-            "value": "3000.000"
+            "value": "3200.000"
           },
           "ADC2_Sampling_Rate": {
-            "value": "3"
+            "value": "3.2"
           },
           "ADC3_Multi_Tile_Sync": {
             "value": "true"
           },
           "ADC3_Outclk_Freq": {
-            "value": "93.750"
+            "value": "100.000"
           },
           "ADC3_Refclk_Freq": {
-            "value": "3000.000"
+            "value": "3200.000"
           },
           "ADC3_Sampling_Rate": {
-            "value": "3"
+            "value": "3.2"
           },
           "ADC_Bypass_BG_Cal02": {
             "value": "true"

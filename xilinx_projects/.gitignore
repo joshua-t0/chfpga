@@ -56,4 +56,9 @@
 !/chan_tests/
 !/chan_tests/*
 
+!/scaler/
+/scaler/*
+!/scaler/*.xpr
+!/scaler/*.wcfg
+
 !*.xpr
