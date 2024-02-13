@@ -2614,6 +2614,11 @@ adc_gen: case ADC_TYPE generate
         -----------------------
         -- AXIS ADC DATA SOURCE
         -----------------------
+        -- The ADCDAQ_RESET signal, which is genererated by REFCLK on CLK10  is resynchronized to adc_clk. It is assumed that the system and constraints are set 
+        -- so we can register this signal without timing issues (i.e. set_multicycle_path might have to be set to ensure sane timing). 
+        --
+        -- When ADCDAQ_RESET is set, the module stops sending ADC data (TVALID=0). Once ADCDAQ_RESET is released, data won't flow for a full frame
+        -- to allow time for the CHAN and CT/CORR engines to come out of reset, then data will start flowing again 
         
         constant WORDS_PER_FRAME: integer := ADC_SAMPLES_PER_FRAME / ADC_SAMPLES_PER_WORD;
         constant LOG2_WORDS_PER_FRAME : integer := integer_log2(WORDS_PER_FRAME);
@@ -2621,12 +2626,23 @@ adc_gen: case ADC_TYPE generate
         signal adc_send_data2: slv(0 to NUMBER_OF_ADCS-1); -- indicates when TVALID can be passed on
         signal axis_adc_tdata_reg: slv128_array(0 to NUMBER_OF_ADCS-1);
         signal axis_adc_tvalid_reg: std_logic_vector(0 to NUMBER_OF_ADCS-1);
-    
+        
+        signal adcdaq_reset_reg: std_logic; -- ADCDAQ reset, resynchronized to adc_clk
+        attribute DONT_TOUCH of adcdaq_reset_reg: signal is "true";
+
     begin
         -- Select clock to be used as a source to generate channelizer clocks
         -- We don't use the clocks directly, but we use the reset sequencer which use these clocks.
         -- We should separate the reset sequencer from the clock generator.
         adc_clk <= adc_axis_clk(ANT_CLK_SOURCE);
+    
+        -- resynchronize ADCDAQ_RESET (clk10) to ADC_CLK
+        adcdaq_proc: process(adc_clk)
+        begin
+            if rising_edge(adc_clk) then
+                adcdaq_reset_reg <= ADCDAQ_RESET;
+            end if; -- clk
+        end process;
     
     
         -- Pipeline and frame the ADC with a TLAST signal and generate the divide-by-two adc clock monitoring signals for the frequency counter
