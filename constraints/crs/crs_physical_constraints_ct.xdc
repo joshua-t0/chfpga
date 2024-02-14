@@ -35,24 +35,20 @@ set_property PACKAGE_PIN W33 [get_ports clk156_p]
 
 create_pblock CGE
 add_cells_to_pblock [get_pblocks CGE] [get_cells -quiet [list chfpga0/GPU_GEN.gpu_sel_gen.cge_case.cge0]]
-resize_pblock [get_pblocks CGE] -add {SLICE_X5Y180:SLICE_X11Y239}
-resize_pblock [get_pblocks CGE] -add {DSP48E2_X0Y72:DSP48E2_X0Y95}
-resize_pblock [get_pblocks CGE] -add {RAMB18_X0Y72:RAMB18_X0Y95}
-resize_pblock [get_pblocks CGE] -add {RAMB36_X0Y36:RAMB36_X0Y47}
+resize_pblock [get_pblocks CGE] -add {SLICE_X13Y180:SLICE_X14Y219 SLICE_X10Y180:SLICE_X12Y239}
+resize_pblock [get_pblocks CGE] -add {RAMB18_X1Y72:RAMB18_X1Y87}
+resize_pblock [get_pblocks CGE] -add {RAMB36_X1Y36:RAMB36_X1Y43}
 set_property EXCLUDE_PLACEMENT 1 [get_pblocks CGE]
 set_property IS_SOFT FALSE [get_pblocks CGE]
 
 
 create_pblock UCORN
 add_cells_to_pblock [get_pblocks UCORN] [get_cells -quiet [list chfpga0/crossbar0_gen.cb1_gen.uram_case.uram0]]
-resize_pblock [get_pblocks UCORN] -add {SLICE_X15Y180:SLICE_X19Y419 SLICE_X12Y180:SLICE_X14Y199}
-resize_pblock [get_pblocks UCORN] -add {RAMB18_X1Y72:RAMB18_X1Y79}
-resize_pblock [get_pblocks UCORN] -add {RAMB36_X1Y36:RAMB36_X1Y39}
-resize_pblock [get_pblocks UCORN] -add {URAM288_X0Y0:URAM288_X0Y63}
+resize_pblock [get_pblocks UCORN] -add {SLICE_X15Y180:SLICE_X19Y419 SLICE_X13Y220:SLICE_X14Y239}
+resize_pblock [get_pblocks UCORN] -add {RAMB18_X1Y88:RAMB18_X1Y95}
+resize_pblock [get_pblocks UCORN] -add {RAMB36_X1Y44:RAMB36_X1Y47}
 set_property EXCLUDE_PLACEMENT 1 [get_pblocks UCORN]
 set_property IS_SOFT FALSE [get_pblocks UCORN]
-
-
 
 
 
