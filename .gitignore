@@ -7,3 +7,4 @@ _ISE_Projects/
 *.git
 *.jou
 /*.log
+vivado_pid*
