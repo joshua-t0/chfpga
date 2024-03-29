@@ -1,6 +1,0 @@
-# Packages required to build the FPGA firmware documentation
-# Use with pip install -r requirements.txt
-
-sphinx
-parsimonious==0.7.0
-sphinx_rtd_theme

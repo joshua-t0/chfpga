@@ -1,0 +1,35 @@
+[build-system]
+    requires = [
+        "setuptools>=64", # >=64 required for setuptools-scm
+        "setuptools-scm>=8.0", # automatically manages version number from git
+        "wheel"
+        ]
+    build-backend = "setuptools.build_meta"
+
+[project]
+    name = "chfpga_docs"
+    description = "Documentation builder for chFPGA"
+    dynamic=["version"]
+    authors = [
+        { name = "JF Cliche", email = "jfcliche@jfcliche.com" }
+        ]
+    dependencies = [
+        "setuptools>=64", # required by setuptools-scm
+        "setuptools-scm>=8.0",
+        "sphinx",
+        "sphinx_rtd_theme",
+        "sphinxcontrib.restbuilder",  # used for debugging output
+        "vhdl_sphinx_domain @ git+https://github.com/jfcliche/vhdl-sphinx-domain.git"
+        ]
+
+[tool.setuptools.packages.find]
+    where = ["."]  # needed, otherwise setuptools doesn't find the root folder.
+
+# [tool.setuptools.package-data]
+#     chfpga_docs = [
+#         ]
+
+[tool.setuptools_scm]
+version_file = "source/_version.py"
+root = ".."  # root of the git repo
+
