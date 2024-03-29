@@ -37,35 +37,37 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --use work.ip_package.all; -- Import definition of components used in this module
 
 ------- CHAN_BIN_SEL ENTITY DECLARATION ----------------------
---! @brief Select specific frequency bins across all incoming channelizer data
---!     streams and repackage them into output packets of N frames with a
---!     header block and data and frame overflow flags repackaged and grouped
---!     at the end of each packet.
---!
---!
---! The purpose of this module is to aggregate into a single stream the data
---! from all channelizers but for a subset of frequency bins, and combine those in packets with headers and flags.
---!
---! Both the input and outputs operate on a single clock. Since new data
---! (header, flags) is added to the frame, the clock  must be fast enough to
---! allow for the overhead.
---!
---! The frequency channels are selected by writing a bit pattern into a RAM block, where each bit identifies
---! whether the corresponding word (containing a pair of frequency samples) is to passed on to the output.
---! The streams coming from all antennas are filtered using the same pattern.
---!
---! No frame is transmitted (not even a header with empty payload) of no data was selected by the filtering process.
---!
---! Both inputs and outputs are implemented using the snatdard AXI4 Straming protocol.
---! The input bus is non-blocking, and contains only time or frequency samples.
---! The output bus is blocking and contains a frame header in addition to the filtered and reordered data.
---! A blocking interface was implemented for the output bus because it will eventually be connected to data shuffling logic (MGTs) which might require transmission of data in bursts without interruption.
---!
---! The module assumes that channelizers input streams operate on a single clock and are frame-aligned.
+
+-- Select specific frequency bins across all incoming channelizer data
+-- streams and repackage them into output packets of N frames with a
+-- header block and data and frame overflow flags repackaged and grouped
+-- at the end of each packet.
+--
+--
+-- The purpose of this module is to aggregate into a single stream the data
+-- from all channelizers but for a subset of frequency bins, and combine those in packets with headers and flags.
+--
+-- Both the input and outputs operate on a single clock. Since new data
+-- (header, flags) is added to the frame, the clock  must be fast enough to
+-- allow for the overhead.
+--
+-- The frequency channels are selected by writing a bit pattern into a RAM block, where each bit identifies
+-- whether the corresponding word (containing a pair of frequency samples) is to passed on to the output.
+-- The streams coming from all antennas are filtered using the same pattern.
+--
+-- No frame is transmitted (not even a header with empty payload) of no data was selected by the filtering process.
+--
+-- Both inputs and outputs are implemented using the snatdard AXI4 Straming protocol.
+-- The input bus is non-blocking, and contains only time or frequency samples.
+-- The output bus is blocking and contains a frame header in addition to the filtered and reordered data.
+-- A blocking interface was implemented for the output bus because it will eventually be connected to data shuffling logic (MGTs) which might require transmission of data in bursts without interruption.
+--
+-- The module assumes that channelizers input streams operate on a single clock and are frame-aligned.
 --
 -- Bypass mode
 -- -----------
 --
+
 -- In BYPASS mode all bins are selected (both the odd and even), but data comes only from one or two input lanes depending whether we operate in 4-bit or 8-bit mode.
 --
 -- In 4 bit mode, the 4 MSB bits of each byte of input lanes LANE_NUMBER*2 and LANE_NUMBER*2+1 are
@@ -83,23 +85,23 @@ use work.chFPGA_Package.all; -- Get all component definitions
 -- data, frame or packet flags are sent  (the data and frame flags are still collected in the FIFOs
 -- but they are never read out).
 --
---!  Word selection map format
---!  -------------------------
---!
---!  Each bit in the RAM block identifies whether a 32-bit word received from the antenna processor module is to be kept or not.
---!  The mapping is as follows:
---!
---!   Byte | bit | Flag for Word # | Time sample # | Frequency sample #
---!   -----|-----|-----------------|---------------|--------------------
---!     0  |  0  | Word 0          | 0-3           | 0-1
---!     0  |  1  | Word 1          | 4-7           | 2-3
---!   ...  | ... | ...             |  ...          | ...
---!     0  |  7  | Word 7          | 28-31         | 14-16
---!     1  |  0  | Word 8          | 32-35         | 16-17
---!   ...  | ... | ...             |               | ...
---!     63 |  7  | Word 511        | 2044-2047     | 1022-1023
---!
---!
+-- Word selection map format
+-- -------------------------
+--
+-- Each bit in the RAM block identifies whether a 32-bit word received from the antenna processor module is to be kept or not.
+-- The mapping is as follows:
+--
+-- #Byte | bit | Flag for Word # | Time sample # | Frequency sample #
+-- #-----|-----|-----------------|---------------|--------------------
+-- #  0  |  0  | Word 0          | 0-3           | 0-1
+-- #  0  |  1  | Word 1          | 4-7           | 2-3
+-- #...  | ... | ...             |  ...          | ...
+-- #  0  |  7  | Word 7          | 28-31         | 14-16
+-- #  1  |  0  | Word 8          | 32-35         | 16-17
+-- #...  | ... | ...             |               | ...
+-- #  63 |  7  | Word 511        | 2044-2047     | 1022-1023
+-- #
+--
 entity chan_bin_sel is
 	generic (
 	 	PLATFORM_ID: integer;

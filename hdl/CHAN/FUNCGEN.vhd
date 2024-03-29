@@ -1,4 +1,3 @@
-----------------------------------------------------------------------------------
 -- Company: McGill University
 -- Engineer: JF Cliche
 --
@@ -16,7 +15,7 @@
 --  2013-02-06 JFC: Removed RST from main process reset list to limit distribution of that signal
 --  2014-01-29 JFC: Added 4-bit functions. Used variables to simplify code. Added use_overflow.
 --  See Git repository for further logs
-----------------------------------------------------------------------------------
+
 library IEEE;
 use IEEE.std_logic_1164.ALL;
 use IEEE.numeric_std.ALL;
@@ -45,7 +44,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 -- the MSB of the word, and each sample is stored as a big endian value. This order facilitate visualizing data in simulation (incoming samples are read left to right in the word).
 -- The input bus from the ADC contains the usual AXI-S TVALID and TLAST lines to frame the data in the packet.
 --
--- Additionaly, the ``ADC_SAMPLES_PER_WORD``-bit wide TUSER signal provides a saturation flag for each of the sample in the word. 
+-- Additionaly, the ``ADC_SAMPLES_PER_WORD``-bit wide TUSER signal provides a saturation flag for each of the sample in the word.
 -- The leftmost (MSB) bit correspond to the saturation sample of the sample in the MSB of the word (i.e. first sample).
 --
 --
@@ -118,9 +117,8 @@ entity FUNCGEN is
     );
     port (
 
-        --in_dat  : in AXIS64_DAT_STRUCT;     --! Data stream from the ADC.
-
         -- ADC data input stream (AXI-Streaming, non blocking)
+
         s_axis_adc_tdata: in std_logic_vector(ADC_SAMPLES_PER_WORD*ADC_BITS_PER_SAMPLE-1 downto 0);
         s_axis_adc_tvalid: in std_logic;
         s_axis_adc_tuser: in std_logic_vector(ADC_SAMPLES_PER_WORD-1 downto 0); --  Contain an overflow bit flag for group of samples.
@@ -128,6 +126,7 @@ entity FUNCGEN is
         trig    : in std_logic := '1';
 
         -- Output data interface
+
         m_axis_adc_tdata: out std_logic_vector(ADC_SAMPLES_PER_WORD*ADC_BITS_PER_SAMPLE-1 downto 0);
         m_axis_adc_tvalid: out std_logic;
         m_axis_adc_tuser: out std_logic_vector(3 downto 0); --  Contain an overflow bit flag for group of samples.
@@ -137,6 +136,7 @@ entity FUNCGEN is
         rst     : in  std_logic;            --! synchronous reset
 
         -- BSB Control Interface (command and reply stream buses)
+
         ctrl_cmd_in_dat     : in  AXIS8_DAT_STRUCT;
         ctrl_cmd_in_rdy     : out AXIS8_RDY_STRUCT;
         ctrl_rply_out_dat   : out AXIS8_DAT_STRUCT;
@@ -203,7 +203,7 @@ signal send_frame: std_logic;
 
 signal ram_page_lsb: std_logic_vector(2 downto 0); -- 3 bits
 signal ram_page_msb: std_logic_vector(3 downto 0); -- 4 bits
-signal ram_page: std_logic_vector(6 downto 0); -- combined ram_page_msb and _lsb. 7 bits, more than we need. 9 bits BSB RAM addr + 7 bits page = 16 bit address = 65536 bytes. 
+signal ram_page: std_logic_vector(6 downto 0); -- combined ram_page_msb and _lsb. 7 bits, more than we need. 9 bits BSB RAM addr + 7 bits page = 16 bit address = 65536 bytes.
 
 signal adc_overflow_flag: std_logic;
 signal capture_flag: std_logic;
@@ -211,7 +211,7 @@ signal adc_tfirst: std_logic;
 signal ramp_tfirst: std_logic;
 signal trig_reg: std_logic;
 
--- Input interface to the RAM is always 8 bit. 
+-- Input interface to the RAM is always 8 bit.
 signal ram_ctrl_addr: std_logic_vector(CMD_ADDR_WIDTH-1 downto 0); -- 2048 bytes x 2
 signal ram_ctrl_addr_paged: std_logic_vector(LOG2_BYTES_PER_FRAME-1 downto 0); -- 2048 bytes x 2
 signal ram_ctrl_wr_en: std_logic;
@@ -219,10 +219,10 @@ signal ram_ctrl_din: std_logic_vector(7 downto 0);
 signal ram_ctrl_dout: std_logic_vector(7 downto 0);
 
 -- Output interface to the RAM
-signal ram_addr: std_logic_vector(LOG2_WORDS_PER_FRAME-1 downto 0); 
--- Intermediary RAM output words used to repack the word in the extected format. 
--- We make sure the those are a multiple of 8 bits so the packing order of the input bytes 
--- into the output word is easier to understand.   
+signal ram_addr: std_logic_vector(LOG2_WORDS_PER_FRAME-1 downto 0);
+-- Intermediary RAM output words used to repack the word in the extected format.
+-- We make sure the those are a multiple of 8 bits so the packing order of the input bytes
+-- into the output word is easier to understand.
 signal ram_dout_int1, ram_dout_int2: std_logic_vector(8*BYTES_PER_SAMPLE*ADC_SAMPLES_PER_WORD-1 downto 0);
 -- RAM Output word, in the same packing format as the function generator input/output word.
 signal ram_dout: std_logic_vector(BITS_PER_WORD-1 downto 0);
@@ -353,7 +353,7 @@ funcgen_proc: process (clk)
     -- variable out_dat_var: std_logic_vector(31 downto 0);
     -- variable word_ctr: std_logic_vector(ramp_word_ctr'range);
     variable temp_tdata: std_logic_vector(ADC_SAMPLES_PER_WORD*ADC_BITS_PER_SAMPLE-1 downto 0);
-    variable int_shift: integer; 
+    variable int_shift: integer;
     begin
         if rising_edge(clk) then
             reset_all <= soft_reset or rst;
@@ -363,7 +363,7 @@ funcgen_proc: process (clk)
             m_axis_adc_tdata <= out_dat_tdata;
             m_axis_adc_tvalid <= out_dat_tvalid;
             m_axis_adc_tuser <= out_dat_tuser;
-            m_axis_adc_tlast <= out_dat_tlast;            
+            m_axis_adc_tlast <= out_dat_tlast;
 
 
             int_shift := to_integer(shift);
@@ -459,7 +459,7 @@ funcgen_proc: process (clk)
                     adc_overflow_flag <= '0';
 
                 -- Send bits 3:0 of RAM samples on even frames an bits 7:4 of RAM samples on odd frames.
-                -- Data is aligned on the 4 MSBs of each sample. 
+                -- Data is aligned on the 4 MSBs of each sample.
                 when FN_RAM_NIBBLE4 =>
                     out_dat_tdata <= (others => '0');
                     for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
@@ -472,13 +472,13 @@ funcgen_proc: process (clk)
                     out_dat_tvalid <= send_frame;
                     adc_overflow_flag <= '0';
 
-                -- Send peudo-random noise on all samples. 
-                -- The 32-bit bits of the PNRG is distributed on the MSB of all samples, and the samples are right-shifted by the value in byte_c.  
+                -- Send peudo-random noise on all samples.
+                -- The 32-bit bits of the PNRG is distributed on the MSB of all samples, and the samples are right-shifted by the value in byte_c.
                 when FN_NOISE =>
                     temp_tdata := (others => '0');
 
                     -- We assign the ADC_BITS_PER_SAMPLE most significant bits of the PRBS word to each sample after rotating the word by 32/ADC_SAMPLES_PER_WORD bits for each sample.
-                    -- Only top 32/ADC_SAMPLES_PER_WORD bits are truely random. The remaining bits are somewhat correlated between samples.              
+                    -- Only top 32/ADC_SAMPLES_PER_WORD bits are truely random. The remaining bits are somewhat correlated between samples.
                     for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
                         temp_tdata(ADC_BITS_PER_SAMPLE*(i+1)-1 downto ADC_BITS_PER_SAMPLE*i) := msb(std_logic_vector(rotate_left(unsigned(crc_out), i*crc_out'LENGTH/ADC_SAMPLES_PER_WORD)), ADC_BITS_PER_SAMPLE);
                     end loop;
@@ -500,7 +500,7 @@ funcgen_proc: process (clk)
                     out_dat_tvalid <= send_frame;
                     adc_overflow_flag <= ram_dout(0);
 
-                -- Send the LSBs of the frame counter on every sample of the frame 
+                -- Send the LSBs of the frame counter on every sample of the frame
                 when FN_FRAME8 =>
                     for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
                         out_dat_tdata(ADC_BITS_PER_SAMPLE*(i+1)-1 downto ADC_BITS_PER_SAMPLE*i) <= to_slv(frame_ctr(ADC_BITS_PER_SAMPLE-3 downto 0)) & "00";
@@ -558,7 +558,7 @@ begin
                 delay_capture_ctr_en <= '0';
             end if;
         end if;
-    end process; 
+    end process;
 end generate delaycap_gen;
 
 -- only if IMPLEMENT_DELAY_CAPTURE=TRUE
@@ -588,7 +588,7 @@ end generate delaycap_gen;
       WRITE_DATA_WIDTH_A => 8,        -- DECIMAL
       BYTE_WRITE_WIDTH_A => 8,        -- DECIMAL
       READ_DATA_WIDTH_A => 8,         -- DECIMAL
-      ADDR_WIDTH_A => LOG2_BYTES_PER_FRAME,             
+      ADDR_WIDTH_A => LOG2_BYTES_PER_FRAME,
       READ_LATENCY_A => 2,             -- DECIMAL
 
       WRITE_DATA_WIDTH_B => 8*BYTES_PER_SAMPLE*ADC_SAMPLES_PER_WORD, -- BITS_PER_WORD,
@@ -597,7 +597,7 @@ end generate delaycap_gen;
       ADDR_WIDTH_B => LOG2_WORDS_PER_FRAME,
       READ_LATENCY_B => 2,             -- DECIMAL
 
-      CLOCKING_MODE => "independent_clock", 
+      CLOCKING_MODE => "independent_clock",
       MEMORY_PRIMITIVE => "block",
 
       MEMORY_SIZE => 8 * BYTES_PER_FRAME,
@@ -633,7 +633,7 @@ end generate delaycap_gen;
       dina => ram_ctrl_din,                     -- WRITE_DATA_WIDTH_A-bit input: Data input for port A write operations.
       douta => ram_ctrl_dout,                   -- READ_DATA_WIDTH_A-bit output: Data output for port A read operations.
       ena => '1',                       -- 1-bit input: Memory enable signal for port A. Must be high on clock
-      wea(0) => ram_ctrl_wr_en, 
+      wea(0) => ram_ctrl_wr_en,
       clka => ctrl_clk,                     -- 1-bit input: Clock signal for port A. Also clocks port B when
       rsta => ctrl_rst,                     -- 1-bit input: Reset signal for the final port A output register
 
@@ -655,8 +655,8 @@ end generate delaycap_gen;
       sleep => '0'                   -- 1-bit input: sleep signal to enable the dynamic power saving feature.
 
    );
-                
-            
+
+
 
 
 end impl;

@@ -1369,14 +1369,14 @@ begin
 		-- DSPs per clock region. Two CORR44 are 68 DSP high. 7 clock regions
 		-- provide 70 DSPs. Nice fit.
 
-	 	X0 := 350; -- Left colums, BDDB layout, FIFO site
-	 	X1 := 425; -- Right column, DBBD layout, DSP site
-	 	-- Lower CORR44s
-	 	Y0 := 0;
-	 	Y1 := Y0 + CORR44_DELTA_Y; -- :=170 -- A corr44 is two columns of (N+1) CMAC44, each one being DSP tile high
-	 	-- Upper CORR44s
-	 	Y2 := 450;
-	 	Y3 := Y2 + CORR44_DELTA_Y; -- =620
+		X0 := 350; -- Left colums, BDDB layout, FIFO site
+		X1 := 425; -- Right column, DBBD layout, DSP site
+		-- Lower CORR44s
+		Y0 := 0;
+		Y1 := Y0 + CORR44_DELTA_Y; -- :=170 -- A corr44 is two columns of (N+1) CMAC44, each one being DSP tile high
+		-- Upper CORR44s
+		Y2 := 450;
+		Y3 := Y2 + CORR44_DELTA_Y; -- =620
 
 		locs := (
 			0 => (layout => "BDDB", loc => (X0, Y0)),

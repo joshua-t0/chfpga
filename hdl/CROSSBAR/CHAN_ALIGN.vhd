@@ -27,8 +27,9 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --use work.ip_package.all; -- Import definition of components used in this module
 
 ------- CHAN_ALIGN ENTITY DECLARATION ----------------------
---! @brief Align data from all the channelizers.
---!
+
+-- Align data from all the channelizers.
+--
 entity CHAN_ALIGN is
 	GENERIC (
 		PLATFORM_ID: integer;

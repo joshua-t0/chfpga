@@ -1,5 +1,4 @@
 ----------------------------------------------------------------------------------
--- @file
 -- Company: McGill University
 -- Engineer: J.-F. Cliche
 --
@@ -62,17 +61,28 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --
 --   - Packet header (4 words)
 --   - Data block, consisting of:
+--
 --        - For each frame
+--
 --           - For each bin
+--
 --              - data words, from lower channel to higher channel number, 1 byte ((4+4) bit complex value)  per channel, little endian ordering (lower channel in Leasy significant Byte).
+--
 --	  - Data flag block, consisting of:
+--
 --        - For each frame
---           - For each bin
---              - data flag words, 1 bit per channel, same order as data block channels, bit 0 of word correspond to the lower channel number.
---   - Frame flags, consisting of
---        - For each frame
---            - Frame flag words, 2 bits per channel : ADC saturation flags in bits 0-15, FFT saturation flags in bits 16-31.
---   - Packet flags (1 word)
+--
+--         - For each bin
+--
+--            - data flag words, 1 bit per channel, same order as data block channels, bit 0 of word correspond to the lower channel number.
+--
+--  - Frame flags, consisting of
+--
+--       - For each frame
+--
+--           - Frame flag words, 2 bits per channel : ADC saturation flags in bits 0-15, FFT saturation flags in bits 16-31.
+--
+--  - Packet flags (1 word)
 --
 -- The data from multiple lanes is combined and buffers in a way that this structure is preserved
 -- at the output. The data words, data flags and frame flags are sent out in the order of the input

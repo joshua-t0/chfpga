@@ -1,5 +1,4 @@
 ----------------------------------------------------------------------------------
--- @file
 -- Company: McGill University, Cosmology Instrumentation Lab
 -- Engineer: J.-F. Cliche
 --
@@ -41,7 +40,7 @@ use UNISIM.VComponents.all;
 -- The FFT is a PFB-FFT from CASPER.  The FFT has a duplex architecture that can process two complex
 -- input samples per clock. The FFT is done across frames consisting of 2048 real samples presented
 -- as 512 32-bit words. The PFB applies windowing across 4 consecutive frames.
-
+--
 -- Since the input data is real, the negative frequency bins are the
 -- complex conjugate of the corresponding positive frequency bins.  The FFT is designed to taka
 -- advantage of this, and discards the negative frequencies in exchange of the ability to to process
@@ -56,21 +55,40 @@ use UNISIM.VComponents.all;
 -- the output in the same order. The TUSER bits from the input are also passed directly to the output.
 --
 --
---! Generating the underlying CASPER FFT block
+-- Generating the underlying CASPER FFT block
+-- ==========================================
 --
---! -------------------------------
---!
---! The following system setup was used:
---!     - Matlab 200Xb
---!     - ISE 12.X
---!     - CASPER libraries 10.X
---!     - Path added to MATLAB:
---!        - mlib_devel_10_X/casper_library
---!
---! Other configurations might work.
---!
---! The CASPER toolset must be open in the Simulink library browser before the FFT model is loaded to force it to re-parse the library
---!
+-- The following system setup was used:
+--     - Matlab 200Xb
+--     - ISE 12.X
+--     - CASPER libraries 10.X
+--     - Path added to MATLAB:
+--        - mlib_devel_10_X/casper_library
+--
+-- Other configurations might work.
+--
+-- The CASPER toolset must be open in the Simulink library browser before the FFT model is loaded to force it to re-parse the library
+--
+-- Configurations
+-- ==============
+--
+-- The FFT currently exists in 2 configurations:
+--
+--   - CHIME (N_bit_in = 32,  N_samp = 4, N_bit_out = 72)
+--      Uses a 2048-sample FFT, 8-bit per samples, 4 samples (32-bits) per clock. Sampling is at 800 MSPS and processing clock is 200 MHz. This is typically run on a Xilinx Kintex 7 (XC7K420).
+--
+--      Each output word contains two 36-bit complex numbers (18 bit real signed + 18 bit imaginary signed values).
+--      The most significant 36 bits contains the value for the even frequency bins,
+--      while the lower ones is the value for the odd frequency bin.
+--      The Most significant bits of a complex value contains the real part.
+--
+--   - D3A/CHORD (N_bit_in = 112, N_samp = 8, N_bit_out = 144)
+--      Uses a 16384-sample FFT, 14-bit per sample, 8 samples (112-bits) per clock. Sampling is at 3200 MSPS and processing clock is at 400 MHz. This is typically run on a Xilinx Ultrascale+ Zynq RfSoC (ZU027/28 or ZU047/48).
+--
+--      Each N_bit_out-bit word contains four 36-bit complex numbers (18 bit real signed + 18 bit imaginary signed values).
+--      The most significant 36 bits contains the value for the first (even) frequency bins, the next contains the value for
+--      the following odd bin, etc.
+--      The Most significant bits of a complex value contains the real part.
 entity FFT is
 	generic (
 		IMPLEMENT_FFT		   : BOOLEAN := TRUE;
@@ -84,53 +102,35 @@ entity FFT is
 		FFT_DELAY_BITS         : integer := CONFIG_FFT_CTR_WIDTH -- CHIME: 12, D3A/CHORD: 14
 --		FFT_OVERFLOW_BITLENGTH : integer := 2 -- CHIME: 1, D3A/CHORD: 2. Needed since D3A/CHORD FFT overflow signal is 2 bits for some reason
 		);
+
 	port (
-		-- I/O interfaces
-		--
-		-- CHIME: N_bit_in = 32,  N_samp = 4, N_bit_out = 72
-		-- D3A:   N_bit_in = 112, N_samp = 8, N_bit_out = 144
 
-		-- Input Interface
-		-- Input time stream, implemented as a non-blocking AXI4 Streaming Interface with a N_bit_in-bit data bus.
-		-- Each word presents N_samp time samples, where the early sample is in the MSB.
-		
-		-- in_dat  : in axis32_dat_struct; -- old format using a structure
-		
-		-- Output Interface
-		-- Output spectrum stream, implemented as a non-blocking AXI4 Streaming interface with a N_bit_out-bit bus.
-		--
-		-- CHIME:
-		-- Each N_bit_out-bit word contains two 36-bit complex numbers (18 bit real signed + 18 bit imaginary signed values).
-		-- The most significant 36 bits contains the value for the even frequency bins,
-		-- while the lower ones is the value for the odd frequency bin.
-		-- The Most significant bits of a complex value contains the real part.
-		--
-		-- D3A:
-		-- Each N_bit_out-bit word contains four 36-bit complex numbers (18 bit real signed + 18 bit imaginary signed values).
-		-- The most significant 36 bits contains the value for the first (even) frequency bins, the next contains the value for
-		-- the following odd bin, etc.
-		-- The Most significant bits of a complex value contains the real part.
-
-		-- out_dat : out axis72_dat_struct; -- old
+		-- Input Interface: AXI4 Streaming, non-blocking, `ADC_BITS_PER_WORD`-wide, synchronous to `clk`
+		-- Each word presents `ADC_SAMPLES_PER_WORD` samples  where the early sample is in the MSB.
 
 		s_axis_in_dat_tdata    : in std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
-		s_axis_in_dat_tvalid   : in std_logic; 
+		s_axis_in_dat_tvalid   : in std_logic;
 		s_axis_in_dat_tlast    : in std_logic;
 		s_axis_in_dat_tuser    : in std_logic_vector(3 downto 0);
+
+		-- Output Interface: AXI4 Streaming, non-blocking, `FFT_BITS_PER_WORD`-wide, synchronous to
+		-- `clk` Each word is made of `ADC_SAMPLES_PER_WORD/2` frequency bins (Re + Im), where the
+		-- the lower bin is in the MSB of the word, and the real part of that bin is also in the
+		-- MSB.
 
 		m_axis_out_dat_tdata   : out std_logic_vector(FFT_BITS_PER_WORD-1 downto 0);
 		m_axis_out_dat_tvalid  : out std_logic;
 		m_axis_out_dat_tlast   : out std_logic;
 		m_axis_out_dat_tuser   : out std_logic_vector(3 downto 0);
 
+		-- Clock and Reset
 
-
-		-- Common Clock and Reset
 		clk     : in  std_logic; --! Processing clock, common to the input and output bus
 		reset   : in  std_logic; --! clk-synchronous Antenna processor reset.
 		                         --! In this module, resets the SYNC generator and send SYNC signals to the FFT
 
-		-- Control interface (command and reply stream buses)
+		-- Control bus (Byte-Serial-Bus protocol)
+
 		ctrl_cmd_in_dat     : in  AXIS8_DAT_STRUCT;
 		ctrl_cmd_in_rdy     : out AXIS8_RDY_STRUCT;
 		ctrl_rply_out_dat   : out AXIS8_DAT_STRUCT;
@@ -206,27 +206,24 @@ architecture Behavioral of FFT is
 begin
 
 -----------------------------------------------------------------------------------
--- CONTROL and STATUS Bytes
------------------------------------------------------------------------------------
---! \addtogroup memory_map
---! FFT Module Memory Map
---!
---!  ------------------------------------------------------------------------------
---! |  Page   | Addr|Bit(s)|     Name             | Description                   |
---! |---------|-----|------|----------------------|-------------------------------|
---! | CONTROL |  0  | 7    | soft_reset           | Reset the block. Also reset the computation of the CASPER block pipelining delay. When released, the block will compute the block latency once a CASPER SYNC has passed through the block and make the result available.|
---! |         |     | 6:4  |  Unused              |                               |
---! |         |     |  3   | overflow_force       | Forces the overflow flag to 1. Used for testing. |
---! |         |     |  2   | overflow_reset       | Resets the overflow counter   |
---! |         |     |  1   | Unused               |                               |
---! |         |     |  0   | bypass_fft           | Bypass the FFT                |
---! |         | 1:2 | 15:0 | fft_shift_schedule   | Sets the shifting schedule through the FFT to prevent overflow. Bit 0 specifies the behavior of stage 0, bit 1 of stage 1, and so on. |
---! |         | 3:4 | 15:0 | sync_period          | Number of clock cycles between SYNC pulses. If zero, no SYNC pulses are generated. See CASPER documentation for minimum SYNC spacing. |
---! |         | 5:6 | 15:0 | fft_pipeline_delay   | Latency (in number of clocks) of the CASPER PFB/FFT. This is used to delay the input flags that accompany the data fed into the FFT so they come out aligned with the FFT output. This should be the values measured by fft_measured_pipeline_delay. |
---! | STATUS  | 0:1 | 15:0 | fft_measured_pipeline_delay   | Measured latency (in number of clocks) of the CASPER PFB/FFT. This is updated when a reset is performed |
---! |         |  2  |  7:0 | overflow_count       | Number of FFT overflows since reset (rolls back) |
---!  ------------------------------------------------------------------------------
---!
+-- Memory Map
+--
+-- ------------------------------------------------------------------------------
+-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+-- |---------|-----|------|----------------------|-------------------------------|
+-- | CONTROL |  0  | 7    | soft_reset           | Reset the block. Also reset the computation of the CASPER block pipelining delay. When released, the block will compute the block latency once a CASPER SYNC has passed through the block and make the result available.|
+-- |         |     | 6:4  |  Unused              |                               |
+-- |         |     |  3   | overflow_force       | Forces the overflow flag to 1. Used for testing. |
+-- |         |     |  2   | overflow_reset       | Resets the overflow counter   |
+-- |         |     |  1   | Unused               |                               |
+-- |         |     |  0   | bypass_fft           | Bypass the FFT                |
+-- |         | 1:2 | 15:0 | fft_shift_schedule   | Sets the shifting schedule through the FFT to prevent overflow. Bit 0 specifies the behavior of stage 0, bit 1 of stage 1, and so on. |
+-- |         | 3:4 | 15:0 | sync_period          | Number of clock cycles between SYNC pulses. If zero, no SYNC pulses are generated. See CASPER documentation for minimum SYNC spacing. |
+-- |         | 5:6 | 15:0 | fft_pipeline_delay   | Latency (in number of clocks) of the CASPER PFB/FFT. This is used to delay the input flags that accompany the data fed into the FFT so they come out aligned with the FFT output. This should be the values measured by fft_measured_pipeline_delay. |
+-- | STATUS  | 0:1 | 15:0 | fft_measured_pipeline_delay   | Measured latency (in number of clocks) of the CASPER PFB/FFT. This is updated when a reset is performed |
+-- |         |  2  |  7:0 | overflow_count       | Number of FFT overflows since reset (rolls back) |
+-- ------------------------------------------------------------------------------
+--
 
 -- CONTROL Byte 0
 soft_reset <= control_bytes(0)(7);
@@ -243,7 +240,7 @@ sync_period <= to_unsigned(control_bytes(3 to 4));
 -- CONTROL Bytes 5-6
 fft_pipeline_delay <= to_slv(control_bytes(5 to 6),fft_pipeline_delay'LENGTH);
 
--- STATUS Byte 0-1 
+-- STATUS Byte 0-1
 status_bytes(0 to 1) <= to_slv8_array(resize(fft_measured_pipeline_delay, 16)); -- fft_measured_pipeline_delay(11 downto 8), fft_measured_pipeline_delay(7 downto 0));
 
 -- STATUS Byte 2
@@ -364,7 +361,7 @@ main_proc: process(clk)
 				-- Insert the FFT overflow flag in the next_to_last Serial flag bit
 				if fft_tlast='1' and fft_tvalid='1' and fft_clk_en='1' then
 					-- out_dat.TUSER(TUSER_SERIAL_FLAGS_BIT) <= fft_overflow_sticky or fft_overflow or overflow_force; -- add the FFT overflow flag, including the one on TLAST
-					m_axis_out_dat_tuser(TUSER_SERIAL_FLAGS_BIT) <= fft_overflow_sticky or overflow_force; 
+					m_axis_out_dat_tuser(TUSER_SERIAL_FLAGS_BIT) <= fft_overflow_sticky or overflow_force;
 				end if;
 			else
 				-- otherwise, just pass the input to the output, adapting the data width.
@@ -380,7 +377,7 @@ main_proc: process(clk)
 				for i in 0 to ADC_SAMPLES_PER_WORD-1 loop -- parameterized
 					-- out_dat_pre.TDATA(18*i+17 downto 18*i) <= std_logic_vector(resize(signed(in_dat.TDATA(8*i+7 downto 8*i)), 18)); -- make sure to sign extend the byte to the full 18 bits
 					--out_dat_pre_tdata(18*i+17 downto 18*i) <= std_logic_vector(resize(signed(s_axis_in_dat_tdata(ADC_BITS_PER_SAMPLE*i+(ADC_BITS_PER_SAMPLE - 1) downto ADC_BITS_PER_SAMPLE*i)), 18));
-					-- Forward the adc word to the *upper* bits of the FFT output word 
+					-- Forward the adc word to the *upper* bits of the FFT output word
 					out_dat_pre_tdata((i+1)*FFT_BITS_PER_BIN/2-1 downto (i+1)*FFT_BITS_PER_BIN/2 - ADC_BITS_PER_SAMPLE) <= s_axis_in_dat_tdata((i+1)*ADC_BITS_PER_SAMPLE -1 downto i*ADC_BITS_PER_SAMPLE);
 				end loop; -- if FFT is implemented
 
@@ -420,11 +417,11 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 	--
 	-- -- CHIME PFB/FFT --
 	-- Time-based data is presented 4 samples at a time,  in0 being the earliest sample. A time sample is 8 bit wide.
-	-- Output is the complex frequency samples (18 bits real + 18 bits imaginary). Out0 and out 1 provide the even and odd 
+	-- Output is the complex frequency samples (18 bits real + 18 bits imaginary). Out0 and out 1 provide the even and odd
 	-- frequencies respectively. The upper
-	
+
 	fftype_gen: if FFT_TYPE = "CHIME" generate
-	
+
 		FFT0: entity work.FFT2
 			PORT MAP(
 				sync_in  => fft_sync_in,
@@ -448,9 +445,9 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 	-- Time-based data is presented 8 samples at a time, in0 being the earliest sample. A time sample is 14 bits wide.
 	-- Output is the complex frequency samples (18 bits real + 18 bits imaginary). out0 is the first frequency bin,
 	-- out1 is the next, etc.
-	
+
 	elsif FFT_TYPE = "D3A" generate
-	
+
 		FFT0: entity work.pfb_fft_d3a_0
 			PORT MAP(
 				sync_in(0)  => fft_sync_in,
@@ -473,7 +470,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 				of_x0    => fft_overflow_d3a, -- (0 => fft_overflow, others => open),--fixme
 				clk      => clk
 			);
-			
+
         fft_overflow <= or fft_overflow_d3a;
 		fft_tdata <= (fft_dout0_int & fft_dout1_int & fft_dout2_int & fft_dout3_int);
 

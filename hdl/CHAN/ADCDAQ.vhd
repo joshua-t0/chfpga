@@ -64,10 +64,9 @@ use UNISIM.VComponents.all;
 ----------- ENTITY DECLARATIONS -----------------------------------------------------------
 
 
---! @brief Implements the **data acquisition** of one channel of a EV8AQ160 ADC
+--! Implements the **data acquisition** of one channel of a EV8AQ160 ADC
 --!     in non-DMUX mode and send the output as a non-blocking, 32-bit wide
 --!     AXI4 STREAMING bus.
---! @details
 --!
 --! Input interface
 --! ===============
@@ -260,7 +259,7 @@ entity ADCDAQ is
 		data_ready 	: out std_logic; --! Indicates when the ADC is ready to start sending data. The data won't start to be pushed out until send_data is True. Synchronous to adc_clk;
 		send_data 	: in std_logic:= '1'; --! Indicates that we can start sending data on ADC_OUT_DAT. This input signal is used to allow the data transmission to be aligned betweeen all ADC channels. Synchronous to adc_clk.
 
-		adc_clk 	: in std_logic; --! Clock for the readout interface. Should be the same speed or faster than the  
+		adc_clk 	: in std_logic; --! Clock for the readout interface. Should be the same speed or faster than the
 
 		-- Output Clocks
 

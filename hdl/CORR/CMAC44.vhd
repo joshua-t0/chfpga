@@ -32,9 +32,10 @@ library UNIMACRO;
 use unimacro.Vcomponents.all;
 
 
--- ----------------------------------
+-- ---------------------------------------------------------------
 -- CMAC44: (4+4) bit complex vector multiplier-and-accumulate core
--- ----------------------------------
+-- ---------------------------------------------------------------
+--
 -- Casadable, compact (4+4) bit 512-element complex vector
 -- multiplier/accumulator that uses two DSP48E1 and two RAMB16 blocks.
 --

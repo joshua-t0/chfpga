@@ -125,7 +125,7 @@ entity chFPGA is
 
 		-- F-Engine config
 		NUMBER_OF_CHANNELIZERS: INTEGER := NUMBER_OF_CHANNELIZERS_MAX; --! Number of channelizers to be implemented
-        CAPTURE_TYPE: string := "BRAM"; -- "BRAM": BRAM-based in-channelizer capture engine; "URAM": URAM-based centralized UCAP capture engine. 
+        CAPTURE_TYPE: string := "BRAM"; -- "BRAM": BRAM-based in-channelizer capture engine; "URAM": URAM-based centralized UCAP capture engine.
         NUMBER_OF_CAPTURE_SOURCES: integer := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES;
 		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT;
 		CAPTURE_BITS_PER_WORD: integer := CONFIG_CAPTURE_BITS_PER_WORD; -- number of bits in the words captured by capture engine
@@ -446,7 +446,7 @@ entity chFPGA is
 			--==== Data capture streaming interface (for slow raw data capture and correlator outputs)
 	        m_axis_cap_tdata: out std_logic_vector(7 downto 0);
 			m_axis_cap_tvalid: out std_logic;
-			m_axis_cap_tlast: out std_logic; 
+			m_axis_cap_tlast: out std_logic;
 			m_axis_cap_tready: in std_logic := '0';
 			axis_cap_clk: in std_logic := '0'
 
@@ -841,7 +841,7 @@ signal axis_bp_shuffle_out_tlast: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMB
 -- signal axis_bp_shuffle_out_clk: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
 signal bp_shuffle_txclk: std_logic; -- 244/322 MHz data clock from backplane shuffle
 signal cge_clk322: std_logic; -- 322 data clock from 100G Ethernet core
-signal cge_clk322_div2: std_logic; 
+signal cge_clk322_div2: std_logic;
 
 signal bp_shuffle_reset: std_logic_vector(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
 signal bp_shuffle_reset_reg: std_logic;
@@ -1121,15 +1121,15 @@ bsb_clk_sel: case PLATFORM_ID generate
         signal rst_pulse: std_logic := '1';
         signal rst_ctr: unsigned(3 downto 0) := (others => '0'); -- init required
     begin
-    
+
         ctrl_clk <= axis_bsb_clk; -- Control system master clock
         ctrl_rst <= axis_bsb_rst or ctrl_reset_pulse or rst_pulse; -- see pulse generator below
-    
+
         -- generate a BSB reset pulse upon FPGA startup
         bsb_rst_proc: process(ctrl_clk)
         begin
             if rising_edge(ctrl_clk) then
-    
+
                 if signed(rst_ctr) = -1 then
                     rst_pulse <= '0';
                 else
@@ -1139,10 +1139,10 @@ bsb_clk_sel: case PLATFORM_ID generate
             end if; -- RST/CLK
         end process;
     end usp_case;
-    
+
     when others =>
         assert FALSE report "Unsupported platform" severity FAILURE;
-        
+
 end generate bsb_clk_sel;
 
 
@@ -1163,11 +1163,11 @@ clk200_rst_proc: process(clk200)
 begin
 	if rising_edge(clk200) then
 		clk200_reset_reg <= clk200_reset;
-	end if; 
+	end if;
 end process;
 
 
--- Select the Corner-Turn engine clock source and generate synchronous reset 
+-- Select the Corner-Turn engine clock source and generate synchronous reset
 ct_clk_blk: block
 	signal ct_reset_pre: std_logic;
 	signal ct_reset: std_logic;
@@ -1212,7 +1212,7 @@ gen_eth: case PHY_TYPE generate
         ---------------------------------------------------------------------
         --! Instantiate UDP / IP / Ethernet interface
             tx_ready <= axis_udp_tx_tready;
-        
+
         --	local_mac_addr <= std_logic_vector'(X"12_34_56_78") & local_ip_addr; -- works
         --	local_mac_addr <= std_logic_vector(unsigned(std_logic_vector'(X"12_34_56_78") & local_ip_addr)); -- does not work
         --	test <= unsigned(std_logic_vector'(X"12_34_56_78") & local_ip_addr); -- does not work - 9 defs for &
@@ -1233,32 +1233,32 @@ gen_eth: case PHY_TYPE generate
                 udp_stack_rst <= ctrl_rst or udp_stack_reset; -- reset using the bsb reset or the gpio's manual stack reset
             end if; -- RST/CLK
         end process;
-    
-        udp_mac0: entity work.udp_mac  
+
+        udp_mac0: entity work.udp_mac
             GENERIC MAP(
                 PHY_TYPE=> PHY_TYPE,  -- "GMII": Alaska 881111 PHY,  or "SGMII": SFP module
                 BROADCAST_IP_PORT => 41000, -- port on which broadcast requests and replies are made. This is fixed as it is used to discover the boards on the network and configure them.
                 SIM => SIM
                 )
             PORT MAP(
-    
+
                 -- UDP incoming traffic network parameters
                 local_mac_addr =>local_mac_addr,
                 local_ip_addr  =>local_ip_addr,
                 local_ip_port  =>local_base_ip_port,
                 local_subarray => local_subarray,
                 -- User-side streaming interface
-    
+
                 -- UDP outgoing traffic port/channel 0 network parameters
                 remote_mac_addr0 => slv48'(others=>'0'), -- Auto detect: Use last incoming packet source mac
                 remote_ip_addr0  => slv32'(others=>'0'), -- Auto detect: Use last incoming packet source ip
                 remote_ip_port0  => remote_ip_port0, -- If 0: Use last incoming packet source port number
-    
+
                 -- UDP outgoing traffic port/channel 1 network parameters
                 remote_mac_addr1 => remote_mac_addr1, -- If 0: Use last incoming packet source mac
                 remote_ip_addr1  => remote_ip_addr1, -- If 0: Use last incoming packet source ip
                 remote_ip_port1  => remote_ip_port1, -- If 0: Use last incoming packet source port number + 1 (*** Notice the "+ 1" ***)
-    
+
                 -- GMII Phy interface (connects to Marvell chip pins)
                 phy_rxclk        => phy_rxclk,
                 phy_txer         => phy_txer,
@@ -1269,7 +1269,7 @@ gen_eth: case PHY_TYPE generate
                 phy_txctl_txen   => phy_txctl_txen,
                 phy_txd          => phy_txd,
                 phy_txclk        => phy_txclk, -- TX bus Clock provided *BY* the PHY for MII interfaces only. Not used.
-    
+
                 -- SGMII PHY interface (connects to SFP module pins and refernence clock source)
                 -- sfp_clk_p => sfp_clk_p,
                 -- sfp_clk_n => sfp_clk_n,
@@ -1277,15 +1277,15 @@ gen_eth: case PHY_TYPE generate
                 sfp_tx_n => sfp_tx_n,
                 sfp_rx_p => sfp_rx_p,
                 sfp_rx_n => sfp_rx_n,
-    
+
                 -- SGMII reference clock
                 sfp_refclk_nobuf => sfp_refclk_nobuf, -- Unbuffered 125 MHz clock from the SFP reference clock.
                 sfp_refclk_buf => sfp_refclk_buf, -- Buffered 125 MHz clock from the SFP reference clock.
-    
+
                 -- SGMII-specific status signals
                 status_vector => sfp_status_vector_int,
                 config_vector => sfp_config_vector,
-    
+
                 mmcm_locked => sfp_mmcm_locked,
                 reset_done => sfp_reset_done,
                 signal_detect => sfp_signal_detect,
@@ -1295,24 +1295,24 @@ gen_eth: case PHY_TYPE generate
                 s_axis_udp_tx_tlast  => axis_udp_tx_tlast,
                 s_axis_udp_tx_tready => axis_udp_tx_tready,
                 tx_port              => udp0_tx_port,
-    
+
                 m_axis_udp_rx_tdata  => axis_udp_rx_tdata,
                 m_axis_udp_rx_tvalid => axis_udp_rx_tvalid,
                 m_axis_udp_rx_tlast  => axis_udp_rx_tlast,
                 m_axis_udp_rx_tready => axis_udp_rx_tready,
-    
+
                 tx_overflow          => udp_tx_overflow,
                 rx_overflow          => udp_rx_overflow,
-    
+
                 clk125 => clk125, -- User RX/TX interface clock AND GMII transmit clock (SGMII uses either this or th SFP reference clock). For SGMII, this must be a stable clock not related to any of the SGMII clocks.
                 -- clk200 => clk200, -- used for the SGMII interface to initialize the cores even if the transceiver is not locked
-    
+
                 -- rst => ctrl_rst
                 rst => udp_stack_rst
             );
     end phy_case;
 
-    when "NONE" => 
+    when "NONE" =>
         -- Command bus comes from the external bus
         axis_udp_rx_tdata <= s_axis_bsb_tdata;
         axis_udp_rx_tvalid <= s_axis_bsb_tvalid;
@@ -1347,7 +1347,7 @@ begin
     process(ctrl_clk) begin
         ctrl_master_rst <= ctrl_rst or ctrl_master_reset when rising_edge(ctrl_clk);
     end process;
-    
+
     ctrl_master0: entity work.ctrl_master
         GENERIC MAP (
             NUMBER_OF_PROBES=>NUMBER_OF_PROBES  -- number of data stream buses
@@ -1358,31 +1358,31 @@ begin
             s_axis_udp_rx_tvalid => axis_udp_rx_tvalid,
             s_axis_udp_rx_tlast => axis_udp_rx_tlast,
             s_axis_udp_rx_tready => axis_udp_rx_tready,
-    
+
             -- TX UDP stream
             m_axis_udp_tx_tvalid => axis_udp_tx_tvalid,
             m_axis_udp_tx_tdata => axis_udp_tx_tdata,
             m_axis_udp_tx_tlast => axis_udp_tx_tlast,
             m_axis_udp_tx_tready => axis_udp_tx_tready,
             m_axis_udp_tx_channel => udp0_tx_port,
-    
+
             -- Command and reply stream buse
             m_axis_cmd_tdata => axis_cmd_tdata,
             m_axis_cmd_tvalid => axis_cmd_tvalid,
             m_axis_cmd_tlast => axis_cmd_tlast,
             m_axis_cmd_tready => axis_cmd_tready,
-    
+
             s_axis_rply_tdata => axis_rply_tdata,
             s_axis_rply_tvalid => axis_rply_tvalid,
             s_axis_rply_tlast => axis_rply_tlast,
             s_axis_rply_tready => axis_rply_tready,
-    
+
             -- Data stream buses
             s_axis_data_tdata => axis_prb_tdata,
             s_axis_data_tvalid => axis_prb_tvalid,
             s_axis_data_tlast => axis_prb_tlast,
             s_axis_data_tready => axis_prb_tready,
-    
+
             -- System
             cmd_packet_counter => cmd_packet_counter,
             rply_packet_counter => rply_packet_counter,
@@ -1417,7 +1417,7 @@ end block bsb_master_blk;
 --! |  7 | 0x70000  | UCAP                               |             |
 --stopLiteralInclude
 
-top_router_blk: block 
+top_router_blk: block
 
 	attribute TARGET_PBLOCK of top_router0: label is "SYSTEM"; -- assign top router to SYSTEM Pblock
 
@@ -1701,7 +1701,7 @@ begin
 	end process;
 
 	-- Sources for the IRIG-B signals
-	gpio_irib_mux_in <= ( 
+	gpio_irib_mux_in <= (
 		0 => bp_trig_reg, -- backplane trig signal
 		1 => bp_time_reg, -- backplane time signal
 		2 => irigb_gen_out, -- internal IRIG-B generator
@@ -1710,7 +1710,7 @@ begin
 		5 => user_mux_in(1), -- led2_sma_b
 		6 => user_mux_in(2), -- led1_bp_sma
 		7 => user_mux_in(3)
-		); 
+		);
 
 
 	gpio_user_mux_signals <= ( -- source of the USER--controlled SMA output
@@ -1863,7 +1863,7 @@ begin
 			event_ctr_inc => gpio_event_ctr_inc_reg,
 			event_ctr_reset => gpio_event_ctr_reset_reg,
 
-   
+
 			-- PWM Generator (generates Frame-aligned PWM waveform)
 			pwm_clk => chan_clk(0),
 			pwm_ctr_en => gpio_pwm_ctr_en_reg,
@@ -1872,9 +1872,9 @@ begin
 
 
             -- External pll
-            
+
             pll_sync => pll_sync,
-            
+
 			-- User muxed outputs
 			user_mux_in => gpio_user_mux_signals,
 			user_mux_out => user_mux_out_int,
@@ -2016,7 +2016,7 @@ gen_i2c: if NUMBER_OF_I2C_PORTS > 0 generate
 	signal i2c_rst: std_logic;
 	attribute DONT_TOUCH of i2c_rst: signal is "true";
 begin
-    -- Pipeline the BSB reset	
+    -- Pipeline the BSB reset
 	bsb_rst_proc: process(ctrl_clk)
 	begin
 		if rising_edge(ctrl_clk) then
@@ -2203,7 +2203,7 @@ begin
 		end if;
 	end process;
 
-	-- Corner-turn engine clock monitor 
+	-- Corner-turn engine clock monitor
 	ct_clk_div2_proc: process(ct_clk)
 	begin
 		if rising_edge(ct_clk) then
@@ -2302,13 +2302,13 @@ begin
 	gen_freq25: if NUMBER_OF_GPU_REFCLKS > 0 generate
 		freq_ctr_in_vect(25) <= gpu_refclk_div2(0); -- MGT
 	end generate;
-	
+
 	freq_ctr_in_vect(26) <= gpu_txclk_div2;
-	
+
 	gen_freq27: if NUMBER_OF_BP_SHUFFLE_REFCLKS > 0 generate
 		freq_ctr_in_vect(27) <= bp_shuffle_refclk_div2(0); -- MGT
 	end generate;
-	
+
 	freq_ctr_in_vect(28) <= bp_shuffle_txclk_div2;
 	freq_ctr_in_vect(29) <= fmc_mgt_pll_refclk_div2(1); -- MGT
 	freq_ctr_in_vect(30) <= fmc_mgt_pll_refclk_div2(2); -- MGT
@@ -2409,7 +2409,7 @@ begin
 						3 => bp_gpio_int_in, -- Corresponds to source #5
 						4 => user_mux_in(0), -- Corresponds to source #6 - sma_a
 						5 => user_mux_in(1) -- Corresponds to source #7 - sma_b
-						), 
+						),
 			clk10_out => clk10_out,
 
 			sync_out => sync_out,
@@ -2428,7 +2428,7 @@ begin
 	begin
 		-- Generate differential buffers
 		mgtbuf_gen: case FPGA_SERIES generate
-			when  FPGA_KINTEX7 => 
+			when  FPGA_KINTEX7 =>
 				ibufds_mgtpllrefclk0 : IBUFDS_GTE2
 					port map (
 						I     => mgt_pll_refclk_p(i),
@@ -2512,17 +2512,17 @@ adc_gen: case ADC_TYPE generate
         signal adc_divclk_out_bufg : std_logic_vector(0 to NUMBER_OF_ADCS-1);
         signal adc_ioclk_out_pll : std_logic_vector(0 to NUMBER_OF_ADCS-1);
         signal adc_divclk_out_pll : std_logic_vector(0 to NUMBER_OF_ADCS-1);
-    
+
         signal axis_adc_tdata8: slv32_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
         signal adc_data_ready_all : std_logic_vector(0 to NUMBER_OF_ADCS-1);
         signal adc_send_data_async : std_logic;
-    
-    
+
+
     begin
         -- Selects which ADCDAQ will provides the master clock for the clock generator module to provide channelizer clocks.
         adc_clk <= adc_divclk_out_bufg(ANT_CLK_SOURCE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
-    
-    
+
+
         -- Generate a global ``send_data`` signal that is '1' when all ADCs have data to send.
         -- The inputs are all from different clocks
         --   1) Since we do a AND operation and all signals are zero after reset, the outputs should be stable at zero until all inputs are '1'
@@ -2532,19 +2532,19 @@ adc_gen: case ADC_TYPE generate
         --      Physical separation of the pipeling registers makes this a less
         --      than optimal CDC, but as stated above timing is not critical.
         adc_send_data_async <= and_reduce(adc_data_ready_all); --
-    
-    
-    
+
+
+
         -- Select which ADCDAQ provides an external clock to other ADCDAQs (used only if USE_EXT_DATA_CLK=TRUE)
         adc_ioclk <= adc_ioclk_out_pll(ANT_CLK_SOURCE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
         adc_divclk <= adc_divclk_out_pll(ANT_CLK_SOURCE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
-    
+
         ADCGEN: for i in 0 to NUMBER_OF_ADCS-1 generate
             signal adc_data_ready : std_logic;
             signal adc_data_ready_reg1 : std_logic;
             signal adc_send_data: std_logic;
             signal adc_send_data_reg: std_logic;
-    
+
             attribute keep of adc_data_ready_reg1: signal is "true"; -- prevent equivalent register merging
             attribute keep of adc_send_data_reg: signal is "true"; -- prevent equivalent register merging
 
@@ -2553,7 +2553,7 @@ adc_gen: case ADC_TYPE generate
 			attribute DONT_TOUCH of adcdaq_ctrl_rst, adcdaq_ctrl_rst_reg: signal is "true";
 
         begin
-    
+
             -- -- Define intermediary signals to eliminate use of indexed record arrays as actuals in the instantiation: this messes up the simulator.
             -- ADC_DAT(i).TDATA <= axis_adc_tdata(i);
             -- ADC_DAT(i).TVALID <= axis_adc_tvalid(i);
@@ -2573,7 +2573,7 @@ adc_gen: case ADC_TYPE generate
             adc_ready_cdc0: xpm_cdc_single
                 generic map (SRC_INPUT_REG => 0)
                 port map (src_clk => '0', src_in => adc_send_data_async, dest_clk => chan_clk(i), dest_out => adc_send_data);
-    
+
             -- Generate the adc_send_data which will tells all the ADCs to start
             -- sending data once all of them have their FIFO half-full
             adc_send_proc: process(chan_clk(i))
@@ -2584,7 +2584,7 @@ adc_gen: case ADC_TYPE generate
                     adc_send_data_reg <= adc_send_data; -- pipeline AND resync adc_send_data
                 end if;
             end process;
-    
+
             -- Convert 4x 8-bit ADCDAQ bus samples to the lower 4 words of the 8x 16-bit bus
     --		repack_gen: for j in 0 to 3  generate -- hard coded to 3 samples per word
     --			axis_adc_tdata(i)(16*j+15 downto 16*j+8) <= axis_adc_tdata8(i)(8*j+7 downto 8*j); -- left aligg data to the MSB
@@ -2592,7 +2592,7 @@ adc_gen: case ADC_TYPE generate
     --			axis_adc_tdata(i)(16*j+7 downto 16*j) <= (others => '0'); -- zero the MSBs
     --		end generate;
             axis_adc_tdata(i) <= axis_adc_tdata8(i);
-    
+
             -- ADCDAQ is still implemented if IMPLEMENT_ANT=FALSE, but its IMPLEMENT_ADCDAQ generics is forced  to FALSE to the appropriate differential buffers are instantiated and prevent UCF errors.
             --	ADC_CLK_OUT_PLL<=ADC_CLK_OUT_PLL_INT;
             --debug3: if false generate
@@ -2613,7 +2613,7 @@ adc_gen: case ADC_TYPE generate
                     ADC_DATA_H_N => ADC_DATA_N(i),
                     ADC_CLK_H_P  => ADC_CLK_P(i),
                     ADC_CLK_H_N  => ADC_CLK_N(i),
-    
+
                     -- Readout interface
                     -- ADC_OUT_DAT => ADC_DAT(i),
                     m_axis_adc_tdata => axis_adc_tdata8(i),
@@ -2621,29 +2621,29 @@ adc_gen: case ADC_TYPE generate
                     m_axis_adc_tlast => axis_adc_tlast(i),
                     m_axis_adc_tuser => axis_adc_tuser(i),
                     ADC_CLK => chan_clk(i),
-    
+
                     -- Clock outputs (before PLL)
-    
+
                     DIVCLK_OUT_BUFG => adc_divclk_out_bufg(i), -- BUFG-buffered word clock derived from the ADC clock (provided if ADC_PROVIDE_BUFFERED_DIVCLK=TRUE)
-    
+
                     -- Clock outputs to deserializer logic (generated by PLL if ADC_INSTANTIATE_PLL=TRUE)
                     IOCLK_OUT_PLL => adc_ioclk_out_pll(i), -- PLL-generated IOCLK clock (if corresponding ADC_INSTANTIATE_PLL=TRUE)
                     DIVCLK_OUT_PLL => adc_divclk_out_pll(i), -- PLL-generated DIVCLK (word) clock (if corresponding ADC_INSTANTIATE_PLL=TRUE)
-    
+
                     -- Clock monitor
                     ADC_CLK_OUT_DIV2 => adc_clk_div2(i), -- Word clock divided by 2 in logic for frequency counter
-    
+
                     -- Data alignment signals
                     data_ready => adc_data_ready,
                     send_data => adc_send_data_reg,
-    
+
                     -- External data clocks
                     IOCLK_IN => adc_ioclk, -- External IOCLK, used if USE_EXT_DATA_CLK=TRUE
                     DIVCLK_IN => adc_divclk, -- External DIVCLK, used if USE_EXT_DATA_CLK=TRUE
-    
+
                     -- Global synchronization
                     ADCDAQ_RESET => ADCDAQ_RESET,
-    
+
                     -- Control lines
                     CTRL_CMD_IN_DAT=> ADC_CMD_DAT(i),
                     CTRL_CMD_IN_RDY=> ADC_CMD_RDY(i),
@@ -2651,12 +2651,12 @@ adc_gen: case ADC_TYPE generate
                     CTRL_RPLY_OUT_RDY=> ADC_RPLY_RDY(i),
                     CTRL_CLK => CTRL_CLK,
                     CTRL_RST => adcdaq_ctrl_rst_reg(i),
-    
-    
+
+
                     REF_CLK => fmc_refclk(ADC_TO_ADC_BOARD_MAP(i)), -- Used to sample the ADC clock waveform
                     clk200 => clk200 -- Used to clock the IODELAYCTRL
                 );
-    
+
         end generate ADCGEN;
     end EV8AQ160_case;
 
@@ -2664,19 +2664,19 @@ adc_gen: case ADC_TYPE generate
         -----------------------
         -- AXIS ADC DATA SOURCE
         -----------------------
-        -- The ADCDAQ_RESET signal, which is genererated by REFCLK on CLK10  is resynchronized to adc_clk. It is assumed that the system and constraints are set 
-        -- so we can register this signal without timing issues (i.e. set_multicycle_path might have to be set to ensure sane timing). 
+        -- The ADCDAQ_RESET signal, which is genererated by REFCLK on CLK10  is resynchronized to adc_clk. It is assumed that the system and constraints are set
+        -- so we can register this signal without timing issues (i.e. set_multicycle_path might have to be set to ensure sane timing).
         --
         -- When ADCDAQ_RESET is set, the module stops sending ADC data (TVALID=0). Once ADCDAQ_RESET is released, data won't flow for a full frame
-        -- to allow time for the CHAN and CT/CORR engines to come out of reset, then data will start flowing again 
-        
+        -- to allow time for the CHAN and CT/CORR engines to come out of reset, then data will start flowing again
+
         constant WORDS_PER_FRAME: integer := ADC_SAMPLES_PER_FRAME / ADC_SAMPLES_PER_WORD;
         constant LOG2_WORDS_PER_FRAME : integer := integer_log2(WORDS_PER_FRAME);
-    
+
         signal adc_send_data2: slv(0 to NUMBER_OF_ADCS-1); -- indicates when TVALID can be passed on
         signal axis_adc_tdata_reg: slv128_array(0 to NUMBER_OF_ADCS-1);
         signal axis_adc_tvalid_reg: std_logic_vector(0 to NUMBER_OF_ADCS-1);
-        
+
         signal adcdaq_reset_reg: std_logic; -- ADCDAQ reset, resynchronized to adc_clk
         attribute DONT_TOUCH of adcdaq_reset_reg: signal is "true";
 
@@ -2685,7 +2685,7 @@ adc_gen: case ADC_TYPE generate
         -- We don't use the clocks directly, but we use the reset sequencer which use these clocks.
         -- We should separate the reset sequencer from the clock generator.
         adc_clk <= adc_axis_clk(ANT_CLK_SOURCE);
-    
+
         -- resynchronize ADCDAQ_RESET (clk10) to ADC_CLK
         adcdaq_proc: process(adc_clk)
         begin
@@ -2693,8 +2693,8 @@ adc_gen: case ADC_TYPE generate
                 adcdaq_reset_reg <= ADCDAQ_RESET;
             end if; -- clk
         end process;
-    
-    
+
+
         -- Pipeline and frame the ADC with a TLAST signal and generate the divide-by-two adc clock monitoring signals for the frequency counter
         -- The first frame is skipped to provide time for the channelizer pipeline modules to complete their reset cycles.
         GEN_ADC: for i in 0 to NUMBER_OF_ADCS-1 generate
@@ -2709,36 +2709,36 @@ adc_gen: case ADC_TYPE generate
                     adc_clk_div2(i) <= not adc_clk_div2(i);
                 end if; -- adc_axis_clk
             end process;
-    
+
             adc_proc: process(chan_clk(i))
-    
+
     --			variable adc_axis_tdata3: std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
-    
+
                 begin
                     if rising_edge(chan_clk(i)) then
-                    
+
                         chan_reset_reg <= chan_reset(i);
                         -- pipeline the ADC data. The ADCs are on the right side of the RfSoC, and some logic may end up on the left.
                         axis_adc_tdata_reg(i) <= adc_axis_tdata(i);
                         axis_adc_tvalid_reg(i) <= adc_axis_tvalid(i);
-    
-                        
+
+
                         if axis_adc_tvalid_reg(i)='1' then
                             adc_word_ctr <= adc_word_ctr + 1;
                         end if;
-                        
+
                         -- The following is deprecated. The ADC data should come in a bus according to the number of
                         -- ADC bits. The appropriate number of zero bits should be added if capturing with UCAP engine.
-    
+
                         -- ADC data comes in 128-bit bus that contains 8x 16-bit sample words.
                         -- Actual ADC data is 12 or 14 bits, MSB-aligned in each word. First sample is in the lower word.
-    
-                        -- Repack the ADC samples in a Nsamples x Nbits_per_samples word and also 
+
+                        -- Repack the ADC samples in a Nsamples x Nbits_per_samples word and also
                         -- invert the order of the words to put the first sample in the MSB of the word
                          for j in 0 to ADC_SAMPLES_PER_WORD-1 loop
                             axis_adc_tdata(i)(ADC_BITS_PER_SAMPLE*(j+1) -1 downto ADC_BITS_PER_SAMPLE*j) <= axis_adc_tdata_reg(i)(16*(ADC_SAMPLES_PER_WORD-j)-1 downto 16*(ADC_SAMPLES_PER_WORD-j)-ADC_BITS_PER_SAMPLE);
                          end loop;
-                        
+
                         -- Pass the data bus and clear overflow flags
                         axis_adc_tuser(i) <= (others =>'0');
                         axis_adc_tvalid(i) <= axis_adc_tvalid_reg(i) and adc_send_data2(i);
@@ -2868,9 +2868,9 @@ chan_clk_gen:case CHAN_CLK_SOURCE generate
             chan_reset(i) <= chan_reset_resync;
         end generate;
     end adc_case;
-    
+
     when others =>
-    
+
         assert FALSE report "Invalid CHAN_CLK_SOURCE" severity FAILURE;
 end generate chan_clk_gen;
 
@@ -2885,7 +2885,7 @@ CHANGEN: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
 	signal chan_ctrl_rst: std_logic;
 	signal chan_ctrl_rst_reg: std_logic;
 	attribute DONT_TOUCH of chan_ctrl_rst, chan_ctrl_rst_reg: signal is "true";
-	
+
 	signal axis_adc_tdata_reg: slv_array(0 to NUMBER_OF_CHANNELIZERS-1)(ADC_BITS_PER_WORD-1 downto 0);
 	signal axis_adc_tvalid_reg: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1);
 	signal axis_adc_tlast_reg: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1);
@@ -2902,7 +2902,7 @@ begin
 	begin
 		if rising_edge(ctrl_clk) then
 			chan_ctrl_rst <= ctrl_rst;
-			chan_ctrl_rst_reg <= chan_ctrl_rst;			
+			chan_ctrl_rst_reg <= chan_ctrl_rst;
 		end if;
 	end process;
 
@@ -2982,7 +2982,7 @@ begin
 	        m_axis_cap_tlast => axis_cap_tlast(i),
             cap_source_req => cap_source_req(i),
             cap_source_ack => cap_source_ack(i),
-        
+
 
 			-- Streaming data capture interface
 			PRB_tdata  => axis_prb_tdata(i),
@@ -3064,7 +3064,7 @@ begin
             crossbar1_ctrl_rst  <= ctrl_rst;
         end if;
     end process;
-        
+
 	-- Index the command bus into an intermediary signal to mitigate simulator problems with indexing record arrays stright in the instantiation
 	crossbar1_cmd_dat             <= top_cmd_dat(CROSSBAR1_BASE_PORT);
 	top_cmd_rdy(CROSSBAR1_BASE_PORT)  <= crossbar1_cmd_rdy;
@@ -3157,16 +3157,16 @@ begin
             signal cb_in_tdata: std_logic_vector(255 downto 0);
             signal cb_in_tvalid: std_logic;
             signal cb_in_tlast: std_logic;
-    
+
             signal cb_out_tdata: std_logic_vector(255 downto 0);
             signal cb_out_tvalid: std_logic;
             signal cb_out_tlast: std_logic;
-    
+
         begin
-    
+
             -- remap the 8x32-bit buses into a single 256-bit bus, 1st lane on the MSB.
             tdata_gen: for i in 0 to 7 generate
-                cb_in_tdata(32*(7-i)+31 downto 32*(7-i)) <= axis_crossbar1_in_tdata_reg2(i);	
+                cb_in_tdata(32*(7-i)+31 downto 32*(7-i)) <= axis_crossbar1_in_tdata_reg2(i);
                 axis_crossbar1_out_tdata(i) <= cb_out_tdata(32*(7-i)+31 downto 32*(7-i));
                 --axis_crossbar1_out_tvalid(i) <= cb_out_tvalid;
                 --axis_crossbar1_out_tlast(i) <= cb_out_tlast;
@@ -3175,24 +3175,24 @@ begin
             axis_crossbar1_out_tlast(0) <= cb_out_tlast;
             cb_in_tvalid <= axis_crossbar1_in_tvalid_reg2(0);
             cb_in_tlast <= axis_crossbar1_in_tlast_reg2(0);
-    
+
             uram0: entity work.uram_ct
                 port map (
                     -- input data bus
                     s_axis_in_tdata => cb_in_tdata,
                     s_axis_in_tvalid => cb_in_tvalid,
                     s_axis_in_tlast=> cb_in_tlast,
-    
+
                     -- Output data bus
                     m_axis_out_tdata => uct_tdata,
                     m_axis_out_tvalid => uct_tvalid,
                     m_axis_out_tlast=> uct_tlast,
-            
-                    clk => ct_clk, 
+
+                    clk => ct_clk,
                     rst => cb1_reset_reg2, -- synchrounous reset
-          
+
                     --debug_out => debug_out,
-    
+
                     -- BSB interface
                     cmd_dat=> crossbar1_cmd_dat,
                     cmd_rdy => crossbar1_cmd_rdy,
@@ -3202,10 +3202,10 @@ begin
                     ctrl_rst => crossbar1_ctrl_rst
                 );
         end uram_case;
-    
+
         when others =>
             assert FALSE report "Invalid CROSSBAR1_TYPE" severity FAILURE;
-    
+
     end generate cb1_gen;
 end generate crossbar0_gen;
 ---------------------------------------------------------------------
@@ -3316,7 +3316,7 @@ CROSSBAR23_GEN: if IMPLEMENT_CROSSBAR2_AND_CROSSBAR3 generate
     signal axis_crossbar2_in_tdata_reg: slv32_array(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1);
     signal axis_crossbar2_in_tvalid_reg: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1);
     signal axis_crossbar2_in_tlast_reg: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1);
-    
+
     attribute shreg_extract of axis_crossbar2_in_tdata_reg: signal is "no";
     attribute shreg_extract of axis_crossbar2_in_tvalid_reg: signal is "no";
     attribute shreg_extract of axis_crossbar2_in_tlast_reg: signal is "no";
@@ -3324,16 +3324,16 @@ CROSSBAR23_GEN: if IMPLEMENT_CROSSBAR2_AND_CROSSBAR3 generate
     signal axis_crossbar2_in_tdata: slv32_array(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1);
     signal axis_crossbar2_in_tvalid: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1);
     signal axis_crossbar2_in_tlast: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1);
-    
-   
+
+
     signal axis_crossbar3_in_tdata: slv32_array(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
     signal axis_crossbar3_in_tvalid: slv(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
     signal axis_crossbar3_in_tlast: slv(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
-    
+
     signal axis_crossbar3_reset: std_logic;
     signal axis_crossbar3_reset_reg: std_logic;
     signal axis_crossbar3_reset_reg2: std_logic;
-            
+
 	signal crossbar2_cmd_dat: AXIS8_DAT_STRUCT;
 	signal crossbar2_cmd_rdy: AXIS8_RDY_STRUCT;
 	signal crossbar2_rply_dat: AXIS8_DAT_STRUCT;
@@ -3357,7 +3357,7 @@ begin
 	top_cmd_rdy(CROSSBAR2_BASE_PORT) <= crossbar2_cmd_rdy;
 	crossbar2_rply_rdy<= top_rply_rdy(CROSSBAR2_BASE_PORT);
 	top_rply_dat(CROSSBAR2_BASE_PORT) <= crossbar2_rply_dat;
-	
+
 	crossbar3_cmd_dat<= top_cmd_dat(CROSSBAR3_BASE_PORT);
 	top_cmd_rdy(CROSSBAR3_BASE_PORT) <= crossbar3_cmd_rdy;
 	crossbar3_rply_rdy<= top_rply_rdy(CROSSBAR3_BASE_PORT);
@@ -3379,7 +3379,7 @@ begin
             if rising_edge(ct_clk) then
                 axis_crossbar2_in_reset <= ct_reset_reg;
                 axis_crossbar2_in_reset_reg <= axis_crossbar2_in_reset;
-    
+
                 for i in 0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1 loop
                         axis_crossbar2_in_tdata(i)  <= axis_bp_shuffle_out_tdata(i);
                         axis_crossbar2_in_tvalid(i) <= axis_bp_shuffle_out_tvalid(i);
@@ -3388,17 +3388,17 @@ begin
                 if ct_reset_reg = '1' then
                     axis_crossbar2_in_tvalid <= (others=>'0');
                 end if;
-    
+
                 axis_crossbar2_in_tdata_reg  <= axis_crossbar2_in_tdata;
                 axis_crossbar2_in_tvalid_reg <= axis_crossbar2_in_tvalid;
                 axis_crossbar2_in_tlast_reg  <= axis_crossbar2_in_tlast;
                 if axis_crossbar2_in_reset = '1' then
                     axis_crossbar2_in_tvalid_reg <= (others=>'0');
                 end if;
-    
+
             end if;
         end process;
-    
+
 	crossbar2: entity work.shuffle_crossbar -- use component instantiation to delay binding in if-generate block and prevent errors during elaboration
 		generic map (
 		 	PLATFORM_ID => PLATFORM_ID,  -- needed to select family-dependent FIFOs
@@ -3526,7 +3526,7 @@ GPU_GEN: if IMPLEMENT_GPU_LINKS generate
     -- Pipelined bsb resets
     signal gpu_ctrl_rst: std_logic;
     signal gpu_ctrl_rst_reg: std_logic;
-    attribute DONT_TOUCH of gpu_ctrl_rst, gpu_ctrl_rst_reg: signal is "true";    
+    attribute DONT_TOUCH of gpu_ctrl_rst, gpu_ctrl_rst_reg: signal is "true";
 begin
 	-- Index the system control buses as a separate signal here , because the simulator will make errors if we index it directly on the instantiation
 	gpu_cmd_dat<= top_cmd_dat(GPU_LINK_BASE_PORT);
@@ -3541,7 +3541,7 @@ begin
             gpu_ctrl_rst_reg <= gpu_ctrl_rst;
         end if;
     end process;
-    
+
 	-- Pipeline the 2nd crossbar output (non-blocking AXI-Streaming bus) to the input to the GPU link blocks to facilitate routing
 	gpulinkinpipe_proc: process(ct_clk)
 		begin
@@ -3561,7 +3561,7 @@ begin
 			end if;
 		end process;
     axis_gpu_clk <= std_logic_vector'(axis_gpu_tdata'RANGE=> ct_clk);
- 
+
     gpu_sel_gen: case GPU_LINK_TYPE generate
 
         when "10GE" =>
@@ -3586,20 +3586,20 @@ begin
                     refclk_n => xge_refclk_n,
                     -- core_status => open,
                     -- resetdone => open,
-        
+
                     -- Clock monitors to be fed to the frequency counter
                     refclk_div2 => gpu_refclk_div2,
                     txclk_div2 => gpu_txclk_div2,
                     clk322_out => clk322,
-        
+
                     -- input data interface
                     s_axis_tx_tdata  => axis_gpu_tdata,
                     s_axis_tx_tvalid => axis_gpu_tvalid,
                     s_axis_tx_tlast  => axis_gpu_tlast,
                     s_axis_tx_tready => open, -- data is always been sent, independent on whether the transmitter is ready or not. W ehave to set out data rate right to avoid overflows.
-                    s_axis_tx_clk => (others => clk322), -- ** patch . was axis_gpu_clk, 
+                    s_axis_tx_clk => (others => clk322), -- ** patch . was axis_gpu_clk,
                     areset => gpu_reset_reg, --async input, so we can use the channel reset
-        
+
                     CMD_DAT => gpu_cmd_dat,
                     CMD_RDY => gpu_cmd_rdy,
                     RPLY_DAT => gpu_rply_dat,
@@ -3607,7 +3607,7 @@ begin
                     CTRL_CLK => CTRL_CLK,
                     CTRL_RST => gpu_ctrl_rst_reg
                  );
-        
+
         when cge_case:"100GE" =>
             ---------------------------------------------------------
             -- 100G Ethernet Interface
@@ -3617,20 +3617,20 @@ begin
             signal axis_cge_tlast: std_logic;
         --	signal axis_cge_tready: std_logic_vector(0 to 7);
             signal cge_reset, cge_reset_reg: std_logic;
-        
+
             signal refclk, refclk_div2:std_logic;
-        
+
         begin
 
- 
-        
+
+
             -- Pipeline the 2nd crossbar output (non-blocking AXI-Streaming bus) to the input to the GPU link blocks to facilitate routing
             cge_pipe_proc: process(ct_clk)
                 begin
                     if rising_edge(ct_clk) then
                         cge_reset <= ct_reset_reg;
                         cge_reset_reg <= cge_reset;
-        
+
                         axis_cge_tvalid <= axis_crossbar1_out_tvalid(0);
                         axis_cge_tlast <= axis_crossbar1_out_tlast(0);
                         if cge_reset = '1' then
@@ -3641,7 +3641,7 @@ begin
                         end loop;
                     end if;
                 end process;
-        
+
             refclk_div2_proc: process(refclk)
                 begin
                     if rising_edge(refclk) then
@@ -3649,14 +3649,14 @@ begin
                     end if; -- clk
             end process;
             gpu_refclk_div2(0) <= refclk_div2;
-        
+
             clk322_div2_proc: process(cge_clk322)
                 begin
                     if rising_edge(cge_clk322) then
                         cge_clk322_div2 <= not cge_clk322_div2;
                     end if; -- clk
             end process;
-        
+
          -- Use COMPONENT instantiation if this is synthesized as an out-of-context module
             cge0: entity work.cge
                 port map (
@@ -3664,11 +3664,11 @@ begin
                     tx_n => cge_tx_n,
                     refclk_p => cge_refclk_p,
                     refclk_n => cge_refclk_n,
-        
+
                     -- internal clock monitors
                     refclk_out => refclk,
                     clk322_out    => cge_clk322, --! 322 MHz generated by the core to clock all user interface signals.
-        
+
                     -- input data interface
                     --s_axis_tx_tdata  => axis_cge_tdata,
                     --s_axis_tx_tvalid => axis_cge_tvalid,
@@ -3677,12 +3677,12 @@ begin
                     s_axis_tx_tvalid => uct_tvalid,
                     s_axis_tx_tlast  => uct_tlast,
                     clk => ct_clk,
-        
-        
+
+
                     rst => cge_reset,
                     --clk200 => clk200,
                     --areset => gpu_reset_reg, --async input, so we can use the channel reset
-        
+
                     -- BSB interface
                     cmd_dat => gpu_cmd_dat,
                     cmd_rdy => gpu_cmd_rdy,
@@ -3696,48 +3696,48 @@ begin
         when others =>
             assert FALSE report "Invalid GPU_LINK_TYPE" severity FAILURE;
 
-    end generate gpu_sel_gen;        
+    end generate gpu_sel_gen;
 end generate GPU_GEN;
 
 -----------------------------
 -- UCAP - Global raw data capture
------------------------------ 
+-----------------------------
 cap_gen: case CAPTURE_TYPE generate
-    when "BRAM" => 
+    when "BRAM" =>
     -- Nothing to do: capture logic in self-contained in CHAN
     when uram_case: "URAM" =>
         signal ucap_cmd_dat: AXIS8_DAT_STRUCT;
         signal ucap_cmd_rdy: AXIS8_RDY_STRUCT;
         signal ucap_rply_dat: AXIS8_DAT_STRUCT;
         signal ucap_rply_rdy: AXIS8_RDY_STRUCT;
-    
+
         signal axis_ucap_reg1_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(CAPTURE_BITS_PER_WORD-1 downto 0);
         signal axis_ucap_reg1_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
         signal axis_ucap_reg1_tlast: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
         attribute shreg_extract of axis_ucap_reg1_tdata,axis_ucap_reg1_tvalid,axis_ucap_reg1_tlast: signal is "no"; -- needed to prevent pipeline registers to be combined into shoft registers
-    
+
         signal axis_ucap_reg2_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(CAPTURE_BITS_PER_WORD-1 downto 0);
         signal axis_ucap_reg2_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
         signal axis_ucap_reg2_tlast: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
         attribute shreg_extract of axis_ucap_reg2_tdata,axis_ucap_reg2_tvalid,axis_ucap_reg2_tlast: signal is "no"; -- needed to prevent pipeline registers to be combined into shoft registers
-    
+
         signal ucap_source_req1:std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1); -- data source request for each channel
         signal ucap_source_ack1: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1); -- curent data source on tdata for each channel
         signal ucap_source_ack2: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1); -- curent data source on tdata for each channel
         attribute shreg_extract of ucap_source_ack1,ucap_source_ack2: signal is "no";
-    
+
         signal axis_cap_reg1_tdata112: slv_array(0 to NUMBER_OF_ADCS-1)(ADC_BITS_PER_WORD-1 downto 0);
         signal ucap_ctrl_rst, ucap_ctrl_rst_reg: std_logic;
         signal ucap_clk: std_logic;
         signal ucap_rst, ucap_rst_reg: std_logic;
-        attribute DONT_TOUCH of ucap_rst, ucap_rst_reg: signal is "true";    
+        attribute DONT_TOUCH of ucap_rst, ucap_rst_reg: signal is "true";
         attribute equivalent_register_removal of ucap_rst, ucap_rst_reg: signal is "no";
 	    attribute keep of ucap_rst, ucap_rst_reg :signal is "true";
-        
+
         attribute DONT_TOUCH of ucap0: label is "true"; -- don't optimize through cell boundaries
     begin
-    
-    
+
+
         ucap_clk <= chan_clk(0);
         -- Pipeline the reset signal. ADC logic and UCAP (which uses Ultraram) are at opposite sides of the FPGA on the Ultrascale+.
         process(ucap_clk) begin
@@ -3746,12 +3746,12 @@ cap_gen: case CAPTURE_TYPE generate
                 ucap_rst_reg <= ucap_rst;
             end if;
         end process;
-        
+
         ucap_cmd_dat <= top_cmd_dat(UCAP_BASE_PORT);
         top_cmd_rdy(UCAP_BASE_PORT) <= ucap_cmd_rdy;
         ucap_rply_rdy <= top_rply_rdy(UCAP_BASE_PORT);
         top_rply_dat(UCAP_BASE_PORT) <= ucap_rply_dat;
-    
+
         -- Pipeline the BSB reset
         bsb_rst_proc: process(ctrl_clk)
             begin
@@ -3760,7 +3760,7 @@ cap_gen: case CAPTURE_TYPE generate
                     ucap_ctrl_rst_reg        <= ucap_ctrl_rst;
                 end if; -- RST/CLK
             end process;
-    
+
         -- Pipeline the Muxed Capture data bus
         pipe_proc: process(ucap_clk)
         begin
@@ -3770,15 +3770,15 @@ cap_gen: case CAPTURE_TYPE generate
                 axis_ucap_reg1_tlast <= axis_cap_tlast(0);
                 cap_source_req <= ucap_source_req1;
                 ucap_source_ack1 <= cap_source_ack;
-    
+
                 axis_ucap_reg2_tdata <= axis_ucap_reg1_tdata;
                 axis_ucap_reg2_tvalid <= axis_ucap_reg1_tvalid;
                 axis_ucap_reg2_tlast <= axis_ucap_reg1_tlast;
                 ucap_source_ack2 <= ucap_source_ack1;
-    
+
             end if;
         end process;
-    
+
         ucap0: entity work.ucap
             generic map (
                 CAPTURE_BITS_PER_WORD => CAPTURE_BITS_PER_WORD
@@ -3786,27 +3786,27 @@ cap_gen: case CAPTURE_TYPE generate
                 --ADC_SAMPLES_PER_WORD => ADC_SAMPLES_PER_WORD,
                 --ADC_SAMPLES_PER_FRAME => ADC_SAMPLES_PER_FRAME
                 )
-            port map ( 
+            port map (
                 s_axis_tdata => axis_ucap_reg2_tdata,
                 s_axis_tvalid => axis_ucap_reg2_tvalid,
                 s_axis_tlast=> axis_ucap_reg2_tlast,
                 source_sel_out => ucap_source_req1,
                 source_sel_in => ucap_source_ack2,
-    
+
                 m_axis_bsb_tdata => m_axis_cap_tdata,
                 m_axis_bsb_tvalid=> m_axis_cap_tvalid,
-                m_axis_bsb_tlast => m_axis_cap_tlast, 
+                m_axis_bsb_tlast => m_axis_cap_tlast,
                 m_axis_bsb_tready => m_axis_cap_tready,
                 bsb_clk => axis_cap_clk,
-                
-                s_axis_stream_in_data => axis_ucap_in_tdata,        
+
+                s_axis_stream_in_data => axis_ucap_in_tdata,
 		        s_axis_stream_in_tvalid=> axis_ucap_in_tvalid,
 		        s_axis_stream_in_tlast=> axis_ucap_in_tlast,
 		        s_axis_stream_in_tready=> axis_ucap_in_tready,
 
                 clk=> ucap_clk,
                 rst=> ucap_rst_reg,
-    
+
                 -- BSB interface
                 CMD_DAT => ucap_cmd_dat,
                 CMD_RDY => ucap_cmd_rdy,
@@ -3818,7 +3818,7 @@ cap_gen: case CAPTURE_TYPE generate
     end uram_case;
 
     when others =>
-        assert FALSE report "Unsupported CAPTURE_TYPE" severity FAILURE;	       
+        assert FALSE report "Unsupported CAPTURE_TYPE" severity FAILURE;
 
 end generate cap_gen;
 ---------------------------------------------------------------------
@@ -3860,7 +3860,7 @@ begin
 	end process;
 
     corr_sel_gen: case CORR_TYPE generate
-            
+
         when corr_case:"CORR44" =>
             -- Implement a BRAM-based correlator
             -- Data is taken at the output of crossbar1, and is fed to MASTER's prober inputs (one bus per correlator)
@@ -3870,13 +3870,13 @@ begin
             signal axis_corr_in_tdata: slv32_array(0 to NUMBER_OF_CORRELATORS-1);
             signal axis_corr_in_tvalid: slv(0 to NUMBER_OF_CORRELATORS-1);
             signal axis_corr_in_tlast: slv(0 to NUMBER_OF_CORRELATORS-1);
-        
+
             signal axis_corr_out_tdata: slv8_array(0 to NUMBER_OF_CORRELATORS-1);
             signal axis_corr_out_tvalid: slv(0 to NUMBER_OF_CORRELATORS-1);
             signal axis_corr_out_tlast: slv(0 to NUMBER_OF_CORRELATORS-1);
             signal axis_corr_out_tready: slv(0 to NUMBER_OF_CORRELATORS-1);
-            
-        begin    
+
+        begin
             -- Connect the correlator inputs and outputs
             CORR_PRB_GEN: for i in 0 to NUMBER_OF_CORRELATORS-1 generate
                 -- input bus. 1:1 connection between each correlator and crossbar output. Pipeling in the module.
@@ -3889,9 +3889,9 @@ begin
                 axis_prb_tlast(CORR_PROBE_BASE_PORT+i)  <= axis_corr_out_tlast(i);
                 axis_corr_out_tready(i)                 <= axis_prb_tready(CORR_PROBE_BASE_PORT+i);
             end generate;
-    
-         
-        
+
+
+
             corr_array0: entity work.corr44_array
                 generic map (
                     PLATFORM_ID             => PLATFORM_ID, -- needed to determine the RPM spacing of the DSP and BRAM elements and choose the right primitives
@@ -3904,7 +3904,7 @@ begin
                     --RIGHT_BRAM_RPM_X        => (394, 462, 394, 462, 394, 462, 394, 462 ),
                     --BOTTOM_DSP_RPM_Y        => (0, 0 , 170, 170, 450, 450, 620, 620),
                     --BOTTOM_BRAM_RPM_Y       => (0, 0 , 170, 170, 450, 450, 620, 620)
-        
+
                     --LEFT_DSP_RPM_X          => corr_rpm.LEFT_DSP_X,
                     --LEFT_BRAM_RPM_X         => corr_rpm.LEFT_BRAM_X,
                     --RIGHT_DSP_RPM_X         => corr_rpm.RIGHT_DSP_X,
@@ -3914,26 +3914,26 @@ begin
                     )
                 port map(
                     -- Input data interface (AXI4-Streaning, 16-bit wide, non-blocking)
-        
+
                     s_axis_tvalid           => axis_corr_in_tvalid,
                     s_axis_tlast            => axis_corr_in_tlast,
                     s_axis_tdata            => axis_corr_in_tdata,
-        
+
                     in_clk                  => ct_clk,
                     in_rst                  => corr_reset_reg1,
-        
+
                     -- Correlated data output interface (AXI4-Streaning, 8-bit wide, blocking)
-        
+
                     m_axis_data_out_tdata   => axis_corr_out_tdata,
                     m_axis_data_out_tvalid  => axis_corr_out_tvalid,
                     m_axis_data_out_tlast   => axis_corr_out_tlast,
                     m_axis_data_out_tready  => axis_corr_out_tready,
-        
+
                     out_clk                 => ctrl_clk,
                     out_rst                 => ctrl_rst,
-        
+
                     -- Control interface
-        
+
                     CMD_DAT  => corr_cmd_dat,
                     CMD_RDY  => corr_cmd_rdy,
                     RPLY_DAT => corr_rply_dat,
@@ -3946,7 +3946,7 @@ begin
             -- When using UCORR44, we take the data directly from the channelizer output; we don't use the first crossbar.
             -- The corner-turning is done in wiring. The output of the correlator is fed to the UCAP auxiliary input.
             -- We can correlate only a subset of channels if we need smaller correlators, but the number of correlators is fixed by the
-            -- number of bins per word. 
+            -- number of bins per word.
             -- There are NUMBER_OF_CORRELATORS bins per channel
             -- There are NUMBER_OF_CHANNELIZERS_TO_CORRELATE channels to correlate (NUMBER_OF_CHANNELIZERS_TO_CORRELATE <= NUMBER_OF_CHANNELIZERS)
             constant NCHAN: integer := NUMBER_OF_CHANNELIZERS_TO_CORRELATE;
@@ -3955,14 +3955,14 @@ begin
             signal axis_corr_in_tdata: slv_array(0 to NCHAN-1)(31 downto 0);
             signal axis_corr_in_tvalid: std_logic;
             signal axis_corr_in_tlast: std_logic;
-        
+
             signal axis_corr_out_tdata: std_logic_vector(7 downto 0);
             signal axis_corr_out_tvalid: std_logic;
             signal axis_corr_out_tlast: std_logic;
             signal axis_corr_out_tready: std_logic;
 --            signal cnt: unsigned(3 downto 0);
         begin
- 
+
             corr_pipe: process(ct_clk)
             begin
                 -- Pipeline correlator input
@@ -3975,7 +3975,7 @@ begin
                     end loop;
                     axis_corr_in_tlast <= axis_chan_out_tlast(0);
                     axis_corr_in_tvalid<= axis_chan_out_tvalid(0);
-    
+
                     -- pipeline correlator output stream to UCAP auxiliary stream input
                     axis_corr_out_tready <= axis_ucap_in_tready;
                     axis_ucap_in_tdata <= axis_corr_out_tdata;
@@ -3983,33 +3983,33 @@ begin
                     axis_ucap_in_tlast <= axis_corr_out_tlast;
                 end if; --clk
             end process corr_pipe;
-        
+
             ucorr44_array0: entity work.ucorr44_array
                 generic map (
                     PLATFORM_ID => PLATFORM_ID, -- needed to determine the RPM spacing of the DSP and BRAM elements and choose the right primitives
-                    NCHAN => NCHAN, 
+                    NCHAN => NCHAN,
                     NCORR   => NCORR
                     )
                 port map(
                     -- Input data interface (AXI4-Streaning, non-blocking)
                     -- One input per channelizer
-        
+
                     s_axis_data_tvalid           => axis_corr_in_tvalid,
                     s_axis_data_tlast            => axis_corr_in_tlast,
                     s_axis_data_tdata            => axis_corr_in_tdata,
-        
+
                     clk                  => ct_clk,
                     rst                  => corr_reset_reg1,
-        
+
                     -- Correlated data output interface (AXI4-Streaning, 8-bit wide, blocking)
-        
+
                     m_axis_data_tdata   => axis_corr_out_tdata,
                     m_axis_data_tvalid  => axis_corr_out_tvalid,
                     m_axis_data_tlast   => axis_corr_out_tlast,
                     m_axis_data_tready  => axis_corr_out_tready,
-        
+
                     -- Control interface
-        
+
                     s_axis_bsb_DAT  => corr_cmd_dat,
                     s_axis_bsb_RDY  => corr_cmd_rdy,
                     m_axis_bsb_DAT => corr_rply_dat,
@@ -4020,7 +4020,7 @@ begin
         -------------
         when others =>
             assert FALSE report "Invalid CORR_TYPE" severity FAILURE;
-    end generate corr_sel_gen;    
+    end generate corr_sel_gen;
 end generate CORRGEN; -- if NUMBER_OF_CORR >0
 
 
