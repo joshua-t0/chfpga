@@ -6,3 +6,10 @@ _Archives
 *.~vsd
 /build/
 *.sublime-workspace
+.py*venv
+.venv*
+py*venv
+.ipynb_checkpoints
+# _version must not be tracked. it is created with the latest git version when pip install is called.
+_version.py
+*.egg-info
