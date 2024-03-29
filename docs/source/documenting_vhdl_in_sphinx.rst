@@ -14,7 +14,7 @@ http://documentation-style-guide-sphinx.readthedocs.io/en/latest/style-guide.htm
     - Index sections (contents, Quick links): ####_####
     - Main sections: ***_***
 
-The `toctree` directive includes a RST file one level down from the current level, i.e. the top heading level of that document becomes a sub-heading in the master document, independent from the heading style (**, === etc.).  The heading levels of RST documents included `toctree` are independent from each other.
+The `toctree` directive includes a RST file one level down from the current level, i.e. the top heading level of that document becomes a sub-heading in the master document, independent from the heading style (``**``, ``===`` etc.).  The heading levels of RST documents included `toctree` are independent from each other.
 
 Content included with the `include` directive is as if it was typed in that document, so this is essentially a single RST document in which case the heading levels must be consistent.)
 
@@ -225,38 +225,15 @@ https://gist.github.com/dupuy/1855764
 
 .. code-block:: python
 
-  s2="""
-  | Tables        | Are           | Cool  |
-  | ------------- |:-------------:| -----:|
-  | col 3 is      | right-aligned | $1600 |
-  | col 2 is      | centered      |   $12 |
-  | zebra stripes | are neat      |    $1 |
-  """
+      s2 = """
+      | Tables        | Are           | Cool  |
+      | ------------- |:-------------:| -----:|
+      | col 3 is      | right-aligned | $1600 |
+      | col 2 is      | centered      |   $12 |
+      | zebra stripes | are neat      |    $1 |
+      """
 
-  r=convert(m,s2)
-
-
-  eprint(r)
-   div
-    table
-     thead
-      tr
-       th Tables
-       th Are
-       th Cool
-     tbody
-      tr
-       td col 3 is
-       td right-aligned
-       td $1600
-      tr
-       td col 2 is
-       td centered
-       td $12
-      tr
-       td zebra stripes
-       td are neat
-       td $1
+      r=convert(m,s2)
 
 
 

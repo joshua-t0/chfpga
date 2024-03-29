@@ -22,6 +22,6 @@ UDP Control Memory Map
 ======================
 
 There are no memory-mapped registers in this module
-.. .. include-docs:: FUNCGEN
+.. .. include-docs
 ..     :start-after: Function Generator Memory Map
 

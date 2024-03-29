@@ -28,9 +28,9 @@ The modules that implement each of these stages are configured differnetly by so
 .. toctree::
 
    chan_crossbar
-   xglink_array
    shuffle_crossbar
-   xge_array
+.. xglink_array
+.. xge_array
 
 ..    - Corner turn engine (Used in CHIME)
 ..       - :entity:`chan_crossbar` : 1st corner-turn engine (takes data from the channelizers)
@@ -193,17 +193,21 @@ The packet format is as follows (assuming one frame per packet):
 
 
 The output data rate on the 10G links are:
-   For 1 frame/packet, with flags::
+
+   - For 1 frame/packet, with flags::
+
       UDP Packet size: 2328 bytes
       Ethernet frame size = int(UDP Payload) + 42 + 7) /8) * 8 = 2376 bytes # confirmwd with wireshark
       Ethernet bandwidth = (2376 *8 bits/frame) / (2.56e-6 s/frame) = 7.425 Gbit/s
 
-   For 2 frames per packet, with flags:
+   - For 2 frames per packet, with flags::
+
       UDP payload: 4636 bytes # confirmed by tcpdump & wireshark
       Ethernet frame size:  4680 bytes # confirmed by wireshark & logs
       Ethernet Bandwidth: = 7.3125 Gbit/s # configmed with bmon
 
-   For 2 frames per packet, no flags:
+   - For 2 frames per packet, no flags::
+
       UDP payload: 4116 bytes # confirmed by tcpdump & wireshark
       Ethernet frame size:  4160 bytes # confirmed by wireshark
       Ethernet Bandwidth: 6.500 Gbit/s # configmed with bmon
@@ -228,7 +232,7 @@ The data rate at the output of the channelizer bin selectors is about half of wh
 
 Since the connectivity of the PCB links between two slots varies from slot to slot, and since the channelizer crossbar does not have any lane remapping capability, the bin selection maps of each bin selector must be customized in order to make sure that the right bins end up at least in the right slot (i.e. bins 0,16,... on slot 0, bins 1,17,... on slot 1 etc). The map is therefore created using the knowledge of the backplane connectivity. Even if we do that, we can't control on which lane of the destination slot the data will arrive in; fixing that is the role of the second crossbar remap operation which will reorder the lanes such that post-remap lane 0 gets its data from slot 0,  lane 1 from slot 1 etc...
 
-In ``shuffle`` 256 mode, the backplane PCB shuffle is operated normally. Lane
+In ``shuffle256`` mode, the backplane PCB shuffle is operated normally. Lane
 0 is the direct, internal one, and is assumed to suffer no packet loss, and is
 therefore used by the 2nd crossbar aligner as a reference to align the
 packets. The latency of lane 0 is therefore much shorter than that of lanes
@@ -259,23 +263,27 @@ The data packet size at each output of the 3rd crossbar is::
       For 2 frames/packet, no flags: 1029 words (4+2*(8*(64+0)+0)+1), 4116 bytes
       For 2 frames/packet, with flags: 1189 words, 4756 bytes
 
-The Ethernet packet size and data rate at the output of the 10G transmitter are::
+The Ethernet packet size and data rate at the output of the 10G transmitter are:
 
-   For 1 frame/packet, no flags:
+   - For 1 frame/packet, no flags::
+
       Ethernet frame size: 2112 bytes
       Ethernet data rate: 2112 * 8/2.56e-6 = 6.600 Gbits/s (hard to measure with bmon)
 
-   For 1 frame/packet, with flags:
+   - For 1 frame/packet, with flags::
+
       UDP payload size: 2388 bytes (confirmed with TCPdump)
       Ethernet frame size: 2432 bytes (confirmed with wireshark)
       Ethernet data rate: 2432 *8/2.56e-6 = 7.600 Gbits/s (hard to measure with bmon)
 
-   For 2 frames/packet, no flags:
+   - For 2 frames/packet, no flags::
+
       UDP payload size: 4116 bytes (confirmed with TCPdump)
       Ethernet frame size: 4160 bytes
       Ethernet data rate: 4160 * 8/2.56e-6/2 = 6.500 Gbits/s (confirmed with bmon)
 
-   For 2 frames/packets, with flags:
+   - For 2 frames/packets, with flags::
+
       UDP payload size: 4756 bytes (confirmed with tcpdump)
       Ethernet frame size: 4800 bytes (4756+42+7)//8*8) (confirmed with wireshark)
       Ethernet data rate: 4800 *8/2/2.56e-6 = 7.500 Gbits/s (confirmed with bmon)

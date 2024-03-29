@@ -1,15 +1,17 @@
-VHDL_DOMAIN
-===========
+vhdl_sphinx_domain
+==================
 
 .. default-domain:: py
 
-.. autosummary:: vhdl_domain
+.. currentmodule:: vhdl_sphinx_domain
 
-	vhdl_parser.VHDLParser
+.. autosummary::
+
+	vhdl_parser.VHDLFiles
 	vhdl_domain.VHDLDomain
 
-.. automodule:: vhdl_parser
+.. automodule:: vhdl_sphinx_domain.vhdl_parser
 
-	.. autoclass:: VHDLParser
+	.. autoclass:: VHDLFiles
 
-	.. automethod:: VHDLParser.analyze_entity_interface
+	.. automethod:: VHDLFiles.analyze_entities

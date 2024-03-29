@@ -6,10 +6,10 @@ chFPGA Modules
    :titlesonly:
 
    System modules (clocks, GPIO, I2C etc.) <system/system>
-   Data Acquisition Engine
    channelizer/chan
    Corner turn engine (Used in CHIME) <corner-turn/corner-turn>
    Correlator engine (X-Engine) (Not used in CHIME) <correlator/corr44_array>
+.. Data Acquisition Engine
 
 
 

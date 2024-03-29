@@ -42,8 +42,9 @@ The tricky part is to document VHDL code. Sphinx does not natively support extra
 Python packages
 - parsimonious 0.7.0 (pip install parsimonious). Used to parse VHDL code to autodocument
 - sphinx 1.5.5-1: Documentation builder
-	- sphinx-rtd-theme 0.2.4-1 (seems to come as a sphinx dependancy)
-	- pygments (sphinx dependency)
+
+	* sphinx-rtd-theme 0.2.4-1 (seems to come as a sphinx dependancy)
+	* pygments (sphinx dependency)
 
 
 Compiling
@@ -51,7 +52,7 @@ Compiling
 
 clone repo::
 
-git clone ...
+	git clone ...
 
 Make sure LFS files were pulled (not just pointers). git-lfs ls-files should show stars ('*') before the filename
 

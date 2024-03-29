@@ -6,7 +6,7 @@
 .. .. figure:: ../images/channelizer.svg
 ..     :width: 75%
 
-The `CHAN_CROSSBAR` implements the first stages of the corner-turn operation. It accepts the raw data directly from the F-Engine channelizers, which are sent as a continuous stream of frames without headers. `CHAN_CROSSBAR`have no headerContrary to the channelizer crossbar, the shuffle crossbar accepts data that is already packetized with headers, flags etc., and there needs to process the data differnetly than the first crossbar.
+The `CHAN_CROSSBAR` implements the first stages of the corner-turn operation. It accepts the raw data directly from the F-Engine channelizers, which are sent as a continuous stream of frames without headers. `CHAN_CROSSBAR` have no header. Contrary to the channelizer crossbar, the shuffle crossbar accepts data that is already packetized with headers, flags etc., and there needs to process the data differnetly than the first crossbar.
 
 Generics are used to specialze the bodule for second or stage operations. Software-controlled registers can be used to change the operation of these crossbars to support different packet geometry and allow the implementation of all the corner turn engine modes of operation.
 
@@ -23,8 +23,8 @@ The module contains a set of control and monitoring memory-map registers.
 .. toctree::
    :titlesonly:
 
-   chan_align
    chan_bin_sel
+.. chan_align
 
 Entity documentation
 --------------------

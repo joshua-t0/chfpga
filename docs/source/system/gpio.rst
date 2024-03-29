@@ -20,11 +20,11 @@ Sub-modules
 .. toctree::
     :titlesonly:
 
-    register_array
-    arm_spi
     irigb_decoder
-    irigb_encoder
-    bp_buck_sync
+..    bp_buck_sync
+..    irigb_encoder
+..    register_array
+..    arm_spi
 
 
 

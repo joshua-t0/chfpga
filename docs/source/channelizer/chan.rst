@@ -59,6 +59,6 @@ Additional details
 Memory map
 ----------
 
-.. include-docs:: CHAN
+.. vhdl:include-docs:: CHAN
     :start-after: CHANNELIZER Memory Map
 

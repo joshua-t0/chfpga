@@ -23,9 +23,9 @@ The module contains a set of control and monitoring memory-map registers.
 .. toctree::
    :titlesonly:
 
-   align2
-   remap
    shuffle_bin_sel
+.. align2
+.. remap
 
 Entity documentation
 --------------------

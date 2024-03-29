@@ -34,7 +34,7 @@ Additional details
 Memory map
 ----------
 
-.. include-docs:: chan_bin_sel
+.. .. include-docs:: chan_bin_sel
     :start-after: CHAN_BIN_SEL Memory Map
 
 Implementation details
@@ -43,14 +43,14 @@ Implementation details
 Data FIFO
 ~~~~~~~~~
 
-.. include-docs:: chan_bin_sel
+.. .. include-docs:: chan_bin_sel
     :start-after: Data FIFOs
 
 
 Data Flag FIFO
 ~~~~~~~~~~~~~~
 
-.. include-docs:: chan_bin_sel
+.. .. include-docs:: chan_bin_sel
     :start-after: Data flags FIFOs
 
 
@@ -79,7 +79,8 @@ Readout Flags FIFO
 ~~~~~~~~~~~~~~~~~~
 
 The flags FIFO describe provide instructions to the readout logic on how to read each block of data from the data FIFO.
-It indicate:
+It indicates:
+
   - size of each block of data in words
   - whether words from pair of lanes should be combined (used for data flags only)
   - whether this is the last block of he the packet. Used to set the TLAST flag if the output stream.
@@ -113,7 +114,7 @@ The limit of these counters are changed from block to block:
 
 
   - When the last word of the packet arrive, the word is ignored, but the packet word is written in the FIFO.
-Readout flags are written on the last word of each block.
+    Readout flags are written on the last word of each block.
 
 
 data_fifo_wr_en_packet_flags_dly=1: The data written in the FIFO is: lower bits: the TLAST flag of each input lane, which indicate if every lane finished at the same time. Other bits are zero.

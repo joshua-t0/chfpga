@@ -1,4 +1,4 @@
-.. system::
+.. title:: system
 
 System modules
 **************
@@ -15,13 +15,13 @@ The SYSTEM modules provide general support such as GPIOs, SPI and I2C interfces,
    :titlesonly:
 
    gpio
-   i2c
-   spi
-   refclk
-   sysmon
-   freq_ctr
-   clocks
-   blinker
+..   i2c
+..   spi
+..   refclk
+..   sysmon
+..   freq_ctr
+..   clocks
+..   blinker
 
 The :entity:`gpio` also provides the following functionnalities:
 
