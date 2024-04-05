@@ -88,7 +88,6 @@ Alternative:
 			chfpgalite/xilinx_projects/CHFPGA_MGK7MB_REV2/CHFPGA_MGK7MB_REV2.runs/impl_Rev2/chFPGA_MGK7MB_Rev2_routed.dcp
 
 	- In the tcl console, cd to the implementation dir. The name of the folder can be cut-and-pasted from messages in the TCL   console window. e.g.::
-
 		cd ...
 
 	- Generate bitstream with the following command::
