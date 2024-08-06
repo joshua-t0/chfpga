@@ -553,17 +553,25 @@ function bitwidth(value: integer) return integer;--! Computes the minimum number
 function shift_left(i:std_logic_vector; n: integer) return std_logic_vector; -- shift left a STD_LOGIC_VECTOR
 function shift_left(ARG:slv8_array; COUNT: natural) return slv8_array; -- shift left a byte array
 function shift_right(i:std_logic_vector; n: integer) return std_logic_vector; -- shift right a STD_LOGIC_VECTOR with zero padding from the left
-function shift_right(x:slv2_array)  return slv2_array; -- shift right a slv2_array. 
+function shift_right(x:slv2_array)  return slv2_array; -- shift right a slv2_array.
 function shift_right(x:slv3_array)  return slv3_array; -- shift right a slv3_array.
 function shift_right(x:slv4_array)  return slv4_array; -- shift right a slv4_array.
+function clip(v:signed; width_minus_one:integer)  return signed;
 function any_one(v: std_logic_vector) return boolean; -- Return TRUE if any bit is '1'.
 function any_one(v: unsigned) return boolean; -- Return TRUE if any bit is '1'.
 function any_zero(v: std_logic_vector) return boolean; -- Return TRUE if any bit is '1'.
 function any_zero(v: unsigned) return boolean; -- Return TRUE if any bit is '1'.
+
 function all_ones(v: std_logic_vector) return boolean; -- Return TRUE if all bits are '1'.
 function all_ones(v: unsigned) return boolean; -- Return TRUE if all bits are '1'.
+function all_ones(v: signed) return boolean; -- Return TRUE if all bits are '1'.
+function all_ones(v: signed; high:integer; low:integer) return boolean;
+
 function all_zeros(v: std_logic_vector) return boolean; -- Return TRUE if all bits are '0'.
 function all_zeros(v: unsigned) return boolean; -- Return TRUE if all bits are '0'.
+function all_zeros(v: signed) return boolean; -- Return TRUE if all bits are '0'.
+function all_zeros(v: signed; high:integer; low:integer) return boolean;
+
 function cmplx(re, im:integer) return complex; -- Create a complex value out of two integer values
 function cmplx(re, im:signed) return complex; -- Create a complex value out of two signed values
 
@@ -669,9 +677,9 @@ end sign_bit;
 -- stolen from std_numeric
 function MAX(LEFT, RIGHT: INTEGER) return INTEGER is
 begin
-	if LEFT > RIGHT then 
+	if LEFT > RIGHT then
 		return LEFT;
-	else 
+	else
 		return RIGHT;
 	end if;
 end MAX;
@@ -703,18 +711,18 @@ end MIN;
 -- stolen from std_numeric
 function MIN(LEFT, RIGHT: INTEGER) return INTEGER is
 begin
-	if LEFT < RIGHT then 
+	if LEFT < RIGHT then
 		return LEFT;
-	else 
+	else
 		return RIGHT;
 	end if;
 end MIN;
 
 function min(LEFT, RIGHT: unsigned) return unsigned is
 begin
-	if LEFT < RIGHT then 
+	if LEFT < RIGHT then
 		return LEFT;
-	else 
+	else
 		return RIGHT;
 	end if;
 end min;
@@ -1047,6 +1055,19 @@ begin
 	return and(v) = '1';
 end function;
 
+--Returns TRUE if all bits are '1'
+function all_ones(v: signed) return boolean is
+begin
+	return and(v) = '1';
+end function;
+
+--Returns TRUE if bits in specified range are all '1'
+function all_ones(v: signed; high:integer; low:integer) return boolean is
+begin
+--	return and(v(high downto low)) = '1'; -- Error: Cannot have variable length slice in component instantiation
+    return signed(v(high downto low)) = -1;
+end function;
+
 --Returns TRUE if all bits are 'o'
 function all_zeros(v: std_logic_vector) return boolean is
 begin
@@ -1054,11 +1075,25 @@ begin
 end function;
 
 
---Returns TRUE if all bits are 'o'
+--Returns TRUE if all bits are '0'
 function all_zeros(v: unsigned) return boolean is
 begin
 	return or(v) = '0';
 end function;
+
+--Returns TRUE if all bits are '0'
+function all_zeros(v: signed) return boolean is
+begin
+	return or(v) = '0';
+end function;
+
+--Returns TRUE if bits in specified range are all '0'
+function all_zeros(v: signed; high:integer; low:integer) return boolean is
+begin
+--	return or(v(high downto low)) = '0'; -- Error: Cannot have variable length slice in component instantiation
+	return signed(v(high downto low)) = 0; -- works
+end function;
+
 
 --Returns the log2 of a integer as a real value
 function log2(v: integer) return real is
@@ -1091,7 +1126,7 @@ begin
 end function;
 
 -- shift left a STD_LOGIC_VECTOR
-function shift_left(i:std_logic_vector; n: integer) return std_logic_vector is  
+function shift_left(i:std_logic_vector; n: integer) return std_logic_vector is
 begin
 	return std_logic_vector(shift_left(unsigned(i), n));
 end function;
@@ -1109,7 +1144,7 @@ begin
 end function;
 
 -- shift right a STD_LOGIC_VECTOR with zero padding on the left
-function shift_right(i:std_logic_vector; n: integer) return std_logic_vector is  
+function shift_right(i:std_logic_vector; n: integer) return std_logic_vector is
 begin
 	return std_logic_vector(shift_right(unsigned(i), n));
 end function;
@@ -1146,6 +1181,27 @@ begin
 	r(x'LEFT) := (others=>'0');
 	return r;
 end function;
+
+-- clip (saturate) the signed value to the specified bit width
+
+function clip(v:signed; width_minus_one:integer)  return signed is
+	variable r: signed(v'RANGE);
+begin
+	-- If the sign bit of the word is 0 but all the clipped bits are not 0, saturate to max positive value
+	if  sign_bit(v) = '0' and not all_zeros(v, v'HIGH, width_minus_one) then
+		r := (others => '0');
+		r(width_minus_one-1 downto 0) := (others => '1');
+	-- If the sign bit of the word is 1 but all the bits down and including the MSB of our byte are not 1, saturate to -128
+	elsif sign_bit(v) = '1' and not all_ones(v, v'HIGH, width_minus_one) then
+		r := (others => '1');
+		r(width_minus_one-1 downto 0) := (others => '0');
+	-- There is no saturation
+	else
+		r := v;
+	end if;
+	return r;
+end function;
+
 
 
 function cmplx(re, im:integer) return complex is -- Create a complex value out of two integer values
