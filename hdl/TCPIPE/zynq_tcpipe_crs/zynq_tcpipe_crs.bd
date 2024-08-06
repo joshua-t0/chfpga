@@ -1,7 +1,7 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0xD1D0009C4A996EAE",
+      "boundary_crc": "0x1A4079424BFA548C",
       "device": "xczu47dr-ffvg1517-1-i",
       "name": "zynq_tcpipe_crs",
       "rev_ctrl_bd_flag": "RevCtrlBdOff",
@@ -1319,6 +1319,386 @@
             "direction": "I"
           }
         }
+      },
+      "adc0_rts": {
+        "mode": "Slave",
+        "vlnv_bus_definition": "xilinx.com:interface:rfdc_rts_pins:1.0",
+        "vlnv": "xilinx.com:interface:rfdc_rts_pins_rtl:1.0",
+        "port_maps": {
+          "CONVERTER0_DATAPATH_OVERFLOW": {
+            "physical_name": "adc0_rts_converter0_datapath_overflow",
+            "direction": "O"
+          },
+          "CONVERTER0_PL_EVENT": {
+            "physical_name": "adc0_rts_converter0_pl_event",
+            "direction": "I"
+          },
+          "CONVERTER01_CLEAR_OR": {
+            "physical_name": "adc0_rts_converter01_clear_or",
+            "direction": "I"
+          },
+          "CONVERTER01_CLEAR_OV": {
+            "physical_name": "adc0_rts_converter01_clear_ov",
+            "direction": "I"
+          },
+          "CONVERTER01_CM_OVER_VOLTAGE": {
+            "physical_name": "adc0_rts_converter01_cm_over_voltage",
+            "direction": "O"
+          },
+          "CONVERTER01_CM_UNDER_VOLTAGE": {
+            "physical_name": "adc0_rts_converter01_cm_under_voltage",
+            "direction": "O"
+          },
+          "CONVERTER01_OVER_RANGE": {
+            "physical_name": "adc0_rts_converter01_over_range",
+            "direction": "O"
+          },
+          "CONVERTER01_OVER_THRESHOLD1": {
+            "physical_name": "adc0_rts_converter01_over_threshold1",
+            "direction": "O"
+          },
+          "CONVERTER01_OVER_THRESHOLD2": {
+            "physical_name": "adc0_rts_converter01_over_threshold2",
+            "direction": "O"
+          },
+          "CONVERTER01_OVER_VOLTAGE": {
+            "physical_name": "adc0_rts_converter01_over_voltage",
+            "direction": "O"
+          },
+          "CONVERTER2_DATAPATH_OVERFLOW": {
+            "physical_name": "adc0_rts_converter2_datapath_overflow",
+            "direction": "O"
+          },
+          "CONVERTER2_PL_EVENT": {
+            "physical_name": "adc0_rts_converter2_pl_event",
+            "direction": "I"
+          },
+          "CONVERTER23_CLEAR_OR": {
+            "physical_name": "adc0_rts_converter23_clear_or",
+            "direction": "I"
+          },
+          "CONVERTER23_CLEAR_OV": {
+            "physical_name": "adc0_rts_converter23_clear_ov",
+            "direction": "I"
+          },
+          "CONVERTER23_CM_OVER_VOLTAGE": {
+            "physical_name": "adc0_rts_converter23_cm_over_voltage",
+            "direction": "O"
+          },
+          "CONVERTER23_CM_UNDER_VOLTAGE": {
+            "physical_name": "adc0_rts_converter23_cm_under_voltage",
+            "direction": "O"
+          },
+          "CONVERTER23_OVER_RANGE": {
+            "physical_name": "adc0_rts_converter23_over_range",
+            "direction": "O"
+          },
+          "CONVERTER23_OVER_THRESHOLD1": {
+            "physical_name": "adc0_rts_converter23_over_threshold1",
+            "direction": "O"
+          },
+          "CONVERTER23_OVER_THRESHOLD2": {
+            "physical_name": "adc0_rts_converter23_over_threshold2",
+            "direction": "O"
+          },
+          "CONVERTER23_OVER_VOLTAGE": {
+            "physical_name": "adc0_rts_converter23_over_voltage",
+            "direction": "O"
+          },
+          "SYNC_OUT": {
+            "physical_name": "adc0_rts_sync_out",
+            "direction": "O"
+          },
+          "SYSREF_GATE": {
+            "physical_name": "adc0_rts_sysref_gate",
+            "direction": "I"
+          }
+        }
+      },
+      "adc1_rts": {
+        "mode": "Slave",
+        "vlnv_bus_definition": "xilinx.com:interface:rfdc_rts_pins:1.0",
+        "vlnv": "xilinx.com:interface:rfdc_rts_pins_rtl:1.0",
+        "port_maps": {
+          "CONVERTER0_DATAPATH_OVERFLOW": {
+            "physical_name": "adc1_rts_converter0_datapath_overflow",
+            "direction": "O"
+          },
+          "CONVERTER0_PL_EVENT": {
+            "physical_name": "adc1_rts_converter0_pl_event",
+            "direction": "I"
+          },
+          "CONVERTER01_CLEAR_OR": {
+            "physical_name": "adc1_rts_converter01_clear_or",
+            "direction": "I"
+          },
+          "CONVERTER01_CLEAR_OV": {
+            "physical_name": "adc1_rts_converter01_clear_ov",
+            "direction": "I"
+          },
+          "CONVERTER01_CM_OVER_VOLTAGE": {
+            "physical_name": "adc1_rts_converter01_cm_over_voltage",
+            "direction": "O"
+          },
+          "CONVERTER01_CM_UNDER_VOLTAGE": {
+            "physical_name": "adc1_rts_converter01_cm_under_voltage",
+            "direction": "O"
+          },
+          "CONVERTER01_OVER_RANGE": {
+            "physical_name": "adc1_rts_converter01_over_range",
+            "direction": "O"
+          },
+          "CONVERTER01_OVER_THRESHOLD1": {
+            "physical_name": "adc1_rts_converter01_over_threshold1",
+            "direction": "O"
+          },
+          "CONVERTER01_OVER_THRESHOLD2": {
+            "physical_name": "adc1_rts_converter01_over_threshold2",
+            "direction": "O"
+          },
+          "CONVERTER01_OVER_VOLTAGE": {
+            "physical_name": "adc1_rts_converter01_over_voltage",
+            "direction": "O"
+          },
+          "CONVERTER2_DATAPATH_OVERFLOW": {
+            "physical_name": "adc1_rts_converter2_datapath_overflow",
+            "direction": "O"
+          },
+          "CONVERTER2_PL_EVENT": {
+            "physical_name": "adc1_rts_converter2_pl_event",
+            "direction": "I"
+          },
+          "CONVERTER23_CLEAR_OR": {
+            "physical_name": "adc1_rts_converter23_clear_or",
+            "direction": "I"
+          },
+          "CONVERTER23_CLEAR_OV": {
+            "physical_name": "adc1_rts_converter23_clear_ov",
+            "direction": "I"
+          },
+          "CONVERTER23_CM_OVER_VOLTAGE": {
+            "physical_name": "adc1_rts_converter23_cm_over_voltage",
+            "direction": "O"
+          },
+          "CONVERTER23_CM_UNDER_VOLTAGE": {
+            "physical_name": "adc1_rts_converter23_cm_under_voltage",
+            "direction": "O"
+          },
+          "CONVERTER23_OVER_RANGE": {
+            "physical_name": "adc1_rts_converter23_over_range",
+            "direction": "O"
+          },
+          "CONVERTER23_OVER_THRESHOLD1": {
+            "physical_name": "adc1_rts_converter23_over_threshold1",
+            "direction": "O"
+          },
+          "CONVERTER23_OVER_THRESHOLD2": {
+            "physical_name": "adc1_rts_converter23_over_threshold2",
+            "direction": "O"
+          },
+          "CONVERTER23_OVER_VOLTAGE": {
+            "physical_name": "adc1_rts_converter23_over_voltage",
+            "direction": "O"
+          },
+          "SYNC_OUT": {
+            "physical_name": "adc1_rts_sync_out",
+            "direction": "O"
+          },
+          "SYSREF_GATE": {
+            "physical_name": "adc1_rts_sysref_gate",
+            "direction": "I"
+          }
+        }
+      },
+      "adc2_rts": {
+        "mode": "Slave",
+        "vlnv_bus_definition": "xilinx.com:interface:rfdc_rts_pins:1.0",
+        "vlnv": "xilinx.com:interface:rfdc_rts_pins_rtl:1.0",
+        "port_maps": {
+          "CONVERTER0_DATAPATH_OVERFLOW": {
+            "physical_name": "adc2_rts_converter0_datapath_overflow",
+            "direction": "O"
+          },
+          "CONVERTER0_PL_EVENT": {
+            "physical_name": "adc2_rts_converter0_pl_event",
+            "direction": "I"
+          },
+          "CONVERTER01_CLEAR_OR": {
+            "physical_name": "adc2_rts_converter01_clear_or",
+            "direction": "I"
+          },
+          "CONVERTER01_CLEAR_OV": {
+            "physical_name": "adc2_rts_converter01_clear_ov",
+            "direction": "I"
+          },
+          "CONVERTER01_CM_OVER_VOLTAGE": {
+            "physical_name": "adc2_rts_converter01_cm_over_voltage",
+            "direction": "O"
+          },
+          "CONVERTER01_CM_UNDER_VOLTAGE": {
+            "physical_name": "adc2_rts_converter01_cm_under_voltage",
+            "direction": "O"
+          },
+          "CONVERTER01_OVER_RANGE": {
+            "physical_name": "adc2_rts_converter01_over_range",
+            "direction": "O"
+          },
+          "CONVERTER01_OVER_THRESHOLD1": {
+            "physical_name": "adc2_rts_converter01_over_threshold1",
+            "direction": "O"
+          },
+          "CONVERTER01_OVER_THRESHOLD2": {
+            "physical_name": "adc2_rts_converter01_over_threshold2",
+            "direction": "O"
+          },
+          "CONVERTER01_OVER_VOLTAGE": {
+            "physical_name": "adc2_rts_converter01_over_voltage",
+            "direction": "O"
+          },
+          "CONVERTER2_DATAPATH_OVERFLOW": {
+            "physical_name": "adc2_rts_converter2_datapath_overflow",
+            "direction": "O"
+          },
+          "CONVERTER2_PL_EVENT": {
+            "physical_name": "adc2_rts_converter2_pl_event",
+            "direction": "I"
+          },
+          "CONVERTER23_CLEAR_OR": {
+            "physical_name": "adc2_rts_converter23_clear_or",
+            "direction": "I"
+          },
+          "CONVERTER23_CLEAR_OV": {
+            "physical_name": "adc2_rts_converter23_clear_ov",
+            "direction": "I"
+          },
+          "CONVERTER23_CM_OVER_VOLTAGE": {
+            "physical_name": "adc2_rts_converter23_cm_over_voltage",
+            "direction": "O"
+          },
+          "CONVERTER23_CM_UNDER_VOLTAGE": {
+            "physical_name": "adc2_rts_converter23_cm_under_voltage",
+            "direction": "O"
+          },
+          "CONVERTER23_OVER_RANGE": {
+            "physical_name": "adc2_rts_converter23_over_range",
+            "direction": "O"
+          },
+          "CONVERTER23_OVER_THRESHOLD1": {
+            "physical_name": "adc2_rts_converter23_over_threshold1",
+            "direction": "O"
+          },
+          "CONVERTER23_OVER_THRESHOLD2": {
+            "physical_name": "adc2_rts_converter23_over_threshold2",
+            "direction": "O"
+          },
+          "CONVERTER23_OVER_VOLTAGE": {
+            "physical_name": "adc2_rts_converter23_over_voltage",
+            "direction": "O"
+          },
+          "SYNC_OUT": {
+            "physical_name": "adc2_rts_sync_out",
+            "direction": "O"
+          },
+          "SYSREF_GATE": {
+            "physical_name": "adc2_rts_sysref_gate",
+            "direction": "I"
+          }
+        }
+      },
+      "adc3_rts": {
+        "mode": "Slave",
+        "vlnv_bus_definition": "xilinx.com:interface:rfdc_rts_pins:1.0",
+        "vlnv": "xilinx.com:interface:rfdc_rts_pins_rtl:1.0",
+        "port_maps": {
+          "CONVERTER0_DATAPATH_OVERFLOW": {
+            "physical_name": "adc3_rts_converter0_datapath_overflow",
+            "direction": "O"
+          },
+          "CONVERTER0_PL_EVENT": {
+            "physical_name": "adc3_rts_converter0_pl_event",
+            "direction": "I"
+          },
+          "CONVERTER01_CLEAR_OR": {
+            "physical_name": "adc3_rts_converter01_clear_or",
+            "direction": "I"
+          },
+          "CONVERTER01_CLEAR_OV": {
+            "physical_name": "adc3_rts_converter01_clear_ov",
+            "direction": "I"
+          },
+          "CONVERTER01_CM_OVER_VOLTAGE": {
+            "physical_name": "adc3_rts_converter01_cm_over_voltage",
+            "direction": "O"
+          },
+          "CONVERTER01_CM_UNDER_VOLTAGE": {
+            "physical_name": "adc3_rts_converter01_cm_under_voltage",
+            "direction": "O"
+          },
+          "CONVERTER01_OVER_RANGE": {
+            "physical_name": "adc3_rts_converter01_over_range",
+            "direction": "O"
+          },
+          "CONVERTER01_OVER_THRESHOLD1": {
+            "physical_name": "adc3_rts_converter01_over_threshold1",
+            "direction": "O"
+          },
+          "CONVERTER01_OVER_THRESHOLD2": {
+            "physical_name": "adc3_rts_converter01_over_threshold2",
+            "direction": "O"
+          },
+          "CONVERTER01_OVER_VOLTAGE": {
+            "physical_name": "adc3_rts_converter01_over_voltage",
+            "direction": "O"
+          },
+          "CONVERTER2_DATAPATH_OVERFLOW": {
+            "physical_name": "adc3_rts_converter2_datapath_overflow",
+            "direction": "O"
+          },
+          "CONVERTER2_PL_EVENT": {
+            "physical_name": "adc3_rts_converter2_pl_event",
+            "direction": "I"
+          },
+          "CONVERTER23_CLEAR_OR": {
+            "physical_name": "adc3_rts_converter23_clear_or",
+            "direction": "I"
+          },
+          "CONVERTER23_CLEAR_OV": {
+            "physical_name": "adc3_rts_converter23_clear_ov",
+            "direction": "I"
+          },
+          "CONVERTER23_CM_OVER_VOLTAGE": {
+            "physical_name": "adc3_rts_converter23_cm_over_voltage",
+            "direction": "O"
+          },
+          "CONVERTER23_CM_UNDER_VOLTAGE": {
+            "physical_name": "adc3_rts_converter23_cm_under_voltage",
+            "direction": "O"
+          },
+          "CONVERTER23_OVER_RANGE": {
+            "physical_name": "adc3_rts_converter23_over_range",
+            "direction": "O"
+          },
+          "CONVERTER23_OVER_THRESHOLD1": {
+            "physical_name": "adc3_rts_converter23_over_threshold1",
+            "direction": "O"
+          },
+          "CONVERTER23_OVER_THRESHOLD2": {
+            "physical_name": "adc3_rts_converter23_over_threshold2",
+            "direction": "O"
+          },
+          "CONVERTER23_OVER_VOLTAGE": {
+            "physical_name": "adc3_rts_converter23_over_voltage",
+            "direction": "O"
+          },
+          "SYNC_OUT": {
+            "physical_name": "adc3_rts_sync_out",
+            "direction": "O"
+          },
+          "SYSREF_GATE": {
+            "physical_name": "adc3_rts_sysref_gate",
+            "direction": "I"
+          }
+        }
       }
     },
     "ports": {
@@ -2359,7 +2739,7 @@
             "value": "0"
           },
           "ADC_RTS": {
-            "value": "false"
+            "value": "true"
           },
           "ADC_Slice00_Enable": {
             "value": "true"
@@ -5832,6 +6212,12 @@
           "usp_rf_data_converter_0/adc0_clk"
         ]
       },
+      "adc0_rts_0_1": {
+        "interface_ports": [
+          "adc0_rts",
+          "usp_rf_data_converter_0/adc0_rts"
+        ]
+      },
       "adc1_calibration_0_1": {
         "interface_ports": [
           "adc1_cal",
@@ -5842,6 +6228,12 @@
         "interface_ports": [
           "adc1_clk",
           "usp_rf_data_converter_0/adc1_clk"
+        ]
+      },
+      "adc1_rts_0_1": {
+        "interface_ports": [
+          "adc1_rts",
+          "usp_rf_data_converter_0/adc1_rts"
         ]
       },
       "adc2_calibration_0_1": {
@@ -5856,6 +6248,12 @@
           "usp_rf_data_converter_0/adc2_clk"
         ]
       },
+      "adc2_rts_0_1": {
+        "interface_ports": [
+          "adc2_rts",
+          "usp_rf_data_converter_0/adc2_rts"
+        ]
+      },
       "adc3_calibration_0_1": {
         "interface_ports": [
           "adc3_cal",
@@ -5866,6 +6264,12 @@
         "interface_ports": [
           "adc3_clk",
           "usp_rf_data_converter_0/adc3_clk"
+        ]
+      },
+      "adc3_rts_0_1": {
+        "interface_ports": [
+          "adc3_rts",
+          "usp_rf_data_converter_0/adc3_rts"
         ]
       },
       "axi_dma_0_M_AXIS_MM2S": {

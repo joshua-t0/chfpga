@@ -155,7 +155,14 @@ entity GPIO is
 		adc_cal_freeze: out std_logic_vector(0 to 7);
 		adc_cal_frozen: in std_logic_vector(0 to 7) := (others => '0');
 		adc_cal_signal_detect: in std_logic_vector(0 to 7) := (others => '0');
-
+		adc_clear_or: out std_logic_vector(0 to 7) := (others => '0');
+		adc_clear_ov: out std_logic_vector(0 to 7) := (others => '0');
+		adc_cm_ov: in std_logic_vector(0 to 7) := (others => '0');
+		adc_cm_uv: in std_logic_vector(0 to 7) := (others => '0');
+		adc_or: in std_logic_vector(0 to 7) := (others => '0');
+		adc_ot1: in std_logic_vector(0 to 7) := (others => '0');
+		adc_ot2: in std_logic_vector(0 to 7) := (others => '0');
+		adc_ov: in std_logic_vector(0 to 7) := (others => '0');
 		adc_pll_lock: in std_logic_vector(0 to NUMBER_OF_ADC_BOARDS-1); --! Lock signal for the ADC PLL on each mezzanine
 
 		-- LCD (on some evaluation boards)
@@ -279,7 +286,7 @@ signal USER_DATA_VALID: std_logic;
 
 --- Define Control word and its signals
 signal CONTROL_BYTES: slv8_array(0 to 50); -- default value set in the CMD_SLAVE
-signal STATUS_BYTES: slv8_array(0 to 37); -- default value set in the CMD_SLAVE
+signal STATUS_BYTES: slv8_array(0 to 41); -- default value set in the CMD_SLAVE
 
 --signal CTRL_FLAG_ADC_RESET: std_logic;
 signal CTRL_FLAG_BUCK_SYNC_ENABLE: std_logic;
@@ -465,83 +472,115 @@ begin
 -----------------------------------------------------------------------------------
 -- CONTROL and STATUS Bytes
 -----------------------------------------------------------------------------------
---! \addtogroup memory_map
---! GPIO Module
---! =============
---!  -------------------------------------------------------------------
---! |  Page   | Addr|Bit(s)|     Name                    | Description |
---! |---------|-----|------|-----------------------------|-------------|
---! | CONTROL |  0  |  7   | CTRL_FLAG_GLOBAL_TRIG       | |
---! |         |     |  6   | CTRL_FLAG_BUCK_SYNC_ENABLE  | Enables the generation of the Buck switcher synchronization signals. If '0', all sync lines are held low to let the switcher free-run.|
---! |         |     |  5   | CHAN_CLK_RESET              | Resets the MMCM that generates the channelizer clocks |
---! |         |     |  4   | CHAN_CLK_SOURCE             | Selects the source of the channelizer clocks: 0: ADC clock, 1: 200 MHz system clock. CHAN_CLK_RESET or ADCDAQ_RESET must be asserted when doing the change to allow the MMCM to lock properly to the new clock.|
---! |         |     |  3   | ADCDAQ_RESET                | Resets all ADCDAQ modules. This also resets the channelizer clock MMCM, the channelizers and the correlators.|
---! |         |     |  2   | (unused)                    | |
---! |         |     | 1:0  | ADC_RESET                   | ADC RESET line (active High) for each FMC ADC boards (bit 0 is for ADC board 0, etc) |
---! |         |  1  | 7:0  | CTRL_FLAG_BUCK_CLK_DIV      | System clock frequency divider ratio used to set the buck sync frequency|
---! |         |  2  |  7   | LCD_E                       | LCD Enable |
---! |         |     |  6   | LCD_RS                      | LCD Command/Data flag|
---! |         |     |  5   | LCD_RW                      | LCD Read/Write flag|
---! |         |     |  4   | (unused)                    | |
---! |         |     | 3:0  | LCD_DB                      | LCD data bus (4 bits) |
---! |         |  3  |  7   | BLINKER_RESET               | |
---! |         |     |  6   | CHAN_RESET_ASYNC            | Resets all channelizers |
---! |         |     |  5   | CORR_RESET_ASYNC            | Resets all correlators |
---! |         |     | 4:0  | (unused)                    | |
---! |         |  4  | 7:5  | (unused)                    | |
---! |         |     | 4:0  | HOST_FRAME_READ_RATE        | Indicates how often the host reads its UDP buffers in order to throttle the Ethernet output data rate. The read period is 2*(2^HOST_FRAME_READ_RATE)*(1/ctrl_clk) where CTRL lk is 125 MHz|
---! |         |5-12 | 63:0 | BUCK_PHASE                  | Phase of each of the 16 Buck sync lines. There are 16 possible phase values for each line. Bits 3:0 is for phase 0, bits 7:4 for phase 1 etc.|
---! |         |13-24|      | (unused)                    | |
---! |         |25-32| 63:57| (unused)                    | |
---! |         |     | 56:0 | TARGET_FPGA_DNA             | Target FPGA serial number: The core registers can be written via BSB commands if this target serial number matches the actual serial number of the FPGA |
---! |         |  33 |      | (unused)                    | |
---! |         |34-37| 31:0 | pwm_offset                  | Number of events (frames) to delay before starting to generate the first High of the PWM output|
---! |         |38-41| 31:0 | pwm_high_time               | Number of events (frames) to keep the PWM output at High|
---! |         |42-45| 31:0 | pwm_period                  | Number of events (frames) between PWM High (i.e PWM period)|
---! |         |  33 | 7    | pwm_soft_reset              | Software reset of the PWM module. Active high. |
---! |         |     | 7:3  | (unused)                    | |
---! |         |     | 2:0  | user_mux_source             | Selects which user source to send to the user output. |
---! | STATUS  |  0  |  7   | USER_DATA_VALID             | is '1' when the ACCESS0 register data (firmware timestamp) is valid |
---! |         |     | 6:0  | COOKIE                      | Defined as a GENERIC (default = 0x42)|
---! |         |  1  | 7:0  | LOG2_FRAME_LENGTH           | |
---! |         |  2  | 7:0  | NUMBER_OF_CHANNELIZERS      | Number of antennas processing pipelines implemented in the firmware |
---! |         |  3  | 7:0  | NUMBER_OF_CORRELATORS       | Number of correlators implemented in the firmware |
---! |         |  4  | 7:0  | NUMBER_OF_CHANNELIZERS_TO_CORRELATE | Number of antennas connected to the correlators. Only antennas 0 to N-1 will be connected. This sets the numbe rof parallel multipliers and accumulators in the correlator. |
---! |         |  5  | 7:0  | NUMBER_OF_CHANNELIZERS_WITH_FFT   | Indicates how many channelizers have a FFT module. Those will be channeizers 0 to N-1|
---! |         |  6  | 7:0  | NUMBER_OF_GPU_LINKS         | Indicates how GPU Links are implemented. If zero, the GPU module is not present at all (not even the common registers)|
---! |         | 7-10| 31:0 | firmware_timestamp          | 32-bit word containing the timestamp of the firmware inserted during the bitgen process |
---! |         | 11  | 7:0  | PLATFORM_ID                 | Type of platform on which the firmware is running. 0=ML605, 1=KC705, 3=MGK7MB, 4=ZCU111 |
---! |         |12-19| 63:57| (unused)                    | |
---! |         |     | 56:0 | FPGA_DNA                    | FPGA unique serial number |
---! |         | 20  | 7:0  | NUMBER_OF_CROSSBAR_INPUTS   | Indicates how many channelizers are connected to the crossbar inputs. Those will be channeizers 0 to N-1|
---! |         | 21  | 7:0  | NUMBER_OF_CROSSBAR1_OUTPUTS | Indicates the number of crossbar1 outputs. Those outputs feed the GPU links and the FPGA correlators (if implemented).
---! |         |22-23| 15:0 | PROTOCOL_VERSION            | 16-bit value indicating the protocol version. A change in the version means that some change is needed on host control software. |
---! |         | 24  | 7:0  | CHANNELIZERS_CLOCK_SOURCE   | ADC channel from which the channelizer clocks are derived. Useful to know if we should expect the clock to be missing and use alternate internal clock.
---! |         |25-30|      | (unused)                    | |
---! |         |  31 | 7:0  | slot_sense_ctr(0)           | |
---! |         |  32 | 7:0  | slot_sense_ctr(1)           | |
---! |         |  33 | 7:6  | adc_pll_lock                | |
---! |         |     | 5:2  | (unused)                    | |
---! |         |     |  1   | udp_tx_overflow             | |
---! |         |     |  0   | udp_rx_overflow             | |
---! |         |  34 | 7:0  | cmd_packet_counter          | |
---! |         |  35 | 7:0  | rply_packet_counter         | |
---! |         |  36 | 7:0  | NUMBER_OF_BP_SHUFFLE_LINKS  | |
---! |         |  37 |  7   | (unused)                    | |
---! |         |  37 |  7   | bp_gpio_int_in              | |
---! |         |  37 |  6   | bp_gpio_int_in              | |
---! |         |  37 |  5   | gpio_irq_in                 | |
---! |         |  37 |  4   | flash_cs_in                 | |
---! |         |  37 |  3   | uart_tx_in                  | |
---! |         |  37 |  2   | uart_rx_in                  | |
---! |         |  37 |  1   | gpio_rst_in                 | |
---! |         |  37 |  0   | arm_irq_in                  | |
---!  ------------------------------------------------------------------------------
---!
+--
+-- GPIO Module
+-- =============
+--  -------------------------------------------------------------------
+-- |  Page   | Addr|Bit(s)|     Name                    | Description |
+-- |---------|-----|------|-----------------------------|-------------|
+-- | CONTROL |  0  |  7   | CTRL_FLAG_GLOBAL_TRIG       | (Possibly unused) |
+-- |         |     |  6   | CTRL_FLAG_BUCK_SYNC_ENABLE  | Enables the generation of the Buck switcher synchronization signals. If '0', all sync lines are held low to let the switcher free-run.|
+-- |         |     |  5   | CHAN_CLK_RESET              | Resets the MMCM that generates the channelizer clocks |
+-- |         |     |  4   | CHAN_CLK_SOURCE             | Selects the source of the channelizer clocks: 0: ADC clock, 1: 200 MHz system clock. CHAN_CLK_RESET or ADCDAQ_RESET must be asserted when doing the change to allow the MMCM to lock properly to the new clock.|
+-- |         |     |  3   | ADCDAQ_RESET                | Resets all ADCDAQ modules. This also resets the channelizer clock MMCM, the channelizers and the correlators.|
+-- |         |     |  2   | (unused)                    | |
+-- |         |     | 1:0  | ADC_RESET                   | ADC RESET line (active High) for each FMC ADC boards (bit 0 is for ADC board 0, etc) |
+-- |         |  1  | 7:0  | CTRL_FLAG_BUCK_CLK_DIV      | System clock frequency divider ratio used to set the buck sync frequency|
+-- |         |  2  |  7   | LCD_E                       | LCD Enable |
+-- |         |     |  6   | LCD_RS                      | LCD Command/Data flag|
+-- |         |     |  5   | LCD_RW                      | LCD Read/Write flag|
+-- |         |     |  4   | (unused)                    | |
+-- |         |     | 3:0  | LCD_DB                      | LCD data bus (4 bits) |
+-- |         |  3  |  7   | BLINKER_RESET               | |
+-- |         |     |  6   | CHAN_RESET_ASYNC            | Resets all channelizers |
+-- |         |     |  5   | CORR_RESET_ASYNC            | Resets all correlators |
+-- |         |     |  4   | ctrl_reset_trig             | Generates a BSB reset pulse when a rising edge of this signal is detected |
+-- |         |     |  3   | sysmon_user_reset           | Resets the SYSMON module |
+-- |         |     |  2   | clk10_sel                   | CRS platform: Selects the source of the 10 MHz reference clock |
+-- |         |     |  1   | pll_sync_pre  				| CRS: Pulses the External PLL SYNC line and causes its clocks to resynchronize	 |
+-- |         |     |  0   | (unused)                    | |
+-- |         |  4  | 7:5  | (unused)                    | |
+-- |         |     | 4:0  | HOST_FRAME_READ_RATE        | Indicates how often the host reads its UDP buffers in order to throttle the Ethernet output data rate. The read period is 2*(2^HOST_FRAME_READ_RATE)*(1/ctrl_clk) where CTRL lk is 125 MHz|
+-- |         |5-12 | 63:0 | BUCK_PHASE                  | Phase of each of the 16 Buck sync lines. There are 16 possible phase values for each line. Bits 3:0 is for phase 0, bits 7:4 for phase 1 etc.|
+-- |         |  13 | 7:0  | adc_cal_freeze              | RfSoC ADC calibration freeze control (bits 0-7 => ADC 0-7) |
+-- |         |  14 | 7:0  | adc_clear_or                | RfSoC ADC overrange flag clear (bits 0-7 => ADC 0-7) |
+-- |         |  15 | 7:0  | adc_clear_ov                | RfSoC ADC overvoltage flag clear (bits 0-7 => ADC 0-7)|
+-- |         |16-24|      | (unused)                    | |
+-- |         |25-32| 63:57| (unused)                    | |
+-- |         |     | 56:0 | target_fpga_serial_number   | Target FPGA serial number: The core registers can be written via BSB commands if this target serial number matches the actual serial number of the FPGA |
+-- |         |  33 |      | target_network_config_source| Selects when core registers arewritable. "00": core reg write always enabled; "01", "10" or "11": core reg write only when target serial matches the FPGA's serial |
+-- |         |34-37| 31:0 | pwm_offset                  | Number of events (frames) to delay before starting to generate the first High of the PWM output|
+-- |         |38-41| 31:0 | pwm_high_time               | Number of events (frames) to keep the PWM output at High|
+-- |         |42-45| 31:0 | pwm_period                  | Number of events (frames) between PWM High (i.e PWM period)|
+-- |         | 46  | 7    | pwm_soft_reset              | Software reset of the PWM module. Active high. |
+-- |         |     | 6:5  | (unused)                    | |
+-- |         |     |  4   | bp_gpio_int_oe              | IceBoard: Enables tristate output of GPIO_INT_OE |
+-- |         |     | 3:0  | user_mux_source(0)          | Selects which user source to send to the user output 0. |
+-- |         | 47  |  7   | uart_tx_oe                  | IceBoard I/O |
+-- |         |     |  6   | uart_tx_out                 | IceBoard I/O |
+-- |         |     |  5   | uart_rx_oe                  | IceBoard I/O |
+-- |         |     |  4   | uart_rx_out                 | IceBoard I/O |
+-- |         |     |  3   | gpio_rst_oe                 | IceBoard I/O |
+-- |         |     |  2   | gpio_rst_out                | IceBoard I/O |
+-- |         |     |  1   | arm_irq_oe                  | IceBoard I/O |
+-- |         |     |  0   | arm_irq_out                 | IceBoard I/O |
+-- |         | 48  | 7:4  | user_mux_source(3)          | Selects the output sent to user output 3 |
+-- |         |     |  3   | gpio_irq_oe                 | IceBoard I/O |
+-- |         |     |  2   | gpio_irq_out                | IceBoard I/O |
+-- |         |     |  1   | flash_cs_oe                 | IceBoard I/O |
+-- |         |     |  0   | flash_cs_out                | IceBoard I/O |
+-- |         | 49  | 7:4  | user_mux_source(2)          | Selects the output sent to user output 2 |
+-- |         |     | 3:0  | user_mux_source(1)          | Selects the output sent to user output 1 |
+-- |         | 50  |  7   | user_bit(1)                 | User bit 1 (multiple functions) |
+-- |         |     |  6   | user_bit(0)                 | user bit 0 (multiple functions) |
+-- |         |     |  5   | irigb_delay_reset           | Loads the delays to the IRIG-B signal |
+-- |         |     | 4:0  | irigb_delay                 | Delayed to be applied to the IRIG-B signal |
+-- | STATUS  |  0  |  7   | USER_DATA_VALID             | is '1' when the ACCESS0 register data (firmware timestamp) is valid |
+-- |         |     | 6:0  | COOKIE                      | Defined as a GENERIC (default = 0x42)|
+-- |         |  1  | 7:5  | LOG2_SAMPLES_PER_WORD       | Base-2 log of the number of samples per word |
+-- |         |     | 4:0  | LOG2_SAMPLES_PER_FRAME      | Base-2 log of the number of samples per frame |
+-- |         |  2  | 7:0  | NUMBER_OF_CHANNELIZERS      | Number of antennas processing pipelines implemented in the firmware |
+-- |         |  3  | 7:0  | NUMBER_OF_CORRELATORS       | Number of correlators implemented in the firmware |
+-- |         |  4  | 7:0  | NUMBER_OF_CHANNELIZERS_TO_CORRELATE | Number of antennas connected to the correlators. Only antennas 0 to N-1 will be connected. This sets the numbe rof parallel multipliers and accumulators in the correlator. |
+-- |         |  5  | 7:0  | NUMBER_OF_CHANNELIZERS_WITH_FFT   | Indicates how many channelizers have a FFT module. Those will be channeizers 0 to N-1|
+-- |         |  6  | 7:0  | NUMBER_OF_GPU_LINKS         | Indicates how GPU Links are implemented. If zero, the GPU module is not present at all (not even the common registers)|
+-- |         | 7-10| 31:0 | firmware_timestamp          | 32-bit word containing the timestamp of the firmware inserted during the bitgen process |
+-- |         |  11 | 7:0  | PLATFORM_ID                 | Type of platform on which the firmware is running. 0=ML605, 1=KC705, 3=MGK7MB, 4=ZCU111 |
+-- |         |12-19| 63:57| (unused)                    | FPGA unique serial number |
+-- |         |     | 56:0 | FPGA_DNA                    | |
+-- |         |  20 | 7:0  | NUMBER_OF_CROSSBAR_INPUTS   | Indicates how many channelizers are connected to the crossbar inputs. Those will be channeizers 0 to N-1|
+-- |         |  21 | 7:0  | NUMBER_OF_CROSSBAR1_OUTPUTS | Indicates the number of crossbar1 outputs. Those outputs feed the GPU links and the FPGA correlators (if implemented).
+-- |         |22-23| 15:0 | PROTOCOL_VERSION            | 16-bit value indicating the protocol version. A change in the version means that some change is needed on host control software. |
+-- |         |  24 | 7:0  | CHANNELIZERS_CLOCK_SOURCE   | ADC channel from which the channelizer clocks are derived. Useful to know if we should expect the clock to be missing and use alternate internal clock.
+-- |         |  25 | 7:0  | NUMBER_OF_ADCS              | Number of ADC channels implemented in this design |
+-- |         |  26 | 7:0  | ADC_BITS_PER_SAMPLE         | Number of bits in an ADC sample |
+-- |         |  27 | 7:0  | adc_cal_frozen              | RfSoC ADC calibration frozen (bit 0-7 => ADC0-7) |
+-- |         |  28 | 7:0  | adc_cal_signal_detect       | RfSoC ADC calibration signal detected (bit 0-7 => ADC0-7) |
+-- |         |  29 | 7:0  | adc_or                      | RfSoC ADC overrange (bit 0-7 => ADC0-7) |
+-- |         |  30 | 7:0  | adc_ov                      | RfSoC ADC overvoltage (bit 0-7 => ADC0-7) |
+-- |         |  31 | 7:0  | slot_sense_ctr(0)           | (unused) |
+-- |         |  32 | 7:0  | slot_sense_ctr(1)           | (unused) |
+-- |         |  33 | 7:6  | adc_pll_lock                | ICEBoard Mezzanine PLL lock signal |
+-- |         |     | 5:0  | (unused)                    | |
+-- |         |  34 | 7:0  | cmd_packet_counter          | Number of command packets received |
+-- |         |  35 | 7:0  | rply_packet_counter         | Number of replies sent |
+-- |         |  36 | 7:0  | NUMBER_OF_BP_SHUFFLE_LINKS  | Number of GTY links in the corner-turn engine (both backplane PCB and backplane QSDP links) |
+-- |         |  37 |  7   | core_reg_wr_en              | (debug) High when writing to the core register is allowed |
+-- |         |     |  6   | bp_gpio_int_in              | IceBoard I/O |
+-- |         |     |  5   | gpio_irq_in                 | IceBoard I/O |
+-- |         |     |  4   | flash_cs_in                 | IceBoard I/O |
+-- |         |     |  3   | uart_tx_in                  | IceBoard I/O |
+-- |         |     |  2   | uart_rx_in                  | IceBoard I/O |
+-- |         |     |  1   | gpio_rst_in                 | IceBoard I/O |
+-- |         |     |  0   | arm_irq_in                  | IceBoard I/O |
+-- |         |  38 | 7:0  | adc_cm_ov                   | RfSoC ADC common mode ovevoltage (bit 0-7 => ADC0-7) |
+-- |         |  39 | 7:0  | adc_cm_uv                   | RfSoC ADC common mode undervoltage (bit 0-7 => ADC0-7) |
+-- |         |  40 | 7:0  | adc_ot1                     | RfSoC ADC over threshold 1 (bit 0-7 => ADC0-7) |
+-- |         |  41 | 7:0  | adc_ot2                     | RfSoC ADC over threshold 2 (bit 0-7 => ADC0-7) |
+--  ------------------------------------------------------------------------------
+--
 
-
-
--- CONTROL Byte 0: Buco converter sync enable, channelizer clock source, various resets
+-- CONTROL Byte 0: Buck converter sync enable, channelizer clock source, various resets
 CTRL_FLAG_GLOBAL_TRIG      <= CONTROL_BYTES(0)(7);
 CTRL_FLAG_BUCK_SYNC_ENABLE <= CONTROL_BYTES(0)(6);
 CHAN_CLK_RESET_ASYNC       <= CONTROL_BYTES(0)(5);
@@ -567,7 +606,7 @@ else generate-- make sure the outputs are driven while the associated CTRL_SLAVE
 end generate;
 
 -- CONTROL Byte 3: Various reset and clock selection controls
-USER_RESET <='0';
+USER_RESET          <= '0';
 BLINKER_RESET       <= CONTROL_BYTES(3)(7);
 CHAN_RESET_ASYNC    <= CONTROL_BYTES(3)(6);
 CORR_RESET_ASYNC    <= CONTROL_BYTES(3)(5);
@@ -575,7 +614,6 @@ ctrl_reset_trig     <= CONTROL_BYTES(3)(4);
 sysmon_user_reset   <= CONTROL_BYTES(3)(3);
 clk10_sel           <= CONTROL_BYTES(3)(2);
 pll_sync_pre        <= CONTROL_BYTES(3)(1);
---USER_RESET <= CONTROL_BYTES(3)(0);
 
 -- CONTROL Byte 4: UDP data throttling control
 HOST_FRAME_READ_RATE    <= CONTROL_BYTES(4)(4 downto 0);
@@ -585,10 +623,15 @@ gen_sw_sync: if IMPLEMENT_SWITCHER_SYNC generate
 BUCK_PHASE <= to_slv(CONTROL_BYTES(5 to 12));
 end generate;
 
--- CONTROL bytes 13: ADC calibration freeze control
-adc_cal_freeze <= reverse_bits_and_dir(CONTROL_BYTES(13));
+-- CONTROL bytes 13-15: RfSoC ADC controls
+adc_cal_freeze <= reverse_bits_and_dir(CONTROL_BYTES(13)); -- ADC calibration freeze control
+adc_clear_or <= reverse_bits_and_dir(CONTROL_BYTES(14)); -- Clear ADC overrange flag
+adc_clear_ov <= reverse_bits_and_dir(CONTROL_BYTES(15)); -- Clear ADC overvoltage flag
 
--- CONTROL bytes 14-24: Unused
+
+
+
+-- CONTROL bytes 16-24: Unused
 
 -- CONTROL bytes 25-32: Target serial number
 target_fpga_serial_number(56) <= CONTROL_BYTES(25)(0);
@@ -597,29 +640,27 @@ target_fpga_serial_number(55 downto 0) <= to_slv(CONTROL_BYTES(26 to 32));
 -- CONTROL byte 33: serial-based core register write control
 target_network_config_source <= CONTROL_BYTES(33)(3 downto 2); --"00": core reg write always enabled; "01", "10" or "11": core reg write only when target serial matches the FPGA's serial
 
-
-
--- CONTROL byte 34-37, 38-41, 42-45
+-- CONTROL byte 34-45: PWM control
 pwm_offset <= to_unsigned(CONTROL_BYTES(34 to 37));
 pwm_high_time <= to_unsigned(CONTROL_BYTES(38 to 41));
 pwm_period <= to_unsigned(CONTROL_BYTES(42 to 45));
 
--- CONTROL byte 46: PWM reset, IO for QC tests, user output mux control
+-- CONTROL byte 46: PWM reset, IO for QC tests, user output 0 mux control
 pwm_soft_reset <= CONTROL_BYTES(46)(7);
 bp_gpio_int_oe <= CONTROL_BYTES(46)(4);
 user_mux_source(0) <= CONTROL_BYTES(46)(3 downto 0);
 
--- CONTROL byte 47: IO's for QC tests
+-- CONTROL byte 47: IceBoard IO's for QC tests
 uart_tx_oe   <= CONTROL_BYTES(47)(7);
 uart_tx_out  <= CONTROL_BYTES(47)(6);
 uart_rx_oe   <= CONTROL_BYTES(47)(5);
 uart_rx_out  <= CONTROL_BYTES(47)(4);
 gpio_rst_oe  <= CONTROL_BYTES(47)(3);
-arm_irq_out  <= CONTROL_BYTES(47)(0);
 gpio_rst_out <= CONTROL_BYTES(47)(2);
 arm_irq_oe   <= CONTROL_BYTES(47)(1);
+arm_irq_out  <= CONTROL_BYTES(47)(0);
 
--- CONTROL byte 48 -- User output mux control, various IO's for QC tests
+-- CONTROL byte 48 -- User output 3 mux control, various IO's for QC tests
 user_mux_source(3) <= CONTROL_BYTES(48)(7 downto 4);
 gpio_irq_oe        <= CONTROL_BYTES(48)(3);
 gpio_irq_out       <= CONTROL_BYTES(48)(2);
@@ -670,12 +711,15 @@ STATUS_BYTES(12)(7 downto 1) <= (others=>'0');
 STATUS_BYTES(12)(0) <= fpga_serial_number(56);
 STATUS_BYTES(13 to 19) <= to_slv8_array(fpga_serial_number(55 downto 0));
 
+-- STATUS Bytes 20-21: crossbar configuration
 STATUS_BYTES(20) <= to_slv(NUMBER_OF_CROSSBAR_INPUTS, 8);
 STATUS_BYTES(21) <= to_slv(NUMBER_OF_CROSSBAR1_OUTPUTS, 8);
 
+-- STATUS Bytes 22-23: Protocol version
 STATUS_BYTES(22 to 23) <= to_slv8_array(to_slv(PROTOCOL_VERSION, 16));
+
+-- STATUS Bytes 24: Channelizer clock source
 STATUS_BYTES(24) <= to_slv(CHANNELIZERS_CLOCK_SOURCE, 8);
--- Connect signals to module ports
 
 -- STATUS Bytes 25
 STATUS_BYTES(25) <= to_slv(NUMBER_OF_ADCS, 8);
@@ -683,35 +727,28 @@ STATUS_BYTES(25) <= to_slv(NUMBER_OF_ADCS, 8);
 -- STATUS Bytes 26
 STATUS_BYTES(26) <= to_slv(ADC_BITS_PER_SAMPLE, 8);
 
--- STATUS Bytes 27: ADC calibration frozen flags (for 8 ADCs)
-STATUS_BYTES(27)  <= reverse_bits_and_dir(adc_cal_frozen);
-
--- STATUS Bytes 28: ADC calibration signal detect flags (for 8 ADCs)
-STATUS_BYTES(28)  <= reverse_bits_and_dir(adc_cal_signal_detect);
-
--- STATUS Bytes 29-30
-STATUS_BYTES(29 to 30) <= (others => (others => '0'));
+-- STATUS Bytes 27-30: ADC flags
+STATUS_BYTES(27)  <= reverse_bits_and_dir(adc_cal_frozen); -- ADC calibration frozen flags (for 8 ADCs)
+STATUS_BYTES(28)  <= reverse_bits_and_dir(adc_cal_signal_detect); -- ADC calibration signal detect flags (for 8 ADCs)
+STATUS_BYTES(29)  <= reverse_bits_and_dir(adc_or);
+STATUS_BYTES(30)  <= reverse_bits_and_dir(adc_ov);
 
 -- STATUS Bytes 31-32
 STATUS_BYTES(31) <= slot_sense_ctr(0); -- is this still used?
 STATUS_BYTES(32) <= slot_sense_ctr(1);
 
--- STATUS Bytes 33-35
+-- STATUS Bytes 33: FMC PLLs
 STATUS_BYTES(33)(7 downto 8-NUMBER_OF_ADC_BOARDS) <= reverse_bits_and_dir(adc_pll_lock);
-STATUS_BYTES(33)(5 downto 2) <= (others=>'0');
---STATUS_BYTES(33)(1) <= udp_tx_overflow;
---STATUS_BYTES(33)(0) <= udp_rx_overflow;
+--STATUS_BYTES(33)(5 downto 2) <= (others=>'0');
 
+-- STATUS Bytes 34-35: Command/replay Packet counters
 STATUS_BYTES(34) <= cmd_packet_counter;
 STATUS_BYTES(35) <= rply_packet_counter;
 
+-- STATUS Byte 36 - Corner-turn engine config
 STATUS_BYTES(36) <= to_slv(NUMBER_OF_BP_SHUFFLE_LINKS, 8);
--- STATUS_BYTES(36)(1) <= bp_shuffle_lock(1);
 
---ADC_RST<=CTRL_FLAG_ADC_RESET;
-
---CLK<=ADC_CLK; -- select clock to use for Buck SYNC generation
-
+-- STATUS Byte 37: IceBoard Extra I/Os
 STATUS_BYTES(37)(0) <= arm_irq_in;
 STATUS_BYTES(37)(1) <= gpio_rst_in;
 STATUS_BYTES(37)(2) <= uart_rx_in;
@@ -720,6 +757,12 @@ STATUS_BYTES(37)(4) <= flash_cs_in;
 STATUS_BYTES(37)(5) <= gpio_irq_in;
 STATUS_BYTES(37)(6) <= bp_gpio_int_in;
 STATUS_BYTES(37)(7) <= core_reg_wr_en; -- debug
+
+-- STATUS Bytes 38-41: More ADC flags (RfSoC)
+STATUS_BYTES(38)  <= reverse_bits_and_dir(adc_cm_ov); -- ADC common mode overflow for each ADC
+STATUS_BYTES(39)  <= reverse_bits_and_dir(adc_cm_uv); -- ADC common mode underflow for each ADC
+STATUS_BYTES(40)  <= reverse_bits_and_dir(adc_ot1);  -- ADC over threshold 1 for each ADC
+STATUS_BYTES(41)  <= reverse_bits_and_dir(adc_ot2); -- ADC over threshold 2 for each ADC
 
 
 -----------------------------------------------------------------------------------
@@ -731,18 +774,20 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 		NUMBER_OF_CONTROL_BYTES => CONTROL_BYTES'Length(1), -- Length of array in the first dimension: number of bytes
 		NUMBER_OF_STATUS_BYTES => STATUS_BYTES'Length(1),
 		DEFAULT_CONTROL_BYTES => ('0' & to_std_logic(BUCK_SYNC_ENABLE) & "010000" & -- Byte 0
-			                      to_slv(BUCK_CLK_DIVIDE_FACTOR,8) & -- Byte 1
+			                      to_slv(BUCK_CLK_DIVIDE_FACTOR, 8) & -- Byte 1
 			                      X"00" & -- Byte 2: LCD
 			                      X"60" & -- Byte 3: Reset and clock control
 			                      X"14" & -- Byte 4: HOST_FRAME_READ_RATE
 			                      X"FEDCBA9876543210" & -- Bytes 5-12: Buck sync phases
-			                      X"00" & -- Byte 13: ADC cal freeze
-			                      X"0000000000_00000000_A028" & -- Bytes 14-24: Unused
+			                      X"00_00_00" & -- Byte 13-15: ADC cal freeze, adc_or_clear, adc_ov_clear
+			                      X"00_00_00_00_00_00_00_00_00" & -- Bytes 16-24: Unused
 			                      X"0000000000000000" & -- Bytes 25-32: Target FPGA ID
 			                      X"00" & --Byte 33: Core reg write mode
 			                      X"00000000_0002faf0_0005f5e1" & -- Bytes 34-45: PWM offset/high time/period
-			                      X"00_00_00" &
-			                      X"89" & -- Byte 49 -- User output 1 & 2 mux control
+			                      X"00" & -- Byte 46: PWM reset, IO for QC tests, user output 0 mux control
+			                      X"00" & -- Byte 47: IceBoard IO's for QC tests
+			                      X"00" & -- Byte 48: User output 3 mux control, various IO's for QC tests
+			                      X"89" & -- Byte 49: User output 1 & 2 mux control
 			                      X"00"), -- Byte 50: User bits, IRIG-B delay control
         RAM_DATA_WIDTH          => 8, -- 8 or 16 bits
         RAM_ADDR_WIDTH          => 5+2,  -- 6 bits (32 register words) + 2 bits (4 bytes per word)

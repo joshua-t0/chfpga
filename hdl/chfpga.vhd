@@ -369,7 +369,14 @@ entity chFPGA is
 			adc_cal_frozen: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
 			adc_cal_freeze: out std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
 			adc_cal_signal_detect: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
-
+			adc_clear_or: out std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+			adc_clear_ov: out std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+			adc_cm_ov: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+			adc_cm_uv: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+			adc_or: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+			adc_ot1: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+			adc_ot2: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+			adc_ov: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
 			------------------------------------
 			-- FMC ADC interface
 			------------------------------------
@@ -1902,6 +1909,15 @@ begin
             adc_cal_frozen => adc_cal_frozen,
             adc_cal_freeze => adc_cal_freeze,
             adc_cal_signal_detect => adc_cal_signal_detect,
+			adc_clear_or => adc_clear_or,
+			adc_clear_ov => adc_clear_ov,
+			adc_cm_ov => adc_cm_ov,
+			adc_cm_uv => adc_cm_uv,
+			adc_or => adc_or,
+			adc_ot1 => adc_ot1,
+			adc_ot2 => adc_ot2,
+			adc_ov => adc_ov,
+
 			-- LCD
 			LCD_DB=>LCD_DB,
 			LCD_E =>LCD_E,
@@ -2740,7 +2756,7 @@ adc_gen: case ADC_TYPE generate
                          end loop;
 
                         -- Pass the data bus and clear overflow flags
-                        axis_adc_tuser(i) <= (others =>'0');
+                        axis_adc_tuser(i) <= adc_or; -- overrange flag. *** TODO ***  this signal is asynchronous. May need to resynchronize on the AXIS clock
                         axis_adc_tvalid(i) <= axis_adc_tvalid_reg(i) and adc_send_data2(i);
                         axis_adc_tlast(i) <= '0';
                         -- generate TLAST

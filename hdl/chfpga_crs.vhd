@@ -3,7 +3,7 @@
 --Tool Version: Vivado v.2022.2 (lin64) Build 3671981 Fri Oct 14 04:59:54 MDT 2022
 --Date        : Tue Mar 28 11:38:21 2023
 --Host        : twiddlebug running 64-bit Ubuntu 22.04.1 LTS
---Command     : 
+--Command     :
 --Design      : chfpga_crs
 --Purpose     : IP block netlist
 ----------------------------------------------------------------------------------
@@ -29,7 +29,7 @@ use xpm.vcomponents.all;
 entity chfpga_crs is
     generic (
 
-        PLATFORM_ID: integer                         := CONFIG_PLATFORM_ID; --  Identifies the type of platform on which the firmware is running. 
+        PLATFORM_ID: integer                         := CONFIG_PLATFORM_ID; --  Identifies the type of platform on which the firmware is running.
 
         -- Clocking config
         SYSTEM_CLOCK_SOURCE: string                  := "SYSCLK_BUFG"; -- System reference clock surce: "SYSCLK": 200 MHz unbuffered differential clock from sysclk_p/n, "SYSCLK_BUFG": 200 MHz BUFG-Buffered clock from sysclk_bufg, "SFP_REFCLK": 125 MHz clock from the GTX reference clock
@@ -88,7 +88,7 @@ entity chfpga_crs is
         -- Copy of the 10 MHz SMA reference clock that feeds the programmable PLL
         sma_clk10_n : in std_logic;
         sma_clk10_p : in std_logic;
- 
+
 
         -- Copy of the 10 MHz Backplane reference clock that feeds the programmable PLL
         bp_clk10_n : in std_logic;
@@ -112,14 +112,14 @@ entity chfpga_crs is
         pl_sysref_p : in std_logic;
 
 
-        -- 250 MHz system clock from programmable PLL. Used as source to generate internal clocks using MMCM. 
+        -- 250 MHz system clock from programmable PLL. Used as source to generate internal clocks using MMCM.
         sysclk_n : in std_logic;
         sysclk_p : in std_logic;
 
 
 
 
-        -- 100G Ethernet 
+        -- 100G Ethernet
 
         --   156.25 MHz reference clock
         clk156_n : in std_logic;
@@ -185,7 +185,7 @@ entity chfpga_crs is
         -- Don't put a DONT_TOUCH attribute to this entity: we need qsfp_tx/rx to be removed if unused
 end entity;
 
- 
+
 architecture impl of chfpga_crs is
     attribute io_buffer_type : string;
     attribute dont_touch: string;
@@ -196,37 +196,37 @@ architecture impl of chfpga_crs is
     -- fails its DRC.
     -- "None" tells the tools not to implement an IO port. "OBUF" implements the IO port.
     --  In the case of "OBUF", it looks like the output buffer is adapted to the type of output such as a transceiver output etc.
-    attribute io_buffer_type of qsfp_txp, qsfp_txn: signal is sel(GPU_LINK_TYPE="100GE", "OBUF", "NONE"); 
-    attribute io_buffer_type of clk156_p, clk156_n: signal is sel(GPU_LINK_TYPE="100GE", "IBUF", "NONE"); 
+    attribute io_buffer_type of qsfp_txp, qsfp_txn: signal is sel(GPU_LINK_TYPE="100GE", "OBUF", "NONE");
+    attribute io_buffer_type of clk156_p, clk156_n: signal is sel(GPU_LINK_TYPE="100GE", "IBUF", "NONE");
 --    attribute dont_touch of plclk_bufg0, plclk_bufg1: label is "true";
 
     -- BSB & CAP AXIS clock (100 MHz)
-    signal aclk: std_logic; 
+    signal aclk: std_logic;
 
-    -- ADC word clock (Fs/8 = 3000/8 = 375 MHz) 
-    signal plclk_nobuf: std_logic; 
-    signal plclk_bufg: std_logic; 
+    -- ADC word clock (Fs/8 = 3000/8 = 375 MHz)
+    signal plclk_nobuf: std_logic;
+    signal plclk_bufg: std_logic;
 
-    -- PLL VCXO clock (50 MHz) 
-    signal pll_oscout_nobuf: std_logic; 
-    signal pll_oscout_bufg: std_logic; 
+    -- PLL VCXO clock (50 MHz)
+    signal pll_oscout_nobuf: std_logic;
+    signal pll_oscout_bufg: std_logic;
     signal pll_sync_bsb, pll_sync10, pll_sync50_pre1,pll_sync50_pre2,pll_sync50_pre3: std_logic;
     -- System Reference clock (Submultiple of ADC sampling clock/16, < 10 MHz)
-    -- Used to calibrate the ADC latency 
-    signal pl_sysref, pl_sysref_pre, pl_sysref_pre2, pl_sysref_reg: std_logic; 
+    -- Used to calibrate the ADC latency
+    signal pl_sysref, pl_sysref_pre, pl_sysref_pre2, pl_sysref_reg: std_logic;
 --    attribute IOB of pl_sysref_reg :signal is "true"; -- make sure PL_SYSREF is registered in the IOB to ensure the best and reproducible timing
     attribute dont_touch of pl_sysref_pre, pl_sysref_pre2, pl_sysref_reg: signal is "true";
 
-    --signal sysref_bufg: std_logic; 
+    --signal sysref_bufg: std_logic;
 
-    -- System clock (250 MHz) 
-    signal sysclk_nobuf: std_logic; 
-    signal sysclk_bufg: std_logic; 
+    -- System clock (250 MHz)
+    signal sysclk_nobuf: std_logic;
+    signal sysclk_bufg: std_logic;
 
     -- 10 MHz reference clocks
-    signal sma_clk10_nobuf, bp_clk10_nobuf: std_logic; 
-    signal clk10_bufg: std_logic; 
-    signal clk10_sel: std_logic; 
+    signal sma_clk10_nobuf, bp_clk10_nobuf: std_logic;
+    signal clk10_bufg: std_logic;
+    signal clk10_sel: std_logic;
 
     -- Vectors representing the ADC inputs.
     -- Length is hard coded to the fixed number of inputs provided in the top level port.
@@ -238,6 +238,15 @@ architecture impl of chfpga_crs is
     signal adc_cal_frozen: std_logic_vector(0 to 7);
     signal adc_cal_freeze: std_logic_vector(0 to 7);
     signal adc_cal_signal_detect: std_logic_vector(0 to 7);
+
+    signal adc_clear_or: std_logic_vector(0 to 7); -- clear overrange flag
+    signal adc_clear_ov: std_logic_vector(0 to 7); -- clear overvoltage flag
+    signal adc_cm_ov: std_logic_vector(0 to 7); -- common mode overvoltageflag
+    signal adc_cm_uv: std_logic_vector(0 to 7); -- common mode overvoltage flag
+    signal adc_or: std_logic_vector(0 to 7); -- overvoltage flag
+    signal adc_ot1: std_logic_vector(0 to 7); -- over threshold 1 flag
+    signal adc_ot2: std_logic_vector(0 to 7); -- over threshold 2 flag
+    signal adc_ov: std_logic_vector(0 to 7); -- overvoltage flag
 
     signal axis_bsb_cmd_tdata: std_logic_vector(7 downto 0);
     signal axis_bsb_cmd_tvalid: std_logic;
@@ -301,7 +310,7 @@ begin
            S => clk10_sel    -- 1-bit input: Clock select
         );
 
- 
+
     -----------
     -- 2.5 MHz SYSREF clock from PLL, used for ADC latency calibration
     -----------
@@ -322,8 +331,8 @@ begin
             pl_sysref_pre <= pl_sysref;
             pl_sysref_pre2 <= pl_sysref_pre;
             pl_sysref_reg <= pl_sysref_pre2;
-            
-            pl400 <= pl10; 
+
+            pl400 <= pl10;
         end if;
     end process;
 
@@ -348,8 +357,8 @@ begin
    sysclk0_proc: process (sysclk_bufg)
     begin
         if rising_edge(sysclk_bufg) then
-         
-            pl10 <= not pl10; 
+
+            pl10 <= not pl10;
         end if;
     end process;
 
@@ -373,20 +382,20 @@ begin
         );
 
     -- CLK10: 1111100000111110000011110000
-    -- CLK50: 1010101010101010101010101010         
-    -- SYNC10:          111111111111111111          
-    -- PRE1:             11111111111111111      
-    -- PRE2:               111111111111111      
-    -- PRE3:                 1111111111111    
-    -- SYNC_OUT                11111111111  
-    -- registered sync:          111111111  
+    -- CLK50: 1010101010101010101010101010
+    -- SYNC10:          111111111111111111
+    -- PRE1:             11111111111111111
+    -- PRE2:               111111111111111
+    -- PRE3:                 1111111111111
+    -- SYNC_OUT                11111111111
+    -- registered sync:          111111111
     -- CLK10: 1111100000111110000011110000
 
     -- Resynchronize pll_sync to the clk10 reference clock so it is roughly aligned to pll_oscout
     pll_sync_cdc0: xpm_cdc_single
         generic map (SRC_INPUT_REG => 0)
         port map (src_clk => '0', src_in => pll_sync_bsb, dest_clk => clk10_bufg, dest_out => pll_sync10);
-    
+
     -- Synchronize SYNC to OSCOUT
         pllsync0_proc: process (pll_oscout_bufg)
     begin
@@ -436,7 +445,7 @@ begin
 --    mmcm0 : MMCME4_BASE
 --        generic map(
 --            BANDWIDTH            => "HIGH",
---            DIVCLK_DIVIDE        => 1, -- 
+--            DIVCLK_DIVIDE        => 1, --
 --            CLKFBOUT_MULT_F      => 4.000, --2 to 128. VCO = 600-1600 MHz
 --            CLKOUT0_DIVIDE_F     => 4.000, -- 200 MHz always. Is not dependent on sampling frequency. Used for SPI, SYNC, IRIGB etc.
 --            CLKOUT0_PHASE        => 45.0/4.0*6.0, -- phase to allow PL_SYSREF to be captured in a nearby Fabric FF
@@ -456,7 +465,7 @@ begin
 --            RST                 => '0'
 --        );
 --end block mmcm_blk;
-			
+
     -- Buck sync
 
     bucksyncdiv_proc: process (buck_sync(1))
@@ -467,8 +476,8 @@ begin
     end process;
 
     buck_sync_5v0 <= buck_sync(0);
---    buck_sync_0v85 <= buck_sync_0v85_div2; -- two switchers operating in paralle 180deg out of phase. Combined freq is double. 
-    buck_sync_0v85 <= buck_sync(1); -- two switchers operating in paralle 180deg out of phase. Combined freq is double. 
+--    buck_sync_0v85 <= buck_sync_0v85_div2; -- two switchers operating in paralle 180deg out of phase. Combined freq is double.
+    buck_sync_0v85 <= buck_sync(1); -- two switchers operating in paralle 180deg out of phase. Combined freq is double.
     buck_sync_3v3 <= buck_sync(2);
     buck_sync_2v5 <= buck_sync(3);
     buck_sync_1v8 <= buck_sync(4);
@@ -526,11 +535,11 @@ zynq: entity work.zynq_tcpipe_crs
     adc3_clk_clk_p => adc3_clk_clk_p,
     rf_sysref_diff_p => rf_sysref_p,
     rf_sysref_diff_n => rf_sysref_n,
-    
+
     user_sysref => pl_sysref_reg, -- PL SYSREF resynchronized to PLCLK
-    
-    
-    
+
+
+
     -- ADC analog inputs
     vin0_01_v_n => vin0_01_v_n,
     vin0_01_v_p => vin0_01_v_p,
@@ -579,7 +588,7 @@ zynq: entity work.zynq_tcpipe_crs
     pl_clk => plclk_bufg,
 
     -- ADC calibration control
-    
+
     adc0_cal_converter01_cal_frozen => adc_cal_frozen(0),
     adc0_cal_converter23_cal_frozen => adc_cal_frozen(1),
     adc1_cal_converter01_cal_frozen => adc_cal_frozen(2),
@@ -613,6 +622,110 @@ zynq: entity work.zynq_tcpipe_crs
     clk_adc2_0 => adc_clkout(4),
     clk_adc3_0 => adc_clkout(6),
 
+    -- ADC real-time signals
+    adc0_rts_converter0_datapath_overflow => open, -- out: High indicates that a sub-block in the signal chain has exceeded fll scale and has been saturated.
+    adc0_rts_converter0_pl_event => '0', --- in: assert to update ADC settings from the PL
+    adc0_rts_converter01_clear_or => adc_clear_or(0), -- in: when asserted the over range is cleared. Synchronous to AXI clock.
+    adc0_rts_converter01_clear_ov => adc_clear_ov(0),  --in: When asserted the over voltage output is cleared. Synchronous to AXI clock. Gen 3 only.
+    adc0_rts_converter01_cm_over_voltage => adc_cm_ov(0), -- out: common mode overvoltage. Async.
+    adc0_rts_converter01_cm_under_voltage => adc_cm_uv(0), -- out: common mode undervoltage. Async.
+    adc0_rts_converter01_over_range => adc_or(0), -- out: A high indicates that the signal exceeds the full-scale input of the ADC. Async.
+    adc0_rts_converter01_over_threshold1 => adc_ot1(0), -- out: High indicates the threshold 1 is exceeded. Synchronous to clk_adcX.
+    adc0_rts_converter01_over_threshold2 => adc_ot2(0), -- out: High indicates the threshold 2 is exceeded. Synchronous to clk_adcX.
+    adc0_rts_converter01_over_voltage => adc_ov(0), -- out: High when the signal far exceeds the normal operating input range. Async.
+
+    adc0_rts_converter2_datapath_overflow => open,
+    adc0_rts_converter2_pl_event => '0',
+    adc0_rts_converter23_clear_or => adc_clear_or(1),
+    adc0_rts_converter23_clear_ov => adc_clear_ov(1),
+    adc0_rts_converter23_cm_over_voltage => adc_cm_ov(1),
+    adc0_rts_converter23_cm_under_voltage => adc_cm_uv(1),
+    adc0_rts_converter23_over_range => adc_or(1),
+    adc0_rts_converter23_over_threshold1 => adc_ot1(1),
+    adc0_rts_converter23_over_threshold2 => adc_ot2(1),
+    adc0_rts_converter23_over_voltage => adc_ov(1),
+
+    adc0_rts_sync_out => open,-- out: one-cycle pulse asserted when sysref event has arrived and indicated divider values are valid. Synchronous to clk_adcX.
+    adc0_rts_sysref_gate => '0', -- in: when asserted, sysref is not acted on by the ADC.
+
+
+    adc1_rts_converter0_datapath_overflow => open, -- out: High indicates that a sub-block in the signal chain has exceeded fll scale and has been saturated.
+    adc1_rts_converter0_pl_event => '0', --- in: assert to update ADC settings from the PL
+    adc1_rts_converter01_clear_or => adc_clear_or(2), -- in: when asserted the over range is cleared. Synchronous to AXI clock.
+    adc1_rts_converter01_clear_ov => adc_clear_ov(2),  --in: When asserted the over voltage output is cleared. Synchronous to AXI clock. Gen 3 only.
+    adc1_rts_converter01_cm_over_voltage => adc_cm_ov(2), -- out: common mode overvoltage. Async.
+    adc1_rts_converter01_cm_under_voltage => adc_cm_uv(2), -- out: common mode undervoltage. Async.
+    adc1_rts_converter01_over_range => adc_or(2), -- out: A high indicates that the signal exceeds the full-scale input of the ADC. Async.
+    adc1_rts_converter01_over_threshold1 => adc_ot1(2), -- out: High indicates the threshold 1 is exceeded. Synchronous to clk_adcX.
+    adc1_rts_converter01_over_threshold2 => adc_ot2(2), -- out: High indicates the threshold 2 is exceeded. Synchronous to clk_adcX.
+    adc1_rts_converter01_over_voltage => adc_ov(2), -- out: High when the signal far exceeds the normal operating input range. Async.
+
+    adc1_rts_converter2_datapath_overflow => open,
+    adc1_rts_converter2_pl_event => '0',
+    adc1_rts_converter23_clear_or => adc_clear_or(3),
+    adc1_rts_converter23_clear_ov => adc_clear_ov(3),
+    adc1_rts_converter23_cm_over_voltage => adc_cm_ov(3),
+    adc1_rts_converter23_cm_under_voltage => adc_cm_uv(3),
+    adc1_rts_converter23_over_range => adc_or(3),
+    adc1_rts_converter23_over_threshold1 => adc_ot1(3),
+    adc1_rts_converter23_over_threshold2 => adc_ot2(3),
+    adc1_rts_converter23_over_voltage => adc_ov(3),
+
+    adc1_rts_sync_out => open,-- out: one-cycle pulse asserted when sysref event has arrived and indicated divider values are valid. Synchronous to clk_adcX.
+    adc1_rts_sysref_gate => '0', -- in: when asserted, sysref is not acted on by the ADC.
+
+
+    adc2_rts_converter0_datapath_overflow => open, -- out: High indicates that a sub-block in the signal chain has exceeded fll scale and has been saturated.
+    adc2_rts_converter0_pl_event => '0', --- in: assert to update ADC settings from the PL
+    adc2_rts_converter01_clear_or => adc_clear_or(4), -- in: when asserted the over range is cleared. Synchronous to AXI clock.
+    adc2_rts_converter01_clear_ov => adc_clear_ov(4),  --in: When asserted the over voltage output is cleared. Synchronous to AXI clock. Gen 3 only.
+    adc2_rts_converter01_cm_over_voltage => adc_cm_ov(4), -- out: common mode overvoltage. Async.
+    adc2_rts_converter01_cm_under_voltage => adc_cm_uv(4), -- out: common mode undervoltage. Async.
+    adc2_rts_converter01_over_range => adc_or(4), -- out: A high indicates that the signal exceeds the full-scale input of the ADC. Async.
+    adc2_rts_converter01_over_threshold1 => adc_ot1(4), -- out: High indicates the threshold 1 is exceeded. Synchronous to clk_adcX.
+    adc2_rts_converter01_over_threshold2 => adc_ot2(4), -- out: High indicates the threshold 2 is exceeded. Synchronous to clk_adcX.
+    adc2_rts_converter01_over_voltage => adc_ov(4), -- out: High when the signal far exceeds the normal operating input range. Async.
+
+    adc2_rts_converter2_datapath_overflow => open,
+    adc2_rts_converter2_pl_event => '0',
+    adc2_rts_converter23_clear_or => adc_clear_or(5),
+    adc2_rts_converter23_clear_ov => adc_clear_ov(5),
+    adc2_rts_converter23_cm_over_voltage => adc_cm_ov(5),
+    adc2_rts_converter23_cm_under_voltage => adc_cm_uv(5),
+    adc2_rts_converter23_over_range => adc_or(5),
+    adc2_rts_converter23_over_threshold1 => adc_ot1(5),
+    adc2_rts_converter23_over_threshold2 => adc_ot2(5),
+    adc2_rts_converter23_over_voltage => adc_ov(5),
+
+    adc2_rts_sync_out => open,-- out: one-cycle pulse asserted when sysref event has arrived and indicated divider values are valid. Synchronous to clk_adcX.
+    adc2_rts_sysref_gate => '0', -- in: when asserted, sysref is not acted on by the ADC.
+
+    adc3_rts_converter0_datapath_overflow => open, -- out: High indicates that a sub-block in the signal chain has exceeded fll scale and has been saturated.
+    adc3_rts_converter0_pl_event => '0', --- in: assert to update ADC settings from the PL
+    adc3_rts_converter01_clear_or => adc_clear_or(6), -- in: when asserted the over range is cleared. Synchronous to AXI clock.
+    adc3_rts_converter01_clear_ov => adc_clear_ov(6),  --in: When asserted the over voltage output is cleared. Synchronous to AXI clock. Gen 3 only.
+    adc3_rts_converter01_cm_over_voltage => adc_cm_ov(6), -- out: common mode overvoltage. Async.
+    adc3_rts_converter01_cm_under_voltage => adc_cm_uv(6), -- out: common mode undervoltage. Async.
+    adc3_rts_converter01_over_range => adc_or(6), -- out: A high indicates that the signal exceeds the full-scale input of the ADC. Async.
+    adc3_rts_converter01_over_threshold1 => adc_ot1(6), -- out: High indicates the threshold 1 is exceeded. Synchronous to clk_adcX.
+    adc3_rts_converter01_over_threshold2 => adc_ot2(6), -- out: High indicates the threshold 2 is exceeded. Synchronous to clk_adcX.
+    adc3_rts_converter01_over_voltage => adc_ov(6), -- out: High when the signal far exceeds the normal operating input range. Async.
+
+    adc3_rts_converter2_datapath_overflow => open,
+    adc3_rts_converter2_pl_event => '0',
+    adc3_rts_converter23_clear_or => adc_clear_or(7),
+    adc3_rts_converter23_clear_ov => adc_clear_ov(7),
+    adc3_rts_converter23_cm_over_voltage => adc_cm_ov(7),
+    adc3_rts_converter23_cm_under_voltage => adc_cm_uv(7),
+    adc3_rts_converter23_over_range => adc_or(7),
+    adc3_rts_converter23_over_threshold1 => adc_ot1(7),
+    adc3_rts_converter23_over_threshold2 => adc_ot2(7),
+    adc3_rts_converter23_over_voltage => adc_ov(7),
+
+    adc3_rts_sync_out => open,-- out: one-cycle pulse asserted when sysref event has arrived and indicated divider values are valid. Synchronous to clk_adcX.
+    adc3_rts_sysref_gate => '0', -- in: when asserted, sysref is not acted on by the ADC.
+
+
 --    -- 100GE interface
 --    cge_tx_p => qsfp_txp,
 --    cge_tx_n => qsfp_txn,
@@ -624,21 +737,21 @@ zynq: entity work.zynq_tcpipe_crs
     m_axis_bsb_tvalid => axis_bsb_cmd_tvalid,
     m_axis_bsb_tlast => axis_bsb_cmd_tlast,
     m_axis_bsb_tready => axis_bsb_cmd_tready,
-    
+
     -- Command reply stream from the FPGA to the ARM
     s_axis_bsb_tdata => axis_bsb_rply_tdata,
     s_axis_bsb_tvalid => axis_bsb_rply_tvalid,
     s_axis_bsb_tlast => axis_bsb_rply_tlast,
     s_axis_bsb_tready => axis_bsb_rply_tready,
     s_axis_bsb_tkeep => (others => '1'),
-    
+
     -- Capture data stream from the FPGA to the ARM
     s_axis_cap_tdata => axis_cap_tdata,
     s_axis_cap_tvalid => axis_cap_tvalid,
     s_axis_cap_tlast => axis_cap_tlast,
     s_axis_cap_tready => axis_cap_tready,
     s_axis_cap_tkeep => (others => '1'),
-    
+
     -- BSB & CAP clock and reset
     aclk => aclk,
     bsb_rst_n(0) => bsb_reset_n,
@@ -653,10 +766,10 @@ zynq: entity work.zynq_tcpipe_crs
 --    smp(2) <= pll_sync; -- Ch4/green trace
 --    smp(2) <= sysclk_bufg;
     smp(2) <= sysclk_bufg;
-    
+
     smp(3) <= plclk_bufg;
-    
-    
+
+
     adc_clkout(1) <= adc_clkout(0);
     adc_clkout(3) <= adc_clkout(2);
     adc_clkout(5) <= adc_clkout(4);
@@ -725,7 +838,7 @@ zynq: entity work.zynq_tcpipe_crs
             -- Reference clock
             clk10 => sysclk_bufg, -- Buffered (BUFG) 10 MHz differential reference clock
             clk10_sel => clk10_sel,
-            
+
             -- External PLL
             pll_oscout => pll_oscout_bufg,
             pll_sync => pll_sync_bsb, -- sync signal approximately synchronous to pll_oscout. Will be rtimed on the falline edge then rising edge of pll_oscout.
@@ -750,6 +863,14 @@ zynq: entity work.zynq_tcpipe_crs
             adc_cal_frozen => adc_cal_frozen(0 to NUMBER_OF_ADCS-1),
             adc_cal_freeze => adc_cal_freeze(0 to NUMBER_OF_ADCS-1),
             adc_cal_signal_detect => adc_cal_signal_detect(0 to NUMBER_OF_ADCS-1),
+            adc_clear_or => adc_clear_or(0 to NUMBER_OF_ADCS-1),
+            adc_clear_ov => adc_clear_ov(0 to NUMBER_OF_ADCS-1),
+            adc_cm_ov => adc_cm_ov(0 to NUMBER_OF_ADCS-1),
+            adc_cm_uv => adc_cm_uv(0 to NUMBER_OF_ADCS-1),
+            adc_or => adc_or(0 to NUMBER_OF_ADCS-1),
+            adc_ot1 => adc_ot1(0 to NUMBER_OF_ADCS-1),
+            adc_ot2 => adc_ot2(0 to NUMBER_OF_ADCS-1),
+            adc_ov => adc_ov(0 to NUMBER_OF_ADCS-1),
 
             -- LEDs
 
