@@ -1,0 +1,4 @@
+v 4
+file . "GPIO.vhd" "4f87414049dd0be046d01df23f7edf030be9364e" "20240222054347.175":
+  entity gpio at 23( 1005) + 0 on 4;
+  architecture behavioral of gpio at 263( 9736) + 0 on 4;
