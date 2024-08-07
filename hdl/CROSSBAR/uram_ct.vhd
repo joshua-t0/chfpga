@@ -3,7 +3,7 @@
 -- Company:  McGill University
 -- Engineer: JF CLiche
 --
--- Create Date: 2023-02-20 
+-- Create Date: 2023-02-20
 -- Design Name: chfpga
 -- Module Name: uram_ct
 -- Project Name: CHORD
@@ -53,19 +53,19 @@ use work.chFPGA_Package.all;
 --    12:11: frame_ctr(3:2) ( 4 frames per cell)
 --    10:0: bin_ctr (2k bins)
 --
--- On the read side, we read bins one column at a time, i.e. 4 frames at a time. We select which column based on the desired bin.   
+-- On the read side, we read bins one column at a time, i.e. 4 frames at a time. We select which column based on the desired bin.
 --
--- The buffer can be written using the BSB interface. This is a 8 bit wide interface. 
+-- The buffer can be written using the BSB interface. This is a 8 bit wide interface.
 -- The logical address space from the BSB point of view is:
--- 
+--
 --    20: bank (1 bit = 2 banks) -> from page register
 --    19:16: frame (4 bits = 16 frames) => from page register
 --    15:3 bin  (13 bits = 2k bins) => from bsb_ram_addr(15:3)
 --    2:0: channel (3 bits = 8 channels) => from bsb_ram_addr(2:0)
 --
--- 16 bits (bin and channel) are derived from the BSB write address directly. 
--- The remaining address bins (frame and bank) are taken from paging registers. There are 32 pages of 64Kbytes. 
--- Writing one 64K  page might require multiple transactions as to not overflow the command buffers and the Ethernet MTU. 
+-- 16 bits (bin and channel) are derived from the BSB write address directly.
+-- The remaining address bins (frame and bank) are taken from paging registers. There are 32 pages of 64Kbytes.
+-- Writing one 64K  page might require multiple transactions as to not overflow the command buffers and the Ethernet MTU.
 
 entity uram_ct is
 	generic (
@@ -80,7 +80,7 @@ entity uram_ct is
 		m_axis_out_tvalid: out std_logic := '0';
 		m_axis_out_tlast: out std_logic := '0';
 
-		clk: in std_logic; 
+		clk: in std_logic;
 		rst: in std_logic; -- synchrounous reset
 
 
@@ -107,12 +107,11 @@ architecture impl of uram_ct is
 	signal control_bytes: slv8_array(0 to 7);
 	signal status_bytes: slv8_array(0 to 2);
 
-    signal cmd_dat_int: axis8_dat_struct;
-    signal cmd_rdy_int: axis8_rdy_struct;
-    signal rply_dat_int: axis8_dat_struct;
-    signal rply_rdy_int: axis8_rdy_struct;
-
-    signal ctrl_rst_int: std_logic;
+	signal cmd_dat_int: axis8_dat_struct;
+	signal cmd_rdy_int: axis8_rdy_struct;
+	signal rply_dat_int: axis8_dat_struct;
+	signal rply_rdy_int: axis8_rdy_struct;
+	signal ctrl_rst_int: std_logic;
 
 	signal ram_wr_addr, ram_rd_addr: std_logic_vector(13 downto 0);
 	signal ram_din: std_logic_vector(255 downto 0);
@@ -129,24 +128,23 @@ architecture impl of uram_ct is
 	signal bsb_ram_bank: std_logic;
 	signal bsb_ram_frame: std_logic_vector(3 downto 0);
 
-    signal rx_write_enable: std_logic;
-    signal rx_mask_low_bins: std_logic;
-    signal tx_trig_sel: std_logic;
-    signal tx_period: unsigned(31 downto 0);
-    signal tx_length: unsigned(7 downto 0);
-    signal tx_enable: std_logic;
-    signal tx_reset: std_logic;
-
-    signal play_ram_wr_en: std_logic;
-    signal play_ram_wr_byte_en: std_logic_vector(0 downto 0);
-    signal play_ram_rd_addr: unsigned(12 downto 0);
-    signal play_ram_rd_en: std_logic;
+	signal rx_write_enable: std_logic;
+	signal rx_mask_low_bins: std_logic;
+	signal tx_trig_sel: std_logic;
+	signal tx_period: unsigned(31 downto 0);
+	signal tx_length: unsigned(7 downto 0);
+	signal tx_enable: std_logic;
+	signal tx_reset: std_logic;
+	signal play_ram_wr_en: std_logic;
+	signal play_ram_wr_byte_en: std_logic_vector(0 downto 0);
+	signal play_ram_rd_addr: unsigned(12 downto 0);
+	signal play_ram_rd_en: std_logic;
 	signal play_ram_dout: std_logic_vector(15 downto 0);
-    signal bsb_ram_sel: std_logic; 
-    
-    signal in_frame_ctr: unsigned(7 downto 0);
-    signal out_frame_ctr: unsigned(7 downto 0);
-    signal cmd_rdy_out: axis8_rdy_struct;
+	signal bsb_ram_sel: std_logic;
+
+	signal in_frame_ctr: unsigned(7 downto 0);
+	signal out_frame_ctr: unsigned(7 downto 0);
+	signal cmd_rdy_out: axis8_rdy_struct;
 	signal rply_dat_out: axis8_dat_struct;
 	signal tx_override_data: std_logic;
 	signal tx_toggle_bank: std_logic;
@@ -168,17 +166,17 @@ begin
             rply_a_dat => rply_dat_out,
             rply_a_rdy => rply_rdy,
             a_clk      => ctrl_clk,
-    
+
             cmd_b_dat  => cmd_dat_int,
             cmd_b_rdy  => cmd_rdy_int,
             rply_b_dat => rply_dat_int,
             rply_b_rdy => rply_rdy_int,
             b_clk      => clk,
-			    
-            rst => ctrl_rst, -- reset is asynchronous and will be extended until a few clocks have happened on both clocks 
+
+            rst => ctrl_rst, -- reset is asynchronous and will be extended until a few clocks have happened on both clocks
             b_rst_out => ctrl_rst_int  -- ctrl_reset, resynchronized to the B_CLK
             );
-    
+
 	bsb_regs0: entity work.CTRL_SLAVE
 		GENERIC MAP (
 			DEFAULT_CONTROL_BYTES=> X"00_66_00010000_FF_10",
@@ -222,10 +220,10 @@ begin
 	bsb_ram_frame <= control_bytes(0)(3 downto 0);
 
 	-- CONTROL byte 1
-	rx_write_enable <= control_bytes(1)(7); -- When '1', incoming data is written to the data buffer. 
-	tx_trig_sel <= control_bytes(1)(6); -- 0: Data transmission starts when an incoming frame set is completed; 1: data transmission starts every `TX_PERIOD` clocks.  
-	tx_enable <= control_bytes(1)(5); -- '1' to enable data transmission. '0' data transmission is muted.  
-	tx_reset <= control_bytes(1)(4); -- '1' resets the data transmitter  
+	rx_write_enable <= control_bytes(1)(7); -- When '1', incoming data is written to the data buffer.
+	tx_trig_sel <= control_bytes(1)(6); -- 0: Data transmission starts when an incoming frame set is completed; 1: data transmission starts every `TX_PERIOD` clocks.
+	tx_enable <= control_bytes(1)(5); -- '1' to enable data transmission. '0' data transmission is muted.
+	tx_reset <= control_bytes(1)(4); -- '1' resets the data transmitter
 	tx_toggle_bank <= control_bytes(1)(3);
 	tx_insert_timestamp  <= control_bytes(1)(2);
 	rx_mask_low_bins <= control_bytes(1)(1);
@@ -337,9 +335,9 @@ begin
 				wr_en := '0'; -- overriden below
 				bin := std_logic_vector(bin_ctr);
 				frame := std_logic_vector(frame_ctr);
-				bank := wr_bank;				
+				bank := wr_bank;
 
-				-- Always set byte enables and din by default to make sure we don't infer unnecessary enables 
+				-- Always set byte enables and din by default to make sure we don't infer unnecessary enables
 				ram_wr_byte_en <= (others => '1'); -- we write all 32 bytes (4 columns) by default
 				ram_din <= s_axis_in_tdata;
 				if s_axis_in_tvalid='1' then
@@ -360,7 +358,7 @@ begin
 				end if;
 
 				--  Write from BSB overrides incoming stream write
-				if bsb_ram_en = '1' and bsb_ram_we = '1' and bsb_ram_sel='0' then 
+				if bsb_ram_en = '1' and bsb_ram_we = '1' and bsb_ram_sel='0' then
 					byte := to_integer(unsigned(not bsb_ram_addr(4 downto 0))); -- 8 channels * 4 cols = 32 bytes, addr 0 = byte 31
 					bin := bsb_ram_addr(15 downto 5);
 					frame := bsb_ram_frame;
@@ -368,7 +366,7 @@ begin
 
 					wr_en := '1';
 					ram_wr_byte_en <= (others => '0');
-					ram_wr_byte_en(byte) <= '1'; 
+					ram_wr_byte_en(byte) <= '1';
 
 					for i in 0 to 31 loop
 						ram_din(8*i+7 downto 8*i) <= bsb_ram_din;
@@ -376,7 +374,7 @@ begin
 				end if;
 
 				-- generate address and row enable
-				ram_wr_addr <= bank & frame(3 downto 2) & bin; -- 1 + 2 + 11 = 14 bits, 16 kwords = 128 kB/cell = 4x32 kB 
+				ram_wr_addr <= bank & frame(3 downto 2) & bin; -- 1 + 2 + 11 = 14 bits, 16 kwords = 128 kB/cell = 4x32 kB
 				row := to_integer(unsigned(not frame(1 downto 0)));
 				ram_wr_row_en <= (others => '0'); -- overriden below
 				ram_wr_row_en(row) <= wr_en;
@@ -472,8 +470,8 @@ begin
 	begin
 		rd_bank <= (not wr_bank) and tx_toggle_bank;
 		play_ram_rd_en <= busy;
-	
-	
+
+
         debug_out(0) <=  busy;
         debug_out(1) <=  play_ram_rd_rdy;
         debug_out(3 downto 2) <= std_logic_vector(frame_ctr);
@@ -508,8 +506,8 @@ begin
 	        variable last_frame: unsigned(1 downto 0);
 	        variable end_of_packet: std_logic;
 	        variable end_of_transmission: std_logic;
-	              
-		begin -- process		
+
+		begin -- process
 			if rising_edge(clk) then
 
 				-- Generate read address and enable signals
@@ -524,7 +522,7 @@ begin
                 end_of_packet := play_ram_dout(14);
                 end_of_transmission := play_ram_dout(15);
 
-				ram_rd_addr <= rd_bank & std_logic_vector(frame_ctr) & bin(12 downto 2); 
+				ram_rd_addr <= rd_bank & std_logic_vector(frame_ctr) & bin(12 downto 2);
 				col_var := not bin(1 downto 0);  -- first column in col 3
 				col_int := to_integer(unsigned(col_var));
 				ram_rd_col_en <= (others => '0'); -- one bit overriden below
@@ -544,24 +542,24 @@ begin
 				col(col'LEFT) <= col_var;
 
 				word_ctr <= word_ctr + 1;
-                play_ram_rd_rdy <= play_ram_rd_en; -- 1 clk latency on playlist RAM
+				play_ram_rd_rdy <= play_ram_rd_en; -- 1 clk latency on playlist RAM
 				if play_ram_rd_rdy='1' then
-					frame_ctr <= frame_ctr + 1; 
+					frame_ctr <= frame_ctr + 1;
 					tvalid(tvalid'LEFT) <='1';
 					-- Send a signal to insert the timestamp on the second frame downstream in the pipeline
 					if tx_insert_timestamp='1' and first_bin='1' and frame_ctr = 1 then
 						insert_ts(insert_ts'LEFT) <='1';
-					end if; 
+					end if;
 					-- Setup the next read one frame before the last because of the RAM latency
-					-- We have to do this because the output of the RAM is feeds back into the RAM address (via last_frame)  
-					if frame_ctr = last_frame - 1 then  
+					-- We have to do this because the output of the RAM is feeds back into the RAM address (via last_frame)
+					if frame_ctr = last_frame - 1 then
                         play_ram_rd_addr <= play_ram_rd_addr + 1;
 						if end_of_transmission = '1' then
 							busy <= '0'; -- we're done
 						end if;
 					end if;
 					-- if the last frame of a bin
-					if frame_ctr = last_frame then  
+					if frame_ctr = last_frame then
                         frame_ctr <= (others =>'0');
 						first_bin <= '0';
 						if end_of_packet='1' then -- 8k bins / 128 NUMA =64 bins/packets, 16 frames*8 bytes/bin/frame * 64 bins/packets = 8kB packet
@@ -573,7 +571,7 @@ begin
 						end if;
 					end if;
 
-					-- Force end of transmission based on tx_len. This is a protection to protect against never-ending packets or transmissions. 
+					-- Force end of transmission based on tx_len. This is a protection to protect against never-ending packets or transmissions.
 					-- Should never be reached if playlist is programmed properly.
 					if word_ctr = tx_length  then
 						busy <= '0'; -- we're done
@@ -591,7 +589,7 @@ begin
 				end if;
 				-- override output in test mode
 				if tx_override_data='1' then
-					tdata_reg <= X"000102030405060708090A0B0C0D0E0F_101112131415161718191a1b1c1d1e1f"; 
+					tdata_reg <= X"000102030405060708090A0B0C0D0E0F_101112131415161718191a1b1c1d1e1f";
 				end if;
 
 				tvalid_reg <= tvalid(tvalid'RIGHT) and tx_enable;
@@ -641,7 +639,7 @@ begin
 					word_ctr <= (others => '0');
 					first_bin <= '1';
 					timestamp <= (others => '0');
-				end if; --rst	
+				end if; --rst
 			end if; --clk
 		end process ram_rd_proc;
 	end block ram_rd_block;
