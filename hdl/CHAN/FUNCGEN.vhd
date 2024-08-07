@@ -157,7 +157,7 @@ constant FN_FRAME_WORD_CTR_RAM_FLAGS : FN_TYPE:="011"; -- Counts frames and word
 constant FN_FRAME8                   : FN_TYPE:="100"; -- Current frame number in each 8-bit sample
 constant FN_FRAME4                   : FN_TYPE:="101"; -- Current frame number in the upper 4-bit of each sample (lower bits are zero)
 constant FN_RAM_NIBBLE4              : FN_TYPE:="110"; -- Current frame number in the upper 4-bit of each sample (lower bits are zero)
-constant FN_ADC16                    : FN_TYPE:="111"; -- *deprecated* Send ADC sample as 16-bit values, MSB first
+constant FN_UNUSED                   : FN_TYPE:="111"; -- Unused
 
 constant WORDS_PER_FRAME: integer := ADC_SAMPLES_PER_FRAME / ADC_SAMPLES_PER_WORD;
 constant LOG2_WORDS_PER_FRAME: integer := integer_log2(WORDS_PER_FRAME); --! Number of words per frame. One word is 4 8-bit time samples or 2 8+8-bits frequency samples.
@@ -180,14 +180,15 @@ signal out_dat_tlast: std_logic;
 
 
 -- Control and status bytes
-signal control_bytes: slv8_array(0 to 5); -- default value set in the CMD_SLAVE
-signal status_bytes: slv8_array(0 to 4);
+signal control_bytes: slv8_array(0 to 6); -- default value set in the CMD_SLAVE
+signal status_bytes: slv8_array(0 to 5);
 
 signal byte_a: slv8;
 signal byte_b: slv8;
 signal byte_c: slv8;
 
 signal shift: unsigned(3 downto 0);
+signal clip_width: unsigned(3 downto 0);
 
 signal fn_sel: FN_TYPE;
 signal ramp_word_ctr: unsigned(LOG2_WORDS_PER_FRAME-1 downto 0) := (others=>'0'); -- Counts words from 0 to FRAME_LENGTH/4-1
@@ -201,8 +202,8 @@ signal frame_ctr: unsigned(31-LOG2_WORDS_PER_FRAME downto 0); -- Counts words fr
 signal enable: std_logic;
 signal send_frame: std_logic;
 
-signal ram_page_lsb: std_logic_vector(2 downto 0); -- 3 bits
-signal ram_page_msb: std_logic_vector(3 downto 0); -- 4 bits
+--signal ram_page_lsb: std_logic_vector(2 downto 0); -- 3 bits
+--signal ram_page_msb: std_logic_vector(3 downto 0); -- 4 bits
 signal ram_page: std_logic_vector(6 downto 0); -- combined ram_page_msb and _lsb. 7 bits, more than we need. 9 bits BSB RAM addr + 7 bits page = 16 bit address = 65536 bytes.
 
 signal adc_overflow_flag: std_logic;
@@ -230,57 +231,80 @@ signal crc_in: std_logic_vector(31 downto 0);
 signal crc_out: std_logic_vector(31 downto 0);
 
 signal delay_capture_ctr: unsigned(15 downto 0);
-
+signal adc_overflow_ctr: unsigned(7 downto 0);
+signal reset_stats: std_logic;
 
 begin
 -----------------------------------------------------------------------------------
 -- CONTROL and STATUS Bytes
 -----------------------------------------------------------------------------------
---! \addtogroup memory_map
---! Function Generator Memory Map
---!
---!  ------------------------------------------------------------------------------
---! |  Page   | Addr|Bit(s)|     Name             | Description                   |
---! |---------|-----|------|----------------------|-------------------------------|
---! | CONTROL |  0  |   7  | soft_reset           |                               |
---! |         |     |   6  | enable               | if '1', funcgen continuously generate frame. If '0', stop generating frame and resets the frame counter.|
---! |         |     |  5:3 | ram_page             | Selects which 512-byte page is being accessed by the RAM address space of the MMI |
---! |         |     |  2:0 | fn_sel               |   |
---! |         |  1  |  7:0 | byte_a               | |
---! |         |  2  |  7:0 | byte_b               | |
---! | STATUS  |  0  |  7:0 | ramp_word_ctr        | |
---!  ------------------------------------------------------------------------------
+-- Function Generator Memory Map
+--
+--  ------------------------------------------------------------------------------
+-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+-- |---------|-----|------|----------------------|-------------------------------|
+-- | CONTROL |  0  |   7  | soft_reset           |                               |
+-- |         |     |   6  | enable               | if '1', funcgen continuously generate frame. If '0', stop generating frame and resets the frame counter.|
+-- |         |     |  5:3 | ram_page[2:0]        | LSB of the RAM page number. Each page can address 512 bytes in RAM memory space |
+-- |         |     |  2:0 | fn_sel               |   |
+-- |         |  1  |  7:0 | byte_a               | Byte A, used as parameters in some functions |
+-- |         |  2  |  7:0 | byte_b               | Byte B, used as parameters in some functions |
+-- |         |  3  |  7:0 | number_of_frames     | If non-zero, only ``number_of_frames`` frames will be sent after sync |
+-- |         |  4  |  7:0 | byte_c               | Byte C, used as parameters in some functions |
+-- |         |  5  |  7:4 | ram_page[6:3]        | MSB of the RAM page number |
+-- |         |     |  3:0 | shift                | Number of bits to right-shift the ADC data |
+-- |         |  6  |  7   | stats_reset          | Clears the ADC overflow counter |
+-- |         |     |  6:4 | (unused)             |  |
+-- |         |     |  3:0 | clip_width           | Saturates the ADC data to a ``clip_width-1``-bit wide signed value (i.e. clip_width is the position of the sign bit). Saturation is applied after the right-shift. |
+-- | STATUS  |  0  |  7:0 | ramp_word_ctr        | Last 8 bits of the word counter |
+-- |         |  1  |  7:0 | frame_ctr            | Last 8 bits of the frame counter |
+-- |         |  2  |  7:1 | (unused)             | |
+-- |         |     |   0  | send_frame           | High when frame sending is enabled |
+-- |         | 3-4 | 15:0 | delay_capture_ctr    | Delay capture value. |
+-- |         |  5  |  7:0 | overflow_ctr         | ADC overflow counter. Saturates at 255. |
+--  ------------------------------------------------------------------------------
 
 
 -- CONTROL Byte 0
 soft_reset   <= control_bytes(0)(7);
 enable       <= control_bytes(0)(6);
-ram_page_lsb <= control_bytes(0)(5 downto 3); -- 3 least significant bits of the page register
+ram_page(2 downto 0) <= control_bytes(0)(5 downto 3); -- 3 least significant bits of the page register
 fn_sel       <= FN_TYPE(control_bytes(0)(2 downto 0)); --
--- CONTROL Bytes 1-2
+
+-- CONTROL Bytes 1-2: Bytes A and B
 byte_a <= control_bytes(1);
 byte_b <= control_bytes(2);
 
 -- CONTROL Byte 3
 number_of_frames <= unsigned(control_bytes(3));
 
--- CONTROL Bytes 4
+-- CONTROL Bytes 4: Byte C
 byte_c <= control_bytes(4);
 
--- CONTROL Bytes 5
+-- CONTROL Bytes 5: RAM page and bit shift
+ram_page(6 downto 3) <= control_bytes(5)(7 downto 4); -- 4 most significant bits of the page register
 shift <= unsigned(control_bytes(5)(3 downto 0));
-ram_page_msb <= control_bytes(5)(7 downto 4); -- 4 most significant bits of the page register
+
+-- CONTROL Bytes 6: Saturation width and overrange count reset
+reset_stats <= control_bytes(6)(7);
+clip_width <= unsigned(control_bytes(6)(3 downto 0));
 
 -- STATUS Byte 0
 status_bytes(0) <= std_logic_vector(lsb(ramp_word_ctr));
+
 -- STATUS Byte 1
 status_bytes(1) <= std_logic_vector(lsb(frame_ctr));
+
 -- STATUS Byte 2
 status_bytes(2)(0) <= send_frame;
+
 -- STATUS Byte 3-4
 status_bytes(3 to 4) <= to_slv8_array(delay_capture_ctr);
 
-ram_page <= ram_page_msb & ram_page_lsb;
+-- STATUS Byte 5
+status_bytes(5) <= std_logic_vector(adc_overflow_ctr);
+
+--ram_page <= ram_page_msb & ram_page_lsb;
 
 -----------------------------------------------------------------------------------
 -- Memory-Mapped interface instantiation
@@ -290,7 +314,12 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
     GENERIC MAP (
         NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --
         NUMBER_OF_STATUS_BYTES  => status_bytes'Length(1), --
-        DEFAULT_CONTROL_BYTES   => X"40_0101_00_FF_00", -- No reset
+        DEFAULT_CONTROL_BYTES   => X"40" & -- Byte 0: soft_reset, enable, ram_page[2:0], fn_sel[2:0]
+                                   X"0101" & -- Bytes 1-2: Byte A & Byte B
+                                   X"00" & -- Byte 3: number_of_frames
+                                   X"FF" & -- Byte 4: Byte C
+                                   X"00" & -- Byte 5: ram_page[6:3], shift[3:0]
+                                   X"0F", -- Byte 6: reset_stats, unused(2:0), clip_width[3:0]
         ADDR_WIDTH              => 9, -- We have 9 bits of data left after routing
         RAM_DATA_WIDTH          => 8, -- 8 or 16 bits
         RAM_ADDR_WIDTH          => CMD_ADDR_WIDTH, -- Cannot exceed 9 bits with 8-bit data width because higher bits are used for routing
@@ -353,7 +382,9 @@ funcgen_proc: process (clk)
     -- variable out_dat_var: std_logic_vector(31 downto 0);
     -- variable word_ctr: std_logic_vector(ramp_word_ctr'range);
     variable temp_tdata: std_logic_vector(ADC_SAMPLES_PER_WORD*ADC_BITS_PER_SAMPLE-1 downto 0);
+    variable sample_var: signed(ADC_BITS_PER_SAMPLE-1 downto 0);
     variable int_shift: integer;
+    variable int_clip_width: integer;
     begin
         if rising_edge(clk) then
             reset_all <= soft_reset or rst;
@@ -367,6 +398,7 @@ funcgen_proc: process (clk)
 
 
             int_shift := to_integer(shift);
+            int_clip_width := to_integer(clip_width);
 
            --------------------------------------
             -- Generate an AXIS ramp stream
@@ -377,13 +409,28 @@ funcgen_proc: process (clk)
             word_ctr <= std_logic_vector(ramp_word_ctr_dly); -- This is aligned with the RAM output
 
 
-            -- Shift-right the input with sign-extend
+            -- Shift-right the input (with sign-extend) and saturate to specified bit width
             for j in 0 to ADC_SAMPLES_PER_WORD-1 loop
-                in_dat_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) <= std_logic_vector(shift_right(signed(s_axis_adc_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j)), int_shift));
+                sample_var := signed(in_dat_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j));
+                sample_var := shift_right(sample_var, int_shift);
+                if int_clip_width /= 15 then
+                    sample_var := clip(sample_var, int_clip_width);
+                end if;
+                in_dat_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) <= std_logic_vector(sample_var);
             end loop;
+
             in_dat_tuser <= s_axis_adc_tuser;
             in_dat_tvalid <= s_axis_adc_tvalid;
             in_dat_tlast <= s_axis_adc_tlast;
+
+
+            if reset_stats then
+                adc_overflow_ctr <= (others => '0');
+            elsif not all_zeros(in_dat_tuser) and not all_ones(adc_overflow_ctr) then
+                adc_overflow_ctr <= adc_overflow_ctr + 1;
+            end if;
+
+
 
             -- Generate a tfirst signal
             if in_dat_tvalid='1' then
@@ -393,6 +440,8 @@ funcgen_proc: process (clk)
 
             -- Set default TLAST (overriden below)
             out_dat_tlast <= '0';
+
+            -- Generate ``send_frame``
             if signed(word_ctr) = -1 then
                 ramp_tfirst <= '1';
                 out_dat_tlast <= '1';
@@ -430,28 +479,13 @@ funcgen_proc: process (clk)
                     out_dat_tdata <= in_dat_tdata;
                     out_dat_tvalid <= in_dat_tvalid;
                     out_dat_tlast <= in_dat_tlast;
-                    ---- Detect 8-bit overflow and saturate
-                    --for j in 0 to 3 loop
-                    --    -- If the sign bit of the word is 0 but all the bits down and including the MSB of our byte are not 0, saturate to +127
-                    --    if  in_dat_tdata(16*j+15) = '0' and signed(in_dat_tdata(16*j+15 downto 16*j+7)) /= 0 then
-                    --        out_dat_tdata(8*j+7 downto 8*j) <= X"7F";
-                    --        adc_overflow_flag <= '1';
-                    --    -- If the sign bit of the word is 1 but all the bits down and including the MSB of our byte are not 1, saturate to -128
-                    --    elsif in_dat_tdata(16*j+15) = '1' and signed(in_dat_tdata(16*j+15 downto 16*j+7)) /= -1 then
-                    --        out_dat_tdata(8*j+7 downto 8*j) <= X"80";
-                    --        adc_overflow_flag <= '1';
-                    --    -- There is no saturation
-                    --    else
-                    --        out_dat_tdata(8*j+7 downto 8*j) <= in_dat_tdata(16*j+7 downto 16*j);
-                    --    end if;
-                    --end loop;
 
-                when FN_ADC16 => -- **OBSOLETE**
-                    -- This mode is now identical to FN_ADC now that we handle wider buses
-                    adc_overflow_flag <= '0';
-                    out_dat_tdata <= in_dat_tdata;
-                    out_dat_tvalid <= in_dat_tvalid;
-                    out_dat_tlast <= in_dat_tlast;
+--                when FN_ADC16 => -- **OBSOLETE**
+--                    -- This mode is now identical to FN_ADC now that we handle wider buses
+--                    adc_overflow_flag <= '0';
+--                    out_dat_tdata <= in_dat_tdata;
+--                    out_dat_tvalid <= in_dat_tvalid;
+--                    out_dat_tlast <= in_dat_tlast;
 
                 when FN_RAM =>
                     out_dat_tdata <= ram_dout; -- Byte at address 0 is in the MSB
