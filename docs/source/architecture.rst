@@ -1,11 +1,11 @@
-************
-Architecture
-************
+*********************
+Firmware Architecture
+*********************
 
 .. toctree::
    :maxdepth: 3
-   :titlesonly:
+   :hidden:
 
    coding_conventions
    internal_buses
-   VHDL Hierarchy and source code documentation <modules>
+
