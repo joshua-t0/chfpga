@@ -411,7 +411,7 @@ funcgen_proc: process (clk)
 
             -- Shift-right the input (with sign-extend) and saturate to specified bit width
             for j in 0 to ADC_SAMPLES_PER_WORD-1 loop
-                sample_var := signed(in_dat_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j));
+                sample_var := signed(s_axis_adc_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j));
                 sample_var := shift_right(sample_var, int_shift);
                 if int_clip_width /= 15 then
                     sample_var := clip(sample_var, int_clip_width);
