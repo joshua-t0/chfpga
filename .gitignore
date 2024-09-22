@@ -8,3 +8,4 @@ _ISE_Projects/
 *.jou
 /*.log
 vivado_pid*
+.venv
