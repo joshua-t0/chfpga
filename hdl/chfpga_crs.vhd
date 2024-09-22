@@ -33,7 +33,7 @@ entity chfpga_crs is
 
         -- Clocking config
         SYSTEM_CLOCK_SOURCE: string                  := "SYSCLK_BUFG"; -- System reference clock surce: "SYSCLK": 200 MHz unbuffered differential clock from sysclk_p/n, "SYSCLK_BUFG": 200 MHz BUFG-Buffered clock from sysclk_bufg, "SFP_REFCLK": 125 MHz clock from the GTX reference clock
-        SYSTEM_CLOCK_FREQ: real                      := 10.0; -- System reference clock frequency, in MHz. Used to select the system PLL divider/multiplier factors.
+        SYSTEM_CLOCK_FREQ: real                      := 10.0; -- System reference clock frequency, in MHz. Must be a real value (i.e. float). Used to select the system PLL divider/multiplier factors.
         CHAN_CLK_SOURCE: string                      := "ADC"; -- Clock sources for the system PLL. Here, Channelizer clock comes directly from the ADC
         CT_CLK_SOURCE: string                        := "ADC_CLK"; -- corner-turn clock source
 
@@ -65,11 +65,12 @@ entity chfpga_crs is
         NUMBER_OF_BP_SHUFFLE_LINKS: integer          := CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
         NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := CONFIG_NUMBER_OF_BP_SHUFFLE_REFCLKS;
 
+        -- Correlator config
         CORR_TYPE: string                            := CONFIG_CORR_TYPE; -- "CORR44" or "UCORR44"
         NUMBER_OF_CORRELATORS: integer               := CONFIG_NUMBER_OF_CORRELATORS; -- Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
 
         -- Real-time data offload links configuration
-        GPU_LINK_TYPE: string                        := CONFIG_GPU_LINK_TYPE; -- If TRUE, a 100G UDP/IP/Ethernet data transmitter is implemented
+        GPU_LINK_TYPE: string                        := CONFIG_GPU_LINK_TYPE; --
         NUMBER_OF_GPU_LINKS: integer                 := CONFIG_NUMBER_OF_GPU_LINKS; -- (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
         NUMBER_OF_GPU_REFCLKS: integer               := CONFIG_NUMBER_OF_GPU_REFCLKS; -- Number of Reference clocks provided for the 10GE links to the GPU
 
@@ -187,6 +188,7 @@ end entity;
 
 
 architecture impl of chfpga_crs is
+
     attribute io_buffer_type : string;
     attribute dont_touch: string;
     attribute IOB: string;
@@ -198,7 +200,6 @@ architecture impl of chfpga_crs is
     --  In the case of "OBUF", it looks like the output buffer is adapted to the type of output such as a transceiver output etc.
     attribute io_buffer_type of qsfp_txp, qsfp_txn: signal is sel(GPU_LINK_TYPE="100GE", "OBUF", "NONE");
     attribute io_buffer_type of clk156_p, clk156_n: signal is sel(GPU_LINK_TYPE="100GE", "IBUF", "NONE");
---    attribute dont_touch of plclk_bufg0, plclk_bufg1: label is "true";
 
     -- BSB & CAP AXIS clock (100 MHz)
     signal aclk: std_logic;
@@ -270,7 +271,6 @@ architecture impl of chfpga_crs is
     signal bsb_reset_n: std_logic;
     signal buck_sync: std_logic_vector(0 to 15);
     signal gpio_led: std_logic_vector(7 downto 0);
-    signal buck_sync_0v85_div2: std_logic;
     signal sma_irig, bp_irig: std_logic;
 
     signal qsfp_txp_int, qsfp_txn_int: std_logic_vector(0 to 3);
@@ -423,60 +423,9 @@ begin
             O => plclk_bufg-- Clock buffer output
         );
 
---mmcm_blk: block
---    signal mmcm_fb_nobuf, mmcm_fb_bufg: std_logic;
---    signal plclk_mmcm_nobuf: std_logic;
---begin
---    -- PLCLK input buffer
-
-
---	fb_bufg0 : BUFG
---        port map (
---            I => mmcm_fb_nobuf, -- Clock buffer input
---            O => mmcm_fb_bufg-- Clock buffer output
---        );
---	plclk_bufg0 : BUFG
---        port map (
---            I => plclk_mmcm_nobuf, -- Clock buffer input
---            O => plclk_bufg-- Clock buffer output
---        );
-
-
---    mmcm0 : MMCME4_BASE
---        generic map(
---            BANDWIDTH            => "HIGH",
---            DIVCLK_DIVIDE        => 1, --
---            CLKFBOUT_MULT_F      => 4.000, --2 to 128. VCO = 600-1600 MHz
---            CLKOUT0_DIVIDE_F     => 4.000, -- 200 MHz always. Is not dependent on sampling frequency. Used for SPI, SYNC, IRIGB etc.
---            CLKOUT0_PHASE        => 45.0/4.0*6.0, -- phase to allow PL_SYSREF to be captured in a nearby Fabric FF
---            CLKIN1_PERIOD        => 1.0/375.0*1000.0,
---            REF_JITTER1          => 0.010
---            )
---        port map(
---            -- Output clocks
---            CLKOUT0             => plclk_mmcm_nobuf,
---            CLKFBOUT            => mmcm_fb_nobuf,
---            -- Input clocks control
---            CLKFBIN             => mmcm_fb_bufg,
---            CLKIN1              => plclk_nobuf,
---            -- Other control and status signals
-----            LOCKED              => open,
---            PWRDWN              => '0',
---            RST                 => '0'
---        );
---end block mmcm_blk;
-
     -- Buck sync
 
-    bucksyncdiv_proc: process (buck_sync(1))
-    begin
-        if rising_edge(buck_sync(1)) then
-            buck_sync_0v85_div2 <= not buck_sync_0v85_div2;
-        end if;
-    end process;
-
     buck_sync_5v0 <= buck_sync(0);
---    buck_sync_0v85 <= buck_sync_0v85_div2; -- two switchers operating in paralle 180deg out of phase. Combined freq is double.
     buck_sync_0v85 <= buck_sync(1); -- two switchers operating in paralle 180deg out of phase. Combined freq is double.
     buck_sync_3v3 <= buck_sync(2);
     buck_sync_2v5 <= buck_sync(3);
@@ -759,21 +708,20 @@ zynq: entity work.zynq_tcpipe_crs
 
     );
 
---end generate;
 
-    smp(0) <= clk10_bufg;
-    smp(1) <= pll_oscout_bufg;
---    smp(2) <= pll_sync; -- Ch4/green trace
---    smp(2) <= sysclk_bufg;
-    smp(2) <= sysclk_bufg;
-
-    smp(3) <= plclk_bufg;
-
-
+    -- Assign clocks to odd-numbered
     adc_clkout(1) <= adc_clkout(0);
     adc_clkout(3) <= adc_clkout(2);
     adc_clkout(5) <= adc_clkout(4);
     adc_clkout(7) <= adc_clkout(6);
+
+    -- Connect debugging signals to SMP connectors
+    smp(0) <= clk10_bufg;
+    smp(1) <= pll_oscout_bufg;
+    smp(2) <= sysclk_bufg;
+    smp(3) <= plclk_bufg;
+
+
 
 --dbg2: if FALSE generate
     chfpga0: entity work.chfpga
@@ -789,48 +737,45 @@ zynq: entity work.zynq_tcpipe_crs
             PHY_TYPE                        => PHY_TYPE,
             ADC_TYPE                        => ADC_TYPE,
             NUMBER_OF_ADCS                  => NUMBER_OF_ADCS,
-            CAPTURE_TYPE                    => CAPTURE_TYPE,
+
+
+            -- F-Engine / Channelizers
+
             NUMBER_OF_CHANNELIZERS          => NUMBER_OF_CHANNELIZERS,
+            CAPTURE_TYPE                    => CAPTURE_TYPE,
+
+            -- Corner Turn Engine
+
             NUMBER_OF_CROSSBAR_INPUTS       => NUMBER_OF_CROSSBAR_INPUTS,
             NUMBER_OF_CROSSBAR1_OUTPUTS      => NUMBER_OF_CROSSBAR1_OUTPUTS,
             CROSSBAR1_TYPE                  => CROSSBAR1_TYPE,
+
             NUMBER_OF_BP_PCB_SHUFFLE_LANES  => NUMBER_OF_BP_PCB_SHUFFLE_LANES,
             NUMBER_OF_BP_QSFP_SHUFFLE_LANES => NUMBER_OF_BP_QSFP_SHUFFLE_LANES,
             NUMBER_OF_BP_SHUFFLE_LINKS      => NUMBER_OF_BP_SHUFFLE_LINKS,
             NUMBER_OF_BP_SHUFFLE_REFCLKS    => NUMBER_OF_BP_SHUFFLE_REFCLKS,
-            --BP_SHUFFLE_LANE_MAP             => BP_SHUFFLE_LANE_MAP,
-            --BP_SHUFFLE_LANE_TO_QUAD_MAP     => BP_SHUFFLE_LANE_TO_QUAD_MAP,
-            --BP_SHUFFLE_QUAD_TO_REFCLK_MAP   => BP_SHUFFLE_QUAD_TO_REFCLK_MAP,
+
+            -- Real time Ethernet data streaming interface
+
+            GPU_LINK_TYPE                   => GPU_LINK_TYPE,
+            NUMBER_OF_GPU_LINKS             => NUMBER_OF_GPU_LINKS,
+            NUMBER_OF_GPU_REFCLKS           => NUMBER_OF_GPU_REFCLKS,
 
             -- Correlator config
             CORR_TYPE                       => CORR_TYPE,
             NUMBER_OF_CORRELATORS           => NUMBER_OF_CORRELATORS,
 
-            -- 10/100G Ethernet data streaming
-            NUMBER_OF_GPU_LINKS             => NUMBER_OF_GPU_LINKS,
-            NUMBER_OF_GPU_REFCLKS           => NUMBER_OF_GPU_REFCLKS,
-            GPU_LINK_TYPE                   => GPU_LINK_TYPE,
-
 
             -- Peripherals
+
             BLINKER_PRESENT                 => BLINKER_PRESENT,
             NUMBER_OF_I2C_PORTS             => NUMBER_OF_I2C_PORTS,
             NUMBER_OF_SPI_PORTS             => NUMBER_OF_SPI_PORTS,
             NUMBER_OF_ADC_BOARDS            => NUMBER_OF_ADC_BOARDS,
-            -- IMPLEMENT_ANT                =>IMPLEMENT_ANT, -- Selects for which antenna a processing pipeline is implemented
-            -- IMPLEMENT_FFT                =>IMPLEMENT_FFT, -- Selects if the FFT block is implemented for each antenna (otherwise the timestream go through directly)
-            -- IMPLEMENT_CORR               =>IMPLEMENT_CORR,
-            IMPLEMENT_ARM_SPI => IMPLEMENT_ARM_SPI, -- is implemented if not specified
-            --ADC_IS_DIFFERENTIAL             => ADC_IS_DIFFERENTIAL,
-            --ADC_PROVIDE_BUFFERED_DIVCLK     => ADC_PROVIDE_BUFFERED_DIVCLK,
-            --ADC_INSTANTIATE_PLL             => ADC_INSTANTIATE_PLL,
-            --ADC_USE_EXT_DATA_CLK            => ADC_USE_EXT_DATA_CLK,
-            --ADC_INSTANTIATE_BUFMR           => ADC_INSTANTIATE_BUFMR,
-            --ANT_CLK_SOURCE                  => ANT_CLK_SOURCE,
-            --GPU_CHANNEL_QUAD                => GPU_CHANNEL_QUAD,
-            --GPU_QUAD_REFCLK                 => GPU_QUAD_REFCLK,
+            IMPLEMENT_ARM_SPI               => IMPLEMENT_ARM_SPI, -- is implemented if not specified
             SIM                             => SIM
             )
+
         PORT MAP(
             -- System reset
             cpu_reset    => not cpu_reset_n,
