@@ -1,0 +1,218 @@
+rule:
+    global:
+        #     severity: Warning
+        indent_style: smart_tabs
+        indent_size: 1
+    # group:
+    #     whitespace:
+    #        number_of_spaces: 0
+    record_type_definition_001:
+        disable: true
+    function_019:  # Move parenthesis to next line.
+        disable: true  # We want Single line functions to be more compact
+    whitespace_002:
+        severity: Warning
+    variable_assignment_001: # Move parenthesis after assignment to the next line.
+        disable: true # keep short aggregates on one line
+    port_012: # default value son port
+        disable: true # We use that. ok with Vivado tools.
+    port_map_010: # No comments on port map - hard to maintain
+        disable: true # We think it still improves redabillity.
+    signal_007:
+        severity: Warning
+    if_002: # We don't use parenthesis in if statements
+        disable: true
+    instantiation_034: # We use component instantiation
+        disable: true
+    process_018: # We don't use labels in "end process" if there is no risk of ambiguity (short processes)
+        severity: Warning
+    generic_014: # We dont put a space between generic label and ":"
+        number_of_spaces: 0
+    port_007 : # we don't necessarily put 4 spaces after 'in'
+        disable: true
+    signal_006: # we don't put a space between the label and ":"
+        number_of_spaces: 0
+    port_020: # we don't put a space between the label and ":"
+        number_of_spaces: 0
+    port_008: # we may have any number of space after "out"
+        disable: true
+    constant_006: # We use no space between constant label and ":"
+        number_of_spaces: 0
+    instantiation_003: # We use no space between label and ":"
+        number_of_spaces: 0
+    generate_002: # space between label and ":"
+        number_of_spaces: 0
+
+    instantiation_033: # require COMPONENT in component instantiation
+        disable: true
+
+    process_002: # no space between proces and "("
+        number_of_spaces: 0
+    process_024: # no space between label and ":"
+        number_of_spaces: 0
+    whitespace_200:
+        blank_lines_allowed: 2
+    process_022: # blank lines below begin
+        # blank_lines_allowed: 1
+        style: no_blank_line
+    if_006: # blank line below if
+        style: no_blank_line
+    if_031: # blank line above: we may or may not have blank lines, depending on where it is
+        # style: no_blank_line
+        disable: true
+    if_007: # elsif: we may or may not have blank lines, depending on where it is
+        disable: true
+
+    if_010: # else: we may or may not have blank lines, depending on where it is
+        disable: true
+    if_008: # end if: we may or may not have blank lines, depending on where it is
+        disable: true
+    entity_017: # align colon in ports and generic
+        disable: true
+    entity_020: # align comments in ports and generic
+        disable: true
+    architecture_026: # align colon in signals
+        disable: true
+    architecture_027: # align comments in signals
+        disable: true
+    signal_012: # multiple signals aligned
+        disable: true
+
+    # Alignments
+    concurrent_006: # assignment alignment
+        compact_alignment: no
+    process_400: # assignment alignment
+        disable: true # not enforced
+    process_035: # comment alignment
+        disable: true # not enforced
+    declarative_part_400: # := alignment
+        disable: true # not enforced
+    instantiation_029: # comment alignment
+        disable: true # not enforced
+
+
+    library_500: # library name case
+        case: upper
+    use_clause_500: # library name case
+        case: upper_or_lower
+    use_clause_503: # ALL case
+        case: upper
+    use_clause_501: # library name case
+        case: upper_or_lower
+        case_exceptions: [ chFPGA_Package]
+        disable: true
+    library_007: # blank line before USE
+        disable: true
+
+    # Blank lines before
+    entity_003: # blank line before entity
+        style: allow_comment # could also require_comment
+    type_010: # blank line before type
+        style: allow_comment
+    generate_004: # blank line before generate
+        style: allow_comment
+    instantiation_019: # blank line before instantiation
+        style: allow_comment
+    loop_statement_202: # blank line before end loop
+        disable: true
+    process_023: # blank line before end process
+        style: no_blank_line
+
+    # bank line below
+    case_200: # blank line below when
+        style: no_blank_line
+    case_010: # blank line below end case
+        style: no_blank_line
+    if_030: # blank line after end if
+        style: no_blank_line
+
+    generic_007: # generic name case
+        case: upper
+    generic_map_002: # generic name case
+        case: upper
+
+    # Entity name case
+    entity_008: # entity name case
+        case: upper_or_lower
+    entity_012: # end entity name case
+        case: upper_or_lower
+    architecture_014: # architecture entity name case
+        case: upper_or_lower
+    instantiation_028: # instantiation entity name case
+        case: upper_or_lower
+
+    # Emum case
+    type_500: # enumerate elements case
+        case: upper
+
+
+    # port name case
+    port_010: # port label case
+        case: lower
+        severity: Warning
+    port_map_002: # port label case
+        case: lower
+        severity: Warning
+
+    # constant name case
+    constant_004: # constant name case
+        case: upper
+
+    # attributes name case
+    attribute_500: # attribute case
+        case: upper
+
+    # Architecture names
+    architecture_013: # architecture name case
+        case: lower
+        severity: Warning
+
+    architecture_011: # end architecture name case
+        case: lower
+        severity: Warning
+
+    # Instantiation
+    instantiation_009: # instance name case
+        case: upper_or_lower
+
+    # Line length
+    length_001: # max line length
+        length: 200
+        severity: Warning
+
+    signal_015: # number of signals declared in same statement
+        consecutive: 4
+        severity: Warning
+
+indent:
+    tokens:
+        use_clause:
+            keyword:
+                token_after_library_clause: current
+                token_if_no_matching_library_clause: current
+        # disable indentation for architecture: that wastes horizontal space for 90% of the file with little clarity benefit
+        architecture_body:
+            architecture_keyword:
+                after: 0
+                token: 0
+            begin_keyword:
+                after: 0
+                token: 0
+            end_keyword:
+                after: 0
+                token: 0
+        # Fix instantiation maps final parenthesis indentation
+        enumeration_type_definition:
+            close_parenthesis:
+              after: -1
+              token: current  # close the parenthesis onthe same level as the previous block
+            enumeration_literal:
+              after: current
+              token: current
+            open_parenthesis:
+              after: 1
+              token: current
+
+        # port_clause:
+        #     close_parenthesis:
+        #           token: current
