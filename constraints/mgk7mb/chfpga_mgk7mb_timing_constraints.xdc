@@ -4,7 +4,7 @@
 
 # Tell the tool to analyze only the timing when the ADCCLK is selected by the chan_mmcm (as opposed to the internal 200 MHz clock)
 # The following line does this by forcing the CLKINSEL input to '0'
-set_case_analysis 1 [get_pins -hierarchical gen_chanpll_k7.chan_mmcm0/CLKINSEL]
+set_case_analysis 1 [get_pins -hierarchical gen_chanpll_k7.mmcm_case.chan_mmcm0/CLKINSEL]
 
 
 # ADC clocks
@@ -136,7 +136,7 @@ set_clock_groups -name CORR_CLK_GROUP -asynchronous -group [get_clocks -include_
 
 # set_clock_groups -name sgmii_txclk_group -asynchronous -group [get_clocks -include_generated_clocks sgmii_txclk]
 
-set_clock_groups -name sgmii_txclk_group -asynchronous -group [get_clocks -include_generated_clocks -of_objects [get_pins chfpga0/gen_eth.udp_mac0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/*/gtwizard_i/gt0_GTWIZARD_i/gtxe2_i/TXOUTCLK]]
+set_clock_groups -name sgmii_txclk_group -asynchronous -group [get_clocks -include_generated_clocks -of_objects [get_pins chfpga0/gen_eth.phy_case.udp_mac0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/*/gtwizard_i/gt0_GTWIZARD_i/gtxe2_i/TXOUTCLK]]
 
 # The following clocks are not used except for monitoring their frequency during board QC
 # ----------------------------------------
