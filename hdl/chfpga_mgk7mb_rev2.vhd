@@ -925,7 +925,7 @@ bufr_rawclk10 : BUFR
 
 			-- BSB interface
 			PHY_TYPE                        => PHY_TYPE,
-			SGMII_CLOCK_SOURCE              => SGMII_CLOCK_SOURCE,
+--			SGMII_CLOCK_SOURCE              => SGMII_CLOCK_SOURCE,
 
 			-- ADC config
 			ADC_TYPE                        => ADC_TYPE,
@@ -958,7 +958,7 @@ bufr_rawclk10 : BUFR
 			BP_SHUFFLE_QUAD_TO_REFCLK_MAP   => BP_SHUFFLE_QUAD_TO_REFCLK_MAP,
 
 			-- Real-time Data offload config
-			IMPLEMENT_100G_ETHERNET         => IMPLEMENT_100G_ETHERNET,
+--			IMPLEMENT_100G_ETHERNET         => IMPLEMENT_100G_ETHERNET,
 			NUMBER_OF_GPU_LINKS             => NUMBER_OF_GPU_LINKS,
 			NUMBER_OF_GPU_REFCLKS           => NUMBER_OF_GPU_REFCLKS,
 			GPU_CHANNEL_QUAD                => GPU_CHANNEL_QUAD,

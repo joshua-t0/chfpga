@@ -908,7 +908,7 @@ bufr_rawclk10 : BUFR
 			
 			BLINKER_PRESENT                 => BLINKER_PRESENT,
 			PHY_TYPE                        => PHY_TYPE,
-			SGMII_CLOCK_SOURCE              => SGMII_CLOCK_SOURCE,
+--			SGMII_CLOCK_SOURCE              => SGMII_CLOCK_SOURCE,
 			NUMBER_OF_ADCS                  => NUMBER_OF_ADCS,
 			NUMBER_OF_CHANNELIZERS          => NUMBER_OF_CHANNELIZERS,
 			NUMBER_OF_CORRELATORS           => NUMBER_OF_CORRELATORS,
