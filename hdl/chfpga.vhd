@@ -89,7 +89,7 @@ entity chFPGA is
 		-- Buck sync
 
 		BUCK_SYNC_ENABLE: boolean := True; -- default state of the buck sync enable at startup
-		BUCK_CLK_DIVIDE_FACTOR: integer :=12; -- Buck frequency is 200MHz/BUCK_CLK_DIVIDE_FACTOR/16
+		BUCK_CLK_DIVIDE_FACTOR: integer := 12; -- Buck frequency is 200MHz/BUCK_CLK_DIVIDE_FACTOR/16
 
 		-- BSB Monitor and control interface
 
@@ -364,11 +364,8 @@ entity chFPGA is
 			adc_axis_clk: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
 			-- Clock output of the ADC tiles (for monitoring)
 			adc_clkout: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
-			-- PL SYSREF
+			-- PL SYSREF: Used in CRS board only
 			adc_sysref: in std_logic := '0'; -- PL_SYSREF, reclocked through adc_axis_clk (plclk)
-			adc_cal_frozen: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
-			adc_cal_freeze: out std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
-			adc_cal_signal_detect: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
 			adc_clear_or: out std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
 			adc_clear_ov: out std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
 			adc_cm_ov: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
@@ -377,6 +374,10 @@ entity chFPGA is
 			adc_ot1: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
 			adc_ot2: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
 			adc_ov: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+			adc_cal_frozen: in std_logic_vector(0 to 7) := (others => '0');
+			adc_cal_freeze: out std_logic_vector(0 to 7) := (others => '0');
+			adc_cal_signal_detect: in std_logic_vector(0 to 7) := (others => '0');
+
 			------------------------------------
 			-- FMC ADC interface
 			------------------------------------
@@ -543,7 +544,7 @@ attribute IOB: string;
 attribute TARGET_PBLOCK: string;
 
 -- ==================================================
--- ========== SIGNALS ==============================
+-- ========== SIGNALS ===============================
 -- ==================================================
 
 -- Constants
@@ -1059,7 +1060,7 @@ ALL_RESET<=  cpu_reset or user_reset;
 --end generate; --debug7
 
 --! Instantiate the system clock generator that generates the local 200 MHz and 125 MHz from the external 200 MHz lines
-CLK0: entity work.CLOCKS
+CLK0: entity work.CLOCKS 
 	generic map (
 		PLATFORM_ID => PLATFORM_ID,
 		CLOCK_SOURCE => SYSTEM_CLOCK_SOURCE, -- "SYSCLK", "SYSCLK_BUFG", "SFP_REFCLK" or "CLK10_BUFG"
@@ -1209,7 +1210,7 @@ begin
 end block ct_clk_blk;
 
 gen_eth: case PHY_TYPE generate
-    when phy_case:"GMII" | "SCMII" =>
+    when phy_case:"GMII" | "SGMII" =>
         signal sfp_signal_detect: std_logic;
         signal udp_stack_rst: std_logic;
         attribute DONT_TOUCH of udp_stack_rst: signal is "true";

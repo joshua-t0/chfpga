@@ -34,7 +34,7 @@ entity chFPGA_MGK7MB_Rev2 is
 	 generic (
 			PLATFORM_ID: INTEGER                         := PLATFORM_ID_MGK7MB; --! identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705
 
-			-- Clocking config
+			-- Clocking config2
 			SYSTEM_CLOCK_SOURCE: string                  := "SFP_REFCLK"; --!"SYSCLK": the 200 MHz clock will be taken from sysclk_p/n (CC pins) or "SFP_REFCLK": the system clock is 125 MHz from the GTX reference clock
 			SYSTEM_CLOCK_FREQ: real                      := 125.0; -- System reference clock frequency, in MHz *** IP packager does not support real. Defined as constant below ***
 			CHAN_CLK_SOURCE: string                      := "MMCM"; -- Channelizer clock comes from the multi-phase MMCM
@@ -925,7 +925,7 @@ bufr_rawclk10 : BUFR
 
 			-- BSB interface
 			PHY_TYPE                        => PHY_TYPE,
-			SGMII_CLOCK_SOURCE              => SGMII_CLOCK_SOURCE,
+--			SGMII_CLOCK_SOURCE              => SGMII_CLOCK_SOURCE,
 
 			-- ADC config
 			ADC_TYPE                        => ADC_TYPE,
@@ -958,7 +958,7 @@ bufr_rawclk10 : BUFR
 			BP_SHUFFLE_QUAD_TO_REFCLK_MAP   => BP_SHUFFLE_QUAD_TO_REFCLK_MAP,
 
 			-- Real-time Data offload config
-			IMPLEMENT_100G_ETHERNET         => IMPLEMENT_100G_ETHERNET,
+--			IMPLEMENT_100G_ETHERNET         => IMPLEMENT_100G_ETHERNET,
 			NUMBER_OF_GPU_LINKS             => NUMBER_OF_GPU_LINKS,
 			NUMBER_OF_GPU_REFCLKS           => NUMBER_OF_GPU_REFCLKS,
 			GPU_CHANNEL_QUAD                => GPU_CHANNEL_QUAD,
