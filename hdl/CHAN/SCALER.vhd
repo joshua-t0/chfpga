@@ -848,9 +848,11 @@ scaler_proc: process(clk)
                         for i in 0 to INTEGERS_PER_WORD-1 loop
                             m_axis_out_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto i*OUT_BITS_PER_BIN/2) <= 
 --                                (OUT_BITS_PER_BIN/2-1 => '1', others =>'0') when stage1_overflow(i)='1' and stage1_sign(i)='1' else
---                                (OUT_BITS_PER_BIN/2-1 => '0', others =>'1') when stage1_overflow(i)='1' and stage1_sign(i)='0' else
-                                X"8000" when stage1_overflow(i)='1' and stage1_sign(i)='1' else
-                                X"7FFF" when stage1_overflow(i)='1' and stage1_sign(i)='0' else
+--                                (OUT_BITS_PER_BIN/2-1 => '0', others =>'1') when stage1_overflow(i)='1' and stage1_sign(i)='0' 
+                                ('1', others => '0') when stage1_overflow(i)='1' and stage1_sign(i)='1' else
+                                ('0', others => '1') when stage1_overflow(i)='1' and stage1_sign(i)='0' else
+--                                msb(X"8000", OUT_BITS_PER_BIN/2) when stage1_overflow(i)='1' and stage1_sign(i)='1' else
+--                                msb(X"7FFF", OUT_BITS_PER_BIN/2) when stage1_overflow(i)='1' and stage1_sign(i)='0' else
                                 msb(std_logic_vector(stage1_word(i)), OUT_BITS_PER_BIN/2);
                         end loop;
                         m_axis_out_tlast <= stage1_tlast;
