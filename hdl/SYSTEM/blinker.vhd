@@ -4,7 +4,7 @@
 --
 -- Create Date:    01:13:55 03/14/2011
 -- Design Name:
--- Module Name:    blinker - Behavioral
+-- Module Name:    blinker - impl
 -- Project Name:
 -- Target Devices:
 -- Tool versions:
@@ -16,6 +16,7 @@
 
 -- Additional Comments:
 ----------------------------------------------------------------------------------
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_MISC.ALL;
@@ -26,32 +27,33 @@ use IEEE.NUMERIC_STD.ALL;
 entity blinker is
 	GENERIC (
 		PING_PONG: boolean := FALSE;
-		DUMMY: BOOLEAN:=FALSE
+		DUMMY: boolean     := FALSE
 		);
    PORT (
 		-- Reset line
-		rst: in  STD_LOGIC;
+		rst: in  std_logic;
 
 		-- Clock
-		clk: in  STD_LOGIC;
-		kick: in std_logic:='0'; --! increases the blink speed when '1'
-		leds: out STD_LOGIC_VECTOR(7 downto 0); --! Ramp up and down pattern Intensity = (0,1,2,3,2,1,0,0,0...)
-		leds_u: out STD_LOGIC_VECTOR(7 downto 0); --! Ramp_up pattern        Intensity = (0,1,2,3,0,0,0,0,0...)
-		leds_d: out STD_LOGIC_VECTOR(7 downto 0) --! Ramp down parrern      Intensity = (0,0,0,3,2,1,0,0,0...)
+		clk: in  std_logic;
+		kick: in std_logic :='0'; --! increases the blink speed when '1'
+		leds: out std_logic_vector(7 downto 0); --! Ramp up and down pattern Intensity = (0,1,2,3,2,1,0,0,0...)
+		leds_u: out std_logic_vector(7 downto 0); --! Ramp_up pattern        Intensity = (0,1,2,3,0,0,0,0,0...)
+		leds_d: out std_logic_vector(7 downto 0) --! Ramp down parrern      Intensity = (0,0,0,3,2,1,0,0,0...)
 		);
+end entity blinker;
 
-end blinker;
+architecture impl of blinker is
 
-architecture Behavioral of blinker is
-
-	signal ctr: unsigned (31 downto 0):=(others=>'0'); --
+	signal ctr: unsigned (31 downto 0) := (others => '0'); --
 
 	signal lead: unsigned(0 to 7) := "10000000"; -- The bit that bounces around
+
 	type TRAIL_TYPE is array(natural range <>) of unsigned(0 to 4);
-	signal trail: TRAIL_TYPE(0 to 7) ; -- Memory of the passage of the bit so we can compute remanent intensity
+
+	signal trail: TRAIL_TYPE(0 to 7); -- Memory of the passage of the bit so we can compute remanent intensity
 	signal pwm_low_to_high: std_logic_vector(0 to 2); -- 3 levels of PWM
 	signal pwm_high_to_low: std_logic_vector(0 to 2); -- 3 levels of PWM
-	signal dir: STD_LOGIC:='1';
+	signal dir: std_logic := '1';
 	signal trig: boolean;
 	signal leds_u_int, leds_d_int: std_logic_vector(7 downto 0) := (others => '0');
 	signal kick_pulse: std_logic;
@@ -65,16 +67,15 @@ begin
 
 	NODUMMY: if DUMMY=FALSE generate
 
-		blinker : process(clk, kick)
+		blinker: process(clk, kick) is
 		begin
-			if kick='1' then
+			if kick = '1' then
 				kick_pulse <= '1';
 			elsif rising_edge(clk) then
-				if kick_pulse='1' then
-					kick_pulse <='0';
+				if kick_pulse = '1' then
+					kick_pulse <= '0';
 				end if;
 			end if;
-
 
 			if rising_edge(clk) then
 				ctr <= ctr + 1;
@@ -92,7 +93,7 @@ begin
 				pwm_high_to_low(2) <= pwm_low_to_high(0);
 
 				if PING_PONG then
-					if lead(0)='1' then
+					if lead(0) = '1' then
 						dir <= '1';
 					elsif lead(7) = '1' then
 						dir <= '0';
@@ -100,10 +101,10 @@ begin
 				end if;
 
 				-- trig <= ctr(22 downto 0)=0 or (ctr(20 downto 0)=0 and kick='1');
-				trig <= ctr(22 downto 0)=0 or kick_pulse='1';
+				trig <= ctr(22 downto 0) = 0 or kick_pulse = '1';
 
 				if trig  then
-					if dir='1' then
+					if dir = '1' then
 						lead <= rotate_right(lead, 1);
 					else
 						lead <= rotate_left(lead, 1);
@@ -122,14 +123,14 @@ begin
 
 				-- synchronous resets. Overrides variables above.
 				if rst='1' then
-					leds_d_int <= (others=>'0');
-					leds_u_int <= (others=>'0');
-					lead <= (0=>'1', others=>'0');
+					leds_d_int <= (others => '0');
+					leds_u_int <= (others => '0');
+					lead <= (0 => '1', others => '0');
 					dir <= '1';
 				end if; -- if rst
 			end if; -- clk
 		end process;
-	end generate;
+	end generate NODUMMY;
 
-end Behavioral;
+end architecture impl;
 

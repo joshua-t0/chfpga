@@ -29,7 +29,9 @@ use work.chFPGA_Package.all; -- Get all component definitions
 -- any Xilinx primitives in this code.
 library UNISIM;
 use UNISIM.VComponents.all;
---! @brief Implements the FPGA's internal SYSTEM MONITOR (Virtex 6) or XADC (7 series) block to monitor internal and external voltages and temperatures
+
+--brief Implements the FPGA's internal SYSTEM MONITOR (Virtex 6) or XADC (7 series) block to monitor
+--internal and external voltages and temperatures
 entity SYSMON_XADC is
 	generic (
 		PLATFORM_ID: INTEGER
@@ -80,7 +82,7 @@ signal CONTROL_BYTES_FAN_EN: STD_LOGIC;
 
 signal ctrl_cmd_in_rdy_int: AXIS8_RDY_STRUCT;
 signal ctrl_rply_out_dat_int: AXIS8_DAT_STRUCT;
-	
+
 
 -- SYSMON signals
 signal SYSMON_DOUT: STD_LOGIC_VECTOR(15 downto 0);
@@ -148,7 +150,7 @@ FIFO0 : entity work.CMD_ASYNC_FIFO
 		b_clk      => sysmon_clk,
 		b_rst_out  => bsb_rst,
 
-		rst => ctrl_rst -- Asynchronous. The module internally extends the pulse for a number of A_CLK and B_CLK when they come. 
+		rst => ctrl_rst -- Asynchronous. The module internally extends the pulse for a number of A_CLK and B_CLK when they come.
 		);
 
 --debug_out(0) <=  ctrl_cmd_in_dat.TVALID;

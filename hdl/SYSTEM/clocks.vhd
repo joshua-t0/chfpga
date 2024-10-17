@@ -33,7 +33,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 
 -- Generate the system and channelizer clocks from the specified clock source.
 --
--- Notes: 
+-- Notes:
 --
 --    For the KC705, the direct clk200 BUFG cannot drive the BUFGMUX because it is not in the same region.
 --    In this case, the MMCM instantiated here has to be put in the same half as the BUFGMUX, and its output can directly drive the BUFGMUX
@@ -56,8 +56,8 @@ use work.chFPGA_Package.all; -- Get all component definitions
 
 		sfp_refclk_p: in std_logic; -- Differential 125 MHz from the GTX reference clock input
 		sfp_refclk_n: in std_logic;
-        
-        clk10_bufg: in std_logic; 
+
+        clk10_bufg: in std_logic;
 
 		adc_clk: in std_logic;
 
@@ -254,7 +254,7 @@ begin
 			end generate;
 
 			-- We use a BUFG to reach the MMCM from the refclk to the MMCM
-			-- We have to use a BUFG because this clock is also used to clock the SGMII reset logic and GTX, 
+			-- We have to use a BUFG because this clock is also used to clock the SGMII reset logic and GTX,
 			-- which resides in another clock region that the REFCLK input.
 
 			bufg_gtrefclk : BUFG
@@ -521,7 +521,7 @@ begin
 
 					-- Input clock & control
 					CLKFBIN             => chan_clk_fb,
-					CLKIN1              => chan_mmcm_clkin1, -- used when CLKINSEL='1'. Can use CLK200_MMCM_NOBUF if adjacent to sys_mmcm, 
+					CLKIN1              => chan_mmcm_clkin1, -- used when CLKINSEL='1'. Can use CLK200_MMCM_NOBUF if adjacent to sys_mmcm,
 					CLKIN2              => chan_mmcm_clkin2, -- used when CLKINSEL='0'. If there is no bufg, this mmcm needs to be adjacent to the adc mmcm
 					CLKINSEL            => chan_clk_src_sel,
 					-- Ports for dynamic reconfiguration

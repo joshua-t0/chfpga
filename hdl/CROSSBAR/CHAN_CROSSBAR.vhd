@@ -275,81 +275,68 @@ crossbar_router0: entity work.CTRL_ROUTER
 -----------------------------------------------------------------------------------
 -- CONTROL and STATUS Bytes
 -----------------------------------------------------------------------------------
---! \addtogroup memory_map
---! CH_DIST Module
---! =============
---! ------------------------------------------------------------------------------
---! |  Page   | Addr|Bit(s)|     Name             | Description                   |
---! |---------|-----|------|----------------------|-------------------------------|
---! | CONTROL |  0  |   7  | USER_RESET               | Reset the CH_DIST and clears the FIFOs.|
---! |         |     |   6  | FOUR_BITS                | The input data is in 4-bit mode. The word streams will be combined 2-by-2 to pack 4 (4+4) bits samples in the output word|
---! |         |     |   5  | USE_OFFSET_BINARY        | Indicates if the data is encoded in offset_binary or 2's complement. This is not used by this module, but is passed in the header flags. It must be set consistently with the type of encoding of the source data.|
---! |         |     |   4  | SEND_FLAGS               | Indicates if we want the packets to contain scaler and adc flags.|
---! |         |     |   3  |                          | |
---! |         |     | 2-0  | (unused)                 |   |
---! |         | 1-2 | 15:0 | STREAM_ID                 | Stream ID to be used for tagging the output frames |
---! |         |  3  | 7:0  | number_of_selected_bins  | Indicates the number of words (frequency bin pairs) that are selected. This must match the number of '1' bits in the word selection map.|
---! |         |  4  | 2:0  | frames_per_packet        | Number of input frames to group into an output packet.|
---! |         |  5  | 7:5  |                          |  |
---! |         |     | 4:0  | number_of_input_lanes    | Number of input lanes from which data is gathered. Must be a multiple of 4. |
---! | STATUS  |  0  |   7  |           | EMPTY status flag of the DATA FIFO for antenna processor 0. Active HIGH. |
---! |         |     |   6  |        | Sticky flag indicating that one of the DATA FIFO has overflown. Cleared only by a reset of the module.|
---! |         |     | 5:0  | '0'                      | Unused   |
---! |         |  1  |  7:0 | FRAME_CTR                | Counts the number of frames written into the FIFOs. Rolls over.|
---! | RAM     | 0-63 | -   | MASK_RAM                 | Word selection map. Each of the 512 bit indicates whether the corresponding word (frequency bin pair) is retained by this correlator. |
---! ------------------------------------------------------------------------------
---!
---! ------------------------------------------------------------------------------------
---! | dual_bin | four_bits | Number of selected_bins                | Number of inputs |
---! |----------|-----------|----------------------------------------|------------------|
---! |    0     |     0     |                                        | Multiple of 2    |
---! |    0     |     1     |                                        | Multiple of 4    |
---! |    1     |     0     | Even, odd-even pair selected together  | Any              |
---! |    1     |     1     | Even, odd-even pair selected together  | Multiple of 2    |
---! ------------------------------------------------------------------------------------
+-- Memory Map
+-- -----------------------------------------------------------------------------------
+-- |  Page   | Addr|Bit(s)|     Name                 | Description                   |
+-- |---------|-----|------|--------------------------|-------------------------------|
+-- | CONTROL |  0  |   7  | USER_RESET               | Reset the CH_DIST and clears the FIFOs.|
+-- |         |     |   6  | FOUR_BITS                | The input data is in 4-bit mode. The word streams will be combined 2-by-2 to pack 4 (4+4) bits samples in the output word|
+-- |         |     |   5  | USE_OFFSET_BINARY        | Indicates if the data is encoded in offset_binary or 2's complement. This is not used by this module, but is passed in the header flags. It must be set consistently with the type of encoding of the source data.|
+-- |         |     |   4  | SEND_FLAGS               | Indicates if we want the packets to contain scaler and adc flags.|
+-- |         |     |   3  |                          |   |
+-- |         |     | 2-0  | (unused)                 |   |
+-- |         | 1-2 | 15:0 | STREAM_ID                | Stream ID to be used for tagging the output frames |
+-- |         |  3  | 7:0  | number_of_selected_bins  | Indicates the number of words (frequency bin pairs) that are selected. This must match the number of '1' bits in the word selection map.|
+-- |         |  4  | 2:0  | frames_per_packet        | Number of input frames to group into an output packet.|
+-- |         |  5  | 7:5  |                          |   |
+-- |         |     | 4:0  | number_of_input_lanes    | Number of input lanes from which data is gathered. Must be a multiple of 4. |
+-- | STATUS  |  0  |   7  |                          | EMPTY status flag of the DATA FIFO for antenna processor 0. Active HIGH. |
+-- |         |     |   6  |                          | Sticky flag indicating that one of the DATA FIFO has overflown. Cleared only by a reset of the module.|
+-- |         |     | 5:0  | '0'                      | Unused   |
+-- |         |  1  |  7:0 | FRAME_CTR                | Counts the number of frames written into the FIFOs. Rolls over.|
+-- | RAM     |0-63 |  -   | MASK_RAM                 | Word selection map. Each of the 512 bit indicates whether the corresponding word (frequency bin pair) is retained by this correlator. |
+-- ----------------------------------------------------------------------------------
+--
+-- ------------------------------------------------------------------------------------
+-- | dual_bin | four_bits | Number of selected_bins                | Number of inputs |
+-- |----------|-----------|----------------------------------------|------------------|
+-- |    0     |     0     |                                        | Multiple of 2    |
+-- |    0     |     1     |                                        | Multiple of 4    |
+-- |    1     |     0     | Even, odd-even pair selected together  | Any              |
+-- |    1     |     1     | Even, odd-even pair selected together  | Multiple of 2    |
+-- ------------------------------------------------------------------------------------
 
---! CONTROL Byte 0
--- USER_RESET        <= control_bytes(0)(7); --! Used in both IN_CLK and OUT_CLK domain
--- FOUR_BITS         <= control_bytes(0)(6); --!
--- USE_OFFSET_BINARY <= control_bytes(0)(5); --!
--- SEND_FLAGS        <= control_bytes(0)(4);
--- dual_bin          <= control_bytes(0)(3);
---! CONTROL Bytes 1-8
--- lane_map_gen: for i in 0 to NUMBER_OF_INPUT_LANES-1 generate
--- 	lane_map(i) <= control_bytes(8-i/2)((i mod 2)*4+3 downto (i mod 2)*4);
--- end generate;
-
---! CONTROL Byte 0
+-- CONTROL Byte 0
 -- fifo_reset                    <= control_bytes(0)(7); --!
 align_reset                   <= control_bytes(0)(6); --!
 -- remap_reset                   <= control_bytes(0)(5); --! There is no remap in 1st crossbar
 lane_monitor_reset            <= control_bytes(0)(4); --!
 lane_monitor_sel              <= control_bytes(0)(3 downto 0); --!
 
---! CONTROL Byte 1
+-- CONTROL Byte 1
 lane_monitor_source <= control_bytes(1)(3 downto 0);
 
 
---! STATUS Byte 0
+-- STATUS Byte 0
 status_bytes(0)(7 downto 3) <= slv(lane_monitor_bit_ctr);
 status_bytes(0)(2) <= lane_monitor_bit;
 status_bytes(0)(1) <= align_fifo_overflow_sticky(to_integer(unsigned(lane_monitor_sel)));
 status_bytes(0)(0) <= rst_reg;
 
---! STATUS Byte 1
+-- STATUS Byte 1
 status_bytes(1) <= input_frame_ctr(to_integer(unsigned(lane_monitor_sel)));
 
---! STATUS Byte 2
+-- STATUS Byte 2
 status_bytes(2) <= align_frame_ctr(to_integer(unsigned(lane_monitor_sel)));
 status_bytes(3 to 4) <= to_slv8_array(delay_capture_ref_word_ctr);
 
 -- status_bytes(0 to 1) <= to_slv8_array(resize(reverse_bits_and_dir(lane_monitor), 16));
 -- status_bytes(2) <= to_slv(lsb(bin_ctr, 8));
---! STATUS Byte 2
+-- STATUS Byte 2
 -- none
 
 
---! STATUS Byte 5
+-- STATUS Byte 5
 
 -- status_bytes(5) <= align_frame_ctr(0); -- this is redundant: remove!
 
