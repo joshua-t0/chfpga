@@ -113,7 +113,7 @@ entity chfpga_crs is
         pl_sysref_p : in std_logic;
 
 
-        -- 250 MHz system clock from programmable PLL. Used as source to generate internal clocks using MMCM.
+        -- 10 MHz system clock from programmable PLL. Used as source to generate internal clocks (200 MHz, 62.5 MHz etc) using MMCM.
         sysclk_n : in std_logic;
         sysclk_p : in std_logic;
 
@@ -455,8 +455,7 @@ begin
         );
 
 
-    -- Register SYSREF
-    -- This is required for the Multi-Converter synchronization
+    -- Select IRIG-B source
     irigb_proc: process (plclk_bufg)
     begin
         if rising_edge(plclk_bufg) then
