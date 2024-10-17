@@ -20,15 +20,19 @@ package chan_package is
 ----------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------
 COMPONENT CHAN is
-    GENERIC (
-        ADC_BITS_PER_SAMPLE: integer := CONFIG_ADC_BITS_PER_SAMPLE;
-        ADC_SAMPLES_PER_WORD: integer := CONFIG_ADC_SAMPLES_PER_WORD;
-        ADC_SAMPLES_PER_FRAME: integer := CONFIG_ADC_SAMPLES_PER_FRAME;
-        ADC_BITS_PER_WORD: integer := ADC_BITS_PER_SAMPLE * ADC_SAMPLES_PER_WORD;
-        IMPLEMENT_FFT: boolean; -- no default value since we only want one channelizer with an FFT for now, as defined in chfpga and the config.
-        NUMBER_OF_CAPTURE_SOURCES: integer := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES;
-        CAPTURE_BITS_PER_WORD: integer := CONFIG_CAPTURE_BITS_PER_WORD
-        );
+    -- We cannot have GENERICS if the module is to be used as an Out-of-contect module,
+    -- even if all the GENERICS have default values and we don't have a GENERICS section in the component
+    -- instantiation
+
+    --GENERIC (
+    --    ADC_BITS_PER_SAMPLE: integer := CONFIG_ADC_BITS_PER_SAMPLE;
+    --    ADC_SAMPLES_PER_WORD: integer := CONFIG_ADC_SAMPLES_PER_WORD;
+    --    ADC_SAMPLES_PER_FRAME: integer := CONFIG_ADC_SAMPLES_PER_FRAME;
+    --    ADC_BITS_PER_WORD: integer := ADC_BITS_PER_SAMPLE * ADC_SAMPLES_PER_WORD;
+    --    IMPLEMENT_FFT: boolean := TRUE; -- out-of-context block will always have their FFT
+    --    NUMBER_OF_CAPTURE_SOURCES: integer := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES;
+    --    CAPTURE_BITS_PER_WORD: integer := CONFIG_CAPTURE_BITS_PER_WORD
+    --    );
 
   PORT (
 
@@ -49,7 +53,7 @@ COMPONENT CHAN is
     out_reset: in std_logic;
 
     -- System level signals
-    trig : in  std_logic; --! Global trigger/capture signal. 
+    trig : in  std_logic; --! Global trigger/capture signal.
     lane_monitor: out std_logic_vector(3 downto 0);
 
     -- Control interface (command and reply stream buses)

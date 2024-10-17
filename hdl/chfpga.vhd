@@ -1422,7 +1422,6 @@ end block bsb_master_blk;
 --! |  5 | 0x50000  | BP Shuffle                         |             |
 --! |  6 | 0x60000  | Crossbar 2                         |             |
 --! |  7 | 0x70000  | UCAP                               |             |
---stopLiteralInclude
 
 top_router_blk: block
 
@@ -1508,6 +1507,7 @@ end block top_router_blk;
 --! | 5  | Base + 0x05000  | I2C                          |             |
 --! | 6  | Base + 0x06000  | (unused)                     |             |
 --! | 7  | Base + 0x07000  | (unused)                     |             |
+
 sysrtr_blk: block
 
 	attribute TARGET_PBLOCK of sys_router0: label is "SYSTEM"; -- assign system router to SYSTEM Pblock
@@ -2939,10 +2939,10 @@ begin
 	end process;
 
 	CHANi: component work.chan_package.CHAN
-		GENERIC MAP (
-			--PLATFORM_ID => PLATFORM_ID
-			IMPLEMENT_FFT => i < NUMBER_OF_CHANNELIZERS_WITH_FFT
-			)
+		--GENERIC MAP (
+		--	--PLATFORM_ID => PLATFORM_ID
+		--	--IMPLEMENT_FFT => i < NUMBER_OF_CHANNELIZERS_WITH_FFT
+		--	)
 		PORT MAP(
 			-- Channelizer input (on ANT_CLK)
 			in_dat_tdata  => axis_adc_tdata_reg(i),
