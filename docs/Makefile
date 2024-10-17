@@ -59,9 +59,15 @@ html:
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
+.PHONY: html_verbose
+html_verbose:
+	$(SPHINXBUILD) -v -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	@echo
+	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
+
 .PHONY: rst
 rst:
-	$(SPHINXBUILD) -b rst $(ALLSPHINXOPTS) $(BUILDDIR)/rst
+	$(SPHINXBUILD) -v -b rst $(ALLSPHINXOPTS) $(BUILDDIR)/rst
 	@echo
 	@echo "Build finished. The RestructuredText pages are in $(BUILDDIR)/rst."
 

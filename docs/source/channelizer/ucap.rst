@@ -36,8 +36,8 @@ Limitations
 Schematic
 ---------
 
-.. figure:: ../images/ucap.svg
-    :width: 50%
+.. .. figure:: ../images/ucap.svg
+..     :width: 50%
 
 .. parse:: hdl/CHAN/ucap.vhd
 

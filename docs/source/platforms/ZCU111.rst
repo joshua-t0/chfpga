@@ -1,0 +1,25 @@
+ZCU111
+******
+
+
+Clocking
+--------
+
+
+Clock frequency selection
+-------------------------
+
+
+The ZCU111's LMK04208  programmable PLL provides only 2 clocks to the fabric, so we can't have a   reference clock (REFCLK, typically 10 MHz) that is separate from SYSREF (2.5 MHz if we want to support both 3000 and 3200 MSPS).
+
+Furthermore, it does not look like we can do multiboard/multichip synchronization, as the SYNC input to the LMK04208 PLL is not connected, and the PLL does not have a SYSREF input.   We can only do multi-tile synchronization by syncing the PLLs and ADCs downstream of the LMK04208.
+
+10 MHz is not a submultiple fo 3000/16 MHz, but it is for 3200/16 MHz. So 10 MHz can not be used to sync the ADCs sampling at 3000 MSPS.
+
+We cannot use a REFCLK <10 MHz because the MMCM in the ``clocks`` module cannot accept an input less than 10 MHz.
+
+Options:
+
+- Stay at fs=3000 MSPS and REFCLK=10 MHz and don't support multi-tile ADC sync on ZCU111
+- Use REFCLK=SYSREF=10 MHz  support MTS only for fs=3200 MSPS
+

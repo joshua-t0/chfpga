@@ -7,11 +7,12 @@
 
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 5
    :caption: Getting started
    :hidden:
 
    introduction
+   requirements
    coding_conventions
    about_this_document
    architecture
@@ -27,11 +28,17 @@
 .. backplane_shuffle
 
 .. toctree::
-   :maxdepth: 1
-   :caption: VHDL Source code docs
+   :maxdepth: 5
+   :caption: VHDL Source code
    :hidden:
+   :includehidden:
 
-   Platform wrapper <modules>
+   platforms/platforms
+   chfpga
+   system/system
+   F Engine <channelizer/chan>
+   CT Engine <corner-turn/corner-turn>
+   X Engine <correlator/correlator>
 
 .. toctree::
    :maxdepth: 1

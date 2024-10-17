@@ -1,9 +1,10 @@
+=====================
 Firmware Requirements
 =====================
 
 
 Source requirments
-------------------
+==================
 
 The firmware was based on the following main requirements that flow from the science, system engineering and project logistics requirements:
 
@@ -20,8 +21,8 @@ The firmware was based on the following main requirements that flow from the sci
 		-	Re-use CASPER signal processing blocks as much as possible to minimize development costs, delays and risks
 		-	Provides the tools to allow easy debugging and validation of the signal processing path
 
-Derived requirments
--------------------
+Derived requirements
+====================
 
 The analysis of the source requirements and preliminary design allowed us to identify a basic architecture with the following constraints:
 

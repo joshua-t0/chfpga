@@ -29,9 +29,9 @@ The module contains a set of control and monitoring memory-map registers.
 Entity documentation
 --------------------
 
-.. parse:: hdl/CROSSBAR/SHUFFLE_CROSSBAR.vhd
+.. parse:: hdl/CROSSBAR/CHAN_CROSSBAR.vhd
 
-.. autoentity:: shuffle_crossbar
+.. autoentity:: CHAN_CROSSBAR
 
 
 Additional details
@@ -40,8 +40,8 @@ Additional details
 Memory map
 ----------
 
-.. include-docs:: shuffle_crossbar
-    :start-after: SHUFFLE_CROSSBAR Memory Map
+.. include-docs:: CHAN_CROSSBAR
+    :start-after: Memory Map
 
 Implementation details
 ----------------------

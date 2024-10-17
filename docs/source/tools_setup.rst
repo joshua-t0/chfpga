@@ -40,6 +40,7 @@ The tricky part is to document VHDL code. Sphinx does not natively support extra
 
 
 Python packages
+
 - parsimonious 0.7.0 (pip install parsimonious). Used to parse VHDL code to autodocument
 - sphinx 1.5.5-1: Documentation builder
 

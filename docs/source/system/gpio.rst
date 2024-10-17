@@ -3,6 +3,15 @@
 :entity:`GPIO`: General Purpose Input/Output
 ********************************************
 
+The :entity:`gpio` provides a bank of configuration registers as well as:
+
+- Motherboard Buck Synchronization
+- Backplane Buck Synchronization
+- IRIG-B decoder (:entity:`irigb_decoder`) and generator
+- IRIG-B tagging of Referenece clock counter and Frame counters
+- External ARM processor SPI memory-map interface
+- Externally configurable core configuration registers
+
 
 Overview
 ========

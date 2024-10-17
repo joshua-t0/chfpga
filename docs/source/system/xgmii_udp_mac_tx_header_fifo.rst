@@ -1,7 +1,9 @@
-.. _xgmii-udp-mac-tx-header-fifo-xil-module:
 
 XGMII UDP MAC Header Data FIFO
 ******************************
+
+
+.. _xgmii-udp-mac-tx-header-fifo-xil-module:
 
 .. image:: ../images/xilinx_modules/xgmii_udp_mac_tx_header_fifo.png
     :width: 25%
