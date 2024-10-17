@@ -22,7 +22,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 use work.chFPGA_Package.all; -- Get all component definitions
-use work.chFPGA_config.all; -- Get all component definitions
+use work.chfpga_config.all; -- Get all component definitions
 
 library UNISIM;
 use UNISIM.VComponents.all;
@@ -40,6 +40,8 @@ use UNISIM.VComponents.all;
 --
 -- Location of each CMAC44
 entity CORR44 is
+-- TODO: Check what's passed
+-- TODO: words per bin
 	generic (
 		PLATFORM_ID: integer := CONFIG_PLATFORM_ID; -- necessary to select the DSP RPM spacing and instantiate the proper DSP and FIFO primitives
 		RPM_LAYOUT: string; -- Name of the layout of the correlator DSP, BRAM and FIFO elements  (e.g. "BDDB" or "DBBD")
@@ -558,6 +560,7 @@ main: process(in_clk)
 -- 38bits x 512 words Embedded FIFO
 -- 36 bits for data, 1 bit for TLAST, 1 bit to indicate a new readout sequence (i.e data is from CMAC0)
 -- EMbedded FIFO has only rs on K7, and only srst on Ultrascale+
+assert FPGA_SERIES=FPGA_KINTEX7 report "FPGA_SERIES should be KINTEX7" severity failure;
 DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
 	data_fifo : entity work.CORR44_DATA_FIFO
 	  PORT MAP (
@@ -579,7 +582,7 @@ end generate;
 DATA_FIFO_UP: if FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
 	data_fifo : entity work.CORR44_DATA_FIFO_UP
 	  PORT MAP (
-		srst       => rst_all, -- sync reset on u+ embedded FIFO
+		srst      => rst_all, -- sync reset on u+ embedded FIFO
 		wr_clk    => in_clk,
 		wr_en     => data_fifo_wr_en,
 		din       => data_fifo_din,
