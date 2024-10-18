@@ -20,9 +20,9 @@ package chan_package is
 ----------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------
 COMPONENT CHAN is
-    -- We cannot have GENERICS if the module is to be used as an Out-of-contect module,
-    -- even if all the GENERICS have default values and we don't have a GENERICS section in the component
-    -- instantiation
+    -- We cannot have GENERICS here if the module is to be used as an Out-Of-Contect (OOC) module.
+    -- That is true EVEN IF all the GENERICS have default values and we don't have a GENERICS section in the component
+    -- instantiation...
 
     --GENERIC (
     --    ADC_BITS_PER_SAMPLE: integer := CONFIG_ADC_BITS_PER_SAMPLE;
@@ -80,11 +80,11 @@ COMPONENT CHAN is
     adc_rply_tready: out std_logic;
 
     -- packet capture interface
-    cap_source_req: in std_logic;
-    cap_source_ack: out std_logic;
-    m_axis_cap_tdata: out std_logic_vector(CAPTURE_BITS_PER_WORD-1 downto 0);
-    m_axis_cap_tvalid: out std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES - 1);
-    m_axis_cap_tlast: out std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES - 1);
+    cap_source_req: in std_logic := '0';
+    cap_source_ack: out std_logic := '0';
+    m_axis_cap_tdata: out std_logic_vector(CONFIG_CAPTURE_BITS_PER_WORD-1 downto 0);
+    m_axis_cap_tvalid: out std_logic_vector(0 to CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES - 1);
+    m_axis_cap_tlast: out std_logic_vector(0 to CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES - 1);
 
 
     -- Data Capture interface

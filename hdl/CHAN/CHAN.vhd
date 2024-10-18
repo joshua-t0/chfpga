@@ -121,8 +121,8 @@ entity CHAN is
         adc_rply_tready : out std_logic;
 
         -- Data capture interface
-        cap_source_req: in std_logic; -- requested data capture source (0 or 1). The actual source switch will happen on a frame boundary and will be reflected by `cap_source_ack`
-        cap_source_ack: out std_logic; -- Current source (0 or 1) for the captured data. This is synchronous to the m_axis_cap tdata/tvalud/tlast.
+        cap_source_req: in std_logic := '0'; -- requested data capture source (0 or 1). The actual source switch will happen on a frame boundary and will be reflected by `cap_source_ack`. Default provided in case we don't use an external capture module.
+        cap_source_ack: out std_logic := '0'; -- Current source (0 or 1) for the captured data. This is synchronous to the m_axis_cap tdata/tvalud/tlast. Default value needed to avoir 'undriven net' warning when we don't use the external capture module is used.
         m_axis_cap_tdata: out std_logic_vector(CAPTURE_BITS_PER_WORD-1 downto 0);
         m_axis_cap_tvalid: out std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES - 1);
         m_axis_cap_tlast: out std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES - 1);

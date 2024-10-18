@@ -1060,7 +1060,7 @@ ALL_RESET<=  cpu_reset or user_reset;
 --end generate; --debug7
 
 --! Instantiate the system clock generator that generates the local 200 MHz and 125 MHz from the external 200 MHz lines
-CLK0: entity work.CLOCKS 
+CLK0: entity work.CLOCKS
 	generic map (
 		PLATFORM_ID => PLATFORM_ID,
 		CLOCK_SOURCE => SYSTEM_CLOCK_SOURCE, -- "SYSCLK", "SYSCLK_BUFG", "SFP_REFCLK" or "CLK10_BUFG"
@@ -3721,7 +3721,9 @@ end generate GPU_GEN;
 -----------------------------
 cap_gen: case CAPTURE_TYPE generate
     when "BRAM" =>
-    -- Nothing to do: capture logic in self-contained in CHAN
+    	-- Nothing to do: capture logic in self-contained in CHAN
+		cap_source_req <= (others => '0'); -- make sure the net is driven
+
     when uram_case: "URAM" =>
         signal ucap_cmd_dat: AXIS8_DAT_STRUCT;
         signal ucap_cmd_rdy: AXIS8_RDY_STRUCT;
