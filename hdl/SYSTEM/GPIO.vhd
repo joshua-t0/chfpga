@@ -53,8 +53,8 @@ entity GPIO is
 		PLATFORM_ID: INTEGER; --! identifies the type of platform on which the firmware is running
 		COOKIE : integer := 16#42#;
 		PROTOCOL_VERSION: INTEGER; --! Protocol version used to determins compatibility with the python support software
-		NUMBER_OF_ADCS: INTEGER; --! Number of antenna processing blocks that are implemented
-		NUMBER_OF_CHANNELIZERS: INTEGER; --! Number of antenna processing blocks that are implemented
+		NUMBER_OF_ADCS: INTEGER; --! Number of adcs that are implemented
+		NUMBER_OF_CHANNELIZERS: INTEGER; --! Number of channelizers that are implemented
 		CHANNELIZERS_CLOCK_SOURCE: INTEGER; --! ADC channel from which the channelizers clocks are derived
 		NUMBER_OF_CHANNELIZERS_WITH_FFT: INTEGER; --! Number of antenna processing blocks with an FFT module
 		ADC_SAMPLES_PER_FRAME: integer;
@@ -152,17 +152,17 @@ entity GPIO is
 		-- ADC mezzanine control signals
 
 		ADC_RST: out std_logic_vector(0 to NUMBER_OF_ADC_BOARDS-1);
-		adc_cal_freeze: out std_logic_vector(0 to 7);
-		adc_cal_frozen: in std_logic_vector(0 to 7) := (others => '0');
-		adc_cal_signal_detect: in std_logic_vector(0 to 7) := (others => '0');
-		adc_clear_or: out std_logic_vector(0 to 7) := (others => '0');
-		adc_clear_ov: out std_logic_vector(0 to 7) := (others => '0');
-		adc_cm_ov: in std_logic_vector(0 to 7) := (others => '0');
-		adc_cm_uv: in std_logic_vector(0 to 7) := (others => '0');
-		adc_or: in std_logic_vector(0 to 7) := (others => '0');
-		adc_ot1: in std_logic_vector(0 to 7) := (others => '0');
-		adc_ot2: in std_logic_vector(0 to 7) := (others => '0');
-		adc_ov: in std_logic_vector(0 to 7) := (others => '0');
+		adc_cal_freeze: out std_logic_vector(0 to NUMBER_OF_ADCS-1);
+		adc_cal_frozen: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+		adc_cal_signal_detect: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+		adc_clear_or: out std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+		adc_clear_ov: out std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+		adc_cm_ov: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+		adc_cm_uv: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+		adc_or: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+		adc_ot1: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+		adc_ot2: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+		adc_ov: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
 		adc_pll_lock: in std_logic_vector(0 to NUMBER_OF_ADC_BOARDS-1); --! Lock signal for the ADC PLL on each mezzanine
 
 		-- LCD (on some evaluation boards)
@@ -276,6 +276,7 @@ constant WORDS_PER_FRAME: integer := ADC_SAMPLES_PER_FRAME / ADC_SAMPLES_PER_WOR
 constant LOG2_WORDS_PER_FRAME: integer := integer_log2(WORDS_PER_FRAME); --! Number of words per frame. One word is 4 8-bit time samples or 2 8+8-bits frequency samples.
 constant LOG2_SAMPLES_PER_FRAME: integer := integer_log2(ADC_SAMPLES_PER_FRAME);
 constant LOG2_SAMPLES_PER_WORD: integer := integer_log2(ADC_SAMPLES_PER_WORD);
+constant NUMBER_OF_ADC_FLAGS: integer := min(NUMBER_OF_ADCS, 8); -- GPIO registers cannot store flags for more than 8 ADCs. It's ok  as those are used only for the RfSoC platforms, which have 8 ADCs or less.
 
 --signal CLK: std_logic;
 signal CLK_CTR: UNSIGNED(7 downto 0):=(others=>'0'); -- Divides the ADC clock by up to 255
@@ -624,9 +625,9 @@ BUCK_PHASE <= to_slv(CONTROL_BYTES(5 to 12));
 end generate;
 
 -- CONTROL bytes 13-15: RfSoC ADC controls
-adc_cal_freeze <= reverse_bits_and_dir(CONTROL_BYTES(13)); -- ADC calibration freeze control
-adc_clear_or <= reverse_bits_and_dir(CONTROL_BYTES(14)); -- Clear ADC overrange flag
-adc_clear_ov <= reverse_bits_and_dir(CONTROL_BYTES(15)); -- Clear ADC overvoltage flag
+adc_cal_freeze(0 to NUMBER_OF_ADC_FLAGS-1) <= reverse_bits_and_dir(CONTROL_BYTES(13)(NUMBER_OF_ADC_FLAGS-1 downto 0)); -- ADC calibration freeze control
+adc_clear_or(0 to NUMBER_OF_ADC_FLAGS-1) <= reverse_bits_and_dir(CONTROL_BYTES(14)(NUMBER_OF_ADC_FLAGS-1 downto 0)); -- Clear ADC overrange flag
+adc_clear_ov(0 to NUMBER_OF_ADC_FLAGS-1) <= reverse_bits_and_dir(CONTROL_BYTES(15)(NUMBER_OF_ADC_FLAGS-1 downto 0)); -- Clear ADC overvoltage flag
 
 
 
@@ -728,10 +729,10 @@ STATUS_BYTES(25) <= to_slv(NUMBER_OF_ADCS, 8);
 STATUS_BYTES(26) <= to_slv(ADC_BITS_PER_SAMPLE, 8);
 
 -- STATUS Bytes 27-30: ADC flags
-STATUS_BYTES(27)  <= reverse_bits_and_dir(adc_cal_frozen); -- ADC calibration frozen flags (for 8 ADCs)
-STATUS_BYTES(28)  <= reverse_bits_and_dir(adc_cal_signal_detect); -- ADC calibration signal detect flags (for 8 ADCs)
-STATUS_BYTES(29)  <= reverse_bits_and_dir(adc_or);
-STATUS_BYTES(30)  <= reverse_bits_and_dir(adc_ov);
+STATUS_BYTES(27)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_cal_frozen(0 to NUMBER_OF_ADC_FLAGS-1)); -- ADC calibration frozen flags (for 8 ADCs)
+STATUS_BYTES(28)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_cal_signal_detect(0 to NUMBER_OF_ADC_FLAGS-1)); -- ADC calibration signal detect flags (for 8 ADCs)
+STATUS_BYTES(29)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_or(0 to NUMBER_OF_ADC_FLAGS-1));
+STATUS_BYTES(30)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_ov(0 to NUMBER_OF_ADC_FLAGS-1));
 
 -- STATUS Bytes 31-32
 STATUS_BYTES(31) <= slot_sense_ctr(0); -- is this still used?
@@ -759,10 +760,10 @@ STATUS_BYTES(37)(6) <= bp_gpio_int_in;
 STATUS_BYTES(37)(7) <= core_reg_wr_en; -- debug
 
 -- STATUS Bytes 38-41: More ADC flags (RfSoC)
-STATUS_BYTES(38)  <= reverse_bits_and_dir(adc_cm_ov); -- ADC common mode overflow for each ADC
-STATUS_BYTES(39)  <= reverse_bits_and_dir(adc_cm_uv); -- ADC common mode underflow for each ADC
-STATUS_BYTES(40)  <= reverse_bits_and_dir(adc_ot1);  -- ADC over threshold 1 for each ADC
-STATUS_BYTES(41)  <= reverse_bits_and_dir(adc_ot2); -- ADC over threshold 2 for each ADC
+STATUS_BYTES(38)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_cm_ov(0 to NUMBER_OF_ADC_FLAGS-1)); -- ADC common mode overflow for each ADC
+STATUS_BYTES(39)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_cm_uv(0 to NUMBER_OF_ADC_FLAGS-1)); -- ADC common mode underflow for each ADC
+STATUS_BYTES(40)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_ot1(0 to NUMBER_OF_ADC_FLAGS-1));  -- ADC over threshold 1 for each ADC
+STATUS_BYTES(41)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_ot2(0 to NUMBER_OF_ADC_FLAGS-1)); -- ADC over threshold 2 for each ADC
 
 
 -----------------------------------------------------------------------------------

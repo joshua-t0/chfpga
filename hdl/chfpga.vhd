@@ -374,9 +374,9 @@ entity chFPGA is
 			adc_ot1: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
 			adc_ot2: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
 			adc_ov: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
-			adc_cal_frozen: in std_logic_vector(0 to 7) := (others => '0');
-			adc_cal_freeze: out std_logic_vector(0 to 7) := (others => '0');
-			adc_cal_signal_detect: in std_logic_vector(0 to 7) := (others => '0');
+			adc_cal_frozen: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+			adc_cal_freeze: out std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
+			adc_cal_signal_detect: in std_logic_vector(0 to NUMBER_OF_ADCS-1) := (others => '0');
 
 			------------------------------------
 			-- FMC ADC interface
