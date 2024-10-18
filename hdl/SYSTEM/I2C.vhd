@@ -80,36 +80,37 @@ constant tTIMEOUT_MIN: integer := integer(CLK_FREQ * 35.0e-3);
 constant CLK_CTR_MAX: integer := tTIMEOUT_MIN + 1; -- use the largest possible count +1 to account that we clear on the following clock
 constant IDLE_CTR_MAX: integer := tHIGH_MAX; -- use the largest possible count
 
-signal CLK_AT_tHIGH: std_logic;
-signal CLK_AT_tLOW: std_logic;
-signal CLK_AT_tHD_STA: std_logic;
-signal CLK_AT_HALF_tLOW: std_logic;
-signal CLK_AT_tTIMEOUT_MIN: std_logic;
-signal CLK_AT_tSU_STA: std_logic;
-signal CLK_AT_tSU_STA_PLUS_tHD_STA: std_logic;
-signal CLK_AT_tSU_STO: std_logic;
-signal CLK_AT_tSU_STO_PLUS_tBUF: std_logic;
+signal clk_at_tHIGH: std_logic;
+signal clk_at_tLOW: std_logic;
+signal clk_at_tHD_STA: std_logic;
+signal clk_at_HALF_tLOW: std_logic;
+signal clk_at_tTIMEOUT_MIN: std_logic;
+signal clk_at_tSU_STA: std_logic;
+signal clk_at_tSU_STA_PLUS_tHD_STA: std_logic;
+signal clk_at_tSU_STO: std_logic;
+signal clk_at_tSU_STO_PLUS_tBUF: std_logic;
 
-signal IDLE_CLK_AT_tBUF: std_logic;
-signal IDLE_CLK_AT_tHIGH: std_logic;
+signal idle_clk_at_tBUF: std_logic;
+signal idle_clk_at_tHIGH: std_logic;
 
 --- Control and status bytes
 signal control_bytes: slv8_array(0 to 5); -- default value set in the CMD_SLAVE
 signal status_bytes: slv8_array(0 to 8); -- default value set in the CMD_SLAVE
 
-signal CTRL_DATA: slv8_array(0 to 3);
+signal ctrl_data: slv8_array(0 to 3);
 
-constant CTRL_DIR_READ: std_logic := '1';
-constant CTRL_DIR_WRITE: std_logic := '0';
+constant ctrl_dir_read: std_logic := '1';
+constant ctrl_dir_write: std_logic := '0';
 
-signal CTRL_START_PREVIOUS: std_logic;
-signal CTRL_START_PREVIOUS2: std_logic;
-signal CTRL_BYTES1: unsigned(1 downto 0);
-signal CTRL_BYTES2: unsigned(2 downto 0);
-signal CTRL_FORCE_SCK: std_logic;
-signal CTRL_FORCE_SDA: std_logic;
-signal CTRL_FORCE_SCK_STATE: std_logic;
-signal CTRL_FORCE_SDA_STATE: std_logic;
+signal ctrl_start: std_logic;
+signal ctrl_start_previous: std_logic;
+signal ctrl_start_previous2: std_logic;
+signal ctrl_bytes1: unsigned(1 downto 0);
+signal ctrl_bytes2: unsigned(2 downto 0);
+signal ctrl_force_sck: std_logic;
+signal ctrl_force_sda: std_logic;
+signal ctrl_force_sck_state: std_logic;
+signal ctrl_force_sda_state: std_logic;
 signal ctrl_always_clk: std_logic;
 
 -- I2C State machine signals
@@ -219,20 +220,20 @@ begin
 -- |         |  8  | 7:0 | (unused)                | |
 -- ------------------------------------------------------------------------------
 
-CTRL_DATA            <= control_bytes(0 to 3);
+ctrl_data            <= control_bytes(0 to 3);
 -- CTRL_DIR           <= control_bytes(0)(0);
 
 
-CTRL_START           <= control_bytes(4)(7);
-CTRL_BYTES2          <= unsigned(control_bytes(4)(6 downto 4));
-CTRL_BYTES1          <= unsigned(control_bytes(4)(1 downto 0));
+ctrl_start           <= control_bytes(4)(7);
+ctrl_bytes2          <= unsigned(control_bytes(4)(6 downto 4));
+ctrl_bytes1          <= unsigned(control_bytes(4)(1 downto 0));
 ctrl_reset           <= control_bytes(5)(7);
 ctrl_always_clk      <= control_bytes(5)(6);
 ctrl_port            <= to_integer(unsigned(control_bytes(5)(5 downto 4)));
-CTRL_FORCE_SCK       <= control_bytes(5)(3);
-CTRL_FORCE_SDA       <= control_bytes(5)(2);
-CTRL_FORCE_SCK_STATE <= control_bytes(5)(1);
-CTRL_FORCE_SDA_STATE <= control_bytes(5)(0);
+ctrl_force_sck       <= control_bytes(5)(3);
+ctrl_force_sda       <= control_bytes(5)(2);
+ctrl_force_sck_state <= control_bytes(5)(1);
+ctrl_force_sda_state <= control_bytes(5)(0);
 
 status_bytes(0) <= Byte(read_word(31 downto 24));
 status_bytes(1) <= Byte(read_word(23 downto 16));
@@ -340,7 +341,7 @@ begin
 		master_ack_status <= (others => '0');
 		start <= '0';
 		done <= '0';
-		CTRL_START_PREVIOUS <= '0';
+		ctrl_start_previous <= '0';
 		write_word <= (others => '0');
 		read_word <= X"AABBCCDD";
 		read_phase <= '0';
@@ -358,17 +359,17 @@ begin
 		sck_debounce_ctr <= 0;
 		sda_debounce_ctr <= 0;
 
-		CLK_AT_tHIGH <= '0';
-		CLK_AT_tLOW <= '0';
-		CLK_AT_tHD_STA <= '0';
-		CLK_AT_HALF_tLOW <= '0';
-		CLK_AT_tTIMEOUT_MIN <= '0';
-		CLK_AT_tSU_STO <= '0';
-		CLK_AT_tSU_STO_PLUS_tBUF <= '0';
-		CLK_AT_tSU_STA_PLUS_tHD_STA <= '0';
+		clk_at_tHIGH <= '0';
+		clk_at_tLOW <= '0';
+		clk_at_tHD_STA <= '0';
+		clk_at_HALF_tLOW <= '0';
+		clk_at_tTIMEOUT_MIN <= '0';
+		clk_at_tSU_STO <= '0';
+		clk_at_tSU_STO_PLUS_tBUF <= '0';
+		clk_at_tSU_STA_PLUS_tHD_STA <= '0';
 
-		IDLE_CLK_AT_tBUF <= '0';
-		IDLE_CLK_AT_tHIGH <= '0';
+		idle_clk_at_tBUF <= '0';
+		idle_clk_at_tHIGH <= '0';
 
 	elsif rising_edge(CLK200) then
 
@@ -386,24 +387,24 @@ begin
 			-- we make this synchronous to avoid glitches. The one clock delay is not a problem.
 			sck_out_vect(i) <= '1'; -- default value, overriden below
 			sda_out_vect(i) <= '1'; -- default value, overriden below
-			if (CTRL_FORCE_SDA = '0' and CTRL_FORCE_SDA_STATE='1') then
+			if (ctrl_force_sda = '0' and ctrl_force_sda_state='1') then
 				sda_tristate_vect(i) <= '0';
 			else
 				sda_tristate_vect(i) <= '1';
 			end if;
-			if (CTRL_FORCE_SCK = '0' and CTRL_FORCE_SCK_STATE = '1') then
+			if (ctrl_force_sck = '0' and ctrl_force_sck_state = '1') then
 				sck_tristate_vect(i) <= '0';
 			else
 				sck_tristate_vect(i) <= '1';
 			end if;
 
 			if i=ctrl_port then
-				if sck_out = '0' or (CTRL_FORCE_SCK = '1' and CTRL_FORCE_SCK_STATE = '0') then
+				if sck_out = '0' or (ctrl_force_sck = '1' and ctrl_force_sck_state = '0') then
 					sck_out_vect(i) <= '0';
 					sck_tristate_vect(i) <= '0';
 				end if;
 
-				if sda_out='0' or (CTRL_FORCE_SDA = '1' and CTRL_FORCE_SDA_STATE = '0') then
+				if sda_out='0' or (ctrl_force_sda = '1' and ctrl_force_sda_state = '0') then
 					sda_out_vect(i) <= '0';
 					sda_tristate_vect(i) <= '0';
 				end if;
@@ -451,15 +452,15 @@ begin
 			idle_ctr <= idle_ctr + 1;
 		end if;
 		if idle_ctr = tBUF - 1 then
-			IDLE_CLK_AT_tBUF <= '1';
+			idle_clk_at_tBUF <= '1';
 		else
-			IDLE_CLK_AT_tBUF <= '0';
+			idle_clk_at_tBUF <= '0';
 		end if;
 
 		if idle_ctr = tHIGH_MAX - 1 then
-			IDLE_CLK_AT_tHIGH <= '1';
+			idle_clk_at_tHIGH <= '1';
 		else
-			IDLE_CLK_AT_tHIGH <= '0';
+			idle_clk_at_tHIGH <= '0';
 		end if;
 
 		if (sck_in = '0' or sda_in = '0') then -- if SDK or SDA are low, reset IDLE detection
@@ -470,16 +471,16 @@ begin
 			stop_detected <= '1';
 			idle_ctr <= 0;
 			bus_idle <= '0';
-		elsif (stop_detected = '1' and IDLE_CLK_AT_tBUF = '1') or (stop_detected = '0' and IDLE_CLK_AT_tHIGH = '1') then
+		elsif (stop_detected = '1' and idle_clk_at_tBUF = '1') or (stop_detected = '0' and idle_clk_at_tHIGH = '1') then
 			bus_idle <= '1';
 		end if;
 
 
 		-- Set the start bit if a 0-to-1 transition is detected on the CTRL_FLAG_START bit.
-		CTRL_START_PREVIOUS <= CTRL_START;
-		CTRL_START_PREVIOUS2 <= CTRL_START_PREVIOUS;
+		ctrl_start_previous <= ctrl_start;
+		ctrl_start_previous2 <= ctrl_start_previous;
 
-		if CTRL_START_PREVIOUS='1' and CTRL_START_PREVIOUS2='0' then
+		if ctrl_start_previous='1' and ctrl_start_previous2='0' then
 			start <= '1'; -- This will start the state machine. Will be cleared when transmission actually starts
 			done <= '0'; -- will be set when transmission is done
 			master_ack_status <= (others => '0'); -- clear ack status - will be overriden below
@@ -496,26 +497,26 @@ begin
 		clk_ctr_clear <= '0'; -- this is a single pulse signal. Always return to zero unless overriden below.
 
 		-- Check time limits. Make sure that the value is zero on the next clock if clk_ctr_clear is active (even if the counter is not yet cleared).
-		-- if clk_ctr = tHIGH-1 then CLK_AT_tHIGH <= not clk_ctr_clear; else CLK_AT_tHIGH <= '0'; end if;
-		-- if clk_ctr = tLOW-1 then CLK_AT_tLOW <= not clk_ctr_clear; else CLK_AT_tLOW <= '0'; end if;
-		-- if clk_ctr = tHD_STA-1 then CLK_AT_tHD_STA <= not clk_ctr_clear; else CLK_AT_tHD_STA <= '0'; end if;
-		-- if clk_ctr = tLOW/2-1 then CLK_AT_HALF_tLOW <= not clk_ctr_clear; else CLK_AT_HALF_tLOW <= '0'; end if;
-		-- if clk_ctr = tTIMEOUT_MIN-1 then CLK_AT_tTIMEOUT_MIN <= not clk_ctr_clear; else CLK_AT_tTIMEOUT_MIN <= '0'; end if;
-		-- if clk_ctr = tSU_STO-1 then CLK_AT_tSU_STO <= not clk_ctr_clear; else CLK_AT_tSU_STO <= '0'; end if;
-		-- if clk_ctr = tSU_STA-1 then CLK_AT_tSU_STA <= not clk_ctr_clear; else CLK_AT_tSU_STA <= '0'; end if;
-		-- if clk_ctr = tSU_STO+tBUF-1 then CLK_AT_tSU_STO_PLUS_tBUF <= not clk_ctr_clear; else CLK_AT_tSU_STO_PLUS_tBUF <= '0'; end if;
-		-- if clk_ctr = tSU_STA+tHD_STA-1 then CLK_AT_tSU_STA_PLUS_tHD_STA <= not clk_ctr_clear; else CLK_AT_tSU_STA_PLUS_tHD_STA <= '0'; end if;
+		-- if clk_ctr = tHIGH-1 then clk_at_tHIGH <= not clk_ctr_clear; else clk_at_tHIGH <= '0'; end if;
+		-- if clk_ctr = tLOW-1 then clk_at_tLOW <= not clk_ctr_clear; else clk_at_tLOW <= '0'; end if;
+		-- if clk_ctr = tHD_STA-1 then clk_at_tHD_STA <= not clk_ctr_clear; else clk_at_tHD_STA <= '0'; end if;
+		-- if clk_ctr = tLOW/2-1 then clk_at_HALF_tLOW <= not clk_ctr_clear; else clk_at_HALF_tLOW <= '0'; end if;
+		-- if clk_ctr = tTIMEOUT_MIN-1 then clk_at_tTIMEOUT_MIN <= not clk_ctr_clear; else clk_at_tTIMEOUT_MIN <= '0'; end if;
+		-- if clk_ctr = tSU_STO-1 then clk_at_tSU_STO <= not clk_ctr_clear; else clk_at_tSU_STO <= '0'; end if;
+		-- if clk_ctr = tSU_STA-1 then clk_at_tSU_STA <= not clk_ctr_clear; else clk_at_tSU_STA <= '0'; end if;
+		-- if clk_ctr = tSU_STO+tBUF-1 then clk_at_tSU_STO_PLUS_tBUF <= not clk_ctr_clear; else clk_at_tSU_STO_PLUS_tBUF <= '0'; end if;
+		-- if clk_ctr = tSU_STA+tHD_STA-1 then clk_at_tSU_STA_PLUS_tHD_STA <= not clk_ctr_clear; else clk_at_tSU_STA_PLUS_tHD_STA <= '0'; end if;
 
 		-- Check time limits. Make sure that the value is zero on the next clock if clk_ctr_clear is active (even if the counter is not yet cleared).
-		CLK_AT_tHIGH                <= to_std_logic(clk_ctr = tHIGH - 1           and clk_ctr_clear = '0');
-		CLK_AT_tLOW                 <= to_std_logic(clk_ctr = tLOW - 1            and clk_ctr_clear = '0');
-		CLK_AT_tHD_STA              <= to_std_logic(clk_ctr = tHD_STA - 1         and clk_ctr_clear = '0');
-		CLK_AT_HALF_tLOW            <= to_std_logic(clk_ctr = tLOW / 2 - 1        and clk_ctr_clear = '0');
-		CLK_AT_tTIMEOUT_MIN         <= to_std_logic(clk_ctr = tTIMEOUT_MIN - 1    and clk_ctr_clear = '0');
-		CLK_AT_tSU_STO              <= to_std_logic(clk_ctr = tSU_STO - 1         and clk_ctr_clear = '0');
-		CLK_AT_tSU_STA              <= to_std_logic(clk_ctr = tSU_STA - 1         and clk_ctr_clear = '0');
-		CLK_AT_tSU_STO_PLUS_tBUF    <= to_std_logic(clk_ctr = tSU_STO + tBUF - 1  and clk_ctr_clear = '0');
-		CLK_AT_tSU_STA_PLUS_tHD_STA <= to_std_logic(clk_ctr = tSU_STA + tHD_STA - 1 and clk_ctr_clear = '0');
+		clk_at_tHIGH                <= to_std_logic(clk_ctr = tHIGH - 1           and clk_ctr_clear = '0');
+		clk_at_tLOW                 <= to_std_logic(clk_ctr = tLOW - 1            and clk_ctr_clear = '0');
+		clk_at_tHD_STA              <= to_std_logic(clk_ctr = tHD_STA - 1         and clk_ctr_clear = '0');
+		clk_at_HALF_tLOW            <= to_std_logic(clk_ctr = tLOW / 2 - 1        and clk_ctr_clear = '0');
+		clk_at_tTIMEOUT_MIN         <= to_std_logic(clk_ctr = tTIMEOUT_MIN - 1    and clk_ctr_clear = '0');
+		clk_at_tSU_STO              <= to_std_logic(clk_ctr = tSU_STO - 1         and clk_ctr_clear = '0');
+		clk_at_tSU_STA              <= to_std_logic(clk_ctr = tSU_STA - 1         and clk_ctr_clear = '0');
+		clk_at_tSU_STO_PLUS_tBUF    <= to_std_logic(clk_ctr = tSU_STO + tBUF - 1  and clk_ctr_clear = '0');
+		clk_at_tSU_STA_PLUS_tHD_STA <= to_std_logic(clk_ctr = tSU_STA + tHD_STA - 1 and clk_ctr_clear = '0');
 
 
 		-- Main state machine
@@ -535,7 +536,7 @@ begin
 					clk_ctr_clear <= '1';
 					master_state <= MASTER_STATE_START;
 					start_ctr <= start_ctr + 1; -- keep track of how many transactions we started for checking and debugging
-				elsif CLK_AT_tHIGH='1' then
+				elsif clk_at_tHIGH='1' then
 					if ctrl_always_clk='1' then
 						sck_out <= '0';
 					end if;
@@ -546,7 +547,7 @@ begin
 
 			when MASTER_STATE_IDLE_LOW => -- release SDK when tLOW has passed
 				-- STATE_MON <= X"E";
-				if CLK_AT_tLOW='1' and clk_ctr_clear='0' then
+				if clk_at_tLOW='1' and clk_ctr_clear='0' then
 					sck_out <= '1';
 					clk_ctr_clear <= '1';
 					master_state <= MASTER_STATE_IDLE;
@@ -554,30 +555,30 @@ begin
 
 			when MASTER_STATE_START => -- wait for the required set-up time after the start condition before brining SCK to 0
 				-- STATE_MON <= X"1";
-				if CLK_AT_tHD_STA='1' and clk_ctr_clear='0' then -- or sck_in='0' go to address transmission when hold time is elapsed or if we are forced down by another master
+				if clk_at_tHD_STA='1' and clk_ctr_clear='0' then -- or sck_in='0' go to address transmission when hold time is elapsed or if we are forced down by another master
 					sck_out <= '0';
 					read_phase <= '0';
-					byte_ctr <= ('0' & CTRL_BYTES1);
-					write_word <= unsigned(CTRL_DATA(0)) & unsigned(CTRL_DATA(1)) & unsigned(CTRL_DATA(2)) & unsigned(CTRL_DATA(3));
+					byte_ctr <= ('0' & ctrl_bytes1);
+					write_word <= unsigned(ctrl_data(0)) & unsigned(ctrl_data(1)) & unsigned(ctrl_data(2)) & unsigned(ctrl_data(3));
 					read_word <= (others => '0');
 					bit_ctr <= (others => '0');
-					dir <= CTRL_DIR_WRITE; -- first byte is the address, use write mode
-					next_dir <= CTRL_DATA(0)(0); -- following bytes are read or write depending on the direction set in the address byte
+					dir <= ctrl_dir_write; -- first byte is the address, use write mode
+					next_dir <= ctrl_data(0)(0); -- following bytes are read or write depending on the direction set in the address byte
 					clk_ctr_clear <= '1';
 					master_state <= MASTER_STATE_DATA_LOW;
 				end if;
 
 			when MASTER_STATE_DATA_LOW => -- SCK is low. If we are writing, set SDA to the data to be written at tLow/2. Release SCK at tLow.
 				-- STATE_MON <= X"2";
-				if CLK_AT_HALF_tLOW='1' and clk_ctr_clear='0' then -- wait half of the LOW time to elapse before setting the data
+				if clk_at_HALF_tLOW='1' and clk_ctr_clear='0' then -- wait half of the LOW time to elapse before setting the data
 					-- set data bit
-					if dir=CTRL_DIR_WRITE then -- if we write
+					if dir=ctrl_dir_write then -- if we write
 						sda_out <= write_word(write_word'LEFT);
 						write_word <= write_word sll 1; -- shift word left one bit
 					else -- if we read
 						sda_out <= '1'; -- hi-z to let the slave drive the data bus
 					end if;
-				elsif CLK_AT_tLOW='1' and clk_ctr_clear='0' then -- end of low time. Clock goes high.
+				elsif clk_at_tLOW='1' and clk_ctr_clear='0' then -- end of low time. Clock goes high.
 					sck_out <= '1';
 					clk_ctr_clear <= '1';
 					master_state <= MASTER_STATE_DATA_WAIT_HIGH;
@@ -588,7 +589,7 @@ begin
 
 				if sck_in='1' then -- wait until all devices have released the clock before counting the high time
 					-- sample data bit
-					-- if dir=CTRL_DIR_WRITE then -- if we are writing
+					-- if dir=ctrl_dir_write then -- if we are writing
 					--   if sda_in/=sda_out then -- if there is a collision we lose the arbitration war - release the bus and go to IDLE
 					--      -- Release the bus
 					--      sda_out <= '1'; -- go Hi-Z
@@ -606,7 +607,7 @@ begin
 					-- read_word(0) <= '1';
 					clk_ctr_clear <= '1';
 					master_state <= MASTER_STATE_DATA_HIGH;
-				elsif CLK_AT_tTIMEOUT_MIN='1' and clk_ctr_clear='0' then
+				elsif clk_at_tTIMEOUT_MIN='1' and clk_ctr_clear='0' then
 					sck_out <= '1';
 					clk_ctr_clear <= '1';
 					timeout <= '1';
@@ -615,7 +616,7 @@ begin
 
 			when MASTER_STATE_DATA_HIGH => -- We just released SCK. Wait for the HIGH time before setting SCK to LOW
 				-- STATE_MON <= X"3";
-				if CLK_AT_tHIGH='1' and clk_ctr_clear='0'  then -- or sck_in='0' go to next state when high time is elapsed or if we are forced by another master
+				if clk_at_tHIGH='1' and clk_ctr_clear='0'  then -- or sck_in='0' go to next state when high time is elapsed or if we are forced by another master
 					sck_out <= '0';
 					-- FLAG(0) <= '1';
 					-- if this is the last bit, go back to ACK phase, otherwise proceed with next bit
@@ -633,8 +634,8 @@ begin
 
 			when MASTER_STATE_ACK_LOW => -- SCK is being forced low prior to ACK sampling. Release SDA at tLow/2 to let the slave put its ACK. Release SCK at tLow.
 				-- STATE_MON <= X"4";
-				if CLK_AT_HALF_tLOW = '1' and clk_ctr_clear = '0' then -- wait for half of the LOW time before setting SDA to send/receive the acknowledge
-					if dir = CTRL_DIR_WRITE then -- if we are writing
+				if clk_at_HALF_tLOW = '1' and clk_ctr_clear = '0' then -- wait for half of the LOW time before setting SDA to send/receive the acknowledge
+					if dir = ctrl_dir_write then -- if we are writing
 						sda_out <= '1'; -- Hi-Z to let the slave respond
 					else -- if we are reading
 						if byte_ctr = 0 then -- if last byte
@@ -643,7 +644,7 @@ begin
 							sda_out <= '0'; -- Send an ACK
 						end if;
 					end if;
-				elsif CLK_AT_tLOW='1' and clk_ctr_clear='0' then
+				elsif clk_at_tLOW='1' and clk_ctr_clear='0' then
 					sck_out <= '1';
 					clk_ctr_clear <= '1';
 					master_state <= MASTER_STATE_ACK_WAIT_HIGH;
@@ -654,7 +655,7 @@ begin
 				if sck_in='1' then -- wait until all devices have released the clock before sampling the bit
 					-- sample ACK bit
 					master_ack_status <= master_ack_status SLL 1; -- shift left, we'll fill in bit 0 below
-					if dir = CTRL_DIR_WRITE then -- if we write
+					if dir = ctrl_dir_write then -- if we write
 						master_ack_status(0) <= not sda_in; -- get the ACK/NACK status from the bus
 					else -- if we read
 						master_ack_status(0) <= '1'; -- assume a ACK
@@ -662,7 +663,7 @@ begin
 
 					clk_ctr_clear <= '1';
 					master_state <= MASTER_STATE_ACK_HIGH;
-				elsif CLK_AT_tTIMEOUT_MIN='1' and clk_ctr_clear='0' then
+				elsif clk_at_tTIMEOUT_MIN='1' and clk_ctr_clear='0' then
 					sck_out <= '1';
 					clk_ctr_clear <= '1';
 					timeout <= '1';
@@ -671,7 +672,7 @@ begin
 
 			when MASTER_STATE_ACK_HIGH => -- SCK has come up and we have sampled out ACK. Now we wait tHigh before forcing SCK low.
 				-- STATE_MON <= X"B";
-				if CLK_AT_tHIGH='1' and clk_ctr_clear='0'  then -- or sck_in='0' if the end o gthe High clock perod, or if forced low by another master
+				if clk_at_tHIGH='1' and clk_ctr_clear='0'  then -- or sck_in='0' if the end o gthe High clock perod, or if forced low by another master
 					sck_out <= '0';
 
 					-- if we didn't get an ACK or if this is not the last byte, go to send the next byte, otherwise send the STOP condition
@@ -686,7 +687,7 @@ begin
 							master_state <= MASTER_STATE_DATA_LOW;
 						else -- this is the last byte, restart if there is a following read phase, otherwise stop
 							-- FLAG(1) <= '1';
-							if read_phase='0' and CTRL_BYTES2 /= 0 then -- if we have a following read phase, proceed with a restart
+							if read_phase='0' and ctrl_bytes2 /= 0 then -- if we have a following read phase, proceed with a restart
 								-- FLAG(2) <= '1';
 								clk_ctr_clear <= '1';
 								master_state <= MASTER_STATE_RESTART_LOW;
@@ -700,9 +701,9 @@ begin
 
 			when MASTER_STATE_STOP_LOW =>
 				-- STATE_MON <= X"6";
-				if CLK_AT_HALF_tLOW='1' and clk_ctr_clear='0' then -- wait for half of the LOW time
+				if clk_at_HALF_tLOW='1' and clk_ctr_clear='0' then -- wait for half of the LOW time
 					sda_out <= '0'; -- prepare for the 0-to-1 transition
-				elsif CLK_AT_tLOW = '1' and clk_ctr_clear = '0' then
+				elsif clk_at_tLOW = '1' and clk_ctr_clear = '0' then
 					-- FLAG(3) <= '1';
 					sck_out <= '1';
 					clk_ctr_clear <= '1';
@@ -713,7 +714,7 @@ begin
 				if sck_in='1' then -- wait until all devices have released the clock before counting the high time
 					clk_ctr_clear <= '1';
 					master_state <= MASTER_STATE_STOP_HIGH;
-				elsif CLK_AT_tTIMEOUT_MIN='1' and clk_ctr_clear='0' then
+				elsif clk_at_tTIMEOUT_MIN='1' and clk_ctr_clear='0' then
 					sck_out <= '1';
 					timeout <= '1';
 					clk_ctr_clear <= '1';
@@ -722,10 +723,10 @@ begin
 
 			when MASTER_STATE_STOP_HIGH => -- wait for half of the LOW time
 				-- STATE_MON <= X"7";
-				if CLK_AT_tSU_STO='1' and clk_ctr_clear='0' then
+				if clk_at_tSU_STO='1' and clk_ctr_clear='0' then
 					-- FLAG(4) <= '1';
 					sda_out <= '1'; -- create 0 to 1 transition that signify the STOP codition
-				elsif CLK_AT_tSU_STO_PLUS_tBUF = '1' and clk_ctr_clear = '0' then -- wait for additional bus free time before proceeding to next bit.
+				elsif clk_at_tSU_STO_PLUS_tBUF = '1' and clk_ctr_clear = '0' then -- wait for additional bus free time before proceeding to next bit.
 					-- BUS_READY <= '0'; -- idem
 					done <= '1'; -- finished the transactions
 					done_ctr <= done_ctr + 1;
@@ -735,9 +736,9 @@ begin
 
 			when MASTER_STATE_RESTART_LOW =>
 				-- STATE_MON <= X"8";
-				if CLK_AT_HALF_tLOW = '1' and clk_ctr_clear = '0' then -- wait for half of the LOW time
+				if clk_at_HALF_tLOW = '1' and clk_ctr_clear = '0' then -- wait for half of the LOW time
 					sda_out <= '1'; -- prepare for the 1-to-0 transition
-				elsif CLK_AT_tLOW='1' and clk_ctr_clear='0' then
+				elsif clk_at_tLOW='1' and clk_ctr_clear='0' then
 					-- FLAG(5) <= '1';
 					sck_out <= '1';
 					clk_ctr_clear <= '1';
@@ -748,7 +749,7 @@ begin
 				if sck_in='1' then -- wait until all devices have released the clock before counting the high time
 					clk_ctr_clear <= '1';
 					master_state <= MASTER_STATE_RESTART_HIGH;
-				elsif CLK_AT_tTIMEOUT_MIN='1' and clk_ctr_clear='0' then
+				elsif clk_at_tTIMEOUT_MIN='1' and clk_ctr_clear='0' then
 					sck_out <= '1';
 					timeout <= '1';
 					clk_ctr_clear <= '1';
@@ -757,19 +758,19 @@ begin
 
 			when MASTER_STATE_RESTART_HIGH => -- wait for half of the LOW time
 				-- STATE_MON <= X"9";
-				if CLK_AT_tSU_STA='1' and clk_ctr_clear='0' then
+				if clk_at_tSU_STA='1' and clk_ctr_clear='0' then
 					sda_out <= '0'; -- create 0 to 1 transition that signify the STOP codition
-				elsif CLK_AT_tSU_STA_PLUS_tHD_STA='1' and clk_ctr_clear='0' then
+				elsif clk_at_tSU_STA_PLUS_tHD_STA='1' and clk_ctr_clear='0' then
 					-- FLAG(6) <= '1';
 					sck_out <= '0';
 					read_phase <= '1';
 					bit_ctr <= (others => '0');
 					clk_ctr_clear <= '1';
-					write_word(31 downto 24) <= unsigned(CTRL_DATA(0));
-					write_word(24) <= CTRL_DIR_READ; -- force READ mode
-					dir <= CTRL_DIR_WRITE; -- first byte is address, write
-					next_dir <= CTRL_DIR_READ;
-					byte_ctr <= CTRL_BYTES2; -- number of bytes to read
+					write_word(31 downto 24) <= unsigned(ctrl_data(0));
+					write_word(24) <= ctrl_dir_read; -- force READ mode
+					dir <= ctrl_dir_write; -- first byte is address, write
+					next_dir <= ctrl_dir_read;
+					byte_ctr <= ctrl_bytes2; -- number of bytes to read
 					master_state <= MASTER_STATE_DATA_LOW;
 				end if;
 
