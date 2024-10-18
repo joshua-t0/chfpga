@@ -515,7 +515,7 @@ set_property PACKAGE_PIN T23 [get_ports fmca_adc_sync_n]
 # Make all ADC inputs LVDS by default
 set_property IOSTANDARD LVDS_25 [get_ports {fmc?_adc?_?hdp fmc?_adc?_?drp}]
 
-set_property LOC BUFMRCE_X0Y6 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[0].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y6 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[0].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN U25 [get_ports fmca_adc0_adrn]
 set_property PACKAGE_PIN T26 [get_ports {fmca_adc0_ahdn[0]}]
 set_property PACKAGE_PIN T27 [get_ports {fmca_adc0_ahdn[1]}]
@@ -534,7 +534,7 @@ set_property PACKAGE_PIN U30 [get_ports {fmca_adc0_bhdn[4]}]
 set_property PACKAGE_PIN W23 [get_ports {fmca_adc0_bhdn[5]}]
 set_property PACKAGE_PIN R25 [get_ports {fmca_adc0_bhdn[6]}]
 set_property PACKAGE_PIN T28 [get_ports {fmca_adc0_bhdn[7]}]
-set_property LOC BUFMRCE_X0Y5 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[2].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y5 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[2].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AD28 [get_ports fmca_adc0_cdrn]
 set_property PACKAGE_PIN AD22 [get_ports {fmca_adc0_chdn[0]}]
 set_property PACKAGE_PIN AK26 [get_ports {fmca_adc0_chdn[1]}]
@@ -544,7 +544,7 @@ set_property PACKAGE_PIN AA25 [get_ports {fmca_adc0_chdn[4]}]
 set_property PACKAGE_PIN AG28 [get_ports {fmca_adc0_chdn[5]}]
 set_property PACKAGE_PIN AC24 [get_ports {fmca_adc0_chdn[6]}]
 set_property PACKAGE_PIN AC30 [get_ports {fmca_adc0_chdn[7]}]
-set_property LOC BUFMRCE_X0Y4 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[3].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y4 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[3].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AB27 [get_ports fmca_adc0_ddrn]
 set_property PACKAGE_PIN AK23 [get_ports {fmca_adc0_dhdn[0]}]
 set_property PACKAGE_PIN AK25 [get_ports {fmca_adc0_dhdn[1]}]
@@ -554,7 +554,7 @@ set_property PACKAGE_PIN AB30 [get_ports {fmca_adc0_dhdn[4]}]
 set_property PACKAGE_PIN AA30 [get_ports {fmca_adc0_dhdn[5]}]
 set_property PACKAGE_PIN AB28 [get_ports {fmca_adc0_dhdn[6]}]
 set_property PACKAGE_PIN W29 [get_ports {fmca_adc0_dhdn[7]}]
-set_property LOC BUFMRCE_X0Y1 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[4].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y1 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[4].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AF16 [get_ports fmca_adc1_adrn]
 set_property PACKAGE_PIN AE19 [get_ports {fmca_adc1_ahdn[0]}]
 set_property PACKAGE_PIN AK14 [get_ports {fmca_adc1_ahdn[1]}]
@@ -564,7 +564,7 @@ set_property PACKAGE_PIN AJ19 [get_ports {fmca_adc1_ahdn[4]}]
 set_property PACKAGE_PIN AB18 [get_ports {fmca_adc1_ahdn[5]}]
 set_property PACKAGE_PIN AE14 [get_ports {fmca_adc1_ahdn[6]}]
 set_property PACKAGE_PIN AA18 [get_ports {fmca_adc1_ahdn[7]}]
-set_property LOC BUFMRCE_X0Y0 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[5].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y0 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[5].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AG17 [get_ports fmca_adc1_bdrn]
 set_property PACKAGE_PIN AD19 [get_ports {fmca_adc1_bhdn[0]}]
 set_property PACKAGE_PIN AH20 [get_ports {fmca_adc1_bhdn[1]}]
@@ -574,7 +574,7 @@ set_property PACKAGE_PIN AG15 [get_ports {fmca_adc1_bhdn[4]}]
 set_property PACKAGE_PIN AD17 [get_ports {fmca_adc1_bhdn[5]}]
 set_property PACKAGE_PIN AH15 [get_ports {fmca_adc1_bhdn[6]}]
 set_property PACKAGE_PIN AJ17 [get_ports {fmca_adc1_bhdn[7]}]
-set_property LOC BUFMRCE_X0Y3 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[6].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y3 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[6].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AG23 [get_ports fmca_adc1_cdrn]
 set_property PACKAGE_PIN AH24 [get_ports {fmca_adc1_chdn[0]}]
 set_property PACKAGE_PIN AG25 [get_ports {fmca_adc1_chdn[1]}]
@@ -630,7 +630,7 @@ set_property PACKAGE_PIN L25 [get_ports fmcb_refclk_m2c_n]
 set_property PACKAGE_PIN U8 [get_ports {fmcb_mgt_pll_refclk_p[0]}]
 set_property PACKAGE_PIN W8 [get_ports {fmcb_mgt_pll_refclk_p[1]}]
 
-set_property LOC BUFMRCE_X0Y10 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[8].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y10 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[8].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN E26 [get_ports fmcb_adc0_adrn]
 set_property PACKAGE_PIN F26 [get_ports {fmcb_adc0_ahdn[0]}]
 set_property PACKAGE_PIN C26 [get_ports {fmcb_adc0_ahdn[1]}]
@@ -648,7 +648,7 @@ set_property PACKAGE_PIN J29 [get_ports {fmcb_adc0_bhdn[4]}]
 set_property PACKAGE_PIN G29 [get_ports {fmcb_adc0_bhdn[5]}]
 set_property PACKAGE_PIN D27 [get_ports {fmcb_adc0_bhdn[6]}]
 set_property PACKAGE_PIN A26 [get_ports {fmcb_adc0_bhdn[7]}]
-set_property LOC BUFMRCE_X0Y13 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[10].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y13 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[10].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN E21 [get_ports fmcb_adc0_cdrn]
 set_property PACKAGE_PIN A16 [get_ports {fmcb_adc0_chdn[0]}]
 set_property PACKAGE_PIN C17 [get_ports {fmcb_adc0_chdn[1]}]
@@ -658,7 +658,7 @@ set_property PACKAGE_PIN A30 [get_ports {fmcb_adc0_chdn[4]}]
 set_property PACKAGE_PIN E19 [get_ports {fmcb_adc0_chdn[5]}]
 set_property PACKAGE_PIN A28 [get_ports {fmcb_adc0_chdn[6]}]
 set_property PACKAGE_PIN D19 [get_ports {fmcb_adc0_chdn[7]}]
-set_property LOC BUFMRCE_X0Y12 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[11].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y12 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[11].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN F21 [get_ports fmcb_adc0_ddrn]
 set_property PACKAGE_PIN A14 [get_ports {fmcb_adc0_dhdn[0]}]
 set_property PACKAGE_PIN B15 [get_ports {fmcb_adc0_dhdn[1]}]
@@ -668,7 +668,7 @@ set_property PACKAGE_PIN A21 [get_ports {fmcb_adc0_dhdn[4]}]
 set_property PACKAGE_PIN B23 [get_ports {fmcb_adc0_dhdn[5]}]
 set_property PACKAGE_PIN C22 [get_ports {fmcb_adc0_dhdn[6]}]
 set_property PACKAGE_PIN D23 [get_ports {fmcb_adc0_dhdn[7]}]
-set_property LOC BUFMRCE_X0Y8 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[12].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y8 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[12].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN L27 [get_ports fmcb_adc1_adrn]
 set_property PACKAGE_PIN L28 [get_ports {fmcb_adc1_ahdn[0]}]
 set_property PACKAGE_PIN P28 [get_ports {fmcb_adc1_ahdn[1]}]
@@ -678,7 +678,7 @@ set_property PACKAGE_PIN K24 [get_ports {fmcb_adc1_ahdn[4]}]
 set_property PACKAGE_PIN P18 [get_ports {fmcb_adc1_ahdn[5]}]
 set_property PACKAGE_PIN L21 [get_ports {fmcb_adc1_ahdn[6]}]
 set_property PACKAGE_PIN M20 [get_ports {fmcb_adc1_ahdn[7]}]
-set_property LOC BUFMRCE_X0Y9 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[13].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y9 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[13].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN M24 [get_ports fmcb_adc1_bdrn]
 set_property PACKAGE_PIN K29 [get_ports {fmcb_adc1_bhdn[0]}]
 set_property PACKAGE_PIN K30 [get_ports {fmcb_adc1_bhdn[1]}]
@@ -688,7 +688,7 @@ set_property PACKAGE_PIN P29 [get_ports {fmcb_adc1_bhdn[4]}]
 set_property PACKAGE_PIN M22 [get_ports {fmcb_adc1_bhdn[5]}]
 set_property PACKAGE_PIN K26 [get_ports {fmcb_adc1_bhdn[6]}]
 set_property PACKAGE_PIN N26 [get_ports {fmcb_adc1_bhdn[7]}]
-set_property LOC BUFMRCE_X0Y15 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[14].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y15 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[14].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN C16 [get_ports fmcb_adc1_cdrn]
 set_property PACKAGE_PIN E16 [get_ports {fmcb_adc1_chdn[0]}]
 set_property PACKAGE_PIN D16 [get_ports {fmcb_adc1_chdn[1]}]
@@ -698,7 +698,7 @@ set_property PACKAGE_PIN H17 [get_ports {fmcb_adc1_chdn[4]}]
 set_property PACKAGE_PIN G14 [get_ports {fmcb_adc1_chdn[5]}]
 set_property PACKAGE_PIN F17 [get_ports {fmcb_adc1_chdn[6]}]
 set_property PACKAGE_PIN A17 [get_ports {fmcb_adc1_chdn[7]}]
-set_property LOC BUFMRCE_X0Y14 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[15].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y14 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[15].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN F15 [get_ports fmcb_adc1_ddrn]
 set_property PACKAGE_PIN J23 [get_ports {fmcb_adc1_dhdn[0]}]
 set_property PACKAGE_PIN F23 [get_ports {fmcb_adc1_dhdn[1]}]
@@ -710,8 +710,8 @@ set_property PACKAGE_PIN G20 [get_ports {fmcb_adc1_dhdn[6]}]
 set_property PACKAGE_PIN G19 [get_ports {fmcb_adc1_dhdn[7]}]
 
 
-set_property LOC USR_ACCESS_X0Y0 [get_cells chfpga0/GPIO0/USRACCESS_7.USR_ACCESS0]
-set_property LOC XADC_X0Y0 [get_cells chfpga0/SYSMON0/SYSMON7_GEN.XADC0]
+set_property LOC USR_ACCESS_X0Y0 [get_cells chfpga0/gpio_blk.GPIO0/USRACCESS_7.USR_ACCESS0]
+set_property LOC XADC_X0Y0 [get_cells chfpga0/sysmon_blk.SYSMON0/SYSMON7_GEN.XADC0]
 
 ##############################
 # LOCATION CONSTRAINTS
@@ -719,7 +719,7 @@ set_property LOC XADC_X0Y0 [get_cells chfpga0/SYSMON0/SYSMON7_GEN.XADC0]
 
 ### MMCMs ###
 # We need to put the ADCDAQ PLL in the same bank as the BUFR that drives it (Bank 13)
-#set_property LOC MMCME2_ADV_X0Y3 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[0].ADCDAQ0/IMPL.USEPLL.PLL0/U0/mmcm_adv_inst}]
+#set_property LOC MMCME2_ADV_X0Y3 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[0].ADCDAQ0/IMPL.USEPLL.PLL0/U0/mmcm_adv_inst}]
 # The Channelizer MMCM has 2 inputs:  ADCDAQ0 and System MMCM (CLK200). If Tey are there were driven directly (no BUFG) by both the ADCDAQ BUFR and Sysntem MMCM output, . The MMCM must be adjacent, but on a half that has enough BUFGs
 #set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/CLK0/gen_chanpll_k7.chan_mmcm0]
 set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/CLK0/gen_chanpll_k7.mmcm_case.chan_mmcm0]
@@ -744,77 +744,64 @@ set_property LOC BUFGCTRL_X0Y19 [get_cells chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/
 
 # CH2
 # NOTE: It is assumed that the ADCDAQ logic is located in the same bank as the clock so it can be clocked out of the BUFR in that region
-set_property LOC BUFR_X0Y4 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[2].ADCDAQ0/IMPL.BUFRGEN[1].BUFRn}]
-set_property LOC BUFR_X0Y8 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[2].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
+set_property LOC BUFR_X0Y4 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[2].ADCDAQ0/IMPL.BUFRGEN[1].BUFRn}]
+set_property LOC BUFR_X0Y8 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[2].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
 
 # CH3
 # NOTE: It is assumed that the ADCDAQ logic is located in the same bank as the clock so it can be clocked out of the BUFR in that region
-set_property LOC BUFR_X0Y5 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[3].ADCDAQ0/IMPL.BUFRGEN[1].BUFRn}]
-set_property LOC BUFR_X0Y9 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[3].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
+set_property LOC BUFR_X0Y5 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[3].ADCDAQ0/IMPL.BUFRGEN[1].BUFRn}]
+set_property LOC BUFR_X0Y9 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[3].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
 
 set_property PACKAGE_PIN F28 [get_ports fmcb_adc0_bdrn]
-set_property LOC BUFR_X0Y22 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[9].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
+set_property LOC BUFR_X0Y22 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[9].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
 
-set_property LOC BUFIO_X0Y27 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[14].ADCDAQ0/IMPL.NOEXTCLK.BUFIOGEN[1].BUFIO0}]
+set_property LOC BUFIO_X0Y27 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[14].ADCDAQ0/IMPL.NOEXTCLK.BUFIOGEN[1].BUFIO0}]
 
-set_property LOC BUFIO_X0Y25 [get_cells {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[15].ADCDAQ0/IMPL.NOEXTCLK.BUFIOGEN[0].BUFIO0}]
+set_property LOC BUFIO_X0Y25 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[15].ADCDAQ0/IMPL.NOEXTCLK.BUFIOGEN[0].BUFIO0}]
+
+
+###################################
+# Switching activity
+# ###################################
+
+set_switching_activity -default_toggle_rate 50.000
+# set_switching_activity -toggle_rate 100.000 -type {bram_enable} -static_probability 0.500 -all
+# set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all
+# set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all
+# set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all
+# set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all
+# set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all
+# set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all
+# set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all
+# set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all
+# set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all
+
+
+set_switching_activity -default_toggle_rate 12.500
+set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all
 
 
 
 # ###################################
 # # AREA Contraints
 # ###################################
-# create_pblock PHY
-# add_cells_to_pblock [get_pblocks PHY] [get_cells -quiet [list chfpga0/UDP_PHY0]]
-# resize_pblock [get_pblocks PHY] -add {SLICE_X0Y150:SLICE_X11Y199}
-# resize_pblock [get_pblocks PHY] -add {RAMB18_X0Y60:RAMB18_X0Y79}
-# resize_pblock [get_pblocks PHY] -add {RAMB36_X0Y30:RAMB36_X0Y39}
-# create_pblock I2C
-# add_cells_to_pblock [get_pblocks I2C] [get_cells -quiet [list chfpga0/I2C0]]
-# resize_pblock [get_pblocks I2C] -add {SLICE_X0Y50:SLICE_X11Y99}
-# create_pblock SPI
-# add_cells_to_pblock [get_pblocks SPI] [get_cells -quiet [list chfpga0/SPI0]]
-# resize_pblock [get_pblocks SPI] -add {SLICE_X0Y100:SLICE_X7Y149}
-# create_pblock ADCDAQ0
-# add_cells_to_pblock [get_pblocks ADCDAQ0] [get_cells -quiet [list {chfpga0/CHANGEN[0].CHANiAQ0}]]
-# resize_pblock [get_pblocks ADCDAQ0] -add {SLICE_X0Y200:SLICE_X7Y224}
-# resize_pblock [get_pblocks ADCDAQ0] -add {RAMB18_X0Y80:RAMB18_X0Y89}
-# resize_pblock [get_pblocks ADCDAQ0] -add {RAMB36_X0Y40:RAMB36_X0Y44}
-# create_pblock ADCDAQ1
-# resize_pblock [get_pblocks ADCDAQ1] -add {SLICE_X0Y225:SLICE_X7Y249}
-# resize_pblock [get_pblocks ADCDAQ1] -add {RAMB18_X0Y90:RAMB18_X0Y99}
-# resize_pblock [get_pblocks ADCDAQ1] -add {RAMB36_X0Y45:RAMB36_X0Y49}
-# create_pblock ADCDAQ2
-# add_cells_to_pblock [get_pblocks ADCDAQ2] [get_cells -quiet [list {chfpga0/CHANGEN[2].CHANiAQ0}]]
-# resize_pblock [get_pblocks ADCDAQ2] -add {SLICE_X0Y250:SLICE_X7Y274}
-# resize_pblock [get_pblocks ADCDAQ2] -add {RAMB18_X0Y100:RAMB18_X0Y109}
-# resize_pblock [get_pblocks ADCDAQ2] -add {RAMB36_X0Y50:RAMB36_X0Y54}
-# create_pblock ADCDAQ3
-# add_cells_to_pblock [get_pblocks ADCDAQ3] [get_cells -quiet [list {chfpga0/CHANGEN[3].CHANiAQ0}]]
-# resize_pblock [get_pblocks ADCDAQ3] -add {SLICE_X0Y275:SLICE_X7Y298}
-# resize_pblock [get_pblocks ADCDAQ3] -add {RAMB18_X0Y110:RAMB18_X0Y117}
-# resize_pblock [get_pblocks ADCDAQ3] -add {RAMB36_X0Y55:RAMB36_X0Y58}
-# create_pblock ADCDAQ4
-# add_cells_to_pblock [get_pblocks ADCDAQ4] [get_cells -quiet [list {chfpga0/CHANGEN[4].CHANiAQ0}]]
-# resize_pblock [get_pblocks ADCDAQ4] -add {SLICE_X0Y0:SLICE_X7Y24}
-# resize_pblock [get_pblocks ADCDAQ4] -add {RAMB18_X0Y0:RAMB18_X0Y9}
-# resize_pblock [get_pblocks ADCDAQ4] -add {RAMB36_X0Y0:RAMB36_X0Y4}
-# create_pblock ADCDAQ5
-# add_cells_to_pblock [get_pblocks ADCDAQ5] [get_cells -quiet [list {chfpga0/CHANGEN[5].CHANiAQ0}]]
-# resize_pblock [get_pblocks ADCDAQ5] -add {SLICE_X0Y25:SLICE_X7Y49}
-# resize_pblock [get_pblocks ADCDAQ5] -add {RAMB18_X0Y10:RAMB18_X0Y19}
-# resize_pblock [get_pblocks ADCDAQ5] -add {RAMB36_X0Y5:RAMB36_X0Y9}
-# create_pblock ADCDAQ6
-# add_cells_to_pblock [get_pblocks ADCDAQ6] [get_cells -quiet [list {chfpga0/CHANGEN[6].CHANiAQ0}]]
-# resize_pblock [get_pblocks ADCDAQ6] -add {SLICE_X0Y300:SLICE_X7Y324}
-# resize_pblock [get_pblocks ADCDAQ6] -add {RAMB18_X0Y120:RAMB18_X0Y129}
-# resize_pblock [get_pblocks ADCDAQ6] -add {RAMB36_X0Y60:RAMB36_X0Y64}
-# create_pblock ADCDAQ7
-# add_cells_to_pblock [get_pblocks ADCDAQ7] [get_cells -quiet [list {chfpga0/CHANGEN[7].CHANiAQ0}]]
-# resize_pblock [get_pblocks ADCDAQ7] -add {SLICE_X0Y325:SLICE_X7Y349}
-# resize_pblock [get_pblocks ADCDAQ7] -add {RAMB18_X0Y130:RAMB18_X0Y139}
-# resize_pblock [get_pblocks ADCDAQ7] -add {RAMB36_X0Y65:RAMB36_X0Y69}
-
 
 create_pblock CHAN0
 add_cells_to_pblock [get_pblocks CHAN0] [get_cells -quiet [list {chfpga0/CHANGEN[0].CHANi}]]
@@ -822,6 +809,8 @@ resize_pblock [get_pblocks CHAN0] -add {SLICE_X8Y175:SLICE_X139Y199}
 resize_pblock [get_pblocks CHAN0] -add {DSP48_X0Y70:DSP48_X8Y79}
 resize_pblock [get_pblocks CHAN0] -add {RAMB18_X1Y70:RAMB18_X8Y79 RAMB18_X0Y74:RAMB18_X0Y79}
 resize_pblock [get_pblocks CHAN0] -add {RAMB36_X1Y35:RAMB36_X8Y39 RAMB36_X0Y37:RAMB36_X0Y39}
+set_property IS_SOFT FALSE [get_pblocks CHAN0]
+
 # add_cells_to_pblock [get_pblocks CHAN0] [get_cells -quiet [list {chfpga0/CHANGEN[0].CHANi}]]
 
 create_pblock CHAN1
@@ -830,6 +819,7 @@ resize_pblock [get_pblocks CHAN1] -add {SLICE_X8Y150:SLICE_X139Y174}
 resize_pblock [get_pblocks CHAN1] -add {DSP48_X0Y60:DSP48_X8Y69}
 resize_pblock [get_pblocks CHAN1] -add {RAMB18_X1Y60:RAMB18_X8Y69 RAMB18_X0Y60:RAMB18_X0Y65}
 resize_pblock [get_pblocks CHAN1] -add {RAMB36_X1Y30:RAMB36_X8Y34 RAMB36_X0Y30:RAMB36_X0Y32}
+set_property IS_SOFT FALSE [get_pblocks CHAN1]
 # add_cells_to_pblock [get_pblocks CHAN1] [get_cells -quiet [list {chfpga0/CHANGEN[1].CHANi}]]
 
 create_pblock CHAN2
@@ -838,6 +828,8 @@ resize_pblock [get_pblocks CHAN2] -add {SLICE_X8Y125:SLICE_X139Y149}
 resize_pblock [get_pblocks CHAN2] -add {DSP48_X0Y50:DSP48_X8Y59}
 resize_pblock [get_pblocks CHAN2] -add {RAMB18_X1Y50:RAMB18_X8Y59 RAMB18_X0Y54:RAMB18_X0Y59}
 resize_pblock [get_pblocks CHAN2] -add {RAMB36_X1Y25:RAMB36_X8Y29 RAMB36_X0Y27:RAMB36_X0Y29}
+set_property IS_SOFT FALSE [get_pblocks CHAN2]
+
 # add_cells_to_pblock [get_pblocks CHAN2] [get_cells -quiet [list {chfpga0/CHANGEN[2].CHANi}]]
 create_pblock CHAN3
 add_cells_to_pblock [get_pblocks CHAN3] [get_cells -quiet [list {chfpga0/CHANGEN[3].CHANi}]]
@@ -845,6 +837,8 @@ resize_pblock [get_pblocks CHAN3] -add {SLICE_X8Y100:SLICE_X139Y124}
 resize_pblock [get_pblocks CHAN3] -add {DSP48_X0Y40:DSP48_X8Y49}
 resize_pblock [get_pblocks CHAN3] -add {RAMB18_X1Y40:RAMB18_X8Y49 RAMB18_X0Y44:RAMB18_X0Y49}
 resize_pblock [get_pblocks CHAN3] -add {RAMB36_X1Y20:RAMB36_X8Y24 RAMB36_X0Y22:RAMB36_X0Y24}
+set_property IS_SOFT FALSE [get_pblocks CHAN3]
+
 # add_cells_to_pblock [get_pblocks CHAN3] [get_cells -quiet [list {chfpga0/CHANGEN[3].CHANi}]]
 
 create_pblock CHAN4
@@ -879,7 +873,6 @@ resize_pblock [get_pblocks CHAN7] -add {RAMB18_X1Y30:RAMB18_X8Y39 RAMB18_X0Y34:R
 resize_pblock [get_pblocks CHAN7] -add {RAMB36_X1Y15:RAMB36_X8Y19 RAMB36_X0Y17:RAMB36_X0Y19}
 # add_cells_to_pblock [get_pblocks CHAN7] [get_cells -quiet [list {chfpga0/CHANGEN[7].CHANi}]]
 
-######
 
 
 create_pblock CHAN8
@@ -947,155 +940,34 @@ resize_pblock [get_pblocks CHAN13] -add {RAMB18_X1Y90:RAMB18_X8Y99 RAMB18_X0Y94:
 resize_pblock [get_pblocks CHAN13] -add {RAMB36_X1Y45:RAMB36_X8Y49 RAMB36_X0Y47:RAMB36_X0Y49}
 # add_cells_to_pblock [get_pblocks CHAN13] [get_cells -quiet [list {chfpga0/CHANGEN[13].CHANi}]]
 
-set_property LOC DNA_PORT_X0Y0 [get_cells chfpga0/GPIO0/gen_dna7.dna0]
-
-# create_pblock CHAN0
-# add_cells_to_pblock [get_pblocks CHAN0] [get_cells -quiet [list {chfpga0/CHANGEN[0].CHANi}]]
-# resize_pblock [get_pblocks CHAN0] -add {SLICE_X0Y325:SLICE_X159Y349}
-# resize_pblock [get_pblocks CHAN0] -add {DSP48_X0Y130:DSP48_X9Y139}
-# resize_pblock [get_pblocks CHAN0] -add {RAMB18_X0Y130:RAMB18_X9Y139}
-# resize_pblock [get_pblocks CHAN0] -add {RAMB36_X0Y65:RAMB36_X9Y69}
+set_property LOC DNA_PORT_X0Y0 [get_cells chfpga0/gpio_blk.GPIO0/gen_dna7.dna0]
 
 
-# create_pblock CORR0
-# resize_pblock [get_pblocks CORR0] -add {SLICE_X78Y375:SLICE_X139Y399}
-# resize_pblock [get_pblocks CORR0] -add {DSP48_X5Y150:DSP48_X8Y159}
-# resize_pblock [get_pblocks CORR0] -add {RAMB18_X5Y150:RAMB18_X8Y159}
-# resize_pblock [get_pblocks CORR0] -add {RAMB36_X5Y75:RAMB36_X8Y79}
-# create_pblock CORR1
-# resize_pblock [get_pblocks CORR1] -add {SLICE_X78Y350:SLICE_X139Y374}
-# resize_pblock [get_pblocks CORR1] -add {DSP48_X5Y140:DSP48_X8Y149}
-# resize_pblock [get_pblocks CORR1] -add {RAMB18_X5Y140:RAMB18_X8Y149}
-# resize_pblock [get_pblocks CORR1] -add {RAMB36_X5Y70:RAMB36_X8Y74}
-
-# create_pblock CORR2
-# resize_pblock [get_pblocks CORR2] -add {SLICE_X78Y325:SLICE_X139Y349}
-# resize_pblock [get_pblocks CORR2] -add {DSP48_X5Y130:DSP48_X8Y139}
-# resize_pblock [get_pblocks CORR2] -add {RAMB18_X5Y130:RAMB18_X8Y139}
-# resize_pblock [get_pblocks CORR2] -add {RAMB36_X5Y65:RAMB36_X8Y69}
-
-# create_pblock CORR3
-# resize_pblock [get_pblocks CORR3] -add {SLICE_X78Y300:SLICE_X139Y324}
-# resize_pblock [get_pblocks CORR3] -add {DSP48_X5Y120:DSP48_X8Y129}
-# resize_pblock [get_pblocks CORR3] -add {RAMB18_X5Y120:RAMB18_X8Y129}
-# resize_pblock [get_pblocks CORR3] -add {RAMB36_X5Y60:RAMB36_X8Y64}
-
-# create_pblock CORR4
-# resize_pblock [get_pblocks CORR4] -add {SLICE_X78Y275:SLICE_X143Y299}
-# resize_pblock [get_pblocks CORR4] -add {DSP48_X5Y110:DSP48_X9Y119}
-# resize_pblock [get_pblocks CORR4] -add {RAMB18_X5Y110:RAMB18_X8Y119}
-# resize_pblock [get_pblocks CORR4] -add {RAMB36_X5Y55:RAMB36_X8Y59}
-
-# create_pblock CORR5
-# resize_pblock [get_pblocks CORR5] -add {SLICE_X78Y250:SLICE_X139Y274}
-# resize_pblock [get_pblocks CORR5] -add {DSP48_X5Y100:DSP48_X8Y109}
-# resize_pblock [get_pblocks CORR5] -add {RAMB18_X5Y100:RAMB18_X8Y109}
-# resize_pblock [get_pblocks CORR5] -add {RAMB36_X5Y50:RAMB36_X8Y54}
-
-# create_pblock CORR6
-# resize_pblock [get_pblocks CORR6] -add {SLICE_X78Y225:SLICE_X139Y249}
-# resize_pblock [get_pblocks CORR6] -add {DSP48_X5Y90:DSP48_X8Y99}
-# resize_pblock [get_pblocks CORR6] -add {RAMB18_X5Y90:RAMB18_X8Y99}
-# resize_pblock [get_pblocks CORR6] -add {RAMB36_X5Y45:RAMB36_X8Y49}
-
-# create_pblock CORR7
-# resize_pblock [get_pblocks CORR7] -add {SLICE_X78Y200:SLICE_X139Y224}
-# resize_pblock [get_pblocks CORR7] -add {DSP48_X5Y80:DSP48_X8Y89}
-# resize_pblock [get_pblocks CORR7] -add {RAMB18_X5Y80:RAMB18_X8Y89}
-# resize_pblock [get_pblocks CORR7] -add {RAMB36_X5Y40:RAMB36_X8Y44}
-
-# add_cells_to_pblock [get_pblocks CROSSBAR0] [get_cells -quiet [list chfpga0/xbar0]]
-
-
-# create_pblock SYSTEM0
-# resize_pblock [get_pblocks SYSTEM0] -add {SLICE_X156Y100:SLICE_X189Y149}
-# resize_pblock [get_pblocks SYSTEM0] -add {DSP48_X10Y40:DSP48_X11Y59}
-# resize_pblock [get_pblocks SYSTEM0] -add {RAMB18_X10Y40:RAMB18_X11Y59}
-# resize_pblock [get_pblocks SYSTEM0] -add {RAMB36_X10Y20:RAMB36_X11Y29}
-# # add_cells_to_pblock [get_pblocks SYSTEM0] [get_cells -quiet [list chfpga0/BLINKER0 chfpga0/FREQ_CTR0 chfpga0/GPIO0 chfpga0/I2C0 chfpga0/REFCLK0 chfpga0/SPI0 chfpga0/SYSMON0 chfpga0/chan_router0 chfpga0/ctrl_master0 chfpga0/sys_router0 chfpga0/top_router0 chfpga0/gen_eth.udp_mac0]]
-
-
-# add_cells_to_pblock [get_pblocks {pblock_udp_gen[0].udp0}] [get_cells -quiet [list {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[0].udp0}]]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+set system_cells  [get_cells { \
+	chfpga0/blinker_blk.BLINKER0 \
+	chfpga0/freq_ctr_blk.FREQ_CTR0 \
+	chfpga0/gpio_blk.GPIO0/CTRL_SLAVE0 \
+	chfpga0/gpio_blk.GPIO0/core_regs0 \
+	chfpga0/gpio_blk.GPIO0/irigb_comparator0 \
+	chfpga0/gpio_blk.GPIO0/irigb_decoder0 \
+	chfpga0/gpio_blk.GPIO0/irigb_encoder0 \
+	chfpga0/gen_i2c.I2C0 \
+	chfpga0/gen_spi.SPI0\
+	}]
 
 create_pblock SYSTEM
-add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list chfpga0/BLINKER0 chfpga0/FREQ_CTR0 chfpga0/GPIO0/CTRL_SLAVE0 chfpga0/GPIO0/core_regs0 chfpga0/GPIO0/irigb_comparator0 chfpga0/GPIO0/irigb_decoder0 chfpga0/GPIO0/irigb_encoder0 chfpga0/gen_i2c.I2C0 chfpga0/gen_spi.SPI0]]
+add_cells_to_pblock [get_pblocks SYSTEM] $system_cells
 resize_pblock [get_pblocks SYSTEM] -add {SLICE_X150Y350:SLICE_X189Y374 SLICE_X142Y355:SLICE_X149Y374}
 resize_pblock [get_pblocks SYSTEM] -add {DSP48_X10Y140:DSP48_X11Y149 DSP48_X9Y142:DSP48_X9Y149}
 resize_pblock [get_pblocks SYSTEM] -add {RAMB18_X10Y140:RAMB18_X11Y149 RAMB18_X9Y142:RAMB18_X9Y149}
 resize_pblock [get_pblocks SYSTEM] -add {RAMB36_X10Y70:RAMB36_X11Y74 RAMB36_X9Y71:RAMB36_X9Y74}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 create_pblock UDP_MAC
-add_cells_to_pblock [get_pblocks UDP_MAC] [get_cells -quiet [list chfpga0/ctrl_master0 chfpga0/gen_eth.phy_case.udp_mac0]]
+add_cells_to_pblock [get_pblocks UDP_MAC] [get_cells -quiet [list chfpga0/bsb_master_blk.ctrl_master0 chfpga0/gen_eth.phy_case.udp_mac0]]
 resize_pblock [get_pblocks UDP_MAC] -add {SLICE_X150Y235:SLICE_X189Y249 SLICE_X144Y235:SLICE_X149Y244}
 resize_pblock [get_pblocks UDP_MAC] -add {DSP48_X10Y94:DSP48_X11Y99}
 resize_pblock [get_pblocks UDP_MAC] -add {RAMB18_X10Y94:RAMB18_X11Y99 RAMB18_X9Y94:RAMB18_X9Y97}
 resize_pblock [get_pblocks UDP_MAC] -add {RAMB36_X10Y47:RAMB36_X11Y49 RAMB36_X9Y47:RAMB36_X9Y48}
-
-
-
-
-
-set_switching_activity -default_toggle_rate 50.000
-# set_switching_activity -toggle_rate 100.000 -type {bram_enable} -static_probability 0.500 -all
-# set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 create_pblock CLK0
@@ -1103,844 +975,163 @@ add_cells_to_pblock [get_pblocks CLK0] [get_cells -quiet [list chfpga0/CLK0]]
 resize_pblock [get_pblocks CLK0] -add {SLICE_X0Y248:SLICE_X7Y249 SLICE_X0Y150:SLICE_X7Y151}
 
 
-
-
-
 create_pblock ARM_SPI
-add_cells_to_pblock [get_pblocks ARM_SPI] [get_cells -quiet [list chfpga0/GPIO0/gen_armspi.arm_spi0]]
+add_cells_to_pblock [get_pblocks ARM_SPI] [get_cells -quiet [list chfpga0/gpio_blk.GPIO0/gen_armspi.arm_spi0]]
 resize_pblock [get_pblocks ARM_SPI] -add {SLICE_X0Y187:SLICE_X7Y206}
 
+# create_pblock I2C
+# resize_pblock [get_pblocks I2C] -add {SLICE_X0Y200:SLICE_X7Y204}
 
+# create_pblock SPI
+# resize_pblock [get_pblocks SPI] -add {SLICE_X0Y93:SLICE_X7Y95}
 
-
-
-
-
-
-
-
-create_pblock I2C
-resize_pblock [get_pblocks I2C] -add {SLICE_X0Y200:SLICE_X7Y204}
-create_pblock SPI
-resize_pblock [get_pblocks SPI] -add {SLICE_X0Y93:SLICE_X7Y95}
-create_pblock BP_BUCK_SYNC
-resize_pblock [get_pblocks BP_BUCK_SYNC] -add {SLICE_X0Y117:SLICE_X7Y124}
-
-
-
-
-
-
-
-
-
-
-
-
+# create_pblock BP_BUCK_SYNC
+# resize_pblock [get_pblocks BP_BUCK_SYNC] -add {SLICE_X0Y117:SLICE_X7Y124}
 
 
 create_pblock BP0
-add_cells_to_pblock [get_pblocks BP0] [get_cells -quiet {{chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr[0][0]_i_7} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr[0][0]_i_9} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][0]_i_2} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][12]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][16]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][20]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][24]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][28]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][4]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][8]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_err_ctr_reg[0][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_rxresetfsm_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gt_slave0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].gtx_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[0].rxoutclk_bufg0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr[1][0]_i_7} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr[1][0]_i_9} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][0]_i_2} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][12]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][16]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][20]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][24]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][28]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][4]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][8]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_err_ctr_reg[1][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_rxresetfsm_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gt_slave0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].gtx_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[1].rxoutclk_bufg0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr[2][0]_i_7} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr[2][0]_i_9} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][0]_i_2} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][12]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][16]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][20]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][24]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][28]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][4]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][8]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_err_ctr_reg[2][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_rxresetfsm_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gt_slave0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].gtx_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[2].rxoutclk_bufg0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr[3][0]_i_7} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr[3][0]_i_9} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][0]_i_2} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][12]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][16]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][20]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][24]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][28]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][4]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][8]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_err_ctr_reg[3][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_rxresetfsm_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gt_slave0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].gtx_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[3].rxoutclk_bufg0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].gt_capture_en_rxusrclk2_reg[0][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].gt_capture_en_rxusrclk2_reg[0][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].gt_rxheader_capture_reg[0][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].gt_rxheader_capture_reg[0][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].gt_unscrambled_data_valid_reg[0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture[0][31]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_data_capture_reg[0][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_header_reg[0][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_header_reg[0][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[0].rx_header_valid_reg[0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].gt_capture_en_rxusrclk2_reg[1][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].gt_capture_en_rxusrclk2_reg[1][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].gt_rxheader_capture_reg[1][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].gt_rxheader_capture_reg[1][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].gt_unscrambled_data_valid_reg[1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture[1][31]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_data_capture_reg[1][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_header_reg[1][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_header_reg[1][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[1].rx_header_valid_reg[1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].gt_capture_en_rxusrclk2_reg[2][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].gt_capture_en_rxusrclk2_reg[2][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].gt_rxheader_capture_reg[2][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].gt_rxheader_capture_reg[2][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].gt_unscrambled_data_valid_reg[2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture[2][31]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_data_capture_reg[2][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_header_reg[2][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_header_reg[2][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[2].rx_header_valid_reg[2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].gt_capture_en_rxusrclk2_reg[3][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].gt_capture_en_rxusrclk2_reg[3][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].gt_rxheader_capture_reg[3][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].gt_rxheader_capture_reg[3][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].gt_unscrambled_data_valid_reg[3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture[3][31]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_data_capture_reg[3][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_header_reg[3][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_header_reg[3][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[3].rx_header_valid_reg[3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_seq_counter[0][0]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_seq_counter[0][1]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_seq_counter[0][2]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_seq_counter[0][3]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_seq_counter[0][4]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_seq_counter[0][5]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_seq_counter[0][6]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_seq_counter[0][7]_i_2} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_seq_counter[0][7]_i_3} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_seq_counter[0][7]_i_4} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_seq_counter_reg[0][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_seq_counter_reg[0][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_seq_counter_reg[0][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_seq_counter_reg[0][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_seq_counter_reg[0][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_seq_counter_reg[0][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_seq_counter_reg[0][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_seq_counter_reg[0][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_txheader_in_reg[0][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_txheader_in_reg[0][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].gt_txresetfsm} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].scrambler0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_dly_reg[0][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_data_int_reg[0][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_header_int_reg[0][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_header_int_reg[0][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_ready[0]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[0].tx_ready_reg[0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_seq_counter[1][0]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_seq_counter[1][1]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_seq_counter[1][2]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_seq_counter[1][3]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_seq_counter[1][4]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_seq_counter[1][5]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_seq_counter[1][6]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_seq_counter[1][7]_i_2} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_seq_counter[1][7]_i_3} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_seq_counter[1][7]_i_4} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_seq_counter_reg[1][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_seq_counter_reg[1][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_seq_counter_reg[1][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_seq_counter_reg[1][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_seq_counter_reg[1][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_seq_counter_reg[1][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_seq_counter_reg[1][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_seq_counter_reg[1][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_txheader_in_reg[1][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_txheader_in_reg[1][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].gt_txresetfsm} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].scrambler0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_dly_reg[1][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_data_int_reg[1][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_header_int_reg[1][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_header_int_reg[1][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_ready[1]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[1].tx_ready_reg[1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_seq_counter[2][0]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_seq_counter[2][1]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_seq_counter[2][2]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_seq_counter[2][3]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_seq_counter[2][4]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_seq_counter[2][5]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_seq_counter[2][6]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_seq_counter[2][7]_i_2} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_seq_counter[2][7]_i_3} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_seq_counter[2][7]_i_4} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_seq_counter_reg[2][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_seq_counter_reg[2][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_seq_counter_reg[2][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_seq_counter_reg[2][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_seq_counter_reg[2][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_seq_counter_reg[2][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_seq_counter_reg[2][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_seq_counter_reg[2][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_txheader_in_reg[2][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_txheader_in_reg[2][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].gt_txresetfsm} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].scrambler0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_dly_reg[2][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_data_int_reg[2][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_header_int_reg[2][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_header_int_reg[2][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_ready[2]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[2].tx_ready_reg[2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_seq_counter[3][0]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_seq_counter[3][1]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_seq_counter[3][2]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_seq_counter[3][3]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_seq_counter[3][4]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_seq_counter[3][5]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_seq_counter[3][6]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_seq_counter[3][7]_i_2} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_seq_counter[3][7]_i_3} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_seq_counter[3][7]_i_4} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_seq_counter_reg[3][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_seq_counter_reg[3][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_seq_counter_reg[3][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_seq_counter_reg[3][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_seq_counter_reg[3][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_seq_counter_reg[3][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_seq_counter_reg[3][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_seq_counter_reg[3][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_txheader_in_reg[3][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_txheader_in_reg[3][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].gt_txresetfsm} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].scrambler0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_dly_reg[3][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_data_int_reg[3][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_header_int_reg[3][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_header_int_reg[3][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_ready[3]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[3].tx_ready_reg[3]} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[0].direct_gen.direct0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[1].rx_gen.rx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[1].tx_gen.tx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[2].rx_gen.rx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[2].tx_gen.tx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[3].rx_gen.rx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[3].tx_gen.tx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[4].rx_gen.rx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[4].tx_gen.tx0} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[0].binsel_i} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[1].binsel_i} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[2].binsel_i} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[3].binsel_i} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[4].binsel_i}}]
+add_cells_to_pblock [get_pblocks BP0] [get_cells { \
+			{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[0].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[1].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[2].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[3].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[0].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[1].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[2].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[3].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[4].*}  \
+			{chfpga0/*chan_crossbar0/BIN_SEL_GEN[0].*} \
+			{chfpga0/*chan_crossbar0/BIN_SEL_GEN[1].*} \
+			{chfpga0/*chan_crossbar0/BIN_SEL_GEN[2].*} \
+			{chfpga0/*chan_crossbar0/BIN_SEL_GEN[3].*} \
+			{chfpga0/*chan_crossbar0/BIN_SEL_GEN[4].*} \
+			}]
 resize_pblock [get_pblocks BP0] -add {SLICE_X140Y160:SLICE_X189Y204}
 resize_pblock [get_pblocks BP0] -add {DSP48_X9Y64:DSP48_X11Y81}
 resize_pblock [get_pblocks BP0] -add {RAMB18_X9Y81:RAMB18_X11Y64}
 resize_pblock [get_pblocks BP0] -add {RAMB36_X9Y40:RAMB36_X11Y32}
+set_property IS_SOFT FALSE [get_pblocks BP0]
+
+
 create_pblock BP1
-add_cells_to_pblock [get_pblocks BP1] [get_cells -quiet {{chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr[4][0]_i_7} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr[4][0]_i_9} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][0]_i_2} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][12]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][16]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][20]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][24]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][28]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][4]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][8]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_err_ctr_reg[4][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_rxresetfsm_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gt_slave0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].gtx_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[4].rxoutclk_bufg0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr[5][0]_i_7} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr[5][0]_i_9} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][0]_i_2} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][12]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][16]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][20]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][24]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][28]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][4]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][8]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_err_ctr_reg[5][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_rxresetfsm_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gt_slave0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].gtx_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[5].rxoutclk_bufg0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr[6][0]_i_7} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr[6][0]_i_9} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][0]_i_2} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][12]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][16]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][20]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][24]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][28]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][4]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][8]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_err_ctr_reg[6][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_rxresetfsm_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gt_slave0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].gtx_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[6].rxoutclk_bufg0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr[7][0]_i_7} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr[7][0]_i_9} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][0]_i_2} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][12]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][16]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][20]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][24]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][28]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][4]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][8]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_err_ctr_reg[7][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_rxresetfsm_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gt_slave0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].gtx_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[7].rxoutclk_bufg0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].gt_capture_en_rxusrclk2_reg[4][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].gt_capture_en_rxusrclk2_reg[4][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].gt_rxheader_capture_reg[4][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].gt_rxheader_capture_reg[4][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].gt_unscrambled_data_valid_reg[4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture[4][31]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_data_capture_reg[4][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_header_reg[4][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_header_reg[4][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[4].rx_header_valid_reg[4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].gt_capture_en_rxusrclk2_reg[5][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].gt_capture_en_rxusrclk2_reg[5][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].gt_rxheader_capture_reg[5][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].gt_rxheader_capture_reg[5][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].gt_unscrambled_data_valid_reg[5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture[5][31]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_data_capture_reg[5][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_header_reg[5][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_header_reg[5][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[5].rx_header_valid_reg[5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].gt_capture_en_rxusrclk2_reg[6][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].gt_capture_en_rxusrclk2_reg[6][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].gt_rxheader_capture_reg[6][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].gt_rxheader_capture_reg[6][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].gt_unscrambled_data_valid_reg[6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture[6][31]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_data_capture_reg[6][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_header_reg[6][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_header_reg[6][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[6].rx_header_valid_reg[6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].gt_capture_en_rxusrclk2_reg[7][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].gt_capture_en_rxusrclk2_reg[7][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].gt_rxheader_capture_reg[7][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].gt_rxheader_capture_reg[7][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].gt_unscrambled_data_valid_reg[7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture[7][31]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_data_capture_reg[7][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_header_reg[7][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_header_reg[7][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[7].rx_header_valid_reg[7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_seq_counter[4][0]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_seq_counter[4][1]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_seq_counter[4][2]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_seq_counter[4][3]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_seq_counter[4][4]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_seq_counter[4][5]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_seq_counter[4][6]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_seq_counter[4][7]_i_2} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_seq_counter[4][7]_i_3} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_seq_counter[4][7]_i_4} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_seq_counter_reg[4][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_seq_counter_reg[4][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_seq_counter_reg[4][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_seq_counter_reg[4][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_seq_counter_reg[4][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_seq_counter_reg[4][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_seq_counter_reg[4][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_seq_counter_reg[4][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_txheader_in_reg[4][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_txheader_in_reg[4][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].gt_txresetfsm} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].scrambler0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_dly_reg[4][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_data_int_reg[4][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_header_int_reg[4][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_header_int_reg[4][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_ready[4]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[4].tx_ready_reg[4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_seq_counter[5][0]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_seq_counter[5][1]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_seq_counter[5][2]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_seq_counter[5][3]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_seq_counter[5][4]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_seq_counter[5][5]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_seq_counter[5][6]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_seq_counter[5][7]_i_2} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_seq_counter[5][7]_i_3} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_seq_counter[5][7]_i_4} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_seq_counter_reg[5][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_seq_counter_reg[5][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_seq_counter_reg[5][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_seq_counter_reg[5][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_seq_counter_reg[5][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_seq_counter_reg[5][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_seq_counter_reg[5][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_seq_counter_reg[5][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_txheader_in_reg[5][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_txheader_in_reg[5][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].gt_txresetfsm} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].scrambler0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_dly_reg[5][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_data_int_reg[5][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_header_int_reg[5][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_header_int_reg[5][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_ready[5]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[5].tx_ready_reg[5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_seq_counter[6][0]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_seq_counter[6][1]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_seq_counter[6][2]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_seq_counter[6][3]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_seq_counter[6][4]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_seq_counter[6][5]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_seq_counter[6][6]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_seq_counter[6][7]_i_2} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_seq_counter[6][7]_i_3} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_seq_counter[6][7]_i_4} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_seq_counter_reg[6][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_seq_counter_reg[6][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_seq_counter_reg[6][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_seq_counter_reg[6][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_seq_counter_reg[6][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_seq_counter_reg[6][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_seq_counter_reg[6][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_seq_counter_reg[6][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_txheader_in_reg[6][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_txheader_in_reg[6][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].gt_txresetfsm} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].scrambler0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_dly_reg[6][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_data_int_reg[6][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_header_int_reg[6][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_header_int_reg[6][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_ready[6]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[6].tx_ready_reg[6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_seq_counter[7][0]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_seq_counter[7][1]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_seq_counter[7][2]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_seq_counter[7][3]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_seq_counter[7][4]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_seq_counter[7][5]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_seq_counter[7][6]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_seq_counter[7][7]_i_2} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_seq_counter[7][7]_i_3} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_seq_counter[7][7]_i_4} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_seq_counter_reg[7][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_seq_counter_reg[7][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_seq_counter_reg[7][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_seq_counter_reg[7][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_seq_counter_reg[7][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_seq_counter_reg[7][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_seq_counter_reg[7][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_seq_counter_reg[7][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_txheader_in_reg[7][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_txheader_in_reg[7][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].gt_txresetfsm} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].scrambler0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_dly_reg[7][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][10]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][11]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][12]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][13]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][14]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][15]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][16]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][17]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][18]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][19]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][20]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][21]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][22]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][23]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][24]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][25]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][26]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][27]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][28]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][29]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][2]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][30]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][31]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][3]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][4]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][5]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][6]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][7]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][8]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_data_int_reg[7][9]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_header_int_reg[7][0]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_header_int_reg[7][1]} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_ready[7]_i_1} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[7].tx_ready_reg[7]} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[5].rx_gen.rx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[5].tx_gen.tx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[6].rx_gen.rx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[6].tx_gen.tx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[7].rx_gen.rx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[7].tx_gen.tx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[8].rx_gen.rx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[8].tx_gen.tx0} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[5].binsel_i} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[6].binsel_i} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[7].binsel_i} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[8].binsel_i}}]
+add_cells_to_pblock [get_pblocks BP1] [get_cells { \
+			{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[4].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[5].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[6].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[7].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[5].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[6].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[7].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[8].*}  \
+			{chfpga0/*chan_crossbar0/BIN_SEL_GEN[5].*} \
+			{chfpga0/*chan_crossbar0/BIN_SEL_GEN[6].*} \
+			{chfpga0/*chan_crossbar0/BIN_SEL_GEN[7].*} \
+			{chfpga0/*chan_crossbar0/BIN_SEL_GEN[8].*} \
+			}]
 resize_pblock [get_pblocks BP1] -add {SLICE_X142Y0:SLICE_X189Y40}
 resize_pblock [get_pblocks BP1] -add {DSP48_X9Y0:DSP48_X11Y15}
 resize_pblock [get_pblocks BP1] -add {RAMB18_X9Y0:RAMB18_X11Y15}
 resize_pblock [get_pblocks BP1] -add {RAMB36_X9Y0:RAMB36_X11Y7}
+set_property IS_SOFT FALSE [get_pblocks BP1]
+
+
 create_pblock BP2
-add_cells_to_pblock [get_pblocks BP2] [get_cells -quiet {{chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[10].gt_rxresetfsm_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[10].gt_slave0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[10].gtx_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[11].gt_rxresetfsm_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[11].gt_slave0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[11].gtx_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[8].gt_rxresetfsm_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[8].gt_slave0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[8].gtx_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[9].gt_rxresetfsm_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[9].gt_slave0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[9].gtx_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[10].gt_txresetfsm} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[10].scrambler0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[11].gt_txresetfsm} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[11].scrambler0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[8].gt_txresetfsm} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[8].scrambler0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[9].gt_txresetfsm} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[9].scrambler0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[10].rx_gen.rx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[10].tx_gen.tx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[11].rx_gen.rx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[11].tx_gen.tx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[12].rx_gen.rx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[12].tx_gen.tx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[9].rx_gen.rx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[9].tx_gen.tx0} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[10].binsel_i} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[11].binsel_i} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[12].binsel_i} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[9].binsel_i}}]
+add_cells_to_pblock [get_pblocks BP2] [get_cells { \
+			{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[8].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[9].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[10].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[11].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[9].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[10].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[11].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[12].*}  \
+			{chfpga0/*chan_crossbar0/BIN_SEL_GEN[9].*} \
+			{chfpga0/*chan_crossbar0/BIN_SEL_GEN[10].*} \
+			{chfpga0/*chan_crossbar0/BIN_SEL_GEN[11].*} \
+			{chfpga0/*chan_crossbar0/BIN_SEL_GEN[12].*} \
+			}]
 resize_pblock [get_pblocks BP2] -add {SLICE_X180Y41:SLICE_X189Y99 SLICE_X142Y41:SLICE_X179Y74}
 resize_pblock [get_pblocks BP2] -add {DSP48_X11Y18:DSP48_X11Y39 DSP48_X9Y18:DSP48_X10Y29}
 resize_pblock [get_pblocks BP2] -add {RAMB18_X9Y18:RAMB18_X11Y29}
 resize_pblock [get_pblocks BP2] -add {RAMB36_X9Y9:RAMB36_X11Y14}
+set_property IS_SOFT FALSE [get_pblocks BP2]
+
+
 create_pblock BP3
-add_cells_to_pblock [get_pblocks BP3] [get_cells -quiet {{chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[12].gt_rxresetfsm_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[12].gt_slave0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[12].gtx_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[13].gt_rxresetfsm_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[13].gt_slave0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[13].gtx_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[14].gt_rxresetfsm_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[14].gt_slave0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[14].gtx_i} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[12].gt_txresetfsm} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[12].scrambler0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[13].gt_txresetfsm} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[13].scrambler0} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[14].gt_txresetfsm} {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[14].scrambler0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[13].rx_gen.rx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[13].tx_gen.tx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[14].rx_gen.rx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[14].tx_gen.tx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[15].rx_gen.rx0} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[15].tx_gen.tx0} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[13].binsel_i} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[14].binsel_i} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[15].binsel_i}}]
+add_cells_to_pblock [get_pblocks BP3] [get_cells { \
+			{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[12].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[13].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[14].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[13].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[14].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[15].*}  \
+			{chfpga0/*chan_crossbar0/BIN_SEL_GEN[13].*} \
+			{chfpga0/*chan_crossbar0/BIN_SEL_GEN[14].*} \
+			{chfpga0/*chan_crossbar0/BIN_SEL_GEN[15].*} \
+			}]
 resize_pblock [get_pblocks BP3] -add {SLICE_X144Y205:SLICE_X189Y234 SLICE_X140Y205:SLICE_X143Y249}
 resize_pblock [get_pblocks BP3] -add {DSP48_X10Y82:DSP48_X11Y93 DSP48_X9Y82:DSP48_X9Y99}
 resize_pblock [get_pblocks BP3] -add {RAMB18_X9Y82:RAMB18_X11Y93}
 resize_pblock [get_pblocks BP3] -add {RAMB36_X9Y41:RAMB36_X11Y46}
+set_property IS_SOFT FALSE [get_pblocks BP3]
+
+
 create_pblock BP4
-add_cells_to_pblock [get_pblocks BP4] [get_cells -quiet [list \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr[15][0]_i_7} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr[15][0]_i_9} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][0]_i_2} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][10]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][11]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][12]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][12]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][13]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][14]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][15]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][16]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][16]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][17]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][18]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][19]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][20]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][20]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][21]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][22]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][23]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][24]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][24]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][25]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][26]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][27]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][28]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][28]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][29]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][30]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][31]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][4]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][8]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][8]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].gt_err_ctr_reg[15][9]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[15].rxoutclk_bufg0} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr[16][0]_i_7} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr[16][0]_i_9} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][0]_i_2} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][10]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][11]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][12]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][12]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][13]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][14]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][15]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][16]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][16]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][17]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][18]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][19]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][20]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][20]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][21]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][22]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][23]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][24]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][24]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][25]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][26]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][27]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][28]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][28]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][29]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][30]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][31]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][4]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][8]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][8]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].gt_err_ctr_reg[16][9]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[16].rxoutclk_bufg0} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr[17][0]_i_7} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr[17][0]_i_9} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][0]_i_2} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][10]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][11]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][12]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][12]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][13]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][14]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][15]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][16]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][16]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][17]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][18]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][19]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][20]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][20]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][21]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][22]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][23]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][24]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][24]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][25]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][26]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][27]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][28]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][28]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][29]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][30]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][31]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][4]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][8]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][8]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].gt_err_ctr_reg[17][9]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[17].rxoutclk_bufg0} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr[18][0]_i_7} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr[18][0]_i_9} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][0]_i_2} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][10]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][11]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][12]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][12]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][13]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][14]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][15]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][16]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][16]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][17]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][18]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][19]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][20]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][20]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][21]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][22]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][23]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][24]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][24]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][25]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][26]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][27]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][28]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][28]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][29]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][30]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][31]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][4]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][8]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][8]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].gt_err_ctr_reg[18][9]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/gtx_gen[18].rxoutclk_bufg0} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].gt_capture_en_rxusrclk2_reg[15][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].gt_capture_en_rxusrclk2_reg[15][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].gt_rxheader_capture_reg[15][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].gt_rxheader_capture_reg[15][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].gt_unscrambled_data_valid_reg[15]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture[15][31]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][10]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][11]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][12]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][13]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][14]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][15]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][16]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][17]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][18]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][19]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][20]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][21]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][22]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][23]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][24]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][25]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][26]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][27]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][28]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][29]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][30]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][31]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][8]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_data_capture_reg[15][9]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_header_reg[15][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_header_reg[15][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[15].rx_header_valid_reg[15]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].gt_capture_en_rxusrclk2_reg[16][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].gt_capture_en_rxusrclk2_reg[16][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].gt_rxheader_capture_reg[16][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].gt_rxheader_capture_reg[16][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].gt_unscrambled_data_valid_reg[16]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture[16][31]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][10]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][11]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][12]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][13]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][14]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][15]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][16]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][17]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][18]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][19]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][20]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][21]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][22]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][23]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][24]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][25]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][26]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][27]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][28]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][29]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][30]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][31]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][8]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_data_capture_reg[16][9]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_header_reg[16][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_header_reg[16][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[16].rx_header_valid_reg[16]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].gt_capture_en_rxusrclk2_reg[17][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].gt_capture_en_rxusrclk2_reg[17][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].gt_rxheader_capture_reg[17][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].gt_rxheader_capture_reg[17][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].gt_unscrambled_data_valid_reg[17]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture[17][31]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][10]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][11]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][12]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][13]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][14]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][15]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][16]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][17]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][18]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][19]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][20]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][21]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][22]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][23]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][24]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][25]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][26]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][27]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][28]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][29]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][30]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][31]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][8]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_data_capture_reg[17][9]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_header_reg[17][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_header_reg[17][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[17].rx_header_valid_reg[17]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].gt_capture_en_rxusrclk2_reg[18][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].gt_capture_en_rxusrclk2_reg[18][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].gt_rxheader_capture_reg[18][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].gt_rxheader_capture_reg[18][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].gt_unscrambled_data_valid_reg[18]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture[18][31]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][10]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][11]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][12]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][13]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][14]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][15]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][16]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][17]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][18]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][19]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][20]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][21]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][22]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][23]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][24]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][25]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][26]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][27]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][28]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][29]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][30]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][31]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][8]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_data_capture_reg[18][9]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_header_reg[18][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_header_reg[18][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/rx_gen[18].rx_header_valid_reg[18]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_seq_counter[15][0]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_seq_counter[15][1]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_seq_counter[15][2]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_seq_counter[15][3]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_seq_counter[15][4]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_seq_counter[15][5]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_seq_counter[15][6]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_seq_counter[15][7]_i_2} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_seq_counter[15][7]_i_3} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_seq_counter[15][7]_i_4} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_seq_counter_reg[15][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_seq_counter_reg[15][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_seq_counter_reg[15][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_seq_counter_reg[15][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_seq_counter_reg[15][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_seq_counter_reg[15][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_seq_counter_reg[15][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_seq_counter_reg[15][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_txheader_in_reg[15][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].gt_txheader_in_reg[15][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][10]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][11]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][12]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][13]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][14]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][15]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][16]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][17]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][18]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][19]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][20]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][21]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][22]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][23]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][24]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][25]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][26]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][27]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][28]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][29]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][30]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][31]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][8]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_dly_reg[15][9]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][10]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][11]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][12]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][13]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][14]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][15]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][16]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][17]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][18]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][19]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][20]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][21]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][22]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][23]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][24]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][25]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][26]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][27]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][28]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][29]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][30]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][31]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][8]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_data_int_reg[15][9]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_header_int_reg[15][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_header_int_reg[15][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_ready[15]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[15].tx_ready_reg[15]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_seq_counter[16][0]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_seq_counter[16][1]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_seq_counter[16][2]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_seq_counter[16][3]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_seq_counter[16][4]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_seq_counter[16][5]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_seq_counter[16][6]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_seq_counter[16][7]_i_2} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_seq_counter[16][7]_i_3} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_seq_counter[16][7]_i_4} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_seq_counter_reg[16][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_seq_counter_reg[16][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_seq_counter_reg[16][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_seq_counter_reg[16][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_seq_counter_reg[16][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_seq_counter_reg[16][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_seq_counter_reg[16][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_seq_counter_reg[16][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_txheader_in_reg[16][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].gt_txheader_in_reg[16][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][10]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][11]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][12]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][13]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][14]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][15]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][16]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][17]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][18]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][19]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][20]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][21]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][22]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][23]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][24]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][25]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][26]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][27]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][28]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][29]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][30]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][31]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][8]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_dly_reg[16][9]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][10]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][11]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][12]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][13]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][14]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][15]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][16]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][17]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][18]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][19]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][20]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][21]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][22]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][23]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][24]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][25]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][26]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][27]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][28]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][29]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][30]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][31]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][8]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_data_int_reg[16][9]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_header_int_reg[16][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_header_int_reg[16][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_ready[16]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[16].tx_ready_reg[16]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_seq_counter[17][0]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_seq_counter[17][1]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_seq_counter[17][2]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_seq_counter[17][3]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_seq_counter[17][4]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_seq_counter[17][5]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_seq_counter[17][6]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_seq_counter[17][7]_i_2} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_seq_counter[17][7]_i_3} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_seq_counter[17][7]_i_4} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_seq_counter_reg[17][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_seq_counter_reg[17][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_seq_counter_reg[17][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_seq_counter_reg[17][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_seq_counter_reg[17][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_seq_counter_reg[17][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_seq_counter_reg[17][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_seq_counter_reg[17][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_txheader_in_reg[17][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].gt_txheader_in_reg[17][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][10]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][11]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][12]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][13]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][14]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][15]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][16]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][17]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][18]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][19]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][20]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][21]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][22]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][23]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][24]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][25]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][26]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][27]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][28]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][29]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][30]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][31]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][8]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_dly_reg[17][9]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][10]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][11]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][12]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][13]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][14]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][15]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][16]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][17]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][18]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][19]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][20]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][21]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][22]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][23]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][24]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][25]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][26]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][27]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][28]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][29]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][30]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][31]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][8]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_data_int_reg[17][9]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_header_int_reg[17][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_header_int_reg[17][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_ready[17]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[17].tx_ready_reg[17]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_seq_counter[18][0]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_seq_counter[18][1]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_seq_counter[18][2]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_seq_counter[18][3]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_seq_counter[18][4]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_seq_counter[18][5]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_seq_counter[18][6]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_seq_counter[18][7]_i_2} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_seq_counter[18][7]_i_3} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_seq_counter[18][7]_i_4} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_seq_counter_reg[18][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_seq_counter_reg[18][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_seq_counter_reg[18][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_seq_counter_reg[18][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_seq_counter_reg[18][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_seq_counter_reg[18][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_seq_counter_reg[18][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_seq_counter_reg[18][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_txheader_in_reg[18][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].gt_txheader_in_reg[18][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][10]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][11]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][12]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][13]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][14]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][15]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][16]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][17]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][18]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][19]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][20]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][21]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][22]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][23]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][24]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][25]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][26]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][27]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][28]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][29]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][30]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][31]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][8]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_dly_reg[18][9]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][10]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][11]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][12]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][13]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][14]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][15]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][16]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][17]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][18]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][19]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][20]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][21]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][22]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][23]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][24]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][25]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][26]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][27]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][28]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][29]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][2]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][30]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][31]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][3]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][4]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][5]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][6]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][7]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][8]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_data_int_reg[18][9]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_header_int_reg[18][0]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_header_int_reg[18][1]} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_ready[18]_i_1} \
-          {chfpga0/BPSHFGEN.bp_shuffle0/core0/tx_gen[18].tx_ready_reg[18]} \
-          {chfpga0/CROSSBAR2_GEN.crossbar2/BIN_SEL_GEN[0].binsel_i} \
-          {chfpga0/CROSSBAR2_GEN.crossbar2/BIN_SEL_GEN[1].binsel_i} \
-          chfpga0/CROSSBAR2_GEN.crossbar2/CTRL_SLAVE0 \
-          chfpga0/CROSSBAR2_GEN.crossbar2/align0 \
-          chfpga0/CROSSBAR2_GEN.crossbar2/crossbar_router0 \
-          chfpga0/CROSSBAR2_GEN.crossbar2/remap0]]
+add_cells_to_pblock [get_pblocks BP4] [get_cells  { \
+			{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[15].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[16].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[17].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[18].*} \
+          {chfpga0/CROSSBAR23_GEN.crossbar2/BIN_SEL_GEN[0].*} \
+          {chfpga0/CROSSBAR23_GEN.crossbar2/BIN_SEL_GEN[1].*} \
+          chfpga0/CROSSBAR23_GEN.crossbar2/CTRL_SLAVE0 \
+          chfpga0/CROSSBAR23_GEN.crossbar2/align0 \
+          chfpga0/CROSSBAR23_GEN.crossbar2/crossbar_router0 \
+          chfpga0/CROSSBAR23_GEN.crossbar2/remap0
+          }]
+
+# Not included
+			# {chfpga0/*chan_crossbar0/BIN_SEL_GEN[16].*} \
+			# {chfpga0/*chan_crossbar0/BIN_SEL_GEN[17].*} \
+			# {chfpga0/*chan_crossbar0/BIN_SEL_GEN[18].*} \
+			# {chfpga0/*chan_crossbar0/BIN_SEL_GEN[19].*} \
+			# {chfpga0/*chan_crossbar0/BIN_SEL_GEN[20].*} \
+			# {chfpga0/*chan_crossbar0/BIN_SEL_GEN[21].*} \
+			# {chfpga0/*chan_crossbar0/BIN_SEL_GEN[22].*} \
+			# {chfpga0/*chan_crossbar0/BIN_SEL_GEN[23].*} \
+
 resize_pblock [get_pblocks BP4] -add {SLICE_X180Y100:SLICE_X189Y159 SLICE_X140Y115:SLICE_X179Y159}
 resize_pblock [get_pblocks BP4] -add {DSP48_X11Y40:DSP48_X11Y63 DSP48_X9Y46:DSP48_X10Y63}
 resize_pblock [get_pblocks BP4] -add {RAMB18_X9Y46:RAMB18_X11Y63}
 resize_pblock [get_pblocks BP4] -add {RAMB36_X9Y23:RAMB36_X11Y31}
-
-
-
+set_property IS_SOFT TRUE [get_pblocks BP4]
+# set_property EXCLUDE_PLACEMENT TRUE [get_pblocks BP4]
 
 
 create_pblock ALIGN2
-add_cells_to_pblock [get_pblocks ALIGN2] [get_cells -quiet {chfpga0/*chan_crossbar0/CTRL_SLAVE0 chfpga0/*chan_crossbar0/align0}]
+add_cells_to_pblock [get_pblocks ALIGN2] [get_cells -quiet { \
+	chfpga0/*chan_crossbar0/CTRL_SLAVE0 \
+	chfpga0/*chan_crossbar0/align0 \
+	}]
 resize_pblock [get_pblocks ALIGN2] -add {SLICE_X140Y75:SLICE_X179Y114}
 resize_pblock [get_pblocks ALIGN2] -add {DSP48_X9Y30:DSP48_X10Y45}
 resize_pblock [get_pblocks ALIGN2] -add {RAMB18_X9Y30:RAMB18_X11Y45}
 resize_pblock [get_pblocks ALIGN2] -add {RAMB36_X9Y15:RAMB36_X11Y22}
+
+
 create_pblock ALIGN3
 add_cells_to_pblock [get_pblocks ALIGN3] [get_cells -quiet [list \
-          chfpga0/CROSSBAR2_GEN.crossbar3/CTRL_SLAVE0 \
-          chfpga0/CROSSBAR2_GEN.crossbar3/align0 \
-          chfpga0/CROSSBAR2_GEN.crossbar3/crossbar_router0 \
-          chfpga0/CROSSBAR2_GEN.crossbar3/remap0 \
+          chfpga0/CROSSBAR23_GEN.crossbar3/CTRL_SLAVE0 \
+          chfpga0/CROSSBAR23_GEN.crossbar3/align0 \
+          chfpga0/CROSSBAR23_GEN.crossbar3/crossbar_router0 \
+          chfpga0/CROSSBAR23_GEN.crossbar3/remap0 \
           chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/GND \
           chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/VCC \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[0]_i_2} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[10]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[11]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[12]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[12]_i_1} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[13]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[14]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[15]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[4]_i_1} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[8]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[8]_i_1} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet_ctr_reg[9]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tdata_reg[0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tdata_reg[10]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tdata_reg[11]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tdata_reg[12]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tdata_reg[13]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tdata_reg[14]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tdata_reg[15]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tdata_reg[1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tdata_reg[2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tdata_reg[3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tdata_reg[4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tdata_reg[5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tdata_reg[6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tdata_reg[7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tdata_reg[8]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tdata_reg[9]} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_packet*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tdata*} \
           chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tlast_reg \
-          chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tvalid_i_4 \
-          chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tvalid_i_5 \
-          chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tvalid_reg \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[0].data_overflow_sticky_reg[0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[0].frame_overflow_sticky_reg[0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[1].data_overflow_sticky_reg[1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[1].frame_overflow_sticky_reg[1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[2].data_overflow_sticky_reg[2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[2].frame_overflow_sticky_reg[2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[3].data_overflow_sticky_reg[3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[3].frame_overflow_sticky_reg[3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[4].data_overflow_sticky_reg[4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[4].frame_overflow_sticky_reg[4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[5].data_overflow_sticky_reg[5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[5].frame_overflow_sticky_reg[5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[6].data_overflow_sticky_reg[6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[6].frame_overflow_sticky_reg[6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[7].data_overflow_sticky_reg[7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[7].frame_overflow_sticky_reg[7]} \
+          chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/test_tvalid* \
           chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/CTRL_ROUTER0 \
-          chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/GND \
-          chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/VCC \
           chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/common_slave0 \
           {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[7].rxoutclk_bufg0} \
           {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/ibuf_gen[0].ibufds0} \
@@ -1949,993 +1140,159 @@ add_cells_to_pblock [get_pblocks ALIGN3] [get_cells -quiet [list \
           {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/quad_gen[1].gtxe2_common_0_i} \
           {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/quad_gen[1].quad_slave0} \
           chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/refclk_bufg0 \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/reset_counter[0]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/reset_counter[1]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/reset_counter[2]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/reset_counter[3]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/reset_counter[4]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/reset_counter[5]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/reset_counter[6]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/reset_counter_reg[0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/reset_counter_reg[1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/reset_counter_reg[2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/reset_counter_reg[3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/reset_counter_reg[4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/reset_counter_reg[5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/reset_counter_reg[6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/reset_pulse_reg[0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/reset_pulse_reg[1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/reset_pulse_reg[2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/reset_pulse_reg[3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/rx_cdrlock_counter[0]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/rx_cdrlock_counter[1]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/rx_cdrlock_counter[2]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/rx_cdrlock_counter[3]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/rx_cdrlock_counter[4]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/rx_cdrlock_counter[5]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/rx_cdrlock_counter[7]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/rx_cdrlock_counter[7]_i_2__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/rx_cdrlock_counter_reg[0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/rx_cdrlock_counter_reg[1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/rx_cdrlock_counter_reg[2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/rx_cdrlock_counter_reg[3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/rx_cdrlock_counter_reg[4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/rx_cdrlock_counter_reg[5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/rx_cdrlock_counter_reg[6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/rx_cdrlock_counter_reg[7]} \
-          chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/rx_cdrlocked_reg \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_seq_counter[0][0]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_seq_counter[0][1]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_seq_counter[0][2]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_seq_counter[0][3]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_seq_counter[0][4]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_seq_counter[0][5]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_seq_counter[0][6]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_seq_counter[0][7]_i_2__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_seq_counter[0][7]_i_3__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_seq_counter[0][7]_i_4__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_seq_counter_reg[0][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_seq_counter_reg[0][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_seq_counter_reg[0][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_seq_counter_reg[0][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_seq_counter_reg[0][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_seq_counter_reg[0][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_seq_counter_reg[0][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_seq_counter_reg[0][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_txheader_in_reg[0][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_txheader_in_reg[0][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][10]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][11]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][12]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][13]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][14]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][15]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][16]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][17]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][18]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][19]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][20]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][21]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][22]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][23]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][24]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][25]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][26]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][27]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][28]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][29]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][30]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][31]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][8]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_dly_reg[0][9]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][10]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][11]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][12]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][13]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][14]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][15]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][16]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][17]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][18]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][19]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][20]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][21]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][22]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][23]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][24]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][25]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][26]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][27]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][28]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][29]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][30]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][31]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][8]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_data_int_reg[0][9]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_header_int_reg[0][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_header_int_reg[0][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].tx_ready_reg[0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_seq_counter[1][0]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_seq_counter[1][1]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_seq_counter[1][2]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_seq_counter[1][3]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_seq_counter[1][4]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_seq_counter[1][5]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_seq_counter[1][6]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_seq_counter[1][7]_i_2__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_seq_counter[1][7]_i_3__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_seq_counter[1][7]_i_4__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_seq_counter_reg[1][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_seq_counter_reg[1][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_seq_counter_reg[1][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_seq_counter_reg[1][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_seq_counter_reg[1][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_seq_counter_reg[1][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_seq_counter_reg[1][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_seq_counter_reg[1][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_txheader_in_reg[1][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_txheader_in_reg[1][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][10]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][11]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][12]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][13]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][14]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][15]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][16]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][17]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][18]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][19]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][20]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][21]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][22]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][23]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][24]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][25]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][26]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][27]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][28]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][29]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][30]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][31]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][8]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_dly_reg[1][9]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][10]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][11]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][12]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][13]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][14]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][15]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][16]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][17]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][18]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][19]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][20]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][21]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][22]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][23]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][24]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][25]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][26]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][27]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][28]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][29]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][30]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][31]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][8]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_data_int_reg[1][9]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_header_int_reg[1][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_header_int_reg[1][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].tx_ready_reg[1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_seq_counter[2][0]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_seq_counter[2][1]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_seq_counter[2][2]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_seq_counter[2][3]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_seq_counter[2][4]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_seq_counter[2][5]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_seq_counter[2][6]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_seq_counter[2][7]_i_2__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_seq_counter[2][7]_i_3__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_seq_counter[2][7]_i_4__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_seq_counter_reg[2][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_seq_counter_reg[2][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_seq_counter_reg[2][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_seq_counter_reg[2][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_seq_counter_reg[2][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_seq_counter_reg[2][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_seq_counter_reg[2][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_seq_counter_reg[2][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_txheader_in_reg[2][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_txheader_in_reg[2][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][10]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][11]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][12]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][13]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][14]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][15]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][16]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][17]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][18]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][19]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][20]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][21]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][22]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][23]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][24]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][25]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][26]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][27]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][28]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][29]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][30]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][31]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][8]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_dly_reg[2][9]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][10]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][11]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][12]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][13]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][14]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][15]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][16]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][17]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][18]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][19]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][20]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][21]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][22]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][23]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][24]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][25]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][26]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][27]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][28]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][29]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][30]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][31]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][8]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_data_int_reg[2][9]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_header_int_reg[2][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_header_int_reg[2][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].tx_ready_reg[2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_seq_counter[3][0]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_seq_counter[3][1]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_seq_counter[3][2]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_seq_counter[3][3]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_seq_counter[3][4]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_seq_counter[3][5]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_seq_counter[3][6]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_seq_counter[3][7]_i_2__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_seq_counter[3][7]_i_3__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_seq_counter[3][7]_i_4__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_seq_counter_reg[3][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_seq_counter_reg[3][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_seq_counter_reg[3][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_seq_counter_reg[3][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_seq_counter_reg[3][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_seq_counter_reg[3][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_seq_counter_reg[3][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_seq_counter_reg[3][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_txheader_in_reg[3][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_txheader_in_reg[3][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][10]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][11]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][12]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][13]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][14]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][15]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][16]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][17]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][18]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][19]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][20]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][21]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][22]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][23]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][24]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][25]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][26]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][27]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][28]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][29]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][30]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][31]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][8]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_dly_reg[3][9]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][10]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][11]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][12]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][13]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][14]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][15]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][16]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][17]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][18]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][19]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][20]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][21]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][22]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][23]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][24]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][25]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][26]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][27]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][28]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][29]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][30]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][31]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][8]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_data_int_reg[3][9]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_header_int_reg[3][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_header_int_reg[3][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].tx_ready_reg[3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_seq_counter[4][0]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_seq_counter[4][1]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_seq_counter[4][2]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_seq_counter[4][3]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_seq_counter[4][4]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_seq_counter[4][5]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_seq_counter[4][6]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_seq_counter[4][7]_i_2__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_seq_counter[4][7]_i_3__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_seq_counter[4][7]_i_4__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_seq_counter_reg[4][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_seq_counter_reg[4][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_seq_counter_reg[4][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_seq_counter_reg[4][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_seq_counter_reg[4][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_seq_counter_reg[4][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_seq_counter_reg[4][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_seq_counter_reg[4][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_txheader_in_reg[4][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_txheader_in_reg[4][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][10]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][11]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][12]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][13]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][14]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][15]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][16]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][17]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][18]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][19]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][20]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][21]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][22]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][23]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][24]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][25]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][26]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][27]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][28]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][29]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][30]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][31]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][8]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_dly_reg[4][9]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][10]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][11]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][12]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][13]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][14]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][15]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][16]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][17]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][18]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][19]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][20]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][21]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][22]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][23]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][24]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][25]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][26]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][27]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][28]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][29]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][30]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][31]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][8]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_data_int_reg[4][9]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_header_int_reg[4][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_header_int_reg[4][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].tx_ready_reg[4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_seq_counter[5][0]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_seq_counter[5][1]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_seq_counter[5][2]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_seq_counter[5][3]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_seq_counter[5][4]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_seq_counter[5][5]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_seq_counter[5][6]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_seq_counter[5][7]_i_2__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_seq_counter[5][7]_i_3__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_seq_counter[5][7]_i_4__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_seq_counter_reg[5][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_seq_counter_reg[5][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_seq_counter_reg[5][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_seq_counter_reg[5][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_seq_counter_reg[5][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_seq_counter_reg[5][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_seq_counter_reg[5][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_seq_counter_reg[5][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_txheader_in_reg[5][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_txheader_in_reg[5][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][10]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][11]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][12]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][13]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][14]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][15]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][16]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][17]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][18]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][19]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][20]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][21]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][22]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][23]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][24]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][25]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][26]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][27]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][28]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][29]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][30]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][31]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][8]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_dly_reg[5][9]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][10]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][11]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][12]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][13]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][14]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][15]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][16]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][17]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][18]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][19]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][20]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][21]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][22]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][23]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][24]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][25]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][26]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][27]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][28]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][29]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][30]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][31]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][8]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_data_int_reg[5][9]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_header_int_reg[5][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_header_int_reg[5][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].tx_ready_reg[5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_seq_counter[6][0]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_seq_counter[6][1]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_seq_counter[6][2]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_seq_counter[6][3]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_seq_counter[6][4]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_seq_counter[6][5]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_seq_counter[6][6]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_seq_counter[6][7]_i_2__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_seq_counter[6][7]_i_3__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_seq_counter[6][7]_i_4__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_seq_counter_reg[6][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_seq_counter_reg[6][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_seq_counter_reg[6][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_seq_counter_reg[6][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_seq_counter_reg[6][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_seq_counter_reg[6][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_seq_counter_reg[6][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_seq_counter_reg[6][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_txheader_in_reg[6][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_txheader_in_reg[6][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][10]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][11]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][12]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][13]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][14]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][15]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][16]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][17]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][18]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][19]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][20]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][21]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][22]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][23]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][24]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][25]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][26]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][27]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][28]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][29]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][30]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][31]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][8]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_dly_reg[6][9]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][10]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][11]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][12]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][13]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][14]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][15]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][16]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][17]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][18]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][19]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][20]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][21]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][22]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][23]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][24]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][25]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][26]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][27]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][28]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][29]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][30]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][31]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][8]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_data_int_reg[6][9]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_header_int_reg[6][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_header_int_reg[6][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].tx_ready_reg[6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_seq_counter[7][0]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_seq_counter[7][1]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_seq_counter[7][2]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_seq_counter[7][3]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_seq_counter[7][4]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_seq_counter[7][5]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_seq_counter[7][6]_i_1__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_seq_counter[7][7]_i_2__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_seq_counter[7][7]_i_3__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_seq_counter[7][7]_i_4__0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_seq_counter_reg[7][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_seq_counter_reg[7][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_seq_counter_reg[7][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_seq_counter_reg[7][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_seq_counter_reg[7][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_seq_counter_reg[7][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_seq_counter_reg[7][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_seq_counter_reg[7][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_txheader_in_reg[7][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_txheader_in_reg[7][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][10]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][11]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][12]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][13]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][14]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][15]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][16]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][17]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][18]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][19]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][20]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][21]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][22]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][23]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][24]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][25]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][26]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][27]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][28]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][29]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][30]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][31]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][8]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_dly_reg[7][9]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][10]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][11]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][12]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][13]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][14]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][15]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][16]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][17]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][18]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][19]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][20]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][21]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][22]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][23]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][24]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][25]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][26]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][27]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][28]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][29]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][2]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][30]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][31]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][3]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][4]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][5]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][6]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][7]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][8]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_data_int_reg[7][9]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_header_int_reg[7][0]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_header_int_reg[7][1]} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].tx_ready_reg[7]} \
-          chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/txclk_div2_int_i_1__0 \
-          chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/txclk_div2_int_reg \
-          chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/txoutclk_bufg0]]
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/reset_*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/rx_cdrlock*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[*].*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/txclk_div2_*} \
+          chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/txoutclk_bufg0 \
+          ]]
 resize_pblock [get_pblocks ALIGN3] -add {SLICE_X150Y290:SLICE_X189Y309 SLICE_X142Y295:SLICE_X149Y304}
 resize_pblock [get_pblocks ALIGN3] -add {DSP48_X10Y116:DSP48_X11Y123 DSP48_X9Y118:DSP48_X9Y121}
 resize_pblock [get_pblocks ALIGN3] -add {RAMB18_X10Y116:RAMB18_X11Y123 RAMB18_X9Y118:RAMB18_X9Y121}
 resize_pblock [get_pblocks ALIGN3] -add {RAMB36_X10Y58:RAMB36_X11Y61 RAMB36_X9Y59:RAMB36_X9Y60}
 
 
-
-
-
-
-
-
 create_pblock GPU0
 add_cells_to_pblock [get_pblocks GPU0] [get_cells -quiet [list \
-          {chfpga0/CROSSBAR2_GEN.crossbar3/BIN_SEL_GEN[0].binsel_i} \
-          {chfpga0/CROSSBAR2_GEN.crossbar3/BIN_SEL_GEN[1].binsel_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[0].udp0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[1].udp0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[0].gt_rxresetfsm_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[0].gt_slave0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[0].gtx_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[1].gt_rxresetfsm_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[1].gt_slave0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[1].gtx_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].gt_txresetfsm} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[0].scrambler0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].gt_txresetfsm} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].scrambler0}]]
+          {chfpga0/CROSSBAR23_GEN.crossbar3/BIN_SEL_GEN[0].*} \
+          {chfpga0/CROSSBAR23_GEN.crossbar3/BIN_SEL_GEN[1].*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[0].*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[1].*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/*x_gen[0].*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/*x_gen[1].*} \
+		]]
+
 resize_pblock [get_pblocks GPU0] -add {SLICE_X142Y250:SLICE_X189Y269 SLICE_X144Y245:SLICE_X149Y249}
 resize_pblock [get_pblocks GPU0] -add {DSP48_X9Y100:DSP48_X11Y107}
 resize_pblock [get_pblocks GPU0] -add {RAMB18_X10Y100:RAMB18_X11Y107 RAMB18_X9Y98:RAMB18_X9Y107}
 resize_pblock [get_pblocks GPU0] -add {RAMB36_X10Y50:RAMB36_X11Y53 RAMB36_X9Y49:RAMB36_X9Y53}
+
+
 create_pblock GPU1
 add_cells_to_pblock [get_pblocks GPU1] [get_cells -quiet [list \
-          {chfpga0/CROSSBAR2_GEN.crossbar3/BIN_SEL_GEN[2].binsel_i} \
-          {chfpga0/CROSSBAR2_GEN.crossbar3/BIN_SEL_GEN[3].binsel_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[2].udp0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[3].udp0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[2].gt_rxresetfsm_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[2].gt_slave0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[2].gtx_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[3].gt_rxresetfsm_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[3].gt_slave0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[3].gtx_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].gt_txresetfsm} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[2].scrambler0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].gt_txresetfsm} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].scrambler0}]]
+          {chfpga0/CROSSBAR23_GEN.crossbar3/BIN_SEL_GEN[2].*} \
+          {chfpga0/CROSSBAR23_GEN.crossbar3/BIN_SEL_GEN[3].*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[2].*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[3].*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/*x_gen[2].*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/*x_gen[3].*} \
+          ]]
 resize_pblock [get_pblocks GPU1] -add {SLICE_X150Y270:SLICE_X189Y289 SLICE_X142Y270:SLICE_X149Y294}
 resize_pblock [get_pblocks GPU1] -add {DSP48_X10Y108:DSP48_X11Y115 DSP48_X9Y108:DSP48_X9Y117}
 resize_pblock [get_pblocks GPU1] -add {RAMB18_X10Y108:RAMB18_X11Y115 RAMB18_X9Y108:RAMB18_X9Y117}
 resize_pblock [get_pblocks GPU1] -add {RAMB36_X10Y54:RAMB36_X11Y57 RAMB36_X9Y54:RAMB36_X9Y58}
+
+
 create_pblock GPU2
 add_cells_to_pblock [get_pblocks GPU2] [get_cells -quiet [list \
-          {chfpga0/CROSSBAR2_GEN.crossbar3/BIN_SEL_GEN[4].binsel_i} \
-          {chfpga0/CROSSBAR2_GEN.crossbar3/BIN_SEL_GEN[5].binsel_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[4].udp0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[5].udp0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[4].gt_rxresetfsm_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[4].gt_slave0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[4].gtx_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[5].gt_rxresetfsm_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[5].gt_slave0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[5].gtx_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].gt_txresetfsm} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[4].scrambler0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].gt_txresetfsm} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].scrambler0}]]
+          {chfpga0/CROSSBAR23_GEN.crossbar3/BIN_SEL_GEN[4].*} \
+          {chfpga0/CROSSBAR23_GEN.crossbar3/BIN_SEL_GEN[5].*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[4].*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[5].*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/*x_gen[4].*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/*x_gen[5].*} \
+		]]
 resize_pblock [get_pblocks GPU2] -add {SLICE_X150Y310:SLICE_X189Y329 SLICE_X142Y305:SLICE_X149Y329}
 resize_pblock [get_pblocks GPU2] -add {DSP48_X10Y124:DSP48_X11Y131 DSP48_X9Y122:DSP48_X9Y131}
 resize_pblock [get_pblocks GPU2] -add {RAMB18_X10Y124:RAMB18_X11Y131 RAMB18_X9Y122:RAMB18_X9Y131}
 resize_pblock [get_pblocks GPU2] -add {RAMB36_X10Y62:RAMB36_X11Y65 RAMB36_X9Y61:RAMB36_X9Y65}
+
+
 create_pblock GPU3
 add_cells_to_pblock [get_pblocks GPU3] [get_cells -quiet [list \
-          {chfpga0/CROSSBAR2_GEN.crossbar3/BIN_SEL_GEN[6].binsel_i} \
-          {chfpga0/CROSSBAR2_GEN.crossbar3/BIN_SEL_GEN[7].binsel_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[6].udp0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[7].udp0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[6].gt_rxresetfsm_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[6].gt_slave0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[6].gtx_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[7].gt_rxresetfsm_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[7].gt_slave0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[7].gtx_i} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].gt_txresetfsm} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[6].scrambler0} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].gt_txresetfsm} \
-          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].scrambler0}]]
+          {chfpga0/CROSSBAR23_GEN.crossbar3/BIN_SEL_GEN[6].*} \
+          {chfpga0/CROSSBAR23_GEN.crossbar3/BIN_SEL_GEN[7].*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[6].*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[7].*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/*x_gen[6].*} \
+          {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/*x_gen[7].*} \
+		]]
 resize_pblock [get_pblocks GPU3] -add {SLICE_X150Y330:SLICE_X189Y349 SLICE_X142Y330:SLICE_X149Y354}
 resize_pblock [get_pblocks GPU3] -add {DSP48_X10Y132:DSP48_X11Y139 DSP48_X9Y132:DSP48_X9Y141}
 resize_pblock [get_pblocks GPU3] -add {RAMB18_X10Y132:RAMB18_X11Y139 RAMB18_X9Y132:RAMB18_X9Y141}
 resize_pblock [get_pblocks GPU3] -add {RAMB36_X10Y66:RAMB36_X11Y69 RAMB36_X9Y66:RAMB36_X9Y70}
 
 
-
-
-
-
-
 create_pblock ADCDAQ0
-add_cells_to_pblock [get_pblocks ADCDAQ0] [get_cells -quiet [list {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[0].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ0] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[0].*}]]
 resize_pblock [get_pblocks ADCDAQ0] -add {SLICE_X0Y169:SLICE_X7Y186}
 resize_pblock [get_pblocks ADCDAQ0] -add {RAMB18_X0Y70:RAMB18_X0Y71}
 resize_pblock [get_pblocks ADCDAQ0] -add {RAMB36_X0Y35:RAMB36_X0Y35}
 create_pblock ADCDAQ1
-add_cells_to_pblock [get_pblocks ADCDAQ1] [get_cells -quiet [list {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[1].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ1] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[1].*}]]
 resize_pblock [get_pblocks ADCDAQ1] -add {SLICE_X0Y152:SLICE_X7Y168}
 resize_pblock [get_pblocks ADCDAQ1] -add {RAMB18_X0Y68:RAMB18_X0Y69}
 resize_pblock [get_pblocks ADCDAQ1] -add {RAMB36_X0Y34:RAMB36_X0Y34}
 create_pblock ADCDAQ2
-add_cells_to_pblock [get_pblocks ADCDAQ2] [get_cells -quiet [list {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[2].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ2] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[2].*}]]
 resize_pblock [get_pblocks ADCDAQ2] -add {SLICE_X0Y125:SLICE_X7Y142 SLICE_X0Y96:SLICE_X7Y97}
 resize_pblock [get_pblocks ADCDAQ2] -add {RAMB18_X0Y50:RAMB18_X0Y51}
 resize_pblock [get_pblocks ADCDAQ2] -add {RAMB36_X0Y25:RAMB36_X0Y25}
 create_pblock ADCDAQ3
-add_cells_to_pblock [get_pblocks ADCDAQ3] [get_cells -quiet [list {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[3].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ3] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[3].*}]]
 resize_pblock [get_pblocks ADCDAQ3] -add {SLICE_X0Y98:SLICE_X7Y116}
 resize_pblock [get_pblocks ADCDAQ3] -add {RAMB18_X0Y40:RAMB18_X0Y41}
 resize_pblock [get_pblocks ADCDAQ3] -add {RAMB36_X0Y20:RAMB36_X0Y20}
 create_pblock ADCDAQ4
-add_cells_to_pblock [get_pblocks ADCDAQ4] [get_cells -quiet [list {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[4].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ4] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[4].*}]]
 resize_pblock [get_pblocks ADCDAQ4] -add {SLICE_X0Y7:SLICE_X7Y24}
 resize_pblock [get_pblocks ADCDAQ4] -add {RAMB18_X0Y8:RAMB18_X0Y9}
 resize_pblock [get_pblocks ADCDAQ4] -add {RAMB36_X0Y4:RAMB36_X0Y4}
 create_pblock ADCDAQ5
-add_cells_to_pblock [get_pblocks ADCDAQ5] [get_cells -quiet [list {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[5].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ5] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[5].*}]]
 resize_pblock [get_pblocks ADCDAQ5] -add {SLICE_X0Y30:SLICE_X7Y49}
 resize_pblock [get_pblocks ADCDAQ5] -add {RAMB18_X0Y18:RAMB18_X0Y19}
 resize_pblock [get_pblocks ADCDAQ5] -add {RAMB36_X0Y9:RAMB36_X0Y9}
 create_pblock ADCDAQ6
-add_cells_to_pblock [get_pblocks ADCDAQ6] [get_cells -quiet [list {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[6].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ6] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[6].*}]]
 resize_pblock [get_pblocks ADCDAQ6] -add {SLICE_X0Y57:SLICE_X7Y74}
 resize_pblock [get_pblocks ADCDAQ6] -add {RAMB18_X0Y28:RAMB18_X0Y29}
 resize_pblock [get_pblocks ADCDAQ6] -add {RAMB36_X0Y14:RAMB36_X0Y14}
 create_pblock ADCDAQ7
-add_cells_to_pblock [get_pblocks ADCDAQ7] [get_cells -quiet [list {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[7].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ7] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[7].*}]]
 resize_pblock [get_pblocks ADCDAQ7] -add {SLICE_X0Y75:SLICE_X7Y92}
 resize_pblock [get_pblocks ADCDAQ7] -add {RAMB18_X0Y30:RAMB18_X0Y31}
 resize_pblock [get_pblocks ADCDAQ7] -add {RAMB36_X0Y15:RAMB36_X0Y15}
 create_pblock ADCDAQ8
-add_cells_to_pblock [get_pblocks ADCDAQ8] [get_cells -quiet [list {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[8].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ8] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[8].*}]]
 resize_pblock [get_pblocks ADCDAQ8] -add {SLICE_X0Y281:SLICE_X7Y298}
 resize_pblock [get_pblocks ADCDAQ8] -add {RAMB18_X0Y118:RAMB18_X0Y119}
 resize_pblock [get_pblocks ADCDAQ8] -add {RAMB36_X0Y59:RAMB36_X0Y59}
 create_pblock ADCDAQ9
-add_cells_to_pblock [get_pblocks ADCDAQ9] [get_cells -quiet [list {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[9].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ9] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[9].*}]]
 resize_pblock [get_pblocks ADCDAQ9] -add {SLICE_X0Y257:SLICE_X7Y274}
 resize_pblock [get_pblocks ADCDAQ9] -add {RAMB18_X0Y108:RAMB18_X0Y109}
 resize_pblock [get_pblocks ADCDAQ9] -add {RAMB36_X0Y54:RAMB36_X0Y54}
 create_pblock ADCDAQ10
-add_cells_to_pblock [get_pblocks ADCDAQ10] [get_cells -quiet [list {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[10].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ10] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[10].*}]]
 resize_pblock [get_pblocks ADCDAQ10] -add {SLICE_X0Y352:SLICE_X7Y353 SLICE_X0Y299:SLICE_X7Y316}
 resize_pblock [get_pblocks ADCDAQ10] -add {RAMB18_X0Y120:RAMB18_X0Y121}
 resize_pblock [get_pblocks ADCDAQ10] -add {RAMB36_X0Y60:RAMB36_X0Y60}
 create_pblock ADCDAQ11
-add_cells_to_pblock [get_pblocks ADCDAQ11] [get_cells -quiet [list {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[11].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ11] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[11].*}]]
 resize_pblock [get_pblocks ADCDAQ11] -add {SLICE_X0Y332:SLICE_X7Y351}
 resize_pblock [get_pblocks ADCDAQ11] -add {RAMB18_X0Y138:RAMB18_X0Y139}
 resize_pblock [get_pblocks ADCDAQ11] -add {RAMB36_X0Y69:RAMB36_X0Y69}
 create_pblock ADCDAQ12
-add_cells_to_pblock [get_pblocks ADCDAQ12] [get_cells -quiet [list {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[12].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ12] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[12].*}]]
 resize_pblock [get_pblocks ADCDAQ12] -add {SLICE_X0Y207:SLICE_X7Y224}
 resize_pblock [get_pblocks ADCDAQ12] -add {RAMB18_X0Y88:RAMB18_X0Y89}
 resize_pblock [get_pblocks ADCDAQ12] -add {RAMB36_X0Y44:RAMB36_X0Y44}
 create_pblock ADCDAQ13
-add_cells_to_pblock [get_pblocks ADCDAQ13] [get_cells -quiet [list {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[13].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ13] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[13].*}]]
 resize_pblock [get_pblocks ADCDAQ13] -add {SLICE_X0Y225:SLICE_X7Y245}
 resize_pblock [get_pblocks ADCDAQ13] -add {RAMB18_X0Y90:RAMB18_X0Y91}
 resize_pblock [get_pblocks ADCDAQ13] -add {RAMB36_X0Y45:RAMB36_X0Y45}
 create_pblock ADCDAQ14
-add_cells_to_pblock [get_pblocks ADCDAQ14] [get_cells -quiet [list {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[14].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ14] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[14].*}]]
 resize_pblock [get_pblocks ADCDAQ14] -add {SLICE_X0Y377:SLICE_X7Y393 SLICE_X0Y330:SLICE_X7Y331}
 resize_pblock [get_pblocks ADCDAQ14] -add {RAMB18_X0Y150:RAMB18_X0Y151}
 resize_pblock [get_pblocks ADCDAQ14] -add {RAMB36_X0Y75:RAMB36_X0Y75}
 create_pblock ADCDAQ15
-add_cells_to_pblock [get_pblocks ADCDAQ15] [get_cells -quiet [list {chfpga0/adc_gen.EV8AQ160_case.ADCGEN[15].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ15] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[15].*}]]
 resize_pblock [get_pblocks ADCDAQ15] -add {SLICE_X0Y358:SLICE_X7Y376 SLICE_X0Y328:SLICE_X7Y329}
 resize_pblock [get_pblocks ADCDAQ15] -add {RAMB18_X0Y148:RAMB18_X0Y149}
 resize_pblock [get_pblocks ADCDAQ15] -add {RAMB36_X0Y74:RAMB36_X0Y74}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
-
-
-set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
-
-
-set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
-
-
-
-
-
-set_switching_activity -default_toggle_rate 12.500
-set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 25.000 -type {lut} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 25.000 -type {register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 25.000 -type {shift_register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 25.000 -type {lut_ram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 25.000 -type {bram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 25.000 -type {dsp} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
 
 
 

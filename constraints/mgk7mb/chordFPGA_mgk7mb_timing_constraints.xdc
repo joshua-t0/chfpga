@@ -84,7 +84,7 @@ set_clock_groups -name REFCLK_GROUP -asynchronous -group [get_clocks -include_ge
 # Frequency counter
 # ----------------
 # Constrain the frequency counter clock. The clock frequency on this net is 1/2 if the measured clock source
-create_clock -period 3.200 -name FREQ_CTR [get_pins */FREQ_CTR0/K7.SRCCLK0/I]
+create_clock -period 3.200 -name FREQ_CTR [get_pins */freq_ctr_blk.FREQ_CTR0/K7.SRCCLK0/I]
 set_clock_groups -name FREQ_CTR_GROUP -asynchronous -group [get_clocks FREQ_CTR]
 
 # Motherboard raw (single-ended) 10 MHz Reference clock
@@ -136,9 +136,9 @@ create_clock -period 5.000 -name mgt_clk200_p -waveform {0.000 2.500} [get_ports
 create_clock -period 6.400 -name GPU_REFCLK [get_ports {xge_refclk_p[*]}]
 set_clock_groups -name GPU_REFCLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks GPU_REFCLK]
 
-create_clock -period 3.103 -name gpu_rxclks [get_pins {chfpga0/GPUGEN.gpulink0/xglink0/gtx_gen[*].gtx_i/gtxe2_i/RXOUTCLK}]
+create_clock -period 3.103 -name gpu_rxclks [get_pins {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[*].gtx_i/gtxe2_i/RXOUTCLK}]
 
-create_clock -period 3.103 -name gpu_txclk [get_pins {chfpga0/GPUGEN.gpulink0/xglink0/gtx_gen[0].gtx_i/gtxe2_i/TXOUTCLK}]
+create_clock -period 3.103 -name gpu_txclk [get_pins {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[0].gtx_i/gtxe2_i/TXOUTCLK}]
 set_clock_groups -name gpu_txclk_group -asynchronous -group [get_clocks -include_generated_clocks gpu_txclk]
 
 ################
@@ -198,7 +198,7 @@ set_false_path -from [get_ports {arm_irq_n bp_buck_sync cpu_reset_n flash_spi_cs
 
 
 #create_clock -period 100.000 -name CLK10 -waveform {0.000 50.000} [get_nets CHFPGA0/REFCLK0/CLK10]
-#create_clock -period 5.000 -name FREQ_CTR_SRC_CLOCK -waveform {0.000 2.500} [get_nets CHFPGA0/FREQ_CTR0/SRC_CLK_FABRIC]
+#create_clock -period 5.000 -name FREQ_CTR_SRC_CLOCK -waveform {0.000 2.500} [get_nets CHFPGA0/freq_ctr_blk.FREQ_CTR0/SRC_CLK_FABRIC]
 
 #
 
@@ -390,12 +390,12 @@ set_input_delay -clock [get_clocks ADCCLK15] -clock_fall -max -add_delay 1.856 [
 
 
 set_operating_conditions -airflow 250
-set_switching_activity -toggle_rate 25.000 -type {lut} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 25.000 -type {register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 25.000 -type {shift_register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 25.000 -type {lut_ram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 25.000 -type {bram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 25.000 -type {dsp} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 25.000 -type {lut} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 25.000 -type {register} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 25.000 -type {shift_register} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 25.000 -type {lut_ram} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 25.000 -type {bram} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 25.000 -type {dsp} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all

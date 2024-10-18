@@ -88,16 +88,16 @@ set_clock_groups -name REFCLK_GROUP -asynchronous -group [get_clocks -include_ge
 
 # The following creates Methogology critical warning - primary clock placed on output or net of clock modifying block
 # Clock appears but Timing is failed because async group is missing (tries to time with clk200).
-create_clock -period 3.200 -name FREQ_CTR [get_pins */FREQ_CTR0/K7.SRCCLK0/I]
+create_clock -period 3.200 -name FREQ_CTR [get_pins */freq_ctr_blk.FREQ_CTR0/K7.SRCCLK0/I]
 
-# create_clock -period 3.200 -name FREQ_CTR [get_pins */FREQ_CTR0/K7.SRCCLK0/O] # same critical warning
+# create_clock -period 3.200 -name FREQ_CTR [get_pins */freq_ctr_blk.FREQ_CTR0/K7.SRCCLK0/O] # same critical warning
 
-# create_clock -period 3.200 -name FREQ_CTR [get_nets */FREQ_CTR0/src_clk_fabric]
+# create_clock -period 3.200 -name FREQ_CTR [get_nets */freq_ctr_blk.FREQ_CTR0/src_clk_fabric]
 
 
 # The following block does not work: critical warning: no clock reaching counter registers clock inputs
 #create_clock -period 2.500 -name FREQ_CTR
-#create_generated_clock -name FREQ_CTR -divide_by 2 -source [get_clocks FREQ_CTR] [get_pins */FREQ_CTR0/K7.SRCCLK0/O]
+#create_generated_clock -name FREQ_CTR -divide_by 2 -source [get_clocks FREQ_CTR] [get_pins */freq_ctr_blk.FREQ_CTR0/K7.SRCCLK0/O]
 #set_clock_groups -name FREQ_CTR_GROUP -asynchronous -group [get_clocks FREQ_CTR]
 
 
@@ -136,8 +136,7 @@ set_clock_groups -name CORR_CLK_GROUP -asynchronous -group [get_clocks -include_
 
 # set_clock_groups -name sgmii_txclk_group -asynchronous -group [get_clocks -include_generated_clocks sgmii_txclk]
 
-set_clock_groups -name sgmii_txclk_group -asynchronous -group [get_clocks -include_generated_clocks -of_objects [get_pins chfpga0/gen_eth.phy_case.udp_mac0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/*/gtwizard_i/gt0_GTWIZARD_i/gtxe2_i/TXOUTCLK]]
-
+set_clock_groups -name sgmii_txclk_group -asynchronous -group [get_clocks -include_generated_clocks -of_objects [get_nets chfpga0/gen_eth.phy_case.udp_mac0/phy_gen.sgmii0/txoutclk_nobuf]]
 # The following clocks are not used except for monitoring their frequency during board QC
 # ----------------------------------------
 create_clock -period 6.400 -name {fmca_mgt_pll_refclk_p[0]} -waveform {0.000 3.200} [get_ports {fmca_mgt_pll_refclk_p[0]}]
@@ -157,9 +156,9 @@ create_clock -period 6.400 -name GPU_REFCLK [get_ports {xge_refclk_p[*]}]
 set_clock_groups -name GPU_REFCLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks GPU_REFCLK]
 
 # Vivado 2022.2 does not automatically create the constraints on the GTX RXOUTCLK
-create_clock -period 3.103 -name gpu_rxclks [get_pins {chfpga0/GPUGEN.gpulink0/xglink0/gtx_gen[*].gtx_i/gtxe2_i/RXOUTCLK}]
+create_clock -period 3.103 -name gpu_rxclks [get_pins {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[*].gtx_i/gtxe2_i/RXOUTCLK}]
 
-create_clock -period 3.103 -name gpu_txclk [get_pins {chfpga0/GPUGEN.gpulink0/xglink0/gtx_gen[0].gtx_i/gtxe2_i/TXOUTCLK}]
+create_clock -period 3.103 -name gpu_txclk [get_pins {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/gtx_gen[0].gtx_i/gtxe2_i/TXOUTCLK}]
 set_clock_groups -name gpu_txclk_group -asynchronous -group [get_clocks -include_generated_clocks gpu_txclk]
 
 ################
@@ -211,14 +210,24 @@ set_input_delay -clock [get_clocks i2c_clk] 0.000 [get_ports i2c_sda]
 
 # Ignore input delays and timing on asynchronously-sampled inputs
 ################
-set async_ports [get_ports { \
-		arm_irq_n bp_buck_sync cpu_reset_n flash_spi_cs_n gpio_irq_n gpio_rst_n \
-		uart_rx uart_tx bp_gpio_int fmc?_adc_pll_lock fpga_led1_bp_sma sma_b_fpga_led2\
-		}] 
+set async_input_ports [get_ports { \
+        cpu_reset_n \
+        fmc?_adc_pll_lock \
+        bp_buck_sync \
+		arm_irq_n  flash_spi_cs_n gpio_irq_n gpio_rst_n \
+		uart_rx uart_tx bp_gpio_int fpga_led1_bp_sma sma_b_fpga_led2\
+		}]
 
-set_input_delay -clock [get_clocks SFP_CLK] 0.000 $async_ports
-set_output_delay -clock [get_clocks SFP_CLK]  0.000 $async_ports
-set_false_path -through $async_ports
+set async_output_ports [get_ports { \
+        bp_buck_sync \
+		arm_irq_n   flash_spi_cs_n gpio_irq_n gpio_rst_n \
+		uart_rx uart_tx bp_gpio_int fpga_led1_bp_sma sma_b_fpga_led2\
+		}]
+
+set_input_delay -clock [get_clocks SFP_CLK] 0.000 $async_input_ports
+set_output_delay -clock [get_clocks SFP_CLK]  0.000 $async_output_ports
+set_false_path -through $async_input_ports
+set_false_path -through $async_output_ports
 
 # set_output_delay -clock [get_clocks SFP_CLK] -max -add_delay 0.000 [get_ports gpio_irq_n]
 #set_false_path -from [get_ports {bp_gpio_int fmc?_adc_pll_lock fpga_led1_bp_sma sma_b_fpga_led2}]
@@ -227,7 +236,7 @@ set_false_path -through $async_ports
 
 
 #create_clock -period 100.000 -name CLK10 -waveform {0.000 50.000} [get_nets CHFPGA0/REFCLK0/CLK10]
-#create_clock -period 5.000 -name FREQ_CTR_SRC_CLOCK -waveform {0.000 2.500} [get_nets CHFPGA0/FREQ_CTR0/SRC_CLK_FABRIC]
+#create_clock -period 5.000 -name FREQ_CTR_SRC_CLOCK -waveform {0.000 2.500} [get_nets CHFPGA0/freq_ctr_blk.FREQ_CTR0/SRC_CLK_FABRIC]
 
 #
 

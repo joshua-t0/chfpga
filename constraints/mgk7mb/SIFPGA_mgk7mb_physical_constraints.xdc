@@ -511,7 +511,7 @@ set_property PACKAGE_PIN T23 [get_ports fmca_adc_sync_n]
 set_property IOSTANDARD LVDS_25 [get_ports {fmc?_adc?_?hdp fmc?_adc?_?drp}]
 
 
-set_property LOC BUFMRCE_X0Y6 [get_cells {chfpga0/EV8AQ160.ADCGEN[0].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y6 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[0].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN U25 [get_ports fmca_adc0_adrn]
 set_property PACKAGE_PIN T26 [get_ports {fmca_adc0_ahdn[0]}]
 set_property PACKAGE_PIN T27 [get_ports {fmca_adc0_ahdn[1]}]
@@ -530,7 +530,7 @@ set_property PACKAGE_PIN U30 [get_ports {fmca_adc0_bhdn[4]}]
 set_property PACKAGE_PIN W23 [get_ports {fmca_adc0_bhdn[5]}]
 set_property PACKAGE_PIN R25 [get_ports {fmca_adc0_bhdn[6]}]
 set_property PACKAGE_PIN T28 [get_ports {fmca_adc0_bhdn[7]}]
-set_property LOC BUFMRCE_X0Y5 [get_cells {chfpga0/EV8AQ160.ADCGEN[2].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y5 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[2].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AD28 [get_ports fmca_adc0_cdrn]
 set_property PACKAGE_PIN AD22 [get_ports {fmca_adc0_chdn[0]}]
 set_property PACKAGE_PIN AK26 [get_ports {fmca_adc0_chdn[1]}]
@@ -540,7 +540,7 @@ set_property PACKAGE_PIN AA25 [get_ports {fmca_adc0_chdn[4]}]
 set_property PACKAGE_PIN AG28 [get_ports {fmca_adc0_chdn[5]}]
 set_property PACKAGE_PIN AC24 [get_ports {fmca_adc0_chdn[6]}]
 set_property PACKAGE_PIN AC30 [get_ports {fmca_adc0_chdn[7]}]
-set_property LOC BUFMRCE_X0Y4 [get_cells {chfpga0/EV8AQ160.ADCGEN[3].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y4 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[3].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AB27 [get_ports fmca_adc0_ddrn]
 set_property PACKAGE_PIN AK23 [get_ports {fmca_adc0_dhdn[0]}]
 set_property PACKAGE_PIN AK25 [get_ports {fmca_adc0_dhdn[1]}]
@@ -550,7 +550,7 @@ set_property PACKAGE_PIN AB30 [get_ports {fmca_adc0_dhdn[4]}]
 set_property PACKAGE_PIN AA30 [get_ports {fmca_adc0_dhdn[5]}]
 set_property PACKAGE_PIN AB28 [get_ports {fmca_adc0_dhdn[6]}]
 set_property PACKAGE_PIN W29 [get_ports {fmca_adc0_dhdn[7]}]
-set_property LOC BUFMRCE_X0Y1 [get_cells {chfpga0/EV8AQ160.ADCGEN[4].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y1 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[4].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AF16 [get_ports fmca_adc1_adrn]
 set_property PACKAGE_PIN AE19 [get_ports {fmca_adc1_ahdn[0]}]
 set_property PACKAGE_PIN AK14 [get_ports {fmca_adc1_ahdn[1]}]
@@ -560,7 +560,7 @@ set_property PACKAGE_PIN AJ19 [get_ports {fmca_adc1_ahdn[4]}]
 set_property PACKAGE_PIN AB18 [get_ports {fmca_adc1_ahdn[5]}]
 set_property PACKAGE_PIN AE14 [get_ports {fmca_adc1_ahdn[6]}]
 set_property PACKAGE_PIN AA18 [get_ports {fmca_adc1_ahdn[7]}]
-set_property LOC BUFMRCE_X0Y0 [get_cells {chfpga0/EV8AQ160.ADCGEN[5].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y0 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[5].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AG17 [get_ports fmca_adc1_bdrn]
 set_property PACKAGE_PIN AD19 [get_ports {fmca_adc1_bhdn[0]}]
 set_property PACKAGE_PIN AH20 [get_ports {fmca_adc1_bhdn[1]}]
@@ -570,7 +570,7 @@ set_property PACKAGE_PIN AG15 [get_ports {fmca_adc1_bhdn[4]}]
 set_property PACKAGE_PIN AD17 [get_ports {fmca_adc1_bhdn[5]}]
 set_property PACKAGE_PIN AH15 [get_ports {fmca_adc1_bhdn[6]}]
 set_property PACKAGE_PIN AJ17 [get_ports {fmca_adc1_bhdn[7]}]
-set_property LOC BUFMRCE_X0Y3 [get_cells {chfpga0/EV8AQ160.ADCGEN[6].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y3 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[6].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AG23 [get_ports fmca_adc1_cdrn]
 set_property PACKAGE_PIN AH24 [get_ports {fmca_adc1_chdn[0]}]
 set_property PACKAGE_PIN AG25 [get_ports {fmca_adc1_chdn[1]}]
@@ -626,7 +626,7 @@ set_property PACKAGE_PIN L25 [get_ports fmcb_refclk_m2c_n]
 set_property PACKAGE_PIN U8 [get_ports {fmcb_mgt_pll_refclk_p[0]}]
 set_property PACKAGE_PIN W8 [get_ports {fmcb_mgt_pll_refclk_p[1]}]
 
-set_property LOC BUFMRCE_X0Y10 [get_cells {chfpga0/EV8AQ160.ADCGEN[8].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y10 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[8].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN E26 [get_ports fmcb_adc0_adrn]
 set_property PACKAGE_PIN F26 [get_ports {fmcb_adc0_ahdn[0]}]
 set_property PACKAGE_PIN C26 [get_ports {fmcb_adc0_ahdn[1]}]
@@ -644,7 +644,7 @@ set_property PACKAGE_PIN J29 [get_ports {fmcb_adc0_bhdn[4]}]
 set_property PACKAGE_PIN G29 [get_ports {fmcb_adc0_bhdn[5]}]
 set_property PACKAGE_PIN D27 [get_ports {fmcb_adc0_bhdn[6]}]
 set_property PACKAGE_PIN A26 [get_ports {fmcb_adc0_bhdn[7]}]
-set_property LOC BUFMRCE_X0Y13 [get_cells {chfpga0/EV8AQ160.ADCGEN[10].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y13 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[10].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN E21 [get_ports fmcb_adc0_cdrn]
 set_property PACKAGE_PIN A16 [get_ports {fmcb_adc0_chdn[0]}]
 set_property PACKAGE_PIN C17 [get_ports {fmcb_adc0_chdn[1]}]
@@ -654,7 +654,7 @@ set_property PACKAGE_PIN A30 [get_ports {fmcb_adc0_chdn[4]}]
 set_property PACKAGE_PIN E19 [get_ports {fmcb_adc0_chdn[5]}]
 set_property PACKAGE_PIN A28 [get_ports {fmcb_adc0_chdn[6]}]
 set_property PACKAGE_PIN D19 [get_ports {fmcb_adc0_chdn[7]}]
-set_property LOC BUFMRCE_X0Y12 [get_cells {chfpga0/EV8AQ160.ADCGEN[11].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y12 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[11].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN F21 [get_ports fmcb_adc0_ddrn]
 set_property PACKAGE_PIN A14 [get_ports {fmcb_adc0_dhdn[0]}]
 set_property PACKAGE_PIN B15 [get_ports {fmcb_adc0_dhdn[1]}]
@@ -664,7 +664,7 @@ set_property PACKAGE_PIN A21 [get_ports {fmcb_adc0_dhdn[4]}]
 set_property PACKAGE_PIN B23 [get_ports {fmcb_adc0_dhdn[5]}]
 set_property PACKAGE_PIN C22 [get_ports {fmcb_adc0_dhdn[6]}]
 set_property PACKAGE_PIN D23 [get_ports {fmcb_adc0_dhdn[7]}]
-set_property LOC BUFMRCE_X0Y8 [get_cells {chfpga0/EV8AQ160.ADCGEN[12].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y8 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[12].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN L27 [get_ports fmcb_adc1_adrn]
 set_property PACKAGE_PIN L28 [get_ports {fmcb_adc1_ahdn[0]}]
 set_property PACKAGE_PIN P28 [get_ports {fmcb_adc1_ahdn[1]}]
@@ -674,7 +674,7 @@ set_property PACKAGE_PIN K24 [get_ports {fmcb_adc1_ahdn[4]}]
 set_property PACKAGE_PIN P18 [get_ports {fmcb_adc1_ahdn[5]}]
 set_property PACKAGE_PIN L21 [get_ports {fmcb_adc1_ahdn[6]}]
 set_property PACKAGE_PIN M20 [get_ports {fmcb_adc1_ahdn[7]}]
-set_property LOC BUFMRCE_X0Y9 [get_cells {chfpga0/EV8AQ160.ADCGEN[13].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y9 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[13].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN M24 [get_ports fmcb_adc1_bdrn]
 set_property PACKAGE_PIN K29 [get_ports {fmcb_adc1_bhdn[0]}]
 set_property PACKAGE_PIN K30 [get_ports {fmcb_adc1_bhdn[1]}]
@@ -684,7 +684,7 @@ set_property PACKAGE_PIN P29 [get_ports {fmcb_adc1_bhdn[4]}]
 set_property PACKAGE_PIN M22 [get_ports {fmcb_adc1_bhdn[5]}]
 set_property PACKAGE_PIN K26 [get_ports {fmcb_adc1_bhdn[6]}]
 set_property PACKAGE_PIN N26 [get_ports {fmcb_adc1_bhdn[7]}]
-set_property LOC BUFMRCE_X0Y15 [get_cells {chfpga0/EV8AQ160.ADCGEN[14].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y15 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[14].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN C16 [get_ports fmcb_adc1_cdrn]
 set_property PACKAGE_PIN E16 [get_ports {fmcb_adc1_chdn[0]}]
 set_property PACKAGE_PIN D16 [get_ports {fmcb_adc1_chdn[1]}]
@@ -694,7 +694,7 @@ set_property PACKAGE_PIN H17 [get_ports {fmcb_adc1_chdn[4]}]
 set_property PACKAGE_PIN G14 [get_ports {fmcb_adc1_chdn[5]}]
 set_property PACKAGE_PIN F17 [get_ports {fmcb_adc1_chdn[6]}]
 set_property PACKAGE_PIN A17 [get_ports {fmcb_adc1_chdn[7]}]
-set_property LOC BUFMRCE_X0Y14 [get_cells {chfpga0/EV8AQ160.ADCGEN[15].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y14 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[15].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN F15 [get_ports fmcb_adc1_ddrn]
 set_property PACKAGE_PIN J23 [get_ports {fmcb_adc1_dhdn[0]}]
 set_property PACKAGE_PIN F23 [get_ports {fmcb_adc1_dhdn[1]}]
@@ -706,7 +706,7 @@ set_property PACKAGE_PIN G20 [get_ports {fmcb_adc1_dhdn[6]}]
 set_property PACKAGE_PIN G19 [get_ports {fmcb_adc1_dhdn[7]}]
 
 
-set_property LOC USR_ACCESS_X0Y0 [get_cells chfpga0/GPIO0/USRACCESS_7.USR_ACCESS0]
+set_property LOC USR_ACCESS_X0Y0 [get_cells chfpga0/gpio_blk/GPIO0/USRACCESS_7.USR_ACCESS0]
 set_property LOC XADC_X0Y0 [get_cells chfpga0/SYSMON0/SYSMON7_GEN.XADC0]
 
 ##############################
@@ -725,8 +725,8 @@ set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/CLK0/gen_chanpll_k7.chan_mmc
 # Make sure that the BUFG instantiated by the SGMII core is on the same half as the IBUFGDS that drives it. For some reason Vivado places it on the wrong half and fails.
 set_property LOC BUFGCTRL_X0Y17 [get_cells chfpga0/gen_eth.udp_mac0/sgmiigen.sgmii0/bufg_txoutclk]
 
-# set_property LOC BUFGCTRL_X0Y18 [get_cells chfpga0/GPUGEN.gpulink0/xglink0/txoutclk_bufg0]
-# set_property LOC BUFGCTRL_X0Y19 [get_cells chfpga0/GPUGEN.gpulink0/xglink0/refclk_bufg0]
+# set_property LOC BUFGCTRL_X0Y18 [get_cells chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/txoutclk_bufg0]
+# set_property LOC BUFGCTRL_X0Y19 [get_cells chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/refclk_bufg0]
 
 ### REFCLK ###
 # REFCLK is in bank 11, coming from a SRCC pins.
@@ -738,20 +738,20 @@ set_property LOC BUFGCTRL_X0Y17 [get_cells chfpga0/gen_eth.udp_mac0/sgmiigen.sgm
 
 # CH2
 # NOTE: It is assumed that the ADCDAQ logic is located in the same bank as the clock so it can be clocked out of the BUFR in that region
-set_property LOC BUFR_X0Y4 [get_cells {chfpga0/EV8AQ160.ADCGEN[2].ADCDAQ0/IMPL.BUFRGEN[1].BUFRn}]
-set_property LOC BUFR_X0Y8 [get_cells {chfpga0/EV8AQ160.ADCGEN[2].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
+set_property LOC BUFR_X0Y4 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[2].ADCDAQ0/IMPL.BUFRGEN[1].BUFRn}]
+set_property LOC BUFR_X0Y8 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[2].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
 
 # CH3
 # NOTE: It is assumed that the ADCDAQ logic is located in the same bank as the clock so it can be clocked out of the BUFR in that region
-set_property LOC BUFR_X0Y5 [get_cells {chfpga0/EV8AQ160.ADCGEN[3].ADCDAQ0/IMPL.BUFRGEN[1].BUFRn}]
-set_property LOC BUFR_X0Y9 [get_cells {chfpga0/EV8AQ160.ADCGEN[3].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
+set_property LOC BUFR_X0Y5 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[3].ADCDAQ0/IMPL.BUFRGEN[1].BUFRn}]
+set_property LOC BUFR_X0Y9 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[3].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
 
 set_property PACKAGE_PIN F28 [get_ports fmcb_adc0_bdrn]
-set_property LOC BUFR_X0Y22 [get_cells {chfpga0/EV8AQ160.ADCGEN[9].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
+set_property LOC BUFR_X0Y22 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[9].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
 
-set_property LOC BUFIO_X0Y27 [get_cells {chfpga0/EV8AQ160.ADCGEN[14].ADCDAQ0/IMPL.NOEXTCLK.BUFIOGEN[1].BUFIO0}]
+set_property LOC BUFIO_X0Y27 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[14].ADCDAQ0/IMPL.NOEXTCLK.BUFIOGEN[1].BUFIO0}]
 
-set_property LOC BUFIO_X0Y25 [get_cells {chfpga0/EV8AQ160.ADCGEN[15].ADCDAQ0/IMPL.NOEXTCLK.BUFIOGEN[0].BUFIO0}]
+set_property LOC BUFIO_X0Y25 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[15].ADCDAQ0/IMPL.NOEXTCLK.BUFIOGEN[0].BUFIO0}]
 
 
 
@@ -941,11 +941,11 @@ resize_pblock [get_pblocks CHAN13] -add {RAMB18_X1Y90:RAMB18_X7Y99 RAMB18_X0Y94:
 resize_pblock [get_pblocks CHAN13] -add {RAMB36_X1Y45:RAMB36_X7Y49 RAMB36_X0Y47:RAMB36_X0Y49}
 # add_cells_to_pblock [get_pblocks CHAN13] [get_cells -quiet [list {chfpga0/CHANGEN[13].CHANi}]]
 
-set_property LOC DNA_PORT_X0Y0 [get_cells chfpga0/GPIO0/gen_dna7.dna0]
+set_property LOC DNA_PORT_X0Y0 [get_cells chfpga0/gpio_blk/GPIO0/gen_dna7.dna0]
 
 
 create_pblock SYSTEM
-add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list chfpga0/BLINKER0 chfpga0/FREQ_CTR0 chfpga0/GPIO0/CTRL_SLAVE0 chfpga0/GPIO0/core_regs0 chfpga0/GPIO0/irigb_comparator0 chfpga0/GPIO0/irigb_decoder0 chfpga0/GPIO0/irigb_encoder0 chfpga0/gen_i2c.I2C0 chfpga0/sys_router0]]
+add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list chfpga0/blinker_blk.BLINKER0 chfpga0/freq_ctr_blk.FREQ_CTR0 chfpga0/gpio_blk/GPIO0/CTRL_SLAVE0 chfpga0/gpio_blk/GPIO0/core_regs0 chfpga0/gpio_blk/GPIO0/irigb_comparator0 chfpga0/gpio_blk/GPIO0/irigb_decoder0 chfpga0/gpio_blk/GPIO0/irigb_encoder0 chfpga0/gen_i2c.I2C0 chfpga0/sys_router0]]
 resize_pblock [get_pblocks SYSTEM] -add {SLICE_X180Y225:SLICE_X189Y324}
 
 
@@ -962,15 +962,15 @@ set_operating_conditions -board large
 set_operating_conditions -heatsink high
 set_switching_activity -default_toggle_rate 50.000
 # set_switching_activity -toggle_rate 100.000 -type {bram_enable} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all
 
 
 create_pblock CLK0
@@ -978,7 +978,7 @@ add_cells_to_pblock [get_pblocks CLK0] [get_cells -quiet [list chfpga0/CLK0]]
 resize_pblock [get_pblocks CLK0] -add {SLICE_X0Y248:SLICE_X7Y249 SLICE_X0Y150:SLICE_X7Y151}
 
 create_pblock ARM_SPI
-add_cells_to_pblock [get_pblocks ARM_SPI] [get_cells -quiet [list chfpga0/GPIO0/gen_armspi.arm_spi0]]
+add_cells_to_pblock [get_pblocks ARM_SPI] [get_cells -quiet [list chfpga0/gpio_blk/GPIO0/gen_armspi.arm_spi0]]
 resize_pblock [get_pblocks ARM_SPI] -add {SLICE_X0Y187:SLICE_X7Y206}
 
 create_pblock I2C
@@ -1030,7 +1030,7 @@ resize_pblock [get_pblocks CROSSBAR0] -add {RAMB36_X8Y34:RAMB36_X11Y39}
 # resize_pblock [get_pblocks ALIGN2] -add {RAMB18_X9Y30:RAMB18_X11Y45}
 # resize_pblock [get_pblocks ALIGN2] -add {RAMB36_X9Y15:RAMB36_X11Y22}
 # create_pblock ALIGN3
-# add_cells_to_pblock [get_pblocks ALIGN3] [get_cells -quiet [list chfpga0/GPUGEN.gpulink0/xglink0/txoutclk_bufg0]]
+# add_cells_to_pblock [get_pblocks ALIGN3] [get_cells -quiet [list chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/txoutclk_bufg0]]
 # resize_pblock [get_pblocks ALIGN3] -add {SLICE_X142Y290:SLICE_X189Y309}
 # resize_pblock [get_pblocks ALIGN3] -add {DSP48_X9Y116:DSP48_X11Y123}
 # resize_pblock [get_pblocks ALIGN3] -add {RAMB18_X9Y116:RAMB18_X11Y123}
@@ -1039,28 +1039,28 @@ resize_pblock [get_pblocks CROSSBAR0] -add {RAMB36_X8Y34:RAMB36_X11Y39}
 
 
 # create_pblock GPU0
-# add_cells_to_pblock [get_pblocks GPU0] [ge {chfpga0/GPUGEN.gpulink0/xglink0/tx_gen[1].scrambler0}]]
+# add_cells_to_pblock [get_pblocks GPU0] [ge {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[1].scrambler0}]]
 # resize_pblock [get_pblocks GPU0] -add {SLICE_X142Y250:SLICE_X189Y269}
 # resize_pblock [get_pblocks GPU0] -add {DSP48_X9Y100:DSP48_X11Y107}
 # resize_pblock [get_pblocks GPU0] -add {RAMB18_X9Y100:RAMB18_X11Y107}
 # resize_pblock [get_pblocks GPU0] -add {RAMB36
 # 	_X9Y50:RAMB36_X11Y53}
 # create_pblock GPU1
-# add_cells_to_pblock [get_pblocks GPU1] [ge {chfpga0/GPUGEN.gpulink0/xglink0/tx_gen[3].scrambler0}]]
+# add_cells_to_pblock [get_pblocks GPU1] [ge {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[3].scrambler0}]]
 # resize_pblock [get_pblocks GPU1] -add {SLICE_X142Y270:SLICE_X189Y289}
 # resize_pblock [get_pblocks GPU1] -add {DSP48_X9Y108:DSP48_X11Y115}
 # resize_pblock [get_pblocks GPU1] -add {RAMB18_X9Y108:RAMB18_X11Y115}
 # resize_pblock [get_pblocks GPU1] -add {RAMB36
 # 	_X9Y54:RAMB36_X11Y57}
 # create_pblock GPU2
-# add_cells_to_pblock [get_pblocks GPU2] [ge {chfpga0/GPUGEN.gpulink0/xglink0/tx_gen[5].scrambler0}]]
+# add_cells_to_pblock [get_pblocks GPU2] [ge {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[5].scrambler0}]]
 # resize_pblock [get_pblocks GPU2] -add {SLICE_X142Y310:SLICE_X189Y329}
 # resize_pblock [get_pblocks GPU2] -add {DSP48_X9Y124:DSP48_X11Y131}
 # resize_pblock [get_pblocks GPU2] -add {RAMB18_X9Y124:RAMB18_X11Y131}
 # resize_pblock [get_pblocks GPU2] -add {RAMB36
 # 	_X9Y62:RAMB36_X11Y65}
 # create_pblock GPU3
-# add_cells_to_pblock [get_pblocks GPU3] [ge {chfpga0/GPUGEN.gpulink0/xglink0/tx_gen[7].scrambler0}]]
+# add_cells_to_pblock [get_pblocks GPU3] [ge {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/tx_gen[7].scrambler0}]]
 # resize_pblock [get_pblocks GPU3] -add {SLICE_X142Y330:SLICE_X189Y349}
 # resize_pblock [get_pblocks GPU3] -add {DSP48_X9Y132:DSP48_X11Y139}
 # resize_pblock [get_pblocks GPU3] -add {RAMB18_X9Y132:RAMB18_X11Y139}
@@ -1073,82 +1073,82 @@ resize_pblock [get_pblocks CROSSBAR0] -add {RAMB36_X8Y34:RAMB36_X11Y39}
 
 
 create_pblock ADCDAQ0
-add_cells_to_pblock [get_pblocks ADCDAQ0] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[0].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ0] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[0].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ0] -add {SLICE_X0Y169:SLICE_X7Y186}
 resize_pblock [get_pblocks ADCDAQ0] -add {RAMB18_X0Y70:RAMB18_X0Y71}
 resize_pblock [get_pblocks ADCDAQ0] -add {RAMB36_X0Y35:RAMB36_X0Y35}
 create_pblock ADCDAQ1
-add_cells_to_pblock [get_pblocks ADCDAQ1] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[1].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ1] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[1].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ1] -add {SLICE_X0Y152:SLICE_X7Y168}
 resize_pblock [get_pblocks ADCDAQ1] -add {RAMB18_X0Y68:RAMB18_X0Y69}
 resize_pblock [get_pblocks ADCDAQ1] -add {RAMB36_X0Y34:RAMB36_X0Y34}
 create_pblock ADCDAQ2
-add_cells_to_pblock [get_pblocks ADCDAQ2] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[2].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ2] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[2].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ2] -add {SLICE_X0Y125:SLICE_X7Y142 SLICE_X0Y96:SLICE_X7Y97}
 resize_pblock [get_pblocks ADCDAQ2] -add {RAMB18_X0Y50:RAMB18_X0Y51}
 resize_pblock [get_pblocks ADCDAQ2] -add {RAMB36_X0Y25:RAMB36_X0Y25}
 create_pblock ADCDAQ3
-add_cells_to_pblock [get_pblocks ADCDAQ3] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[3].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ3] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[3].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ3] -add {SLICE_X0Y98:SLICE_X7Y116}
 resize_pblock [get_pblocks ADCDAQ3] -add {RAMB18_X0Y40:RAMB18_X0Y41}
 resize_pblock [get_pblocks ADCDAQ3] -add {RAMB36_X0Y20:RAMB36_X0Y20}
 create_pblock ADCDAQ4
-add_cells_to_pblock [get_pblocks ADCDAQ4] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[4].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ4] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[4].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ4] -add {SLICE_X0Y7:SLICE_X7Y24}
 resize_pblock [get_pblocks ADCDAQ4] -add {RAMB18_X0Y8:RAMB18_X0Y9}
 resize_pblock [get_pblocks ADCDAQ4] -add {RAMB36_X0Y4:RAMB36_X0Y4}
 create_pblock ADCDAQ5
-add_cells_to_pblock [get_pblocks ADCDAQ5] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[5].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ5] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[5].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ5] -add {SLICE_X0Y30:SLICE_X7Y49}
 resize_pblock [get_pblocks ADCDAQ5] -add {RAMB18_X0Y18:RAMB18_X0Y19}
 resize_pblock [get_pblocks ADCDAQ5] -add {RAMB36_X0Y9:RAMB36_X0Y9}
 create_pblock ADCDAQ6
-add_cells_to_pblock [get_pblocks ADCDAQ6] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[6].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ6] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[6].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ6] -add {SLICE_X0Y57:SLICE_X7Y74}
 resize_pblock [get_pblocks ADCDAQ6] -add {RAMB18_X0Y28:RAMB18_X0Y29}
 resize_pblock [get_pblocks ADCDAQ6] -add {RAMB36_X0Y14:RAMB36_X0Y14}
 create_pblock ADCDAQ7
-add_cells_to_pblock [get_pblocks ADCDAQ7] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[7].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ7] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[7].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ7] -add {SLICE_X0Y75:SLICE_X7Y92}
 resize_pblock [get_pblocks ADCDAQ7] -add {RAMB18_X0Y30:RAMB18_X0Y31}
 resize_pblock [get_pblocks ADCDAQ7] -add {RAMB36_X0Y15:RAMB36_X0Y15}
 create_pblock ADCDAQ8
-add_cells_to_pblock [get_pblocks ADCDAQ8] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[8].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ8] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[8].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ8] -add {SLICE_X0Y281:SLICE_X7Y298}
 resize_pblock [get_pblocks ADCDAQ8] -add {RAMB18_X0Y118:RAMB18_X0Y119}
 resize_pblock [get_pblocks ADCDAQ8] -add {RAMB36_X0Y59:RAMB36_X0Y59}
 create_pblock ADCDAQ9
-add_cells_to_pblock [get_pblocks ADCDAQ9] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[9].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ9] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[9].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ9] -add {SLICE_X0Y257:SLICE_X7Y274}
 resize_pblock [get_pblocks ADCDAQ9] -add {RAMB18_X0Y108:RAMB18_X0Y109}
 resize_pblock [get_pblocks ADCDAQ9] -add {RAMB36_X0Y54:RAMB36_X0Y54}
 create_pblock ADCDAQ10
-add_cells_to_pblock [get_pblocks ADCDAQ10] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[10].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ10] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[10].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ10] -add {SLICE_X0Y352:SLICE_X7Y353 SLICE_X0Y299:SLICE_X7Y316}
 resize_pblock [get_pblocks ADCDAQ10] -add {RAMB18_X0Y120:RAMB18_X0Y121}
 resize_pblock [get_pblocks ADCDAQ10] -add {RAMB36_X0Y60:RAMB36_X0Y60}
 create_pblock ADCDAQ11
-add_cells_to_pblock [get_pblocks ADCDAQ11] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[11].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ11] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[11].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ11] -add {SLICE_X0Y332:SLICE_X7Y351}
 resize_pblock [get_pblocks ADCDAQ11] -add {RAMB18_X0Y138:RAMB18_X0Y139}
 resize_pblock [get_pblocks ADCDAQ11] -add {RAMB36_X0Y69:RAMB36_X0Y69}
 create_pblock ADCDAQ12
-add_cells_to_pblock [get_pblocks ADCDAQ12] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[12].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ12] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[12].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ12] -add {SLICE_X0Y207:SLICE_X7Y224}
 resize_pblock [get_pblocks ADCDAQ12] -add {RAMB18_X0Y88:RAMB18_X0Y89}
 resize_pblock [get_pblocks ADCDAQ12] -add {RAMB36_X0Y44:RAMB36_X0Y44}
 create_pblock ADCDAQ13
-add_cells_to_pblock [get_pblocks ADCDAQ13] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[13].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ13] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[13].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ13] -add {SLICE_X0Y225:SLICE_X7Y245}
 resize_pblock [get_pblocks ADCDAQ13] -add {RAMB18_X0Y90:RAMB18_X0Y91}
 resize_pblock [get_pblocks ADCDAQ13] -add {RAMB36_X0Y45:RAMB36_X0Y45}
 create_pblock ADCDAQ14
-add_cells_to_pblock [get_pblocks ADCDAQ14] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[14].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ14] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[14].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ14] -add {SLICE_X0Y377:SLICE_X7Y393 SLICE_X0Y330:SLICE_X7Y331}
 resize_pblock [get_pblocks ADCDAQ14] -add {RAMB18_X0Y150:RAMB18_X0Y151}
 resize_pblock [get_pblocks ADCDAQ14] -add {RAMB36_X0Y75:RAMB36_X0Y75}
 create_pblock ADCDAQ15
-add_cells_to_pblock [get_pblocks ADCDAQ15] [get_cells -quiet [list {chfpga0/EV8AQ160.ADCGEN[15].ADCDAQ0}]]
+add_cells_to_pblock [get_pblocks ADCDAQ15] [get_cells -quiet [list {chfpga0/adc_gen.ev8aq160_case.ADCGEN[15].ADCDAQ0}]]
 resize_pblock [get_pblocks ADCDAQ15] -add {SLICE_X0Y358:SLICE_X7Y376 SLICE_X0Y328:SLICE_X7Y329}
 resize_pblock [get_pblocks ADCDAQ15] -add {RAMB18_X0Y148:RAMB18_X0Y149}
 resize_pblock [get_pblocks ADCDAQ15] -add {RAMB36_X0Y74:RAMB36_X0Y74}
@@ -1171,63 +1171,63 @@ resize_pblock [get_pblocks ADCDAQ15] -add {RAMB36_X0Y74:RAMB36_X0Y74}
 
 
 
-set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all
 
 
 set_operating_conditions -airflow 500
-set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all
 
 
-set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all
 
 
 
 
 
 set_switching_activity -default_toggle_rate 12.500
-set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all
 set_operating_conditions -airflow 750
-set_switching_activity -toggle_rate 25.000 -type {lut} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 25.000 -type {register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 25.000 -type {shift_register} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 25.000 -type {lut_ram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 25.000 -type {bram} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 25.000 -type {dsp} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
-set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 25.000 -type {lut} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 25.000 -type {register} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 25.000 -type {shift_register} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 25.000 -type {lut_ram} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 25.000 -type {bram} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 25.000 -type {dsp} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all
 
 
 
