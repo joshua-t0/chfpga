@@ -1,7 +1,8 @@
-..   .. title:: system
+.. title:: SPI
 
-:entity:`SPI`
-****************
+*************************
+:entity:`SPI` (*SPI.vhd*)
+*************************
 
 .. title:: SPI Peripheral
 
@@ -21,7 +22,7 @@ Entity documentation
 Additional details
 ==================
 
-The SPI entity is a very simple SPI controller that can perform 1, 2,3 o 4 bytes tansactions (the count includes both read and write bytes).
+The SPI entity is a very simple SPI controller that can perform 1, 2,3 or 4 bytes tansactions (the count includes both read and write bytes).
 The module is operated through control and status registers, and there is no buffer or FIFO. Throughput is therefore limited. The SPI controller provided by the platform processor, if available, should be used if a high-performance interface is required.
 
 Operations

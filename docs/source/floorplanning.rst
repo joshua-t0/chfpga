@@ -84,6 +84,14 @@ BP4: (logic that feeds the backplane QSFP link (4 GTX))
 		BIN_SEL: 16 RAMB18 for each BIN_SEL
 		TOTAL: 2 * 16 + 16 = 48
 
+	Allocated: 54 RAMB18
+
+	Usage:
+
+	BPSHUFFLE: lane_gen[16..23]: 2*8=16 RAMB18
+	CB2 align: 2*8 = 16 RAMB18
+	CB2 BIN_SEL[0..1]: 2*17 = 34 RAMB18
+
 
 GPU0 : Instance [0] and [1] of CB3 BIN_SEL, UDP_GEN, xglink0.gtx_gen, xglink0.tx_gen
 GPU1 : CB3 BIN_SEL 2 & 3, with all GTX TX logic, next to their corresponding GTXes.

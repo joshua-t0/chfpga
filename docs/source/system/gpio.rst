@@ -1,7 +1,6 @@
-.. title:: GPIO
-
-:entity:`GPIO`: General Purpose Input/Output
-********************************************
+****************************
+:entity:`GPIO`: (*GPIO.vhd*)
+****************************
 
 The :entity:`gpio` provides a bank of configuration registers as well as:
 

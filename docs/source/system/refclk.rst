@@ -1,7 +1,8 @@
 ..   .. title:: system
 
-:entity:`REFCLK`
-****************
+*******************************
+:entity:`REFCLK` (*REFCLK.vhd*)
+*******************************
 
 .. title:: REFCLK
 
@@ -22,9 +23,9 @@ Additional details
 ==================
 
 
-.. Memory map
-.. ==========
+Memory map
+==========
 
-.. .. include-docs:: REFCLK
-..     :start-after: Memory map
+.. include-docs:: REFCLK
+    :start-after: Memory Map
 

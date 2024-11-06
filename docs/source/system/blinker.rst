@@ -1,7 +1,8 @@
-..   .. title:: system
+..   .. title:: blinker
 
-:entity:`BLINKER`
-*****************
+********************************
+:entity:`blinker` (*binker.vhd*)
+********************************
 
 .. title:: BLINKER
 
@@ -22,9 +23,8 @@ Additional details
 ==================
 
 
-.. Memory map
-.. ==========
+Memory map
+==========
 
-.. .. include-docs:: BLINKER
-..     :start-after: Memory map
+The :entity:`blinker` module does ot have memory mapped register.
 

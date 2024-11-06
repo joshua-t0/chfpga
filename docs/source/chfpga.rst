@@ -1,15 +1,7 @@
 
-
+*******************************
 :entity:`chfpga` (`chfpga.vhd`)
 *******************************
-
-
-
-
-***********
-Description
-***********
-
 
 
 Overview
@@ -19,18 +11,18 @@ chFPGA is the common module that is used to implement the core firmware for all 
 
 chfpga is normally instantiated by a platform-specific top module that creates the platform-specific logic (board-specific ports, clock and data buffers etc.) that connects chfpga to the outside world.
 
-chfpga creates the following sub-modules:
+`chfpga` instantiates the following sub-modules:
 
 - System modules
 
-    - :entity:`clocks` Clocking system
-    - System Bus master :entity:`master` and routers :entity:`router`
-    - :entity:`GPIO` GPIO
-    - :entity:`I2C` I2C and :entity:`SPI` SPI controllers
-    - :entity:`SYSMON` System monitor
-    - :entity:`REFCLK` Reference clock
-    - :entity:`FREQCTR` Frequency counter
-    - :entity:`blinker` LED blinker
+    - Clocking system (:entity:`clocks`)
+    - System Bus master (:entity:`master` and routers :entity:`router` with optional :entity:`UDP_MAC` 1G Ethernet interface)
+    - GPIO and general configuration registers (:entity:`GPIO`)
+    - I2C and SPI controllers (:entity:`I2C` and :entity:`SPI`)
+    - System monitor (:entity:`SYSMON`)
+    - Reference clock/ synchroniztion sequencer (:entity:`REFCLK`)
+    - Frequency counter (:entity:`FREQCTR`)
+    - Heartbeat LED blinker (:entity:`blinker`)
 
 
 - ADC Data acquisition logic
@@ -39,7 +31,7 @@ chfpga creates the following sub-modules:
 
 - Corner-turn Engine
 
-- X-Engine (correlator)
+- X-Engine/Correlator
 
 - 40/100 G Ethernet Data real-time streaming interface
 
@@ -93,25 +85,16 @@ UDP Control Memory Map
 .. include-docs:: chfpga
     :start-after: SYSTEM Memory Map
 
-.. ***********
-.. Sub-modules
-.. ***********
+Submodules
+==========
 
-.. .. note:: mynote
-
-..     this is a note
-
-
-.. .. rubric:: Invisible Submodules
-..     :heading-level: 2
-
-toctree is below but invisible
+The following modules are instantiated directly by :entity:`chFPGA`:
 
 .. toctree::
-    :hidden:
+    :maxdepth: 1
 
     system/clocks
-    GPIO <system/gpio>
+    system/gpio
     system/i2c
     system/spi
     system/blinker

@@ -1,9 +1,9 @@
-..   .. title:: system
+..   .. title:: SYSMON_XADC
 
-:entity:`SYSMON_XADC` (SYSMON_V6.vhd)
-*************************************
+***************************************
+:entity:`SYSMON_XADC` (*SYSMON_V6.vhd*)
+***************************************
 
-.. title:: SYSMON_XADC
 
 .. .. figure:: ../images/SYSMON.svg
 ..     :width: 100%
@@ -22,9 +22,9 @@ Additional details
 ==================
 
 
-.. Memory map
-.. ==========
+Memory map
+==========
 
-.. .. include-docs:: SYSMON_XADC
-..     :start-after: Memory map
+.. include-docs:: SYSMON_XADC
+    :start-after: Memory map
 
