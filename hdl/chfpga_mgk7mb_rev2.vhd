@@ -26,6 +26,7 @@ library UNISIM;
 use UNISIM.VComponents.all;
 --! Project libraries
 use work.chFPGA_Package.all; --! Get all component definitions
+use work.chfpga_config.all; -- get all configuratoin parameters
 
 ----ENTITY DECLARATION ------------------------------------------------------------------------------
 --! @brief This is the _top level_ entity of the CHIME ICEboard-based data acquisition/channelizer/correlator.
@@ -39,7 +40,7 @@ entity chFPGA_MGK7MB_Rev2 is
 			SYSTEM_CLOCK_FREQ: real                      := 125.0; -- System reference clock frequency, in MHz *** IP packager does not support real. Defined as constant below ***
 			CHAN_CLK_SOURCE: string                      := "MMCM"; -- Channelizer clock comes from the multi-phase MMCM
 			CHAN_CLK_FREQ: real                          := 200.0; -- MHz. 200.0 or 300.0 are supported.
-			CT_CLK_SOURCE: string                        := "BP_SHUFFLE_TXCLK"; -- corner-turn operates on backplane GTY word clock (~244 MHz)
+			CT_CLK_SOURCE: string                        := CONFIG_CT_CLK_SOURCE; -- corner-turn operates on backplane GTY word clock (~244 MHz)
 
 			-- BSB interface config
 			PHY_TYPE: string                             := "SGMII"; -- "GMII" or "SGMII"
@@ -100,10 +101,10 @@ entity chFPGA_MGK7MB_Rev2 is
 			-- Corner-turn engine config
 			CROSSBAR1_TYPE: string                       := "BRAM"; -- "BRAM" or "URAM"
 			NUMBER_OF_CROSSBAR_INPUTS: integer           := 16; --! (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
-			NUMBER_OF_CROSSBAR_OUTPUTS: integer          := 16; --! (Typ. =16): Number of repacked data streams to feed to the corrleator or GPU links
-			NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := 16;
-			NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := 8;
-			NUMBER_OF_BP_SHUFFLE_LINKS: integer          := 19; --! Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
+			NUMBER_OF_CROSSBAR_OUTPUTS: integer          := CONFIG_NUMBER_OF_CROSSBAR_OUTPUTS; --! (Typ. =16): Number of repacked data streams to feed to the corrleator or GPU links
+			NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES;
+			NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := CONFIG_NUMBER_OF_BP_QSFP_SHUFFLE_LANES;
+			NUMBER_OF_BP_SHUFFLE_LINKS: integer          := CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS; --! Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
 			NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := 2;
 			BP_SHUFFLE_LANE_MAP: integerArray            := ( -- Associate the concatenated BP PCB and QUAD lanes to GTX links. -1 means a bypass lane.
 			                                                -- Backplane PCB Lanes
@@ -118,13 +119,13 @@ entity chFPGA_MGK7MB_Rev2 is
 			BP_SHUFFLE_QUAD_TO_REFCLK_MAP : integerArray := (0 => 1, 1 => 0, 2 => 0, 3=> 1, 4 => 1); --! Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_BP_SHUFFLE_REFCLK-1).
 
 			-- Correlator config
-			NUMBER_OF_CORRELATORS: INTEGER               := 0; --! (0-NUMBER_OF_REORDER_OUTPUTS) Number of correlator blocks (CH_DIST+CORR+ACC) to be implemented if IMPLEMENT_CORR=TRUE
-			NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER := GLOBAL_NUMBER_OF_CHANNELIZERS_TO_CORRELATE; --! (3 - NUMBER_OF_CHANNELIZERS) Number of channelizers outputs to be correlated for each frequency channel. This is hard coded for now. Determines how many antenna streams are fed to the CORR_BLOCK modules, and how many multipliers to implement in parallel in the CORR module.
+			NUMBER_OF_CORRELATORS: INTEGER               := CONFIG_NUMBER_OF_CORRELATORS; --! (0-NUMBER_OF_REORDER_OUTPUTS) Number of correlator blocks (CH_DIST+CORR+ACC) to be implemented if IMPLEMENT_CORR=TRUE
+			NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER := CONFIG_NUMBER_OF_CHANNELIZERS_TO_CORRELATE; --! (3 - NUMBER_OF_CHANNELIZERS) Number of channelizers outputs to be correlated for each frequency channel. This is hard coded for now. Determines how many antenna streams are fed to the CORR_BLOCK modules, and how many multipliers to implement in parallel in the CORR module.
 
 			-- Real-time data offload config
 			IMPLEMENT_100G_ETHERNET: boolean             := FALSE; -- If TRUE, a 100G UDP/IP/Ethernet data transmitter is implemented
-			NUMBER_OF_GPU_LINKS: integer                 := GLOBAL_NUMBER_OF_GPU_LINKS; --! (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
-			NUMBER_OF_GPU_REFCLKS: integer               := GLOBAL_NUMBER_OF_GPU_REFCLKS; --! Number of Reference clocks provided for the 10GE links to the GPU
+			NUMBER_OF_GPU_LINKS: integer                 := CONFIG_NUMBER_OF_GPU_LINKS; --! (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
+			NUMBER_OF_GPU_REFCLKS: integer               := 1; --! Number of Reference clocks provided for the 10GE links to the GPU
 			GPU_CHANNEL_QUAD: IntegerArray := GLOBAL_GPU_CHANNEL_QUAD; -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1
 			GPU_QUAD_REFCLK: IntegerArray := GLOBAL_GPU_QUAD_REFCLK; -- Both QUAD0 and QUAD1 use refclk(0)
 
@@ -508,7 +509,8 @@ architecture Behavioral of chFPGA_MGK7MB_Rev2 is
 	signal bp_gpio_int_oe: std_logic;
 
 	-- Ensure the ARM SPI interface signal registers are placed in the IOB to produce consistent timing
-	attribute IOB of arm_spi_sck, arm_spi_miso: signal is "true";
+	attribute IOB of arm_spi_sck: signal is "true";
+	attribute IOB of arm_spi_miso: signal is "true";
 
 begin
 

@@ -3,10 +3,10 @@
 -- Engineer: JF Cliche
 --
 -- Create Date:    13:54:40 11/19/2010
--- Design Name:
+-- Design Name:    chFPGA
 -- Module Name:    UDP_MAC_RX
--- Project Name:
--- Target Devices:
+-- Project Name:   CHIME
+-- Target Devices: K7
 -- Tool versions:
 -- Description: Implements a simplified Gigabit Ethernet UDP/IP/Ethernet Receiver Packetizer and MAC with a GMII output interface.
 -- See UDP_MAC for description
@@ -31,40 +31,52 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
 use IEEE.NUMERIC_STD.ALL;
 
--- Uncomment the following library declaration if instantiating
--- any Xilinx primitives in this code.
 library UNISIM;
 use UNISIM.VComponents.all;
 
+library xpm;
+use xpm.vcomponents.all;
 
---! @brief Implements a UDP packet receiver combined with a GMII MAC
+-- Implements a simplified Gigabit Ethernet UDP/IP/Ethernet Receiver Packetizer and MAC with a GMII output interface with ARP functionality.
 --
---!     UDP/IP/Ethernet Packet structure
---!     X"00", X"1b", X"fc", X"43", X"ba", X"ff", -- Ethernet destination MAC address
---!     X"12", X"34", X"56", X"78", X"9A", X"BC", -- Ethernet source MAC address
---!     X"08", X"00",	-- Ethertype: Ethernet (jumbo = 0x8870)
---!     -- IP
---!     X"45", X"00",	-- IP: Version, Header length, DSCP/ECP
---!     X"00", X"00",	-- IP: Length. Not used. Actual length value (DATA_LENGTH+28) is transmitted instead. 0x0030 for a 20-byte payload.
---!     X"14", X"26",	-- IP: identification (To be overriden)
---!     X"00", X"00",	-- IP: Flags and fragments offset
---!     X"74",	-- IP: Time to live
---!     X"11",	-- IP: protocol =UDP
---!     X"00", X"00",	-- IP: Header checksum.  Not used. Actual IP Header checksum computed on the fly is transmitted instead. 0x0A6F for a 20-byte payload
---!     X"0A", X"0A", X"0A", X"0B",	-- IP: Source IP
---!     X"0A", X"0A", X"0A", X"0A",	-- IP: Destination IP
---!     -- UDP
---!     X"00", X"00",	-- UDP: Source port (still works if zero)
---!     X"A0", X"28",	-- UDP: Destination port
---!     X"00", X"00",	-- UDP: Length . Not used. Actual length value (DATA_LENGTH+8) is transmitted instead . 0x001C for a 20-byte payload.
---!     X"00", X"00",	-- UDP: Checksum (disabled)
---!     UDP payload
---!     Padding (if needed to guarantee minimum frame length)
---!     Ethernet CRC32
+-- This module receives 1G Ethernet data from a GMII (8-bit parallel) interface
+--
+-- Incoming GMII data is decoded on-the-fly using a state machine to inspect each interesting part of the packet.
+-- The receiver will answer to broadcast packets to to packets with the MAC and IP addresses specified by corresponding the input ports, as long as they also have the matching destination port number.
+-- When it arrives, the UDP payload is written inthe data FIFO. The Flag fifo is then written with 0 or 1 to indicate that the packet is complete, and whether the data is valid (good CRC).
+-- ARP requests that have a matching IP address are processed by serring an ARM request flag that will be used to tell the TX module to send an ARM reply.
+
+-- UDP/IP/Ethernet Packet structure
+--
+-- - Ethernet header
+--
+--     X"00", X"1b", X"fc", X"43", X"ba", X"ff", -- Ethernet destination MAC address
+--     X"12", X"34", X"56", X"78", X"9A", X"BC", -- Ethernet source MAC address
+--     X"08", X"00",	-- Ethertype: Ethernet (jumbo = 0x8870)
+--
+--  -IP header
+--
+--     X"45", X"00",	-- IP: Version, Header length, DSCP/ECP
+--     X"00", X"00",	-- IP: Length. Not used. Actual length value (DATA_LENGTH+28) is transmitted instead. 0x0030 for a 20-byte payload.
+--     X"14", X"26",	-- IP: identification (To be overriden)
+--     X"00", X"00",	-- IP: Flags and fragments offset
+--     X"74",	-- IP: Time to live
+--     X"11",	-- IP: protocol =UDP
+--     X"00", X"00",	-- IP: Header checksum.  Not used. Actual IP Header checksum computed on the fly is transmitted instead. 0x0A6F for a 20-byte payload
+--     X"0A", X"0A", X"0A", X"0B",	-- IP: Source IP
+--     X"0A", X"0A", X"0A", X"0A",	-- IP: Destination IP
+--
+--  - UDP header
+--     X"00", X"00",	-- UDP: Source port (still works if zero)
+--     X"A0", X"28",	-- UDP: Destination port
+--     X"00", X"00",	-- UDP: Length . Not used. Actual length value (DATA_LENGTH+8) is transmitted instead . 0x001C for a 20-byte payload.
+--     X"00", X"00",	-- UDP: Checksum (disabled)
+--  - UDP payload
+--  - Padding (if needed to guarantee minimum frame length)
+--  - Ethernet CRC32
+--
 entity udp_mac_rx is
 	generic(
 		BROADCAST_IP_PORT: integer
@@ -102,7 +114,7 @@ entity udp_mac_rx is
 		);
 end udp_mac_rx;
 
-architecture Behavioral of udp_mac_rx is
+architecture impl of udp_mac_rx is
 
 	-- RX state machine states
 	TYPE RX_STATE_TYPE IS -- States of the RX state machine
@@ -133,13 +145,13 @@ architecture Behavioral of udp_mac_rx is
 		RX_STATE_ARP_TARGET_IP
 	);
 
-	signal rx_state: RX_STATE_TYPE:=RX_STATE_STDBY; -- Initialization needed
-	signal rx_state_ctr: unsigned(7 downto 0):=(others=>'0'); -- counts clocks within a state
+	signal rx_state: RX_STATE_TYPE := RX_STATE_STDBY; -- Initialization needed
+	signal rx_state_ctr: unsigned(7 downto 0) := (others => '0'); -- counts clocks within a state
 
 
 	signal rx_udp_length: std_logic_vector(15 downto 0); -- udp packet length (including header), to be insterted in udp length field
 	signal rx_payload_length: unsigned(15 downto 0); -- payload length
-	signal rx_payload_ctr: unsigned(15 downto 0) := (others=>'0'); -- payload counter.
+	signal rx_payload_ctr: unsigned(15 downto 0) := (others => '0'); -- payload counter.
 
 	signal rx_clk: std_logic;
 	signal gmii_rx_en: std_logic;
@@ -149,14 +161,7 @@ architecture Behavioral of udp_mac_rx is
 	signal rx_data_wide: std_logic_vector(47 downto 0);
 	signal rx_start_of_frame,rx_frame: std_logic:='0';
 
-	-- signal rx_frame_valid: std_logic:='0';
-	-- signal rx_store_frame: std_logic:='0';
-	-- signal rx_data_fifo_ctr: unsigned(15 downto 0) := (others=>'0'); -- fifo data counter.
-
-	--signal mac_addr_match: std_logic:='0'; -- init not needed, cleared when a new frame begins
-	--signal ip_addr_match: std_logic:='0'; -- init not needed
 	signal ip_addr_broadcast: std_logic;
-	--signal mac_addr_broadcast: std_logic;
 	signal latest_remote_mac_addr_temp: std_logic_vector(47 downto 0);
 	signal latest_remote_ip_addr_temp: std_logic_vector(31 downto 0);
 	signal latest_remote_ip_port_temp: std_logic_vector(15 downto 0);
@@ -169,17 +174,21 @@ architecture Behavioral of udp_mac_rx is
 	signal rx_crc_reg_out: std_logic_vector(31 downto 0); -- Ethernet CRC word
 
 	-- RX data FIFO signals
+
 	signal rx_data_fifo_wr_en: std_logic :='0'; -- must be initialized
 	signal rx_data_fifo_rd_en: std_logic:='0';
 	signal rx_data_fifo_almost_full: std_logic;
 	signal rx_data_fifo_empty: std_logic;
 	signal rx_data_fifo_valid: std_logic;
 	signal rx_data_fifo_dout: std_logic_vector(8 downto 0);
-	signal rx_data_fifo_din: std_logic_vector(8 downto 0) := (others=>'0');
+	signal rx_data_fifo_din: std_logic_vector(8 downto 0) := (others => '0');
+	signal rx_data_fifo_dout64: std_logic_vector(63 downto 0);
+	signal rx_data_fifo_dout8: std_logic_vector(7 downto 0);
 
 	-- RX frame FIFO signals
+
 	signal rx_frame_fifo_dout: std_logic_vector(0 downto 0); --
-	signal rx_frame_fifo_din: std_logic_vector(0 downto 0) := (others=>'0'); --
+	signal rx_frame_fifo_din: std_logic_vector(0 downto 0) := (others => '0'); --
 	signal rx_frame_fifo_rd_en: std_logic := '0';
 	signal rx_frame_fifo_wr_en: std_logic := '0';
 	signal rx_frame_fifo_valid: std_logic;
@@ -206,7 +215,7 @@ gmii_rx_d <= gmii_rxd;
 -- Compute UDP payload length from UDP packet length
 rx_payload_length <= (unsigned(rx_udp_length)-8);
 
---! Instantiate CRC32 Engine
+-- Instantiate CRC32 Engine
 CRC32_0: entity work.crc32
 	port map(
 --		crc_reg => eth_crc,
@@ -220,23 +229,79 @@ CRC32_0: entity work.crc32
 		reset   => rst
 	);
 
---! Instantiate Data FIFO
---! This is a First-Word-Fall-Through FIFO
---! This stored the data frame. Bit 8 indicates wether this is the last byte.
-DATA_FIFO0 : entity work.udp_mac_rx_data_fifo
+-- Instantiate Data FIFO
+-- This is a First-Word-Fall-Through FIFO
+-- This stored the data frame. Bit 8 indicates wether this is the last byte.
+-- DATA_FIFO0 : entity work.udp_mac_rx_data_fifo
+--	port map (
+--		rst         => rst,
+--		wr_clk      => rx_clk,
+--		rd_clk      => clk,
+--		din         => rx_data_fifo_din,
+--		wr_en       => rx_data_fifo_wr_en,
+--		rd_en       => rx_data_fifo_rd_en,
+--		dout        => rx_data_fifo_dout,
+--		full        => open,
+--		almost_full => rx_data_fifo_almost_full,
+--		empty       => rx_data_fifo_empty,
+--		valid       => rx_data_fifo_valid
+--		);
+
+-- Independent clock Builtin FWFT FIFO, 9-bit input data width, 9-bit output data width, with output register, latency=0
+-- This FIFO stores the data frame. Bit 8 indicates wether this is the last byte of the frame (TLAST).
+
+	rx_data_fifo_dout <= rx_data_fifo_dout8(0) & rx_data_fifo_dout64(7 downto 0);
+
+data_fifo0 : FIFO36E1  -- works only for 7-series
+	generic map (
+		ALMOST_FULL_OFFSET => X"0FFF",    -- Sets almost full threshold
+		DATA_WIDTH => 9,                  -- Data width is 9 bits, meaning that depth = 36K/9 = 4K bytes
+		DO_REG => 1,                      -- Enable output register (1-0) Must be 1 if EN_SYN = FALSE
+		EN_SYN => FALSE,                  -- Asynchronous FIFO
+		FIFO_MODE => "FIFO36",            -- "FIFO36" or "FIFO36_72"
+		FIRST_WORD_FALL_THROUGH => TRUE   -- We want FWFT
+	)
 	port map (
-		rst         => rst,
-		wr_clk      => rx_clk,
-		rd_clk      => clk,
-		din         => rx_data_fifo_din,
-		wr_en       => rx_data_fifo_wr_en,
-		rd_en       => rx_data_fifo_rd_en,
-		dout        => rx_data_fifo_dout,
-		full        => open,
-		almost_full => rx_data_fifo_almost_full,
-		empty       => rx_data_fifo_empty,
-		valid       => rx_data_fifo_valid
-		);
+
+		-- Write interfce
+
+		wrclk => rx_clk,              -- 1-bit input: Rising edge write clock.
+		wren  => rx_data_fifo_wr_en,  -- 1-bit input: Write enable
+
+		di(63 downto 8) => (others => '0'), -- data bus is 64 bit, only 8 LSBs are used
+		di(7 downto 0)  => rx_data_fifo_din(7 downto 0),
+		dip(7 downto 1) => (others => '0'), -- Parity bus is 8 bits, only LSB is used
+		dip(0)          => rx_data_fifo_din(8),
+
+		-- Read interface
+
+		rdclk => clk, -- 1-bit input: Read clock
+		rden  => rx_data_fifo_rd_en, -- 1-bit input: Read enable
+		regce => '1', -- 1-bit input: Clock enable
+
+		do  => rx_data_fifo_dout64, -- 64-bit data output. Valid data is in 8 LSBs
+		dop => rx_data_fifo_dout8, -- 8 bit parity output. Valid data is on LSB
+		-- DO(7 downto 0) => rx_data_fifo_dout(7 downto 0), -- Partial assignment causes a synthesis error
+		-- DOP(0) => rx_data_fifo_dout(8), -- Partial assignment causes a synthesis error
+
+		-- Status flags
+
+		almostfull => rx_data_fifo_almost_full, -- 1-bit output: Almost full flag
+		empty => rx_data_fifo_empty,            -- 1-bit output: Empty flag
+		full => open,                           -- 1-bit output: Full flag
+
+
+		-- ECC Signals (unused)
+		injectdbiterr => '0',
+		injectsbiterr => '0',
+
+		-- Resets
+
+		rst    => rst, -- 1-bit input: Reset
+		rstreg => rst  -- 1-bit input: Output register set/reset
+   );
+
+
 
 -- Instantiate Frame FIFO, which contains a single bit flag that indicates that a  frame is in the
 -- data FIFO, and whether it is valid or not.
@@ -245,61 +310,100 @@ DATA_FIFO0 : entity work.udp_mac_rx_data_fifo
 --
 -- The frame validity flag is written in this FIFO once the data is finished to be written in the
 -- DATA FIFO. If the flag is '0', the frame will be discarded.
-FRAME_FIFO0 : entity work.udp_mac_rx_frame_fifo
-	port map (
-		rst    => rst,
-		wr_clk => rx_clk,
-		rd_clk => clk,
-		din    => rx_frame_fifo_din,
-		wr_en  => rx_frame_fifo_wr_en,
-		rd_en  => rx_frame_fifo_rd_en,
-		dout   => rx_frame_fifo_dout,
-		full   => rx_frame_fifo_full,
-		empty  => rx_frame_fifo_empty,
-		valid  => rx_frame_fifo_valid
-		);
+--FRAME_FIFO0 : entity work.udp_mac_rx_frame_fifo
+--	port map (
+--		rst    => rst,
+--		wr_clk => rx_clk,
+--		rd_clk => clk,
+--		din    => rx_frame_fifo_din,
+--		wr_en  => rx_frame_fifo_wr_en,
+--		rd_en  => rx_frame_fifo_rd_en,
+--		dout   => rx_frame_fifo_dout,
+--		full   => rx_frame_fifo_full,
+--		empty  => rx_frame_fifo_empty,
+--		valid  => rx_frame_fifo_valid
+--		);
+
+frame_fifo0: xpm_fifo_async
+    generic map (
+       FIFO_MEMORY_TYPE => "dist", -- String
+       READ_MODE => "fwft",         -- String
+       FIFO_READ_LATENCY => 0,     --must be 0 for READ_MODE=fwft
+       WRITE_DATA_WIDTH => 1,     -- DECIMAL
+       FIFO_WRITE_DEPTH => 64,   --
+       READ_DATA_WIDTH => 1,      -- DECIMAL
+       FULL_RESET_VALUE => 0,      -- DECIMAL
+       SIM_ASSERT_CHK => 1,        -- DECIMAL; 0=disable simulation messages, 1=enable simulation messages
+       USE_ADV_FEATURES => "1000", -- Hex string: bit 0: overflow, 1:prog_full, 2:wr_count, 3:almost_full, 8:underflow, 9:prog_empty, 10:rd_count, 11: almost_empty, [12:valid]
+       WR_DATA_COUNT_WIDTH => 11    -- Not needed
+    )
+    port map (
+
+       rst => rst,               -- Reset, synchronous to wr_clk.
+
+       -- Write domain
+       wr_clk => rx_clk,                  -- Write clock
+       din    => rx_frame_fifo_din,                -- Write Data:
+       wr_en  => rx_frame_fifo_wr_en,            -- Write Enable: Must be held active-low when rst or wr_rst_busy is active high.
+       full   => rx_frame_fifo_full,              -- Full Flag:  Write requests are ignored when the FIFO is full.
+
+        -- Read domain
+       rd_clk     => clk,          -- Read clock
+       rd_en      => rx_frame_fifo_rd_en,            -- 1-bit input: Read Enable: Must be held low when rd_rst_busy is active high.
+       dout       => rx_frame_fifo_dout,              -- Read Data
+       data_valid => rx_frame_fifo_valid,       -- Read Data Valid: High when data is available on dout.
+       empty      => rx_frame_fifo_empty,            -- Empty Flag: High when FIFO is empty. Read requests are ignored.
+
+       injectdbiterr => '0', -- Double Bit Error Injection: Injects a double bit error
+       injectsbiterr => '0', -- Single Bit Error Injection: Injects a single bit error
+       sleep => '0'         -- Dynamic power saving: If sleep is High, the memory/fifo block is in power saving mode.
+    );
 
 
 ---------------------
--- Receiver front end
+-- FIFO readout
 ---------------------
+--
+-- Connect the receiver output to the output of the DATA FIFO. Enable the TVALID flag only when a full packet has been buffered and was fully validated, which is signaled bythe frame FIFO.
 
-
- -- Output data is ready if 1) there is a frame flag in the FRAME FIFO, 2) the frame flag says the frame is valid (i.e. is not being flushed out) and 3) the data fifo has valid data.
+-- Output data is ready if 1) there is a frame flag in the FRAME FIFO, 2) the frame flag says the frame is valid (i.e. is not being flushed out) and 3) the data fifo has valid data.
 m_axis_udp_rx_tvalid <= rx_frame_fifo_valid and rx_frame_fifo_dout(0) and rx_data_fifo_valid;
 m_axis_udp_rx_tdata <= rx_data_fifo_dout(7 downto 0);
 m_axis_udp_rx_tlast <= rx_data_fifo_dout(8);
 
--- Fetch the next frame flag when the last byte of the data fifo is being read
+-- Generate the data & fame FIFO read enable signals
+--
+-- There are generated combinatorially, but we run this at 125 MHz, so we don't worry about timing here
+
+-- Fetch the next frame flag when 1) there is a frame bit available; 2) there is a data byte available; 3) we are reading the last byte of a frame; 4) the AXI-S link has absorbed the data or the flag indicates we are flushing the frame
 rx_frame_fifo_rd_en <= '1' when rx_frame_fifo_valid = '1' and  rx_data_fifo_valid = '1' and rx_data_fifo_dout(8) = '1' and (rx_frame_fifo_dout(0) = '0' or m_axis_udp_rx_tready = '1') else '0';
 -- Read the data fifo if 1) we have a frame flag and either: the user read the data or the data is to be flushed according to the frame flag
 rx_data_fifo_rd_en <= '1' when rx_frame_fifo_valid = '1' and (rx_frame_fifo_dout(0) = '0' or m_axis_udp_rx_tready = '1') else '0';
 
 
 ---------------------
--- Receiver back end
+-- Frame decoding and FIFO storage
 ---------------------
 
 -- Async RAM readout. RAM output is valid at the same time as the substate (which is the header byte number)
 
 --rx_ram_dout <= RX_RAM(to_integer(RX_STATE_CTR(5 downto 0))); -- Clock RAM output. Is aligned with data
---rx_ram_match <= '1' when rx_ram_dout =RX_DATA;
-rx_data_wide <= (RX_DATA_DLY4 & RX_DATA_DLY3 & RX_DATA_DLY2 & RX_DATA_DLY1 & RX_DATA_DLY & RX_DATA);
+--rx_ram_match <= '1' when rx_ram_dout =rx_data;
+
+-- Combine the last 5 bytes and the curent byte to generate a 48-bit number (enough to fit a MAC address)
+rx_data_wide <= (rx_data_dly4 & rx_data_dly3 & rx_data_dly2 & rx_data_dly1 & rx_data_dly & rx_data);
 
 rx_back_end: process (RX_CLK, RST)
 	variable is_broadcast_var: std_logic;
 	begin
-		if RST='1' then
+		if rst = '1' then -- async reset, should probably move into sync reset.
 			arp_request <= '0';
 			rx_overflow_int <= '0';
 
 		elsif rising_edge(RX_CLK) then
 
-			-- Register data and enable (frame) signals
---			rx_data0 <= GMII_RX_D;
---			rx_frame0 <= GMII_RX_EN;
 
-			-- Frame detect : set RX_FRAME during every data byte after SOF until no more data is sent.
+			-- Frame detect : monitors the GMII interface, and set rx_start_of_frame and the SOF byte is detected and rx_frame for any subsequent byres. Both are cleared whenever gmii_rx_en =0, signifying the end of frame.
 			if(gmii_rx_en = '0') then -- no data received, clear frame flag
 				rx_frame <= '0';
 				rx_start_of_frame <= '0';
@@ -313,14 +417,16 @@ rx_back_end: process (RX_CLK, RST)
 			end if;
 
 
-			-- Data and FRAME delay line
+			-- Data delay line
 			rx_data_dly <= rx_data;
 			rx_data_dly1 <= rx_data_dly;
 			rx_data_dly2 <= rx_data_dly1;
 			rx_data_dly3 <= rx_data_dly2;
 			rx_data_dly4 <= rx_data_dly3;
 
-		-- CRC engine control
+			-- CRC engine control
+			--
+			-- We set the CRC init/calc/en bits to alow the CRC module to compute its CRC on the specified part of the incoming frame.
 			if rx_state = RX_STATE_STDBY then -- initialize CRC while waiting for first data
 				rx_crc_init <= '1';
 				rx_crc_calc <= '0';
@@ -337,20 +443,6 @@ rx_back_end: process (RX_CLK, RST)
 
 
 
-			-- Frame FIFO control
-			-- if rx_store_frame = '1' then
-			-- 	if (rx_data_fifo_ctr /= 0) then
-			-- 		rx_frame_fifo_wr_en <= '1';
-			-- 		rx_frame_fifo_din <= ((not rx_frame_valid) & std_logic_vector(rx_data_fifo_ctr));
-			-- 	end if;
-			-- 	rx_data_fifo_ctr <= (others=>'0');
-			-- else
-			-- 	rx_frame_fifo_wr_en <= '0';
-			-- 	if rx_data_fifo_wr_en = '1' then
-			-- 		rx_data_fifo_ctr <= rx_data_fifo_ctr+1;
-			-- 	end if;
-			-- end if;
-
 			rx_data_fifo_wr_en <= '0'; -- This is active for one clock cycle. Overriden below.
 			rx_frame_fifo_wr_en <= '0'; -- This is active for one clock cycle. Overriden below.
 
@@ -366,12 +458,12 @@ rx_back_end: process (RX_CLK, RST)
 							--mac_addr_match <= '0';
 							--ip_addr_match <= '0';
 							rx_state <= RX_STATE_MAC_DEST_ADDR;
-							rx_state_ctr <= (others=>'0');
+							rx_state_ctr <= (others => '0');
 						end if;
 					end if;
 
 				-- Check Destination MAC Address
-				when RX_STATE_MAC_DEST_ADDR => -- At this point, RX_DATA contains the first MAC Destination word, state_ctr = 0
+				when RX_STATE_MAC_DEST_ADDR => -- At this point, rx_data contains the first MAC Destination word, state_ctr = 0
 					if rx_frame = '0' then
 						rx_state <= RX_STATE_STDBY; -- fall back to standby state if frame is interrupted during the header
 					elsif rx_state_ctr = 6-1 then
@@ -383,7 +475,7 @@ rx_back_end: process (RX_CLK, RST)
 						if (rx_data_wide = local_mac_addr or is_broadcast_var='1') then -- if this packet is destined to us (by exact address or by broadcast)
 							--mac_addr_match <= '1';
 							--mac_addr_broadcast <= is_broadcast_var;
-							rx_state_ctr <= (others=>'0');
+							rx_state_ctr <= (others => '0');
 							rx_state <= RX_STATE_MAC_SRC_ADDR;
 						else
 							rx_state <= RX_STATE_SKIP;
@@ -401,7 +493,7 @@ rx_back_end: process (RX_CLK, RST)
 						latest_remote_mac_addr_temp <= rx_data_wide; -- Store MAC address of first received packet
 	--					end if;
 						rx_state <= RX_STATE_ETHERTYPE;
-						rx_state_ctr <= (others=>'0');
+						rx_state_ctr <= (others => '0');
 					else
 						rx_state_ctr <= rx_state_ctr + 1;
 					end if;
@@ -412,11 +504,11 @@ rx_back_end: process (RX_CLK, RST)
 						rx_state <= RX_STATE_STDBY; -- fall back to standby state if frame is interrupted during the header
 					elsif rx_state_ctr = 2-1 then
 						if rx_data_wide(15 downto 0) = X"0800" then -- if IP packet
-							rx_state_ctr <= (others=>'0');
+							rx_state_ctr <= (others => '0');
 							rx_state <= RX_STATE_IP_TYPE;
 						elsif rx_data_wide(15 downto 0) = X"0806" then -- if ARP packet
 							arp_request <= '0';
-							rx_state_ctr <= (others=>'0');
+							rx_state_ctr <= (others => '0');
 							rx_state <= RX_STATE_ARP_TYPE;
 						else -- otherwise not a known type, skip ethernet frame
 							rx_state <= RX_STATE_SKIP;
@@ -432,7 +524,7 @@ rx_back_end: process (RX_CLK, RST)
 						rx_state <= RX_STATE_SKIP;
 					else
 						rx_state <= RX_STATE_IP_HEADER;
-						rx_state_ctr <= (others=>'0');
+						rx_state_ctr <= (others => '0');
 					end if;
 
 				when RX_STATE_IP_HEADER =>
@@ -440,7 +532,7 @@ rx_back_end: process (RX_CLK, RST)
 						rx_state <= RX_STATE_STDBY; -- fall back to standby state if frame is interrupted during the header
 					elsif rx_state_ctr = 8-1 then
 						rx_state <= RX_STATE_IP_PROTOCOL;
-						rx_state_ctr <= (others=>'0');
+						rx_state_ctr <= (others => '0');
 					else
 						rx_state_ctr <= rx_state_ctr + 1;
 					end if;
@@ -452,7 +544,7 @@ rx_back_end: process (RX_CLK, RST)
 						rx_state <= RX_STATE_SKIP;
 					else
 						rx_state <= RX_STATE_IP_CHECKSUM;
-						rx_state_ctr <= (others=>'0');
+						rx_state_ctr <= (others => '0');
 					end if;
 
 				when RX_STATE_IP_CHECKSUM =>
@@ -460,7 +552,7 @@ rx_back_end: process (RX_CLK, RST)
 						rx_state <= RX_STATE_STDBY; -- fall back to standby state if frame is interrupted during the header
 					elsif rx_state_ctr = 2-1 then
 						rx_state <= RX_STATE_IP_SRC_ADDR;
-						rx_state_ctr <= (others=>'0');
+						rx_state_ctr <= (others => '0');
 					else
 						rx_state_ctr <= rx_state_ctr + 1;
 					end if;
@@ -471,7 +563,7 @@ rx_back_end: process (RX_CLK, RST)
 					elsif rx_state_ctr = 4-1 then
 						latest_remote_ip_addr_temp <= rx_data_wide(31 downto 0); -- Store source IP address of first received packet
 						rx_state <= RX_STATE_IP_DEST_ADDR;
-						rx_state_ctr <= (others=>'0');
+						rx_state_ctr <= (others => '0');
 					else
 						rx_state_ctr <= rx_state_ctr + 1;
 					end if;
@@ -489,7 +581,7 @@ rx_back_end: process (RX_CLK, RST)
 							--ip_addr_match <= '1';
 							ip_addr_broadcast <= is_broadcast_var;
 							rx_state <= RX_STATE_IP_SRC_PORT;
-							rx_state_ctr <= (others=>'0');
+							rx_state_ctr <= (others => '0');
 						else
 							rx_state <= RX_STATE_SKIP;
 						end if;
@@ -503,7 +595,7 @@ rx_back_end: process (RX_CLK, RST)
 					elsif rx_state_ctr = 2-1 then
 						latest_remote_ip_port_temp <= rx_data_wide(15 downto 0); -- Store the IP port number
 						rx_state <= RX_STATE_IP_DEST_PORT;
-						rx_state_ctr <= (others=>'0');
+						rx_state_ctr <= (others => '0');
 					else
 						rx_state_ctr <= rx_state_ctr + 1;
 					end if;
@@ -520,7 +612,7 @@ rx_back_end: process (RX_CLK, RST)
 								latest_remote_ip_port <= latest_remote_ip_port_temp; -- Store the IP port number
 							end if;
 							rx_state <= RX_STATE_UDP_LENGTH;
-							rx_state_ctr <= (others=>'0');
+							rx_state_ctr <= (others => '0');
 						else
 							rx_state <= RX_STATE_SKIP;
 						end if;
@@ -534,7 +626,7 @@ rx_back_end: process (RX_CLK, RST)
 					elsif rx_state_ctr = 2-1 then
 						rx_udp_length <= rx_data_wide(rx_udp_length'Range);
 						rx_state <= RX_STATE_UDP_CHECKSUM;
-						rx_state_ctr <= (others=>'0');
+						rx_state_ctr <= (others => '0');
 					else
 						rx_state_ctr <= rx_state_ctr + 1;
 					end if;
@@ -581,19 +673,19 @@ rx_back_end: process (RX_CLK, RST)
 				when RX_STATE_SKIP_CRC => -- skip remaining bytes of frame (which includes padding and the CRC). CRC is still being computed on the delayed data stream
 					if(rx_frame = '0') then
 						rx_state <= RX_STATE_CHECK_CRC;
-						rx_state_ctr <= (others=>'0');
+						rx_state_ctr <= (others => '0');
 					end if;
 
 				when RX_STATE_CHECK_CRC => -- The data frame has ended, but the CRC engine now outputs the 4 CRC bytes
-					if (rx_data_dly4/=rx_crc_out) then
+					if rx_data_dly4 /= rx_crc_out then
 						rx_frame_fifo_din(0) <= '0'; -- Bad CRC. Frame is invalid and should be flushed
 						rx_frame_fifo_wr_en <= '1'; -- write frame data in the FRAME FIFO .
 						rx_state <= RX_STATE_STDBY; -- go back to standby
-					elsif (rx_frame = '1') then -- a new frame began while we were processing the CRC (which violates the minimum interframe delay)
+					elsif rx_frame = '1' then -- a new frame began while we were processing the CRC (which violates the minimum interframe delay)
 						rx_frame_fifo_din(0) <= '0'; --  Frame is invalid and should be flushed
 						rx_frame_fifo_wr_en <= '1'; -- write frame data in the FRAME FIFO .
 						rx_state <= RX_STATE_SKIP; -- go back to standby
-					elsif (rx_state_ctr = 4-1) then
+					elsif rx_state_ctr = 4 - 1 then
 						rx_frame_fifo_din(0) <= '1'; -- Everything checked out - rame is valid
 						rx_frame_fifo_wr_en <= '1'; -- write frame data in the FRAME FIFO .
 						rx_state <= RX_STATE_STDBY;
@@ -602,19 +694,19 @@ rx_back_end: process (RX_CLK, RST)
 					end if;
 
 				when  RX_STATE_SKIP=> -- skip remaining bytes of frame
-					if(rx_frame = '0') then
+					if rx_frame = '0' then
 						rx_state <= RX_STATE_STDBY;
-						rx_state_ctr <= (others=>'0');
+						rx_state_ctr <= (others => '0');
 					end if;
 
-				------- ARP ---------
+				------- ARP STATES ---------
 
 				when RX_STATE_ARP_TYPE =>
 					if rx_frame = '0' then
 						rx_state <= RX_STATE_STDBY; -- fall back to standby state if frame is interrupted during the header
 					elsif rx_state_ctr = 6-1 then
 						if rx_data_wide = X"000108000604" then -- if htype = Ethernet, proto = IP, hsize = 6 and pize = 4
-							rx_state_ctr <= (others=>'0');
+							rx_state_ctr <= (others => '0');
 							rx_state <= RX_STATE_ARP_OPCODE;
 						else -- otherwise not a known type, skip ethernet frame
 							rx_state <= RX_STATE_SKIP;
@@ -628,7 +720,7 @@ rx_back_end: process (RX_CLK, RST)
 						rx_state <= RX_STATE_STDBY; -- fall back to standby state if frame is interrupted during the header
 					elsif rx_state_ctr = 2-1 then
 						if rx_data_wide(15 downto 0)=X"0001" then -- if opcode = request
-							rx_state_ctr <= (others=>'0');
+							rx_state_ctr <= (others => '0');
 							rx_state <= RX_STATE_ARP_SENDER_MAC;
 						else -- otherwise not a known type, skip ethernet frame
 							rx_state <= RX_STATE_SKIP;
@@ -643,7 +735,7 @@ rx_back_end: process (RX_CLK, RST)
 					elsif rx_state_ctr = 6-1 then
 						arp_remote_mac_addr <= rx_data_wide; -- Store MAC address of sender to be used to reply
 						rx_state <= RX_STATE_ARP_SENDER_IP;
-						rx_state_ctr <= (others=>'0');
+						rx_state_ctr <= (others => '0');
 					else
 						rx_state_ctr <= rx_state_ctr + 1;
 					end if;
@@ -655,7 +747,7 @@ rx_back_end: process (RX_CLK, RST)
 						arp_remote_ip_addr <= rx_data_wide(31 downto 0); -- Store source IP address of sender to be used to reply
 						--rx_first_src <= '0';
 						rx_state <= RX_STATE_ARP_TARGET_MAC;
-						rx_state_ctr <= (others=>'0');
+						rx_state_ctr <= (others => '0');
 					else
 						rx_state_ctr <= rx_state_ctr + 1;
 					end if;
@@ -665,7 +757,7 @@ rx_back_end: process (RX_CLK, RST)
 						rx_state <= RX_STATE_STDBY; -- fall back to standby state if frame is interrupted during the header
 					elsif rx_state_ctr = 6-1 then
 						rx_state <= RX_STATE_ARP_TARGET_IP;
-						rx_state_ctr <= (others=>'0');
+						rx_state_ctr <= (others => '0');
 					else
 						rx_state_ctr <= rx_state_ctr + 1;
 					end if;
@@ -688,7 +780,7 @@ rx_back_end: process (RX_CLK, RST)
 
 
 
-end Behavioral;
+end impl;
 
 
 

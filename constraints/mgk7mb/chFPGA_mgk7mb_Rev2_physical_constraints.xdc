@@ -848,6 +848,7 @@ resize_pblock [get_pblocks CHAN4] -add {DSP48_X0Y0:DSP48_X8Y9}
 resize_pblock [get_pblocks CHAN4] -add {RAMB18_X1Y0:RAMB18_X8Y9 RAMB18_X0Y0:RAMB18_X0Y5}
 resize_pblock [get_pblocks CHAN4] -add {RAMB36_X1Y0:RAMB36_X8Y4 RAMB36_X0Y0:RAMB36_X0Y2}
 # add_cells_to_pblock [get_pblocks CHAN4] [get_cells -quiet [list {chfpga0/CHANGEN[4].CHANi}]]
+# set_property IS_SOFT FALSE [get_pblocks CHAN4]
 
 create_pblock CHAN5
 add_cells_to_pblock [get_pblocks CHAN5] [get_cells -quiet [list {chfpga0/CHANGEN[5].CHANi}]]
@@ -856,6 +857,7 @@ resize_pblock [get_pblocks CHAN5] -add {DSP48_X0Y10:DSP48_X8Y19}
 resize_pblock [get_pblocks CHAN5] -add {RAMB18_X1Y10:RAMB18_X8Y19 RAMB18_X0Y10:RAMB18_X0Y15}
 resize_pblock [get_pblocks CHAN5] -add {RAMB36_X1Y5:RAMB36_X8Y9 RAMB36_X0Y5:RAMB36_X0Y7}
 # add_cells_to_pblock [get_pblocks CHAN5] [get_cells -quiet [list {chfpga0/CHANGEN[5].CHANi}]]
+# set_property IS_SOFT FALSE [get_pblocks CHAN5]
 
 create_pblock CHAN6
 add_cells_to_pblock [get_pblocks CHAN6] [get_cells -quiet [list {chfpga0/CHANGEN[6].CHANi}]]
@@ -864,6 +866,7 @@ resize_pblock [get_pblocks CHAN6] -add {DSP48_X0Y20:DSP48_X8Y29}
 resize_pblock [get_pblocks CHAN6] -add {RAMB18_X1Y20:RAMB18_X8Y29 RAMB18_X0Y20:RAMB18_X0Y25}
 resize_pblock [get_pblocks CHAN6] -add {RAMB36_X1Y10:RAMB36_X8Y14 RAMB36_X0Y10:RAMB36_X0Y12}
 # add_cells_to_pblock [get_pblocks CHAN6] [get_cells -quiet [list {chfpga0/CHANGEN[6].CHANi}]]
+# set_property IS_SOFT FALSE [get_pblocks CHAN6]
 
 create_pblock CHAN7
 add_cells_to_pblock [get_pblocks CHAN7] [get_cells -quiet [list {chfpga0/CHANGEN[7].CHANi}]]
@@ -872,6 +875,7 @@ resize_pblock [get_pblocks CHAN7] -add {DSP48_X0Y30:DSP48_X8Y39}
 resize_pblock [get_pblocks CHAN7] -add {RAMB18_X1Y30:RAMB18_X8Y39 RAMB18_X0Y34:RAMB18_X0Y39}
 resize_pblock [get_pblocks CHAN7] -add {RAMB36_X1Y15:RAMB36_X8Y19 RAMB36_X0Y17:RAMB36_X0Y19}
 # add_cells_to_pblock [get_pblocks CHAN7] [get_cells -quiet [list {chfpga0/CHANGEN[7].CHANi}]]
+# set_property IS_SOFT FALSE [get_pblocks CHAN7]
 
 
 
@@ -1010,6 +1014,11 @@ resize_pblock [get_pblocks BP0] -add {SLICE_X140Y160:SLICE_X189Y204}
 resize_pblock [get_pblocks BP0] -add {DSP48_X9Y64:DSP48_X11Y81}
 resize_pblock [get_pblocks BP0] -add {RAMB18_X9Y81:RAMB18_X11Y64}
 resize_pblock [get_pblocks BP0] -add {RAMB36_X9Y40:RAMB36_X11Y32}
+# Below may be too tight
+# resize_pblock [get_pblocks BP0] -add {SLICE_X144Y160:SLICE_X189Y199}
+# resize_pblock [get_pblocks BP0] -add {DSP48_X10Y64:DSP48_X11Y79}
+# resize_pblock [get_pblocks BP0] -add {RAMB18_X9Y64:RAMB18_X11Y79}
+# resize_pblock [get_pblocks BP0] -add {RAMB36_X9Y32:RAMB36_X11Y39}
 set_property IS_SOFT FALSE [get_pblocks BP0]
 
 
@@ -1030,6 +1039,9 @@ add_cells_to_pblock [get_pblocks BP1] [get_cells { \
 			}]
 resize_pblock [get_pblocks BP1] -add {SLICE_X142Y0:SLICE_X189Y39}
 resize_pblock [get_pblocks BP1] -add {DSP48_X9Y0:DSP48_X11Y15}
+# Below may be too tight
+# resize_pblock [get_pblocks BP1] -add {SLICE_X144Y0:SLICE_X189Y39}
+# resize_pblock [get_pblocks BP1] -add {DSP48_X10Y0:DSP48_X11Y15}
 resize_pblock [get_pblocks BP1] -add {RAMB18_X9Y0:RAMB18_X11Y15}
 resize_pblock [get_pblocks BP1] -add {RAMB36_X9Y0:RAMB36_X11Y7}
 set_property IS_SOFT FALSE [get_pblocks BP1]
@@ -1054,6 +1066,11 @@ resize_pblock [get_pblocks BP2] -add {SLICE_X180Y40:SLICE_X189Y94 SLICE_X142Y40:
 resize_pblock [get_pblocks BP2] -add {DSP48_X11Y16:DSP48_X11Y37 DSP48_X9Y16:DSP48_X10Y29}
 resize_pblock [get_pblocks BP2] -add {RAMB18_X9Y16:RAMB18_X11Y29}
 resize_pblock [get_pblocks BP2] -add {RAMB36_X9Y8:RAMB36_X11Y14}
+# Below may be too tight
+# resize_pblock [get_pblocks BP2] -add {SLICE_X180Y45:SLICE_X189Y94 SLICE_X144Y45:SLICE_X179Y74}
+# resize_pblock [get_pblocks BP2] -add {DSP48_X11Y18:DSP48_X11Y37 DSP48_X10Y18:DSP48_X10Y29}
+# resize_pblock [get_pblocks BP2] -add {RAMB18_X9Y18:RAMB18_X11Y29}
+# resize_pblock [get_pblocks BP2] -add {RAMB36_X9Y9:RAMB36_X11Y14}
 set_property IS_SOFT FALSE [get_pblocks BP2]
 
 
@@ -1073,6 +1090,11 @@ resize_pblock [get_pblocks BP3] -add {SLICE_X144Y205:SLICE_X189Y234 SLICE_X140Y2
 resize_pblock [get_pblocks BP3] -add {DSP48_X10Y82:DSP48_X11Y93 DSP48_X9Y82:DSP48_X9Y99}
 resize_pblock [get_pblocks BP3] -add {RAMB18_X9Y82:RAMB18_X11Y93}
 resize_pblock [get_pblocks BP3] -add {RAMB36_X9Y41:RAMB36_X11Y46}
+# Below may be too tight
+# resize_pblock [get_pblocks BP3] -add {SLICE_X140Y210:SLICE_X189Y234}
+# resize_pblock [get_pblocks BP3] -add {DSP48_X9Y84:DSP48_X11Y93}
+# resize_pblock [get_pblocks BP3] -add {RAMB18_X9Y84:RAMB18_X11Y93}
+# resize_pblock [get_pblocks BP3] -add {RAMB36_X9Y42:RAMB36_X11Y46}
 set_property IS_SOFT FALSE [get_pblocks BP3]
 
 
@@ -1094,6 +1116,10 @@ add_cells_to_pblock [get_pblocks BP4] [get_cells  { \
 			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[17].*}  \
 			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[18].*}  \
 			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[19].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[20].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[21].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[22].*}  \
+			{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[23].*}  \
 
           }]
 
@@ -1111,6 +1137,11 @@ resize_pblock [get_pblocks BP4] -add {SLICE_X140Y95:SLICE_X189Y159 SLICE_X166Y75
 resize_pblock [get_pblocks BP4] -add {DSP48_X9Y38:DSP48_X11Y63}
 resize_pblock [get_pblocks BP4] -add {RAMB18_X11Y30:RAMB18_X11Y63 RAMB18_X9Y38:RAMB18_X10Y63}
 resize_pblock [get_pblocks BP4] -add {RAMB36_X11Y15:RAMB36_X11Y31 RAMB36_X9Y19:RAMB36_X10Y31}
+# below may be too tight
+# resize_pblock [get_pblocks BP4] -add {SLICE_X140Y95:SLICE_X189Y159 SLICE_X166Y85:SLICE_X179Y94}
+# resize_pblock [get_pblocks BP4] -add {DSP48_X9Y38:DSP48_X11Y63}
+# resize_pblock [get_pblocks BP4] -add {RAMB18_X11Y34:RAMB18_X11Y63 RAMB18_X9Y38:RAMB18_X10Y63}
+# resize_pblock [get_pblocks BP4] -add {RAMB36_X11Y17:RAMB36_X11Y31 RAMB36_X9Y19:RAMB36_X10Y31}
 set_property IS_SOFT FALSE [get_pblocks BP4]
 # set_property EXCLUDE_PLACEMENT TRUE [get_pblocks BP4]
 
@@ -1124,6 +1155,8 @@ resize_pblock [get_pblocks ALIGN2] -add {SLICE_X140Y75:SLICE_X165Y94}
 resize_pblock [get_pblocks ALIGN2] -add {DSP48_X9Y30:DSP48_X10Y37}
 resize_pblock [get_pblocks ALIGN2] -add {RAMB18_X9Y30:RAMB18_X10Y37}
 resize_pblock [get_pblocks ALIGN2] -add {RAMB36_X9Y15:RAMB36_X10Y18}
+
+# set_property IS_SOFT FALSE [get_pblocks ALIGN2]
 
 
 create_pblock ALIGN3
@@ -1157,6 +1190,7 @@ resize_pblock [get_pblocks ALIGN3] -add {SLICE_X150Y290:SLICE_X189Y309 SLICE_X14
 resize_pblock [get_pblocks ALIGN3] -add {DSP48_X10Y116:DSP48_X11Y123 DSP48_X9Y118:DSP48_X9Y121}
 resize_pblock [get_pblocks ALIGN3] -add {RAMB18_X10Y116:RAMB18_X11Y123 RAMB18_X9Y118:RAMB18_X9Y121}
 resize_pblock [get_pblocks ALIGN3] -add {RAMB36_X10Y58:RAMB36_X11Y61 RAMB36_X9Y59:RAMB36_X9Y60}
+# set_property IS_SOFT FALSE [get_pblocks ALIGN3]
 
 
 create_pblock GPU0
@@ -1173,6 +1207,7 @@ resize_pblock [get_pblocks GPU0] -add {SLICE_X142Y250:SLICE_X189Y269 SLICE_X144Y
 resize_pblock [get_pblocks GPU0] -add {DSP48_X9Y100:DSP48_X11Y107}
 resize_pblock [get_pblocks GPU0] -add {RAMB18_X10Y100:RAMB18_X11Y107 RAMB18_X9Y98:RAMB18_X9Y107}
 resize_pblock [get_pblocks GPU0] -add {RAMB36_X10Y50:RAMB36_X11Y53 RAMB36_X9Y49:RAMB36_X9Y53}
+# set_property IS_SOFT FALSE [get_pblocks GPU0]
 
 
 create_pblock GPU1
@@ -1188,6 +1223,7 @@ resize_pblock [get_pblocks GPU1] -add {SLICE_X150Y270:SLICE_X189Y289 SLICE_X142Y
 resize_pblock [get_pblocks GPU1] -add {DSP48_X10Y108:DSP48_X11Y115 DSP48_X9Y108:DSP48_X9Y117}
 resize_pblock [get_pblocks GPU1] -add {RAMB18_X10Y108:RAMB18_X11Y115 RAMB18_X9Y108:RAMB18_X9Y117}
 resize_pblock [get_pblocks GPU1] -add {RAMB36_X10Y54:RAMB36_X11Y57 RAMB36_X9Y54:RAMB36_X9Y58}
+# set_property IS_SOFT FALSE [get_pblocks GPU1]
 
 
 create_pblock GPU2
@@ -1203,6 +1239,7 @@ resize_pblock [get_pblocks GPU2] -add {SLICE_X150Y310:SLICE_X189Y329 SLICE_X142Y
 resize_pblock [get_pblocks GPU2] -add {DSP48_X10Y124:DSP48_X11Y131 DSP48_X9Y122:DSP48_X9Y131}
 resize_pblock [get_pblocks GPU2] -add {RAMB18_X10Y124:RAMB18_X11Y131 RAMB18_X9Y122:RAMB18_X9Y131}
 resize_pblock [get_pblocks GPU2] -add {RAMB36_X10Y62:RAMB36_X11Y65 RAMB36_X9Y61:RAMB36_X9Y65}
+# set_property IS_SOFT FALSE [get_pblocks GPU2]
 
 
 create_pblock GPU3
@@ -1218,6 +1255,7 @@ resize_pblock [get_pblocks GPU3] -add {SLICE_X150Y330:SLICE_X189Y349 SLICE_X142Y
 resize_pblock [get_pblocks GPU3] -add {DSP48_X10Y132:DSP48_X11Y139 DSP48_X9Y132:DSP48_X9Y141}
 resize_pblock [get_pblocks GPU3] -add {RAMB18_X10Y132:RAMB18_X11Y139 RAMB18_X9Y132:RAMB18_X9Y141}
 resize_pblock [get_pblocks GPU3] -add {RAMB36_X10Y66:RAMB36_X11Y69 RAMB36_X9Y66:RAMB36_X9Y70}
+# set_property IS_SOFT FALSE [get_pblocks GPU3]
 
 
 create_pblock ADCDAQ0

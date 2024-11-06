@@ -4,7 +4,7 @@
 
 # Tell the tool to analyze only the timing when the ADCCLK is selected by the chan_mmcm (as opposed to the internal 200 MHz clock)
 # The following line does this by forcing the CLKINSEL input to '0'
-set_case_analysis 1 [get_pins -hierarchical gen_chanpll_k7.chan_mmcm0/CLKINSEL]
+set_case_analysis 1 [get_pins -hierarchical gen_chanpll_k7.mmcm_case.chan_mmcm0/CLKINSEL]
 
 
 # ADC clocks

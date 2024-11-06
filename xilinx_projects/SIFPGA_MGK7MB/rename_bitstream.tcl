@@ -1,0 +1,1 @@
+file copy -force chFPGA_MGK7MB_Rev2.bit SIFPGA_MGK7MB.bit

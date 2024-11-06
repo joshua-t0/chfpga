@@ -706,8 +706,8 @@ set_property PACKAGE_PIN G20 [get_ports {fmcb_adc1_dhdn[6]}]
 set_property PACKAGE_PIN G19 [get_ports {fmcb_adc1_dhdn[7]}]
 
 
-set_property LOC USR_ACCESS_X0Y0 [get_cells chfpga0/gpio_blk/GPIO0/USRACCESS_7.USR_ACCESS0]
-set_property LOC XADC_X0Y0 [get_cells chfpga0/SYSMON0/SYSMON7_GEN.XADC0]
+set_property LOC USR_ACCESS_X0Y0 [get_cells chfpga0/gpio_blk.GPIO0/USRACCESS_7.USR_ACCESS0]
+set_property LOC XADC_X0Y0 [get_cells chfpga0/sysmon_blk.SYSMON0/SYSMON7_GEN.XADC0]
 
 ##############################
 # LOCATION CONSTRAINTS
@@ -717,13 +717,13 @@ set_property LOC XADC_X0Y0 [get_cells chfpga0/SYSMON0/SYSMON7_GEN.XADC0]
 # We need to put the ADCDAQ PLL in the same bank as the BUFR that drives it (Bank 13)
 #set_property LOC MMCME2_ADV_X0Y3 [get_cells {chfpga0/ADCGEN[0].ADCDAQ0/IMPL.USEPLL.PLL0/U0/mmcm_adv_inst}]
 # The Channelizer MMCM has 2 inputs:  ADCDAQ0 and System MMCM (CLK200). If Tey are there were driven directly (no BUFG) by both the ADCDAQ BUFR and Sysntem MMCM output, . The MMCM must be adjacent, but on a half that has enough BUFGs
-set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/CLK0/gen_chanpll_k7.chan_mmcm0]
+set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/CLK0/gen_chanpll_k7.mmcm_case.chan_mmcm0]
 # The system MMCM also drives the Channelizer MMCM, and also needs to be adjacent.
 
 # Make sure that the BUFG instantiated by the SGMII core is on the same half as the IBUFGDS that drives it. For some reason Vivado places it on the wrong half and fails.
 # set_property LOC BUFGCTRL_X0Y16 [get_cells chfpga0/gen_eth.udp_mac0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/U0/gtwizard_i/gt0_GTWIZARD_i/bufg_gtrefclk0_in]
 # Make sure that the BUFG instantiated by the SGMII core is on the same half as the IBUFGDS that drives it. For some reason Vivado places it on the wrong half and fails.
-set_property LOC BUFGCTRL_X0Y17 [get_cells chfpga0/gen_eth.udp_mac0/sgmiigen.sgmii0/bufg_txoutclk]
+set_property LOC BUFGCTRL_X0Y17 [get_cells chfpga0/gen_eth.phy_case.udp_mac0/phy_gen.sgmii0/bufg_txoutclk]
 
 # set_property LOC BUFGCTRL_X0Y18 [get_cells chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/txoutclk_bufg0]
 # set_property LOC BUFGCTRL_X0Y19 [get_cells chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/refclk_bufg0]
@@ -941,16 +941,16 @@ resize_pblock [get_pblocks CHAN13] -add {RAMB18_X1Y90:RAMB18_X7Y99 RAMB18_X0Y94:
 resize_pblock [get_pblocks CHAN13] -add {RAMB36_X1Y45:RAMB36_X7Y49 RAMB36_X0Y47:RAMB36_X0Y49}
 # add_cells_to_pblock [get_pblocks CHAN13] [get_cells -quiet [list {chfpga0/CHANGEN[13].CHANi}]]
 
-set_property LOC DNA_PORT_X0Y0 [get_cells chfpga0/gpio_blk/GPIO0/gen_dna7.dna0]
+set_property LOC DNA_PORT_X0Y0 [get_cells chfpga0/gpio_blk.GPIO0/gen_dna7.dna0]
 
 
 create_pblock SYSTEM
-add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list chfpga0/blinker_blk.BLINKER0 chfpga0/freq_ctr_blk.FREQ_CTR0 chfpga0/gpio_blk/GPIO0/CTRL_SLAVE0 chfpga0/gpio_blk/GPIO0/core_regs0 chfpga0/gpio_blk/GPIO0/irigb_comparator0 chfpga0/gpio_blk/GPIO0/irigb_decoder0 chfpga0/gpio_blk/GPIO0/irigb_encoder0 chfpga0/gen_i2c.I2C0 chfpga0/sys_router0]]
+add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list chfpga0/blinker_blk.BLINKER0 chfpga0/freq_ctr_blk.FREQ_CTR0 chfpga0/gpio_blk.GPIO0/CTRL_SLAVE0 chfpga0/gpio_blk.GPIO0/core_regs0 chfpga0/gpio_blk.GPIO0/irigb_comparator0 chfpga0/gpio_blk.GPIO0/irigb_decoder0 chfpga0/gpio_blk.GPIO0/irigb_encoder0 chfpga0/gen_i2c.I2C0 chfpga0/sys_router0]]
 resize_pblock [get_pblocks SYSTEM] -add {SLICE_X180Y225:SLICE_X189Y324}
 
 
 create_pblock UDP_MAC
-add_cells_to_pblock [get_pblocks UDP_MAC] [get_cells -quiet [list chfpga0/ctrl_master0 chfpga0/gen_eth.udp_mac0 chfpga0/top_router0]]
+add_cells_to_pblock [get_pblocks UDP_MAC] [get_cells -quiet [list chfpga0/bsb_master_blk.ctrl_master0 chfpga0/gen_eth.phy_case.udp_mac0]]
 resize_pblock [get_pblocks UDP_MAC] -add {SLICE_X150Y200:SLICE_X189Y224}
 resize_pblock [get_pblocks UDP_MAC] -add {DSP48_X10Y80:DSP48_X11Y89}
 resize_pblock [get_pblocks UDP_MAC] -add {RAMB18_X10Y80:RAMB18_X10Y89}
@@ -978,7 +978,7 @@ add_cells_to_pblock [get_pblocks CLK0] [get_cells -quiet [list chfpga0/CLK0]]
 resize_pblock [get_pblocks CLK0] -add {SLICE_X0Y248:SLICE_X7Y249 SLICE_X0Y150:SLICE_X7Y151}
 
 create_pblock ARM_SPI
-add_cells_to_pblock [get_pblocks ARM_SPI] [get_cells -quiet [list chfpga0/gpio_blk/GPIO0/gen_armspi.arm_spi0]]
+add_cells_to_pblock [get_pblocks ARM_SPI] [get_cells -quiet [list chfpga0/gpio_blk.GPIO0/gen_armspi.arm_spi0]]
 resize_pblock [get_pblocks ARM_SPI] -add {SLICE_X0Y187:SLICE_X7Y206}
 
 create_pblock I2C
@@ -989,7 +989,7 @@ create_pblock BP_BUCK_SYNC
 resize_pblock [get_pblocks BP_BUCK_SYNC] -add {SLICE_X0Y117:SLICE_X7Y124}
 
 create_pblock CROSSBAR0
-add_cells_to_pblock [get_pblocks CROSSBAR0] [get_cells -quiet {chfpga0/crossbar0_gen.cbbram_gen.chan_crossbar0/CTRL_SLAVE0 chfpga0/crossbar0_gen.chan_crossbar0/align0 {chfpga0/crossbar0_gen.chan_crossbar0/BIN_SEL_GEN[*].*}}]
+add_cells_to_pblock [get_pblocks CROSSBAR0] [get_cells -quiet {chfpga0/crossbar0_gen.cb1_gen.chan_crossbar0/CTRL_SLAVE0 chfpga0/crossbar0_gen.cb1_gen.chan_crossbar0/align0 {chfpga0/crossbar0_gen.cb1_gen.chan_crossbar0/BIN_SEL_GEN[*].*}}]
 resize_pblock [get_pblocks CROSSBAR0] -add {SLICE_X180Y137:SLICE_X189Y199 SLICE_X132Y170:SLICE_X179Y199}
 resize_pblock [get_pblocks CROSSBAR0] -add {DSP48_X8Y68:DSP48_X11Y79}
 resize_pblock [get_pblocks CROSSBAR0] -add {RAMB18_X8Y68:RAMB18_X11Y79}
@@ -1235,7 +1235,7 @@ set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_proba
 
 
 create_pblock CORR
-add_cells_to_pblock [get_pblocks CORR] [get_cells -quiet [list chfpga0/CORRGEN.corr_array0]]
+add_cells_to_pblock [get_pblocks CORR] [get_cells -quiet [list chfpga0/CORRGEN.corr_sel_gen.corr_case.corr_array0]]
 resize_pblock [get_pblocks CORR] -add {SLICE_X180Y325:SLICE_X189Y399 SLICE_X180Y0:SLICE_X189Y136 SLICE_X132Y225:SLICE_X179Y399 SLICE_X132Y0:SLICE_X179Y169}
 resize_pblock [get_pblocks CORR] -add {DSP48_X8Y90:DSP48_X11Y159 DSP48_X8Y0:DSP48_X11Y67}
 resize_pblock [get_pblocks CORR] -add {RAMB18_X8Y90:RAMB18_X11Y159 RAMB18_X8Y0:RAMB18_X11Y67}

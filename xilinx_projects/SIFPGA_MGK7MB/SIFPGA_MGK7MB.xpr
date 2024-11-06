@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Product Version: Vivado v2022.1 (64-bit)              -->
+<!-- Product Version: Vivado v2022.2 (64-bit)              -->
 <!--                                                         -->
 <!-- Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.   -->
 
-<Project Version="7" Minor="60" Path="C:/Users/jfcliche/workspace/CHIME/chfpga/xilinx_projects/SIFPGA_MGK7MB/SIFPGA_MGK7MB.xpr">
+<Project Version="7" Minor="61" Path="/home/jfcliche/chfpga/xilinx_projects/SIFPGA_MGK7MB/SIFPGA_MGK7MB.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
     <Option Name="Id" Val="472c9c81751d4c6f92b75a38d4739e38"/>
@@ -28,18 +28,18 @@
     <Option Name="SimulatorGccInstallDirVCS" Val=""/>
     <Option Name="SimulatorGccInstallDirRiviera" Val=""/>
     <Option Name="SimulatorGccInstallDirActiveHdl" Val=""/>
-    <Option Name="SimulatorVersionXsim" Val="2022.1"/>
-    <Option Name="SimulatorVersionModelSim" Val="2021.3"/>
-    <Option Name="SimulatorVersionQuesta" Val="2021.3"/>
-    <Option Name="SimulatorVersionXcelium" Val="20.09.006"/>
-    <Option Name="SimulatorVersionVCS" Val="R-2020.12"/>
-    <Option Name="SimulatorVersionRiviera" Val="2021.04"/>
+    <Option Name="SimulatorVersionXsim" Val="2022.2"/>
+    <Option Name="SimulatorVersionModelSim" Val="2022.2"/>
+    <Option Name="SimulatorVersionQuesta" Val="2022.2"/>
+    <Option Name="SimulatorVersionXcelium" Val="21.09.009"/>
+    <Option Name="SimulatorVersionVCS" Val="S-2021.09"/>
+    <Option Name="SimulatorVersionRiviera" Val="2022.04"/>
     <Option Name="SimulatorVersionActiveHdl" Val="12.0"/>
     <Option Name="SimulatorGccVersionXsim" Val="6.2.0"/>
     <Option Name="SimulatorGccVersionModelSim" Val="7.4.0"/>
     <Option Name="SimulatorGccVersionQuesta" Val="7.4.0"/>
-    <Option Name="SimulatorGccVersionXcelium" Val="6.3"/>
-    <Option Name="SimulatorGccVersionVCS" Val="6.2.0"/>
+    <Option Name="SimulatorGccVersionXcelium" Val="9.3.0"/>
+    <Option Name="SimulatorGccVersionVCS" Val="9.2.0"/>
     <Option Name="SimulatorGccVersionRiviera" Val="9.3.0"/>
     <Option Name="SimulatorGccVersionActiveHdl" Val="9.3.0"/>
     <Option Name="TargetLanguage" Val="VHDL"/>
@@ -55,9 +55,10 @@
     <Option Name="EnableCoreContainer" Val="TRUE"/>
     <Option Name="EnableResourceEstimation" Val="FALSE"/>
     <Option Name="XPMLibraries" Val="XPM_MEMORY"/>
+    <Option Name="SimCompileState" Val="TRUE"/>
     <Option Name="CreateRefXciForCoreContainers" Val="FALSE"/>
-    <Option Name="IPUserFilesDir" Val="$PPRDIR/../../../../../../AppData/Roaming/Xilinx/Vivado/$PIPUSERFILESDIR"/>
-    <Option Name="IPStaticSourceDir" Val="$PPRDIR/../../../../../../AppData/Roaming/Xilinx/Vivado/$PIPUSERFILESDIR/ipstatic"/>
+    <Option Name="IPUserFilesDir" Val="$PPRDIR/../../../../../AppData/Roaming/Xilinx/Vivado/$PIPUSERFILESDIR"/>
+    <Option Name="IPStaticSourceDir" Val="$PPRDIR/../../../../../AppData/Roaming/Xilinx/Vivado/$PIPUSERFILESDIR/ipstatic"/>
     <Option Name="EnableBDX" Val="FALSE"/>
     <Option Name="DSANumComputeUnits" Val="16"/>
     <Option Name="WTXSimLaunchSim" Val="27"/>
@@ -88,123 +89,14 @@
   <FileSets Version="1" Minor="31">
     <FileSet Name="sources_1" Type="DesignSrcs" RelSrcDir="$PSRCDIR/sources_1" RelGenDir="$PGENDIR/sources_1">
       <Filter Type="Srcs"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/XG_UDP_MAC_TX_HEADER_FIFO/XGMII_UDP_MAC_TX_HEADER_FIFO.xci">
+      <File Path="$PPRDIR/../../_Cores/KC705/CORR44_DATA_FIFO/CORR44_DATA_FIFO.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="XGMII_UDP_MAC_TX_HEADER_FIFO.xci" FileRelPathName="XGMII_UDP_MAC_TX_HEADER_FIFO/XGMII_UDP_MAC_TX_HEADER_FIFO_clocks.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="XGMII_UDP_MAC_TX_HEADER_FIFO.xci" FileRelPathName="XGMII_UDP_MAC_TX_HEADER_FIFO/XGMII_UDP_MAC_TX_HEADER_FIFO.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/XG_UDP_MAC_TX_DATA_FIFO/XGMII_UDP_MAC_TX_DATA_FIFO.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-        <CompFileExtendedInfo CompFileName="XGMII_UDP_MAC_TX_DATA_FIFO.xci" FileRelPathName="XGMII_UDP_MAC_TX_DATA_FIFO/XGMII_UDP_MAC_TX_DATA_FIFO_clocks.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="XGMII_UDP_MAC_TX_DATA_FIFO.xci" FileRelPathName="XGMII_UDP_MAC_TX_DATA_FIFO/XGMII_UDP_MAC_TX_DATA_FIFO.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/AXI4S_REG_SLICE/AXI4S_REG_SLICE.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_DATA_FIFO_DRAM/SHUFFLE_BIN_SEL_DATA_FIFO_DRAM.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-        <CompFileExtendedInfo CompFileName="SHUFFLE_BIN_SEL_DATA_FIFO_DRAM.xci" FileRelPathName="SHUFFLE_BIN_SEL_DATA_FIFO_DRAM/SHUFFLE_BIN_SEL_DATA_FIFO_DRAM.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_DATA_FIFO_EMBED/SHUFFLE_BIN_SEL_DATA_FIFO_EMBED.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-        <CompFileExtendedInfo CompFileName="SHUFFLE_BIN_SEL_DATA_FIFO_EMBED.xci" FileRelPathName="SHUFFLE_BIN_SEL_DATA_FIFO_EMBED/SHUFFLE_BIN_SEL_DATA_FIFO_EMBED.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_DATA_FIFO_BRAM/SHUFFLE_BIN_SEL_DATA_FIFO_BRAM.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-        <CompFileExtendedInfo CompFileName="SHUFFLE_BIN_SEL_DATA_FIFO_BRAM.xci" FileRelPathName="SHUFFLE_BIN_SEL_DATA_FIFO_BRAM/SHUFFLE_BIN_SEL_DATA_FIFO_BRAM.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_BIN_SEL_MASK_RAM/SHUFFLE_BIN_SEL_MASK_RAM.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-        <CompFileExtendedInfo CompFileName="SHUFFLE_BIN_SEL_MASK_RAM.xci" FileRelPathName="SHUFFLE_BIN_SEL_MASK_RAM_ooc.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_CROSSBAR_ALIGN_FIFO/SHUFFLE_CROSSBAR_ALIGN_FIFO.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-        <CompFileExtendedInfo CompFileName="SHUFFLE_CROSSBAR_ALIGN_FIFO.xci" FileRelPathName="SHUFFLE_CROSSBAR_ALIGN_FIFO/SHUFFLE_CROSSBAR_ALIGN_FIFO.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/XGLINK_RX_DATA_FIFO/XGLINK_RX_DATA_FIFO.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-        <CompFileExtendedInfo CompFileName="XGLINK_RX_DATA_FIFO.xci" FileRelPathName="XGLINK_RX_DATA_FIFO/XGLINK_RX_DATA_FIFO_clocks.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="XGLINK_RX_DATA_FIFO.xci" FileRelPathName="XGLINK_RX_DATA_FIFO/XGLINK_RX_DATA_FIFO.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/XGLINK_TX_DATA_FIFO/XGLINK_TX_DATA_FIFO.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-        <CompFileExtendedInfo CompFileName="XGLINK_TX_DATA_FIFO.xci" FileRelPathName="XGLINK_TX_DATA_FIFO/XGLINK_TX_DATA_FIFO_clocks.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="XGLINK_TX_DATA_FIFO.xci" FileRelPathName="XGLINK_TX_DATA_FIFO/XGLINK_TX_DATA_FIFO.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/ADCDAQ_FIFO/ADCDAQ_FIFO.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/CORR44_DATA_FIFO/CORR44_DATA_FIFO.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -251,6 +143,23 @@
           <Attr Name="UsedInImplementation" Val="0"/>
         </CompFileExtendedInfo>
       </File>
+      <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_CROSSBAR_ALIGN_FIFO/SHUFFLE_CROSSBAR_ALIGN_FIFO.xci">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+        <CompFileExtendedInfo CompFileName="SHUFFLE_CROSSBAR_ALIGN_FIFO.xci" FileRelPathName="SHUFFLE_CROSSBAR_ALIGN_FIFO/SHUFFLE_CROSSBAR_ALIGN_FIFO.xdc">
+          <Attr Name="UsedInImplementation" Val="0"/>
+        </CompFileExtendedInfo>
+      </File>
+      <File Path="$PPRDIR/../../_Cores/KC705/ADCDAQ_FIFO/ADCDAQ_FIFO.xci">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <File Path="$PPRDIR/../../_Cores/KC705/CMD_FIFO/CMD_FIFO.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -274,32 +183,6 @@
           <Attr Name="UsedInImplementation" Val="0"/>
         </CompFileExtendedInfo>
       </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/UDP_MAC_RX_FRAME_FIFO/udp_mac_rx_frame_fifo.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-        <CompFileExtendedInfo CompFileName="udp_mac_rx_frame_fifo.xci" FileRelPathName="udp_mac_rx_frame_fifo/udp_mac_rx_frame_fifo_clocks.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="udp_mac_rx_frame_fifo.xci" FileRelPathName="udp_mac_rx_frame_fifo/udp_mac_rx_frame_fifo.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/UDP_MAC_RX_DATA_FIFO/udp_mac_rx_data_fifo.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-        <CompFileExtendedInfo CompFileName="udp_mac_rx_data_fifo.xci" FileRelPathName="udp_mac_rx_data_fifo/udp_mac_rx_data_fifo_clocks.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="udp_mac_rx_data_fifo.xci" FileRelPathName="udp_mac_rx_data_fifo/udp_mac_rx_data_fifo.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-      </File>
       <File Path="$PPRDIR/../../_Cores/KC705/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -313,355 +196,259 @@
           <Attr Name="UsedInImplementation" Val="0"/>
         </CompFileExtendedInfo>
       </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/udp_mac_tx_data_fifo/udp_mac_tx_data_fifo.xci">
+      <File Path="$PPRDIR/../../_Cores/KC705/UDP_MAC_TX_DATA_FIFO/udp_mac_tx_data_fifo.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="udp_mac_tx_data_fifo.xci" FileRelPathName="udp_mac_tx_data_fifo/udp_mac_tx_data_fifo_clocks.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="udp_mac_tx_data_fifo.xci" FileRelPathName="udp_mac_tx_data_fifo/udp_mac_tx_data_fifo.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/chfpga_package.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CMD/CMD_SLAVE2.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CHAN/ADCDAQ.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/CROSSBAR/ALIGN2.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CROSSBAR/CHAN_ALIGN.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CROSSBAR/CHAN_BIN_SEL.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CMD/CMD_SYNC_FIFO.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CMD/CMD_ROUTER.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CROSSBAR/CHAN_CROSSBAR.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CORR/CMAC44.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CMD/CMD_ASYNC_FIFO.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CMD/CMD_MASTER.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../hdl/chfpga_mgk7mb_corr_config.vhd">
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CORR/CORR44.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CORR/CORR44_ARRAY.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/SYSTEM/FREQ_CTR.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CMD/icecore_package.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CMD/arm_spi.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CMD/register_array.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CMD/irigb_decoder.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CMD/irigb_comparator.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CMD/irigb_encoder.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/SYSTEM/GPIO.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/SYSTEM/I2C.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/SYSTEM/REFCLK.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/CROSSBAR/REMAP.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/CROSSBAR/SHUFFLE_BIN_SEL.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/CROSSBAR/SHUFFLE_CROSSBAR.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/SYSTEM/SPI.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/SYSTEM/SYSMON_V6.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/SYSTEM/blinker.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/SYSTEM/reset_sync.vhd">
-        <FileInfo>
+      <File Path="$PPRDIR/../../hdl/CHAN/chan_package.vhd">
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/SYSTEM/clocks.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/1G_UDP_MAC/udp_mac_crc32.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/1G_UDP_MAC/udp_mac_tx.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/1G_UDP_MAC/udp_mac_rx.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/1G_UDP_MAC/udp_mac_gmii_to_sgmii.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/1G_UDP_MAC/udp_mac.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_bypass.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_crc32_32.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_tx.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_rx.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_gtx.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_rx_startup_fsm.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_tx_startup_fsm.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_scrambler.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_block_sync.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_descrambler.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_core.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_array.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/10GE_UDP_MAC/xge_udp_mac_tx2.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/10GE_UDP_MAC/xge_array.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/chfpga.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../hdl/chfpga_mgk7mb_rev2.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../_Cores/KC705/udp_mac_rx_frame_fifo/udp_mac_rx_frame_fifo.xci">
+        <FileInfo>
+          <Attr Name="UserDisabled" Val="1"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../_Cores/KC705/udp_mac_rx_data_fifo/udp_mac_rx_data_fifo.xci">
+        <FileInfo>
+          <Attr Name="UserDisabled" Val="1"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/XGLINK/xglink_sync_block.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/sifpga_mgk7mb.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/CMD/CTRL_FIFO.vhd">
-        <FileInfo>
-          <Attr Name="AutoDisabled" Val="1"/>
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="UserDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <Config>
         <Option Name="DesignMode" Val="RTL"/>
-        <Option Name="TopModule" Val="SIFPGA_MGK7MB"/>
+        <Option Name="TopModule" Val="chFPGA_MGK7MB_Rev2"/>
         <Option Name="TopAutoSet" Val="TRUE"/>
         <Option Name="ElabLinkDCPs" Val="0"/>
         <Option Name="ElabLoadTimingContstraints" Val="0"/>
+        <Option Name="dataflowViewerSettings" Val="min_width=16"/>
       </Config>
     </FileSet>
     <FileSet Name="constrs_1" Type="Constrs" RelSrcDir="$PSRCDIR/constrs_1" RelGenDir="$PGENDIR/constrs_1">
@@ -685,12 +472,6 @@
     </FileSet>
     <FileSet Name="sim_1" Type="SimulationSrcs" RelSrcDir="$PSRCDIR/sim_1" RelGenDir="$PGENDIR/sim_1">
       <Filter Type="Srcs"/>
-      <File Path="$PPRDIR/../../hdl/chfpga_package.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../../hdl/SIM/ADC_EV8AQ160.vhd">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -704,6 +485,12 @@
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/SIM/FMC_EMUL.vhd">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../hdl/chfpga_package.vhd">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -801,29 +588,12 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/SCALER_COEFF_RAM/SCALER_COEFF_RAM.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../../_Cores/KC705/FFT2/FFT2.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/FUNCGEN_RAM/FUNCGEN_RAM.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-        <CompFileExtendedInfo CompFileName="FUNCGEN_RAM.xci" FileRelPathName="FUNCGEN_RAM_ooc.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/AXI4S_REG_SLICE/AXI4S_REG_SLICE.xci">
         <FileInfo>
@@ -833,67 +603,73 @@
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/chfpga_package.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../hdl/chfpga_mgk7mb_corr_config.vhd">
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CMD/CMD_SYNC_FIFO.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CMD/CMD_ROUTER.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CMD/CMD_SLAVE2.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/XGLINK/xglink_crc32_32.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CHAN/FUNCGEN.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CHAN/SYNC.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CHAN/FFT.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CHAN/SCALER.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CHAN/PROBER.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/CHAN/CHAN.vhd">
-        <FileInfo>
+        <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
@@ -910,7 +686,8 @@
         <Option Name="TopRTLFile" Val="$PPRDIR/../../hdl/CHAN/CHAN.vhd"/>
         <Option Name="ElabLinkDCPs" Val="0"/>
         <Option Name="ElabLoadTimingContstraints" Val="0"/>
-        <Option Name="UseBlackboxStub" Val="0"/>
+        <Option Name="dataflowViewerSettings" Val="min_width=16"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
   </FileSets>
@@ -925,11 +702,14 @@
     <Simulator Name="Questa">
       <Option Name="Description" Val="Questa Advanced Simulator"/>
     </Simulator>
+    <Simulator Name="Xcelium">
+      <Option Name="Description" Val="Xcelium Parallel Simulator"/>
+    </Simulator>
+    <Simulator Name="VCS">
+      <Option Name="Description" Val="Verilog Compiler Simulator (VCS)"/>
+    </Simulator>
     <Simulator Name="Riviera">
       <Option Name="Description" Val="Riviera-PRO Simulator"/>
-    </Simulator>
-    <Simulator Name="ActiveHDL">
-      <Option Name="Description" Val="Active-HDL Simulator"/>
     </Simulator>
   </Simulators>
   <Runs Version="1" Minor="19">
@@ -945,9 +725,7 @@
     </Run>
     <Run Id="CHAN_synth_1" Type="Ft3:Synth" SrcSet="CHAN" Part="xc7k420tffg901-2" ConstrsSet="CHAN" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/CHAN_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/CHAN_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/CHAN_synth_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -955,31 +733,35 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/impl_1" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/impl_1">
+    <Run Id="impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="constrs_1" Description="Uses multiple algorithms for optimization, placement, and routing to get potentially better results." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/impl_1" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2018"/>
+        <StratHandle Name="Performance_Explore" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
-        <Step Id="opt_design"/>
+        <Step Id="opt_design">
+          <Option Id="Directive">0</Option>
+        </Step>
         <Step Id="power_opt_design"/>
-        <Step Id="place_design"/>
+        <Step Id="place_design">
+          <Option Id="Directive">0</Option>
+        </Step>
         <Step Id="post_place_power_opt_design"/>
-        <Step Id="phys_opt_design"/>
+        <Step Id="phys_opt_design">
+          <Option Id="Directive">0</Option>
+        </Step>
         <Step Id="route_design">
-          <Option Id="Directive">2</Option>
+          <Option Id="Directive">0</Option>
         </Step>
         <Step Id="post_route_phys_opt_design"/>
         <Step Id="write_bitstream"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
-      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2018"/>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2022"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
     <Run Id="CHAN_impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="CHAN" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="CHAN_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/CHAN_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/CHAN_impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
@@ -995,6 +777,34 @@
       <RQSFiles/>
     </Run>
   </Runs>
+  <MsgRule>
+    <MsgAttr Name="RuleType" Val="1"/>
+    <MsgAttr Name="Limit" Val="-1"/>
+    <MsgAttr Name="NewSeverity" Val="INFO"/>
+    <MsgAttr Name="Id" Val="BD 41-759"/>
+    <MsgAttr Name="Severity" Val="ANY"/>
+    <MsgAttr Name="ShowRule" Val="1"/>
+    <MsgAttr Name="RuleSource" Val="2"/>
+    <MsgAttr Name="StringIsRegExp" Val="0"/>
+    <MsgAttr Name="RuleId" Val="1"/>
+    <MsgAttr Name="Note" Val=""/>
+    <MsgAttr Name="Author" Val=""/>
+    <MsgAttr Name="CreatedTimestamp" Val=""/>
+  </MsgRule>
+  <MsgRule>
+    <MsgAttr Name="RuleType" Val="1"/>
+    <MsgAttr Name="Limit" Val="-1"/>
+    <MsgAttr Name="NewSeverity" Val="CRITICAL WARNING"/>
+    <MsgAttr Name="Id" Val="BD 41-759"/>
+    <MsgAttr Name="Severity" Val="ANY"/>
+    <MsgAttr Name="ShowRule" Val="1"/>
+    <MsgAttr Name="RuleSource" Val="2"/>
+    <MsgAttr Name="StringIsRegExp" Val="0"/>
+    <MsgAttr Name="RuleId" Val="2"/>
+    <MsgAttr Name="Note" Val=""/>
+    <MsgAttr Name="Author" Val=""/>
+    <MsgAttr Name="CreatedTimestamp" Val=""/>
+  </MsgRule>
   <Board/>
   <DashboardSummary Version="1" Minor="0">
     <Dashboards>
