@@ -55,7 +55,7 @@ entity REFCLK is
 
 		sync_in: in std_logic_vector(0 to 5); -- External sync request signals (from backplane or IRIG-B comparator)
 
-		adcdaq_reset: out std_logic; --! When a SYNC event is detected, is activated to initiate reset of the ADC data acquisition and processing pipeline  
+		adcdaq_reset: out std_logic; --! When a SYNC event is detected, is activated to initiate reset of the ADC data acquisition and processing pipeline
 
 		------------------------------------------------------------------------
 		-- Mezzanine signals
@@ -124,7 +124,7 @@ signal local_sync_reg: std_logic;  -- on clk10
 signal local_sync_dly: std_logic;  -- on clk10
 attribute ASYNC_REG of local_sync_reg, local_sync_dly: signal is "true";
 
-signal adc_sync_pre: std_logic; -- precursor to the adc_sync signal 
+signal adc_sync_pre: std_logic; -- precursor to the adc_sync signal
 
 signal sync_done: std_logic;
 
@@ -141,12 +141,11 @@ signal sync_state: SYNC_STATE_TYPE := SYNC_STATE_IDLE;
 
 
 begin
+
 -----------------------------------------------------------------------------------
 -- CONTROL and STATUS Bytes
 -----------------------------------------------------------------------------------
--- @addtogroup memory_map
--- REFCLK Module
--- =============
+-- Memory Map
 -- ----------------------------------------------------------------------------------------
 -- | Page | Addr | Bit(s)|     Name                | Description                           |
 -- |---------|-----|-----|-------------------------|---------------------------------------|
@@ -181,7 +180,7 @@ sync_source   <= control_bytes(0)(2 downto 0);
 
 -- CONTROL Byte 1
 
-refclk_delay(1)     <= control_bytes(1)(4 downto 0); -- Delay applied to the Mezzanine 1 reference clock (sets the sync signal timing) 
+refclk_delay(1)     <= control_bytes(1)(4 downto 0); -- Delay applied to the Mezzanine 1 reference clock (sets the sync signal timing)
 
 -- CONTROL Byte 2
 refclk_delay_rst    <= control_bytes(2)(7); -- Resets the delay lines and loads the delays
@@ -304,8 +303,8 @@ begin
 	--
 	-- We sample the 10 MHz reference clock with the internal 200 MHz clock. There are 20 samples per REFCLK (10 high, 10 low for a 50 % duty cycle.)
 	-- We enable the rcovered_sync signal when a high pulse of the 10 MHz clock is 8 samples or less (<=40% duty cycle).
-	-- Since we detect the high time, the position of the rising edge is not affected by the pulse width modulation. 
-	-- Devices that are sensitive to the rising edge (such as PLLs) should therefore not be affected by the scheme. 
+	-- Since we detect the high time, the position of the rising edge is not affected by the pulse width modulation.
+	-- Devices that are sensitive to the rising edge (such as PLLs) should therefore not be affected by the scheme.
 	sync_det_proc: process(clk200, rst)
 	begin
 		if rst='1' then
@@ -324,7 +323,7 @@ begin
 			elsif signed(refclk_counter) /= -1 then -- if not maximum count value possible, increase counter
 				refclk_counter <= refclk_counter + 1;
 			end if;
-			-- On the falling edge of the reference clock, set recovered_sync if the clock has stayed high for less than 8 samples. 
+			-- On the falling edge of the reference clock, set recovered_sync if the clock has stayed high for less than 8 samples.
 			if fmc_refclk_sample='0' and fmc_refclk_previous='1' then
 				if refclk_counter <= 8 then
 					recovered_sync <= '1';
@@ -348,7 +347,7 @@ mezzsync_gen: for i in 0 to NUMBER_OF_MEZZANINES-1 generate
 
 	-- Make sure the ADC SYNC registers are placed in the IO block with the OBUFDS buffer to ensure
 	-- timing reproducibility and low jitter
-	signal adc_sync: std_logic; attribute IOB of adc_sync: signal is "true"; 
+	signal adc_sync: std_logic; attribute IOB of adc_sync: signal is "true";
 
 
 begin
@@ -430,7 +429,7 @@ begin
 			--! Consequently, we route to a BUFR 2 banks above, then to the BUFG.
 			--! We could route directly to a BUFG but the path is less clean.
 
-			fmcbufr0 : BUFR 
+			fmcbufr0 : BUFR
 			 		generic map (
 			 			BUFR_DIVIDE => "BYPASS", --  ("BYPASS", "1", "2", "3", "4", "5", "6", "7", "8")
 			 			SIM_DEVICE => "7SERIES"
@@ -506,7 +505,7 @@ begin
 		end process;
 
 	-- Instantiate the LVDS sync signals to be sent to the mezzanines
-	-- The adc_sync signal shall be registered direcly in the IOB for best performance. 
+	-- The adc_sync signal shall be registered direcly in the IOB for best performance.
 	SYNCBUF0: OBUFDS
 		generic map(
 	--		DRIVE=>24,
