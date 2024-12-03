@@ -35,7 +35,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
-    'sphinx.ext.mathjax',  # JFC temporarily disable to prevent unnecessary web accesses
+    'sphinx.ext.mathjax',
     'vhdl_sphinx_domain',
 ]
 
@@ -153,6 +153,10 @@ html_theme_options = {
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
 
+mathjax3_config = {
+    'displayAlign' : 'left'
+}
+
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
 #html_title = u'chFPGA v0.1'
@@ -172,7 +176,7 @@ html_logo = 'images/chfpga_logo.png'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
