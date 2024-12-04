@@ -420,60 +420,91 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 	-- Output is the complex frequency samples (18 bits real + 18 bits imaginary). Out0 and out 1 provide the even and odd
 	-- frequencies respectively. The upper
 
-	fftype_gen: if FFT_TYPE = "CHIME" generate
+	fftype_gen: case FFT_TYPE generate
 
-		FFT0: entity work.FFT2
-			PORT MAP(
-				sync_in  => fft_sync_in,
-				in0      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 0) - 1 downto ADC_BITS_PER_SAMPLE * 3),
-				in1      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 1) - 1 downto ADC_BITS_PER_SAMPLE * 2),
-				in2      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 2) - 1 downto ADC_BITS_PER_SAMPLE * 1),
-				in3      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 3) - 1 downto ADC_BITS_PER_SAMPLE * 0),
+        when "CHIME" =>  
+            FFT0: entity work.FFT2
+                PORT MAP(
+                    sync_in  => fft_sync_in,
+                    in0      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 0) - 1 downto ADC_BITS_PER_SAMPLE * 3),
+                    in1      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 1) - 1 downto ADC_BITS_PER_SAMPLE * 2),
+                    in2      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 2) - 1 downto ADC_BITS_PER_SAMPLE * 1),
+                    in3      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 3) - 1 downto ADC_BITS_PER_SAMPLE * 0),
+    
+                    sync_out => fft_sync_out,
+                    out1     => fft_dout0_int,
+                    out2     => fft_dout1_int,
+    
+                    shift    => fft_shift_schedule(10 downto 0),
+                    overflow => fft_overflow,
+                    ce_1     => fft_clk_en,
+                    clk_1    => clk
+                );
+    
+            fft_tdata <= (fft_dout0_int & fft_dout1_int);
 
-				sync_out => fft_sync_out,
-				out1     => fft_dout0_int,
-				out2     => fft_dout1_int,
 
-				shift    => fft_shift_schedule(10 downto 0),
-				overflow => fft_overflow,
-				ce_1     => fft_clk_en,
-				clk_1    => clk
-			);
-
-        fft_tdata <= (fft_dout0_int & fft_dout1_int);
-	-- -- D3A PFB/FFT --
-	-- Time-based data is presented 8 samples at a time, in0 being the earliest sample. A time sample is 14 bits wide.
-	-- Output is the complex frequency samples (18 bits real + 18 bits imaginary). out0 is the first frequency bin,
-	-- out1 is the next, etc.
-
-	elsif FFT_TYPE = "D3A" generate
-
-		FFT0: entity work.pfb_fft_d3a_0
-			PORT MAP(
-				sync_in(0)  => fft_sync_in,
-				in0      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 0) - 1 downto ADC_BITS_PER_SAMPLE * 7),
-				in1      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 1) - 1 downto ADC_BITS_PER_SAMPLE * 6),
-				in2      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 2) - 1 downto ADC_BITS_PER_SAMPLE * 5),
-				in3      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 3) - 1 downto ADC_BITS_PER_SAMPLE * 4),
-				in4      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 4) - 1 downto ADC_BITS_PER_SAMPLE * 3),
-				in5      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 5) - 1 downto ADC_BITS_PER_SAMPLE * 2),
-				in6      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 6) - 1 downto ADC_BITS_PER_SAMPLE * 1),
-				in7      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 7) - 1 downto ADC_BITS_PER_SAMPLE * 0),
-
-				sync_out(0) => fft_sync_out,
-				out0     => fft_dout0_int,
-				out1     => fft_dout1_int,
-				out2 	 => fft_dout2_int,
-				out3 	 => fft_dout3_int,
-
-				shift    => fft_shift_schedule(13 downto 0),
-				of_x0    => fft_overflow_d3a, -- (0 => fft_overflow, others => open),--fixme
-				clk      => clk
-			);
-
-        fft_overflow <= or fft_overflow_d3a;
-		fft_tdata <= (fft_dout0_int & fft_dout1_int & fft_dout2_int & fft_dout3_int);
-
+        -- -- D3A PFB/FFT --
+        -- Time-based data is presented 8 samples at a time, in0 being the earliest sample. A time sample is 14 bits wide.
+        -- Output is the complex frequency samples (18 bits real + 18 bits imaginary). out0 is the first frequency bin,
+        -- out1 is the next, etc.
+        when "D3A" =>
+            FFT0: entity work.pfb_fft_d3a_0
+                PORT MAP(
+                    sync_in(0)  => fft_sync_in,
+                    in0      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 0) - 1 downto ADC_BITS_PER_SAMPLE * 7),
+                    in1      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 1) - 1 downto ADC_BITS_PER_SAMPLE * 6),
+                    in2      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 2) - 1 downto ADC_BITS_PER_SAMPLE * 5),
+                    in3      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 3) - 1 downto ADC_BITS_PER_SAMPLE * 4),
+                    in4      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 4) - 1 downto ADC_BITS_PER_SAMPLE * 3),
+                    in5      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 5) - 1 downto ADC_BITS_PER_SAMPLE * 2),
+                    in6      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 6) - 1 downto ADC_BITS_PER_SAMPLE * 1),
+                    in7      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 7) - 1 downto ADC_BITS_PER_SAMPLE * 0),
+    
+                    sync_out(0) => fft_sync_out,
+                    out0     => fft_dout0_int,
+                    out1     => fft_dout1_int,
+                    out2 	 => fft_dout2_int,
+                    out3 	 => fft_dout3_int,
+    
+                    shift    => fft_shift_schedule(13 downto 0),
+                    of_x0    => fft_overflow_d3a, -- (0 => fft_overflow, others => open),--fixme
+                    clk      => clk
+                );
+    
+            fft_overflow <= or fft_overflow_d3a;
+            fft_tdata <= (fft_dout0_int & fft_dout1_int & fft_dout2_int & fft_dout3_int);
+    
+        when "CHORD" =>
+    
+            FFT0: entity work.pfb_fft_bitgrowth_0
+                PORT MAP(
+                    sync_in(0)  => fft_sync_in,
+                    in0      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 0) - 1 downto ADC_BITS_PER_SAMPLE * 7),
+                    in1      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 1) - 1 downto ADC_BITS_PER_SAMPLE * 6),
+                    in2      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 2) - 1 downto ADC_BITS_PER_SAMPLE * 5),
+                    in3      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 3) - 1 downto ADC_BITS_PER_SAMPLE * 4),
+                    in4      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 4) - 1 downto ADC_BITS_PER_SAMPLE * 3),
+                    in5      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 5) - 1 downto ADC_BITS_PER_SAMPLE * 2),
+                    in6      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 6) - 1 downto ADC_BITS_PER_SAMPLE * 1),
+                    in7      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 7) - 1 downto ADC_BITS_PER_SAMPLE * 0),
+    
+                    sync_out(0) => fft_sync_out,
+                    out0     => fft_dout0_int,
+                    out1     => fft_dout1_int,
+                    out2 	 => fft_dout2_int,
+                    out3 	 => fft_dout3_int,
+    
+                    shift    => fft_shift_schedule(13 downto 0),
+                    of_x0    => fft_overflow_d3a, -- (0 => fft_overflow, others => open),--fixme
+                    clk      => clk
+                );
+    
+            fft_overflow <= or fft_overflow_d3a;
+            fft_tdata <= (fft_dout0_int & fft_dout1_int & fft_dout2_int & fft_dout3_int);
+    
+		when others =>
+			assert FALSE report "Invalid FFT Type" severity FAILURE;
 	end generate fftype_gen;
 
 	-- -- Pass the FFT CE signal through a BUFH to avoid the signal to be replicated a large number of times to meet timing.

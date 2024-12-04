@@ -10,7 +10,8 @@ package chfpga_config is
 	constant CONFIG_NUMBER_OF_ADCS: integer := 8; -- Number of ADC inputs that are connected
 
 	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean := TRUE;
-	constant CONFIG_CHAN_FFT_TYPE: string := "D3A";
+	constant CONFIG_CHAN_FFT_TYPE: string := "CHORD"; -- "D3A", "CHORD", "CHIME"
+    constant CONFIG_FFT_BITS_PER_BIN: integer := 32+32; -- total width ( Re +Im) width of fft output. Typically 18+18 with shift schedule, or 32+32 with bit growth on CRS
 	constant CONFIG_FFT_CTR_WIDTH: integer := 14; -- CHIME: 12, D3A/CHORD: 13. Number of bits of the delay line. Max delay = 2^CONFIG_FFT_CTR_WIDTH
 	constant CONFIG_ADC_SAMPLES_PER_WORD: integer := 8; -- we pack 8 samples per word
 	constant CONFIG_ADC_BITS_PER_SAMPLE: integer := 14;

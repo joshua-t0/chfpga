@@ -50,6 +50,7 @@ entity CHAN is
         IMPLEMENT_CHAN  : boolean          := TRUE;
         IMPLEMENT_FFT   : boolean          := CONFIG_CHAN_IMPLEMENT_FFT;
         FFT_TYPE        : string           := CONFIG_CHAN_FFT_TYPE;
+        FFT_BITS_PER_BIN: integer          := CONFIG_FFT_BITS_PER_BIN; -- Re and Im parts combined
         ADC_BITS_PER_SAMPLE: integer       := CONFIG_ADC_BITS_PER_SAMPLE;
         ADC_SAMPLES_PER_WORD: integer      := CONFIG_ADC_SAMPLES_PER_WORD;
         ADC_SAMPLES_PER_FRAME: integer     := CONFIG_ADC_SAMPLES_PER_FRAME;
@@ -152,7 +153,6 @@ attribute dont_touch: string;
 --constant SIM             : BOOLEAN :=GLOBAL_SIM;
 
 constant FPGA_SERIES: integer          := FPGA_SERIES_LIST(PLATFORM_ID);
-constant FFT_BITS_PER_BIN: integer     := 18+18; -- Re and Im parts combined
 constant FFT_BINS_PER_WORD: integer    := ADC_SAMPLES_PER_WORD / 2;
 constant FFT_BITS_PER_WORD: integer    := FFT_BITS_PER_BIN * FFT_BINS_PER_WORD;
 constant FFT_BINS_PER_FRAME :integer   := ADC_SAMPLES_PER_FRAME/2;
