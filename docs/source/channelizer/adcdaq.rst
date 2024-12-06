@@ -1,7 +1,8 @@
-.. title:: ADCDAQ
+.. title:: ADCDAQ: Analog to Digital Converter Data Aquisistion
 
-:entity:`ADCDAQ`: Analog to Digital Converter Data Aquisistion
-**************************************************************
+*********************************
+:entity:`ADCDAQ` (``ADCDAQ.vhd``)
+*********************************
 
 .. default-role:: vhdl:entity
 

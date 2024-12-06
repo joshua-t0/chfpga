@@ -36,7 +36,7 @@
    platforms/platforms
    chfpga
    system/system
-   F Engine <channelizer/chan>
+   channelizer/index
    CT Engine <corner-turn/corner-turn>
    X Engine <correlator/correlator>
 

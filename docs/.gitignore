@@ -13,3 +13,4 @@ py*venv
 # _version must not be tracked. it is created with the latest git version when pip install is called.
 _version.py
 *.egg-info
+*.log

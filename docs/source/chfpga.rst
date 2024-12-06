@@ -74,16 +74,26 @@ Description
 
 
 
-UDP Control Memory Map
-======================
+Memory Map
+==========
+
+Top level memory map
+--------------------
 
 .. include-docs:: chfpga
     :start-after: Top-level Memoy map
 
-
+SYSTEM memory map
+----------------
 
 .. include-docs:: chfpga
     :start-after: SYSTEM Memory Map
+
+Channelizers memory map
+-----------------------
+
+.. include-docs:: chfpga
+    :start-after: Channel Memory Map
 
 Submodules
 ==========
@@ -101,6 +111,6 @@ The following modules are instantiated directly by :entity:`chFPGA`:
     system/refclk
     system/sysmon
     system/freq_ctr
-    F Engine <channelizer/chan>
+    channelizer/chan
     CT Engine <corner-turn/corner-turn>
     X Engine <correlator/correlator>
