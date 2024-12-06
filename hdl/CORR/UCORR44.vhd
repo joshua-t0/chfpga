@@ -908,7 +908,7 @@ begin
 	ram_gen: for i in 0 to P/2 - 1 generate
 			signal ram_din_word: std_logic_vector(71 downto 0);
 			signal ram_dout_word: std_logic_vector(71 downto 0);
-			constant MEM_TYPE: string := sel(i < URAM_MAX, "utra", "block");
+			constant MEM_TYPE: string := sel(i < URAM_MAX, "ultra", "block");
 	begin
         -- combine the din from 2 CMAC in to the ram din
 		ram_din_word <= ram_din(2*i) & ram_din(2*i+1);
