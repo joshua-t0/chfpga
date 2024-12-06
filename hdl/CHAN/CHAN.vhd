@@ -66,16 +66,16 @@ entity CHAN is
 
     PORT (
 
-        --! Input Interface from ADC
-        --! 64-bit wide (4x 16-bit samples), using the AXI4-Streaming Prototol
+        -- Input Interface from ADC
+        -- 64-bit wide (4x 16-bit samples), using the AXI4-Streaming Prototol
 
         in_dat_tdata    : in std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
         in_dat_tvalid   : in std_logic;
         in_dat_tlast    : in std_logic;
         in_dat_tuser    : in std_logic_vector(ADC_SAMPLES_PER_WORD-1 downto 0);  -- ADC saturation flags (one per sample)
-        in_clk          : in std_logic; --! Input and signal processing clock
-        in_reset        : in std_logic; --! Resets all the channelizer modules,
-                                        --! except ADCDAQ. Must be synchronous to in_clk.
+        in_clk          : in std_logic; -- Input and signal processing clock
+        in_reset        : in std_logic; -- Resets all the channelizer modules,
+                                        -- except ADCDAQ. Must be synchronous to in_clk.
 
         -- Output Interface
         -- Output Data Stream in 32bit AXI4-Streaming, Non-blocking
@@ -88,14 +88,14 @@ entity CHAN is
         out_clk         : in  std_logic;
         out_reset       : in  std_logic;
 
-        --! Common data interface signals
-        --! Global trigger/capture signal.
-        --! Indicates to SRCSEL when to start flagging the incoming frames the data capture.
+        -- Common data interface signals
+        -- Global trigger/capture signal.
+        -- Indicates to SRCSEL when to start flagging the incoming frames the data capture.
 
         trig            : in  std_logic;
         lane_monitor    : out std_logic_vector(3 downto 0);
 
-        --! UDP Command Control Interface (command and reply stream buses)
+        -- UDP Command Control Interface (command and reply stream buses)
 
         ctrl_cmd_tdata  : in  std_logic_vector(7 downto 0);
         ctrl_cmd_tvalid : in  std_logic;
@@ -109,7 +109,7 @@ entity CHAN is
         ctrl_clk        : in  std_logic;
         ctrl_rst        : in  std_logic;
 
-        --! Control Interface to be hooked-up  to the corresponding ADCDAQ module
+        -- Control Interface to be hooked-up  to the corresponding ADCDAQ module
 
         adc_cmd_tdata   : out std_logic_vector(7 downto 0);
         adc_cmd_tvalid  : out std_logic;
@@ -133,7 +133,7 @@ entity CHAN is
         prb_tvalid      : out std_logic;
         prb_tlast       : out std_logic;
         prb_tready      : in  std_logic;
-        PRB_CLK         : in  std_logic --! Data capture clock
+        PRB_CLK         : in  std_logic -- Data capture clock
         );
 end CHAN;
 
@@ -202,7 +202,7 @@ signal fifo_rst_ctr : unsigned(4 downto 0);
 signal fifo_rst: std_logic;
 
 
---signal in_reset_prober: std_logic :='1'; --! added =1 to see if it helps the reset problem
+--signal in_reset_prober: std_logic :='1'; -- added =1 to see if it helps the reset problem
 -- signal out_reset_reg: std_logic :='1';
 -- Make sure the pipeline registers are not simplified by the synthesizer so they can be useful in helping meeting timing
 signal funcgen_reset_out: std_logic;
@@ -219,14 +219,12 @@ attribute keep of funcgen_reset_out, fft_reset_out, scaler_reset_out: signal is 
 --signal ADC_CLK_OUT_PLL_INT : STD_LOGIC;
 
 -- Control bus signals
-constant NUMBER_OF_MODULES  : integer:=7; --! Total number of modules to be implemented. Is used to set the number of ports of the control interface router.
-constant MODULE_ADCDAQ_ADDR : integer:=0; --! Address of the ADC data acquisition module
---constant MODULE_SRCSEL_ADDR : integer:=1; --! (unused) Address of the source selector module
-constant MODULE_FFT_ADDR    : integer:=2; --! Address of the channelizer (FFT) module
-constant MODULE_SCALER_ADDR : integer:=3; --! Address of the scaler module
-constant MODULE_PROBER_ADDR : integer:=4; --! Address of the data capture module
-constant MODULE_FUNCGEN_ADDR: integer:=5; --! Address of the function generator module
---constant MODULE_INJECT_ADDR : integer:=6; --! (unused) Address of the data injection module
+constant MODULE_ADCDAQ_ADDR : integer:=0; -- Address of the ADC data acquisition module
+constant MODULE_FFT_ADDR    : integer:=2; -- Address of the channelizer (FFT) module
+constant MODULE_SCALER_ADDR : integer:=3; -- Address of the scaler module
+constant MODULE_PROBER_ADDR : integer:=4; -- Address of the data capture module
+constant MODULE_FUNCGEN_ADDR: integer:=5; -- Address of the function generator module
+constant NUMBER_OF_MODULES  : integer:=7; -- Total number of modules to be implemented. Is used to set the number of ports of the control interface router.
 
 -- UDP Control Command from chfpga
 signal CMD_DAT  : AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_MODULES-1 downto 0);
@@ -282,18 +280,19 @@ adc_rply_tready <= ADC_RPLY_RDY.tready;
 
 
 
--- CHANNELIZER Memory Map
+-- Memory Map
 --
+-- ---------------------------------------------------------------------
 -- |#   |  Addr           | Module                       | Description |
 -- |----|-----------------|------------------------------|-------------|
 -- | 0  | Base + 0x00000  | ADCDAQ                       |             |
--- | 1  | Base + 0x00100  | (unused)                     |             |
--- | 2  | Base + 0x00200  | FFT                          |             |
--- | 3  | Base + 0x00300  | SCALER                       |             |
--- | 4  | Base + 0x00400  | PROBER                       |             |
--- | 5  | Base + 0x00500  | FUNCGEN                      |             |
--- | 6  | Base + 0x00600  | (unused)                     |             |
--- | 7  | Base + 0x00700  | (unused)                     |             |
+-- | 1  | Base + 0x00200  | (unused)                     |             |
+-- | 2  | Base + 0x00400  | FFT                          |             |
+-- | 3  | Base + 0x00600  | SCALER                       |             |
+-- | 4  | Base + 0x00800  | PROBER                       |             |
+-- | 5  | Base + 0x00A00  | FUNCGEN                      |             |
+-- | 6  | Base + 0x00C00  | (unused)                     |             |
+-- | 7  | Base + 0x00E00  | (unused)                     |             |
 
 ---------------------------------------------------------------------
 -- Instantiate the Command router
@@ -330,19 +329,19 @@ ADC_RPLY_RDY                 <= RPLY_RDY(MODULE_ADCDAQ_ADDR);
 
 IMPL_GEN: if IMPLEMENT_CHAN=TRUE generate
 ---------------------------------------------------------------------
---! Propagates the ADCDAQ output through a couple of registers to facilitate timing between the ADCDAQ and FUNCGEN
---! Helps meet timing, since the bus can take two stops to route across the chip.
+-- Propagates the ADCDAQ output through a couple of registers to facilitate timing between the ADCDAQ and FUNCGEN
+-- Helps meet timing, since the bus can take two stops to route across the chip.
 -- Placement of this logic should not be constrained.
---!
---! Also pipeline and forwards key debugging signals for external moinitoring.
---!
---! NOTE:  only TVALID is affected by the synchronous RESET line, not the
---!    entire bus. This is because that reset would 1) drive a large load and
---!    2) be routed to all the registers and will make timing harder to meet.
+--
+-- Also pipeline and forwards key debugging signals for external moinitoring.
+--
+-- NOTE:  only TVALID is affected by the synchronous RESET line, not the
+--    entire bus. This is because that reset would 1) drive a large load and
+--    2) be routed to all the registers and will make timing harder to meet.
 --1
---! NOTE: This process is implemented only when IMPLEMENT_CHAN=TRUE, otherwise
---!   there will be assignment conflicts to OUT_DAT with the block that handle
---!   IMPLEMENT_CHAN=FALSE, and that makes the Vivado simulator hang up.
+-- NOTE: This process is implemented only when IMPLEMENT_CHAN=TRUE, otherwise
+--   there will be assignment conflicts to OUT_DAT with the block that handle
+--   IMPLEMENT_CHAN=FALSE, and that makes the Vivado simulator hang up.
 ---------------------------------------------------------------------
 funcgen_blk: BLOCK
     -- Data and reset pipeline signals, level 1
@@ -814,7 +813,7 @@ begin
 
                 axis_cap0_tdata(0) <= (others => '0');
                 for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
-                    axis_cap0_tdata(0)((i+1)*CAPTURE_BITS_PER_SAMPLE-1 downto (i+1)*CAPTURE_BITS_PER_SAMPLE-LEN) <= axis_funcgen_out_tdata((i+1)*ADC_BITS_PER_SAMPLE-1 downto (i+1)*ADC_BITS_PER_SAMPLE-LEN);
+                    axis_cap0_tdata(0)((i+1) * CAPTURE_BITS_PER_SAMPLE-1 downto (i+1) * CAPTURE_BITS_PER_SAMPLE-LEN) <= axis_funcgen_out_tdata((i+1) * ADC_BITS_PER_SAMPLE-1 downto (i+1)*ADC_BITS_PER_SAMPLE-LEN);
                 end loop;
                 axis_cap0_tuser(0) <= axis_funcgen_out_tuser;
                 axis_cap0_tvalid(0) <= axis_funcgen_out_tvalid;
@@ -909,18 +908,18 @@ end generate IMPL_GEN; -- IMPLEMENT_CHAN=TRUE
 
 
 
-NOIMPL_GEN: if IMPLEMENT_CHAN=FALSE generate
-    --! Force the output stream to send no data
+NOIMPL_GEN: if IMPLEMENT_CHAN = FALSE generate
+    -- Force the output stream to send no data
     out_dat_tvalid <= '0'; -- this line makes the simulator crash
     out_dat_tdata <= (others=>'0');
     out_dat_tuser <= (others=>'0');
     out_dat_tlast <= '0';
 
-    --! Force the command interface to accept and ignore any command and to reply nothing.
-    --! Skip the ADCDAQ module because it is always implemented.
+    -- Force the command interface to accept and ignore any command and to reply nothing.
+    -- Skip the ADCDAQ module because it is always implemented.
     MODn:   for i in MODULE_ADCDAQ_ADDR+1 to NUMBER_OF_MODULES-1 generate
-                CMD_RDY(i).TREADY <= '1'; --! Always accept commands. Those will be ignored.
-                RPLY_DAT(i).TVALID <= '0'; --! Do not send any reply
+                CMD_RDY(i).TREADY <= '1'; -- Always accept commands. Those will be ignored.
+                RPLY_DAT(i).TVALID <= '0'; -- Do not send any reply
                 RPLY_DAT(i).TLAST <= '0'; -- for nice simulations only
                 RPLY_DAT(i).TDATA <= (others=>'0'); -- for nice simulations only
     end generate;
