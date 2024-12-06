@@ -559,11 +559,18 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
         signal fft_reg_tlast: std_logic;
         signal fft_reg_tuser: std_logic_vector(3 downto 0);
 
-        signal scaled_data_tdata_pre: std_logic_vector(INTEGER_WIDTH*INTEGERS_PER_WORD-1 downto 0);
-        signal scaled_data_tvalid_pre: std_logic;
-        signal scaled_data_tuser_pre: std_logic_vector(3 downto 0);
-        signal scaled_data_tlast_pre: std_logic;
+        signal scaled_data_tdata_dly1, scaled_data_tdata_dly2: std_logic_vector(INTEGER_WIDTH*INTEGERS_PER_WORD-1 downto 0);
+        signal scaled_data_tvalid_dly1, scaled_data_tvalid_dly2: std_logic;
+        signal scaled_data_tuser_dly1, scaled_data_tuser_dly2: std_logic_vector(3 downto 0);
+        signal scaled_data_tlast_dly1, scaled_data_tlast_dly2: std_logic;
 
+        constant MUL_B_WIDTH_MAX: integer := 18; -- use  2 multipliers if B_WIDTH > B_WIDTH_MAX
+        constant PROD_LO_WIDTH:integer := MUL_B_WIDTH_MAX + COEFF_BITS_PER_BIN + 1; -- b1 unsigned slice has a extra guard bit to make it signed
+        constant PROD_HI_WIDTH: integer := FFT_BITS_PER_BIN/2 - MUL_B_WIDTH_MAX + COEFF_BITS_PER_BIN;
+    
+        signal prod_re_lo_dly1, prod_im_lo_dly1: signed_array(0 to FFT_BINS_PER_WORD-1)(PROD_LO_WIDTH-1 downto 0);
+        signal prod_re_hi_dly1, prod_im_hi_dly1: signed_array(0 to FFT_BINS_PER_WORD-1)(PROD_HI_WIDTH-1 downto 0);
+        signal prod_re_dly1, prod_im_dly1: signed_array(0 to FFT_BINS_PER_WORD-1)(INTEGER_WIDTH-1 downto 0);
             
     begin
 
@@ -582,9 +589,10 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
         --     COeff:     |           G(N+1)      |        G(N)          |
         --                ---------------------------------------------
         mul_proc: process (clk) 
-            variable fft_re, fft_im: signed(FFT_BITS_PER_BIN/2-1 downto 0);
+            variable fft_val: signed(FFT_BITS_PER_BIN/2-1 downto 0);
             variable gain: signed(COEFF_BITS_PER_BIN-1 downto 0);
-            variable re_lsb, im_lsb: integer;
+            variable prod: signed(INTEGER_WIDTH-1 downto 0);
+            variable fft_lsb, prod_lsb: integer;
         begin
             if rising_edge(clk) then
                 -- Pipeline the gain and fft values. These registers should be absorbed as the input registers 
@@ -602,31 +610,54 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 for i in FFT_BINS_PER_WORD-1 downto 0 loop
                     -- Extract the single real gain to be applied to both the Re and Im part 
                     gain := signed(coeff_reg((FFT_BINS_PER_WORD-i)*COEFF_BITS_PER_BIN-1 downto (FFT_BINS_PER_WORD-i-1)*COEFF_BITS_PER_BIN));
-                    -- Compute the bit position of the lsb of the Re and Im integer in fft input and extract them
-                    re_lsb := i*FFT_BITS_PER_BIN + FFT_BITS_PER_BIN/2;
-                    im_lsb := i*FFT_BITS_PER_BIN;
-                    fft_re := signed(fft_reg_tdata(re_lsb + FFT_BITS_PER_BIN/2-1 downto re_lsb)); -- we must use dly2 signals which are synchronized with the gain coefficient
-                    fft_im := signed(fft_reg_tdata(im_lsb + FFT_BITS_PER_BIN/2-1 downto im_lsb));
-                    -- COmpute lsb osition of the Re and Im product in the output word
-                    re_lsb := 2*i*INTEGER_WIDTH + INTEGER_WIDTH;
-                    im_lsb := 2*i*INTEGER_WIDTH;
-                    -- Perform the multiplication
-                    scaled_data_tdata_pre(re_lsb + INTEGER_WIDTH-1 downto re_lsb) <= std_logic_vector(resize(gain * fft_re, INTEGER_WIDTH));
-                    scaled_data_tdata_pre(im_lsb + INTEGER_WIDTH-1 downto im_lsb) <= std_logic_vector(resize(gain * fft_im, INTEGER_WIDTH));
+                    
+                    -- Real component                    
+                    fft_lsb := i*FFT_BITS_PER_BIN + FFT_BITS_PER_BIN/2; -- bit position of the lsb of the Re and Im integer in fft input and extract them
+                    fft_val := signed(fft_reg_tdata(fft_lsb + FFT_BITS_PER_BIN/2-1 downto fft_lsb)); -- we must use dly2 signals which are synchronized with the gain coefficient
+                    prod_lsb := 2*i*INTEGER_WIDTH + INTEGER_WIDTH;
+                    if FFT_BITS_PER_BIN/2 <= MUL_B_WIDTH_MAX then
+                        prod_re_dly1(i) <= resize(gain * fft_val, INTEGER_WIDTH);
+                        prod := prod_re_dly1(i);
+                    else
+                        prod_re_lo_dly1(i) <= gain * signed(resize(unsigned(fft_val(MUL_B_WIDTH_MAX-1 downto 0)), MUL_B_WIDTH_MAX + 1));
+                        prod_re_hi_dly1(i) <= gain * fft_val(FFT_BITS_PER_BIN/2-1 downto MUL_B_WIDTH_MAX);
+                        prod := prod_re_lo_dly1(i) + shift_left(resize(prod_re_hi_dly1(i), INTEGER_WIDTH), MUL_B_WIDTH_MAX);
+                    end if; -- wide mul
+                    scaled_data_tdata_dly2(prod_lsb + INTEGER_WIDTH-1 downto prod_lsb) <= std_logic_vector(prod);
+
+                    -- Imaginary component
+                    fft_lsb := i*FFT_BITS_PER_BIN;
+                    fft_val := signed(fft_reg_tdata(fft_lsb + FFT_BITS_PER_BIN/2-1 downto fft_lsb));
+                    prod_lsb := 2*i*INTEGER_WIDTH;                     -- lsb position of Im product in the output word
+                    if FFT_BITS_PER_BIN/2 <= MUL_B_WIDTH_MAX then
+                        prod_im_dly1(i) <= resize(gain * fft_val, INTEGER_WIDTH);
+                        prod := prod_im_dly1(i);
+                    else
+                        prod_im_lo_dly1(i) <= gain * signed(resize(unsigned(fft_val(MUL_B_WIDTH_MAX-1 downto 0)), MUL_B_WIDTH_MAX + 1));
+                        prod_im_hi_dly1(i) <= gain * fft_val(FFT_BITS_PER_BIN/2-1 downto MUL_B_WIDTH_MAX);
+                        prod := prod_im_lo_dly1(i) + shift_left(resize(prod_im_hi_dly1(i), INTEGER_WIDTH), MUL_B_WIDTH_MAX);
+                    end if; -- wide mul    
+                    scaled_data_tdata_dly2(prod_lsb + INTEGER_WIDTH-1 downto prod_lsb) <= std_logic_vector(prod);
+
                 end loop;
-                scaled_data_tvalid_pre <= fft_reg_tvalid;
-                scaled_data_tlast_pre <= fft_reg_tlast;
-                scaled_data_tuser_pre <= fft_reg_tuser;
+                scaled_data_tvalid_dly1 <= fft_reg_tvalid;
+                scaled_data_tlast_dly1 <= fft_reg_tlast;
+                scaled_data_tuser_dly1 <= fft_reg_tuser;
+
+                scaled_data_tvalid_dly2 <= scaled_data_tvalid_dly1;
+                scaled_data_tlast_dly2 <= scaled_data_tlast_dly1;
+                scaled_data_tuser_dly2 <= scaled_data_tuser_dly1;
 
                 -- Pipeline output: the previous register stage seems to be moved in the DSP
-                scaled_data_tdata <= scaled_data_tdata_pre;
-                scaled_data_tlast <= scaled_data_tlast_pre;
-                scaled_data_tvalid <= scaled_data_tvalid_pre;
-                scaled_data_tuser <= scaled_data_tuser_pre;
+                scaled_data_tdata <= scaled_data_tdata_dly2;
+                scaled_data_tlast <= scaled_data_tlast_dly2;
+                scaled_data_tvalid <= scaled_data_tvalid_dly2;
+                scaled_data_tuser <= scaled_data_tuser_dly2;
 
                 if rst_reg='1' then
                     fft_reg_tvalid <= '0';
-                    scaled_data_tvalid_pre <= '0';
+                    scaled_data_tvalid_dly1 <= '0';
+                    scaled_data_tvalid_dly2 <= '0';
                 end if; -- rst
 
             end if; --clk
