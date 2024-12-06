@@ -1406,23 +1406,22 @@ end block bsb_master_blk;
 --! Routes the commands and replies to/from the top-level modules (ANTs, CORRs,  and system modules)
 
 
---startLiteralInclude
 --------------------------------------------------
 -- TOP-LEVEL COMMAND ROUTER
 --------------------------------------------------
---!@addtogroup memory_map
---! Top-level Memoy map
---!
---! | #  | Base Addr| Subaddresses                       | Description |
---! |    |----------|------------------------------------|-------------|
---! |  0 | 0x00000  | SYSTEM                             |             |
---! |  1 | 0x10000  | ADC & Channelizers                 |             |
---! |  2 | 0x20000  | Crossbar 1                         |             |
---! |  3 | 0x30000  | GPU Links                          |             |
---! |  4 | 0x40000  | Crossbar 3                         |             |
---! |  5 | 0x50000  | BP Shuffle                         |             |
---! |  6 | 0x60000  | Crossbar 2                         |             |
---! |  7 | 0x70000  | UCAP                               |             |
+
+-- Top-level Memoy map
+--
+-- | #  | Base Addr| Subaddresses                       | Description |
+-- |    |----------|------------------------------------|-------------|
+-- |  0 | 0x00000  | SYSTEM                             |             |
+-- |  1 | 0x10000  | ADC & Channelizers                 |             |
+-- |  2 | 0x20000  | Crossbar 1                         |             |
+-- |  3 | 0x30000  | GPU Links                          |             |
+-- |  4 | 0x40000  | Crossbar 3                         |             |
+-- |  5 | 0x50000  | BP Shuffle                         |             |
+-- |  6 | 0x60000  | Crossbar 2                         |             |
+-- |  7 | 0x70000  | UCAP                               |             |
 
 top_router_blk: block
 
@@ -1495,19 +1494,18 @@ end block top_router_blk;
 ---------------------------------------------------------------------
 
 
---!@addtogroup memory_map
---! SYSTEM Memory Map
---!
---! |#   |  Addr           | Module                       | Description |
---! |----|-----------------|------------------------------|-------------|
---! | 0  | Base + 0x00000  | GPIO                         |             |
---! | 1  | Base + 0x01000  | SYSMON                       |             |
---! | 2  | Base + 0x02000  | FREQ_CTR                     |             |
---! | 3  | Base + 0x03000  | SPI                          |             |
---! | 4  | Base + 0x04000  | REFCLK                       |             |
---! | 5  | Base + 0x05000  | I2C                          |             |
---! | 6  | Base + 0x06000  | (unused)                     |             |
---! | 7  | Base + 0x07000  | (unused)                     |             |
+-- SYSTEM Memory Map
+--
+-- |#   |  Addr           | Module                       | Description |
+-- |----|-----------------|------------------------------|-------------|
+-- | 0  | Base + 0x00000  | GPIO                         |             |
+-- | 1  | Base + 0x01000  | SYSMON                       |             |
+-- | 2  | Base + 0x02000  | FREQ_CTR                     |             |
+-- | 3  | Base + 0x03000  | SPI                          |             |
+-- | 4  | Base + 0x04000  | REFCLK                       |             |
+-- | 5  | Base + 0x05000  | I2C                          |             |
+-- | 6  | Base + 0x06000  | (unused)                     |             |
+-- | 7  | Base + 0x07000  | (unused)                     |             |
 
 sysrtr_blk: block
 
@@ -2791,28 +2789,28 @@ end generate adc_gen; -- case ADC_TYPE
 --------------------------------------------------
 -- CHAN COMMAND ROUTER
 --------------------------------------------------
---! @addtogroup memory_map
---! Channel Memoy Map/ Base addresses
---! Offset = Channel # x 0x02000
---! ==============================
---! |#   | Base Addr       | Subaddresses | Description |
---! |----|-----------------|------------- |-------------|
---! | 0  | Base + 0x00000  | CHAN 0       |             |
---! | 1  | Base + 0x02000  | CHAN 1       |             |
---! | 2  | Base + 0x04000  | CHAN 2       |             |
---! | 3  | Base + 0x06000  | CHAN 3       |             |
---! | 4  | Base + 0x08000  | CHAN 4       |             |
---! | 5  | Base + 0x0A000  | CHAN 5       |             |
---! | 6  | Base + 0x0C000  | CHAN 6       |             |
---! | 7  | Base + 0x0E000  | CHAN 7       |             |
---! | 8  | Base + 0x10000  | CHAN 8       |             |
---! | 9  | Base + 0x12000  | CHAN 9       |             |
---! | 10 | Base + 0x14000  | CHAN 10      |             |
---! | 11 | Base + 0x16000  | CHAN 11      |             |
---! | 12 | Base + 0x18000  | CHAN 12      |             |
---! | 13 | Base + 0x1A000  | CHAN 13      |             |
---! | 14 | Base + 0x1C000  | CHAN 14      |             |
---! | 15 | Base + 0x1E000  | CHAN 15      |             |
+
+-- Channel Memory Map
+-- ==============================
+-- |#   | Base Addr       | Subaddresses | Description |
+-- |----|-----------------|------------- |-------------|
+-- | 0  | Base + 0x00000  | CHAN 0       |             |
+-- | 1  | Base + 0x02000  | CHAN 1       |             |
+-- | 2  | Base + 0x04000  | CHAN 2       |             |
+-- | 3  | Base + 0x06000  | CHAN 3       |             |
+-- | 4  | Base + 0x08000  | CHAN 4       |             |
+-- | 5  | Base + 0x0A000  | CHAN 5       |             |
+-- | 6  | Base + 0x0C000  | CHAN 6       |             |
+-- | 7  | Base + 0x0E000  | CHAN 7       |             |
+-- | 8  | Base + 0x10000  | CHAN 8       |             |
+-- | 9  | Base + 0x12000  | CHAN 9       |             |
+-- | 10 | Base + 0x14000  | CHAN 10      |             |
+-- | 11 | Base + 0x16000  | CHAN 11      |             |
+-- | 12 | Base + 0x18000  | CHAN 12      |             |
+-- | 13 | Base + 0x1A000  | CHAN 13      |             |
+-- | 14 | Base + 0x1C000  | CHAN 14      |             |
+-- | 15 | Base + 0x1E000  | CHAN 15      |             |
+
 chan_router_blk: block
 
 	signal TOP_CHAN_CMD_DAT: AXIS8_DAT_STRUCT;
