@@ -484,6 +484,13 @@ fft_blk: block
     signal fft_reset_in: std_logic;
     attribute keep of  fft_reset_in: signal is "true";
 
+    signal axis_fft_in2_tdata: std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
+    signal axis_fft_in2_tuser: std_logic_vector(3 downto 0);
+    signal axis_fft_in2_tvalid: std_logic;
+    signal axis_fft_in2_tlast: std_logic;
+    signal fft_reset_in2: std_logic;
+    attribute keep of  fft_reset_in2: signal is "true";
+
 begin
     -- Pipeline the FFT reset (skip over the funcgen logic)
     fft_pipe_proc: process(in_clk)
@@ -494,10 +501,16 @@ begin
                 axis_fft_in_tdata <= axis_funcgen_out_tdata;
                 axis_fft_in_tuser <= axis_funcgen_out_tuser;
                 axis_fft_in_tlast <= axis_funcgen_out_tlast;
-                axis_fft_in_tvalid <= axis_funcgen_out_tvalid;
-                axis_fft_in_tvalid <= '0' when funcgen_reset_out;
+                axis_fft_in_tvalid <= '0' when funcgen_reset_out else axis_funcgen_out_tvalid;
 
-                fft_reset_out <= fft_reset_in;
+                fft_reset_in2 <= fft_reset_in;
+
+                axis_fft_in2_tdata <= axis_fft_in_tdata;
+                axis_fft_in2_tuser <= axis_fft_in_tuser;
+                axis_fft_in2_tlast <= axis_fft_in_tlast;
+                axis_fft_in2_tvalid <= '0' when fft_reset_in else axis_fft_in_tvalid;
+
+                fft_reset_out <= fft_reset_in2;
             end if;
         end process;
 
@@ -512,22 +525,12 @@ begin
 		    FFT_BITS_PER_BIN => FFT_BITS_PER_BIN
             )
         PORT MAP(
-            -- Input and output interfaces
-            --in_dat  => (
-            --    TDATA => axis_funcgen_out_tdata32,
-            --    TUSER => axis_funcgen_out_tuser,
-            --    TVALID => axis_funcgen_out_tvalid,
-            --    TLAST => axis_funcgen_out_tlast),
-            --    out_dat.TDATA => axis_fft_out_tdata(71 downto 0), -- ** hack to allow compiling with the old FFT ***
-            --    out_dat.TVALID => axis_fft_out_tvalid,
-            --    out_dat.TLAST => axis_fft_out_tlast,
-            --    out_dat.TUSER => axis_fft_out_tuser,
 
             -- Input stream from funcgen
-            s_axis_in_dat_tdata  => axis_fft_in_tdata,
-            s_axis_in_dat_tvalid => axis_fft_in_tvalid,
-            s_axis_in_dat_tlast  => axis_fft_in_tlast,
-            s_axis_in_dat_tuser  => axis_fft_in_tuser,
+            s_axis_in_dat_tdata  => axis_fft_in2_tdata,
+            s_axis_in_dat_tvalid => axis_fft_in2_tvalid,
+            s_axis_in_dat_tlast  => axis_fft_in2_tlast,
+            s_axis_in_dat_tuser  => axis_fft_in2_tuser,
 
             -- Output stream to scaler
             m_axis_out_dat_tdata  => axis_fft_out_tdata,
@@ -536,7 +539,7 @@ begin
             m_axis_out_dat_tuser  => axis_fft_out_tuser,
 
             clk     => in_clk,
-            reset   => fft_reset_in,
+            reset   => fft_reset_in2,
 
             -- Control interface
             CTRL_CMD_IN_DAT   => CMD_DAT(MODULE_FFT_ADDR),
