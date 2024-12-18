@@ -14,6 +14,9 @@
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 USE ieee.numeric_std.ALL;
+USE ieee.math_complex.ALL;
+USE std.env.finish;
+USE std.textio.all;
 
 library work;
 USE work.chFPGA_Package.all;
@@ -21,12 +24,10 @@ use work.tb_package.all;
 
 ENTITY ucorr44_testbench IS
 	generic (
-	    NUMBER_OF_CHANNELS: integer := 4; -- Warning: current design works only with NUMBER_OF_CHANNELS = 8
---	    NUMBER_OF_SOURCES : integer := 2; -- Warning; current design works only with NUMBER_OF_SOURCES = 2
-
- 		BITS_PER_SAMPLE: integer := 14; 
- 		SAMPLES_PER_WORD: integer := 8;
- 		SAMPLES_PER_FRAME: integer := 16384
+	    N: integer := 8; -- Warning: current design works only with NUMBER_OF_CHANNELS = 8
+	    N_PER_CLK: integer := 8;
+	    N_BINS: integer := 10; -- must be >
+	    N_INTEG: integer := 150
  		);
 END ucorr44_testbench;
 
@@ -36,11 +37,7 @@ ARCHITECTURE behavior OF ucorr44_testbench IS
    -- Clock period definitions
    -- constant CLK_PERIOD : time := 3.2 ns;
 
-    constant CLK_PERIOD : time := 1000000/375 * 1 ps; -- 375 MHz
-    constant BSB_CLK_PERIOD : time := 10 ns; --
-    constant CTRL_CLK_PERIOD : time := 10 ns; --
-    constant WORDS_PER_FRAME : integer:= SAMPLES_PER_FRAME/SAMPLES_PER_WORD;
-    constant ADC_BITS_PER_WORD: integer := BITS_PER_SAMPLE * SAMPLES_PER_WORD;
+    constant CLK_PERIOD : time := 2 ns; -- 375 MHz
 
 	--Inputs
 	--signal reset : std_logic := '0';
@@ -48,25 +45,19 @@ ARCHITECTURE behavior OF ucorr44_testbench IS
 
 	signal clk: std_logic; -- 200 MHz
 	signal rst: std_logic := '1';
-	signal bsb_clk: std_logic; -- 200 MHz
-	signal bsb_rst: std_logic := '1';
+--	signal bsb_clk: std_logic; -- 200 MHz
+--	signal bsb_rst: std_logic := '1';
  	signal tlast_in, tvalid_in: std_logic := '0';
-	signal tdata_in: slv_array(0 to NUMBER_OF_CHANNELS-1)(7 downto 0);
+	signal tdata_in: slv_array(0 to N_PER_CLK-1)(7 downto 0);
 
-    signal source_sel_out: std_logic_vector(0 to NUMBER_OF_CHANNELS - 1); -- data source request
-    signal source_sel_in: std_logic_vector(0 to NUMBER_OF_CHANNELS - 1) := (others => '0'); -- curent data source on tdata
-
-    signal tlast_out, tvalid_out, tready_out: std_logic;
+    signal tlast_out, tvalid_out: std_logic;
     signal tdata_out: std_logic_vector(7 downto 0);
 
 
-	constant NUMBER_OF_PACKETS : integer :=500;
+--	constant NUMBER_OF_PACKETS : integer :=500;
 
 
 begin
-
-
-
 	clk_process: process
 	   begin
 			clk <= '0';
@@ -75,28 +66,13 @@ begin
 			wait for CLK_PERIOD/2;
 	   end process;
 
-    -- BSB clock, used for both the output stream and control bus.
-    bsbclk_process: process
-	   begin
-			bsb_clk <= '0';
-			wait for BSB_CLK_PERIOD/2;
-			bsb_clk <= '1';
-			wait for BSB_CLK_PERIOD/2;
-	   end process;
-
-
-	UCORR44i: entity work.ucorr44
+ 	UCORR440: entity work.ucorr44
         generic map (
-            N => NUMBER_OF_CHANNELS
---            NUMBER_OF_SOURCES => NUMBER_OF_SOURCES,
---            ADC_BITS_PER_SAMPLE => BITS_PER_SAMPLE,
---            ADC_SAMPLES_PER_WORD => SAMPLES_PER_WORD,
---            ADC_SAMPLES_PER_FRAME => SAMPLES_PER_FRAME,
---            SIM => TRUE
+            N => N,
+            N_PER_CLK => N_PER_CLK,
+            NCLK => 1*N/N_PER_CLK
         )
 		port map (
-
-
 			s_axis_tdata => tdata_in, -- First byte to transmit is in in most significant byte
 			s_axis_tvalid => tvalid_in,
 			s_axis_tlast => tlast_in,
@@ -105,15 +81,13 @@ begin
 			z_out_tvalid => tvalid_out,
 			z_out_tlast => tlast_out,
             z_out_send => '1',
---            bsb_clk => bsb_clk,
-    
---            source_sel_out => source_sel_out,
---            source_sel_in => source_sel_in,
+
+            integ_period => to_slv(N_INTEG-1, 16),
+            autocorr_only => '0',
+            no_accum => '0',
     
 			clk=> clk,
 			rst => rst
---			ctrl_clk => bsb_clk,
---			ctrl_rst => bsb_rst
 		 );
 
 
@@ -122,51 +96,103 @@ begin
         variable data: std_logic_vector(255 downto 0);
         variable addr, eop, eot: integer;
         variable dat: slv8_array(0 to 127);
-        variable src: integer := 0;    
+        variable src: integer := 0;
+        variable ix: integer;     
 	begin
 
-		-- wait for init and synchronize to clock
-		tdata_in <=(X"10", X"20", X"30", X"40");
 		tlast_in <= '0';
 		tvalid_in <= '0';
+		tdata_in <= (others => (others => '0'));
 		rst <= '1';
-		bsb_rst <= '1';
-		sleep(bsb_clk, 10);
-		bsb_rst <= '0';
-		sleep(bsb_clk, 10);
 		sleep(clk, 10);
 		rst <= '0';
         sleep(clk, 10); 
 
         -- send channelizer data
-        for frame in 0 to 8192 loop
-            for word in 0 to WORDS_PER_FRAME-1 loop
---                for chan in 0 to NUMBER_OF_CHANNELS-1 loop
---                    tdata_in(chan) <= (others => '0');
---                    tdata_in(chan)(111 downto 111-7) <= to_slv(chan, 8);
---                    tdata_in(chan)(2*16-1 downto 0) <= to_slv(frame, 16) & to_slv(word, 16);
-----                    for sample in 0 to SAMPLES_PER_WORD-1 loop 
-----                        tdata_in(chan)((7-sample)*14+13 downto (7-sample)*14) <=  to_slv(word*8+sample, 14);
-----                        tdata_in(chan)((SAMPLES_PER_WORD-sample)*BITS_PER_SAMPLE-1 downto (SAMPLES_PER_WORD-sample-1)*BITS_PER_SAMPLE) <=  to_slv(frame, BITS_PER_SAMPLE);
-----                    end loop; -- sample
---                end loop; --ch
-                tvalid_in <='1';
-                tlast_in <= '0';
-
-                if word = WORDS_PER_FRAME-1 then
-                    tlast_in <= '1';
-                end if;
-                sleep(clk);
+        for frame in 0 to 10*N_INTEG loop
+            for bin in 0 to N_BINS-1 loop
+                for word in 0 to N/N_PER_CLK-1 loop
+                    for sample in 0 to N_PER_CLK-1 loop
+                        tdata_in(sample) <= to_slv(sample + N_PER_CLK * (word + N/N_PER_CLK * bin), 8) and x"07";
+--                        tdata_in(sample) <= to_slv(1, 8);
+                    end loop; -- sample
+                    tvalid_in <= '1';
+                    tlast_in <= '0';
+                    if word = N/N_PER_CLK-1 and bin=N_BINS-1 then
+                        tlast_in <= '1';
+                    end if;
+                    sleep(clk);
+                end loop; --word
             end loop; -- bin
         end loop; --frame
-        tvalid_in <='0';
- 
-
-
-		wait;
+        tvalid_in <='0'; 
+        finish;
 	end process;
 
+cap_blk: block
 
+        signal byte_ctr, bin: integer := 0;
+    
+begin
+
+	capture_proc: process(clk)
+        variable is_header: boolean := true;
+        variable header_bytes: slv8_array(0 to 9);
+        variable prod_word: std_logic_vector(39 downto 0); 
+        variable prod: complex;
+        variable prod_ctr: integer;
+        variable re, im: integer;
+        variable buf: line;
+        variable cookie: integer;
+        variable bin: integer;
+        variable ts: integer;
+        
+	begin
+        if rising_edge(clk) then
+--            sleep(clk);
+--            wait for 10 ps;
+            if tvalid_out then
+                byte_ctr <= byte_ctr + 1;
+--                write(buf, "Byte # " & to_string(byte_ctr) & "= 0x" & to_hstring(unsigned(tdata_out)));
+--                writeline(output, buf);
+
+                if is_header then
+                    header_bytes(byte_ctr) := tdata_out;
+                    if byte_ctr = 10-1 then
+                        byte_ctr <= 0;
+                        prod_ctr := 0;
+                        is_header := False;        
+                        cookie := to_integer(unsigned(header_bytes(0)));
+                        assert cookie=16#CF# report "Invalid cookie" severity FAILURE;
+                        bin := to_integer(to_unsigned(header_bytes(1 to 2)));
+                        ts := to_integer(to_unsigned(header_bytes(4 to 9)));
+                        write(buf, "Starting Frame #" & to_string(ts) & " bin #" & to_string(bin));
+                        writeline(output, buf);
+                        end if;
+                else -- not header
+--                    prod_word((4-byte_ctr)*8+7 downto (4-byte_ctr)*8) := tdata_out;
+                    prod_word((byte_ctr)*8+7 downto (byte_ctr)*8) := tdata_out;
+                    if byte_ctr=4 then
+                        byte_ctr <= 0;
+--                        prod := COMPLEX'(real(to_integer(signed(prod_word(35 downto 18)))), real(to_integer(signed(prod_word(17 downto 0)))));
+                        re := to_integer(signed(prod_word(35 downto 18)));                       
+                        im := to_integer(signed(prod_word(17 downto 0)));
+                       write(buf, "Prod #" & to_string(prod_ctr) & ":" & to_string(Re) & " + i" & to_string(Im)) ;
+                       writeline(output, buf);
+                       prod_ctr := prod_ctr + 1;
+                    end if; --last byte
+                end if; --header
+                if tlast_out then
+                    byte_ctr <= 0;
+                    is_header:= true;
+                end if;
+
+           end if; --tvalid                 
+--        end loop; --while True
+            end if;
+	end process;
+
+end block cap_blk;
 
 
 END;
