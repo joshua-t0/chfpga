@@ -651,12 +651,12 @@ end lsb;
 
 FUNCTION msb(s1:signed; width:integer:=8) return signed is
 begin
-	return s1(s1'LENGTH-1 downto s1'LENGTH-width);
+	return s1(s1'LEFT downto s1'LEFT-width+1);
 end msb;
 
 FUNCTION msb(s1:std_logic_vector; width:integer:=8) return std_logic_vector is
 begin
-	return s1(s1'LENGTH-1 downto s1'LENGTH-width);
+	return s1(s1'LEFT downto s1'LEFT-width+1);
 end msb;
 
 FUNCTION sign_bit(i:signed) return std_logic is --
