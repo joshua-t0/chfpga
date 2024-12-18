@@ -293,6 +293,18 @@ In this case, the same CMACs are reused multiple times, so we need less of them.
 Implementation
 ==============
 
+Types of CMAC44
+---------------
+
+.. default-role:: entity
+
+- `CMAC44`: implements a single CMAC that uses a FIFO18 for accumulation and a RAMB18 for readout. The two DSPs occupy the same vertical space as a RAMB36 tile. Mostly suited for FPGAs without UltraRAM. Readout occurs whenever the readout bus is available without sacrificing bins. Each CMAC has its own RAM/FIFO sequencing logic and its own readout logic. `CMAC44` are assembled into an array by `CORR44` to form a correlator core. Multiple correlator cores are instantiated in `CORR44_ARRAY`.
+
+- CMAC44P: Implements two CMACs that are connected to either a UltraRAM or an equivalent made out of BRAMs. This is to match the fixed width of the UltraRam (72 bits) with the products width (18+18)=36 bits. Because of UltraRam constraints, memory is used as simple dual port, i.e. there is one write port and one read port. Instead of using separate memories for accumulation and readout, data is strored in 2 banks that alternatively act as accumulation and readout banks. Readout is performed by on the first cycle of each frame, preventing the accumulation of the first product of the first bin. This is usually not an issue as the first bins of a baseband digitizer are usually at a frequency that is too low for the feed or analog electronics. Sequencing logic is external so it can be shared with every CMAC of the correlator core.
+
+  	UCORR44P assembles an array of `CMACC44P` to form a correlator core.
+
+
 
 CRS 8-input correlator
 ----------------------
