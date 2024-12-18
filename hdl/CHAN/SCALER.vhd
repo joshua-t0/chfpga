@@ -72,14 +72,14 @@ entity SCALER is
         COEFF_BITS_PER_BIN: integer := 16; -- typically 16 or 16+16. Includes both real and imaginary part. If USE_COMPLEX_GAINS=TRUE, half the bits are used for real and half for imaginary. Must be multiple of 8 as it is configured byte-wise.
         OUT_BITS_PER_BIN: integer := 16+16; -- minimum is 4+4, but can be increased to use 8-bit mode or get more of the input data in bypass mode for capture purposes.
         OUT_BITS_PER_WORD: integer := OUT_BITS_PER_BIN * FFT_BINS_PER_WORD;
-        EIGHT_BIT_SUPPORT: BOOLEAN := OUT_BITS_PER_BIN >= 8+8 -- TRUE of the scaler supports (8+8) bit output in addition to the 4+4 bit output 
+        EIGHT_BIT_SUPPORT: BOOLEAN := OUT_BITS_PER_BIN >= 8+8 -- TRUE of the scaler supports (8+8) bit output in addition to the 4+4 bit output
         );
     port (
         -- Input Interface
         s_axis_in_tdata    : in std_logic_vector(FFT_BITS_PER_WORD-1 downto 0); -- Format: MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
         s_axis_in_tvalid   : in std_logic;
         s_axis_in_tlast    : in std_logic;
-        s_axis_in_tuser    : in std_logic_vector(3 downto 0);  -- 
+        s_axis_in_tuser    : in std_logic_vector(3 downto 0);  --
 
         -- Output interface
         --out_dat : out AXIS32_DAT_STRUCT;
@@ -87,7 +87,7 @@ entity SCALER is
         m_axis_out_tdata    : out std_logic_vector(OUT_BITS_PER_WORD-1 downto 0); -- Format: MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
         m_axis_out_tvalid   : out std_logic;
         m_axis_out_tlast    : out std_logic;
-        m_axis_out_tuser    : out std_logic_vector(3 downto 0);  -- 
+        m_axis_out_tuser    : out std_logic_vector(3 downto 0);  --
 
         -- Common Clock and Reset
         clk     : in  std_logic;
@@ -114,7 +114,7 @@ end SCALER;
 architecture Behavioral of SCALER is
 
     constant COEFF_BITS_PER_WORD: integer := COEFF_BITS_PER_BIN * FFT_BINS_PER_WORD;
-    constant FFT_WORDS_PER_FRAME: integer := FFT_BINS_PER_FRAME / FFT_BINS_PER_WORD; 
+    constant FFT_WORDS_PER_FRAME: integer := FFT_BINS_PER_FRAME / FFT_BINS_PER_WORD;
     constant LOG2_FFT_WORDS_PER_FRAME: integer := integer_log2(FFT_WORDS_PER_FRAME); -- word counter width
     -- The following is to establosh how much storage space we need to store the gain coefficients and how many bits of addtess we need to access them
     constant COEFF_WORDS_PER_FRAME: integer := FFT_WORDS_PER_FRAME;
@@ -122,10 +122,10 @@ architecture Behavioral of SCALER is
     constant LOG2_COEFF_BYTES_PER_FRAME: integer := integer_log2(COEFF_BYTES_PER_FRAME); -- number of address bits to access gain coefficients byte-wise
     constant LOG2_COEFF_WORDS_PER_FRAME: integer := integer_log2(FFT_WORDS_PER_FRAME); -- number of address bits to access gain coefficients word-wise
     -- Describe how many integers in total there are in a post-gain word. The number includes both real or imaginary parts.
-    -- The post-gain processing applies post-scaling, rounding and saturation to each integer individually, 
-    -- whether they are the real or complex component of the product.  
+    -- The post-gain processing applies post-scaling, rounding and saturation to each integer individually,
+    -- whether they are the real or complex component of the product.
     constant INTEGERS_PER_WORD:integer := FFT_BINS_PER_WORD * 2;
-    constant INTEGER_WIDTH: integer := sel(USE_COMPLEX_GAINS, 
+    constant INTEGER_WIDTH: integer := sel(USE_COMPLEX_GAINS,
                                            FFT_BITS_PER_BIN/2 + COEFF_BITS_PER_BIN/2 + 1, -- complex gains, +1 to account for add operation in complex multiplication
                                            FFT_BITS_PER_BIN/2 + COEFF_BITS_PER_BIN +1); -- read gain. We keep the +1 for compatibility with complex gains
     --constant SCALAR_WIDTH:integer := FFT_BITS_PER_BIN * sel(USE_COMPLEX_GAINS, 2, 1);
@@ -143,12 +143,12 @@ architecture Behavioral of SCALER is
     signal in_dat_dly1_tdata    : std_logic_vector(FFT_BITS_PER_WORD-1 downto 0);
     signal in_dat_dly1_tvalid   : std_logic;
     signal in_dat_dly1_tlast    : std_logic;
-    signal in_dat_dly1_tuser    : std_logic_vector(3 downto 0);  -- 
+    signal in_dat_dly1_tuser    : std_logic_vector(3 downto 0);  --
 
     signal in_dat_dly2_tdata    : std_logic_vector(FFT_BITS_PER_WORD-1 downto 0);
     signal in_dat_dly2_tvalid   : std_logic;
     signal in_dat_dly2_tlast    : std_logic;
-    signal in_dat_dly2_tuser    : std_logic_vector(3 downto 0);  -- 
+    signal in_dat_dly2_tuser    : std_logic_vector(3 downto 0);  --
 
     --signal IN_DAT_DLY1: AXIS72_DAT_STRUCT; --!
     --signal IN_DAT_DLY2: AXIS72_DAT_STRUCT; --!
@@ -180,6 +180,7 @@ architecture Behavioral of SCALER is
     signal symmetric_saturation: std_logic;
     signal zero_on_saturation: std_logic;
     signal force_gain_to_one: std_logic;
+    signal use_float_gains: std_logic;
 
     signal rounding_mode: std_logic_vector(1 downto 0);
     constant ROUNDING_MODE_TRUNCATE: std_logic_vector(1 downto 0):= "00";
@@ -215,6 +216,7 @@ architecture Behavioral of SCALER is
     signal scaled_data_tuser: std_logic_vector(3 downto 0);
     signal scaled_data_tlast: std_logic;
     signal scaled_data_tdata: std_logic_vector(INTEGER_WIDTH*INTEGERS_PER_WORD-1 downto 0);
+    signal scaled_data_log_gain: unsigned(4 downto 0);
 
 
     signal coeff_ram_dout: std_logic_vector(COEFF_BITS_PER_WORD-1 downto 0);
@@ -319,7 +321,8 @@ stats_frame_count <= to_unsigned(control_bytes(3 to 5));
 gain_bank_switch_frame_number <= to_slv(control_bytes(6 to 9));
 
 -- CONTROL Byte 10
-data_type                <= control_bytes(10)(1 downto 0); -- "00": scaled data, "01": 1+0j if any saturation, "10": 1+0j or 0+1j if positive or negative saturation respectively
+data_type  <= control_bytes(10)(1 downto 0); -- "00": scaled data, "01": 1+0j if any saturation, "10": 1+0j or 0+1j if positive or negative saturation respectively
+use_float_gains <= control_bytes(10)(7); -- if True, bin-specific log gain is encoded in the upper 5 bits of the gain. For real gains only (USE_COMPLEX_GAINS=FALSE)
 
 -- STATUS Byte 0
 status_bytes(0)(7)   <= stats_ready;
@@ -328,11 +331,11 @@ status_bytes(0)(5)   <= to_std_logic(EIGHT_BIT_SUPPORT);
 status_bytes(0)(4)   <= fifo_overflow_sticky;
 status_bytes(0)(3)   <= to_std_logic(USE_COMPLEX_GAINS);
 
--- log2 of the number of gain table pages . 
+-- log2 of the number of gain table pages .
 --   - 8192 bins x 16-bit real gains x 2 banks: log2(8k*2*2)-9 = 6
 --   -  1024 bins * 16-bit complex gains * 2 banks: log2(1024*4*2)-9 = 4
 -- Gain bank size in bytes = 2**(value+9-1)
-status_bytes(0)(2 downto 0) <= to_slv(LOG2_NUMBER_OF_COEFF_PAGES, 3);  
+status_bytes(0)(2 downto 0) <= to_slv(LOG2_NUMBER_OF_COEFF_PAGES, 3);
 
 -- STATUS Byte 1-2: scaler overflows
 status_bytes(1 to 2) <= to_slv8_array(stats_scaler_overflows);
@@ -343,8 +346,9 @@ status_bytes(3 to 4) <= to_slv8_array(stats_adc_overflows);
 -- STATUS Byte 5
 status_bytes(5)      <= to_slv(lsb(frame_ctr, 8));
 
--- STATUS Byte 5
+-- STATUS Byte 6-7
 status_bytes(6 to 7) <= to_slv8_array(delay_capture_ctr);
+
 -----------------------------------------------------------------------------------
 -- Memory-Mapped interface
 -----------------------------------------------------------------------------------
@@ -403,7 +407,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
         --                ---------------------------------------------
         --                 7         0 7        0 7        0 7       0
         --     BSB bytes: |    4N+3   |   4N+2   | 4N + 1   |   4N    |
-        --                | MSB Re(N) | LSB Re(N)| MSB Im(N)| LSB Im(N) 
+        --                | MSB Re(N) | LSB Re(N)| MSB Im(N)| LSB Im(N)
         --                ---------------------------------------------
         --                31        24 23      16 15       8 7       0
         --     COeff:     |           Re(N)      |        Im(N)       |
@@ -412,16 +416,16 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
         -- Xilinx Parameterized Macro, version 2022.2
         coeff_ram0 : xpm_memory_tdpram
         generic map (
-            CLOCKING_MODE => "independent_clock", 
+            CLOCKING_MODE => "independent_clock",
             MEMORY_PRIMITIVE => "block",
 
             -- Port A (control port) geometry
 
-            WRITE_DATA_WIDTH_A => 8,     
-            BYTE_WRITE_WIDTH_A => 8,     
-            READ_DATA_WIDTH_A  => 8,     
-            ADDR_WIDTH_A       => LOG2_COEFF_BYTES_PER_FRAME+LOG2_NUMBER_OF_COEFF_BANKS,             
-            READ_LATENCY_A     => RAM_LATENCY,     
+            WRITE_DATA_WIDTH_A => 8,
+            BYTE_WRITE_WIDTH_A => 8,
+            READ_DATA_WIDTH_A  => 8,
+            ADDR_WIDTH_A       => LOG2_COEFF_BYTES_PER_FRAME+LOG2_NUMBER_OF_COEFF_BANKS,
+            READ_LATENCY_A     => RAM_LATENCY,
 
             -- Port B (coefficient readout port) geometry
 
@@ -429,14 +433,14 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             BYTE_WRITE_WIDTH_B => COEFF_BITS_PER_WORD,
             READ_DATA_WIDTH_B  => COEFF_BITS_PER_WORD,
             ADDR_WIDTH_B       => LOG2_COEFF_WORDS_PER_FRAME+LOG2_NUMBER_OF_COEFF_BANKS,
-            READ_LATENCY_B     => RAM_LATENCY,     
+            READ_LATENCY_B     => RAM_LATENCY,
 
             MEMORY_SIZE => COEFF_BITS_PER_WORD * COEFF_WORDS_PER_FRAME * NUMBER_OF_COEFF_BANKS, -- in bits
 
             USE_EMBEDDED_CONSTRAINT => 0,    -- DRC says 1 is only for distributed RAM
 
             -- defaults
-            -- RST_MODE_A => "SYNC", RST_MODE_B => "SYNC", AUTO_SLEEP_TIME => 0, CASCADE_HEIGHT => 0, ECC_MODE => "no_ecc", 
+            -- RST_MODE_A => "SYNC", RST_MODE_B => "SYNC", AUTO_SLEEP_TIME => 0, CASCADE_HEIGHT => 0, ECC_MODE => "no_ecc",
             -- MEMORY_INIT_FILE => "none", MEMORY_INIT_PARAM => "0", READ_RESET_VALUE_A => "0", READ_RESET_VALUE_B => "0",
             -- USE_MEM_INIT_MMI => 0, WAKEUP_TIME => "disable_sleep"
             MEMORY_OPTIMIZATION => "true",   -- String
@@ -450,34 +454,34 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             WRITE_PROTECT => 1               -- DECIMAL
         )
         port map (
-            -- Port A: 8-bit read/write programming interface 
+            -- Port A: 8-bit read/write programming interface
 
-            addra => coeff_ram_ctrl_addr_int,         
-            dina => coeff_ram_ctrl_din,                     
-            douta => coeff_ram_ctrl_dout,                   
-            ena => '1',                       
-            wea(0) => coeff_ram_ctrl_wr_en, 
-            clka => ctrl_clk,                 
-            rsta => ctrl_rst,                 
+            addra => coeff_ram_ctrl_addr_int,
+            dina => coeff_ram_ctrl_din,
+            douta => coeff_ram_ctrl_dout,
+            ena => '1',
+            wea(0) => coeff_ram_ctrl_wr_en,
+            clka => ctrl_clk,
+            rsta => ctrl_rst,
 
             -- Port B: Gain coefficient readout port
 
-            addrb => coeff_ram_addr,          
-            dinb => (others=>'0'),            
-            doutb => coeff_ram_dout,       
-            enb => '1',                    
-            web(0) => '0',                 
-            clkb => clk,                   
-            rstb => '0',                   
-                                           
-            injectdbiterra => '0', injectdbiterrb => '0', injectsbiterra => '0', injectsbiterrb => '0', 
+            addrb => coeff_ram_addr,
+            dinb => (others=>'0'),
+            doutb => coeff_ram_dout,
+            enb => '1',
+            web(0) => '0',
+            clkb => clk,
+            rstb => '0',
+
+            injectdbiterra => '0', injectdbiterrb => '0', injectsbiterra => '0', injectsbiterrb => '0',
             regcea => '1',
             regceb => '1',
-            sleep => '0'  
+            sleep => '0'
 
             );
     -- Implement the gain multipliers for both the REAL-only or complex gains configurations
-    -- 
+    --
     ---------------
     -- COMPLEX gains
     ---------------
@@ -499,7 +503,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
 
         -- fft data word:     MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
         -- gain word: MSB->LSB: Re(N+1), Im(N+1), Re(N),   Im(N)
-        -- single multiplier product format: Im, Re 
+        -- single multiplier product format: Im, Re
         -- Final scaled output format: MSB->LSB: Re(N), Im(N), Re(N+1), Im(N+1)
 
         -- Select gain coefficient for the even bin
@@ -524,7 +528,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
           );
 
         -- Instantiate complex multiplier for the odd bin
-         coeff_odd_din <= std_logic_vector(to_signed(0, 16)) & std_logic_vector(to_signed(1, 16)) when force_gain_to_one else    
+         coeff_odd_din <= std_logic_vector(to_signed(0, 16)) & std_logic_vector(to_signed(1, 16)) when force_gain_to_one else
                           (coeff_ram_dout(32+15 downto 32+0) & coeff_ram_dout(32+31 downto 32+16));
         cmul1_a_tdata <= ("000000" & in_dat_dly2_tdata(0*18+17 downto 0*18+0) & "000000" & in_dat_dly2_tdata(1*18+17 downto 1*18+0));
         cmul1: entity work.SCALER_CMUL
@@ -547,13 +551,13 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
           scaled_data_tdata(3*INTEGER_WIDTH - 1 downto 2*INTEGER_WIDTH) <= scaled_data_even_tdata(74 downto 40); -- Im(N)
           scaled_data_tdata(2*INTEGER_WIDTH - 1 downto 1*INTEGER_WIDTH) <= scaled_data_odd_tdata(34 downto 0); -- Re(N+1)
           scaled_data_tdata(1*INTEGER_WIDTH - 1 downto 0*INTEGER_WIDTH) <= scaled_data_odd_tdata(74 downto 40); -- Im(N+1)
-    
+
     ---------------
     -- REAL gains
     ---------------
     else generate -- if no complex gains
 
-        signal coeff_reg: std_logic_vector(COEFF_BITS_PER_WORD-1 downto 0);
+        signal coeff_reg: unsigned(COEFF_BITS_PER_WORD-1 downto 0);
         signal fft_reg_tdata: std_logic_vector(FFT_BITS_PER_WORD-1 downto 0);
         signal fft_reg_tvalid: std_logic;
         signal fft_reg_tlast: std_logic;
@@ -563,44 +567,46 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
         signal scaled_data_tvalid_dly1, scaled_data_tvalid_dly2: std_logic;
         signal scaled_data_tuser_dly1, scaled_data_tuser_dly2: std_logic_vector(3 downto 0);
         signal scaled_data_tlast_dly1, scaled_data_tlast_dly2: std_logic;
+        signal scaled_data_log_gain_dly1, scaled_data_log_gain_dly2: unsigned(4 downto 0);
 
-        constant MUL_B_WIDTH_MAX: integer := 18; -- use  2 multipliers if B_WIDTH > B_WIDTH_MAX
-        constant PROD_LO_WIDTH:integer := MUL_B_WIDTH_MAX + COEFF_BITS_PER_BIN + 1; -- b1 unsigned slice has a extra guard bit to make it signed
-        constant PROD_HI_WIDTH: integer := FFT_BITS_PER_BIN/2 - MUL_B_WIDTH_MAX + COEFF_BITS_PER_BIN;
-    
+        constant MUL_B_WIDTH_MAX: integer := 18; -- use  2 multipliers if B_WIDTH (i.e. FFT data) > B_WIDTH_MAX
+        constant PROD_LO_WIDTH:integer := MUL_B_WIDTH_MAX + 1 + COEFF_BITS_PER_BIN + 1; -- b1 unsigned slice has a extra guard bit to make it signed
+        constant PROD_HI_WIDTH: integer := FFT_BITS_PER_BIN/2 - MUL_B_WIDTH_MAX + COEFF_BITS_PER_BIN + 1;
+
         signal prod_re_lo_dly1, prod_im_lo_dly1: signed_array(0 to FFT_BINS_PER_WORD-1)(PROD_LO_WIDTH-1 downto 0);
         signal prod_re_hi_dly1, prod_im_hi_dly1: signed_array(0 to FFT_BINS_PER_WORD-1)(PROD_HI_WIDTH-1 downto 0);
         signal prod_re_dly1, prod_im_dly1: signed_array(0 to FFT_BINS_PER_WORD-1)(INTEGER_WIDTH-1 downto 0);
-            
+
     begin
 
         -- fft data format:                    MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
-        -- gain storage format (Complex gain): MSB->LSB: Re(N+1), Im(N+1), Re(N),   Im(N) 
-        -- gain storage format (Real gain):    MSB->LSB:                   Re(N+1), Re(N) 
+        -- gain storage format (Complex gain): MSB->LSB: Re(N+1), Im(N+1), Re(N),   Im(N)
+        -- gain storage format (Real gain):    MSB->LSB:                   Re(N+1), Re(N)
         -- product data format:                MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
         --
         -- BRAM storage format: (16bit gain words are is stored little-endian)
         --                -----------------------------------------------
         --                 7          0 7         0 7        0 7       0
         --     BSB bytes: |    2N+3    |   2N+2    | 2N + 1   |   2N    |
-        --                | MSB G(N+1) | LSB G(N+1)| MSB G(N) | LSB G(N) 
+        --                | MSB G(N+1) | LSB G(N+1)| MSB G(N) | LSB G(N)
         --                -----------------------------------------------
         --                31        24 23      16 15       8 7       0
         --     COeff:     |           G(N+1)      |        G(N)          |
         --                ---------------------------------------------
-        mul_proc: process (clk) 
+        mul_proc: process (clk)
             variable fft_val: signed(FFT_BITS_PER_BIN/2-1 downto 0);
-            variable gain: signed(COEFF_BITS_PER_BIN-1 downto 0);
+            variable coeff: unsigned(COEFF_BITS_PER_BIN-1 downto 0);
+            variable gain: signed(COEFF_BITS_PER_BIN downto 0); -- add extra bit to hold unsigned in a signed
             variable prod: signed(INTEGER_WIDTH-1 downto 0);
             variable fft_lsb, prod_lsb: integer;
         begin
             if rising_edge(clk) then
-                -- Pipeline the gain and fft values. These registers should be absorbed as the input registers 
+                -- Pipeline the gain and fft values. These registers should be absorbed as the input registers
                 -- of the DSP48 block and should greatly help with timing closure.
                 for i in 0 to FFT_BINS_PER_WORD-1 loop
-                    coeff_reg((i+1)*COEFF_BITS_PER_BIN-1 downto i*COEFF_BITS_PER_BIN) <= 
-                        std_logic_vector(to_signed(1, COEFF_BITS_PER_BIN)) when force_gain_to_one else -- debug: force gain to 1
-                        coeff_ram_dout((i+1)*COEFF_BITS_PER_BIN-1 downto i*COEFF_BITS_PER_BIN);
+                    coeff_reg((i+1)*COEFF_BITS_PER_BIN-1 downto i*COEFF_BITS_PER_BIN) <=
+                        to_unsigned(1, COEFF_BITS_PER_BIN) when force_gain_to_one else -- debug: force gain to 1
+                        unsigned(coeff_ram_dout((i+1)*COEFF_BITS_PER_BIN-1 downto i*COEFF_BITS_PER_BIN));
                 end loop;
                 fft_reg_tdata <= in_dat_dly2_tdata;
                 -- Make sure the control signals are delayed as much as the data
@@ -608,10 +614,17 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 fft_reg_tlast <= in_dat_dly2_tlast;
                 fft_reg_tuser <= in_dat_dly2_tuser;
                 for i in FFT_BINS_PER_WORD-1 downto 0 loop
-                    -- Extract the single real gain to be applied to both the Re and Im part 
-                    gain := signed(coeff_reg((FFT_BINS_PER_WORD-i)*COEFF_BITS_PER_BIN-1 downto (FFT_BINS_PER_WORD-i-1)*COEFF_BITS_PER_BIN));
-                    
-                    -- Real component                    
+                    -- Extract the single real gain to be applied to both the Re and Im part
+                    coeff := unsigned(coeff_reg((FFT_BINS_PER_WORD-i)*COEFF_BITS_PER_BIN-1 downto (FFT_BINS_PER_WORD-i-1)*COEFF_BITS_PER_BIN));
+                    if use_float_gains then
+                        scaled_data_log_gain_dly1 <= coeff(COEFF_BITS_PER_BIN-1 downto COEFF_BITS_PER_BIN-5); -- upper 5 bits are the gain
+                        gain := signed(resize(coeff(COEFF_BITS_PER_BIN-6 downto 0), COEFF_BITS_PER_BIN+1)); -- resize prepends zeros. Signed value will be positive.
+                    else
+                        scaled_data_log_gain_dly1 <= unsigned(post_scaler_left_shift);
+                        gain := signed(resize(coeff, COEFF_BITS_PER_BIN+1));
+                    end if; -- if USE_FLOAT_GAINS
+
+                    -- Apply gain on real component
                     fft_lsb := i*FFT_BITS_PER_BIN + FFT_BITS_PER_BIN/2; -- bit position of the lsb of the Re and Im integer in fft input and extract them
                     fft_val := signed(fft_reg_tdata(fft_lsb + FFT_BITS_PER_BIN/2-1 downto fft_lsb)); -- we must use dly2 signals which are synchronized with the gain coefficient
                     prod_lsb := 2*i*INTEGER_WIDTH + INTEGER_WIDTH;
@@ -619,13 +632,13 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         prod_re_dly1(i) <= resize(gain * fft_val, INTEGER_WIDTH);
                         prod := prod_re_dly1(i);
                     else
-                        prod_re_lo_dly1(i) <= gain * signed(resize(unsigned(fft_val(MUL_B_WIDTH_MAX-1 downto 0)), MUL_B_WIDTH_MAX + 1));
+                        prod_re_lo_dly1(i) <= gain * signed(resize(unsigned(fft_val(MUL_B_WIDTH_MAX-1 downto 0)), MUL_B_WIDTH_MAX + 1)); -- zero pad at MSB to hold unsigned value in to a signed
                         prod_re_hi_dly1(i) <= gain * fft_val(FFT_BITS_PER_BIN/2-1 downto MUL_B_WIDTH_MAX);
                         prod := prod_re_lo_dly1(i) + shift_left(resize(prod_re_hi_dly1(i), INTEGER_WIDTH), MUL_B_WIDTH_MAX);
                     end if; -- wide mul
                     scaled_data_tdata_dly2(prod_lsb + INTEGER_WIDTH-1 downto prod_lsb) <= std_logic_vector(prod);
 
-                    -- Imaginary component
+                    -- Apply gain on imaginary component
                     fft_lsb := i*FFT_BITS_PER_BIN;
                     fft_val := signed(fft_reg_tdata(fft_lsb + FFT_BITS_PER_BIN/2-1 downto fft_lsb));
                     prod_lsb := 2*i*INTEGER_WIDTH;                     -- lsb position of Im product in the output word
@@ -636,7 +649,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         prod_im_lo_dly1(i) <= gain * signed(resize(unsigned(fft_val(MUL_B_WIDTH_MAX-1 downto 0)), MUL_B_WIDTH_MAX + 1));
                         prod_im_hi_dly1(i) <= gain * fft_val(FFT_BITS_PER_BIN/2-1 downto MUL_B_WIDTH_MAX);
                         prod := prod_im_lo_dly1(i) + shift_left(resize(prod_im_hi_dly1(i), INTEGER_WIDTH), MUL_B_WIDTH_MAX);
-                    end if; -- wide mul    
+                    end if; -- wide mul
                     scaled_data_tdata_dly2(prod_lsb + INTEGER_WIDTH-1 downto prod_lsb) <= std_logic_vector(prod);
 
                 end loop;
@@ -647,12 +660,14 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 scaled_data_tvalid_dly2 <= scaled_data_tvalid_dly1;
                 scaled_data_tlast_dly2 <= scaled_data_tlast_dly1;
                 scaled_data_tuser_dly2 <= scaled_data_tuser_dly1;
+                scaled_data_log_gain_dly2 <= scaled_data_log_gain_dly1;
 
                 -- Pipeline output: the previous register stage seems to be moved in the DSP
                 scaled_data_tdata <= scaled_data_tdata_dly2;
                 scaled_data_tlast <= scaled_data_tlast_dly2;
                 scaled_data_tvalid <= scaled_data_tvalid_dly2;
                 scaled_data_tuser <= scaled_data_tuser_dly2;
+                scaled_data_log_gain <= scaled_data_log_gain_dly2;
 
                 if rst_reg='1' then
                     fft_reg_tvalid <= '0';
@@ -672,7 +687,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
 -------------------------------------------------------------------
 --! Reads the input bus, scales the values, and send them to the output bus.
 scaler_proc: process(clk)
-    variable shift_left_value_var: integer range 0 to (2**post_scaler_left_shift'LENGTH - 1);
+    variable scaled_data_log_gain_var: integer range 0 to (2**post_scaler_left_shift'LENGTH - 1);
 --    variable stage1_word_var: int35_array(3 downto 0);
     variable word_var: signed(INTEGER_WIDTH-1 downto 0);
     variable OUT_WORD_VAR: int8_array(0 to INTEGERS_PER_WORD-1);
@@ -713,12 +728,10 @@ scaler_proc: process(clk)
 
             -- RESET:  See at the bottom of this process
 
-            post_scaler_left_shift_reg <= post_scaler_left_shift;
+            --post_scaler_left_shift_reg <= post_scaler_left_shift;
             ----------
             -- Scaling
             ----------
-            -- convert shift value into an integer
-            shift_left_value_var := to_integer(unsigned(post_scaler_left_shift_reg)); 
 
             -- PIPELINE STAGE 1: Implement a barrel shifter to
             -- shift-left the read/imaginary parts of the products and
@@ -728,23 +741,29 @@ scaler_proc: process(clk)
             stage1_tuser   <= scaled_data_tuser;
 
             for i in 0 to INTEGERS_PER_WORD-1 loop
-                -- get an integer. The to_10() standard function makes sure that 'U' values are converted to zeros and 
+                -- get an integer. The to_10() standard function makes sure that 'U' values are converted to zeros and
                 -- prevent simulation warnings in the following computations
-                word_var := to_01(signed(scaled_data_tdata((i+1)*INTEGER_WIDTH-1 downto i*INTEGER_WIDTH))); 
+                word_var := to_01(signed(scaled_data_tdata((i+1)*INTEGER_WIDTH-1 downto i*INTEGER_WIDTH)));
 
                 -- Store the sign bit before shifting
-                stage1_sign(i) <= sign_bit(word_var); -- preserve the sign that may have been destroyed by the shift operation
+                stage1_sign(i) <= sign_bit(word_var); -- preserve the sign that may be destroyed by the shift operation
                 -- Store the shifted integer. We'll fix overflows in the next phase.
-                stage1_word(i) <= shift_left(word_var, shift_left_value_var);
+                -- convert shift value into an integer
+                scaled_data_log_gain_var := to_integer(scaled_data_log_gain);
+                stage1_word(i) <= shift_left(word_var, scaled_data_log_gain_var);
 
                 -- Determine if all bits shifted out and the final sign bits have the same sign as the sign bit. If not, we are in overflow condition.
-                -- Note: We cannot use and_reduce() with a range determined from a variable: it does not synthersize.
-                stage1_overflow(i) <= '0';
-                for j in 1 to 31 loop
-                    if j <= shift_left_value_var and word_var(word_var'LENGTH-1-j) /= sign_bit(word_var) then
-                        stage1_overflow(i)<='1';
-                    end if;
-                end loop;
+                -- Note: We cannot use and_reduce() with a range determined from a variable: it does not synthersize. But we can compare a variable range of a
+                -- signed value with a constant.
+
+                stage1_overflow(i) <= to_std_logic(word_var(INTEGER_WIDTH-1 downto INTEGER_WIDTH-1-scaled_data_log_gain_var)=0 or
+                                                   word_var(INTEGER_WIDTH-1 downto INTEGER_WIDTH-1-scaled_data_log_gain_var)=-1);
+--                stage1_overflow(i) <= '0';
+--                for j in 1 to 31 loop
+--                    if j <= scaled_data_log_gain_var and word_var(word_var'LENGTH-1-j) /= sign_bit(word_var) then
+--                        stage1_overflow(i)<='1';
+--                    end if;
+--                end loop;
             end loop;
 
 
@@ -753,7 +772,7 @@ scaler_proc: process(clk)
             stage2_tlast   <= stage1_tlast;
             stage2_tuser   <= stage1_tuser;
             for i in 0 to INTEGERS_PER_WORD-1 loop
-                stage2_sign(i) <= stage1_sign(i); 
+                stage2_sign(i) <= stage1_sign(i);
                 stage2_overflow(i) <= stage1_overflow(i);
                 if four_bits = '1' or EIGHT_BIT_SUPPORT = FALSE then
                     if rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND or rounding_mode = ROUNDING_MODE_ROUND then -- if rounding
@@ -767,11 +786,11 @@ scaler_proc: process(clk)
                         -- First: if the rounding causes a positive value to overflow (rounds 7.5 to -8)
                         if msb(stage1_word(i), 5) = "01111" then -- If we have a tie, convergent rounding would make the number even, but it's already even after rounding, so the test is the same for normal and convergent rounding.
                             stage2_overflow(i) <= '1';-- the rounding will cause a overflow
-                        -- Second, if the rounding adds 0.5, so we can never overflow a negative value. 
+                        -- Second, if the rounding adds 0.5, so we can never overflow a negative value.
                         -- Instead, here we check that the value is not -8 after rounding, so we can saturate to -7 if symmetric saturation is enabled
-                        -- We check for 2 conditions. 
-                        --     a) we had -8.0 prior to rounding, so we are still -8 after rounding. 
-                        --     b) We were -7.5 and rounded back down to -8 by convergent rounding 
+                        -- We check for 2 conditions.
+                        --     a) we had -8.0 prior to rounding, so we are still -8 after rounding.
+                        --     b) We were -7.5 and rounded back down to -8 by convergent rounding
                         elsif symmetric_saturation='1' and ( msb(stage1_word(i), 5) = "10000" or (msb(stage1_word(i), 5) = "10001" and round_down_var = '1')) then --if the rounding causes a negative value to overflow
                             stage2_overflow(i) <= '1';-- the rounded value will exceed -7
                         end if;
@@ -790,7 +809,7 @@ scaler_proc: process(clk)
                         if round_down_var = '1' then
                             stage2_word(i)(0) <= '0';
                         end if;
-                        -- Detect saturations to be applied on next pipeline stage 
+                        -- Detect saturations to be applied on next pipeline stage
                         if msb(stage1_word(i), 9) = "011111111" then --if the rounding causes a positive value to overflow
                             stage2_overflow(i) <= '1';-- the rounding will cause a overflow
                         elsif symmetric_saturation='1' and ( msb(stage1_word(i), 9) = "100000000" or (msb(stage1_word(i), 9) = "100000001" and round_down_var = '1')) then --if the rounding causes a negative value to overflow
@@ -854,15 +873,39 @@ scaler_proc: process(clk)
             m_axis_out_tuser <= (others => '0');
             m_axis_out_tlast <= '0';
             m_axis_out_tvalid <= '0';
- 
+
             if bypass_scaler then
                 case data_type is
-                    when "00" => --send input
-                        -- We forward the upper N bits of the FFT integers to the upper N bits of the output integer
-                        for i in 0 to INTEGERS_PER_WORD-1 loop
-                            m_axis_out_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto i*OUT_BITS_PER_BIN/2) <= 
-                                s_axis_in_tdata((i+1)*FFT_BITS_PER_BIN/2-1 downto (i+1)*FFT_BITS_PER_BIN/2 - OUT_BITS_PER_BIN/2);
-                        end loop;
+                    when "00" | "10" | "11"  => --send pre-gain FFT output
+
+                        if data_type = "00" then
+                            -- We forward the upper N bits of the FFT integers to the upper N bits of the output integer
+                            for i in 0 to INTEGERS_PER_WORD-1 loop
+                                m_axis_out_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto i*OUT_BITS_PER_BIN/2) <=
+                                    msb(s_axis_in_tdata((i+1)*FFT_BITS_PER_BIN/2-1 downto i*FFT_BITS_PER_BIN/2), OUT_BITS_PER_BIN/2);
+                            end loop;
+                        else -- data_type "10" or "11" Even or odd bins, double resolution
+--                            for i in 0 to FFT_BINS_PER_WORD/2-1 loop
+                            for i in 0 to 0 loop
+                                if data_type = "10" then -- Send Even FFT bins, 2x the resolution
+                                    -- Re part
+                                    m_axis_out_tdata(i*2*OUT_BITS_PER_BIN + 2*OUT_BITS_PER_BIN-1 downto i*2*OUT_BITS_PER_BIN + OUT_BITS_PER_BIN) <=
+    --                                    msb(s_axis_in_tdata(i*2*FFT_BITS_PER_BIN + FFT_BITS_PER_BIN + FFT_BITS_PER_BIN -1 downto i*2*FFT_BITS_PER_BIN + FFT_BITS_PER_BIN + FFT_BITS_PER_BIN/2), OUT_BITS_PER_BIN);
+                                        s_axis_in_tdata(i*2*FFT_BITS_PER_BIN + FFT_BITS_PER_BIN + FFT_BITS_PER_BIN -1 downto i*2*FFT_BITS_PER_BIN + FFT_BITS_PER_BIN + FFT_BITS_PER_BIN- OUT_BITS_PER_BIN);
+                                    -- Im part
+                                    m_axis_out_tdata(i*2*OUT_BITS_PER_BIN + OUT_BITS_PER_BIN-1 downto i*2*OUT_BITS_PER_BIN) <=
+                                        s_axis_in_tdata(i*2*FFT_BITS_PER_BIN + FFT_BITS_PER_BIN + FFT_BITS_PER_BIN/2-1 downto i*2*FFT_BITS_PER_BIN + FFT_BITS_PER_BIN + FFT_BITS_PER_BIN/2- OUT_BITS_PER_BIN);
+                                else -- Send Odd FFT bins, 2x the resolution
+                                    ---- Re part
+                                    m_axis_out_tdata(i*2*OUT_BITS_PER_BIN + 2*OUT_BITS_PER_BIN-1 downto i*2*OUT_BITS_PER_BIN + OUT_BITS_PER_BIN) <=
+                                        s_axis_in_tdata(i*2*FFT_BITS_PER_BIN + FFT_BITS_PER_BIN -1 downto i*2*FFT_BITS_PER_BIN + FFT_BITS_PER_BIN - OUT_BITS_PER_BIN);
+                                    -- Im part
+                                    m_axis_out_tdata(i*2*OUT_BITS_PER_BIN + OUT_BITS_PER_BIN-1 downto i*2*OUT_BITS_PER_BIN) <=
+                                        s_axis_in_tdata(i*2*FFT_BITS_PER_BIN + FFT_BITS_PER_BIN/2-1 downto i*2*FFT_BITS_PER_BIN + FFT_BITS_PER_BIN/2 - OUT_BITS_PER_BIN);
+                                end if; -- data_type="10"
+                            end loop;
+                        end if; -- data_type
+
                         m_axis_out_tlast <= s_axis_in_tlast;
                         m_axis_out_tvalid <= s_axis_in_tvalid;
                         m_axis_out_tuser(TUSER_CAPTURE_BIT) <= s_axis_in_tuser(TUSER_CAPTURE_BIT);
@@ -877,9 +920,9 @@ scaler_proc: process(clk)
                     when "01" =>
                         -- We pass the upper bits of the the shifted product with saturation
                         for i in 0 to INTEGERS_PER_WORD-1 loop
-                            m_axis_out_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto i*OUT_BITS_PER_BIN/2) <= 
+                            m_axis_out_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto i*OUT_BITS_PER_BIN/2) <=
 --                                (OUT_BITS_PER_BIN/2-1 => '1', others =>'0') when stage1_overflow(i)='1' and stage1_sign(i)='1' else
---                                (OUT_BITS_PER_BIN/2-1 => '0', others =>'1') when stage1_overflow(i)='1' and stage1_sign(i)='0' 
+--                                (OUT_BITS_PER_BIN/2-1 => '0', others =>'1') when stage1_overflow(i)='1' and stage1_sign(i)='0'
                                 ('1', others => '0') when stage1_overflow(i)='1' and stage1_sign(i)='1' else
                                 ('0', others => '1') when stage1_overflow(i)='1' and stage1_sign(i)='0' else
 --                                msb(X"8000", OUT_BITS_PER_BIN/2) when stage1_overflow(i)='1' and stage1_sign(i)='1' else
@@ -888,6 +931,7 @@ scaler_proc: process(clk)
                         end loop;
                         m_axis_out_tlast <= stage1_tlast;
                         m_axis_out_tvalid <= stage1_tvalid;
+
                     when others=>
                         assert FALSE report "Unhandled data type case" severity FAILURE;
                 end case;
@@ -895,28 +939,28 @@ scaler_proc: process(clk)
                 len := minimum(OUT_BITS_PER_BIN/2, 8); -- copy at most 8 bits to the output, or less if the output word is narrower
                 for i in 0 to INTEGERS_PER_WORD/2-1 loop
                     case data_type is
-                        when "00" =>
+                        when "00" => -- send the 4+4 bit scaled values
                            m_axis_out_tdata((2*i+1)*OUT_BITS_PER_BIN/2-1 downto (2*i+1)*OUT_BITS_PER_BIN/2-len) <= std_logic_vector(OUT_WORD_VAR(2*i)(7 downto 8-len)); -- MSB->LSB: 3,2,1,0 = Re(N), Im(N), Re(N+1), Im(N+1)
                            m_axis_out_tdata((2*i+2)*OUT_BITS_PER_BIN/2-1 downto (2*i+2)*OUT_BITS_PER_BIN/2-len) <= std_logic_vector(OUT_WORD_VAR(2*i+1)(7 downto 8-len)); -- MSB->LSB: 3,2,1,0 = Re(N), Im(N), Re(N+1), Im(N+1)
-                        when "01" =>
+                        when "01" => -- Send 1+0j on overflow
                             if  stage2_overflow(2*i)='1' or stage2_overflow(2*i+1)='1' then
                                 m_axis_out_tdata((2*i+2)*OUT_BITS_PER_BIN/2-4) <= '1'; -- set LSB of upper 4 bits, Re only
                             end if;
-                        when "10" =>
+                        when "10" => -- Send (1+0j) if Re has a positive saturation and (0+1j) if it has a negative saturation
                             if  stage2_overflow(2*i+1)='1' then -- Re overflow
                                 if stage2_sign(2*i+1)='0' then -- if positive Re overflow set output to 1+0j
                                     m_axis_out_tdata((2*i+2)*OUT_BITS_PER_BIN/2-4) <= '1'; -- set LSB of upper 4 bits of Re part
                                 else -- if negative Re overflow, set output to 0+1j
                                     m_axis_out_tdata((2*i+1)*OUT_BITS_PER_BIN/2-4) <= '1'; -- set LSB of upper 4 bits of Im part
-                                end if; 
+                                end if;
                             end if;
-                        when "11" =>
-                            if  stage2_overflow(2*i)='1' then -- Im overflow 
+                        when "11" => -- Send (1+0j) if Im has a positive saturation and (0+1j) if it has a negative saturation
+                            if  stage2_overflow(2*i)='1' then -- Im overflow
                                 if stage2_sign(2*i)='0' then -- if positive Im overflow set output to 1+0j
                                     m_axis_out_tdata((2*i+2)*OUT_BITS_PER_BIN/2-4) <= '1'; -- set LSB of upper 4 bits of Re part
                                 else -- if negative Im overflow, set output to 0+1j
                                     m_axis_out_tdata((2*i+1)*OUT_BITS_PER_BIN/2-4) <= '1'; -- set LSB of upper 4 bits of Im part
-                                end if; 
+                                end if;
                             end if;
                         when others=>
                             assert FALSE report "Unhandled data type case" severity FAILURE;
@@ -930,7 +974,7 @@ scaler_proc: process(clk)
                     m_axis_out_tuser(TUSER_SERIAL_FLAGS_BIT) <= stage2_tuser(TUSER_SERIAL_FLAGS_BIT);
                 end if;
                 -- Set the scaler overflow bits in the user data
-                -- Warning: works only if we have 2 bins/word. To be fixed if these bits are to be used downstream. 
+                -- Warning: works only if we have 2 bins/word. To be fixed if these bits are to be used downstream.
                 m_axis_out_tuser(TUSER_SCALER_LOW_OVERFLOW_BIT) <= stage2_overflow(0) or stage2_overflow(1); -- Overflow for the low word is when either its real or imaginary value overflows
                 m_axis_out_tuser(TUSER_SCALER_HIGH_OVERFLOW_BIT) <= stage2_overflow(2) or stage2_overflow(3); -- Overflow for the low word is when either its real or imaginary value overflows
                 m_axis_out_tlast <= stage2_tlast;
@@ -1010,7 +1054,7 @@ stat_proc: process(clk)
                             scaler_overflow_incr := scaler_overflow_incr + 1;
                         end if;
                     end loop;
-                        
+
                     -- Count scaler overflows
                     if stats_first_frame = '1' then
                         scaler_overflow_ctr <= to_unsigned(scaler_overflow_incr, scaler_overflow_ctr'length);
