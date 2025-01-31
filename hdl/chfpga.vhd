@@ -554,7 +554,7 @@ constant ADC_BITS_PER_WORD: integer := ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPL
 --constant NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := sel(GLOBAL_IMPLEMENT_FFT, 0*NUMBER_OF_CHANNELIZERS+4, 0); --! Number of channelizers that have an FFT module
 constant NUMBER_OF_ADCS_OR_CHANNELIZERS: integer := max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS);
 constant IMPLEMENT_CROSSBAR1: boolean := NUMBER_OF_CROSSBAR_INPUTS > 0 and NUMBER_OF_CROSSBAR1_OUTPUTS > 0 and CROSSBAR1_TYPE /= "NONE";
-constant IMPLEMENT_CROSSBAR2_AND_CROSSBAR3: boolean := IMPLEMENT_CROSSBAR1 and NUMBER_OF_BP_SHUFFLE_LINKS > 0 and CROSSBAR1_TYPE /= "NONE";
+constant IMPLEMENT_CROSSBAR2_AND_CROSSBAR3: boolean := IMPLEMENT_CROSSBAR1 and NUMBER_OF_BP_SHUFFLE_LINKS > 0 and CROSSBAR1_TYPE = "BRAM";
 constant IMPLEMENT_GPU_LINKS: boolean := NUMBER_OF_GPU_LINKS > 0 and GPU_LINK_TYPE /= "NONE";
 constant IMPLEMENT_CORR: boolean := NUMBER_OF_CORRELATORS > 0 and CORR_TYPE /= "NONE";
 constant FPGA_SERIES: integer :=FPGA_SERIES_LIST(PLATFORM_ID);
@@ -709,10 +709,6 @@ signal top_rply_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_PORTS-1 downto 0);
 -- Intermediary buses used to split out the top router outputs and avoid a simulator bug when indexing record arrays as an actual parameter of an instance
 
 
-signal top_bp_shuffle_cmd_dat: AXIS8_DAT_STRUCT;
-signal top_bp_shuffle_cmd_rdy: AXIS8_RDY_STRUCT;
-signal top_bp_shuffle_rply_dat: AXIS8_DAT_STRUCT;
-signal top_bp_shuffle_rply_rdy: AXIS8_RDY_STRUCT;
 
 -- System ROUTER output interface buses
 signal SYS_CMD_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_SYS_MODULES-1 downto 0);
@@ -837,11 +833,13 @@ signal axis_crossbar1_out_tlast: slv(0 to NUMBER_OF_CROSSBAR1_OUTPUTS-1);
 -- signal axis_bp_shuffle_bypass: std_logic;
 
 signal axis_bp_shuffle_in_tdata: slv32_array(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
+signal axis_bp_shuffle_in_tdata64: slv64_array(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
 signal axis_bp_shuffle_in_tvalid: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
 signal axis_bp_shuffle_in_tlast: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
 -- signal axis_bp_shuffle_in_tready: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
 
 signal axis_bp_shuffle_out_tdata: slv32_array(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
+signal axis_bp_shuffle_out_tdata64: slv64_array(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
 -- signal axis_bp_shuffle_out_tuser: slv4_array(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
 signal axis_bp_shuffle_out_tvalid: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
 signal axis_bp_shuffle_out_tlast: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
@@ -3229,6 +3227,106 @@ begin
                 );
         end uram_case;
 
+	    when u64_case:"U64" =>
+
+			signal top_bp_shuffle_cmd_dat: AXIS8_DAT_STRUCT;
+			signal top_bp_shuffle_cmd_rdy: AXIS8_RDY_STRUCT;
+			signal top_bp_shuffle_rply_dat: AXIS8_DAT_STRUCT;
+			signal top_bp_shuffle_rply_rdy: AXIS8_RDY_STRUCT;
+
+            signal cb1_out_tdata: slv64_array(0 to NUMBER_OF_CROSSBAR1_OUTPUTS-1);
+            signal cb1_out_tvalid: std_logic_vector(0 to NUMBER_OF_CROSSBAR1_OUTPUTS-1);
+            signal cb1_out_tlast: std_logic_vector(0 to NUMBER_OF_CROSSBAR1_OUTPUTS-1);
+
+            signal word_ctr: unsigned_array(0 to NUMBER_OF_CROSSBAR1_OUTPUTS-1)(10 downto 0);
+	    begin
+
+			process(ct_clk)
+			begin
+				if rising_edge(ct_clk) then
+					bp_shuffle_reset <= (others=> ct_reset_reg);
+					bp_shuffle_reset_reg <= bp_shuffle_reset(0);
+
+                    -- Implement a hardwired CROSSBAR1
+					for i in 0 to NUMBER_OF_CROSSBAR1_OUTPUTS-1 loop -- 0 to 2
+
+	                    if axis_crossbar1_in_tvalid_reg2(i) then
+	                        word_ctr(i) <= (others => '0') when axis_crossbar1_in_tlast_reg2(i) else word_ctr(i) + 1;
+	                    end if;
+						word_ctr(i) <= (others => '0') when bp_shuffle_reset(i);
+
+						for j in 0 to NUMBER_OF_CROSSBAR_INPUTS-1 loop -- 0 to 7
+							cb1_out_tdata(i)(8*(j+1)-1 downto j*8) <= axis_crossbar1_in_tdata_reg2(j)(8*(i+1)-1 downto 8*i);
+						end loop;
+						cb1_out_tvalid(i) <= axis_crossbar1_in_tvalid_reg2(i);
+						if bp_shuffle_reset(i)='1' or (word_ctr(i)(2 downto 0) /= "111" and axis_crossbar1_in_tlast_reg2(i)='0') then
+							cb1_out_tvalid(i) <= '0';
+				        end if;
+						cb1_out_tlast(i) <= axis_crossbar1_in_tlast_reg2(i);
+					end loop;
+
+
+				end if; -- clk
+			end process;
+
+			top_bp_shuffle_cmd_dat             <= top_cmd_dat(BP_SHUFFLE_BASE_PORT);
+			top_cmd_rdy(BP_SHUFFLE_BASE_PORT)  <= top_bp_shuffle_cmd_rdy;
+			top_bp_shuffle_rply_rdy            <= top_rply_rdy(BP_SHUFFLE_BASE_PORT);
+			top_rply_dat(BP_SHUFFLE_BASE_PORT) <= top_bp_shuffle_rply_dat;
+
+            -- Implement 1st shuffle between the 4 boards in the sub-backplane
+			gtlinks0: entity work.xxvglink_array
+				generic map (
+				    LANE_TO_LINK_MAP       => (-1,0,1,2), -- 4 logical lane: 1 bypass lane, 3 physical links
+					LINK_TO_QUAD_MAP       => (0,1,1), --! Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
+					QUAD_TO_REFCLK_MAP     => (0,0) --! Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+					)
+				port map (
+					tx_p     => bp_shuffle_tx_p,
+					tx_n     => bp_shuffle_tx_n,
+					rx_p     => bp_shuffle_rx_p,
+					rx_n     => bp_shuffle_rx_n,
+					refclk_p => bp_shuffle_refclk_p,
+					refclk_n => bp_shuffle_refclk_n,
+
+					-- TX user interface (AXI-Streaming, non-blocking, on clk_out)
+					s_axis_tx_tdata  => cb1_out_tdata,
+					s_axis_tx_tvalid => cb1_out_tvalid,
+					s_axis_tx_tlast  => cb1_out_tlast,
+
+					-- RX user interface (AXI-Streaming, non-blocking, on clk_out)
+					m_axis_rx_tdata  => axis_bp_shuffle_out_tdata64,
+					m_axis_rx_tvalid => axis_bp_shuffle_out_tvalid,
+					m_axis_rx_tlast  => axis_bp_shuffle_out_tlast,
+
+					clk_out    => bp_shuffle_txclk, --! 244 or 322 MHz clock generated by the backplane shuffle transmitter from the reference clock. Must be used to clock all the Tx (slave) interface data.  There is one single clock per array.
+
+					-- Clock monitoring ports
+					refclk_div2 => bp_shuffle_refclk_div2, -- divided-by-two version of the 156.25 MHz reference clock fed to the QUAD PLL
+					txclk_div2  => bp_shuffle_txclk_div2, -- divided-by-two version of the TX word clock, which is also clk_out
+
+					-- Debug signals
+					lane_monitor => open,
+
+					-- User bypass control line
+					-- bypass      => axis_bp_shuffle_bypass,
+
+					-- Control and reply streams
+					CMD_DAT  => top_bp_shuffle_cmd_dat,
+					CMD_RDY  => top_bp_shuffle_cmd_rdy,
+					RPLY_DAT => top_bp_shuffle_rply_dat,
+					RPLY_RDY => top_bp_shuffle_rply_rdy,
+					CTRL_CLK => CTRL_CLK,
+					CTRL_RST => bp_shuffle_CTRL_RST_reg,
+					--areset   => bp_shuffle_reset_reg
+					areset   => corr_reset -- stops clk_out: must not be sync'ed to clk_out.
+				 );
+
+				 -- todo: implement data align
+				 -- todo: implement 2nd crossbar
+				 -- feed to correlator
+		end u64_case;
+
         when others =>
             assert FALSE report "Invalid CROSSBAR1_TYPE" severity FAILURE;
 
@@ -3240,6 +3338,14 @@ end generate crossbar0_gen;
 --! Implements the GTX links to exchange the packetized data over to other boards on the backplane (over the backplane PCB links) or to boards on another crate (using the backplane QSFP links).
 
 BPSHFGEN: if IMPLEMENT_CROSSBAR2_AND_CROSSBAR3 generate
+
+	signal top_bp_shuffle_cmd_dat: AXIS8_DAT_STRUCT;
+	signal top_bp_shuffle_cmd_rdy: AXIS8_RDY_STRUCT;
+	signal top_bp_shuffle_rply_dat: AXIS8_DAT_STRUCT;
+	signal top_bp_shuffle_rply_rdy: AXIS8_RDY_STRUCT;
+
+
+begin
 	-- Index the system control buses as a separate signal here , because the simulator will make errors if we index it directly on the instantiation
 	top_bp_shuffle_cmd_dat             <= top_cmd_dat(BP_SHUFFLE_BASE_PORT);
 	top_cmd_rdy(BP_SHUFFLE_BASE_PORT)  <= top_bp_shuffle_cmd_rdy;
@@ -4016,7 +4122,8 @@ begin
                 generic map (
                     PLATFORM_ID => PLATFORM_ID, -- needed to determine the RPM spacing of the DSP and BRAM elements and choose the right primitives
                     NCHAN => NCHAN,
-                    NCORR   => NCORR
+                    NCORR   => NCORR,
+                    READOUT_BINS => CONFIG_CORR_READOUT_BINS
                     )
                 port map(
                     -- Input data interface (AXI4-Streaning, non-blocking)

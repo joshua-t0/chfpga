@@ -1,0 +1,48 @@
+library work;
+-- Get all chFPGA_package definitions. Since this USE statement is outside the
+-- package, its content is visible only to this package, i.e. "USE
+-- chFPGA_config.all" does not import the contents of chFPGA_package.
+use work.chFPGA_package.all;
+
+package chfpga_config is
+	constant CONFIG_PLATFORM_ID: integer := PLATFORM_ID_CRS;
+
+	constant CONFIG_NUMBER_OF_ADCS: integer := 8; -- Number of ADC inputs that are connected
+
+	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean := FALSE;
+	constant CONFIG_CHAN_FFT_TYPE: string := "CHORD"; -- "D3A", "CHORD", "CHIME"
+    constant CONFIG_FFT_BITS_PER_BIN: integer := 32+32; -- total width ( Re +Im) width of fft output. Typically 18+18 with shift schedule, or 32+32 with bit growth on CRS
+	constant CONFIG_FFT_CTR_WIDTH: integer := 14; -- CHIME: 12, D3A/CHORD: 13. Number of bits of the delay line. Max delay = 2^CONFIG_FFT_CTR_WIDTH
+	constant CONFIG_FFT_ROTATE_BINS: boolean := TRUE; -- CHIME: False, D3A/CHORD: True.
+	constant CONFIG_ADC_SAMPLES_PER_WORD: integer := 8; -- we pack 8 samples per word
+	constant CONFIG_ADC_BITS_PER_SAMPLE: integer := 14;
+	constant CONFIG_ADC_SAMPLES_PER_FRAME: integer := 16384;
+	constant CONFIG_CHAN_CAPTURE_TYPE: string := "URAM";
+	constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer := 2;
+	constant CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS: boolean:= FALSE;
+	constant CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := 8;
+	constant CONFIG_CAPTURE_BITS_PER_WORD: integer := sel(CONFIG_CHAN_CAPTURE_TYPE="URAM", 128, 32);
+
+    -- Corner-turn engine configuration
+    constant CONFIG_CT_CLK_SOURCE: string                        := "BP_SHUFFLE_TXCLK";
+    constant CONFIG_CROSSBAR1_TYPE: string                       := "U64"; -- "BRAM" or "URAM"
+	constant CONFIG_NUMBER_OF_CROSSBAR_INPUTS: integer           := 8; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
+	constant CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS: integer         := 4; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
+	constant CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS;
+	constant CONFIG_NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := 0;
+	constant CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS: integer          := CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS-1; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
+	constant CONFIG_NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := 1;
+
+
+    constant CONFIG_CORR_TYPE: string                            := "UCORR44";
+	constant CONFIG_NUMBER_OF_CORRELATORS: integer               := CONFIG_ADC_SAMPLES_PER_WORD/2; -- One correlator per bin in the FFT output word
+	constant CONFIG_CORR_READOUT_BINS: integer_array(0 to CONFIG_NUMBER_OF_CORRELATORS-1) := (0, 1, 2, 3); -- With CONFIG_FFT_ROTATE_BINS=True, true bins 0, 1, 2 & 3 will be used for readout
+
+    -- 10/100G Ethernet Real-time data offload links configuration
+    constant CONFIG_GPU_LINK_TYPE: string := "NONE";
+	constant CONFIG_NUMBER_OF_GPU_LINKS: integer                 := 0; -- Number of 10G or 100G Ethernet lanes to connecto to the GPUs (one QSFP is 4 lanes)
+	constant CONFIG_NUMBER_OF_GPU_REFCLKS: integer               := 1; -- Number of Reference clocks provided for the 10GE/100GE transmitter
+
+
+
+end chfpga_config;
