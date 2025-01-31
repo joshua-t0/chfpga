@@ -146,8 +146,8 @@ begin
 			tx_n => txn,
 			refclk_p => refclk,
 			refclk_n => refclkb,
-
-			clk_out => clk,
+            clk => clk,
+			clk322_out => clk,
 
 			s_axis_tx_tdata => tdata_out,
 			s_axis_tx_tvalid => tvalid_out,
@@ -161,7 +161,7 @@ begin
 	sim_proc: process
 
         variable data: std_logic_vector(255 downto 0);
-        variable addr, eop, eot: integer;
+        variable addr, eop, eot, hdr: integer;
 	begin
 
 		-- wait for init and synchronize to clock
@@ -183,21 +183,22 @@ begin
         sleep(clk, 10);
         addr := 0;
         for pkt in 0 to 127 loop
-            for bin in 0 to 63 loop
-                if bin=0 or bin >10 then
-                    eop:= 0;
-                    eot:= 0;
-                    if bin=63 then
-                        eop:= 1;
-                        if pkt=127 then
-                            eot:=1;
-                        end if;
+            for bin in 0 to 47 loop
+                hdr := 0;
+                if  bin=0 then hdr:=1; end if;
+                eop:= 0;
+                eot:= 0;
+  
+                if bin=47 then
+                    eop:= 1;
+                    if pkt=127 then
+                        eot:=1;
                     end if;
-    
-                    fpga_write_ram(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
-                                   addr=> addr*2, data => to_slv8_array(to_unsigned(bin*128 + pkt + 8192 + 16384*eop+32768*eot,16)));
-                    addr := addr + 1;
-                end if; --bin=0 or > 10
+                end if;
+
+                fpga_write_ram(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
+                               addr=> addr*2, data => to_slv8_array(to_unsigned(pkt*128 + bin + 8192*hdr + 16384*eop+32768*eot,16)));
+                addr := addr + 1;
             end loop; --bin
         end loop; --pkt    
         
