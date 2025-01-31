@@ -64,7 +64,9 @@ entity UCORR44 is
 		N_PER_CLK: integer := 32; -- Number of inputs provided on each clock
 		Nclk: integer := N/N_PER_CLK; -- Number of clocks  the correlator should take to compute the products
 		CORR_NUMBER: integer := 0; -- correlator number to be used in packet headers
-		URAM_MAX: integer := 64
+        NCORR: integer := 1;
+		URAM_MAX: integer := 64;
+		READOUT_BIN: integer := 0 -- bin number sacrificed for the readout cycle
 		);
 	PORT(
 
@@ -79,6 +81,7 @@ entity UCORR44 is
 	    no_accum: in std_logic := '1'; -- when '1', there is no accumulation: only th elast product of the accumulation period is kept.
 
         overrun: out std_logic;
+        overrun_reset: in std_logic;
 
 		-- Byte-serialized cascadable data input/outputs, AXI-Streaming, 8-bit, sloppy blocking via `send`
 		z_out_tdata: out std_logic_vector(7 downto 0);
@@ -229,7 +232,7 @@ begin
 corr_gen: if TRUE generate
 
 		signal t: slv_array(0 to N-N_PER_CLK-1)(7 downto 0); -- assembly vector - don't need to store the last word
-		signal x: slv_array(0 to N-1)(7 downto 0) := (others => (others => '0')); -- fixed correlation vector. Init value for nice sims only. 
+		signal x: slv_array(0 to N-1)(7 downto 0) := (others => (others => '0')); -- fixed correlation vector. Init value for nice sims only.
 		signal y: slv_array(0 to N-1)(7 downto 0):= (others => (others => '0')); -- rotating correlation vector. Init value for nice sims only.
 		signal xsel: std_logic_vector(N/2 to N-1); -- mux selection vector, only applies to muxes fron N/2+1 to N. Elements frm 0 to N/2 are not touches and shoudl be synthesized out.
 
@@ -251,7 +254,7 @@ corr_gen: if TRUE generate
 
 
 
-            
+
 			if rising_edge(clk) then
 				-- Rotate y and grow xsel vectors by N. Overriden below when new data is ready.
                 y <= y(H to N-1) & y(0 to H-1);
@@ -293,7 +296,7 @@ corr_gen: if TRUE generate
 					end if;
 				end if; -- tvalid and right bin
 
-                
+
 
 				if rst then
     				xsel <= (others =>'0');
@@ -310,7 +313,9 @@ corr_gen: if TRUE generate
 			NCMAC => NCMAC,
 			AUTOCORR_STRIDE => H,
 			CORR_NUMBER => CORR_NUMBER,
-			URAM_MAX => URAM_MAX
+			N_CORR => NCORR,
+			URAM_MAX => URAM_MAX,
+			READOUT_BIN => READOUT_BIN
 		)
 		port map (
 			s_axis_xy_tdata => xy_tdata,
@@ -321,6 +326,7 @@ corr_gen: if TRUE generate
 	        integ_period => integ_period,
 		    no_accum => no_accum,
 	        overrun => overrun,
+	        overrun_reset => overrun_reset,
 	        autocorr_only => autocorr_only,
 
 			m_axis_z_tdata => z_out_tdata,

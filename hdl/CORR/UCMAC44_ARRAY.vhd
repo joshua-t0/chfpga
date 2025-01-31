@@ -51,7 +51,8 @@ entity UCMAC44_ARRAY is
 		AUTOCORR_STRIDE: integer:= 1; -- Spacing (in CMACs) between autocorrelation products. We assume there will be NCMAC/AUTOCORR_STRIDE-1 autocorrelations
 		CORR_NUMBER: integer; -- correlator number to be used in packet headers
         N_CORR: integer := 1; -- Total number of correlators. Used only in computing the STREAM_ID (id = bin*N_CORR+CORR_NUMBER)
-		URAM_MAX: integer := 64 -- Maximum number of URAM that will be used. The rest will use BRAMs.
+		URAM_MAX: integer := 64; -- Maximum number of URAM that will be used. The rest will use BRAMs.
+		READOUT_BIN: integer := 0 -- Bin number sacrificed for the readout cycle
 		);
 	PORT(
 
@@ -59,13 +60,14 @@ entity UCMAC44_ARRAY is
 		s_axis_xy_tdata: in slv_array(0 to NCMAC-1)(15 downto 0); -- Array of (4+4)-bit complex numbers to multiply. From MSB to LSB: A_re, A_im, B_re, B_im.
 		s_axis_xy_tlast: in std_logic;
 		s_axis_xy_tvalid: in std_logic;
-        s_axis_xy_swap: in std_logic_vector(0 to NCMAC-1); -- swap A and B (in practice, conjugate A instead of B) 
+        s_axis_xy_swap: in std_logic_vector(0 to NCMAC-1); -- swap A and B (in practice, conjugate A instead of B)
 
         integ_period: in std_logic_vector(15 downto 0);
         autocorr_only: in std_logic := '1';
 	    no_accum: in std_logic := '1'; -- when '1', there is no accumulation: only the last product of the accumulation period is kept. (for debugging)
 
         overrun: out std_logic; -- indicates that data could not be streamed out fast enough and data was lost
+        overrun_reset: in std_logic;
 
 		-- Byte-serialized cascadable data input/outputs, AXI-Streaming, 8-bit, sloppy blocking via `send`
 		m_axis_z_tdata: out std_logic_vector(7 downto 0);
@@ -173,7 +175,7 @@ architecture impl of UCMAC44_ARRAY is
 
 	signal tvalid1, tvalid2, tvalid3, tvalid4: std_logic:='0';
 	signal tlast1, tlast2, tlast3, tlast4: std_logic;
-	signal first_word1, first_word2: std_logic:='1'; -- first word of frame
+	signal ro_word1, ro_word2: std_logic:='1'; -- first word of frame
 	signal last_frame1, last_frame2, last_frame3, last_frame4: std_logic;
 	signal first_frame1, first_frame2: std_logic :='1'; --init needed
 
@@ -193,15 +195,15 @@ begin
 		signal byte_ctr: integer range 0 to bytes'LENGTH;
 		signal ro_active: std_logic := '0'; -- bank readout busy
 		signal ro_shift: std_logic := '0'; -- data available for shift out
---		signal ro_load2: std_logic := '0'; -- load new et of products
-		
+		signal ro_last: std_logic := '0'; -- is the last shift out of the integ period
+
 		signal dc_busy: std_logic := '0'; -- daisy chain readout busy
 		signal timestamp, integ_timestamp, readout_timestamp: unsigned(47 downto 0);
         -- signal overrun: std_logic;
 	begin
 
 --		ram_rd_acc_addr <= word_ctr;
-		ram_rd_addr <= (not acc_bank1) & std_logic_vector(ro_word_ctr1) when rd_word_ctr1=0 else
+		ram_rd_addr <= (not acc_bank1) & std_logic_vector(ro_word_ctr1) when rd_word_ctr1=READOUT_BIN else
 		               acc_bank1 & std_logic_vector(rd_word_ctr1);
 		ram_wr_addr <= acc_bank5 & std_logic_vector(wr_word_ctr5);
 
@@ -236,13 +238,9 @@ begin
                             end if;
 							ro_active <= '1'; -- start readout of the readout bank
 							readout_timestamp <= integ_timestamp;
-							integ_timestamp <= next_timestamp; -- timestamp+1 should reuses the logic above 
+							integ_timestamp <= next_timestamp; -- timestamp+1 should reuses the logic above
 							s_axis_z_send <= '0'; -- tell the upstream cascaded correlators we stop accepting data
-							acc_bank1 <= not acc_bank1;
---							first_timestamp <= timestamp+1;
-                            -- Set the readout word counter(address) in preparation for the readput phase. 
-                            -- Skip word 0: it is invalid because we steal use word 0 access from the accumulation for the readout,
-							ro_word_ctr1 <= to_unsigned(1, ro_word_ctr1'LENGTH); 
+							acc_bank1 <= not acc_bank1; -- switch bank
 						end if;
 					end if;
 				end if;
@@ -250,7 +248,7 @@ begin
                 -- pipeline the control signals
 				tvalid1 <= s_axis_xy_tvalid;
 				tlast1 <= s_axis_xy_tlast;
-				first_word1 <= to_std_logic(rd_word_ctr1=0); -- first word of frame
+				ro_word1 <= to_std_logic(rd_word_ctr1=READOUT_BIN); -- active when we are reading the readout bin
 				last_frame1 <= to_std_logic(frame=unsigned(integ_period)); -- last frame of accumulation
                 first_frame1 <= to_std_logic(all_zeros(frame)); -- last frame of accumulation
 				-------------
@@ -261,16 +259,16 @@ begin
                 -- pipeline the control signals
 				tvalid2 <= tvalid1;
 				tlast2 <= tlast1;
-				first_word2 <= first_word1;
+				ro_word2 <= ro_word1;
 				last_frame2 <= last_frame1;
 				first_frame2 <= first_frame1;
 
-
---                ro_load2 <= to_std_logic(first_word1='1' and ro_active = '1' and ro_shift='0');
-
 				-------------
-				-- CLOCK 3: Register the pre-accumulation product (DSP1 sum XY+Z) in DSP1.P and RAM output in DSP2.C.
-				-- If word 0, capture new readout products when needed.
+				-- CLOCK 3: Pre-accumulation product (DSP1 sum XY+Z) was registered in DSP1.P
+				--          RAM outputs registers the previous value for the same product, which is fed to DSP2.C.
+				--          If this is the first word of the frame, RAM does not output the previous accumulated value but rather
+				--          outputs at the current the readout address from the readout bank. We capture those in a byte array if we
+				--          this array is free.
 				-------------
 
                 -- pipeline the control signals
@@ -278,11 +276,10 @@ begin
 				tlast3 <= tlast2;
 				last_frame3 <= last_frame2;
 
-                -- Clear valid flag if output word is transferred
-                m_axis_z_tvalid <= '0';
-                s_axis_z_send <= m_axis_z_send;
-
                 -- Clear tvalid. Is overriden below if a new byte is available.
+                m_axis_z_tvalid <= '0';
+                -- Clear send flag. Is overriden below when we are ready to forward data.
+                s_axis_z_send <= '0'; -- m_axis_z_send;
 
                 -- Send readout bytes from this correlator or from the down-cascaded correlator
                 if ro_active then -- read data from this correlator
@@ -296,29 +293,28 @@ begin
                             if byte_ctr = 1 then -- tlast when last byte.
                                 m_axis_z_tlast <= '1';
                                 ro_shift <= '0'; -- stop shifting
-                                ro_word_ctr1 <= ro_word_ctr1 + 1; -- next word to readout
-                                if ro_word_ctr1 = ro_word_ctr_max then -- if last word
+                                if ro_last then -- if last readout on integration period
                                     ro_active <='0';
                                 end if; -- last word
                             end if;
                             -- Shift the byte vector. This affects a verly large number of registers, so control logic has a high fanout.
-                            -- Control logic: first_word2, ro_active, ro_shift, m_axis_z_send, and autocorr_only (see below)  
-                            bytes(0 to bytes'LENGTH-2) <= bytes(1 to bytes'LENGTH-1); 
+                            -- Control logic: ro_word2, ro_active, ro_shift, m_axis_z_send, and autocorr_only (see below)
+                            bytes(0 to bytes'LENGTH-2) <= bytes(1 to bytes'LENGTH-1);
                             byte_ctr <= byte_ctr - 1;
                          end if; -- if m_axis_z_send='1'
-                    elsif first_word2='1' then -- ro_shift=0 ,ro_active=1
+                    elsif ro_word2 then -- ro_shift=0 ,ro_active=1
                         -- Readout is active, no shift is in progress, and are processing the 1st product word of the frame,
                         -- meaning the RAM outputs data from the readout bank. .
                         -- We therefore capture the products in the byte array, set the byte counter and enable ro_shift.
-            
+
                         -- Store the header in the bytes buffer
                         frame_header.STREAM_ID(12 downto LOG2_NCORR) := std_logic_vector(resize(ro_word_ctr1, 13-LOG2_NCORR));
-                        frame_header.STREAM_ID(LOG2_NCORR-1 downto 0) := to_slv(CORR_NUMBER, LOG2_NCORR); 
+                        frame_header.STREAM_ID(LOG2_NCORR-1 downto 0) := to_slv(CORR_NUMBER, LOG2_NCORR);
                         frame_header.TIMESTAMP := std_logic_vector(readout_timestamp);
                         frame_header.FLAGS(0) := overrun;
                         frame_header.FLAGS(1) := autocorr_only;
                         bytes(0 to FRAME_HEADER_BYTE_LENGTH-1) <= struct_to_bytes(frame_header);
-    
+
                         -- Store the product bytes in the bytes buffer
                         -- Capture the RAM outputs, slice them in 5-byte products,  and store them in the shift register
                         -- This affects a large number of registers, implying large fanout controls
@@ -326,7 +322,7 @@ begin
                             prod_bytes := to_slv8_array(reverse_bytes(std_logic_vector(resize(unsigned(ram_dout(i)), 8 * BYTES_PER_PRODUCT))));
                             bytes(FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT*i to FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT*(i+1)-1) <= prod_bytes;
                         end loop;
-    
+
                         -- Override the first product bytes after the frame header with the autocorrelation products if autocorr='1'
                         if autocorr_only then
                             for i in 0 to NCMAC/AUTOCORR_STRIDE-2 loop -- assume that last one is not an autocorrelation (first N elements in N+1 high column are autocorrs)
@@ -334,18 +330,32 @@ begin
                                 bytes(FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT*i to FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT*(i+1) -1) <= prod_bytes;
                             end loop;
                         end if;
-    
+
                         -- set the byte counter to signify we now have data to send
                         if autocorr_only then
+                            -- We send only the autocorrelations. We dont have the NCHAN parameter, but if we assume that
+                            -- we have NCMAC = (NCHAN+1)*AUTOCORR_STRIDE CMACs, we can deduct if with  NCHAN = NCMAC/AUTOCORR_STRIDE-1
                             byte_ctr <= FRAME_HEADER_BYTE_LENGTH + (NCMAC/AUTOCORR_STRIDE-1)* BYTES_PER_PRODUCT;
                         else
                             byte_ctr <= FRAME_HEADER_BYTE_LENGTH + NCMAC * BYTES_PER_PRODUCT;
                         end if;
                         ro_shift <= '1'; -- there is data to shift out
-                    end if; -- ro_shift, first_word2
-    
+                        ro_last <= '0'; -- is this the last readout? overriden below.
+                        -- Increment the readout word counter, or reset it if this is the last integration
+                        -- The readout word counter must be ready before we set the RAM read address for reading the first word of the next frame.
+                        -- Since we increment the counter 2 clocks after first word, and the next first word is almost one frame away,
+                        -- the counter is guaranteed to be ready
+                        ro_word_ctr1 <= ro_word_ctr1 + 1; -- next word to readout
+                        if ro_word_ctr1 = ro_word_ctr_max then -- last readout word
+                            -- Set the readout word counter(address) in preparation for the readout phase.
+   							ro_word_ctr1 <= (others => '0');
+                            ro_last <= '1';
+                        end if;
+                    end if; -- ro_shift, ro_word2
+
 
                 else -- ro_active=0, sending cascade input data if any
+                    s_axis_z_send <= m_axis_z_send; -- pass on the send flag
                     m_axis_z_tvalid <= s_axis_z_tvalid;
                     m_axis_z_tdata <= s_axis_z_tdata;
                     m_axis_z_tlast <= s_axis_z_tlast;
@@ -357,7 +367,7 @@ begin
 						end if;
 					end if;
 				end if; -- if ro_active
-                
+
 
 
 				-------------
@@ -387,9 +397,15 @@ begin
 
 
 
+				if overrun_reset then
+					overrun <= '0';
+				end if;
+
 				-- Synchronous resets (overrides signals above)
 				if rst_reg = '1' then
 					rd_word_ctr1 <= (others => '0');
+					ro_word_ctr1 <= (others => '0'); -- prepare readout word counter for first readout.
+
 					frame <= (others => '0');
 					ro_active <= '0';
                     overrun <= '0';
@@ -402,7 +418,7 @@ begin
 					tvalid3 <= '0';
 					tvalid4 <= '0';
 
-                    
+
 
 					acc_bank1 <= '0';
 					acc_bank5 <= '0';
@@ -897,7 +913,7 @@ begin
 
 				-- clock and reset
 				clka => clk,
-				rstb => rst,
+				rstb => rst_reg,
 
 				-- unused signals
 				sleep => '0',

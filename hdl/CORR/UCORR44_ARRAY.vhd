@@ -7,7 +7,7 @@
 -- Module Name:    UCORR44_ARRAY - Behavioral
 -- Project Name: 	CHIME
 -- Target Devices: Ultrascale+
--- Tool versions: Vivado 2022.2 
+-- Tool versions: Vivado 2022.2
 -- Description: Implement an array of UCORR44
 -- Dependencies:
 --
@@ -20,19 +20,28 @@ use work.chFPGA_Package.all; -- Get all component definitions
 library UNISIM;
 use UNISIM.VComponents.all;
 
+library xpm;
+use xpm.vcomponents.all;
+
 entity UCORR44_ARRAY is
 	GENERIC (
 		PLATFORM_ID: integer;
 		NCORR: integer; -- number of correlators
-		NCHAN: integer -- number of channels to correlate per correlator
+		NCHAN: integer; -- number of channels to correlate per correlator
+		SOFT_NINTEG: integer := 8192; -- default integration period (number of frames)
+		SOFT_AUTOCORR_ONLY: boolean := FALSE;
+		N_BINS_PER_WORD: integer := 4;
+		N_BITS_PER_BIN: integer := 4+4; -- The correlator only support 4+4 bit format.
+		N_BITS_PER_WORD: integer := N_BINS_PER_WORD * N_BITS_PER_BIN; -- do not override
+		READOUT_BINS: integer_array(0 to NCORR-1) := (others => 0) -- array of integers indicating which bin is sacrificed to the readout cycle for each correlator
 	);
 
 	PORT (
 
 		-- Input data AXI-S bus , non-blocking
 		-- Data ordering: 0 to K-1 => (Corr0Chan0, Corr0Chan1, ... Corr0 ChanNCHAN-1, Corr1Chan0 ...)
-		-- Re in MSB of byte  
-		s_axis_data_tdata : in  slv_array(0 to NCHAN-1)(31 downto 0); --! input data stream containing the channelized data from every antenna processor. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
+		-- Re in MSB of byte
+		s_axis_data_tdata : in  slv_array(0 to NCHAN-1)(N_BITS_PER_WORD-1 downto 0); --! input data stream containing the channelized data from every antenna processor. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
 		s_axis_data_tvalid : in  std_logic; --
 		s_axis_data_tlast : in  std_logic; --
 
@@ -67,41 +76,45 @@ architecture Behavioral of UCORR44_ARRAY is
     attribute shreg_extract: string;
     attribute DONT_TOUCH: string;
     --attribute RLOC_ORIGIN : string;
-    
-    constant N: integer := NCHAN; 
-    
+
+    constant N: integer := NCHAN;
+
     signal rst_reg: slv(0 to NCORR-1);
     attribute DONT_TOUCH of rst_reg: signal is "true";
-    
+
     -- Control signals
     signal control_bytes: slv8_array(0 to 2);
     signal status_bytes: slv8_array(0 to 0);
     signal user_reset: std_logic;
+    signal user_reset_resync: std_logic;
+    signal overrun_reset, overrun_reset_resync: std_logic;
     signal autocorr_only: std_logic;
     signal no_accum: std_logic; -- when '1', there is no accumulation: only th elast product of the accumulation period is kept.
     signal integ_period: std_logic_vector(15 downto 0);
 
     type slv_2darray is array (natural range <>) of slv_array(0 to NCHAN-1)(7 downto 0);
-    signal axis_corr_in_tdata: slv_2darray(0 to NCORR-1);    
+    signal axis_corr_in_tdata: slv_2darray(0 to NCORR-1);
     signal axis_corr_in_tlast: std_logic_vector(0 to NCORR-1);
     signal axis_corr_in_tvalid: std_logic_vector(0 to NCORR-1);
-    
+
     signal z_tdata: slv_array(0 to NCORR)(7 downto 0);
     signal z_tlast: std_logic_vector(0 to NCORR);
     signal z_tvalid: std_logic_vector(0 to NCORR);
     signal z_send: std_logic_vector(0 to NCORR);
-    
+
     signal overrun:std_logic_vector(0 to NCORR-1);
+    signal word_ctr: unsigned(INTEGER_LOG2(NCORR)-1 downto 0);
 begin
 
 
     --------------------------------------------
     -- Memory mapped registers
     --------------------------------------------
-    
+
 	bsb_regs0: entity work.CTRL_SLAVE
 		GENERIC MAP (
-			DEFAULT_CONTROL_BYTES=> X"03_3FFF",
+			DEFAULT_CONTROL_BYTES=> "0000000" & to_std_logic(SOFT_AUTOCORR_ONLY) &
+			                        to_slv(SOFT_NINTEG-1,16),
 			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), -- Number of bits in the control word
 			NUMBER_OF_STATUS_BYTES => status_bytes'Length(1) -- Number of bits in the status word.
 		)
@@ -119,7 +132,8 @@ begin
 		);
 
 	-- CONTROL byte 0
-	user_reset            <= control_bytes(0)(7); -- 
+	user_reset            <= control_bytes(0)(7); --
+	overrun_reset         <= control_bytes(0)(6); --
     no_accum              <= control_bytes(0)(1);
     autocorr_only         <= control_bytes(0)(0);
 
@@ -129,6 +143,17 @@ begin
     -- Status Byte 0
     status_bytes(0)(0) <= or(overrun);
 
+
+	-- Synchronize the software-controlled user reset to the correlator clock to ensure proper release from reset
+	rst_cdc0: xpm_cdc_single
+		generic map (SRC_INPUT_REG => 0)
+		port map (src_clk => '0', src_in => user_reset, dest_clk => clk, dest_out => user_reset_resync);
+
+	-- Synchronize the software-controlled user reset to the correlator clock to ensure proper release from reset
+	orrst_cdc0: xpm_cdc_single
+		generic map (SRC_INPUT_REG => 0)
+		port map (src_clk => '0', src_in => overrun_reset, dest_clk => clk, dest_out => overrun_reset_resync);
+
 ---------------------------------------------------------------------
 -- Correlator input pipelining process
 ---------------------------------------------------------------------
@@ -136,12 +161,12 @@ begin
 	process(clk)
 	begin
 		if rising_edge(clk) then
-			rst_reg <= (others=> rst);
+			rst_reg <= (others=> (rst or user_reset_resync));
 
 			-- Perform the corner-turn between the inputs by remapping the bytes
 			for corr in 0 to NCORR-1 loop
 				for chan in 0 to NCHAN-1 loop
-					axis_corr_in_tdata(corr)(chan) <= s_axis_data_tdata(chan)(8*(NCORR-1-corr+1)-1 downto 8*(NCORR-1-corr)); 
+					axis_corr_in_tdata(corr)(chan) <= s_axis_data_tdata(chan)(N_BITS_PER_BIN*(NCORR-1-corr+1)-1 downto N_BITS_PER_BIN*(NCORR-1-corr));
 				end loop;
 				axis_corr_in_tvalid(corr) <= s_axis_data_tvalid;
 				axis_corr_in_tlast(corr) <= s_axis_data_tlast;
@@ -170,9 +195,11 @@ begin
 		generic map (
 			PLATFORM_ID             => PLATFORM_ID,
 			CORR_NUMBER             => i, -- will be used in the packet header and to determine the RPM location of the CORR44 cores
+            NCORR => NCORR, -- used only to format STREAM ID
 			N => NCHAN,
 			N_PER_CLK => NCHAN,
-			URAM_MAX => 64/NCORR
+			URAM_MAX => 64/NCORR,
+			READOUT_BIN => READOUT_BINS(i)
 			)
 		port map(
 			s_axis_tvalid           => axis_corr_in_tvalid(i),
@@ -183,6 +210,7 @@ begin
             autocorr_only => autocorr_only,
             no_accum => no_accum,
             overrun => overrun(i),
+            overrun_reset => overrun_reset,
 
 			z_out_tdata   => z_tdata(i),
 			z_out_tvalid  => z_tvalid(i),
@@ -194,7 +222,7 @@ begin
 --			z_in_tvalid  => '0',
 			z_in_tlast   => z_tlast(i+1),
 			z_in_send  => z_send(i+1),
-   
+
 			clk                  => clk,
 			rst                  => rst_reg(i)
 			);
