@@ -51,6 +51,9 @@ entity CHAN is
         IMPLEMENT_FFT   : boolean          := CONFIG_CHAN_IMPLEMENT_FFT;
         FFT_TYPE        : string           := CONFIG_CHAN_FFT_TYPE;
         FFT_BITS_PER_BIN: integer          := CONFIG_FFT_BITS_PER_BIN; -- Re and Im parts combined
+        FFT_DELAY_CTR_WIDTH: integer       := CONFIG_FFT_CTR_WIDTH;
+        FFT_ROTATE_BINS : boolean          := CONFIG_FFT_ROTATE_BINS;
+
         ADC_BITS_PER_SAMPLE: integer       := CONFIG_ADC_BITS_PER_SAMPLE;
         ADC_SAMPLES_PER_WORD: integer      := CONFIG_ADC_SAMPLES_PER_WORD;
         ADC_SAMPLES_PER_FRAME: integer     := CONFIG_ADC_SAMPLES_PER_FRAME;
@@ -58,7 +61,7 @@ entity CHAN is
         SCALER_USE_COMPLEX_GAINS: boolean  := CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS;
         SCALER_COEFF_BITS_PER_BIN: integer := sel(SCALER_USE_COMPLEX_GAINS, 16+16, 16); -- use wither 16-bit real gains or (16+16i) bit complex gains
         NUMBER_OF_CAPTURE_SOURCES: integer := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES;
-        OUT_BITS_PER_WORD: integer         := 32; -- Width of the output data bus
+        OUT_BITS_PER_WORD: integer         := 32; -- Width of the output data bus which feeds the corner-turn engine or correlator.
         CAPTURE_TYPE: string               := CONFIG_CHAN_CAPTURE_TYPE; -- "URAM" or "BRAM"
         CAPTURE_BITS_PER_WORD: integer     := CONFIG_CAPTURE_BITS_PER_WORD; -- sel(CAPTURE_TYPE="URAM", 128, 32); -- If we use URAM capture (which has a 128-bit bus), have the scaler output be the same width so we can get more FFT resolution when the scaler is bypassed.
         SIM: boolean                       := GLOBAL_SIM
@@ -156,9 +159,9 @@ constant FPGA_SERIES: integer          := FPGA_SERIES_LIST(PLATFORM_ID);
 constant FFT_BINS_PER_WORD: integer    := ADC_SAMPLES_PER_WORD / 2;
 constant FFT_BITS_PER_WORD: integer    := FFT_BITS_PER_BIN * FFT_BINS_PER_WORD;
 constant FFT_BINS_PER_FRAME :integer   := ADC_SAMPLES_PER_FRAME/2;
-constant SCALER_BITS_PER_WORD: integer := CAPTURE_BITS_PER_WORD;
+constant SCALER_BITS_PER_WORD: integer := OUT_BITS_PER_WORD;
 constant SCALER_BITS_PER_BIN: integer  := SCALER_BITS_PER_WORD / FFT_BINS_PER_WORD; -- Note: scaler output is always 4+4 or 8+8 bits when not bypassed.
-constant OUT_BITS_PER_BIN: integer     := OUT_BITS_PER_WORD / FFT_BINS_PER_WORD;  -- 16 for CHIME, 8 for CHORD
+constant OUT_BITS_PER_BIN: integer     := SCALER_BITS_PER_BIN;  -- 16 for CHIME, 8 for CHORD
 
 signal axis_funcgen_out_tdata: std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
 signal axis_funcgen_out_tuser: std_logic_vector(3 downto 0);
@@ -180,6 +183,11 @@ signal axis_scaler_out_tdata: std_logic_vector(SCALER_BITS_PER_WORD-1 downto 0);
 signal axis_scaler_out_tvalid : std_logic;
 signal axis_scaler_out_tlast : std_logic;
 signal axis_scaler_out_tuser: std_logic_vector(3 downto 0);
+
+signal axis_scaler_cap_tdata: std_logic_vector(CAPTURE_BITS_PER_WORD-1 downto 0);
+signal axis_scaler_cap_tvalid : std_logic;
+signal axis_scaler_cap_tlast : std_logic;
+signal axis_scaler_cap_tuser: std_logic_vector(3 downto 0);
 
 
 signal axis_fifo_in_tdata: std_logic_vector(OUT_BITS_PER_WORD-1 downto 0);
@@ -219,12 +227,12 @@ attribute keep of funcgen_reset_out, fft_reset_out, scaler_reset_out: signal is 
 --signal ADC_CLK_OUT_PLL_INT : STD_LOGIC;
 
 -- Control bus signals
-constant MODULE_ADCDAQ_ADDR : integer:=0; -- Address of the ADC data acquisition module
-constant MODULE_FFT_ADDR    : integer:=2; -- Address of the channelizer (FFT) module
-constant MODULE_SCALER_ADDR : integer:=3; -- Address of the scaler module
-constant MODULE_PROBER_ADDR : integer:=4; -- Address of the data capture module
-constant MODULE_FUNCGEN_ADDR: integer:=5; -- Address of the function generator module
-constant NUMBER_OF_MODULES  : integer:=7; -- Total number of modules to be implemented. Is used to set the number of ports of the control interface router.
+constant MODULE_ADCDAQ_ADDR : integer := 0; -- Address of the ADC data acquisition module
+constant MODULE_FFT_ADDR    : integer := 2; -- Address of the channelizer (FFT) module
+constant MODULE_SCALER_ADDR : integer := 3; -- Address of the scaler module
+constant MODULE_PROBER_ADDR : integer := 4; -- Address of the data capture module
+constant MODULE_FUNCGEN_ADDR: integer := 5; -- Address of the function generator module
+constant NUMBER_OF_MODULES  : integer := 7; -- Total number of modules to be implemented. Is used to set the number of ports of the control interface router.
 
 -- UDP Control Command from chfpga
 signal CMD_DAT  : AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_MODULES-1 downto 0);
@@ -254,7 +262,6 @@ signal srcsel_rply_rdy  : AXIS8_RDY_STRUCT;
 begin
 
 
-
 CTRL_CMD_IN_DAT.TDATA <= ctrl_cmd_tdata;
 CTRL_CMD_IN_DAT.TVALID <= ctrl_cmd_tvalid;
 CTRL_CMD_IN_DAT.TLAST <= ctrl_cmd_tlast;
@@ -275,9 +282,6 @@ adc_rply_dat.tdata <= adc_rply_tdata;
 adc_rply_dat.tvalid <= adc_rply_tvalid;
 adc_rply_dat.tlast <= adc_rply_tlast;
 adc_rply_tready <= ADC_RPLY_RDY.tready;
-
-
-
 
 
 -- Memory Map
@@ -522,7 +526,9 @@ begin
             FFT_TYPE=>FFT_TYPE,
             ADC_BITS_PER_SAMPLE => ADC_BITS_PER_SAMPLE,
 		    ADC_SAMPLES_PER_WORD => ADC_SAMPLES_PER_WORD,
-		    FFT_BITS_PER_BIN => FFT_BITS_PER_BIN
+		    FFT_BITS_PER_BIN => FFT_BITS_PER_BIN,
+            FFT_DELAY_CTR_WIDTH => FFT_DELAY_CTR_WIDTH,
+            ROTATE_BINS => FFT_ROTATE_BINS
             )
         PORT MAP(
 
@@ -590,7 +596,8 @@ begin
             FFT_BINS_PER_FRAME => FFT_BINS_PER_FRAME, -- same comment
             USE_COMPLEX_GAINS => SCALER_USE_COMPLEX_GAINS,
             COEFF_BITS_PER_BIN => SCALER_COEFF_BITS_PER_BIN, -- typically 16 or 16+16. Includes both real and imaginary part. If USE_COMPLEX_GAINS=TRUE, half the bits are used for real and half for imaginary. Must be multiple of 8 as it is configured byte-wise.
-            OUT_BITS_PER_BIN => SCALER_BITS_PER_BIN
+            OUT_BITS_PER_BIN => SCALER_BITS_PER_BIN,
+            CAP_BITS_PER_WORD => CAPTURE_BITS_PER_WORD
             )
         PORT MAP(
             -- Input data from the FFT
@@ -605,10 +612,19 @@ begin
             m_axis_out_tlast => axis_scaler_out_tlast,
             m_axis_out_tuser => axis_scaler_out_tuser,
 
+
+            m_axis_cap_tdata => axis_scaler_cap_tdata,
+            m_axis_cap_tvalid => axis_scaler_cap_tvalid,
+            m_axis_cap_tlast => axis_scaler_cap_tlast,
+
             clk       => in_clk,
             reset     => scaler_reset_in,
 
             fifo_overflow => fifo_overflow, -- We ask SCALER to monitor the channel FIFO for us
+            mon_clk => out_clk,
+            mon_tvalid => out_dat_tvalid,
+            mon_tlast => out_dat_tlast,
+
             -- Control interface
             CTRL_CMD_IN_DAT   => CMD_DAT(MODULE_SCALER_ADDR),
             CTRL_CMD_IN_RDY   => CMD_RDY(MODULE_SCALER_ADDR),
@@ -646,11 +662,12 @@ fifo_blk:block
     attribute keep of  fifo_reset_in: signal is "true";
 
 begin
-    FIFO_REMAP_GEN: for i in 0 to FFT_BINS_PER_WORD*2-1 generate
-        axis_fifo_in_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto i*OUT_BITS_PER_BIN/2) <= axis_scaler_out_tdata((i+1)*SCALER_BITS_PER_BIN/2-1 downto (i+1)*SCALER_BITS_PER_BIN/2-OUT_BITS_PER_BIN/2);
-    end generate;
+    --FIFO_REMAP_GEN: for i in 0 to FFT_BINS_PER_WORD*2-1 generate
+    --    axis_fifo_in_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto i*OUT_BITS_PER_BIN/2) <= axis_scaler_out_tdata((i+1)*SCALER_BITS_PER_BIN/2-1 downto (i+1)*SCALER_BITS_PER_BIN/2-OUT_BITS_PER_BIN/2);
+    --end generate;
     --axis_fifo_in_tdata <= slv(cnt) & "0000" & slv(cnt+1) & "0000" & slv(cnt+2) & "0000" & slv(cnt+3) & "0000";
 
+    axis_fifo_in_tdata <= axis_scaler_out_tdata;
     axis_fifo_in_tvalid <= axis_scaler_out_tvalid and not fifo_rst and (not fifo_almost_full or axis_scaler_out_tlast); -- make sure we don't write during reset
     axis_fifo_in_tlast <= axis_scaler_out_tlast;
     axis_fifo_in_tuser <= axis_scaler_out_tuser;
@@ -768,16 +785,11 @@ end block fifo_blk;
 out_proc: process(out_clk)
     begin
         if rising_edge(out_clk) then
-            -- out_reset_reg <= out_reset;
-            if out_reset = '1' then
-                out_dat_tvalid <= '0';
-            else
-                out_dat_tvalid <= axis_fifo_out_tvalid;
-            end if;
 
             out_dat_tdata <= axis_fifo_out_tdata;
             out_dat_tuser <= axis_fifo_out_tuser;
             out_dat_tlast <= axis_fifo_out_tlast;
+            out_dat_tvalid <= '0' when out_reset else axis_fifo_out_tvalid;
         end if; -- clk
     end process;
 
@@ -791,6 +803,13 @@ out_proc: process(out_clk)
 --        The channelizer only implements the mux that selects the data source, and passes on the selected data to the capture port.
 --
 cap_blk: block
+
+    -- funcgen pipeline
+    signal axis_funcgen_tdata: std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
+    signal axis_funcgen_tuser: std_logic_vector(3 downto 0);
+    signal axis_funcgen_tvalid: std_logic;
+    signal axis_funcgen_tlast: std_logic;
+
     signal axis_cap0_tdata: slv_array(0 to NUMBER_OF_CAPTURE_SOURCES-1)(CAPTURE_BITS_PER_WORD-1 downto 0);
     signal axis_cap0_tuser: slv_array(0 to NUMBER_OF_CAPTURE_SOURCES-1)(3 downto 0);
     signal axis_cap0_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
@@ -799,7 +818,6 @@ cap_blk: block
     attribute keep of prober_reset_in: signal is "true";
 
     constant CAPTURE_BITS_PER_SAMPLE: integer := CAPTURE_BITS_PER_WORD / ADC_SAMPLES_PER_WORD;
-    constant LEN: integer := minimum(CAPTURE_BITS_PER_SAMPLE, ADC_BITS_PER_SAMPLE);
 
 begin
 
@@ -812,29 +830,27 @@ begin
                 -- pipeline reset
                 prober_reset_in <= funcgen_reset_out or scaler_reset_out;
 
-                -- Pipeline data from FUNCGEN. Repack the ADC samples on the MSB of the capture samples.
+                -- Pipeline data from FUNCGEN.
+                axis_funcgen_tdata <= axis_funcgen_out_tdata;
+                axis_funcgen_tuser <= axis_funcgen_out_tuser;
+                axis_funcgen_tvalid <= '0' when prober_reset_in  else axis_funcgen_out_tvalid;
+                axis_funcgen_tlast <= axis_funcgen_out_tlast;
 
+                -- Assign to FUNCGEN data to capture bus.
+                -- Repack the ADC samples on the MSB of the capture samples.
                 axis_cap0_tdata(0) <= (others => '0');
                 for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
-                    axis_cap0_tdata(0)((i+1) * CAPTURE_BITS_PER_SAMPLE-1 downto (i+1) * CAPTURE_BITS_PER_SAMPLE-LEN) <= axis_funcgen_out_tdata((i+1) * ADC_BITS_PER_SAMPLE-1 downto (i+1)*ADC_BITS_PER_SAMPLE-LEN);
+                    axis_cap0_tdata(0)((i+1) * CAPTURE_BITS_PER_SAMPLE-1 downto i*CAPTURE_BITS_PER_SAMPLE) <= msb_pad(axis_funcgen_tdata((i+1)*ADC_BITS_PER_SAMPLE-1 downto i*ADC_BITS_PER_SAMPLE), CAPTURE_BITS_PER_SAMPLE);
                 end loop;
-                axis_cap0_tuser(0) <= axis_funcgen_out_tuser;
-                axis_cap0_tvalid(0) <= axis_funcgen_out_tvalid;
-                axis_cap0_tlast(0) <= axis_funcgen_out_tlast;
+                axis_cap0_tuser(0) <= axis_funcgen_tuser;
+                axis_cap0_tvalid(0) <= '0' when prober_reset_in else axis_funcgen_tvalid;
+                axis_cap0_tlast(0) <= axis_funcgen_tlast;
 
-                if prober_reset_in = '1' then
-                    axis_cap0_tvalid(0) <= '0';
-                end if;
-
-                -- Pipeline data from SCALER.
-                axis_cap0_tdata(1) <= axis_scaler_out_tdata; -- Scaler output width was already made equal to the capture width.
-                axis_cap0_tuser(1) <= axis_scaler_out_tuser;
-                axis_cap0_tvalid(1) <= axis_scaler_out_tvalid;
-                axis_cap0_tlast(1) <= axis_scaler_out_tlast;
-
-                if prober_reset_in = '1' then
-                    axis_cap0_tvalid(1) <= '0';
-                end if;
+                -- Assign SCALER data to capture bus.
+                -- No additional SCALER pipelining is used since it is assumed SCALER is close to the external capture module
+                axis_cap0_tdata(1) <= axis_scaler_cap_tdata; -- Scaler output width was already made equal to the capture width.
+                axis_cap0_tvalid(1) <= '0' when prober_reset_in else axis_scaler_cap_tvalid;
+                axis_cap0_tlast(1) <= axis_scaler_cap_tlast;
 
             end if; -- clk
         end process;
