@@ -35,7 +35,7 @@ entity chfpga_crs is
         SYSTEM_CLOCK_SOURCE: string                  := "SYSCLK_BUFG"; -- System reference clock surce: "SYSCLK": 200 MHz unbuffered differential clock from sysclk_p/n, "SYSCLK_BUFG": 200 MHz BUFG-Buffered clock from sysclk_bufg, "SFP_REFCLK": 125 MHz clock from the GTX reference clock
         SYSTEM_CLOCK_FREQ: real                      := 10.0; -- System reference clock frequency, in MHz. Must be a real value (i.e. float). Used to select the system PLL divider/multiplier factors.
         CHAN_CLK_SOURCE: string                      := "ADC"; -- Clock sources for the system PLL. Here, Channelizer clock comes directly from the ADC
-        CT_CLK_SOURCE: string                        := "ADC_CLK"; -- corner-turn clock source
+        CT_CLK_SOURCE: string                        := CONFIG_CT_CLK_SOURCE; -- corner-turn clock source
 
         -- Buck synchronization
 
