@@ -1187,7 +1187,18 @@ begin
 		          cge_clk322 when "CGE_CLK322",
 		          corr_clk when others;
 
-
+	ct_clk_case: case CT_CLK_SOURCE generate
+	    when "BP_SHUFFLE_TXCLK" =>
+	    	ct_clk <= bp_shuffle_txclk ;
+	    when "ADC_CLK" =>
+	    	adc_clk <= bp_shuffle_txclk ;
+	    when "CGE_CLK322" =>
+	    	ct_clk <= cge_clk322 ;
+	    when "CORR_CLK" =>
+	    	ct_clk <= corr_clk ;
+	    when others =>
+	        assert FALSE report "Invalid CT_CLK_SOURCE" severity FAILURE;
+	end generate;
 	-- Generate a corner-turn engine reset synchronous to ct_clk
 	-- we use the clock generator corr_reset as a source since it is properly sequenced but we resync it to ct_clk.
 	ct_reset_cdc0: xpm_cdc_single
