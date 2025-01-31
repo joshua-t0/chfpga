@@ -98,6 +98,8 @@ type slv48_array is array (NATURAL RANGE <>) of std_logic_vector(47 downto 0);
 type slv64_array is array (NATURAL RANGE <>) of std_logic_vector(63 downto 0);
 type slv65_array is array (NATURAL RANGE <>) of std_logic_vector(64 downto 0);
 type slv66_array is array (NATURAL RANGE <>) of std_logic_vector(65 downto 0);
+type slv68_array is array (NATURAL RANGE <>) of std_logic_vector(67 downto 0);
+type slv72_array is array (NATURAL RANGE <>) of std_logic_vector(71 downto 0);
 type slv80_array is array (NATURAL RANGE <>) of std_logic_vector(79 downto 0);
 type slv112_array is array (NATURAL RANGE <>) of std_logic_vector(111 downto 0);
 type slv128_array is array (NATURAL RANGE <>) of std_logic_vector(127 downto 0);
@@ -503,6 +505,7 @@ function lsb(s1:unsigned; width:integer:=8) return unsigned; -- returns least si
 function lsb(s1:std_logic_vector; width:integer:=8) return std_logic_vector;
 function msb(s1:signed; width:integer:=8) return signed;
 function msb(s1:std_logic_vector; width:integer:=8) return std_logic_vector;
+function msb_pad(s1:std_logic_vector; width:integer:=8) return std_logic_vector; -- returns ``width`` leftmost bits of ``s1`, right-pad with zeros if ``s1`` is shorter then ``width`
 function sign_bit(i:signed) return std_logic; --! Returns the sign bit (the MSB) of a signed number
 function sign_bit(i:unsigned) return std_logic; --! Returns the sign bit (the MSB) of an unsigned number
 function sign_bit(i:std_logic_vector) return std_logic; --! Returns the sign bit (the MSB) of a std_logic_vector
@@ -515,11 +518,13 @@ function sel(b: BOOLEAN; if_true: std_logic_vector; if_false: std_logic_vector) 
 function sel(b: BOOLEAN; if_true: slv32_array; if_false: slv32_array) return slv32_array;
 function sel(b: std_logic; if_true: std_logic_vector; if_false: std_logic_vector) return std_logic_vector;
 
-function MAX (LEFT, RIGHT: INTEGER) return INTEGER;
-function MAX (vin: IntegerArray) return INTEGER;
-function MIN (LEFT, RIGHT: INTEGER) return INTEGER;
-function MIN (vin: IntegerArray) return INTEGER;
-function MIN (LEFT, RIGHT: unsigned) return unsigned;
+function max(LEFT, RIGHT: INTEGER) return INTEGER;
+function max(vin: IntegerArray) return INTEGER;
+function max(vin: integer_array) return integer;
+function min(LEFT, RIGHT: INTEGER) return INTEGER;
+function min(vin: IntegerArray) return INTEGER;
+function min(vin: integer_array) return integer;
+function min(LEFT, RIGHT: unsigned) return unsigned;
 function to_std_logic(i:boolean) return std_logic; -- converts bool to std_logic
 function to_slv(i:integer; n: integer) return std_logic_vector; -- converts integer to standard_logic_vector with specified numbe rof bits
 function to_slv(r:real; n: integer) return std_logic_vector; -- converts real to standard_logic_vector with specified numbe rof bits
@@ -659,6 +664,14 @@ begin
 	return s1(s1'LEFT downto s1'LEFT-width+1);
 end msb;
 
+FUNCTION msb_pad(s1:std_logic_vector; width:integer:=8) return std_logic_vector is
+	variable r: std_logic_vector(width-1 downto 0) := (others => '0');
+	variable min_width: integer := minimum(width, s1'LENGTH);
+begin
+	r(width-1 downto width-min_width) := s1(s1'LEFT downto s1'LEFT-min_width+1);
+	return r;
+end msb_pad;
+
 FUNCTION sign_bit(i:signed) return std_logic is --
 begin
 	return i(i'LENGTH-1);
@@ -696,6 +709,18 @@ begin
 	return vout;
 end MAX;
 
+function max(vin: integer_array) return integer is
+	variable vout: integer;
+begin
+	vout := integer'LOW;
+	for j in 0 to vin'Length-1 loop
+		if 	vin(j) > vout then
+			vout := vin(j);
+		end if;
+	end loop;
+	return vout;
+end max;
+
 function MIN(vin: IntegerArray) return INTEGER is
 	variable vout: integer;
 begin
@@ -707,6 +732,18 @@ begin
 	end loop;
 	return vout;
 end MIN;
+
+function min(vin: integer_array) return integer is
+	variable vout: integer;
+begin
+	vout := integer'HIGH;
+	for j in 0 to vin'LENGTH-1 loop
+		if 	vin(j) < vout then
+			vout := vin(j);
+		end if;
+	end loop;
+	return vout;
+end min;
 
 -- stolen from std_numeric
 function MIN(LEFT, RIGHT: INTEGER) return INTEGER is
