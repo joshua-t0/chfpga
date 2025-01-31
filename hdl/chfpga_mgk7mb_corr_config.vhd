@@ -17,9 +17,10 @@ package chfpga_config is
 	constant CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := 16; -- only implement one channelizer with an FFT for now
 	constant CONFIG_CAPTURE_BITS_PER_WORD: integer := 32;
 	constant CONFIG_FFT_CTR_WIDTH: integer := 12; -- CHIME: 12, D3A/CHORD: 13. Number of bits of the delay line. Max delay = 2^CONFIG_FFT_CTR_WIDTH
+	constant CONFIG_FFT_ROTATE_BINS: boolean := FALSE; -- CHIME: False, D3A/CHORD: True.
 	constant CONFIG_NUMBER_OF_CHANNELIZERS_TO_CORRELATE: integer := 8; -- ignored when there are no correlators
 
-	-- the following parameters differ between the cct and corr configs
+	-- the following parameters differ between the ct and corr configs
 	constant CONFIG_CT_CLK_SOURCE: string := "CORR_CLK"; -- Use the 250 MHz clock  from the main MMCM. This provides enough speed to handle packet overheads.
 	constant CONFIG_NUMBER_OF_CROSSBAR_OUTPUTS: integer := 8 ; -- matches the number of correlators
 	constant CONFIG_NUMBER_OF_CORRELATORS: integer := 8; -- each correlator handles 128 bins

@@ -13,12 +13,13 @@ package chfpga_config is
 	constant CONFIG_CHAN_FFT_TYPE: string := "CHORD"; -- "D3A", "CHORD", "CHIME"
     constant CONFIG_FFT_BITS_PER_BIN: integer := 32+32; -- total width ( Re +Im) width of fft output. Typically 18+18 with shift schedule, or 32+32 with bit growth on CRS
 	constant CONFIG_FFT_CTR_WIDTH: integer := 14; -- CHIME: 12, D3A/CHORD: 13. Number of bits of the delay line. Max delay = 2^CONFIG_FFT_CTR_WIDTH
+	constant CONFIG_FFT_ROTATE_BINS: boolean := TRUE; -- CHIME: False, D3A/CHORD: True.
 	constant CONFIG_ADC_SAMPLES_PER_WORD: integer := 8; -- we pack 8 samples per word
 	constant CONFIG_ADC_BITS_PER_SAMPLE: integer := 14;
 	constant CONFIG_ADC_SAMPLES_PER_FRAME: integer := 16384;
-	constant CONFIG_CHAN_CAPTURE_TYPE: string := "URAM"; 
-	constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer := 2; 
-	constant CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS: boolean:= FALSE; 
+	constant CONFIG_CHAN_CAPTURE_TYPE: string := "URAM";
+	constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer := 2;
+	constant CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS: boolean:= FALSE;
 	constant CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := 8;
 	constant CONFIG_CAPTURE_BITS_PER_WORD: integer := sel(CONFIG_CHAN_CAPTURE_TYPE="URAM", 128, 32);
 
@@ -30,7 +31,7 @@ package chfpga_config is
 
     constant CONFIG_CORR_TYPE: string                            := "UCORR44";
 	constant CONFIG_NUMBER_OF_CORRELATORS: integer               := CONFIG_ADC_SAMPLES_PER_WORD/2; -- One correlator per bin in the FFT output word
-
+	constant CONFIG_CORR_READOUT_BINS: integer_array(0 to CONFIG_NUMBER_OF_CORRELATORS-1) := (0, 1, 2, 3); -- With CONFIG_FFT_ROTATE_BINS=True, true bins 0, 1, 2 & 3 will be used for readout
 	constant CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := 0;
 	constant CONFIG_NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := 0;
 	constant CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS: integer          := 0; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
