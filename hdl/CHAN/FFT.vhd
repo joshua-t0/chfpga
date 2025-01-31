@@ -3,11 +3,11 @@
 -- Engineer: J.-F. Cliche
 --
 -- Create Date:    20:34:01 03/26/2011
--- Design Name:     chFPGA
+-- Design Name:    chFPGA
 -- Module Name:    FFT - Behavioral
--- Project Name: CHIME
--- Target Devices: Virtex 6
--- Tool versions: ISE 13.4
+-- Project Name: CHIME/CHORD
+-- Target Devices: Virtex 6, Kintex 7, Ultrascale+
+-- Tool versions: Vivado 2022.2
 --
 -- Dependencies:
 --
@@ -30,26 +30,27 @@ use UNISIM.VComponents.all;
 
 --===== ENTITY DECLARATION ======================
 
--- Wraps a CASPER wideband FFT into a AXI4-STREAMING
+-- Wraps a CASPER wideband FFT into a non-blocking AXI4-STREAMING
 -- processing block with a few memory-mapped control registers.
 --
--- The FFT input is an non-blocking, AXI4-Streaming bus with 32 bits of data and 4 bits of user-
--- defined bits. The 4 bytes correspond to four 8-bit signed data samples, with the first sample
--- being placed in the most significant byte.
+-- The FFT input is an non-blocking, AXI4-Streaming bus that accepts ``ADC_SAMPLES_PER_WORD`` ADC samples per clock,
+-- each clock providing ``ADC_BITS_PER_SAMPLE`` bits for each sample. ADC samples are signed values, and are packed
+-- into a single word with the first sample being placed in the most significant bits of the word.
+-- A frame consists of ``CONFIG_ADC_SAMPLES_PER_FRAME`` samples, or ``CONFIG_ADC_SAMPLES_PER_FRAME/ADC_SAMPLES_PER_WORD`` words.
 --
--- The FFT is a PFB-FFT from CASPER.  The FFT has a duplex architecture that can process two complex
--- input samples per clock. The FFT is done across frames consisting of 2048 real samples presented
--- as 512 32-bit words. The PFB applies windowing across 4 consecutive frames.
---
+-- The FFT is a PFB-FFT from CASPER.  The PFB submodule processes ``ADC_SAMPLES_PER_WORD``
+-- and applies windowing across 4 consecutive frames.
+-- The FFT submodule performs the **real** FFT operation on the windowed data.
 -- Since the input data is real, the negative frequency bins are the
 -- complex conjugate of the corresponding positive frequency bins.  The FFT is designed to taka
 -- advantage of this, and discards the negative frequencies in exchange of the ability to to process
--- twice as many samples per clock. Overall, the FFT processes 4 real samples per clock.
+-- twice as many samples per clock.
 --
--- The FFT outputs two (18+18) bits complex numbers per clock, for a total of 1024 frequency bins
--- emitted during the 512-clock frame. An Even-numbered and Odd-numbered bin is provided on each
--- clock. Those a re packed onto a 72-bit-wide non-blocking AXI-Streaming bus. The order of the
--- 18-bit signed numbers emitted on each clock is, from MSB to LSB: Re Even, Im Even, Re Odd and Im Odd.
+-- The FFT outputs ``ADC_SAMPLES_PER_WORD/2`` complex numbers per clock, for a total of CONFIG_ADC_SAMPLES_PER_FRAME/2 frequency bins.
+-- Each complex number consist of a ``FFT_BITS_PER_BIN``-bit vector, where the ``FFT_BITS_PER_BIN/2`` most significant bits are the signed real part and
+-- the ``FFT_BITS_PER_BIN/2`` least significant bits are the signed imaginary part.
+-- Those ``ADC_SAMPLES_PER_WORD/2`` complex numbers are packed into a ``FFT_BITS_PER_WORD`` bit wide vector, where the lower bin in stored in the MSBs.
+-- This vector is streamed out as a non-blocking AXI-streaming bus.
 --
 -- In BYPASS mode, each of the 8 bit of the input are signed extended to 18 bits and are passed to
 -- the output in the same order. The TUSER bits from the input are also passed directly to the output.
@@ -99,8 +100,8 @@ entity FFT is
 		FFT_BITS_PER_BIN 	   : integer := 18+18; -- real + imaginary
 		FFT_BINS_PER_WORD 	   : integer := ADC_SAMPLES_PER_WORD / 2; -- CHIME: 2, D3A/CHORD: 4. -- we divide by 2 because the FFT outputs only the positive frequencies
 		FFT_BITS_PER_WORD 	   : integer := FFT_BITS_PER_BIN * FFT_BINS_PER_WORD;
-		FFT_DELAY_BITS         : integer := CONFIG_FFT_CTR_WIDTH -- CHIME: 12, D3A/CHORD: 14
---		FFT_OVERFLOW_BITLENGTH : integer := 2 -- CHIME: 1, D3A/CHORD: 2. Needed since D3A/CHORD FFT overflow signal is 2 bits for some reason
+		FFT_DELAY_CTR_WIDTH    : integer := 14; -- CHIME: 12, D3A/CHORD: 14
+		ROTATE_BINS            : boolean := FALSE -- rotate down the bins in the output by N positions, where N is the word number. Used to spread low bins to multiple word positions in cases where the FFT does not naturally do that (e.g. no unscrambler)
 		);
 
 	port (
@@ -149,8 +150,8 @@ architecture Behavioral of FFT is
 	signal flags_in, flags_out: std_logic_vector(5 downto 0);
 
 
-	signal fft_pipeline_delay: std_logic_vector(FFT_DELAY_BITS - 1 downto 0);
-	signal fft_measured_pipeline_delay: std_logic_vector(FFT_DELAY_BITS - 1 downto 0);
+	signal fft_pipeline_delay: std_logic_vector(FFT_DELAY_CTR_WIDTH - 1 downto 0);
+	signal fft_measured_pipeline_delay: std_logic_vector(FFT_DELAY_CTR_WIDTH - 1 downto 0);
 	signal sync_reset: std_logic;
 
 
@@ -165,6 +166,16 @@ architecture Behavioral of FFT is
 	signal out_dat_pre_tdata   : std_logic_vector(m_axis_out_dat_tdata'RANGE);
 	signal out_dat_pre_tlast   : std_logic;
 	signal out_dat_pre_tuser   : std_logic_vector(3 downto 0);
+
+	signal bypass1_tvalid  : std_logic;
+	signal bypass1_tdata   : std_logic_vector(s_axis_in_dat_tdata'RANGE);
+	signal bypass1_tlast   : std_logic;
+	signal bypass1_tuser   : std_logic_vector(3 downto 0);
+
+	signal bypass2_tvalid  : std_logic;
+	signal bypass2_tdata   : std_logic_vector(s_axis_in_dat_tdata'RANGE);
+	signal bypass2_tlast   : std_logic;
+	signal bypass2_tuser   : std_logic_vector(3 downto 0);
 
 	signal fft_dout0_int, fft_dout1_int: std_logic_vector(FFT_BITS_PER_BIN-1 downto 0) := (others=>'0');
 
@@ -202,6 +213,8 @@ architecture Behavioral of FFT is
 	signal sync_frame_ctr: unsigned(sync_period'Range):=(others=>'0'); -- Counts SYNC pulses
 	signal sync_period_is_zero: std_logic;
 	signal is_last_frame_of_sync_period: std_logic;
+
+    signal word_ctr: unsigned(INTEGER_LOG2(FFT_BINS_PER_WORD)-1 downto 0); -- counts words at the output of the FFT. Used to rotate the bins
 
 begin
 
@@ -277,6 +290,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 --! Sends the input data to the FFT input and repackage the FFT output and pass it to the output bus.
 fft_clk_en <= '1'; -- clock is always enabled, as the buffer should always have some data (i.e., data always streaming out)
 main_proc: process(clk)
+	variable ii: integer range 0 to FFT_BINS_PER_WORD-1;
 	begin
 		if rising_edge(clk) then
 			sync_reset <= soft_reset or reset; -- Both reset sources are clk-synchronous
@@ -338,6 +352,18 @@ main_proc: process(clk)
 				end if; -- TLAST=1
 			end if; -- TVALID=1
 
+
+			-- pipeline the bypass path. It has to go over the whole FFT, which spans the whole width of the FPGA.
+			bypass1_tvalid <= s_axis_in_dat_tvalid;
+			bypass1_tlast  <= s_axis_in_dat_tlast;
+			bypass1_tuser  <= s_axis_in_dat_tuser;
+			bypass1_tdata  <= s_axis_in_dat_tdata;
+
+			bypass2_tvalid <= bypass1_tvalid;
+			bypass2_tlast  <= bypass1_tlast;
+			bypass2_tuser  <= bypass1_tuser;
+			bypass2_tdata  <= bypass1_tdata;
+
 			-- Register the final output. The delay is also used so we can insert the overflow flag on the final word.
 			-- Warning: out_dat.TUSER is overriden below - do not move down
 			-- SHREG_EXTRACT is set to FALSE to prevent the pipeline with the SCALER input from being turned into a shift register.
@@ -356,7 +382,18 @@ main_proc: process(clk)
 				out_dat_pre_tvalid <= fft_tvalid and fft_clk_en; -- The FFT outputs valid data only of the FFT is clocked AND the data has gone through the pipeline
 				out_dat_pre_tlast  <= fft_tlast;
 				out_dat_pre_tuser  <= fft_tuser;
-				out_dat_pre_tdata  <= fft_tdata;
+				--out_dat_pre_tdata  <= fft_tdata;
+
+				-- Count the words coming out of the FFT
+				if fft_tvalid and fft_clk_en then
+					word_ctr <= (others => '0') when fft_tlast else word_ctr + 1;
+				end if;
+
+				-- Assign words to the next pipeline stage, rotating them as necessary if ROTATE_BINS=TRUE
+				for i in 0 to FFT_BINS_PER_WORD-1 loop
+					ii := (i + to_integer(word_ctr)) MOD FFT_BINS_PER_WORD when ROTATE_BINS else i;
+					out_dat_pre_tdata((i+1)*FFT_BITS_PER_BIN-1 downto i*FFT_BITS_PER_BIN) <= fft_tdata((ii+1)*FFT_BITS_PER_BIN -1 downto ii*FFT_BITS_PER_BIN);
+				end loop; -- if FFT is implemented
 
 				-- Insert the FFT overflow flag in the next_to_last Serial flag bit
 				if fft_tlast='1' and fft_tvalid='1' and fft_clk_en='1' then
@@ -365,20 +402,14 @@ main_proc: process(clk)
 				end if;
 			else
 				-- otherwise, just pass the input to the output, adapting the data width.
-				-- out_dat_pre.TVALID <= in_dat.TVALID;
-				-- out_dat_pre.TLAST <= in_dat.TLAST;
-				-- out_dat_pre.TUSER <= in_dat.TUSER;
-				-- out_dat_pre.TDATA <= (others=>'0'); -- all bits are dezo by default unless defined below
-				out_dat_pre_tvalid <= s_axis_in_dat_tvalid;
-				out_dat_pre_tlast  <= s_axis_in_dat_tlast;
-				out_dat_pre_tuser  <= s_axis_in_dat_tuser;
-				out_dat_pre_tdata  <= (others=>'0'); -- all bits are dezo by default unless defined below
+				out_dat_pre_tvalid <= bypass2_tvalid;
+				out_dat_pre_tlast  <= bypass2_tlast;
+				out_dat_pre_tuser  <= bypass2_tuser;
+				out_dat_pre_tdata  <= (others=>'0'); -- all bits are zero by default unless defined below
 				-- for i in 0 to 3 loop
 				for i in 0 to ADC_SAMPLES_PER_WORD-1 loop -- parameterized
-					-- out_dat_pre.TDATA(18*i+17 downto 18*i) <= std_logic_vector(resize(signed(in_dat.TDATA(8*i+7 downto 8*i)), 18)); -- make sure to sign extend the byte to the full 18 bits
-					--out_dat_pre_tdata(18*i+17 downto 18*i) <= std_logic_vector(resize(signed(s_axis_in_dat_tdata(ADC_BITS_PER_SAMPLE*i+(ADC_BITS_PER_SAMPLE - 1) downto ADC_BITS_PER_SAMPLE*i)), 18));
 					-- Forward the adc word to the *upper* bits of the FFT output word
-					out_dat_pre_tdata((i+1)*FFT_BITS_PER_BIN/2-1 downto (i+1)*FFT_BITS_PER_BIN/2 - ADC_BITS_PER_SAMPLE) <= s_axis_in_dat_tdata((i+1)*ADC_BITS_PER_SAMPLE -1 downto i*ADC_BITS_PER_SAMPLE);
+					out_dat_pre_tdata((i+1)*FFT_BITS_PER_BIN/2-1 downto (i+1)*FFT_BITS_PER_BIN/2 - ADC_BITS_PER_SAMPLE) <= bypass2_tdata((i+1)*ADC_BITS_PER_SAMPLE -1 downto i*ADC_BITS_PER_SAMPLE);
 				end loop; -- if FFT is implemented
 
 			end if;
@@ -389,7 +420,7 @@ main_proc: process(clk)
 			-- SYNC is pulsed every N frames afterwards.
 			-- Define intermediate signals to simplify the logic
 			-- These are needed only at the first TLAST, so they have time to initialize before they are needed. No reset values are necessary.
-			if reset='1' then
+			if reset then
 				sync_frame_ctr <= (others=>'0'); --needed
 				overflow_count <= (others=>'0');
 				-- Clock the FFT with a SYNC input
@@ -402,6 +433,7 @@ main_proc: process(clk)
 				-- fft_clk_en<='1';
 				fft_sync_in <= '1';
 				delay_clk_en <= '0'; -- don't write anything to the delay line. we don't want the forced SYNC in there
+				word_ctr <= (others => '0');
 			end if; -- if RST
 
 		end if; -- clk
@@ -415,14 +447,13 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 	-----------------------------------------------------------------------------------
 	-- This is a CASPER PFB/FFT generated using Xilinx System Generator
 	--
-	-- -- CHIME PFB/FFT --
-	-- Time-based data is presented 4 samples at a time,  in0 being the earliest sample. A time sample is 8 bit wide.
-	-- Output is the complex frequency samples (18 bits real + 18 bits imaginary). Out0 and out 1 provide the even and odd
-	-- frequencies respectively. The upper
-
 	fftype_gen: case FFT_TYPE generate
 
-        when "CHIME" =>  
+		-- -- CHIME PFB/FFT --
+		-- Time-based data is presented 4 samples at a time,  in0 being the earliest sample. A time sample is 8 bit wide.
+		-- Output is the complex frequency samples (18 bits real + 18 bits imaginary). Out0 and out 1 provide the even and odd
+		-- frequencies respectively. The lower (even) bin is in the MSB.
+        when "CHIME" =>
             FFT0: entity work.FFT2
                 PORT MAP(
                     sync_in  => fft_sync_in,
@@ -430,17 +461,17 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
                     in1      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 1) - 1 downto ADC_BITS_PER_SAMPLE * 2),
                     in2      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 2) - 1 downto ADC_BITS_PER_SAMPLE * 1),
                     in3      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 3) - 1 downto ADC_BITS_PER_SAMPLE * 0),
-    
+
                     sync_out => fft_sync_out,
                     out1     => fft_dout0_int,
                     out2     => fft_dout1_int,
-    
+
                     shift    => fft_shift_schedule(10 downto 0),
                     overflow => fft_overflow,
                     ce_1     => fft_clk_en,
                     clk_1    => clk
                 );
-    
+
             fft_tdata <= (fft_dout0_int & fft_dout1_int);
 
 
@@ -452,57 +483,57 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
             FFT0: entity work.pfb_fft_d3a_0
                 PORT MAP(
                     sync_in(0)  => fft_sync_in,
-                    in0      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 0) - 1 downto ADC_BITS_PER_SAMPLE * 7),
-                    in1      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 1) - 1 downto ADC_BITS_PER_SAMPLE * 6),
-                    in2      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 2) - 1 downto ADC_BITS_PER_SAMPLE * 5),
-                    in3      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 3) - 1 downto ADC_BITS_PER_SAMPLE * 4),
-                    in4      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 4) - 1 downto ADC_BITS_PER_SAMPLE * 3),
-                    in5      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 5) - 1 downto ADC_BITS_PER_SAMPLE * 2),
-                    in6      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 6) - 1 downto ADC_BITS_PER_SAMPLE * 1),
-                    in7      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 7) - 1 downto ADC_BITS_PER_SAMPLE * 0),
-    
+                    in0      => fft_in_tdata(ADC_BITS_PER_SAMPLE * 8 - 1 downto ADC_BITS_PER_SAMPLE * 7),
+                    in1      => fft_in_tdata(ADC_BITS_PER_SAMPLE * 7 - 1 downto ADC_BITS_PER_SAMPLE * 6),
+                    in2      => fft_in_tdata(ADC_BITS_PER_SAMPLE * 6 - 1 downto ADC_BITS_PER_SAMPLE * 5),
+                    in3      => fft_in_tdata(ADC_BITS_PER_SAMPLE * 5 - 1 downto ADC_BITS_PER_SAMPLE * 4),
+                    in4      => fft_in_tdata(ADC_BITS_PER_SAMPLE * 4 - 1 downto ADC_BITS_PER_SAMPLE * 3),
+                    in5      => fft_in_tdata(ADC_BITS_PER_SAMPLE * 3 - 1 downto ADC_BITS_PER_SAMPLE * 2),
+                    in6      => fft_in_tdata(ADC_BITS_PER_SAMPLE * 2 - 1 downto ADC_BITS_PER_SAMPLE * 1),
+                    in7      => fft_in_tdata(ADC_BITS_PER_SAMPLE * 1 - 1 downto ADC_BITS_PER_SAMPLE * 0),
+
                     sync_out(0) => fft_sync_out,
                     out0     => fft_dout0_int,
                     out1     => fft_dout1_int,
                     out2 	 => fft_dout2_int,
                     out3 	 => fft_dout3_int,
-    
+
                     shift    => fft_shift_schedule(13 downto 0),
                     of_x0    => fft_overflow_d3a, -- (0 => fft_overflow, others => open),--fixme
                     clk      => clk
                 );
-    
+
             fft_overflow <= or fft_overflow_d3a;
             fft_tdata <= (fft_dout0_int & fft_dout1_int & fft_dout2_int & fft_dout3_int);
-    
+
         when "CHORD" =>
-    
+    		-- Overflow-free FFT, allowing bitgrowth
             FFT0: entity work.pfb_fft_bitgrowth_0
                 PORT MAP(
                     sync_in(0)  => fft_sync_in,
-                    in0      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 0) - 1 downto ADC_BITS_PER_SAMPLE * 7),
-                    in1      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 1) - 1 downto ADC_BITS_PER_SAMPLE * 6),
-                    in2      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 2) - 1 downto ADC_BITS_PER_SAMPLE * 5),
-                    in3      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 3) - 1 downto ADC_BITS_PER_SAMPLE * 4),
-                    in4      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 4) - 1 downto ADC_BITS_PER_SAMPLE * 3),
-                    in5      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 5) - 1 downto ADC_BITS_PER_SAMPLE * 2),
-                    in6      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 6) - 1 downto ADC_BITS_PER_SAMPLE * 1),
-                    in7      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 7) - 1 downto ADC_BITS_PER_SAMPLE * 0),
-    
+                    in0      => fft_in_tdata(ADC_BITS_PER_SAMPLE * 8 - 1 downto ADC_BITS_PER_SAMPLE * 7),
+                    in1      => fft_in_tdata(ADC_BITS_PER_SAMPLE * 7 - 1 downto ADC_BITS_PER_SAMPLE * 6),
+                    in2      => fft_in_tdata(ADC_BITS_PER_SAMPLE * 6 - 1 downto ADC_BITS_PER_SAMPLE * 5),
+                    in3      => fft_in_tdata(ADC_BITS_PER_SAMPLE * 5 - 1 downto ADC_BITS_PER_SAMPLE * 4),
+                    in4      => fft_in_tdata(ADC_BITS_PER_SAMPLE * 4 - 1 downto ADC_BITS_PER_SAMPLE * 3),
+                    in5      => fft_in_tdata(ADC_BITS_PER_SAMPLE * 3 - 1 downto ADC_BITS_PER_SAMPLE * 2),
+                    in6      => fft_in_tdata(ADC_BITS_PER_SAMPLE * 2 - 1 downto ADC_BITS_PER_SAMPLE * 1),
+                    in7      => fft_in_tdata(ADC_BITS_PER_SAMPLE * 1 - 1 downto ADC_BITS_PER_SAMPLE * 0),
+
                     sync_out(0) => fft_sync_out,
                     out0     => fft_dout0_int,
                     out1     => fft_dout1_int,
                     out2 	 => fft_dout2_int,
                     out3 	 => fft_dout3_int,
-    
+
                     shift    => fft_shift_schedule(13 downto 0),
                     of_x0    => fft_overflow_d3a, -- (0 => fft_overflow, others => open),--fixme
                     clk      => clk
                 );
-    
+
             fft_overflow <= or fft_overflow_d3a;
             fft_tdata <= (fft_dout0_int & fft_dout1_int & fft_dout2_int & fft_dout3_int);
-    
+
 		when others =>
 			assert FALSE report "Invalid FFT Type" severity FAILURE;
 	end generate fftype_gen;
@@ -530,8 +561,8 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 	--! Measures the CASPER block pipelining delay and propagate a vector containing the data flags with the same delay
 		DELAY0: entity work.FFT_DELAY
 			GENERIC MAP (
-				CTR_WIDTH  => fft_pipeline_delay'Length,
-				DATA_WIDTH => flags_in' Length
+				CTR_WIDTH  => fft_pipeline_delay'LENGTH,
+				DATA_WIDTH => flags_in'LENGTH
 				)
 
 			PORT MAP(
