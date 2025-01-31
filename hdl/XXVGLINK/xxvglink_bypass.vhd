@@ -1,0 +1,200 @@
+----------------------------------------------------------------------------------
+-- Company: McGill Univ.
+-- Engineer: JF Cliche
+--
+-- Create Date:    2025-01-20
+-- Design Name:
+-- Module Name:    xxvglink_bypass
+-- Project Name:
+-- Target Devices: Ultrascale+
+-- Tool versions: Vivado 2022.2
+-- Description: Implements a direct internal data link that simulates the GTY RX-TX pair.
+--
+----------------------------------------------------------------------------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+use IEEE.NUMERIC_STD.ALL;
+
+library UNISIM;
+use UNISIM.VComponents.all;
+
+library work;
+use work.chFPGA_Package.all;
+
+
+entity xxvglink_bypass is
+	port (
+		-- User AXI-Streaming data input (nnon-blocking)
+		s_axis_tx_tdata: in slv64; -- Fisrt *byte* transmitted is in the MSB (i.e. first bit transmitted is bit 24)
+		s_axis_tx_tvalid: in std_logic;
+		s_axis_tx_tlast: in std_logic;
+
+		reset_stats: in std_logic;
+		tx_fifo_overflow: out std_logic;
+		rx_fifo_overflow: out std_logic;
+		rx_frame_detect: out std_logic;
+		rx_err_ctr: out std_logic_vector(15 downto 0); -- always 0 for a direct internal link
+		rx_max_frame: out std_logic_vector(12 downto 0);
+		rx_min_frame: out std_logic_vector(12 downto 0);
+
+		-- User AXI-Streaming data output (non-blocking)
+		m_axis_rx_tdata: out slv64;
+		m_axis_rx_tvalid: out std_logic;
+		m_axis_rx_tlast: out std_logic;
+		m_axis_rx_terror: out std_logic;
+
+		clk: in std_logic; -- clock for both the user and GTX interface
+		rst : in std_logic -- asynchronous reset
+		);
+
+
+end xxvglink_bypass;
+
+architecture Behavioral of xxvglink_bypass is
+
+
+
+-- FIFO output signals
+--signal s_axis_tx_tready: std_logic;
+signal axis_tx_tdata_int: slv64; -- Fisrt *byte* transmitted is in the MSB (i.e. first bit transmitted is bit 24)
+signal axis_tx_tvalid_int: std_logic;
+signal axis_tx_tlast_int: std_logic;
+
+
+signal rx_fifo_overflow_int: std_logic;
+
+signal tx_ctr: unsigned(6 downto 0) := (others=>'0'); -- counts clocks (0-65) to implement RX FIFO throttling
+signal read_en: std_logic; --!
+
+signal rx_max_frame_int: unsigned(12 downto 0); -- maximum detected frame size (max 8191)
+signal rx_min_frame_int: unsigned(12 downto 0); -- minimum detecteed frame size
+signal rx_word_ctr: unsigned(12 downto 0); -- counts rx errors on lane specified uin 'lane_sel'
+
+
+begin
+
+
+--------------------------------------
+-- TX FIFO
+--------------------------------------
+-- TX FIFO: synchronous, FWFT, 33x512 words. The design expects a read latency of 0.
+-- Using embedded output register is highly desirable to facilitate timing closure, especially if the CT engine runs at 322 MHz.
+-- Note: We cannot use EMBED FIFO (FIFO18) with embedded output register because it has a latency of 1.
+-- We use a BRAM-based FIFO with embedded register, which has a latency of 0.
+tx_fifo0 : entity work.xxvglink_data_fifo
+  PORT MAP (
+
+	s_axis_tvalid => s_axis_tx_tvalid,
+	s_axis_tlast  => s_axis_tx_tlast,
+	s_axis_tdata  => s_axis_tx_tdata,
+	s_clk         => clk,
+
+	m_axis_tready => read_en,
+	m_axis_tvalid => axis_tx_tvalid_int,
+	m_axis_tlast  => axis_tx_tlast_int,
+	m_axis_tdata  => axis_tx_tdata_int,
+	m_clk         => clk,
+
+	overflow      => tx_fifo_overflow,
+
+	rst           => rst
+  );
+
+rx_fifo0: entity work.xxvglink_data_fifo
+	port map (
+		s_axis_tdata  => axis_tx_tdata_int,
+		s_axis_tlast  => axis_tx_tlast_int,
+		s_axis_tvalid => axis_tx_tvalid_int and read_en,
+		s_clk         => clk,
+
+		m_axis_tready => m_axis_rx_tvalid,
+		m_axis_tvalid => m_axis_rx_tvalid,
+		m_axis_tdata  => m_axis_rx_tdata,
+		m_axis_tlast  => m_axis_rx_tlast,
+		m_clk         => clk,
+
+		overflow      => rx_fifo_overflow,
+
+		rst           => rst
+	);
+
+
+
+
+-- Throttle the RX FIFO by skipping 2 reads every 66 clocks  to simulate the
+-- behavior of the GTY transmission which uses a 64/66 bit gearbox.
+bypass_proc: process(clk)
+begin
+	if rising_edge(clk) then
+
+		tx_ctr <= tx_ctr + 1;
+		if rst='1' or tx_ctr=66-1 then
+			tx_ctr <= (others=>'0');
+			read_en <= '1';
+		elsif tx_ctr = 66-3 then
+			read_en <= '0';
+		end if;
+
+	end if; --clk
+end process;
+
+
+rx_err_ctr <= (others=>'0'); -- we never have errors on a direct link
+rx_max_frame <= std_logic_vector(rx_max_frame_int);
+rx_min_frame <= std_logic_vector(rx_min_frame_int);
+
+
+rx_fifo_overflow_proc: process(clk)
+	begin
+		if rising_edge(clk) then
+
+			---- Detect FIFO overflows
+			--if rx_fifo_overflow_int='1' or s_axis_rx_tready='0' then
+			--	rx_fifo_overflow <= '1';
+			--elsif rst='1' or reset_stats='1' then
+			--	rx_fifo_overflow <= '0';
+			--end if;
+
+			--if tx_fifo_overflow='1' then
+			--	tx_fifo_overflow <= '1';
+			--elsif rst='1' or reset_stats='1' then
+			--	tx_fifo_overflow <= '0';
+			--end if;
+
+			-- Detect maximum and minimum frame length
+			if m_axis_rx_tvalid = '1' then
+				rx_word_ctr <= rx_word_ctr + 1;
+				if m_axis_rx_tlast = '1' then
+					-- rx_frame_ctr <= rx_frame_ctr + 1;
+					rx_frame_detect <= '1';
+					rx_word_ctr <= (others => '0');
+					if rx_word_ctr > rx_max_frame_int then
+						rx_max_frame_int <= rx_word_ctr;
+					end if;
+					if rx_word_ctr < rx_min_frame_int then
+						rx_min_frame_int <= rx_word_ctr;
+					end if;
+				end if;
+			end if;
+
+			--resets
+			if rst='1' then
+				rx_word_ctr <= (others => '0'); -- don't reset the word counter with reset_stats so we don't capture partial frames which affects the minimum packet size.
+			end if;
+
+			if reset_stats='1' or rst='1' then
+				rx_max_frame_int <= (others=>'0');
+				rx_min_frame_int <= (others=>'1');
+				rx_frame_detect <= '0';
+				-- rx_frame_ctr <= (others => '0');
+			end if; -- reset
+
+
+		end if; --clk
+	end process;
+
+
+
+end Behavioral;
+
