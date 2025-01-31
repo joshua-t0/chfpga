@@ -100,8 +100,8 @@ set_property IOSTANDARD LVDS [get_ports plclk_p]
 set_property DIFF_TERM_ADV TERM_100 [get_ports plclk_p]
 #create_clock -period 2.666 -name PL_CLK [get_ports plclk_p]
 create_clock -period 2.500 -name PL_CLK [get_ports plclk_p]
-set_clock_latency -min -0.015 -source [get_ports plclk_p]
-set_clock_latency -max 0.015 -source [get_ports plclk_p]
+set_clock_latency -min -source -0.015 [get_ports plclk_p]
+set_clock_latency -max -source 0.015 [get_ports plclk_p]
 
 # SYSREF clock (Bank 69), 2.5 MHz, used to synchronize all the ADC logic. The equivalent of this signal (RF_SYSREF) also goes directly to the ADC/DACs bank.
 # This signal is not treated as a clock, but rather a signal that is synchronized to PLCLK.
@@ -114,19 +114,19 @@ set_input_delay -clock [get_clocks PL_CLK] -max 0.015 [get_ports pl_sysref_p]
 set_input_delay -clock [get_clocks PL_CLK] -min -0.015 [get_ports pl_sysref_p]
 #set_multicycle_path 3 -setup -from  [get_ports pl_sysref_p] -to [get_ports plclk_p]
 # PL_CLK needs to sample SYSREF, but it is much more delayed than SYSREF because of the BUFG.
-# The normal setup rule tries to meet SYSREF setup with the next PL_CLK edge (2.5 ns later), which cause the tool to try and add lots of delay on the SYSREF line, but fails. 
-# We fix this by aligning SYSREF setup on the same edge if is generated outside the FPGA. 
-set_multicycle_path 0 -setup -from  [get_ports pl_sysref_p]
+# The normal setup rule tries to meet SYSREF setup with the next PL_CLK edge (2.5 ns later), which cause the tool to try and add lots of delay on the SYSREF line, but fails.
+# We fix this by aligning SYSREF setup on the same edge if is generated outside the FPGA.
+set_multicycle_path -setup -from [get_ports pl_sysref_p] 0
 
 # DDR4_CLK (Bank 67), used as a 10 MHz system clock
 set_property PACKAGE_PIN H23 [get_ports sysclk_p]
 set_property IOSTANDARD LVDS [get_ports sysclk_p]
 set_property DIFF_TERM_ADV TERM_100 [get_ports sysclk_p]
 create_clock -period 100.000 -name SYS_CLK [get_ports sysclk_p]
-set_clock_latency -min -0.015 -source [get_ports sysclk_p]
-set_clock_latency -max 0.015 -source [get_ports sysclk_p]
+set_clock_latency -min -source -0.015 [get_ports sysclk_p]
+set_clock_latency -max -source 0.015 [get_ports sysclk_p]
 
-set_multicycle_path 0 -setup -from  [get_clocks SYS_CLK] -to [get_clocks PL_CLK]
+set_multicycle_path -setup -from [get_clocks SYS_CLK] -to [get_clocks PL_CLK] 0
 
 # # Recovered clock output (not used)
 # set_property PACKAGE_PIN C84     [get_ports {pl_recclk_p}]; # Bank  69 VCC1V8
@@ -277,7 +277,71 @@ add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list \
           chfpga0/ct_clk_blk.ct_reset_cdc0 \
           chfpga0/freq_ctr_blk.FREQ_CTR0 \
           chfpga0/gpio_blk.GPIO0 \
-          chfpga0/refclk_blk.REFCLK0 \
+          {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state[1]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state[2]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state[3]_i_2} \
+          {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state[3]_i_3} \
+          {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state[3]_i_4} \
+          {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state[3]_i_5} \
+          {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state[3]_i_6} \
+          {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state[3]_i_7} \
+          {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state[3]_i_8} \
+          {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state_reg[1]} \
+          {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state_reg[2]} \
+          {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state_reg[3]} \
+          chfpga0/refclk_blk.REFCLK0/VCC \
+          chfpga0/refclk_blk.REFCLK0/adcdaq_reset_reg \
+          chfpga0/refclk_blk.REFCLK0/bsb_regs0 \
+          chfpga0/refclk_blk.REFCLK0/local_sync_dly_reg \
+          chfpga0/refclk_blk.REFCLK0/local_sync_reg_reg \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[0]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[10]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[10]_i_2} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[11]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[12]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[13]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[14]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[14]_i_2} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[15]_i_2} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[15]_i_3} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[1]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[2]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[3]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[4]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[5]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[5]_i_2} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[6]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[7]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[8]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[9]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr[9]_i_2} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr_reg[0]} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr_reg[10]} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr_reg[11]} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr_reg[12]} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr_reg[13]} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr_reg[14]} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr_reg[15]} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr_reg[1]} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr_reg[2]} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr_reg[3]} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr_reg[4]} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr_reg[5]} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr_reg[6]} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr_reg[7]} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr_reg[8]} \
+          {chfpga0/refclk_blk.REFCLK0/sync_ctr_reg[9]} \
+          chfpga0/refclk_blk.REFCLK0/sync_dly_reg \
+          chfpga0/refclk_blk.REFCLK0/sync_done_reg \
+          {chfpga0/refclk_blk.REFCLK0/sync_event_ctr[0]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/sync_event_ctr[1]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/sync_event_ctr[2]_i_1} \
+          {chfpga0/refclk_blk.REFCLK0/sync_event_ctr[3]_i_2} \
+          {chfpga0/refclk_blk.REFCLK0/sync_event_ctr_reg[0]} \
+          {chfpga0/refclk_blk.REFCLK0/sync_event_ctr_reg[1]} \
+          {chfpga0/refclk_blk.REFCLK0/sync_event_ctr_reg[2]} \
+          {chfpga0/refclk_blk.REFCLK0/sync_event_ctr_reg[3]} \
+          chfpga0/refclk_blk.REFCLK0/sync_reg \
           chfpga0/sysmon_blk.SYSMON0 \
           chfpga0/sysrtr_blk.sys_router0 \
           chfpga0/top_router_blk.top_router0]]
@@ -592,6 +656,7 @@ resize_pblock [get_pblocks SCALER7] -add {DSP48E2_X3Y168:DSP48E2_X3Y191}
 resize_pblock [get_pblocks SCALER7] -add {RAMB18_X2Y168:RAMB18_X2Y183}
 resize_pblock [get_pblocks SCALER7] -add {RAMB36_X2Y84:RAMB36_X2Y91}
 set_property IS_SOFT FALSE [get_pblocks SCALER7]
+
 
 
 
