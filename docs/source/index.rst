@@ -12,12 +12,9 @@
    :hidden:
 
    introduction
-   requirements
-   coding_conventions
-   about_this_document
-   architecture
-   floorplanning
-   documenting_vhdl_in_sphinx
+   firmware_architecture
+   source_code_information
+.. requirements
 .. implementation
 .. internal_buses
 .. udp_command_protocol

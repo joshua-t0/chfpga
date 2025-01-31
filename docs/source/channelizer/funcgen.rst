@@ -12,7 +12,7 @@ AXI4-Streaming function generator that either forwards the input from the ADC or
 Schematic
 =========
 
-.. figure:: ../images/funcgen.svg
+.. figure:: ../images/CHAN/funcgen.svg
     :width: 100%
 
 Sub-modules

@@ -8,7 +8,7 @@ Prober captures and buffer data frames and makes them available over a 8-bit AXI
 Schematic
 ---------
 
-.. figure:: ../images/prober.svg
+.. figure:: ../images/CHAN/prober.svg
     :width: 50%
 
 .. parse:: hdl/CHAN/PROBER.vhd

@@ -10,7 +10,7 @@
 Schematic
 =========
 
-.. figure:: ../images/adcdaq_block_diagram.svg
+.. figure:: ../images/CHAN/ADCDAQ/adcdaq_block_diagram.svg
     :width: 50%
 
 
@@ -42,5 +42,5 @@ Schematic
 =========
 
 
-.. figure:: ../images/adcdaq_pll_unambiguous_phase_config.svg
+.. figure:: ../images/CHAN/ADCDAQ/  adcdaq_pll_unambiguous_phase_config.svg
     :width: 50%

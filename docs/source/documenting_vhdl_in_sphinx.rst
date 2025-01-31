@@ -1,5 +1,5 @@
-About this documentation
-========================
+Documenting VHDL using Sphinx
+=============================
 
 This documentation was generated using Sphinx, which is typically used to document Python code, but can also support other languages. We use the home-made vhdl_sphinx_domain extension to parse the VHDL source file and automatically include documentation found in the source files themselves.
 

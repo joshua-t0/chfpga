@@ -2,10 +2,10 @@
 
 .. title:: chFPGA
 
-.. image:: images/chfpga_logo.svg
-   :width: 30%
+.. .. image:: images/chfpga_logo.svg
+..    :width: 30%
 
--------------------------------------------------
+.. -------------------------------------------------
 
 
 Introduction
@@ -14,36 +14,89 @@ Introduction
 
 ..  chFPGA: Data acquisition, Channelizer, corner-turn and correlator engine FPGA firmware for the IceBoard FPGAs
 
-``chFPGA`` is a multiplatform FPGA firmware designed to implement wide bandwidth radiotelescope and radio-interferometers front-ends. It provides:
+``chFPGA`` is a multiplatform FPGA firmware designed to implement wide bandwidth radiotelescope and radio-interferometers front-ends. It provides the following components:
 
 - F-Engine (channelizer)
-- Single-board or multi-board Corner-turn engine
-- Optional real-time  Ethernet streaming of corner-turned data
-- Optinal X-engine (correlator)
+- Corner-turn engine (groups data from one or multiple boards by frequency)
+- Optional X-engine (:math:`N^2` correlator)
+- Optional real-time 80G/100G Ethernet streaming of corner-turned data
+- Hardware platform management and peripheral controllers
 
+A block diagram of the firmware is provided below.
 
 .. figure:: ./images/chfpga_simple_block_diagram_v2.svg
    :width: 100%
 
 
-The main features of the firmware are:
+Features
+========
 
-- Runs on Virtex 6, Kintex 7 and Ultrascale+ Xilinx/AMD FPGA platforms
-- Scalable number of input channels
-- Operates at sampling rates of up to 3200 MSPS @ 14 bits per sample
-- Acquires data from external FMC ADCs or from internal data converters (RfSoC FPGAs)
-- F-Engine (a.k.a. channelizer) is based  on the resource-efficient CASPER PFB/FFT.
-- F-Enfine supports waveform/test pattern injection.
-- Corner-turn engine can be configured to groups data by frequency, with data coming from a single board, from  multiple boards within a crate and from boards between crates.
-- X-Engine (a.k.a N^2 correlator) can be scaled to the desired number of inputs and is highly optimized for maximum density and speed.
-- Real-time data offload through 8x10G or 100G Ethernet links over UDP, with Ethernet test packet generators
-- Raw data can be captured periodically at various points of the signal processing chain
-- Includes multiple peripherals: SPI, I2C, System monitor, frequency counter, IRIG-B, Buck converter synchronizer etc.
-- Configuration, operation and monitoring of every sybsystem performed through memory-mapped read/write registers accessed through a lightweight 8-bit bus interface.
-- Bitstream can be contigured for multiple platforms using generics parameters and configuration files.
-- Can operate with various reference clock frequencies.
+The main features of ``chFPGA`` are:
 
-`chFPGA` is operated through the ``pychfpga`` Python package, which provides a Python interface to every subsystem of the `chFPGA` firmware and provides platform wrappers and servers for on-site automated operations.
+- Platforms
+
+   - Runs on Virtex 6, Kintex 7 and Ultrascale+ Xilinx/AMD FPGA platforms
+   - FPGAs with embedded ARM processing system can interface directly with chFPGA using DMA streams
+
+- Firmware components configurable through a configuration file:
+
+   - Number of channels
+   - Data/FFT bit width
+   - Types and geometry of FFT/PFB, corner-turn, correlator
+   - Clock sources and speed
+   - etc.
+
+- ADC inputs
+
+   - Acquires data from external FMC ADCs or from internal data converters (RfSoC FPGAs)
+   - Operates at sampling rates of up to 3200 MSPS @ 14 bits per sample (Ultrascale+)
+
+- F-Engine (a.k.a. channelizer)
+
+      - Supports waveform/test pattern/noise injection.
+      - FFT based on resource-efficient CASPER PFB/FFT.
+      - Output scaled down to (4+4i) bits using programmable per-frequency digital gains
+
+- Corner-turn engine
+
+   - Flexible frequency selection map
+   - Can be scaled from a single board up to 32 boards
+   - Uses backplane or SFP/QSFP links to perform 10/25Gbps data exchange between boards
+
+- X-Engine
+
+   - Processes (4+4i)-bits data from the corner-turn engine
+   - Scaleable to any number of inputs
+   - Is highly optimized for maximum density and speed.
+
+- Real-time data offload
+
+   - Implements 8x10G or 100G Ethernet links over UDP
+   - Includes test packet generators
+
+- Data monitoring
+
+   - Raw ADC/FFT/SCALER data can be captured periodically
+   - Data source can be switched dynamically without affecting the science data
+   - Data is sent through the shared command link (1G Ethernet)
+
+- Hardware support
+
+   - Supports multiple peripherals: SPI, I2C, System monitor, frequency counter, IRIG-B, Buck converter synchronizer etc.
+   - Can operate with various reference clock frequencies.
+
+- Control interface
+
+   - Configuration, operation and monitoring of every sybsystem performed through memory-mapped read/write registers accessed through a lightweight 8-bit bus interface.
+
+Python control software
+=======================
+
+`chFPGA` is operated through the ``pychfpga`` Python package, which provides a Python high-level interface to every subsystem of the `chFPGA` firmware and provides platform wrappers and servers for on-site automated operations.
+
+
+Hardware platforms
+==================
 
 ``chFPGA`` has been used on multiple hardware platforms FPGAs:
 
@@ -63,8 +116,14 @@ The firmware is structured so new platform wrappers and configuration files can 
 
 .. 16 ADC analog channels at 800 Msps, channelizes the data in 1024 frequency bins (F-engine), and can either implement an on-board 16-channel correlator (X-engine) or reorder and redistribute the data with other boards before sending it to an external correlator.
 
+Real-world applications
+=======================
 
-``chFPGA`` was originally designed for the Canadian Hydrogen Intensity Mapping Experiment (CHIME) radiotelescope, which consists of an array of 128 IceBoards that digitizes 1024 dual-polarization feeds, samples the feeds at 800 MHz @ 8 bits per sample, implement a 2048-sample FFT, scales and  corner-turns the data between groups of 64 boards, and feeds the baseband data to a a 256-node GPU-based correlator farm. ``chFPGA`` is also used on an array of 128 Xilinx CRS RfSoC FPGAs to digitize the signals from 512-dual-polarization feeds, sample the feeds at 3200 MSPS @ 14-bits,  and perform a 16384-sample FFT and on-board corner-turn, and offload the resulting data over a modern GPU farm over 100G Ethernet links through a Ethernet switch that performs the corner-turn. The firmware is also used around the world on many small (2-16 element) arrays to implement single-board full N-square correlators.
+``chFPGA`` was originally designed for the Canadian Hydrogen Intensity Mapping Experiment (CHIME) radiotelescope, which consists of an array of 128 IceBoards that digitizes 1024 dual-polarization feeds at 800 MHz @ 8 bits per sample, implement a 2048-sample FFT, scales and  corner-turns the data between groups of 32 boards, and feeds the real-time baseband data to a a 256-node GPU-based correlator farm.
+
+``chFPGA`` is also used on an array of 128 Xilinx CRS RfSoC FPGAs to digitize the signals from 512-dual-polarization feeds, sample the feeds at 3200 MSPS @ 14-bits, perform a 16384-sample FFT and on-board corner-turn, and offloads the resulting data over 100G Ethernet links through a Ethernet switch that performs the final corner-turn.
+
+The firmware is also used around the world on many small (2-16 element) arrays to implement single-board full N-square correlators.
 
 
 .. A block diagram of chFPGA used in this configuration is shown in chfpga_block_diagram_.
