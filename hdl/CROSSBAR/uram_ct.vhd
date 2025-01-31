@@ -157,25 +157,25 @@ begin
 		rply_dat <= rply_dat_out;
 
 
-    --Implement an an asynchronous FIFO to bridge the BSB bus from the ctrl_clk
-    --to the clk domains (RAM accesses must be made in the clk domain)
-    bsb_fifo0 : entity work.CMD_ASYNC_FIFO
-      PORT MAP (
-            cmd_a_dat  => cmd_dat,
-            cmd_a_rdy  => cmd_rdy_out,
-            rply_a_dat => rply_dat_out,
-            rply_a_rdy => rply_rdy,
-            a_clk      => ctrl_clk,
+		--Implement an an asynchronous FIFO to bridge the BSB bus from the ctrl_clk
+		--to the clk domains (RAM accesses must be made in the clk domain)
+		bsb_fifo0 : entity work.CMD_ASYNC_FIFO
+			PORT MAP (
+						cmd_a_dat  => cmd_dat,
+						cmd_a_rdy  => cmd_rdy_out,
+						rply_a_dat => rply_dat_out,
+						rply_a_rdy => rply_rdy,
+						a_clk      => ctrl_clk,
 
-            cmd_b_dat  => cmd_dat_int,
-            cmd_b_rdy  => cmd_rdy_int,
-            rply_b_dat => rply_dat_int,
-            rply_b_rdy => rply_rdy_int,
-            b_clk      => clk,
+						cmd_b_dat  => cmd_dat_int,
+						cmd_b_rdy  => cmd_rdy_int,
+						rply_b_dat => rply_dat_int,
+						rply_b_rdy => rply_rdy_int,
+						b_clk      => clk,
 
-            rst => ctrl_rst, -- reset is asynchronous and will be extended until a few clocks have happened on both clocks
-            b_rst_out => ctrl_rst_int  -- ctrl_reset, resynchronized to the B_CLK
-            );
+						rst => ctrl_rst, -- reset is asynchronous and will be extended until a few clocks have happened on both clocks
+						b_rst_out => ctrl_rst_int  -- ctrl_reset, resynchronized to the B_CLK
+						);
 
 	bsb_regs0: entity work.CTRL_SLAVE
 		GENERIC MAP (
@@ -254,35 +254,35 @@ begin
 			ram_dout(col)(64*row + 63 downto 64*row) <= ram_dout_word;
 			ram_din_word <= ram_din(64*col + 63 downto 64*col);
 			ram_wr_byte_en_word <= ram_wr_byte_en(8*col+7 downto 8*col);
-		   	-- xpm_memory_sdpram: Simple Dual Port RAM
-		   	-- Xilinx Parameterized Macro, version 2022.1
-		   	-- UltraRAM primitive is organized as 4K x 72 bits
-		   	-- Addr width: we use all the memory space. The uram is 2kx
-		   	uram_cell_inst : xpm_memory_sdpram
-			   	generic map (
-			      MEMORY_PRIMITIVE => "ultra",      -- force the use of UltraRAM
-                    -- write bus A
-			      ADDR_WIDTH_A => 14,               -- 4k (12 bits) per URAM, +2 because we cascade 4 of them.
-			      WRITE_DATA_WIDTH_A => 64,        -- 8 byte (64 bits) wide write bus
-			      BYTE_WRITE_WIDTH_A => 8,          -- We use 8-bit-wide-byte-enabled write, i.e. we have 8 byte enable bits
-                    -- Read bus B
-			      ADDR_WIDTH_B => 14,               -- same
-			      READ_DATA_WIDTH_B => 64,         -- 8 byte (64 bits) wide read bus
-			      --CASCADE_HEIGHT => 4,             -- We castade 4 URAM
-			      --MEMORY_OPTIMIZATION => "true",   -- String
-			      MEMORY_SIZE => 64*4096*4,         -- 64-bit word * 4096 words/URAM * 4 URAMs
-			      --MESSAGE_CONTROL => 0,            -- DECIMAL
-			      READ_LATENCY_B => 5,             -- Needs to be >= of cascade height to allow registering. Synthesis ask for more than 4 to have full pipelining (4 is partial).
-			      --READ_RESET_VALUE_B => "0",       -- String
-			      --RST_MODE_A => "SYNC",            -- String
-			      --RST_MODE_B => "SYNC",            -- String
-			      SIM_ASSERT_CHK => 1,             -- DECIMAL; 0=disable simulation messages, 1=enable simulation messages
-			      --USE_EMBEDDED_CONSTRAINT => 0,    -- DECIMAL
-			      --USE_MEM_INIT => 1,               -- DECIMAL
-			      --USE_MEM_INIT_MMI => 0,           -- DECIMAL
-			      --WAKEUP_TIME => "disable_sleep",  -- String
-			      WRITE_MODE_B => "write_first",     -- URAM is either read_first or write_first
-			      WRITE_PROTECT => 1               -- DECIMAL
+				-- xpm_memory_sdpram: Simple Dual Port RAM
+				-- Xilinx Parameterized Macro, version 2022.1
+				-- UltraRAM primitive is organized as 4K x 72 bits
+				-- Addr width: we use all the memory space. The uram is 2kx
+				uram_cell_inst : xpm_memory_sdpram
+					generic map (
+						MEMORY_PRIMITIVE => "ultra",      -- force the use of UltraRAM
+										-- write bus A
+						ADDR_WIDTH_A => 14,               -- 4k (12 bits) per URAM, +2 because we cascade 4 of them.
+						WRITE_DATA_WIDTH_A => 64,        -- 8 byte (64 bits) wide write bus
+						BYTE_WRITE_WIDTH_A => 8,          -- We use 8-bit-wide-byte-enabled write, i.e. we have 8 byte enable bits
+										-- Read bus B
+						ADDR_WIDTH_B => 14,               -- same
+						READ_DATA_WIDTH_B => 64,         -- 8 byte (64 bits) wide read bus
+						--CASCADE_HEIGHT => 4,             -- We castade 4 URAM
+						--MEMORY_OPTIMIZATION => "true",   -- String
+						MEMORY_SIZE => 64*4096*4,         -- 64-bit word * 4096 words/URAM * 4 URAMs
+						--MESSAGE_CONTROL => 0,            -- DECIMAL
+						READ_LATENCY_B => 5,             -- Needs to be >= of cascade height to allow registering. Synthesis ask for more than 4 to have full pipelining (4 is partial).
+						--READ_RESET_VALUE_B => "0",       -- String
+						--RST_MODE_A => "SYNC",            -- String
+						--RST_MODE_B => "SYNC",            -- String
+						SIM_ASSERT_CHK => 1,             -- DECIMAL; 0=disable simulation messages, 1=enable simulation messages
+						--USE_EMBEDDED_CONSTRAINT => 0,    -- DECIMAL
+						--USE_MEM_INIT => 1,               -- DECIMAL
+						--USE_MEM_INIT_MMI => 0,           -- DECIMAL
+						--WAKEUP_TIME => "disable_sleep",  -- String
+						WRITE_MODE_B => "write_first",     -- URAM is either read_first or write_first
+						WRITE_PROTECT => 1               -- DECIMAL
 				)
 				port map (
 					-- Write port
@@ -306,7 +306,7 @@ begin
 					injectdbiterra => '0',
 					regceb => '1',
 					clkb => '0'
-			   );
+				 );
 
 		end generate uram_col_gen;
 	end generate uram_row_gen;
@@ -390,60 +390,60 @@ begin
 		end process ram_wr_proc;
 	end block ram_wr_block;
 
-    play_ram0 : xpm_memory_sdpram
-        generic map (
-          MEMORY_PRIMITIVE => "auto",      -- force the use of UltraRAM
-            -- write bus A
-          ADDR_WIDTH_A => 14,               -- 4k (12 bits) per URAM, +2 because we cascade 4 of them.
-          WRITE_DATA_WIDTH_A => 8,        -- 8 byte (64 bits) wide write bus
-          BYTE_WRITE_WIDTH_A => 8,          -- We use 8-bit-wide-byte-enabled write, i.e. we have 8 byte enable bits
-            -- Read bus B
-          ADDR_WIDTH_B => 13,               -- same
-          READ_DATA_WIDTH_B => 16,         -- 8 byte (64 bits) wide read bus
-          --CASCADE_HEIGHT => 0,             -- Auto detect
-          --MEMORY_OPTIMIZATION => "true",   -- String
-          MEMORY_SIZE => 16*8192,         -- 64-bit word * 4096 words/URAM * 4 URAMs
-          --MESSAGE_CONTROL => 0,            -- DECIMAL
-          READ_LATENCY_B => 1,             -- Needs to be >= of cascade height to allow registering.
-          --READ_RESET_VALUE_B => "0",       -- String
-          --RST_MODE_A => "SYNC",            -- String
-          --RST_MODE_B => "SYNC",            -- String
-          SIM_ASSERT_CHK => 1,             -- DECIMAL; 0=disable simulation messages, 1=enable simulation messages
-          --USE_EMBEDDED_CONSTRAINT => 0,    -- DECIMAL
-          --USE_MEM_INIT => 1,               -- DECIMAL
-          --USE_MEM_INIT_MMI => 0,           -- DECIMAL
-          --WAKEUP_TIME => "disable_sleep",  -- String
-          WRITE_MODE_B => "read_first",     -- has to be read_first for assymetrical data ports, otherwise raises error on synthesis
-          WRITE_PROTECT => 1               -- DECIMAL
-        )
-        port map (
-            -- Write port
-            dina => bsb_ram_din,
-            addra => bsb_ram_addr(13 downto 0),
-            ena => play_ram_wr_en ,
-            wea => play_ram_wr_byte_en,
+		play_ram0 : xpm_memory_sdpram
+				generic map (
+					MEMORY_PRIMITIVE => "auto",      -- force the use of UltraRAM
+						-- write bus A
+					ADDR_WIDTH_A => 14,               -- 4k (12 bits) per URAM, +2 because we cascade 4 of them.
+					WRITE_DATA_WIDTH_A => 8,        -- 8 byte (64 bits) wide write bus
+					BYTE_WRITE_WIDTH_A => 8,          -- We use 8-bit-wide-byte-enabled write, i.e. we have 8 byte enable bits
+						-- Read bus B
+					ADDR_WIDTH_B => 13,               -- same
+					READ_DATA_WIDTH_B => 16,         -- 8 byte (64 bits) wide read bus
+					--CASCADE_HEIGHT => 0,             -- Auto detect
+					--MEMORY_OPTIMIZATION => "true",   -- String
+					MEMORY_SIZE => 16*8192,         -- 64-bit word * 4096 words/URAM * 4 URAMs
+					--MESSAGE_CONTROL => 0,            -- DECIMAL
+					READ_LATENCY_B => 1,             -- Needs to be >= of cascade height to allow registering.
+					--READ_RESET_VALUE_B => "0",       -- String
+					--RST_MODE_A => "SYNC",            -- String
+					--RST_MODE_B => "SYNC",            -- String
+					SIM_ASSERT_CHK => 1,             -- DECIMAL; 0=disable simulation messages, 1=enable simulation messages
+					--USE_EMBEDDED_CONSTRAINT => 0,    -- DECIMAL
+					--USE_MEM_INIT => 1,               -- DECIMAL
+					--USE_MEM_INIT_MMI => 0,           -- DECIMAL
+					--WAKEUP_TIME => "disable_sleep",  -- String
+					WRITE_MODE_B => "read_first",     -- has to be read_first for assymetrical data ports, otherwise raises error on synthesis
+					WRITE_PROTECT => 1               -- DECIMAL
+				)
+				port map (
+						-- Write port
+						dina => bsb_ram_din,
+						addra => bsb_ram_addr(13 downto 0),
+						ena => play_ram_wr_en ,
+						wea => play_ram_wr_byte_en,
 
-            -- read port
-            doutb(7 downto 0) => play_ram_dout(15 downto 8), -- Byte written at low address on din appears in LSB in dout
-            doutb(15 downto 8) => play_ram_dout(7 downto 0),
-            addrb => std_logic_vector(play_ram_rd_addr),
-            enb => play_ram_rd_en,
+						-- read port
+						doutb(7 downto 0) => play_ram_dout(15 downto 8), -- Byte written at low address on din appears in LSB in dout
+						doutb(15 downto 8) => play_ram_dout(7 downto 0),
+						addrb => std_logic_vector(play_ram_rd_addr),
+						enb => play_ram_rd_en,
 
-            -- clock and reset
-            clka => clk,
-            rstb => rst,
+						-- clock and reset
+						clka => clk,
+						rstb => rst,
 
-            -- unused signals
-            sleep => '0',
-            injectsbiterra => '0',
-            injectdbiterra => '0',
-            regceb => '1',
-            clkb => '0'
-       );
+						-- unused signals
+						sleep => '0',
+						injectsbiterra => '0',
+						injectdbiterra => '0',
+						regceb => '1',
+						clkb => '0'
+			 );
 
-    play_ram_wr_en <= bsb_ram_en and bsb_ram_sel;
-    play_ram_wr_byte_en <= (0 => bsb_ram_we);
-    -- Reads data from 4x4 UltraRAM cell array in the specified order.
+		play_ram_wr_en <= bsb_ram_en and bsb_ram_sel;
+		play_ram_wr_byte_en <= (0 => bsb_ram_we);
+		-- Reads data from 4x4 UltraRAM cell array in the specified order.
 	--
 	-- Bins from one frame are written in all cells in one row.
 	-- Consecutive frames are written in consecutive rows.
@@ -472,28 +472,28 @@ begin
 		play_ram_rd_en <= busy;
 
 
-        debug_out(0) <=  busy;
-        debug_out(1) <=  play_ram_rd_rdy;
-        debug_out(3 downto 2) <= std_logic_vector(frame_ctr);
-        debug_out(4) <= rd_bank;
-        debug_out(5) <= play_ram_rd_en;
+				debug_out(0) <=  busy;
+				debug_out(1) <=  play_ram_rd_rdy;
+				debug_out(3 downto 2) <= std_logic_vector(frame_ctr);
+				debug_out(4) <= rd_bank;
+				debug_out(5) <= play_ram_rd_en;
 --			debug_out(7 downto 6) <= col_pre;
-        --debug_out(5) <= rply_rdy.TREADY;
+				--debug_out(5) <= rply_rdy.TREADY;
 
 
-        --debug_out(6) <=  cmd_dat_int.TVALID;
-        --debug_out(7) <=  cmd_dat_int.TLAST;
-        --debug_out(8) <= cmd_rdy_int.TREADY;
-        --debug_out(9) <= rply_dat_int.TVALID;
-        --debug_out(10) <= rply_dat_int.TLAST;
-        --debug_out(11) <= rply_rdy_int.TREADY;
+				--debug_out(6) <=  cmd_dat_int.TVALID;
+				--debug_out(7) <=  cmd_dat_int.TLAST;
+				--debug_out(8) <= cmd_rdy_int.TREADY;
+				--debug_out(9) <= rply_dat_int.TVALID;
+				--debug_out(10) <= rply_dat_int.TLAST;
+				--debug_out(11) <= rply_rdy_int.TREADY;
 
-        --debug_out(12) <=  ctrl_rst;
-        --debug_out(13) <= rst;
-        --debug_out(14) <= '0'; --bsb_rst;
-        --debug_out(15) <= '0';
-        debug_out(15 downto 8) <= std_logic_vector(play_ram_rd_addr(7 downto 0));
-        debug_out(31 downto 16) <= play_ram_dout;
+				--debug_out(12) <=  ctrl_rst;
+				--debug_out(13) <= rst;
+				--debug_out(14) <= '0'; --bsb_rst;
+				--debug_out(15) <= '0';
+				debug_out(15 downto 8) <= std_logic_vector(play_ram_rd_addr(7 downto 0));
+				debug_out(31 downto 16) <= play_ram_dout;
 
 
 
@@ -503,24 +503,22 @@ begin
 			variable col_var: std_logic_vector(1 downto 0);
 			variable col_int: integer;
 
-	        variable last_frame: unsigned(1 downto 0);
-	        variable end_of_packet: std_logic;
-	        variable end_of_transmission: std_logic;
+					variable last_frame: unsigned(1 downto 0);
+					variable end_of_packet: std_logic;
+					variable end_of_transmission: std_logic;
 
 		begin -- process
 			if rising_edge(clk) then
 
 				-- Generate read address and enable signals
-				--frame := std_logic_vector(frame_ctr);
---				bin := std_logic_vector(bin_ctr(5 downto 0)) & std_logic_vector(bin_ctr(12 downto 6)); -- we swap the bin bits to interleave every 128 bins
 				bin := play_ram_dout(12 downto 0);
-                if play_ram_dout(13)='1' then
-                    last_frame := "11"; -- 4 frames (0 to 3) => 128 bytes
-                else
-                    last_frame := "01"; -- 2 frames (0 to 1) => 64 bytes - use for headers
-                end if;
-                end_of_packet := play_ram_dout(14);
-                end_of_transmission := play_ram_dout(15);
+				if play_ram_dout(13)='1' then
+						last_frame := "11"; -- 4 frames (0 to 3) => 128 bytes
+				else
+						last_frame := "01"; -- 2 frames (0 to 1) => 64 bytes - use for headers
+				end if;
+				end_of_packet := play_ram_dout(14);
+				end_of_transmission := play_ram_dout(15);
 
 				ram_rd_addr <= rd_bank & std_logic_vector(frame_ctr) & bin(12 downto 2);
 				col_var := not bin(1 downto 0);  -- first column in col 3
@@ -553,23 +551,23 @@ begin
 					-- Setup the next read one frame before the last because of the RAM latency
 					-- We have to do this because the output of the RAM is feeds back into the RAM address (via last_frame)
 					if frame_ctr = last_frame - 1 then
-                        play_ram_rd_addr <= play_ram_rd_addr + 1;
+												play_ram_rd_addr <= play_ram_rd_addr + 1;
 						if end_of_transmission = '1' then
 							busy <= '0'; -- we're done
 						end if;
 					end if;
 					-- if the last frame of a bin
 					if frame_ctr = last_frame then
-                        frame_ctr <= (others =>'0');
+						frame_ctr <= (others =>'0');
 						first_bin <= '0';
-						if end_of_packet='1' then -- 8k bins / 128 NUMA =64 bins/packets, 16 frames*8 bytes/bin/frame * 64 bins/packets = 8kB packet
+						if end_of_packet then -- 8k bins / 128 NUMA =64 bins/packets, 16 frames*8 bytes/bin/frame * 64 bins/packets = 8kB packet
 							tlast(tlast'LEFT) <= '1';
 							first_bin <= '1';
 						end if;
-						if end_of_transmission = '1' then
+						if end_of_transmission then
 							eot(eot'LEFT) <= '1'; -- signal end of transmission down the pipeline
 						end if;
-					end if;
+					end if; -- if last frame
 
 					-- Force end of transmission based on tx_len. This is a protection to protect against never-ending packets or transmissions.
 					-- Should never be reached if playlist is programmed properly.
@@ -595,7 +593,7 @@ begin
 				tvalid_reg <= tvalid(tvalid'RIGHT) and tx_enable;
 				tlast_reg <= tlast(tvalid'RIGHT);
 
-                -- keep track of output frames for debugging
+				-- keep track of output frames for debugging
 				if tvalid_reg = '1' and tlast_reg = '1' then
 					out_frame_ctr <= out_frame_ctr + 1;
 				end if;
