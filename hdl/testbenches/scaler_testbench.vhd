@@ -34,7 +34,7 @@ use work.tb_package.all;
 
 ENTITY scaler_testbench IS
  	generic (
-       FFT_BITS_PER_BIN: integer := 18+18; -- Real + Imaginary part
+       FFT_BITS_PER_BIN: integer := 32+32; -- Real + Imaginary part
         FFT_BINS_PER_WORD: integer := 4;
         FFT_BINS_PER_FRAME: integer:= 8192;
         USE_COMPLEX_GAINS: boolean := FALSE;
@@ -172,12 +172,14 @@ stim_proc : process
 
         -- Create gain table - Valid for REAL gains only.
         for i in 0 to FFT_BINS_PER_FRAME-1 loop
-            gains(i) := std_logic_vector(to_signed(4090 + (i MOD 20), COEFF_BITS_PER_BIN));
+--            gains(i) := std_logic_vector(to_signed(4090 + (i MOD 20), COEFF_BITS_PER_BIN));
+            gains(i)(15 downto 11) := to_slv(i MOD 32, 5); -- set log gain
+            gains(i)(10 downto 0) := to_slv(1, 11); -- set lin gain
             gain_bytes(2*i) := gains(i)(7 downto 0); -- LSB first
             gain_bytes(2*i+1) := gains(i)(15 downto 8); 
         end loop;
         
-        -- Program the gain table
+        -- Program the gain table, page per page
         for page in 0 to 2*FFT_BINS_PER_FRAME/512-1 loop
             page_bits := to_slv(page, page_bits'LENGTH);
 		    fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, SCALER_PAGE_REG, 
@@ -188,14 +190,17 @@ stim_proc : process
             -- Set the page registers
         end loop;            
         -- Set log gain
-        fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, SCALER_POSTSCALER_REG, 18 + 32);
+        fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, SCALER_POSTSCALER_REG, 64);  -- 64=bypass
+        fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 10, 1 + 128);  -- 1:DATA_MODE=1, 128: use_float_gains=1
         -- Create Test data vector. For 4 bins per word only, 18+18 bits per bin
-        for i in 0 to FFT_BINS_PER_FRAME-1 loop
-            sub_word := 3-(i mod 4); -- first bin in upper 36 bits of word
-            data_words(i/4)(36*sub_word+35 downto 36*sub_word+18) := std_logic_vector(to_signed(-4,18)); -- Re in upper 18 bits of bin
-            data_words(i/4)(36*sub_word+17 downto 36*sub_word+0) := std_logic_vector(to_signed(-4,18)); -- Im in lower 18 bits of bin
+        for i in 0 to FFT_BINS_PER_FRAME/FFT_BINS_PER_WORD-1 loop
+            for j in 0 to FFT_BINS_PER_WORD-1 loop
+                sub_word := 3-(i mod 4); -- first bin in upper 36 bits of word
+--                data_words(i)((j+1)*FFT_BITS_PER_BIN-1 downto j*FFT_BITS_PER_BIN) := std_logic_vector(to_signed(-16384,FFT_BITS_PER_BIN/2)) & std_logic_vector(to_signed(0,FFT_BITS_PER_BIN/2)); -- Re in upper 18 bits of bin
+                data_words(i)((j+1)*FFT_BITS_PER_BIN-1 downto j*FFT_BITS_PER_BIN) := X"00040000_FFFC0000"; -- Re in upper 18 bits of bin
+--                data_words(i)(36*sub_word+17 downto 36*sub_word+0) := std_logic_vector(to_signed(0,18)); -- Im in lower 18 bits of bin
+            end loop;
         end loop;
-
 		-- fpga_write(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, CROSSBAR_BASE_ADDR + 0, 0); --
 
 		-- for i in 0 to NUMBER_OF_OUTPUT_LANES-1 loop
