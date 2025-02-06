@@ -131,8 +131,8 @@ entity chFPGA is
 		CAPTURE_BITS_PER_WORD: integer := CONFIG_CAPTURE_BITS_PER_WORD; -- number of bits in the words captured by capture engine
 
 		-- Corner-turn engine config
-
-		CROSSBAR1_TYPE: string := "BRAM"; -- "BRAM" or "URAM"
+		CT_TYPE: string := "BCT"; -- "BCT": BRAM-based (CHIME-like), "UCT": Ultraram-based (CHORD-like)
+		CT_LEVEL: integer := 1;
 		NUMBER_OF_CROSSBAR_INPUTS : integer := GLOBAL_NUMBER_OF_CHANNELIZERS_TO_CORRELATE;
 		NUMBER_OF_CROSSBAR1_OUTPUTS : integer; -- number of CROSSBAR1 output lanes. Should be 8 for URAM-based CROSSBAR1.
 		NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer := 4;
@@ -553,23 +553,24 @@ constant ADC_BITS_PER_WORD: integer := ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPL
 
 --constant NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := sel(GLOBAL_IMPLEMENT_FFT, 0*NUMBER_OF_CHANNELIZERS+4, 0); --! Number of channelizers that have an FFT module
 constant NUMBER_OF_ADCS_OR_CHANNELIZERS: integer := max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS);
-constant IMPLEMENT_CROSSBAR1: boolean := NUMBER_OF_CROSSBAR_INPUTS > 0 and NUMBER_OF_CROSSBAR1_OUTPUTS > 0 and CROSSBAR1_TYPE /= "NONE";
-constant IMPLEMENT_CROSSBAR2_AND_CROSSBAR3: boolean := IMPLEMENT_CROSSBAR1 and NUMBER_OF_BP_SHUFFLE_LINKS > 0 and CROSSBAR1_TYPE = "BRAM";
-constant IMPLEMENT_GPU_LINKS: boolean := NUMBER_OF_GPU_LINKS > 0 and GPU_LINK_TYPE /= "NONE";
+--constant IMPLEMENT_CROSSBAR1: boolean := NUMBER_OF_CROSSBAR_INPUTS > 0 and NUMBER_OF_CROSSBAR1_OUTPUTS > 0 and CROSSBAR1_TYPE /= "NONE";
+--constant IMPLEMENT_CROSSBAR2_AND_CROSSBAR3: boolean := IMPLEMENT_CROSSBAR1 and NUMBER_OF_BP_SHUFFLE_LINKS > 0 and CROSSBAR1_TYPE = "BRAM";
+--constant IMPLEMENT_GPU_LINKS: boolean := NUMBER_OF_GPU_LINKS > 0 and GPU_LINK_TYPE /= "NONE";
 constant IMPLEMENT_CORR: boolean := NUMBER_OF_CORRELATORS > 0 and CORR_TYPE /= "NONE";
 constant FPGA_SERIES: integer :=FPGA_SERIES_LIST(PLATFORM_ID);
 
 -- Top level memory-mapped address ranges
-constant SYSTEM_BASE_PORT    : integer := 0; --! Top level address for the SYSTEM subsystem
-constant CHAN_BASE_PORT      : integer := 1; --! Top-level address channelizers subsystem (which also includes the ADCs).
-constant CROSSBAR1_BASE_PORT : integer := 2; --! Top-level address of the CT-Engine 1st crossbar.
-constant GPU_LINK_BASE_PORT  : integer := 3; --! Top level address for the GPU link subsystem
-constant CROSSBAR3_BASE_PORT : integer := 4; --! Top level address of the CT-Engine 3rd crossbar subsystem.
-constant CORR_BASE_PORT      : integer := 4; --! Top level address for the correlator subsystem (exclusive with the 2nd and 3rd crossbar)
-constant BP_SHUFFLE_BASE_PORT: integer := 5; --! Top level address of the CT-Engine backplane shuffle subsystem.
-constant CROSSBAR2_BASE_PORT : integer := 6; --! Top-level address of the CT-Engine 2nd crossbar
-constant UCAP_BASE_PORT      : integer := 7; --! Top-level address for the UltraRAM-based data capture engine.
-constant NUMBER_OF_PORTS     : integer := 8; --! Total number of top-level subsystems to be addressed.
+constant SYSTEM_BASE_PORT    : integer := 0; -- Top level address for the SYSTEM subsystem
+constant CHAN_BASE_PORT      : integer := 1; -- Top-level address channelizers subsystem (which also includes the ADCs).
+constant CROSSBAR1_BASE_PORT : integer := 2; -- Top-level address of the CT-Engine 1st crossbar.
+constant CT_BASE_PORT        : integer := 2; -- Top-level address of the CT-Engine.
+constant GPU_LINK_BASE_PORT  : integer := 3; -- Top level address for the GPU link subsystem
+constant CROSSBAR3_BASE_PORT : integer := 4; -- Top level address of the CT-Engine 3rd crossbar subsystem.
+constant CORR_BASE_PORT      : integer := 4; -- Top level address for the correlator subsystem (exclusive with the 2nd and 3rd crossbar)
+constant BP_SHUFFLE_BASE_PORT: integer := 5; -- Top level address of the CT-Engine backplane shuffle subsystem.
+constant CROSSBAR2_BASE_PORT : integer := 6; -- Top-level address of the CT-Engine 2nd crossbar
+constant UCAP_BASE_PORT      : integer := 7; -- Top-level address for the UltraRAM-based data capture engine.
+constant NUMBER_OF_PORTS     : integer := 8; -- Total number of top-level subsystems to be addressed.
 
 -- SYSTEM modules definition
 
@@ -708,6 +709,11 @@ signal top_rply_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_PORTS-1 downto 0);
 
 -- Intermediary buses used to split out the top router outputs and avoid a simulator bug when indexing record arrays as an actual parameter of an instance
 
+-- Per-channel BSB buses
+signal CHAN_CMD_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_CHANNELIZERS-1 downto 0);
+signal CHAN_CMD_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_CHANNELIZERS-1 downto 0);
+signal CHAN_RPLY_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_CHANNELIZERS-1 downto 0);
+signal CHAN_RPLY_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_CHANNELIZERS-1 downto 0);
 
 
 -- System ROUTER output interface buses
@@ -724,15 +730,6 @@ signal ADC_CMD_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_ADCS_OR_CHANNELIZERS-1 down
 signal ADC_RPLY_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_ADCS_OR_CHANNELIZERS-1 downto 0);
 signal ADC_RPLY_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_ADCS_OR_CHANNELIZERS-1 downto 0);
 
-signal CHAN_CMD_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_CHANNELIZERS-1 downto 0); -- We need to use max because the channelizer and ADCDAQ comamnd buses are linked.
-signal CHAN_CMD_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_CHANNELIZERS-1 downto 0);
-signal CHAN_RPLY_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_CHANNELIZERS-1 downto 0);
-signal CHAN_RPLY_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_CHANNELIZERS-1 downto 0);
-
---signal CORR_CMD_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_CORRELATORS-1 downto 0); -- We need to use max because the channelizer and ADCDAQ comamnd buses are linked.
---signal CORR_CMD_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_CORRELATORS-1 downto 0);
---signal CORR_RPLY_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_CORRELATORS-1 downto 0);
---signal CORR_RPLY_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_CORRELATORS-1 downto 0);
 
 -- Make sure the pipeline registers are not simplified by the synthesizer so they can be useful in helping meeting timing
 
@@ -788,6 +785,8 @@ signal axis_chan_out_tdata: slv32_array(0 to NUMBER_OF_CHANNELIZERS-1);
 signal axis_chan_out_tuser: slv4_array(0 to NUMBER_OF_CHANNELIZERS-1);
 signal axis_chan_out_tvalid: slv(0 to NUMBER_OF_CHANNELIZERS-1);
 signal axis_chan_out_tlast: slv(0 to NUMBER_OF_CHANNELIZERS-1);
+signal axis_chan_out_almost_empty: slv(0 to NUMBER_OF_CHANNELIZERS-1);
+signal axis_chan_out_send: slv(0 to NUMBER_OF_CHANNELIZERS-1) := (others =>'1'); -- have the channelizer send data by default unless this is overriden
 
 attribute equivalent_register_removal of axis_chan_out_tdata: signal is "no";
 attribute equivalent_register_removal of axis_chan_out_tuser: signal is "no";
@@ -806,6 +805,12 @@ signal ADC_DAQ_BUFR_SYNC: std_logic;
 signal ADCDAQ_RESET: std_logic;
 
 
+
+signal axis_ct_out_tdata: slv(8*32-1 downto 0);
+signal axis_ct_out_tvalid: std_logic;
+signal axis_ct_out_tlast: std_logic;
+
+
 -----------------------
 -- CROSSBAR signals
 -----------------------
@@ -816,6 +821,7 @@ signal axis_crossbar1_in_tdata: slv32_array(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
 signal axis_crossbar1_in_tuser: slv4_array(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
 signal axis_crossbar1_in_tvalid: slv(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
 signal axis_crossbar1_in_tlast: slv(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
+
 
 
 
@@ -931,7 +937,7 @@ signal spi_rst_n_int: std_logic; -- SPI reset output signal
 
 -- GPIO signals
 signal ADCDAQ_RESET_ASYNC: std_logic;
-signal chan_lane_monitor: slv4_array(0 to NUMBER_OF_CHANNELIZERS-1);
+--signal chan_lane_monitor: slv4_array(0 to NUMBER_OF_CHANNELIZERS-1);
 
 
 -- REFCLK and Mezzanine signals
@@ -969,48 +975,10 @@ signal clk10_ctr: unsigned(7 downto 0);
 signal sysmon_clk_ctr: unsigned(7 downto 0);
 
 
--- ADC signals
---type string_array is array (natural range <>) of string;
---function is_in(value:string; list:string_array) return boolean is
---begin
---    for i in list'RANGE loop
---    if value=list(i) then
---        return TRUE;
---    end if;
---    end loop;
---    return FALSE;
---end function is_in;
---type string_pointer is access string;
-
---procedure assert_choice(value:string; list:string_array; message: string := "Invalid parameter") is
-----    use std.textio.all;
-----    variable list_string:line := "";
---    variable s2: string(0 to 100);
---begin
---    if is_in(value, list) then
---        return;
---    end if;
-----    write(list_string, string'("allo"));
---    s2 := "allo";
---    s2 := s2 & "coco";
-----    for i in 0 to 1 loop
-------        list_string := list_string & "," when i > 0;
-----        list_string := new string'(list_string.all & list(i));
-----    end loop;
-----    s2 := list_string;
---    assert FALSE report message & " Valid values are " & s2 severity FAILURE;
---end procedure;
-
 begin
 
--- Generics validation
---assert NUMBER_OF_ADCS>0 and is_in(ADC_TYPE, ("EV8AQ160", "AXIS")) report "ADC_TYPE must be EV8AQ160 or AXIS" severity FAILURE;
---assert is_in(CROSSBAR1_TYPE, ("URAM", "BRAM")) report "Invalid CROSSBAR1_TYPE" severity FAILURE;
---assert is_in(CT_CLK_SOURCE, ("ADC_CLK", "BP_SHUFFLE_TXCLK", "CGE_CLK322")) report "Invalid CT_CLK_SOURCE" severity FAILURE;
-
---assert_choice(CROSSBAR1_TYPE, ("URAM2", "BRAM2"), "Invalid CROSSBAR1_TYPE.");
 -------------------------------------------------------------------
--- Instantiate System clocks
+-- Assign debugging outputs
 -------------------------------------------------------------------
 
 --debug_out(7 downto 0) <= cmd_packet_counter;
@@ -1056,6 +1024,10 @@ sma_out(3) <= sysclk_bufg;
 
 ALL_RESET<=  cpu_reset or user_reset;
 --end generate; --debug7
+
+-------------------------------------------------------------------
+-- Instantiate System clocks
+-------------------------------------------------------------------
 
 --! Instantiate the system clock generator that generates the local 200 MHz and 125 MHz from the external 200 MHz lines
 CLK0: entity work.CLOCKS
@@ -2822,10 +2794,14 @@ end generate adc_gen; -- case ADC_TYPE
 
 chan_router_blk: block
 
+	-- Locally assigned channelizer master BSB bus
+	-- (older version of simulator crashed when using indexed structs in instantiation mappings)
 	signal TOP_CHAN_CMD_DAT: AXIS8_DAT_STRUCT;
 	signal TOP_CHAN_CMD_RDY: AXIS8_RDY_STRUCT;
 	signal TOP_CHAN_RPLY_DAT: AXIS8_DAT_STRUCT;
 	signal TOP_CHAN_RPLY_RDY: AXIS8_RDY_STRUCT;
+
+
 
 	signal chan_router_ctrl_rst: std_logic;
 	attribute DONT_TOUCH of chan_router_ctrl_rst: signal is "true";
@@ -2965,12 +2941,14 @@ begin
 			out_dat_tvalid => axis_chan_out_tvalid(i),
 			out_dat_tlast  => axis_chan_out_tlast(i),
 			out_dat_tuser  => axis_chan_out_tuser(i),
+            out_dat_send   => axis_chan_out_send(i),
+            out_dat_almost_empty => axis_chan_out_almost_empty(i),
 			out_reset      => ct_reset_reg,
 			out_clk        => ct_clk, -- output clock
 
 			-- Misc signals
 			TRIG => TRIG,
-			lane_monitor => chan_lane_monitor(i),
+--			lane_monitor => chan_lane_monitor(i),
 
 
 			-- Control interface
@@ -3024,629 +3002,116 @@ end generate;
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
--- Implement the corner turn operation
----    a) between channels in the same board
---     b) between boards in the same crate (optional)
---     c) between boards in two crates (optional)
---
--- The corner-turn engine is implemented using the following blocks
---
---    - CROSSBAR: channelizer crosbar a.k.a 1st crossbar
---    - CROSSBAR2: shuffle_crossbar
---    - bp_shuffle
---    - CROSSBAR3 shuffle_crossbar
 
+ct_gen: case CT_TYPE generate
+	when "BCT" =>
+		assert FALSE report "Put back in the BCT engine" severity FAILURE;
 
----------------------------------------------------------------------
--- CHANNELIZER CROSSBAR
----------------------------------------------------------------------
---! Route specified frequency channels from all channelizers to individual streams
-
-
-
-crossbar0_gen: if IMPLEMENT_CROSSBAR1 generate
-
-	constant N_INPUTS: integer := min(NUMBER_OF_CHANNELIZERS, NUMBER_OF_CROSSBAR_INPUTS);
-
-	signal crossbar1_cmd_dat: AXIS8_DAT_STRUCT;
-	signal crossbar1_cmd_rdy: AXIS8_RDY_STRUCT;
-	signal crossbar1_rply_dat: AXIS8_DAT_STRUCT;
-	signal crossbar1_rply_rdy: AXIS8_RDY_STRUCT;
-
-	signal axis_crossbar1_in_tdata_reg: slv32_array(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
-	signal axis_crossbar1_in_tuser_reg: slv4_array(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
-	signal axis_crossbar1_in_tvalid_reg: slv(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
-	signal axis_crossbar1_in_tlast_reg: slv(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
-
-	signal axis_crossbar1_in_tdata_reg2: slv32_array(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
-	signal axis_crossbar1_in_tuser_reg2: slv4_array(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
-	signal axis_crossbar1_in_tvalid_reg2: slv(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
-	signal axis_crossbar1_in_tlast_reg2: slv(0 to NUMBER_OF_CROSSBAR_INPUTS-1);
-
-	attribute shreg_extract of axis_crossbar1_in_tdata_reg: signal is "no";
-	attribute shreg_extract of axis_crossbar1_in_tuser_reg: signal is "no";
-	attribute shreg_extract of axis_crossbar1_in_tvalid_reg: signal is "no";
-	attribute shreg_extract of axis_crossbar1_in_tlast_reg: signal is "no";
-
-	attribute shreg_extract of axis_crossbar1_in_tdata_reg2: signal is "no";
-	attribute shreg_extract of axis_crossbar1_in_tuser_reg2: signal is "no";
-	attribute shreg_extract of axis_crossbar1_in_tvalid_reg2: signal is "no";
-	attribute shreg_extract of axis_crossbar1_in_tlast_reg2: signal is "no";
-
-    signal crossbar1_ctrl_rst: std_logic;
-    attribute DONT_TOUCH of crossbar1_ctrl_rst: signal is "true";
-
-	signal cb1_reset: std_logic;
-	signal cb1_reset_reg: std_logic;
-	signal cb1_reset_reg2: std_logic;
-    attribute DONT_TOUCH of cb1_reset, cb1_reset_reg, cb1_reset_reg2 : signal is "true";
-begin
-
-    bsb_rst_proc: process (ctrl_clk)
+	when uct_case: "UCT" =>
+    
+        signal axis_chan_out_tdata2: slv_array(0 to NUMBER_OF_CHANNELIZERS-1)(31 downto 0);
+        signal almost_empty_reg1, almost_empty_reg2: slv(0 to NUMBER_OF_CHANNELIZERS-1);
+        signal send_reg1, send_reg2: slv(0 to NUMBER_OF_CHANNELIZERS-1);
+        signal send: std_logic;
+        
     begin
-        if rising_edge(ctrl_clk) then
-            crossbar1_ctrl_rst  <= ctrl_rst;
-        end if;
-    end process;
-
-	-- Index the command bus into an intermediary signal to mitigate simulator problems with indexing record arrays stright in the instantiation
-	crossbar1_cmd_dat             <= top_cmd_dat(CROSSBAR1_BASE_PORT);
-	top_cmd_rdy(CROSSBAR1_BASE_PORT)  <= crossbar1_cmd_rdy;
-	crossbar1_rply_rdy            <= top_rply_rdy(CROSSBAR1_BASE_PORT);
-	top_rply_dat(CROSSBAR1_BASE_PORT) <= crossbar1_rply_dat;
-
-	--! Pipeline and connect the channelizer output to the 1st crossbar inputs.
-	--! The pipelining is there to help meeting timing closure, as we need to route long distance from the channelizer to the first crossbar
-	cb1_pipe_proc: process(ct_clk)
-	begin
-		if rising_edge(ct_clk) then
-			-- Pipeline 1
-			cb1_reset <= ct_reset_reg;
-			for i in 0 to N_INPUTS-1 loop
-				axis_crossbar1_in_tdata(i) <= axis_chan_out_tdata(i);
-				axis_crossbar1_in_tuser(i) <= axis_chan_out_tuser(i);
-				axis_crossbar1_in_tlast(i) <= axis_chan_out_tlast(i);
-				axis_crossbar1_in_tvalid(i) <= axis_chan_out_tvalid(i);
-				-- JFC: Why was this commenetd out?
-				if ct_reset_reg = '1' then
-					axis_crossbar1_in_tvalid(i) <= '0';
-				end if;
-			end loop;
-
-			-- Pipeline 2
-			cb1_reset_reg <= cb1_reset;
-			for i in 0 to N_INPUTS-1 loop
-				axis_crossbar1_in_tdata_reg(i) <= axis_crossbar1_in_tdata(i);
-				axis_crossbar1_in_tuser_reg(i) <= axis_crossbar1_in_tuser(i);
-				axis_crossbar1_in_tlast_reg(i) <= axis_crossbar1_in_tlast(i);
-				axis_crossbar1_in_tvalid_reg(i) <= axis_crossbar1_in_tvalid(i);
-				-- JFC: Why was this commenetd out?
-				if cb1_reset = '1' then
-					axis_crossbar1_in_tvalid_reg(i) <= '0';
-				end if;
-			end loop;
-
-			-- Pipeline 3
-			cb1_reset_reg2 <= cb1_reset_reg;
-			for i in 0 to N_INPUTS-1 loop
-				axis_crossbar1_in_tdata_reg2(i) <= axis_crossbar1_in_tdata_reg(i);
-				axis_crossbar1_in_tuser_reg2(i) <= axis_crossbar1_in_tuser_reg(i);
-				axis_crossbar1_in_tlast_reg2(i) <= axis_crossbar1_in_tlast_reg(i);
-				axis_crossbar1_in_tvalid_reg2(i) <= axis_crossbar1_in_tvalid_reg(i);
-				if cb1_reset_reg = '1' then
-					axis_crossbar1_in_tvalid_reg2(i) <= '0';
-				end if;
-			end loop;
-		end if;
-	end process cb1_pipe_proc;
-
-	cb1_gen: case CROSSBAR1_TYPE generate
-	   when "BRAM" =>
-	       chan_crossbar0: entity work.CHAN_CROSSBAR
-			generic map (
-			 	PLATFORM_ID => PLATFORM_ID,  -- needed to select family-dependent FIFOs
-				NUMBER_OF_INPUT_LANES  => NUMBER_OF_CROSSBAR_INPUTS,
-				NUMBER_OF_OUTPUT_LANES => NUMBER_OF_CROSSBAR1_OUTPUTS,
-				-- BINSEL_PBLOCK_MAP => (0 to 4 => 0, 5 to 8 => 1, 9 to 12 => 2, 13 to 15 => 3),
-				BINSEL_PBLOCK_MAP => (0 to 4 => 0, 5 to 8 => 1, 9 to 12 => 1, 13 to 15 => 0),
-				EIGHT_BIT_SUPPORT      => FALSE
-			)
-			port map (
-				-- Input stream from the channelizer (AXI4-streaming, non-blocking, on clk)
-				s_axis_tvalid => axis_crossbar1_in_tvalid_reg2,
-				s_axis_tdata  => axis_crossbar1_in_tdata_reg2,
-				s_axis_tlast  => axis_crossbar1_in_tlast_reg2,
-				s_axis_tuser  => axis_crossbar1_in_tuser_reg2,
-
-				-- Output stream to the shuffle module (AXI4-streaming, non-blocking, on clk)
-				m_axis_tdata  => axis_crossbar1_out_tdata,
-				m_axis_tvalid => axis_crossbar1_out_tvalid,
-				m_axis_tlast  => axis_crossbar1_out_tlast,
-				-- m_axis_tready => axis_crossbar1_out_tready,
-
-				frame_clk_out => open,
-				clk           => ct_clk,
-				rst           => cb1_reset_reg2,
-
-				lane_monitor => debug2,
-				-- Control interface (command and reply stream buses)
-				ctrl_cmd_dat  => crossbar1_cmd_dat,
-				ctrl_cmd_rdy  => crossbar1_cmd_rdy,
-				ctrl_rply_dat => crossbar1_rply_dat,
-				ctrl_rply_rdy => crossbar1_rply_rdy,
-				ctrl_clk      => ctrl_clk,
-				ctrl_rst      => crossbar1_ctrl_rst
-			);
-        when uram_case:"URAM" =>
-            signal cb_in_tdata: std_logic_vector(255 downto 0);
-            signal cb_in_tvalid: std_logic;
-            signal cb_in_tlast: std_logic;
-
-            signal cb_out_tdata: std_logic_vector(255 downto 0);
-            signal cb_out_tvalid: std_logic;
-            signal cb_out_tlast: std_logic;
-
-        begin
-
-            -- remap the 8x32-bit buses into a single 256-bit bus, 1st lane on the MSB.
-            tdata_gen: for i in 0 to 7 generate
-                cb_in_tdata(32*(7-i)+31 downto 32*(7-i)) <= axis_crossbar1_in_tdata_reg2(i);
-                axis_crossbar1_out_tdata(i) <= cb_out_tdata(32*(7-i)+31 downto 32*(7-i));
-                --axis_crossbar1_out_tvalid(i) <= cb_out_tvalid;
-                --axis_crossbar1_out_tlast(i) <= cb_out_tlast;
-            end generate;
-            axis_crossbar1_out_tvalid(0) <= cb_out_tvalid;
-            axis_crossbar1_out_tlast(0) <= cb_out_tlast;
-            cb_in_tvalid <= axis_crossbar1_in_tvalid_reg2(0);
-            cb_in_tlast <= axis_crossbar1_in_tlast_reg2(0);
-
-            uram0: entity work.uram_ct
-                port map (
-                    -- input data bus
-                    s_axis_in_tdata => cb_in_tdata,
-                    s_axis_in_tvalid => cb_in_tvalid,
-                    s_axis_in_tlast=> cb_in_tlast,
-
-                    -- Output data bus
-                    m_axis_out_tdata => uct_tdata,
-                    m_axis_out_tvalid => uct_tvalid,
-                    m_axis_out_tlast=> uct_tlast,
-
-                    clk => ct_clk,
-                    rst => cb1_reset_reg2, -- synchrounous reset
-
-                    --debug_out => debug_out,
-
-                    -- BSB interface
-                    cmd_dat=> crossbar1_cmd_dat,
-                    cmd_rdy => crossbar1_cmd_rdy,
-                    rply_dat => crossbar1_rply_dat,
-                    rply_rdy => crossbar1_rply_rdy,
-                    ctrl_clk => ctrl_clk,
-                    ctrl_rst => crossbar1_ctrl_rst
-                );
-        end uram_case;
-
-	    when u64_case:"U64" =>
-
-			signal top_bp_shuffle_cmd_dat: AXIS8_DAT_STRUCT;
-			signal top_bp_shuffle_cmd_rdy: AXIS8_RDY_STRUCT;
-			signal top_bp_shuffle_rply_dat: AXIS8_DAT_STRUCT;
-			signal top_bp_shuffle_rply_rdy: AXIS8_RDY_STRUCT;
-
-            signal cb1_out_tdata: slv64_array(0 to NUMBER_OF_CROSSBAR1_OUTPUTS-1);
-            signal cb1_out_tvalid: std_logic_vector(0 to NUMBER_OF_CROSSBAR1_OUTPUTS-1);
-            signal cb1_out_tlast: std_logic_vector(0 to NUMBER_OF_CROSSBAR1_OUTPUTS-1);
-
-            signal word_ctr: unsigned_array(0 to NUMBER_OF_CROSSBAR1_OUTPUTS-1)(10 downto 0);
-	    begin
-
-			process(ct_clk)
-			begin
-				if rising_edge(ct_clk) then
-					bp_shuffle_reset <= (others=> ct_reset_reg);
-					bp_shuffle_reset_reg <= bp_shuffle_reset(0);
-
-                    -- Implement a hardwired CROSSBAR1
-					for i in 0 to NUMBER_OF_CROSSBAR1_OUTPUTS-1 loop -- 0 to 2
-
-	                    if axis_crossbar1_in_tvalid_reg2(i) then
-	                        word_ctr(i) <= (others => '0') when axis_crossbar1_in_tlast_reg2(i) else word_ctr(i) + 1;
-	                    end if;
-						word_ctr(i) <= (others => '0') when bp_shuffle_reset(i);
-
-						for j in 0 to NUMBER_OF_CROSSBAR_INPUTS-1 loop -- 0 to 7
-							cb1_out_tdata(i)(8*(j+1)-1 downto j*8) <= axis_crossbar1_in_tdata_reg2(j)(8*(i+1)-1 downto 8*i);
-						end loop;
-						cb1_out_tvalid(i) <= axis_crossbar1_in_tvalid_reg2(i);
-						if bp_shuffle_reset(i)='1' or (word_ctr(i)(2 downto 0) /= "111" and axis_crossbar1_in_tlast_reg2(i)='0') then
-							cb1_out_tvalid(i) <= '0';
-				        end if;
-						cb1_out_tlast(i) <= axis_crossbar1_in_tlast_reg2(i);
-					end loop;
-
-
-				end if; -- clk
-			end process;
-
-			top_bp_shuffle_cmd_dat             <= top_cmd_dat(BP_SHUFFLE_BASE_PORT);
-			top_cmd_rdy(BP_SHUFFLE_BASE_PORT)  <= top_bp_shuffle_cmd_rdy;
-			top_bp_shuffle_rply_rdy            <= top_rply_rdy(BP_SHUFFLE_BASE_PORT);
-			top_rply_dat(BP_SHUFFLE_BASE_PORT) <= top_bp_shuffle_rply_dat;
-
-            -- Implement 1st shuffle between the 4 boards in the sub-backplane
-			gtlinks0: entity work.xxvglink_array
-				generic map (
-				    LANE_TO_LINK_MAP       => (-1,0,1,2), -- 4 logical lane: 1 bypass lane, 3 physical links
-					LINK_TO_QUAD_MAP       => (0,1,1), --! Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-					QUAD_TO_REFCLK_MAP     => (0,0) --! Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
-					)
-				port map (
-					tx_p     => bp_shuffle_tx_p,
-					tx_n     => bp_shuffle_tx_n,
-					rx_p     => bp_shuffle_rx_p,
-					rx_n     => bp_shuffle_rx_n,
-					refclk_p => bp_shuffle_refclk_p,
-					refclk_n => bp_shuffle_refclk_n,
-
-					-- TX user interface (AXI-Streaming, non-blocking, on clk_out)
-					s_axis_tx_tdata  => cb1_out_tdata,
-					s_axis_tx_tvalid => cb1_out_tvalid,
-					s_axis_tx_tlast  => cb1_out_tlast,
-
-					-- RX user interface (AXI-Streaming, non-blocking, on clk_out)
-					m_axis_rx_tdata  => axis_bp_shuffle_out_tdata64,
-					m_axis_rx_tvalid => axis_bp_shuffle_out_tvalid,
-					m_axis_rx_tlast  => axis_bp_shuffle_out_tlast,
-
-					clk_out    => bp_shuffle_txclk, --! 244 or 322 MHz clock generated by the backplane shuffle transmitter from the reference clock. Must be used to clock all the Tx (slave) interface data.  There is one single clock per array.
-
-					-- Clock monitoring ports
-					refclk_div2 => bp_shuffle_refclk_div2, -- divided-by-two version of the 156.25 MHz reference clock fed to the QUAD PLL
-					txclk_div2  => bp_shuffle_txclk_div2, -- divided-by-two version of the TX word clock, which is also clk_out
-
-					-- Debug signals
-					lane_monitor => open,
-
-					-- User bypass control line
-					-- bypass      => axis_bp_shuffle_bypass,
-
-					-- Control and reply streams
-					CMD_DAT  => top_bp_shuffle_cmd_dat,
-					CMD_RDY  => top_bp_shuffle_cmd_rdy,
-					RPLY_DAT => top_bp_shuffle_rply_dat,
-					RPLY_RDY => top_bp_shuffle_rply_rdy,
-					CTRL_CLK => CTRL_CLK,
-					CTRL_RST => bp_shuffle_CTRL_RST_reg,
-					--areset   => bp_shuffle_reset_reg
-					areset   => corr_reset -- stops clk_out: must not be sync'ed to clk_out.
-				 );
-
-				 -- todo: implement data align
-				 -- todo: implement 2nd crossbar
-				 -- feed to correlator
-		end u64_case;
-
-        when others =>
-            assert FALSE report "Invalid CROSSBAR1_TYPE" severity FAILURE;
-
-    end generate cb1_gen;
-end generate crossbar0_gen;
----------------------------------------------------------------------
--- BACKPLANE PCB and QSFP DATA LINKS
----------------------------------------------------------------------
---! Implements the GTX links to exchange the packetized data over to other boards on the backplane (over the backplane PCB links) or to boards on another crate (using the backplane QSFP links).
-
-BPSHFGEN: if IMPLEMENT_CROSSBAR2_AND_CROSSBAR3 generate
-
-	signal top_bp_shuffle_cmd_dat: AXIS8_DAT_STRUCT;
-	signal top_bp_shuffle_cmd_rdy: AXIS8_RDY_STRUCT;
-	signal top_bp_shuffle_rply_dat: AXIS8_DAT_STRUCT;
-	signal top_bp_shuffle_rply_rdy: AXIS8_RDY_STRUCT;
-
-
-begin
-	-- Index the system control buses as a separate signal here , because the simulator will make errors if we index it directly on the instantiation
-	top_bp_shuffle_cmd_dat             <= top_cmd_dat(BP_SHUFFLE_BASE_PORT);
-	top_cmd_rdy(BP_SHUFFLE_BASE_PORT)  <= top_bp_shuffle_cmd_rdy;
-	top_bp_shuffle_rply_rdy            <= top_rply_rdy(BP_SHUFFLE_BASE_PORT);
-	top_rply_dat(BP_SHUFFLE_BASE_PORT) <= top_bp_shuffle_rply_dat;
-
-	-- Pipeline the channelizer crossbar output to the backplane PCB shuffle input
-	bp_pcb_shuffle_in_pipe_proc: process(ct_clk)
-	begin
-		if rising_edge(ct_clk) then
-			bp_shuffle_reset <= (others=> ct_reset_reg);
-			bp_shuffle_reset_reg <= bp_shuffle_reset(0);
-
-			for i in 0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1 loop
-				axis_bp_shuffle_in_tdata(i) <= axis_crossbar1_out_tdata(i);
-				axis_bp_shuffle_in_tvalid(i) <= axis_crossbar1_out_tvalid(i);
-				axis_bp_shuffle_in_tlast(i) <= axis_crossbar1_out_tlast(i);
-				if bp_shuffle_reset(i) = '1' then
-					axis_bp_shuffle_in_tvalid(i) <= '0';
-				end if;
-			end loop;
-			for i in 0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1 loop
-				axis_bp_shuffle_in_tdata(NUMBER_OF_BP_PCB_SHUFFLE_LANES + i) <= axis_crossbar2_out_tdata(i);
-				axis_bp_shuffle_in_tvalid(NUMBER_OF_BP_PCB_SHUFFLE_LANES + i) <= axis_crossbar2_out_tvalid(i);
-				axis_bp_shuffle_in_tlast(NUMBER_OF_BP_PCB_SHUFFLE_LANES + i) <= axis_crossbar2_out_tlast(i);
-				if bp_shuffle_reset(NUMBER_OF_BP_PCB_SHUFFLE_LANES + i) = '1' then
-					axis_bp_shuffle_in_tvalid(NUMBER_OF_BP_PCB_SHUFFLE_LANES + i) <= '0';
-				end if;
-			end loop;
-		end if;
-	end process;
-
-	bp_shuffle0: entity work.xglink_array -- use component instantiation to delay binding in this if-generate block and prevent errors
-		generic map (
-			LINK_SPEED             => BP_LINK_SPEED, -- 0: 7.5 Gb/s (244 MHz word clock), 1: 10 Gb/s (322 MHz word clock)
-			NUMBER_OF_LANES        => NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES,
-			NUMBER_OF_LANE_GROUPS  => 2,
-			-- LANE_GROUP_MAP         => (0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1 => 0, NUMBER_OF_BP_PCB_SHUFFLE_LANES to NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1 => 1),
-			LANE_GROUP_MAP         => IntegerArray'(0 to 15 => 0, 16 to 23 => 1), -- We cast to make sure the synthesizer can unambiguously determine the final type and infer the entity in case the entity file is not needed (if-generate is False) and not included in the project
-			NUMBER_OF_LINKS        => NUMBER_OF_BP_SHUFFLE_LINKS,
-			LANE_TO_LINK_MAP       => BP_SHUFFLE_LANE_MAP,
-			NUMBER_OF_REFCLK       => NUMBER_OF_BP_SHUFFLE_REFCLKS,
-			LANE_TO_QUAD_MAP       => BP_SHUFFLE_LANE_TO_QUAD_MAP, --! Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-			QUAD_TO_REFCLK_MAP     => BP_SHUFFLE_QUAD_TO_REFCLK_MAP, --! Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
-			IMPLEMENT_RX           => TRUE,
-			SIM                    => FALSE
-			)
-		port map (
-			tx_p     => bp_shuffle_tx_p,
-			tx_n     => bp_shuffle_tx_n,
-			rx_p     => bp_shuffle_rx_p,
-			rx_n     => bp_shuffle_rx_n,
-			refclk_p => bp_shuffle_refclk_p,
-			refclk_n => bp_shuffle_refclk_n,
-
-			-- TX user interface (AXI-Streaming, non-blocking, on clk_out)
-			s_axis_tx_tdata  => axis_bp_shuffle_in_tdata,
-			s_axis_tx_tvalid => axis_bp_shuffle_in_tvalid,
-			s_axis_tx_tlast  => axis_bp_shuffle_in_tlast,
-
-			-- RX user interface (AXI-Streaming, non-blocking, on clk_out)
-			m_axis_rx_tdata  => axis_bp_shuffle_out_tdata,
-			m_axis_rx_tvalid => axis_bp_shuffle_out_tvalid,
-			m_axis_rx_tlast  => axis_bp_shuffle_out_tlast,
-
-			clk_out    => bp_shuffle_txclk, --! 244 or 322 MHz clock generated by the backplane shuffle transmitter from the reference clock. Must be used to clock all the Tx (slave) interface data.  There is one single clock per array.
-
-			-- Clock monitoring ports
-			refclk_div2 => bp_shuffle_refclk_div2, -- divided-by-two version of the 156.25 MHz reference clock fed to the QUAD PLL
-			txclk_div2  => bp_shuffle_txclk_div2, -- divided-by-two version of the TX word clock, which is also clk_out
-
-			-- Debug signals
-			lane_monitor => open,
-
-			-- User bypass control line
-			-- bypass      => axis_bp_shuffle_bypass,
-
-			-- Control and reply streams
-			CMD_DAT  => top_bp_shuffle_cmd_dat,
-			CMD_RDY  => top_bp_shuffle_cmd_rdy,
-			RPLY_DAT => top_bp_shuffle_rply_dat,
-			RPLY_RDY => top_bp_shuffle_rply_rdy,
-			CTRL_CLK => CTRL_CLK,
-			CTRL_RST => bp_shuffle_CTRL_RST_reg,
-			areset   => bp_shuffle_reset_reg
-		 );
-
-end generate BPSHFGEN;
-
----------------------------------------------------------------------
--- CROSSBARS 2 & 3
----------------------------------------------------------------------
-
-CROSSBAR23_GEN: if IMPLEMENT_CROSSBAR2_AND_CROSSBAR3 generate
-
-    signal axis_crossbar2_in_reset: std_logic;
-    signal axis_crossbar2_in_reset_reg: std_logic;
-    attribute shreg_extract of axis_crossbar2_in_reset_reg: signal is "no";
-
-    signal axis_crossbar2_in_tdata_reg: slv32_array(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1);
-    signal axis_crossbar2_in_tvalid_reg: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1);
-    signal axis_crossbar2_in_tlast_reg: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1);
-
-    attribute shreg_extract of axis_crossbar2_in_tdata_reg: signal is "no";
-    attribute shreg_extract of axis_crossbar2_in_tvalid_reg: signal is "no";
-    attribute shreg_extract of axis_crossbar2_in_tlast_reg: signal is "no";
-
-    signal axis_crossbar2_in_tdata: slv32_array(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1);
-    signal axis_crossbar2_in_tvalid: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1);
-    signal axis_crossbar2_in_tlast: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1);
-
-
-    signal axis_crossbar3_in_tdata: slv32_array(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
-    signal axis_crossbar3_in_tvalid: slv(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
-    signal axis_crossbar3_in_tlast: slv(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1);
-
-    signal axis_crossbar3_reset: std_logic;
-    signal axis_crossbar3_reset_reg: std_logic;
-    signal axis_crossbar3_reset_reg2: std_logic;
-
-	signal crossbar2_cmd_dat: AXIS8_DAT_STRUCT;
-	signal crossbar2_cmd_rdy: AXIS8_RDY_STRUCT;
-	signal crossbar2_rply_dat: AXIS8_DAT_STRUCT;
-	signal crossbar2_rply_rdy: AXIS8_RDY_STRUCT;
-
-
-	signal crossbar3_cmd_dat: AXIS8_DAT_STRUCT;
-	signal crossbar3_cmd_rdy: AXIS8_RDY_STRUCT;
-	signal crossbar3_rply_dat: AXIS8_DAT_STRUCT;
-	signal crossbar3_rply_rdy: AXIS8_RDY_STRUCT;
-
-    signal crossbar2_ctrl_rst: std_logic;
-    signal crossbar3_ctrl_rst: std_logic;
-
-    attribute DONT_TOUCH of crossbar2_ctrl_rst: signal is "true";
-attribute DONT_TOUCH of crossbar3_ctrl_rst: signal is "true";
-
-begin
-    -- select the crossbar 2 & 3 BSB bus
-	crossbar2_cmd_dat<= top_cmd_dat(CROSSBAR2_BASE_PORT);
-	top_cmd_rdy(CROSSBAR2_BASE_PORT) <= crossbar2_cmd_rdy;
-	crossbar2_rply_rdy<= top_rply_rdy(CROSSBAR2_BASE_PORT);
-	top_rply_dat(CROSSBAR2_BASE_PORT) <= crossbar2_rply_dat;
-
-	crossbar3_cmd_dat<= top_cmd_dat(CROSSBAR3_BASE_PORT);
-	top_cmd_rdy(CROSSBAR3_BASE_PORT) <= crossbar3_cmd_rdy;
-	crossbar3_rply_rdy<= top_rply_rdy(CROSSBAR3_BASE_PORT);
-	top_rply_dat(CROSSBAR3_BASE_PORT) <= crossbar3_rply_dat;
-
-
-	-- pipeline the bsb resets
-    bsb_rst_proc: process (ctrl_clk)
-    begin
-        if rising_edge(ctrl_clk) then
-            crossbar2_ctrl_rst  <= ctrl_rst;
-			crossbar3_ctrl_rst  <= ctrl_rst;
-        end if;
-    end process;
-
-    -- Pipeline the backplane PCB shuffle output to the shuffle crossbar input
-    crossbar2_in_pipe_proc: process(ct_clk)
-        begin
+        -- convert from slv_array to slv64_array
+        conv_gen: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
+            axis_chan_out_tdata2(i) <= axis_chan_out_tdata(i);
+        end generate;
+
+        -- Align data output from channelizers.
+        -- We send data unless one lane is almost empty.
+        -- The latency to propagate the empty and send signals will cause a few extra reads to occur after the almost_empty signal is asserted, 
+        -- but there should be enough words left in the FIFO to ensure we don't underrun it.
+        process(all) begin
             if rising_edge(ct_clk) then
-                axis_crossbar2_in_reset <= ct_reset_reg;
-                axis_crossbar2_in_reset_reg <= axis_crossbar2_in_reset;
-
-                for i in 0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES-1 loop
-                        axis_crossbar2_in_tdata(i)  <= axis_bp_shuffle_out_tdata(i);
-                        axis_crossbar2_in_tvalid(i) <= axis_bp_shuffle_out_tvalid(i);
-                        axis_crossbar2_in_tlast(i)  <= axis_bp_shuffle_out_tlast(i);
-                end loop;
-                if ct_reset_reg = '1' then
-                    axis_crossbar2_in_tvalid <= (others=>'0');
-                end if;
-
-                axis_crossbar2_in_tdata_reg  <= axis_crossbar2_in_tdata;
-                axis_crossbar2_in_tvalid_reg <= axis_crossbar2_in_tvalid;
-                axis_crossbar2_in_tlast_reg  <= axis_crossbar2_in_tlast;
-                if axis_crossbar2_in_reset = '1' then
-                    axis_crossbar2_in_tvalid_reg <= (others=>'0');
-                end if;
-
-            end if;
+                -- pipeline valid signal sfrom channelizer to a central point
+                almost_empty_reg1 <= axis_chan_out_almost_empty; 
+                almost_empty_reg2 <= almost_empty_reg1;
+                -- Don't send if any lane is empty
+                send <= not(or almost_empty_reg2); 
+                -- Propagate the send signal back to the channelizers
+                send_reg1 <= (others => send);
+                send_reg2 <= send_reg1;
+                axis_chan_out_send <= send_reg2;
+                if ct_reset_reg then
+                    send <= '0';
+                end if; --rst
+          
+                                 
+            end if; -- clk
         end process;
+        
+    ct0: entity work.u_ct_engine 
+	generic map(
+		PLATFORM_ID => PLATFORM_ID,
+		NUMBER_OF_INPUT_LANES => NUMBER_OF_CHANNELIZERS, -- Number of channelizer inputs
+		CT_LEVEL => CT_LEVEL -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
+		--LANE_TO_LINK_MAP: integer_array  := (-1,0,1,2); -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
+		--LINK_TO_QUAD_MAP: integer_array  := (0,1,1); -- Indicates which quad is associated to each GTY link.
+		--QUAD_TO_REFCLK_MAP: integer_array:= (0,0); -- Indicates which refclk is associated with each QUAD
+		--NUMBER_OF_OUTPUT_LANES: integer := 8; -- Number of output streams
+		--WORDS_PER_BIN_MAX: integer :=4; --! Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 16 words.
+		--BINS_PER_FRAME_MAX: integer :=64; --! Maximum number of bins per frame
+		--BIN_SEL_FIFO_TYPE_MAP: integer_16xN_array := (0 to 15 => (0 to 3=>0, others=>0)); -- 0= Block RAM., 1=Dist RAM. By default, for every BIN_SEL, 10 FIFOS are made of BRAM and the rest is made of distributed RAM to maximize area utilization efficiency
+		--SHUFFLE_FLAGS_MASK: slv32 -- Mask to apply to the shuffle flags to count packet errors
+		)
+	port map(
 
-	crossbar2: entity work.shuffle_crossbar -- use component instantiation to delay binding in if-generate block and prevent errors during elaboration
-		generic map (
-		 	PLATFORM_ID => PLATFORM_ID,  -- needed to select family-dependent FIFOs
-			NUMBER_OF_INPUT_LANES              => NUMBER_OF_BP_PCB_SHUFFLE_LANES, -- Number of input streams
-			NUMBER_OF_OUTPUT_LANES             => NUMBER_OF_BP_QSFP_SHUFFLE_LANES, -- Number of output streams
-			NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL => 4,
-			WORDS_PER_BIN_MAX                  => 4,  -- 1st crossbar outputs data for 16 channels max = 4 words
-			BINS_PER_FRAME_MAX                 => 128, -- need 128 bins in case i'm in 16
-			COMBINE_DATA_FLAGS                 => TRUE,
-			SHUFFLE_FLAGS_MASK                 => slv32'(X"00070000") -- count errors from crossbar 2 only
-			)
-		port map (
-			-- Non-blocking AXI-Streaming input
-			s_axis_tdata  => axis_crossbar2_in_tdata_reg,
-			s_axis_tvalid => axis_crossbar2_in_tvalid_reg,
-			s_axis_tlast  => axis_crossbar2_in_tlast_reg,
-			-- s_axis_tready => axis_bp_crossbar2_in_tready,
+		-- Non-blocking input stream from the channelizer, synchronous to `clk`
+		s_axis_tvalid => axis_chan_out_tvalid,
+		s_axis_tdata => axis_chan_out_tdata2,
+		s_axis_tlast => axis_chan_out_tlast,
 
-			-- Non-blocking AXI-Streaming output
-			m_axis_tdata  => axis_crossbar2_out_tdata,
-			m_axis_tvalid => axis_crossbar2_out_tvalid,
-			m_axis_tlast  => axis_crossbar2_out_tlast,
-			-- m_axis_tready => axis_crossbar2_out_tready,
+		-- Non-blocking output stream, synchronous to `clk`
+		m_axis_tvalid => axis_ct_out_tvalid,
+		m_axis_tdata => axis_ct_out_tdata,
+		m_axis_tlast => axis_ct_out_tlast,
 
-			clk => ct_clk,
-			rst => axis_crossbar2_in_reset_reg,
+		-- Backplane 25 Gbps GTY links
+		tx_p      => bp_shuffle_tx_p,
+		tx_n      => bp_shuffle_tx_n,
+		rx_p      => bp_shuffle_rx_p,
+		rx_n      => bp_shuffle_rx_n,
+		refclk_p  => bp_shuffle_refclk_p,
+		refclk_n  => bp_shuffle_refclk_n,
 
-			align_pulse => debug1,
-			-- Control interface (command and reply stream buses)
-			ctrl_cmd_dat=> crossbar2_cmd_dat,
-			ctrl_cmd_rdy=> crossbar2_cmd_rdy,
-			ctrl_rply_dat=> crossbar2_rply_dat,
-			ctrl_rply_rdy=> crossbar2_rply_rdy,
-			ctrl_clk => CTRL_CLK,
-			ctrl_rst => crossbar2_CTRL_RST
+		refclk_div2 => bp_shuffle_refclk_div2,-- divided-by-two version of the 156.25 MHz reference clock fed to the QUAD PLL
+		txclk_div2 => bp_shuffle_txclk_div2, -- divided-by-two version of the TX word clock, which is also clk_out
+
+		txclk_out => bp_shuffle_txclk, -- Word clock from the GTY TX link
+
+		clk => ct_clk,
+		rst => ct_reset_reg,
+		arst => corr_reset,
+
+		-- Control interface (command and reply stream buses)
+		bsb_cmd_dat  => top_cmd_dat(CT_BASE_PORT),
+		bsb_cmd_rdy  => top_cmd_rdy(CT_BASE_PORT),
+		bsb_rply_dat => top_rply_dat(CT_BASE_PORT),
+		bsb_rply_rdy =>top_rply_rdy(CT_BASE_PORT),
+		bsb_clk      => ctrl_clk,
+		bsb_rst      => ctrl_rst
 		);
 
-	-- Pipeline the backplane PCB shuffle output to the shuffle crossbar input
-	crossbar3_in_pipe_proc: process(ct_clk)
-	begin
-		if rising_edge(ct_clk) then
-			axis_crossbar3_reset <= ct_reset_reg;
-			axis_crossbar3_reset_reg <= axis_crossbar3_reset;
-			for i in 0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES-1 loop
-				axis_crossbar3_in_tdata(i)  <= axis_bp_shuffle_out_tdata(NUMBER_OF_BP_PCB_SHUFFLE_LANES + i); -- QSFP shuffle lanes are concatenated after PCB shuffle lanes
-				axis_crossbar3_in_tvalid(i) <= axis_bp_shuffle_out_tvalid(NUMBER_OF_BP_PCB_SHUFFLE_LANES + i);
-				axis_crossbar3_in_tlast(i)  <= axis_bp_shuffle_out_tlast(NUMBER_OF_BP_PCB_SHUFFLE_LANES + i);
-			end loop;
-			if axis_crossbar3_reset = '1' then
-				axis_crossbar3_in_tvalid <= (others => '0');
-			end if;
-		end if;
-	end process;
 
+    when others =>
+        assert FALSE report "Invalid CT_TYPE" severity FAILURE;
 
-	crossbar3: entity work.shuffle_crossbar -- use component instantiation to delay binding in if-generate block and prevent errors during elaboration
-		generic map (
-		 	PLATFORM_ID => PLATFORM_ID,  -- needed to select family-dependent FIFOs
-			NUMBER_OF_INPUT_LANES              => NUMBER_OF_BP_QSFP_SHUFFLE_LANES, -- Number of input streams
-			NUMBER_OF_OUTPUT_LANES             => NUMBER_OF_GPU_LINKS, -- Number of output streams
-			NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL => 1,
-			COMBINE_DATA_FLAGS                 => FALSE,
-			WORDS_PER_BIN_MAX                  => 16,
-			BINS_PER_FRAME_MAX                 => 64,
-			BIN_SEL_FIFO_TYPE_MAP              => integer_16xN_array'(0 to 15 => (0 to 1=>0, others=>0)),
-			SHUFFLE_FLAGS_MASK                 => slv32'(X"70000700") -- Count errors from both crossbars. Use a qualified axpression to ensure type is known.
-
-			)
-		port map (
-			-- Non-blocking AXI-Streaming input
-			s_axis_tdata  => axis_crossbar3_in_tdata,
-			s_axis_tvalid => axis_crossbar3_in_tvalid,
-			s_axis_tlast  => axis_crossbar3_in_tlast,
-			-- s_axis_tready => axis_bp_crossbar2_in_tready,
-
-			-- Non-blocking AXI-Streaming output
-			m_axis_tdata  => axis_crossbar3_out_tdata,
-			m_axis_tvalid => axis_crossbar3_out_tvalid,
-			m_axis_tlast  => axis_crossbar3_out_tlast,
-			-- m_axis_tready => axis_crossbar2_out_tready,
-
-			clk => ct_clk,
-			rst => axis_crossbar3_reset_reg,
-
-			-- Control interface (command and reply stream buses)
-			ctrl_cmd_dat=> crossbar3_cmd_dat,
-			ctrl_cmd_rdy=> crossbar3_cmd_rdy,
-			ctrl_rply_dat=> crossbar3_rply_dat,
-			ctrl_rply_rdy=> crossbar3_rply_rdy,
-			ctrl_clk => CTRL_CLK,
-			ctrl_rst => crossbar3_CTRL_RST
-		);
-
-end generate CROSSBAR23_GEN;
-
--- If there are no shuffle links, connect directly to the output of the 1st crossbar if there are aly lanes there
--- Note: There should be at least as many 1st crossbar outputs as the number of GPU lanes.
---NOXBAR2_GEN: if not IMPLEMENT_CROSSBAR2_AND_CROSSBAR3 generate
---	axis_crossbar2_out_tdata <= axis_crossbar1_out_tdata(0 to NUMBER_OF_GPU_LINKS-1);
---	axis_crossbar2_out_tvalid <= axis_crossbar1_out_tvalid(0 to NUMBER_OF_GPU_LINKS-1);
---	axis_crossbar2_out_tlast <= axis_crossbar1_out_tlast(0 to NUMBER_OF_GPU_LINKS-1);
---	-- axis_crossbar1_out_tready(0 to NUMBER_OF_GPU_LINKS-1) <= (others=>'1');
---	ct_clk <= CORR_CLK;
---end generate;
+end generate ct_gen;
 
 
 
 -----------------------------------------------------------
 -----------------------------------------------------------
--- GPU LINKS
+-- Real-time Offload links
 -----------------------------------------------------------
 -----------------------------------------------------------
 -- ! Implements an array of 10G Ethernet transmitters to send data off to the GPUs.
 -- ! We have 8x 10G Links connected on the two QSFP+ connectors on the motherboard.
 
-GPU_GEN: if IMPLEMENT_GPU_LINKS generate
+GPU_GEN: if GPU_LINK_TYPE /= "NONE" generate
 
 	signal gpu_cmd_dat: AXIS8_DAT_STRUCT;
 	signal gpu_cmd_rdy: AXIS8_RDY_STRUCT;
@@ -3681,15 +3146,6 @@ begin
 				gpu_reset <= ct_reset_reg;
 				gpu_reset_reg <= gpu_reset;
 
-				--  ** patch  below
-				--for i in 0 to NUMBER_OF_GPU_LINKS-1 loop
-				--	axis_gpu_tdata(i) <= axis_crossbar3_out_tdata(i);
-				--	axis_gpu_tvalid(i) <= axis_crossbar3_out_tvalid(i);
-				--	axis_gpu_tlast(i) <= axis_crossbar3_out_tlast(i);
-				--	if gpu_reset = '1' then
-				--		axis_gpu_tvalid(i) <= '0';
-				--	end if;
-				--end loop;
 			end if;
 		end process;
     axis_gpu_clk <= std_logic_vector'(axis_gpu_tdata'RANGE=> ct_clk);
@@ -4083,10 +3539,12 @@ begin
             -- number of bins per word.
             -- There are NUMBER_OF_CORRELATORS bins per channel
             -- There are NUMBER_OF_CHANNELIZERS_TO_CORRELATE channels to correlate (NUMBER_OF_CHANNELIZERS_TO_CORRELATE <= NUMBER_OF_CHANNELIZERS)
-            constant NCHAN: integer := NUMBER_OF_CHANNELIZERS_TO_CORRELATE;
-            constant NCORR: integer:= NUMBER_OF_CORRELATORS;
+            constant NCHAN: integer := sel(CT_LEVEL=1, 8, 32);
+            constant NCORR: integer:= sel(CT_LEVEL=1, 4, 1);
+            constant BIN_DECIMATION_FACTOR:integer := sel(CT_LEVEL=1, 1, 4);
+            constant BITS_PER_BIN: integer := 4+4;
 
-            signal axis_corr_in_tdata: slv_array(0 to NCHAN-1)(31 downto 0);
+            signal axis_corr_in_tdata: slv(255 downto 0);
             signal axis_corr_in_tvalid: std_logic;
             signal axis_corr_in_tlast: std_logic;
 
@@ -4097,18 +3555,13 @@ begin
 --            signal cnt: unsigned(3 downto 0);
         begin
 
-            corr_pipe: process(ct_clk)
+            corr_pipe: process(all)
             begin
                 -- Pipeline correlator input
                 if rising_edge(ct_clk) then
---                    cnt <= cnt + 4;
---                    cnt <= "0000" when corr_reset_reg1;
-                    for i in 0 to NCHAN-1 loop
-                        axis_corr_in_tdata(i) <= axis_chan_out_tdata(i);
---                        axis_corr_in_tdata(i) <= slv(cnt) & "0000" & slv(cnt+1) & "0000" & slv(cnt+2) & "0000" & slv(cnt+3) & "0000";
-                    end loop;
-                    axis_corr_in_tlast <= axis_chan_out_tlast(0);
-                    axis_corr_in_tvalid<= axis_chan_out_tvalid(0);
+                    axis_corr_in_tdata <= axis_ct_out_tdata;
+                    axis_corr_in_tlast <= axis_ct_out_tlast;
+                    axis_corr_in_tvalid<= axis_ct_out_tvalid;
 
                     -- pipeline correlator output stream to UCAP auxiliary stream input
                     axis_corr_out_tready <= axis_ucap_in_tready;
@@ -4122,19 +3575,21 @@ begin
                 generic map (
                     PLATFORM_ID => PLATFORM_ID, -- needed to determine the RPM spacing of the DSP and BRAM elements and choose the right primitives
                     NCHAN => NCHAN,
-                    NCORR   => NCORR,
+                    NCORR => NCORR, -- equals to the number of bins per input word
+              
+                    BIN_DECIMATION_FACTOR => BIN_DECIMATION_FACTOR,
                     READOUT_BINS => CONFIG_CORR_READOUT_BINS
                     )
                 port map(
                     -- Input data interface (AXI4-Streaning, non-blocking)
                     -- One input per channelizer
 
-                    s_axis_data_tvalid           => axis_corr_in_tvalid,
-                    s_axis_data_tlast            => axis_corr_in_tlast,
-                    s_axis_data_tdata            => axis_corr_in_tdata,
+                    s_axis_data_tvalid => axis_corr_in_tvalid,
+                    s_axis_data_tlast  => axis_corr_in_tlast,
+                    s_axis_data_tdata  => axis_corr_in_tdata,
 
-                    clk                  => ct_clk,
-                    rst                  => corr_reset_reg1,
+                    clk => ct_clk,
+                    rst => corr_reset_reg1,
 
                     -- Correlated data output interface (AXI4-Streaning, 8-bit wide, blocking)
 
