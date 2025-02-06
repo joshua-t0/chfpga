@@ -88,13 +88,13 @@ entity xxvglink_array is
 	refclk_n : in std_logic_vector(0 to NUMBER_OF_REFCLK-1);
 
 	-- TX user interface (AXI-Streaming, blocking, synchronous to clk_out)
-	s_axis_tx_tdata: in slv64_array(0 to NUMBER_OF_LANES -1);
+	s_axis_tx_tdata: in slv_array(0 to NUMBER_OF_LANES -1)(63 downto 0);
 	s_axis_tx_tvalid: in std_logic_vector(0 to NUMBER_OF_LANES -1);
 	s_axis_tx_tlast: in std_logic_vector(0 to NUMBER_OF_LANES -1);
 
 
 	-- RX user interface (AXI-Streaming, non-blocking, synchronous to clk_out)
-	m_axis_rx_tdata: out slv64_array(0 to NUMBER_OF_LANES-1);
+	m_axis_rx_tdata: out slv_array(0 to NUMBER_OF_LANES-1)(63 downto 0);
 	m_axis_rx_tvalid: out std_logic_vector(0 to NUMBER_OF_LANES-1);
 	m_axis_rx_tlast: out std_logic_vector(0 to NUMBER_OF_LANES-1);
 	m_axis_rx_terror: out std_logic_vector(0 to NUMBER_OF_LANES-1); -- active high on TLAST=1 if an error occured in the frame
@@ -170,13 +170,13 @@ architecture Implementation of xxvglink_array is
 	-- signal s_axis_tx_tvalid_int: std_logic_vector(0 to NUMBER_OF_LANES-1);
 	-- signal s_axis_tx_tlast_int: std_logic_vector(0 to NUMBER_OF_LANES-1);
 
-	signal m_axis_rx_tdata_int: slv64_array(0 to NUMBER_OF_LANES-1);
+	signal m_axis_rx_tdata_int: slv_array(0 to NUMBER_OF_LANES-1)(63 downto 0);
 	signal m_axis_rx_tvalid_int: std_logic_vector(0 to NUMBER_OF_LANES-1);
 	signal m_axis_rx_tlast_int: std_logic_vector(0 to NUMBER_OF_LANES-1);
 	signal m_axis_rx_tready_int: std_logic_vector(0 to NUMBER_OF_LANES-1);
 	signal m_axis_rx_terror_int: std_logic_vector(0 to NUMBER_OF_LANES-1);
 
-	signal m_axis_rx_tdata_int2: slv64_array(0 to NUMBER_OF_LANES-1);
+	signal m_axis_rx_tdata_int2: slv_array(0 to NUMBER_OF_LANES-1)(63 downto 0);
 	signal m_axis_rx_tvalid_int2: std_logic_vector(0 to NUMBER_OF_LANES-1);
 	signal m_axis_rx_tlast_int2: std_logic_vector(0 to NUMBER_OF_LANES-1);
 	signal m_axis_rx_terror_int2: std_logic_vector(0 to NUMBER_OF_LANES-1);
