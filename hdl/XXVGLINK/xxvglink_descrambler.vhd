@@ -87,41 +87,95 @@ end xxvglink_descrambler;
 architecture RTL of xxvglink_descrambler is
 
 
+----***********************************Parameter Declarations********************
+
+--    --constant DLY : time := 0 ns;
+
+--    signal   descrambler        :  std_logic_vector(57 downto 0);
+--    --signal   poly               :  std_logic_vector(57 downto 0);
+--    --signal   tempdata           :  std_logic_vector((RX_DATA_WIDTH-1) downto 0);
+
+--begin
+
+--    process(clk)
+--        variable   poly_i     :  std_logic_vector(57 downto 0);
+--        variable   tempData_i :  std_logic_vector((RX_DATA_WIDTH-1) downto 0);
+--        variable   xorBit     :  std_logic;
+--    begin
+--        if rising_edge(clk) then
+--            if rst then
+--                unscrambled_data_out <= (others => '0');
+--                descrambler <= "0101010101010101010101010101010101010101010101010101010101";
+--            elsif data_valid_in then
+
+--                poly_i := descrambler;
+--                for  i in 0 to (RX_DATA_WIDTH-1) loop
+--                    xorBit := scrambled_data_in(i) xor poly_i(38) xor poly_i(57);
+--                    poly_i := poly_i(56 downto 0) & scrambled_data_in(i);
+--                    tempData_i(i) := xorBit;
+--                end loop;
+--                --poly          <=   poly_i;
+--                --tempdata      <=   tempdata_i;
+
+--                descrambler <= poly_i;
+--                unscrambled_data_out <= tempdata_i;
+--            end if;
+--        end if;
+--    end process;
+
+
 --***********************************Parameter Declarations********************
 
-    --constant DLY : time := 0 ns;
+    constant DLY : time := 0 ns;
+
+--***************************Internal Register Declarations********************
 
     signal   descrambler        :  std_logic_vector(57 downto 0);
-    --signal   poly               :  std_logic_vector(57 downto 0);
-    --signal   tempdata           :  std_logic_vector((RX_DATA_WIDTH-1) downto 0);
+    signal   poly               :  std_logic_vector(57 downto 0);
+    signal   tempdata           :  std_logic_vector((RX_DATA_WIDTH-1) downto 0);
+    signal   unscrambled_data_i :  std_logic_vector((RX_DATA_WIDTH-1) downto 0);
+
+--*********************************Main Body of Code***************************
+
+    signal system_reset, user_clk: std_logic;
 
 begin
 
-    process(clk)
-        variable   poly_i     :  std_logic_vector(57 downto 0);
-        variable   tempData_i :  std_logic_vector((RX_DATA_WIDTH-1) downto 0);
-        variable   xorBit     :  std_logic;
+    system_reset <= rst;
+    user_clk <= clk;
+    
+    process( descrambler,SCRAMBLED_DATA_IN )
+    variable   poly_i     :  std_logic_vector(57 downto 0);
+    variable   tempData_i :  std_logic_vector((RX_DATA_WIDTH-1) downto 0);
+    variable   xorBit     :  std_logic;
+    variable   i          :  std_logic;
     begin
-        if rising_edge(clk) then
-            if rst then
-                unscrambled_data_out <= (others => '0');
-                descrambler <= "0101010101010101010101010101010101010101010101010101010101";
-            elsif data_valid_in then
+        poly_i := descrambler;
+        for  i in 0 to (RX_DATA_WIDTH-1) loop
+            xorBit := SCRAMBLED_DATA_IN(i) xor poly_i(38) xor poly_i(57);
+            poly_i := (poly_i(56 downto 0) & SCRAMBLED_DATA_IN(i));
+            tempData_i(i) := xorBit;
+        end loop;
+        poly          <=   poly_i;
+        tempdata      <=   tempdata_i;
+    end process;
 
-                poly_i := descrambler;
-                for  i in 0 to (RX_DATA_WIDTH-1) loop
-                    xorBit := scrambled_data_in(i) xor poly_i(38) xor poly_i(57);
-                    poly_i := poly_i(56 downto 0) & scrambled_data_in(i);
-                    tempData_i(i) := xorBit;
-                end loop;
-                --poly          <=   poly_i;
-                --tempdata      <=   tempdata_i;
-
-                descrambler <= poly_i;
-                unscrambled_data_out <= tempdata_i;
+    process( USER_CLK )
+    begin
+        if(USER_CLK'event and USER_CLK = '1') then
+            if (SYSTEM_RESET = '1') then
+                unscrambled_data_i <= (others => '0') after DLY;
+                descrambler        <= "0101010101010101010101010101010101010101010101010101010101" after DLY;
+            elsif (DATA_VALID_IN = '1') then
+                descrambler        <=   poly after DLY;
+                unscrambled_data_i <=   tempdata after DLY;
             end if;
         end if;
     end process;
+
+    --_______________ Unscrambled Data assignment to output port ______________
+
+    UNSCRAMBLED_DATA_OUT <= unscrambled_data_i;
 
 
 end RTL;

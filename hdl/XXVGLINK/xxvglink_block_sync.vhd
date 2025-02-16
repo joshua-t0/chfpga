@@ -118,37 +118,193 @@ architecture RTL of xxvglink_block_sync is
     signal  sync_header_invalid_count_i   :   unsigned(9 downto 0);
     signal  test_sh_r                     :   std_logic;
 
+    signal system_reset, user_clk: std_logic;
+    signal  blocksync_out_i               :   std_logic;
+    signal  rxgearboxslip_out_i           :   std_logic;
 begin
 
+    system_reset <= rst;
+    user_clk <= clk;
+    
 
-    sync_found_i   <=  '1' when ((rxheader_in(1 downto 0) = "01") or (rxheader_in(1 downto 0) = "10")) else '0';
+   -- sync_found_i   <=  '1' when ((rxheader_in(1 downto 0) = "01") or (rxheader_in(1 downto 0) = "10")) else '0';
+
+   -- --- Next state logic
+   -- next_begin_c      <=    sync_done_r
+   --                         or (slip_r and slip_done_i)
+   --                         or (sh_valid_r and sh_count_equals_max_i and not sh_invalid_cnt_equals_max_i)
+   --                         or (sh_invalid_r and sh_count_equals_max_i and not sh_invalid_cnt_equals_max_i and blocksync_out);
+
+   -- next_test_sh_c    <=   begin_r
+   --                        or (test_sh_r and not RXHEADERVALID_IN)
+   --                        or (sh_valid_r and not sh_count_equals_max_i)
+   --                        or (sh_invalid_r and not sh_count_equals_max_i and not sh_invalid_cnt_equals_max_i and blocksync_out);
+
+
+   -- next_sh_valid_c   <=   (test_sh_r and RXHEADERVALID_IN and sync_found_i);
+
+   -- next_sh_invalid_c <=   (test_sh_r and RXHEADERVALID_IN and not sync_found_i);
+
+   -- next_slip_c       <=   (sh_invalid_r and (sh_invalid_cnt_equals_max_i or not blocksync_out))
+   --                        or (slip_r and not slip_done_i);
+
+   -- next_sync_done_c  <=   (sh_valid_r and sh_count_equals_max_i and sh_invalid_cnt_equals_zero_i);
+
+   -- ---________________________________ State machine __________________________
+
+   -- sh_count_equals_max_i <= '1' when (sync_header_count_i=SH_CNT_MAX) else '0';
+
+   ----- signal to indicate max number of invalid sync headers has been reached
+   -- sh_invalid_cnt_equals_max_i  <= '1'  when (sync_header_invalid_count_i=SH_INVALID_CNT_MAX)
+   --                                  else '0';
+
+   -- --- signal to indicate no invalid sync headers
+   -- sh_invalid_cnt_equals_zero_i <= '1' when (sync_header_invalid_count_i=0) else '0';
+
+   -- ---_______ Counter wait for 16 cycles to ensure that slip is complete _______
+
+   -- slip_pulse_i <= next_slip_c and not slip_r;
+
+   -- slip_done_i <= slip_count_i(31);
+
+
+   -- --- State registers
+   -- process( clk )
+   -- begin
+   --     if rising_edge(clk) then
+   --         begin_r      <=  next_begin_c after DLY;
+   --         test_sh_r    <=  next_test_sh_c after DLY;
+   --         sh_valid_r   <=  next_sh_valid_c after DLY;
+   --         sh_invalid_r <=  next_sh_invalid_c after DLY;
+   --         slip_r       <=  next_slip_c after DLY;
+   --         sync_done_r  <=  next_sync_done_c after DLY;
+
+   --         --- Counter to keep track of sync headers counted
+
+   --         if begin_r = '1' then
+   --             sync_header_count_i <= (others => '0') after DLY;
+   --         elsif sh_valid_r= '1' or sh_invalid_r = '1' then
+   --             sync_header_count_i  <=   sync_header_count_i + 1 after DLY;
+   --         end if;
+
+
+   --         ---________________ Counter keep track of invalid sync headers  ____________
+
+   --         if(begin_r = '1') then
+   --            sync_header_invalid_count_i   <=  (others => '0') after DLY;
+   --         elsif (sh_invalid_r = '1') then
+   --             sync_header_invalid_count_i  <=   sync_header_invalid_count_i + 1 after DLY;
+   --         end if;
+
+
+   --         rxgearboxslip_out   <=  slip_pulse_i after DLY;
+
+   --         ---_____________ Ouput assignment to indicate block sync complete  _________
+
+   --         if(slip_r = '0') then
+   --             slip_count_i   <=  (others => '0') after DLY;
+   --         else
+   --             slip_count_i   <=  (slip_count_i(30 downto 0) & rxgearboxslip_out) after DLY;
+   --         end if;
+
+   --         if((rst='1') or (slip_r= '1')) then
+   --             blocksync_out   <=  '0' after DLY;
+   --         elsif (sync_done_r = '1') then
+   --             blocksync_out   <=  '1' after DLY;
+   --         end if;
+
+
+   --         -- Synchronous resets
+   --         if(rst = '1') then
+   --             begin_r      <=  '1' after DLY;
+   --             test_sh_r    <=  '0' after DLY;
+   --             sh_valid_r   <=  '0' after DLY;
+   --             sh_invalid_r <=  '0' after DLY;
+   --             slip_r       <=  '0' after DLY;
+   --             sync_done_r  <=  '0' after DLY;
+   --         end if;
+
+
+   --     end if; -- clk
+   -- end process;
+
+
+    sync_found_i   <=  '1' when ((RXHEADER_IN(1 downto 0) = "01") or (RXHEADER_IN(1 downto 0) = "10")) else '0';
+
+    ---________________________________ State machine __________________________
+
+    --- State registers
+    process( USER_CLK )
+    begin
+        if(USER_CLK'event and USER_CLK = '1') then
+            if(SYSTEM_RESET = '1') then
+                begin_r      <=  '1' after DLY;
+                test_sh_r    <=  '0' after DLY;
+                sh_valid_r   <=  '0' after DLY;
+                sh_invalid_r <=  '0' after DLY;
+                slip_r       <=  '0' after DLY;
+                sync_done_r  <=  '0' after DLY;
+            else
+                begin_r      <=  next_begin_c after DLY;
+                test_sh_r    <=  next_test_sh_c after DLY;
+                sh_valid_r   <=  next_sh_valid_c after DLY;
+                sh_invalid_r <=  next_sh_invalid_c after DLY;
+                slip_r       <=  next_slip_c after DLY;
+                sync_done_r  <=  next_sync_done_c after DLY;
+            end if;
+        end if;
+    end process;
 
     --- Next state logic
     next_begin_c      <=    sync_done_r
                             or (slip_r and slip_done_i)
                             or (sh_valid_r and sh_count_equals_max_i and not sh_invalid_cnt_equals_max_i)
-                            or (sh_invalid_r and sh_count_equals_max_i and not sh_invalid_cnt_equals_max_i and blocksync_out);
+                            or (sh_invalid_r and sh_count_equals_max_i and not sh_invalid_cnt_equals_max_i and blocksync_out_i);
 
     next_test_sh_c    <=   begin_r
                            or (test_sh_r and not RXHEADERVALID_IN)
                            or (sh_valid_r and not sh_count_equals_max_i)
-                           or (sh_invalid_r and not sh_count_equals_max_i and not sh_invalid_cnt_equals_max_i and blocksync_out);
+                           or (sh_invalid_r and not sh_count_equals_max_i and not sh_invalid_cnt_equals_max_i and blocksync_out_i);
 
 
     next_sh_valid_c   <=   (test_sh_r and RXHEADERVALID_IN and sync_found_i);
 
     next_sh_invalid_c <=   (test_sh_r and RXHEADERVALID_IN and not sync_found_i);
 
-    next_slip_c       <=   (sh_invalid_r and (sh_invalid_cnt_equals_max_i or not blocksync_out))
+    next_slip_c       <=   (sh_invalid_r and (sh_invalid_cnt_equals_max_i or not blocksync_out_i))
                            or (slip_r and not slip_done_i);
 
     next_sync_done_c  <=   (sh_valid_r and sh_count_equals_max_i and sh_invalid_cnt_equals_zero_i);
 
-    ---________________________________ State machine __________________________
+    ---________________ Counter keep track of sync headers counted _____________
+
+    process( USER_CLK )
+    begin
+        if(USER_CLK'event and USER_CLK = '1') then
+            if(begin_r = '1') then
+                sync_header_count_i   <=    (others => '0') after DLY;
+            elsif ((sh_valid_r= '1') or (sh_invalid_r = '1')) then
+                sync_header_count_i  <=   sync_header_count_i + 1 after DLY;
+            end if;
+        end if;
+    end process;
 
     sh_count_equals_max_i <= '1' when (sync_header_count_i=SH_CNT_MAX) else '0';
 
-   --- signal to indicate max number of invalid sync headers has been reached
+    ---________________ Counter keep track of invalid sync headers  ____________
+
+    process( USER_CLK )
+    begin
+        if(USER_CLK'event and USER_CLK = '1') then
+            if(begin_r = '1') then
+               sync_header_invalid_count_i   <=  (others => '0') after DLY;
+            elsif (sh_invalid_r = '1') then
+                sync_header_invalid_count_i  <=   sync_header_invalid_count_i + 1 after DLY;
+            end if;
+        end if;
+    end process;
+
+    --- signal to indicate max number of invalid sync headers has been reached
     sh_invalid_cnt_equals_max_i  <= '1'  when (sync_header_invalid_count_i=SH_INVALID_CNT_MAX)
                                      else '0';
 
@@ -159,69 +315,47 @@ begin
 
     slip_pulse_i <= next_slip_c and not slip_r;
 
-    slip_done_i <= slip_count_i(31);
-
-
-    --- State registers
-    process( clk )
+    process( USER_CLK )
     begin
-        if rising_edge(clk) then
-            begin_r      <=  next_begin_c after DLY;
-            test_sh_r    <=  next_test_sh_c after DLY;
-            sh_valid_r   <=  next_sh_valid_c after DLY;
-            sh_invalid_r <=  next_sh_invalid_c after DLY;
-            slip_r       <=  next_slip_c after DLY;
-            sync_done_r  <=  next_sync_done_c after DLY;
+        if(USER_CLK'event and USER_CLK = '1') then
+            rxgearboxslip_out_i   <=  slip_pulse_i after DLY;
+        end if;
+    end process;
 
-            --- Counter to keep track of sync headers counted
+    ---_____________ Ouput assignment to indicate block sync complete  _________
 
-            if begin_r = '1' then
-                sync_header_count_i <= (others => '0') after DLY;
-            elsif sh_valid_r= '1' or sh_invalid_r = '1' then
-                sync_header_count_i  <=   sync_header_count_i + 1 after DLY;
-            end if;
-
-
-            ---________________ Counter keep track of invalid sync headers  ____________
-
-            if(begin_r = '1') then
-               sync_header_invalid_count_i   <=  (others => '0') after DLY;
-            elsif (sh_invalid_r = '1') then
-                sync_header_invalid_count_i  <=   sync_header_invalid_count_i + 1 after DLY;
-            end if;
-
-
-            rxgearboxslip_out   <=  slip_pulse_i after DLY;
-
-            ---_____________ Ouput assignment to indicate block sync complete  _________
-
+    process( USER_CLK )
+    begin
+        if(USER_CLK'event and USER_CLK = '1') then
             if(slip_r = '0') then
                 slip_count_i   <=  (others => '0') after DLY;
             else
-                slip_count_i   <=  (slip_count_i(30 downto 0) & rxgearboxslip_out) after DLY;
+                slip_count_i   <=  (slip_count_i(30 downto 0) & rxgearboxslip_out_i) after DLY;
             end if;
-
-            if((rst='1') or (slip_r= '1')) then
-                blocksync_out   <=  '0' after DLY;
-            elsif (sync_done_r = '1') then
-                blocksync_out   <=  '1' after DLY;
-            end if;
-
-
-            -- Synchronous resets
-            if(rst = '1') then
-                begin_r      <=  '1' after DLY;
-                test_sh_r    <=  '0' after DLY;
-                sh_valid_r   <=  '0' after DLY;
-                sh_invalid_r <=  '0' after DLY;
-                slip_r       <=  '0' after DLY;
-                sync_done_r  <=  '0' after DLY;
-            end if;
-
-
-        end if; -- clk
+        end if;
     end process;
 
+    slip_done_i <= slip_count_i(31);
+
+
+    ---_____________ Pulse GEARBOXSLIP port to slip the data by 1 bit  _________
+
+    process( USER_CLK )
+    begin
+        if(USER_CLK'event and USER_CLK = '1') then
+            if((SYSTEM_RESET='1') or (slip_r= '1')) then
+                blocksync_out_i   <=  '0' after DLY;
+            elsif (sync_done_r = '1') then
+                blocksync_out_i   <=  '1' after DLY;
+            end if;
+        end if;
+    end process;
+
+
+    --__________________________ Ouput Port Assignment ________________________
+
+    BLOCKSYNC_OUT   <=   blocksync_out_i;
+    RXGEARBOXSLIP_OUT   <=   rxgearboxslip_out_i;
 
 end RTL;
 
