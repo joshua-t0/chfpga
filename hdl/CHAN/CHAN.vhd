@@ -426,7 +426,7 @@ begin
             lane_monitor(0) <= axis_scaler_out_tvalid xor axis_scaler_out_tlast;
             lane_monitor(1) <= axis_fft_out_tvalid xor axis_fft_out_tlast;
             lane_monitor(2) <= axis_funcgen_out_tvalid xor axis_funcgen_out_tlast;
-            lane_monitor(3) <= axis_fifo_out_tvalid xor axis_fifo_out_tlast;
+            lane_monitor(3) <= axis_fifo_in_tvalid xor axis_fifo_in_tlast; -- use FIFO input to stay in the right clock domain
         end if; --clk
     end process;
 
@@ -672,8 +672,7 @@ begin
     axis_fifo_in_tlast <= axis_scaler_out_tlast;
     axis_fifo_in_tuser <= axis_scaler_out_tuser;
 
-    rst_proc: process(in_clk)
-    begin
+    rst_proc: process(all) begin
         if rising_edge(in_clk) then
             fifo_reset_in <= scaler_reset_out;
         end if;
