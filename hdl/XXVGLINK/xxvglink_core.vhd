@@ -20,6 +20,9 @@ use IEEE.std_logic_misc.ALL; -- for reduce functions
 library UNISIM;
 use UNISIM.VComponents.all;
 
+library xpm;
+use xpm.vcomponents.all;
+
 library work;
 use work.chFPGA_Package.all;
 
@@ -38,7 +41,7 @@ entity xxvglink_core is
 		NUMBER_OF_REFCLK   : integer := max(QUAD_TO_REFCLK_MAP) + 1;
 		NUMBER_OF_RX_LINKS : integer := sel(IMPLEMENT_RX, LINK_TO_QUAD_MAP'LENGTH, 0);
 		NUMBER_OF_TX_LINKS : integer := sel(IMPLEMENT_TX, LINK_TO_QUAD_MAP'LENGTH, 0);
-		NUMBER_OF_GT       : integer := max(NUMBER_OF_RX_LINKS, NUMBER_OF_TX_LINKS); -- computed value - do not override
+		NUMBER_OF_LINKS       : integer := max(NUMBER_OF_RX_LINKS, NUMBER_OF_TX_LINKS); -- computed value - do not override
 
 		-- Simulation parameters
 		EXAMPLE_SIMULATION          : integer :=1;
@@ -46,10 +49,10 @@ entity xxvglink_core is
 		SIM                         : boolean := false
 		);
 	port (
-		tx_p     : out std_logic_vector(0 to NUMBER_OF_GT-1);
-		tx_n     : out std_logic_vector(0 to NUMBER_OF_GT-1);
-		rx_p     : in std_logic_vector(0 to NUMBER_OF_GT-1);
-		rx_n     : in std_logic_vector(0 to NUMBER_OF_GT-1);
+		tx_p     : out std_logic_vector(0 to NUMBER_OF_LINKS-1);
+		tx_n     : out std_logic_vector(0 to NUMBER_OF_LINKS-1);
+		rx_p     : in std_logic_vector(0 to NUMBER_OF_LINKS-1);
+		rx_n     : in std_logic_vector(0 to NUMBER_OF_LINKS-1);
 		refclk_p : in std_logic_vector(0 to NUMBER_OF_REFCLK-1); --156.250 high quality reference clocks to feed all the quads in the array. One reference clock can feed the bank it is  on, and the banks above and below.
 		refclk_n : in std_logic_vector(0 to NUMBER_OF_REFCLK-1);
 
@@ -93,9 +96,9 @@ attribute SHREG_EXTRACT : string;
 attribute DONT_TOUCH : string;
 
 --- CONSTANTS
-constant DLY : time := 1 ps; -- delta delay used to ensure the simulator changes the data after the clock edge (which is a problem because we do a clock assignment which might be evaluated in any order)
+constant DLY : time := 10 ps; -- delta delay used to ensure the simulator changes the data after the clock edge (which is a problem because we do a clock assignment which might be evaluated in any order)
 
-constant NUMBER_OF_QUADS : integer := MAX(LINK_TO_QUAD_MAP(0 to NUMBER_OF_GT-1))+1; --! get the maximum QUAD index from the list of actually implemented channels
+constant NUMBER_OF_QUADS : integer := MAX(LINK_TO_QUAD_MAP(0 to NUMBER_OF_LINKS-1))+1; --! get the maximum QUAD index from the list of actually implemented channels
 
 
 -- QPLL parameters
@@ -111,25 +114,25 @@ constant NUMBER_OF_QUADS : integer := MAX(LINK_TO_QUAD_MAP(0 to NUMBER_OF_GT-1))
 -- Speed 0 = N/M=100/2, 7.8125 Gbps line rate, 244.140625 word clock (no RX/TX every 2 out of 66 clocks), 7.5757 Gbps / 946.92 MB/s effective
 -- Speed 1 = N/M=66/1, 10.3125 Gbps line rate, 322.265625 word clock (see comment above), 10.000 Gbps / 1250 MB/s effective
 
-constant QPLL_FBDIV_IN_TABLE : slv10_array := (
-			0 => "0101110000", -- N=100
-			1 => "0101000000" -- N=66
-			);
+--constant QPLL_FBDIV_IN_TABLE : slv10_array := (
+--			0 => "0101110000", -- N=100
+--			1 => "0101000000" -- N=66
+--			);
 
-constant QPLL_FBDIV_RATIO_TABLE : std_logic_vector := (
-			0 => '1', -- used when N=100
-			1 => '0' -- used when N=66
-			);
+--constant QPLL_FBDIV_RATIO_TABLE : std_logic_vector := (
+--			0 => '1', -- used when N=100
+--			1 => '0' -- used when N=66
+--			);
 
-constant QPLL_CFG_TABLE : slv28_array := (
-			0 => x"06801C1",
-			1 => x"0680181"
-			);
+--constant QPLL_CFG_TABLE : slv28_array := (
+--			0 => x"06801C1",
+--			1 => x"0680181"
+--			);
 
-constant QPLL_REFCLK_DIV_TABLE : integer_array := (
-			0 => 2, -- M=2 (0 in the DRP register)
-			1 => 1 -- M=1 (16 in the DRP register)
-			);
+--constant QPLL_REFCLK_DIV_TABLE : integer_array := (
+--			0 => 2, -- M=2 (0 in the DRP register)
+--			1 => 1 -- M=1 (16 in the DRP register)
+--			);
 
 --constant QPLL_FBDIV_IN    : std_logic_vector(9 downto 0) := QPLL_FBDIV_IN_TABLE(LINK_SPEED);
 --constant QPLL_FBDIV_RATIO : std_logic := QPLL_FBDIV_RATIO_TABLE(LINK_SPEED);
@@ -137,45 +140,50 @@ constant QPLL_REFCLK_DIV_TABLE : integer_array := (
 --constant QPLL_REFCLK_DIV: integer := QPLL_REFCLK_DIV_TABLE(LINK_SPEED);
 
 ---- CLOCKS
--- signal clk156_nobuf : std_logic; --! unbuffered 156.25 MHz data clock at the output of MMCM
-signal clk156 : std_logic; --! buffered 156.25 MHz data clock derived from the reference clock
+	-- signal clk156_nobuf : std_logic; --! unbuffered 156.25 MHz data clock at the output of MMCM
+	-- signal clk156 : std_logic; --! buffered 156.25 MHz data clock derived from the reference clock
 
--- signal txclk322_nobuf : std_logic_vector(0 to NUMBER_OF_GT-1); --! Unbuffered TXOUTCLK from each GTX
-signal txclk322 : std_logic; --! buffered TXOUTCLK used to clock all GTX TX subsystems
-signal rxclk322 : slv(0 to NUMBER_OF_GT-1); --!
+	signal stable_clk: std_logic; -- free-running stable clock for reset state machines. Either ctrl_clk or reference clock
+	-- signal txclk322_nobuf : std_logic_vector(0 to NUMBER_OF_LINKS-1); --! Unbuffered TXOUTCLK from each GTX
+	--signal txclk322 : std_logic; --! buffered TXOUTCLK used to clock all GTX TX subsystems
+	--signal rxclk322 : slv(0 to NUMBER_OF_LINKS-1); --!
 
-signal txusrclk : std_logic; --! txusrclk for all GTX
-signal txusrclk2 : std_logic; --! txusrclk2 for all GTX
-signal rxusrclk : slv(0 to NUMBER_OF_GT-1); --! rxusrclk for all GTX
-signal rxusrclk2 : slv(0 to NUMBER_OF_GT-1); --! rxusrclk2 for all GTX
+	signal txusrclk : std_logic; --! txusrclk for all GTX
+	signal txusrclk2 : std_logic; --! txusrclk2 for all GTX
+	--signal rxusrclk : slv(0 to NUMBER_OF_LINKS-1); --! rxusrclk for all GTX
+	signal rxusrclk2 : slv(0 to NUMBER_OF_LINKS-1); --! rxusrclk2 for all GTX
 
-signal refclk_nobuf : std_logic_vector(0 to NUMBER_OF_REFCLK-1); --! unbuffered GTX reference clock
-signal refclk_buf : std_logic_vector(0 to NUMBER_OF_REFCLK-1); --! buffered GTX reference clock
-
---- QPLL signals
-signal qpllreset : std_logic; --! QPLL reset signal for all QPLLs, generated after 500us following the release of areset
-signal qplloutclk : std_logic_vector(0 to NUMBER_OF_QUADS-1);
-signal qplloutrefclk : std_logic_vector(0 to NUMBER_OF_QUADS-1);
-signal qplllock, qplllock_debug : std_logic_vector(0 to NUMBER_OF_QUADS-1);
-signal not_qplllock: std_logic;
-
--- signal qplllock_txusrclk2: std_logic;--_vector(0 to NUMBER_OF_QUADS-1);
--- attribute ASYNC_REG of qplllock_txusrclk2 : signal is "true";
-
--- signal txuserrdy : std_logic;
-signal resetdone: std_logic;
-
+	signal refclk_nobuf : std_logic_vector(0 to NUMBER_OF_REFCLK-1); --! unbuffered GTX reference clock
+	signal refclk_buf : std_logic_vector(0 to NUMBER_OF_REFCLK-1); --! buffered GTX reference clock
 
 -- Reset signals
 
-signal tx_resetdone_int: std_logic_vector(0 to NUMBER_OF_GT-1);
-signal rx_resetdone_int: std_logic_vector(0 to NUMBER_OF_GT-1);
+	signal reset_all: std_logic; -- all reset sources combined, including manual and ffrom reset FSM
+	signal reset_rx_datapath: std_logic; -- reset from reset FSM to GTY
+	signal tx_reset: std_logic_vector(0 to NUMBER_OF_LINKS-1); -- User Tx logic reset from reset FSM
+	signal rx_reset: std_logic_vector(0 to NUMBER_OF_LINKS-1); -- User Rx logic reset from reset FSM
+	signal tx_resetdone_int: std_logic_vector(0 to NUMBER_OF_LINKS-1); -- User TX reset done, in txclk clock domain
+	signal rx_resetdone_int: std_logic_vector(0 to NUMBER_OF_LINKS-1); -- User RX reset done, in rxclk clock domain
 
-signal scrambler_reset: std_logic_vector(0 to NUMBER_OF_GT-1);
 
-signal reset_pulse : std_logic_vector(3 downto 0);
+	--signal reset_pulse : std_logic_vector(3 downto 0);
+	--signal txuserrdy : std_logic;
+	--signal resetdone: std_logic;
 
-constant NUMBER_OF_MODULES: integer := NUMBER_OF_QUADS + NUMBER_OF_GT + 1; -- One common module, and one for each quad (QPLL) and channel (GTX)
+--- QPLL signals
+	signal qpllreset : std_logic; --! QPLL reset signal for all QPLLs, generated after 500us following the release of areset
+	signal qplloutclk : std_logic_vector(0 to NUMBER_OF_QUADS-1);
+	signal qplloutrefclk : std_logic_vector(0 to NUMBER_OF_QUADS-1);
+	signal qplllock, qplllock_debug : std_logic_vector(0 to NUMBER_OF_QUADS-1);
+	signal not_qplllock: std_logic;
+
+	-- signal qplllock_txusrclk2: std_logic;--_vector(0 to NUMBER_OF_QUADS-1);
+	-- attribute ASYNC_REG of qplllock_txusrclk2 : signal is "true";
+
+
+
+
+constant NUMBER_OF_MODULES: integer := NUMBER_OF_QUADS + NUMBER_OF_LINKS + 1; -- One common module, and one for each quad (QPLL) and channel (GTX)
 
 signal MODULE_CMD_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_MODULES-1 downto 0);
 signal MODULE_CMD_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_MODULES-1 downto 0);
@@ -203,23 +211,26 @@ type QUAD_STATUS_BYTES_ARRAY is array (natural range <>) of slv8_array(0 to 0);
 signal quad_status_bytes: QUAD_STATUS_BYTES_ARRAY(0 to NUMBER_OF_QUADS-1);
 
 type gt_CONTROL_BYTES_ARRAY is array (natural range <>) of slv8_array(0 to 5);
-signal gt_control_bytes: gt_control_bytes_array(0 to NUMBER_OF_GT-1);
+signal gt_control_bytes: gt_control_bytes_array(0 to NUMBER_OF_LINKS-1);
 type gt_STATUS_BYTES_ARRAY is array (natural range <>) of slv8_array(0 to sel(NUMBER_OF_RX_LINKS>0, 11, 4));
-signal gt_status_bytes: gt_status_bytes_array(0 to NUMBER_OF_GT-1);
+signal gt_status_bytes: gt_status_bytes_array(0 to NUMBER_OF_LINKS-1);
 
-signal txclk_div2_int: std_logic := '0'; -- init needed
-signal refclk_div2_int: std_logic_vector(0 to NUMBER_OF_REFCLK-1) := (others=> '0'); -- init needed
 
 signal common_user_reset: std_logic;
 signal common_user_tx_data: std_logic_vector(23 downto 0);
+signal common_rx_pll_datapath_reset: std_logic;
+signal common_rx_datapath_reset: std_logic;
+signal common_rx_reset: std_logic;
+signal common_tx_reset: std_logic;
+signal common_rx_cdr_stable_out: std_logic;
 
 -------------------------------------------------------------------
-signal gt_drp_dout: slv16_array(NUMBER_OF_GT-1 downto 0);
-signal gt_drp_din: slv16_array(NUMBER_OF_GT-1 downto 0);
-signal gt_drp_addr: slv10_array(NUMBER_OF_GT-1 downto 0);
-signal gt_drp_rdy: slv(NUMBER_OF_GT-1 downto 0);
-signal gt_drp_en: slv(NUMBER_OF_GT-1 downto 0);
-signal gt_drp_wr_en: slv(NUMBER_OF_GT-1 downto 0);
+signal gt_drp_dout: slv16_array(NUMBER_OF_LINKS-1 downto 0);
+signal gt_drp_din: slv16_array(NUMBER_OF_LINKS-1 downto 0);
+signal gt_drp_addr: slv10_array(NUMBER_OF_LINKS-1 downto 0);
+signal gt_drp_rdy: slv(NUMBER_OF_LINKS-1 downto 0);
+signal gt_drp_en: slv(NUMBER_OF_LINKS-1 downto 0);
+signal gt_drp_wr_en: slv(NUMBER_OF_LINKS-1 downto 0);
 
 
 constant STABLE_CLOCK_PERIOD: integer := 6; -- in fact 1/156.25 = 6.4 ns
@@ -227,94 +238,87 @@ constant WAIT_TIME_CDRLOCK: integer := sel(SIM, 1000,  50000 / integer(10.3125))
 signal rx_cdrlock_counter  :   integer range 0 to WAIT_TIME_CDRLOCK:= 0 ;
 signal rx_cdrlocked                    : std_logic;
 
-signal gt_dmonitorout_out: slv8_array(0 to NUMBER_OF_GT-1);
-signal gt_rxmonitorout_out: slv7_array(0 to NUMBER_OF_GT-1);
-signal gt_rxmonitorsel_in: slv2_array(0 to NUMBER_OF_GT-1) := (others=>"00");
+signal gt_dmonitorout_out: slv8_array(0 to NUMBER_OF_LINKS-1);
+signal gt_rxmonitorout_out: slv7_array(0 to NUMBER_OF_LINKS-1);
+signal gt_rxmonitorsel_in: slv2_array(0 to NUMBER_OF_LINKS-1) := (others=>"00");
 
-signal gt_loopback_in: slv3_array(0 to NUMBER_OF_GT-1);
-signal gt_rxcdrhold_in: slv(0 to NUMBER_OF_GT-1);
-signal gt_rxdata_out: slv64_array(0 to NUMBER_OF_GT-1);
-signal gt_rxprbserr_out: slv(0 to NUMBER_OF_GT-1);
-signal gt_rxprbslocked_out: slv(0 to NUMBER_OF_GT-1);
-signal gt_rxprbssel_in: slv3_array(0 to NUMBER_OF_GT-1) := (others=> "000");
-signal gt_txprbssel_in: slv3_array(0 to NUMBER_OF_GT-1) := (others=> "000");
-signal gt_rxprbscntreset_in: slv(0 to NUMBER_OF_GT-1) := (others=>'0');
-signal gt_rxbufstatus_out: slv3_array(0 to NUMBER_OF_GT-1);
-signal gt_rxdfeagchold_in: slv(0 to NUMBER_OF_GT-1);
-signal gt_rxdfelfhold_in: slv(0 to NUMBER_OF_GT-1);
-signal gt_rxoutclk_out: slv(0 to NUMBER_OF_GT-1);
-signal gt_rxdatavalid_out: slv(0 to NUMBER_OF_GT-1);
-signal gt_rxheader_out: slv2_array(0 to NUMBER_OF_GT-1);
-signal gt_rxheader_capture: slv2_array(0 to NUMBER_OF_GT-1);
-signal gt_rxheadervalid_out: slv(0 to NUMBER_OF_GT-1);
-signal gt_rxstartofseq_out: slv(0 to NUMBER_OF_GT-1);
-signal gt_rxgearboxslip_in: slv(0 to NUMBER_OF_GT-1) := (others=>'0');
-signal gt_rxpolarity_in: slv(0 to NUMBER_OF_GT-1);
-signal gt_txpolarity_in: slv(0 to NUMBER_OF_GT-1);
-signal gt_txpostcursor_in: slv5_array(0 to NUMBER_OF_GT-1);
-signal gt_txprecursor_in: slv5_array(0 to NUMBER_OF_GT-1);
-signal gt_gttxreset_in: slv(0 to NUMBER_OF_GT-1);
-signal gt_gttxreset_all: slv(0 to NUMBER_OF_GT-1);
-signal gt_txuserrdy_in: slv(0 to NUMBER_OF_GT-1);
-signal gt_rxuserrdy_in: slv(0 to NUMBER_OF_GT-1);
-signal gt_txprbsforceerr_in: slv(0 to NUMBER_OF_GT-1) := (others=>'0');
-signal gt_txbufstatus_out: slv2_array(0 to NUMBER_OF_GT-1);
-signal gt_txdiffctrl_in: slv4_array(0 to NUMBER_OF_GT-1);
-signal gt_txinhibit_in: slv(0 to NUMBER_OF_GT-1);
-signal gt_txdata_in: slv64_array(0 to NUMBER_OF_GT-1);
-signal gt_user_tx_data: slv64_array(0 to NUMBER_OF_GT-1);
-signal gt_user_tx_data_int: slv64_array(0 to NUMBER_OF_GT-1);
-signal gt_user_source_sel: slv(0 to NUMBER_OF_GT-1);
-signal gt_txoutclk_out: slv(0 to NUMBER_OF_GT-1);
-signal gt_txheader_in: slv2_array(0 to NUMBER_OF_GT-1);
-signal gt_user_tx_header: slv2_array(0 to NUMBER_OF_GT-1);
-signal gt_gtrxreset_in : slv(0 to NUMBER_OF_GT-1);
-signal gt_gtrxreset_all : slv(0 to NUMBER_OF_GT-1);
-signal gt_txsequence_in: slv7_array(0 to NUMBER_OF_GT-1);
-signal gt_rxresetdone_out: slv(0 to NUMBER_OF_GT-1);
-signal gt_txresetdone_out: slv(0 to NUMBER_OF_GT-1);
-signal gt_block_lock: slv(0 to NUMBER_OF_GT-1) := (others => '0'); -- default provided to attempt to squash undriven warnings when there is no RX
+signal gt_loopback_in: slv3_array(0 to NUMBER_OF_LINKS-1);
+signal gt_rxcdrhold_in: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_rxdata_out: slv64_array(0 to NUMBER_OF_LINKS-1);
+signal gt_rxprbserr_out: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_rxprbslocked_out: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_rxprbssel_in: slv3_array(0 to NUMBER_OF_LINKS-1) := (others=> "000");
+signal gt_txprbssel_in: slv3_array(0 to NUMBER_OF_LINKS-1) := (others=> "000");
+signal gt_rxprbscntreset_in: slv(0 to NUMBER_OF_LINKS-1) := (others=>'0');
+signal gt_rxbufstatus_out: slv3_array(0 to NUMBER_OF_LINKS-1);
+signal gt_rxdfeagchold_in: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_rxdfelfhold_in: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_rxoutclk_out: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_rxdatavalid_out: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_rxheader_out: slv2_array(0 to NUMBER_OF_LINKS-1);
+signal gt_rxheader_capture: slv2_array(0 to NUMBER_OF_LINKS-1);
+signal gt_rxheadervalid_out: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_rxstartofseq_out: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_rxgearboxslip_in: slv(0 to NUMBER_OF_LINKS-1) := (others=>'0');
+signal gt_rxgearboxforceslip: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_rxpolarity_in: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_txpolarity_in: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_txpostcursor_in: slv5_array(0 to NUMBER_OF_LINKS-1);
+signal gt_txprecursor_in: slv5_array(0 to NUMBER_OF_LINKS-1);
+--signal gt_gttxreset_in: slv(0 to NUMBER_OF_LINKS-1);
+--signal gt_gttxreset_all: slv(0 to NUMBER_OF_LINKS-1);
+--signal gt_txuserrdy_in: slv(0 to NUMBER_OF_LINKS-1);
+--signal gt_rxuserrdy_in: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_txprbsforceerr_in: slv(0 to NUMBER_OF_LINKS-1) := (others=>'0');
+signal gt_txbufstatus_out: slv2_array(0 to NUMBER_OF_LINKS-1);
+signal gt_txdiffctrl_in: slv4_array(0 to NUMBER_OF_LINKS-1);
+signal gt_txinhibit_in: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_txdata_in: slv64_array(0 to NUMBER_OF_LINKS-1);
+signal gt_user_tx_data: slv64_array(0 to NUMBER_OF_LINKS-1);
+signal gt_user_tx_data_int: slv64_array(0 to NUMBER_OF_LINKS-1);
+signal gt_user_source_sel: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_txoutclk_out: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_txheader_in: slv2_array(0 to NUMBER_OF_LINKS-1);
+signal gt_user_tx_header: slv2_array(0 to NUMBER_OF_LINKS-1);
+signal gt_gtrxreset_in : slv(0 to NUMBER_OF_LINKS-1);
+--signal gt_gtrxreset_all : slv(0 to NUMBER_OF_LINKS-1);
+signal gt_txsequence_in: unsigned_array(0 to NUMBER_OF_LINKS-1)(6 downto 0);
+signal gt_rxresetdone_out: slv(0 to NUMBER_OF_LINKS-1); -- txresetdone from GTY
+signal gt_txresetdone_out: slv(0 to NUMBER_OF_LINKS-1); -- rxresetdone form GTY
+signal gt_block_lock: slv(0 to NUMBER_OF_LINKS-1) := (others => '0'); -- default provided to attempt to squash undriven warnings when there is no RX
 signal quad_sel: std_logic_vector(1 downto 0);
-signal gt_seq_counter: unsigned_array(0 to NUMBER_OF_GT-1)(6 downto 0); -- counts from 0 to 65
-signal gt_scramble_en: slv(0 to NUMBER_OF_GT-1);
-signal gt_descramble_en: slv(0 to NUMBER_OF_GT-1);
-signal gt_block_lock_reset: slv(0 to NUMBER_OF_GT-1) := (others=>'0');
-signal gt_scrambler_reset: slv(0 to NUMBER_OF_GT-1);
-signal gt_unscrambler_reset: slv(0 to NUMBER_OF_GT-1);
-signal gt_err_ctr: slv32_array(0 to NUMBER_OF_GT-1);
-signal gt_capture_en: slv(0 to NUMBER_OF_GT-1) := (others=>'0');
-signal gt_capture_en_rxusrclk2: slv2_array(0 to NUMBER_OF_GT-1);
-signal gt_user_gttxreset: slv(0 to NUMBER_OF_GT-1);
-signal gt_user_gtrxreset: slv(0 to NUMBER_OF_GT-1) := (others=>'0');
-signal gt_user_reset: slv(0 to NUMBER_OF_GT-1);
+signal gt_seq_counter: unsigned_array(0 to NUMBER_OF_LINKS-1)(6 downto 0); -- counts from 0 to 65
+signal gt_scramble_en: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_descramble_en: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_block_lock_reset: slv(0 to NUMBER_OF_LINKS-1) := (others=>'0');
+signal gt_scrambler_reset: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_unscrambler_reset: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_err_ctr: slv32_array(0 to NUMBER_OF_LINKS-1);
+signal gt_capture_en: slv(0 to NUMBER_OF_LINKS-1) := (others=>'0');
+signal gt_user_gttxreset: slv(0 to NUMBER_OF_LINKS-1);
+signal gt_user_gtrxreset: slv(0 to NUMBER_OF_LINKS-1) := (others=>'0');
+signal gt_user_reset: slv(0 to NUMBER_OF_LINKS-1);
 
-signal gt_rxdfelpmreset_in: slv(0 to NUMBER_OF_GT-1) := (others=>'0');
-signal gt_rxlpmen_in: slv(0 to NUMBER_OF_GT-1) := (others => '0');
-signal gt_rxlpmhold_in: slv2_array(0 to NUMBER_OF_GT-1);
-signal gt_rxlpmovrd_in: slv2_array(0 to NUMBER_OF_GT-1);
-signal gt_rxdfehold_in: slv9_array(0 to NUMBER_OF_GT-1);
-signal gt_rxdfeovrd_in: slv9_array(0 to NUMBER_OF_GT-1);
-signal gt_stop_bitslip: slv(0 to NUMBER_OF_GT-1);
+signal gt_rxdfelpmreset_in: slv(0 to NUMBER_OF_LINKS-1) := (others=>'0');
+signal gt_rxlpmen_in: slv(0 to NUMBER_OF_LINKS-1) := (others => '0');
+signal gt_rxlpmhold_in: slv2_array(0 to NUMBER_OF_LINKS-1);
+signal gt_rxlpmovrd_in: slv2_array(0 to NUMBER_OF_LINKS-1);
+signal gt_rxdfehold_in: slv9_array(0 to NUMBER_OF_LINKS-1);
+signal gt_rxdfeovrd_in: slv9_array(0 to NUMBER_OF_LINKS-1);
+signal gt_stop_bitslip: slv(0 to NUMBER_OF_LINKS-1);
 
-	attribute SHREG_EXTRACT of gt_capture_en_rxusrclk2 : signal is "no";
-	attribute ASYNC_REG of gt_capture_en_rxusrclk2 : signal is "true";
 
 -- User data interface
-signal tx_ready_int: slv(0 to NUMBER_OF_GT-1);
+signal tx_ready_int: slv(0 to NUMBER_OF_LINKS-1);
 
-signal rx_data_capture: slv64_array(0 to NUMBER_OF_GT-1);
+signal rx_data_capture: slv64_array(0 to NUMBER_OF_LINKS-1);
 
---signal tx_ctr: u16_array(0 to NUMBER_OF_GT-1) := (others=> (others=>'0')); -- init for sim
+--signal tx_ctr: u16_array(0 to NUMBER_OF_LINKS-1) := (others=> (others=>'0')); -- init for sim
 
-signal tx_fsm_soft_reset: slv(0 to NUMBER_OF_GT-1);
-signal rx_fsm_soft_reset: slv(0 to NUMBER_OF_GT-1);
-signal block_sync_reset: slv(0 to NUMBER_OF_GT-1);
+signal tx_fsm_soft_reset: slv(0 to NUMBER_OF_LINKS-1);
+signal rx_fsm_soft_reset: slv(0 to NUMBER_OF_LINKS-1);
 
 begin
--- assign internal signals to output ports
-txclk_div2 <= txclk_div2_int;
-refclk_div2 <= refclk_div2_int;
-
 
 
 ctrl_rst_proc: process(CTRL_CLK)
@@ -380,41 +384,157 @@ begin
 				CEB   => '0',
 				O     => refclk_nobuf(i)
 			);
---		-- Instantiate global clock buffers
---		refclkbuftype_gen: if i = 0 generate 	-- Instantiate BUFG for refclk[0] only to ve used as global free-runnning clock
-			refclk_bufg0 : BUFG_GT --
-				port map(
-					I => refclk_div_nobuf(i),
-					O => refclk_buf(i),
-					CE => '1',
-					CEMASK => '0',
-					CLR => '0',
-					CLRMASK => '0',
-					DIV => "000"
-				);
---		else generate
---			refclk_bufh0 : BUFH -- Instantiate BUFH for the local divide-by-2 counter
---				port map(
---					I => refclk_nobuf(i),
---					O => refclk_buf(i)
---				);
---		end generate; -- if i==0
+		-- Instantiate global clock buffers
+		refclk_bufg0 : BUFG_GT --
+			port map(
+				I => refclk_div_nobuf(i),
+				O => refclk_buf(i),
+				CE => '1',
+				CEMASK => '0',
+				CLR => '0',
+				CLRMASK => '0',
+				DIV => "000"
+			);
+
+		-- Generate REFCLK divided-by-two signal for clock monitoring
+		process(all) begin
+			if rising_edge(refclk_buf(i)) then
+				refclk_div2(i) <=not refclk_div2(i);
+			end if;
+		end process;
 	end generate; -- for each refclk
-
---	clk156 <= refclk_buf(0); -- free running stable clock
-	clk156 <= ctrl_clk; -- free running stable clock
-
-	-- Generate a logic signal that toggles at half the rate of the reference clock for the frequency counter
-	refclkdiv2_gen: for i in 0 to NUMBER_OF_REFCLK-1 generate
-		refclkdiv2_proc: process(refclk_buf(i))
-			begin
-				if rising_edge(refclk_buf(i)) then
-					refclk_div2_int(i) <=not refclk_div2_int(i);
-				end if;
-			end process;
-	end generate;
 end block;
 
+--------------------------------------------------------------------------------
+-- Select free-running clock
+--------------------------------------------------------------------------------
+
+stable_clk <= ctrl_clk; -- free running stable clock
+
+-------------------------------------------------------------------------------
+-- MASTER RESET SEQUENCER
+-------------------------------------------------------------------------------
+
+rst_blk: block
+
+	constant P_FREERUN_FREQUENCY: real     := 200.0; -- MHz, worst case
+	constant P_TX_TIMER_DURATION_US: real  := sel(SIM, 25.0, 30000.0); -- us
+	constant P_RX_TIMER_DURATION_US: real  := sel(SIM, 40.0, 130000.0); --us
+
+	constant P_TX_TIMER_TERM_CYC_INT: unsigned(24 downto 0) := to_unsigned(integer(P_TX_TIMER_DURATION_US * P_FREERUN_FREQUENCY), 25);
+	constant P_RX_TIMER_TERM_CYC_INT: unsigned(24 downto 0) := to_unsigned(integer(P_RX_TIMER_DURATION_US * P_FREERUN_FREQUENCY),25);
+
+	signal reset_all_out: std_logic;
+	signal reset_all_sync: std_logic;
+	signal reset_rx_out: std_logic;
+	signal tx_resetdone_sync: std_logic; -- resetdone sync'ed to stable_clk
+	signal rx_resetdone_sync: std_logic;
+	signal rx_data_good_sync: std_logic := '1';
+	signal init_done_out: std_logic; -- not used
+
+	signal timer_clr: std_logic := '1';
+	signal timer_ctr: unsigned (24 downto 0) := (others => '0');
+	signal tx_timer_sat, rx_timer_sat: std_logic;
+
+	signal retry_ctr_incr: std_logic;
+	signal retry_ctr_out: unsigned(3 downto 0) := (others =>'0');
+
+	type STATE_TYPE is (ST_START, ST_TX_WAIT, ST_RX_WAIT, ST_MONITOR);
+  	signal state: STATE_TYPE := ST_START;
+	signal sm_init_active: std_logic;
+
+begin
+	reset_all <= areset or common_user_reset or reset_all_out;
+	reset_rx_datapath <=  reset_rx_out;
+	rall_cdc0: xpm_cdc_single
+		generic map (SRC_INPUT_REG => 0)
+		port map (src_clk => '0', src_in => reset_all, dest_clk => stable_clk, dest_out =>reset_all_sync);
+
+	txdone_cdc0: xpm_cdc_single
+		generic map (SRC_INPUT_REG => 0)
+		port map (src_clk => '0', src_in => and gt_txresetdone_out, dest_clk => stable_clk, dest_out =>tx_resetdone_sync);
+
+	rxdone_cdc0: xpm_cdc_single
+		generic map (SRC_INPUT_REG => 0)
+		port map (src_clk => '0', src_in => and gt_rxresetdone_out, dest_clk => stable_clk, dest_out =>rx_resetdone_sync);
+
+	process(all) begin
+		-- Timer: raises the tx and rx timout flags after specified time
+		if rising_edge(stable_clk) then
+			timer_clr      <= '0'; -- single pulse
+    		tx_timer_sat <= '1' when timer_ctr = P_TX_TIMER_TERM_CYC_INT;
+       		rx_timer_sat <= '1' when timer_ctr = P_RX_TIMER_TERM_CYC_INT;
+       		timer_ctr <= timer_ctr + 1 when not rx_timer_sat;
+		    if timer_clr then
+				timer_ctr    <= (others => '0');
+				tx_timer_sat <= '0';
+				rx_timer_sat <= '0';
+		    end if;
+
+		    -- count retries
+			retry_ctr_incr <= '0'; -- single pulse
+		    retry_ctr_out <= retry_ctr_out + 1 when ??retry_ctr_incr and not all_ones(retry_ctr_out);
+
+
+		    -- State machine
+		    case state is
+		    	when ST_START =>
+					if sm_init_active then
+						timer_clr      <= '1';
+						reset_all_out  <= '0';
+						reset_rx_out   <= '0';
+						state          <= ST_TX_WAIT;
+					end if;
+
+		        when ST_TX_WAIT =>
+					if tx_resetdone_sync then
+						timer_clr <= '1';
+						state   <= ST_RX_WAIT;
+					elsif tx_timer_sat then
+						timer_clr      <= '1'; -- redundant
+						reset_all_out  <= '1';
+						retry_ctr_incr <= '1';
+						state          <= ST_START;
+					end if;
+
+				when ST_RX_WAIT =>
+					if rx_timer_sat then
+						if rx_resetdone_sync and rx_data_good_sync then
+							init_done_out <= '1';
+							state         <= ST_MONITOR;
+						else
+							timer_clr      <= '1';
+							reset_rx_out   <= '1';
+							retry_ctr_incr <= '1';
+							state          <= ST_START;
+						end if; -- rx done
+					else
+						timer_clr <= '0';
+					end if; -- rx timeout
+
+				when ST_MONITOR =>
+					if (not rx_resetdone_sync or not rx_data_good_sync) then
+						init_done_out  <= '0';
+						timer_clr      <= '1';
+						reset_rx_out   <= '1';
+						retry_ctr_incr <= '1';
+						state          <= ST_START;
+					end if;
+			end case;
+
+			-- State machine reset
+			if reset_all_sync then
+			  timer_clr      <= '1';
+			  reset_all_out  <= '0';
+			  reset_rx_out   <= '0';
+			  retry_ctr_incr <= '0';
+			  init_done_out  <= '0';
+			  sm_init_active <= '1';
+			  state          <= ST_START;
+			end if; -- reset
+		end if; -- clk
+	end process;
+end block;
 
 ----------------------------------
 -- REFERENCE CLOCK-BASED RESETS
@@ -515,7 +635,7 @@ common_regs0: entity work.CTRL_SLAVE
 		STATUS_BYTES => common_status_bytes
 );
 
-resetdone <= (and_reduce(tx_resetdone_int) or to_std_logic(NUMBER_OF_TX_LINKS=0)) and (and_reduce(rx_resetdone_int) or to_std_logic(NUMBER_OF_RX_LINKS=0)) after DLY;
+
 
 
 -- CONTROL Byte 0
@@ -526,6 +646,10 @@ common_user_reset                <= common_control_bytes(0)(7);
 -- common_scramble_en               <= common_control_bytes(0)(3);
 -- common_descramble_en             <= common_control_bytes(0)(2);
 -- common_capture_en                <= common_control_bytes(0)(1);
+common_tx_reset <= common_control_bytes(0)(3); -- core only
+common_rx_pll_datapath_reset <= common_control_bytes(0)(2); -- core only
+common_rx_datapath_reset <= common_control_bytes(0)(1); -- core only
+common_rx_reset <= common_control_bytes(0)(0); -- core only
 
 -- CONTROL Byte 1-3
 common_user_tx_data <= to_slv(common_control_bytes(1 to 3));
@@ -535,12 +659,12 @@ control_bytes <= slv8_array(common_control_bytes(4 to 4+NUMBER_OF_CONTROL_BYTES-
 
 
 common_status_bytes(0)(7 downto 5) <= to_slv(NUMBER_OF_QUADS, 3);
-common_status_bytes(0)(4 downto 0) <= to_slv(NUMBER_OF_GT, 5);
+common_status_bytes(0)(4 downto 0) <= to_slv(NUMBER_OF_LINKS, 5);
 
-common_status_bytes(1)(5) <= reset_pulse(0);
-common_status_bytes(1)(4) <= resetdone;
+--common_status_bytes(1)(5) <= reset_pulse(0);
+common_status_bytes(1)(4) <= (not (or tx_reset) or to_std_logic(NUMBER_OF_TX_LINKS=0)) and (not (or rx_reset) or to_std_logic(NUMBER_OF_RX_LINKS=0));
 common_status_bytes(1)(3) <= qpllreset;
-
+common_status_bytes(1)(2) <= common_rx_cdr_stable_out; -- core only
 -- common_status_bytes(3) <= to_slv(frame_counter);
 -- common_status_bytes(4) <= to_slv(lsb(word_counter, 8));
 
@@ -703,11 +827,11 @@ gtycore_blk: block
 
 
     -- Clock outputs
-    signal gtwiz_userclk_tx_srcclk_out : std_logic_vector(0 downto 0);
-    signal gtwiz_userclk_tx_usrclk_out : std_logic_vector(0 downto 0); --
+    --signal gtwiz_userclk_tx_srcclk_out : std_logic_vector(0 downto 0);
+    --signal gtwiz_userclk_tx_usrclk_out : std_logic_vector(0 downto 0); --
     signal gtwiz_userclk_tx_usrclk2_out : std_logic_vector(0 downto 0); --
-    signal gtwiz_userclk_rx_srcclk_out : std_logic_vector(0 downto 0);
-    signal gtwiz_userclk_rx_usrclk_out : std_logic_vector(0 downto 0); --
+    --signal gtwiz_userclk_rx_srcclk_out : std_logic_vector(0 downto 0);
+    --signal gtwiz_userclk_rx_usrclk_out : std_logic_vector(0 downto 0); --
     signal gtwiz_userclk_rx_usrclk2_out : std_logic_vector(0 downto 0); --
 
 
@@ -793,7 +917,7 @@ begin
 		qplloutclk(i) <= qpll0outclk_out(i);
 		qplloutrefclk(i) <= qpll0outrefclk_out(i);
 
-		-- clock
+		-- QPLL DRP bus
 		drpdi_common_in(16*(i+1)-1 downto 16*i) <= quad_drp_din(i);
 		quad_drp_dout(i) <= drpdo_common_out(16*(i+1)-1 downto 16*i);
 		quad_drp_drdy(i) <= drprdy_common_out(i);
@@ -825,31 +949,54 @@ begin
 
 		-- Clocks
 		rxusrclk2(i) <= gtwiz_userclk_rx_usrclk2_out(0);
-		rxusrclk(i) <= gtwiz_userclk_rx_usrclk_out(0);
+		--rxusrclk(i) <= gtwiz_userclk_rx_usrclk_out(0);
 
 	    -- reset outputs
-	    tx_resetdone_int(i) <= gtwiz_reset_tx_done_out(0);
-
-	    rx_resetdone_int(i) <= gtwiz_reset_rx_done_out(0);
+		gt_txresetdone_out(i) <= gtwiz_reset_rx_done_out(0);
+		tx_resetdone_int(i) <= gtwiz_reset_rx_done_out(0);
 		gt_rxresetdone_out(i) <= gtwiz_reset_rx_done_out(0);
-	    -- data
+		rx_resetdone_int(i) <= gtwiz_reset_rx_done_out(0);
 
+		-- reset to be used by RX user logic, on rxclk(i)
+		-- asserts asynchronously but deasserts synchronously
+		rxrrst_cdc0: xpm_cdc_async_rst
+			generic map (RST_ACTIVE_HIGH => 1)
+			port map (
+				src_arst  => reset_all or not gtwiz_userclk_rx_active_out(0),
+				dest_clk  => rxusrclk2(i),
+				dest_arst => rx_reset(i)
+				);
+
+		-- reset to be used by RX user logic, on txclk
+		-- asserts asynchronously but deasserts synchronously
+		txrrst_cdc0: xpm_cdc_async_rst
+			generic map (RST_ACTIVE_HIGH => 1)
+			port map (
+				src_arst  => reset_all or not gtwiz_userclk_tx_active_out(0),
+				dest_clk  => txusrclk2,
+				dest_arst => tx_reset(i)
+				);
+
+	    -- TX data
 	    gtwiz_userdata_tx_in(64*(i+1)-1 downto 64*i) <= gt_txdata_in(i);
 		txheader_in(6*(i+1)-1 downto 6*i) <= "0000" & gt_txheader_in(i);
-		rxgearboxslip_in(i) <= gt_rxgearboxslip_in(i);
+        txsequence_in(7*(i+1)-1 downto 7*i) <= std_logic_vector(gt_txsequence_in(i));
+
+		-- RX data
+		rxgearboxslip_in(i) <= gt_rxgearboxslip_in(i) or gt_rxgearboxforceslip(i);
+		gt_rxdata_out(i) <= gtwiz_userdata_rx_out(64*(i+1)-1 downto 64*i);
+		gt_rxdatavalid_out(i) <= rxdatavalid_out(2*i);
 		gt_rxheader_out(i) <= rxheader_out(6*i+1 downto 6*i);
 		gt_rxheadervalid_out(i) <= rxheadervalid_out(2*i);
-		gt_rxdatavalid_out(i) <= rxdatavalid_out(2*i);
-		gt_rxdata_out(i) <= gtwiz_userdata_rx_out(64*(i+1)-1 downto 64*i);
+
+		-- unused
 		rxcdrhold_in(i) <= '0'; -- for SATA only
-        txsequence_in(7*(i+1)-1 downto 7*i) <= gt_txsequence_in(i);
 
         -- debug signals
 
         loopback_in(3*(i+1)-1 downto 3*i) <= gt_loopback_in(i);
 
         rxdfeagchold_in(i) <= gt_rxdfeagchold_in(i);
-		rxdfeagchold_in(i) <= gt_rxdfeagchold_in(i);
 		rxdfelfhold_in(i) <= gt_rxdfelfhold_in(i);
 		rxdfelpmreset_in(i) <= gt_rxdfelpmreset_in(i);
 
@@ -857,7 +1004,7 @@ begin
 	    --rxlpmoshold_in(i) <= gt_rxlpmoshold_in(i);
 	    rxlpmoshold_in(i) <= '0';
 	    rxmonitorsel_in(2*(i+1)-1 downto 2*i) <= gt_rxmonitorsel_in(i);
-		txdiffctrl_in(5*(i+1)-1 downto 5*i) <= '0' & gt_txdiffctrl_in(i);
+		txdiffctrl_in(5*(i+1)-1 downto 5*i) <=  gt_txdiffctrl_in(i) & '1'; -- convert 4-bit to 5-bit
 		txinhibit_in(i) <= gt_txinhibit_in(i);
 		txpostcursor_in(5*(i+1)-1 downto 5*i) <= gt_txpostcursor_in(i);
 		txprecursor_in(5*(i+1)-1 downto 5*i) <= gt_txprecursor_in(i);
@@ -875,41 +1022,56 @@ begin
 	end generate; -- for each lane
 
 	-- Clocks
-	gtwiz_reset_clk_freerun_in(0) <= clk156; -- free-running stable clock
-	txusrclk2 <= gtwiz_userclk_tx_usrclk_out(0);
-	txusrclk <= gtwiz_userclk_tx_usrclk_out(0);
+	gtwiz_reset_clk_freerun_in(0) <= stable_clk; -- free-running stable clock
+	txusrclk2 <= gtwiz_userclk_tx_usrclk2_out(0);
+	--txusrclk <= gtwiz_userclk_tx_usrclk_out(0); -- not used
+
+	-- Status flags
+    common_rx_cdr_stable_out <= gtwiz_reset_rx_cdr_stable_out(0);
+
 
 	-- Resets inputs
-	gtwiz_reset_all_in(0) <= common_user_reset or areset;  -- ***JFC replace areset by real sync clock
-	gtwiz_userclk_rx_reset_in(0) <= areset; -- ***JFC replace areset by real sync clock
-	gtwiz_userclk_tx_reset_in(0) <= areset; -- ***JFC replace areset by real sync clock
+	gtwiz_reset_all_in(0) <= reset_all;
+    gtwiz_reset_rx_datapath_in(0) <= reset_rx_datapath or common_rx_datapath_reset;
+
+	  --// The TX user clocking helper block should be held in reset until the clock source of that block is known to be
+	  --// stable. The following assignment is an example of how that stability can be determined, based on the selected TX
+	  --// user clock source. Replace the assignment with the appropriate signal or logic to achieve that behavior as needed.
+	  gtwiz_userclk_tx_reset_in(0) <=  not (and txprgdivresetdone_out) and (and txpmaresetdone_out);
+
+	  --// The RX user clocking helper block should be held in reset until the clock source of that block is known to be
+	  --// stable. The following assignment is an example of how that stability can be determined, based on the selected RX
+	  --// user clock source. Replace the assignment with the appropriate signal or logic to achieve that behavior as needed.
+	  gtwiz_userclk_rx_reset_in(0) <= not (and rxpmaresetdone_out);
+
+
+
+    -- Optional resets
     gtwiz_reset_tx_pll_and_datapath_in(0) <= '0';
     gtwiz_reset_tx_datapath_in(0) <= '0';
-    gtwiz_reset_rx_pll_and_datapath_in(0) <= '0';
-    gtwiz_reset_rx_datapath_in(0) <= '0';
-
+    gtwiz_reset_rx_pll_and_datapath_in(0) <= common_rx_pll_datapath_reset; -- not necessary
 
 
 gty_core0 : entity work.gtwizard_ultrascale_0
   PORT MAP (
     gtwiz_userclk_tx_reset_in => gtwiz_userclk_tx_reset_in,
-    gtwiz_userclk_tx_srcclk_out => gtwiz_userclk_tx_srcclk_out,
-    gtwiz_userclk_tx_usrclk_out => gtwiz_userclk_tx_usrclk_out,
-    gtwiz_userclk_tx_usrclk2_out => gtwiz_userclk_tx_usrclk2_out,
-    gtwiz_userclk_tx_active_out => gtwiz_userclk_tx_active_out,
-    gtwiz_userclk_rx_reset_in => gtwiz_userclk_rx_reset_in,
-    gtwiz_userclk_rx_srcclk_out => gtwiz_userclk_rx_srcclk_out,
-    gtwiz_userclk_rx_usrclk_out => gtwiz_userclk_rx_usrclk_out,
-    gtwiz_userclk_rx_usrclk2_out => gtwiz_userclk_rx_usrclk2_out,
-    gtwiz_userclk_rx_active_out => gtwiz_userclk_rx_active_out,
-    gtwiz_reset_clk_freerun_in => gtwiz_reset_clk_freerun_in,
-    gtwiz_reset_all_in => gtwiz_reset_all_in,
-    gtwiz_reset_tx_pll_and_datapath_in => gtwiz_reset_tx_pll_and_datapath_in,
-    gtwiz_reset_tx_datapath_in => gtwiz_reset_tx_datapath_in,
-    gtwiz_reset_rx_pll_and_datapath_in => gtwiz_reset_rx_pll_and_datapath_in,
-    gtwiz_reset_rx_datapath_in => gtwiz_reset_rx_datapath_in,
-    gtwiz_reset_rx_cdr_stable_out => gtwiz_reset_rx_cdr_stable_out,
-    gtwiz_reset_tx_done_out => gtwiz_reset_tx_done_out,
+    --gtwiz_userclk_tx_srcclk_out => gtwiz_userclk_tx_srcclk_out, -- nc
+    --gtwiz_userclk_tx_usrclk_out => gtwiz_userclk_tx_usrclk_out, -- nou used
+    gtwiz_userclk_tx_usrclk2_out => gtwiz_userclk_tx_usrclk2_out, -- user clock
+    gtwiz_userclk_tx_active_out => gtwiz_userclk_tx_active_out, -- not used
+    gtwiz_userclk_rx_reset_in => gtwiz_userclk_rx_reset_in, -- must be held in reset until clocks
+    --gtwiz_userclk_rx_srcclk_out => gtwiz_userclk_rx_srcclk_out, -- nc
+    --gtwiz_userclk_rx_usrclk_out => gtwiz_userclk_rx_usrclk_out,
+    gtwiz_userclk_rx_usrclk2_out => gtwiz_userclk_rx_usrclk2_out, --used
+    gtwiz_userclk_rx_active_out => gtwiz_userclk_rx_active_out, -- used
+    gtwiz_reset_clk_freerun_in => gtwiz_reset_clk_freerun_in, -- used
+    gtwiz_reset_all_in => gtwiz_reset_all_in, --used
+    gtwiz_reset_tx_pll_and_datapath_in => gtwiz_reset_tx_pll_and_datapath_in, -- set to 0
+    gtwiz_reset_tx_datapath_in => gtwiz_reset_tx_datapath_in, -- set to 0
+    gtwiz_reset_rx_pll_and_datapath_in => gtwiz_reset_rx_pll_and_datapath_in, -- not necessary, using commoon
+    gtwiz_reset_rx_datapath_in => gtwiz_reset_rx_datapath_in, -- from reset FSM
+    gtwiz_reset_rx_cdr_stable_out => gtwiz_reset_rx_cdr_stable_out, -- not used
+    gtwiz_reset_tx_done_out => gtwiz_reset_tx_done_out, -- used
     gtwiz_reset_rx_done_out => gtwiz_reset_rx_done_out,
     gtwiz_userdata_tx_in => gtwiz_userdata_tx_in,
     gtwiz_userdata_rx_out => gtwiz_userdata_rx_out,
@@ -958,81 +1120,23 @@ gty_core0 : entity work.gtwizard_ultrascale_0
     rxheader_out => rxheader_out,
     rxheadervalid_out => rxheadervalid_out,
     rxmonitorout_out => rxmonitorout_out,
-    rxpmaresetdone_out => rxpmaresetdone_out,
+    rxpmaresetdone_out => rxpmaresetdone_out, -- used in userclk_rx_reset
     rxprbserr_out => rxprbserr_out,
     rxprbslocked_out => rxprbslocked_out,
     rxstartofseq_out => rxstartofseq_out,
-    txpmaresetdone_out => txpmaresetdone_out,
-    txprgdivresetdone_out => txprgdivresetdone_out
+    txpmaresetdone_out => txpmaresetdone_out, -- used in userclk_tx_reset
+    txprgdivresetdone_out => txprgdivresetdone_out-- used in userclk_tx_reset
   );
 
-    -- Instantiate GTY core
-	--gty_core0 : entity work.gtwizard_ultrascale_0
-	--  port map (
-    --    gtwiz_userclk_tx_reset_in => gtwiz_userclk_tx_reset_in,
-    --    gtwiz_userclk_tx_srcclk_out => gtwiz_userclk_tx_srcclk_out,
-    --    gtwiz_userclk_tx_usrclk_out => gtwiz_userclk_tx_usrclk_out,
-    --    gtwiz_userclk_tx_usrclk2_out => gtwiz_userclk_tx_usrclk2_out,
-    --    gtwiz_userclk_tx_active_out => gtwiz_userclk_tx_active_out,
-    --    gtwiz_userclk_rx_reset_in => gtwiz_userclk_rx_reset_in,
-    --    gtwiz_userclk_rx_srcclk_out => gtwiz_userclk_rx_srcclk_out,
-    --    gtwiz_userclk_rx_usrclk_out => gtwiz_userclk_rx_usrclk_out,
-    --    gtwiz_userclk_rx_usrclk2_out => gtwiz_userclk_rx_usrclk2_out,
-    --    gtwiz_userclk_rx_active_out => gtwiz_userclk_rx_active_out,
-    --    gtwiz_reset_clk_freerun_in => gtwiz_reset_clk_freerun_in,
-    --    gtwiz_reset_all_in => gtwiz_reset_all_in,
-    --    gtwiz_reset_tx_pll_and_datapath_in => gtwiz_reset_tx_pll_and_datapath_in,
-    --    gtwiz_reset_tx_datapath_in => gtwiz_reset_tx_datapath_in,
-    --    gtwiz_reset_rx_pll_and_datapath_in => gtwiz_reset_rx_pll_and_datapath_in,
-    --    gtwiz_reset_rx_datapath_in => gtwiz_reset_rx_datapath_in,
-    --    gtwiz_reset_rx_cdr_stable_out => gtwiz_reset_rx_cdr_stable_out,
-    --    gtwiz_reset_tx_done_out => gtwiz_reset_tx_done_out,
-    --    gtwiz_reset_rx_done_out => gtwiz_reset_rx_done_out,
-    --    gtwiz_userdata_tx_in => gtwiz_userdata_tx_in,
-    --    gtwiz_userdata_rx_out => gtwiz_userdata_rx_out,
-    --    drpaddr_common_in => drpaddr_common_in,
-    --    drpclk_common_in => drpclk_common_in,
-    --    drpdi_common_in => drpdi_common_in,
-    --    drpen_common_in => drpen_common_in,
-    --    drpwe_common_in => drpwe_common_in,
-    --    gtrefclk00_in => gtrefclk00_in,
-    --    drpdo_common_out => drpdo_common_out,
-    --    drprdy_common_out => drprdy_common_out,
-    --    qpll0outclk_out => qpll0outclk_out,
-    --    qpll0outrefclk_out => qpll0outrefclk_out,
-    --    drpaddr_in => drpaddr_in,
-    --    drpclk_in => drpclk_in,
-    --    drpdi_in => drpdi_in,
-    --    drpen_in => drpen_in,
-    --    drpwe_in => drpwe_in,
-    --    gtyrxn_in => gtyrxn_in,
-    --    gtyrxp_in => gtyrxp_in,
-    --    rxcdrhold_in => rxcdrhold_in,
-    --    rxgearboxslip_in => rxgearboxslip_in,
-    --    txheader_in => txheader_in,
-    --    txsequence_in => txsequence_in,
-    --    drpdo_out => drpdo_out,
-    --    drprdy_out => drprdy_out,
-    --    gtpowergood_out => gtpowergood_out,
-    --    gtytxn_out => gtytxn_out,
-    --    gtytxp_out => gtytxp_out,
-    --    rxdatavalid_out => rxdatavalid_out,
-    --    rxheader_out => rxheader_out,
-    --    rxheadervalid_out => rxheadervalid_out,
-    --    rxpmaresetdone_out => rxpmaresetdone_out,
-    --    rxstartofseq_out => rxstartofseq_out,
-    --    txpmaresetdone_out => txpmaresetdone_out,
-    --    txprgdivresetdone_out => txprgdivresetdone_out
-    --    );
 
 end block;
 
 
-gtx_gen: for i in 0 to NUMBER_OF_GT-1 generate
+gtx_gen: for i in 0 to NUMBER_OF_LINKS-1 generate
 
 	lane_regs0: entity work.CTRL_SLAVE
 		GENERIC MAP (
-			DEFAULT_CONTROL_BYTES => X"00_00_01_40_00_00",
+			DEFAULT_CONTROL_BYTES => X"80_00_01_40_00_00",
 			USE_RAM_DOUT_RDY      => TRUE, -- need to wait for the RDY signal on RAM read accesses
 			RAM_DATA_WIDTH        => 16,
 			RAM_ADDR_WIDTH        => 10, -- GTX DRP Address bus is 10 bits, we use 11 bits of address in the memory-mapepd interface since we access bytes
@@ -1062,13 +1166,17 @@ gtx_gen: for i in 0 to NUMBER_OF_GT-1 generate
 	--------------------
 
 	-- CONTROL Byte 0
-	gt_user_reset(i)                <= gt_control_bytes(i)(0)(7);
-	gt_user_gttxreset(i)            <= gt_control_bytes(i)(0)(6);
+	--gt_user_reset(i)                <= gt_control_bytes(i)(0)(7); -- unused with core
+	--gt_user_gttxreset(i)            <= gt_control_bytes(i)(0)(6);-- unused with core
+
+	gt_scramble_en(i)               <= gt_control_bytes(i)(0)(7);
+	gt_rxgearboxforceslip(i)        <= gt_control_bytes(i)(0)(6);
 	gt_txinhibit_in(i)              <= gt_control_bytes(i)(0)(5);
 	gt_txpostcursor_in(i)           <= gt_control_bytes(i)(0)(4 downto 0);
 
 	-- CONTROL Byte 1
 	gt_txdiffctrl_in(i)             <= gt_control_bytes(i)(1)(7 downto 4);
+	gt_unscrambler_reset(i) <= gt_control_bytes(i)(1)(3);
 	gt_loopback_in(i)               <= gt_control_bytes(i)(1)(2 downto 0); -- '000' = normal operation
 
 	-- CONTROL Byte 2
@@ -1084,11 +1192,12 @@ gtx_gen: for i in 0 to NUMBER_OF_GT-1 generate
 	-- CONTROL Byte 4
 
 	gt_rxdfelpmreset_in(i)  <= gt_control_bytes(i)(4)(7); -- needed for link tests
-	gt_user_gtrxreset(i)    <= gt_control_bytes(i)(4)(6); -- may be needed for link tests
+	gt_user_gtrxreset(i)    <= gt_control_bytes(i)(4)(6); -- unused by core
 	gt_rxlpmen_in(i)        <= gt_control_bytes(i)(4)(5); -- may be needed for link tests
 	gt_rxmonitorsel_in(i)   <= gt_control_bytes(i)(4)(4 downto 3); -- may be needed for link tests (if so, will need to make rxmonitor status available)
 	gt_capture_en(i)        <= gt_control_bytes(i)(4)(2);
 	gt_block_lock_reset(i)  <= gt_control_bytes(i)(4)(1); -- could be global, but routing is easier if it is local
+	gt_rxdfeagchold_in(i) <= gt_control_bytes(i)(4)(0);
 
 	-- CONTROL Byte 5
 
@@ -1107,9 +1216,10 @@ gtx_gen: for i in 0 to NUMBER_OF_GT-1 generate
 	-- Constant control signals
 
 	gt_scrambler_reset(i)   <= '0';
-	gt_unscrambler_reset(i) <= '0';
-	gt_scramble_en(i)       <= '1'; -- ***JFC Normally 1, 0 for debug
-	gt_descramble_en(i)     <= '1'; ---***JFC Normally 1, 0 for debug
+	--gt_unscrambler_reset(i) <= '0';
+	--gt_scramble_en(i)       <= '1'; -- ***JFC Normally 1, 0 for debug
+	--gt_descramble_en(i)     <= '1'; ---***JFC Normally 1, 0 for debug
+	gt_descramble_en(i)     <= gt_scramble_en(i);
 
 	gt_txpolarity_in(i)            <= '0';
 	gt_rxpolarity_in(i)            <= '0';
@@ -1129,8 +1239,8 @@ gtx_gen: for i in 0 to NUMBER_OF_GT-1 generate
 	gt_status_bytes(i)(0)(7) <= gt_txresetdone_out(i);
 	gt_status_bytes(i)(0)(6) <= gt_rxresetdone_out(i);
 	gt_status_bytes(i)(0)(5 downto 4) <= gt_txbufstatus_out(i);
-	gt_status_bytes(i)(0)(3) <= tx_resetdone_int(i);
-	gt_status_bytes(i)(0)(2) <= rx_resetdone_int(i);
+	gt_status_bytes(i)(0)(3) <= tx_resetdone(i);
+	gt_status_bytes(i)(0)(2) <= rx_resetdone(i);
 	gt_status_bytes(i)(0)(1) <= gt_block_lock(i);
 	gt_status_bytes(i)(0)(0) <= to_std_logic(NUMBER_OF_RX_LINKS > 0); -- Indicates if RX part is present
 
@@ -1143,6 +1253,7 @@ gtx_gen: for i in 0 to NUMBER_OF_GT-1 generate
 	rxstatus_gen: if NUMBER_OF_RX_LINKS>0 generate
 	-- STATUS BYTE 5
 		gt_status_bytes(i)(5)(7 downto 6) <= gt_rxheader_capture(i);
+		gt_status_bytes(i)(5)(5) <= gt_rxgearboxslip_in(i); --optional
 		gt_status_bytes(i)(5)(2 downto 0) <= gt_rxbufstatus_out(i);
 
 		-- STATUS BYTE 6
@@ -1168,9 +1279,9 @@ gtx_gen: for i in 0 to NUMBER_OF_GT-1 generate
 	-- gt_status_bytes(i)(13)(6 downto 0) <= gt_txsequence_in(i);--optional
 	-- gt_status_bytes(i)(5)(0) <= gt_rxprbserr_out(i);
 
-
-gt_gtrxreset_all(i) <= gt_gtrxreset_in(i) or gt_user_gtrxreset(i);
-gt_gttxreset_all(i) <= gt_gttxreset_in(i) or gt_user_gttxreset(i);
+-- unused with GTY core
+--gt_gtrxreset_all(i) <= gt_gtrxreset_in(i) or gt_user_gtrxreset(i);
+--gt_gttxreset_all(i) <= gt_gttxreset_in(i) or gt_user_gttxreset(i);
 
 
 
@@ -1386,39 +1497,40 @@ end generate; -- for number of GTX
 ----------------------------------------------
 -- Global TX Clock
 ----------------------------------------------
-
+-- Assign Tx clock output
 tx_clk <= txusrclk2;
 
 -- Generate a logic signal that toggles at half the rate of the tx clock for the frequency counter
-txclkdiv2_proc: process(txusrclk2)
-	begin
-		if rising_edge(txusrclk2) then
-			txclk_div2_int <= not txclk_div2_int;
-			gt_user_tx_data_int <= gt_user_tx_data; -- Pipeline signals from SLAVEs. Keep it out of gtx_gen[] to allow free placement.
-		end if;
-	end process;
+txclkdiv2_proc: process(all) begin
+	if rising_edge(txusrclk2) then
+		txclk_div2 <= not txclk_div2;
+	end if;
+end process;
+
 
 
 ----------------------------------------------
 -- TX Data Logic
 ----------------------------------------------
 tx_gen: for i in  0 to NUMBER_OF_TX_LINKS-1 generate
---    signal tx_data_unscrambled: slv64;
---    signal tx_data_scrambled: slv64;
---    signal tx_data_valid: std_logic;
+
+	signal user_tx_data_reg: slv64;
+	signal user_tx_header_reg: slv2;
+
     signal tx_header_reg: slv2;
     signal tx_data_reg: slv64 := (others=>'0'); -- init for sim
---    signal tx_header_valid: std_logic;
-    signal tx_data_unscr: slv64 := (others=> '0'); -- init for sim
-    signal tx_header_unscr: slv2 := (others=> '0'); -- init for sim
+    signal tx_data_scr_bypass: slv64 := (others=> '0'); -- init for sim
+--    signal tx_header_unscr: slv2 := (others=> '0'); -- init for sim
     signal tx_data_scr: slv64 := (others=> '0'); -- init for sim
     signal tx_header_scr: slv2 := (others=> '0'); -- init for sim
+    signal txsequence_bit: std_logic;
 
+	signal scrambler_reset: std_logic;
 
 begin
 
 -- ** Not use with GTY core
-	tx_fsm_soft_reset(i) <= common_user_reset or gt_user_reset(i);
+	--tx_fsm_soft_reset(i) <= common_user_reset or gt_user_reset(i);
 
 	--gt_txresetfsm: entity work.xglink_tx_startup_fsm
 	--	generic map(
@@ -1472,51 +1584,77 @@ begin
 	-- 00        00            1                1                           e                  d 00  78             y
 	-- 01        00            1                1                           f                  e     55             y
 
-	gt_txsequence_in(i) <= "0" & std_logic_vector(gt_seq_counter(i)(6 downto 1));
+	--gt_txsequence_in(i) <= "0" & std_logic_vector(gt_seq_counter(i)(6 downto 1));
 
-	process(txusrclk2)
-	begin
-		if rising_edge(txusrclk2) then
-			if tx_resetdone_int(i)='0' or gt_seq_counter(i) = 65 then
-			     gt_seq_counter(i) <= (others => '0');
-			else
-			     gt_seq_counter(i) <= gt_seq_counter(i) + 1;
-			end if;
-			if gt_seq_counter(i)(6 downto 1) = 31 then
-				tx_ready_int(i) <= '0';
-				tx_ready(i) <= '0' after DLY; -- delay needed to ensure proper evaluation order of outside modules since tx_clk is generated by assignment
-			else
-				tx_ready_int(i) <= '1';
-				tx_ready(i) <= '1' after DLY;
-			end if;
-		end if;
-	end process;
+	--process(all)
+	--begin
+	--	if rising_edge(txusrclk2) then
+	--		if tx_resetdone_int(i)='0' or gt_seq_counter(i) = 65 then
+	--		     gt_seq_counter(i) <= (others => '0');
+	--		else
+	--		     gt_seq_counter(i) <= gt_seq_counter(i) + 1;
+	--		end if;
+	--		if gt_seq_counter(i)(6 downto 1) = 31 then
+	--			tx_ready_int(i) <= '0';
+	--			tx_ready(i) <= '0' after DLY; -- delay needed to ensure proper evaluation order of outside modules since tx_clk is generated by assignment
+	--		else
+	--			tx_ready_int(i) <= '1';
+	--			tx_ready(i) <= '1' after DLY;
+	--		end if;
+	--	end if;
+	--end process;
 
+
+	tx_ready(i) <= tx_ready_int(i) after DLY;
 	tx_resetdone(i) <= tx_resetdone_int(i) after DLY;
 
-	txproc: process(txusrclk2)
-	begin
+	process(all) begin
+		if rising_edge(txusrclk2) then
+			txsequence_bit <= not txsequence_bit;
+			if txsequence_bit then
+			    gt_txsequence_in(i) <= gt_txsequence_in(i) + 1 after DLY;
+			    gt_txsequence_in(i) <= (others => '0') after DLY when gt_txsequence_in(i) = 32;
+				tx_ready_int(i) <= '0' when gt_txsequence_in(i) = 31 else '1'; -- we need the delays to ensure the signal changes after all copies of the clock
+			end if; -- txsequence_bit
+			-- Resets
+			if tx_reset(i) then
+				txsequence_bit <= '0';
+				gt_txsequence_in(i) <= (others => '0');
+			end if;
+		end if; -- clk
+	end process;
+
+
+
+
+	-- Data tranmission path
+	-- User_data => reverse bytes => scramble => reverse bits => GTY Tx
+	txproc: process(all) begin
 		if rising_edge(txusrclk2) then
 
-			if tx_ready_int(i) = '1' then
+			user_tx_data_reg <= gt_user_tx_data(i); -- Pipeline user data and header words.
+			user_tx_header_reg <= gt_user_tx_header(i);
 
-				tx_data_reg <= tx_data(i);
+			if tx_ready(i) then
+
+				tx_data_reg <= reverse_bytes(tx_data(i));
 				tx_header_reg <= tx_header(i);
 
-
-				tx_header_scr <= tx_header_unscr; -- delay header to compensate for the scrambler latency
-
-				if gt_user_source_sel(i)='1' then -- select values from registers
-					tx_data_unscr <= gt_user_tx_data_int(i);
-					tx_header_unscr <= gt_user_tx_header(i);
-				else -- select values from module input
-					tx_data_unscr <= reverse_bytes(tx_data_reg);
-					tx_header_unscr <= tx_header_reg;
---					tx_data_int(i) <= (others => '0'); ---*** JFC debug
+				-- Override with user-specified register values if source_sel=1
+				if gt_user_source_sel(i) = '1' then -- select values from registers
+					tx_data_reg <= reverse_bytes(user_tx_data_reg);
+					tx_header_reg <= user_tx_header_reg;
 				end if;
 
-			end if; -- tx_ready_int='1'
+				-- Delay tx_header and data to compensate for the scrambler latency
+				tx_data_scr_bypass <= tx_data_reg; -- for scrambler bypass path
+				tx_header_scr <= tx_header_reg;
 
+				-- Send data to GTY, scrambled or not
+				gt_txdata_in(i) <= reverse_bits_same_dir(tx_data_scr) when gt_scramble_en(i) else
+				                   reverse_bits_same_dir(tx_data_scr_bypass);
+				gt_txheader_in(i) <= tx_header_scr;
+            end if; -- tx_ready
 		end if; --clk
 	end process;
 
@@ -1526,20 +1664,18 @@ begin
 	------------------------------------------------
 
 
-	gt_txdata_in(i) <= reverse_bits_same_dir(tx_data_scr) when gt_scramble_en(i)='1' else reverse_bits_same_dir(tx_data_unscr); -- first bit transmitted is in the MSB
-    gt_txheader_in(i) <= tx_header_scr when gt_scramble_en(i)='1' else tx_header_unscr;
-	scrambler_reset(i) <= not tx_resetdone_int(i) or gt_scrambler_reset(i);
+	scrambler_reset <= tx_reset(i) or not tx_resetdone_int(i) or gt_scrambler_reset(i);
 
 	scrambler0: entity work.xxvglink_scrambler
 		port map (
 			-- User Interface
-			unscrambled_data_in => tx_data_unscr, -- first bit transmitted is in the LSB
+			unscrambled_data_in => tx_data_reg, -- first bit transmitted is in the LSB
 			scrambled_data_out  => tx_data_scr, -- first bit transmitted is in the LSB
 			data_valid_in       => tx_ready_int(i),
 
 			-- System Interface
 			USER_CLK            => txusrclk2,
-			SYSTEM_RESET        => scrambler_reset(i)
+			SYSTEM_RESET        => scrambler_reset
 	    );
 
 end generate; -- for NUMBER_OF_TX_LINKS
@@ -1550,111 +1686,115 @@ end generate; -- for NUMBER_OF_TX_LINKS
 -- RX Data Logic
 ----------------------------------------------
 rx_gen: for i in  0 to NUMBER_OF_RX_LINKS-1 generate
+
+	signal block_sync_reset: std_logic;
+
+    signal rx_data_unscr_bypass: slv64;
     signal rx_data_unscr: slv64;
-    signal rx_data_valid_unscr: std_logic;
-    signal rx_header_unscr: slv2;
-    signal rx_header_valid_unscr: std_logic;
---    signal rx_data_scr: slv64;
---    signal rx_data_valid_scr: std_logic;
---    signal rx_data_unscr: slv64;
---    signal rx_data_valid_unscr: std_logic;
+    signal rx_data_valid_reg: std_logic;
+    signal rx_header_reg: slv2;
+    signal rx_header_valid_reg: std_logic;
 
+	signal rx_capture_en: std_logic;
+	signal unscrambler_reset: std_logic;
 
+    signal rx_data_int: slv64;
+    signal rx_data_valid_int: std_logic;
+    signal rx_header_int: slv2;
+    signal rx_header_valid_int: std_logic;
 
 begin
+	-- Assign clock and reset outputs
 	rx_clk(i) <= rxusrclk2(i); --! Danger Will Robinson! In sims, the clock assignment might be evaluated AFTER the output signals are evaluated, causing the data to appear on the wrong clock. That's why we have a DLY for each output purt assignments.
+	rx_resetdone(i) <= rx_resetdone_int(i) after DLY;
 
-
+    -- apply output with delays for simulations
+    rx_data(i) <= rx_data_int after DLY;
+    rx_data_valid(i) <= rx_data_valid_int after DLY;
+    rx_header(i) <= rx_header_int after DLY;
+    rx_header_valid(i) <= rx_header_valid_int after DLY;
 	------------------------------------------------
 	-- RX BLOCK SYNCHRONIZATION
 	------------------------------------------------
-	block_sync_reset(i) <= not gt_rxresetdone_out(i) or gt_block_lock_reset(i);
+	block_sync_reset <= rx_reset(i) or not rx_resetdone_int(i) or gt_block_lock_reset(i);
 
 	block_sync0 :  entity work.xxvglink_block_sync
-		generic map
-		(
+		generic map (
 		    SH_CNT_MAX          => 64,
 		    SH_INVALID_CNT_MAX  => 16
 		)
-		port map
-		(
+		port map (
 			-- User Interface
-			BLOCKSYNC_OUT             =>    gt_block_lock(i),
-			RXGEARBOXSLIP_OUT         =>    gt_rxgearboxslip_in(i),
-			RXHEADER_IN               =>    gt_rxheader_out(i),
-			RXHEADERVALID_IN          =>    gt_rxheadervalid_out(i),
+			BLOCKSYNC_OUT     => gt_block_lock(i),
+			RXGEARBOXSLIP_OUT => gt_rxgearboxslip_in(i),
+			RXHEADER_IN       => gt_rxheader_out(i),
+			RXHEADERVALID_IN  => gt_rxheadervalid_out(i),
 
 			-- System Interface
-			clk                  =>    rxusrclk2(i),
-			rst                  => block_sync_reset(i)
+			clk => rxusrclk2(i),
+			rst => block_sync_reset
 		);
+
+	-- Synchronize the capture signal to the local rx clock
+	cap_cdc0: xpm_cdc_single
+		generic map (SRC_INPUT_REG => 0)
+		port map (
+		    src_clk => ctrl_clk,
+			src_in => gt_capture_en(i),
+			dest_clk => rxusrclk2(i),
+			dest_out => rx_capture_en
+		);
+
+	-- Data receive path
+	--   GTY Rx => reverse_bits => descrambler => reverse bytes => user data
+	-- Also Capture descrambled or unscambled data when valid and capture=1
+	process(all) begin
+		if rising_edge(rxusrclk2(i)) then
+			-- Compensate unscrambler latency
+			rx_data_unscr_bypass <= reverse_bits_same_dir(gt_rxdata_out(i)); -- descrambler bypass
+			rx_data_valid_reg <= gt_rxdatavalid_out(i);
+			rx_header_reg <= gt_rxheader_out(i);
+			rx_header_valid_reg <= gt_rxheadervalid_out(i);
+
+			if rx_reset(i) or not rx_resetdone_int(i) then -- Added reset to try to prevent spurious sends after reset
+				rx_header_reg <="00";
+				rx_header_valid_reg <= '0';
+				rx_data_valid_reg <= '0';
+			end if;
+
+            -- Assign user outputs, scrambled or unscrambled
+            -- Add assignment delays to make sure the signal changes AFTER all copies of the clocks have propagated in simulation
+		    rx_data_int <= reverse_bytes(rx_data_unscr) when gt_descramble_en(i) else
+		                   reverse_bytes(rx_data_unscr_bypass); -- first byte received is in bits 31-24 (MSB-LSB)
+		    rx_data_valid_int <= rx_data_valid_reg;
+		    rx_header_int <= rx_header_reg;
+		    rx_header_valid_int <= rx_header_valid_reg;
+
+			-- Word capture logic
+			if rx_capture_en then
+				rx_data_capture(i) <= rx_data_int when rx_data_valid_int;
+				gt_rxheader_capture(i) <= rx_header_int when rx_header_valid_int;
+			end if;
+		end if; -- clk
+	end process;
 
 	------------------------------------------------
 	-- RX DESCRAMBLER
 	------------------------------------------------
+	unscrambler_reset <= rx_reset(i) or not rx_resetdone_int(i) or gt_unscrambler_reset(i);
 
-	rx_resetdone(i) <= rx_resetdone_int(i) after DLY;
-
-		-- Capture descrambled or unscambled data when valid and capture=1
-	process(rxusrclk2(i))
-	begin
-	      if rising_edge(rxusrclk2(i)) then
-            -- Compensate unscrambler latency
-   			rx_data_valid_unscr <= gt_rxdatavalid_out(i) after DLY;
-    		rx_header_unscr <= gt_rxheader_out(i) after DLY;
-			rx_header_valid_unscr <= gt_rxheadervalid_out(i) after DLY;
-
-			if rx_resetdone_int(i)='0' or gt_block_lock(i)='0' then -- Added reset to try to prevent spurious sends after reset
-				rx_header_unscr <="00";
-				rx_header_valid_unscr <= '0';
-				rx_data_valid_unscr <= '0';
-			end if;
-
-            if gt_descramble_en(i)='1' then
-                rx_data(i) <= reverse_bytes(rx_data_unscr) after DLY; -- first byte received is in bits 31-24 (MSB-LSB)
-                rx_data_valid(i) <= rx_data_valid_unscr after DLY;
-                rx_header(i) <= rx_header_unscr after DLY;
-                rx_header_valid(i) <= rx_header_valid_unscr after DLY;
-            else
-                rx_data(i) <= reverse_bytes(reverse_bits_same_dir(gt_rxdata_out(i))) after DLY; -- first byte received is in bits 31-24 (MSB-LSB)
-                rx_data_valid(i) <= gt_rxdatavalid_out(i) and gt_block_lock(i) after DLY;
-                rx_header(i) <= gt_rxheader_out(i) after DLY;
-                rx_header_valid(i) <= gt_rxheadervalid_out(i) and gt_block_lock(i) after DLY;
-            end if;
-
-            -- Word capture logic
-			gt_capture_en_rxusrclk2(i)(1) <= gt_capture_en(i);
-			gt_capture_en_rxusrclk2(i)(0) <= gt_capture_en_rxusrclk2(i)(1);
-			if gt_capture_en_rxusrclk2(i)(0)='1' then
-				if gt_descramble_en(i)='0' and gt_rxdatavalid_out(i)='1' then
-					rx_data_capture(i) <= reverse_bits_same_dir(gt_rxdata_out(i));
-				elsif gt_descramble_en(i)='1' and rx_data_valid_unscr='1' then
-					rx_data_capture(i) <= rx_data_unscr;
-				end if;
-				if gt_rxheadervalid_out(i)='1' then
-					gt_rxheader_capture(i) <= gt_rxheader_out(i);
-				end if;
-			end if;
-
-
-	      end if; -- clk
-	end process;
-
-
-
-	-- Descramble
 	descrambler0  :  entity work.xxvglink_descrambler
 	    port map (
 	        -- User Interface
-	        scrambled_data_in     =>     reverse_bits_same_dir(gt_rxdata_out(i)), -- first bit received is in the LSB
-	        data_valid_in         =>     gt_rxdatavalid_out(i),
-	        unscrambled_data_out  =>     rx_data_unscr, -- first bit received is in the LSB
+	        scrambled_data_in    => reverse_bits_same_dir(gt_rxdata_out(i)), -- first bit received is in the LSB
+	        data_valid_in        => gt_rxdatavalid_out(i),
+	        unscrambled_data_out => rx_data_unscr, -- first bit received is in the LSB
 
 	        -- System Interface
 	        clk => rxusrclk2(i),
-	        rst => gt_unscrambler_reset(i) or not gt_block_lock(i)
+	        rst => unscrambler_reset -- or not gt_block_lock(i)
 	    );
-end generate; -- if RX in implemented
+end generate; -- for RX lane
 
 
 end Behavioral;
