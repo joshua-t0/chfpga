@@ -27,6 +27,9 @@ use IEEE.NUMERIC_STD.ALL;
 library UNISIM;
 use UNISIM.VComponents.all;
 
+library xpm;
+use xpm.vcomponents.all;
+
 library work;
 use work.chFPGA_Package.all;
 
@@ -50,17 +53,18 @@ entity xxvglink_tx is
 		s_axis_tx_tdata: in slv64; -- Fisrt *byte* transmitted is in the MSB (i.e. first bit transmitted is bit 24)
 		s_axis_tx_tvalid: in std_logic;
 		s_axis_tx_tlast: in std_logic;
+		s_axis_tx_clk: in std_logic;
 
 		--reset_stats: in std_logic;
 		tx_fifo_overflow: out std_logic; -- transient flag indicating that the TX FIFO has a overflow condition.
 
 		-- XGLINK core interface
-		tx_data: out slv64;
+		tx_data: out slv64 := X"1E000000_00000000"; -- init important for sims
 		tx_header: out slv2; -- '10' for control, '01' for data
 		tx_ready: in std_logic; -- The data is accepted only on clocks where tx_ready is High
+		tx_clk: in std_logic; -- TX clock from the XGLINK core
 
-		clk: in std_logic; -- TX clock from the XGLINK core
-		rst : in STD_LOGIC -- asynchronous reset
+		arst : in STD_LOGIC -- asynchronous reset
 		);
 
 
@@ -71,6 +75,8 @@ architecture impl of xxvglink_tx is
 
 
 -- Signals
+
+signal tx_rst: std_logic; -- synchronous reset
 
 -- TX state machine
 type TX_STATE_TYPE is (
@@ -100,6 +106,14 @@ signal crc_out_int: slv32; -- Ethernet CRC word
 
 begin
 
+rst_cdc0: xpm_cdc_async_rst
+	generic map (RST_ACTIVE_HIGH => 1)
+	port map (
+		src_arst  => arst,
+		dest_clk  => tx_clk,
+		dest_arst => tx_rst
+		);
+
 
 tx_fifo0 : entity work.xxvglink_data_fifo
   PORT MAP (
@@ -107,17 +121,17 @@ tx_fifo0 : entity work.xxvglink_data_fifo
 	s_axis_tvalid  => s_axis_tx_tvalid and tx_reset_done,
 	s_axis_tlast   => s_axis_tx_tlast,
 	s_axis_tdata   => s_axis_tx_tdata,
-	s_clk          => clk,
+	s_clk          => s_axis_tx_clk,
 
 	m_axis_tready  => fifo_rd_en,
 	m_axis_tvalid  => fifo_tvalid,
 	m_axis_tlast   => fifo_tlast,
 	m_axis_tdata   => fifo_tdata,
-	m_clk          => clk,
+	m_clk          => tx_clk,
 
 	overflow       => tx_fifo_overflow,
 
-	rst            => rst
+	arst            => arst
   );
 
 
@@ -128,18 +142,17 @@ crc32_0: entity work.crc32_64
 		din => reverse_bits_same_dir(reverse_bytes(fifo_tdata)), -- First bit to transmit is in the MSB of data_in
 		crc_out => crc_out_int,
 		rst => crc_init,
-		en => fifo_rd_en,
-		clk => clk
+		en => fifo_rd_en and fifo_tvalid,
+		clk => tx_clk
 );
 --crc_calc <= tvalid2 and tready;
 crc_out <= not reverse_bytes(reverse_bits_same_dir(crc_out_int)); -- First *byte* to transmit in the MSB, all bits inverted as per Ethernet standard
 
 -- fetch new data word when we are sending a data word to the tx_data
-fifo_rd_en <= to_std_logic(tx_ready = '1' and tx_state = TX_STATE_DATA and fifo_tvalid='1');
+fifo_rd_en <= to_std_logic(tx_ready = '1' and tx_state = TX_STATE_DATA);
 
-tx_proc : process(clk)
-begin
-	if rising_edge(clk) then
+tx_proc : process(all) begin
+	if rising_edge(tx_clk) then
 
 		-- Mare sure no data is written to FIFO a few clocks after reset
 		if all_ones(tx_reset_ctr) then
@@ -153,10 +166,11 @@ begin
 				-- Output data state machine
 		if tx_ready then -- if GTY's gearbox can receive data
 
+            tx_data <= X"1E000000_00000000";
+            tx_header <= "10";
+
 			case tx_state is
 				when TX_STATE_STANDBY_IDLE => -- STANDBY State
-					tx_data <= X"1E000000_00000000";
-					tx_header <= "10";
 					crc_init <= '1';
 					if fifo_tvalid='1' then -- if there is any data coming our way, start a new frame
 						tx_state <= TX_STATE_SOF;
@@ -174,10 +188,8 @@ begin
 						if fifo_tlast='1' then -- if this is the last word of the frame
 							tx_state <= TX_STATE_CRC_EOF; -- ...send the CRC on the second half of the block, then EOF in a new block
 						end if;
-					else -- othewise we don't have enough data to fill a block so send an IDLE block instead. The data is in the pipeline and will be sent later.
-						tx_data <= X"1E000000_00000000";
-						tx_header <= "10";
 					end if;
+					-- othewise we don't have enough data to fill a block so send an IDLE block instead. The data is in the pipeline and will be sent later.
 
 				when TX_STATE_CRC_EOF => -- Send CRC on the second half of the block
 					tx_data <= X"CC" & crc_out & X"000000"; -- Ordered set {D0 D1 D2 D3 T4 C5 C6 C7} = 0xcc D0 D1 D2 D3 "000" C5 C6 C7 (C5-7 are 7 bits and are IDEL (0))
@@ -187,9 +199,10 @@ begin
 
 		end if; -- if tx_ready=1
 
-		if rst = '1' then
+		if tx_rst = '1' then
 			tx_state <= TX_STATE_STANDBY_IDLE;
-			tx_header <= "01"; -- Make sure we have a valid header even when RST is held high.
+            tx_data <= X"1E000000_00000000";
+            tx_header <= "10";
 			tx_reset_ctr <= (others => '0');
 			tx_reset_done <= '0';
 		end if;
