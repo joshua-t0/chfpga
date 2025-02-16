@@ -62,7 +62,8 @@ entity UCORR44 is
 		PLATFORM_ID: integer := PLATFORM_ID_CRS;
 		N: integer :=64; -- Number of inputs to correlate
 		N_PER_CLK: integer := 32; -- Number of inputs provided on each clock
-		Nclk: integer := N/N_PER_CLK; -- Number of clocks  the correlator should take to compute the products
+		BIN_DECIMATION_FACTOR: integer := 1; -- Only 1 out of every BIN_DECIMATION_FACTOR bin is processed in order to provide extra comoputing cycles and use less resources
+		Nclk: integer := BIN_DECIMATION_FACTOR*N/N_PER_CLK; -- Number of clocks  the correlator should take to compute the products
 		CORR_NUMBER: integer := 0; -- correlator number to be used in packet headers
         NCORR: integer := 1;
 		URAM_MAX: integer := 64;
@@ -162,8 +163,8 @@ architecture impl of UCORR44 is
 	-- Constants
 	constant P: integer := (N*(N+1)/2); -- number of products
 	constant NCMAC : integer := P / Nclk;
-	constant WORDS_PER_BIN: integer := N/N_PER_CLK;
-	constant K: integer := N/N_PER_CLK/Nclk; -- decimation factor
+	constant WORDS_PER_BIN: integer := N/N_PER_CLK; -- number of clocks it takes to send all the channels of one bin
+	constant K: integer := BIN_DECIMATION_FACTOR; -- bin decimation factor
 	constant H: integer := N/2/Nclk; -- Number of columns processed per clock
 	--constant Nprod_per_clk: integer := N/2/Nclk/K
 
@@ -180,8 +181,7 @@ architecture impl of UCORR44 is
 
 begin
 
-	bin_sel: process(clk)
-	begin
+	bin_sel: process(all) begin
 		if rising_edge(clk) then
 			if s_axis_tvalid then
 				word_ctr <= word_ctr + 1;
@@ -201,43 +201,14 @@ begin
 		end if;
 	end process bin_sel;
 
---	corr_gen: if N=N_PER_CLK and Nclk=1 generate
 
---		type tuple_array is array (NATURAL range <>) of integer_vector(0 to 1);
-
---		function triu_indices(N:integer) return tuple_array is
---			variable xy: tuple_array(0 to N*(N+1)/2 - 1);
---			variable k: integer := 0;
---		begin
---			for i in 0 to N-1 loop
---				for j in i to N-1 loop
---					xy(k)(0) := i;
---					xy(k)(1) := j;
---					k := k + 1;
---				end loop;
---			end loop;
---			return xy;
---		end function triu_indices;
-
---		constant input_map: tuple_array(0 to P-1) := triu_indices(N);
-
---	begin
---		gen_xy: for i in 0 to P-1 generate
---			xy_tdata(i)(15 downto 8) <= s_axis_tdata(input_map(i)(0));
---			xy_tdata(i)(7 downto 0) <= s_axis_tdata(input_map(i)(1));
---		end generate;
-
-
---	else generate
-corr_gen: if TRUE generate
-
+    corr_blk: block
 		signal t: slv_array(0 to N-N_PER_CLK-1)(7 downto 0); -- assembly vector - don't need to store the last word
 		signal x: slv_array(0 to N-1)(7 downto 0) := (others => (others => '0')); -- fixed correlation vector. Init value for nice sims only.
 		signal y: slv_array(0 to N-1)(7 downto 0):= (others => (others => '0')); -- rotating correlation vector. Init value for nice sims only.
 		signal xsel: std_logic_vector(N/2 to N-1); -- mux selection vector, only applies to muxes fron N/2+1 to N. Elements frm 0 to N/2 are not touches and shoudl be synthesized out.
 
 		signal clk_ctr: unsigned(3 downto 0);
-
 	begin
 
         xyj_gen: for j in 0 to H-1 generate
@@ -248,13 +219,7 @@ corr_gen: if TRUE generate
             end generate; --i
         end generate; --j
 
-		seq_proc: process(clk)
-
-		begin
-
-
-
-
+		seq_proc: process(all) begin
 			if rising_edge(clk) then
 				-- Rotate y and grow xsel vectors by N. Overriden below when new data is ready.
                 y <= y(H to N-1) & y(0 to H-1);
@@ -296,16 +261,13 @@ corr_gen: if TRUE generate
 					end if;
 				end if; -- tvalid and right bin
 
-
-
 				if rst then
     				xsel <= (others =>'0');
     				xy_tvalid <= '0';
     			end if; --rst
 			end if; --clk
         end process;
-
-	end generate;
+	end block corr_blk;
 
 
 	corr0: entity work.UCMAC44_ARRAY
@@ -341,9 +303,7 @@ corr_gen: if TRUE generate
 
 			clk => clk,
 			rst => rst
-
 	);
 
-
-end impl;
+end architecture impl;
 

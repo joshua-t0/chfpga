@@ -10,8 +10,7 @@ use ieee.numeric_std.all;
 use work.chfpga_package.all;
 use work.chfpga_config.all;
 
--------- udp_mac package ------------
---! Defines the chan entity as a component so we can  defer binding in conditional if-generate blocks and prevent elaboration errors
+-- Defines the chan entity as a component so we can  defer binding in conditional if-generate blocks and prevent elaboration errors
 package chan_package is
 
 ----------------------------------------------------------------------------------
@@ -49,12 +48,14 @@ COMPONENT CHAN is
     out_dat_tuser: out std_logic_vector(3 downto 0);
     out_dat_tvalid: out std_logic;
     out_dat_tlast: out std_logic;
+    out_dat_almost_empty : out std_logic; -- assers about 15 clocks before the FIFO has no more data
+    out_dat_send    : in  std_logic := '1'; -- high when output data can be sent. Has a one clock latency.
     out_clk: in std_logic;
     out_reset: in std_logic;
 
     -- System level signals
     trig : in  std_logic; --! Global trigger/capture signal.
-    lane_monitor: out std_logic_vector(3 downto 0);
+--    lane_monitor: out std_logic_vector(3 downto 0);
 
     -- Control interface (command and reply stream buses)
     ctrl_cmd_tdata: in std_logic_vector(7 downto 0);

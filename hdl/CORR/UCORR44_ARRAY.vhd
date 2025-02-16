@@ -28,12 +28,12 @@ entity UCORR44_ARRAY is
 		PLATFORM_ID: integer;
 		NCORR: integer; -- number of correlators
 		NCHAN: integer; -- number of channels to correlate per correlator
+		BIN_DECIMATION_FACTOR: integer := 1; -- Only 1 out of every BIN_DECIMATION_FACTOR bin is processed in order to provide extra comoputing cycles and use less resources
+		N_BITS_PER_BIN: integer := 4+4; -- The correlator only support 4+4 bit format.
 		SOFT_NINTEG: integer := 8192; -- default integration period (number of frames)
 		SOFT_AUTOCORR_ONLY: boolean := FALSE;
-		N_BINS_PER_WORD: integer := 4;
-		N_BITS_PER_BIN: integer := 4+4; -- The correlator only support 4+4 bit format.
-		N_BITS_PER_WORD: integer := N_BINS_PER_WORD * N_BITS_PER_BIN; -- do not override
-		READOUT_BINS: integer_array(0 to NCORR-1) := (others => 0) -- array of integers indicating which bin is sacrificed to the readout cycle for each correlator
+		READOUT_BINS: integer_array(0 to NCORR-1) := (others => 0); -- array of integers indicating which bin is sacrificed to the readout cycle for each correlator
+        INPUT_WIDTH: integer := 256 -- Number of bits of the input bus. Is divided in NCORR sections (CORR 0 in MSB), 
 	);
 
 	PORT (
@@ -41,7 +41,7 @@ entity UCORR44_ARRAY is
 		-- Input data AXI-S bus , non-blocking
 		-- Data ordering: 0 to K-1 => (Corr0Chan0, Corr0Chan1, ... Corr0 ChanNCHAN-1, Corr1Chan0 ...)
 		-- Re in MSB of byte
-		s_axis_data_tdata : in  slv_array(0 to NCHAN-1)(N_BITS_PER_WORD-1 downto 0); --! input data stream containing the channelized data from every antenna processor. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
+		s_axis_data_tdata : in  slv(INPUT_WIDTH-1 downto 0); --! input data stream containing the channelized data from every antenna processor. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
 		s_axis_data_tvalid : in  std_logic; --
 		s_axis_data_tlast : in  std_logic; --
 
@@ -78,6 +78,7 @@ architecture Behavioral of UCORR44_ARRAY is
     --attribute RLOC_ORIGIN : string;
 
     constant N: integer := NCHAN;
+    constant N_CHAN_PER_CLK: integer  := INPUT_WIDTH/NCORR/N_BITS_PER_BIN;
 
     signal rst_reg: slv(0 to NCORR-1);
     attribute DONT_TOUCH of rst_reg: signal is "true";
@@ -92,7 +93,7 @@ architecture Behavioral of UCORR44_ARRAY is
     signal no_accum: std_logic; -- when '1', there is no accumulation: only th elast product of the accumulation period is kept.
     signal integ_period: std_logic_vector(15 downto 0);
 
-    type slv_2darray is array (natural range <>) of slv_array(0 to NCHAN-1)(7 downto 0);
+    type slv_2darray is array (natural range <>) of slv_array(0 to NCHAN-1)(N_BITS_PER_BIN-1 downto 0);
     signal axis_corr_in_tdata: slv_2darray(0 to NCORR-1);
     signal axis_corr_in_tlast: std_logic_vector(0 to NCORR-1);
     signal axis_corr_in_tvalid: std_logic_vector(0 to NCORR-1);
@@ -158,15 +159,20 @@ begin
 -- Correlator input pipelining process
 ---------------------------------------------------------------------
 -- Pipeline the reset and data buses inputs to facilitate routing and timing closure.
-	process(clk)
+	process(all)
+	   variable rcorr, rchan: integer; --inverted corr and chan numbers
+	   variable lsb: integer;
 	begin
 		if rising_edge(clk) then
 			rst_reg <= (others=> (rst or user_reset_resync));
 
-			-- Perform the corner-turn between the inputs by remapping the bytes
+			-- split the input word into NCORR correlator inputs, and split the channels
 			for corr in 0 to NCORR-1 loop
+                rcorr := NCORR-1-corr;
 				for chan in 0 to NCHAN-1 loop
-					axis_corr_in_tdata(corr)(chan) <= s_axis_data_tdata(chan)(N_BITS_PER_BIN*(NCORR-1-corr+1)-1 downto N_BITS_PER_BIN*(NCORR-1-corr));
+				    rchan := NCHAN-1-chan;
+				    lsb := N_BITS_PER_BIN*(rcorr*N_CHAN_PER_CLK + rchan);
+					axis_corr_in_tdata(corr)(chan) <= s_axis_data_tdata(lsb + N_BITS_PER_BIN -1 downto lsb);
 				end loop;
 				axis_corr_in_tvalid(corr) <= s_axis_data_tvalid;
 				axis_corr_in_tlast(corr) <= s_axis_data_tlast;
@@ -198,6 +204,7 @@ begin
             NCORR => NCORR, -- used only to format STREAM ID
 			N => NCHAN,
 			N_PER_CLK => NCHAN,
+			BIN_DECIMATION_FACTOR => BIN_DECIMATION_FACTOR,
 			URAM_MAX => 64/NCORR,
 			READOUT_BIN => READOUT_BINS(i)
 			)

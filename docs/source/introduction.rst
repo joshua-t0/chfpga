@@ -20,7 +20,7 @@ Introduction
 - Corner-turn engine (groups data from one or multiple boards by frequency)
 - Optional X-engine (:math:`N^2` correlator)
 - Optional real-time 80G/100G Ethernet streaming of corner-turned data
-- Hardware platform management and peripheral controllers
+- Hardware platform management and peripheral controllers...
 
 A block diagram of the firmware is provided below.
 
