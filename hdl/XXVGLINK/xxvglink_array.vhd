@@ -21,6 +21,9 @@ use IEEE.std_logic_misc.ALL; -- for reduce functions
 library UNISIM;
 use UNISIM.VComponents.all;
 
+library xpm;
+use xpm.vcomponents.all;
+
 library work;
 use work.chFPGA_Package.all;
 
@@ -110,9 +113,7 @@ entity xxvglink_array is
 	txclk_div2: out std_logic; -- Logic signal toggling at half of the Tx word clock frequency clk_out
 
 	-- Monitor & debugging signals
-	tx_resetdone: out std_logic_vector(0 to NUMBER_OF_LANES-1);
-	rx_resetdone: out std_logic_vector(0 to NUMBER_OF_LANES-1);
-	lane_monitor: out std_logic;
+	resetdone: out std_logic; -- synchronous to clk_out
 
 
 	-- Control and reply streams
@@ -126,7 +127,7 @@ entity xxvglink_array is
 end;
 
 
-architecture Implementation of xxvglink_array is
+architecture impl of xxvglink_array is
 
 	-- Attribute definitions
 
@@ -136,14 +137,16 @@ architecture Implementation of xxvglink_array is
 
 	-- XGLINK_CORE Signals
 
-	signal reset_reg: std_logic_vector(0 to NUMBER_OF_LANES-1);
-	attribute DONT_TOUCH of reset_reg: signal is "true";
+	--signal reset_reg: std_logic_vector(0 to NUMBER_OF_LANES-1);
+	--attribute DONT_TOUCH of reset_reg: signal is "true";
 
-	signal reset_stats_reg: std_logic_vector(0 to NUMBER_OF_LANES-1);
-	attribute DONT_TOUCH of reset_stats_reg: signal is "true";
+	--signal reset_stats_reg: std_logic_vector(0 to NUMBER_OF_LANES-1);
+	--attribute DONT_TOUCH of reset_stats_reg: signal is "true";
 
 	signal xglink_tx_data: slv64_array(0 to NUMBER_OF_LINKS-1);
 	signal xglink_tx_header: slv2_array(0 to NUMBER_OF_LINKS-1);
+	signal xglink_tx_data_sel: slv64_array(0 to NUMBER_OF_LINKS-1);
+	signal xglink_tx_header_sel: slv2_array(0 to NUMBER_OF_LINKS-1);
 	signal xglink_tx_ready: std_logic_vector(0 to NUMBER_OF_LINKS-1);
 	signal tx_clk: std_logic;
 	signal xglink_tx_resetdone: std_logic_vector(0 to NUMBER_OF_LINKS-1);
@@ -159,7 +162,6 @@ architecture Implementation of xxvglink_array is
 
 	signal xglink_rx_reset: std_logic_vector(0 to NUMBER_OF_LINKS-1);
 
-	-- signal rx_clk: std_logic_vector(0 to NUMBER_OF_LINKS-1);
 
 	signal rx_p_dly: std_logic_vector(0 to NUMBER_OF_LINKS-1);
 	signal rx_n_dly: std_logic_vector(0 to NUMBER_OF_LINKS-1);
@@ -176,10 +178,10 @@ architecture Implementation of xxvglink_array is
 	signal m_axis_rx_tready_int: std_logic_vector(0 to NUMBER_OF_LANES-1);
 	signal m_axis_rx_terror_int: std_logic_vector(0 to NUMBER_OF_LANES-1);
 
-	signal m_axis_rx_tdata_int2: slv64_array(0 to NUMBER_OF_LANES-1);
-	signal m_axis_rx_tvalid_int2: std_logic_vector(0 to NUMBER_OF_LANES-1);
-	signal m_axis_rx_tlast_int2: std_logic_vector(0 to NUMBER_OF_LANES-1);
-	signal m_axis_rx_terror_int2: std_logic_vector(0 to NUMBER_OF_LANES-1);
+	signal rx_tdata: slv64_array(0 to NUMBER_OF_LANES-1);
+	signal rx_tvalid: std_logic_vector(0 to NUMBER_OF_LANES-1);
+	signal rx_tlast: std_logic_vector(0 to NUMBER_OF_LANES-1);
+	signal rx_terror: std_logic_vector(0 to NUMBER_OF_LANES-1);
 
 	signal tx_fifo_overflow: std_logic_vector(0 to NUMBER_OF_LANES-1);
 	signal tx_fifo_overflow_sticky: std_logic_vector(0 to NUMBER_OF_LANES-1);
@@ -187,67 +189,99 @@ architecture Implementation of xxvglink_array is
 	signal rx_fifo_overflow_sticky: std_logic_vector(0 to NUMBER_OF_LANES-1);
 
 	signal rx_frame_detect: std_logic_vector(0 to NUMBER_OF_LANES-1);
-	signal rx_resetdone_int: std_logic_vector(0 to NUMBER_OF_LANES-1);
+	--signal rx_resetdone_int: std_logic_vector(0 to NUMBER_OF_LANES-1);
 
-	signal lane_sel: unsigned(4 downto 0);
+	signal lane_sel: integer range 0 to 31; --unsigned(4 downto 0);
+	signal lane_mon_type: integer range 0 to 15; --unsigned(3 downto 0);
+	signal lane_mon_src: integer range 0 to 3; -- unsigned(1 downto 0);
 	signal reset_stats: std_logic; -- resets the fifo overflow  and error counter
 	signal bypass: std_logic_vector(NUMBER_OF_LANE_GROUPS-1 downto 0);
-	signal err_ctr: slv16_array(0 to NUMBER_OF_LANES-1); -- counts rx errors on lane specified uin 'lane_sel'
-	signal rx_max_frame_length: slv13_array(0 to NUMBER_OF_LANES-1); -- counts rx errors on lane specified uin 'lane_sel'
-	signal rx_min_frame_length: slv13_array(0 to NUMBER_OF_LANES-1); -- counts rx errors on lane specified uin 'lane_sel'
-    signal word_ctr: unsigned(15 downto 0) := (others => '0'); -- init for sims
-    signal tx_packet_length: unsigned(15 downto 0):= (others => '0'); -- init for sims
-    signal tx_packet_ctr: unsigned(7 downto 0) := (others => '0'); -- init for sims
 
+    signal tx_mon_word: unsigned(15 downto 0) := (others => '0'); -- init for sims
+    -- rx_clk monitoring signals
+--	signal rx_clk: std_logic_vector(0 to NUMBER_OF_LINKS-1); -- internal local receiver clock for each receiver. Used for monitoring stats
+	signal rx_fifo_in_tvalid: std_logic_vector(0 to NUMBER_OF_LANES-1);
+	signal rx_fifo_in_tlast: std_logic_vector(0 to NUMBER_OF_LANES-1);
+	signal rx_fifo_in_terror: std_logic_vector(0 to NUMBER_OF_LANES-1);
+    signal rx_mon_word: unsigned_array(0 to NUMBER_OF_LANES-1)(15 downto 0);
+
+    signal tx_force_en: std_logic;
+    signal tx_force_data: slv64;
+    signal tx_force_header: slv2;
+
+    signal rx_capture_en: std_logic;
+    signal rx_capture_data: slv64_array(0 to NUMBER_OF_LANES-1);
+    signal rx_capture_header: slv2_array(0 to NUMBER_OF_LANES-1);
+    signal tx_capture_data: slv64;
+    signal tx_capture_header: slv2;
+    signal rx_capture_word_number: unsigned(15 downto 0);
+    signal rx_reset: std_logic;
 	-- Control
-	signal control_bytes: slv8_array(0 to 1);
-	signal status_bytes: slv8_array(0 to 11);
+	signal control_bytes: slv8_array(4 to 15);
+	signal status_bytes: slv8_array(2 to 14);
 
 
 begin
 
+    -- CONTROL bytes 0-3: Used by core common registers
 
 	-- CONTROL byte 4
-	lane_sel            <= unsigned(control_bytes(0)(7 downto 3)); --! selects from which lane
-	reset_stats         <= control_bytes(0)(2); --!
+	lane_sel        <= to_integer(unsigned(control_bytes(4)(7 downto 3))); -- selects from which lane monitoring data is captured
+	reset_stats         <= control_bytes(4)(2); --!
 	--tx_test_enable      <= control_bytes(0)(1);
-
+    rx_capture_en <= control_bytes(4)(1);
+	rx_reset      <= control_bytes(4)(0);
 
 	-- CONTROL byte 5
-	bypass              <= control_bytes(1)(NUMBER_OF_LANE_GROUPS-1 downto 0);
+	bypass              <= control_bytes(5)(NUMBER_OF_LANE_GROUPS-1 downto 0);
 
-	-- -- CONTROL byte 5
-	-- rx_fifo_reset       <= control_bytes(1)(0);
+	-- CONTROL byte 6
 
+	lane_mon_src        <= to_integer(unsigned(control_bytes(6)(5 downto 4))); -- selects from which source on selected lane data is being monitored
+	lane_mon_type        <= to_integer(unsigned(control_bytes(6)(3 downto 0))); -- selects what kind of data is to be monitored
+
+
+	-- CONTROL byte 7
+    tx_force_en <= control_bytes(7)(2);
+    tx_force_header <= control_bytes(7)(1 downto 0);
+	-- CONTROL byte 8-15
+	tx_force_data <= to_slv(control_bytes(8 to 15));
+    rx_capture_word_number <= unsigned(tx_force_data(15 downto 0));
+
+    -- STATUS bytes 0-1: Used by xxvglink_core
 	-- STATUS byte 2
 
+	 status_bytes(2)(7 downto 6) <= rx_capture_header(lane_sel) when lane_mon_src=1 else
+	 							    tx_capture_header;
 	-- status_bytes(0)(7 downto 4) <= to_slv(lsb(ctr, 4));
-	status_bytes(2-2)(3)          <= tx_fifo_overflow_sticky(to_integer(lane_sel));
-	status_bytes(2-2)(2)          <= rx_frame_detect(to_integer(lane_sel));
-	status_bytes(2-2)(1)          <= areset;
-	status_bytes(2-2)(0)          <= rx_fifo_overflow_sticky(to_integer(lane_sel));
+--	status_bytes(2)(3)          <= tx_fifo_overflow_sticky(lane_sel_int);
+--	status_bytes(2)(2)          <= rx_frame_detect(lane_sel_int);
+	status_bytes(2)(1)          <= areset;
+--	status_bytes(2)(0)          <= rx_fifo_overflow_sticky(lane_sel_int);
 
 	-- STATUS byte 3-4
-	status_bytes(3-2 to 4-2) <= to_slv8_array(err_ctr(to_integer(lane_sel)));
+	status_bytes(3 to 4) <= to_slv8_array(rx_mon_word(lane_sel));
 
 	-- STATUS byte 5-6
-	status_bytes(5-2 to 6-2) <= to_slv8_array(rx_max_frame_length(to_integer(lane_sel)));
+	status_bytes(5 to 6) <= to_slv8_array(tx_mon_word);
 	-- STATUS byte 7-8
-	status_bytes(7-2 to 8-2) <= to_slv8_array(rx_min_frame_length(to_integer(lane_sel)));
+--	status_bytes(7 to 8) <= to_slv8_array(rx_min_frame_length(lane_sel_int));
 	-- STATUS bytes 9-10
-	status_bytes(9-2 to 10-2) <= to_slv8_array(word_ctr);
-	status_bytes(11-2 to 12-2) <= to_slv8_array(tx_packet_length);
-	status_bytes(13-2) <= std_logic_vector(tx_packet_ctr);
+--	status_bytes(9 to 10) <= to_slv8_array(word_ctr);
+--	status_bytes(11 to 12) <= to_slv8_array(tx_packet_length);
+--	status_bytes(13) <= std_logic_vector(tx_packet_ctr);
+	status_bytes(7 to 14) <= to_slv8_array(rx_capture_data(lane_sel)) when lane_mon_src=1 else
+	                         to_slv8_array(tx_capture_data);
 
 
 	-- reset
-	rst_proc: process(tx_clk)
-	begin
-		if rising_edge(tx_clk) then
-			reset_reg <= (others => areset);
-			reset_stats_reg <= (others => reset_stats);
-		end if; --tx_clk
-	end process;
+	--rst_proc: process(tx_clk)
+	--begin
+	--	if rising_edge(tx_clk) then
+	--		reset_reg <= (others => areset);
+	--		reset_stats_reg <= (others => reset_stats);
+	--	end if; --tx_clk
+	--end process;
 
 	--! Data source selector
 	--! We implement it as a combinatorial mux because we don't want to implement a FIFO to deal with tready if we can avoid it.
@@ -292,50 +326,43 @@ begin
 	clk_out <= tx_clk;
 
 
-	--------------------------------------
-	-- TX source selection (user data or test pattern)
-	--------------------------------------
-
-	-- tx_sel_gen: for i in 0 to NUMBER_OF_LANES-1 generate
-	-- 	-- -- s_axis_tx_tdata_int(i)  <= sel(tx_test_enable_reg='1', test_tdata, s_axis_tx_tdata(i));
-	-- 	-- s_axis_tx_tdata_int(i)  <= sel(tx_test_enable_reg='1', to_slv(i,32), s_axis_tx_tdata(i)); -- removed tdata because it has to spread to all tx modules and  caused timing issues
-	-- 	-- s_axis_tx_tvalid_int(i) <= sel(tx_test_enable_reg='1', test_tvalid, s_axis_tx_tvalid(i));
-	-- 	-- s_axis_tx_tlast_int(i)  <= sel(tx_test_enable_reg='1', test_tlast, s_axis_tx_tlast(i));
-	-- 	s_axis_tx_tdata_int(i)  <= s_axis_tx_tdata(i); -- removed tdata because it has to spread to all tx modules and  caused timing issues
-	-- 	s_axis_tx_tvalid_int(i) <= s_axis_tx_tvalid(i);
-	-- 	s_axis_tx_tlast_int(i)  <= s_axis_tx_tlast(i);
-	-- end generate;
-
+	rstdone_cdc0: xpm_cdc_async_rst
+		generic map (RST_ACTIVE_HIGH => 1)
+		port map (
+			src_arst  => not areset and and(xglink_tx_resetdone) and and(xglink_rx_resetdone),
+			dest_clk  => tx_clk,
+			dest_arst => resetdone
+			);
 
 	--------------------------------------
 	-- Output source selection (RX data or TX data (bypass))
 	--------------------------------------
 
-	m_axis_rx_tdata <= m_axis_rx_tdata_int2;
-	m_axis_rx_tvalid <= m_axis_rx_tvalid_int2;
-	m_axis_rx_tlast <= m_axis_rx_tlast_int2;
-	m_axis_rx_terror <= m_axis_rx_terror_int2;
 
 	bypass_gen: if IMPLEMENT_RX generate
-		bypass_proc: process(tx_clk)
-		begin
+		bypass_proc: process(all) begin
 			if rising_edge(tx_clk) then
 				for i in 0 to NUMBER_OF_LANES-1 loop
 					if bypass(LANE_GROUP_MAP(i))='1' then
-						m_axis_rx_tdata_int2(i)  <= s_axis_tx_tdata(i);
-						m_axis_rx_tvalid_int2(i) <= s_axis_tx_tvalid(i);
-						m_axis_rx_tlast_int2(i)  <= s_axis_tx_tlast(i);
-						m_axis_rx_terror_int2(i) <= '0';
+						m_axis_rx_tdata_int(i)  <= s_axis_tx_tdata(i);
+						m_axis_rx_tvalid_int(i) <= '0' when not resetdone else s_axis_tx_tvalid(i);
+						m_axis_rx_tlast_int(i)  <= s_axis_tx_tlast(i);
+						m_axis_rx_terror_int(i) <= '0';
 					else
-						m_axis_rx_tdata_int2(i)  <= m_axis_rx_tdata_int(i);
-						m_axis_rx_tvalid_int2(i) <= m_axis_rx_tvalid_int(i);
-						m_axis_rx_tlast_int2(i)  <= m_axis_rx_tlast_int(i);
-						m_axis_rx_terror_int2(i) <= m_axis_rx_terror_int(i);
-					end if;
-					if reset_reg(i)='1' then -- Add reset to prevent spurious receives after reset
-						m_axis_rx_tvalid_int2(i) <= '0';
+						m_axis_rx_tdata_int(i)  <= rx_tdata(i);
+						m_axis_rx_tvalid_int(i) <= '0' when not resetdone else rx_tvalid(i);
+						m_axis_rx_tlast_int(i)  <= rx_tlast(i);
+						m_axis_rx_terror_int(i) <= rx_terror(i);
 					end if;
 				end loop;
+
+                -- Set output
+                m_axis_rx_tdata <= m_axis_rx_tdata_int;
+                m_axis_rx_tvalid <= m_axis_rx_tvalid_int;
+                m_axis_rx_tlast <= m_axis_rx_tlast_int;
+                m_axis_rx_terror <= m_axis_rx_terror_int;
+
+
 			end if; -- tx_clk
 		end process;
 	end generate;
@@ -347,16 +374,17 @@ begin
 
 
 	lane_gen: for i in 0 to NUMBER_OF_LANES-1 generate
-
-		tx_gen: if LANE_TO_LINK_MAP(i) < 0 and IMPLEMENT_RX generate
-			tx_resetdone(i) <= '1';
-			rx_resetdone_int(i) <= '1';
+    	constant link: integer range -1 to NUMBER_OF_LINKS-1 := LANE_TO_LINK_MAP(i);
+    begin
+		tx_gen: if link < 0 and IMPLEMENT_RX generate
+			--tx_resetdone(i) <= '1';
+			--rx_resetdone_int(i) <= '1';
 
 			-- Instantiate a direct internal lane, i.e. one that does not go
 			-- through a a GTY link. The module simulates the real data throughput
 			-- (64 words out of 66 clock). The instance has the input and output
 			-- interface of the XGLINK_TX and XGLINK_RX respectively.
-			direct0: entity work.xxvglink_bypass
+			bypass0: entity work.xxvglink_bypass
 			  port map (
 			  	-- AXI4-Streaming data input, non-blocking, on clk
 				s_axis_tx_tdata  => s_axis_tx_tdata(i),
@@ -365,25 +393,20 @@ begin
 
 				tx_fifo_overflow => tx_fifo_overflow(i), -- non sticky
 				rx_fifo_overflow => rx_fifo_overflow(i), -- non sticky
-				reset_stats      => reset_stats_reg(i), -- for rx stats below only
-				rx_frame_detect  => rx_frame_detect(i),
-				rx_err_ctr       => err_ctr(i),
-				rx_max_frame     => rx_max_frame_length(i),
-				rx_min_frame     => rx_min_frame_length(i),
 
 			  	-- AXI4-Streaming data output, non-blocking, on clk
-				m_axis_rx_tdata  => m_axis_rx_tdata_int(i),
-				m_axis_rx_tvalid => m_axis_rx_tvalid_int(i),
-				m_axis_rx_tlast  => m_axis_rx_tlast_int(i),
-				m_axis_rx_terror => m_axis_rx_terror_int(i),
+				m_axis_rx_tdata  => rx_tdata(i),
+				m_axis_rx_tvalid => rx_tvalid(i),
+				m_axis_rx_tlast  => rx_tlast(i),
+				m_axis_rx_terror => rx_terror(i),
 
 				clk => tx_clk,
-				rst => reset_reg(i)
+				arst => not resetdone
 				);
-		elsif LANE_TO_LINK_MAP(i) >= 0 generate
-			tx_resetdone(i) <= xglink_tx_resetdone(LANE_TO_LINK_MAP(i));
+		elsif link >= 0 generate
+			--tx_resetdone(i) <= xglink_tx_resetdone(link);
 
-			xglink_tx_reset(LANE_TO_LINK_MAP(i)) <= reset_reg(i) or not xglink_tx_resetdone(LANE_TO_LINK_MAP(i));
+			--xglink_tx_reset(link) <= not xglink_tx_resetdone(link);
 
 			tx0: entity work.xxvglink_tx
 			  port map (
@@ -391,47 +414,46 @@ begin
 				s_axis_tx_tdata  => s_axis_tx_tdata(i),
 				s_axis_tx_tvalid => s_axis_tx_tvalid(i),
 				s_axis_tx_tlast  => s_axis_tx_tlast(i),
+				s_axis_tx_clk   => tx_clk,
 
 				tx_fifo_overflow => tx_fifo_overflow(i), -- non-sticky
 
 				-- XGLINK_CORE Tx interface
-				tx_data   => xglink_tx_data(LANE_TO_LINK_MAP(i)), -- 32-bit word
-				tx_header => xglink_tx_header(LANE_TO_LINK_MAP(i)),
-				tx_ready  => xglink_tx_ready(LANE_TO_LINK_MAP(i)),
+				tx_data   => xglink_tx_data(link), -- 64-bit word
+				tx_header => xglink_tx_header(link),
+				tx_ready  => xglink_tx_ready(link),
+				tx_clk       => tx_clk,
 
-				clk       => tx_clk,
-
-			    rst => xglink_tx_reset(LANE_TO_LINK_MAP(i)) --! make sure we hold reset until the clock is available, otherwise the reset does not happen
+			    arst => not resetdone -- make sure we hold reset until the clock is available, otherwise the reset does not happen
 			  );
 		end generate; -- tx
 
-		rx_resetdone <= rx_resetdone_int;
+		--rx_resetdone <= rx_resetdone_int;
 
 		rx_gen: if LANE_TO_LINK_MAP(i) >= 0 and IMPLEMENT_RX generate
-			rx_resetdone_int(i) <= xglink_rx_resetdone(LANE_TO_LINK_MAP(i));
-			xglink_rx_reset(LANE_TO_LINK_MAP(i)) <= reset_reg(i) or not xglink_rx_resetdone(LANE_TO_LINK_MAP(i)); --! make sure we reset the de-framer until the clock is available, otherwise the reset does not happen
+		      constant link: integer range 0 to NUMBER_OF_LINKS-1 := LANE_TO_LINK_MAP(i);
+		begin
+--			rx_resetdone_int(i) <= xglink_rx_resetdone(link);
+--			xglink_rx_reset(link) <= xglink_rx_resetdone(link); --! make sure we reset the de-framer until the clock is available, otherwise the reset does not happen
 
 			rx0: entity work.xxvglink_rx
 				port map (
-					rx_data         => xglink_rx_data(LANE_TO_LINK_MAP(i)),
-					rx_data_valid   => xglink_rx_data_valid(LANE_TO_LINK_MAP(i)),
-					rx_header       => xglink_rx_header(LANE_TO_LINK_MAP(i)),
-					rx_header_valid => xglink_rx_header_valid(LANE_TO_LINK_MAP(i)),
-					rx_clk          => xglink_rx_clk(LANE_TO_LINK_MAP(i)), -- this is a BUFH-driven clock that is usable only in the clock region of the receiver
+					rx_data         => xglink_rx_data(link),
+					rx_data_valid   => xglink_rx_data_valid(link),
+					rx_header       => xglink_rx_header(link),
+					rx_header_valid => xglink_rx_header_valid(link),
+					rx_clk          => xglink_rx_clk(link),
 					-- rx_clk          => rx_clk(NUMBER_OF_BYPASS_LANES + i), -- This does not work in Vivado2014.2 Simulator. The clock transition is never detected in xglink_rx.
-					m_axis_rx_tdata  => m_axis_rx_tdata_int(i),
-					m_axis_rx_tvalid => m_axis_rx_tvalid_int(i),
-					m_axis_rx_tlast  => m_axis_rx_tlast_int(i),
-					m_axis_rx_terror => m_axis_rx_terror_int(i),
+					m_axis_rx_tdata  => rx_tdata(i),
+					m_axis_rx_tvalid => rx_tvalid(i),
+					m_axis_rx_tlast  => rx_tlast(i),
+					m_axis_rx_terror => rx_terror(i),
 					m_axis_rx_clk    => tx_clk,
 
-					reset_stats      => reset_stats_reg(i),
-					rx_fifo_overflow => rx_fifo_overflow(i),
-					rx_frame_detect  => rx_frame_detect(i),
-					rx_err_ctr       => err_ctr(i),
-					rx_max_frame     => rx_max_frame_length(i),
-					rx_min_frame     => rx_min_frame_length(i),
-					rst              => xglink_rx_reset(LANE_TO_LINK_MAP(i))
+					fifo_overflow    => rx_fifo_overflow(i),
+					fifo_in_tvalid   => rx_fifo_in_tvalid(i),
+					fifo_in_tlast    => rx_fifo_in_tlast(i),
+					arst             => not resetdone
 				 );
 		end generate; -- rx
 	end generate; -- for each lane
@@ -445,6 +467,9 @@ begin
 	rx_p_dly <= transport rx_p after 27 ns;
 	rx_n_dly <= transport rx_n after 27 ns;
 
+    xglink_tx_data_sel <=  (others => tx_force_data) when tx_force_en else xglink_tx_data;
+    xglink_tx_header_sel <=  (others => tx_force_header) when tx_force_en else xglink_tx_header;
+
 	-- Implement an array of 10G Transmitters/receivers
 	core0: entity work.xxvglink_core
 		generic map (
@@ -456,7 +481,7 @@ begin
 			EXAMPLE_SIMULATION          => 1,
 			EXAMPLE_SIM_GTRESET_SPEEDUP => "TRUE",    -- simulation setting for GT SecureIP model
 			DONT_RESET_ON_DATA_ERROR_IN => '0',
-			SIM                         => TRUE
+			SIM                         => SIM
 			)
 		port map (
 			tx_p => tx_p,
@@ -469,8 +494,8 @@ begin
 			refclk_div2 => refclk_div2,
 			txclk_div2 => txclk_div2,
 
-			tx_data   => xglink_tx_data,
-			tx_header => xglink_tx_header,
+			tx_data   => xglink_tx_data_sel,
+			tx_header => xglink_tx_header_sel,
 			tx_ready  => xglink_tx_ready,
 			tx_clk    => tx_clk,
 			tx_resetdone => xglink_tx_resetdone,
@@ -497,49 +522,166 @@ begin
 			areset=> areset --! asynchronous reset
 		 );
 
-	--------------------------------------
-	-- Stats
-	--------------------------------------
 
- 	-- Gather stats of the RX data stream
- 	fifo_overflow_proc: process(tx_clk)
- 	begin
- 		if rising_edge(tx_clk) then
-            -- Count words
-            if s_axis_tx_tvalid(0)='1' then
-                word_ctr <= word_ctr + 1;
-                if  s_axis_tx_tlast(0)='1' then
-                    word_ctr <= (others => '0');
-                    tx_packet_ctr <= tx_packet_ctr + 1;
-                    tx_packet_length <= word_ctr when word_ctr > tx_packet_length;
+
+    --------------------------------------
+    -- Stats on local receiver clocks
+    --------------------------------------
+    rxmon_gen: for i in 0 to NUMBER_OF_LANES-1 generate
+        constant link: integer range -1 to NUMBER_OF_LINKS-1 := LANE_TO_LINK_MAP(i);
+        signal word_ctr: unsigned(15 downto 0) := (others => '0'); -- init for sims
+        signal tvalid, tlast, err, fifo_overflow: std_logic;
+        signal rst: std_logic;
+        signal rx_capture_en_reg: std_logic;
+    begin
+        rxlink_gen: if link >= 0 generate
+
+        cap_cdc0: xpm_cdc_single
+            generic map (SRC_INPUT_REG => 0)
+            port map (
+                src_clk => ctrl_clk,
+                src_in => rx_capture_en,
+                dest_clk => xglink_rx_clk(link),
+                dest_out => rx_capture_en_reg
+            );
+
+        process(all) begin
+            if rising_edge(xglink_rx_clk(link)) then
+                rst <= reset_stats or not xglink_rx_resetdone(link);
+
+                -- capture word
+--                rx_capture_en_reg <= rx_capture_en;
+                if rx_capture_en_reg='1' and (rx_capture_word_number = X"FFFF" or rx_capture_word_number=word_ctr) then
+                    rx_capture_data(i) <= xglink_rx_data(link) when xglink_rx_data_valid(link);
+                    rx_capture_header(i) <= xglink_rx_header(link) when xglink_rx_header_valid(link);
                 end if;
 
-            end if;
-            if areset or reset_stats_reg(0) then
-                tx_packet_length <= (others =>'0');
-                tx_packet_ctr <= (others =>'0');
-            end if;
+                tvalid <= rx_fifo_in_tvalid(i);
+                tlast <= rx_fifo_in_tlast(i);
+                err <= rx_fifo_in_terror(i);
 
- 			-- Detect TX FIFO overflows
- 			for i in 0 to NUMBER_OF_LANES-1 loop
-	 			if tx_fifo_overflow(i)='1' then
-	 				tx_fifo_overflow_sticky(i) <= '1';
-	 			end if;
+                if tvalid then
+                    word_ctr <= (others => '0') when tlast else word_ctr + 1;
+                end if;
 
-	 			if rx_fifo_overflow(i)='1' then
-	 				rx_fifo_overflow_sticky(i) <= '1';
-	 			end if;
+                case lane_mon_type is
+                    when 0 => -- clock counter
+                        rx_mon_word(i) <= rx_mon_word(i) + 1;
+                    when 1 => -- word counter
+                        rx_mon_word(i) <= word_ctr;
+                    when 2 => -- frame counter
+                        rx_mon_word(i) <= (others => '0') when rst else rx_mon_word(i)+1 when tvalid and tlast;
+                    when 3 => -- frame length
+                        rx_mon_word(i) <= (others => '0') when rst else word_ctr when tvalid and tlast;
+                    when 4 => -- min frame len
+                        rx_mon_word(i) <= (others => '1') when rst else word_ctr when ??(tvalid and tlast) and word_ctr < rx_mon_word(i);
+                    when 5 => -- max frame len
+                        rx_mon_word(i) <= (others => '0') when rst else word_ctr when ??(tvalid and tlast) and word_ctr > rx_mon_word(i);
+                    when 6 => -- error counter
+                        rx_mon_word(i) <= (others => '0') when rst else (rx_mon_word(i) + 1) when (tvalid='1' and tlast='1' and err='1' and signed(rx_mon_word(i))/=-1);
+                     when others => -- flags
+                        rx_mon_word(i) <= (
+                            0 => tvalid,
+                            1 => tlast,
+                            4 => rst,
+                            others => '0');
+                end case; -- lane_mon_sel
+            end if; -- clk
+        end process;
+    else generate
+        rx_mon_word(i) <= (others => '0');
+    end generate; -- if link is present
+    end generate; -- for lane
 
-	 			if reset_reg(i)='1' or reset_stats_reg(i)='1' or rx_resetdone_int(i)='0' then
-	 				rx_fifo_overflow_sticky(i) <= '0';
-	 				tx_fifo_overflow_sticky(i) <= '0';
-	 			end if; -- reset
- 			end loop;
 
- 		end if; --tx_clk
- 	end process;
+   txmon_blk: block
+        signal word_ctr: unsigned(15 downto 0) := (others => '0'); -- init for sims
+        signal rst: std_logic;
+        signal tvalid, tlast, err, fifo_overflow: std_logic;
+    begin
 
- --end generate;
+    	cap_blk: block
+    	    signal link: integer range -1 to NUMBER_OF_LINKS-1;
+            signal capture_en_reg: std_logic;
+        begin
+            link <= LANE_TO_LINK_MAP(lane_sel);
+	        cap_cdc0: xpm_cdc_single
+	            generic map (SRC_INPUT_REG => 0)
+	            port map (
+	                src_clk => ctrl_clk,
+	                src_in => rx_capture_en,
+	                dest_clk => tx_clk,
+	                dest_out => capture_en_reg
+	            );
 
+	        process(all) begin
+	            if rising_edge(tx_clk) then
+	                -- capture word
+	                if capture_en_reg then
+	                    tx_capture_data <= xglink_tx_data(link) when xglink_tx_ready(link);
+	                    tx_capture_header <= xglink_tx_header(link) when xglink_tx_ready(link);
+	                end if;
+	            end if; -- clk
+	        end process;
+	    end block;
 
-end Implementation;
+     -- Gather stats of the RX data stream
+        process(all) begin
+            if rising_edge(tx_clk) then
+                rst <= reset_stats or not resetdone;
+
+                case lane_mon_src is
+                    when 0 =>
+                        tvalid <= s_axis_tx_tvalid(lane_sel);
+                        tlast <= s_axis_tx_tlast(lane_sel);
+                        err <= '0';
+                        fifo_overflow <= tx_fifo_overflow(lane_sel);
+                    when 1 =>
+                        tvalid <= m_axis_rx_tvalid(lane_sel);
+                        tlast <= m_axis_rx_tlast(lane_sel);
+                        err <= m_axis_rx_terror(lane_sel);
+                        fifo_overflow <= rx_fifo_overflow(lane_sel);
+                    when others =>
+                        tvalid <= '0';
+                        tlast <= '0';
+                        err <= '0';
+                        fifo_overflow <= '0';
+                         -- do nothing
+                end case;
+
+                -- Count words
+                if tvalid then
+                    word_ctr <= (others => '0') when tlast else word_ctr + 1;
+                end if;
+
+                case lane_mon_type is
+                    when 0 => -- clock counter
+                        tx_mon_word <= tx_mon_word + 1;
+                    when 1 => -- word counter
+                        tx_mon_word <= word_ctr;
+                    when 2 => -- frame counter
+                        tx_mon_word <= (others => '0') when rst else tx_mon_word+1 when tvalid and tlast;
+                    when 3 => -- frame length
+                        tx_mon_word <= (others => '0') when rst else word_ctr when tvalid and tlast;
+                    when 4 => -- min frame len
+                        tx_mon_word <= (others => '1') when rst else word_ctr when ??(tvalid and tlast) and word_ctr < tx_mon_word;
+                    when 5 => -- max frame len
+                        tx_mon_word <= (others => '0') when rst else word_ctr when ??(tvalid and tlast) and word_ctr > tx_mon_word;
+                    when 6 => -- error counter
+                        tx_mon_word <= (others => '0') when rst else (tx_mon_word + 1) when (tvalid='1' and tlast='1' and err='1' and signed(tx_mon_word)/=-1);
+                    when 7 => -- fifo overflow counter
+                        tx_mon_word <= (others => '0') when rst else tx_mon_word + 1 when fifo_overflow='1' and not all_ones(tx_mon_word);
+                    when others => -- flags
+                        tx_mon_word <= (
+                            0 => tvalid,
+                            1 => tlast,
+                            2 => err,
+                            3 => fifo_overflow,
+                            4 => rst,
+                            others => '0');
+                end case; -- lane_mon_sel
+            end if; -- clk
+        end process;
+    end block; -- tx mon
+
+ end impl;
