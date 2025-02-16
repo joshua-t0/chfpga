@@ -61,20 +61,20 @@
     <Option Name="IPStaticSourceDir" Val="$PIPUSERFILESDIR/ipstatic"/>
     <Option Name="EnableBDX" Val="FALSE"/>
     <Option Name="DSABoardId" Val="zcu111"/>
-    <Option Name="WTXSimLaunchSim" Val="4"/>
+    <Option Name="WTXSimLaunchSim" Val="5"/>
     <Option Name="WTModelSimLaunchSim" Val="0"/>
     <Option Name="WTQuestaLaunchSim" Val="0"/>
     <Option Name="WTIesLaunchSim" Val="0"/>
     <Option Name="WTVcsLaunchSim" Val="0"/>
     <Option Name="WTRivieraLaunchSim" Val="0"/>
     <Option Name="WTActivehdlLaunchSim" Val="0"/>
-    <Option Name="WTXSimExportSim" Val="217"/>
-    <Option Name="WTModelSimExportSim" Val="217"/>
-    <Option Name="WTQuestaExportSim" Val="217"/>
+    <Option Name="WTXSimExportSim" Val="218"/>
+    <Option Name="WTModelSimExportSim" Val="218"/>
+    <Option Name="WTQuestaExportSim" Val="218"/>
     <Option Name="WTIesExportSim" Val="43"/>
-    <Option Name="WTVcsExportSim" Val="217"/>
-    <Option Name="WTRivieraExportSim" Val="217"/>
-    <Option Name="WTActivehdlExportSim" Val="217"/>
+    <Option Name="WTVcsExportSim" Val="218"/>
+    <Option Name="WTRivieraExportSim" Val="218"/>
+    <Option Name="WTActivehdlExportSim" Val="218"/>
     <Option Name="GenerateIPUpgradeLog" Val="TRUE"/>
     <Option Name="XSimRadix" Val="hex"/>
     <Option Name="XSimTimeUnit" Val="ns"/>
@@ -144,15 +144,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_rst_ps8_0_96M_0/zynq_tcpipe_crs_rst_ps8_0_96M_0.xci">
-          <Proxy FileSetName="zynq_tcpipe_crs_rst_ps8_0_96M_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_zynq_ultra_ps_e_0_0/zynq_tcpipe_crs_zynq_ultra_ps_e_0_0.xci">
-          <Proxy FileSetName="zynq_tcpipe_crs_zynq_ultra_ps_e_0_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_usp_rf_data_converter_0_0/zynq_tcpipe_crs_usp_rf_data_converter_0_0.xci">
-          <Proxy FileSetName="zynq_tcpipe_crs_usp_rf_data_converter_0_0"/>
-        </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_axi_dma_0_0/zynq_tcpipe_crs_axi_dma_0_0.xci">
           <Proxy FileSetName="zynq_tcpipe_crs_axi_dma_0_0"/>
         </CompFileExtendedInfo>
@@ -161,6 +152,15 @@
         </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_pl_clk_rst_0/zynq_tcpipe_crs_pl_clk_rst_0.xci">
           <Proxy FileSetName="zynq_tcpipe_crs_pl_clk_rst_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_rst_ps8_0_96M_0/zynq_tcpipe_crs_rst_ps8_0_96M_0.xci">
+          <Proxy FileSetName="zynq_tcpipe_crs_rst_ps8_0_96M_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_usp_rf_data_converter_0_0/zynq_tcpipe_crs_usp_rf_data_converter_0_0.xci">
+          <Proxy FileSetName="zynq_tcpipe_crs_usp_rf_data_converter_0_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_zynq_ultra_ps_e_0_0/zynq_tcpipe_crs_zynq_ultra_ps_e_0_0.xci">
+          <Proxy FileSetName="zynq_tcpipe_crs_zynq_ultra_ps_e_0_0"/>
         </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/chfpga_package.vhd">
@@ -633,13 +633,13 @@
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Flow_PerfOptimized_high" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design">
-          <Option Id="Assert">1</Option>
+          <Option Id="FsmExtraction">1</Option>
           <Option Id="KeepEquivalentRegisters">1</Option>
           <Option Id="ShregMinSize">5</Option>
-          <Option Id="NoCombineLuts">1</Option>
+          <Option Id="Assert">1</Option>
           <Option Id="ResourceSharing">2</Option>
           <Option Id="Directive">7</Option>
-          <Option Id="FsmExtraction">1</Option>
+          <Option Id="NoCombineLuts">1</Option>
         </Step>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
