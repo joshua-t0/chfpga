@@ -123,12 +123,23 @@ entity chfpga_crs is
         -- 100G Ethernet
 
         --   156.25 MHz reference clock
+
         clk156_n : in std_logic;
         clk156_p : in std_logic;
-        --   QSFP data lanes
+
+        -- --   QSFP data lanes
+
         qsfp_txn : out std_logic_vector(0 to 3);
         qsfp_txp : out std_logic_vector(0 to 3);
 
+        -- Corner-turn engine shuffle links
+
+        bp_shuffle_tx_p: out std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS - 1);
+        bp_shuffle_tx_n: out std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS - 1);
+        bp_shuffle_rx_p: in std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS - 1);
+        bp_shuffle_rx_n: in std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS - 1);
+        bp_shuffle_refclk_p: in std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_REFCLKS - 1);
+        bp_shuffle_refclk_n: in std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_REFCLKS - 1);
 
         -- Buck sync signals
 
@@ -815,6 +826,18 @@ zynq: entity work.zynq_tcpipe_crs
             adc_ot1 => adc_ot1(0 to NUMBER_OF_ADCS-1),
             adc_ot2 => adc_ot2(0 to NUMBER_OF_ADCS-1),
             adc_ov => adc_ov(0 to NUMBER_OF_ADCS-1),
+
+            ------------------------------------
+            -- Corner-Turn Engine
+            ------------------------------------
+            -- Gigabit Transceiver links to the backplane for intra-crate and inter-crate data transfers
+            bp_shuffle_tx_p => bp_shuffle_tx_p,
+            bp_shuffle_tx_n => bp_shuffle_tx_n,
+            bp_shuffle_rx_p => bp_shuffle_rx_p,
+            bp_shuffle_rx_n => bp_shuffle_rx_n,
+            -- Gigabit transceiver refrenece clocks (typically 156.25 MHz)
+            bp_shuffle_refclk_p => bp_shuffle_refclk_p,
+            bp_shuffle_refclk_n => bp_shuffle_refclk_n,
 
             -- LEDs
 

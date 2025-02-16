@@ -1,6 +1,6 @@
 ############################################################################
 ##
-##   CRS Rev1.0 Physical constraints
+##   CRS Rev1.0 Physical constraints - "-ct" config-specific
 ##
 ############################################################################
 
@@ -16,6 +16,10 @@ set_property PACKAGE_PIN Y35 [get_ports {qsfp_txp[0]}]
 set_property PACKAGE_PIN V35 [get_ports {qsfp_txp[1]}]
 set_property PACKAGE_PIN T35 [get_ports {qsfp_txp[2]}]
 set_property PACKAGE_PIN R33 [get_ports {qsfp_txp[3]}]
+
+# -----
+# 100G interface
+# -----
 
 # GTY reference clock, 156.25 MHz from fixed PLL, Bank 129
 # This is config-specific

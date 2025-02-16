@@ -53,16 +53,25 @@ create_clock -period 100.000 -name SMA_CLK10 [get_ports sma_clk10_p]
 # Primary clocks from AD9574 (Always present, non-programmable)
 ###############################################################
 # # Fixed 156.25 MHz
-# set_property PACKAGE_PIN W33      [get_ports {gty_clk0_p129}] ; # GTY Bank 129, REFCLK0
+
+
+# GTY reference clock MGTREFCLK0, 156.25 MHz from fixed PLL, Bank 131
+# Corner-turn engine GTY reference clock
+set_property PACKAGE_PIN P31 [get_ports {bp_shuffle_refclk_p[0]}]
+# set_property package_pin P32 [get_ports mgtrefclk0_x0y4_n]
+# Timing is defined in the GTY cores
+create_clock -period 6.400 -name CLK_BP_SHUFFLE_REFCLK [get_ports bp_shuffle_refclk_p]
 # set_property PACKAGE_PIN P31      [get_ports {gty_clk0_p131}] ; # GTY Bank  131, REFCLK0
-# create_clock -name GTY_P129 -period 156.25MHz [get_ports {gty_clk0_p129}]
 # create_clock -name GTY_P131 -period 156.25MHz [get_ports {gty_clk0_p131}]
 
+
 # GTY reference clock, 156.25 MHz from fixed PLL, Bank 129
-# This is config-specific
-#set_property PACKAGE_PIN W33 [get_ports clk156_p]
-# Note: clock period is defined by the CMAC IP and does not need to be defined below.
-#create_clock -name CLK156 -period 6.4 [get_ports {clk156_p}]
+# 100G interface reference clock
+# This is defined in the -ct config-specific physical constraint file
+# set_property PACKAGE_PIN W33      [get_ports {gty_clk0_p129}] ; # GTY Bank 129, REFCLK0
+# set_property PACKAGE_PIN W33 [get_ports clk156_p]
+# create_clock -name CLK156 -period 6.4 [get_ports {clk156_p}]
+# create_clock -name GTY_P129 -period 156.25MHz [get_ports {gty_clk0_p129}]
 
 ##########################################################################
 # Secondary clocks from HMC7044 PLL (Programmable, not defined at powerup)
@@ -223,6 +232,22 @@ set_property PACKAGE_PIN A10 [get_ports {led7b[7]}]
 
 
 
+########################################
+# Corner-turn engine
+########################################
+# These constraints are needed for the CDC synchronizers in the GTY core
+# False path constraints
+# ----------------------------------------------------------------------------------------------------------------------
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *bit_synchronizer*inst/i_in_meta_reg}] -quiet
+##set_false_path -to [get_cells -hierarchical -filter {NAME =~ *reset_synchronizer*inst/rst_in_*_reg}] -quiet
+set_false_path -to [get_pins -filter {REF_PIN_NAME=~*D} -of_objects [get_cells -hierarchical -filter {NAME =~ *reset_synchronizer*inst/rst_in_meta*}]] -quiet
+set_false_path -to [get_pins -filter {REF_PIN_NAME=~*PRE} -of_objects [get_cells -hierarchical -filter {NAME =~ *reset_synchronizer*inst/rst_in_meta*}]] -quiet
+set_false_path -to [get_pins -filter {REF_PIN_NAME=~*PRE} -of_objects [get_cells -hierarchical -filter {NAME =~ *reset_synchronizer*inst/rst_in_sync1*}]] -quiet
+set_false_path -to [get_pins -filter {REF_PIN_NAME=~*PRE} -of_objects [get_cells -hierarchical -filter {NAME =~ *reset_synchronizer*inst/rst_in_sync2*}]] -quiet
+set_false_path -to [get_pins -filter {REF_PIN_NAME=~*PRE} -of_objects [get_cells -hierarchical -filter {NAME =~ *reset_synchronizer*inst/rst_in_sync3*}]] -quiet
+set_false_path -to [get_pins -filter {REF_PIN_NAME=~*PRE} -of_objects [get_cells -hierarchical -filter {NAME =~ *reset_synchronizer*inst/rst_in_out*}]] -quiet
+
+
 
 ########################################
 # RESET
@@ -284,8 +309,6 @@ add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list \
           {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state[3]_i_4} \
           {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state[3]_i_5} \
           {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state[3]_i_6} \
-          {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state[3]_i_7} \
-          {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state[3]_i_8} \
           {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state_reg[1]} \
           {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state_reg[2]} \
           {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state_reg[3]} \
@@ -301,7 +324,6 @@ add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list \
           {chfpga0/refclk_blk.REFCLK0/sync_ctr[12]_i_1} \
           {chfpga0/refclk_blk.REFCLK0/sync_ctr[13]_i_1} \
           {chfpga0/refclk_blk.REFCLK0/sync_ctr[14]_i_1} \
-          {chfpga0/refclk_blk.REFCLK0/sync_ctr[14]_i_2} \
           {chfpga0/refclk_blk.REFCLK0/sync_ctr[15]_i_2} \
           {chfpga0/refclk_blk.REFCLK0/sync_ctr[15]_i_3} \
           {chfpga0/refclk_blk.REFCLK0/sync_ctr[1]_i_1} \
@@ -657,6 +679,13 @@ resize_pblock [get_pblocks SCALER7] -add {RAMB18_X2Y168:RAMB18_X2Y183}
 resize_pblock [get_pblocks SCALER7] -add {RAMB36_X2Y84:RAMB36_X2Y91}
 set_property IS_SOFT FALSE [get_pblocks SCALER7]
 
+
+
+create_pblock CORN
+add_cells_to_pblock [get_pblocks CORN] [get_cells -quiet [list chfpga0/crossbar0_gen.cb1_gen.u64_case.gtlinks0]]
+resize_pblock [get_pblocks CORN] -add {SLICE_X0Y240:SLICE_X5Y419}
+resize_pblock [get_pblocks CORN] -add {BUFG_GT_X0Y96:BUFG_GT_X0Y191}
+resize_pblock [get_pblocks CORN] -add {BUFG_GT_SYNC_X0Y60:BUFG_GT_SYNC_X0Y119}
 
 
 
