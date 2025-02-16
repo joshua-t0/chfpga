@@ -32,7 +32,7 @@ ARCHITECTURE behavior OF xxvglink_array_testbench IS
    -- Clock period definitions
 constant REFCLK_PERIOD : time := 6.4 ns;
 constant CLK125_period : time := 8 ns;
-constant CHAN_CLK_PERIOD : time := 2.7 ns;
+constant CHAN_CLK_PERIOD : time := 2.5 ns;
 
 
 --Inputs
@@ -199,9 +199,9 @@ signal tdata: slv64_array(0 to data'length-1);
 signal tvalid: slv(0 to data'length-1);
 signal tlast: slv(0 to data'length-1);
 
-signal tx_resetdone: std_logic_vector(0 to NUMBER_OF_LANES-1); --
-signal rx_resetdone: std_logic_vector(0 to NUMBER_OF_LANES-1); --
-
+--signal tx_resetdone: std_logic_vector(0 to NUMBER_OF_LANES-1); --
+--signal rx_resetdone: std_logic_vector(0 to NUMBER_OF_LANES-1); --
+signal resetdone: std_logic;
 signal cmd_tdata: slv8;
 signal cmd_tvalid: std_logic;
 signal cmd_tlast: std_logic;
@@ -222,7 +222,7 @@ end generate;
 dut0: entity work.xxvglink_array
 	generic map (
 		LANE_TO_LINK_MAP       => (-1,0,1,2),
-		LINK_TO_QUAD_MAP       => (0,0,1),
+		LINK_TO_QUAD_MAP       => (0,1,1),
 		QUAD_TO_REFCLK_MAP     => (0,0),
 		SIM => True
 		)
@@ -243,8 +243,7 @@ dut0: entity work.xxvglink_array
 		m_axis_rx_tvalid => m_axis_rx_tvalid,
 		m_axis_rx_tlast  => m_axis_rx_tlast,
 
-		tx_resetdone => tx_resetdone,
-		rx_resetdone => rx_resetdone,
+		resetdone => resetdone,
 
 		clk_out    => clk,
 		areset => CPU_RESET,
@@ -295,7 +294,7 @@ reset_process: process
 	sleep(refclk_p, 100); -- not really needed
 --	sleep(clk, 10); -- wait for the QPLL to lock and starts generating the main clock
 	CPU_RESET <= '0'; -- release RESET. FIFOs start their reset sequence
-	wait until tx_resetdone(1)='1' and rx_resetdone(1)='1';
+	wait until resetdone;
 	sleep(clk, 32); -- wait for the FIFO to finish their resent before writing into them
 	send_data <= '1';
 	wait;
@@ -315,7 +314,7 @@ fifo_gen: for i in 0 to NUMBER_OF_LANES-1 generate
             m_clk          => clk,
     
             overflow => open,
-            rst      => rst
+            arst      => rst
         );
 end generate;
 -- Stimulus: send data packets
@@ -376,7 +375,7 @@ begin
                 end if;
                 cb1_out_tdata(i) <= fifo_out_tdata(i);
                 cb1_out_tvalid(i) <= fifo_out_tvalid(i);
-                if cpu_reset='1' or (word_ctr2(i)(2 downto 0) /= "111" and fifo_out_tlast(i)='0') then
+                if cpu_reset='1' or (word_ctr2(i)(10 downto 8) = 0 and word_ctr2(i)(1 downto 0)= i and fifo_out_tlast(i)='0') then
                     cb1_out_tvalid(i) <= '0';
                 end if;
                 cb1_out_tlast(i) <= fifo_out_tlast(i);
