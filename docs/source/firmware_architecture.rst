@@ -183,3 +183,34 @@ Configuration management
 - Module-specific capability registers can be placed in their specific modules.
 - We generally try to put as much capability information in capability registers as possible to minimize the need to keep the Python code up to date with firmware changes. However, Python-based look up tables might be necessary to provide detailed configuration based on some FPGA capability register in order to minimize the amount of logic resources allocated to these registers. This is the case of platform-specific constants which are looked up from the PLATFORM_ID parameter found in GPIO.
 -
+
+Data buses
+==========
+
+
+We use exclusively AXI4-Streaming to carry both the science data and the control/monitoring system.
+
+Generally non-blocking. There is generally no point in blocking the main pipeline: data rate is so high that we can't block for a significant amout of time and not run out of memory. Slow control interfaces are not in this case.
+Blocking brings issues with timing. Tready cannot be registered unless we introduce a 1-deep FIFO at each stage. Bad for timing.
+Sometimes implement loose backpressure: to avoid confusion, we use the `send` signal instead of tready since we break protocol. Send can be pipelined, but it is expected that data in the pipe will continue flowing until the send has made its way to the source. This is fixed by having an elastic FIFO at the end that requests stop sending before there is no more space left in the FIFO (i.e. use almost full to drive send). This greatly simplifies the logic by using a free feature of the FIFOs. This is used at the output of the channelizer (to allow their outputs to be aligned), and on the daisy-chained outputs of the correlator.
+
+
+Vivado quirks
+=============
+
+Simulation
+----------
+
+Vivado simulation (VS) does not seem to have a good reputation, sepecially for VHDL2008. Howeer, the tool seems to simulate the current code correctly, even as we ass more and more VHDL 2008 idioms in the code.
+
+Older versions of VS had a hard time handling ``struct`` passed as port arguments, or indexing those right on the port assignments. We also discovered a buffer overrun condition where setting value in one field affected another one. But these seem to have been solved as of Vivado 2022.2.
+
+Nevertherless, here are the list of strange behaviors that were observed
+
+
+- Feb 2025, Vivado 2022.2: Crash caused by a assignment outside the range of a vector. No useful message. Had to bisect-disable code to find this out.
+- Jan 2025, Vivado 2022.2: Got the impression that we could not use VHDL 2008 on the testbench, but it was ok for any submodules. But then it worked for another testbench, with or without the `-2008` simualtion option. Maybe an error on my part?
+- 2022.2: restarting a simulation after adding signals at the bottom  of the waveform list sometimes just crashes the GUI. Save often.
+Generic tricks
+
+- When simulaiton does not work because of missing modules, restart a full simulation instead of using the re-run button.
