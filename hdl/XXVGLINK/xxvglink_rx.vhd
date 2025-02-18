@@ -93,6 +93,7 @@ architecture impl of xxvglink_rx is
 
     signal fifo_in_tdata: slv64;
     signal fifo_almost_full: std_logic;
+    signal fifo_overflow_int: std_logic;
 
     -- signal crc_calc: std_logic:='0'; --
     signal crc_init: std_logic:='0'; --
@@ -186,6 +187,7 @@ begin
             s_axis_tlast    => fifo_in_tlast,
             s_axis_terror   => fifo_in_terror,
             s_clk           => rx_clk,
+            overflow        => fifo_overflow_int, -- on rx_clk
 
             m_axis_tvalid   => m_axis_rx_tvalid,
             m_axis_tdata    => m_axis_rx_tdata,
@@ -194,12 +196,21 @@ begin
             m_axis_tready   => '1', -- Always read (non blocking output) AXI4S specs: A slave is permitted to wait for TVALID to be asserted before asserting the corresponding TREADY
             m_clk           => m_axis_rx_clk,
 
-            overflow => fifo_overflow,
             almost_full => fifo_almost_full,
             arst      => rx_rst -- async reset
 
         );
 
+    -- Resync the overflow signal to the read (AXIS) domain.
+    -- We use a reset synchronizer to make sure we catch any time overflow is activated
+    -- It won't be perfectly accurate, but this is for monitoring only. At least we should know if any overflow had occured. 
+	ovf_cdc0: xpm_cdc_async_rst
+		generic map (RST_ACTIVE_HIGH => 1)
+		port map (
+			src_arst  => fifo_overflow_int,
+			dest_clk  => m_axis_rx_clk,
+			dest_arst => fifo_overflow
+			);
 
 end impl;
 
