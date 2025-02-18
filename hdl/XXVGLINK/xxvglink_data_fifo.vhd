@@ -44,6 +44,10 @@ entity xxvglink_data_fifo is
 		s_axis_terror: in std_logic := '0';
 		s_clk: in std_logic;
 
+		full: out std_logic; -- on s_clk
+        almost_full: out std_logic; -- on s_clk
+		overflow: out std_logic; -- on s_clk
+
 		m_axis_tdata: out std_logic_vector(DATA_WIDTH-1 downto 0);
 		m_axis_tlast: out std_logic;
 		m_axis_tready: in std_logic := '1';
@@ -52,9 +56,6 @@ entity xxvglink_data_fifo is
 		m_clk: in std_logic; -- clock for both the user and GTX interface
 
 		empty: out std_logic; -- on m_clk
-		full: out std_logic; -- on s_clk
-		overflow: out std_logic; -- on s_clk
-        almost_full: out std_logic;
         almost_empty: out std_logic;
 
 		arst : in std_logic -- asynchronous reset
