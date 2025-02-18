@@ -26,7 +26,7 @@ package chfpga_config is
     -- Corner-turn engine configuration
     constant CONFIG_CT_LEVEL: integer := 2;
     constant CONFIG_CT_TYPE: string                              := "UCT"; -- "UCT" or "BCT"
-    constant CONFIG_CT_CLK_SOURCE: string                        := "BP_SHUFFLE_TXCLK";
+    constant CONFIG_CT_CLK_SOURCE: string                        := "ADC_CLK"; -- Run the corner-turn & correlator on the 400 MHz ADC clock
 	constant CONFIG_NUMBER_OF_CROSSBAR_INPUTS: integer           := 8; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
 	constant CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS: integer         := 4; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
 	constant CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS;
