@@ -37,13 +37,14 @@ entity u_ct_engine is
 		LANE_TO_LINK_MAP: integer_array  := (-1, 0, 1, 2); -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
 		LINK_TO_QUAD_MAP: integer_array  := (0,1,1); -- Indicates which quad is associated to each GTY link.
 		QUAD_TO_REFCLK_MAP: integer_array:= (0,0); -- Indicates which refclk is associated with each QUAD
-        LANE_TO_GROUP_MAP: integer_array := (0, 0, 0, 0); -- Indicates to which lane group each lane is associated with 
+        LANE_TO_GROUP_MAP: integer_array := (0, 0, 0, 0); -- Indicates to which lane group each lane is associated with
 
         -- Dervived parameters
         OUTPUT_WIDTH: integer := NUMBER_OF_INPUT_LANES * INPUT_WORD_WIDTH;  -- assumes inputs are 32 bits wide, and CT preserves data rate
         NUMBER_OF_LINKS: integer        := max(LANE_TO_LINK_MAP) + 1; --  Number of physical data links (GTYs) - Do not override
     	NUMBER_OF_REFCLK: integer       := max(QUAD_TO_REFCLK_MAP) + 1; -- Number of reference clocks - Do not override
-        BITS_PER_BIN: integer := INPUT_WORD_WIDTH / BINS_PER_INPUT_WORD -- Supporting only 4+4 bits/bin
+        BITS_PER_BIN: integer := INPUT_WORD_WIDTH / BINS_PER_INPUT_WORD ;-- Supporting only 4+4 bits/bin
+		PRE_DECIMATE: boolean := CT_LEVEL > 1 -- True if we want to decimate the first 256 bins of the spectrum before entering the backplane shuffle
 --		NUMBER_OF_OUTPUT_LANES: integer := 8; -- Number of output streams
 --		WORDS_PER_BIN_MAX: integer :=4; --! Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 16 words.
 --		BINS_PER_FRAME_MAX: integer :=64; --! Maximum number of bins per frame
@@ -52,16 +53,18 @@ entity u_ct_engine is
 		);
 	PORT(
 
-		-- Non-blocking input stream from the channelizer, synchronous to `clk`
-		s_axis_tvalid: in slv(0 to NUMBER_OF_INPUT_LANES-1);
-		s_axis_tdata: in slv_array(0 to NUMBER_OF_INPUT_LANES-1)(INPUT_WORD_WIDTH-1 downto 0); -- data from each channelizer, each of which contains 4x (4+4)-bit bin values
-		s_axis_tlast: in slv(0 to NUMBER_OF_INPUT_LANES-1);
+		-- Non-blocking input stream from the channelizer, synchronous to `axis_clk
+		-- We assume all lanes are aligned and therefore share a common `tvalid` and `tlast`
+		s_axis_tdata: in slv32_array(0 to NUMBER_OF_INPUT_LANES-1); -- data from each channelizer, each of which contains 4x (4+4)-bit bin values
+		s_axis_tvalid: in std_logic;
+		s_axis_tlast: in std_logic;
 
-		-- Non-blocking output stream, synchronous to `clk`
+		-- Non-blocking output stream, synchronous to `axis_clk`
 		m_axis_tvalid: out std_logic;
 		m_axis_tdata: out slv(OUTPUT_WIDTH-1 downto 0);
 		m_axis_tlast: out std_logic;
 
+		axis_clk: in  std_logic; -- AXI-S bus clocks. Tie to clk_out if the backplane links are enabled
 
 		-- Backplane data shuffle
 
@@ -77,11 +80,12 @@ entity u_ct_engine is
 
 		txclk_out: out std_logic; -- Word clock from the GTY TX link
 		-- frame_clk_in: in std_logic;
-		clk: in  std_logic; -- AXI-S bus clocks. Tie to clk_out if the backplane links are enabled
+
 		rst: in std_logic;
 		arst: in std_logic; -- aync reset, NOT synchronized on txclk_out as arst stops the clock
+        resetdone: out std_logic;
 
-		align_pulse: out std_logic;
+--		align_pulse: out std_logic;
 
 		-- Control interface (command and reply stream buses)
 		bsb_cmd_dat: in AXIS8_DAT_STRUCT;
@@ -101,7 +105,8 @@ architecture Behavioral of u_ct_engine is
 	attribute async_reg: string;
 	attribute shreg_extract: string;
 
-	constant NUMBER_OF_CB1_OUTPUTS: integer := BINS_PER_INPUT_WORD;
+	constant CT1_OUTPUT_LANES: integer := BINS_PER_INPUT_WORD;
+    constant CT1_LANE_WIDTH: integer := NUMBER_OF_INPUT_LANES * BITS_PER_BIN;
 
 	constant BSB_CT1_BASE_PORT : integer := 0; -- Top-level address of the CT-Engine 1st crossbar.
 	constant BSB_CT2_BASE_PORT : integer := 1; -- Top-level address of the CT-Engine 2nd crossbar
@@ -120,96 +125,8 @@ architecture Behavioral of u_ct_engine is
 	signal router_rply_dat: AXIS8_DAT_STRUCT_ARRAY(0 to BSB_ROUTER_PORTS-1);
 	signal router_rply_rdy: AXIS8_RDY_STRUCT_ARRAY(0 to BSB_ROUTER_PORTS-1);
 
-
-
-
-
---	signal s_axis_tfirst: slv(0 to NUMBER_OF_INPUT_LANES-1);
-
---	signal m_axis_tvalid_int: slv(0 to NUMBER_OF_OUTPUT_LANES-1);
---	signal m_axis_tdata_int: slv32_array(0 to NUMBER_OF_OUTPUT_LANES-1);
---	signal m_axis_tlast_int: slv(0 to NUMBER_OF_OUTPUT_LANES-1);
---	signal m_axis_terror_int: slv(0 to NUMBER_OF_OUTPUT_LANES-1);
-
-	-- Internal AXI-Streaming buses
-
---	signal m_axis_fifo_tvalid: slv(0 to NUMBER_OF_INPUT_LANES-1);
---	signal m_axis_fifo_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES-1);
---	signal m_axis_fifo_tlast: slv(0 to NUMBER_OF_INPUT_LANES-1);
---	signal m_axis_fifo_tuser: slv4_array(0 to NUMBER_OF_INPUT_LANES-1);
---	signal m_axis_fifo_tready: slv(0 to NUMBER_OF_INPUT_LANES-1);
-	-- signal frame_clk:slv (0 to NUMBER_OF_INPUT_LANES-1);
-
---	signal m_axis_align_tvalid: slv(0 to NUMBER_OF_INPUT_LANES-1);
---	signal m_axis_align_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES-1);
---	signal m_axis_align_tlast: slv(0 to NUMBER_OF_INPUT_LANES-1);
---	signal m_axis_align_tuser: slv4_array(0 to NUMBER_OF_INPUT_LANES-1);
---	signal m_axis_align_global_tvalid: std_logic;
---	signal m_axis_align_global_tlast: std_logic;
-
---	signal m_axis_remap_tvalid: slv(0 to NUMBER_OF_INPUT_LANES-1);
---	signal m_axis_remap_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES-1);
---	signal m_axis_remap_tlast: slv(0 to NUMBER_OF_INPUT_LANES-1);
---	-- signal m_axis_remap_tuser: slv4_array(0 to NUMBER_OF_INPUT_LANES-1);
---	signal m_axis_remap_global_tvalid: std_logic;
---	signal m_axis_remap_global_tlast: std_logic;
-
---	signal m_axis_remap_tvalid_reg: slv(0 to NUMBER_OF_INPUT_LANES-1);
---	signal m_axis_remap_tdata_reg: slv32_array(0 to NUMBER_OF_INPUT_LANES-1);
---	signal m_axis_remap_tlast_reg: slv(0 to NUMBER_OF_INPUT_LANES-1);
---	-- signal m_axis_remap_tuser_reg: slv4_array(0 to NUMBER_OF_INPUT_LANES-1);
-
---	attribute shreg_extract of m_axis_remap_tvalid_reg: signal is "no";
---	attribute shreg_extract of m_axis_remap_tdata_reg: signal is "no";
---	attribute shreg_extract of m_axis_remap_tlast_reg: signal is "no";
-
-
-
---	signal input_frame_ctr: u8_array(0 to NUMBER_OF_INPUT_LANES-1);
---	signal align_frame_ctr: u8_array(0 to NUMBER_OF_INPUT_LANES-1);
---	signal output_frame_ctr: u8_array(0 to NUMBER_OF_OUTPUT_LANES-1);
---	signal packet_error_ctr: u16_array(0 to NUMBER_OF_OUTPUT_LANES-1);
---	-- signal enable_fifo_frame_detection: std_logic;
---	-- signal enable_align_frame_detection: std_logic;
---	-- signal enable_remap_frame_detection: std_logic;
---	-- signal enable_output_frame_detection: std_logic;
-
---	signal frame_clk_sel: std_logic;
---	signal clk_ctr: unsigned(7 downto 0);
---	-- signal frame_clk_ctr: unsigned(7 downto 0);
---	-- signal frame_clk_dly: std_logic;
---	signal align_reset_all: std_logic;
-
---	- Define Control word and its signals
---	signal CONTROL_BYTES: slv8_array(0 to (2 + (NUMBER_OF_INPUT_LANES+1)/2 + 2)); -- default value set in the CMD_SLAVE
---	signal STATUS_BYTES: slv8_array(0 to 14);
-
-	-- signal capture_word_ctr: unsigned(7 downto 0);
-	-- signal capture_word_number: unsigned(7 downto 0);
-	-- signal capture_word_ctr_en: std_logic;
-	-- signal capture_done: std_logic;
-	-- signal capture_tdata: slv32;
-	-- signal capture_tvalid:std_logic;
-	-- signal capture_tlast:std_logic;
-
-
-	-- signal delay_capture_word_ctr: u16_array(0 to 1);
-	-- signal delay_capture_word_ctr_en: std_logic_vector(0 to 1);
---	signal delay_capture_word_ctr: unsigned(15 downto 0);
---	signal delay_capture_word_ctr_en: std_logic;
---	signal delay_capture_word_ctr_arm: std_logic;
-
---	signal delay_capture_ref_word_ctr: unsigned(15 downto 0);
---	signal delay_capture_ref_word_ctr_en: std_logic;
-
-    ---
-    
     signal bsb_rst_reg: std_logic;
     signal cb1_rst: std_logic;
-    
-    signal cb1_out_tdata: slv(OUTPUT_WIDTH-1 downto 0);
-    signal cb1_out_tvalid: std_logic;
-    signal cb1_out_tlast: std_logic;
 
 begin
 
@@ -256,27 +173,31 @@ begin
 		signal control_bytes: slv8_array(0 to 0); -- default value set in the CMD_SLAVE
 		signal status_bytes: slv8_array(0 to 0);
 
-        signal cb1_in_tvalid: std_Logic;
-        signal cb1_in_tdata: slv_array(0 to NUMBER_OF_INPUT_LANES-1)(INPUT_WORD_WIDTH-1 downto 0);
+        --signal cb1_in_tdata: slv_array(0 to NUMBER_OF_INPUT_LANES-1)(INPUT_WORD_WIDTH-1 downto 0);
+        signal cb1_in_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES-1);
+        signal cb1_in_tvalid: std_logic;
         signal cb1_in_tlast: std_logic;
-   
-        signal word_ctr: unsigned(10 downto 0);
-    
+
+        signal cb1_out_tdata: slv_array(0 to CT1_OUTPUT_LANES-1)(CT1_LANE_WIDTH-1 downto 0);
+        signal cb1_out_tvalid: std_logic;
+        signal cb1_out_tlast: std_logic;
+
 	begin
 
 		-- Pipeline BSB reset
+		-- Note; Putting two `if rising_edge(clk)`` in the same process crashed Vivado simulator 2008.
 		process(all) begin
 			if rising_edge(bsb_clk) then
 				bsb_rst_reg <= bsb_rst;
 			end if; -- bsb_clk
-		end process;
+--        end process;
 
-        process(all) begin
-            if rising_edge(clk) then
+--		process(all) begin
+            if rising_edge(axis_clk) then
                 cb1_rst <= rst;
             end if; -- RST/CLK
         end process;
-    
+
 		-- Instantiate level-1 corner turning registers
 		ct1_regs0: entity work.CTRL_SLAVE
 			GENERIC MAP (
@@ -302,52 +223,55 @@ begin
 		-- Connect CT level 1 registers
 
 		-- Perform the crossbar operation
-		process(all) 
-		  variable rlane: integer; -- reverse lane number
+		process(all)
+		  variable rlane, rbin: integer; -- reverse lane and bin numbers
 		  variable lsb: integer;
 		begin
-			if rising_edge(clk) then
+			if rising_edge(axis_clk) then
 
 				-- pipeline channelizer data
-				cb1_in_tlast <= s_axis_tlast(0);
+				-- This CT engine assumes that the channelizer data is aligned, i.e. all lanes share a common tvalid and tlast
 				cb1_in_tdata <= s_axis_tdata;
-				cb1_in_tvalid <= '0' when cb1_rst else s_axis_tlast(0);
+				cb1_in_tvalid <= s_axis_tvalid when not cb1_rst else '0';
+				cb1_in_tlast <= s_axis_tlast;
 
-	            -- Implement a hardwired CROSSBAR1
-	            -- Regroup input channels per bin
-
-                if cb1_in_tvalid then
-                    word_ctr <= (others => '0') when cb1_in_tlast else word_ctr + 1;
-                end if;
-                word_ctr <= (others => '0') when cb1_rst;
-
-				-- reorganize channelizer data, grouping them in bin
+                -- Implement a hardwired CROSSBAR1.
+                -- We take  NUMBER_OF_INPUT_LANES lanes, each word containing values from BINS_PER_INPUT_WORD different bins.
+                -- We generate BINS_PER_INPUT_WORD lanes each word containing the NUMBER_OF_INPUT_LANES values from the same bin
+                -- We pack the values with the lower input lane being in the MSB of the output word.
+                -- Outlut lane 0 is for low bins, which are in the MSB of the input words
 				for bin in 0 to BINS_PER_INPUT_WORD-1 loop -- 0 to 3
-					for lane in 0 to NUMBER_OF_INPUT_LANES-1 loop -- 0 to 7
-					   rlane := NUMBER_OF_INPUT_LANES-1-lane; -- 7 to 0
-					   lsb := BITS_PER_BIN * (NUMBER_OF_INPUT_LANES * bin + rlane);
-					   cb1_out_tdata(lsb+BITS_PER_BIN-1 downto lsb) <= cb1_in_tdata(lane)(BITS_PER_BIN*(bin+1)-1 downto BITS_PER_BIN*bin);
+				    rbin := BINS_PER_INPUT_WORD-1 - bin;
+					for input_lane in 0 to NUMBER_OF_INPUT_LANES-1 loop -- 0 to 7
+					   rlane := NUMBER_OF_INPUT_LANES-1 - input_lane; -- reverse input lane,  7 to 0
+					   lsb := BITS_PER_BIN * rlane;
+					   cb1_out_tdata(bin)(lsb+BITS_PER_BIN-1 downto lsb) <= cb1_in_tdata(input_lane)(BITS_PER_BIN*(rbin+1)-1 downto BITS_PER_BIN*rbin);
 					end loop;
 				end loop;
-                cb1_out_tvalid <= cb1_in_tvalid;
-                cb1_out_tvalid <= '0' when cb1_rst='1' or (word_ctr(2 downto 0) /= "111" and cb1_in_tlast='0');
+                cb1_out_tvalid <= cb1_in_tvalid  when not cb1_rst else '0';
                 cb1_out_tlast <= cb1_in_tlast;
-
-			end if; -- clk
+            end if; -- clk
 		end process;
-
-	end block; -- cb1_block
 
 	-- ******
 
 	ct2_gen: if not (CT_LEVEL >= 2) generate -- If we do NOT have level 2 corner-turning
 	begin
-		process(all) begin
-			-- There is no level 2 corner-turning, so assign crossbar 1 outputs directly to the output bus
-			if rising_edge(clk) then
-				m_axis_tdata <= cb1_out_tdata;
-				m_axis_tvalid <= '0' when cb1_rst else cb1_out_tvalid;
+		process(all)
+		  variable lsb: integer;
+		  variable rlane: integer; -- reverse lane
+		begin
+			-- If there is no level 2 corner-turning, then assign crossbar 1 outputs directly to the output bus
+			-- We repack the cb1 output lane into a single word for the correlator.
+            -- CT1 lane 0 is in the MSB. Channelizer 0 value is in the MSB. Re part of value is on the MSB.
+			if rising_edge(axis_clk) then
+			    for lane in 0 to CT1_OUTPUT_LANES-1 loop
+                    rlane := CT1_OUTPUT_LANES-1 - lane;
+    				m_axis_tdata(CT1_LANE_WIDTH*(rlane+1)-1 downto  CT1_LANE_WIDTH*rlane) <= cb1_out_tdata(lane);
+                end loop;
+				m_axis_tvalid <= cb1_out_tvalid when not cb1_rst else '0';
 				m_axis_tlast <= cb1_out_tlast;
+    			resetdone <= not cb1_rst;
 			end if; -- bsb_clk
 		end process;
 
@@ -393,16 +317,17 @@ begin
 
 
         ---
-        
+
         -- resets
         signal remap_rst: std_logic;
         signal bp_rst: std_logic;
         signal align1_rst: std_logic;
 
+        signal word_ctr: unsigned(10 downto 0);
 
 		signal remap_out_tdata: slv_array(0 to NUMBER_OF_CT2_INPUTS-1)(BITS_PER_CT2_LANE_WORD-1 downto 0);
-		signal remap_out_tvalid: std_logic;
-		signal remap_out_tlast: std_logic;
+		signal remap_out_tvalid: std_logic_vector(0 to NUMBER_OF_CT2_INPUTS-1);
+		signal remap_out_tlast: std_logic_vector(0 to NUMBER_OF_CT2_INPUTS-1);
 
 
 --		signal bp1_in_tdata: slv64_array(0 to NUMBER_OF_CT2_INPUTS-1);
@@ -440,16 +365,16 @@ begin
     --	signal discarded_data_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
     --	signal bad_lane_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
     --	signal bad_eof_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
-            
+
         -- used
         	signal align_reset: std_logic;
         	signal remap_reset: std_logic;
-        
+
 
 	begin
 		-- Pipeline resets for Level 2 CT logic
 		process(all) begin
-			if rising_edge(clk) then
+			if rising_edge(axis_clk) then
 				remap_rst <= cb1_rst;
 				bp_rst <= remap_rst;
 				align1_rst <= bp_rst;
@@ -498,7 +423,7 @@ begin
 
 		--! CONTROL Bytes 5-12 (crossbar2) or 5-8 (crossbar3)
 		lane_map_gen: for i in 0 to NUMBER_OF_CT2_INPUTS-1 generate
-			lane_map(i) <= CONTROL_BYTES(5+i/2)((i mod 2)*4+3 downto (i mod 2)*4); --
+			lane_map(i) <= CONTROL_BYTES(5+i/2)(((i+1) mod 2)*4+3 downto ((i+1) mod 2)*4); --
 		end generate;
 
 
@@ -530,43 +455,62 @@ begin
 		-- STATUS_BYTES(6)(1) <= capture_tvalid;
 		-- STATUS_BYTES(6)(2) <= capture_tlast;
 		-- STATUS_BYTES(6)(3) <= header_capture_enable;
-		STATUS_BYTES(6)(7) <= '0';
-		STATUS_BYTES(6)(6) <= align1_lane0_tfirst_mon;
-		STATUS_BYTES(6)(5) <= '0';
-		STATUS_BYTES(6)(4 downto 0) <= to_slv(NUMBER_OF_INPUT_LANES, 5);
+--		STATUS_BYTES(6)(7) <= '0';
+--		STATUS_BYTES(6)(6) <= align1_lane0_tfirst_mon;
+--		STATUS_BYTES(6)(5) <= '0';
+--		STATUS_BYTES(6)(4 downto 0) <= to_slv(NUMBER_OF_INPUT_LANES, 5);
 
-		-- STATUS_BYTES(7 to 10) <= to_slv8_array(capture_tdata);
+--		 STATUS_BYTES(7 to 10) <= to_slv8_array(capture_tdata);
 
 --		status_bytes(7)       <= frame_number_capture_reg(to_integer(lane_monitor_sel));
 --		status_bytes(8)       <= stream_id_capture_reg(to_integer(lane_monitor_sel));
 --		status_bytes(9 to 10) <= to_slv8_array(delay_capture_ref_word_ctr) when lane_monitor_sel=0 else to_slv8_array(delay_capture_word_ctr);
 --		status_bytes(11 to 12) <= to_slv8_array(fifo_count_mon_reg(to_integer(lane_monitor_sel)));
 --		status_bytes(13 to 14) <= to_slv8_array(packet_error_ctr(to_integer(lane_monitor_sel)));
-		--! STATUS Byte 8
-		-- STATUS_BYTES(8)<=resize(reverse_bits_and_dir(m_axis_fifo_tvalid),8);
+--		! STATUS Byte 8
+--		 STATUS_BYTES(8)<=resize(reverse_bits_and_dir(m_axis_fifo_tvalid),8);
 
-		--! STATUS Byte 0
-		-- STATUS_BYTES(0)(7)<=data_fifo_empty(0);
-		-- STATUS_BYTES(0)(6)<=DATA_OVERFLOW;
-		-- STATUS_BYTES(0)(5)<=reset_all;
-		-- STATUS_BYTES(0)(4)<=to_std_logic(EIGHT_BIT_SUPPORT);
-		-- STATUS_BYTES(0)(3)<='0'; --or_reduce(in_dat_align_underflow);
-		-- STATUS_BYTES(0)(2 downto 0)<=(others=>'0');
+--		! STATUS Byte 0
+--		 STATUS_BYTES(0)(7)<=data_fifo_empty(0);
+--		 STATUS_BYTES(0)(6)<=DATA_OVERFLOW;
+--		 STATUS_BYTES(0)(5)<=reset_all;
+--		 STATUS_BYTES(0)(4)<=to_std_logic(EIGHT_BIT_SUPPORT);
+--		 STATUS_BYTES(0)(3)<='0'; --or_reduce(in_dat_align_underflow);
+--		 STATUS_BYTES(0)(2 downto 0)<=(others=>'0');
 
 
-		-- Split CT1 output word in lanes and remap lanes to be fed to the backplane shuffle in order 
-		-- to compensate for variable backplane connectivity between slots
+
+
+--         Lane remap and bin culling
+
+--		 Remap lanes to be fed to the backplane shuffle in order to
+--		 route bin sets to specific destination slots. The mapping differs for each slot.
+
+--         Also perform bin culling to allow the data to fit the backplane link bandwidth.
+--         To do this, we drop one bin on each of the first 256 words. This means we ibhibit tvalid on one output lane during each of the first 256 words.
+--         We rotate the targeted bin on each word, matching the ordering of the bin-rotated order of the FFT, so we end up
+--         dropping the first 256 absolute bins of the spectrum.
+
+--         Pre-decimation bandwidth = 400 MHz * 64 bit/output_lane = 25.6 Gbps
+--         Post-decimation bandwidth = 400 MHz * 64 bits/output_lane * (8192-256 bins)/(8192 bins) = 24.8 Gbps
 		remap_proc: process(all)
 			variable source_lane: integer range 0 to NUMBER_OF_CT2_INPUTS-1;
-            variable rlane: integer; -- reverse lane number
+            variable drop_bin: boolean;
 		begin
-			if rising_edge(clk) then
-					remap_out_tvalid <= '0' when remap_rst else cb1_out_tvalid;
-					remap_out_tlast <= cb1_out_tlast;
+			if rising_edge(axis_clk) then
+
+                if cb1_out_tvalid then
+                    word_ctr <= word_ctr + 1 when not cb1_out_tlast else (others => '0');
+                end if;
+                word_ctr <= (others => '0') when remap_rst;
+
+
 				for lane in 0 to NUMBER_OF_CT2_INPUTS-1 loop
 					source_lane := to_integer(unsigned(lane_map(lane)));
-				    rlane := NUMBER_OF_CT2_INPUTS-1-source_lane;
-					remap_out_tdata(lane) <= cb1_out_tdata(BITS_PER_CT2_LANE_WORD * (rlane +1) -1  downto BITS_PER_CT2_LANE_WORD * rlane);
+					remap_out_tdata(lane) <= cb1_out_tdata(source_lane);
+					drop_bin := PRE_DECIMATE and (word_ctr(10 downto 8) = 0) and (word_ctr(1 downto 0) = source_lane);
+	                remap_out_tvalid(lane) <= cb1_out_tvalid when not (??remap_rst or drop_bin) else '0';
+					remap_out_tlast(lane) <= cb1_out_tlast;
 				end loop;
 			end if; -- clk
 		end process;
@@ -575,7 +519,7 @@ begin
 
 		-- Instantiate backplane links
 		-- Used for 1st data shuffle (between 4 boards on the same sub-backplane) and eventually 2nd data shuffle (between sub-backplanes)
-		gtlinks0: entity work.xxvglink_array
+		bp_links0: entity work.xxvglink_array
 			generic map (
 			    LANE_TO_LINK_MAP       => LANE_TO_LINK_MAP, -- 4 logical lane: 1 bypass lane, 3 physical links
 				LINK_TO_QUAD_MAP       => LINK_TO_QUAD_MAP, --! Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
@@ -583,7 +527,7 @@ begin
 				)
 			port map (
 
-				-- Backplane data shuffle interface
+				-- Backplane link signals
 
 				tx_p     => tx_p,
 				tx_n     => tx_n,
@@ -595,8 +539,8 @@ begin
 				-- TX user interface (AXI-Streaming, non-blocking, on clk_out)
 
 				s_axis_tx_tdata  => remap_out_tdata,
-				s_axis_tx_tvalid => (others => remap_out_tvalid),
-				s_axis_tx_tlast  => (others => remap_out_tlast),
+				s_axis_tx_tvalid => remap_out_tvalid,
+				s_axis_tx_tlast  => remap_out_tlast,
 
 				-- RX user interface (AXI-Streaming, non-blocking, on clk_out)
 
@@ -604,17 +548,13 @@ begin
 				m_axis_rx_tvalid => bp1_out_tvalid,
 				m_axis_rx_tlast  => bp1_out_tlast,
 
-				clk_out    => txclk_out, --! 402.8 MHz clock from TX links (25 Gbps * 66/64 / 64 bits/word =402.83203125 MHz)
+				axis_clk => axis_clk, -- lcock for both AXIS interfaces
+                resetdone => resetdone,
 
-				-- Clock monitoring ports
+				-- Backplane link cloand and related clock monitoring signals
+				clk_out    => txclk_out, --! 402.8 MHz clock from TX links (25 Gbps * 66/64 / 64 bits/word =402.83203125 MHz)
 				refclk_div2 => refclk_div2, -- divided-by-two version of the 156.25 MHz reference clock fed to the QUAD PLL
 				txclk_div2  => txclk_div2, -- divided-by-two version of the TX word clock, which is also clk_out
-
-				-- Debug signals
-				lane_monitor => open,
-
-				-- User bypass control line
-				-- bypass      => axis_bp_shuffle_bypass,
 
 				-- Control and reply streams
 				cmd_dat  => router_cmd_dat(BSB_BP_SHUFFLE_BASE_PORT),
@@ -665,17 +605,17 @@ begin
 				lane_monitor_source => align1_lane_monitor_source,
 				lane_monitor => align1_lane_monitor,
 
-				clk => clk,
+				clk => axis_clk,
 				rst => align1_rst
 				);
 
 		ct3_gen: if not (CT_LEVEL >= 3) generate
 		begin
 			-- We have no level-3 corner-turning, so assign the output of the packet aligner to the output bus
-			process(all) 
+			process(all)
 			     variable rlane: integer; -- reverse lane number
 			begin
-				if rising_edge(clk) then
+				if rising_edge(axis_clk) then
                     for lane in 0 to NUMBER_OF_CT2_INPUTS-1 loop
                         rlane := NUMBER_OF_CT2_INPUTS-1-lane;
                         m_axis_tdata(BITS_PER_CT2_LANE_WORD * (rlane +1) -1  downto BITS_PER_CT2_LANE_WORD * rlane) <= align1_out_tdata(lane);
@@ -719,6 +659,7 @@ begin
 
 	end generate ct2_gen; -- if CT_LEVEL >= 2
 
+	end block; -- cb1_block
 
 
 end Behavioral;
