@@ -72,6 +72,8 @@ entity xxvglink_core is
 		rx_clk          : out std_logic_vector(0 to max(NUMBER_OF_RX_LINKS-1, 0)); --! clock synchronous with the rx data. Recovered from the received link.
 		rx_resetdone    : out std_logic_vector(0 to max(NUMBER_OF_RX_LINKS-1, 0)); --! Indicates that the receiver is ready to receive data
 
+		stable_clk: in std_logic; -- free-running stable clock for reset state machines.
+
 		control_bytes : out slv8_array(0 to NUMBER_OF_CONTROL_BYTES-1); -- additional control bytes appended to the common control registers
 		status_bytes  : in slv8_array(0 to NUMBER_OF_STATUS_BYTES-1):=(others=>(others=>'0')); -- additional status bytes appended to the common status registers
 
@@ -143,7 +145,6 @@ constant NUMBER_OF_QUADS : integer := MAX(LINK_TO_QUAD_MAP(0 to NUMBER_OF_LINKS-
 	-- signal clk156_nobuf : std_logic; --! unbuffered 156.25 MHz data clock at the output of MMCM
 	-- signal clk156 : std_logic; --! buffered 156.25 MHz data clock derived from the reference clock
 
-	signal stable_clk: std_logic; -- free-running stable clock for reset state machines. Either ctrl_clk or reference clock
 	-- signal txclk322_nobuf : std_logic_vector(0 to NUMBER_OF_LINKS-1); --! Unbuffered TXOUTCLK from each GTX
 	--signal txclk322 : std_logic; --! buffered TXOUTCLK used to clock all GTX TX subsystems
 	--signal rxclk322 : slv(0 to NUMBER_OF_LINKS-1); --!
@@ -409,7 +410,7 @@ end block;
 -- Select free-running clock
 --------------------------------------------------------------------------------
 
-stable_clk <= ctrl_clk; -- free running stable clock
+--stable_clk <= ctrl_clk; -- free running stable clock
 
 -------------------------------------------------------------------------------
 -- MASTER RESET SEQUENCER
