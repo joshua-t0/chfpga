@@ -199,12 +199,10 @@ begin
 
 		signal dc_busy: std_logic := '0'; -- daisy chain readout busy
 		signal timestamp, integ_timestamp, readout_timestamp: unsigned(47 downto 0);
-        -- signal overrun: std_logic;
 	begin
 
---		ram_rd_acc_addr <= word_ctr;
-		ram_rd_addr <= (not acc_bank1) & std_logic_vector(ro_word_ctr1) when rd_word_ctr1=READOUT_BIN else
-		               acc_bank1 & std_logic_vector(rd_word_ctr1);
+--		ram_rd_addr <= (not acc_bank1) & std_logic_vector(ro_word_ctr1) when rd_word_ctr1=READOUT_BIN else
+--		               acc_bank1 & std_logic_vector(rd_word_ctr1);
 		ram_wr_addr <= acc_bank5 & std_logic_vector(wr_word_ctr5);
 
 		wr_proc: process(clk)
@@ -212,6 +210,10 @@ begin
 		    --variable prod: integer range 0 to NCMAC; -- counts autocorr products (not NCMAC-1 because last increment?)
 		    variable prod_bytes: slv8_array(0 to BYTES_PER_PRODUCT-1);
 		    variable next_timestamp : unsigned(47 downto 0);
+		    variable next_rd_word_ctr: unsigned(rd_word_ctr1'RANGE);
+		    variable next_acc_bank: std_logic;
+		    variable is_capture_word: boolean;
+
 		begin
 			if rising_edge(clk) then
 				rst_reg <= rst;
@@ -224,10 +226,11 @@ begin
 				-- Write state machine: count words and frames, and set the done signal
 --	            src_readout_trig <= '0'; -- single clock pulse signal, overriden below
 				if s_axis_xy_tvalid then
-					rd_word_ctr1 <= rd_word_ctr1 + 1;
+				    next_acc_bank := acc_bank1; -- get current accum bank
+					next_rd_word_ctr := rd_word_ctr1 + 1;
 					if s_axis_xy_tlast then
-                        ro_word_ctr_max <= rd_word_ctr1;
-						rd_word_ctr1 <= (others => '0');
+                        ro_word_ctr_max <= rd_word_ctr1; -- capture the frame length so we can readout the same amount of words
+						next_rd_word_ctr := (others => '0');
 						frame <= frame + 1;
 						next_timestamp := timestamp + 1;
                         timestamp <= next_timestamp;
@@ -240,10 +243,15 @@ begin
 							readout_timestamp <= integ_timestamp;
 							integ_timestamp <= next_timestamp; -- timestamp+1 should reuses the logic above
 							s_axis_z_send <= '0'; -- tell the upstream cascaded correlators we stop accepting data
-							acc_bank1 <= not acc_bank1; -- switch bank
-						end if;
-					end if;
-				end if;
+							next_acc_bank := not next_acc_bank; -- switch bank
+						end if; -- last frame of integ_period
+					end if;-- tlast
+                    -- set the next RAM address to read
+                    ram_rd_addr <= (not next_acc_bank) & std_logic_vector(ro_word_ctr1) when next_rd_word_ctr=READOUT_BIN else
+                                   next_acc_bank & std_logic_vector(next_rd_word_ctr);
+                    acc_bank1 <= next_acc_bank;
+                    rd_word_ctr1 <= next_rd_word_ctr;
+                end if; -- tvalid
 
                 -- pipeline the control signals
 				tvalid1 <= s_axis_xy_tvalid;
@@ -405,6 +413,7 @@ begin
 				if rst_reg = '1' then
 					rd_word_ctr1 <= (others => '0');
 					ro_word_ctr1 <= (others => '0'); -- prepare readout word counter for first readout.
+                    ram_rd_addr <= (others => '0'); -- always zero since acc_bank=0 and rd/ro_word_ctr=0 as well
 
 					frame <= (others => '0');
 					ro_active <= '0';

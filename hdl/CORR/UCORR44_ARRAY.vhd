@@ -33,13 +33,13 @@ entity UCORR44_ARRAY is
 		SOFT_NINTEG: integer := 8192; -- default integration period (number of frames)
 		SOFT_AUTOCORR_ONLY: boolean := FALSE;
 		READOUT_BINS: integer_array(0 to NCORR-1) := (others => 0); -- array of integers indicating which bin is sacrificed to the readout cycle for each correlator
-        INPUT_WIDTH: integer := 256 -- Number of bits of the input bus. Is divided in NCORR sections (CORR 0 in MSB), 
+        INPUT_WIDTH: integer := 256 -- Number of bits of the input bus. Is divided in NCORR sections (CORR 0 in MSB),
 	);
 
 	PORT (
 
 		-- Input data AXI-S bus , non-blocking
-		-- Data ordering: 0 to K-1 => (Corr0Chan0, Corr0Chan1, ... Corr0 ChanNCHAN-1, Corr1Chan0 ...)
+		-- Data ordering from MSB to LSB => (Corr0,Chan0), (Corr0,Chan1), ... (Corr0,ChanN-1), ... (CorrM-1, ChanN-1)
 		-- Re in MSB of byte
 		s_axis_data_tdata : in  slv(INPUT_WIDTH-1 downto 0); --! input data stream containing the channelized data from every antenna processor. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
 		s_axis_data_tvalid : in  std_logic; --
