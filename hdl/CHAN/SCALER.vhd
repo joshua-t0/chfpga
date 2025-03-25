@@ -163,7 +163,7 @@ architecture Behavioral of SCALER is
 
     --- Define Control word and its signals
     signal control_bytes: slv8_array(0 to 10); -- default value set in the CMD_SLAVE
-    signal status_bytes: slv8_array(0 to 12);
+    signal status_bytes: slv8_array(0 to 13);
 
     signal bypass_scaler: std_logic;
     signal soft_reset: std_logic;
@@ -210,6 +210,7 @@ architecture Behavioral of SCALER is
 
     signal word_ctr: unsigned(LOG2_FFT_WORDS_PER_FRAME-1 downto 0); -- 10 bits
     signal frame_ctr: unsigned(31 downto 0); -- 10 bits
+    signal cap_frame_ctr: unsigned(7 downto 0); -- 8 bits counter for debugging
     signal use_offset_binary: std_logic;
     signal cap_data_type: std_logic_vector(2 downto 0);
     signal bypass_data_type: std_logic_vector(1 downto 0);
@@ -225,7 +226,7 @@ architecture Behavioral of SCALER is
     signal scaled_data_tuser: std_logic_vector(3 downto 0);
     signal scaled_data_tlast: std_logic;
     signal scaled_data_tdata: std_logic_vector(INTEGER_WIDTH*INTEGERS_PER_WORD-1 downto 0);
-    signal scaled_data_log_gain: unsigned_array(0 to FFT_BINS_PER_WORD-1)(4 downto 0);
+    signal scaled_data_log_gain: unsigned_array(0 to FFT_BINS_PER_WORD-1)(5 downto 0);
 
 
     signal coeff_ram_dout: std_logic_vector(COEFF_BITS_PER_WORD-1 downto 0);
@@ -269,37 +270,36 @@ begin
 -----------------------------------------------------------------------------------
 -- CONTROL and STATUS Bytes
 -----------------------------------------------------------------------------------
---! \addtogroup memory_map
---! SCALER Module Memory Map
---!
---! ----------------------------------------------------------------------------------------------
---! |  Page   | Addr|Bit(s)|     Name                     | Description
---! |---------|-----|------|------------------------------|---------------------------------------
---! | CONTROL |  0  |  7   | soft_reset                   |  |
---! |         |     |   6  | bypass_scaler                |  |
---! |         |     |   5  | four_bits                    | Is '1' when only the top 4 bits are of interest (i.e. rounding is done on the 5th bit). In this case the lower 4 bits of the results are zero.  |
---! |         |     |  4:0 | post_scaler_left_shift       |  Post-scaler |
---! |         |  1  |   7  | (unused)                     |  |
---! |         |     |   6  | USE_OFFSET_BINARY            | When '1', Offset_binary encoding is used on the output of the scaler. The input data and gains are not affected and are always provided in 2's complement. |
---! |         |     |   5  | (unused)                     |  |
---! |         |     |   4  | next_gain_bank               | Indicates which bank of gain coefficients is to be used by the scaler|
---! |         |     |  3:0 | gain_table_page              | Indicates which page of gain coefficients table is being read or written to by the user.|
---! |         |  2  |   7  | stats_capture                | '0' clears the stats_done flag. when '1', the stats are captured and stats_done is set to '1' when the next frame block completes |
---! |         |     |   6  | symmetric_saturation         | When '1', negative values will saturate to -127 (8-bit mode) or -7 (4-bit mode). Otherwise they saturate on -128 and -8 respectively. |
---! |         |     |   5  | zero_on_saturation           | When '1', the real/imaginary pairs are zeroed if wither the real part or imaginary part encounters an overflow.|
---! |         |     |   4  | synchronize_gain_bank_switch | When '1', The target gain bank is activated only when the target frame number has been reached|
---! |         |     |  3:2 | (unused)                     |  |
---! |         |     |  1:0 | rounding_mode                | Specified the type of rounding: '00' = No rounding (truncation), '01'= standard rounding (ties always round up), '10' = convergent rounding (ties round toward the even values)|
---! |         | 3:5 | 23:0 | stats_frame_count            | Number of frames to include in the statistics. 1 = 1 frame. |
---! |         | 6:9 | 31:0 | gain_bank_switch_frame_number| Target frame number at which the next gain bank will be activated. |
---! | STATUS  |  0  |  7   | stats_ready                  | '1' when new stats data has been captured|
---! |         |     |  6   | current_gain_bank            | Currently used gain bank. |
---! |         |     |  5   | eight_bit_support            | '1' when this scaler implementation supports (8+8) bit output mode|
---! |         |     |  4:0 | (unused)                     |  |
---! |         | 1:2 | 15:0 | stats_scaler_overflows       | Number of scaler overflows in the last captured frame block. Saturates at 0xFFFE or 0xFFFF. |
---! |         | 3:4 | 15:0 | stats_adc_overflows          | Number of adc overflows in the last captured frame block. Saturates at 0xFFFF. |
---! |         |  5  |  7:0 | frame_ctr                    | Last 8 bits of the frame counter. |
---! -----------------------------------------------------------------------------------------------
+-- SCALER Module Memory Map
+--
+-- ----------------------------------------------------------------------------------------------
+-- |  Page   | Addr|Bit(s)|     Name                     | Description
+-- |---------|-----|------|------------------------------|---------------------------------------
+-- | CONTROL |  0  |  7   | soft_reset                   |  |
+-- |         |     |   6  | bypass_scaler                |  |
+-- |         |     |   5  | four_bits                    | Is '1' when only the top 4 bits are of interest (i.e. rounding is done on the 5th bit). In this case the lower 4 bits of the results are zero.  |
+-- |         |     |  4:0 | post_scaler_left_shift       |  Post-scaler |
+-- |         |  1  |   7  | (unused)                     |  |
+-- |         |     |   6  | USE_OFFSET_BINARY            | When '1', Offset_binary encoding is used on the output of the scaler. The input data and gains are not affected and are always provided in 2's complement. |
+-- |         |     |   5  | (unused)                     |  |
+-- |         |     |   4  | next_gain_bank               | Indicates which bank of gain coefficients is to be used by the scaler|
+-- |         |     |  3:0 | gain_table_page              | Indicates which page of gain coefficients table is being read or written to by the user.|
+-- |         |  2  |   7  | stats_capture                | '0' clears the stats_done flag. when '1', the stats are captured and stats_done is set to '1' when the next frame block completes |
+-- |         |     |   6  | symmetric_saturation         | When '1', negative values will saturate to -127 (8-bit mode) or -7 (4-bit mode). Otherwise they saturate on -128 and -8 respectively. |
+-- |         |     |   5  | zero_on_saturation           | When '1', the real/imaginary pairs are zeroed if wither the real part or imaginary part encounters an overflow.|
+-- |         |     |   4  | synchronize_gain_bank_switch | When '1', The target gain bank is activated only when the target frame number has been reached|
+-- |         |     |  3:2 | (unused)                     |  |
+-- |         |     |  1:0 | rounding_mode                | Specified the type of rounding: '00' = No rounding (truncation), '01'= standard rounding (ties always round up), '10' = convergent rounding (ties round toward the even values)|
+-- |         | 3:5 | 23:0 | stats_frame_count            | Number of frames to include in the statistics. 1 = 1 frame. |
+-- |         | 6:9 | 31:0 | gain_bank_switch_frame_number| Target frame number at which the next gain bank will be activated. |
+-- | STATUS  |  0  |  7   | stats_ready                  | '1' when new stats data has been captured|
+-- |         |     |  6   | current_gain_bank            | Currently used gain bank. |
+-- |         |     |  5   | eight_bit_support            | '1' when this scaler implementation supports (8+8) bit output mode|
+-- |         |     |  4:0 | (unused)                     |  |
+-- |         | 1:2 | 15:0 | stats_scaler_overflows       | Number of scaler overflows in the last captured frame block. Saturates at 0xFFFE or 0xFFFF. |
+-- |         | 3:4 | 15:0 | stats_adc_overflows          | Number of adc overflows in the last captured frame block. Saturates at 0xFFFF. |
+-- |         |  5  |  7:0 | frame_ctr                    | Last 8 bits of the frame counter. |
+-- -----------------------------------------------------------------------------------------------
 
 
 -- CONTROL Byte 0
@@ -368,6 +368,8 @@ status_bytes(6 to 7) <= to_slv8_array(delay_capture_ctr);
 status_bytes(8 to 9) <= to_slv8_array(mon_packet_length);
 status_bytes(10) <= std_logic_vector(mon_packet_ctr);
 status_bytes(11 to 12) <= to_slv8_array(mon_word_ctr);
+
+status_bytes(13) <= std_logic_vector(cap_frame_ctr);
 
 -----------------------------------------------------------------------------------
 -- Memory-Mapped interface
@@ -583,13 +585,13 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
         signal fft_reg_tvalid: std_logic;
         signal fft_reg_tlast: std_logic;
         signal fft_reg_tuser: std_logic_vector(3 downto 0);
-        signal fft_reg_log_gain: unsigned_array(0 to FFT_BINS_PER_WORD-1)(4 downto 0);
+        signal fft_reg_log_gain: unsigned_array(0 to FFT_BINS_PER_WORD-1)(5 downto 0);
 
 --        signal scaled_data_tdata_dly1, scaled_data_tdata_dly2: std_logic_vector(INTEGER_WIDTH*INTEGERS_PER_WORD-1 downto 0);
         signal scaled_data_tvalid_dly1, scaled_data_tvalid_dly2: std_logic;
         signal scaled_data_tuser_dly1, scaled_data_tuser_dly2: std_logic_vector(3 downto 0);
         signal scaled_data_tlast_dly1, scaled_data_tlast_dly2: std_logic;
-        signal scaled_data_log_gain_dly1, scaled_data_log_gain_dly2: unsigned_array(0 to FFT_BINS_PER_WORD-1)(4 downto 0);
+        signal scaled_data_log_gain_dly1, scaled_data_log_gain_dly2: unsigned_array(0 to FFT_BINS_PER_WORD-1)(5 downto 0);
 
 --        constant MUL_B_WIDTH_MAX: integer := 18; -- use  2 multipliers if B_WIDTH (i.e. FFT data) > B_WIDTH_MAX
 --        constant PROD_LO_WIDTH:integer := MUL_B_WIDTH_MAX + 1 + COEFF_BITS_PER_BIN + 1; -- b1 unsigned slice has a extra guard bit to make it signed
@@ -636,10 +638,10 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                     -- Extract 16-bit coefficient. Word order is reversed coming out of RAM.
                     coeff_var := unsigned(coeff_ram_dout((FFT_BINS_PER_WORD-1-i+1)*COEFF_BITS_PER_BIN-1 downto (FFT_BINS_PER_WORD-1-i)*COEFF_BITS_PER_BIN));
                     if use_float_gains then
-                        fft_reg_log_gain(i) <= coeff_var(COEFF_BITS_PER_BIN-1 downto COEFF_BITS_PER_BIN-5); -- upper 5 bits are the gain
+                        fft_reg_log_gain(i) <= resize(coeff_var(COEFF_BITS_PER_BIN-1 downto COEFF_BITS_PER_BIN-5),6) + resize(unsigned(post_scaler_left_shift), 6); -- upper 5 bits are the log gain, which is added to the common log gain
                         coeff(i) <= resize(coeff_var(COEFF_BITS_PER_BIN-6 downto 0), COEFF_BITS_PER_BIN); -- resize prepends zeros. Signed value will be positive.
                     else
-                        fft_reg_log_gain(i) <= unsigned(post_scaler_left_shift);
+                        fft_reg_log_gain(i) <= resize(unsigned(post_scaler_left_shift), 6);
                         coeff(i) <= coeff_var;
                     end if; -- if USE_FLOAT_GAINS
                 end loop;
@@ -719,7 +721,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
 -------------------------------------------------------------------
 --! Reads the input bus, scales the values, and send them to the output bus.
 scaler_proc: process(clk)
-    variable scaled_data_log_gain_var: integer range 0 to (2**post_scaler_left_shift'LENGTH - 1);
+    variable scaled_data_log_gain_var: integer range 0 to 63;
 --    variable stage1_word_var: int35_array(3 downto 0);
     variable word_var: signed(INTEGER_WIDTH-1 downto 0);
     variable OUT_WORD_VAR: int8_array(0 to INTEGERS_PER_WORD-1);
@@ -795,9 +797,9 @@ scaler_proc: process(clk)
 --                stage1_overflow(i) <= not to_std_logic(word_var(INTEGER_WIDTH-1 downto INTEGER_WIDTH-1-scaled_data_log_gain_var)=0 or
 --                                                   word_var(INTEGER_WIDTH-1 downto INTEGER_WIDTH-1-scaled_data_log_gain_var)=-1);
                 stage1_overflow(i) <= '0';
-                for j in 1 to 31 loop
+                for j in 1 to word_var'LENGTH-1 loop
                     if j <= scaled_data_log_gain_var and word_var(word_var'LENGTH-1-j) /= sign_bit(word_var) then
-                        stage1_overflow(i)<='1';
+                        stage1_overflow(i) <= '1';
                     end if;
                 end loop;
             end loop;
@@ -814,7 +816,7 @@ scaler_proc: process(clk)
                     if rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND or rounding_mode = ROUNDING_MODE_ROUND then -- if rounding
                         stage2_word(i)(7 downto 4) <= msb(msb(stage1_word(i), 4 + 1) + 1, 4);
                         stage2_word(i)(3 downto 0) <= "0000";
-                        round_down_var := to_std_logic(rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND and stage1_word(i)(35-1-4)='1' and stage1_word(i)(35-1-4-1 downto 0)=0);
+                        round_down_var := to_std_logic(rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND and stage1_word(i)(INTEGER_WIDTH-1-4)='1' and stage1_word(i)(INTEGER_WIDTH-1-4-1 downto 0)=0);
                         if round_down_var = '1' then
                             stage2_word(i)(4) <= '0';
                         end if;
@@ -841,7 +843,7 @@ scaler_proc: process(clk)
                 elsif EIGHT_BIT_SUPPORT=TRUE then -- four_bits = '0'
                     if rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND or rounding_mode = ROUNDING_MODE_ROUND then -- if rounding
                         stage2_word(i) <= msb(msb(stage1_word(i), 8 + 1) + 1, 8);
-                        round_down_var := to_std_logic(rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND and stage1_word(i)(35-1-8)='1' and stage1_word(i)(35-1-8-1 downto 0)=0);
+                        round_down_var := to_std_logic(rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND and stage1_word(i)(INTEGER_WIDTH-1-8)='1' and stage1_word(i)(INTEGER_WIDTH-1-8-1 downto 0)=0);
                         if round_down_var = '1' then
                             stage2_word(i)(0) <= '0';
                         end if;
@@ -925,8 +927,8 @@ scaler_proc: process(clk)
             case? bypass_scaler & bypass_data_type is
                 when "0--" => -- send the 4+4 bit scaled values
                     for i in 0 to FFT_BINS_PER_WORD-1 loop
-                        m_axis_out_tdata((2*i+1)*OB/2-1 downto (2*i+1)*OB/2) <= msb_pad(std_logic_vector(OUT_WORD_VAR(2*i)), OB/2); -- MSB->LSB: 3,2,1,0 = Re(N), Im(N), Re(N+1), Im(N+1)
-                        m_axis_out_tdata((2*i+2)*OB/2-1 downto (2*i+2)*OB/2) <= msb_pad(std_logic_vector(OUT_WORD_VAR(2*i+1)), OB/2); -- MSB->LSB: 3,2,1,0 = Re(N), Im(N), Re(N+1), Im(N+1)
+                        m_axis_out_tdata((2*i+1)*OB/2-1 downto (2*i+0)*OB/2) <= msb_pad(std_logic_vector(OUT_WORD_VAR(2*i)), OB/2); -- MSB->LSB: 3,2,1,0 = Re(N), Im(N), Re(N+1), Im(N+1)
+                        m_axis_out_tdata((2*i+2)*OB/2-1 downto (2*i+1)*OB/2) <= msb_pad(std_logic_vector(OUT_WORD_VAR(2*i+1)), OB/2); -- MSB->LSB: 3,2,1,0 = Re(N), Im(N), Re(N+1), Im(N+1)
                     end loop;
 
 
@@ -973,6 +975,11 @@ scaler_proc: process(clk)
             m_axis_cap_tlast <= in_dat_dly1_tlast; -- default framing sources
             m_axis_cap_tvalid <= in_dat_dly1_tvalid;
 
+            -- Count capture frames for debugging
+            if m_axis_cap_tvalid and m_axis_cap_tlast then
+                cap_frame_ctr <= cap_frame_ctr + 1;
+            end if;
+
             case cap_data_type is
                 when "000" => -- send main scaler output (default)
                     for i in 0 to INTEGERS_PER_WORD-1 loop
@@ -991,18 +998,17 @@ scaler_proc: process(clk)
 
                 when "010" => -- send MSBs of the post-gain FFT output with saturation
                     for i in 0 to INTEGERS_PER_WORD-1 loop
-                        m_axis_cap_tdata((i+1)*OUT_BITS_PER_BIN/2-1 downto i*OUT_BITS_PER_BIN/2) <=
+                        m_axis_cap_tdata((i+1)*CB/2-1 downto i*CB/2) <=
                             ('1', others => '0') when stage1_overflow(i)='1' and stage1_sign(i)='1' else
                             ('0', others => '1') when stage1_overflow(i)='1' and stage1_sign(i)='0' else
-                            msb(std_logic_vector(stage1_word(i)), OUT_BITS_PER_BIN/2);
+                            msb(std_logic_vector(stage1_word(i)), CB/2);
                     end loop;
                     m_axis_cap_tlast <= stage1_tlast;
                     m_axis_cap_tvalid <= stage1_tvalid;
 
                 when "011" => -- send the 4+4 bit scaled values
-                    for i in 0 to FFT_BINS_PER_WORD-1 loop
-                        m_axis_cap_tdata((2*i+1)*CB/2-1 downto (2*i+1)*CB/2) <= msb_pad(std_logic_vector(OUT_WORD_VAR(2*i)), CB/2); -- MSB->LSB: 3,2,1,0 = Re(N), Im(N), Re(N+1), Im(N+1)
-                        m_axis_cap_tdata((2*i+2)*CB/2-1 downto (2*i+2)*CB/2) <= msb_pad(std_logic_vector(OUT_WORD_VAR(2*i+1)), CB/2); -- MSB->LSB: 3,2,1,0 = Re(N), Im(N), Re(N+1), Im(N+1)
+                    for i in 0 to INTEGERS_PER_WORD-1 loop
+                        m_axis_cap_tdata((i+1)*CB/2-1 downto i*CB/2) <= msb_pad(std_logic_vector(OUT_WORD_VAR(i)), CB/2); -- MSB->LSB: 3,2,1,0 = Re(N), Im(N), Re(N+1), Im(N+1)
                     end loop;
                     m_axis_cap_tlast <= stage2_tlast;
                     m_axis_cap_tvalid <= stage2_tvalid;
