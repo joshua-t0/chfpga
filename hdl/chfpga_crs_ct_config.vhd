@@ -9,8 +9,9 @@ package chfpga_config is
 
 	constant CONFIG_NUMBER_OF_ADCS: integer := 8; -- Number of ADC inputs that are connected
 
-	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean := TRUE;
-	constant CONFIG_CHAN_FFT_TYPE: string := "D3A";
+	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean := FALSE;
+	constant CONFIG_CHAN_FFT_TYPE: string := "CHORD";
+	constant CONFIG_FFT_BITS_PER_BIN: integer := 32+32; -- total width ( Re +Im) width of fft output. Typically 18+18 with shift schedule, or 32+32 with bit growth on CRS
 	constant CONFIG_FFT_CTR_WIDTH: integer := 14; -- CHIME: 12, D3A/CHORD: 13. Number of bits of the delay line. Max delay = 2^CONFIG_FFT_CTR_WIDTH
 	constant CONFIG_FFT_ROTATE_BINS: boolean := TRUE; -- CHIME: False, D3A/CHORD: True.
 	constant CONFIG_ADC_SAMPLES_PER_WORD: integer := 8; -- we pack 8 samples per word
@@ -23,14 +24,16 @@ package chfpga_config is
 	constant CONFIG_CAPTURE_BITS_PER_WORD: integer := sel(CONFIG_CHAN_CAPTURE_TYPE="URAM", 128, 32);
 
     -- Corner-turn engine configuration
-    constant CONFIG_CROSSBAR1_TYPE: string                       := "URAM"; -- "BRAM" or "URAM"
+    constant CONFIG_CT_LEVEL: integer := 1;
+    constant CONFIG_CT_TYPE: string                              := "UCT"; -- "UCT" or "BCT"
+    constant CONFIG_CT_CLK_SOURCE: string                        := "ADC_CLK"; -- Run the corner-turn & correlator on the 400 MHz ADC clock
 	constant CONFIG_NUMBER_OF_CROSSBAR_INPUTS: integer           := CONFIG_NUMBER_OF_ADCS; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
 	constant CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS: integer         := 8; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
 	constant CONFIG_NUMBER_OF_CORRELATORS: integer               := 0; -- Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
 	constant CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := 0;
 	constant CONFIG_NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := 0;
-	constant CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS: integer          := 0; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
-	constant CONFIG_NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := 0;
+	constant CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS: integer          := 3; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
+	constant CONFIG_NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := 1;
 
     constant CONFIG_CORR_TYPE: string                            := "NONE";
 --	constant CONFIG_NUMBER_OF_CORRELATORS: integer               := 4; -- Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
