@@ -205,6 +205,7 @@ architecture impl of chfpga_crs is
     attribute dont_touch: string;
     attribute IOB: string;
 
+    signal bp_shuffle_tx_p_int, bp_shuffle_tx_n_int: std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS - 1);
     -- Tell the tools not to infer buffers and autoplace IO ports for the following if the ports are not connected
     -- If 100GE is not implemented, the placer assigns random IOs to these ports, and since those have no specifiec IO standard, the bitstream
     -- fails its DRC.
@@ -212,6 +213,7 @@ architecture impl of chfpga_crs is
     --  In the case of "OBUF", it looks like the output buffer is adapted to the type of output such as a transceiver output etc.
     attribute io_buffer_type of qsfp_txp, qsfp_txn: signal is sel(GPU_LINK_TYPE="100GE", "OBUF", "NONE");
     attribute io_buffer_type of clk156_p, clk156_n: signal is sel(GPU_LINK_TYPE="100GE", "IBUF", "NONE");
+    attribute io_buffer_type of bp_shuffle_tx_p, bp_shuffle_tx_n: signal is "NONE";--sel(CT_LEVEL>1, "OBUF", "NONE");
 
     -- BSB & CAP AXIS clock (100 MHz)
     signal aclk: std_logic;
@@ -292,6 +294,11 @@ architecture impl of chfpga_crs is
     attribute dont_touch of pl400, pl10: signal is "true";
 
 begin
+
+    bp_gen: if CT_LEVEL > 1 generate
+        bp_shuffle_tx_p <= bp_shuffle_tx_p_int;
+        bp_shuffle_tx_n <= bp_shuffle_tx_n_int;
+    end generate;    
     -----------
     -- 10 MHz Reference clocks from SMA and BP
     -----------
@@ -843,8 +850,8 @@ zynq: entity work.zynq_tcpipe_crs
             -- Corner-Turn Engine
             ------------------------------------
             -- Gigabit Transceiver links to the backplane for intra-crate and inter-crate data transfers
-            bp_shuffle_tx_p => bp_shuffle_tx_p,
-            bp_shuffle_tx_n => bp_shuffle_tx_n,
+            bp_shuffle_tx_p => bp_shuffle_tx_p_int,
+            bp_shuffle_tx_n => bp_shuffle_tx_n_int,
             bp_shuffle_rx_p => bp_shuffle_rx_p,
             bp_shuffle_rx_n => bp_shuffle_rx_n,
             -- Gigabit transceiver refrenece clocks (typically 156.25 MHz)
