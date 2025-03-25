@@ -152,8 +152,8 @@ end CHAN;
 -- Implements the channelizer blocks
 architecture impl of CHAN is
 
-attribute equivalent_register_removal: string;
-attribute shreg_extract: string;
+--attribute equivalent_register_removal: string;
+--attribute shreg_extract: string;
 attribute keep: string;
 attribute dont_touch: string;
 
@@ -359,6 +359,12 @@ funcgen_blk: BLOCK
     signal funcgen_reset_in: std_logic;
     attribute keep of funcgen_reset_in: signal is "true";
 
+    signal funcgen_out_pre_tdata: std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
+    signal funcgen_out_pre_tuser: std_logic_vector(3 downto 0);
+    signal funcgen_out_pre_tvalid: std_logic;
+    signal funcgen_out_pre_tlast: std_logic;
+    
+
     --attribute equivalent_register_removal of axis_adc_reg1: signal is "no";
     --attribute equivalent_register_removal of axis_adcdaq_out_reg2: signal is "no";
     --attribute shreg_extract of axis_adc_reg1: signal is "no";
@@ -410,6 +416,11 @@ begin
             funcgen_reset_in <= in_reset_adc_reg2;
             funcgen_reset_out <= funcgen_reset_in;
 
+            axis_funcgen_out_tdata <= funcgen_out_pre_tdata;
+            axis_funcgen_out_tuser <= funcgen_out_pre_tuser;
+            axis_funcgen_out_tvalid <= funcgen_out_pre_tvalid when not funcgen_reset_out else '0';
+            axis_funcgen_out_tlast <= funcgen_out_pre_tlast;
+
             -- Provide monitoring data
             lane_monitor(0) <= axis_scaler_out_tvalid xor axis_scaler_out_tlast;
             lane_monitor(1) <= axis_fft_out_tvalid xor axis_fft_out_tlast;
@@ -445,10 +456,10 @@ begin
             trig   => trig,
 
             -- Output stream to FFT
-            m_axis_adc_tdata => axis_funcgen_out_tdata,
-            m_axis_adc_tvalid => axis_funcgen_out_tvalid,
-            m_axis_adc_tuser => axis_funcgen_out_tuser,
-            m_axis_adc_tlast => axis_funcgen_out_tlast,
+            m_axis_adc_tdata => funcgen_out_pre_tdata,
+            m_axis_adc_tvalid => funcgen_out_pre_tvalid,
+            m_axis_adc_tuser => funcgen_out_pre_tuser,
+            m_axis_adc_tlast => funcgen_out_pre_tlast,
 
             clk => in_clk,
             rst => funcgen_reset_in,
