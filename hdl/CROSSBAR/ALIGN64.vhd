@@ -57,23 +57,25 @@ entity align64 is
 
 		-- Operational parameters
 		sof_window_stop: in std_logic_vector(7 downto 0); --!
-		ignore_lane: in slv(0 to NUMBER_OF_LANES-1);
+		ignore_lane: in std_logic_vector(0 to NUMBER_OF_LANES-1);
 		-- Monitoring signals
 
-		fifo_overflow: out slv(0 to NUMBER_OF_LANES-1);
-		missing_frame: out slv(0 to NUMBER_OF_LANES-1);
-		bad_frame_length: out slv(0 to NUMBER_OF_LANES-1);
-		lane0_tfirst_mon: out std_logic;
-		fifo_tfirst_mon: out std_logic_vector(0 to NUMBER_OF_LANES-1);
-		fifo_count_mon: out slv10_array(0 to NUMBER_OF_LANES-1);
+		fifo_overflow: out std_logic_vector(0 to NUMBER_OF_LANES-1);
+--		missing_frame: out slv(0 to NUMBER_OF_LANES-1);
+--		bad_frame_length: out slv(0 to NUMBER_OF_LANES-1);
+--		lane0_tfirst_mon: out std_logic;
+--		fifo_tfirst_mon: out std_logic_vector(0 to NUMBER_OF_LANES-1);
+--		fifo_count_mon: out slv10_array(0 to NUMBER_OF_LANES-1);
 
 		-- Additional monitoring port for debugging (if ENABLE_MONITORING_LOGIC=TRUE)
-		lane_monitor_source: in std_logic_vector(3 downto 0);
-		lane_monitor: out slv(0 to NUMBER_OF_LANES-1) := (others=>'0');
+		mon_reset: in std_logic;
+		mon_lane: in std_logic_vector(3 downto 0);
+		mon_source: in std_logic_vector(3 downto 0);
+		mon_word: out std_logic_vector(15 downto 0);
 
 
 		clk: in std_logic;
-		rst : in STD_LOGIC --! Synchronous  reset synchronized to CLK
+		rst : in std_logic --! Synchronous  reset synchronized to CLK
  	);
 
 
@@ -122,16 +124,23 @@ architecture Behavioral of align64 is
 --- Signal definitions ------------------------------------
 
 
-signal s_axis_tfirst: slv(0 to NUMBER_OF_LANES-1);
+signal s_axis_tfirst: std_logic_vector(0 to NUMBER_OF_LANES-1);
 
-signal is_sof: slv(0 to NUMBER_OF_LANES-1);
-signal is_eof: slv(0 to NUMBER_OF_LANES-1);
+signal is_sof: std_logic_vector(0 to NUMBER_OF_LANES-1);
+signal is_eof: std_logic_vector(0 to NUMBER_OF_LANES-1);
 
 
-signal read_en: slv(0 to NUMBER_OF_LANES-1);
+signal read_en: std_logic_vector(0 to NUMBER_OF_LANES-1);
 
-signal valid_lane: slv(0 to NUMBER_OF_LANES-1);
-signal ignore_lane_reg: slv(0 to NUMBER_OF_LANES-1); -- registered verson of the lanes to be ignored
+signal valid_lane: std_logic_vector(0 to NUMBER_OF_LANES-1);
+signal ignore_lane_reg: std_logic_vector(0 to NUMBER_OF_LANES-1); -- registered verson of the lanes to be ignored
+
+
+signal missing_frame: std_logic_vector(0 to NUMBER_OF_LANES-1);
+signal bad_frame_length:  std_logic_vector(0 to NUMBER_OF_LANES-1);
+signal lane0_tfirst_mon:  std_logic;
+signal fifo_tfirst_mon: std_logic_vector(0 to NUMBER_OF_LANES-1);
+--signal fifo_count_mon: slv10_array(0 to NUMBER_OF_LANES-1);
 
 signal sof_window_ctr: unsigned(7 downto 0) := (others=>'0'); -- init for sim
 signal sof_window: std_logic;
@@ -149,7 +158,7 @@ signal data_fifo_wr_en:    slv(0 to NUMBER_OF_LANES-1);
 --signal data_fifo_empty:    slv(0 to NUMBER_OF_LANES-1);
 signal data_fifo_almost_full: slv(0 to NUMBER_OF_LANES-1);
 signal data_fifo_valid:    slv(0 to NUMBER_OF_LANES-1);
-signal data_fifo_overflow: slv(0 to NUMBER_OF_LANES-1);
+--signal data_fifo_overflow: slv(0 to NUMBER_OF_LANES-1);
 signal data_fifo_count:    slv10_array(0 to NUMBER_OF_LANES-1);
 
 signal fifo_tdata:      slv64_array(0 to NUMBER_OF_LANES-1);
@@ -163,7 +172,7 @@ signal all_valid: std_logic;
 signal any_valid: std_logic;
 
 -- Monitoring signals
-signal bad_frame_length_int: slv(0 to NUMBER_OF_LANES-1);
+--signal bad_frame_length_int: slv(0 to NUMBER_OF_LANES-1);
 signal align_pulse: slv(0 to NUMBER_OF_LANES-1);
 -- signal ignore: slv(0 to NUMBER_OF_LANES-1);
 
@@ -232,12 +241,13 @@ fifo0: entity work.align64_fifo
 		m_axis_tuser   => fifo_tuser(i),
 		m_axis_tready   => read_en(i),
 
-		overflow => data_fifo_overflow(i),
-		empty => fifo_empty(i),
+		overflow    => fifo_overflow(i),
+		empty       => fifo_empty(i),
 		almost_full => data_fifo_almost_full(i),
-        wr_count => data_fifo_count(i),
-		clk          => clk,
-		rst      => rst
+        wr_count    => data_fifo_count(i),
+
+		clk => clk,
+		rst => rst
 	);
 
 
@@ -264,11 +274,11 @@ is_eof          <= fifo_tvalid and fifo_tlast;
 -- All frames are aligned and are of the same length (tlast=1 occur at the same time), but some lanes might be missing (tvalid=0)
 
 -- Assign monitoring signals to entity output ports
-fifo_overflow <= data_fifo_overflow;
-bad_frame_length <= bad_frame_length_int;
+--fifo_overflow <= data_fifo_overflow;
+--bad_frame_length <= bad_frame_length_int;
 lane0_tfirst_mon <= lane0_tfirst;
 fifo_tfirst_mon <= fifo_tfirst;
-fifo_count_mon <= data_fifo_count;
+--fifo_count_mon <= data_fifo_count;
 
 out_proc: process(clk)
 	-- variable start_send_var: std_logic;
@@ -327,10 +337,10 @@ out_proc: process(clk)
 				-- pre-FIFO reference lane ends, which should not happen) we probably have a bad lane and dont
 				-- want the data to fill up the FIFO, so we discarding its
 				-- data.
-				bad_frame_length_int(i) <= '0';
+				bad_frame_length(i) <= '0';
 				if (is_eof(i)='1' and read_en(i)='1') or (is_eof(0)='1' and read_en(0)='1') then --
 					valid_lane(i) <= '0';
-					bad_frame_length_int(i) <= not is_eof(i) or not is_eof(0); -- monitoring flag only: Misaligned EOF / bad frame length
+					bad_frame_length(i) <= not is_eof(i) or not is_eof(0); -- monitoring flag only: Misaligned EOF / bad frame length
 				end if;
 
 				-- Start sending all lanes by enabling valid_lane on all lanes that have a SOF flag at the end of
@@ -365,7 +375,7 @@ out_proc: process(clk)
 				is_last_in_sof_window <= '0';
 				fifo_tfirst <= (others=>'1');
 				s_axis_tfirst <= (others=>'1'); -- Make sure we trig on the first incoming packet after reset. Otherwise we will buffer a full frame before sending data.
-				bad_frame_length_int <= (others=>'0');
+				bad_frame_length <= (others=>'0');
 				missing_frame <= (others=>'0');
 				valid_lane <= (others=>'0');
 				m_axis_tvalid <= (others=>'0');
@@ -376,62 +386,83 @@ out_proc: process(clk)
 
 
 MON_GEN: if ENABLE_MONITORING_LOGIC generate
-mon_proc: process(clk)
+    signal clk_ctr: unsigned(15 downto 0);
+    signal lane_delay: unsigned(15 downto 0);
+    signal flags: unsigned(15 downto 0);
+    signal sticky_flags: unsigned(15 downto 0);
+    signal fifo_overflow_sticky: std_logic_vector(0 to NUMBER_OF_LANES-1);
+    signal missing_frame_sticky: std_logic_vector(0 to NUMBER_OF_LANES-1);
+    signal bad_frame_length_sticky: std_logic_vector(0 to NUMBER_OF_LANES-1);
+    signal valid_lane_sticky: std_logic_vector(0 to NUMBER_OF_LANES-1);
+    signal mon_word_int: unsigned(15 downto 0);
+begin
+    mon_proc: process(all) 
+        variable lane: integer;
+    begin
+        mon_word <= std_logic_vector(mon_word_int);
 
-	begin
 		if rising_edge(clk) then
 
-			for i in 0 to NUMBER_OF_LANES-1 loop
-				if s_axis_tvalid(0)='1' and s_axis_tfirst(0)='1' then
-					align_pulse(i) <= '1';
-				elsif s_axis_tvalid(i)='1' and s_axis_tfirst(i)='1' then
-					align_pulse(i) <= '0';
-				end if;
-			end loop;
+            lane := to_integer(unsigned(mon_lane));
+            clk_ctr <= (others => '0') when mon_reset or (s_axis_tvalid(0) and s_axis_tfirst(0)) else clk_ctr + 1 when not all_ones(clk_ctr);
+            lane_delay <= (others => '0') when mon_reset else clk_ctr when (s_axis_tvalid(lane) and s_axis_tfirst(lane));
 
+            fifo_overflow_sticky <= (others => '0') when mon_reset else (fifo_overflow_sticky or fifo_overflow);
+            missing_frame_sticky <= (others => '0') when mon_reset='1' else (missing_frame_sticky or missing_frame);
 
-			case to_integer(unsigned(lane_monitor_source)) is
-				when 0 =>
-					lane_monitor <= (
-						0 => is_last_in_sof_window,
-						1 => all_valid,
-						2 => sof_window,
-						-- 3 => lane0_tfirst and s_axis_tvalid(0) ,
-						-- 4 => any_valid,
-						-- 5 => is_last_in_sof_window and not is_sof(0),
-						-- 6 => m_axis_global_tvalid_int,
-						-- 7 => m_axis_global_tlast_int,
-						others => '0');
-				when 1 =>
-					lane_monitor <= is_sof;
-				when 2 =>
-					lane_monitor <= is_eof;
-				when 3 =>
-					lane_monitor <= valid_lane;
-				when 4 =>
-					lane_monitor <= read_en;
-				when 5 =>
-					lane_monitor <= bad_frame_length_int;
-				when 6 =>
-					lane_monitor <= fifo_tvalid;
-				when 7 =>
-					lane_monitor <= fifo_tlast;
-				when 8 =>
-					lane_monitor <= fifo_empty;
-				when 9 =>
-					lane_monitor <= fifo_tfirst;
-				when 10 =>
-					lane_monitor <= s_axis_tvalid;
-				when 11 =>
-					lane_monitor <= s_axis_tlast;
-				-- when 12 =>
-				-- 	lane_monitor <= ban_lane;
-				when 13 =>
-					lane_monitor <= data_fifo_overflow;
-				when 14 =>
-					lane_monitor <= align_pulse;
-				when others =>
-					lane_monitor <= (others => '0');
+            bad_frame_length_sticky <= (others => '0') when mon_reset='1' else (bad_frame_length_sticky or bad_frame_length);
+            valid_lane_sticky <= (others => '0') when mon_reset else valid_lane_sticky or valid_lane;
+
+			case to_integer(unsigned(mon_source)) is
+                when 0 => -- flags (sticky or not)
+                    mon_word_int <= (
+                        0 => fifo_overflow(lane),
+                        1 => missing_frame(lane),
+                        2 => bad_frame_length(lane),
+                        3 => not valid_lane(lane),
+                        4 => fifo_overflow_sticky(lane),
+                        5 => missing_frame_sticky(lane),
+                        6 => bad_frame_length_sticky(lane),
+                        7 => not valid_lane_sticky(lane),
+                        others => '0'
+                        );
+                when 1 => -- internal signals
+                    mon_word_int <= (
+                        0 => fifo_tfirst_mon(lane),
+                        1 => is_sof(lane),
+                        2 => is_eof(lane),
+                        3 => read_en(lane),
+                        4 => fifo_tvalid(lane),
+                        5 => fifo_tlast(lane),
+                        6 => fifo_empty(lane),
+                        7 => fifo_tfirst(lane),
+                        8 => s_axis_tvalid(lane),
+                        9 => s_axis_tlast(lane),
+                        10 => align_pulse(lane),
+                        11 => lane0_tfirst_mon,
+                        12 => fifo_overflow(lane),
+                        13 => is_last_in_sof_window,
+                        14 => all_valid,
+                        15 => sof_window
+                        );
+
+                when 3 => -- FIFO occupancy
+                    mon_word_int <= resize(unsigned(data_fifo_count(lane)), 16);
+                when 4 => -- lane delay
+                    mon_word_int <= lane_delay;
+                when 5 => -- FIFO overflow counter
+                    mon_word_int <= (others => '0') when mon_reset else mon_word_int + 1 when fifo_overflow(lane);
+                when 6 => -- missing frame counter
+                    mon_word_int <= (others => '0') when mon_reset else mon_word_int + 1 when missing_frame(lane);
+                when 7 => -- bad frame length counter
+                    mon_word_int <= (others => '0') when mon_reset else mon_word_int + 1 when bad_frame_length(lane);
+                when 8 => -- invalid lane counter
+                    mon_word_int <= (others => '0') when mon_reset else mon_word_int + 1 when not valid_lane(lane);
+                when 9 => -- clock counter since lane 0 tfirst
+                    mon_word_int <= clk_ctr;
+                when others =>
+                    mon_word_int <= (others => '0');
+    
 			end case;
 		end if; --clk
 
