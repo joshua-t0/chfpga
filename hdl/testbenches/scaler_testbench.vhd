@@ -39,7 +39,7 @@ ENTITY scaler_testbench IS
         FFT_BINS_PER_FRAME: integer:= 8192;
         USE_COMPLEX_GAINS: boolean := FALSE;
         COEFF_BITS_PER_BIN: integer := 16; -- typically 16 or 16+16. Includes both real and imaginary part. If USE_COMPLEX_GAINS=TRUE, half the bits are used for real and half for imaginary. Must be multiple of 8 as it is configured byte-wise.
-        OUT_BITS_PER_BIN: integer := 16+16 -- minimum is 4+4, but can be increased to use 8-bit mode or get more of the input data in bypass mode for capture purposes.
+        OUT_BITS_PER_BIN: integer := 4+4 -- minimum is 4+4, but can be increased to use 8-bit mode or get more of the input data in bypass mode for capture purposes.
    		);
 END scaler_testbench;
 
@@ -77,6 +77,10 @@ constant CLK125_period : time := 8 ns;
 	signal m_axis_tlast: std_logic;
 	signal m_axis_tuser: slv4;
 
+	signal m_cap_tdata: std_logic_vector(127 downto 0);
+	signal m_cap_tvalid: std_logic;
+	signal m_cap_tlast: std_logic;
+
 	signal cmd_tdata: slv8;
 	signal cmd_tvalid: std_logic;
 	signal cmd_tlast: std_logic;
@@ -95,7 +99,8 @@ dut0: entity work.scaler
         FFT_BINS_PER_FRAME => FFT_BINS_PER_FRAME,
         USE_COMPLEX_GAINS => USE_COMPLEX_GAINS,
         COEFF_BITS_PER_BIN => COEFF_BITS_PER_BIN, -- typically 16 or 16+16. Includes both real and imaginary part. If USE_COMPLEX_GAINS=TRUE, half the bits are used for real and half for imaginary. Must be multiple of 8 as it is configured byte-wise.
-        OUT_BITS_PER_BIN=> OUT_BITS_PER_BIN -- minimum is 4+4, but can be increased to use 8-bit mode or get more of the input data in bypass mode for capture purposes.
+        OUT_BITS_PER_BIN=> OUT_BITS_PER_BIN, -- minimum is 4+4, but can be increased to use 8-bit mode or get more of the input data in bypass mode for capture purposes.
+        CAP_BITS_PER_WORD => 128
   )
 	port map (
 
@@ -109,6 +114,10 @@ dut0: entity work.scaler
 		m_axis_out_tvalid => m_axis_tvalid,
 		m_axis_out_tlast  => m_axis_tlast,
 		m_axis_out_tuser  => m_axis_tuser,
+
+        m_axis_cap_tdata  => m_cap_tdata, -- Format: MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
+        m_axis_cap_tvalid => m_cap_tvalid,
+        m_axis_cap_tlast => m_cap_tlast,
 
 		clk => out_clk,
 		reset => reset,
@@ -163,23 +172,28 @@ stim_proc : process
     constant SCALER_POSTSCALER_REG: integer := 0;
     variable data_words: slv_array(0 to FFT_BINS_PER_FRAME/4-1)(FFT_BITS_PER_WORD-1 downto 0); -- for 4 bins per word only
     variable sub_word: integer;
+    variable re, im, rj: integer;
+    variable cap_mode: integer;
+    variable lin_gain, log_gain, common_log_gain: integer;
+    variable bypass: integer;
 	begin
 		reset <= '1';
 		sleep(out_clk, 10);
 		reset <= '0';
 		sleep(clk125, 10); -- make sure we start command transmission on a CLK125 edge or we will lose some data
 
+        lin_gain := 1024;
+        log_gain := 0;
 
         -- Create gain table - Valid for REAL gains only.
         for i in 0 to FFT_BINS_PER_FRAME-1 loop
 --            gains(i) := std_logic_vector(to_signed(4090 + (i MOD 20), COEFF_BITS_PER_BIN));
 --            gains(i)(15 downto 11) := to_slv(i MOD 32, 5); -- set log gain
-            gains(i)(15 downto 11) := to_slv(10, 5); -- set log gain
-            gains(i)(10 downto 0) := to_slv(1511, 11); -- set lin gain
+            gains(i)(15 downto 11) := to_slv(log_gain, 5); -- set log gain
+            gains(i)(10 downto 0) := to_slv(lin_gain, 11); -- set lin gain
             gain_bytes(2*i) := gains(i)(7 downto 0); -- LSB first
             gain_bytes(2*i+1) := gains(i)(15 downto 8); 
         end loop;
-        
         -- Program the gain table, page per page
         for page in 0 to 2*FFT_BINS_PER_FRAME/512-1 loop
             page_bits := to_slv(page, page_bits'LENGTH);
@@ -191,15 +205,25 @@ stim_proc : process
             -- Set the page registers
         end loop;            
         -- Set log gain
-        fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, SCALER_POSTSCALER_REG, 64);  -- 64=bypass
-        fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 10, 1 + 128);  -- 1:DATA_MODE=1, 128: use_float_gains=1
+        bypass := 0;
+        common_log_gain := 30;
+        fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, SCALER_POSTSCALER_REG, bypass*64 + common_log_gain);  -- 64=bypass
+        cap_mode := 2; -- 0:main out,1: raw FFT, 2: post-gain FFT, 3: 4+4 bit, 4:rawFFT, even bins, 5: raw FFT, odd bins, 
+        fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 10, 2#100_00_000# + cap_mode);  -- use_float_gains, reset_stats, unused, bypass_mode, cap_mode
+
         -- Create Test data vector. For 4 bins per word only, 18+18 bits per bin
         for i in 0 to FFT_BINS_PER_FRAME/FFT_BINS_PER_WORD-1 loop
             for j in 0 to FFT_BINS_PER_WORD-1 loop
+                rj := FFT_BINS_PER_WORD-1-j;
                 sub_word := 3-(i mod 4); -- first bin in upper 36 bits of word
 --                data_words(i)((j+1)*FFT_BITS_PER_BIN-1 downto j*FFT_BITS_PER_BIN) := std_logic_vector(to_signed(-16384,FFT_BITS_PER_BIN/2)) & std_logic_vector(to_signed(0,FFT_BITS_PER_BIN/2)); -- Re in upper 18 bits of bin
-                data_words(i)((j+1)*FFT_BITS_PER_BIN-1 downto j*FFT_BITS_PER_BIN) := X"00004cee_0000e0e5"; -- Re in upper 18 bits of bin
+--                data_words(i)((j+1)*FFT_BITS_PER_BIN-1 downto j*FFT_BITS_PER_BIN) := X"00004cee_0000e0e5"; -- Re in upper 18 bits of bin
 --                data_words(i)(36*sub_word+17 downto 36*sub_word+0) := std_logic_vector(to_signed(0,18)); -- Im in lower 18 bits of bin
+                re := i*FFT_BINS_PER_WORD + j;
+--                re := 16#7FFFFFFF#;
+--                re := (re * 2**(32-16)); 
+                im := re;
+                data_words(i)((rj+1)*FFT_BITS_PER_BIN-1 downto rj*FFT_BITS_PER_BIN) := to_slv(re, FFT_BITS_PER_BIN/2) & to_slv(im, FFT_BITS_PER_BIN/2);
             end loop;
         end loop;
 		-- fpga_write(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, CROSSBAR_BASE_ADDR + 0, 0); --
