@@ -155,18 +155,24 @@ architecture Behavioral of FFT is
 	signal sync_reset: std_logic;
 
 
-	-- FFT block
-
+	-- CASPER FFT output
 	signal fft_in_tvalid       : std_logic;
 	signal fft_in_tdata        : std_logic_vector(s_axis_in_dat_tdata'RANGE);
 	signal fft_in_tlast        : std_logic;
 	signal fft_in_tuser        : std_logic_vector(3 downto 0);
+
+    -- Rotated FFT output
+	signal fft_rot_tvalid  : std_logic;
+	signal fft_rot_tdata   : std_logic_vector(m_axis_out_dat_tdata'RANGE);
+	signal fft_rot_tlast   : std_logic;
+	signal fft_rot_tuser   : std_logic_vector(3 downto 0);
 
 	signal out_dat_pre_tvalid  : std_logic;
 	signal out_dat_pre_tdata   : std_logic_vector(m_axis_out_dat_tdata'RANGE);
 	signal out_dat_pre_tlast   : std_logic;
 	signal out_dat_pre_tuser   : std_logic_vector(3 downto 0);
 
+    -- Bypass pipeline
 	signal bypass1_tvalid  : std_logic;
 	signal bypass1_tdata   : std_logic_vector(s_axis_in_dat_tdata'RANGE);
 	signal bypass1_tlast   : std_logic;
@@ -284,13 +290,13 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 	);
 
 
------------------------------------------------------------------------------------
--- Main process
------------------------------------------------------------------------------------
---! Sends the input data to the FFT input and repackage the FFT output and pass it to the output bus.
-fft_clk_en <= '1'; -- clock is always enabled, as the buffer should always have some data (i.e., data always streaming out)
-main_proc: process(clk)
-	variable ii: integer range 0 to FFT_BINS_PER_WORD-1;
+    -----------------------------------------------------------------------------------
+    -- Main process
+    -----------------------------------------------------------------------------------
+    -- Sends the input data to the FFT input and repackage the FFT output and pass it to the output bus.
+    fft_clk_en <= '1'; -- clock is always enabled, as the buffer should always have some data (i.e., data always streaming out)
+    main_proc: process(all)
+        variable src_lane: integer range 0 to FFT_BINS_PER_WORD-1;
 	begin
 		if rising_edge(clk) then
 			sync_reset <= soft_reset or reset; -- Both reset sources are clk-synchronous
@@ -329,15 +335,11 @@ main_proc: process(clk)
 
 			-- Process the input data
 			-- fft_in <= in_dat; -- delay the data so it is aligned with the generated sync
---			fft_in_tvalid <= s_axis_in_dat_tvalid;
+			delay_clk_en <= s_axis_in_dat_tvalid; -- enable writing control signals through the delay line
 			fft_in_tdata  <= s_axis_in_dat_tdata;
 			fft_in_tlast  <= s_axis_in_dat_tlast;
 			fft_in_tuser  <= s_axis_in_dat_tuser;
-			-- fft_clk_en   <= in_dat.TVALID; -- enable passing the valid data into the FFT
-			-- delay_clk_en <= in_dat.TVALID; -- enable writing control signals through the delay line
-			delay_clk_en <= s_axis_in_dat_tvalid; -- enable writing control signals through the delay line
 
-			-- if in_dat.TVALID='1' then
 			if s_axis_in_dat_tvalid='1' then
 				-- Generate a SYNC pulse every sync_period frames on the last word of the previous frame
 				fft_sync_in <= '0'; -- SYNC returns to zero on every valid word so it lasts only one sample. Will be overriden below.
@@ -364,6 +366,23 @@ main_proc: process(clk)
 			bypass2_tuser  <= bypass1_tuser;
 			bypass2_tdata  <= bypass1_tdata;
 
+            -- Compute rotated FFT output. This involves a large number of 2:1 or 4:1 MUXes depending on the FFT. 
+            -- We dont want this to be dependent on bypass_fft because it adds an extra mux input and adds combinatorial depth.
+            -- Count the words coming out of the FFT
+            if fft_tvalid and fft_clk_en then
+                word_ctr <= (others => '0') when fft_tlast else word_ctr + 1;
+            end if;
+
+            -- Assign words to the next pipeline stage, rotating them as necessary if ROTATE_BINS=TRUE
+            fft_rot_tvalid <= fft_tvalid and fft_clk_en; -- The FFT outputs valid data only of the FFT is clocked AND the data has gone through the pipeline
+            fft_rot_tlast  <= fft_tlast;
+            fft_rot_tuser  <= fft_tuser;
+            for i in 0 to FFT_BINS_PER_WORD-1 loop
+                src_lane := (i + to_integer(word_ctr)) MOD FFT_BINS_PER_WORD when ROTATE_BINS else i;
+                fft_rot_tdata((i+1)*FFT_BITS_PER_BIN-1 downto i*FFT_BITS_PER_BIN) <= fft_tdata((src_lane+1)*FFT_BITS_PER_BIN -1 downto src_lane*FFT_BITS_PER_BIN);
+            end loop; -- if FFT is implemented
+
+
 			-- Register the final output. The delay is also used so we can insert the overflow flag on the final word.
 			-- Warning: out_dat.TUSER is overriden below - do not move down
 			-- SHREG_EXTRACT is set to FALSE to prevent the pipeline with the SCALER input from being turned into a shift register.
@@ -371,29 +390,14 @@ main_proc: process(clk)
 			m_axis_out_dat_tvalid <= out_dat_pre_tvalid;
 			m_axis_out_dat_tdata  <= out_dat_pre_tdata;
 			m_axis_out_dat_tlast  <= out_dat_pre_tlast;
-			m_axis_out_dat_tuser  <= out_dat_pre_tuser;
+			m_axis_out_dat_tuser  <= out_dat_pre_tuser; -- overriden below - do not move down
 
 			if IMPLEMENT_FFT=TRUE and bypass_fft='0' then -- if the FFT is being used
 				-- if the FFT module is present and it is not bypassed by software, pass the FFT output to the output
-				-- out_dat_pre.TVALID <= fft_tvalid and fft_clk_en; -- The FFT outputs valid data only of the FFT is clocked AND the data has gone through the pipeline
-				-- out_dat_pre.TLAST <= fft_tlast;
-				-- out_dat_pre.TUSER <= fft_tuser;
-				-- out_dat_pre.TDATA <= fft_tdata;
-				out_dat_pre_tvalid <= fft_tvalid and fft_clk_en; -- The FFT outputs valid data only of the FFT is clocked AND the data has gone through the pipeline
-				out_dat_pre_tlast  <= fft_tlast;
-				out_dat_pre_tuser  <= fft_tuser;
-				--out_dat_pre_tdata  <= fft_tdata;
-
-				-- Count the words coming out of the FFT
-				if fft_tvalid and fft_clk_en then
-					word_ctr <= (others => '0') when fft_tlast else word_ctr + 1;
-				end if;
-
-				-- Assign words to the next pipeline stage, rotating them as necessary if ROTATE_BINS=TRUE
-				for i in 0 to FFT_BINS_PER_WORD-1 loop
-					ii := (i + to_integer(word_ctr)) MOD FFT_BINS_PER_WORD when ROTATE_BINS else i;
-					out_dat_pre_tdata((i+1)*FFT_BITS_PER_BIN-1 downto i*FFT_BITS_PER_BIN) <= fft_tdata((ii+1)*FFT_BITS_PER_BIN -1 downto ii*FFT_BITS_PER_BIN);
-				end loop; -- if FFT is implemented
+				out_dat_pre_tvalid <= fft_rot_tvalid; -- The FFT outputs valid data only of the FFT is clocked AND the data has gone through the pipeline
+				out_dat_pre_tlast  <= fft_rot_tlast;
+				out_dat_pre_tuser  <= fft_rot_tuser;
+				out_dat_pre_tdata  <= fft_rot_tdata;
 
 				-- Insert the FFT overflow flag in the next_to_last Serial flag bit
 				if fft_tlast='1' and fft_tvalid='1' and fft_clk_en='1' then
@@ -406,13 +410,12 @@ main_proc: process(clk)
 				out_dat_pre_tlast  <= bypass2_tlast;
 				out_dat_pre_tuser  <= bypass2_tuser;
 				out_dat_pre_tdata  <= (others=>'0'); -- all bits are zero by default unless defined below
-				-- for i in 0 to 3 loop
 				for i in 0 to ADC_SAMPLES_PER_WORD-1 loop -- parameterized
 					-- Forward the adc word to the *upper* bits of the FFT output word
 					out_dat_pre_tdata((i+1)*FFT_BITS_PER_BIN/2-1 downto (i+1)*FFT_BITS_PER_BIN/2 - ADC_BITS_PER_SAMPLE) <= bypass2_tdata((i+1)*ADC_BITS_PER_SAMPLE -1 downto i*ADC_BITS_PER_SAMPLE);
 				end loop; -- if FFT is implemented
 
-			end if;
+			end if; -- bypass
 
 			-- Synchronous Resets -- overrides only some of the previously assigned signals
 			-- If reset is enabled, the FFT is fed with dummy data and SYNC=1.
