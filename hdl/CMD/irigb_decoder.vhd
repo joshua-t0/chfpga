@@ -36,6 +36,7 @@ entity irigb_decoder is port (
 	clk_200mhz : in std_logic; -- 200 MHz clock, used to sample and decode the IRIGB signal and interpolate time between seconds
 	irig : in std_logic_vector(0 to 7); -- IRIG-B sources, one of which is selected by the index in `source`
 	source : in unsigned(2 downto 0); -- Selects which IRIG-B source to use
+    pol : in std_logic; -- IRIG-B signal polarity: 0= normal, 1=inverted
 	pps: out std_logic; -- Pulsed high for 0.5s at the eginning of each new IRIG-B frame
 	ts : out irigb -- structure containing the decoded time contained in the previous IRIG-B frame
 );
@@ -45,8 +46,8 @@ architecture rtl of irigb_decoder is
 
 	signal irig_dly1, irig_dly2 : std_logic := '0';
 	signal symbol_counter : unsigned(17 downto 0) := (others => '0');
-
-	signal source_dly1, source_dly2 : unsigned(source'range) := (others => '0');
+	signal pol_dly1, pol_dly2: std_logic;
+	signal source_dly1, source_dly2 : unsigned(source'RANGE) := (others => '0');
 
 	-- How many milliseconds has the IRIG signal remained low?
 	-- We use this to discriminate between symbols. Tracking 'high'
@@ -98,11 +99,14 @@ begin
 		if rising_edge(clk_200mhz) then
 
 			-- Multiplex and delay for pipelining and edge detection
-			irig_dly1 <= irig(to_integer(source_dly2));
+			irig_dly1 <= irig(to_integer(source_dly2)) xor pol_dly2;
 			irig_dly2 <= irig_dly1;
 
 			source_dly1 <= source;
 			source_dly2 <= source_dly1;
+
+			pol_dly1 <= pol;
+			pol_dly2 <= pol_dly1;
 
 			-- Mark milliseconds while IRIG-B signal is stable
 			--
@@ -184,7 +188,7 @@ begin
 
 			-- If we switch the irig source, invalidate the state so we we'll never get to the P0
 			-- state and issue a garbled timestamp.
-			if source_dly1 /= source_dly2 then
+			if source_dly1 /= source_dly2 or pol_dly1 /= pol_dly2 then
 				state <= STUFFED;
 			-- Otherwise, we proceed through states, unless we are in an invalid (STUFFED) state, in
 			-- which case we stay just there until someone gets us out of here.
@@ -289,7 +293,7 @@ begin
 			end if;
 
 			-- Count subseconds; on saturation or on source change, clear the 'recent' flag.
-			if signed(ss) = -1 or source_dly1 /= source_dly2 then -- also clear the recent flag immediately when the source is changed so we can use it reliably to know  when time is valid after a source change
+			if signed(ss) = -1 or source_dly1 /= source_dly2 or pol_dly1 /= pol_dly2 then -- also clear the recent flag immediately when the source is changed so we can use it reliably to know  when time is valid after a source change
 				ts_pre.recent <= '0';
 				ss <= (others => '1'); -- make sure we stop counting subseconds when the source change so 'recent' stays zero
 				ts_pre.source <= source_dly2; -- otherwise this never gets updated when IRIG source is invalid
