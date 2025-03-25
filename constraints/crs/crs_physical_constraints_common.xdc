@@ -25,7 +25,7 @@ create_clock -period 5.000 -name FREQ_CTR_CLK [get_pins chfpga0/freq_ctr_blk.FRE
 # Backplane signals
 ####################
 # IRIG-B
-set_property PACKAGE_PIN K19 [get_ports bp_irig_p]
+set_property PACKAGE_PIN H22 [get_ports bp_irig_p]; # Was K19
 set_property IOSTANDARD LVDS [get_ports bp_irig_p]
 
 # Backplane 10 MHz reference clock (copy of the signal fed to the HMC7044)
@@ -170,7 +170,15 @@ set_property PACKAGE_PIN AU8 [get_ports buck_sync_1v4]
 set_property PACKAGE_PIN AT7 [get_ports buck_sync_bp]
 
 # #################
-# # SMP (on-board clip-on coax) connectors and testpoints
+#  SMP (on-board clip-on coax) connectors and testpoints
+# These are located towards the front of the CRS, behind the DAC SMAs
+# From edge towards center, Silk label & Refdes = SMP5, SMP6, SMP7, SMP8
+# Corresponding FPGA Pins are: B10, B9, B8, B7
+# Mapping is:
+#   smp[0]: SMP6 (2nd from top)
+#   smp[1]: SMP5 (1st from top)
+#   smp[2]: SMP8 (4th from top)
+#   smp[3]: SMP7 (3rd from top)
 # #################
 set_property PACKAGE_PIN B9 [get_ports {smp[0]}]
 set_property IOSTANDARD LVCMOS33 [get_ports {smp[0]}]
