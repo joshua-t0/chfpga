@@ -284,7 +284,7 @@ architecture impl of chfpga_crs is
     signal buck_sync: std_logic_vector(0 to 15);
     signal gpio_led: std_logic_vector(7 downto 0);
     signal sma_irig, bp_irig: std_logic;
-
+    signal sma_out: std_logic_vector(0 to 3);
     signal qsfp_txp_int, qsfp_txn_int: std_logic_vector(0 to 3);
     signal irigb_reg:std_logic;
 
@@ -468,8 +468,7 @@ begin
 
 
     -- Select IRIG-B source
-    irigb_proc: process (plclk_bufg)
-    begin
+    irigb_proc: process(all) begin
         if rising_edge(plclk_bufg) then
             irigb_reg <= sma_irig when clk10_sel else bp_irig;
         end if;
@@ -477,8 +476,8 @@ begin
 
     -- 7-segment display
     led7b(5 downto 0) <= gpio_led(6 downto 1); -- a-f segments (forming a circle)
-    led7b(6) <= '0'; -- central g segment
-    led7b(7) <= '0'; -- decimal point
+    led7b(6) <= sma_out(2); -- central g segment
+    led7b(7) <= sma_out(3); -- decimal point
 
 --dbg1: if FALSE generate
 zynq: entity work.zynq_tcpipe_crs
@@ -727,10 +726,19 @@ zynq: entity work.zynq_tcpipe_crs
     adc_clkout(7) <= adc_clkout(6);
 
     -- Connect debugging signals to SMP connectors
-    smp(0) <= clk10_bufg;
-    smp(1) <= pll_oscout_bufg;
-    smp(2) <= sysclk_bufg;
-    smp(3) <= plclk_bufg;
+    --
+    -- This is the row of 4 SMP (clip-on SMT coax connectors) located on the PCB towards the front of the board, behind the DAC SMAs.
+    -- The connectors are, from the edge towards the center (or from top to bottom when the board is in a crate):
+    --  -------- Top/Edge of board ----------------------------------------------
+    --     SMP5 => smp(1)
+    --     SMP6 => smp(0)
+    --     SMP7 => smp(3)
+    --     SMP8 => smp(2)
+    smp(1) <= sma_out(0); -- SMP5 (1st from top)
+    --smp(1) <= pll_oscout_bufg; -- SMP5 (1st from top)
+    smp(0) <= clk10_bufg; -- SMP6 (2nd from top)
+    smp(3) <= plclk_bufg; -- SMP7 (3rd form top)
+    smp(2) <= sysclk_bufg; -- SMP8 (4th from top)
 
 
 
@@ -809,7 +817,9 @@ zynq: entity work.zynq_tcpipe_crs
             -- Time signal
 
             bp_time_in => sma_irig,
-            bp_trig_in => bp_irig,
+            bp_trig_in => not bp_irig,
+            --bp_time_in => irigb_reg,
+            --bp_trig_in => irigb_reg,
 
             -- ADC inputs
             adc_axis_tdata => adc_axis_tdata(0 to NUMBER_OF_ADCS-1),
@@ -853,7 +863,8 @@ zynq: entity work.zynq_tcpipe_crs
 
             -- debug bus
 --            debug_out => debug_out,
-            sma_out => open, --smp,
+            --sma_out => , --smp,
+            user_mux_out => sma_out,
 
             -- Command input stream
             s_axis_bsb_tdata => axis_bsb_cmd_tdata,
