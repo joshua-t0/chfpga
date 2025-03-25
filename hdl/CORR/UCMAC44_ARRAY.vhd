@@ -65,6 +65,7 @@ entity UCMAC44_ARRAY is
         integ_period: in std_logic_vector(15 downto 0);
         autocorr_only: in std_logic := '1';
 	    no_accum: in std_logic := '1'; -- when '1', there is no accumulation: only the last product of the accumulation period is kept. (for debugging)
+	    corr_id: in std_logic_vector(3 downto 0); -- Software-defined identifier placed in the MSB of the STREAM ID. Used to uniquely identify correlator packets from multiple boards.
 
         overrun: out std_logic; -- indicates that data could not be streamed out fast enough and data was lost
         overrun_reset: in std_logic;
@@ -316,8 +317,9 @@ begin
                         -- We therefore capture the products in the byte array, set the byte counter and enable ro_shift.
 
                         -- Store the header in the bytes buffer
-                        frame_header.STREAM_ID(12 downto LOG2_NCORR) := std_logic_vector(resize(ro_word_ctr1, 13-LOG2_NCORR));
-                        frame_header.STREAM_ID(LOG2_NCORR-1 downto 0) := to_slv(CORR_NUMBER, LOG2_NCORR);
+                        frame_header.STREAM_ID(15 downto 11) := to_slv(to_integer(unsigned(corr_id)) + CORR_NUMBER, 5);
+                        frame_header.STREAM_ID(10 downto 0) := std_logic_vector(ro_word_ctr1);
+                        --frame_header.STREAM_ID(LOG2_NCORR-1 downto 0) := to_slv(CORR_NUMBER, LOG2_NCORR);
                         frame_header.TIMESTAMP := std_logic_vector(readout_timestamp);
                         frame_header.FLAGS(0) := overrun;
                         frame_header.FLAGS(1) := autocorr_only;

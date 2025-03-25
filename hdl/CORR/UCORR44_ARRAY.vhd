@@ -85,13 +85,14 @@ architecture Behavioral of UCORR44_ARRAY is
 
     -- Control signals
     signal control_bytes: slv8_array(0 to 2);
-    signal status_bytes: slv8_array(0 to 0);
+    signal status_bytes: slv8_array(0 to 4);
     signal user_reset: std_logic;
     signal user_reset_resync: std_logic;
     signal overrun_reset, overrun_reset_resync: std_logic;
     signal autocorr_only: std_logic;
     signal no_accum: std_logic; -- when '1', there is no accumulation: only th elast product of the accumulation period is kept.
     signal integ_period: std_logic_vector(15 downto 0);
+    signal corr_id: std_logic_vector(3 downto 0);
 
     type slv_2darray is array (natural range <>) of slv_array(0 to NCHAN-1)(N_BITS_PER_BIN-1 downto 0);
     signal axis_corr_in_tdata: slv_2darray(0 to NCORR-1);
@@ -104,7 +105,8 @@ architecture Behavioral of UCORR44_ARRAY is
     signal z_send: std_logic_vector(0 to NCORR);
 
     signal overrun:std_logic_vector(0 to NCORR-1);
-    signal word_ctr: unsigned(INTEGER_LOG2(NCORR)-1 downto 0);
+    signal in_frame_ctr: unsigned(7 downto 0);
+    signal out_frame_ctr: unsigned(7 downto 0);
 begin
 
 
@@ -135,6 +137,7 @@ begin
 	-- CONTROL byte 0
 	user_reset            <= control_bytes(0)(7); --
 	overrun_reset         <= control_bytes(0)(6); --
+	corr_id               <= control_bytes(0)(5 downto 2);
     no_accum              <= control_bytes(0)(1);
     autocorr_only         <= control_bytes(0)(0);
 
@@ -143,6 +146,20 @@ begin
 
     -- Status Byte 0
     status_bytes(0)(0) <= or(overrun);
+
+    -- Status Byte 1
+    status_bytes(1) <= to_slv(NCHAN, 8);
+
+    -- Status Byte 2
+    status_bytes(2)(7 downto 4) <= to_slv(NCORR, 4);
+    status_bytes(2)(3 downto 0) <= to_slv(BIN_DECIMATION_FACTOR, 4);
+
+    -- Status Byte 3
+    status_bytes(3) <= std_logic_vector(in_frame_ctr);
+
+    -- Status Byte 4
+    status_bytes(4) <= std_logic_vector(out_frame_ctr);
+
 
 
 	-- Synchronize the software-controlled user reset to the correlator clock to ensure proper release from reset
@@ -178,63 +195,71 @@ begin
 				axis_corr_in_tlast(corr) <= s_axis_data_tlast;
 			end loop;
 
+			if s_axis_data_tvalid then
+				in_frame_ctr <= in_frame_ctr + 1 when not s_axis_data_tlast else (others => '0');
+			end if; -- tvalid
+
+			if m_axis_data_tvalid then
+				out_frame_ctr <= out_frame_ctr + 1 when not m_axis_data_tlast else (others => '0');
+			end if; -- tvalid
 		end if; -- clk
 	end process;
 
 
--- Connect CORR[0] output stream to the ouput port
-z_send(0) <= m_axis_data_tready; -- first corr sends data only if destination is ready
-m_axis_data_tdata <= z_tdata(0);
-m_axis_data_tvalid <= z_tvalid(0);
-m_axis_data_tlast <= z_tlast(0);
+	-- Connect CORR[0] output stream to the ouput port
+	z_send(0) <= m_axis_data_tready; -- first corr sends data only if destination is ready
+	m_axis_data_tdata <= z_tdata(0);
+	m_axis_data_tvalid <= z_tvalid(0);
+	m_axis_data_tlast <= z_tlast(0);
 
--- Connect null stream to the cascade input of CORR[NCORR]
-z_tvalid(NCORR) <= '0'; -- no data coming into the last corr
-z_tdata(NCORR) <= (others => '0'); -- don't leave floating to prevent warnings
-z_tlast(NCORR) <= '0'; -- don't leave floating to prevent warnings
+	-- Connect null stream to the cascade input of CORR[NCORR]
+	z_tvalid(NCORR) <= '0'; -- no data coming into the last corr
+	z_tdata(NCORR) <= (others => '0'); -- don't leave floating to prevent warnings
+	z_tlast(NCORR) <= '0'; -- don't leave floating to prevent warnings
 
-corr_gen: for i in 0 to NCORR-1 generate
-	-- set the position of the core44 core
-	--attribute RLOC_ORIGIN of corr0: label is rpm_to_string(corr44_rpm(i).loc);
-begin
-	corr0: entity work.ucorr44
-		generic map (
-			PLATFORM_ID             => PLATFORM_ID,
-			CORR_NUMBER             => i, -- will be used in the packet header and to determine the RPM location of the CORR44 cores
-            NCORR => NCORR, -- used only to format STREAM ID
-			N => NCHAN,
-			N_PER_CLK => NCHAN,
-			BIN_DECIMATION_FACTOR => BIN_DECIMATION_FACTOR,
-			URAM_MAX => 64/NCORR,
-			READOUT_BIN => READOUT_BINS(i)
-			)
-		port map(
-			s_axis_tvalid           => axis_corr_in_tvalid(i),
-			s_axis_tlast            => axis_corr_in_tlast(i),
-			s_axis_tdata            => axis_corr_in_tdata(i),
+	corr_gen: for i in 0 to NCORR-1 generate
+		-- set the position of the core44 core
+		--attribute RLOC_ORIGIN of corr0: label is rpm_to_string(corr44_rpm(i).loc);
+	begin
+		corr0: entity work.ucorr44
+			generic map (
+				PLATFORM_ID             => PLATFORM_ID,
+				CORR_NUMBER             => i, -- will be used in the packet header and to determine the RPM location of the CORR44 cores
+	            NCORR => NCORR, -- used only to format STREAM ID
+				N => NCHAN,
+				N_PER_CLK => NCHAN,
+				BIN_DECIMATION_FACTOR => BIN_DECIMATION_FACTOR,
+				URAM_MAX => 64/NCORR,
+				READOUT_BIN => READOUT_BINS(i)
+				)
+			port map(
+				s_axis_tvalid           => axis_corr_in_tvalid(i),
+				s_axis_tlast            => axis_corr_in_tlast(i),
+				s_axis_tdata            => axis_corr_in_tdata(i),
 
-            integ_period => integ_period,
-            autocorr_only => autocorr_only,
-            no_accum => no_accum,
-            overrun => overrun(i),
-            overrun_reset => overrun_reset,
+	            integ_period => integ_period,
+	            autocorr_only => autocorr_only,
+	            no_accum => no_accum,
+	            overrun => overrun(i),
+	            overrun_reset => overrun_reset,
+	            corr_id => corr_id,
 
-			z_out_tdata   => z_tdata(i),
-			z_out_tvalid  => z_tvalid(i),
-			z_out_tlast   => z_tlast(i),
-			z_out_send  => z_send(i),
+				z_out_tdata   => z_tdata(i),
+				z_out_tvalid  => z_tvalid(i),
+				z_out_tlast   => z_tlast(i),
+				z_out_send  => z_send(i),
 
-			z_in_tdata   => z_tdata(i+1),
-			z_in_tvalid  => z_tvalid(i+1),
---			z_in_tvalid  => '0',
-			z_in_tlast   => z_tlast(i+1),
-			z_in_send  => z_send(i+1),
+				z_in_tdata   => z_tdata(i+1),
+				z_in_tvalid  => z_tvalid(i+1),
+	--			z_in_tvalid  => '0',
+				z_in_tlast   => z_tlast(i+1),
+				z_in_send  => z_send(i+1),
 
-			clk                  => clk,
-			rst                  => rst_reg(i)
-			);
+				clk                  => clk,
+				rst                  => rst_reg(i)
+				);
 
-end generate;
+	end generate; -- NCORR
 
 end Behavioral;
 

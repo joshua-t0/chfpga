@@ -22,11 +22,11 @@ use work.tb_package.all;
 use std.textio.all;
 ENTITY ucorr44_array_testbench IS
 	generic (
-	    NCHAN: integer := 8; 
+	    NCHAN: integer := 32; 
         NBINS: integer := 32;-- bins per correlator (not total)
-	    NCORR: integer := 4;
+	    NCORR: integer := 1;
 	    NINTEG: integer := 1024; -- 1024 is ok for autocorr only
-	    N_BINS_PER_WORD: integer := 4;
+	    N_BINS_PER_WORD: integer := 1;
 	    N_BITS_PER_BIN: integer := 4+4;
 	    AUTOCORR_ONLY: boolean := TRUE 
  		);
@@ -51,7 +51,7 @@ ARCHITECTURE behavior OF ucorr44_array_testbench IS
     signal clk_ctr:unsigned(2 downto 0) := (others => '0');
 
  	signal tlast_in, tvalid_in: std_logic := '0';
-	signal tdata_in: slv_array(0 to NCHAN-1)(31 downto 0);
+	signal tdata_in: std_logic_vector(255 downto 0);
 
     signal source_sel_out: std_logic_vector(0 to NCHAN - 1); -- data source request
     signal source_sel_in: std_logic_vector(0 to NCHAN - 1) := (others => '0'); -- curent data source on tdata
@@ -97,11 +97,10 @@ begin
                 PLATFORM_ID => PLATFORM_ID_CRS, -- needed to determine the RPM spacing of the DSP and BRAM elements and choose the right primitives
                 NCHAN => NCHAN, 
                 NCORR   => NCORR,
+                BIN_DECIMATION_FACTOR => 4,
                 SOFT_NINTEG => NINTEG,
                 SOFT_AUTOCORR_ONLY => AUTOCORR_ONLY,
-                N_BINS_PER_WORD => N_BINS_PER_WORD,
-                ROTATE_BINS => TRUE,
-                READOUT_BINS => (0,1,2,3)
+                READOUT_BINS => (0=>0)
                 )
             port map(
                 -- Input data interface (AXI4-Streaning, non-blocking)
@@ -139,7 +138,8 @@ begin
         variable src: integer := 0;
         variable bin:integer; 
         variable rb: integer;
-        variable re, im: integer;   
+        variable re, im: integer;
+        variable lsb, rch, rbin: integer;   
 	begin
 
 		-- wait for init and synchronize to clock
@@ -158,12 +158,15 @@ begin
         loop
             for word in 0 to NBINS-1 loop
                 for ch in 0 to NCHAN-1 loop
+                    rch := NCHAN-1-ch;
                     for b in 0 to N_BINS_PER_WORD-1 loop
+                        rbin := N_BINS_PER_WORD-1-b;
                         bin := N_BINS_PER_WORD * word + b; -- bin number
                         rb := N_BINS_PER_WORD-1-b;  -- reverse-order bin index in word
                         re := (bin MOD 16);
                         im := -1;
-                        tdata_in(ch)(N_BITS_PER_BIN*rb+N_BITS_PER_BIN-1 downto N_BITS_PER_BIN*rb) <= to_slv(re, N_BITS_PER_BIN/2) & to_slv(im, N_BITS_PER_BIN/2);
+                        lsb := N_BITS_PER_BIN * (rbin + rch*N_BINS_PER_WORD);
+                        tdata_in(lsb + N_BITS_PER_BIN -1 downto lsb) <= to_slv(re, N_BITS_PER_BIN/2) & to_slv(im, N_BITS_PER_BIN/2);
                     end loop;
                 end loop;
 --        		tdata_in <=(X"10101010", X"20202020", X"30303030", X"40404040", X"50505050", X"60606060", X"70707070",X"F0F0F0F0");

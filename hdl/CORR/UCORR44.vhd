@@ -80,6 +80,7 @@ entity UCORR44 is
         integ_period: in std_logic_vector(15 downto 0);
         autocorr_only: in std_logic := '1';
 	    no_accum: in std_logic := '1'; -- when '1', there is no accumulation: only th elast product of the accumulation period is kept.
+	    corr_id: in std_logic_vector(3 downto 0); -- Software-defined identifier placed in the MSB of the STREAM ID. Used to uniquely identify correlator packets from multiple boards.
 
         overrun: out std_logic;
         overrun_reset: in std_logic;
@@ -240,7 +241,7 @@ begin
   				end if; -- xy_tvalid
 
                 -- Assemble N inputs into x and y
-				if s_axis_tvalid='1' and bin_ctr=0 then
+				if s_axis_tvalid='1' and bin_ctr=3 then
 					if word_ctr = WORDS_PER_BIN-1 then -- if last word of bin
 						y(0 to N-N_PER_CLK-1) <= t;
 						y(N-N_PER_CLK to N-1) <= s_axis_tdata;
@@ -290,6 +291,7 @@ begin
 	        overrun => overrun,
 	        overrun_reset => overrun_reset,
 	        autocorr_only => autocorr_only,
+	        corr_id => corr_id,
 
 			m_axis_z_tdata => z_out_tdata,
 			m_axis_z_tlast => z_out_tlast,
