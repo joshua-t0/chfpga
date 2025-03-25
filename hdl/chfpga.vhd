@@ -1,15 +1,16 @@
 ----------------------------------------------------------------------------------
---! @file
---! @brief Top-level file
 -- Company: McGill University
 -- Engineer: JF Cliche
 --
 -- Create Date:    2011-05-19
--- Design Name:    chFPGA_PoC
+-- Design Name:    chFPGA
 -- Module Name:    top - Behavioral
--- Project Name: CHIME
--- Target Devices: Virtex6 on ML605 Evaluation board, Kintex 7 on KC705
--- Tool versions: ISE 14.4, Vovado 2012.4
+-- Project Name: CHIME/CHORD
+-- Target Devices:
+-- 	- Virtex6 on ML605 Evaluation board
+--  - Kintex 7 on KC705 and IceBoard
+--  - Ultrascale+ on ZCU111 and CRS
+-- Tool versions: ISE 14.4, Vivado 2012.4, Vivado 2022.2
 
 -- Dependencies:
 --
@@ -67,12 +68,9 @@ use work.chFPGA_config.all; --! Get implementation-specific definitions
 --use work.xglink_package.xglink_array; --! Get udp_mac component
 --use work.ct_package.shuffle_crossbar; --! Get corner-turn engine components
 
-----ENTITY DECLARATION ------------------------------------------------------------------------------
---! @brief
---!
---! This is the generic **top-level** entity of the CHIME data acquisition/channelizer/correlator firmware.
---! The code is configurable for multiple platforms (Virtex 6, Kintex 7, GMII or SFP+ Ethernet interface, various clock sources, etc) through the generics.
---! A platform-specific wrapper file is used to define these generics for a specific platform and expose the useful ports.
+-- This is the generic **top-level** entity of the chFPGA data acquisition/channelizer/correlator firmware.
+-- The code is configurable for multiple platforms (Virtex 6, Kintex 7, GMII or SFP+ Ethernet interface, various clock sources, etc) through the generics.
+-- A platform-specific wrapper file is used to define these generics for a specific platform and expose the useful ports.
 entity chFPGA is
 	 GENERIC (
 		PLATFORM_ID: INTEGER:= 0; --! identifies the type of platform on which the firmware is running. 0=Motherboard, 1=KC705
@@ -562,13 +560,13 @@ constant FPGA_SERIES: integer :=FPGA_SERIES_LIST(PLATFORM_ID);
 -- Top level memory-mapped address ranges
 constant SYSTEM_BASE_PORT    : integer := 0; -- Top level address for the SYSTEM subsystem
 constant CHAN_BASE_PORT      : integer := 1; -- Top-level address channelizers subsystem (which also includes the ADCs).
-constant CROSSBAR1_BASE_PORT : integer := 2; -- Top-level address of the CT-Engine 1st crossbar.
+--constant CROSSBAR1_BASE_PORT : integer := 2; -- Top-level address of the CT-Engine 1st crossbar.
 constant CT_BASE_PORT        : integer := 2; -- Top-level address of the CT-Engine.
 constant GPU_LINK_BASE_PORT  : integer := 3; -- Top level address for the GPU link subsystem
-constant CROSSBAR3_BASE_PORT : integer := 4; -- Top level address of the CT-Engine 3rd crossbar subsystem.
+--constant CROSSBAR3_BASE_PORT : integer := 4; -- Top level address of the CT-Engine 3rd crossbar subsystem.
 constant CORR_BASE_PORT      : integer := 4; -- Top level address for the correlator subsystem (exclusive with the 2nd and 3rd crossbar)
-constant BP_SHUFFLE_BASE_PORT: integer := 5; -- Top level address of the CT-Engine backplane shuffle subsystem.
-constant CROSSBAR2_BASE_PORT : integer := 6; -- Top-level address of the CT-Engine 2nd crossbar
+constant UCORN_BASE_PORT: integer := 5; -- Top level address of the CT-Engine backplane shuffle subsystem.
+--constant CROSSBAR2_BASE_PORT : integer := 6; -- Top-level address of the CT-Engine 2nd crossbar
 constant UCAP_BASE_PORT      : integer := 7; -- Top-level address for the UltraRAM-based data capture engine.
 constant NUMBER_OF_PORTS     : integer := 8; -- Total number of top-level subsystems to be addressed.
 
@@ -704,7 +702,7 @@ signal host_frame_read_rate: std_logic_vector(4 downto 0); -- GPIO -> master
 -- Master to top-level modules control interface buses
 signal top_cmd_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_PORTS-1 downto 0);
 signal top_cmd_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_PORTS-1 downto 0):=(others=>(TREADY=>'1'));
-signal top_rply_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_PORTS-1 downto 0);
+signal top_rply_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_PORTS-1 downto 0) := (others => (TDATA=>X"00", TVALID=>'0', TLAST=>'0'));
 signal top_rply_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_PORTS-1 downto 0);
 
 -- Intermediary buses used to split out the top router outputs and avoid a simulator bug when indexing record arrays as an actual parameter of an instance
@@ -999,8 +997,8 @@ begin
 --debug_out(26) <= top_cmd_dat(0).TVALID;
 --debug_out(27) <= top_rply_dat(0).TVALID;
 
-debug_out(3 downto 0) <= cmd_packet_counter(3 downto 0);
-debug_out(7 downto 4) <= rply_packet_counter(3 downto 0);
+--debug_out(3 downto 0) <= cmd_packet_counter(3 downto 0);
+--debug_out(7 downto 4) <= rply_packet_counter(3 downto 0);
 --debug_out(23 downto 16) <= SYS_GPIO_CMD_DAT.TDATA;
 --debug_out(31 downto 24) <= SYS_GPIO_RPLY_DAT.TDATA;
 --debug_out(16) <= SYS_GPIO_CMD_DAT.TVALID;
@@ -1011,16 +1009,16 @@ debug_out(7 downto 4) <= rply_packet_counter(3 downto 0);
 --debug_out(21) <= SYS_GPIO_RPLY_RDY.TREADY;
 
 
-debug_out(28) <= axis_cmd_tvalid;
-debug_out(29) <= axis_cmd_tready;
-debug_out(30) <= axis_rply_tvalid;
-debug_out(31) <= axis_rply_tready;
+--debug_out(28) <= axis_cmd_tvalid;
+--debug_out(29) <= axis_cmd_tready;
+--debug_out(30) <= axis_rply_tvalid;
+--debug_out(31) <= axis_rply_tready;
 
 -- debugging signals to SMA
-sma_out(0) <= clk200;
-sma_out(1) <= clk200_reset;
-sma_out(2) <= clk10;
-sma_out(3) <= sysclk_bufg;
+--sma_out(0) <= clk200;
+--sma_out(1) <= clk200_reset;
+--sma_out(2) <= clk10;
+--sma_out(3) <= sysclk_bufg;
 
 ALL_RESET<=  cpu_reset or user_reset;
 --end generate; --debug7
@@ -1376,7 +1374,7 @@ top_router_blk: block
 
 begin
 
-	debug_out(8) <= cmd_overflow;
+--	debug_out(8) <= cmd_overflow;
 
 	UDP_CMD_DAT.TDATA <= axis_cmd_tdata;
 	UDP_CMD_DAT.TVALID <= axis_cmd_tvalid;
@@ -1465,12 +1463,12 @@ begin
 	top_rply_dat(SYSTEM_BASE_PORT) <= top_sys_rply_dat;
 
 	-- debug signals
-	debug_out(22) <= top_sys_cmd_dat.TVALID;
-	debug_out(23) <= top_sys_cmd_dat.TLAST;
-	debug_out(24) <= top_sys_cmd_rdy.TREADY;
-	debug_out(25) <= top_sys_rply_dat.TVALID;
-	debug_out(26) <= top_sys_rply_dat.TLAST;
-	debug_out(27) <= top_sys_rply_rdy.TREADY;
+--	debug_out(22) <= top_sys_cmd_dat.TVALID;
+--	debug_out(23) <= top_sys_cmd_dat.TLAST;
+--	debug_out(24) <= top_sys_cmd_rdy.TREADY;
+--	debug_out(25) <= top_sys_rply_dat.TVALID;
+--	debug_out(26) <= top_sys_rply_dat.TLAST;
+--	debug_out(27) <= top_sys_rply_rdy.TREADY;
 
 	-- Pipeline reset signal
 	bsb_rst_proc: process(ctrl_clk)
@@ -1564,9 +1562,6 @@ gpio_blk: block
 	signal bsb_rst_reg1, bsb_rst_reg2: std_logic;
 	attribute DONT_TOUCH of bsb_rst_reg1, bsb_rst_reg2: signal is "true";
 
-
-
-
 begin
 
 	-- Index the system control buses as a separate signal here , because the simulator will make errors if we index it directly on the instantiation
@@ -1576,20 +1571,18 @@ begin
 	SYS_RPLY_DAT(MODULE_GPIO_ADDR) <= SYS_GPIO_RPLY_DAT;
 
 	-- Pipeline reset signal
-	bsb_rst_proc: process(ctrl_clk)
-	begin
+	bsb_rst_proc: process(all) begin
 		if rising_edge(ctrl_clk) then
 			bsb_rst_reg1 <= ctrl_rst;
 			bsb_rst_reg2 <= bsb_rst_reg1;
-		end if;
+		end if; -- clk
 	end process;
 
     -- Pipeline the clk200 reset
-	gpio_rst_proc: process(clk200)
-	begin
+	gpio_rst_proc: process(all)	begin
 		if rising_edge(clk200) then
 			gpio_rst <= clk200_reset_reg;
-		end if;
+		end if; -- clk
 	end process;
 
 	timedelay_gen: if FPGA_SERIES=FPGA_KINTEX7 generate
@@ -1633,8 +1626,7 @@ begin
 
 	-- Pipeline backplane time (IRIG-B) and trig signals to allow them to propagate across the chip
 	-- The IRIG-B decoder uses these signals and is clocked by clk200
-	bp_trig_sync_proc: process(clk200)
-	begin
+	bp_trig_sync_proc: process(all)	begin
 		if rising_edge(clk200) then
 			bp_time_io_reg <= bp_time_io_dly; -- this is registered on the IO pad for optimal timing predictability
 			bp_time_reg <= bp_time_io_reg;
@@ -2628,8 +2620,9 @@ adc_gen: case ADC_TYPE generate
         signal axis_adc_tdata_reg: slv128_array(0 to NUMBER_OF_ADCS-1);
         signal axis_adc_tvalid_reg: std_logic_vector(0 to NUMBER_OF_ADCS-1);
 
-        signal adcdaq_reset_reg: std_logic; -- ADCDAQ reset, resynchronized to adc_clk
-        attribute DONT_TOUCH of adcdaq_reset_reg: signal is "true";
+        signal adcdaq_reset_pre: std_logic; -- ADCDAQ reset, resynchronized to adc_clk
+        signal adcdaq_reset_reg: std_logic; -- ADCDAQ reset, pipelined
+        --attribute DONT_TOUCH of adcdaq_reset_reg: signal is "true";
 
     begin
         -- Select clock to be used as a source to generate channelizer clocks
@@ -2641,7 +2634,8 @@ adc_gen: case ADC_TYPE generate
         adcdaq_proc: process(adc_clk)
         begin
             if rising_edge(adc_clk) then
-                adcdaq_reset_reg <= ADCDAQ_RESET;
+                adcdaq_reset_pre <= ADCDAQ_RESET;
+                adcdaq_reset_reg <= adcdaq_reset_pre; -- add extra pipelining to facilitate routing
             end if; -- clk
         end process;
 
@@ -3003,7 +2997,6 @@ begin
 	end process;
 end block ct_clk_blk;
 
-
 ct_gen: case CT_TYPE generate
 	when "BCT" =>
 		assert FALSE report "Put back in the BCT engine" severity FAILURE;
@@ -3013,7 +3006,9 @@ ct_gen: case CT_TYPE generate
         --signal axis_chan_out_tdata2: slv_array(0 to NUMBER_OF_CHANNELIZERS-1)(31 downto 0);
         signal almost_empty_reg1, almost_empty_reg2: slv(0 to NUMBER_OF_CHANNELIZERS-1);
         signal send_reg1, send_reg2: slv(0 to NUMBER_OF_CHANNELIZERS-1);
+
         signal send: std_logic;
+        attribute keep of send_reg1, send_reg2, send, almost_empty_reg1, almost_empty_reg2  :signal is "true"; -- prevent the tool form inferring a shift register
 
         signal ct_reset_reg0, ct_reset_reg1, ct_reset_reg2: std_logic;
 
@@ -3092,59 +3087,71 @@ ct_gen: case CT_TYPE generate
 
 
         ct0: entity work.u_ct_engine
-        generic map(
-            PLATFORM_ID => PLATFORM_ID,
-            NUMBER_OF_INPUT_LANES => NUMBER_OF_CHANNELIZERS, -- Number of channelizer inputs
-            CT_LEVEL => CT_LEVEL -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
-            --LANE_TO_LINK_MAP: integer_array  := (-1,0,1,2); -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
-            --LINK_TO_QUAD_MAP: integer_array  := (0,1,1); -- Indicates which quad is associated to each GTY link.
-            --QUAD_TO_REFCLK_MAP: integer_array:= (0,0); -- Indicates which refclk is associated with each QUAD
-            --NUMBER_OF_OUTPUT_LANES: integer := 8; -- Number of output streams
-            --WORDS_PER_BIN_MAX: integer :=4; --! Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 16 words.
-            --BINS_PER_FRAME_MAX: integer :=64; --! Maximum number of bins per frame
-            --BIN_SEL_FIFO_TYPE_MAP: integer_16xN_array := (0 to 15 => (0 to 3=>0, others=>0)); -- 0= Block RAM., 1=Dist RAM. By default, for every BIN_SEL, 10 FIFOS are made of BRAM and the rest is made of distributed RAM to maximize area utilization efficiency
-            --SHUFFLE_FLAGS_MASK: slv32 -- Mask to apply to the shuffle flags to count packet errors
-            )
-        port map(
-    
-            -- Non-blocking input stream from the channelizer, synchronous to `clk`
-            s_axis_tdata => ct_in2_tdata,
-            s_axis_tvalid => ct_in2_tvalid(0), -- we assume all lanes are aligned and therefore use only one `tvalid`
-            s_axis_tlast => ct_in2_tlast(0), -- idem
-    
-            -- Non-blocking output stream, synchronous to `clk`
-            m_axis_tvalid => axis_ct_out_tvalid,
-            m_axis_tdata => axis_ct_out_tdata,
-            m_axis_tlast => axis_ct_out_tlast,
-    
-            axis_clk => ct_clk,
-    
-            -- Backplane 25 Gbps GTY links
-            tx_p      => bp_shuffle_tx_p,
-            tx_n      => bp_shuffle_tx_n,
-            rx_p      => bp_shuffle_rx_p,
-            rx_n      => bp_shuffle_rx_n,
-            refclk_p  => bp_shuffle_refclk_p,
-            refclk_n  => bp_shuffle_refclk_n,
-    
-            refclk_div2 => bp_shuffle_refclk_div2,-- divided-by-two version of the 156.25 MHz reference clock fed to the QUAD PLL
-            txclk_div2 => bp_shuffle_txclk_div2, -- divided-by-two version of the TX word clock, which is also clk_out
-    
-            txclk_out => bp_shuffle_txclk, -- Word clock from the GTY TX link
-    
-            rst => ct_reset_reg2,
-            arst => corr_reset,
-    
-            -- Control interface (command and reply stream buses)
-            bsb_cmd_dat  => top_cmd_dat(CT_BASE_PORT),
-            bsb_cmd_rdy  => top_cmd_rdy(CT_BASE_PORT),
-            bsb_rply_dat => top_rply_dat(CT_BASE_PORT),
-            bsb_rply_rdy => top_rply_rdy(CT_BASE_PORT),
-            bsb_clk      => ctrl_clk,
-            bsb_rst      => ctrl_rst
-            );
-    
-    
+	        generic map(
+	            PLATFORM_ID => PLATFORM_ID,
+	            NUMBER_OF_INPUT_LANES => NUMBER_OF_CHANNELIZERS, -- Number of channelizer inputs
+	            CT_LEVEL => CT_LEVEL -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
+	            --LANE_TO_LINK_MAP: integer_array  := (-1,0,1,2); -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
+	            --LINK_TO_QUAD_MAP: integer_array  := (0,1,1); -- Indicates which quad is associated to each GTY link.
+	            --QUAD_TO_REFCLK_MAP: integer_array:= (0,0); -- Indicates which refclk is associated with each QUAD
+	            --NUMBER_OF_OUTPUT_LANES: integer := 8; -- Number of output streams
+	            --WORDS_PER_BIN_MAX: integer :=4; --! Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 16 words.
+	            --BINS_PER_FRAME_MAX: integer :=64; --! Maximum number of bins per frame
+	            --BIN_SEL_FIFO_TYPE_MAP: integer_16xN_array := (0 to 15 => (0 to 3=>0, others=>0)); -- 0= Block RAM., 1=Dist RAM. By default, for every BIN_SEL, 10 FIFOS are made of BRAM and the rest is made of distributed RAM to maximize area utilization efficiency
+	            --SHUFFLE_FLAGS_MASK: slv32 -- Mask to apply to the shuffle flags to count packet errors
+	            )
+	        port map(
+
+	            -- Non-blocking input stream from the channelizer, synchronous to `clk`
+	            s_axis_tdata => ct_in2_tdata,
+	            s_axis_tvalid => ct_in2_tvalid(0), -- we assume all lanes are aligned and therefore use only one `tvalid`
+	            s_axis_tlast => ct_in2_tlast(0), -- idem
+
+	            -- Non-blocking output stream, synchronous to `clk`
+	            m_axis_tdata => axis_ct_out_tdata,
+	            m_axis_tvalid => axis_ct_out_tvalid,
+	            m_axis_tlast => axis_ct_out_tlast,
+
+	            axis_clk => ct_clk,
+
+	            -- Backplane 25 Gbps GTY links
+	            tx_p      => bp_shuffle_tx_p,
+	            tx_n      => bp_shuffle_tx_n,
+	            rx_p      => bp_shuffle_rx_p,
+	            rx_n      => bp_shuffle_rx_n,
+	            refclk_p  => bp_shuffle_refclk_p,
+	            refclk_n  => bp_shuffle_refclk_n,
+
+	            refclk_div2 => bp_shuffle_refclk_div2,-- divided-by-two version of the 156.25 MHz reference clock fed to the QUAD PLL
+	            txclk_div2 => bp_shuffle_txclk_div2, -- divided-by-two version of the TX word clock, which is also clk_out
+
+	            txclk_out => bp_shuffle_txclk, -- Word clock from the GTY TX link
+
+	            rst => ct_reset_reg2,
+	            arst => corr_reset,
+
+	            -- Control interface (command and reply stream buses)
+	--		bsb_cmd_dat  => top_bp_shuffle_cmd_dat,
+	--		bsb_cmd_rdy  => top_bp_shuffle_cmd_rdy,
+	--		bsb_rply_dat => top_bp_shuffle_rply_dat,
+	--		bsb_rply_rdy =>top_bp_shuffle_rply_rdy,
+	--		bsb_clk      => ctrl_clk,
+	--		bsb_rst      => bp_shuffle_CTRL_RST_reg
+
+	            bsb_cmd_dat  => top_cmd_dat(CT_BASE_PORT),
+	            bsb_cmd_rdy  => top_cmd_rdy(CT_BASE_PORT),
+	            bsb_rply_dat => top_rply_dat(CT_BASE_PORT),
+	            bsb_rply_rdy => top_rply_rdy(CT_BASE_PORT),
+
+	--            bsb_cmd_dat  => open,
+	--            bsb_cmd_rdy.TREADY  =>'1',
+	--            bsb_rply_dat => top_rply_dat(CT_BASE_PORT),
+	--            bsb_rply_rdy => top_rply_rdy(CT_BASE_PORT),
+	            bsb_clk      => ctrl_clk,
+	            bsb_rst      => ctrl_rst
+	            );
+
+
     when others =>
         assert FALSE report "Invalid CT_TYPE" severity FAILURE;
 
@@ -3179,6 +3186,7 @@ begin
 	top_cmd_rdy(GPU_LINK_BASE_PORT) <= gpu_cmd_rdy;
 	gpu_rply_rdy<= top_rply_rdy(GPU_LINK_BASE_PORT);
 	top_rply_dat(GPU_LINK_BASE_PORT) <= gpu_rply_dat;
+
 
     rst_proc: process (ctrl_clk)
     begin
@@ -3293,6 +3301,34 @@ begin
                         cge_clk322_div2 <= not cge_clk322_div2;
                     end if; -- clk
             end process;
+
+            -- For now, always instantiate UCORN when we have the 100G link. We might want to decouple the two when we want to stream CT data without it.
+	        uram0: entity work.uram_ct
+                port map (
+                    -- input data bus
+                    s_axis_in_tdata => axis_ct_out_tdata,
+                    s_axis_in_tvalid => axis_ct_out_tvalid,
+                    s_axis_in_tlast=> axis_ct_out_tlast,
+
+                    -- Output data bus
+                    m_axis_out_tdata => uct_tdata,
+                    m_axis_out_tvalid => uct_tvalid,
+                    m_axis_out_tlast=> uct_tlast,
+
+                    clk => ct_clk,
+                    rst => cge_reset, -- synchrounous reset
+
+                    --debug_out => debug_out,
+
+                    -- BSB interface
+
+                    cmd_dat=> top_cmd_dat(UCORN_BASE_PORT),
+                    cmd_rdy => top_cmd_rdy(UCORN_BASE_PORT),
+                    rply_dat => top_rply_dat(UCORN_BASE_PORT),
+                    rply_rdy => top_rply_rdy(UCORN_BASE_PORT),
+                    ctrl_clk => ctrl_clk,
+                    ctrl_rst => gpu_ctrl_rst_reg
+                );
 
          -- Use COMPONENT instantiation if this is synthesized as an out-of-context module
             cge0: entity work.cge
