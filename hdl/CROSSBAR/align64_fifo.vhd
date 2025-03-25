@@ -89,12 +89,13 @@ begin
 		generic map (
 			CLOCK_DOMAINS => "COMMON", -- independent clock / asynchronous FIFO
 			--PROG_EMPTY_THRESH     => 128, -- Sets the almost empty threshold
-			PROG_FULL_THRESH      => ALMOST_FULL_THRESH, -- Sets almost full threshold
+			PROG_FULL_THRESH        => ALMOST_FULL_THRESH, -- Sets almost full threshold
 			READ_WIDTH              => 72, -- Sets data width to 4-72
-			WRITE_WIDTH              => 72, -- Sets data width to 4-72
-			REGISTER_MODE         => "REGISTERED", -- Output is registered as part of the FIFO, and does not add additional latency.
+			WRITE_WIDTH             => 72, -- Sets data width to 4-72
+			REGISTER_MODE           => "REGISTERED", -- Output is registered as part of the FIFO, and does not add additional latency.
 			--REGISTER_MODE         => "DO_PIPELINED", -- Output is registered as a pipeline register, with an additional latency. We need this latency to be compatible with the 7-series FIFOE1 in synchronous mode with output register.
-			FIRST_WORD_FALL_THROUGH => "TRUE" -- Sets the FIFO FWFT to FALSE, TRUE. Must be FALSE when EN_SYN=TRUE.
+			FIRST_WORD_FALL_THROUGH => "TRUE", -- Sets the FIFO FWFT to FALSE, TRUE. Must be FALSE when EN_SYN=TRUE.
+			WRCOUNT_TYPE            => "EXTENDED_DATACOUNT"
 --			INIT                    => X"000000000", -- Initial values on output port
 --			SRVAL                   => X"000000000" -- Set/Reset value for output port
 		)
