@@ -269,205 +269,199 @@ end GPIO;
 
 architecture Behavioral of GPIO is
 
-attribute async_reg : string;
+	attribute async_reg : string;
 
-constant FPGA_SERIES:integer := PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES;
-constant WORDS_PER_FRAME: integer := ADC_SAMPLES_PER_FRAME / ADC_SAMPLES_PER_WORD;
-constant LOG2_WORDS_PER_FRAME: integer := integer_log2(WORDS_PER_FRAME); --! Number of words per frame. One word is 4 8-bit time samples or 2 8+8-bits frequency samples.
-constant LOG2_SAMPLES_PER_FRAME: integer := integer_log2(ADC_SAMPLES_PER_FRAME);
-constant LOG2_SAMPLES_PER_WORD: integer := integer_log2(ADC_SAMPLES_PER_WORD);
-constant NUMBER_OF_ADC_FLAGS: integer := min(NUMBER_OF_ADCS, 8); -- GPIO registers cannot store flags for more than 8 ADCs. It's ok  as those are used only for the RfSoC platforms, which have 8 ADCs or less.
+	constant FPGA_SERIES:integer := PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES;
+	constant WORDS_PER_FRAME: integer := ADC_SAMPLES_PER_FRAME / ADC_SAMPLES_PER_WORD;
+	constant LOG2_WORDS_PER_FRAME: integer := integer_log2(WORDS_PER_FRAME); --! Number of words per frame. One word is 4 8-bit time samples or 2 8+8-bits frequency samples.
+	constant LOG2_SAMPLES_PER_FRAME: integer := integer_log2(ADC_SAMPLES_PER_FRAME);
+	constant LOG2_SAMPLES_PER_WORD: integer := integer_log2(ADC_SAMPLES_PER_WORD);
+	constant NUMBER_OF_ADC_FLAGS: integer := min(NUMBER_OF_ADCS, 8); -- GPIO registers cannot store flags for more than 8 ADCs. It's ok  as those are used only for the RfSoC platforms, which have 8 ADCs or less.
 
---signal CLK: std_logic;
-signal CLK_CTR: UNSIGNED(7 downto 0):=(others=>'0'); -- Divides the ADC clock by up to 255
-signal CE: std_logic:='0';
+	--signal CLK: std_logic;
+	signal CLK_CTR: UNSIGNED(7 downto 0):=(others=>'0'); -- Divides the ADC clock by up to 255
+	signal CE: std_logic:='0';
 
-signal firmware_timestamp: std_logic_vector(31 downto 0);
-signal USER_DATA_VALID: std_logic;
+	signal firmware_timestamp: std_logic_vector(31 downto 0);
+	signal USER_DATA_VALID: std_logic;
 
---- Define Control word and its signals
-signal CONTROL_BYTES: slv8_array(0 to 50); -- default value set in the CMD_SLAVE
-signal STATUS_BYTES: slv8_array(0 to 41); -- default value set in the CMD_SLAVE
+	--- Define Control word and its signals
+	signal control_bytes: slv8_array(0 to 50); -- default value set in the CMD_SLAVE
+	signal status_bytes: slv8_array(0 to 41); -- default value set in the CMD_SLAVE
 
---signal CTRL_FLAG_ADC_RESET: std_logic;
-signal CTRL_FLAG_BUCK_SYNC_ENABLE: std_logic;
-signal CTRL_FLAG_ADCDAQ_RESET: std_logic;
-signal CTRL_FLAG_GLOBAL_TRIG: std_logic;
-signal CTRL_FLAG_BUCK_CLK_DIV: UNSIGNED(7 downto 0);
-signal buck_sync_int: std_logic:='0';
-signal buck_phase: std_logic_vector(NUMBER_OF_BUCK_SYNC_LINES*4-1 downto 0);
-signal buck_phase_ctr: unsigned(3 downto 0):=(others=>'0'); -- Counts the 16 possible phasess. Initialized to avoid metata on '=' for simulations.
+	--signal CTRL_FLAG_ADC_RESET: std_logic;
+	signal CTRL_FLAG_BUCK_SYNC_ENABLE: std_logic;
+	signal CTRL_FLAG_ADCDAQ_RESET: std_logic;
+	signal CTRL_FLAG_GLOBAL_TRIG: std_logic;
+	signal CTRL_FLAG_BUCK_CLK_DIV: UNSIGNED(7 downto 0);
+	signal buck_sync_int: std_logic:='0';
+	signal buck_phase: std_logic_vector(NUMBER_OF_BUCK_SYNC_LINES*4-1 downto 0);
+	signal buck_phase_ctr: unsigned(3 downto 0):=(others=>'0'); -- Counts the 16 possible phasess. Initialized to avoid metata on '=' for simulations.
 
---signal CTRL_FLAG_TEST: std_logic_vector(3 downto 0);
---signal CHAN_RESET_ASYNC: std_logic;
---signal CORR_RESET_ASYNC: std_logic;
+	--signal CTRL_FLAG_TEST: std_logic_vector(3 downto 0);
+	--signal CHAN_RESET_ASYNC: std_logic;
+	--signal CORR_RESET_ASYNC: std_logic;
 
--- ARM-SPI interface
-	signal spi_addr, spi_rdat, spi_wdat: std_logic_vector(31 downto 0) := (others => '0');
-	signal spi_rreq, spi_rack, spi_wreq, spi_wack: std_logic := '0'; -- important to have default value in case the ARM SPI receiver is not instantiated.
+	-- ARM-SPI interface
+		signal spi_addr, spi_rdat, spi_wdat: std_logic_vector(31 downto 0) := (others => '0');
+		signal spi_rreq, spi_rack, spi_wreq, spi_wack: std_logic := '0'; -- important to have default value in case the ARM SPI receiver is not instantiated.
 
-	constant NUMBER_OF_CORE_REGISTERS: integer := 26;
-	signal core_reg_wr_value : work.icecore_package.slv32_array(0 to NUMBER_OF_CORE_REGISTERS-1);
-	signal core_reg_rd_value : work.icecore_package.slv32_array(0 to NUMBER_OF_CORE_REGISTERS-1);
-	constant core_reg_default_values : work.icecore_package.slv32_array(0 to NUMBER_OF_CORE_REGISTERS-1) := (
-		7 => X"00000000", -- MAC
-		8 => X"0000_0000", -- MAC, Port
-		9 => X"00000000", -- IP
-		others => X"00000000" );
+		constant NUMBER_OF_CORE_REGISTERS: integer := 26;
+		signal core_reg_wr_value : work.icecore_package.slv32_array(0 to NUMBER_OF_CORE_REGISTERS-1);
+		signal core_reg_rd_value : work.icecore_package.slv32_array(0 to NUMBER_OF_CORE_REGISTERS-1);
+		constant core_reg_default_values : work.icecore_package.slv32_array(0 to NUMBER_OF_CORE_REGISTERS-1) := (
+			7 => X"00000000", -- MAC
+			8 => X"0000_0000", -- MAC, Port
+			9 => X"00000000", -- IP
+			others => X"00000000" );
 
--- -- ARM memory map process
--- 	-- Define module addresses
--- 	constant BASE_ADDR: integer := 0; -- Core Control register
--- 	constant NUMBER_OF_MODULES: integer := 1;
+	-- -- ARM memory map process
+	-- 	-- Define module addresses
+	-- 	constant BASE_ADDR: integer := 0; -- Core Control register
+	-- 	constant NUMBER_OF_MODULES: integer := 1;
 
--- 	signal addr: unsigned(18 downto 0) := (others => '0');
--- 	signal addr_dly: unsigned(18 downto 0) := (others => '0');
--- 	signal din_dly: std_logic_vector(31 downto 0) := (others => '0');
--- 	-- Bus control signals for each module, packed into arrays
--- 	signal rreq, rack, wreq, wack: std_logic_vector(0 to NUMBER_OF_MODULES-1) := (others => '0');
--- 	signal dout: icecore_package.slv32_array(0 to NUMBER_OF_MODULES-1) := (others=> (others=>'0'));
-
-
--- Fan related signals
-signal FAN_TACH_CTR: UNSIGNED(16 downto 0); --! the length of this counter sets the number of clk200 cycles  the debouncing waits before deciding that the state is stable
-signal FAN_TACH_TARGET: std_logic :='0'; --!
-signal FAN_TACH_DIV2_INT: std_logic :='0';
-
-signal slot_probe_dly: std_logic_vector(1 downto 0);
-signal slot_sense_ctr: slv8_array( 1 downto 0);
-
-signal dna_dout: std_logic;
-signal dna_read: std_logic :='1'; -- First clock is a read
-signal dna_shift: std_logic := '1'; -- Will start shifting as soon as read is disabled
-signal dna_ctr: unsigned(5 downto 0) := to_unsigned(57-1, 6); -- Will shift 57 times
-
-signal firmware_crc32: std_logic_vector(31 downto 0);
-
-signal fpga_serial_number: std_logic_vector(56 downto 0) := (others=>'0'); -- Need to initialize because we do not shift all the 64 bits
-signal target_fpga_serial_number: std_logic_vector(56 downto 0);
-
---signal target_local_subarray: std_logic_vector(1 downto 0);
---signal target_load_trigger: std_logic;
---signal target_load_trigger_dly: std_logic := '0';
---signal target_local_mac_addr: std_logic_vector(47 downto 0);
-signal target_network_config_source: std_logic_vector(1 downto 0);
---signal target_local_base_ip_addr: std_logic_vector(31 downto 0);
---signal _base_ip_port: std_logic_vector(15 downto 0);
-
-signal core_reg_wr_en: std_logic; -- indicates if the FPGA serial number matches the target serial number
-
-signal bsb_core_din: std_logic_vector(7 downto 0);
-signal bsb_core_dout: std_logic_vector(7 downto 0);
-signal bsb_core_addr: std_logic_vector(6 downto 0); -- 5 bit word number (max 32 registers) + 2 bits (4 bytes per word)
-signal bsb_core_wr_en: std_logic;
-signal bsb_core_rd_en: std_logic;
-
--- Network parameters from the core registers
-signal spi_fpga_local_ip_address: std_logic_vector(31 downto 0) := X"0A0A0A0B";
-signal spi_fpga_local_ip_port: std_logic_vector(15 downto 0) := X"A028"; -- 41000
-signal spi_fpga_local_mac_address: std_logic_vector(47 downto 0) := X"123456789ABC";
-signal spi_fpga_ch0_remote_ip_port: std_logic_vector(15 downto 0);
-signal spi_fpga_ch1_remote_ip_address: std_logic_vector(31 downto 0);
-signal spi_fpga_ch1_remote_ip_port: std_logic_vector(15 downto 0);
-signal spi_fpga_ch1_remote_mac_address: std_logic_vector(47 downto 0);
-
---signal udp_stack_reset: std_logic;
---signal ctrl_master_reset: std_logic;
-
--- signal local_mac_addr_int: std_logic_vector(47 downto 0);
-
--- Default Network settings -- Valid until new targets are loaded (requires the matching FPGA serial number in the TARGET_FPGA_SERIAN_NUMBER)
---signal local_base_ip_addr_reg: std_logic_vector(31 downto 0) := X"0A0A0A0B";
---signal local_base_ip_port_reg: std_logic_vector(15 downto 0) := X"A028"; -- 41000
---signal local_network_config_source_reg: std_logic_vector(1 downto 0) := sel(SIM, "11", "00"); -- Normally Use SPI-based networking parameters, but use default local parameters if this is simulated
---signal local_mac_addr_reg: std_logic_vector(47 downto 0) := X"123456789ABC";
---signal local_subarray_reg: std_logic_vector(1 downto 0) := "00";
-
--- signal udp_tx_frame_ctr: unsigned(7 downto 0) := (others=>'0');
--- signal udp_rx_frame_ctr: unsigned(7 downto 0) := (others=>'0');
-
--- Mux signals
-signal user_mux_source: slv4_array(0 to 3);
-
--- IRIG-B receiver
-
-signal irig_source: std_logic_vector(2 downto 0) := "000";
--- signal irigb_out_int: std_logic;
--- signal irig_vect : std_logic_vector(0 to 3);
-signal ts: irigb; -- Current time as obtained by the IRIG-B decoder
-signal pps_ctr: unsigned(5 downto 0);
-signal pps_int: std_logic;
-
-signal ts_sample: irigb; -- Sampled time
-signal ts_sample_event_trig_in: std_logic; -- Automatically generated by the event counter trigger (on the event_ctr_clk). Toggled on every trigger event.
-signal ts_sample_event_trig_out: std_logic; --
-
---signal event_ts_sample_trig_reg: std_logic; -- registers the trigger for the IRIGB time, from other clock domain. First stage of a synchronizer. Needs ASYNC_REG attribute.
---signal event_ts_sample_trig_reg2: std_logic; -- second stage of the IRIG-B sampling trigger synchronizer. Needs ASYNC_REG attribute.
---attribute ASYNC_REG of event_ts_sample_trig_reg: signal is "true";
---attribute ASYNC_REG of event_ts_sample_trig_reg2: signal is "true";
---signal event_ts_sample_trig_reg3: std_logic; -- Equals event_ts_sample_trig when the trigger has been processed.
-
-signal ts_sample_refclk_trig_in: std_logic; -- Automatically generated by the event counter trigger (on the event_ctr_clk). Toggled on every trigger event.
-signal ts_sample_refclk_trig_out: std_logic;
---signal refclk_ts_sample_trig_reg: std_logic; -- registers the trigger for the IRIGB time, from other clock domain. First stage of a synchronizer. Needs ASYNC_REG attribute.
---signal refclk_ts_sample_trig_reg2: std_logic; -- second stage of the IRIG-B sampling trigger synchronizer. Needs ASYNC_REG attribute.
---attribute ASYNC_REG of refclk_ts_sample_trig_reg: signal is "true";
---attribute ASYNC_REG of refclk_ts_sample_trig_reg2: signal is "true";
---signal refclk_ts_sample_trig_reg3: std_logic; -- Equals event_ts_sample_trig when the trigger has been processed.
-
-signal ts_target: irigb; -- Target time used with the time comparator
-signal ts_compare_enable: std_logic;
-signal ts_force: std_logic;
-signal ts_before_target: std_logic;
-
-signal refclk_sample: unsigned(63 downto 0);
-
---signal target_refclk_count: unsigned(63 downto 0);
--- PWM signals
-signal pwm_period: unsigned(31 downto 0);
-signal pwm_high_time: unsigned(31 downto 0);
-signal pwm_offset: unsigned(31 downto 0);
-signal pwm_ctr: unsigned(31 downto 0);
-signal pwm_active: std_logic;
-signal pwm_out_int: std_logic;
-signal pwm_soft_reset: std_logic;
+	-- 	signal addr: unsigned(18 downto 0) := (others => '0');
+	-- 	signal addr_dly: unsigned(18 downto 0) := (others => '0');
+	-- 	signal din_dly: std_logic_vector(31 downto 0) := (others => '0');
+	-- 	-- Bus control signals for each module, packed into arrays
+	-- 	signal rreq, rack, wreq, wack: std_logic_vector(0 to NUMBER_OF_MODULES-1) := (others => '0');
+	-- 	signal dout: icecore_package.slv32_array(0 to NUMBER_OF_MODULES-1) := (others=> (others=>'0'));
 
 
--- Event counter and capture
-signal event_sample: unsigned(47 downto 0); -- Captured value
-signal event_ctr_soft_reset: std_logic;
+	-- Fan related signals
+	signal FAN_TACH_CTR: UNSIGNED(16 downto 0); --! the length of this counter sets the number of clk200 cycles  the debouncing waits before deciding that the state is stable
+	signal FAN_TACH_TARGET: std_logic :='0'; --!
+	signal FAN_TACH_DIV2_INT: std_logic :='0';
 
-signal manual_event_sample_trig: std_logic;
+	signal slot_probe_dly: std_logic_vector(1 downto 0);
+	signal slot_sense_ctr: slv8_array( 1 downto 0);
 
-signal event_sample_done: std_logic;
-attribute async_reg of event_sample_done: signal is "true";
+	signal dna_dout: std_logic;
+	signal dna_read: std_logic :='1'; -- First clock is a read
+	signal dna_shift: std_logic := '1'; -- Will start shifting as soon as read is disabled
+	signal dna_ctr: unsigned(5 downto 0) := to_unsigned(57-1, 6); -- Will shift 57 times
 
--- Reference clock counter capture logic
-signal manual_refclk_sample_trig: std_logic; -- indicates when to capture the reference counter
-signal manual_refclk_sample_trig_reg: std_logic; -- 1st stage of the synchronizer
-attribute ASYNC_REG of manual_refclk_sample_trig_reg: signal is "true";
-signal manual_refclk_sample_trig_reg2: std_logic; -- delayed version used to detect the rising edge and do clock synchronization (needs ASYNC_REG)
-attribute ASYNC_REG of manual_refclk_sample_trig_reg2: signal is "true";
-signal manual_refclk_sample_trig_reg3: std_logic;
-signal refclk_sample_done: std_logic;
-attribute async_reg of refclk_sample_done: signal is "true";
-signal ts_sample_trig10: std_logic :='0';
-signal ts_sample_trig10_ack: std_logic;
-signal ts_sample_done: std_logic;
+	signal firmware_crc32: std_logic_vector(31 downto 0);
 
--- External PLL
-signal pll_sync_pre: std_logic;
+	signal fpga_serial_number: std_logic_vector(56 downto 0) := (others=>'0'); -- Need to initialize because we do not shift all the 64 bits
+	signal target_fpga_serial_number: std_logic_vector(56 downto 0);
+
+	--signal target_local_subarray: std_logic_vector(1 downto 0);
+	--signal target_load_trigger: std_logic;
+	--signal target_load_trigger_dly: std_logic := '0';
+	--signal target_local_mac_addr: std_logic_vector(47 downto 0);
+	signal target_network_config_source: std_logic_vector(1 downto 0);
+	--signal target_local_base_ip_addr: std_logic_vector(31 downto 0);
+	--signal _base_ip_port: std_logic_vector(15 downto 0);
+
+	signal core_reg_wr_en: std_logic; -- indicates if the FPGA serial number matches the target serial number
+
+	signal bsb_core_din: std_logic_vector(7 downto 0);
+	signal bsb_core_dout: std_logic_vector(7 downto 0);
+	signal bsb_core_addr: std_logic_vector(6 downto 0); -- 5 bit word number (max 32 registers) + 2 bits (4 bytes per word)
+	signal bsb_core_wr_en: std_logic;
+	signal bsb_core_rd_en: std_logic;
+
+	-- Network parameters from the core registers
+	signal spi_fpga_local_ip_address: std_logic_vector(31 downto 0) := X"0A0A0A0B";
+	signal spi_fpga_local_ip_port: std_logic_vector(15 downto 0) := X"A028"; -- 41000
+	signal spi_fpga_local_mac_address: std_logic_vector(47 downto 0) := X"123456789ABC";
+	signal spi_fpga_ch0_remote_ip_port: std_logic_vector(15 downto 0);
+	signal spi_fpga_ch1_remote_ip_address: std_logic_vector(31 downto 0);
+	signal spi_fpga_ch1_remote_ip_port: std_logic_vector(15 downto 0);
+	signal spi_fpga_ch1_remote_mac_address: std_logic_vector(47 downto 0);
+
+	--signal udp_stack_reset: std_logic;
+	--signal ctrl_master_reset: std_logic;
+
+	-- signal local_mac_addr_int: std_logic_vector(47 downto 0);
+
+	-- Default Network settings -- Valid until new targets are loaded (requires the matching FPGA serial number in the TARGET_FPGA_SERIAN_NUMBER)
+	--signal local_base_ip_addr_reg: std_logic_vector(31 downto 0) := X"0A0A0A0B";
+	--signal local_base_ip_port_reg: std_logic_vector(15 downto 0) := X"A028"; -- 41000
+	--signal local_network_config_source_reg: std_logic_vector(1 downto 0) := sel(SIM, "11", "00"); -- Normally Use SPI-based networking parameters, but use default local parameters if this is simulated
+	--signal local_mac_addr_reg: std_logic_vector(47 downto 0) := X"123456789ABC";
+	--signal local_subarray_reg: std_logic_vector(1 downto 0) := "00";
+
+	-- signal udp_tx_frame_ctr: unsigned(7 downto 0) := (others=>'0');
+	-- signal udp_rx_frame_ctr: unsigned(7 downto 0) := (others=>'0');
+
+	-- Mux signals
+	signal user_mux_source: slv4_array(0 to 3);
+
+	-- IRIG-B receiver
+
+	signal irig_source: std_logic_vector(2 downto 0) := "000";
+	signal irig_pol: std_logic := '0'; -- irig-b signal polarity: 0=normal, 1=inverted
+	-- signal irigb_out_int: std_logic;
+	-- signal irig_vect : std_logic_vector(0 to 3);
+	signal ts: irigb; -- Current time as obtained by the IRIG-B decoder
+	signal pps_ctr: unsigned(5 downto 0);
+	signal pps_int: std_logic;
+
+	signal ts_sample: irigb; -- Sampled time
+	signal ts_sample_event_trig_in: std_logic; -- Automatically generated by the event counter trigger (on the event_ctr_clk). Toggled on every trigger event.
+	signal ts_sample_event_trig_out: std_logic; --
+
+	--signal event_ts_sample_trig_reg: std_logic; -- registers the trigger for the IRIGB time, from other clock domain. First stage of a synchronizer. Needs ASYNC_REG attribute.
+	--signal event_ts_sample_trig_reg2: std_logic; -- second stage of the IRIG-B sampling trigger synchronizer. Needs ASYNC_REG attribute.
+	--attribute ASYNC_REG of event_ts_sample_trig_reg: signal is "true";
+	--attribute ASYNC_REG of event_ts_sample_trig_reg2: signal is "true";
+	--signal event_ts_sample_trig_reg3: std_logic; -- Equals event_ts_sample_trig when the trigger has been processed.
+
+	signal ts_sample_refclk_trig_in: std_logic; -- Automatically generated by the event counter trigger (on the event_ctr_clk). Toggled on every trigger event.
+	signal ts_sample_refclk_trig_out: std_logic;
+	--signal refclk_ts_sample_trig_reg: std_logic; -- registers the trigger for the IRIGB time, from other clock domain. First stage of a synchronizer. Needs ASYNC_REG attribute.
+	--signal refclk_ts_sample_trig_reg2: std_logic; -- second stage of the IRIG-B sampling trigger synchronizer. Needs ASYNC_REG attribute.
+	--attribute ASYNC_REG of refclk_ts_sample_trig_reg: signal is "true";
+	--attribute ASYNC_REG of refclk_ts_sample_trig_reg2: signal is "true";
+	--signal refclk_ts_sample_trig_reg3: std_logic; -- Equals event_ts_sample_trig when the trigger has been processed.
+
+	signal ts_target: irigb; -- Target time used with the time comparator
+	signal ts_compare_enable: std_logic;
+	signal ts_force: std_logic;
+	signal ts_before_target: std_logic;
+
+	signal refclk_sample: unsigned(63 downto 0);
+
+	--signal target_refclk_count: unsigned(63 downto 0);
+	-- PWM signals
+	signal pwm_period: unsigned(31 downto 0);
+	signal pwm_high_time: unsigned(31 downto 0);
+	signal pwm_offset: unsigned(31 downto 0);
+	signal pwm_ctr: unsigned(31 downto 0);
+	signal pwm_active: std_logic;
+	signal pwm_out_int: std_logic;
+	signal pwm_soft_reset: std_logic;
 
 
-signal ctrl_reset_trig: std_logic;
+	-- Event counter and capture
+	signal event_sample: unsigned(47 downto 0); -- Captured value
+	signal event_ctr_soft_reset: std_logic;
 
---signal bp_buck_sync_wr_dat: std_logic_vector(31 downto 0);
---signal bp_buck_sync_rd_dat: std_logic_vector(31 downto 0);
---signal bp_buck_sync_rd_dat_valid: std_logic;
+	signal manual_event_sample_trig: std_logic;
 
---signal release_ctr_mon: std_logic_vector(7 downto 0);
---signal sync_ctr_mon: std_logic_vector(7 downto 0);
+	signal event_sample_done: std_logic;
+	attribute async_reg of event_sample_done: signal is "true";
+
+	-- Reference clock counter capture logic
+	signal manual_refclk_sample_trig: std_logic; -- indicates when to capture the reference counter
+	signal manual_refclk_sample_trig_reg: std_logic; -- 1st stage of the synchronizer
+	attribute ASYNC_REG of manual_refclk_sample_trig_reg: signal is "true";
+	signal manual_refclk_sample_trig_reg2: std_logic; -- delayed version used to detect the rising edge and do clock synchronization (needs ASYNC_REG)
+	attribute ASYNC_REG of manual_refclk_sample_trig_reg2: signal is "true";
+	signal manual_refclk_sample_trig_reg3: std_logic;
+	signal refclk_sample_done: std_logic;
+	attribute async_reg of refclk_sample_done: signal is "true";
+	signal ts_sample_trig10: std_logic :='0';
+	signal ts_sample_trig10_ack: std_logic;
+	signal ts_sample_done: std_logic;
+
+	-- External PLL
+	signal pll_sync_pre: std_logic;
+
+	signal ctrl_reset_trig: std_logic;
+
 begin
 
 -----------------------------------------------------------------------------------
@@ -582,23 +576,23 @@ begin
 --
 
 -- CONTROL Byte 0: Buck converter sync enable, channelizer clock source, various resets
-CTRL_FLAG_GLOBAL_TRIG      <= CONTROL_BYTES(0)(7);
-CTRL_FLAG_BUCK_SYNC_ENABLE <= CONTROL_BYTES(0)(6);
-CHAN_CLK_RESET_ASYNC       <= CONTROL_BYTES(0)(5);
-CHAN_CLK_SOURCE            <= CONTROL_BYTES(0)(4);
-ADCDAQ_RESET_ASYNC         <= CONTROL_BYTES(0)(3);
-ADC_RST                    <= reverse_bits_and_dir(CONTROL_BYTES(0)(NUMBER_OF_ADC_BOARDS-1 downto 0));
+CTRL_FLAG_GLOBAL_TRIG      <= control_bytes(0)(7);
+CTRL_FLAG_BUCK_SYNC_ENABLE <= control_bytes(0)(6);
+CHAN_CLK_RESET_ASYNC       <= control_bytes(0)(5);
+CHAN_CLK_SOURCE            <= control_bytes(0)(4);
+ADCDAQ_RESET_ASYNC         <= control_bytes(0)(3);
+ADC_RST                    <= reverse_bits_and_dir(control_bytes(0)(NUMBER_OF_ADC_BOARDS-1 downto 0));
 
 
 -- CONTROL Byte 1: Buck converter switching frequency control
-CTRL_FLAG_BUCK_CLK_DIV <= UNSIGNED(CONTROL_BYTES(1));
+CTRL_FLAG_BUCK_CLK_DIV <= UNSIGNED(control_bytes(1));
 
 -- CONTROL Byte 2: LCD control
 lcd_gen: if IMPLEMENT_LCD generate
-	LCD_E  <= CONTROL_BYTES(2)(7);
-	LCD_RS <= CONTROL_BYTES(2)(6);
-	LCD_RW <= CONTROL_BYTES(2)(5);
-	LCD_DB <= CONTROL_BYTES(2)(3 downto 0);
+	LCD_E  <= control_bytes(2)(7);
+	LCD_RS <= control_bytes(2)(6);
+	LCD_RW <= control_bytes(2)(5);
+	LCD_DB <= control_bytes(2)(3 downto 0);
 else generate-- make sure the outputs are driven while the associated CTRL_SLAVE logic is synthesized out
 	LCD_E  <= '0';
 	LCD_RS <= '0';
@@ -608,26 +602,26 @@ end generate;
 
 -- CONTROL Byte 3: Various reset and clock selection controls
 USER_RESET          <= '0';
-BLINKER_RESET       <= CONTROL_BYTES(3)(7);
-CHAN_RESET_ASYNC    <= CONTROL_BYTES(3)(6);
-CORR_RESET_ASYNC    <= CONTROL_BYTES(3)(5);
-ctrl_reset_trig     <= CONTROL_BYTES(3)(4);
-sysmon_user_reset   <= CONTROL_BYTES(3)(3);
-clk10_sel           <= CONTROL_BYTES(3)(2);
-pll_sync_pre        <= CONTROL_BYTES(3)(1);
+BLINKER_RESET       <= control_bytes(3)(7);
+CHAN_RESET_ASYNC    <= control_bytes(3)(6);
+CORR_RESET_ASYNC    <= control_bytes(3)(5);
+ctrl_reset_trig     <= control_bytes(3)(4);
+sysmon_user_reset   <= control_bytes(3)(3);
+clk10_sel           <= control_bytes(3)(2);
+pll_sync_pre        <= control_bytes(3)(1);
 
 -- CONTROL Byte 4: UDP data throttling control
-HOST_FRAME_READ_RATE    <= CONTROL_BYTES(4)(4 downto 0);
+HOST_FRAME_READ_RATE    <= control_bytes(4)(4 downto 0);
 
 gen_sw_sync: if IMPLEMENT_SWITCHER_SYNC generate
 -- CONTROL bytes 5-12: Buck converter phases (8 phases)
-BUCK_PHASE <= to_slv(CONTROL_BYTES(5 to 12));
+BUCK_PHASE <= to_slv(control_bytes(5 to 12));
 end generate;
 
 -- CONTROL bytes 13-15: RfSoC ADC controls
-adc_cal_freeze(0 to NUMBER_OF_ADC_FLAGS-1) <= reverse_bits_and_dir(CONTROL_BYTES(13)(NUMBER_OF_ADC_FLAGS-1 downto 0)); -- ADC calibration freeze control
-adc_clear_or(0 to NUMBER_OF_ADC_FLAGS-1) <= reverse_bits_and_dir(CONTROL_BYTES(14)(NUMBER_OF_ADC_FLAGS-1 downto 0)); -- Clear ADC overrange flag
-adc_clear_ov(0 to NUMBER_OF_ADC_FLAGS-1) <= reverse_bits_and_dir(CONTROL_BYTES(15)(NUMBER_OF_ADC_FLAGS-1 downto 0)); -- Clear ADC overvoltage flag
+adc_cal_freeze(0 to NUMBER_OF_ADC_FLAGS-1) <= reverse_bits_and_dir(control_bytes(13)(NUMBER_OF_ADC_FLAGS-1 downto 0)); -- ADC calibration freeze control
+adc_clear_or(0 to NUMBER_OF_ADC_FLAGS-1) <= reverse_bits_and_dir(control_bytes(14)(NUMBER_OF_ADC_FLAGS-1 downto 0)); -- Clear ADC overrange flag
+adc_clear_ov(0 to NUMBER_OF_ADC_FLAGS-1) <= reverse_bits_and_dir(control_bytes(15)(NUMBER_OF_ADC_FLAGS-1 downto 0)); -- Clear ADC overvoltage flag
 
 
 
@@ -635,135 +629,135 @@ adc_clear_ov(0 to NUMBER_OF_ADC_FLAGS-1) <= reverse_bits_and_dir(CONTROL_BYTES(1
 -- CONTROL bytes 16-24: Unused
 
 -- CONTROL bytes 25-32: Target serial number
-target_fpga_serial_number(56) <= CONTROL_BYTES(25)(0);
-target_fpga_serial_number(55 downto 0) <= to_slv(CONTROL_BYTES(26 to 32));
+target_fpga_serial_number(56) <= control_bytes(25)(0);
+target_fpga_serial_number(55 downto 0) <= to_slv(control_bytes(26 to 32));
 
 -- CONTROL byte 33: serial-based core register write control
-target_network_config_source <= CONTROL_BYTES(33)(3 downto 2); --"00": core reg write always enabled; "01", "10" or "11": core reg write only when target serial matches the FPGA's serial
+target_network_config_source <= control_bytes(33)(3 downto 2); --"00": core reg write always enabled; "01", "10" or "11": core reg write only when target serial matches the FPGA's serial
 
 -- CONTROL byte 34-45: PWM control
-pwm_offset <= to_unsigned(CONTROL_BYTES(34 to 37));
-pwm_high_time <= to_unsigned(CONTROL_BYTES(38 to 41));
-pwm_period <= to_unsigned(CONTROL_BYTES(42 to 45));
+pwm_offset <= to_unsigned(control_bytes(34 to 37));
+pwm_high_time <= to_unsigned(control_bytes(38 to 41));
+pwm_period <= to_unsigned(control_bytes(42 to 45));
 
 -- CONTROL byte 46: PWM reset, IO for QC tests, user output 0 mux control
-pwm_soft_reset <= CONTROL_BYTES(46)(7);
-bp_gpio_int_oe <= CONTROL_BYTES(46)(4);
-user_mux_source(0) <= CONTROL_BYTES(46)(3 downto 0);
+pwm_soft_reset <= control_bytes(46)(7);
+bp_gpio_int_oe <= control_bytes(46)(4);
+user_mux_source(0) <= control_bytes(46)(3 downto 0);
 
 -- CONTROL byte 47: IceBoard IO's for QC tests
-uart_tx_oe   <= CONTROL_BYTES(47)(7);
-uart_tx_out  <= CONTROL_BYTES(47)(6);
-uart_rx_oe   <= CONTROL_BYTES(47)(5);
-uart_rx_out  <= CONTROL_BYTES(47)(4);
-gpio_rst_oe  <= CONTROL_BYTES(47)(3);
-gpio_rst_out <= CONTROL_BYTES(47)(2);
-arm_irq_oe   <= CONTROL_BYTES(47)(1);
-arm_irq_out  <= CONTROL_BYTES(47)(0);
+uart_tx_oe   <= control_bytes(47)(7);
+uart_tx_out  <= control_bytes(47)(6);
+uart_rx_oe   <= control_bytes(47)(5);
+uart_rx_out  <= control_bytes(47)(4);
+gpio_rst_oe  <= control_bytes(47)(3);
+gpio_rst_out <= control_bytes(47)(2);
+arm_irq_oe   <= control_bytes(47)(1);
+arm_irq_out  <= control_bytes(47)(0);
 
 -- CONTROL byte 48 -- User output 3 mux control, various IO's for QC tests
-user_mux_source(3) <= CONTROL_BYTES(48)(7 downto 4);
-gpio_irq_oe        <= CONTROL_BYTES(48)(3);
-gpio_irq_out       <= CONTROL_BYTES(48)(2);
-flash_cs_oe        <= CONTROL_BYTES(48)(1);
-flash_cs_out       <= CONTROL_BYTES(48)(0);
+user_mux_source(3) <= control_bytes(48)(7 downto 4);
+gpio_irq_oe        <= control_bytes(48)(3);
+gpio_irq_out       <= control_bytes(48)(2);
+flash_cs_oe        <= control_bytes(48)(1);
+flash_cs_out       <= control_bytes(48)(0);
 
 
 -- CONTROL byte 49 -- User output 1 & 2 mux control
-user_mux_source(2) <= CONTROL_BYTES(49)(7 downto 4);
-user_mux_source(1) <= CONTROL_BYTES(49)(3 downto 0);
+user_mux_source(2) <= control_bytes(49)(7 downto 4);
+user_mux_source(1) <= control_bytes(49)(3 downto 0);
 
 -- CONTROL byte 50 -- User bits, IRIG-B delay control
-user_bit(1)       <= CONTROL_BYTES(50)(7);
-user_bit(0)       <= CONTROL_BYTES(50)(6);
-irigb_delay_reset <= CONTROL_BYTES(50)(5);
-irigb_delay       <= CONTROL_BYTES(50)(4 downto 0);
+user_bit(1)       <= control_bytes(50)(7);
+user_bit(0)       <= control_bytes(50)(6);
+irigb_delay_reset <= control_bytes(50)(5);
+irigb_delay       <= control_bytes(50)(4 downto 0);
 
 -- STATUS Byte 0
-STATUS_BYTES(0)(7)          <= USER_DATA_VALID;
-STATUS_BYTES(0)(6 downto 0) <= to_slv(COOKIE, 7);
+status_bytes(0)(7)          <= USER_DATA_VALID;
+status_bytes(0)(6 downto 0) <= to_slv(COOKIE, 7);
 
 -- STATUS Byte 1 - ADC data frame geometry
-STATUS_BYTES(1)(4 downto 0) <= to_slv(LOG2_SAMPLES_PER_FRAME, 5); -- 16384=14
-STATUS_BYTES(1)(7 downto 5) <= to_slv(LOG2_SAMPLES_PER_WORD, 3); -- 2: 4 samples/word, 3: 8 samples/word
+status_bytes(1)(4 downto 0) <= to_slv(LOG2_SAMPLES_PER_FRAME, 5); -- 16384=14
+status_bytes(1)(7 downto 5) <= to_slv(LOG2_SAMPLES_PER_WORD, 3); -- 2: 4 samples/word, 3: 8 samples/word
 
 -- STATUS Byte 2
-STATUS_BYTES(2) <= to_slv(NUMBER_OF_CHANNELIZERS, 8);
+status_bytes(2) <= to_slv(NUMBER_OF_CHANNELIZERS, 8);
 
 
 -- STATUS Byte 3
-STATUS_BYTES(3) <= to_slv(NUMBER_OF_CORRELATORS,8);
+status_bytes(3) <= to_slv(NUMBER_OF_CORRELATORS,8);
 
---STATUS_BYTES(3)(7 downto 4) <= (others=>'0');
+--status_bytes(3)(7 downto 4) <= (others=>'0');
 
 --STATUS Byte 4-6
-STATUS_BYTES(4) <= to_slv(NUMBER_OF_CHANNELIZERS_TO_CORRELATE, 8);
-STATUS_BYTES(5) <= to_slv(NUMBER_OF_CHANNELIZERS_WITH_FFT,8);
-STATUS_BYTES(6) <= to_slv(NUMBER_OF_GPU_LINKS,8);
+status_bytes(4) <= to_slv(NUMBER_OF_CHANNELIZERS_TO_CORRELATE, 8);
+status_bytes(5) <= to_slv(NUMBER_OF_CHANNELIZERS_WITH_FFT,8);
+status_bytes(6) <= to_slv(NUMBER_OF_GPU_LINKS,8);
 
 -- STATUS Bytes 7-10
-STATUS_BYTES(7 to 10) <= to_slv8_array(firmware_timestamp);  -- ** ToDo: still used by Python, but redundant with core regs.
+status_bytes(7 to 10) <= to_slv8_array(firmware_timestamp);  -- ** ToDo: still used by Python, but redundant with core regs.
 
 -- STATUS Bytes 11: Platform ID
-STATUS_BYTES(11) <= to_slv(PLATFORM_ID, 8);
+status_bytes(11) <= to_slv(PLATFORM_ID, 8);
 
 -- STATUS Bytes 12-19: FPGA serial number
-STATUS_BYTES(12)(7 downto 1) <= (others=>'0');
-STATUS_BYTES(12)(0) <= fpga_serial_number(56);
-STATUS_BYTES(13 to 19) <= to_slv8_array(fpga_serial_number(55 downto 0));
+status_bytes(12)(7 downto 1) <= (others=>'0');
+status_bytes(12)(0) <= fpga_serial_number(56);
+status_bytes(13 to 19) <= to_slv8_array(fpga_serial_number(55 downto 0));
 
 -- STATUS Bytes 20-21: crossbar configuration
-STATUS_BYTES(20) <= to_slv(NUMBER_OF_CROSSBAR_INPUTS, 8);
-STATUS_BYTES(21) <= to_slv(NUMBER_OF_CROSSBAR1_OUTPUTS, 8);
+status_bytes(20) <= to_slv(NUMBER_OF_CROSSBAR_INPUTS, 8);
+status_bytes(21) <= to_slv(NUMBER_OF_CROSSBAR1_OUTPUTS, 8);
 
 -- STATUS Bytes 22-23: Protocol version
-STATUS_BYTES(22 to 23) <= to_slv8_array(to_slv(PROTOCOL_VERSION, 16));
+status_bytes(22 to 23) <= to_slv8_array(to_slv(PROTOCOL_VERSION, 16));
 
 -- STATUS Bytes 24: Channelizer clock source
-STATUS_BYTES(24) <= to_slv(CHANNELIZERS_CLOCK_SOURCE, 8);
+status_bytes(24) <= to_slv(CHANNELIZERS_CLOCK_SOURCE, 8);
 
 -- STATUS Bytes 25
-STATUS_BYTES(25) <= to_slv(NUMBER_OF_ADCS, 8);
+status_bytes(25) <= to_slv(NUMBER_OF_ADCS, 8);
 
 -- STATUS Bytes 26
-STATUS_BYTES(26) <= to_slv(ADC_BITS_PER_SAMPLE, 8);
+status_bytes(26) <= to_slv(ADC_BITS_PER_SAMPLE, 8);
 
 -- STATUS Bytes 27-30: ADC flags
-STATUS_BYTES(27)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_cal_frozen(0 to NUMBER_OF_ADC_FLAGS-1)); -- ADC calibration frozen flags (for 8 ADCs)
-STATUS_BYTES(28)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_cal_signal_detect(0 to NUMBER_OF_ADC_FLAGS-1)); -- ADC calibration signal detect flags (for 8 ADCs)
-STATUS_BYTES(29)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_or(0 to NUMBER_OF_ADC_FLAGS-1));
-STATUS_BYTES(30)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_ov(0 to NUMBER_OF_ADC_FLAGS-1));
+status_bytes(27)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_cal_frozen(0 to NUMBER_OF_ADC_FLAGS-1)); -- ADC calibration frozen flags (for 8 ADCs)
+status_bytes(28)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_cal_signal_detect(0 to NUMBER_OF_ADC_FLAGS-1)); -- ADC calibration signal detect flags (for 8 ADCs)
+status_bytes(29)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_or(0 to NUMBER_OF_ADC_FLAGS-1));
+status_bytes(30)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_ov(0 to NUMBER_OF_ADC_FLAGS-1));
 
 -- STATUS Bytes 31-32
-STATUS_BYTES(31) <= slot_sense_ctr(0); -- is this still used?
-STATUS_BYTES(32) <= slot_sense_ctr(1);
+status_bytes(31) <= slot_sense_ctr(0); -- is this still used?
+status_bytes(32) <= slot_sense_ctr(1);
 
 -- STATUS Bytes 33: FMC PLLs
-STATUS_BYTES(33)(7 downto 8-NUMBER_OF_ADC_BOARDS) <= reverse_bits_and_dir(adc_pll_lock);
---STATUS_BYTES(33)(5 downto 2) <= (others=>'0');
+status_bytes(33)(7 downto 8-NUMBER_OF_ADC_BOARDS) <= reverse_bits_and_dir(adc_pll_lock);
+--status_bytes(33)(5 downto 2) <= (others=>'0');
 
 -- STATUS Bytes 34-35: Command/replay Packet counters
-STATUS_BYTES(34) <= cmd_packet_counter;
-STATUS_BYTES(35) <= rply_packet_counter;
+status_bytes(34) <= cmd_packet_counter;
+status_bytes(35) <= rply_packet_counter;
 
 -- STATUS Byte 36 - Corner-turn engine config
-STATUS_BYTES(36) <= to_slv(NUMBER_OF_BP_SHUFFLE_LINKS, 8);
+status_bytes(36) <= to_slv(NUMBER_OF_BP_SHUFFLE_LINKS, 8);
 
 -- STATUS Byte 37: IceBoard Extra I/Os
-STATUS_BYTES(37)(0) <= arm_irq_in;
-STATUS_BYTES(37)(1) <= gpio_rst_in;
-STATUS_BYTES(37)(2) <= uart_rx_in;
-STATUS_BYTES(37)(3) <= uart_tx_in;
-STATUS_BYTES(37)(4) <= flash_cs_in;
-STATUS_BYTES(37)(5) <= gpio_irq_in;
-STATUS_BYTES(37)(6) <= bp_gpio_int_in;
-STATUS_BYTES(37)(7) <= core_reg_wr_en; -- debug
+status_bytes(37)(0) <= arm_irq_in;
+status_bytes(37)(1) <= gpio_rst_in;
+status_bytes(37)(2) <= uart_rx_in;
+status_bytes(37)(3) <= uart_tx_in;
+status_bytes(37)(4) <= flash_cs_in;
+status_bytes(37)(5) <= gpio_irq_in;
+status_bytes(37)(6) <= bp_gpio_int_in;
+status_bytes(37)(7) <= core_reg_wr_en; -- debug
 
 -- STATUS Bytes 38-41: More ADC flags (RfSoC)
-STATUS_BYTES(38)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_cm_ov(0 to NUMBER_OF_ADC_FLAGS-1)); -- ADC common mode overflow for each ADC
-STATUS_BYTES(39)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_cm_uv(0 to NUMBER_OF_ADC_FLAGS-1)); -- ADC common mode underflow for each ADC
-STATUS_BYTES(40)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_ot1(0 to NUMBER_OF_ADC_FLAGS-1));  -- ADC over threshold 1 for each ADC
-STATUS_BYTES(41)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_ot2(0 to NUMBER_OF_ADC_FLAGS-1)); -- ADC over threshold 2 for each ADC
+status_bytes(38)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_cm_ov(0 to NUMBER_OF_ADC_FLAGS-1)); -- ADC common mode overflow for each ADC
+status_bytes(39)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_cm_uv(0 to NUMBER_OF_ADC_FLAGS-1)); -- ADC common mode underflow for each ADC
+status_bytes(40)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_ot1(0 to NUMBER_OF_ADC_FLAGS-1));  -- ADC over threshold 1 for each ADC
+status_bytes(41)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_ot2(0 to NUMBER_OF_ADC_FLAGS-1)); -- ADC over threshold 2 for each ADC
 
 
 -----------------------------------------------------------------------------------
@@ -771,9 +765,9 @@ STATUS_BYTES(41)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_ot
 -----------------------------------------------------------------------------------
 --! Instantiates a memory-mapped interface to the control and status bytes
 CTRL_SLAVE0: entity work.CTRL_SLAVE
-	GENERIC MAP (
-		NUMBER_OF_CONTROL_BYTES => CONTROL_BYTES'Length(1), -- Length of array in the first dimension: number of bytes
-		NUMBER_OF_STATUS_BYTES => STATUS_BYTES'Length(1),
+	generic map (
+		NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), -- Length of array in the first dimension: number of bytes
+		NUMBER_OF_STATUS_BYTES => status_bytes'Length(1),
 		DEFAULT_CONTROL_BYTES => ('0' & to_std_logic(BUCK_SYNC_ENABLE) & "010000" & -- Byte 0
 			                      to_slv(BUCK_CLK_DIVIDE_FACTOR, 8) & -- Byte 1
 			                      X"00" & -- Byte 2: LCD
@@ -794,7 +788,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
         RAM_ADDR_WIDTH          => 5+2,  -- 6 bits (32 register words) + 2 bits (4 bytes per word)
         RAM_LATENCY             => 1
 	)
-	PORT MAP(
+	port map(
 		-- Control interface (command and reply stream buses)
 		ctrl_cmd_in_dat => ctrl_cmd_in_dat,
 		ctrl_cmd_in_rdy => ctrl_cmd_in_rdy,
@@ -803,8 +797,8 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 		ctrl_clk => ctrl_clk,
 		ctrl_rst => ctrl_rst,
 
-		CONTROL_BYTES => CONTROL_BYTES,
-		STATUS_BYTES => STATUS_BYTES,
+		control_bytes => control_bytes,
+		status_bytes => status_bytes,
 
         RAM_DIN   => bsb_core_din,
         RAM_DOUT  => bsb_core_dout,
@@ -941,18 +935,21 @@ ts_target.h                        <= unsigned(core_reg_wr_value(14)(19 downto 1
 ts_target.m                        <= unsigned(core_reg_wr_value(14)(13 downto 7));
 ts_target.s                        <= unsigned(core_reg_wr_value(14)(6 downto 0));
 -- Register 15 (_IRIGB_TARGET2_ADDR)
+ts_compare_enable                  <= core_reg_wr_value(15)(31);
 core_reg_rd_value(15)(31)          <= ts_compare_enable; -- (Readback)
+ts_force                           <= core_reg_wr_value(15)(30);
 core_reg_rd_value(15)(30)          <= ts_force; -- (Readback)
-core_reg_rd_value(15)(27 downto 0) <= core_reg_wr_value(15)(27 downto 0); -- (Readback)
+irig_pol                           <= core_reg_wr_value(15)(29);
+core_reg_rd_value(15)(29)          <= irig_pol; -- (Readback)
 ts_target.ss                       <= unsigned(core_reg_wr_value(15)(27 downto 0));
 -- (make sure the rest of ts_target is driven to prevent warnings)
 ts_target.c <= (others=>'0');
 ts_target.sbs <= (others=>'0');
 ts_target.recent <= '0';
 ts_target.source <= (others=>'0');
+core_reg_rd_value(15)(27 downto 0) <= core_reg_wr_value(15)(27 downto 0); -- (Readback)
 
-ts_compare_enable                  <= core_reg_wr_value(15)(31);
-ts_force                           <= core_reg_wr_value(15)(30);
+
 -- Register 16 (_IRIGB_EVENT_CTR_ADDR)
 core_reg_rd_value(16) <= std_logic_vector(event_sample(31 downto 0)); -- (Read-only)
 
@@ -1045,6 +1042,7 @@ irigb_decoder0 : entity work.irigb_decoder
 		clk_200mhz => clk200,
 		irig       => irigb_mux_in,
 		source     => unsigned(irig_source),
+		pol        => irig_pol,
 		pps        => pps_int,
 		ts         => ts
 	);
