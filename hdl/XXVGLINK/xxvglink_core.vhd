@@ -335,7 +335,7 @@ end process;
 bsb_router0: entity work.CTRL_ROUTER
 	generic map (
 		NUMBER_OF_PORTS=> NUMBER_OF_MODULES,
-		ADDRESS_MASK => "---11111-----------" -- 5-bit routing address,  11-bit internal address
+		ADDRESS_MASK => "-----1111----------" -- 4-bit routing address (1 common, 4 PLL max, 11 GTY max),  10-bit internal address
 	)
 	port map(
 		-- Master control interface
