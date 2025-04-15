@@ -12,3 +12,4 @@
 *.wcfg filter=lfs diff=lfs merge=lfs -text
 *.slx filter=lfs diff=lfs merge=lfs -text
 *.ipynb filter=lfs diff=lfs merge=lfs -text
+*.rqs filter=lfs diff=lfs merge=lfs -text
