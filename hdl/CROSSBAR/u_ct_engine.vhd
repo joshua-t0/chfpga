@@ -219,6 +219,7 @@ begin
 				status_bytes  => status_bytes
 			);
 
+		status_bytes(0)(1 downto 0) <= to_slv(CT_LEVEL, 2);
 
 		-- Connect CT level 1 registers
 
