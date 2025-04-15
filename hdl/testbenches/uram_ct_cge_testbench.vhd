@@ -31,10 +31,10 @@ ARCHITECTURE behavior OF uram_ct_cge_testbench IS
    -- Clock period definitions
    -- constant CLK_PERIOD : time := 3.2 ns;
 
-constant CLK_PERIOD : time := 1000000/375 * 1 ps; -- 375 MHz
-constant CTRL_CLK_PERIOD : time := 3.2 ns; --
-constant REFCLK_PERIOD : time := 6.4 ns; -- 156.25 MHz
-
+    constant CLK_PERIOD : time := 1000000/375 * 1 ps; -- 375 MHz
+    constant CTRL_CLK_PERIOD : time := 3.2 ns; --
+    constant REFCLK_PERIOD : time := 6.4 ns; -- 156.25 MHz
+    
 
 	--Inputs
 	--signal reset : std_logic := '0';
@@ -139,7 +139,7 @@ begin
     refclkb <= not refclk;
 	cge0: entity work.cge
 		generic map (
-			IMPLEMENT_PACKET_GENERATOR => TRUE
+			IMPLEMENT_PACKET_GENERATOR => FALSE
 		 	)
 		port map (
 			tx_p => txp,
@@ -162,6 +162,8 @@ begin
 
         variable data: std_logic_vector(255 downto 0);
         variable addr, eop, eot, hdr: integer;
+        constant NBINS: integer := 128;
+        constant NPKTS: integer := 1;
 	begin
 
 		-- wait for init and synchronize to clock
@@ -182,22 +184,21 @@ begin
         fpga_write_control(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, addr=> 0, data => 32);
         sleep(clk, 10);
         addr := 0;
-        for pkt in 0 to 127 loop
-            for bin in 0 to 47 loop
-                hdr := 0;
-                if  bin=0 then hdr:=1; end if;
+        for pkt in 0 to NPKTS-1 loop
+            for bin in 0 to NBINS loop -- one additional bin for the header
+                hdr:=0 when bin=0 else 1;
                 eop:= 0;
                 eot:= 0;
   
-                if bin=47 then
+                if bin=NBINS then
                     eop:= 1;
-                    if pkt=127 then
+                    if pkt=NPKTS-1 then
                         eot:=1;
                     end if;
                 end if;
 
                 fpga_write_ram(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
-                               addr=> addr*2, data => to_slv8_array(to_unsigned(pkt*128 + bin + 8192*hdr + 16384*eop+32768*eot,16)));
+                               addr=> addr*2, data => to_slv8_array(to_unsigned(pkt*NBINS + bin + 8192*hdr + 16384*eop + 32768*eot,16)));
                 addr := addr + 1;
             end loop; --bin
         end loop; --pkt    
@@ -207,11 +208,11 @@ begin
             fpga_write_control(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, addr=> 0, data => 128);
             sleep(clk, 10); --let the wripe propagate through the FIFO and opcode decoding
             -- send channelizer data
-            for bank in 0 to 1 loop
+            for bank in 0 to 10 loop
                 for frame in 0 to 15 loop
                     for bin in 0 to 2047 loop
                         for i in 0 to 3 loop
-                            tdata_in(64*(3-i)+63 downto 64*(3-i)) <= X"B" & to_slv(bank,4) & X"F" & to_slv(frame, 4) & X"B" & to_slv(bin*4+i, 16) & to_slv(0, 64-36);
+                            tdata_in(64*(3-i)+63 downto 64*(3-i)) <= X"B" & to_slv((bank mod 2),4) & X"F" & to_slv(frame, 4) & X"B" & to_slv(bin*4+i, 16) & to_slv(0, 64-36);
                         end loop; --i
                         tvalid_in <='1';
                         tlast_in <= '0';
