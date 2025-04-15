@@ -80,8 +80,8 @@ entity chfpga_crs is
         NUMBER_OF_I2C_PORTS: integer                 := 0;
         NUMBER_OF_SPI_PORTS: integer                 := 0; -- One port for each FMC
         IMPLEMENT_ARM_SPI: boolean                   := FALSE;
-
-        SIM: boolean := FALSE-- Indicates this is running as a simulation. Used to accelerate simulations
+        IMPLEMEMT_LCD: boolean                       := TRUE; -- OLED display clock select & clock line
+        SIM: boolean := FALSE -- Indicates this is running as a simulation. Used to accelerate simulations
 
     );
 
@@ -156,6 +156,9 @@ entity chfpga_crs is
 
         -- LEDs (PL's 7-segment display)
         led7b : out std_logic_vector (7 downto 0);
+
+        -- OLED display
+        fpc_d : out std_logic_vector (1 downto 0);
 
         -- User connectors
         smp : out std_logic_vector (0 to 3);
@@ -293,12 +296,13 @@ architecture impl of chfpga_crs is
     signal pl400, pl10:std_logic;
     attribute dont_touch of pl400, pl10: signal is "true";
 
+    signal lcd_db: std_logic_vector(3 downto 0);
 begin
 
     bp_gen: if CT_LEVEL > 1 generate
         bp_shuffle_tx_p <= bp_shuffle_tx_p_int;
         bp_shuffle_tx_n <= bp_shuffle_tx_n_int;
-    end generate;    
+    end generate;
     -----------
     -- 10 MHz Reference clocks from SMA and BP
     -----------
@@ -485,6 +489,9 @@ begin
     led7b(5 downto 0) <= gpio_led(6 downto 1); -- a-f segments (forming a circle)
     led7b(6) <= sma_out(2); -- central g segment
     led7b(7) <= sma_out(3); -- decimal point
+
+    -- Display
+    fpc_d <= lcd_db(1 downto 0);
 
 --dbg1: if FALSE generate
 zynq: entity work.zynq_tcpipe_crs
@@ -800,12 +807,13 @@ zynq: entity work.zynq_tcpipe_crs
             NUMBER_OF_SPI_PORTS             => NUMBER_OF_SPI_PORTS,
             NUMBER_OF_ADC_BOARDS            => NUMBER_OF_ADC_BOARDS,
             IMPLEMENT_ARM_SPI               => IMPLEMENT_ARM_SPI, -- is implemented if not specified
+            IMPLEMENT_LCD                   => IMPLEMEMT_LCD,
             SIM                             => SIM
             )
 
         PORT MAP(
             -- System reset
-            cpu_reset    => not cpu_reset_n,
+            cpu_reset => not cpu_reset_n,
 
             -- Reference clock
             clk10 => sysclk_bufg, -- Buffered (BUFG) 10 MHz differential reference clock
@@ -824,7 +832,7 @@ zynq: entity work.zynq_tcpipe_crs
             -- Time signal
 
             bp_time_in => sma_irig,
-            bp_trig_in => not bp_irig,
+            bp_trig_in => bp_irig,
             --bp_time_in => irigb_reg,
             --bp_trig_in => irigb_reg,
 
@@ -861,6 +869,11 @@ zynq: entity work.zynq_tcpipe_crs
             -- LEDs
 
             gpio_led => gpio_led,
+
+            -- Display
+
+
+            lcd_db => lcd_db,
 
             -- 100GE interface
             cge_tx_p => qsfp_txp,
