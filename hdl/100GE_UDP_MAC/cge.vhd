@@ -254,7 +254,7 @@ begin
 
 	bsb_mmr0: entity work.CTRL_SLAVE
 		GENERIC MAP (
-			DEFAULT_CONTROL_BYTES=> X"80_11_0020_0000",
+			DEFAULT_CONTROL_BYTES=> X"00_11_0020_0000",
 			USE_RAM_DOUT_RDY=>TRUE, -- need to wait for the RDY signal on RAM read accesses
 			RAM_DATA_WIDTH => 16,
 			RAM_ADDR_WIDTH => 10, -- CMAC DRP Address bus is 10 bits
