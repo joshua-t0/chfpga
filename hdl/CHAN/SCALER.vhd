@@ -242,6 +242,7 @@ architecture Behavioral of SCALER is
 
     signal stats_capture: std_logic;
     signal stats_first_frame: std_logic;
+    signal stats_last_frame: std_logic;
     signal stats_ready: std_logic;
 
     signal delay_capture_ctr: unsigned(15 downto 0);
@@ -1057,86 +1058,87 @@ scaler_proc: process(clk)
                 current_gain_bank <= '0';
             end if; -- IF RST
         end if; -- clk
-    end process;
+    end process scaler_proc;
 
-----------------------------------
--- Statistics process
-----------------------------------
---
-stat_proc: process(clk)
-    variable scaler_overflow_incr: integer;
-
+    ----------------------------------
+    -- Statistics process
+    ----------------------------------
+    --
+    stat_proc: process(all)
+        variable scaler_overflow_incr: integer;
     begin
         if rising_edge(clk) then
 
             -- Channel FIFO overflow monitoring
-            if rst_reg='1' or fifo_overflow_reset='1' then
-                fifo_overflow_sticky <= '0';
-            elsif fifo_overflow='1' then
-                fifo_overflow_sticky <= '1';
+            --if rst_reg='1' or fifo_overflow_reset='1' then
+            --    fifo_overflow_sticky <= '0';
+            --elsif fifo_overflow='1' then
+            --    fifo_overflow_sticky <= '1';
+            --end if;
+
+            fifo_overflow_sticky <= '0' when rst_reg or fifo_overflow_reset else
+                                    '1' when fifo_overflow;
+
+            stats_last_frame <=  to_std_logic(stats_frame_ctr = stats_frame_count);
+
+            if stage2_tvalid then
+
+                -- set stats_first_frame in the first sample of the first frame of each frame block
+                stats_first_frame <= '0';
+                if stage2_tlast then
+                    stats_frame_ctr <= stats_frame_ctr + 1;
+                    if stats_last_frame then -- stats_last_frame has time to register before the next TLAST.
+                        stats_first_frame <= '1';
+                        stats_frame_ctr <= (0 => '1', others => '0');
+                    end if;
+                end if;
+
+
+                -- Determine if how many scaler overflows we have on this word sample
+                -- We count a saturation on either the real or imaginary part as a single count
+                scaler_overflow_incr := 0;
+                for i in 0 to FFT_BINS_PER_WORD-1 loop
+                    if  stage2_overflow(2*i to 2*i+1) /= "00" then
+                        scaler_overflow_incr := scaler_overflow_incr + 1;
+                    end if;
+                end loop;
+
+                -- Count scaler overflows
+                if stats_first_frame = '1' then
+                    scaler_overflow_ctr <= to_unsigned(scaler_overflow_incr, scaler_overflow_ctr'LENGTH);
+                elsif signed(scaler_overflow_ctr) /= -2 and signed(scaler_overflow_ctr) /= -1 then
+                    scaler_overflow_ctr <= scaler_overflow_ctr + scaler_overflow_incr;
+                end if;
+
+                -- Count ADC overflows (counts how many frames have at least one overflow, as stated in the ADC_OVERFLOW flag thn TLAST=1)
+                if stats_first_frame = '1' then
+                    adc_overflow_ctr <= (others => '0'); -- This is the first sample of a frame, don't have to worry about the ADC_OVERFLOW flag yet
+                elsif stage2_tlast = '1' and stage2_tuser(TUSER_ADC_OVERFLOW_BIT)='1' and signed(adc_overflow_ctr) /= -1 then
+                    adc_overflow_ctr <= adc_overflow_ctr + 1;
+                end if;
+            end if; -- if TVALID
+
+
+            -- Capture stats when requested
+            if stats_capture = '0' then -- Clear the ready flags whenever trig is low
+                stats_ready <= '0';
+            elsif stage2_tvalid = '1' and stats_first_frame = '1' and stats_capture='1' then -- Capture stats of the last frame block when the new block begins
+                stats_scaler_overflows <= scaler_overflow_ctr;
+                stats_adc_overflows <= adc_overflow_ctr;
+                stats_ready <='1';
             end if;
 
             if rst_reg='1' then
                 stats_ready <= '0';
                 stats_frame_ctr <= (0=>'1', others=>'0');
                 stats_first_frame <= '1';
-            else
-
-
-                if stage2_tvalid='1' then
-
-                    -- set stats_first_frame in the first sample of the first frame of each frame block
-                    stats_first_frame <= '0';
-                    if stage2_tlast='1' then
-                        stats_frame_ctr <= stats_frame_ctr + 1;
-                        if stats_frame_ctr = stats_frame_count then
-                            stats_first_frame <= '1';
-                            stats_frame_ctr <= (0=>'1', others=>'0');
-                        end if;
-                    end if;
-
-
-                    -- Determine if how many scaler overflows we have on this word sample
-                    -- We count a saturation on either the real or imaginary part as a single count
-                    scaler_overflow_incr := 0;
-                    for i in 0 to FFT_BINS_PER_WORD-1 loop
-                        if  stage2_overflow(2*i to 2*i+1) /= "00" then
-                            scaler_overflow_incr := scaler_overflow_incr + 1;
-                        end if;
-                    end loop;
-
-                    -- Count scaler overflows
-                    if stats_first_frame = '1' then
-                        scaler_overflow_ctr <= to_unsigned(scaler_overflow_incr, scaler_overflow_ctr'length);
-                    elsif signed(scaler_overflow_ctr) /= -2 and signed(scaler_overflow_ctr) /= -1 then
-                        scaler_overflow_ctr <= scaler_overflow_ctr + scaler_overflow_incr;
-                    end if;
-
-                    -- Count ADC overflows (counts how many frames have at least one overflow, as stated in the ADC_OVERFLOW flag thn TLAST=1)
-                    if stats_first_frame = '1' then
-                        adc_overflow_ctr <= (others=>'0'); -- This is the first sample of a frame, don't have to worry about the ADC_OVERFLOW flag yet
-                    elsif stage2_tlast='1' and stage2_tuser(TUSER_ADC_OVERFLOW_BIT)='1' and signed(adc_overflow_ctr)/=-1 then
-                        adc_overflow_ctr <= adc_overflow_ctr + 1;
-                    end if;
-                end if; -- if TVALID
-
-
-                -- Capture stats when requested
-                if stats_capture='0' then -- Clear the ready flags whenever trig is low
-                    stats_ready <= '0';
-                elsif stage2_tvalid='1' and stats_first_frame = '1' and stats_capture='1' then -- Capture stats of the last frame block when the new block begins
-                    stats_scaler_overflows <= scaler_overflow_ctr;
-                    stats_adc_overflows <= adc_overflow_ctr;
-                    stats_ready <='1';
-                end if;
-
+                stats_last_frame <= '0';
             end if; -- IF RST
         end if; -- clk
-    end process;
+    end process stat_proc;
 
 
-    process(mon_clk)
-    begin
+    process(all) begin
         if rising_edge(mon_clk) then
             -- Count words
             if mon_tvalid  then
