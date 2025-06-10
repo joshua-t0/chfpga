@@ -137,6 +137,12 @@ type BUFMRIndexArrayArray is  array (NATURAL RANGE <>) of BUFMRIndexArray;
 subtype PortOffset is std_logic_vector(1 downto 0);
 type PortOffsetArray is array (natural range <>) of PortOffset;
 
+type si_map_entry is record -- string-integer tuple
+	key: string;
+	value: integer;
+end record;
+type si_map_array is array (NATURAL RANGE <>) of si_map_entry; -- string-integer map as a list of string-integer tuples
+
 --type ADCOut is array (0 to 7) of STD_LOGIC_VECTOR(31 downto 0); -- 8 64-bit words provided by the two ADCs ;
 
 
@@ -340,21 +346,9 @@ constant GLOBAL_GPU_QUAD_REFCLK: IntegerArray := (0 to 1=>0); -- Both QUAD0 and 
 constant CTRL_CMD_BYTE_LENGTH: integer :=3; --! Number of bytes in the command word
 constant CTRL_CMD_WORD_WIDTH: integer := CTRL_CMD_BYTE_LENGTH * 8; --! Number of bits in the command word
 constant CTRL_CMD_BYTE_COUNT_WIDTH: integer :=2; --! number of bits requird to count the number of bytes in a command
---constant CTRL_CMD_DIR_BIT: integer:=23;
---constant CTRL_CMD_INCR_BIT: integer:=22;
 constant CTRL_CMD_OPCODE_WIDTH: integer :=3; --! Number of bits in the opcode
 constant CTRL_CMD_COUNT_WIDTH: integer:=2;
---constant CTRL_CMD_COUNT_LSB: integer:=20;
---type CTRL_CMD_COUNT_RANGE is range (CTRL_CMD_COUNT_LSB+CTRL_CMD_COUNT_WIDTH-1) downto CTRL_CMD_COUNT_LSB;
 constant CTRL_CMD_ADDR_WIDTH: integer := CTRL_CMD_WORD_WIDTH - CTRL_CMD_OPCODE_WIDTH - CTRL_CMD_COUNT_WIDTH; --! Total number of address bits. The address is in the LSBs of the command word (i.e. downto 0)
---constant CTRL_PORT_NUMBER_WIDTH: INTEGER :=5; --! Number of address bits used for port number
---constant CTRL_MODULE_NUMBER_WIDTH: INTEGER :=3; --! Number of address bits used for module number
---constant CTRL_MODULE_ADDR_WIDTH: INTEGER :=CTRL_ADDR_WIDTH-CTRL_PORT_NUMBER_WIDTH-CTRL_MODULE_NUMBER_WIDTH; -- Number of address bits used within a module
---constant CTRL_MODULE_ADDR_WIDTH: INTEGER := 10; -- Number of address bits used within a module
---type CTRL_ADDR_RANGE is range (CTRL_ADDR_WIDTH-1) downto 0;
-
--- subtype CTRL_PORT_NUMBER_RANGE is integer RANGE (CTRL_ADDR_WIDTH-1) downto CTRL_ADDR_WIDTH-CTRL_PORT_NUMBER_WIDTH; --
--- subtype CTRL_MODULE_NUMBER_RANGE is integer RANGE (CTRL_ADDR_WIDTH-CTRL_PORT_NUMBER_WIDTH-1) downto CTRL_ADDR_WIDTH-CTRL_PORT_NUMBER_WIDTH-CTRL_MODULE_NUMBER_WIDTH; --
 
 -- AXI4 STREAMING data structure used for the control system (Command and Reply buses)
 type AXIS8_DAT_STRUCT is -- control/data bus used to communicate from  master to slave
@@ -566,6 +560,7 @@ function msb_pad(s1:std_logic_vector; width:integer:=8) return std_logic_vector;
 function sign_bit(i:signed) return std_logic; --! Returns the sign bit (the MSB) of a signed number
 function sign_bit(i:unsigned) return std_logic; --! Returns the sign bit (the MSB) of an unsigned number
 function sign_bit(i:std_logic_vector) return std_logic; --! Returns the sign bit (the MSB) of a std_logic_vector
+
 function sel(b: BOOLEAN; if_true: string; if_false: string) return string;
 function sel(b: BOOLEAN; if_true: real; if_false: real) return real;
 function sel(b: BOOLEAN; if_true: integer; if_false: integer) return integer;
@@ -574,6 +569,8 @@ function sel(b: BOOLEAN; if_true: std_logic; if_false: std_logic) return std_log
 function sel(b: BOOLEAN; if_true: std_logic_vector; if_false: std_logic_vector) return std_logic_vector;
 function sel(b: BOOLEAN; if_true: slv32_array; if_false: slv32_array) return slv32_array;
 function sel(b: std_logic; if_true: std_logic_vector; if_false: std_logic_vector) return std_logic_vector;
+FUNCTION sel(key:string; si_map: si_map_array) return integer;
+
 
 function max(LEFT, RIGHT: INTEGER) return INTEGER;
 function max(vin: IntegerArray) return INTEGER;
@@ -607,11 +604,13 @@ function to_unsigned(i:slv8_array) return unsigned; -- concatenate bytes in a sl
 function to_unsigned(i:std_logic) return unsigned; -- converts a std_logic into a one element unsigned
 function str(i:integer) return string; -- converts integer to a string. Allows expressions, contrary to to_string().
 function repeat( V: std_logic_vector; N: natural) return std_logic_vector; --! Concatenates a vector N times
+
 function log2(v: integer) return real; -- Returns the log2 of an integer as a real (overloads the library log2())
 function integer_log2(v: integer) return integer; -- Returns the log2 of an integer as an integer
-function integer_log2(v: real) return integer; -- Returns the log2 of areal as an integer
+function integer_log2(v: real) return integer; -- Returns the log2 of a real as an integer
 function width(len: integer) return integer; --! computes the minimum number of bits needed to represent len-1
 function bitwidth(value: integer) return integer;--! Computes the minimum number of bits needed to represent value
+
 function shift_left(i:std_logic_vector; n: integer) return std_logic_vector; -- shift left a STD_LOGIC_VECTOR
 function shift_left(ARG:slv8_array; COUNT: natural) return slv8_array; -- shift left a byte array
 function shift_right(i:std_logic_vector; n: integer) return std_logic_vector; -- shift right a STD_LOGIC_VECTOR with zero padding from the left
@@ -1102,6 +1101,16 @@ begin
 	end if;
 end sel;
 
+FUNCTION sel(key:string; si_map: si_map_array) return integer is
+begin
+    for i in 0 to si_map'LENGTH-1 loop
+        if si_map(i).key = key then
+            return si_map(i).value;
+        end if;
+    end loop;
+    assert FALSE report "Invalid key: " & key severity failure;
+end sel;
+
 function repeat( V: std_logic_vector; N: natural) return std_logic_vector is
 	constant L: natural := V'length;
 	variable result: std_logic_vector(0 to N*L - 1);
@@ -1213,7 +1222,7 @@ begin
 	return integer(ceil(log2(real(len))));
 end function;
 
---! Compute the number of bits needed to represent 'value'
+--! Compute the number of bits needed to represent 'value' as an unsigned value
 function bitwidth(value: integer) return integer is
 begin
 	return integer(ceil(log2(real(value+1))));
