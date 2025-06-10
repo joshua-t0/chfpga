@@ -15,7 +15,7 @@ create_clock -period 5.000 -name FREQ_CTR_CLK [get_pins chfpga0/freq_ctr_blk.FRE
 
 
 ####################
-# Backplane signals
+# Backplane signals (DC coupled at the input buffer, AC coupled to the FPGA pins)
 ####################
 # IRIG-B
 set_property PACKAGE_PIN H22 [get_ports bp_irig_p]; # Was K19
@@ -43,7 +43,7 @@ set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets clk10_ibufds1/O]
 
 
 ########################
-# Rear SMAs (DC coupled)
+# Rear SMAs (DC coupled at the input buffer, AC coupled to the FPGA pins)
 ########################
 # # IRIG-B signal
 set_property PACKAGE_PIN K16 [get_ports sma_irig_p]
@@ -52,12 +52,13 @@ set_input_delay -clock [get_clocks SYS_CLK] -max 0.015 [get_ports sma_irig_p]
 set_input_delay -clock [get_clocks SYS_CLK] -min -0.015 [get_ports sma_irig_p]
 # # Aux signal
 # set_property PACKAGE_PIN H11     [get_ports {sma_aux_p}]; # Bank  57 VCC1V8
-# set_property IOSTANDARD  LVDS     [get_ports {sma_aux_p}];
 
 # 10 MHz clock signal (copy fed to the HMC7044 input)
 set_property PACKAGE_PIN J11 [get_ports sma_clk10_p]
-set_property IOSTANDARD DIFF_SSTL18_I_DCI [get_ports sma_clk10_p]
-set_property DQS_BIAS TRUE [get_ports sma_clk10_p]
+# set_property IOSTANDARD DIFF_SSTL18_I_DCI [get_ports sma_clk10_p]
+# set_property DQS_BIAS TRUE [get_ports sma_clk10_p]
+set_property IOSTANDARD  LVDS     [get_ports sma_clk10_p]
+set_property DIFF_TERM_ADV TERM_100 [get_ports sma_clk10_p]
 create_clock -period 100.000 -name SMA_CLK10 [get_ports sma_clk10_p]
 
 ###############################################################
