@@ -225,6 +225,8 @@ architecture impl of chfpga_crs is
     signal plclk_nobuf: std_logic;
     signal plclk_bufg: std_logic;
 
+    attribute IOB of pll_sync: signal is "true"; -- make sure we have the best possible reproducible timing on pll_sync
+
     -- PLL VCXO clock (50 MHz)
     signal pll_oscout_nobuf: std_logic;
     signal pll_oscout_bufg: std_logic;
@@ -306,8 +308,11 @@ begin
     -----------
     -- 10 MHz Reference clocks from SMA and BP
     -----------
-    clk10_ibufds0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
-        generic map(DIFF_TERM => TRUE)
+    -- Note: We tried using the DIFF_SSTL18_I_DCI input standard with DQS_BIAS=TRUE parameter to
+    -- provide a differential bias and ensure a stable signal if no clock is present, but that makes
+    -- the clock signal very noisy, so we stick to LVDS.
+
+    clk10_ibufds0: IBUFGDS -- Instantiate the motherboard SMA reference  differential input pads
         port map (
             I => sma_clk10_p,
             IB => sma_clk10_n,
@@ -420,16 +425,17 @@ begin
         port map (src_clk => '0', src_in => pll_sync_bsb, dest_clk => clk10_bufg, dest_out => pll_sync10);
 
     -- Synchronize SYNC to OSCOUT
-        pllsync0_proc: process (pll_oscout_bufg)
-    begin
-        if falling_edge(pll_oscout_bufg) then
-            pll_sync50_pre1 <= pll_sync10;
+    pllsync0_proc: process(all) begin
+        if falling_edge(pll_oscout_bufg) then  -- *** Notice the *falling* edge
+            --pll_sync50_pre1 <= pll_sync10;
             pll_sync50_pre2 <= pll_sync50_pre1;
             pll_sync50_pre3 <= pll_sync50_pre2;
+            --pll_sync <= pll_sync50_pre3;
+        end if;
+        if rising_edge(pll_oscout_bufg) then
+            pll_sync50_pre1 <= pll_sync10;
             pll_sync <= pll_sync50_pre3;
         end if;
---        if rising_edge(pll_oscout_bufg) then
---        end if;
     end process;
 
 
