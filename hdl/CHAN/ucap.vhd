@@ -103,7 +103,7 @@ architecture impl of ucap is
     subtype int8 is integer range 0 to NUMBER_OF_CHANNELS-1; -- used for channel and buffer indexing
 
 
-	signal control_bytes: slv8_array(0 to 9);
+	signal control_bytes: slv8_array(0 to 10);
 	signal status_bytes: slv8_array(0 to 2);
 
     -- control and status signals
@@ -115,7 +115,7 @@ architecture impl of ucap is
 	signal user_reset, user_reset_reg: std_logic;
 	signal overrun: std_logic;
     signal output_source_sel: std_logic;
-
+    signal user_stream_id: std_logic_vector(7 downto 0);
     -- Signals used for both write and read processes
     signal chan_pair_sel: u3_array(0 to NUMBER_OF_CHANNEL_PAIRS-1);
 	signal capture_timestamp: u48_array(0 to NUMBER_OF_SOURCES-1);
@@ -176,7 +176,7 @@ begin
 
 	bsb_regs0: entity work.CTRL_SLAVE
 		GENERIC MAP (
-			DEFAULT_CONTROL_BYTES=> X"08_1A_02cb41_02cb41_1F_00",
+			DEFAULT_CONTROL_BYTES=> X"08_1A_02cb41_02cb41_1F_00_00",
 			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), -- Number of bits in the control word
 			NUMBER_OF_STATUS_BYTES => status_bytes'Length(1) -- Number of bits in the status word.
 		)
@@ -212,6 +212,9 @@ begin
 
 	-- CONTROL bytes 9: source selection
 	source_sel_out <= reverse_bits_and_dir(control_bytes(9)); -- bit 0 = channel 0
+
+	-- CONTROL bytes 10: user stream ID
+	user_stream_id <= control_bytes(10);
 
 	-- STATUS byte 0
 	status_bytes(0)(0) <= fifo_overflow_sticky;
@@ -682,8 +685,9 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
 	            -- Override the capture flag withthe overflow flags so we know  from the packet header if somewhing is amiss with the stream
 	            --frame_header.FLAGS(TUSER_CAPTURE_BIT) := data_fifo_overflow_sticky or header_fifo_overflow_sticky;
 	            frame_header.TIMESTAMP := std_logic_vector(capture_timestamp(src_int));
-	            -- Set the STREAM ID. Format is: 4-bit frame , 4-bit crate, 4-bit slot, 4-bit channel
-				frame_header.STREAM_ID := (others => '0');
+	            -- Set the STREAM ID. Format is: 4-bit frame , 8-bit crate/slot, 4-bit channel
+				frame_header.STREAM_ID := (others => '0'); -- make sure unassigned bits are zero
+				frame_header.STREAM_ID(11 downto 4) := user_stream_id;
 	            case mode is
 	                when  "00" => -- 8 channel mode (pkt ctr = 3 bit chan, 1 bit seq, 2 bit subframe)
 	                    -- STREAM_ID = "000" [1-bit frame #] [8-bit crate/slot #] "0" [3-bit chan #]
