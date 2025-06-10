@@ -53,7 +53,7 @@ entity chfpga_crs is
         NUMBER_OF_ADC_BOARDS: integer                := 0; -- No mezzanine, therefore no associated clocks etc.
 
         -- Channelizer configuration
-        NUMBER_OF_CHANNELIZERS:integer               := CONFIG_NUMBER_OF_ADCS;  --(Typ. =16)  (0-NUMBER_OF_ADCS) Number of channelizer blocks to be implemented
+        FFT_TYPE: integer                            := CONFIG_CHAN_FFT_TYPE;
         CAPTURE_TYPE: string                         := CONFIG_CHAN_CAPTURE_TYPE;
 
         -- Corner-turn engine configuration
@@ -818,7 +818,7 @@ zynq: entity work.zynq_tcpipe_crs
 
 
             -- F-Engine / Channelizers
-
+            FFT_TYPE => FFT_TYPE,
             NUMBER_OF_CHANNELIZERS          => NUMBER_OF_CHANNELIZERS,
             CAPTURE_TYPE                    => CAPTURE_TYPE,
 
