@@ -27,6 +27,11 @@ set_input_delay -clock [get_clocks SYS_CLK] -min -0.015 [get_ports bp_irig_p]
 # Backplane 10 MHz reference clock (copy of the signal fed to the HMC7044)
 set_property PACKAGE_PIN H17 [get_ports bp_clk10_p]
 set_property IOSTANDARD LVDS [get_ports bp_clk10_p]
+set_property DIFF_TERM_ADV TERM_100 [get_ports bp_clk10_p]
+
+# set_property IOSTANDARD DIFF_SSTL18_I_DCI [get_ports bp_clk10_p]
+# set_property DQS_BIAS TRUE [get_ports bp_clk10_p]
+
 create_clock -period 100.000 -name PL_BP_CLK10 [get_ports bp_clk10_p]
 set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets clk10_ibufds1/O]
 # # GPIO pins
@@ -51,7 +56,8 @@ set_input_delay -clock [get_clocks SYS_CLK] -min -0.015 [get_ports sma_irig_p]
 
 # 10 MHz clock signal (copy fed to the HMC7044 input)
 set_property PACKAGE_PIN J11 [get_ports sma_clk10_p]
-set_property IOSTANDARD LVDS [get_ports sma_clk10_p]
+set_property IOSTANDARD DIFF_SSTL18_I_DCI [get_ports sma_clk10_p]
+set_property DQS_BIAS TRUE [get_ports sma_clk10_p]
 create_clock -period 100.000 -name SMA_CLK10 [get_ports sma_clk10_p]
 
 ###############################################################
