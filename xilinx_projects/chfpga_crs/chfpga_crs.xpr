@@ -506,6 +506,13 @@
           <Attr Name="UsedIn" Val="implementation"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/rqs_report1.rqs">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedInSteps" Val="impl_1"/>
+        </FileInfo>
+      </File>
       <Config>
         <Option Name="TopAutoSet" Val="TRUE"/>
       </Config>
@@ -606,9 +613,9 @@
           <Option Id="Assert">1</Option>
           <Option Id="KeepEquivalentRegisters">1</Option>
           <Option Id="NoCombineLuts">1</Option>
-          <Option Id="Directive">7</Option>
-          <Option Id="ResourceSharing">2</Option>
           <Option Id="ShregMinSize">5</Option>
+          <Option Id="ResourceSharing">2</Option>
+          <Option Id="Directive">7</Option>
           <Option Id="FsmExtraction">1</Option>
         </Step>
       </Strategy>
@@ -699,25 +706,30 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="impl_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="To compensate for optimistic delay estimation, add extra delay cost to long distance and high fanout connections. (high setting, most pessimistic)" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/impl_1" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PPRDIR/../sifpga_crs/impl_1" AutoRQSDir="$PPRDIR/../chfpga_zcu111/chfpga_zcu111.srcs/utils_1/imports/impl_1">
+    <Run Id="impl_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Similar to Peformance_Explore, but enables the physical optimization step (phys_opt_design) with the Explore directive after routing." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/impl_1" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PPRDIR/../sifpga_crs/impl_1" AutoRQSDir="$PPRDIR/../chfpga_zcu111/chfpga_zcu111.srcs/utils_1/imports/impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Performance_NetDelay_high" Flow="Vivado Implementation 2022">
-          <Desc>To compensate for optimistic delay estimation, add extra delay cost to long distance and high fanout connections. (high setting, most pessimistic)</Desc>
+        <StratHandle Name="Performance_ExplorePostRoutePhysOpt" Flow="Vivado Implementation 2022">
+          <Desc>Similar to Peformance_Explore, but enables the physical optimization step (phys_opt_design) with the Explore directive after routing.</Desc>
         </StratHandle>
         <Step Id="init_design"/>
-        <Step Id="opt_design"/>
+        <Step Id="opt_design">
+          <Option Id="Directive">0</Option>
+        </Step>
         <Step Id="power_opt_design"/>
         <Step Id="place_design">
-          <Option Id="Directive">2</Option>
+          <Option Id="Directive">0</Option>
         </Step>
         <Step Id="post_place_power_opt_design"/>
         <Step Id="phys_opt_design">
-          <Option Id="Directive">2</Option>
+          <Option Id="Directive">0</Option>
         </Step>
         <Step Id="route_design">
-          <Option Id="Directive">1</Option>
+          <Option Id="Directive">0</Option>
+          <Option Id="MoreOptsStr"><![CDATA[-tns_cleanup]]></Option>
         </Step>
-        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="post_route_phys_opt_design" EnableStepBool="1">
+          <Option Id="Directive">0</Option>
+        </Step>
         <Step Id="write_bitstream" PostStepTclHook="$PPRDIR/rename_bitstream.tcl">
           <Option Id="BinFile">1</Option>
         </Step>
@@ -726,7 +738,7 @@
       <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2022"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles>
-        <RQSFilePath>$PPRDIR/rqs_report.rqs</RQSFilePath>
+        <RQSFilePath>$PPRDIR/rqs_report1.rqs</RQSFilePath>
       </RQSFiles>
     </Run>
     <Run Id="zynq_tcpipe_crs_pl_clk_rst_0_impl_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="zynq_tcpipe_crs_pl_clk_rst_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="zynq_tcpipe_crs_pl_clk_rst_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PPRDIR/../sifpga_crs/sifpga_crs.srcs/utils_1/imports/zynq_tcpipe_crs_pl_clk_rst_0_impl_1" AutoRQSDir="$PPRDIR/../sifpga_crs/sifpga_crs.srcs/utils_1/imports/zynq_tcpipe_crs_pl_clk_rst_0_impl_1">
@@ -862,6 +874,94 @@
         <Step Id="write_bitstream"/>
       </Strategy>
       <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2022"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="i_impl_1_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="synth_1" ReferenceRun="impl_1" CustomProperties="{ WRITE_BITSTREAM.TCL.POST {/home/jfcliche/chfpga/xilinx_projects/chfpga_crs/rename_bitstream.tcl} file_properties {WRITE_BITSTREAM.TCL.POST}}" IncludeInArchive="true" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado IDR Flow Defaults" Flow="Vivado IDR Flow 2022"/>
+        <Step Id="idr_flow_rqs"/>
+        <Step Id="idr_flow_ml"/>
+        <Step Id="idr_flow_incr_rqs"/>
+        <Step Id="write_bitstream">
+          <Option Id="BinFile">1</Option>
+        </Step>
+      </Strategy>
+      <ReportStrategy Name="Vivado IDR Flow Default Reports" Flow="Vivado IDR Flow 2022"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="i_impl_1_1_rqs" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="synth_1" IncludeInArchive="true" IsChild="true" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1_rqs" ParentHierarchy="i_impl_1_1:idr_flow_rqs" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1_rqs">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado RQS Implementation Defaults" Flow="Vivado RQS Implementation 2022"/>
+        <Step Id="init_design"/>
+        <Step Id="cleanup_xdc"/>
+        <Step Id="cleanup_utilization"/>
+        <Step Id="cleanup_clocking"/>
+        <Step Id="cleanup_congestion"/>
+        <Step Id="cleanup_timing"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado RQS Implementation Default Reports" Flow="Vivado RQS Implementation 2022"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="i_impl_1_1_ml_strat_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="synth_1" IncludeInArchive="true" IsChild="true" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_strat_1" ParentHierarchy="i_impl_1_1:idr_flow_ml" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_strat_1">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream" PostStepTclHook="$PPRDIR/rename_bitstream.tcl"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2022"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="i_impl_1_1_ml_strat_2" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="synth_1" IncludeInArchive="true" IsChild="true" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_strat_2" ParentHierarchy="i_impl_1_1:idr_flow_ml" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_strat_2">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream" PostStepTclHook="$PPRDIR/rename_bitstream.tcl"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2022"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="i_impl_1_1_ml_strat_3" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="synth_1" IncludeInArchive="true" IsChild="true" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_strat_3" ParentHierarchy="i_impl_1_1:idr_flow_ml" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_strat_3">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream" PostStepTclHook="$PPRDIR/rename_bitstream.tcl"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2022"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="i_impl_1_1_eco_flow" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="synth_1" IncludeInArchive="true" IsChild="true" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1_eco_flow" ParentHierarchy="i_impl_1_1:idr_flow_incr_rqs" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1_eco_flow">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Last Mile Implementation Defaults" Flow="Vivado Last Mile Implementation 2022"/>
+        <Step Id="setup_eco_flow"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Last Mile Implementation Default Reports" Flow="Vivado Last Mile Implementation 2022"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
@@ -1604,48 +1704,6 @@
     <MsgAttr Name="RuleSource" Val="2"/>
     <MsgAttr Name="StringIsRegExp" Val="0"/>
     <MsgAttr Name="RuleId" Val="6"/>
-    <MsgAttr Name="Note" Val=""/>
-    <MsgAttr Name="Author" Val=""/>
-    <MsgAttr Name="CreatedTimestamp" Val=""/>
-  </MsgRule>
-  <MsgRule>
-    <MsgAttr Name="RuleType" Val="0"/>
-    <MsgAttr Name="Limit" Val="-1"/>
-    <MsgAttr Name="NewSeverity" Val="ANY"/>
-    <MsgAttr Name="Id" Val="[Timing 38-72]"/>
-    <MsgAttr Name="Severity" Val="ANY"/>
-    <MsgAttr Name="ShowRule" Val="1"/>
-    <MsgAttr Name="RuleSource" Val="2"/>
-    <MsgAttr Name="StringIsRegExp" Val="0"/>
-    <MsgAttr Name="RuleId" Val="7"/>
-    <MsgAttr Name="Note" Val=""/>
-    <MsgAttr Name="Author" Val=""/>
-    <MsgAttr Name="CreatedTimestamp" Val=""/>
-  </MsgRule>
-  <MsgRule>
-    <MsgAttr Name="RuleType" Val="0"/>
-    <MsgAttr Name="Limit" Val="-1"/>
-    <MsgAttr Name="NewSeverity" Val="ANY"/>
-    <MsgAttr Name="Id" Val="[Timing 38-78]"/>
-    <MsgAttr Name="Severity" Val="ANY"/>
-    <MsgAttr Name="ShowRule" Val="1"/>
-    <MsgAttr Name="RuleSource" Val="2"/>
-    <MsgAttr Name="StringIsRegExp" Val="0"/>
-    <MsgAttr Name="RuleId" Val="8"/>
-    <MsgAttr Name="Note" Val=""/>
-    <MsgAttr Name="Author" Val=""/>
-    <MsgAttr Name="CreatedTimestamp" Val=""/>
-  </MsgRule>
-  <MsgRule>
-    <MsgAttr Name="RuleType" Val="0"/>
-    <MsgAttr Name="Limit" Val="-1"/>
-    <MsgAttr Name="NewSeverity" Val="ANY"/>
-    <MsgAttr Name="Id" Val="[Timing 38-91]"/>
-    <MsgAttr Name="Severity" Val="ANY"/>
-    <MsgAttr Name="ShowRule" Val="1"/>
-    <MsgAttr Name="RuleSource" Val="2"/>
-    <MsgAttr Name="StringIsRegExp" Val="0"/>
-    <MsgAttr Name="RuleId" Val="9"/>
     <MsgAttr Name="Note" Val=""/>
     <MsgAttr Name="Author" Val=""/>
     <MsgAttr Name="CreatedTimestamp" Val=""/>
