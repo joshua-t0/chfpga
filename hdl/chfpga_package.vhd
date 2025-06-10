@@ -252,6 +252,63 @@ constant FPGA_SERIES_LIST: IntegerArray:=(
 -- Hardware-related constants
 constant NUMBER_OF_CHANNELIZERS_MAX: INTEGER :=16; -- Maximum number of channelizers supported by the system
 constant NUMBER_OF_ADCS_MAX: INTEGER :=16; -- Maximum number of ADC inputs supported by the system
+
+-- Types of FFT
+constant FFT_TYPE_NONE: integer := 0;
+constant FFT_TYPE_CHIME: integer := 1;
+constant FFT_TYPE_D3A: integer := 2;
+constant FFT_TYPE_CHORD: integer := 3;
+
+
+-- Platform information structure
+type FFT_INFO_STRUCT is
+	record
+		SAMPLES_PER_FRAME : integer;
+		LATENCY: integer; --
+		BITS_PER_SAMPLE: integer; -- Number of bits per sample
+		SAMPLES_PER_WORD: integer; -- Number of ADC samples in an input word
+		BITS_PER_BIN: integer; -- Number of bits per bin (Re+Im)
+		BINS_PER_WORD: integer; -- Number of bins per output word
+	end record;
+type FFT_INFO_ARRAY is array (NATURAL RANGE <>) of FFT_INFO_STRUCT;
+
+constant FFT_INFO: FFT_INFO_ARRAY := (
+	FFT_TYPE_NONE => (
+		SAMPLES_PER_FRAME => 0,
+		LATENCY => 0,
+		BITS_PER_SAMPLE => 0,
+		SAMPLES_PER_WORD => 0,
+		BITS_PER_BIN => 0,
+		BINS_PER_WORD => 0
+		),
+    FFT_TYPE_CHIME => (
+		SAMPLES_PER_FRAME => 2048,
+		LATENCY => 3230,
+		BITS_PER_SAMPLE => 8,
+		SAMPLES_PER_WORD => 4,
+		BITS_PER_BIN => 18+18,
+		BINS_PER_WORD => 2
+		),
+
+    FFT_TYPE_D3A => (
+		SAMPLES_PER_FRAME => 16384,
+		LATENCY => 12533,
+		BITS_PER_SAMPLE => 14,
+		SAMPLES_PER_WORD => 8,
+		BITS_PER_BIN => 18+18,
+		BINS_PER_WORD => 4
+		),
+
+    FFT_TYPE_CHORD => (
+		SAMPLES_PER_FRAME => 16384,
+		LATENCY => 10452,
+		BITS_PER_SAMPLE => 14,
+		SAMPLES_PER_WORD => 8,
+		BITS_PER_BIN => 32+32,
+		BINS_PER_WORD => 4
+		)
+	);
+
 constant NUMBER_OF_CORRELATORS_MAX: INTEGER :=8; -- Maximum number of correlators supported by the system
 
 -- maximum number of CMACs in a CORR44 core.  The factor of two is because CORR44 needs to process two vectors at the same time so the results are coming out as fast at the data is pushed in

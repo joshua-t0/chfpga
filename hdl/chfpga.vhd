@@ -100,9 +100,6 @@ entity chFPGA is
 									    -- "AXIS": Data provided over the axis_adc AXI4-Streaming interface
 		NUMBER_OF_ADCS: INTEGER := NUMBER_OF_ADCS_MAX; --! Number of ADC data acquisition blocks (ADCDAQ) to be implemented. If 0, the channelizers ar fed directly from the adc_axis* bus.
 
-		ADC_SAMPLES_PER_FRAME: integer := CONFIG_ADC_SAMPLES_PER_FRAME;
-		ADC_SAMPLES_PER_WORD: integer := CONFIG_ADC_SAMPLES_PER_WORD;
-		ADC_BITS_PER_SAMPLE: integer := CONFIG_ADC_BITS_PER_SAMPLE;
 
 		-- EV8AQ160 ADC data acquisition logic configuration
 
@@ -122,6 +119,7 @@ entity chFPGA is
 		ADC_TO_ADC_BOARD_MAP: IntegerArray(0 to NUMBER_OF_ADCS_MAX-1):=(0 to 7 => 0, 8 to 15 => 1);
 
 		-- F-Engine config
+		FFT_TYPE: integer;
 		NUMBER_OF_CHANNELIZERS: INTEGER := NUMBER_OF_CHANNELIZERS_MAX; --! Number of channelizers to be implemented
         CAPTURE_TYPE: string := "BRAM"; -- "BRAM": BRAM-based in-channelizer capture engine; "URAM": URAM-based centralized UCAP capture engine.
         NUMBER_OF_CAPTURE_SOURCES: integer := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES;
@@ -546,7 +544,9 @@ attribute TARGET_PBLOCK: string;
 -- ==================================================
 
 -- Constants
-
+constant ADC_SAMPLES_PER_FRAME: integer := FFT_INFO(FFT_TYPE).SAMPLES_PER_FRAME;
+constant ADC_SAMPLES_PER_WORD: integer := FFT_INFO(FFT_TYPE).SAMPLES_PER_WORD;
+constant ADC_BITS_PER_SAMPLE: integer := FFT_INFO(FFT_TYPE).BITS_PER_SAMPLE;
 constant ADC_BITS_PER_WORD: integer := ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPLE;
 
 --constant NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := sel(GLOBAL_IMPLEMENT_FFT, 0*NUMBER_OF_CHANNELIZERS+4, 0); --! Number of channelizers that have an FFT module

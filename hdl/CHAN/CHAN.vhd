@@ -49,21 +49,20 @@ entity CHAN is
         PLATFORM_ID     : integer          := CONFIG_PLATFORM_ID;-- PLATFORM_ID_MGK7MB; -- This generics is locked to the MGK7MB when using CHAN as an OOC.
         IMPLEMENT_CHAN  : boolean          := TRUE;
         IMPLEMENT_FFT   : boolean          := CONFIG_CHAN_IMPLEMENT_FFT;
-        FFT_TYPE        : string           := CONFIG_CHAN_FFT_TYPE;
-        FFT_BITS_PER_BIN: integer          := CONFIG_FFT_BITS_PER_BIN; -- Re and Im parts combined
-        FFT_DELAY_CTR_WIDTH: integer       := CONFIG_FFT_CTR_WIDTH;
-        FFT_ROTATE_BINS : boolean          := CONFIG_FFT_ROTATE_BINS;
-
-        ADC_BITS_PER_SAMPLE: integer       := CONFIG_ADC_BITS_PER_SAMPLE;
-        ADC_SAMPLES_PER_WORD: integer      := CONFIG_ADC_SAMPLES_PER_WORD;
-        ADC_SAMPLES_PER_FRAME: integer     := CONFIG_ADC_SAMPLES_PER_FRAME;
-        ADC_BITS_PER_WORD: integer         := ADC_BITS_PER_SAMPLE * ADC_SAMPLES_PER_WORD;
+        FFT_TYPE        : integer          := CONFIG_CHAN_FFT_TYPE;
+        FFT_ROTATE_BINS : boolean          := CONFIG_FFT_ROTATE_BINS; -- enables bin rotation when true
         SCALER_USE_COMPLEX_GAINS: boolean  := CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS;
-        SCALER_COEFF_BITS_PER_BIN: integer := sel(SCALER_USE_COMPLEX_GAINS, 16+16, 16); -- use wither 16-bit real gains or (16+16i) bit complex gains
-        NUMBER_OF_CAPTURE_SOURCES: integer := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES;
         OUT_BITS_PER_WORD: integer         := 32; -- Width of the output data bus which feeds the corner-turn engine or correlator.
+        NUMBER_OF_CAPTURE_SOURCES: integer := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES;
         CAPTURE_TYPE: string               := CONFIG_CHAN_CAPTURE_TYPE; -- "URAM" or "BRAM"
         CAPTURE_BITS_PER_WORD: integer     := CONFIG_CAPTURE_BITS_PER_WORD; -- sel(CAPTURE_TYPE="URAM", 128, 32); -- If we use URAM capture (which has a 128-bit bus), have the scaler output be the same width so we can get more FFT resolution when the scaler is bypassed.
+
+        FFT_BITS_PER_BIN: integer          := FFT_INFO(FFT_TYPE).BITS_PER_BIN; -- Re and Im parts combined
+        ADC_BITS_PER_SAMPLE: integer       := FFT_INFO(FFT_TYPE).BITS_PER_SAMPLE;
+        ADC_SAMPLES_PER_WORD: integer      := FFT_INFO(FFT_TYPE).SAMPLES_PER_WORD;
+        ADC_SAMPLES_PER_FRAME: integer     := FFT_INFO(FFT_TYPE).SAMPLES_PER_FRAME;
+        ADC_BITS_PER_WORD: integer         := ADC_BITS_PER_SAMPLE * ADC_SAMPLES_PER_WORD;
+        SCALER_COEFF_BITS_PER_BIN: integer := sel(SCALER_USE_COMPLEX_GAINS, 16+16, 16); -- use wither 16-bit real gains or (16+16i) bit complex gains
         SIM: boolean                       := GLOBAL_SIM
         );
 
@@ -161,9 +160,9 @@ attribute dont_touch: string;
 --constant SIM             : BOOLEAN :=GLOBAL_SIM;
 
 constant FPGA_SERIES: integer          := FPGA_SERIES_LIST(PLATFORM_ID);
-constant FFT_BINS_PER_WORD: integer    := ADC_SAMPLES_PER_WORD / 2;
+constant FFT_BINS_PER_WORD: integer    := FFT_INFO(FFT_TYPE).BINS_PER_WORD;
 constant FFT_BITS_PER_WORD: integer    := FFT_BITS_PER_BIN * FFT_BINS_PER_WORD;
-constant FFT_BINS_PER_FRAME :integer   := ADC_SAMPLES_PER_FRAME/2;
+constant FFT_BINS_PER_FRAME :integer   := ADC_SAMPLES_PER_FRAME / 2;
 constant SCALER_BITS_PER_WORD: integer := OUT_BITS_PER_WORD;
 constant SCALER_BITS_PER_BIN: integer  := SCALER_BITS_PER_WORD / FFT_BINS_PER_WORD; -- Note: scaler output is always 4+4 or 8+8 bits when not bypassed.
 constant OUT_BITS_PER_BIN: integer     := SCALER_BITS_PER_BIN;  -- 16 for CHIME, 8 for CHORD
@@ -363,7 +362,7 @@ funcgen_blk: BLOCK
     signal funcgen_out_pre_tuser: std_logic_vector(3 downto 0);
     signal funcgen_out_pre_tvalid: std_logic;
     signal funcgen_out_pre_tlast: std_logic;
-    
+
 
     --attribute equivalent_register_removal of axis_adc_reg1: signal is "no";
     --attribute equivalent_register_removal of axis_adcdaq_out_reg2: signal is "no";
@@ -520,13 +519,12 @@ begin
     -- Also adds a control interface to control the FFT operation.
     FFT0: entity work.FFT
         GENERIC MAP (
-            IMPLEMENT_FFT=>IMPLEMENT_FFT,
-            FFT_TYPE=>FFT_TYPE,
-            ADC_BITS_PER_SAMPLE => ADC_BITS_PER_SAMPLE,
+            IMPLEMENT_FFT        => IMPLEMENT_FFT,
+            FFT_TYPE             => FFT_TYPE,
+            ADC_BITS_PER_SAMPLE  => ADC_BITS_PER_SAMPLE,
 		    ADC_SAMPLES_PER_WORD => ADC_SAMPLES_PER_WORD,
-		    FFT_BITS_PER_BIN => FFT_BITS_PER_BIN,
-            FFT_DELAY_CTR_WIDTH => FFT_DELAY_CTR_WIDTH,
-            ROTATE_BINS => FFT_ROTATE_BINS
+		    FFT_BITS_PER_BIN     => FFT_BITS_PER_BIN,
+            ROTATE_BINS          => FFT_ROTATE_BINS
             )
         PORT MAP(
 
@@ -714,7 +712,7 @@ begin
             s_axis_tlast => axis_fifo_in_tlast,
             s_axis_tvalid=> axis_fifo_in_tvalid,
             s_axis_clk => in_clk,
-                
+
             m_axis_tdata => axis_fifo_out_tdata,
             m_axis_tuser=> axis_fifo_out_tuser,
             m_axis_tlast=> axis_fifo_out_tlast,

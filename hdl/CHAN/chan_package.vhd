@@ -35,8 +35,8 @@ COMPONENT CHAN is
 
   PORT (
 
-    in_dat_tdata: in std_logic_vector(CONFIG_ADC_BITS_PER_SAMPLE * CONFIG_ADC_SAMPLES_PER_WORD -1  downto 0);
-    in_dat_tuser: in std_logic_vector(CONFIG_ADC_SAMPLES_PER_WORD -1 downto 0);
+    in_dat_tdata: in std_logic_vector(FFT_INFO(CONFIG_CHAN_FFT_TYPE).BITS_PER_SAMPLE * FFT_INFO(CONFIG_CHAN_FFT_TYPE).SAMPLES_PER_WORD -1  downto 0);
+    in_dat_tuser: in std_logic_vector(FFT_INFO(CONFIG_CHAN_FFT_TYPE).SAMPLES_PER_WORD -1 downto 0);
     in_dat_tvalid: in std_logic;
     in_dat_tlast: in std_logic;
     in_reset: in std_logic; -- Resets all the antenna processor modules, except ADCDAQ. Must be synchronous to ANT_CLK.

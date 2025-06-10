@@ -93,15 +93,16 @@ use UNISIM.VComponents.all;
 entity FFT is
 	generic (
 		IMPLEMENT_FFT		   : BOOLEAN := TRUE;
-		FFT_TYPE			   : string  := "D3A"; -- tells the entity which experiment-dependent Casper-generated PFB/FFT block to use. Currently accepts "CHIME" or "D3A"
-		ADC_BITS_PER_SAMPLE    : integer := 14; -- CHIME: 8 bits, D3A/CHORD: 14 bits
-		ADC_SAMPLES_PER_WORD   : integer := 8; -- CHIME: 4, D3A/CHORD: 8
+		FFT_TYPE			   : integer := FFT_TYPE_CHORD; -- tells the entity which experiment-dependent Casper-generated PFB/FFT block to use. Currently accepts "CHIME" or "D3A"
+		ROTATE_BINS            : boolean := FALSE; -- rotate down the bins in the output by N positions, where N is the word number. Used to spread low bins to multiple word positions in cases where the FFT does not naturally do that (e.g. no unscrambler)
+
+        -- Derived (but overridable) parameters
+		ADC_BITS_PER_SAMPLE    : integer := FFT_INFO(FFT_TYPE).BITS_PER_SAMPLE; -- CHIME: 8 bits, D3A/CHORD: 14 bits
+		ADC_SAMPLES_PER_WORD   : integer := FFT_INFO(FFT_TYPE).SAMPLES_PER_WORD; -- CHIME: 4, D3A/CHORD: 8
 		ADC_BITS_PER_WORD	   : integer := ADC_BITS_PER_SAMPLE * ADC_SAMPLES_PER_WORD;
-		FFT_BITS_PER_BIN 	   : integer := 18+18; -- real + imaginary
-		FFT_BINS_PER_WORD 	   : integer := ADC_SAMPLES_PER_WORD / 2; -- CHIME: 2, D3A/CHORD: 4. -- we divide by 2 because the FFT outputs only the positive frequencies
-		FFT_BITS_PER_WORD 	   : integer := FFT_BITS_PER_BIN * FFT_BINS_PER_WORD;
-		FFT_DELAY_CTR_WIDTH    : integer := 14; -- CHIME: 12, D3A/CHORD: 14
-		ROTATE_BINS            : boolean := FALSE -- rotate down the bins in the output by N positions, where N is the word number. Used to spread low bins to multiple word positions in cases where the FFT does not naturally do that (e.g. no unscrambler)
+		FFT_BITS_PER_BIN 	   : integer := FFT_INFO(FFT_TYPE).BITS_PER_BIN; -- real + imaginary
+		FFT_BINS_PER_WORD 	   : integer := FFT_INFO(FFT_TYPE).BINS_PER_WORD; -- CHIME: 2, D3A/CHORD: 4. -- we divide by 2 because the FFT outputs only the positive frequencies
+		FFT_BITS_PER_WORD 	   : integer := FFT_BITS_PER_BIN * FFT_BINS_PER_WORD
 		);
 
 	port (
@@ -143,12 +144,16 @@ end FFT;
 
 
 --------- FFT architecture --------------------
---! Implements the FFT module functionnalities
+-- Implements the FFT module functionnalities
 architecture Behavioral of FFT is
 
+	attribute DONT_TOUCH: string;
+
+    -- Latencies of each type of FFT. These are used as default values in the FFT_LATENCY control register
+    constant FFT_LATENCY: integer := FFT_INFO(FFT_TYPE).LATENCY;
+	constant FFT_DELAY_CTR_WIDTH: integer := bitwidth(FFT_LATENCY); -- CHIME: 12, D3A/CHORD: 14
 
 	signal flags_in, flags_out: std_logic_vector(5 downto 0);
-
 
 	signal fft_pipeline_delay: std_logic_vector(FFT_DELAY_CTR_WIDTH - 1 downto 0);
 	signal fft_measured_pipeline_delay: std_logic_vector(FFT_DELAY_CTR_WIDTH - 1 downto 0);
@@ -206,7 +211,7 @@ architecture Behavioral of FFT is
 
 	--- Define Control word and its signals
 	signal control_bytes: slv8_array(0 to 6);
-	signal status_bytes: slv8_array(0 to 2);
+	signal status_bytes: slv8_array(0 to 3);
 
 	signal bypass_fft: std_logic;
 	signal soft_reset: std_logic;
@@ -220,8 +225,8 @@ architecture Behavioral of FFT is
 	signal sync_period_is_zero: std_logic;
 	signal is_last_frame_of_sync_period: std_logic;
 
-    signal word_ctr: unsigned(INTEGER_LOG2(FFT_BINS_PER_WORD)-1 downto 0); -- counts words at the output of the FFT. Used to rotate the bins
-
+    signal word_ctr: unsigned_array(0 to FFT_BINS_PER_WORD-1)(INTEGER_LOG2(FFT_BINS_PER_WORD)-1 downto 0); -- counts words at the output of the FFT. Used to rotate the bins
+	attribute DONT_TOUCH of word_ctr: signal is "yes";
 begin
 
 -----------------------------------------------------------------------------------
@@ -265,6 +270,10 @@ status_bytes(0 to 1) <= to_slv8_array(resize(fft_measured_pipeline_delay, 16)); 
 -- STATUS Byte 2
 status_bytes(2) <= std_logic_vector(overflow_count);
 
+-- STATUS BYTE 3
+status_bytes(3)(2 downto 0) <= to_slv(FFT_TYPE, 3);
+status_bytes(3)(7 downto 3) <= to_slv(FFT_DELAY_CTR_WIDTH, 5);
+
 -----------------------------------------------------------------------------------
 -- Memory-Mapped interface
 -----------------------------------------------------------------------------------
@@ -273,7 +282,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 	GENERIC MAP (
 		NUMBER_OF_CONTROL_BYTES => control_bytes'LENGTH(1), -- Number of bits in the control word
 		NUMBER_OF_STATUS_BYTES  => status_bytes'LENGTH(1), -- Number of bits in the status word.
-		DEFAULT_CONTROL_BYTES   => X"00_03FF_0000_0C9E" -- default values.
+		DEFAULT_CONTROL_BYTES   => X"00_03FF_0000" & to_slv(FFT_LATENCY, 16) -- default values.
 	)
 
 	PORT MAP(
@@ -366,19 +375,20 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 			bypass2_tuser  <= bypass1_tuser;
 			bypass2_tdata  <= bypass1_tdata;
 
-            -- Compute rotated FFT output. This involves a large number of 2:1 or 4:1 MUXes depending on the FFT. 
+            -- Compute rotated FFT output. This involves a large number of 2:1 or 4:1 MUXes depending on the FFT.
             -- We dont want this to be dependent on bypass_fft because it adds an extra mux input and adds combinatorial depth.
             -- Count the words coming out of the FFT
-            if fft_tvalid and fft_clk_en then
-                word_ctr <= (others => '0') when fft_tlast else word_ctr + 1;
-            end if;
-
+            for i in 0 to FFT_BINS_PER_WORD-1 loop
+	            if fft_tvalid and fft_clk_en then
+	                word_ctr(i) <= (others => '0') when fft_tlast else word_ctr(i) + 1;
+	            end if;
+	        end loop;
             -- Assign words to the next pipeline stage, rotating them as necessary if ROTATE_BINS=TRUE
             fft_rot_tvalid <= fft_tvalid and fft_clk_en; -- The FFT outputs valid data only of the FFT is clocked AND the data has gone through the pipeline
             fft_rot_tlast  <= fft_tlast;
             fft_rot_tuser  <= fft_tuser;
             for i in 0 to FFT_BINS_PER_WORD-1 loop
-                src_lane := (i + to_integer(word_ctr)) MOD FFT_BINS_PER_WORD when ROTATE_BINS else i;
+                src_lane := (i + to_integer(word_ctr(i))) MOD FFT_BINS_PER_WORD when ROTATE_BINS else i;
                 fft_rot_tdata((i+1)*FFT_BITS_PER_BIN-1 downto i*FFT_BITS_PER_BIN) <= fft_tdata((src_lane+1)*FFT_BITS_PER_BIN -1 downto src_lane*FFT_BITS_PER_BIN);
             end loop; -- if FFT is implemented
 
@@ -436,7 +446,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 				-- fft_clk_en<='1';
 				fft_sync_in <= '1';
 				delay_clk_en <= '0'; -- don't write anything to the delay line. we don't want the forced SYNC in there
-				word_ctr <= (others => '0');
+				word_ctr <= (others => (others => '0'));
 			end if; -- if RST
 
 		end if; -- clk
@@ -456,7 +466,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 		-- Time-based data is presented 4 samples at a time,  in0 being the earliest sample. A time sample is 8 bit wide.
 		-- Output is the complex frequency samples (18 bits real + 18 bits imaginary). Out0 and out 1 provide the even and odd
 		-- frequencies respectively. The lower (even) bin is in the MSB.
-        when "CHIME" =>
+        when FFT_TYPE_CHIME =>
             FFT0: entity work.FFT2
                 PORT MAP(
                     sync_in  => fft_sync_in,
@@ -482,7 +492,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
         -- Time-based data is presented 8 samples at a time, in0 being the earliest sample. A time sample is 14 bits wide.
         -- Output is the complex frequency samples (18 bits real + 18 bits imaginary). out0 is the first frequency bin,
         -- out1 is the next, etc.
-        when "D3A" =>
+        when FFT_TYPE_D3A =>
             FFT0: entity work.pfb_fft_d3a_0
                 PORT MAP(
                     sync_in(0)  => fft_sync_in,
@@ -509,7 +519,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
             fft_overflow <= or fft_overflow_d3a;
             fft_tdata <= (fft_dout0_int & fft_dout1_int & fft_dout2_int & fft_dout3_int);
 
-        when "CHORD" =>
+        when FFT_TYPE_CHORD =>
     		-- Overflow-free FFT, allowing bitgrowth
             FFT0: entity work.pfb_fft_bitgrowth_0
                 PORT MAP(

@@ -39,7 +39,7 @@ use UNISIM.VComponents.all;
 
 entity FFT_DELAY is
 	generic (
-		CTR_WIDTH: INTEGER := CONFIG_FFT_CTR_WIDTH; -- number of bits of the delay line. Max delay = 2^CTR_WIDTH
+		CTR_WIDTH: INTEGER; -- number of bits of the delay line. Max delay = 2^CTR_WIDTH
 		DATA_WIDTH: INTEGER := 4 -- number of flag bits to propagate through the delay line.
 		);
    port (
