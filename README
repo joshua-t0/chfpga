@@ -1,0 +1,17 @@
+.. Use UTF-8 encoding
+
+
+Introduction
+============
+
+``chFPGA`` is a multiplatform FPGA firmware designed to implement wide bandwidth radiotelescope and radio-interferometers front-ends. It provides the following components:
+
+- F-Engine (channelizer)
+- Corner-turn engine (groups data from one or multiple boards by frequency)
+- Optional X-engine (:math:`N^2` correlator)
+- Optional real-time 80G/100G Ethernet streaming of corner-turned data
+- Hardware platform management and peripheral controllers...
+
+Online documentation of ``chFPGA`` can be found at https://winterlandcosmology.bitbucket.io/chfpga/
+
+Arrays of one or more FPGAs running the ``chFPGA`` firmware are meant to be operated through the Python package ``pychfpga`` (see  https://winterlandcosmology.bitbucket.io/pychfpga)
