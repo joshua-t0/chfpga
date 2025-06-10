@@ -24,8 +24,26 @@ rule:
         disable: true
     instantiation_034: # We use component instantiation
         disable: true
-    process_018: # We don't use labels in "end process" if there is no risk of ambiguity (short processes)
+
+    # process
+    process_016: # allow label-less processes
+        disable: true
+    process_018: # We don't use labels in "end process" on short processes. Don't use an opening label on the process to prevent this warning.
+        disable: true
         severity: Warning
+    process_010: # Allow "process (all) begin"
+        disable: true
+    process_012: # Allow "process (all) begin"
+        disable: true
+
+    # block
+    block_002: # we don't use 'is'
+        disable: true
+    # block_007:
+
+
+    # Spaces
+
     generic_014: # We dont put a space between generic label and ":"
         number_of_spaces: 0
     port_007 : # we don't necessarily put 4 spaces after 'in'
@@ -41,6 +59,12 @@ rule:
     instantiation_003: # We use no space between label and ":"
         number_of_spaces: 0
     generate_002: # space between label and ":"
+        number_of_spaces: 0
+    block_100: # Zero space between label and :, One space between label: and block. The tool does not distinguish between these two, so we accept anything <=1.
+        number_of_spaces: "<=1"
+    entity_specification_101: # no space between attribute signal name and :
+        number_of_spaces: 0
+    attribute_declaration_101: # no space between attribute declaration label and :
         number_of_spaces: 0
 
     instantiation_033: # require COMPONENT in component instantiation
