@@ -496,10 +496,49 @@ begin
     led7b(6) <= sma_out(2); -- central g segment
     led7b(7) <= sma_out(3); -- decimal point
 
-    -- Display
-    fpc_d <= lcd_db(1 downto 0);
 
---dbg1: if FALSE generate
+    -- OLED Display (SSD1306)
+    -- fpc_d(0): CLK (333 - 407 kHz?) We provide 500 kHz, but divide by 2 in the display. Dividing by 1 caused intermittent init failures.
+    -- fpc_d(1): CLS (clock select, 0=external (i.e. CLK line on D0), 1=internal)
+    -- CLK clock is enabled when CLS = fpc_d(1) = lcd_db(0)= '0'. Otherwise it is Hi-Z.
+    -- To generate CLK, We divide pll_oscout_bufg (50 MHz) by 50 then by 2: 50 MHz/50/2 = 500 kHz
+    -- We use pll_oscout_bufg because it is always there, even if the PLL is not programmed
+    oled_blk: block
+        signal ctr: unsigned(6 downto 0);
+        signal clk: std_logic;
+    begin
+       lcdclk_proc: process(all) begin
+            if rising_edge(pll_oscout_bufg) then
+                ctr <= ctr + 1;
+                if ctr = unsigned(lcd_db) + 50 - 1  then
+                    ctr <= (others => '0');
+                    clk <= not clk;
+                end if;
+            end if; -- clk
+        end process;
+--        fpc_d(1) <= lcd_db(0); -- CLS
+--        fpc_clkbuf: OBUFT port map (I => clk, O => fpc_d(0), T => fpc_d(1)); -- CLK: tristate clock output when fpc_d(1)=1 (internal clock)
+        fpc_d(1) <= '0'; -- CLS = 0: Display will use the external clock source
+        fpc_d(0) <= clk; -- CLK
+
+    end block oled_blk;
+
+    -- Connect debugging signals to SMP connectors
+    --
+    -- This is the row of 4 SMP (clip-on SMT coax connectors) located on the PCB towards the front of the board, behind the DAC SMAs.
+    -- The connectors are, from the edge towards the center (or from top to bottom when the board is in a crate):
+    --  -------- Top/Edge of board ----------------------------------------------
+    --     SMP5 => smp(1)
+    --     SMP6 => smp(0)
+    --     SMP7 => smp(3)
+    --     SMP8 => smp(2)
+    smp(1) <= sma_out(0); -- SMP5 (1st from top), user-programmable
+    smp(0) <= clk10_bufg; -- SMP6 (2nd from top), SMA/BP REFCLK from BUFGMUX
+    --smp(3) <= plclk_bufg; -- SMP7 (3rd form top)
+    smp(3) <= pll_oscout_bufg; -- SMP7 (3rd form top), PLL OSCOUT 50 MHz VCXO
+    smp(2) <= sysclk_bufg; -- SMP8 (4th from top), 10 MHz clock from programmable PLL
+
+
 zynq: entity work.zynq_tcpipe_crs
     port map (
 
