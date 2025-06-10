@@ -204,7 +204,7 @@ set_property PACKAGE_PIN A10 [get_ports {led7b[7]}]
 # #############################################
 
 
-set_property IOSTANDARD LVCMOS33 [get_ports fpc_d*]
+set_property -dict {IOSTANDARD LVCMOS33 DRIVE 4 SLEW SLOW} [get_ports fpc_d*]
 set_property PACKAGE_PIN D8 [get_ports {fpc_d[0]}]
 set_property PACKAGE_PIN D9 [get_ports {fpc_d[1]}]
 
