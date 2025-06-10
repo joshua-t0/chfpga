@@ -1113,28 +1113,26 @@ begin
 		generic map (SRC_INPUT_REG => 0)
 		port map (src_clk => '0', src_in => ts_sample_event_trig_in, dest_clk => clk200, dest_out => ts_sample_event_trig_in_resync);
 
-	irigb_ctr_proc: process(clk200)
-		begin
-			if rising_edge(clk200) then
+	irigb_ctr_proc: process(all) begin
+		if rising_edge(clk200) then
 
-				-- Count the pps pulses on the rising edge of the PPS signal. This
-				-- is used mainly for debugging. This counter is never resetted.
-				pps_int_dly <= pps_int;
+			-- Count the pps pulses on the rising edge of the PPS signal. This
+			-- is used mainly for debugging. This counter is never resetted.
+			pps_int_dly <= pps_int;
 
-				if pps_int='1' and pps_int_dly='0' then
-					pps_ctr <= pps_ctr + 1;
-				end if;
+			if pps_int='1' and pps_int_dly='0' then
+				pps_ctr <= pps_ctr + 1;
+			end if;
 
-				-- Sample the IRIG-B timestamp when the event or refclk triggers change state
-				ts_sample_event_trig_out <= ts_sample_event_trig_in_resync;
-				ts_sample_refclk_trig_out <= ts_sample_refclk_trig_in_resync;
-				if ts_sample_event_trig_in_resync /= ts_sample_event_trig_out or
-				   ts_sample_refclk_trig_in_resync /= ts_sample_refclk_trig_out then
-					ts_sample <= ts; -- register the current IRIG-B time
-				end if;
-
-			end if;  -- if clk200
-		end process;
+			-- Sample the IRIG-B timestamp when the event or refclk triggers change state
+			ts_sample_event_trig_out <= ts_sample_event_trig_in_resync;
+			ts_sample_refclk_trig_out <= ts_sample_refclk_trig_in_resync;
+			if ts_sample_event_trig_in_resync /= ts_sample_event_trig_out or
+			   ts_sample_refclk_trig_in_resync /= ts_sample_refclk_trig_out then
+				ts_sample <= ts; -- register the current IRIG-B time
+			end if;
+		end if;  -- if clk200
+	end process;
 end block;
 
 --------------------------------
@@ -1168,8 +1166,7 @@ begin
 		port map (src_clk => '0', src_in => ts_sample_event_trig_out, dest_clk => event_ctr_clk, dest_out => ts_sample_event_trig_out_resync);
 
 
-	event_proc: process(event_ctr_clk)
-	begin
+	event_proc: process(all) begin
 		if rising_edge(event_ctr_clk) then
 
 			-- Capture the event info
@@ -1259,37 +1256,23 @@ begin
 		generic map (SRC_INPUT_REG => 0)
 		port map (src_clk => '0', src_in => ts_sample_refclk_trig_out, dest_clk => clk10, dest_out => ts_sample_refclk_trig_out_resync);
 
-	refclk_capture_proc: process(clk10)
-		begin
-			if rising_edge(clk10) then
-				-- Count the 10 MHz clocks continuously
-				refclk_ctr <= refclk_ctr + 1;
+	refclk_capture_proc: process(all) begin
+		if rising_edge(clk10) then
+			-- Count the 10 MHz clocks continuously
+			refclk_ctr <= refclk_ctr + 1;
 
-				-- detect the target condition
-				-- refclk_sync_trig <= to_std_logic(refclk_ctr = target_refclk_count);
-
-				-- Capture the counter value on the rising edge of `manual_refclk_sample_trig`.
-				-- Manual trigger (edge sensitive, as it is driven by a slow process)
-				-- This automatically triggers capture of the IRIG-B time (about 2xclk200 later)`
-				--manual_refclk_sample_trig_reg <= manual_refclk_sample_trig; -- two stage synchronizer
-				--manual_refclk_sample_trig_reg2 <= manual_refclk_sample_trig_reg;
-				manual_refclk_sample_trig_dly <= manual_refclk_sample_trig_resync;
-				if manual_refclk_sample_trig_resync='1' and manual_refclk_sample_trig_dly='0' then
-					refclk_sample <= refclk_ctr; -- register the current counter
-					ts_sample_refclk_trig_in <= not ts_sample_refclk_trig_in; -- triggers the sampling of the IRIG-B time
-					refclk_sample_done <= '0';
-				else
-					refclk_sample_done <= to_std_logic(ts_sample_refclk_trig_in = ts_sample_refclk_trig_out_resync);
-				end if;
-				-- Event-based trigger (sync or start of frame) (level-sensitive)
-				--event_refclk_sample_trig_reg <= event_refclk_sample_trig; -- two stage synchronizer
-				--event_refclk_sample_trig_reg2 <= event_refclk_sample_trig_reg;
-				--event_refclk_sample_trig_ack <= event_refclk_sample_trig_reg2; --
-				--if event_refclk_sample_trig_reg2 /= event_refclk_sample_trig_ack then
-				--	refclk_sample <= refclk_ctr; -- register the current counter
-				--end if;
-			end if; --CLK
-		end process;
+			-- Capture the counter value on the rising edge of `manual_refclk_sample_trig`.
+			-- This automatically triggers capture of the IRIG-B time (about 2xclk200 later)`
+			manual_refclk_sample_trig_dly <= manual_refclk_sample_trig_resync;
+			if manual_refclk_sample_trig_resync='1' and manual_refclk_sample_trig_dly='0' then
+				refclk_sample <= refclk_ctr; -- register the current counter
+				ts_sample_refclk_trig_in <= not ts_sample_refclk_trig_in; -- triggers the sampling of the IRIG-B time
+				refclk_sample_done <= '0';
+			else
+				refclk_sample_done <= to_std_logic(ts_sample_refclk_trig_in = ts_sample_refclk_trig_out_resync);
+			end if;
+		end if; --CLK
+	end process;
 end block;
 
 
