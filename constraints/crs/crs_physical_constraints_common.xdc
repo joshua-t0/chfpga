@@ -21,6 +21,9 @@ create_clock -period 5.000 -name FREQ_CTR_CLK [get_pins chfpga0/freq_ctr_blk.FRE
 set_property PACKAGE_PIN H22 [get_ports bp_irig_p]; # Was K19
 set_property IOSTANDARD LVDS [get_ports bp_irig_p]
 
+set_input_delay -clock [get_clocks SYS_CLK] -max 0.015 [get_ports bp_irig_p]
+set_input_delay -clock [get_clocks SYS_CLK] -min -0.015 [get_ports bp_irig_p]
+
 # Backplane 10 MHz reference clock (copy of the signal fed to the HMC7044)
 set_property PACKAGE_PIN H17 [get_ports bp_clk10_p]
 set_property IOSTANDARD LVDS [get_ports bp_clk10_p]
@@ -40,6 +43,8 @@ set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets clk10_ibufds1/O]
 # # IRIG-B signal
 set_property PACKAGE_PIN K16 [get_ports sma_irig_p]
 set_property IOSTANDARD LVDS [get_ports sma_irig_p]
+set_input_delay -clock [get_clocks SYS_CLK] -max 0.015 [get_ports sma_irig_p]
+set_input_delay -clock [get_clocks SYS_CLK] -min -0.015 [get_ports sma_irig_p]
 # # Aux signal
 # set_property PACKAGE_PIN H11     [get_ports {sma_aux_p}]; # Bank  57 VCC1V8
 # set_property IOSTANDARD  LVDS     [get_ports {sma_aux_p}];
@@ -101,6 +106,9 @@ set_property PACKAGE_PIN D19 [get_ports pll_sync]
 set_property IOSTANDARD LVCMOS18 [get_ports pll_sync]
 set_property SLEW FAST [get_ports pll_sync]
 set_property DRIVE 12 [get_ports pll_sync]
+set_output_delay -max -clock OSCOUT 1 [get_ports pll_sync]
+set_output_delay -min -clock OSCOUT -1 [get_ports pll_sync]
+set_multicycle_path -setup -to [get_ports pll_sync] 1
 
 # PL_CLK (Bank 69), Fabric signal processing word clock (programmable, must be ADC sampling freq / 8 samples/word)
 # 3000 MSPS/ 8 = 375 MHz
