@@ -1627,10 +1627,17 @@ begin
 	-- Pipeline backplane time (IRIG-B) and trig signals to allow them to propagate across the chip
 	-- The IRIG-B decoder uses these signals and is clocked by clk200
 	bp_trig_sync_proc: process(all)	begin
-		if rising_edge(clk200) then
+
+		-- Capture IRIG-B on the falling edge of clk200 to provide mamimum setup/hold margin, assuming that
+		-- clk200 is phase aligned with the reference clock and the IRIG-B signal
+		if falling_edge(clk200) then
 			bp_time_io_reg <= bp_time_io_dly; -- this is registered on the IO pad for optimal timing predictability
-			bp_time_reg <= bp_time_io_reg;
 			bp_trig_io_reg <= bp_trig_in; -- this is registered on the IO pad for optimal timing predictability
+		end if; -- RST/CLK
+
+		-- re-sample IRIG-B on the rising edge of clk200
+		if rising_edge(clk200) then
+			bp_time_reg <= bp_time_io_reg;
 			bp_trig_reg <= bp_trig_io_reg;
 		end if; -- RST/CLK
 	end process;
