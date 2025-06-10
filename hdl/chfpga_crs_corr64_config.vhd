@@ -36,8 +36,7 @@ package chfpga_config is
 
 
     constant CONFIG_CORR_TYPE: string                            := "UCORR44";
-	constant CONFIG_NUMBER_OF_CORRELATORS: integer               := CONFIG_ADC_SAMPLES_PER_WORD/2; -- One correlator per bin in the FFT output word
-	--constant CONFIG_CORR_READOUT_BINS: integer_array(0 to CONFIG_NUMBER_OF_CORRELATORS-1) := (0, 1, 2, 3); -- With CONFIG_FFT_ROTATE_BINS=True, true bins 0, 1, 2 & 3 will be used for readout
+	constant CONFIG_NUMBER_OF_CORRELATORS: integer               := FFT_INFO(CONFIG_CHAN_FFT_TYPE).BINS_PER_WORD; -- One correlator per bin in the FFT output word
 	constant CONFIG_CORR_READOUT_BINS: integer_array(0 to 0) := (0 => 0); -- With CONFIG_FFT_ROTATE_BINS=True, true bins 0, 1, 2 & 3 will be used for readout
 
     -- 10/100G Ethernet Real-time data offload links configuration
