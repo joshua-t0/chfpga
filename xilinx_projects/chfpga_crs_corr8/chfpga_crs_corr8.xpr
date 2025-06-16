@@ -48,7 +48,6 @@
     <Option Name="DefaultLib" Val="xil_defaultlib"/>
     <Option Name="ProjectType" Val="Default"/>
     <Option Name="IPRepoPath" Val="$PPRDIR/../../ip_library"/>
-    <Option Name="IPRepoPath" Val="$PPRDIR/../../../casper/htfft"/>
     <Option Name="IPOutputRepo" Val="$PCACHEDIR/ip"/>
     <Option Name="IPDefaultOutputPath" Val="$PGENDIR/sources_1"/>
     <Option Name="IPCachePermission" Val="disable"/>
@@ -560,6 +559,7 @@
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedInSteps" Val="impl_1"/>
           <Attr Name="UsedInSteps" Val="synth_1"/>
         </FileInfo>
       </File>
