@@ -47,8 +47,9 @@
 --    Added fanout control in ACC (ADD_IN_BYPASS). Added _NOREG general rule in UCF. Shrank ADCDAQ areas a dn remove their CLOCKREGION constraint since there is no BRAM.
 -- Additional Comments:
 --
----  LIBRARY DECLARATIONS -------------------------------------------------------------------------------
---! Standard libraries
+
+--  LIBRARY DECLARATIONS -------------------------------------------------------------------------------
+-- Standard libraries
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
@@ -60,16 +61,14 @@ use UNISIM.vcomponents.all;
 library xpm;
 use xpm.vcomponents.all;
 
---! Project libraries
+-- Project libraries
 use work.chFPGA_Package.all; --! Get all component definitions
 use work.chan_package.all; --! Get chan component
 use work.chFPGA_config.all; --! Get implementation-specific definitions
---use work.udp_mac_package.udp_mac; --! Get udp_mac component
---use work.xglink_package.xglink_array; --! Get udp_mac component
---use work.ct_package.shuffle_crossbar; --! Get corner-turn engine components
 
--- This is the generic **top-level** entity of the chFPGA data acquisition/channelizer/correlator firmware.
--- The code is configurable for multiple platforms (Virtex 6, Kintex 7, GMII or SFP+ Ethernet interface, various clock sources, etc) through the generics.
+-- This is the generic **top-level** entity of the chFPGA data acquisition/channelizer/corner-turn/correlator firmware.
+--
+-- The code is configurable for multiple platforms (Virtex 6, Kintex 7, Ultrascale+) with optional GMII or SFP+ Ethernet interface, various clock sources, etc) through the generics.
 -- A platform-specific wrapper file is used to define these generics for a specific platform and expose the useful ports.
 entity chFPGA is
 	 GENERIC (
@@ -661,34 +660,29 @@ signal ctrl_master_reset: std_logic; -- GPIO -> master, UDP_MAC
 
 
 -- Ethernet/UDP output / MASTER input  interface buses
-signal axis_udp_tx_tdata:   std_logic_vector(7 downto 0);
-signal axis_udp_tx_tlast:   std_logic;
-signal axis_udp_tx_tvalid:   std_logic;
-signal axis_udp_tx_tready:   std_logic;
+signal udp_tx_tdata:   std_logic_vector(7 downto 0);
+signal udp_tx_tlast:   std_logic;
+signal udp_tx_tvalid:   std_logic;
+signal udp_tx_tready:   std_logic;
 signal udp0_tx_port:   std_logic_vector(1 downto 0) := (others=>'0');
 
-signal axis_udp_rx_tdata: std_logic_vector(7 downto 0);
-signal axis_udp_rx_tvalid: std_logic;
-signal axis_udp_rx_tlast: std_logic;
-signal axis_udp_rx_tready: std_logic;
+signal udp_rx_tdata: std_logic_vector(7 downto 0);
+signal udp_rx_tvalid: std_logic;
+signal udp_rx_tlast: std_logic;
+signal udp_rx_tready: std_logic;
 
--- MASTER output / First router input bus
+-- Byte-serial-bus (monitor and control bus)
+signal bsb_cmd_tdata: std_logic_vector(7 downto 0);
+signal bsb_cmd_tvalid: std_logic;
+signal bsb_cmd_tlast: std_logic;
+signal bsb_cmd_tready: std_logic;
+signal bsb_rply_tdata: std_logic_vector(7 downto 0);
+signal bsb_rply_tvalid: std_logic;
+signal bsb_rply_tlast: std_logic;
+signal bsb_rply_tready: std_logic;
 
-signal axis_cmd_tdata: std_logic_vector(7 downto 0);
-signal axis_cmd_tvalid: std_logic;
-signal axis_cmd_tlast: std_logic;
-signal axis_cmd_tready: std_logic;
-
-
-signal axis_rply_tdata: std_logic_vector(7 downto 0);
-signal axis_rply_tvalid: std_logic;
-signal axis_rply_tlast: std_logic;
-signal axis_rply_tready: std_logic;
 
 		-- debug
-		signal uct_tdata: std_logic_vector(255 downto 0);
-		signal uct_tvalid: std_logic;
-		signal uct_tlast: std_logic;
 
 signal cmd_packet_counter: std_logic_vector(7 downto 0); -- master -> GPIO
 signal rply_packet_counter: std_logic_vector(7 downto 0); -- master -> GPIO
@@ -730,10 +724,10 @@ signal ADC_RPLY_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_ADCS_OR_CHANNELIZERS-1 dow
 
 
 -- Slow data capture bus (PROBER & CORR output)
-signal axis_prb_tdata: slv8_array(NUMBER_OF_PROBES-1 downto 0);
-signal axis_prb_tvalid: slv(NUMBER_OF_PROBES-1 downto 0);
-signal axis_prb_tlast: slv(NUMBER_OF_PROBES-1 downto 0);
-signal axis_prb_tready: slv(NUMBER_OF_PROBES-1 downto 0);
+signal cap_data: slv8_array(NUMBER_OF_PROBES-1 downto 0);
+signal cap_valid: slv(NUMBER_OF_PROBES-1 downto 0);
+signal cap_last: slv(NUMBER_OF_PROBES-1 downto 0);
+signal cap_ready: slv(NUMBER_OF_PROBES-1 downto 0);
 
 -- REFCLK signals
 
@@ -745,23 +739,25 @@ signal fmc_refclk: std_logic_vector(0 to NUMBER_OF_ADC_BOARDS-1); -- REFCLK -> A
 --type adc_tuser_array is array (NATURAL RANGE <>) of std_logic_vector(ADC_SAMPLES_PER_WORD-1 downto 0);
 
 -- ADC data bus, shared between the channelizers and the corner turn engine or the correlator
-signal axis_adc_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(ADC_BITS_PER_WORD-1 downto 0);
-signal axis_adc_tuser: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(ADC_SAMPLES_PER_WORD-1 downto 0);
-signal axis_adc_tvalid: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
-signal axis_adc_tlast: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+signal adc_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(ADC_BITS_PER_WORD-1 downto 0);
+signal adc_tuser: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(ADC_SAMPLES_PER_WORD-1 downto 0);
+signal adc_tvalid: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+signal adc_tlast: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
 
 -- Data capture bus, shared between the channelizers and UCAP instance
-signal axis_cap_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(CAPTURE_BITS_PER_WORD-1 downto 0);
-signal axis_cap_tvalid: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(0 to NUMBER_OF_CAPTURE_SOURCES-1);
-signal axis_cap_tlast: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(0 to NUMBER_OF_CAPTURE_SOURCES-1);
-signal cap_source_req: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
-signal cap_source_ack: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+signal chan_mon_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(CAPTURE_BITS_PER_WORD-1 downto 0);
+signal chan_mon_tvalid: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(0 to NUMBER_OF_CAPTURE_SOURCES-1);
+signal chan_mon_tlast: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(0 to NUMBER_OF_CAPTURE_SOURCES-1);
+signal chan_mon_source_req: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+signal chan_mon_source_ack: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
 
 
-signal axis_ucap_in_tdata: std_logic_vector(7 downto 0);
-signal axis_ucap_in_tready: std_logic;
-signal axis_ucap_in_tvalid: std_logic;
-signal axis_ucap_in_tlast: std_logic;
+-- Correlator output
+signal corr_out_tdata: std_logic_vector(7 downto 0);
+signal corr_out_tvalid: std_logic;
+signal corr_out_tlast: std_logic;
+signal corr_out_tready: std_logic;
+
 
 -----------------------
 -- Channelizer signals
@@ -801,9 +797,9 @@ signal ADCDAQ_RESET: std_logic;
 
 
 
-signal axis_ct_out_tdata: slv(8*32-1 downto 0);
-signal axis_ct_out_tvalid: std_logic;
-signal axis_ct_out_tlast: std_logic;
+signal ct_out_tdata: slv(8*32-1 downto 0); -- TODO: parametrize this, even if this is mostly fixed for the platform
+signal ct_out_tvalid: std_logic;
+signal ct_out_tlast: std_logic;
 
 
 -----------------------
@@ -981,8 +977,8 @@ begin
 --debug_out(22) <= corr_clk_div2;
 --debug_out(23) <= SYSMON_CLK_DIV2;
 
---debug_out(24) <= axis_cmd_tvalid;
---debug_out(25) <= axis_rply_tvalid;
+--debug_out(24) <= bsb_cmd_tvalid;
+--debug_out(25) <= bsb_rply_tvalid;
 --debug_out(26) <= top_cmd_dat(0).TVALID;
 --debug_out(27) <= top_rply_dat(0).TVALID;
 
@@ -998,10 +994,10 @@ begin
 --debug_out(21) <= SYS_GPIO_RPLY_RDY.TREADY;
 
 
---debug_out(28) <= axis_cmd_tvalid;
---debug_out(29) <= axis_cmd_tready;
---debug_out(30) <= axis_rply_tvalid;
---debug_out(31) <= axis_rply_tready;
+--debug_out(28) <= bsb_cmd_tvalid;
+--debug_out(29) <= bsb_cmd_tready;
+--debug_out(30) <= bsb_rply_tvalid;
+--debug_out(31) <= bsb_rply_tready;
 
 -- debugging signals to SMA
 --sma_out(0) <= clk200;
@@ -1143,7 +1139,7 @@ gen_eth: case PHY_TYPE generate
         -- UDP Interface
         ---------------------------------------------------------------------
         --! Instantiate UDP / IP / Ethernet interface
-            tx_ready <= axis_udp_tx_tready;
+            tx_ready <= udp_tx_tready;
 
         --	local_mac_addr <= std_logic_vector'(X"12_34_56_78") & local_ip_addr; -- works
         --	local_mac_addr <= std_logic_vector(unsigned(std_logic_vector'(X"12_34_56_78") & local_ip_addr)); -- does not work
@@ -1222,16 +1218,16 @@ gen_eth: case PHY_TYPE generate
                 reset_done => sfp_reset_done,
                 signal_detect => sfp_signal_detect,
                 -- User TX interface
-                s_axis_udp_tx_tvalid => axis_udp_tx_tvalid,
-                s_axis_udp_tx_tdata  => axis_udp_tx_tdata,
-                s_axis_udp_tx_tlast  => axis_udp_tx_tlast,
-                s_axis_udp_tx_tready => axis_udp_tx_tready,
+                s_axis_udp_tx_tvalid => udp_tx_tvalid,
+                s_axis_udp_tx_tdata  => udp_tx_tdata,
+                s_axis_udp_tx_tlast  => udp_tx_tlast,
+                s_axis_udp_tx_tready => udp_tx_tready,
                 tx_port              => udp0_tx_port,
 
-                m_axis_udp_rx_tdata  => axis_udp_rx_tdata,
-                m_axis_udp_rx_tvalid => axis_udp_rx_tvalid,
-                m_axis_udp_rx_tlast  => axis_udp_rx_tlast,
-                m_axis_udp_rx_tready => axis_udp_rx_tready,
+                m_axis_udp_rx_tdata  => udp_rx_tdata,
+                m_axis_udp_rx_tvalid => udp_rx_tvalid,
+                m_axis_udp_rx_tlast  => udp_rx_tlast,
+                m_axis_udp_rx_tready => udp_rx_tready,
 
                 tx_overflow          => udp_tx_overflow,
                 rx_overflow          => udp_rx_overflow,
@@ -1246,22 +1242,22 @@ gen_eth: case PHY_TYPE generate
 
     when "NONE" =>
         -- Command bus comes from the external bus
-        axis_udp_rx_tdata <= s_axis_bsb_tdata;
-        axis_udp_rx_tvalid <= s_axis_bsb_tvalid;
-        axis_udp_rx_tlast <= s_axis_bsb_tlast;
+        udp_rx_tdata <= s_axis_bsb_tdata;
+        udp_rx_tvalid <= s_axis_bsb_tvalid;
+        udp_rx_tlast <= s_axis_bsb_tlast;
         -- Reply bus TREADY
-        axis_udp_tx_tready <= m_axis_bsb_tready;
+        udp_tx_tready <= m_axis_bsb_tready;
         sfp_status_vector_int(0) <= '1'; -- simulate valid link so the blinker will work
 
 		-- We also always deive these signals on the output port, weather or not thay are used outside, to prevent warnings of undriven output port
 		-- Command bus TREADY
-		s_axis_bsb_tready <= axis_udp_rx_tready;
+		s_axis_bsb_tready <= udp_rx_tready;
 		-- Reply bus
-		m_axis_bsb_tvalid <= axis_udp_tx_tvalid;
+		m_axis_bsb_tvalid <= udp_tx_tvalid;
 		--m_axis_bsb_tdata(31 downto 30) <= udp0_tx_port;
 		--m_axis_bsb_tdata(29 downto 8) <= (others => '0');
-		m_axis_bsb_tdata <= axis_udp_tx_tdata;
-		m_axis_bsb_tlast <= axis_udp_tx_tlast;
+		m_axis_bsb_tdata <= udp_tx_tdata;
+		m_axis_bsb_tlast <= udp_tx_tlast;
 
     when others =>
         assert FALSE report "Invalid PHY_TYPE" severity FAILURE;
@@ -1286,34 +1282,34 @@ begin
             )
         PORT MAP(
             -- RX UDP stream
-            s_axis_udp_rx_tdata => axis_udp_rx_tdata,
-            s_axis_udp_rx_tvalid => axis_udp_rx_tvalid,
-            s_axis_udp_rx_tlast => axis_udp_rx_tlast,
-            s_axis_udp_rx_tready => axis_udp_rx_tready,
+            s_axis_udp_rx_tdata => udp_rx_tdata,
+            s_axis_udp_rx_tvalid => udp_rx_tvalid,
+            s_axis_udp_rx_tlast => udp_rx_tlast,
+            s_axis_udp_rx_tready => udp_rx_tready,
 
             -- TX UDP stream
-            m_axis_udp_tx_tvalid => axis_udp_tx_tvalid,
-            m_axis_udp_tx_tdata => axis_udp_tx_tdata,
-            m_axis_udp_tx_tlast => axis_udp_tx_tlast,
-            m_axis_udp_tx_tready => axis_udp_tx_tready,
+            m_axis_udp_tx_tvalid => udp_tx_tvalid,
+            m_axis_udp_tx_tdata => udp_tx_tdata,
+            m_axis_udp_tx_tlast => udp_tx_tlast,
+            m_axis_udp_tx_tready => udp_tx_tready,
             m_axis_udp_tx_channel => udp0_tx_port,
 
             -- Command and reply stream buse
-            m_axis_cmd_tdata => axis_cmd_tdata,
-            m_axis_cmd_tvalid => axis_cmd_tvalid,
-            m_axis_cmd_tlast => axis_cmd_tlast,
-            m_axis_cmd_tready => axis_cmd_tready,
+            m_axis_cmd_tdata => bsb_cmd_tdata,
+            m_axis_cmd_tvalid => bsb_cmd_tvalid,
+            m_axis_cmd_tlast => bsb_cmd_tlast,
+            m_axis_cmd_tready => bsb_cmd_tready,
 
-            s_axis_rply_tdata => axis_rply_tdata,
-            s_axis_rply_tvalid => axis_rply_tvalid,
-            s_axis_rply_tlast => axis_rply_tlast,
-            s_axis_rply_tready => axis_rply_tready,
+            s_axis_rply_tdata => bsb_rply_tdata,
+            s_axis_rply_tvalid => bsb_rply_tvalid,
+            s_axis_rply_tlast => bsb_rply_tlast,
+            s_axis_rply_tready => bsb_rply_tready,
 
             -- Data stream buses
-            s_axis_data_tdata => axis_prb_tdata,
-            s_axis_data_tvalid => axis_prb_tvalid,
-            s_axis_data_tlast => axis_prb_tlast,
-            s_axis_data_tready => axis_prb_tready,
+            s_axis_data_tdata => cap_data,
+            s_axis_data_tvalid => cap_valid,
+            s_axis_data_tlast => cap_last,
+            s_axis_data_tready => cap_ready,
 
             -- System
             cmd_packet_counter => cmd_packet_counter,
@@ -1365,15 +1361,15 @@ begin
 
 --	debug_out(8) <= cmd_overflow;
 
-	UDP_CMD_DAT.TDATA <= axis_cmd_tdata;
-	UDP_CMD_DAT.TVALID <= axis_cmd_tvalid;
-	UDP_CMD_DAT.TLAST <= axis_cmd_tlast;
-	axis_cmd_tready <= UDP_CMD_RDY.TREADY;
+	UDP_CMD_DAT.TDATA <= bsb_cmd_tdata;
+	UDP_CMD_DAT.TVALID <= bsb_cmd_tvalid;
+	UDP_CMD_DAT.TLAST <= bsb_cmd_tlast;
+	bsb_cmd_tready <= UDP_CMD_RDY.TREADY;
 
-	axis_rply_tdata <= UDP_RPLY_DAT.TDATA ;
-	axis_rply_tvalid <= UDP_RPLY_DAT.TVALID;
-	axis_rply_tlast <= UDP_RPLY_DAT.TLAST ;
-	UDP_RPLY_RDY.TREADY <= axis_rply_tready;
+	bsb_rply_tdata <= UDP_RPLY_DAT.TDATA ;
+	bsb_rply_tvalid <= UDP_RPLY_DAT.TVALID;
+	bsb_rply_tlast <= UDP_RPLY_DAT.TLAST ;
+	UDP_RPLY_RDY.TREADY <= bsb_rply_tready;
 
 	-- Pipeline the reset signal
 	bsb_rst_proc: process (ctrl_clk)
@@ -1664,20 +1660,20 @@ begin
 		-- 8: Copy of the 200 MHz clock of the master ADC. Useful to analyze the timing of the ADC clock relative to the 10 MHz reference clock to validate proper SYNCing.
 		);
 
-	gpio_udp_tx_frame <= axis_udp_tx_tvalid and axis_udp_tx_tlast and axis_udp_tx_tready;
-	gpio_udp_rx_frame <= axis_udp_rx_tvalid and axis_udp_rx_tlast and axis_udp_rx_tready;
+	gpio_udp_tx_frame <= udp_tx_tvalid and udp_tx_tlast and udp_tx_tready;
+	gpio_udp_rx_frame <= udp_rx_tvalid and udp_rx_tlast and udp_rx_tready;
 
 	-- Pipeline event counter signals since they need to go across the FPGA from the ADCDAQ to GPIO areas
 	eventclkproc: process(chan_clk(0))
 	begin
         if rising_edge(chan_clk(0)) then
-            gpio_event_ctr_en <= axis_adc_tvalid(0);
-            gpio_event_ctr_inc <= axis_adc_tlast(0);
+            gpio_event_ctr_en <= adc_tvalid(0);
+            gpio_event_ctr_inc <= adc_tlast(0);
             gpio_event_ctr_en_reg <= gpio_event_ctr_en; -- pipeline. we have a long way to go between ADCDAQ[0] and GPIO
             gpio_event_ctr_inc_reg <= gpio_event_ctr_inc; -- pipeline. we have a long way to go between ADCDAQ[0] and GPIO
             gpio_event_ctr_reset_reg <=  chan_reset(0);
 
-            gpio_pwm_ctr_en <= axis_adc_tvalid(0) and axis_adc_tlast(0);
+            gpio_pwm_ctr_en <= adc_tvalid(0) and adc_tlast(0);
             gpio_pwm_ctr_en_reg <= gpio_pwm_ctr_en; -- pipeline. we have a long way to go between ADCDAQ[0] and GPIO
         end if; -- RST/CLK
     end process;
@@ -2419,10 +2415,10 @@ end block refclk_blk;
 --
 -- adc_clk: out: BUFG-buffered master clock used by CLOCKS to generate the channelizer clocks
 -- Data interface
--- 		axis_adc_tdata
--- 		axis_adc_tvalid
--- 		axis_adc_tlast
--- 		axis_adc_tuser
+-- 		adc_tdata
+-- 		adc_tvalid
+-- 		adc_tlast
+-- 		adc_tuser
 -- 		chan_clk in: axis_adc clock
 -- 		ADCDAQ_RESET
 -- Others:
@@ -2452,7 +2448,7 @@ adc_gen: case ADC_TYPE generate
         signal adc_ioclk_out_pll : std_logic_vector(0 to NUMBER_OF_ADCS-1);
         signal adc_divclk_out_pll : std_logic_vector(0 to NUMBER_OF_ADCS-1);
 
-        signal axis_adc_tdata8: slv32_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
+        signal adc_tdata8: slv32_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1);
         signal adc_data_ready_all : std_logic_vector(0 to NUMBER_OF_ADCS-1);
         signal adc_send_data_async : std_logic;
 
@@ -2494,10 +2490,10 @@ adc_gen: case ADC_TYPE generate
         begin
 
             -- -- Define intermediary signals to eliminate use of indexed record arrays as actuals in the instantiation: this messes up the simulator.
-            -- ADC_DAT(i).TDATA <= axis_adc_tdata(i);
-            -- ADC_DAT(i).TVALID <= axis_adc_tvalid(i);
-            -- ADC_DAT(i).TLAST <= axis_adc_tlast(i);
-            -- ADC_DAT(i).TUSER <= axis_adc_tuser(i);
+            -- ADC_DAT(i).TDATA <= adc_tdata(i);
+            -- ADC_DAT(i).TVALID <= adc_tvalid(i);
+            -- ADC_DAT(i).TLAST <= adc_tlast(i);
+            -- ADC_DAT(i).TUSER <= adc_tuser(i);
 
             -- pipeline the bsb reset signals
 			rst_proc: process (ctrl_clk)
@@ -2526,11 +2522,11 @@ adc_gen: case ADC_TYPE generate
 
             -- Convert 4x 8-bit ADCDAQ bus samples to the lower 4 words of the 8x 16-bit bus
     --		repack_gen: for j in 0 to 3  generate -- hard coded to 3 samples per word
-    --			axis_adc_tdata(i)(16*j+15 downto 16*j+8) <= axis_adc_tdata8(i)(8*j+7 downto 8*j); -- left aligg data to the MSB
-    --			--axis_adc_tdata(i)(16*j+7 downto 16*j) <= (others => axis_adc_tdata8(i)(7)); -- sign extend
-    --			axis_adc_tdata(i)(16*j+7 downto 16*j) <= (others => '0'); -- zero the MSBs
+    --			adc_tdata(i)(16*j+15 downto 16*j+8) <= adc_tdata8(i)(8*j+7 downto 8*j); -- left aligg data to the MSB
+    --			--adc_tdata(i)(16*j+7 downto 16*j) <= (others => adc_tdata8(i)(7)); -- sign extend
+    --			adc_tdata(i)(16*j+7 downto 16*j) <= (others => '0'); -- zero the MSBs
     --		end generate;
-            axis_adc_tdata(i) <= axis_adc_tdata8(i);
+            adc_tdata(i) <= adc_tdata8(i);
 
             -- ADCDAQ is still implemented if IMPLEMENT_ANT=FALSE, but its IMPLEMENT_ADCDAQ generics is forced  to FALSE to the appropriate differential buffers are instantiated and prevent UCF errors.
             --	ADC_CLK_OUT_PLL<=ADC_CLK_OUT_PLL_INT;
@@ -2555,10 +2551,10 @@ adc_gen: case ADC_TYPE generate
 
                     -- Readout interface
                     -- ADC_OUT_DAT => ADC_DAT(i),
-                    m_axis_adc_tdata => axis_adc_tdata8(i),
-                    m_axis_adc_tvalid => axis_adc_tvalid(i),
-                    m_axis_adc_tlast => axis_adc_tlast(i),
-                    m_axis_adc_tuser => axis_adc_tuser(i),
+                    m_axis_adc_tdata => adc_tdata8(i),
+                    m_axis_adc_tvalid => adc_tvalid(i),
+                    m_axis_adc_tlast => adc_tlast(i),
+                    m_axis_adc_tuser => adc_tuser(i),
                     ADC_CLK => chan_clk(i),
 
                     -- Clock outputs (before PLL)
@@ -2613,8 +2609,8 @@ adc_gen: case ADC_TYPE generate
         constant LOG2_WORDS_PER_FRAME : integer := integer_log2(WORDS_PER_FRAME);
 
         signal adc_send_data2: slv(0 to NUMBER_OF_ADCS-1); -- indicates when TVALID can be passed on
-        signal axis_adc_tdata_reg: slv128_array(0 to NUMBER_OF_ADCS-1);
-        signal axis_adc_tvalid_reg: std_logic_vector(0 to NUMBER_OF_ADCS-1);
+        signal adc_tdata_reg: slv128_array(0 to NUMBER_OF_ADCS-1);
+        signal adc_tvalid_reg: std_logic_vector(0 to NUMBER_OF_ADCS-1);
 
         signal adcdaq_reset_pre: std_logic; -- ADCDAQ reset, resynchronized to adc_clk
         signal adcdaq_reset_reg: std_logic; -- ADCDAQ reset, pipelined
@@ -2660,11 +2656,11 @@ adc_gen: case ADC_TYPE generate
 
                         chan_reset_reg <= chan_reset(i);
                         -- pipeline the ADC data. The ADCs are on the right side of the RfSoC, and some logic may end up on the left.
-                        axis_adc_tdata_reg(i) <= adc_axis_tdata(i);
-                        axis_adc_tvalid_reg(i) <= adc_axis_tvalid(i);
+                        adc_tdata_reg(i) <= adc_axis_tdata(i);
+                        adc_tvalid_reg(i) <= adc_axis_tvalid(i);
 
 
-                        if axis_adc_tvalid_reg(i)='1' then
+                        if adc_tvalid_reg(i)='1' then
                             adc_word_ctr <= adc_word_ctr + 1;
                         end if;
 
@@ -2677,22 +2673,22 @@ adc_gen: case ADC_TYPE generate
                         -- Repack the ADC samples in a Nsamples x Nbits_per_samples word and also
                         -- invert the order of the words to put the first sample in the MSB of the word
                          for j in 0 to ADC_SAMPLES_PER_WORD-1 loop
-                            axis_adc_tdata(i)(ADC_BITS_PER_SAMPLE*(j+1) -1 downto ADC_BITS_PER_SAMPLE*j) <= axis_adc_tdata_reg(i)(16*(ADC_SAMPLES_PER_WORD-j)-1 downto 16*(ADC_SAMPLES_PER_WORD-j)-ADC_BITS_PER_SAMPLE);
+                            adc_tdata(i)(ADC_BITS_PER_SAMPLE*(j+1) -1 downto ADC_BITS_PER_SAMPLE*j) <= adc_tdata_reg(i)(16*(ADC_SAMPLES_PER_WORD-j)-1 downto 16*(ADC_SAMPLES_PER_WORD-j)-ADC_BITS_PER_SAMPLE);
                          end loop;
 
                         -- Pass the data bus and clear overflow flags
-                        axis_adc_tuser(i) <= adc_or; -- overrange flag. *** TODO ***  this signal is asynchronous. May need to resynchronize on the AXIS clock
-                        axis_adc_tvalid(i) <= axis_adc_tvalid_reg(i) and adc_send_data2(i);
-                        axis_adc_tlast(i) <= '0';
+                        adc_tuser(i) <= adc_or; -- overrange flag. *** TODO ***  this signal is asynchronous. May need to resynchronize on the AXIS clock
+                        adc_tvalid(i) <= adc_tvalid_reg(i) and adc_send_data2(i);
+                        adc_tlast(i) <= '0';
                         -- generate TLAST
                         if all_ones(adc_word_ctr) then
-                            axis_adc_tlast(i) <= '1';
+                            adc_tlast(i) <= '1';
                             adc_send_data2(i) <= '1'; -- start setting tvalid to 1
                         end if; -- last word
                         -- Synchronous reset
                         if chan_reset_reg or adcdaq_reset_reg then
-                            axis_adc_tvalid(i) <= '0';
-                            axis_adc_tvalid_reg(i) <= '0';
+                            adc_tvalid(i) <= '0';
+                            adc_tvalid_reg(i) <= '0';
                             adc_word_ctr <= (others => '0');
                             adc_send_data2(i) <= '0';
                         end if;
@@ -2806,8 +2802,15 @@ chan_clk_gen:case CHAN_CLK_SOURCE generate
         signal chan_reset_resync: std_logic;
     begin
         adcrst_cdc0: xpm_cdc_single
-            generic map (SRC_INPUT_REG => 0)
-            port map (src_clk => '0', src_in => chan_reset_pll(0), dest_clk => adc_clk, dest_out => chan_reset_resync);
+            generic map (
+            	SRC_INPUT_REG => 0
+            	)
+            port map (
+            	src_clk => '0',
+            	src_in => chan_reset_pll(0),
+            	dest_clk => adc_clk,
+            	dest_out => chan_reset_resync
+            	);
         chclkgen: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
             chan_clk(i) <= adc_clk;
             chan_reset(i) <= chan_reset_resync;
@@ -2831,12 +2834,12 @@ CHANGEN: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
 	signal chan_ctrl_rst_reg: std_logic;
 	attribute DONT_TOUCH of chan_ctrl_rst, chan_ctrl_rst_reg: signal is "true";
 
-	signal axis_adc_tdata_reg: slv_array(0 to NUMBER_OF_CHANNELIZERS-1)(ADC_BITS_PER_WORD-1 downto 0);
-	signal axis_adc_tvalid_reg: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1);
-	signal axis_adc_tlast_reg: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1);
-    signal axis_adc_tuser_reg: slv_array(0 to NUMBER_OF_CHANNELIZERS-1)(ADC_SAMPLES_PER_WORD-1 downto 0);
+	signal adc_tdata_reg: slv_array(0 to NUMBER_OF_CHANNELIZERS-1)(ADC_BITS_PER_WORD-1 downto 0);
+	signal adc_tvalid_reg: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1);
+	signal adc_tlast_reg: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1);
+    signal adc_tuser_reg: slv_array(0 to NUMBER_OF_CHANNELIZERS-1)(ADC_SAMPLES_PER_WORD-1 downto 0);
 
-    attribute shreg_extract of axis_adc_tdata_reg, axis_adc_tvalid_reg, axis_adc_tlast_reg, axis_adc_tuser_reg: signal is "no";
+    attribute shreg_extract of adc_tdata_reg, adc_tvalid_reg, adc_tlast_reg, adc_tuser_reg: signal is "no";
 
 	attribute DONT_TOUCH of CHANi: label is "true"; -- don't optimize through cell boundaries
 
@@ -2857,12 +2860,12 @@ begin
 		if rising_edge(chan_clk(i)) then
 			chan_reset_reg(i) <= chan_reset(i);
 
-            axis_adc_tdata_reg(i) <= axis_adc_tdata(i);
-            axis_adc_tvalid_reg(i) <= axis_adc_tvalid(i);
-            axis_adc_tlast_reg(i) <= axis_adc_tlast(i);
-            axis_adc_tuser_reg(i) <= axis_adc_tuser(i);
+            adc_tdata_reg(i) <= adc_tdata(i);
+            adc_tvalid_reg(i) <= adc_tvalid(i);
+            adc_tlast_reg(i) <= adc_tlast(i);
+            adc_tuser_reg(i) <= adc_tuser(i);
             if chan_reset(i)='1' then
-                axis_adc_tvalid_reg(i) <='0';
+                adc_tvalid_reg(i) <='0';
             end if;
         end if; -- clk
 	end process;
@@ -2874,10 +2877,10 @@ begin
 		--	)
 		PORT MAP(
 			-- Channelizer input (on ANT_CLK)
-			in_dat_tdata  => axis_adc_tdata_reg(i),
-			in_dat_tvalid => axis_adc_tvalid_reg(i),
-			in_dat_tlast  => axis_adc_tlast_reg(i),
-			in_dat_tuser  => axis_adc_tuser_reg(i),
+			in_dat_tdata  => adc_tdata_reg(i),
+			in_dat_tvalid => adc_tvalid_reg(i),
+			in_dat_tlast  => adc_tlast_reg(i),
+			in_dat_tuser  => adc_tuser_reg(i),
 			in_reset => chan_reset_reg(i),
 			in_clk => chan_clk(i), -- input and signal processing clock
 
@@ -2923,19 +2926,19 @@ begin
 			adc_RPLY_tlast  => ADC_RPLY_DAT(i).TLAST,
 			adc_RPLY_tready => ADC_RPLY_RDY(i).TREADY,
 
-			-- Data capture mux port
-	        m_axis_cap_tdata => axis_cap_tdata(i),
-	        m_axis_cap_tvalid => axis_cap_tvalid(i),
-	        m_axis_cap_tlast => axis_cap_tlast(i),
-            cap_source_req => cap_source_req(i),
-            cap_source_ack => cap_source_ack(i),
+			-- Data monitoring port
+	        m_axis_cap_tdata => chan_mon_tdata(i),
+	        m_axis_cap_tvalid => chan_mon_tvalid(i),
+	        m_axis_cap_tlast => chan_mon_tlast(i),
+            cap_source_req => chan_mon_source_req(i),
+            cap_source_ack => chan_mon_source_ack(i),
 
 
 			-- Streaming data capture interface
-			PRB_tdata  => axis_prb_tdata(i),
-			PRB_tvalid => axis_prb_tvalid(i),
-			PRB_tlast  => axis_prb_tlast(i),
-			PRB_tready => axis_prb_tready(i),
+			PRB_tdata  => cap_data(i),
+			PRB_tvalid => cap_valid(i),
+			PRB_tlast  => cap_last(i),
+			PRB_tready => cap_ready(i),
 			PRB_CLK    => CTRL_CLK
 		);
 end generate;
@@ -2953,25 +2956,21 @@ ct_clk_blk: block
 	signal ct_reset_sync: std_logic;
 	signal ct_reset_reg: std_logic;
 begin
-	-- Select which clock to use for the corner-turn engine
-	with CT_CLK_SOURCE select
-		ct_clk <= bp_shuffle_txclk when "BP_SHUFFLE_TXCLK",
-		          adc_clk when "ADC_CLK",
-		          cge_clk322 when "CGE_CLK322",
-		          corr_clk when others;
 
+	-- Select which clock to use for the corner-turn engine
 	ct_clk_case: case CT_CLK_SOURCE generate
 	    when "BP_SHUFFLE_TXCLK" =>  -- backplane link clock
 	    	ct_clk <= bp_shuffle_txclk ;
 	    when "ADC_CLK" => -- ADC clock
-	    	ct_clk <= adc_clk;
-	    when "CGE_CLK322" => -- 100G Ethernet clock
+	    	ct_clk <= adc_clk;  -- JFC: should this be chan_clk(0)?
+	    when "CGE_CLK322" => -- 322 MHz clock from the 100G Ethernet core
 	    	ct_clk <= cge_clk322 ;
 	    when "CORR_CLK" => -- PLL-generated correlator clock
 	    	ct_clk <= corr_clk ;
 	    when others =>
 	        assert FALSE report "Invalid CT_CLK_SOURCE" severity FAILURE;
 	end generate;
+
 
 	-- Generate a corner-turn engine reset synchronous to ct_clk
 	-- We use the clock generator's corr_reset as a source for the CT reset since it is properly sequenced but we resync it to ct_clk.
@@ -3047,9 +3046,9 @@ ct_gen: case CT_TYPE generate
                 axis_chan_out_send <= send_reg2;
 
 
-				--! Pipeline and connect the channelizer output to the 1st crossbar inputs.
-				--! The pipelining is there to help meeting timing closure, as we need to route long distance from the channelizer to the first crossbar
-				-- Pipeline 1
+				-- Pipeline and connect the channelizer output to the corner-turn engine inputs. The
+				-- pipelining is there to help meeting timing closure, as we need to route long
+				-- distance from the channelizer to the input of the CT Engine.
 				ct_reset_reg1 <= ct_reset_reg0;
 				for i in 0 to NUMBER_OF_CHANNELIZERS-1 loop
 		            ct_in1_tdata(i) <= axis_chan_out_tdata(i); -- convert from slv32() to slv_array()(31 downto 0)
@@ -3067,17 +3066,6 @@ ct_gen: case CT_TYPE generate
 					ct_in2_tvalid(i) <= '0' when ct_reset_reg2 else ct_in1_tvalid(i);
 				end loop;
 
-				---- Pipeline 3
-				--cb1_reset_reg2 <= cb1_reset_reg;
-				--for i in 0 to N_INPUTS-1 loop
-				--	axis_crossbar1_in_tdata_reg2(i) <= axis_crossbar1_in_tdata_reg(i);
-				--	axis_crossbar1_in_tuser_reg2(i) <= axis_crossbar1_in_tuser_reg(i);
-				--	axis_crossbar1_in_tlast_reg2(i) <= axis_crossbar1_in_tlast_reg(i);
-				--	axis_crossbar1_in_tvalid_reg2(i) <= axis_crossbar1_in_tvalid_reg(i);
-				--	if cb1_reset_reg = '1' then
-				--		axis_crossbar1_in_tvalid_reg2(i) <= '0';
-				--	end if;
-				--end loop;
 			end if; -- clk
 		end process;
 
@@ -3104,9 +3092,9 @@ ct_gen: case CT_TYPE generate
 	            s_axis_tlast => ct_in2_tlast(0), -- idem
 
 	            -- Non-blocking output stream, synchronous to `clk`
-	            m_axis_tdata => axis_ct_out_tdata,
-	            m_axis_tvalid => axis_ct_out_tvalid,
-	            m_axis_tlast => axis_ct_out_tlast,
+	            m_axis_tdata => ct_out_tdata,
+	            m_axis_tvalid => ct_out_tvalid,
+	            m_axis_tlast => ct_out_tlast,
 
 	            axis_clk => ct_clk,
 
@@ -3123,16 +3111,10 @@ ct_gen: case CT_TYPE generate
 
 	            txclk_out => bp_shuffle_txclk, -- Word clock from the GTY TX link
 
-	            rst => ct_reset_reg2,
-	            arst => corr_reset,
+	            rst => ct_reset_reg2, -- synchronous reset (sync to ct_clk, which is derived from corr_reset)
+	            arst => corr_reset, -- asynchronous reset that is independent from ct_clk (because reset stops bp_shuffle_txclk and therefore ct_clk)
 
 	            -- Control interface (command and reply stream buses)
-	--		bsb_cmd_dat  => top_bp_shuffle_cmd_dat,
-	--		bsb_cmd_rdy  => top_bp_shuffle_cmd_rdy,
-	--		bsb_rply_dat => top_bp_shuffle_rply_dat,
-	--		bsb_rply_rdy =>top_bp_shuffle_rply_rdy,
-	--		bsb_clk      => ctrl_clk,
-	--		bsb_rst      => bp_shuffle_CTRL_RST_reg
 
 	            bsb_cmd_dat  => top_cmd_dat(CT_BASE_PORT),
 	            bsb_cmd_rdy  => top_cmd_rdy(CT_BASE_PORT),
@@ -3157,11 +3139,12 @@ end generate ct_gen;
 
 -----------------------------------------------------------
 -----------------------------------------------------------
--- Real-time Offload links
+-- Real-time data offload links (8x10G or 100G Ethernet links)
 -----------------------------------------------------------
 -----------------------------------------------------------
--- ! Implements an array of 10G Ethernet transmitters to send data off to the GPUs.
--- ! We have 8x 10G Links connected on the two QSFP+ connectors on the motherboard.
+--
+-- Implements an array of 10G Ethernet transmitters to send data off to the GPUs.
+-- We have 8x 10G Links connected on the two QSFP+ connectors on the motherboard.
 
 GPU_GEN: if GPU_LINK_TYPE /= "NONE" generate
 
@@ -3257,6 +3240,11 @@ begin
 
             signal refclk, refclk_div2:std_logic;
 
+            -- Data bus from the frame accumulator to the 100G interface
+			signal uct_tdata: std_logic_vector(255 downto 0);
+			signal uct_tvalid: std_logic;
+			signal uct_tlast: std_logic;
+
         begin
 
 
@@ -3286,9 +3274,9 @@ begin
 	        uram0: entity work.uram_ct
                 port map (
                     -- input data bus
-                    s_axis_in_tdata => axis_ct_out_tdata,
-                    s_axis_in_tvalid => axis_ct_out_tvalid,
-                    s_axis_in_tlast=> axis_ct_out_tlast,
+                    s_axis_in_tdata => ct_out_tdata,
+                    s_axis_in_tvalid => ct_out_tvalid,
+                    s_axis_in_tlast=> ct_out_tlast,
 
                     -- Output data bus
                     m_axis_out_tdata => uct_tdata,
@@ -3355,7 +3343,7 @@ end generate GPU_GEN;
 cap_gen: case CAPTURE_TYPE generate
     when "BRAM" =>
     	-- Nothing to do: capture logic in self-contained in CHAN
-		cap_source_req <= (others => '0'); -- make sure the net is driven
+		chan_mon_source_req <= (others => '0'); -- make sure the net is driven
 
     when uram_case: "URAM" =>
         signal ucap_cmd_dat: AXIS8_DAT_STRUCT;
@@ -3363,22 +3351,27 @@ cap_gen: case CAPTURE_TYPE generate
         signal ucap_rply_dat: AXIS8_DAT_STRUCT;
         signal ucap_rply_rdy: AXIS8_RDY_STRUCT;
 
-        signal axis_ucap_reg1_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(CAPTURE_BITS_PER_WORD-1 downto 0);
-        signal axis_ucap_reg1_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
-        signal axis_ucap_reg1_tlast: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
-        attribute shreg_extract of axis_ucap_reg1_tdata,axis_ucap_reg1_tvalid,axis_ucap_reg1_tlast: signal is "no"; -- needed to prevent pipeline registers to be combined into shoft registers
+        signal chan_mon_reg1_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(CAPTURE_BITS_PER_WORD-1 downto 0);
+        signal chan_mon_reg1_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
+        signal chan_mon_reg1_tlast: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
+        attribute shreg_extract of chan_mon_reg1_tdata,chan_mon_reg1_tvalid,chan_mon_reg1_tlast: signal is "no"; -- needed to prevent pipeline registers to be combined into shoft registers
 
-        signal axis_ucap_reg2_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(CAPTURE_BITS_PER_WORD-1 downto 0);
-        signal axis_ucap_reg2_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
-        signal axis_ucap_reg2_tlast: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
-        attribute shreg_extract of axis_ucap_reg2_tdata,axis_ucap_reg2_tvalid,axis_ucap_reg2_tlast: signal is "no"; -- needed to prevent pipeline registers to be combined into shoft registers
+        signal chan_mon_reg2_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS-1)(CAPTURE_BITS_PER_WORD-1 downto 0);
+        signal chan_mon_reg2_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
+        signal chan_mon_reg2_tlast: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES-1);
+        attribute shreg_extract of chan_mon_reg2_tdata,chan_mon_reg2_tvalid,chan_mon_reg2_tlast: signal is "no"; -- needed to prevent pipeline registers to be combined into shoft registers
 
-        signal ucap_source_req1:std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1); -- data source request for each channel
+        signal chan_mon_source_req_pre:std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1); -- data source request for each channel
         signal ucap_source_ack1: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1); -- curent data source on tdata for each channel
         signal ucap_source_ack2: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1); -- curent data source on tdata for each channel
         attribute shreg_extract of ucap_source_ack1,ucap_source_ack2: signal is "no";
 
-        signal axis_cap_reg1_tdata112: slv_array(0 to NUMBER_OF_ADCS-1)(ADC_BITS_PER_WORD-1 downto 0);
+		signal ucap_corr_in_tdata: std_logic_vector(7 downto 0);
+		signal ucap_corr_in_tready: std_logic;
+		signal ucap_corr_in_tvalid: std_logic;
+		signal ucap_corr_in_tlast: std_logic;
+
+        --signal axis_cap_reg1_tdata112: slv_array(0 to NUMBER_OF_ADCS-1)(ADC_BITS_PER_WORD-1 downto 0);
         signal ucap_ctrl_rst, ucap_ctrl_rst_reg: std_logic;
         signal ucap_clk: std_logic;
         signal ucap_rst, ucap_rst_reg: std_logic;
@@ -3389,6 +3382,9 @@ cap_gen: case CAPTURE_TYPE generate
         attribute DONT_TOUCH of ucap0: label is "true"; -- don't optimize through cell boundaries
     begin
 
+    	-- Make sure the correlator clock (ct_clk) is the same as the channelizer clock (chan_clk).
+    	-- UCAP assumes the aux data sources use the same clock as the main monitored source, but maybe that can change in the future.
+		assert CT_CLK_SOURCE = "ADC_CLK" and CHAN_CLK_SOURCE = "ADC" report "Correlator must run on ADC_CLK in order for its output to be used by UCAP" severity FAILURE;
 
         ucap_clk <= chan_clk(0);
         -- Pipeline the reset signal. ADC logic and UCAP (which uses Ultraram) are at opposite sides of the FPGA on the Ultrascale+.
@@ -3416,16 +3412,23 @@ cap_gen: case CAPTURE_TYPE generate
         -- Pipeline the Muxed Capture data bus
         pipe_proc: process(all) begin
             if rising_edge(ucap_clk) then
-                axis_ucap_reg1_tdata <= axis_cap_tdata;
-                axis_ucap_reg1_tvalid <= axis_cap_tvalid(0); -- all channels are assumed to be synchronous
-                axis_ucap_reg1_tlast <= axis_cap_tlast(0);
-                cap_source_req <= ucap_source_req1;
-                ucap_source_ack1 <= cap_source_ack;
+                chan_mon_reg1_tdata <= chan_mon_tdata;
+                chan_mon_reg1_tvalid <= chan_mon_tvalid(0); -- all channels are assumed to be synchronous
+                chan_mon_reg1_tlast <= chan_mon_tlast(0);
+                chan_mon_source_req <= chan_mon_source_req_pre;
+                ucap_source_ack1 <= chan_mon_source_ack;
 
-                axis_ucap_reg2_tdata <= axis_ucap_reg1_tdata;
-                axis_ucap_reg2_tvalid <= axis_ucap_reg1_tvalid;
-                axis_ucap_reg2_tlast <= axis_ucap_reg1_tlast;
+                chan_mon_reg2_tdata <= chan_mon_reg1_tdata;
+                chan_mon_reg2_tvalid <= chan_mon_reg1_tvalid;
+                chan_mon_reg2_tlast <= chan_mon_reg1_tlast;
                 ucap_source_ack2 <= ucap_source_ack1;
+
+                -- pipeline correlator output stream to UCAP auxiliary stream input
+                -- Correlator must run on adc_clk
+                corr_out_tready <= ucap_corr_in_tready;
+                ucap_corr_in_tdata   <= corr_out_tdata;
+                ucap_corr_in_tvalid  <= corr_out_tvalid;
+                ucap_corr_in_tlast   <= corr_out_tlast;
 
             end if;
         end process;
@@ -3438,25 +3441,29 @@ cap_gen: case CAPTURE_TYPE generate
                 --ADC_SAMPLES_PER_FRAME => ADC_SAMPLES_PER_FRAME
                 )
             port map (
-                s_axis_tdata => axis_ucap_reg2_tdata,
-                s_axis_tvalid => axis_ucap_reg2_tvalid,
-                s_axis_tlast=> axis_ucap_reg2_tlast,
-                source_sel_out => ucap_source_req1,
+
+            	-- Data monitoring port, synchronous to clk
+                s_axis_tdata => chan_mon_reg2_tdata,
+                s_axis_tvalid => chan_mon_reg2_tvalid,
+                s_axis_tlast=> chan_mon_reg2_tlast,
+                source_sel_out => chan_mon_source_req_pre,
                 source_sel_in => ucap_source_ack2,
 
+                -- Auxiliary input stream, synchronous to clk
+                s_axis_stream_in_data => ucap_corr_in_tdata,
+		        s_axis_stream_in_tvalid=> ucap_corr_in_tvalid,
+		        s_axis_stream_in_tlast=> ucap_corr_in_tlast,
+		        s_axis_stream_in_tready=> ucap_corr_in_tready,
+
+                clk => ucap_clk,
+                rst => ucap_rst_reg,
+
+                -- Output stream, synchronous to bsb_clk
                 m_axis_bsb_tdata => m_axis_cap_tdata,
                 m_axis_bsb_tvalid=> m_axis_cap_tvalid,
                 m_axis_bsb_tlast => m_axis_cap_tlast,
                 m_axis_bsb_tready => m_axis_cap_tready,
                 bsb_clk => axis_cap_clk,
-
-                s_axis_stream_in_data => axis_ucap_in_tdata,
-		        s_axis_stream_in_tvalid=> axis_ucap_in_tvalid,
-		        s_axis_stream_in_tlast=> axis_ucap_in_tlast,
-		        s_axis_stream_in_tready=> axis_ucap_in_tready,
-
-                clk=> ucap_clk,
-                rst=> ucap_rst_reg,
 
                 -- BSB interface
                 CMD_DAT => ucap_cmd_dat,
@@ -3481,7 +3488,9 @@ end generate cap_gen;
 --
 -- Correlator reset process
 -- We try to use multiple registered stages and multiple output to ease the timing closure, although the synthesizer might remove some of those extra redundant registers.
-
+--
+-- The correlator is clocked by ct_clk, which is selected by CONFIG_CT_CLK_SOURCE
+--
 CORRGEN: if IMPLEMENT_CORR generate
 
 	signal corr_cmd_dat: AXIS8_DAT_STRUCT; -- shared with CROSSBAR3
@@ -3515,27 +3524,27 @@ begin
             -- There is NUMBER_OF_CORRELATOR crossbar1 output lanes, and NUMBER_OF_CORRELEATOR streaming outputs
 
 
-            signal axis_corr_in_tdata: slv32_array(0 to NUMBER_OF_CORRELATORS-1);
-            signal axis_corr_in_tvalid: slv(0 to NUMBER_OF_CORRELATORS-1);
-            signal axis_corr_in_tlast: slv(0 to NUMBER_OF_CORRELATORS-1);
+            signal corr_in_tdata: slv32_array(0 to NUMBER_OF_CORRELATORS-1);
+            signal corr_in_tvalid: slv(0 to NUMBER_OF_CORRELATORS-1);
+            signal corr_in_tlast: slv(0 to NUMBER_OF_CORRELATORS-1);
 
-            signal axis_corr_out_tdata: slv8_array(0 to NUMBER_OF_CORRELATORS-1);
-            signal axis_corr_out_tvalid: slv(0 to NUMBER_OF_CORRELATORS-1);
-            signal axis_corr_out_tlast: slv(0 to NUMBER_OF_CORRELATORS-1);
-            signal axis_corr_out_tready: slv(0 to NUMBER_OF_CORRELATORS-1);
+            signal corr_out_tdata: slv8_array(0 to NUMBER_OF_CORRELATORS-1);
+            signal corr_out_tvalid: slv(0 to NUMBER_OF_CORRELATORS-1);
+            signal corr_out_tlast: slv(0 to NUMBER_OF_CORRELATORS-1);
+            signal corr_out_tready: slv(0 to NUMBER_OF_CORRELATORS-1);
 
         begin
             -- Connect the corner-turn engine outputs to the correlator inputs
             CORR_PRB_GEN: for i in 0 to NUMBER_OF_CORRELATORS-1 generate
                 -- input bus. 1:1 connection between each correlator and crossbar output. Pipeling in the module.
-                axis_corr_in_tvalid(i)                 <= axis_ct_out_tvalid;
-                axis_corr_in_tlast(i)                  <= axis_ct_out_tlast;
-                axis_corr_in_tdata(i)                  <= axis_ct_out_tdata(32*i+31 downto 31*i); -- Should we invert the direction of i?
+                corr_in_tvalid(i)                 <= ct_out_tvalid;
+                corr_in_tlast(i)                  <= ct_out_tlast;
+                corr_in_tdata(i)                  <= ct_out_tdata(32*i+31 downto 31*i); -- Should we invert the direction of i?
                 -- output bus. Connects to the probe port
-                axis_prb_tdata(CORR_PROBE_BASE_PORT+i)  <= axis_corr_out_tdata(i);
-                axis_prb_tvalid(CORR_PROBE_BASE_PORT+i) <= axis_corr_out_tvalid(i);
-                axis_prb_tlast(CORR_PROBE_BASE_PORT+i)  <= axis_corr_out_tlast(i);
-                axis_corr_out_tready(i)                 <= axis_prb_tready(CORR_PROBE_BASE_PORT+i);
+                cap_data(CORR_PROBE_BASE_PORT+i)  <= corr_out_tdata(i);
+                cap_valid(CORR_PROBE_BASE_PORT+i) <= corr_out_tvalid(i);
+                cap_last(CORR_PROBE_BASE_PORT+i)  <= corr_out_tlast(i);
+                corr_out_tready(i)                 <= cap_ready(CORR_PROBE_BASE_PORT+i);
             end generate;
 
 
@@ -3563,19 +3572,19 @@ begin
                 port map(
                     -- Input data interface (AXI4-Streaning, 16-bit wide, non-blocking)
 
-                    s_axis_tvalid           => axis_corr_in_tvalid,
-                    s_axis_tlast            => axis_corr_in_tlast,
-                    s_axis_tdata            => axis_corr_in_tdata,
+                    s_axis_tvalid           => corr_in_tvalid,
+                    s_axis_tlast            => corr_in_tlast,
+                    s_axis_tdata            => corr_in_tdata,
 
                     in_clk                  => ct_clk,
                     in_rst                  => corr_reset_reg1,
 
                     -- Correlated data output interface (AXI4-Streaning, 8-bit wide, blocking)
 
-                    m_axis_data_out_tdata   => axis_corr_out_tdata,
-                    m_axis_data_out_tvalid  => axis_corr_out_tvalid,
-                    m_axis_data_out_tlast   => axis_corr_out_tlast,
-                    m_axis_data_out_tready  => axis_corr_out_tready,
+                    m_axis_data_out_tdata   => corr_out_tdata,
+                    m_axis_data_out_tvalid  => corr_out_tvalid,
+                    m_axis_data_out_tlast   => corr_out_tlast,
+                    m_axis_data_out_tready  => corr_out_tready,
 
                     out_clk                 => ctrl_clk,
                     out_rst                 => ctrl_rst,
@@ -3599,29 +3608,19 @@ begin
             constant BIN_DECIMATION_FACTOR:integer := sel(CT_LEVEL=1, 1, 4);
             constant BITS_PER_BIN: integer := 4+4;
 
-            signal axis_corr_in_tdata: slv(255 downto 0);
-            signal axis_corr_in_tvalid: std_logic;
-            signal axis_corr_in_tlast: std_logic;
+            signal corr_in_tdata: slv(255 downto 0);
+            signal corr_in_tvalid: std_logic;
+            signal corr_in_tlast: std_logic;
 
-            signal axis_corr_out_tdata: std_logic_vector(7 downto 0);
-            signal axis_corr_out_tvalid: std_logic;
-            signal axis_corr_out_tlast: std_logic;
-            signal axis_corr_out_tready: std_logic;
---            signal cnt: unsigned(3 downto 0);
         begin
 
             corr_pipe: process(all) begin
                 -- Pipeline correlator input
                 if rising_edge(ct_clk) then
-                    axis_corr_in_tdata <= axis_ct_out_tdata;
-                    axis_corr_in_tlast <= axis_ct_out_tlast;
-                    axis_corr_in_tvalid<= axis_ct_out_tvalid;
+                    corr_in_tdata  <= ct_out_tdata;
+                    corr_in_tlast  <= ct_out_tlast;
+                    corr_in_tvalid <= ct_out_tvalid;
 
-                    -- pipeline correlator output stream to UCAP auxiliary stream input
-                    axis_corr_out_tready <= axis_ucap_in_tready;
-                    axis_ucap_in_tdata <= axis_corr_out_tdata;
-                    axis_ucap_in_tvalid <= axis_corr_out_tvalid;
-                    axis_ucap_in_tlast <= axis_corr_out_tlast;
                 end if; --clk
             end process corr_pipe;
 
@@ -3638,19 +3637,19 @@ begin
                     -- Input data interface (AXI4-Streaning, non-blocking)
                     -- One input per channelizer
 
-                    s_axis_data_tvalid => axis_corr_in_tvalid,
-                    s_axis_data_tlast  => axis_corr_in_tlast,
-                    s_axis_data_tdata  => axis_corr_in_tdata,
+                    s_axis_data_tvalid => corr_in_tvalid,
+                    s_axis_data_tlast  => corr_in_tlast,
+                    s_axis_data_tdata  => corr_in_tdata,
 
                     clk => ct_clk,
                     rst => corr_reset_reg1,
 
                     -- Correlated data output interface (AXI4-Streaning, 8-bit wide, blocking)
 
-                    m_axis_data_tdata   => axis_corr_out_tdata,
-                    m_axis_data_tvalid  => axis_corr_out_tvalid,
-                    m_axis_data_tlast   => axis_corr_out_tlast,
-                    m_axis_data_tready  => axis_corr_out_tready,
+                    m_axis_data_tdata   => corr_out_tdata,
+                    m_axis_data_tvalid  => corr_out_tvalid,
+                    m_axis_data_tlast   => corr_out_tlast,
+                    m_axis_data_tready  => corr_out_tready,
 
                     -- Control interface
 
@@ -3661,6 +3660,7 @@ begin
                     CTRL_CLK => ctrl_clk,
                     CTRL_RST => ctrl_rst
                     );
+
         -------------
         when others =>
             assert FALSE report "Invalid CORR_TYPE" severity FAILURE;
@@ -3690,7 +3690,7 @@ begin
 
 	blinker_reset_all <= bsb_rst_reg2 or blinker_reset;
 	blinker_rst <= blinker_reset_all or (not sfp_status_vector_int(0)); -- do not blink if Link Status = 0
-	blinker_kick <= axis_udp_rx_tvalid and axis_udp_rx_tlast; -- blink faster when packets are received
+	blinker_kick <= udp_rx_tvalid and udp_rx_tlast; -- blink faster when packets are received
     --	gpio_led <= gpio_led_int;
 	--blinker_leds <= gpio_led_int;
 	BLINKER0: entity work.BLINKER
