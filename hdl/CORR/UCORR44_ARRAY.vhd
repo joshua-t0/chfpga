@@ -146,6 +146,9 @@ begin
 
     -- Status Byte 0
     status_bytes(0)(0) <= or(overrun);
+    status_bytes(0)(1) <= rst;
+    status_bytes(0)(2) <= s_axis_data_tvalid;
+    status_bytes(0)(3) <= s_axis_data_tlast;
 
     -- Status Byte 1
     status_bytes(1) <= to_slv(NCHAN, 8);
@@ -183,7 +186,7 @@ begin
 		if rising_edge(clk) then
 			rst_reg <= (others=> (rst or user_reset_resync));
 
-			-- split the input word into NCORR correlator inputs, and split the channels
+			-- split the input word into NCORR correlator inputs and N channels
 			for corr in 0 to NCORR-1 loop
                 rcorr := NCORR-1-corr;
 				for chan in 0 to NCHAN-1 loop
@@ -195,13 +198,10 @@ begin
 				axis_corr_in_tlast(corr) <= s_axis_data_tlast;
 			end loop;
 
-			if s_axis_data_tvalid then
-				in_frame_ctr <= in_frame_ctr + 1 when not s_axis_data_tlast else (others => '0');
-			end if; -- tvalid
+			-- Count the input and output frames for debugging
+			in_frame_ctr <= in_frame_ctr + 1 when s_axis_data_tvalid and s_axis_data_tlast;
+			out_frame_ctr <= out_frame_ctr + 1 when m_axis_data_tvalid and m_axis_data_tlast;
 
-			if m_axis_data_tvalid then
-				out_frame_ctr <= out_frame_ctr + 1 when not m_axis_data_tlast else (others => '0');
-			end if; -- tvalid
 		end if; -- clk
 	end process;
 
@@ -229,7 +229,7 @@ begin
 				N => NCHAN,
 				N_PER_CLK => NCHAN,
 				BIN_DECIMATION_FACTOR => BIN_DECIMATION_FACTOR,
-				URAM_MAX => 64/NCORR,
+				URAM_MAX => 64 / NCORR,
 				READOUT_BIN => READOUT_BINS(i)
 				)
 			port map(

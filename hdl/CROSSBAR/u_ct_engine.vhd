@@ -45,11 +45,6 @@ entity u_ct_engine is
     	NUMBER_OF_REFCLK: integer       := max(QUAD_TO_REFCLK_MAP) + 1; -- Number of reference clocks - Do not override
         BITS_PER_BIN: integer := INPUT_WORD_WIDTH / BINS_PER_INPUT_WORD ;-- Supporting only 4+4 bits/bin
 		PRE_DECIMATE: boolean := CT_LEVEL > 1 -- True if we want to decimate the first 256 bins of the spectrum before entering the backplane shuffle
---		NUMBER_OF_OUTPUT_LANES: integer := 8; -- Number of output streams
---		WORDS_PER_BIN_MAX: integer :=4; --! Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 16 words.
---		BINS_PER_FRAME_MAX: integer :=64; --! Maximum number of bins per frame
---		BIN_SEL_FIFO_TYPE_MAP: integer_16xN_array := (0 to 15 => (0 to 3=>0, others=>0)); -- 0= Block RAM., 1=Dist RAM. By default, for every BIN_SEL, 10 FIFOS are made of BRAM and the rest is made of distributed RAM to maximize area utilization efficiency
---		SHUFFLE_FLAGS_MASK: slv32 -- Mask to apply to the shuffle flags to count packet errors
 		);
 	PORT(
 
@@ -81,7 +76,7 @@ entity u_ct_engine is
 		txclk_out: out std_logic; -- Word clock from the GTY TX link
 		-- frame_clk_in: in std_logic;
 
-		rst: in std_logic;
+		rst: in std_logic; -- sync reset, synchronous to axis_clk
 		arst: in std_logic; -- aync reset, NOT synchronized on txclk_out as arst stops the clock
         resetdone: out std_logic;
 
@@ -166,10 +161,10 @@ begin
 
 
 	-- First corner turn (internal corner-turn)
-	ct1_blk: block
+	ct1_blk: block is
 
 		signal control_bytes: slv8_array(0 to 0); -- default value set in the CMD_SLAVE
-		signal status_bytes: slv8_array(0 to 0);
+		signal status_bytes: slv8_array(0 to 2);
 
         --signal cb1_in_tdata: slv_array(0 to NUMBER_OF_INPUT_LANES-1)(INPUT_WORD_WIDTH-1 downto 0);
         signal cb1_in_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES-1);
@@ -180,7 +175,9 @@ begin
         signal cb1_out_tvalid: std_logic;
         signal cb1_out_tlast: std_logic;
 
-        attribute keep of cb1_out_tdata, cb1_out_tvalid, cb1_out_tlast :signal is "true"; -- prevent the tool form inferring a shift register
+        attribute keep of cb1_out_tdata, cb1_out_tvalid, cb1_out_tlast: signal is "true"; -- prevent the tool form inferring a shift register
+
+        signal in_frame_ctr, out_frame_ctr: unsigned(7 downto 0);
 
 	begin
 
@@ -190,9 +187,7 @@ begin
 			if rising_edge(bsb_clk) then
 				bsb_rst_reg <= bsb_rst;
 			end if; -- bsb_clk
---        end process;
 
---		process(all) begin
             if rising_edge(axis_clk) then
                 cb1_rst <= rst;
             end if; -- RST/CLK
@@ -219,9 +214,14 @@ begin
 				status_bytes  => status_bytes
 			);
 
-		status_bytes(0)(1 downto 0) <= to_slv(CT_LEVEL, 2);
-
 		-- Connect CT level 1 registers
+		status_bytes(0)(1 downto 0) <= to_slv(CT_LEVEL, 2);
+		status_bytes(0)(2) <= cb1_rst;
+		status_bytes(0)(3) <= rst;
+		status_bytes(0)(4) <= arst;
+		status_bytes(1) <= std_logic_vector(in_frame_ctr);
+		status_bytes(2) <= std_logic_vector(out_frame_ctr);
+
 
 		-- Perform the crossbar operation
 		process(all)
@@ -229,6 +229,11 @@ begin
 		  variable lsb: integer;
 		begin
 			if rising_edge(axis_clk) then
+
+				-- count CT1 input and output words
+
+				in_frame_ctr <= in_frame_ctr + 1 when s_axis_tvalid and s_axis_tlast;
+				out_frame_ctr <= out_frame_ctr + 1 when m_axis_tvalid and m_axis_tlast;
 
 				-- pipeline channelizer data
 				-- This CT engine assumes that the channelizer data is aligned, i.e. all lanes share a common tvalid and tlast
