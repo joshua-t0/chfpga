@@ -560,7 +560,6 @@
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedInSteps" Val="impl_1"/>
           <Attr Name="UsedInSteps" Val="synth_1"/>
         </FileInfo>
       </File>
