@@ -93,6 +93,8 @@
       <Filter Type="Srcs"/>
       <File Path="$PPRDIR/../../_Cores/CRS/scaler_mul/scaler_mul.xci">
         <FileInfo>
+          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/CRS/scaler_mul/scaler_mul.xci"/>
+          <Attr Name="ImportTime" Val="1742841207"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -545,7 +547,6 @@
           <Attr Name="ImportTime" Val="1742494408"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedInSteps" Val="synth_1"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../sifpga_crs/rqs_report4.rqs">
@@ -560,6 +561,13 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
           <Attr Name="UsedInSteps" Val="impl_1;WRITE_BITSTREAM;TCL.POST"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/rqs_report4.rqs">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedInSteps" Val="synth_1"/>
         </FileInfo>
       </File>
       <Config>
@@ -654,7 +662,7 @@
       <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2022"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles>
-        <RQSFilePath>$PSRCDIR/utils_1/impl_1/rqs_report3.rqs</RQSFilePath>
+        <RQSFilePath>$PPRDIR/rqs_report4.rqs</RQSFilePath>
       </RQSFiles>
     </Run>
     <Run Id="zynq_tcpipe_crs_pl_clk_rst_0_synth_1" Type="Ft3:Synth" SrcSet="zynq_tcpipe_crs_pl_clk_rst_0" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="zynq_tcpipe_crs_pl_clk_rst_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/zynq_tcpipe_crs_pl_clk_rst_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PPRDIR/../sifpga_crs/sifpga_crs.srcs/utils_1/imports/zynq_tcpipe_crs_pl_clk_rst_0_synth_1" AutoRQSDir="$PPRDIR/../sifpga_crs/sifpga_crs.srcs/utils_1/imports/zynq_tcpipe_crs_pl_clk_rst_0_synth_1">
