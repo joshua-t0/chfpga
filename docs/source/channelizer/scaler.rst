@@ -52,6 +52,13 @@ The format ressembles the half-precision floating point format defined by IEEE 7
 - We cannot express negative exponent or mantissa. There is therefore no offset encoding.
 - We don't use the assumed '1' bit prefixing the mantissa, although that is a nice trick that could add resolution but would offset the gain range.
 
+
+Gain banks
+----------
+
+Up to two independent gain tables can be stored in memory simultaneously. The scaler can be configured to switch between these two banks at any point and ensures that the scalers in each channelizer switches on the same clock cycle. This allows for different gain banks to be used depending on the conditions (e.g. a different gain bank for daytime and nighttime observation).
+
+
 Memory Map
 ==========
 
