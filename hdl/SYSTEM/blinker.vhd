@@ -35,10 +35,10 @@ entity blinker is
 
 		-- Clock
 		clk: in  std_logic;
-		kick: in std_logic :='0'; --! increases the blink speed when '1'
-		leds: out std_logic_vector(7 downto 0); --! Ramp up and down pattern Intensity = (0,1,2,3,2,1,0,0,0...)
-		leds_u: out std_logic_vector(7 downto 0); --! Ramp_up pattern        Intensity = (0,1,2,3,0,0,0,0,0...)
-		leds_d: out std_logic_vector(7 downto 0) --! Ramp down parrern      Intensity = (0,0,0,3,2,1,0,0,0...)
+		kick: in std_logic := '0'; -- increases the blink speed when '1'
+		leds: out std_logic_vector(7 downto 0); -- Ramp up and down pattern Intensity = (0,1,2,3,2,1,0,0,0...)
+		leds_u: out std_logic_vector(7 downto 0); -- Ramp_up pattern        Intensity = (0,1,2,3,0,0,0,0,0...)
+		leds_d: out std_logic_vector(7 downto 0) -- Ramp down parrern      Intensity = (0,0,0,3,2,1,0,0,0...)
 		);
 end entity blinker;
 

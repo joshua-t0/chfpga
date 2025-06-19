@@ -1,4 +1,4 @@
-----------------------------------------------------------------------------------
+	----------------------------------------------------------------------------------
 -- Company: McGill University
 -- Engineer: JF Cliche
 --
@@ -455,7 +455,7 @@ entity chFPGA is
 
 
 			);
-end chFPGA;
+end entity chFPGA;
 
 ---------- chFPGA implementation ------
 --! Implements the chFPGA top level functionalities.
@@ -1262,7 +1262,7 @@ gen_eth: case PHY_TYPE generate
     when others =>
         assert FALSE report "Invalid PHY_TYPE" severity FAILURE;
 
-end generate; -- case PHY_TYPE
+end generate gen_eth; -- case PHY_TYPE
 
 
 
@@ -1492,7 +1492,7 @@ begin
 			CLK => CTRL_CLK,
 			RST => bsb_rst_reg2
 		);
-end block;
+end block sysrtr_blk;
 
 ---------------------------------------------------------------------
 -- GPIO interface instantiation
@@ -2236,13 +2236,13 @@ begin
 
 	gen_freq25: if NUMBER_OF_GPU_REFCLKS > 0 generate
 		freq_ctr_in_vect(25) <= gpu_refclk_div2(0); -- MGT
-	end generate;
+	end generate gen_freq25;
 
 	freq_ctr_in_vect(26) <= gpu_txclk_div2;
 
 	gen_freq27: if NUMBER_OF_BP_SHUFFLE_REFCLKS > 0 generate
 		freq_ctr_in_vect(27) <= bp_shuffle_refclk_div2(0); -- MGT
-	end generate;
+	end generate gen_freq27;
 
 	freq_ctr_in_vect(28) <= bp_shuffle_txclk_div2;
 	freq_ctr_in_vect(29) <= fmc_mgt_pll_refclk_div2(1); -- MGT
@@ -2257,7 +2257,7 @@ begin
 
 	gen_freq38: if NUMBER_OF_BP_SHUFFLE_REFCLKS > 1 generate
 		freq_ctr_in_vect(38) <= bp_shuffle_refclk_div2(1); -- MGT
-	end generate;
+	end generate gen_freq38;
 
     freq_ctr_in_vect(39) <= pll_oscout_div2;
 
@@ -2793,7 +2793,7 @@ chan_clk_gen:case CHAN_CLK_SOURCE generate
         chclkgen: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
             chan_clk(i) <= chan_clk_pll(i mod 8);
             chan_reset(i) <= chan_reset_pll(i mod 8);
-        end generate;
+        end generate chclkgen;
 
     when adc_case:"ADC" =>
         -- Generate channalizer clocks.
@@ -2814,7 +2814,7 @@ chan_clk_gen:case CHAN_CLK_SOURCE generate
         chclkgen: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
             chan_clk(i) <= adc_clk;
             chan_reset(i) <= chan_reset_resync;
-        end generate;
+        end generate chclkgen;
     end adc_case;
 
     when others =>
@@ -2941,7 +2941,7 @@ begin
 			PRB_tready => cap_ready(i),
 			PRB_CLK    => CTRL_CLK
 		);
-end generate;
+end generate CHANGEN;
 
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
@@ -3545,7 +3545,7 @@ begin
                 cap_valid(CORR_PROBE_BASE_PORT+i) <= corr_out_tvalid(i);
                 cap_last(CORR_PROBE_BASE_PORT+i)  <= corr_out_tlast(i);
                 corr_out_tready(i)                 <= cap_ready(CORR_PROBE_BASE_PORT+i);
-            end generate;
+            end generate CORR_PRB_GEN; 
 
 
 
@@ -3706,5 +3706,5 @@ begin
 		);
 end block blinker_blk;
 
-end Behavioral;
+end architecture Behavioral;
 
