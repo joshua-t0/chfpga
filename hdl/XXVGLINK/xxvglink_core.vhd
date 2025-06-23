@@ -185,7 +185,7 @@ constant NUMBER_OF_QUADS : integer := MAX(LINK_TO_QUAD_MAP(0 to NUMBER_OF_LINKS-
 
 
 constant NUMBER_OF_MODULES: integer := NUMBER_OF_QUADS + NUMBER_OF_LINKS + 1; -- One common module, and one for each quad (QPLL) and channel (GTX)
-
+constant MODULE_ADDR_WIDTH: integer := 10; -- number of remaining addressable space for each module
 signal MODULE_CMD_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_MODULES-1 downto 0);
 signal MODULE_CMD_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_MODULES-1 downto 0);
 signal MODULE_RPLY_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_MODULES-1 downto 0);
@@ -224,11 +224,12 @@ signal common_rx_datapath_reset: std_logic;
 signal common_rx_reset: std_logic;
 signal common_tx_reset: std_logic;
 signal common_rx_cdr_stable_out: std_logic;
+signal common_drp_page: std_logic_vector(0 downto 0);
 
 -------------------------------------------------------------------
 signal gt_drp_dout: slv16_array(NUMBER_OF_LINKS-1 downto 0);
 signal gt_drp_din: slv16_array(NUMBER_OF_LINKS-1 downto 0);
-signal gt_drp_addr: slv10_array(NUMBER_OF_LINKS-1 downto 0);
+signal gt_drp_addr: slv9_array(NUMBER_OF_LINKS-1 downto 0); -- GTY needs 10 bits, 9 bits (word address) available in address space. Use page register for upper bit.
 signal gt_drp_rdy: slv(NUMBER_OF_LINKS-1 downto 0);
 signal gt_drp_en: slv(NUMBER_OF_LINKS-1 downto 0);
 signal gt_drp_wr_en: slv(NUMBER_OF_LINKS-1 downto 0);
@@ -334,21 +335,21 @@ end process;
 -- Routes the commands to the requested module
 bsb_router0: entity work.CTRL_ROUTER
 	generic map (
-		NUMBER_OF_PORTS=> NUMBER_OF_MODULES,
-		ADDRESS_MASK => "-----1111----------" -- 4-bit routing address (1 common, 4 PLL max, 11 GTY max),  10-bit internal address
+		NUMBER_OF_PORTS => NUMBER_OF_MODULES,
+		ADDRESS_MASK    => "-----1111----------" -- 4-bit routing address (1 common, 4 PLL max, 11 GTY max),  10-bit internal address
 	)
 	port map(
 		-- Master control interface
-		CMD_IN_DAT=>CMD_DAT,
-		CMD_IN_RDY=>CMD_RDY,
-		RPLY_OUT_DAT=>RPLY_DAT,
-		RPLY_OUT_RDY=>RPLY_RDY,
+		CMD_IN_DAT   => CMD_DAT,
+		CMD_IN_RDY   => CMD_RDY,
+		RPLY_OUT_DAT => RPLY_DAT,
+		RPLY_OUT_RDY => RPLY_RDY,
 
 
-		CMD_OUT_DAT=> MODULE_CMD_DAT,
-		CMD_OUT_RDY=> MODULE_CMD_RDY,
-		RPLY_IN_DAT=> MODULE_RPLY_DAT,
-		RPLY_IN_RDY=> MODULE_RPLY_RDY,
+		CMD_OUT_DAT => MODULE_CMD_DAT,
+		CMD_OUT_RDY => MODULE_CMD_RDY,
+		RPLY_IN_DAT => MODULE_RPLY_DAT,
+		RPLY_IN_RDY => MODULE_RPLY_RDY,
 
 		CLK => CTRL_CLK,
 		RST => CTRL_RST
@@ -647,6 +648,7 @@ common_user_reset                <= common_control_bytes(0)(7);
 -- common_scramble_en               <= common_control_bytes(0)(3);
 -- common_descramble_en             <= common_control_bytes(0)(2);
 -- common_capture_en                <= common_control_bytes(0)(1);
+common_drp_page <= common_control_bytes(0)(4 downto 4);
 common_tx_reset <= common_control_bytes(0)(3); -- core only
 common_rx_pll_datapath_reset <= common_control_bytes(0)(2); -- core only
 common_rx_datapath_reset <= common_control_bytes(0)(1); -- core only
@@ -673,18 +675,24 @@ common_status_bytes(2 to 2 + NUMBER_OF_STATUS_BYTES-1) <= slv8_array(status_byte
 
 
 --------------------------------------
--- GTXE2_COMMON (QPLL)
+-- GTYE4_COMMON (QPLL)
 --------------------------------------
---! Instantiates a GTXE2_COMMON (QPLL) block for each quad
---! The refeence clock use for each quad is specified in the QUAD_TO_REFCLK_MAP list.
+-- Instantiates a GTYE4_COMMON (QPLL) block for each quad
+-- The refeence clock use for each quad is specified in the QUAD_TO_REFCLK_MAP list.
+--
+-- The GTYE4_COMMON DRP Address bus is 10 bits (word address), so we need 11-bits of BSB (byte) address space.
+-- The router allocated 10 bits of BSB address to this module, so we can access only 9-bits DRP address (0x000-0x1FF).
+-- However the highest register is at 0x00B0 (8-bit word address) so we are ok.
+
 quad_gen: for i in 0 to NUMBER_OF_QUADS-1 generate
 
 	quad_regs0: entity work.CTRL_SLAVE
 		GENERIC MAP (
 			DEFAULT_CONTROL_BYTES   => X"00",
 			USE_RAM_DOUT_RDY        => TRUE, -- need to wait for the RDY signal on RAM read accesses
+			ADDR_WIDTH              => MODULE_ADDR_WIDTH, -- needed because RAM byte address width is bigger than available address bits
 			RAM_DATA_WIDTH          => 16,
-			RAM_ADDR_WIDTH          => 10, -- GTYE4_COMMON DRP Address bus is 10 bits
+			RAM_ADDR_WIDTH          => 10,
 			NUMBER_OF_CONTROL_BYTES => quad_control_bytes(i)'Length(1), -- Number of bits in the control word
 			NUMBER_OF_STATUS_BYTES  => quad_status_bytes(i)'Length(1) -- Number of bits in the status word.
 		)
@@ -940,7 +948,7 @@ begin
 
 
 		-- DRP port
-		drpaddr_in(10*(i+1)-1 downto 10*i) <= gt_drp_addr(i);
+		drpaddr_in(10*(i+1)-1 downto 10*i) <= common_drp_page & gt_drp_addr(i);
 		drpdi_in(16*(i+1)-1 downto 16*i) <= gt_drp_din(i);
 		drpclk_in(i) <= ctrl_clk;
 		gt_drp_dout(i) <= drpdo_out(16*(i+1)-1 downto 16*i);
@@ -1139,8 +1147,9 @@ gtx_gen: for i in 0 to NUMBER_OF_LINKS-1 generate
 		GENERIC MAP (
 			DEFAULT_CONTROL_BYTES => X"80_00_01_40_00_00",
 			USE_RAM_DOUT_RDY      => TRUE, -- need to wait for the RDY signal on RAM read accesses
+			ADDR_WIDTH            => MODULE_ADDR_WIDTH, -- needed because RAM byte address width is bigger than available address bits
 			RAM_DATA_WIDTH        => 16,
-			RAM_ADDR_WIDTH        => 10, -- GTX DRP Address bus is 10 bits, we use 11 bits of address in the memory-mapepd interface since we access bytes
+			RAM_ADDR_WIDTH        => 9, -- GTY DRP word Address is 10 bits (11 bit byte address on BSB bus). Maximum register is at 0x28C (10-bit word address)
 			NUMBER_OF_CONTROL_BYTES => gt_control_bytes(i)'LENGTH(1), -- Number of bits in the control word
 			NUMBER_OF_STATUS_BYTES => gt_status_bytes(i)'LENGTH(1) -- Number of bits in the status word.
 	  	)
