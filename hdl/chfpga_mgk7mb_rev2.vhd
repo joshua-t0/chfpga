@@ -96,6 +96,7 @@ entity chFPGA_MGK7MB_Rev2 is
 
 
 			-- Channelizer config
+			FFT_TYPE: integer                            := CONFIG_CHAN_FFT_TYPE;
 			NUMBER_OF_CHANNELIZERS:INTEGER               := 16;  --!(Typ. =16)  (0-NUMBER_OF_ADCS) Number of antenna processing blocks to be implemented
 
 			-- Corner-turn engine config
@@ -941,6 +942,7 @@ bufr_rawclk10 : BUFR
 			ANT_CLK_SOURCE                  => ANT_CLK_SOURCE,
 
 			-- Channelizer config
+			FFT_TYPE => FFT_TYPE,
 			NUMBER_OF_CHANNELIZERS          => NUMBER_OF_CHANNELIZERS,
 
 			-- Correlator config
