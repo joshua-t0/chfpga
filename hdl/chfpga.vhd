@@ -871,9 +871,6 @@ signal axis_gpu_tlast: slv(0 to NUMBER_OF_GPU_LINKS-1);
 -- CORR signals
 -----------------------
 
-
-
-
 -----------------------
 -- RESET network
 -----------------------
@@ -881,18 +878,8 @@ signal axis_gpu_tlast: slv(0 to NUMBER_OF_GPU_LINKS-1);
 signal gpu_reset: std_logic;
 signal gpu_reset_reg: std_logic;
 
-
-
-
-
-
-
 signal bp_shuffle_ctrl_rst: std_logic;
 signal bp_shuffle_ctrl_rst_reg: std_logic;
-
-
-
-
 
 attribute DONT_TOUCH of bp_shuffle_ctrl_rst: signal is "true";
 attribute DONT_TOUCH of bp_shuffle_ctrl_rst_reg: signal is "true";
