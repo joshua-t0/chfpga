@@ -64,7 +64,7 @@ use UNISIM.VComponents.all;
 --
 -- | 000 | Read 2^NN control bytes | [000NNxxx] [xxxxxxxx] [aaaaaaaa]
 -- | 001 | No operation (reserved for future operations)|
--- | 010 | Read 2^^NN status byte |
+-- | 010 | Read 2^NN status byte |
 -- | 011 | Read 2^NN RAM bytes or 2^NN DRP words (LSB fist)|
 -- | 100 | Write control bytes |
 -- | 101 | Write control bytes with mask |
@@ -72,13 +72,15 @@ use UNISIM.VComponents.all;
 -- | 111 | Write RAM bytes or DRP words (LSB first) |
 --
 --
---  In 16-bit mode, The LSB is stored at even addresses and the MSB is at odd addresses (little endian). This is the opposite to the general big endian convention used for the control registers.
+-- In 16-bit mode, The LSB is stored at even addresses and the MSB is at odd addresses (little endian).
+-- This is the opposite to the general big endian convention used for the control registers.
+--
 --   e.g.
 --      Addr 2*N = bits 7-0 = LSB
 --      Addr 2*N+1 = bits 15-8 = MSB
 --   where N is the DRP register word address
 --
---   NOTE: The even address must be read/write before the odd for the 16-bit (such as DRP) operation to succeed
+--   NOTE: The even address (LSB) must be read/write before the odd (MSB) for the 16-bit access to succeed
 --
 
 entity CTRL_SLAVE is
@@ -447,7 +449,7 @@ cmd_proc: process(ctrl_clk)
 										addr <= addr + 1;
 										count <= count - 1;
 											ctrl_rply_out_dat.TLAST <= '0';
-										if count=1 then -- if this is the last byte/word
+										if count = 1 then -- if this is the last byte/word
 											ram_rd_en_int <='0'; -- cancel any data fetch
 											ctrl_rply_out_dat.TLAST <= '1';
 											ctrl_cmd_in_rdy.TREADY <= '1'; -- the next byte will be processed
