@@ -29,4 +29,7 @@ package chfpga_config is
 	constant CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS: integer := 0;
 	constant CONFIG_NUMBER_OF_GPU_LINKS: integer := 0;
 
+	constant CONFIG_CT_LEVEL: integer := 1;
+    constant CONFIG_CT_TYPE: string                              := "UCT"; -- "UCT" or "BCT"
+
 end chfpga_config;

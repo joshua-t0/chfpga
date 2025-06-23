@@ -103,20 +103,20 @@ begin
                     rst                => fifo_rst, -- asynchronous
                     wr_clk             => s_axis_clk,
                     wr_en              => fifo_wr_en,
-                    din(31 downto 0)   => axis_fifo_in_tdata,
-                    din(32)            => axis_fifo_in_tlast,
-                    din(36 downto 33)  => axis_fifo_in_tuser,
+                    din(31 downto 0)   => s_axis_tdata,
+                    din(32)            => s_axis_tlast,
+                    din(36 downto 33)  => s_axis_tuser,
 
                     rd_clk             => m_axis_clk,
                     rd_en              => fifo_rd_en,
-                    dout(31 downto 0)  => axis_fifo_out_tdata,
-                    dout(32)           => axis_fifo_out_tlast,
-                    dout(36 downto 33) => axis_fifo_out_tuser,
-                    valid              => axis_fifo_out_tvalid,
+                    dout(31 downto 0)  => m_axis_tdata,
+                    dout(32)           => m_axis_tlast,
+                    dout(36 downto 33) => m_axis_tuser,
+                    valid              => m_axis_tvalid,
                     full               => open,
-                    prog_full          => fifo_almost_full,
-                    prog_empty         => fifo_almost_empty,
-                    overflow           => fifo_overflow,
+                    prog_full          => almost_full,
+                    prog_empty         => almost_empty,
+                    overflow           => full,
                     empty              => open
                 );
         end k7_case;

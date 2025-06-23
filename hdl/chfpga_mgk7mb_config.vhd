@@ -17,9 +17,10 @@ package chfpga_config is
 	constant CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := 16; -- only implement one channelizer with an FFT for now
 	constant CONFIG_CAPTURE_BITS_PER_WORD: integer := 32;
 	--constant CONFIG_FFT_CTR_WIDTH: integer := 12; -- CHIME: 12, D3A/CHORD: 13. Number of bits of the delay line. Max delay = 2^CONFIG_FFT_CTR_WIDTH
-	constant CONFIG_NUMBER_OF_CHANNELIZERS_TO_CORRELATE := 8; -- ignored when there are no correlators
+	constant CONFIG_FFT_ROTATE_BINS: boolean := FALSE; -- CHIME: False, D3A/CHORD: True.
+	constant CONFIG_NUMBER_OF_CHANNELIZERS_TO_CORRELATE: integer := 8; -- ignored when there are no correlators
 
-	# the following parameters differ between the cct and corr configs
+	-- the following parameters differ between the cct and corr configs
 	constant CONFIG_CT_CLK_COURCE: string := "BP_SHUFFLE_TXCLK"; -- "CORR_CLK" for corr config
 	constant CONFIG_NUMBER_OF_CROSSBAR_OUTPUTS: integer := 16 ; -- 8 on corr config
 	constant CONFIG_NUMBER_OF_CORRELATORS: integer := 0; --8 for corr config

@@ -281,7 +281,7 @@ begin
 -- |         |     |   5  | four_bits                    | Is '1' when only the top 4 bits are of interest (i.e. rounding is done on the 5th bit). In this case the lower 4 bits of the results are zero.  |
 -- |         |     |  4:0 | post_scaler_left_shift       |  Post-scaler |
 -- |         |  1  |   7  | (unused)                     |  |
--- |         |     |   6  | USE_OFFSET_BINARY            | When '1', Offset_binary encoding is used on the output of the scaler. The input data and gains are not affected and are always provided in 2's complement. |
+-- |         |     |   6  | use_offset_binary            | When '1', Offset_binary encoding is used on the output of the scaler. The input data and gains are not affected and are always provided in 2's complement. |
 -- |         |     |   5  | (unused)                     |  |
 -- |         |     |   4  | next_gain_bank               | Indicates which bank of gain coefficients is to be used by the scaler|
 -- |         |     |  3:0 | gain_table_page              | Indicates which page of gain coefficients table is being read or written to by the user.|
@@ -289,17 +289,29 @@ begin
 -- |         |     |   6  | symmetric_saturation         | When '1', negative values will saturate to -127 (8-bit mode) or -7 (4-bit mode). Otherwise they saturate on -128 and -8 respectively. |
 -- |         |     |   5  | zero_on_saturation           | When '1', the real/imaginary pairs are zeroed if wither the real part or imaginary part encounters an overflow.|
 -- |         |     |   4  | synchronize_gain_bank_switch | When '1', The target gain bank is activated only when the target frame number has been reached|
--- |         |     |  3:2 | (unused)                     |  |
+-- |         |     |   3  | fifo_overflow_reset          | Resets the fifo_overflow_sticky status bit
+-- |         |     |   1  | force_gain_to_one            | When using complex gains, overrides gain table and uses 1+0j as gain for all bins|
 -- |         |     |  1:0 | rounding_mode                | Specified the type of rounding: '00' = No rounding (truncation), '01'= standard rounding (ties always round up), '10' = convergent rounding (ties round toward the even values)|
 -- |         | 3:5 | 23:0 | stats_frame_count            | Number of frames to include in the statistics. 1 = 1 frame. |
 -- |         | 6:9 | 31:0 | gain_bank_switch_frame_number| Target frame number at which the next gain bank will be activated. |
+-- |         | 10  |   7  | use_float_gains              | When '1', bin-specific log gain is encoded in the upper 5 bits of the gain. For real gains only|
+-- |         |     |   6  | mon_reset_stats              | Reset mon_packet_length and mon_packet_ctr |
+-- |         |     |  4:3 | bypass_data_type             | When bypass_scaler is '1': "00": input, "01": 1+0j if any saturation, "10": 1+0j or 0+1j if positive or negative saturation respectively|
+-- |         |     |  2:0 | cap_data_type                | "000": raw input, "001": scaled input, "010": 4-bit, "100": Even bins, "101": odd bins
 -- | STATUS  |  0  |  7   | stats_ready                  | '1' when new stats data has been captured|
 -- |         |     |  6   | current_gain_bank            | Currently used gain bank. |
 -- |         |     |  5   | eight_bit_support            | '1' when this scaler implementation supports (8+8) bit output mode|
--- |         |     |  4:0 | (unused)                     |  |
+-- |         |     |  4   | fifo_overflow_sticky         | Set when channeliser fifo overflows and remains set until reset|
+-- |         |     |  3   | USE_COMPLEX_GAINS            | '1' when the scaler is using complex gain coefficients|
+-- |         |     | 2:0  | coeff_page_width             |  width of the page register for bytewise access to both banks|
 -- |         | 1:2 | 15:0 | stats_scaler_overflows       | Number of scaler overflows in the last captured frame block. Saturates at 0xFFFE or 0xFFFF. |
 -- |         | 3:4 | 15:0 | stats_adc_overflows          | Number of adc overflows in the last captured frame block. Saturates at 0xFFFF. |
 -- |         |  5  |  7:0 | frame_ctr                    | Last 8 bits of the frame counter. |
+-- |         | 6:7 | 15:0 | delay_capture_ctr            | Number of clocks it took for first frame of data to arrive after reset| 
+-- |         | 8:9 | 15:0 | mon_packet_length            | Length in words of longest packet so far|
+-- |         | 10  | 7:0  | mon_packet_ctr               | Number of packets so far|
+-- |         |11:12| 15:0 | mon_word_ctr                 | Number of words in current packet so far|
+-- |         | 13  | 7:0  | cap_frame_ctr                | Number of frames of data captured by capture outputs so far | 
 -- -----------------------------------------------------------------------------------------------
 
 
