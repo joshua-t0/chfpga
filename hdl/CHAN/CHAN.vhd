@@ -155,6 +155,7 @@ architecture impl of CHAN is
 --attribute shreg_extract: string;
 attribute keep: string;
 attribute dont_touch: string;
+attribute shreg_extract: string;
 
 --constant IMPLEMENT_FFT   : BOOLEAN :=GLOBAL_IMPLEMENT_FFT;
 --constant SIM             : BOOLEAN :=GLOBAL_SIM;
@@ -173,10 +174,10 @@ signal axis_funcgen_out_tvalid: std_logic;
 signal axis_funcgen_out_tlast: std_logic;
 
 
-signal axis_fft_out_tdata: std_logic_vector(FFT_BITS_PER_WORD-1 downto 0);
-signal axis_fft_out_tuser: std_logic_vector(3 downto 0);
-signal axis_fft_out_tvalid: std_logic;
-signal axis_fft_out_tlast: std_logic;
+signal fft_out_tdata: std_logic_vector(FFT_BITS_PER_WORD-1 downto 0);
+signal fft_out_tuser: std_logic_vector(3 downto 0);
+signal fft_out_tvalid: std_logic;
+signal fft_out_tlast: std_logic;
 
 --signal axis_fft_out         : axis72_dat_struct;
 
@@ -422,7 +423,7 @@ begin
 
             -- Provide monitoring data
             lane_monitor(0) <= axis_scaler_out_tvalid xor axis_scaler_out_tlast;
-            lane_monitor(1) <= axis_fft_out_tvalid xor axis_fft_out_tlast;
+            lane_monitor(1) <= fft_out_tvalid xor fft_out_tlast;
             lane_monitor(2) <= axis_funcgen_out_tvalid xor axis_funcgen_out_tlast;
         end if; --clk
     end process;
@@ -478,18 +479,20 @@ end block funcgen_blk;
 -- Instantiate the FFT Block
 ---------------------------------------------------------------------
 fft_blk: block
-    signal axis_fft_in_tdata: std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
-    signal axis_fft_in_tuser: std_logic_vector(3 downto 0);
-    signal axis_fft_in_tvalid: std_logic;
-    signal axis_fft_in_tlast: std_logic;
+    signal fft_in_tdata: std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
+    signal fft_in_tuser: std_logic_vector(3 downto 0);
+    signal fft_in_tvalid: std_logic;
+    signal fft_in_tlast: std_logic;
     signal fft_reset_in: std_logic;
+    attribute shreg_extract of fft_in_tdata, fft_in_tuser, fft_in_tvalid, fft_in_tlast : signal is "no";
     attribute keep of  fft_reset_in: signal is "true";
 
-    signal axis_fft_in2_tdata: std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
-    signal axis_fft_in2_tuser: std_logic_vector(3 downto 0);
-    signal axis_fft_in2_tvalid: std_logic;
-    signal axis_fft_in2_tlast: std_logic;
+    signal fft_in2_tdata: std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
+    signal fft_in2_tuser: std_logic_vector(3 downto 0);
+    signal fft_in2_tvalid: std_logic;
+    signal fft_in2_tlast: std_logic;
     signal fft_reset_in2: std_logic;
+    attribute shreg_extract of fft_in2_tdata, fft_in2_tuser, fft_in2_tvalid, fft_in2_tlast : signal is "no";
     attribute keep of  fft_reset_in2: signal is "true";
 
 begin
@@ -499,17 +502,17 @@ begin
             if rising_edge(in_clk) then
                 fft_reset_in <= funcgen_reset_out;
 
-                axis_fft_in_tdata <= axis_funcgen_out_tdata;
-                axis_fft_in_tuser <= axis_funcgen_out_tuser;
-                axis_fft_in_tlast <= axis_funcgen_out_tlast;
-                axis_fft_in_tvalid <= '0' when funcgen_reset_out else axis_funcgen_out_tvalid;
+                fft_in_tdata <= axis_funcgen_out_tdata;
+                fft_in_tuser <= axis_funcgen_out_tuser;
+                fft_in_tlast <= axis_funcgen_out_tlast;
+                fft_in_tvalid <= '0' when funcgen_reset_out else axis_funcgen_out_tvalid;
 
                 fft_reset_in2 <= fft_reset_in;
 
-                axis_fft_in2_tdata <= axis_fft_in_tdata;
-                axis_fft_in2_tuser <= axis_fft_in_tuser;
-                axis_fft_in2_tlast <= axis_fft_in_tlast;
-                axis_fft_in2_tvalid <= '0' when fft_reset_in else axis_fft_in_tvalid;
+                fft_in2_tdata <= fft_in_tdata;
+                fft_in2_tuser <= fft_in_tuser;
+                fft_in2_tlast <= fft_in_tlast;
+                fft_in2_tvalid <= '0' when fft_reset_in else fft_in_tvalid;
 
                 fft_reset_out <= fft_reset_in2;
             end if;
@@ -529,16 +532,16 @@ begin
         PORT MAP(
 
             -- Input stream from funcgen
-            s_axis_in_dat_tdata  => axis_fft_in2_tdata,
-            s_axis_in_dat_tvalid => axis_fft_in2_tvalid,
-            s_axis_in_dat_tlast  => axis_fft_in2_tlast,
-            s_axis_in_dat_tuser  => axis_fft_in2_tuser,
+            s_axis_in_dat_tdata  => fft_in2_tdata,
+            s_axis_in_dat_tvalid => fft_in2_tvalid,
+            s_axis_in_dat_tlast  => fft_in2_tlast,
+            s_axis_in_dat_tuser  => fft_in2_tuser,
 
             -- Output stream to scaler
-            m_axis_out_dat_tdata  => axis_fft_out_tdata,
-            m_axis_out_dat_tvalid => axis_fft_out_tvalid,
-            m_axis_out_dat_tlast  => axis_fft_out_tlast,
-            m_axis_out_dat_tuser  => axis_fft_out_tuser,
+            m_axis_out_dat_tdata  => fft_out_tdata,
+            m_axis_out_dat_tvalid => fft_out_tvalid,
+            m_axis_out_dat_tlast  => fft_out_tlast,
+            m_axis_out_dat_tuser  => fft_out_tuser,
 
             clk     => in_clk,
             reset   => fft_reset_in2,
@@ -575,10 +578,10 @@ begin
         if rising_edge(in_clk) then
            scaler_reset_in <= fft_reset_out;
 
-            axis_scaler_in_tdata <= axis_fft_out_tdata;
-            axis_scaler_in_tuser <= axis_fft_out_tuser;
-            axis_scaler_in_tlast <= axis_fft_out_tlast;
-            axis_scaler_in_tvalid <= axis_fft_out_tvalid;
+            axis_scaler_in_tdata <= fft_out_tdata;
+            axis_scaler_in_tuser <= fft_out_tuser;
+            axis_scaler_in_tlast <= fft_out_tlast;
+            axis_scaler_in_tvalid <= fft_out_tvalid;
             axis_scaler_in_tvalid <= '0' when fft_reset_out;
 
             scaler_reset_out <= scaler_reset_in;
