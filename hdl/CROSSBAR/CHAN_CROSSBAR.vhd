@@ -9,10 +9,9 @@
 -- Target Devices: 7 Series
 -- Tool versions: Vivado 2014.2
 
--- Description: Implement a channelizer elastic FIFO, frame aligner, lane
--- remapper and bin selector to select a number of frequency bins from all
--- channelizers and package the data in packets suitable for transmission over
--- the shuffle network.
+-- Description: Implements a frame aligner and an array of bin selector to select a number of
+-- frequency bins from all channelizers and package the data in packets suitable for transmission
+-- over the shuffle network.
 --
 -- Dependencies:
 --
@@ -101,12 +100,7 @@ architecture Behavioral of chan_crossbar is
 
 	-- Internal AXI-Streaming buses
 
-	-- signal m_axis_fifo_tvalid: slv(0 to NUMBER_OF_INPUT_LANES-1);
-	-- signal m_axis_fifo_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES-1);
-	-- signal m_axis_fifo_tlast: slv(0 to NUMBER_OF_INPUT_LANES-1);
-	-- signal m_axis_fifo_tuser: slv4_array(0 to NUMBER_OF_INPUT_LANES-1);
-	-- signal m_axis_fifo_tready: slv(0 to NUMBER_OF_INPUT_LANES-1);
-	signal frame_clk:slv (0 to NUMBER_OF_INPUT_LANES-1);
+	signal frame_clk: slv(0 to NUMBER_OF_INPUT_LANES-1);
 
 	signal m_axis_align_out_tvalid: slv(0 to NUMBER_OF_INPUT_LANES-1);
 	signal m_axis_align_out_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES-1);
@@ -123,13 +117,6 @@ architecture Behavioral of chan_crossbar is
 	signal m_axis_align_out_tuser_reg: slv4_array(0 to NUMBER_OF_INPUT_LANES-1);
 	signal m_axis_align_out_global_tvalid_reg: std_logic;
 	signal m_axis_align_out_global_tlast_reg: std_logic;
-
-	-- signal m_axis_align_out_tvalid_reg: align_tvalid_array(0 to NUMBER_OF_BINSEL_PBLOCKS-1);
-	-- signal m_axis_align_out_tdata_reg: align_tdata_array(0 to NUMBER_OF_BINSEL_PBLOCKS-1);
-	-- signal m_axis_align_out_tlast_reg: align_tlast_array(0 to NUMBER_OF_BINSEL_PBLOCKS-1);
-	-- signal m_axis_align_out_tuser_reg: align_tuser_array(0 to NUMBER_OF_BINSEL_PBLOCKS-1);
-	-- signal m_axis_align_out_global_tvalid_reg: std_logic_vector(0 to NUMBER_OF_BINSEL_PBLOCKS-1);
-	-- signal m_axis_align_out_global_tlast_reg: std_logic_vector(0 to NUMBER_OF_BINSEL_PBLOCKS-1);
 
 	type align_tvalid_array is array (NATURAL RANGE <>) of slv(0 to NUMBER_OF_INPUT_LANES-1);
 	type align_tdata_array is array (NATURAL RANGE <>) of slv32_array(0 to NUMBER_OF_INPUT_LANES-1);
@@ -152,28 +139,6 @@ architecture Behavioral of chan_crossbar is
 	attribute dont_touch of m_axis_align_out_global_tvalid_reg2: signal is "true"; --
 	attribute dont_touch of m_axis_align_out_global_tlast_reg2: signal is "true"; --
 
-	-- attribute shreg_extract of m_axis_align_out_tvalid_reg2: signal is "no"; -- preserve clock net name to facilitate timing constraining and analysis
-	-- attribute shreg_extract of m_axis_align_out_tdata_reg2: signal is "no"; -- preserve clock net name to facilitate timing constraining and analysis
-	-- -- attribute shreg_extract of m_axis_align_out_tlast_reg2: signal is "no"; -- this signal us not used by chan_bin_sel. Allow it to be removed.
-	-- attribute shreg_extract of m_axis_align_out_tuser_reg2: signal is "no"; -- preserve clock net name to facilitate timing constraining and analysis
-
-	-- attribute shreg_extract of m_axis_align_out_global_tvalid_reg2: signal is "no"; -- preserve clock net name to facilitate timing constraining and analysis
-	-- attribute shreg_extract of m_axis_align_out_global_tlast_reg2: signal is "no"; -- preserve clock net name to facilitate timing constraining and analysis
-
-	-- signal m_axis_align_out_tvalid_reg3: align_tvalid_array(0 to NUMBER_OF_OUTPUT_LANES/4-1);
-	-- signal m_axis_align_out_tdata_reg3: align_tdata_array(0 to NUMBER_OF_OUTPUT_LANES/4-1);
-	-- signal m_axis_align_out_tlast_reg3: align_tlast_array(0 to NUMBER_OF_OUTPUT_LANES/4-1);
-	-- signal m_axis_align_out_tuser_reg3: align_tuser_array(0 to NUMBER_OF_OUTPUT_LANES/4-1);
-	-- signal m_axis_align_out_global_tvalid_reg3: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES/4-1);
-	-- signal m_axis_align_out_global_tlast_reg3: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES/4-1);
-
-	-- attribute dont_touch of m_axis_align_out_global_tvalid_reg3: signal is "yes"; -- preserve clock net name to facilitate timing constraining and analysis
-	-- attribute dont_touch of m_axis_align_out_global_tlast_reg3: signal is "yes"; -- preserve clock net name to facilitate timing constraining and analysis
-	-- attribute dont_touch of m_axis_align_out_tvalid_reg3: signal is "yes"; -- preserve clock net name to facilitate timing constraining and analysis
-	-- attribute dont_touch of m_axis_align_out_tdata_reg3: signal is "yes"; -- preserve clock net name to facilitate timing constraining and analysis
-	-- -- attribute dont_touch of m_axis_align_out_tlast_reg3: signal is "yes"; -- this signal us not used by chan_bin_sel. Allow it to be removed.
-	-- attribute dont_touch of m_axis_align_out_tuser_reg3: signal is "yes"; -- preserve clock net name to facilitate timing constraining and analysis
-
 	signal m_axis_tvalid_int: slv(0 to NUMBER_OF_OUTPUT_LANES-1);
 
 	signal align_reset: std_logic;
@@ -186,9 +151,6 @@ architecture Behavioral of chan_crossbar is
 	signal reset_stats: std_logic;
 	signal align_lane_monitor: slv(0 to max(NUMBER_OF_INPUT_LANES, 16)-1);
 
-	-- signal fifo_reset: std_logic;
-	-- signal fifo_reset_all: std_logic;
-	-- signal lane_monitor:  std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
 	signal lane_monitor_reset: std_logic;
 	signal lane_monitor_sel: std_logic_vector(3 downto 0);
 	signal lane_monitor_source: std_logic_vector(3 downto 0);
@@ -202,25 +164,15 @@ architecture Behavioral of chan_crossbar is
 	signal align_frame_ctr: slv8_array(0 to NUMBER_OF_INPUT_LANES-1);
 	signal align_global_frame_ctr: unsigned(7 downto 0);
 
-	-- signal sof_window_start: std_logic_vector(7 downto 0);
-	-- signal sof_window_stop: std_logic_vector(7 downto 0);
-
-	-- signal align_fifo_overflow: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
 	signal align_fifo_overflow_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
-	-- signal missing_frame: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
-	-- signal missing_frame_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
 
 	signal delay_capture_word_ctr: u16_array(0 to 3);
 	signal delay_capture_word_ctr_en: std_logic_vector(0 to 3);
 
-	-- signal bin_ctr : unsigned(9 downto 0); -- Up to 1024 bins per frame
-	-- signal lane_map: slv4_array(0 to NUMBER_OF_INPUT_LANES-1);
 	--- Define Control word and its signals
 	signal control_bytes: slv8_array(0 to 1); -- default value set in the CMD_SLAVE
 	signal status_bytes: slv8_array(0 to 4); --
 
---attribute keep_hierarchy : string;
---attribute keep_hierarchy of binsel_i : label is "yes";
 
 begin
 
@@ -243,9 +195,9 @@ rst_proc: process(clk)
 	end process;
 
 ---------------------------------------------------------------------
---! ROUTER
+-- ROUTER
 ---------------------------------------------------------------------
---! Routes the commands and replies to/from the crossbar subsystems
+-- Routes the commands and replies to/from the crossbar subsystems
 
 crossbar_router0: entity work.CTRL_ROUTER
 	GENERIC MAP (
@@ -371,14 +323,14 @@ frame_clk_out <= s_axis_tvalid(0) and s_axis_tlast(0);
 
 
 ---------------------------------------------------------------------
---! ALIGN
+-- ALIGN
 ---------------------------------------------------------------------
---! Control the Channelizer FIFO readout in  order to align the frames.
---! Aligning the frames is necessary because we need to grab data from multiple lanes at a time based on a single selection map.
---!
---! The align module also handles missing and malformed frames, but this is not an issue here since
---! data is coming straight from the channelizer through the internal FPGA routing, which will not cause packet loss.
- --! The only exception to this are for channels that do not send data due to missing ADC cards, inwhich case the ALIGN will handle those automatically.
+-- Control the Channelizer FIFO readout in  order to align the frames.
+-- Aligning the frames is necessary because we need to grab data from multiple lanes at a time based on a single selection map.
+--
+-- The align module also handles missing and malformed frames, but this is not an issue here since
+-- data is coming straight from the channelizer through the internal FPGA routing, which will not cause packet loss.
+-- The only exception to this are for channels that do not send data due to missing ADC cards, inwhich case the ALIGN will handle those automatically.
 
 
 align0: entity work.CHAN_ALIGN
@@ -504,7 +456,7 @@ begin
 			NUMBER_OF_INPUTS => NUMBER_OF_INPUT_LANES
 			)
 		PORT MAP(
-			-- Input from remap (non blocking AXI-Streaming bus)
+			-- Input from align (non blocking AXI-Streaming bus)
 			s_axis_tdata         => m_axis_align_out_tdata_reg2(BINSEL_PBLOCK_MAP(i)),
 			s_axis_tuser         => m_axis_align_out_tuser_reg2(BINSEL_PBLOCK_MAP(i)),
 			s_axis_tvalid        => m_axis_align_out_tvalid_reg2(BINSEL_PBLOCK_MAP(i)),

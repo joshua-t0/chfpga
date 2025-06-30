@@ -718,7 +718,7 @@ m_axis_tlast <= m_axis_tlast_int;
 
 BIN_SEL_GEN: for i in 0 to NUMBER_OF_BIN_SEL-1 generate
 	----------------------------------------
-	--! Instantiate a bin selector
+	-- Instantiate a bin selector
 	----------------------------------------
 	binsel_i: entity work.shuffle_bin_sel
 		GENERIC MAP (
