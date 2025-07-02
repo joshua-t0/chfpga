@@ -35,19 +35,19 @@ entity chan_fifo is
 		FPGA_SERIES: integer;
 		DATA_WIDTH : integer := 64;
 		USER_WIDTH : integer := 4;
-		ALMOST_FULL_THRESH: integer := 511;
-		ALMOST_EMPTY_THRESH: integer := 2
+		ALMOST_FULL_THRESH_OFFSET: integer := 16; -- number of words from FULL
+		ALMOST_EMPTY_THRESH_OFFSET: integer := 16 -- -- number of words from EMPTY
 		);
 	port (
 		-- User AXI-Streaming data input (nnon-blocking)
-		s_axis_tdata: in std_logic_vector(DATA_WIDTH-1 downto 0);
-		s_axis_tuser: in std_logic_vector(USER_WIDTH-1 downto 0) := (others => '0');
+		s_axis_tdata: in std_logic_vector(DATA_WIDTH - 1 downto 0);
+		s_axis_tuser: in std_logic_vector(USER_WIDTH - 1 downto 0) := (others => '0');
 		s_axis_tlast: in std_logic;
 		s_axis_tvalid: in std_logic;
 		s_axis_clk: in std_logic;
 
-		m_axis_tdata: out std_logic_vector(DATA_WIDTH-1 downto 0);
-		m_axis_tuser: out std_logic_vector(USER_WIDTH-1 downto 0);
+		m_axis_tdata: out std_logic_vector(DATA_WIDTH - 1 downto 0);
+		m_axis_tuser: out std_logic_vector(USER_WIDTH - 1 downto 0);
 		m_axis_tlast: out std_logic;
 		m_axis_tready: in std_logic := '1';
 		m_axis_tvalid: out std_logic;
@@ -70,9 +70,11 @@ begin
     fifo_gen: case FPGA_SERIES generate
 
         when k7_case:FPGA_KINTEX7 =>
+            signal fifo_din: std_logic_vector(71 downto 0);
+            signal fifo_dout: std_logic_vector(71 downto 0);
             signal fifo_wr_en: std_logic;
             signal fifo_rd_en: std_logic;
-            signal fifo_rst_ctr : unsigned(4 downto 0);
+            signal fifo_rst_ctr: unsigned(4 downto 0);
             signal fifo_rst: std_logic;
         begin
             ----------------------
@@ -80,45 +82,96 @@ begin
             ----------------------
             -- According to the user manual, for Async FIFOs, reset
             -- must be held for 31 clocks of the slowest clk (in_clk) when there is no safety circuit, and there must be no
-            -- read or write during that period. There does not seem to be a safety circuit from the core generator GUI.
-            fifo_pipe_proc: process(all) begin
-                    if rising_edge(s_axis_clk) then
-                        if rst = '1' then
-                            fifo_rst <= '1';
-                            fifo_rst_ctr <= (others => '0'); -- this is a 5-bit counter
-                        elsif signed(fifo_rst_ctr) = -1 then
-                            fifo_rst <= '0';
-                        else
-                            fifo_rst_ctr <= fifo_rst_ctr + 1;
-                        end if; --reset
-                    end if; --clk
-                end process;
+            -- read or write during that period.
+            process(all) begin
+                if rising_edge(s_axis_clk) then
+                    if rst then
+                        fifo_rst <= '1';
+                        fifo_rst_ctr <= (others => '0'); -- this is a 5-bit counter
+                    elsif signed(fifo_rst_ctr) = -1 then
+                        fifo_rst <= '0';
+                    else
+                        fifo_rst_ctr <= fifo_rst_ctr + 1;
+                    end if; --reset
+                end if; --clk
+            end process;
 
-            fifo_rd_en <= m_axis_tvalid and not fifo_rst; -- start reading only when there is data. make sure we don't read during reset. In simulation, tying rd_en to '1' causes 'valid' to be invalid.
-            fifo_wr_en <= s_axis_tvalid and not fifo_rst and (not almost_full or s_axis_tlast); -- make sure we don't write during reset
+            fifo_rd_en <= m_axis_tready and not fifo_rst; -- start reading only when there is data. make sure we don't read during reset. In simulation, tying rd_en to '1' causes 'valid' to be invalid.
+            fifo_wr_en <= s_axis_tvalid and not fifo_rst; -- make sure we don't write during reset
 
+            -- remap the FIFO data/parity buses
+            fifo_din(DATA_WIDTH - 1 downto 0) <= s_axis_tdata;
+            fifo_din(DATA_WIDTH) <= s_axis_tlast;
+            fifo_din(DATA_WIDTH + USER_WIDTH downto DATA_WIDTH + 1) <= s_axis_tuser;
+            m_axis_tdata <= fifo_dout(DATA_WIDTH - 1 downto 0);
+            m_axis_tlast <= fifo_dout(DATA_WIDTH);
+            m_axis_tuser <= fifo_dout(DATA_WIDTH + USER_WIDTH downto DATA_WIDTH + 1);
+            m_axis_tvalid <= not empty;
             -- FIFO is asynchronous, 37 bit wide (32-bit tdata, 4-bit tuser, 1 bit tlast), FWFT, zero latency
-            chan_fifo0 : entity work.CHAN_FIFO2
-                PORT MAP (
-                    rst                => fifo_rst, -- asynchronous
-                    wr_clk             => s_axis_clk,
-                    wr_en              => fifo_wr_en,
-                    din(31 downto 0)   => s_axis_tdata,
-                    din(32)            => s_axis_tlast,
-                    din(36 downto 33)  => s_axis_tuser,
+            --chan_fifo0 : entity work.CHAN_FIFO2
+            --    PORT MAP (
+            --        rst                => fifo_rst, -- asynchronous
+            --        wr_clk             => s_axis_clk,
+            --        wr_en              => fifo_wr_en,
+            --        din(31 downto 0)   => s_axis_tdata,
+            --        din(32)            => s_axis_tlast,
+            --        din(36 downto 33)  => s_axis_tuser,
 
-                    rd_clk             => m_axis_clk,
-                    rd_en              => fifo_rd_en,
-                    dout(31 downto 0)  => m_axis_tdata,
-                    dout(32)           => m_axis_tlast,
-                    dout(36 downto 33) => m_axis_tuser,
-                    valid              => m_axis_tvalid,
-                    full               => open,
-                    prog_full          => almost_full,
-                    prog_empty         => almost_empty,
-                    overflow           => full,
-                    empty              => open
-                );
+            --        rd_clk             => m_axis_clk,
+            --        rd_en              => fifo_rd_en,
+            --        dout(31 downto 0)  => m_axis_tdata,
+            --        dout(32)           => m_axis_tlast,
+            --        dout(36 downto 33) => m_axis_tuser,
+            --        valid              => m_axis_tvalid,
+            --        full               => open,
+            --        prog_full          => almost_full,
+            --        prog_empty         => almost_empty,
+            --        overflow           => full,
+            --        empty              => open
+            --    );
+
+        -- FIFO36E1 (7-Series), 512 words x 72 bits, Async, FWFT
+        -- We need to use a FIFO36 rather than a FIFO18 because we typically need 37 bits (32 TDATA, 1 TLAST and 4 TUSER) on the 7-series platforms.
+        data_fifo0 : FIFO36E1
+            generic map (
+                ALMOST_FULL_OFFSET      => to_bit_vector(ALMOST_FULL_THRESH_OFFSET, 13),    -- Number of words before FULL
+                ALMOST_EMPTY_OFFSET     => to_bit_vector(ALMOST_EMPTY_THRESH_OFFSET, 13),    -- Number of words before EMPTY
+                DATA_WIDTH              => 72,                  -- Data width is 9 bits, meaning that depth = 36K/9 = 4K bytes
+                DO_REG                  => 1,                      -- Enable output register (1-0) Must be 1 if EN_SYN = FALSE
+                EN_SYN                  => FALSE,                  -- Asynchronous FIFO
+                FIFO_MODE               => "FIFO36_72",            -- "FIFO36" or "FIFO36_72"
+                FIRST_WORD_FALL_THROUGH => TRUE   -- We want FWFT
+            )
+            port map (
+                -- Write interfce
+                wrclk      => s_axis_clk,              -- 1-bit input: Rising edge write clock.
+                wren       => fifo_wr_en,     -- 1-bit input: Write enable
+                di         => fifo_din(63 downto 0),
+                dip        => fifo_din(71 downto 64),
+                almostfull => almost_full, -- 1-bit output: Almost full flag
+                full       => full,
+
+                -- Read interface
+                rdclk       => m_axis_clk, -- Read clock
+                rden        => fifo_rd_en, -- Read enable
+                regce       => '1', -- 1-bit input: Clock enable
+                do          => fifo_dout(63 downto 0),
+                dop         => fifo_dout(71 downto 64),
+                almostempty => almost_empty,
+                empty       => empty,
+
+                -- ECC Signals (unused)
+                injectdbiterr => '0',
+                injectsbiterr => '0',
+
+                -- Resets
+                rst    => fifo_rst, -- Async -- write domain reset reset, must be high at least 5 cycles of the slowest clock
+                rstreg => '0'  -- Output register reset
+            );
+
+
+
+
         end k7_case;
 
         when usp_case:FPGA_ULTRASCALEPLUS =>
@@ -142,18 +195,20 @@ begin
 
 
             fifo_rst <= rst; -- synchronous to write clock
-            fifo_wr_en <= s_axis_tvalid and not (fifo_rst or fifo_wr_rst_busy); -- write clock domain
             fifo_rd_en <= m_axis_tready and not fifo_rd_rst_busy; -- start reading only when there is data. make sure we don't read during reset.
+            fifo_wr_en <= s_axis_tvalid and not (fifo_rst or fifo_wr_rst_busy); -- write clock domain
 
-            m_axis_tdata <= fifo_dout(DATA_WIDTH-1 downto 0);
+            m_axis_tdata <= fifo_dout(DATA_WIDTH - 1 downto 0);
             m_axis_tlast <= fifo_dout(64);
             m_axis_tuser <= fifo_dout(64 + USER_WIDTH downto 65);
             m_axis_tvalid <= not empty;
+
+            -- FIFO36E2 is 512 words x 72 bits
             chan_fifo0 : FIFO36E2
                 generic map (
                     CLOCK_DOMAINS           => "INDEPENDENT", -- independent clock / asynchronous FIFO
-                    PROG_EMPTY_THRESH       => ALMOST_EMPTY_THRESH, -- Sets the almost empty threshold
-                    PROG_FULL_THRESH        => ALMOST_FULL_THRESH, -- Sets almost full threshold
+                    PROG_EMPTY_THRESH       => ALMOST_EMPTY_THRESH_OFFSET, -- Sets the almost empty threshold (number of words from EMPTY)
+                    PROG_FULL_THRESH        => 512 - ALMOST_FULL_THRESH_OFFSET, -- Almost full threshold on Ultrascale is an absolute value (not an offset from FULL)
                     READ_WIDTH              => 72, -- Sets data width to 4-36
                     WRITE_WIDTH             => 72, -- Sets data width to 4-36
                     REGISTER_MODE           => "REGISTERED", -- Output is registered as part of the FIFO, and does not add additional latency.
@@ -182,11 +237,18 @@ begin
                     RST      => fifo_rst, -- synchronous to WRCLK
 
                     -- Unused inputs
-                    CASDIN => (others => '0'), CASDINP => (others => '0'),
-                    casdomux => '0', casdomuxen => '0', casnxtrden => '0',
-                    casoregimux => '0', casoregimuxen => '0', casprvempty => '0',
-                    injectsbiterr => '0', injectdbiterr => '0',
-                    REGCE => '1', RSTREG => '0',
+                    CASDIN => (others => '0'),
+                    CASDINP => (others => '0'),
+                    casdomux => '0',
+                    casdomuxen => '0',
+                    casnxtrden => '0',
+                    casoregimux => '0',
+                    casoregimuxen => '0',
+                    casprvempty => '0',
+                    injectsbiterr => '0',
+                    injectdbiterr => '0',
+                    REGCE => '1',
+                    RSTREG => '0',
                     SLEEP => '0'
 
                 );
@@ -221,4 +283,4 @@ begin
 
     end generate fifo_gen;
 
-end architecture;
+end architecture impl;
