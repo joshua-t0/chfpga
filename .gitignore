@@ -7,5 +7,6 @@ _ISE_Projects/
 *.git
 *.jou
 /*.log
+*.mif
 vivado_pid*
 .venv
