@@ -307,11 +307,11 @@ begin
 -- |         | 1:2 | 15:0 | stats_scaler_overflows       | Number of scaler overflows in the last captured frame block. Saturates at 0xFFFE or 0xFFFF. |
 -- |         | 3:4 | 15:0 | stats_adc_overflows          | Number of adc overflows in the last captured frame block. Saturates at 0xFFFF. |
 -- |         |  5  |  7:0 | frame_ctr                    | Last 8 bits of the frame counter. |
--- |         | 6:7 | 15:0 | delay_capture_ctr            | Number of clocks it took for first frame of data to arrive after reset| 
+-- |         | 6:7 | 15:0 | delay_capture_ctr            | Number of clocks it took for first frame of data to arrive after reset|
 -- |         | 8:9 | 15:0 | mon_packet_length            | Length in words of longest packet so far|
 -- |         | 10  | 7:0  | mon_packet_ctr               | Number of packets so far|
 -- |         |11:12| 15:0 | mon_word_ctr                 | Number of words in current packet so far|
--- |         | 13  | 7:0  | cap_frame_ctr                | Number of frames of data captured by capture outputs so far | 
+-- |         | 13  | 7:0  | cap_frame_ctr                | Number of frames of data captured by capture outputs so far |
 -- -----------------------------------------------------------------------------------------------
 
 
@@ -361,8 +361,8 @@ status_bytes(0)(4)   <= fifo_overflow_sticky;
 status_bytes(0)(3)   <= to_std_logic(USE_COMPLEX_GAINS);
 
 -- log2 of the number of gain table pages .
+--   - 1024 bins x 16-bit complex gains x 2 banks = 1024*4*2 = 8 Kbytes, log2(8K) 13 bit address space, 13 - 9 = 4 bit page address
 --   - 8192 bins x 16-bit real gains x 2 banks: log2(8k*2*2)-9 = 6
---   -  1024 bins * 16-bit complex gains * 2 banks: log2(1024*4*2)-9 = 4
 -- Gain bank size in bytes = 2**(value+9-1)
 status_bytes(0)(2 downto 0) <= to_slv(LOG2_NUMBER_OF_COEFF_PAGES, 3);
 
