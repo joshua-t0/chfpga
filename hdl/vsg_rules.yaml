@@ -41,6 +41,25 @@ rule:
         disable: true
     # block_007:
 
+    # concurrent statements
+    concurrent_012: # -- Move parenthesis after assignment to the next line.
+        disable: true # we allow parenthesis on assignment  first line of multiline assignment
+
+    conditional_waveforms_001:
+        disable: true
+        severity: Warning # move code after else to next line.
+
+    # signals
+
+    signal_007:  # default assignment on signals
+        disable: true # We allow them. Useful for sims.
+
+    # asserts
+
+    assert_002: # -- Place **report** keyword on its own line.
+        disable: true # We allow that
+    assert_004: # -- Place **severity** keyword on its own line.
+        disable: true # We allow that
 
     # Spaces
 
@@ -49,6 +68,8 @@ rule:
     port_007 : # we don't necessarily put 4 spaces after 'in'
         disable: true
     signal_006: # we don't put a space between the label and ":"
+        number_of_spaces: 0
+    variable_006: # spaces between label and :
         number_of_spaces: 0
     port_020: # we don't put a space between the label and ":"
         number_of_spaces: 0
@@ -66,7 +87,29 @@ rule:
         number_of_spaces: 0
     attribute_declaration_101: # no space between attribute declaration label and :
         number_of_spaces: 0
+    block_200: # blank line before block statement
+        # disable: true # allow blank lines
+        style: allow_comment # There might be comments
+    block_201: # space before
+        style: no_blank_line
+    block_202: # space after
+        style: no_blank_line
+    block_203: # space after begin
+        # style: no_blank_line
+        disable: true # we might have a process that requires a blank line
+    block_204: # space before end
+        style: no_blank_line
+        disable: true # allow blank lines - conflicts with blank lines below instantiations/processes in block
 
+    if_030: # blank lines below if
+        disable: true # allow blank lines
+    loop_statement_201: # blank line below loop
+        style: no_blank_line
+    generate_004: # Insert blank line above generate
+        # disable: true # we might have a comment block
+        style: allow_comment # There might be comments
+    # generate_003: # blank line below end
+        # disable: true #
     instantiation_033: # require COMPONENT in component instantiation
         disable: true
 
@@ -113,10 +156,14 @@ rule:
         disable: true # not enforced
     instantiation_029: # comment alignment
         disable: true # not enforced
+    concurrent_009: # concurent statement multiline alignment
+        align_left: no
+        severity: Warning  # did nto find a way to get it the way I want - subsequent lines indented same as target and spaces up to after <=
 
-
+    # case
     library_500: # library name case
-        case: upper
+        case: upper_or_lower
+        disable: true # disable to we can use IEEE and work
     use_clause_500: # library name case
         case: upper_or_lower
     use_clause_503: # ALL case
@@ -127,6 +174,10 @@ rule:
         disable: true
     library_007: # blank line before USE
         disable: true
+    bit_string_literal_500:
+        case: upper
+    attribute_declaration_501:
+        case: upper
 
     # Blank lines before
     entity_003: # blank line before entity
@@ -141,6 +192,8 @@ rule:
         disable: true
     process_023: # blank line before end process
         style: no_blank_line
+    architecture_003: # blank line before entity
+        style: allow_comment # could also require_comment
 
     # bank line below
     case_200: # blank line below when
@@ -201,7 +254,7 @@ rule:
 
     # Line length
     length_001: # max line length
-        length: 200
+        length: 256
         severity: Warning
 
     signal_015: # number of signals declared in same statement
@@ -215,16 +268,16 @@ indent:
                 token_after_library_clause: current
                 token_if_no_matching_library_clause: current
         # disable indentation for architecture: that wastes horizontal space for 90% of the file with little clarity benefit
-        architecture_body:
-            architecture_keyword:
-                after: 0
-                token: 0
-            begin_keyword:
-                after: 0
-                token: 0
-            end_keyword:
-                after: 0
-                token: 0
+        # architecture_body:
+        #     architecture_keyword:
+        #         after: 0
+        #         token: 0
+        #     begin_keyword:
+        #         after: 0
+        #         token: 0
+        #     end_keyword:
+        #         after: 0
+        #         token: 0
         # Fix instantiation maps final parenthesis indentation
         enumeration_type_definition:
             close_parenthesis:
@@ -240,3 +293,8 @@ indent:
         # port_clause:
         #     close_parenthesis:
         #           token: current
+        # conditional_waveform_assignment:
+        #     target:
+        #         after: current,
+        #         token: 1
+
