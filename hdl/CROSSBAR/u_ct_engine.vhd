@@ -29,22 +29,22 @@ use work.chFPGA_Package.all;
 -- Each channelizer inputs packs four (4+4)-bit bin values into a 32-bit value (low bin in MSB)
 entity u_ct_engine is
 	GENERIC (
-		PLATFORM_ID: integer; -- necessary to select the proper FIFOs
+		PLATFORM_ID:           integer; -- necessary to select the proper FIFOs
 		NUMBER_OF_INPUT_LANES: integer := 8; -- Number of channelizer inputs
-        BINS_PER_INPUT_WORD: integer := 4;
-        INPUT_WORD_WIDTH: integer := 32;
-		CT_LEVEL: integer := 2; -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
+        BINS_PER_INPUT_WORD:   integer := 4;
+        INPUT_WORD_WIDTH:      integer := 32; -- width of the scaler output word
+		CT_LEVEL:              integer := 2; -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
+
 		LANE_TO_LINK_MAP: integer_array  := (-1, 0, 1, 2); -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
 		LINK_TO_QUAD_MAP: integer_array  := (0,1,1); -- Indicates which quad is associated to each GTY link.
 		QUAD_TO_REFCLK_MAP: integer_array:= (0,0); -- Indicates which refclk is associated with each QUAD
         LANE_TO_GROUP_MAP: integer_array := (0, 0, 0, 0); -- Indicates to which lane group each lane is associated with
 
         -- Dervived parameters
-        OUTPUT_WIDTH: integer := NUMBER_OF_INPUT_LANES * INPUT_WORD_WIDTH;  -- assumes inputs are 32 bits wide, and CT preserves data rate
-        NUMBER_OF_LINKS: integer        := max(LANE_TO_LINK_MAP) + 1; --  Number of physical data links (GTYs) - Do not override
-    	NUMBER_OF_REFCLK: integer       := max(QUAD_TO_REFCLK_MAP) + 1; -- Number of reference clocks - Do not override
-        BITS_PER_BIN: integer := INPUT_WORD_WIDTH / BINS_PER_INPUT_WORD ;-- Supporting only 4+4 bits/bin
-		PRE_DECIMATE: boolean := CT_LEVEL > 1 -- True if we want to decimate the first 256 bins of the spectrum before entering the backplane shuffle
+        OUTPUT_WIDTH:        integer := NUMBER_OF_INPUT_LANES * INPUT_WORD_WIDTH;  -- assumes inputs are 32 bits wide, and CT preserves data rate
+        NUMBER_OF_LINKS:     integer := max(LANE_TO_LINK_MAP) + 1; --  Number of physical data links (GTYs) - Do not override
+    	NUMBER_OF_REFCLK:    integer := max(QUAD_TO_REFCLK_MAP) + 1; -- Number of reference clocks - Do not override
+		PRE_DECIMATE:        boolean := CT_LEVEL > 1 -- True if we want to decimate the first 256 bins of the spectrum before entering the backplane shuffle
 		);
 	PORT(
 
@@ -99,6 +99,8 @@ architecture Behavioral of u_ct_engine is
 	attribute equivalent_register_removal: string;
 	attribute async_reg: string;
 	attribute shreg_extract: string;
+
+	constant BITS_PER_BIN: integer := INPUT_WORD_WIDTH / BINS_PER_INPUT_WORD ;-- Supporting only 4+4 bits/bin
 
 	constant CT1_OUTPUT_LANES: integer := BINS_PER_INPUT_WORD;
     constant CT1_LANE_WIDTH: integer := NUMBER_OF_INPUT_LANES * BITS_PER_BIN;
@@ -182,12 +184,15 @@ begin
 	begin
 
 		-- Pipeline BSB reset
-		-- Note; Putting two `if rising_edge(clk)`` in the same process crashed Vivado simulator 2008.
 		process(all) begin
 			if rising_edge(bsb_clk) then
 				bsb_rst_reg <= bsb_rst;
 			end if; -- bsb_clk
+        end process;
 
+		-- Pipeline corner-turn reset
+		-- Note; Putting two `if rising_edge(clk)`` in the same process crashed Vivado simulator 2008.
+		process(all) begin
             if rising_edge(axis_clk) then
                 cb1_rst <= rst;
             end if; -- RST/CLK
