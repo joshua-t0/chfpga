@@ -1,27 +1,13 @@
-Command and Control Interfaces
-******************************
+=================================
+Control and monitoring Interfaces
+=================================
 
-chFPGA implements two interfaces that allows control and monitoring of the FPGA firmware operation:
-
-
-- UDP Control Link : This is a lightweight command protocol carried using
-  UDP packets over the FPGA's SFP 1Gbps Ethernet port. The protocol allows
-  memory-mapped read and write operations to internal registers, memory blocks
-  and Xilinx Core's Dynamic Reconfigurable Ports (DRP). Most of the chFPGA
-  custom  firmware use this link as it is very fast and is optimized to use
-  very little FPGA logic and routing resources.
-
-- ARM-SPI Control Link : Uses the ~60Mbps SPI between the ARM and the FPGA to carry memory-mapped access of 32-bit registers in the
-  FPGA. This link is slower and is used to  provide access to core functionalities of the FPGA. This link is used to  operate the IRIG-B subsystem and set-up the networking parameters needed to establish the UDP Control link (MAC & IP addresses, port numbers).
-
-Both links access different address spaces, e.g. one  link cannot access registers associated with the other link.
+The chFPGA firmware operation is controlled by reading and writing memory-mapped registers and buffers located within each module and sub-modules throughout the design.
 
 
-UDP Control System
-==================
 
 Design Philosophy
------------------
+=================
 
 The UDP control system is designed to distribute memory-mapped registers throughout the FPGA within each sub-modules in a hierarchical way while maintaining low resources utilization. We want each FFT, scaler, GTX transceiver etc. to have its own set of registers that are placed locally with their logic to facilitate floorplanning, routing, and  timing closure. This allows the design to be scaled up or down easily. We also wanted to be able to create Python classes that represent each firmware subsystem and transparently expose its memory-mapped registers, and instantiate as many of those classes as needed.
 
@@ -36,6 +22,24 @@ For this reason, we chose to internally interconnect the elements of the control
 - All AXI4-Streaming buses are blocking, i.e. transfers are only made if the destination has asserted the TREADY line. This minimizes the need to buffer packets throughout the system, but makes the pipeling slightly more difficult (we need a 1-byte FIFO each time we want to pipeline the bus)
 
 Although we could in theory process commands in multiple end nodes concurrently and get replies asynchronously, it was decided that only one command will be issued at a time, i.e. a new command is not issued until the reply from the previous one has been sent out.  To do this,  it would be necessary to tag each command with a unique ID so we can sort out the replies. This is not hard to do (just add an extra byte to the command),  but the speed benefit was not  significant in the context of typical operations.
+
+
+
+Design notes
+============
+
+We originally considered possible architectures for a command system:
+- AXI-Lite bus: Too big
+- Standard 8-bit bus: A simple microprocessor bus could be used, with the minimal interface consisting of
+
+    - 8-bit data in
+    - 8-bit data out
+    - N-bit address
+    - Read/write controls: write_enable (WEN), read_enable (REN), cknowledge (RACK)
+
+  This interface assumes the module is always ready to accept a word. Slow write devices (DRP) might require.
+- 2) serialized bus
+
 
 Infrastructure
 --------------
@@ -81,6 +85,29 @@ Command and Reply Packet Format
 
 .. figure:: ../images/udp_command_packet_format.svg
     :width: 75 %
+
+
+
+Accessing the Byte-Serial-Bus
+=============================
+
+The BSB can be accessed through diifferent means:
+
+- UDP packets: For firmware configuration using a firmware-implemented UDP packet receiver/transmitter, The payload of UDP packets can be sent directly on the BSB command stream, and replies from the BSB reply stream can be sent back directly to the sender as UDP packets.
+
+- SoC ARM: If the FPGA features an embedded ARM processor (like Ultrascale+ RfSoC), the BSB can be connected directly to the ARM through DMA interfaces, and the processor can implement a more sophisticated method of passing command and replies from a control computer to the FPGA. For example, we typically implement a TCP/IP stack on the processor which passes commands and replies through TCP packets. This is more reliable than UDP packets.
+
+Note that the BSB is also used to send channelizer monitoring data and correlator products.
+
+We currently do not provide a way to access the BSB bus through a serial interface (e.g. SPI) as this would be too slow.
+
+Core registers
+==============
+
+- ARM-SPI Control Link : Uses the ~60Mbps SPI between the ARM and the FPGA to carry memory-mapped access of 32-bit registers in the
+  FPGA. This link is slower and is used to  provide access to core functionalities of the FPGA. This link is used to  operate the IRIG-B subsystem and set-up the networking parameters needed to establish the UDP Control link (MAC & IP addresses, port numbers).
+
+Both links access different address spaces, e.g. one  link cannot access registers associated with the other link.
 
 AXI4-Streaming Protocol
 -----------------------
