@@ -62,6 +62,7 @@ entity UCORR44 is
 		PLATFORM_ID: integer := PLATFORM_ID_CRS;
 		N: integer := 64; -- Number of inputs to correlate
 		N_PER_CLK: integer := 32; -- Number of inputs provided on each clock
+		NBINS: integer; -- Number of bins to be processed by this correlator
 		BIN_DECIMATION_FACTOR: integer := 1; -- Only 1 out of every BIN_DECIMATION_FACTOR bin is processed in order to provide extra comoputing cycles and use less resources
 		Nclk: integer := BIN_DECIMATION_FACTOR * N / N_PER_CLK; -- Number of clocks  the correlator should take to compute the products
 		CORR_NUMBER: integer := 0; -- correlator number to be used in packet headers
@@ -274,6 +275,7 @@ begin
 	corr0: entity work.UCMAC44_ARRAY
 		generic map (
 			NCMAC => NCMAC,
+			NPROD => NBINS * Nclk,
 			AUTOCORR_STRIDE => H,
 			CORR_NUMBER => CORR_NUMBER,
 			N_CORR => NCORR,

@@ -48,6 +48,7 @@ use xpm.vcomponents.all;
 entity UCMAC44_ARRAY is
 	GENERIC (
 		NCMAC: integer :=8*9/2; -- Number of CMACs. There will be 2*NCMAC DSP48s, and min(URAM_MAX, NCMAC/2) UltraRAMs
+		NPROD: integer := 2048; -- Number of products to be stored by each CMAC. Sets memory depth. Must be 2048 if URAM_MAX > 0
 		AUTOCORR_STRIDE: integer:= 1; -- Spacing (in CMACs) between autocorrelation products. We assume there will be NCMAC/AUTOCORR_STRIDE-1 autocorrelations
 		CORR_NUMBER: integer; -- correlator number to be used in packet headers
         N_CORR: integer := 1; -- Total number of correlators. Used only in computing the STREAM_ID (id = bin*N_CORR+CORR_NUMBER)
@@ -918,7 +919,7 @@ begin
                 -- Read bus B
 		      ADDR_WIDTH_B => 12,               -- same
 		      READ_DATA_WIDTH_B => 72,         -- 2 x (18+18) bits wide read bus
-		      MEMORY_SIZE => 72 * 4096,         -- 72-bit word * 4096 words = 1 x URAM288 or 8 x RAMB36 (72 x 512 each)
+		      MEMORY_SIZE => 72 * 2*NPROD,         -- 72-bit word * 4096 words = 1 x URAM288 or 8 x RAMB36 (72 x 512 each)
 		      READ_LATENCY_B => 2,     -- Needs to be >= of cascade height to allow registering. Synthesis ask for more than 4 to have full pipelining (4 is partial).
 		      SIM_ASSERT_CHK => 1,             -- DECIMAL; 0=disable simulation messages, 1=enable simulation messages
 		      --USE_EMBEDDED_CONSTRAINT => 0,    -- DECIMAL
