@@ -47,6 +47,9 @@
 !/chfpga_crs_corr8/*
 
 
+!/chfpga_ice_corr16/
+!/chfpga_ice_corr16/*
+
 !/chfpga_crs/
 !/chfpga_crs/*
 
