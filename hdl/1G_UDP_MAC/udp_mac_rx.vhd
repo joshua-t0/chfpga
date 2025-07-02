@@ -182,6 +182,7 @@ architecture impl of udp_mac_rx is
 	signal rx_data_fifo_valid: std_logic;
 	signal rx_data_fifo_dout: std_logic_vector(8 downto 0);
 	signal rx_data_fifo_din: std_logic_vector(8 downto 0) := (others => '0');
+	signal rx_data_fifo_wr_count: std_logic_vector(12 downto 0);
 	signal rx_data_fifo_dout64: std_logic_vector(63 downto 0);
 	signal rx_data_fifo_dout8: std_logic_vector(7 downto 0);
 	signal wr_rst: std_logic; -- write domain reset
@@ -287,14 +288,20 @@ data_fifo_rst1: xpm_cdc_async_rst
 	);
 
 -- Data FIFO
+--
+-- The Data FIFO is implemented directly using a FIFI36 primitive so we can leverage the embedded
+-- FIFO logic. This can't be done with a XPM macro. The FIFO is 4Kbytes deep, allowing for large
+-- ethernet packets but not quite jumbo frames. Command packets should typically be limited to the
+-- standard MTU of less than 1K. Large memories are written page by page.
 data_fifo0 : FIFO36E1  -- 7-series
 	generic map (
-		ALMOST_FULL_OFFSET => X"0FF8",    -- Sets almost full threshold
+		ALMOST_FULL_OFFSET => 13D"16",    -- ALMOST_FULL asserts 16 bytes before FULL
 		DATA_WIDTH => 9,                  -- Data width is 9 bits, meaning that depth = 36K/9 = 4K bytes
 		DO_REG => 1,                      -- Enable output register (1-0) Must be 1 if EN_SYN = FALSE
 		EN_SYN => FALSE,                  -- Asynchronous FIFO
 		FIFO_MODE => "FIFO36",            -- "FIFO36" or "FIFO36_72"
-		FIRST_WORD_FALL_THROUGH => TRUE   -- We want FWFT
+		FIRST_WORD_FALL_THROUGH => TRUE,   -- We want FWFT
+		SIM_DEVICE => "7SERIES"
 	)
 	port map (
 
@@ -307,6 +314,8 @@ data_fifo0 : FIFO36E1  -- 7-series
 		di(7 downto 0)  => rx_data_fifo_din(7 downto 0),
 		dip(7 downto 1) => (others => '0'), -- Parity bus is 8 bits, only LSB is used
 		dip(0)          => rx_data_fifo_din(8),
+
+		WRCOUNT => rx_data_fifo_wr_count, -- for debug
 
 		-- Read interface
 
