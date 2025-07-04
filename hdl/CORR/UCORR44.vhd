@@ -60,10 +60,11 @@ use xpm.vcomponents.all;
 entity UCORR44 is
 	GENERIC (
 		PLATFORM_ID: integer := PLATFORM_ID_CRS;
-		N: integer :=64; -- Number of inputs to correlate
+		N: integer := 64; -- Number of inputs to correlate
 		N_PER_CLK: integer := 32; -- Number of inputs provided on each clock
+		NBINS: integer; -- Number of bins to be processed by this correlator
 		BIN_DECIMATION_FACTOR: integer := 1; -- Only 1 out of every BIN_DECIMATION_FACTOR bin is processed in order to provide extra comoputing cycles and use less resources
-		Nclk: integer := BIN_DECIMATION_FACTOR*N/N_PER_CLK; -- Number of clocks  the correlator should take to compute the products
+		Nclk: integer := BIN_DECIMATION_FACTOR * N / N_PER_CLK; -- Number of clocks  the correlator should take to compute the products
 		CORR_NUMBER: integer := 0; -- correlator number to be used in packet headers
         NCORR: integer := 1;
 		URAM_MAX: integer := 64;
@@ -241,7 +242,7 @@ begin
   				end if; -- xy_tvalid
 
                 -- Assemble N inputs into x and y
-				if s_axis_tvalid='1' and bin_ctr=3 then
+				if s_axis_tvalid='1' and bin_ctr= K-1 then -- select last bin of the decimation block to make sure we get the TLAST frame
 					if word_ctr = WORDS_PER_BIN-1 then -- if last word of bin
 						y(0 to N-N_PER_CLK-1) <= t;
 						y(N-N_PER_CLK to N-1) <= s_axis_tdata;
@@ -274,6 +275,7 @@ begin
 	corr0: entity work.UCMAC44_ARRAY
 		generic map (
 			NCMAC => NCMAC,
+			NPROD => NBINS * Nclk,
 			AUTOCORR_STRIDE => H,
 			CORR_NUMBER => CORR_NUMBER,
 			N_CORR => NCORR,

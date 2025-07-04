@@ -54,7 +54,7 @@ entity ucap is
         SIM: boolean := FALSE
 	);
     port (
-        -- Input data buses
+        -- Input data buses, synchronous to clk
 
         s_axis_tdata: in slv_array(0 to NUMBER_OF_CHANNELS-1)(CAPTURE_BITS_PER_WORD -1 downto 0);
         s_axis_tvalid: in std_logic_vector(0 to NUMBER_OF_SOURCES - 1); -- common to all channels
@@ -66,13 +66,8 @@ entity ucap is
         source_sel_out: out std_logic_vector(0 to NUMBER_OF_CHANNELS - 1); -- data source request for each channel
         source_sel_in: in std_logic_vector(0 to NUMBER_OF_CHANNELS - 1); -- curent data source on tdata for each channel
 
-        -- Output data bus
 
-        m_axis_bsb_tdata: out std_logic_vector(7 downto 0); -- 8-bit output bus
-		m_axis_bsb_tvalid: out std_logic;
-		m_axis_bsb_tlast: out std_logic;
-		m_axis_bsb_tready: in std_logic := '1';
-        bsb_clk: in std_logic;
+        -- Auxiliary capture stream input, synchronous to clk
 
 		s_axis_stream_in_data: in std_logic_vector(7 downto 0) := X"00";
 		s_axis_stream_in_tvalid: in std_logic := '0';
@@ -82,7 +77,16 @@ entity ucap is
         clk: in std_logic;
         rst: in std_logic; -- synchronous to clk
 
+        -- Output data bus, synchronous to bsb_clk
+
+        m_axis_bsb_tdata: out std_logic_vector(7 downto 0); -- 8-bit output bus
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic := '1';
+        bsb_clk: in std_logic;
+
 		-- BSB Control interface
+
 		cmd_dat: in axis8_dat_struct := (TDATA=>(others=>'0'), TVALID=>'0', TLAST=>'0');
 		cmd_rdy: out axis8_rdy_struct;
 		rply_dat: out axis8_dat_struct;

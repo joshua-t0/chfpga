@@ -59,8 +59,8 @@ signal cmd_tvalid: std_logic;
 signal cmd_tlast: std_logic;
 signal cmd_tready: std_logic;
 
-signal CONTROL_BYTES: slv8_array(0 to 3); --
-signal STATUS_BYTES: slv8_array(0 to 1);
+signal CONTROL_BYTES: slv8_array(0 to 7); --
+signal STATUS_BYTES: slv8_array(0 to 7);
 signal RPLY_OUT_DAT: AXIS8_DAT_STRUCT;
 
 -- SYSMON signals
@@ -81,6 +81,7 @@ SYSMON_DOUT <= X"1234";
 
 CTRL_SLAVE0: entity work.CTRL_SLAVE
 	GENERIC MAP (
+        DEFAULT_CONTROL_BYTES=> X"00000000_00000000",
 		USE_RAM_DOUT_RDY => TRUE, -- need to wait for the RDY signal on RAM read accesses
 		RAM_DATA_WIDTH => 16,
 		RAM_ADDR_WIDTH => 7, -- SYSMON DRP Address bus width is 7 bits
@@ -143,6 +144,12 @@ stim_proc : process
 		reset <= '0';
 		sleep(clk125, 2); -- make sure we start command transmission on a CLK125 edge or we will lose some data
 		fpga_write_mask(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, 255,0); --
+        sleep(clk125, 10);
+		fpga_write_mask(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 
+		  addr => 0, 
+		  data => slv8_array'(X"01",X"02",X"03",X"04",X"05",X"06",X"07",X"08"),
+		  mask => slv8_array'(X"FF",X"FF",X"FF",X"FF",X"FF",X"FF",X"FF",X"FF"));  --
+        
 		-- fpga_write(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, 13); --
 		-- fpga_read(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, 0); --
 		-- fpga_read(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 16#80#+13, 3); --STATUS READ

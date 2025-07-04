@@ -34,14 +34,14 @@ use IEEE.NUMERIC_STD.ALL;
 -- any Xilinx primitives in this code.
 library UNISIM;
 use UNISIM.VComponents.all;
-use work.chFPGA_Package.all; 
+use work.chFPGA_Package.all;
 
 
 entity CTRL_ROUTER is
 	generic(
-		NUMBER_OF_PORTS: INTEGER :=8;
+		NUMBER_OF_PORTS: INTEGER := 8;
 		ADDRESS_MASK: std_logic_vector(CTRL_CMD_ADDR_WIDTH-1 downto 0);
-		TARGET_PBLOCK: string := "" -- generic passed as searchable node property in implementation 
+		TARGET_PBLOCK: string := "" -- generic passed as searchable node property in implementation
 		);
     PORT (
 
@@ -106,7 +106,7 @@ architecture Behavioral of CTRL_ROUTER is
 	signal cmd_out_dat_int_tlast: slv(NUMBER_OF_PORTS-1 downto 0);
 
 	constant CMD_FIFO_LENGTH: integer:= CTRL_CMD_BYTE_LENGTH + 2; -- Number of command bytes in FIFO. Must be more than the command header length, +1 to accomodate pipeline latency in TREADY.
-	signal cmd_word: std_logic_vector(23 downto 0); 
+	signal cmd_word: std_logic_vector(23 downto 0);
 
 	signal cmd_fifo_tdata: slv8_array(CMD_FIFO_LENGTH-1 downto 0);
 	signal cmd_fifo_tvalid: slv(CMD_FIFO_LENGTH-1 downto 0);
@@ -174,19 +174,19 @@ begin
 		-- By default, clear the VALID flag whenever a port is read (i.e its READY=1). The code below will override this if we write a new value to the port.
 		for i in 0 to NUMBER_OF_PORTS-1 loop
 			if cmd_out_rdy(i).TREADY='1' then
-				cmd_out_dat_int_tvalid(i) <= '0'; 
+				cmd_out_dat_int_tvalid(i) <= '0';
 			end if;
 		end loop;
 
 		---- Tell the source if we are ready for more data We accept bytes as
 		--   long as the fifo is not one entry from full because there is a
 		--   latency on one clock between the length and the TREADY, so we
-		--   may have to accomodate one extra entry. 
-		cmd_in_rdy_int.TREADY <= to_std_logic(cmd_fifo_len < CMD_FIFO_LENGTH - 1); 
+		--   may have to accomodate one extra entry.
+		cmd_in_rdy_int.TREADY <= to_std_logic(cmd_fifo_len < CMD_FIFO_LENGTH - 1);
 
 		case cmd_state is
 
-			-- Command bytes are coming in, and we are shifting them in and not reading them out until we have enough bytes to 
+			-- Command bytes are coming in, and we are shifting them in and not reading them out until we have enough bytes to
 			-- establish the packet destination address.
 			when CMD_STATE_READ_CMD =>
 				-- we arrive in this state when the last bytes of a frame has been transmitted.
@@ -194,7 +194,7 @@ begin
 				-- otherwise we wait until the fifo is full.
 
 
-				-- store the command words in the fifo 
+				-- store the command words in the fifo
 				if cmd_in_dat_int.TVALID = '1' and cmd_in_rdy_int.TREADY='1'  then
 					cmd_fifo_tdata(cmd_fifo_len) <= cmd_in_dat_int.TDATA;
 					cmd_fifo_tlast(cmd_fifo_len) <= cmd_in_dat_int.TLAST;
@@ -204,8 +204,8 @@ begin
 				-- If the FIFO contains the full command header, get the port address and go process it in the next state.
 				-- This is done whether or not an other byte is incoming so we are not blocking the pipeling for commands that have no data (read commands)
 				-- We get the port and jump only when we have all 3 bytes stored, not as we receive the 3rd one.
-				-- This adds a delay, and we may heve 4 samples in the FIFO when we enter the read state, 
-				-- but we do this so can enter the command state with a buffer that has already the required header bytes.  
+				-- This adds a delay, and we may heve 4 samples in the FIFO when we enter the read state,
+				-- but we do this so can enter the command state with a buffer that has already the required header bytes.
 				if cmd_fifo_len >= CTRL_CMD_BYTE_LENGTH then
 					-- Get the port number fromm the command in the FIFO
 					var_cmd_word := cmd_fifo_tdata(0) & cmd_fifo_tdata(1) & cmd_fifo_tdata(2);
@@ -219,15 +219,15 @@ begin
 			--    - 0 , 0: do nothing
 			--    - 1,  0: write data at *length, length +=1
 			--    - 0,  1: send data out, shift data, length-=1
-			--    - 1,  1: send data out, shift data,  write data *(length-1), length += 0 
+			--    - 1,  1: send data out, shift data,  write data *(length-1), length += 0
 			when CMD_STATE_READ_SEND_DAT => -- send the source data until the last byte of the frame
 
 
 				---- If we get data out of the FIFO
 				if (cmd_out_rdy(cmd_port).TREADY='1' or cmd_out_dat_int_tvalid(cmd_port) = '0') and cmd_fifo_len /= 0 then -- If we can write to the output
 					cmd_out_dat_int_tdata(cmd_port) <= cmd_fifo_tdata(0); -- Send the word at the top of the FIFO
-					cmd_out_dat_int_tlast(cmd_port) <= cmd_fifo_tlast(0); 
-					cmd_out_dat_int_tvalid(cmd_port) <= '1'; 
+					cmd_out_dat_int_tlast(cmd_port) <= cmd_fifo_tlast(0);
+					cmd_out_dat_int_tvalid(cmd_port) <= '1';
 
 					-- Shift right the FIFO
 					cmd_fifo_tdata(CMD_FIFO_LENGTH-2 downto 0) <= cmd_fifo_tdata(CMD_FIFO_LENGTH-1 downto 1);
@@ -254,7 +254,7 @@ begin
 						cmd_fifo_tdata(cmd_fifo_len) <= cmd_in_dat_int.TDATA;
 						cmd_fifo_tlast(cmd_fifo_len) <= cmd_in_dat_int.TLAST;
 						cmd_fifo_len <= cmd_fifo_len + 1;
-						-- Check for overflows. This should never happen by design 
+						-- Check for overflows. This should never happen by design
 						-- because cmd_in_rdy_int.TREADY=0 by the time we get there.
 						if cmd_fifo_len = CMD_FIFO_LENGTH then
 							cmd_overflow <= '1';

@@ -85,11 +85,13 @@ begin
     m_axis_tlast <= fifo_doutp(0);
 	-- FIFO is implemented using the FIFO36E2 primitive because the XPM_FIFO macro does not support the embedded FIFO.
 	-- RST is synchronous to WR_CLK
+
+	-- FIFO is 512 words x 72-bit
 	acc_fifo0 : FIFO36E2
 		generic map (
 			CLOCK_DOMAINS => "COMMON", -- independent clock / asynchronous FIFO
 			--PROG_EMPTY_THRESH     => 128, -- Sets the almost empty threshold
-			PROG_FULL_THRESH        => ALMOST_FULL_THRESH, -- Sets almost full threshold
+			PROG_FULL_THRESH        => ALMOST_FULL_THRESH, -- Almost full threshold. This is an absolute value.
 			READ_WIDTH              => 72, -- Sets data width to 4-72
 			WRITE_WIDTH             => 72, -- Sets data width to 4-72
 			REGISTER_MODE           => "REGISTERED", -- Output is registered as part of the FIFO, and does not add additional latency.

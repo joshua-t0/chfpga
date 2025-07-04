@@ -40,9 +40,15 @@
 !/sifpga_zcu111/
 !/sifpga_zcu111/*
 
-!/sifpga_crs/
-!/sifpga_crs/*
+# !/sifpga_crs/
+# !/sifpga_crs/*
 
+!/chfpga_crs_corr8/
+!/chfpga_crs_corr8/*
+
+
+!/chfpga_ice_corr16/
+!/chfpga_ice_corr16/*
 
 !/chfpga_crs/
 !/chfpga_crs/*

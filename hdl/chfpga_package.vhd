@@ -315,6 +315,11 @@ constant FFT_INFO: FFT_INFO_ARRAY := (
 		)
 	);
 
+-- Types of Coner-Turn Engines
+constant CT_TYPE_NONE: integer := 0;
+constant CT_TYPE_BCT: integer := 1;
+constant CT_TYPE_UCT: integer := 2;
+
 constant NUMBER_OF_CORRELATORS_MAX: INTEGER :=8; -- Maximum number of correlators supported by the system
 
 -- maximum number of CMACs in a CORR44 core.  The factor of two is because CORR44 needs to process two vectors at the same time so the results are coming out as fast at the data is pushed in
@@ -579,9 +584,10 @@ function min(LEFT, RIGHT: INTEGER) return INTEGER;
 function min(vin: IntegerArray) return INTEGER;
 function min(vin: integer_array) return integer;
 function min(LEFT, RIGHT: unsigned) return unsigned;
+function count(vin: integer_array; target:integer) return integer;
 function to_std_logic(i:boolean) return std_logic; -- converts bool to std_logic
-function to_slv(i:integer; n: integer) return std_logic_vector; -- converts integer to standard_logic_vector with specified numbe rof bits
-function to_slv(r:real; n: integer) return std_logic_vector; -- converts real to standard_logic_vector with specified numbe rof bits
+function to_slv(i:integer; n: integer) return std_logic_vector; -- converts integer to standard_logic_vector with specified number of bits
+function to_slv(r:real; n: integer) return std_logic_vector; -- converts real to standard_logic_vector with specified number of bits
 function to_slv(i:std_logic) return std_logic_vector; -- converts a std_logic into a one element vector
 function to_slv(i:unsigned) return std_logic_vector; -- converts unsigned to STD_LOGIC_VECTOR
 function to_slv(i:unsigned; n: integer) return std_logic_vector; -- resize and converts unsigned to STD_LOGIC_VECTOR
@@ -589,6 +595,7 @@ function to_slv(i:ByteArray; n: integer) return std_logic_vector; -- concatenate
 function to_slv(i:ByteArray) return std_logic_vector; -- concatenated bytes in a ByteAray and return them as a STD_LOGIC_VECTOR
 function to_slv(i:slv8_array; n: integer) return std_logic_vector; -- concatenate bytes in a slv8_array and return the n LSBs as a STD_LOGIC_VECTOR
 function to_slv(i:slv8_array) return std_logic_vector; -- concatenated bytes in a slv8_array and return them as a STD_LOGIC_VECTOR
+function to_bit_vector(i:integer; n: integer) return bit_vector; -- converts integer to bit_vector with specified number of bits
 
 function resize(i:std_logic_vector; n: integer) return std_logic_vector; -- resizes a STD_LOGIC_VECTOR. Truncates or adds zero padding.
 function to_ByteArray(i:std_logic_vector) return ByteArray;-- spilt a slv in ia ByteArray. The SLV length must be multiples of 8 bits.
@@ -820,6 +827,17 @@ begin
 	end if;
 end min;
 
+function count(vin: integer_array; target: integer) return integer is
+	variable vout: integer := 0;
+begin
+	for j in vin'RANGE loop
+		if 	vin(j) = target then
+			vout := vout + 1;
+		end if;
+	end loop;
+	return vout;
+end count;
+
 FUNCTION to_std_logic(i:boolean) return std_logic is -- converts boot to std_logic
 begin
 	if i then
@@ -829,12 +847,12 @@ begin
 	end if;
 end to_std_logic;
 
-FUNCTION to_slv(i:integer; n: integer) return std_logic_vector is -- converts integer to standard_logic_vector with specified numbe rof bits
+FUNCTION to_slv(i:integer; n: integer) return std_logic_vector is -- converts integer to standard_logic_vector with specified number of bits
 begin
 	return std_logic_vector(to_unsigned(i,n));
 end to_slv;
 
-FUNCTION to_slv(r:real; n: integer) return std_logic_vector is -- converts real to std_logic_vector with specified numbe rof bits
+FUNCTION to_slv(r:real; n: integer) return std_logic_vector is -- converts real to std_logic_vector with specified number of bits
 begin
 	return std_logic_vector(to_signed(integer(r), n));
 end to_slv;
@@ -848,6 +866,11 @@ FUNCTION to_slv(i:unsigned; n: integer) return std_logic_vector is -- resizes an
 begin
 	return std_logic_vector(resize(i,n));
 end to_slv;
+
+FUNCTION to_bit_vector(i:integer; n: integer) return bit_vector is -- converts integer to bit_vector with specified number of bits
+begin
+	return to_bit_vector(std_logic_vector(to_unsigned(i,n)));
+end to_bit_vector;
 
 FUNCTION resize(i:std_logic_vector; n: integer) return std_logic_vector is -- resizes a STD_LOGIC_VECTOR. Truncates or adds zero padding.
 begin

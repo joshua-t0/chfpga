@@ -945,7 +945,7 @@ set_property LOC DNA_PORT_X0Y0 [get_cells chfpga0/gpio_blk.GPIO0/gen_dna7.dna0]
 
 
 create_pblock SYSTEM
-add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list chfpga0/blinker_blk.BLINKER0 chfpga0/freq_ctr_blk.FREQ_CTR0 chfpga0/gpio_blk.GPIO0/CTRL_SLAVE0 chfpga0/gpio_blk.GPIO0/core_regs0 chfpga0/gpio_blk.GPIO0/irigb_comparator0 chfpga0/gpio_blk.GPIO0/irigb_decoder0 chfpga0/gpio_blk.GPIO0/irigb_encoder0 chfpga0/gen_i2c.I2C0 chfpga0/sys_router0]]
+add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list chfpga0/blinker_blk.BLINKER0 chfpga0/freq_ctr_blk.FREQ_CTR0 chfpga0/gen_i2c.I2C0 chfpga0/gpio_blk.GPIO0/CTRL_SLAVE0 chfpga0/gpio_blk.GPIO0/core_regs0 chfpga0/gpio_blk.GPIO0/irigb_comparator0 chfpga0/gpio_blk.GPIO0/irigb_decoder0 chfpga0/gpio_blk.GPIO0/irigb_encoder0]]
 resize_pblock [get_pblocks SYSTEM] -add {SLICE_X180Y225:SLICE_X189Y324}
 
 
@@ -989,7 +989,6 @@ create_pblock BP_BUCK_SYNC
 resize_pblock [get_pblocks BP_BUCK_SYNC] -add {SLICE_X0Y117:SLICE_X7Y124}
 
 create_pblock CROSSBAR0
-add_cells_to_pblock [get_pblocks CROSSBAR0] [get_cells -quiet {chfpga0/crossbar0_gen.cb1_gen.chan_crossbar0/CTRL_SLAVE0 chfpga0/crossbar0_gen.cb1_gen.chan_crossbar0/align0 {chfpga0/crossbar0_gen.cb1_gen.chan_crossbar0/BIN_SEL_GEN[*].*}}]
 resize_pblock [get_pblocks CROSSBAR0] -add {SLICE_X180Y137:SLICE_X189Y199 SLICE_X132Y170:SLICE_X179Y199}
 resize_pblock [get_pblocks CROSSBAR0] -add {DSP48_X8Y68:DSP48_X11Y79}
 resize_pblock [get_pblocks CROSSBAR0] -add {RAMB18_X8Y68:RAMB18_X11Y79}
@@ -1235,11 +1234,12 @@ set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_proba
 
 
 create_pblock CORR
-add_cells_to_pblock [get_pblocks CORR] [get_cells -quiet [list chfpga0/CORRGEN.corr_sel_gen.corr_case.corr_array0]]
+add_cells_to_pblock [get_pblocks CORR] [get_cells -quiet [list chfpga0/CORRGEN.corr_sel_gen.ucorr44_case.ucorr44_array0]]
 resize_pblock [get_pblocks CORR] -add {SLICE_X180Y325:SLICE_X189Y399 SLICE_X180Y0:SLICE_X189Y136 SLICE_X132Y225:SLICE_X179Y399 SLICE_X132Y0:SLICE_X179Y169}
 resize_pblock [get_pblocks CORR] -add {DSP48_X8Y90:DSP48_X11Y159 DSP48_X8Y0:DSP48_X11Y67}
 resize_pblock [get_pblocks CORR] -add {RAMB18_X8Y90:RAMB18_X11Y159 RAMB18_X8Y0:RAMB18_X11Y67}
 resize_pblock [get_pblocks CORR] -add {RAMB36_X8Y45:RAMB36_X11Y79 RAMB36_X8Y0:RAMB36_X11Y33}
+
 
 
 

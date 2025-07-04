@@ -48,6 +48,7 @@ use xpm.vcomponents.all;
 entity UCMAC44_ARRAY is
 	GENERIC (
 		NCMAC: integer :=8*9/2; -- Number of CMACs. There will be 2*NCMAC DSP48s, and min(URAM_MAX, NCMAC/2) UltraRAMs
+		NPROD: integer := 2048; -- Number of products to be stored by each CMAC. Sets memory depth. Must be 2048 if URAM_MAX > 0
 		AUTOCORR_STRIDE: integer:= 1; -- Spacing (in CMACs) between autocorrelation products. We assume there will be NCMAC/AUTOCORR_STRIDE-1 autocorrelations
 		CORR_NUMBER: integer; -- correlator number to be used in packet headers
         N_CORR: integer := 1; -- Total number of correlators. Used only in computing the STREAM_ID (id = bin*N_CORR+CORR_NUMBER)
@@ -890,9 +891,24 @@ begin
 		ram_dout(2*i+1) <= ram_dout_word(35 downto 0);
 
         -- Implement RAM for a pair of CMACs.
-        -- For URAM,
-        --   LATENCY=2 and write_mode=write_first gives the error: [Synth 8-6058] Synth Error: [XPM_MEMORY 40-9] READ_LATENCY_B (2) specifies fewer than 3 stages, but simple dual port RAM configurations targeting UltraRAM and using write-first mode for port B must use a read latency of at least 3 for port B.   ["/tools/Xilinx/Vivado/2022.2/data/ip/xpm/xpm_memory/hdl/xpm_memory.sv":588]
-        --   LATENCY=2 and write mode=read_first works.
+        --
+        -- Depending on MEM_TYPE, we either implement the memory as an ULTRARAM block or a BRAM array that offers the same storage. We need 8 RAMB36 to implement the equivalent of a UltraRAM.
+        --
+        -- We use a READ latency of 2 (READ_LATENCY_B=2). The DSP pipeline is designed to accomodate that exact latency.
+        --
+        -- When using Ultraram,
+        --   we have to use ``write_mode=write_first``, otherwise we get the error::
+        --
+        -- 		[Synth 8-6058] Synth Error: [XPM_MEMORY 40-9] READ_LATENCY_B (2) specifies fewer than 3 stages, but simple dual port RAM configurations targeting UltraRAM and using write-first mode for port B must use a read latency of at least 3 for port B.   ["/tools/Xilinx/Vivado/2022.2/data/ip/xpm/xpm_memory/hdl/xpm_memory.sv":588]
+        --
+        --   It works ok with ``write_mode=read_first``.
+        --
+        -- When using BRAM, the placement of the 8 BRAM cascade is critical with such a low latency.
+        -- The BRAM can be placed in a single column or two adjacent columns, and in the later case,
+        -- the 2 groups of 4 BRAM can be swapped, but all the BRAMs must be in the same clock
+        -- region, otherwise we have a hold timing error. The placer does not always get it right,
+        -- so it might need help by adding PBLOCKs for each correlator core.
+        --
 	   	ram0 : xpm_memory_sdpram
 		   	generic map (
 		      MEMORY_PRIMITIVE => MEM_TYPE,      -- force the use of UltraRAM ("ultra") or Block RAM ("block")
@@ -903,7 +919,7 @@ begin
                 -- Read bus B
 		      ADDR_WIDTH_B => 12,               -- same
 		      READ_DATA_WIDTH_B => 72,         -- 2 x (18+18) bits wide read bus
-		      MEMORY_SIZE => 72 * 4096,         -- 72-bit word * 4096 words = 1 x URAM288 or 8 x RAMB36 (72 x 512 each)
+		      MEMORY_SIZE => 72 * 2*NPROD,         -- 72-bit word * 4096 words = 1 x URAM288 or 8 x RAMB36 (72 x 512 each)
 		      READ_LATENCY_B => 2,     -- Needs to be >= of cascade height to allow registering. Synthesis ask for more than 4 to have full pipelining (4 is partial).
 		      SIM_ASSERT_CHK => 1,             -- DECIMAL; 0=disable simulation messages, 1=enable simulation messages
 		      --USE_EMBEDDED_CONSTRAINT => 0,    -- DECIMAL

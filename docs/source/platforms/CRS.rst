@@ -213,9 +213,11 @@ Timing constraints
 Physical Constraints / Floorplanning
 ------------------------------------
 
-Platform wrapper
-****************
+Platform wrapper (*chfpga_crs.vhd*)
+***********************************
 
+
+What are these generics for!!!
 
 
 Configurations

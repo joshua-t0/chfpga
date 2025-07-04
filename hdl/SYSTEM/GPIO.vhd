@@ -53,23 +53,41 @@ entity GPIO is
 		PLATFORM_ID: INTEGER; --! identifies the type of platform on which the firmware is running
 		COOKIE : integer := 16#42#;
 		PROTOCOL_VERSION: INTEGER; --! Protocol version used to determins compatibility with the python support software
+
+		-- ADC info
+
 		NUMBER_OF_ADCS: INTEGER; --! Number of adcs that are implemented
-		NUMBER_OF_CHANNELIZERS: INTEGER; --! Number of channelizers that are implemented
 		CHANNELIZERS_CLOCK_SOURCE: INTEGER; --! ADC channel from which the channelizers clocks are derived
-		NUMBER_OF_CHANNELIZERS_WITH_FFT: INTEGER; --! Number of antenna processing blocks with an FFT module
 		ADC_SAMPLES_PER_FRAME: integer;
 		ADC_SAMPLES_PER_WORD: integer;
 		ADC_BITS_PER_SAMPLE: integer;
+		NUMBER_OF_ADC_BOARDS: integer := 1;
+
+		-- Channelizer info
+
+		NUMBER_OF_CHANNELIZERS: INTEGER; --! Number of channelizers that are implemented
+		NUMBER_OF_CHANNELIZERS_WITH_FFT: INTEGER; --! Number of antenna processing blocks with an FFT module
+		FFT_TYPE: integer;
+
+		-- Corner-turn Engine info
+		CT_TYPE: integer;
+		CT_LEVEL: integer;
 		NUMBER_OF_CROSSBAR_INPUTS: integer;
 		NUMBER_OF_CROSSBAR1_OUTPUTS: integer;
 		NUMBER_OF_BP_SHUFFLE_LINKS: integer;
 		NUMBER_OF_GPU_LINKS: integer;
+
+		-- Correlator info
 		NUMBER_OF_CORRELATORS: INTEGER; --! Number of correlator blocks (CH_DIST+CORR+ACC) that are implemented if IMPLEMENT_CORR=TRUE
 		NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER; --! Number of antennas to be correlated for each frequency channel. This is hard coded for now. Determines how many antenna streams are fed to the CORR_BLOCK modules, and how many multipliers to implement in parallel in the CORR module.
-		NUMBER_OF_ADC_BOARDS: integer := 1;
+
+		-- Buck regulator SYNC control
+
 		NUMBER_OF_BUCK_SYNC_LINES: integer :=16;
 		BUCK_SYNC_ENABLE: boolean := True; -- default state of the buck sync enable at startup
 		BUCK_CLK_DIVIDE_FACTOR: INTEGER :=12; -- Buck frequency is 200MHz/BUCK_CLK_DIVIDE_FACTOR/16
+
+
 		MAC_ADDRESS_OUI_CODE: std_logic_vector(23 downto 0) := X"000A35"; -- Xilinx OUI code used to identify the first 3 bytes of the MAC address
 		NUMBER_OF_USER_SMA_SIGNALS: integer := 8;
 		IMPLEMENT_LCD: BOOLEAN := FALSE;
@@ -287,7 +305,7 @@ architecture Behavioral of GPIO is
 
 	--- Define Control word and its signals
 	signal control_bytes: slv8_array(0 to 50); -- default value set in the CMD_SLAVE
-	signal status_bytes: slv8_array(0 to 41); -- default value set in the CMD_SLAVE
+	signal status_bytes: slv8_array(0 to 43); -- default value set in the CMD_SLAVE
 
 	--signal CTRL_FLAG_ADC_RESET: std_logic;
 	signal CTRL_FLAG_BUCK_SYNC_ENABLE: std_logic;
@@ -706,7 +724,7 @@ status_bytes(12)(7 downto 1) <= (others=>'0');
 status_bytes(12)(0) <= fpga_serial_number(56);
 status_bytes(13 to 19) <= to_slv8_array(fpga_serial_number(55 downto 0));
 
--- STATUS Bytes 20-21: crossbar configuration
+-- STATUS Bytes 20-21: Corner-turn engine configuration Part 1
 status_bytes(20) <= to_slv(NUMBER_OF_CROSSBAR_INPUTS, 8);
 status_bytes(21) <= to_slv(NUMBER_OF_CROSSBAR1_OUTPUTS, 8);
 
@@ -740,7 +758,7 @@ status_bytes(33)(7 downto 8-NUMBER_OF_ADC_BOARDS) <= reverse_bits_and_dir(adc_pl
 status_bytes(34) <= cmd_packet_counter;
 status_bytes(35) <= rply_packet_counter;
 
--- STATUS Byte 36 - Corner-turn engine config
+-- STATUS Byte 36 - Corner-turn engine config Part 2
 status_bytes(36) <= to_slv(NUMBER_OF_BP_SHUFFLE_LINKS, 8);
 
 -- STATUS Byte 37: IceBoard Extra I/Os
@@ -758,6 +776,14 @@ status_bytes(38)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_cm
 status_bytes(39)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_cm_uv(0 to NUMBER_OF_ADC_FLAGS-1)); -- ADC common mode underflow for each ADC
 status_bytes(40)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_ot1(0 to NUMBER_OF_ADC_FLAGS-1));  -- ADC over threshold 1 for each ADC
 status_bytes(41)(NUMBER_OF_ADC_FLAGS-1 downto 0)  <= reverse_bits_and_dir(adc_ot2(0 to NUMBER_OF_ADC_FLAGS-1)); -- ADC over threshold 2 for each ADC
+
+-- STATUS Byte 42 - Corner-turn engine config Part 3
+status_bytes(42)(3 downto 0) <= to_slv(CT_TYPE, 4);
+status_bytes(42)(7 downto 4) <= to_slv(CT_LEVEL, 4);
+
+-- STATUS Byte 43 - FFT config Part 1
+status_bytes(43)(3 downto 0) <= to_slv(FFT_TYPE, 4);
+
 
 
 -----------------------------------------------------------------------------------

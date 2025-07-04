@@ -1,6 +1,4 @@
 ----------------------------------------------------------------------------------
---! @file
---! @brief Top-level file to implement chFPGA on the Kintex 7-based MGK7MB (ICEboard) platform
 -- Company: McGill University
 -- Engineer: JF Cliche
 --
@@ -17,76 +15,68 @@
 -- 2013-07-29 JFC: File Created as a wrapper to chFPGA.vhdl
 
 ---  LIBRARY DECLARATIONS -------------------------------------------------------------------------------
---! Standard libraries
+
+-- Standard libraries
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 library UNISIM;
 use UNISIM.VComponents.all;
---! Project libraries
-use work.chFPGA_Package.all; --! Get all component definitions
+
+-- Project libraries
+use work.chFPGA_Package.all; -- Get all component definitions
+use work.chfpga_config.all; -- get all configuratoin parameters
 
 ----ENTITY DECLARATION ------------------------------------------------------------------------------
---! @brief This is the _top level_ entity of the CHIME ICEboard-based data acquisition/channelizer/correlator.
---! The ports of this top-level entity correspond to physical pins on the Kintex 7 FPGA on that board. The location of these pins are defined in the constraint file.
+-- This is the _top level_ entity of the CHIME ICEboard-based data acquisition/channelizer/correlator.
+-- The ports of this top-level entity correspond to physical pins on the Kintex 7 FPGA on that board. The location of these pins are defined in the constraint file.
 entity SIFPGA_MGK7MB is
 	 generic (
-			PLATFORM_ID: INTEGER                         := PLATFORM_ID_MGK7MB; --! identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705
---			UDP_MAC_PRESENT: BOOLEAN                     := TRUE; --! Indicates if the Ethernet interface is to be implemented (sets the DYMMY flag on the MAC). Used for debugging only.
-			BLINKER_PRESENT: BOOLEAN                     := TRUE; --! Indicates if the LED flasher is to  be implemented by setting the DUMMY flag of the BLINKER module
-			SYSTEM_CLOCK_SOURCE: string                  := "SFP_REFCLK"; --!"SYSCLK": the 200 MHz clock will be taken from sysclk_p/n (CC pins) or "SFP_REFCLK": the system clock is 125 MHz from the GTX reference clock
---			New from refactored version:----------------
+			PLATFORM_ID: INTEGER                         := PLATFORM_ID_MGK7MB; -- identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705
+
+			-- Clocking
+
+			SYSTEM_CLOCK_SOURCE: string                  := "SFP_REFCLK"; --"SYSCLK": the 200 MHz clock will be taken from sysclk_p/n (CC pins) or "SFP_REFCLK": the system clock is 125 MHz from the GTX reference clock
 			SYSTEM_CLOCK_FREQ: real                      := 125.0; -- System reference clock frequency, in MHz *** IP packager does not support real. Defined as constant below ***
+
 			CHAN_CLK_SOURCE: string                      := "MMCM"; -- Channelizer clock comes from the multi-phase MMCM
+			ANT_CLK_SOURCE: integer                      := 0; -- Indicate which ADC is the source of the channelizer. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
 			CHAN_CLK_FREQ: real                          := 200.0; -- MHz. 200.0 or 300.0 are supported.
-			CT_CLK_SOURCE: string                        := "CORR_CLK"; -- corner-turn operates on backplane GTY word clock (~244 MHz)
---          -------------------------------------------- 
+			CT_CLK_SOURCE: string                        := CONFIG_CT_CLK_SOURCE; -- corner-turn operates on backplane GTY word clock (~244 MHz)
+
+			-- BSB interface
+
 			PHY_TYPE: string                             := "SGMII"; -- "GMII" or "SGMII"
-			SGMII_CLOCK_SOURCE: string                   := "REFCLK"; --! Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
-			NUMBER_OF_ADCS: INTEGER                      := 16; --! Number of ADC Data acquisition blocks to implement
-			NUMBER_OF_CHANNELIZERS:INTEGER               := 16;  --!(Typ. =16)  (0-NUMBER_OF_ADCS) Number of antenna processing blocks to be implemented
-			NUMBER_OF_CROSSBAR_INPUTS: integer           := 16; --! (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
-			NUMBER_OF_CROSSBAR_OUTPUTS: integer          := 8; --! (Typ. =16): Number of repacked data streams to feed to the corrleator or GPU links
-			NUMBER_OF_CORRELATORS: INTEGER               := 8; --! (0-NUMBER_OF_REORDER_OUTPUTS) Number of correlator blocks (CH_DIST+CORR+ACC) to be implemented if IMPLEMENT_CORR=TRUE
-			NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER := GLOBAL_NUMBER_OF_CHANNELIZERS_TO_CORRELATE; --! (3 - NUMBER_OF_CHANNELIZERS) Number of channelizers outputs to be correlated for each frequency channel. This is hard coded for now. Determines how many antenna streams are fed to the CORR_BLOCK modules, and how many multipliers to implement in parallel in the CORR module.
-			NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := 0;
-			NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := 0;
-			NUMBER_OF_BP_SHUFFLE_LINKS: integer          := 0; --! Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
-			NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := 2;
-			BP_SHUFFLE_LANE_MAP: integerArray            := ( -- Associate the concatenated BP PCB and QUAD lanes to GTX links. -1 means a bypass lane.
-			                                                -- Backplane PCB Lanes
-			                                                 0=>-1, -- Bypass lane
-			                                                 1=>0, 2=> 1, 3 => 2, 4 =>3,  5 =>4,  6 =>5,  7 =>6, 8=>7,
-			                                                 9=>8, 10=>9, 11=>10, 12=>11, 13=>12, 14=>13, 15=>14,
-			                                                -- Backplane QUAD Lanes
-			                                                 16 to 19=>-1, -- Bypass lane
-			                                                 20=>15, 21=>16, 22=>17, 23=>18
-			                                                );
-			BP_SHUFFLE_LANE_TO_QUAD_MAP : integerArray   := (0 to 3=>0, 4 to 7=>1, 8 to 11=> 2, 12 to 14 => 3, 15 to 18=> 4); --!  Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-			BP_SHUFFLE_QUAD_TO_REFCLK_MAP : integerArray := (0 => 1, 1 => 0, 2 => 0, 3=> 1, 4 => 1); --! Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+			SGMII_CLOCK_SOURCE: string                   := "REFCLK"; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 
-			NUMBER_OF_GPU_LINKS: integer                 := 0; --! (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
-			NUMBER_OF_GPU_REFCLKS: integer               := GLOBAL_NUMBER_OF_GPU_REFCLKS; --! Number of Reference clocks provided for the 10GE links to the GPU
-			NUMBER_OF_I2C_PORTS: integer                 := 1;
-			NUMBER_OF_SPI_PORTS: integer                 := 2; -- One port for each FMC
-			NUMBER_OF_ADC_BOARDS: integer                := 2; -- One SYNC for each FMC
-			-- IMPLEMENT_ANT: BoolArray(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(others=>TRUE); --! Selects for which antenna a processing pipeline is implemented
-			-- IMPLEMENT_FFT: BoolArray(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(others=>TRUE); --! Selects if the FFT block is implemented for each antenna (otherwise the timestream go through directly)
-			-- IMPLEMENT_CORR: BoolArray(0 to NUMBER_OF_CORRELATORS_MAX-1):=(0 to 7=>TRUE, others=>FALSE); --! Indicates if the correlator blocks are to be implemented
+			-- ADCs
 
-			--! ADC_IS_DIFFERNTIAL indicates whether each ADC data and clock inputs are single-ended (zero value) or differential (non-zero value).
-			-- For Rev2 board
+			ADC_TYPE: string := "EV8AQ160"; -- Type of ADC to use.
+			NUMBER_OF_ADC_BOARDS: integer                := 2; -- Sets the number of SPI and SYNC lines (one for each FMC)
+			NUMBER_OF_ADCS: INTEGER                      := 16; -- Number of ADC Data acquisition blocks to implement
 			ADC_IS_DIFFERENTIAL: BUFMRIndexArrayArray := ( 0 to 15 => (1,1,1,1,1,1,1,1,  1));
-			--! ADC_INSTANTIATE_PLL determines which ADCDAQ need to instantiate a PLL to provide IOCLK and DIVCLK to ISERDES that are in non-adjacent banks, and to provide a BUFG-buffered global word clock.
-			--! NOTE: A PLL (MMCM) could be used in theory for all data buses, but in practice we would run out of PLLs (there are only 2 per clock region).
-			--! NOTE: On the Virtex 6, there is no fast clock routing for the outer IO pads to the PLL. So the use of a PLL is preferably limited to the center IO pads
-			ADC_PROVIDE_BUFFERED_DIVCLK: BoolArray( 0 to NUMBER_OF_ADCS_MAX-1):=( 0 => TRUE, others=>FALSE); --! ADC 0 will be used to provide the clock to generate the signal processing clocks for all antennas
+			-- ADC_INSTANTIATE_PLL determines which ADCDAQ need to instantiate a PLL to provide IOCLK and DIVCLK to ISERDES that are in non-adjacent banks, and to provide a BUFG-buffered global word clock.
+			-- NOTE: A PLL (MMCM) could be used in theory for all data buses, but in practice we would run out of PLLs (there are only 2 per clock region).
+			-- NOTE: On the Virtex 6, there is no fast clock routing for the outer IO pads to the PLL. So the use of a PLL is preferably limited to the center IO pads
+			ADC_PROVIDE_BUFFERED_DIVCLK: BoolArray( 0 to NUMBER_OF_ADCS_MAX-1):=( 0 => TRUE, others=>FALSE); -- ADC 0 will be used to provide the clock to generate the signal processing clocks for all antennas
 			ADC_INSTANTIATE_PLL: BoolArray(0 to NUMBER_OF_ADCS_MAX-1):=(others=>FALSE); -- Need no PLL on this board. All deserialisers are acessible directly by the BUFRs and BUFIOs when using BUFMRs if necessary
-			--! ADC_USE_EXT_DATA_CLK determines which ADC use the external (PLL-generated) IOCLK and DIVCLK. This is needed if the data bus lines end up in non-adjacent banks reachable by the IOBUF or BUFR.
-			--! If FALSE, the clocks generated by IOCLK and BUFR will be used.
-			--! NOTE: using a single PLL output for multiple ADC data buses is allowed, but that assumes that all data buses are relatively well in phase to be realigned with the IDELAY. This is reasonable assumption if all data buses come from the same ADC chip. It is not clear if this work well across multiple ADC chips.
+			-- ADC_USE_EXT_DATA_CLK determines which ADC use the external (PLL-generated) IOCLK and DIVCLK. This is needed if the data bus lines end up in non-adjacent banks reachable by the IOBUF or BUFR.
+			-- If FALSE, the clocks generated by IOCLK and BUFR will be used.
+			-- NOTE: using a single PLL output for multiple ADC data buses is allowed, but that assumes that all data buses are relatively well in phase to be realigned with the IDELAY. This is reasonable assumption if all data buses come from the same ADC chip. It is not clear if this work well across multiple ADC chips.
 			ADC_USE_EXT_DATA_CLK: BoolArray(0 to NUMBER_OF_ADCS_MAX-1):=(others=>FALSE); -- On Rev0 board, the clock buffer fot CHAN1 is bad
+			-- For 7-Series only. Determines which BUFMR to use for each ADC bit (indices 0-7) and clock (index 8).
+			-- On th e7-series, BUFMR (Multi-region clock buffer) is needed to allow access to BUFIOs and BUFRs in adjacent clocking regions. No BUFMR is instantiated if any index is negative. If all indices are 0 or more, one BUFMR is instantiated, and the corresponding BUFR/BUFIO will be used for each data/clock line
+			-- NOTES on BUFMR/BUFIO/BUFIO assignments
+			--
+			--   CH0: Data and clock in the same bank. We use a BUFMR to equalize delays on the word counter logic.
+			--   CH1: Used as the PLL clock source. We need a BUFMR. One BUFR is used for the clock IDELAY in Bank 17 . The other is used for the word counter logic in Bank 16 and the PLL. The BUFMR here equalize the delays caused by BUFMRs inother channels
+			--   CH2: Cannot use a BUFMR because clock is on a SRCC pin. Data lines and clock are NOT in same bank. This is why we use the PLL because we cannot do direct clocking.
+			--   CH3: Data and clock lines spread between banks 17 and 18. Clock and logic is in Bank 17 . No need of a separate BUFR/BUFIO for data lines in bank 18.
+			--   CH4: Data and clock not in the same bank. We use one BUFMR,  and BUFR and BUFIO in banks 17 and 18 each.
+			--   CH5: Data and clock all in same bank 12. We use one BUFMR to equalize delays only.
+			--   CH6: Data and clock not in same bank. We use one BUFMR,  and BUFR and BUFIOs in banks 12 and 13 each.
+			--   CH7: Data and clock all in same bank 18. Clock is on a SRCC pin, so we cannot use BUFMR to equalize delays.
 			ADC_INSTANTIATE_BUFMR: BUFMRIndexArrayArray(0 to NUMBER_OF_ADCS_MAX-1):=(
 				-- FMC A
 				(others => 0), -- CH0: Data and clock in bank 14. We use a BUFMR to equalize delays with other channels. We have only one BUFR/BUFIO.
@@ -106,22 +96,61 @@ entity SIFPGA_MGK7MB is
 				(others => 0), -- CH13: Clock in Bank 15 (MRCC), data in bank 15
 				(0,0,0,1,0,0,0,0, 0), -- CH14: Clock in bank 18 (MRCC), data in banks 17 and 18
 				(1,1,1,1,1,1,1,1, 0) -- CH15: Clock in bank 18 (MRCC), Data in Bank 17
+				);
 
-				); --! For 7-Series only. Determines which BUFMR to use for each ADC bit (indices 0-7) and clock (index 8) , to allow access to BUFIOs and BUFRs in adjacent clocking regions. No BUFMR is instantiated if any index is negative. If all indices are 0 or more, one BUFMR is instantiated, and the corresponding BUFR/BUFIO will be used for each data/clock line
-				--! NOTES on BUFMR/BUFIO/BUFIO assignments
-				--! CH0: Data and clock in the same bank. We use a BUFMR to equalize delays on the word counter logic.
-				--! CH1: Used as the PLL clock source. We need a BUFMR. One BUFR is used for the clock IDELAY in Bank 17 . The other is used for the word counter logic in Bank 16 and the PLL. The BUFMR here equalize the delays caused by BUFMRs inother channels
-				--! CH2: Cannot use a BUFMR because clock is on a SRCC pin. Data lines and clock are NOT in same bank. This is why we use the PLL because we cannot do direct clocking.
-				--! CH3: Data and clock lines spread between banks 17 and 18. Clock and logic is in Bank 17 . No need of a separate BUFR/BUFIO for data lines in bank 18.
-				--! CH4: Data and clock not in the same bank. We use one BUFMR,  and BUFR and BUFIO in banks 17 and 18 each.
-				--! CH5: Data and clock all in same bank 12. We use one BUFMR to equalize delays only.
-				--! CH6: Data and clock not in same bank. We use one BUFMR,  and BUFR and BUFIOs in banks 12 and 13 each.
-				--! CH7: Data and clock all in same bank 18. Clock is on a SRCC pin, so we cannot use BUFMR to equalize delays.
-			ANT_CLK_SOURCE: integer :=0; -- Indicate which ADC is the source of the antenna processing clock. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
 
-			GPU_CHANNEL_QUAD: IntegerArray := GLOBAL_GPU_CHANNEL_QUAD; -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1
-			GPU_QUAD_REFCLK: IntegerArray := GLOBAL_GPU_QUAD_REFCLK; -- Both QUAD0 and QUAD1 use refclk(0)
-			SIM: BOOLEAN := GLOBAL_SIM--! Indicates this is running as a simulation. Used to accelerate simulations
+			-- Channelizers
+
+			NUMBER_OF_CHANNELIZERS:INTEGER               := 16;  --(Typ. =16)  (0-NUMBER_OF_ADCS) Number of antenna processing blocks to be implemented
+            FFT_TYPE : integer := CONFIG_CHAN_FFT_TYPE;
+
+
+			-- Corner-turn engine
+
+	        CT_TYPE: integer                             := CONFIG_CT_TYPE;
+			CT_LEVEL: integer                            := CONFIG_CT_LEVEL;
+
+			NUMBER_OF_CROSSBAR_INPUTS: integer           := 16; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
+			NUMBER_OF_CROSSBAR_OUTPUTS: integer          := 8; -- (Typ. =16): Number of repacked data streams to feed to the corrleator or GPU links
+			NUMBER_OF_CORRELATORS: INTEGER               := 8; -- (0-NUMBER_OF_REORDER_OUTPUTS) Number of correlator blocks (CH_DIST+CORR+ACC) to be implemented if IMPLEMENT_CORR=TRUE
+			NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER := GLOBAL_NUMBER_OF_CHANNELIZERS_TO_CORRELATE; -- (3 - NUMBER_OF_CHANNELIZERS) Number of channelizers outputs to be correlated for each frequency channel. This is hard coded for now. Determines how many antenna streams are fed to the CORR_BLOCK modules, and how many multipliers to implement in parallel in the CORR module.
+			NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := 0;
+			NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := 0;
+			BP_SHUFFLE_LANE_MAP: integerArray            := ( -- Associate the concatenated BP PCB and QUAD lanes to GTX links. -1 means a bypass lane.
+			                                                -- Backplane PCB Lanes
+			                                                 0=>-1, -- Bypass lane
+			                                                 1=>0, 2=> 1, 3 => 2, 4 =>3,  5 =>4,  6 =>5,  7 =>6, 8=>7,
+			                                                 9=>8, 10=>9, 11=>10, 12=>11, 13=>12, 14=>13, 15=>14,
+			                                                -- Backplane QUAD Lanes
+			                                                 16 to 19=>-1, -- Bypass lane
+			                                                 20=>15, 21=>16, 22=>17, 23=>18
+			                                                );
+			BP_SHUFFLE_LANE_TO_QUAD_MAP : integerArray   := (0 to 3=>0, 4 to 7=>1, 8 to 11=> 2, 12 to 14 => 3, 15 to 18=> 4); --  Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
+			BP_SHUFFLE_QUAD_TO_REFCLK_MAP : integerArray := (0 => 1, 1 => 0, 2 => 0, 3=> 1, 4 => 1); -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+
+			NUMBER_OF_BP_SHUFFLE_LINKS: integer          := max(BP_SHUFFLE_LANE_MAP)+1; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
+			NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := max(BP_SHUFFLE_QUAD_TO_REFCLK_MAP)+1;
+
+			-- Correlator
+
+			CORR_TYPE: string := CONFIG_CORR_TYPE;
+
+			-- Real-time data offload links
+
+			GPU_LINK_TYPE : string := CONFIG_GPU_LINK_TYPE;
+			GPU_CHANNEL_QUAD: integer_array := CONFIG_GPU_LINK_TO_QUAD_MAP; -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1
+			GPU_QUAD_REFCLK: integer_array := CONFIG_GPU_QUAD_TO_REFCLK_MAP; -- Both QUAD0 and QUAD1 use refclk(0)
+			NUMBER_OF_GPU_LINKS: integer                 := 0; -- (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
+			NUMBER_OF_GPU_REFCLKS: integer               := GLOBAL_NUMBER_OF_GPU_REFCLKS; -- Number of Reference clocks provided for the 10GE links to the GPU
+
+			-- Peripherals
+
+			NUMBER_OF_I2C_PORTS: integer                 := 1;
+			NUMBER_OF_SPI_PORTS: integer                 := NUMBER_OF_ADC_BOARDS; -- One port for each FMC
+			BLINKER_PRESENT: BOOLEAN                     := TRUE; -- Indicates if the LED flasher is to  be implemented by setting the DUMMY flag of the BLINKER module
+
+
+			SIM: BOOLEAN := GLOBAL_SIM-- Indicates this is running as a simulation. Used to accelerate simulations
 
 	);
     PORT (
@@ -130,36 +159,40 @@ entity SIFPGA_MGK7MB is
 			------------------------------------
 
 			-- Reset line
-			cpu_reset_n: in std_logic; --! Hardware reset generated by the board
+			cpu_reset_n: in std_logic; -- Hardware reset generated by the board
 
 
 			raw_clk10: in std_logic; -- 10 MHz Board clock reference (From primary clock buffer, no PLL. Single-ended, on a SRCC pin.
-			mgt_clk10_p: in std_logic; --! 10 MHz backplane reference clock (From PLL in Bypass mode). Used for synchronizing ADCs.
+			mgt_clk10_p: in std_logic; -- 10 MHz backplane reference clock (From PLL in Bypass mode). Used for synchronizing ADCs.
 			mgt_clk10_n: in std_logic;
-			mgt_clk100_p: in std_logic; --! 100 MHz MGT reference clock (From PLL). Used only with frequency counter for connectivity tests.
+			mgt_clk100_p: in std_logic; -- 100 MHz MGT reference clock (From PLL). Used only with frequency counter for connectivity tests.
 			mgt_clk100_n: in std_logic;
-			mgt_clk200_p: in std_logic; --! 200 MHz MGT reference clock (From PLL). Used only with frequency counter for connectivity tests.
+			mgt_clk200_p: in std_logic; -- 200 MHz MGT reference clock (From PLL). Used only with frequency counter for connectivity tests.
 			mgt_clk200_n: in std_logic;
-			mgt_clk125_p: in std_logic; --! 125 MHz MGT reference clock (From PLL). Used only with frequency counter for connectivity tests.
+			mgt_clk125_p: in std_logic; -- 125 MHz MGT reference clock (From PLL). Used only with frequency counter for connectivity tests.
 			mgt_clk125_n: in std_logic;
 
---			bp_io: out  STD_LOGIC_VECTOR(8 downto 0); --! Backplane IO
+			-- User signals
 			sma_a: inout std_logic; -- sync out
 			sma_b_fpga_led2: inout std_logic; -- LED2
+			fpga_led1_bp_sma: inout std_logic; -- FPGA LED1 & Backplane SMA
+
+
+			-- Time
 			bp_time_p: in std_logic; -- Time_P
 			bp_time_n: in std_logic; -- Time_N
 			bp_trig_p: in std_logic; -- Trig_P (used as Sync in)
 			bp_trig_n: in std_logic; -- Trig_N
+
 			bp_gpio_int: inout std_logic;
 			bp_buck_sync: inout std_logic;
-			fpga_led1_bp_sma: inout std_logic; -- FPGA LED1 & Backplane SMA
 
 
 			------------------------------------
 			--  IIC/PMBus
 			------------------------------------
-			i2c_scl: inout STD_LOGIC; --!   (I2C) clock (bidirectional)
-			i2c_sda: inout STD_LOGIC; --!   (I2C) data (bidirectional)
+			i2c_scl: inout STD_LOGIC; --   (I2C) clock (bidirectional)
+			i2c_sda: inout STD_LOGIC; --   (I2C) data (bidirectional)
 
 			------------------------------------
 			-- ARM <-> FPGA SPI port
@@ -169,6 +202,7 @@ entity SIFPGA_MGK7MB is
 			arm_spi_mosi : in std_logic;
 			arm_spi_cs_n : in std_logic;
 			flash_spi_cs_n: inout std_logic;
+
 			------------------------------------
 			-- ARM IRQ line
 			------------------------------------
@@ -187,18 +221,16 @@ entity SIFPGA_MGK7MB is
 			uart_tx: inout std_logic; --
 			uart_rx: inout std_logic; --
 
-			------------------------------------
-			-- SFP Module (Gbit Ethernet)
-			------------------------------------
+			-- BSB interface: SFP Module/Gbit Ethernet
 
-			-- SFP_LOS: out STD_LOGIC; --! SFP Loss of Signal flag
-
-			sfp_clk_p: in STD_LOGIC; --! SFP reference clock, generated on-board using a high qualyty oscillator and used to synchronize the MGT used to communicate to the SFP.
+			sfp_clk_p: in STD_LOGIC; -- SFP reference clock, generated on-board using a high qualyty oscillator and used to synchronize the MGT used to communicate to the SFP.
 			sfp_clk_n: in STD_LOGIC;
-			sfp_tx_p: out STD_LOGIC; --! Serialized data from the FPGA MGT to the SFP
+			sfp_tx_p: out STD_LOGIC; -- Serialized data from the FPGA MGT to the SFP
 			sfp_tx_n: out STD_LOGIC;
-			sfp_rx_p: in STD_LOGIC; --! Serialized data from the SFP to the FPGA MGT
+			sfp_rx_p: in STD_LOGIC; -- Serialized data from the SFP to the FPGA MGT
 			sfp_rx_n: in STD_LOGIC;
+
+			-- Real-time data offload: 8x10G Ethernet
 
 			xge_tx_p: out std_logic_vector(0 to NUMBER_OF_GPU_LINKS-1);
 			xge_tx_n: out std_logic_vector(0 to NUMBER_OF_GPU_LINKS-1);
@@ -207,12 +239,18 @@ entity SIFPGA_MGK7MB is
 			xge_refclk_p: in std_logic_vector(0 to NUMBER_OF_GPU_REFCLKS-1);
 			xge_refclk_n: in std_logic_vector(0 to NUMBER_OF_GPU_REFCLKS-1);
 
+
+			-- Corner-turn engine
+
 			bp_shuffle_tx_p: out std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS-1);
 			bp_shuffle_tx_n: out std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS-1);
 			bp_shuffle_rx_p: in std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS-1);
 			bp_shuffle_rx_n: in std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS-1);
 			bp_shuffle_refclk_p: in std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_REFCLKS-1);
 			bp_shuffle_refclk_n: in std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_REFCLKS-1);
+
+
+			-- Buck sync
 
 			sync_1v0_gtx: out std_logic;
 			sync_3v3: out std_logic;
@@ -223,182 +261,185 @@ entity SIFPGA_MGK7MB is
 			sync_1v5: out std_logic;
 			sync_1v8: out std_logic;
 			sync_1v2: out std_logic;
+
+
 			------------------------------------
-			-- FMC
+			-- FMC ADCs
 			------------------------------------
 
 			-- ADC0 AH signals
-			fmca_adc0_ahdp : in  STD_LOGIC_VECTOR (7 downto 0); --! AH data bus from the ADC chip 0 on the ADC board. This is DDR. The AL bus and overrange lines are not used.
+			fmca_adc0_ahdp : in  STD_LOGIC_VECTOR (7 downto 0); -- AH data bus from the ADC chip 0 on the ADC board. This is DDR. The AL bus and overrange lines are not used.
 			fmca_adc0_ahdn : in  STD_LOGIC_VECTOR (7 downto 0);
-			fmca_adc0_adrp : in  STD_LOGIC; --! Data Ready line that clocks the AH data on each rising and falling edge (DDR)
+			fmca_adc0_adrp : in  STD_LOGIC; -- Data Ready line that clocks the AH data on each rising and falling edge (DDR)
 			fmca_adc0_adrn : in  STD_LOGIC;
 
 			-- ADC0 BH signals
-			fmca_adc0_bhdp : in  STD_LOGIC_VECTOR (7 downto 0);--! BH data bus from the ADC chip 0 on the ADC board. This is DDR. The BL bus and overrange lines are not used.
+			fmca_adc0_bhdp : in  STD_LOGIC_VECTOR (7 downto 0);-- BH data bus from the ADC chip 0 on the ADC board. This is DDR. The BL bus and overrange lines are not used.
 			fmca_adc0_bhdn : in  STD_LOGIC_VECTOR (7 downto 0);
-			fmca_adc0_bdrp : in  STD_LOGIC;  --! Data Ready line that clocks the BH data on each rising and falling edge (DDR)
+			fmca_adc0_bdrp : in  STD_LOGIC;  -- Data Ready line that clocks the BH data on each rising and falling edge (DDR)
 			fmca_adc0_bdrn : in  STD_LOGIC;
 
 			-- ADC0 CH signals. Only 6 bits are available on the LPC FMC connector
-			fmca_adc0_chdp : in  STD_LOGIC_VECTOR (7 downto 0); --! CH data bus from the ADC chip 0 on the ADC board. This is DDR. The CL bus and overrange lines are not used.
+			fmca_adc0_chdp : in  STD_LOGIC_VECTOR (7 downto 0); -- CH data bus from the ADC chip 0 on the ADC board. This is DDR. The CL bus and overrange lines are not used.
 			fmca_adc0_chdn : in  STD_LOGIC_VECTOR (7 downto 0);
-			fmca_adc0_cdrp : in  STD_LOGIC; --! Data Ready line that clocks the CH data on each rising and falling edge (DDR)
+			fmca_adc0_cdrp : in  STD_LOGIC; -- Data Ready line that clocks the CH data on each rising and falling edge (DDR)
 			fmca_adc0_cdrn : in  STD_LOGIC;
 
 			-- ADC0 DH or CL  Only 5 bits are available on the FMC LPC connector.
-			fmca_adc0_dhdp : in  STD_LOGIC_VECTOR (7 downto 0); --! DH data bus from the ADC chip 0 on the ADC board. This is DDR. The DL bus and overrange lines are not used.
+			fmca_adc0_dhdp : in  STD_LOGIC_VECTOR (7 downto 0); -- DH data bus from the ADC chip 0 on the ADC board. This is DDR. The DL bus and overrange lines are not used.
 			fmca_adc0_dhdn : in  STD_LOGIC_VECTOR (7 downto 0);
-			fmca_adc0_ddrp : in  STD_LOGIC;  --! Data Ready line that clocks the DH data on each rising and falling edge (DDR)
+			fmca_adc0_ddrp : in  STD_LOGIC;  -- Data Ready line that clocks the DH data on each rising and falling edge (DDR)
 			fmca_adc0_ddrn : in  STD_LOGIC;
 
 			-- ADC1 port AH signals - Available on KC705 with FMC700 adapter
-			fmca_adc1_ahdp : in  STD_LOGIC_VECTOR (7 downto 0); --! AH data bus from the ADC chip 1 on the ADC board. This is DDR. The AL bus and overrange lines are not used.
+			fmca_adc1_ahdp : in  STD_LOGIC_VECTOR (7 downto 0); -- AH data bus from the ADC chip 1 on the ADC board. This is DDR. The AL bus and overrange lines are not used.
 			fmca_adc1_ahdn : in  STD_LOGIC_VECTOR (7 downto 0);
-			fmca_adc1_adrp : in  STD_LOGIC; --! Data Ready line that clocks the AH data on each rising and falling edge (DDR)
+			fmca_adc1_adrp : in  STD_LOGIC; -- Data Ready line that clocks the AH data on each rising and falling edge (DDR)
 			fmca_adc1_adrn : in  STD_LOGIC;
 
 			-- ADC1 port BH signals - Available on KC705 with FMC700 adapter
-			fmca_adc1_bhdp : in  STD_LOGIC_VECTOR (7 downto 0); --! BH data bus from the ADC chip 1 on the ADC board. This is DDR. The BL bus and overrange lines are not used.
+			fmca_adc1_bhdp : in  STD_LOGIC_VECTOR (7 downto 0); -- BH data bus from the ADC chip 1 on the ADC board. This is DDR. The BL bus and overrange lines are not used.
 			fmca_adc1_bhdn : in  STD_LOGIC_VECTOR (7 downto 0);
-			fmca_adc1_bdrp : in  STD_LOGIC; --! Data Ready line that clocks the BH data on each rising and falling edge (DDR)
+			fmca_adc1_bdrp : in  STD_LOGIC; -- Data Ready line that clocks the BH data on each rising and falling edge (DDR)
 			fmca_adc1_bdrn : in  STD_LOGIC;
 
 			-- ADC1 port CH signals
-			fmca_adc1_chdp : in  STD_LOGIC_VECTOR (7 downto 0); --! CH data bus from the ADC chip 1 on the ADC board. This is DDR. The CL bus and overrange lines are not used.
+			fmca_adc1_chdp : in  STD_LOGIC_VECTOR (7 downto 0); -- CH data bus from the ADC chip 1 on the ADC board. This is DDR. The CL bus and overrange lines are not used.
 			fmca_adc1_chdn : in  STD_LOGIC_VECTOR (7 downto 0);
-			fmca_adc1_cdrp : in  STD_LOGIC; --! Data Ready line that clocks the CH data on each rising and falling edge (DDR)
+			fmca_adc1_cdrp : in  STD_LOGIC; -- Data Ready line that clocks the CH data on each rising and falling edge (DDR)
 			fmca_adc1_cdrn : in  STD_LOGIC;
 
 			-- ADC1 port DH signals
-			fmca_adc1_dhdp : in STD_LOGIC_VECTOR (7 downto 0); --! DH data bus from the ADC chip 1 on the ADC board. This is DDR. The DL bus and overrange lines are not used.
+			fmca_adc1_dhdp : in STD_LOGIC_VECTOR (7 downto 0); -- DH data bus from the ADC chip 1 on the ADC board. This is DDR. The DL bus and overrange lines are not used.
 			fmca_adc1_dhdn : in STD_LOGIC_VECTOR (7 downto 0);
-			fmca_adc1_ddrp : in STD_LOGIC; --! Data Ready line that clocks the DH data on each rising and falling edge (DDR)
+			fmca_adc1_ddrp : in STD_LOGIC; -- Data Ready line that clocks the DH data on each rising and falling edge (DDR)
 			fmca_adc1_ddrn : in STD_LOGIC;
 
 			-- ADC RESET and SYNC signals
-			fmca_adc_sync_p: out STD_LOGIC; --! SYNC signal to the ADC (or the recynchronization circuit that drives the ADC SYNC)
+			fmca_adc_sync_p: out STD_LOGIC; -- SYNC signal to the ADC (or the recynchronization circuit that drives the ADC SYNC)
 			fmca_adc_sync_n: out STD_LOGIC;
-			fmca_adc_rst_n: out STD_LOGIC; --! Active LOW ADC reset line, common to both ADC chips.
+			fmca_adc_rst_n: out STD_LOGIC; -- Active LOW ADC reset line, common to both ADC chips.
 
 			--SPI signals
-			fmca_spi_sck: out STD_LOGIC; --! SPI clock to the FPC. Typically 1 MHz.
-			fmca_spi_miso: in STD_LOGIC; --! SPI data from the FMC
-			fmca_spi_mosi: out STD_LOGIC; --! SPI data to the FMC
-			fmca_spi_addr: out STD_LOGIC_VECTOR(2 downto 0); --! Address bus that selects which SPI device is enabled. Up to 8 devices are possible)
-			fmca_spi_cs_n: out STD_LOGIC; --! On Rev0 MGADC08, it is the ADC PLL Latch Enable. On Rev2, is is an active LOW SPI_CS that enables the device selected by the address.
-			-- fmca_spi_rst_n: out STD_LOGIC; --! Active LOW reset for the SPI devices, namely the IO Expander. This line is used by REV0 boards, and is left floating by REV2 boards. Note that this LPC pinn is normally used by the PRSNT signal, which should normally be grounded by a FMC board when it is installed.
-			fmca_spi_rst_n_alt: out STD_LOGIC; --! Active LOW reset for the SPI devices, namely the IO Expander. This line is used by REV2 boards, and is left floating by REV0 boards.
+			fmca_spi_sck: out STD_LOGIC; -- SPI clock to the FPC. Typically 1 MHz.
+			fmca_spi_miso: in STD_LOGIC; -- SPI data from the FMC
+			fmca_spi_mosi: out STD_LOGIC; -- SPI data to the FMC
+			fmca_spi_addr: out STD_LOGIC_VECTOR(2 downto 0); -- Address bus that selects which SPI device is enabled. Up to 8 devices are possible)
+			fmca_spi_cs_n: out STD_LOGIC; -- On Rev0 MGADC08, it is the ADC PLL Latch Enable. On Rev2, is is an active LOW SPI_CS that enables the device selected by the address.
+			-- fmca_spi_rst_n: out STD_LOGIC; -- Active LOW reset for the SPI devices, namely the IO Expander. This line is used by REV0 boards, and is left floating by REV2 boards. Note that this LPC pinn is normally used by the PRSNT signal, which should normally be grounded by a FMC board when it is installed.
+			fmca_spi_rst_n_alt: out STD_LOGIC; -- Active LOW reset for the SPI devices, namely the IO Expander. This line is used by REV2 boards, and is left floating by REV0 boards.
 
-			fmca_adc_pll_lock: in std_logic; --! ADC PLL lock status
+			fmca_adc_pll_lock: in std_logic; -- ADC PLL lock status
 
 			-- Buck control signals - Available on KC705 with FMC700 adapter
-			fmca_buck1v8_sync: out STD_LOGIC; --! Clock used to synchronize the 3.3V Buck switching regulator
-			fmca_buck3v3_sync: out STD_LOGIC; --! Clock used to synchronize the 1.8V Buck switching regulator
+			fmca_buck1v8_sync: out STD_LOGIC; -- Clock used to synchronize the 3.3V Buck switching regulator
+			fmca_buck3v3_sync: out STD_LOGIC; -- Clock used to synchronize the 1.8V Buck switching regulator
 
 			-- FMC I2C signals: accessed through the IIC hub on KC705
---			FMC_I2C_SCK: inout STD_LOGIC; --! FMC I2C clock (bidirectional). Used to talk to the on-board EEPROM.
---			FMC_I2C_SDA: inout STD_LOGIC; --! FMC I2C data (bidirectional). Used to talk to the on-board EEPROM.
+--			FMC_I2C_SCK: inout STD_LOGIC; -- FMC I2C clock (bidirectional). Used to talk to the on-board EEPROM.
+--			FMC_I2C_SDA: inout STD_LOGIC; -- FMC I2C data (bidirectional). Used to talk to the on-board EEPROM.
 			-- FMC Reference clock -- Available on KC705 with FMC700 adapter
 
-			fmca_refclk_m2c_p: in STD_LOGIC; --! copy of the 10 MHz reference clock received by the FMC board (through its SMA connector )and forwarded to the FPGA as a LVDS signal. May contain encoded SYNC information.
+			fmca_refclk_m2c_p: in STD_LOGIC; -- copy of the 10 MHz reference clock received by the FMC board (through its SMA connector )and forwarded to the FPGA as a LVDS signal. May contain encoded SYNC information.
 			fmca_refclk_m2c_n: in STD_LOGIC;
 
-			fmca_mgt_pll_refclk_p: in std_logic_vector(0 to 1); --! Clocks generated by the MGT PLL
+			fmca_mgt_pll_refclk_p: in std_logic_vector(0 to 1); -- Clocks generated by the MGT PLL
 			fmca_mgt_pll_refclk_n: in std_logic_vector(0 to 1);
 
 
 			-- ADC0 AH signals
-			fmcb_adc0_ahdp : in  STD_LOGIC_VECTOR (7 downto 0); --! AH data bus from the ADC chip 0 on the ADC board. This is DDR. The AL bus and overrange lines are not used.
+			fmcb_adc0_ahdp : in  STD_LOGIC_VECTOR (7 downto 0); -- AH data bus from the ADC chip 0 on the ADC board. This is DDR. The AL bus and overrange lines are not used.
 			fmcb_adc0_ahdn : in  STD_LOGIC_VECTOR (7 downto 0);
-			fmcb_adc0_adrp : in  STD_LOGIC; --! Data Ready line that clocks the AH data on each rising and falling edge (DDR)
+			fmcb_adc0_adrp : in  STD_LOGIC; -- Data Ready line that clocks the AH data on each rising and falling edge (DDR)
 			fmcb_adc0_adrn : in  STD_LOGIC;
 
 			-- ADC0 BH signals
-			fmcb_adc0_bhdp : in  STD_LOGIC_VECTOR (7 downto 0);--! BH data bus from the ADC chip 0 on the ADC board. This is DDR. The BL bus and overrange lines are not used.
+			fmcb_adc0_bhdp : in  STD_LOGIC_VECTOR (7 downto 0);-- BH data bus from the ADC chip 0 on the ADC board. This is DDR. The BL bus and overrange lines are not used.
 			fmcb_adc0_bhdn : in  STD_LOGIC_VECTOR (7 downto 0);
-			fmcb_adc0_bdrp : in  STD_LOGIC;  --! Data Ready line that clocks the BH data on each rising and falling edge (DDR)
+			fmcb_adc0_bdrp : in  STD_LOGIC;  -- Data Ready line that clocks the BH data on each rising and falling edge (DDR)
 			fmcb_adc0_bdrn : in  STD_LOGIC;
 
 			-- ADC0 CH signals. Only 6 bits are available on the LPC FMC connector
-			fmcb_adc0_chdp : in  STD_LOGIC_VECTOR (7 downto 0); --! CH data bus from the ADC chip 0 on the ADC board. This is DDR. The CL bus and overrange lines are not used.
+			fmcb_adc0_chdp : in  STD_LOGIC_VECTOR (7 downto 0); -- CH data bus from the ADC chip 0 on the ADC board. This is DDR. The CL bus and overrange lines are not used.
 			fmcb_adc0_chdn : in  STD_LOGIC_VECTOR (7 downto 0);
-			fmcb_adc0_cdrp : in  STD_LOGIC; --! Data Ready line that clocks the CH data on each rising and falling edge (DDR)
+			fmcb_adc0_cdrp : in  STD_LOGIC; -- Data Ready line that clocks the CH data on each rising and falling edge (DDR)
 			fmcb_adc0_cdrn : in  STD_LOGIC;
 
 			-- ADC0 DH or CL  Only 5 bits are available on the FMC LPC connector.
-			fmcb_adc0_dhdp : in  STD_LOGIC_VECTOR (7 downto 0); --! DH data bus from the ADC chip 0 on the ADC board. This is DDR. The DL bus and overrange lines are not used.
+			fmcb_adc0_dhdp : in  STD_LOGIC_VECTOR (7 downto 0); -- DH data bus from the ADC chip 0 on the ADC board. This is DDR. The DL bus and overrange lines are not used.
 			fmcb_adc0_dhdn : in  STD_LOGIC_VECTOR (7 downto 0);
-			fmcb_adc0_ddrp : in  STD_LOGIC;  --! Data Ready line that clocks the DH data on each rising and falling edge (DDR)
+			fmcb_adc0_ddrp : in  STD_LOGIC;  -- Data Ready line that clocks the DH data on each rising and falling edge (DDR)
 			fmcb_adc0_ddrn : in  STD_LOGIC;
 
 			-- ADC1 port AH signals - Available on KC705 with FMC700 adapter
-			fmcb_adc1_ahdp : in  STD_LOGIC_VECTOR (7 downto 0); --! AH data bus from the ADC chip 1 on the ADC board. This is DDR. The AL bus and overrange lines are not used.
+			fmcb_adc1_ahdp : in  STD_LOGIC_VECTOR (7 downto 0); -- AH data bus from the ADC chip 1 on the ADC board. This is DDR. The AL bus and overrange lines are not used.
 			fmcb_adc1_ahdn : in  STD_LOGIC_VECTOR (7 downto 0);
-			fmcb_adc1_adrp : in  STD_LOGIC; --! Data Ready line that clocks the AH data on each rising and falling edge (DDR)
+			fmcb_adc1_adrp : in  STD_LOGIC; -- Data Ready line that clocks the AH data on each rising and falling edge (DDR)
 			fmcb_adc1_adrn : in  STD_LOGIC;
 
 			-- ADC1 port BH signals - Available on KC705 with FMC700 adapter
-			fmcb_adc1_bhdp : in  STD_LOGIC_VECTOR (7 downto 0); --! BH data bus from the ADC chip 1 on the ADC board. This is DDR. The BL bus and overrange lines are not used.
+			fmcb_adc1_bhdp : in  STD_LOGIC_VECTOR (7 downto 0); -- BH data bus from the ADC chip 1 on the ADC board. This is DDR. The BL bus and overrange lines are not used.
 			fmcb_adc1_bhdn : in  STD_LOGIC_VECTOR (7 downto 0);
-			fmcb_adc1_bdrp : in  STD_LOGIC; --! Data Ready line that clocks the BH data on each rising and falling edge (DDR)
+			fmcb_adc1_bdrp : in  STD_LOGIC; -- Data Ready line that clocks the BH data on each rising and falling edge (DDR)
 			fmcb_adc1_bdrn : in  STD_LOGIC;
 
 			-- ADC1 port CH signals
-			fmcb_adc1_chdp : in  STD_LOGIC_VECTOR (7 downto 0); --! CH data bus from the ADC chip 1 on the ADC board. This is DDR. The CL bus and overrange lines are not used.
+			fmcb_adc1_chdp : in  STD_LOGIC_VECTOR (7 downto 0); -- CH data bus from the ADC chip 1 on the ADC board. This is DDR. The CL bus and overrange lines are not used.
 			fmcb_adc1_chdn : in  STD_LOGIC_VECTOR (7 downto 0);
-			fmcb_adc1_cdrp : in  STD_LOGIC; --! Data Ready line that clocks the CH data on each rising and falling edge (DDR)
+			fmcb_adc1_cdrp : in  STD_LOGIC; -- Data Ready line that clocks the CH data on each rising and falling edge (DDR)
 			fmcb_adc1_cdrn : in  STD_LOGIC;
 
 			-- ADC1 port DH signals
-			fmcb_adc1_dhdp : in STD_LOGIC_VECTOR (7 downto 0); --! DH data bus from the ADC chip 1 on the ADC board. This is DDR. The DL bus and overrange lines are not used.
+			fmcb_adc1_dhdp : in STD_LOGIC_VECTOR (7 downto 0); -- DH data bus from the ADC chip 1 on the ADC board. This is DDR. The DL bus and overrange lines are not used.
 			fmcb_adc1_dhdn : in STD_LOGIC_VECTOR (7 downto 0);
-			fmcb_adc1_ddrp : in STD_LOGIC; --! Data Ready line that clocks the DH data on each rising and falling edge (DDR)
+			fmcb_adc1_ddrp : in STD_LOGIC; -- Data Ready line that clocks the DH data on each rising and falling edge (DDR)
 			fmcb_adc1_ddrn : in STD_LOGIC;
 
 			-- ADC RESET and SYNC signals
-			fmcb_adc_sync_p: out STD_LOGIC; --! SYNC signal to the ADC (or the recynchronization circuit that drives the ADC SYNC)
+			fmcb_adc_sync_p: out STD_LOGIC; -- SYNC signal to the ADC (or the recynchronization circuit that drives the ADC SYNC)
 			fmcb_adc_sync_n: out STD_LOGIC;
-			fmcb_adc_rst_n: out STD_LOGIC; --! Active LOW ADC reset line, common to both ADC chips.
+			fmcb_adc_rst_n: out STD_LOGIC; -- Active LOW ADC reset line, common to both ADC chips.
 
 			--SPI signals
-			fmcb_spi_sck: out STD_LOGIC; --! SPI clock to the FPC. Typically 1 MHz.
-			fmcb_spi_miso: in STD_LOGIC; --! SPI data from the FMC
-			fmcb_spi_mosi: out STD_LOGIC; --! SPI data to the FMC
-			fmcb_spi_addr: out STD_LOGIC_VECTOR(2 downto 0); --! Address bus that selects which SPI device is enabled. Up to 8 devices are possible)
-			fmcb_spi_cs_n: out STD_LOGIC; --! On Rev0 MGADC08, it is the ADC PLL Latch Enable. On Rev2, is is an active LOW SPI_CS that enables the device selected by the address.
-			-- fmcb_spi_rst_n: out STD_LOGIC; --! Active LOW reset for the SPI devices, namely the IO Expander. This line is used by REV0 boards, and is left floating by REV2 boards. Note that this LPC pinn is normally used by the PRSNT signal, which should normally be grounded by a FMC board when it is installed.
-			fmcb_spi_rst_n_alt: out STD_LOGIC; --! Active LOW reset for the SPI devices, namely the IO Expander. This line is used by REV2 boards, and is left floating by REV0 boards.
+			fmcb_spi_sck: out STD_LOGIC; -- SPI clock to the FPC. Typically 1 MHz.
+			fmcb_spi_miso: in STD_LOGIC; -- SPI data from the FMC
+			fmcb_spi_mosi: out STD_LOGIC; -- SPI data to the FMC
+			fmcb_spi_addr: out STD_LOGIC_VECTOR(2 downto 0); -- Address bus that selects which SPI device is enabled. Up to 8 devices are possible)
+			fmcb_spi_cs_n: out STD_LOGIC; -- On Rev0 MGADC08, it is the ADC PLL Latch Enable. On Rev2, is is an active LOW SPI_CS that enables the device selected by the address.
+			-- fmcb_spi_rst_n: out STD_LOGIC; -- Active LOW reset for the SPI devices, namely the IO Expander. This line is used by REV0 boards, and is left floating by REV2 boards. Note that this LPC pinn is normally used by the PRSNT signal, which should normally be grounded by a FMC board when it is installed.
+			fmcb_spi_rst_n_alt: out STD_LOGIC; -- Active LOW reset for the SPI devices, namely the IO Expander. This line is used by REV2 boards, and is left floating by REV0 boards.
 
-			fmcb_adc_pll_lock: in std_logic; --! ADC PLL lock status
+			fmcb_adc_pll_lock: in std_logic; -- ADC PLL lock status
 
 			-- Buck control signals - Available on KC705 with FMC700 adapter
-			fmcb_buck1v8_sync: out STD_LOGIC; --! Clock used to synchronize the 3.3V Buck switching regulator
-			fmcb_buck3v3_sync: out STD_LOGIC; --! Clock used to synchronize the 1.8V Buck switching regulator
+			fmcb_buck1v8_sync: out STD_LOGIC; -- Clock used to synchronize the 3.3V Buck switching regulator
+			fmcb_buck3v3_sync: out STD_LOGIC; -- Clock used to synchronize the 1.8V Buck switching regulator
 
 			-- FMC I2C signals: accessed through the IIC hub on KC705
---			FMC_I2C_SCK: inout STD_LOGIC; --! FMC I2C clock (bidirectional). Used to talk to the on-board EEPROM.
---			FMC_I2C_SDA: inout STD_LOGIC; --! FMC I2C data (bidirectional). Used to talk to the on-board EEPROM.
+--			FMC_I2C_SCK: inout STD_LOGIC; -- FMC I2C clock (bidirectional). Used to talk to the on-board EEPROM.
+--			FMC_I2C_SDA: inout STD_LOGIC; -- FMC I2C data (bidirectional). Used to talk to the on-board EEPROM.
 			-- FMC Reference clock -- Available on KC705 with FMC700 adapter
 
-			fmcb_refclk_m2c_p: in STD_LOGIC; --! copy of the 10 MHz reference clock received by the FMC board (through its SMA connector )and forwarded to the FPGA as a LVDS signal. May contain encoded SYNC information.
+			fmcb_refclk_m2c_p: in STD_LOGIC; -- copy of the 10 MHz reference clock received by the FMC board (through its SMA connector )and forwarded to the FPGA as a LVDS signal. May contain encoded SYNC information.
 			fmcb_refclk_m2c_n: in STD_LOGIC;
 
-			fmcb_mgt_pll_refclk_p: in std_logic_vector(0 to 1); --! Clocks generated by the MGT PLL
+			fmcb_mgt_pll_refclk_p: in std_logic_vector(0 to 1); -- Clocks generated by the MGT PLL
 			fmcb_mgt_pll_refclk_n: in std_logic_vector(0 to 1)
 
 			 );
 end SIFPGA_MGK7MB;
 
 ---------- chFPGA implementaPLATFORM_ID_MGK7MBion ------
---! Implements the chFPGA CHIME PoC Data acquisition/channelizer/corrrlator for the KC705 evaluation board (equipped with a Kintex 7 7K355 FPGA).
---! This simply instantiate the generic chFPGA code with the appropriate generics for that hardware platform.
---!
+-- Implements the chFPGA CHIME PoC Data acquisition/channelizer/corrrlator for the KC705 evaluation board (equipped with a Kintex 7 7K355 FPGA).
+-- This simply instantiate the generic chFPGA code with the appropriate generics for that hardware platform.
+--
 
 architecture Behavioral of SIFPGA_MGK7MB is
 	-- SIGNALS
 
 	attribute IOB: string;
 	attribute DONT_TOUCH: string;
+    attribute io_buffer_type: string;
 
 	signal cpu_reset: std_logic;
 	signal mgt_clk10_nobuf: std_logic;
@@ -433,6 +474,18 @@ architecture Behavioral of SIFPGA_MGK7MB is
 
 	signal fmc_refclk_m2c_p: std_logic_vector(0 to NUMBER_OF_ADC_BOARDS-1);
 	signal fmc_refclk_m2c_n: std_logic_vector(0 to NUMBER_OF_ADC_BOARDS-1);
+
+
+    signal bp_shuffle_tx_p_int, bp_shuffle_tx_n_int: std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS - 1);
+    -- Tell the tools not to infer buffers and autoplace IO ports for the following if the ports are not connected
+    -- If 100GE is not implemented, the placer assigns random IOs to these ports, and since those have no specifiec IO standard, the bitstream
+    -- fails its DRC.
+    -- "None" tells the tools not to implement an IO port. "OBUF" implements the IO port.
+    --  In the case of "OBUF", it looks like the output buffer is adapted to the type of output such as a transceiver output etc.
+    --attribute io_buffer_type of qsfp_txp, qsfp_txn: signal is sel(GPU_LINK_TYPE = "10GE", "OBUF", "NONE");
+    --attribute io_buffer_type of clk156_p, clk156_n: signal is sel(GPU_LINK_TYPE = "10GE", "IBUF", "NONE");
+    attribute io_buffer_type of bp_shuffle_tx_p, bp_shuffle_tx_n: signal is sel(CT_LEVEL > 1, "OBUF", "NONE");
+
 
 	signal buck_sync: std_logic_vector(0 to 15);
 	signal adc_rst_n: std_logic_vector(0 to NUMBER_OF_ADC_BOARDS-1);
@@ -491,8 +544,15 @@ architecture Behavioral of SIFPGA_MGK7MB is
 
 begin
 
-	cpu_reset <= not cpu_reset_n; --! Reset is active LOW on the ICEBoard
-	--cpu_reset <= '0'; --! ICEBoard reset held low when ARM is not clocked. We thereofre ignore it.
+
+	-- Disconnect bp_shuffle links if they are not used
+    bp_gen: if CT_LEVEL > 1 generate
+        bp_shuffle_tx_p <= bp_shuffle_tx_p_int;
+        bp_shuffle_tx_n <= bp_shuffle_tx_n_int;
+    end generate bp_gen;
+
+	cpu_reset <= not cpu_reset_n; -- Reset is active LOW on the ICEBoard
+	--cpu_reset <= '0'; -- ICEBoard reset held low when ARM is not clocked. We thereofre ignore it.
 	-- sma_a <= sma_out; -- BP_IO5/SMA-A/Backplane: Reference cap
 	-- sma_b_fpga_led2 <= FPGA_LED2; -- BP_IO4/BP_LED/SMA-B/SW8/FPGA_LED2, Backplane LED 0
 
@@ -808,23 +868,23 @@ bufr_rawclk10 : BUFR
 -- 		ODIV2 => open
 -- 	);
 
---! Buck phase schedule
---! |  0 | 5V0      | Supply |
---! |  1 | 1V0_GTX  | 5V0    | GTX |
---! |  2 | 1V2      | 5V0    |
---! |  3 | 1V5      | 5V0    |
---! |  4 | 3V3      | Supply |
---! |  5 | 1V0      | 5V0    | FPGA Core logic |
---! |  6 | 1V8      | 5V0    |
---! |  7 | VADJ     | 5V0    |
---! |  8 | FMCA_1V8 | 5V0    |
---! |  9 | (unused) |        |
---! | 10 | FMCB_1V8 | 5V0    |
---! | 11 | (unused) |        |
---! | 12 | FMCA_3V3 | 5V0    |
---! | 13 | 12V      |        |
---! | 14 | FMCB_3V3 | 5V0    |
---! | 15 | (unused) |        |
+-- Buck phase schedule
+-- |  0 | 5V0      | Supply |
+-- |  1 | 1V0_GTX  | 5V0    | GTX |
+-- |  2 | 1V2      | 5V0    |
+-- |  3 | 1V5      | 5V0    |
+-- |  4 | 3V3      | Supply |
+-- |  5 | 1V0      | 5V0    | FPGA Core logic |
+-- |  6 | 1V8      | 5V0    |
+-- |  7 | VADJ     | 5V0    |
+-- |  8 | FMCA_1V8 | 5V0    |
+-- |  9 | (unused) |        |
+-- | 10 | FMCB_1V8 | 5V0    |
+-- | 11 | (unused) |        |
+-- | 12 | FMCA_3V3 | 5V0    |
+-- | 13 | 12V      |        |
+-- | 14 | FMCB_3V3 | 5V0    |
+-- | 15 | (unused) |        |
 
 
 	-- Assign motherboard buck sync
@@ -898,45 +958,65 @@ bufr_rawclk10 : BUFR
 	chfpga0: entity work.chFPGA
 		GENERIC MAP(
 			PLATFORM_ID                     => PLATFORM_ID,
-			
+
 			-- clocks
 			SYSTEM_CLOCK_SOURCE             => SYSTEM_CLOCK_SOURCE,
 			SYSTEM_CLOCK_FREQ               => SYSTEM_CLOCK_FREQ,
 			CHAN_CLK_SOURCE                 => CHAN_CLK_SOURCE,
 			CHAN_CLK_FREQ 					=> CHAN_CLK_FREQ,
 			CT_CLK_SOURCE                   => CT_CLK_SOURCE,
-			
+
 			BLINKER_PRESENT                 => BLINKER_PRESENT,
 			PHY_TYPE                        => PHY_TYPE,
 --			SGMII_CLOCK_SOURCE              => SGMII_CLOCK_SOURCE,
+
+			-- ADCs
+
+			ADC_TYPE                        => ADC_TYPE,
 			NUMBER_OF_ADCS                  => NUMBER_OF_ADCS,
-			NUMBER_OF_CHANNELIZERS          => NUMBER_OF_CHANNELIZERS,
-			NUMBER_OF_CORRELATORS           => NUMBER_OF_CORRELATORS,
-			NUMBER_OF_CROSSBAR_INPUTS       => NUMBER_OF_CROSSBAR_INPUTS,
-			NUMBER_OF_CROSSBAR1_OUTPUTS      => NUMBER_OF_CROSSBAR_OUTPUTS,
-			NUMBER_OF_GPU_LINKS             => NUMBER_OF_GPU_LINKS,
-			NUMBER_OF_GPU_REFCLKS           => NUMBER_OF_GPU_REFCLKS,
-			NUMBER_OF_BP_PCB_SHUFFLE_LANES  => NUMBER_OF_BP_PCB_SHUFFLE_LANES,
-			NUMBER_OF_BP_QSFP_SHUFFLE_LANES => NUMBER_OF_BP_QSFP_SHUFFLE_LANES,
-			NUMBER_OF_BP_SHUFFLE_LINKS      => NUMBER_OF_BP_SHUFFLE_LINKS,
-			NUMBER_OF_BP_SHUFFLE_REFCLKS    => NUMBER_OF_BP_SHUFFLE_REFCLKS,
-			BP_SHUFFLE_LANE_MAP             => BP_SHUFFLE_LANE_MAP,
-			BP_SHUFFLE_LANE_TO_QUAD_MAP     => BP_SHUFFLE_LANE_TO_QUAD_MAP,
-			BP_SHUFFLE_QUAD_TO_REFCLK_MAP   => BP_SHUFFLE_QUAD_TO_REFCLK_MAP,
-			NUMBER_OF_I2C_PORTS             => NUMBER_OF_I2C_PORTS,
-			NUMBER_OF_SPI_PORTS             => NUMBER_OF_SPI_PORTS,
 			NUMBER_OF_ADC_BOARDS            => NUMBER_OF_ADC_BOARDS,
-			-- IMPLEMENT_ANT                =>IMPLEMENT_ANT, -- Selects for which antenna a processing pipeline is implemented
-			-- IMPLEMENT_FFT                =>IMPLEMENT_FFT, -- Selects if the FFT block is implemented for each antenna (otherwise the timestream go through directly)
-			-- IMPLEMENT_CORR               =>IMPLEMENT_CORR,
 			ADC_IS_DIFFERENTIAL             => ADC_IS_DIFFERENTIAL,
 			ADC_PROVIDE_BUFFERED_DIVCLK     => ADC_PROVIDE_BUFFERED_DIVCLK,
 			ADC_INSTANTIATE_PLL             => ADC_INSTANTIATE_PLL,
 			ADC_USE_EXT_DATA_CLK            => ADC_USE_EXT_DATA_CLK,
 			ADC_INSTANTIATE_BUFMR           => ADC_INSTANTIATE_BUFMR,
 			ANT_CLK_SOURCE                  => ANT_CLK_SOURCE,
-			GPU_CHANNEL_QUAD                => GPU_CHANNEL_QUAD,
-			GPU_QUAD_REFCLK                 => GPU_QUAD_REFCLK,
+
+			-- Channelizers
+
+			NUMBER_OF_CHANNELIZERS          => NUMBER_OF_CHANNELIZERS,
+            FFT_TYPE => FFT_TYPE,
+			-- IMPLEMENT_FFT                =>IMPLEMENT_FFT, -- Selects if the FFT block is implemented for each antenna (otherwise the timestream go through directly)
+
+			-- Corner-turn engine
+
+            CT_TYPE                         => CT_TYPE,
+            CT_LEVEL                        => CT_LEVEL,
+
+			NUMBER_OF_CROSSBAR_INPUTS       => NUMBER_OF_CROSSBAR_INPUTS,
+			NUMBER_OF_CROSSBAR1_OUTPUTS     => NUMBER_OF_CROSSBAR_OUTPUTS,
+			NUMBER_OF_GPU_LINKS             => NUMBER_OF_GPU_LINKS,
+			NUMBER_OF_GPU_REFCLKS           => NUMBER_OF_GPU_REFCLKS,
+			NUMBER_OF_BP_PCB_SHUFFLE_LANES  => NUMBER_OF_BP_PCB_SHUFFLE_LANES,
+			NUMBER_OF_BP_QSFP_SHUFFLE_LANES => NUMBER_OF_BP_QSFP_SHUFFLE_LANES,
+			NUMBER_OF_BP_SHUFFLE_LINKS      => NUMBER_OF_BP_SHUFFLE_LINKS,
+			NUMBER_OF_BP_SHUFFLE_REFCLKS    => NUMBER_OF_BP_SHUFFLE_REFCLKS,
+
+			-- Correlator
+
+			CORR_TYPE => CORR_TYPE,
+			NUMBER_OF_CORRELATORS           => NUMBER_OF_CORRELATORS,
+
+
+			BP_SHUFFLE_LANE_MAP             => BP_SHUFFLE_LANE_MAP,
+			BP_SHUFFLE_LANE_TO_QUAD_MAP     => BP_SHUFFLE_LANE_TO_QUAD_MAP,
+			BP_SHUFFLE_QUAD_TO_REFCLK_MAP   => BP_SHUFFLE_QUAD_TO_REFCLK_MAP,
+			NUMBER_OF_I2C_PORTS             => NUMBER_OF_I2C_PORTS,
+			NUMBER_OF_SPI_PORTS             => NUMBER_OF_SPI_PORTS,
+
+			GPU_LINK_TYPE => GPU_LINK_TYPE,
+			GPU_CHANNEL_QUAD                => integerarray(GPU_CHANNEL_QUAD),
+			GPU_QUAD_REFCLK                 => integerarray(GPU_QUAD_REFCLK),
 			SIM                             => SIM
 			)
 		PORT MAP(

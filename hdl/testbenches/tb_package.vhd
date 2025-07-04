@@ -43,10 +43,15 @@ package tb_package is
 	procedure fpga_read(  signal CLK : IN STD_LOGIC;  signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0); signal tvalid: OUT STD_LOGIC; signal tlast: OUT STD_LOGIC; signal tready: in std_logic;  addr: integer; log2_length: integer := 0);
 	procedure fpga_write_control(  signal CLK : IN STD_LOGIC;  signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0); signal tvalid: OUT STD_LOGIC; signal tlast: OUT STD_LOGIC;  signal tready: in std_logic; addr: integer; data: integer; nbytes: integer:=1);
 	procedure fpga_write_control(  signal CLK : IN STD_LOGIC;  signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0); signal tvalid: OUT STD_LOGIC; signal tlast: OUT STD_LOGIC;  signal tready: in std_logic; addr: integer; data: std_logic_vector(7 downto 0));
+
 	procedure fpga_write_mask(  signal CLK : IN STD_LOGIC;  signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0); signal tvalid: OUT STD_LOGIC; signal tlast: OUT STD_LOGIC;  signal tready: in std_logic; addr: integer; data: integer; mask:integer );
+	procedure fpga_write_mask(  signal CLK : IN STD_LOGIC;  signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0); signal tvalid: OUT STD_LOGIC; signal tlast: OUT STD_LOGIC;  signal tready: in std_logic; addr: integer; data, mask: slv8_array);
+
 	procedure fpga_write_ram(  signal CLK : IN STD_LOGIC;  signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0); signal tvalid: OUT STD_LOGIC; signal tlast: OUT STD_LOGIC;  signal tready: in std_logic; addr: integer; data: slv8_array );
 	procedure fpga_write_ram(  signal CLK : IN STD_LOGIC;  signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0); signal tvalid: OUT STD_LOGIC; signal tlast: OUT STD_LOGIC;  signal tready: in std_logic; addr: integer; data: slv_array);
+
 	procedure fpga_select_bins( signal clk : in STD_LOGIC;  signal tdata: out STD_LOGIC_VECTOR(7 downto 0); signal tvalid: out std_logic; signal tlast: out STD_LOGIC;   signal tready: in std_logic; addr: integer;  first_bin: integer; bin_step: integer; number_of_bins: integer);
+
 	procedure send_axis32_packet(signal clk: IN std_logic; signal m_axis_tdata: OUT slv32; signal m_axis_tvalid: out std_logic; signal m_axis_tlast: OUT std_logic; signal m_axis_tready: IN std_logic;data: IN slv32_array; period: in integer := 0);
 	procedure send_axis_packet(signal clk: IN std_logic; signal m_axis_tdata: OUT std_logic_vector; signal m_axis_tvalid: out std_logic; signal m_axis_tlast: OUT std_logic; signal m_axis_tready: IN std_logic;data: IN slv_array; period: in integer := 0);
 	procedure sleep (signal clk: IN std_logic; delay: IN integer:= 1);
@@ -128,7 +133,7 @@ package body tb_package is
 	end procedure fpga_read;
 
 
-      
+
     -- Writes one control byte specified as a std_logic_vector(7 downto 0)
 	procedure fpga_write_control (
 			signal CLK : IN STD_LOGIC;
@@ -145,9 +150,9 @@ package body tb_package is
 		buf(3) := data;
 		send_buffer(clk, tdata, tvalid, tlast, tready, buf);
 	end procedure fpga_write_control;
-	
 
-    -- Writes a n-byte wide integer in the control registers. 
+
+    -- Writes a n-byte wide integer in the control registers.
     -- The word is stored in big endian format.
     -- `addr` specifies the address of the first byte (the MSB)
 	procedure fpga_write_control (
@@ -225,6 +230,30 @@ package body tb_package is
 		send_buffer(clk, tdata, tvalid, tlast, tready, buf);
 	end procedure fpga_write_mask;
 
+	procedure fpga_write_mask (
+			signal CLK : IN STD_LOGIC;
+			signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0);
+			signal tvalid: out std_logic;
+			signal tlast: OUT STD_LOGIC;
+			signal tready: in std_logic;
+			-- port_number: in integer;
+			-- module_number: in integer;
+			addr: IN integer;
+			data, mask: in slv8_array
+			) is
+		variable buf: slv8_array(0 to 2 + 2*data'LENGTH(1));
+		variable opcode: slv3;
+		variable addr_vect: slv19;
+	begin
+		addr_vect := to_slv(addr, 19);
+		opcode := WRITE_CONTROL_MASK;
+		buf(0 to 2) := to_command_bytes(opcode=>opcode, addr => addr);
+		for i in 0 to data'LENGTH(1)-1 loop
+			buf(3+2*i) := data(i);
+			buf(3+2*i+1) := mask(i);
+		end loop;
+		send_buffer(clk, tdata, tvalid, tlast, tready, buf);
+	end procedure fpga_write_mask;
 
 
 	procedure fpga_select_bins (

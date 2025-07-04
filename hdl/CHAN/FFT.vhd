@@ -148,6 +148,7 @@ end FFT;
 architecture Behavioral of FFT is
 
 	attribute DONT_TOUCH: string;
+	attribute shreg_extract: string;
 
     -- Latencies of each type of FFT. These are used as default values in the FFT_LATENCY control register
     constant FFT_LATENCY: integer := FFT_INFO(FFT_TYPE).LATENCY;
@@ -171,22 +172,27 @@ architecture Behavioral of FFT is
 	signal fft_rot_tdata   : std_logic_vector(m_axis_out_dat_tdata'RANGE);
 	signal fft_rot_tlast   : std_logic;
 	signal fft_rot_tuser   : std_logic_vector(3 downto 0);
+    attribute shreg_extract of fft_rot_tdata, fft_rot_tuser, fft_rot_tvalid, fft_rot_tlast : signal is "no";
+
 
 	signal out_dat_pre_tvalid  : std_logic;
 	signal out_dat_pre_tdata   : std_logic_vector(m_axis_out_dat_tdata'RANGE);
 	signal out_dat_pre_tlast   : std_logic;
 	signal out_dat_pre_tuser   : std_logic_vector(3 downto 0);
+    attribute shreg_extract of out_dat_pre_tdata, out_dat_pre_tuser, out_dat_pre_tvalid, out_dat_pre_tlast : signal is "no";
 
     -- Bypass pipeline
 	signal bypass1_tvalid  : std_logic;
 	signal bypass1_tdata   : std_logic_vector(s_axis_in_dat_tdata'RANGE);
 	signal bypass1_tlast   : std_logic;
 	signal bypass1_tuser   : std_logic_vector(3 downto 0);
+    attribute shreg_extract of bypass1_tdata, bypass1_tuser, bypass1_tvalid, bypass1_tlast : signal is "no";
 
 	signal bypass2_tvalid  : std_logic;
 	signal bypass2_tdata   : std_logic_vector(s_axis_in_dat_tdata'RANGE);
 	signal bypass2_tlast   : std_logic;
 	signal bypass2_tuser   : std_logic_vector(3 downto 0);
+    attribute shreg_extract of bypass2_tdata, bypass2_tuser, bypass2_tvalid, bypass2_tlast : signal is "no";
 
 	signal fft_dout0_int, fft_dout1_int: std_logic_vector(FFT_BITS_PER_BIN-1 downto 0) := (others=>'0');
 
