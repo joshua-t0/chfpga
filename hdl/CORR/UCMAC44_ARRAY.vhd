@@ -90,29 +90,34 @@ entity UCMAC44_ARRAY is
 end UCMAC44_ARRAY;
 
 
--- @brief Implementation of the compact (4+4) bit complex multiplier/accumulator.
+-- Compact (4+4) bit complex multiplier/accumulator array
 --
--- The complex multiplier/accumulator (CMAC) takes advantage of the small bit width if the incoming
--- complex number (4-bit real, 4-bit imaginary) to implement a full complex multiplier and
--- accumulator using only two DSP48, a half of a UltraRAM (or equivalent BRAMs), and a very small
--- amount of logic and routing resources.
+-- The complex multiplier/accumulator (UCMAC44_ARRAY) implements an array of DSP- and BRAM or
+-- UltraRAM-Based correlation and accumulator kernels. The unit takes advantage of the small bit
+-- width if the incoming complex number (4-bit real, 4-bit imaginary) to implement a full complex
+-- multiplier and accumulator using only two DSP48, requiring a very small amount of additional
+-- logic and routing resources. The products are accumulated as (18+18) bits values using UltraRAM,
+-- BRAMs, or a combination of both.
 --
--- Many tricks have been used to use the various features and operation modes of the DSP
--- block to minimize the use of fabric logic (such as fabric-based adders) and maximize speed.
---
--- The RAM is divided in two pages: the acculator page and the readout page. Since the UltraRAM does
--- not allow two fully independent read ports, we steal the write cycle of the first word of each
--- frame to read a word from the readout page.  We therefore lose the first 4 bins of the spectrum.
---
--- A UltraRAM has 4096 words x 72 bits. If each product is (18+18) bits, we can store 2 product per
--- word, and therefore 4096 products in each of the Accumulator and Readout pages.
---
+-- The CMACs allows continuous accumulation of products without any dead time. In order to do this, two memory banks are used:
+-- one for the currently accumulation, and one for slow readout: once an accumulation is completed, the banks are switched
+-- to allow a new accumulation.
 -- It is assumed that the integration period is long enough so that the data can be sent out before
--- a new integration period starts. The capture buffer has the same geometry as the accumulator. It
--- is implemented as a BRAM, not a FIFO, since the FIFO embedded logic is used by the accumulator
--- FIFO. The read logic is simplified compared to a ful-fledged FIFO in order to reduce the logic
--- count.
+-- a new integration period starts.
 --
+-- The array is implemented with up to URAM_MAX UltraRAM blocks, and BRAMs are used for the rest. URAM_MAX can be set to 0 for a BRAM-only correlator..
+--
+-- Supporting UltraRAM brings some design constraints. Since UltraRAM is structured as 4096 words x 72 bits and cannot be changed.
+-- Since accumulated products require 36 bits (18+18 bits), two CMAC cores are associated with each
+-- UltraRAM. We can therefore store 4096 products per UltraRAM. However, this is twice as what is needed for our typical Ultrascale-based
+-- correlators (2048 products). In order to not waste precious memory resources, we split each UltraRAM address space in two, one for the accumulation bank and one for the readout bank.
+-- But since the UltraRAM does
+-- not allow two fully independent read ports, we steal one accumulation read cycle  to read a word from the readout page.
+-- We consequently lose one bin per CMAC array. The effect of this can be mitigated at the system level by having this bin aligned with an unused frequency.
+--
+-- When BRAM is used, a block BRAMs is implemented to simulate one UltraRAM, and is used in the exact same way, with the exception
+-- that we can control the depth of the memory. We do not currently attempt to create two independent BRAMs blocks for the accumulator
+-- and readout banks and use the extra read port to avoid the stolen read cycle that invalidates one bin, but this could be a future improvement.
 --
 -- Readout logic
 -- -------------
