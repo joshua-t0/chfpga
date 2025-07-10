@@ -23,6 +23,17 @@ use UNISIM.VComponents.all;
 library xpm;
 use xpm.vcomponents.all;
 
+
+-- 4+4-bit correlator array
+--
+-- Input data is provided as a INPUT_WIDTH-wide vector to be divided into NCORR streams, one to each correlator core.
+-- Correlator 0 stream is stored in the MSBs.
+--
+-- Each of the stream contains the input data from NCHAN Channels. Channel 0 is stored towards the MSBs.
+-- Each complex data point from a channelizer is made of 4-bit Real part aligned toward sthe MSB, followed by the 4-bit Imaginary part.
+-- Both real and imaginary parts are two's complement signed values.
+--
+
 entity UCORR44_ARRAY is
 	GENERIC (
 		PLATFORM_ID: integer;
@@ -97,9 +108,10 @@ architecture Behavioral of UCORR44_ARRAY is
     signal corr_id: std_logic_vector(3 downto 0);
 
     type slv_2darray is array (natural range <>) of slv_array(0 to NCHAN-1)(N_BITS_PER_BIN-1 downto 0);
-    signal axis_corr_in_tdata: slv_2darray(0 to NCORR-1);
-    signal axis_corr_in_tlast: std_logic_vector(0 to NCORR-1);
-    signal axis_corr_in_tvalid: std_logic_vector(0 to NCORR-1);
+    signal corr_in_tdata: slv_2darray(0 to NCORR-1);
+    signal corr_in_tlast: std_logic_vector(0 to NCORR-1);
+    signal corr_in_tvalid: std_logic_vector(0 to NCORR-1);
+	attribute shreg_extract of corr_in_tdata, corr_in_tlast, corr_in_tvalid: signal is "no";
 
     signal z_tdata: slv_array(0 to NCORR)(7 downto 0);
     signal z_tlast: std_logic_vector(0 to NCORR);
@@ -177,10 +189,10 @@ begin
 		generic map (SRC_INPUT_REG => 0)
 		port map (src_clk => '0', src_in => overrun_reset, dest_clk => clk, dest_out => overrun_reset_resync);
 
----------------------------------------------------------------------
--- Correlator input pipelining process
----------------------------------------------------------------------
--- Pipeline the reset and data buses inputs to facilitate routing and timing closure.
+	---------------------------------------------------------------------
+	-- Correlator input pipelining process
+	---------------------------------------------------------------------
+	-- Pipeline the reset and data buses inputs to facilitate routing and timing closure.
 	process(all)
 	   variable rcorr, rchan: integer; --inverted corr and chan numbers
 	   variable lsb: integer;
@@ -194,10 +206,10 @@ begin
 				for chan in 0 to NCHAN-1 loop
 				    rchan := NCHAN-1-chan;
 				    lsb := N_BITS_PER_BIN*(rcorr*N_CHAN_PER_CLK + rchan);
-					axis_corr_in_tdata(corr)(chan) <= s_axis_data_tdata(lsb + N_BITS_PER_BIN -1 downto lsb);
+					corr_in_tdata(corr)(chan) <= s_axis_data_tdata(lsb + N_BITS_PER_BIN -1 downto lsb);
 				end loop;
-				axis_corr_in_tvalid(corr) <= s_axis_data_tvalid;
-				axis_corr_in_tlast(corr) <= s_axis_data_tlast;
+				corr_in_tvalid(corr) <= s_axis_data_tvalid;
+				corr_in_tlast(corr) <= s_axis_data_tlast;
 			end loop;
 
 			-- Count the input and output frames for debugging
@@ -207,70 +219,69 @@ begin
 		end if; -- clk
 	end process;
 
-FIFO_GEN: if USE_OUTPUT_FIFO generate
+	FIFO_GEN: if USE_OUTPUT_FIFO generate
+		signal rx_data_fifo_dout64: std_logic_vector(63 downto 0);
+		signal rx_data_fifo_dout8: std_logic_vector(7 downto 0);
+		signal rx_data_fifo_empty: std_logic;
+		signal almost_full: std_logic;
+	begin
+		m_axis_data_tdata <= rx_data_fifo_dout64(7 downto 0);
+		m_axis_data_tvalid <= not rx_data_fifo_empty;
+	    m_axis_data_tlast <= rx_data_fifo_dout8(0);
+	    z_send(0) <= not almost_full;
 
-	signal rx_data_fifo_dout64: std_logic_vector(63 downto 0);
-	signal rx_data_fifo_dout8: std_logic_vector(7 downto 0);
-	signal rx_data_fifo_empty: std_logic;
-	signal almost_full: std_logic;
-begin
-	m_axis_data_tdata <= rx_data_fifo_dout64(7 downto 0);
-	m_axis_data_tvalid <= not rx_data_fifo_empty;
-    m_axis_data_tlast <= rx_data_fifo_dout8(0);
-    z_send(0) <= not almost_full;
+		data_fifo0 : FIFO36E1  -- 7-series
+			generic map (
+				ALMOST_FULL_OFFSET => 13D"32",    -- Sets almost full flag 32 bytes before full to accomodate for the z_send response time
+				DATA_WIDTH => 9,                  -- Data width is 9 bits, meaning that depth = 36K/9 = 4K bytes
+				DO_REG => 1,                      -- Enable output register (1-0) Must be 1 if EN_SYN = FALSE
+				EN_SYN => FALSE,                  -- Asynchronous FIFO
+				FIFO_MODE => "FIFO36",            -- "FIFO36" or "FIFO36_72"
+				FIRST_WORD_FALL_THROUGH => TRUE   -- We want FWFT
+			)
+			port map (
 
-	data_fifo0 : FIFO36E1  -- 7-series
-		generic map (
-			ALMOST_FULL_OFFSET => 13D"32",    -- Sets almost full flag 32 bytes before full to accomodate for the z_send response time
-			DATA_WIDTH => 9,                  -- Data width is 9 bits, meaning that depth = 36K/9 = 4K bytes
-			DO_REG => 1,                      -- Enable output register (1-0) Must be 1 if EN_SYN = FALSE
-			EN_SYN => FALSE,                  -- Asynchronous FIFO
-			FIFO_MODE => "FIFO36",            -- "FIFO36" or "FIFO36_72"
-			FIRST_WORD_FALL_THROUGH => TRUE   -- We want FWFT
-		)
-		port map (
+				-- Write interfce
 
-			-- Write interfce
+				wrclk => clk,              -- 1-bit input: Rising edge write clock.
+				wren  => z_tvalid(0),     -- 1-bit input: Write enable
 
-			wrclk => clk,              -- 1-bit input: Rising edge write clock.
-			wren  => z_tvalid(0),     -- 1-bit input: Write enable
+				di(63 downto 8) => (others => '0'), -- data bus is 64 bit, only 8 LSBs are used
+				di(7 downto 0)  => z_tdata(0),
+				dip(7 downto 1) => (others => '0'), -- Parity bus is 8 bits, only LSB is used
+				dip(0)          => z_tlast(0),
+				almostfull => almost_full, -- 1-bit output: Almost full flag
 
-			di(63 downto 8) => (others => '0'), -- data bus is 64 bit, only 8 LSBs are used
-			di(7 downto 0)  => z_tdata(0),
-			dip(7 downto 1) => (others => '0'), -- Parity bus is 8 bits, only LSB is used
-			dip(0)          => z_tlast(0),
-			almostfull => almost_full, -- 1-bit output: Almost full flag
+				-- Read interface
 
-			-- Read interface
+				rdclk => out_clk, -- Read clock
+				rden  => m_axis_data_tready, -- Read enable
+				regce => '1', -- 1-bit input: Clock enable
 
-			rdclk => out_clk, -- Read clock
-			rden  => m_axis_data_tready, -- Read enable
-			regce => '1', -- 1-bit input: Clock enable
-
-			do  => rx_data_fifo_dout64, -- 64-bit data output. Valid data is in 8 LSBs
-			dop => rx_data_fifo_dout8, -- 8 bit parity output. Valid data is on LSB
-			empty => rx_data_fifo_empty,            -- 1-bit output: Empty flag
-
-
-			-- ECC Signals (unused)
-			injectdbiterr => '0',
-			injectsbiterr => '0',
-
-			-- Resets
-
-			rst    => rst, -- Async -- write domain reset reset, must be high at least 5 cycles of the slowest clock
-			rstreg => '0'  -- Output register reset
-	   );
+				do  => rx_data_fifo_dout64, -- 64-bit data output. Valid data is in 8 LSBs
+				dop => rx_data_fifo_dout8, -- 8 bit parity output. Valid data is on LSB
+				empty => rx_data_fifo_empty,            -- 1-bit output: Empty flag
 
 
-else generate
+				-- ECC Signals (unused)
+				injectdbiterr => '0',
+				injectsbiterr => '0',
 
-	-- Connect CORR[0] output stream to the ouput port
-	z_send(0) <= m_axis_data_tready; -- first corr sends data only if destination is ready
-	m_axis_data_tdata <= z_tdata(0);
-	m_axis_data_tvalid <= z_tvalid(0);
-	m_axis_data_tlast <= z_tlast(0);
-end generate FIFO_GEN;
+				-- Resets
+
+				rst    => rst, -- Async -- write domain reset reset, must be high at least 5 cycles of the slowest clock
+				rstreg => '0'  -- Output register reset
+		   );
+
+	else generate
+
+		-- Connect CORR[0] output stream to the ouput port
+		z_send(0) <= m_axis_data_tready; -- first corr sends data only if destination is ready
+		m_axis_data_tdata <= z_tdata(0);
+		m_axis_data_tvalid <= z_tvalid(0);
+		m_axis_data_tlast <= z_tlast(0);
+
+	end generate FIFO_GEN;
 
 	-- Connect null stream to the cascade input of CORR[NCORR]
 	z_tvalid(NCORR) <= '0'; -- no data coming into the last corr
@@ -279,45 +290,43 @@ end generate FIFO_GEN;
 
 	corr_gen: for i in 0 to NCORR-1 generate
 		-- set the position of the core44 core
-		--attribute RLOC_ORIGIN of corr0: label is rpm_to_string(corr44_rpm(i).loc);
-	begin
+		-- attribute RLOC_ORIGIN of corr0: label is rpm_to_string(corr44_rpm(i).loc);
 		corr0: entity work.ucorr44
 			generic map (
-				PLATFORM_ID             => PLATFORM_ID,
-				CORR_NUMBER             => i, -- will be used in the packet header and to determine the RPM location of the CORR44 cores
-	            NCORR => NCORR, -- used only to format STREAM ID
-	            NBINS => NBINS_PER_CORR, -- number of bins per correlator
-				N => NCHAN,
-				N_PER_CLK => NCHAN,
+				PLATFORM_ID           => PLATFORM_ID,
+				CORR_NUMBER           => i, -- will be used in the packet header and to determine the RPM location of the CORR44 cores
+				NCORR                 => NCORR, -- used only to format STREAM ID
+				NBINS                 => NBINS_PER_CORR, -- number of bins per correlator
+				N                     => NCHAN,
+				N_PER_CLK             => NCHAN,
 				BIN_DECIMATION_FACTOR => BIN_DECIMATION_FACTOR,
-				URAM_MAX => URAM_MAX,
-				READOUT_BIN => READOUT_BINS(i)
+				URAM_MAX              => URAM_MAX,
+				READOUT_BIN           => READOUT_BINS(i)
 				)
 			port map(
-				s_axis_tvalid           => axis_corr_in_tvalid(i),
-				s_axis_tlast            => axis_corr_in_tlast(i),
-				s_axis_tdata            => axis_corr_in_tdata(i),
+				s_axis_tvalid => corr_in_tvalid(i),
+				s_axis_tlast  => corr_in_tlast(i),
+				s_axis_tdata  => corr_in_tdata(i),
 
-	            integ_period => integ_period,
-	            autocorr_only => autocorr_only,
-	            no_accum => no_accum,
-	            overrun => overrun(i),
-	            overrun_reset => overrun_reset,
-	            corr_id => corr_id,
+				integ_period  => integ_period,
+				autocorr_only => autocorr_only,
+				no_accum      => no_accum,
+				overrun       => overrun(i),
+				overrun_reset => overrun_reset,
+				corr_id       => corr_id,
 
-				z_out_tdata   => z_tdata(i),
-				z_out_tvalid  => z_tvalid(i),
-				z_out_tlast   => z_tlast(i),
-				z_out_send  => z_send(i),
+				z_out_tdata  => z_tdata(i),
+				z_out_tvalid => z_tvalid(i),
+				z_out_tlast  => z_tlast(i),
+				z_out_send   => z_send(i),
 
-				z_in_tdata   => z_tdata(i+1),
-				z_in_tvalid  => z_tvalid(i+1),
-	--			z_in_tvalid  => '0',
-				z_in_tlast   => z_tlast(i+1),
-				z_in_send  => z_send(i+1),
+				z_in_tdata  => z_tdata(i + 1),
+				z_in_tvalid => z_tvalid(i + 1),
+				z_in_tlast  => z_tlast(i + 1),
+				z_in_send   => z_send(i + 1),
 
-				clk                  => clk,
-				rst                  => rst_reg(i)
+				clk => clk,
+				rst => rst_reg(i)
 				);
 
 	end generate; -- NCORR
