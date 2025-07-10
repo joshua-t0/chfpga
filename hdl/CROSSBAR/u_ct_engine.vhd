@@ -65,10 +65,10 @@ entity u_ct_engine is
 
 		tx_p     : out std_logic_vector(0 to NUMBER_OF_LINKS-1);
 		tx_n     : out std_logic_vector(0 to NUMBER_OF_LINKS-1);
-		rx_p     : in std_logic_vector(0 to NUMBER_OF_LINKS-1);
-		rx_n     : in std_logic_vector(0 to NUMBER_OF_LINKS-1);
-		refclk_p : in std_logic_vector(0 to NUMBER_OF_REFCLK-1);
-		refclk_n : in std_logic_vector(0 to NUMBER_OF_REFCLK-1);
+		rx_p     : in std_logic_vector(0 to NUMBER_OF_LINKS-1) := (others => '0');
+		rx_n     : in std_logic_vector(0 to NUMBER_OF_LINKS-1) := (others => '1');
+		refclk_p : in std_logic_vector(0 to NUMBER_OF_REFCLK-1) := (others => '0');
+		refclk_n : in std_logic_vector(0 to NUMBER_OF_REFCLK-1) := (others => '1');
 
 		refclk_div2: out std_logic_vector(0 to NUMBER_OF_REFCLK-1); -- divided-by-two version of the 156.25 MHz reference clock fed to the QUAD PLL
 		txclk_div2: out std_logic; -- divided-by-two version of the TX word clock, which is also clk_out
@@ -100,7 +100,7 @@ architecture Behavioral of u_ct_engine is
 	attribute async_reg: string;
 	attribute shreg_extract: string;
 
-	constant BITS_PER_BIN: integer := INPUT_WORD_WIDTH / BINS_PER_INPUT_WORD ;-- Supporting only 4+4 bits/bin
+	constant BITS_PER_BIN: integer := INPUT_WORD_WIDTH / BINS_PER_INPUT_WORD; -- There could be 16 bits per bin, even if we eventually use only 8
 
 	constant CT1_OUTPUT_LANES: integer := BINS_PER_INPUT_WORD;
     constant CT1_LANE_WIDTH: integer := NUMBER_OF_INPUT_LANES * BITS_PER_BIN;
@@ -172,12 +172,13 @@ begin
         signal cb1_in_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES-1);
         signal cb1_in_tvalid: std_logic;
         signal cb1_in_tlast: std_logic;
+        attribute shreg_extract of cb1_in_tdata, cb1_in_tvalid, cb1_in_tlast: signal is "no"; -- prevent the tool form inferring a shift register
+
 
         signal cb1_out_tdata: slv_array(0 to CT1_OUTPUT_LANES-1)(CT1_LANE_WIDTH-1 downto 0);
         signal cb1_out_tvalid: std_logic;
         signal cb1_out_tlast: std_logic;
-
-        attribute keep of cb1_out_tdata, cb1_out_tvalid, cb1_out_tlast: signal is "true"; -- prevent the tool form inferring a shift register
+        attribute shreg_extract of cb1_out_tdata, cb1_out_tvalid, cb1_out_tlast: signal is "true"; -- prevent the tool form inferring a shift register
 
         signal in_frame_ctr, out_frame_ctr: unsigned(7 downto 0);
 
@@ -230,7 +231,7 @@ begin
 
 		-- Perform the crossbar operation
 		process(all)
-		  variable rlane, rbin: integer; -- reverse lane and bin numbers
+		  variable rchan, rbin: integer; -- reverse lane and bin numbers
 		  variable lsb: integer;
 		begin
 			if rising_edge(axis_clk) then
@@ -251,12 +252,12 @@ begin
                 -- We generate BINS_PER_INPUT_WORD lanes each word containing the NUMBER_OF_INPUT_LANES values from the same bin
                 -- We pack the values with the lower input lane being in the MSB of the output word.
                 -- Outlut lane 0 is for low bins, which are in the MSB of the input words
-				for bin in 0 to BINS_PER_INPUT_WORD-1 loop -- 0 to 3
-				    rbin := BINS_PER_INPUT_WORD-1 - bin;
-					for input_lane in 0 to NUMBER_OF_INPUT_LANES-1 loop -- 0 to 7
-					   rlane := NUMBER_OF_INPUT_LANES-1 - input_lane; -- reverse input lane,  7 to 0
-					   lsb := BITS_PER_BIN * rlane;
-					   cb1_out_tdata(bin)(lsb+BITS_PER_BIN-1 downto lsb) <= cb1_in_tdata(input_lane)(BITS_PER_BIN*(rbin+1)-1 downto BITS_PER_BIN*rbin);
+				for bin in 0 to BINS_PER_INPUT_WORD - 1 loop -- 0 to 3
+				    rbin := BINS_PER_INPUT_WORD - 1 - bin;
+					for chan in 0 to NUMBER_OF_INPUT_LANES-1 loop -- 0 to 7
+					   rchan := NUMBER_OF_INPUT_LANES - 1 - chan; -- reverse input lane,  7 to 0
+					   lsb := BITS_PER_BIN * rchan;
+					   cb1_out_tdata(bin)(lsb + BITS_PER_BIN - 1 downto lsb) <= cb1_in_tdata(chan)(BITS_PER_BIN * (rbin + 1) - 1 downto BITS_PER_BIN*rbin);
 					end loop;
 				end loop;
                 cb1_out_tvalid <= cb1_in_tvalid  when not cb1_rst else '0';
