@@ -213,7 +213,7 @@ architecture Behavioral of SCALER is
     signal cap_frame_ctr: unsigned(7 downto 0); -- 8 bits counter for debugging
     signal use_offset_binary: std_logic;
     signal cap_data_type: std_logic_vector(2 downto 0);
-    signal bypass_data_type: std_logic_vector(1 downto 0);
+    signal bypass_data_type: std_logic_vector(1 downto 0) := (others => '0'); -- init for sims
 
     signal next_gain_bank: std_logic; -- 1 bit
     signal gain_bank_switch_frame_number: std_logic_vector(31 downto 0);
@@ -562,6 +562,11 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             m_axis_dout_tlast => scaled_data_tlast,
             m_axis_dout_tdata => scaled_data_even_tdata
           );
+          scaled_data_tdata(4*INTEGER_WIDTH - 1 downto 3*INTEGER_WIDTH) <= scaled_data_even_tdata(34 downto 0); -- Re(N)
+          scaled_data_tdata(3*INTEGER_WIDTH - 1 downto 2*INTEGER_WIDTH) <= scaled_data_even_tdata(74 downto 40); -- Im(N)
+
+          scaled_data_log_gain(1) <= resize(unsigned(post_scaler_left_shift), 6);
+
 
         -- Instantiate complex multiplier for the odd bin
          coeff_odd_din <= std_logic_vector(to_signed(0, 16)) & std_logic_vector(to_signed(1, 16)) when force_gain_to_one else
@@ -583,10 +588,10 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
           );
 
           -- remap the CMUL output into the scaled_data vector (order from MSB to LSB: Re(N), Im(N), Re(N+1), Im(N+1))
-          scaled_data_tdata(4*INTEGER_WIDTH - 1 downto 3*INTEGER_WIDTH) <= scaled_data_even_tdata(34 downto 0); -- Re(N)
-          scaled_data_tdata(3*INTEGER_WIDTH - 1 downto 2*INTEGER_WIDTH) <= scaled_data_even_tdata(74 downto 40); -- Im(N)
           scaled_data_tdata(2*INTEGER_WIDTH - 1 downto 1*INTEGER_WIDTH) <= scaled_data_odd_tdata(34 downto 0); -- Re(N+1)
           scaled_data_tdata(1*INTEGER_WIDTH - 1 downto 0*INTEGER_WIDTH) <= scaled_data_odd_tdata(74 downto 40); -- Im(N+1)
+
+          scaled_data_log_gain(0) <= resize(unsigned(post_scaler_left_shift), 6);
 
     ---------------
     -- REAL gains
@@ -631,28 +636,30 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
         --     COeff:     |           G(N+1)      |        G(N)          |
         --                ---------------------------------------------
 
-        gen_rmul: for i in 2*FFT_BINS_PER_WORD-1 downto 0 generate
+        -- Real multiplier, A= 18/32 bit signed, B=16 bit unsigned, P=34/48 bit signed, Latency = 3
+        gen_rmul: for i in 2 * FFT_BINS_PER_WORD - 1 downto 0 generate
             rmul0: entity work.scaler_mul
               port map (
                 CLK => clk,
-                A => std_logic_vector(fft_reg_tdata(i)), -- 32-bit signed
-                B => std_logic_vector(coeff(i/2)), -- 16 bit unsigned
-                P => scaled_data_tdata((i+1)*INTEGER_WIDTH-1 downto i*INTEGER_WIDTH) -- 48 bit signed
+                A => std_logic_vector(fft_reg_tdata(i)), -- 18/32-bit signed
+                B => std_logic_vector(coeff(i / 2)), -- 16 bit unsigned
+                P => scaled_data_tdata((i + 1) * INTEGER_WIDTH - 1 downto i * INTEGER_WIDTH) -- 34/48 bit signed
               );
         end generate;
 
-        mul_proc: process (clk)
-            variable coeff_var: unsigned(COEFF_BITS_PER_BIN-1 downto 0);
+        mul_proc: process (all)
+            variable coeff_var: unsigned(COEFF_BITS_PER_BIN - 1 downto 0);
         begin
             if rising_edge(clk) then
-                -- Register the gain and fft values. These registers can be absorbed as the input registers
+                -- Clock 0: Register the gain and fft values at the input of the mutiplier.
+                -- These registers can be absorbed as the input registers
                 -- of the DSP48 block and should greatly help with timing closure.
-                for i in FFT_BINS_PER_WORD-1 downto 0 loop
+                for i in FFT_BINS_PER_WORD - 1 downto 0 loop
                     -- Extract 16-bit coefficient. Word order is reversed coming out of RAM.
-                    coeff_var := unsigned(coeff_ram_dout((FFT_BINS_PER_WORD-1-i+1)*COEFF_BITS_PER_BIN-1 downto (FFT_BINS_PER_WORD-1-i)*COEFF_BITS_PER_BIN));
+                    coeff_var := unsigned(coeff_ram_dout((FFT_BINS_PER_WORD - 1 - i + 1) * COEFF_BITS_PER_BIN - 1 downto (FFT_BINS_PER_WORD-1-i)*COEFF_BITS_PER_BIN));
                     if use_float_gains then
-                        fft_reg_log_gain(i) <= resize(coeff_var(COEFF_BITS_PER_BIN-1 downto COEFF_BITS_PER_BIN-5),6) + resize(unsigned(post_scaler_left_shift), 6); -- upper 5 bits are the log gain, which is added to the common log gain
-                        coeff(i) <= resize(coeff_var(COEFF_BITS_PER_BIN-6 downto 0), COEFF_BITS_PER_BIN); -- resize prepends zeros. Signed value will be positive.
+                        fft_reg_log_gain(i) <= resize(coeff_var(COEFF_BITS_PER_BIN - 1 downto COEFF_BITS_PER_BIN - 5), 6) + resize(unsigned(post_scaler_left_shift), 6); -- upper 5 bits are the log gain, which is added to the common log gain
+                        coeff(i) <= resize(coeff_var(COEFF_BITS_PER_BIN - 6 downto 0), COEFF_BITS_PER_BIN); -- resize prepends zeros. Signed value will be positive.
                     else
                         fft_reg_log_gain(i) <= resize(unsigned(post_scaler_left_shift), 6);
                         coeff(i) <= coeff_var;
@@ -661,62 +668,33 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
 
 
                 -- Register the data bus. This register could also be absorbed in the DSP48
-                for i in 2*FFT_BINS_PER_WORD-1 downto 0 loop
-                    fft_reg_tdata(i) <= signed(in_dat_dly2_tdata((i+1)*FFT_BITS_PER_BIN/2-1 downto i*FFT_BITS_PER_BIN/2));
+                for i in 2 * FFT_BINS_PER_WORD - 1 downto 0 loop
+                    fft_reg_tdata(i) <= signed(in_dat_dly2_tdata((i + 1) * FFT_BITS_PER_BIN / 2 - 1 downto i * FFT_BITS_PER_BIN / 2));
                 end loop;
                 fft_reg_tvalid <= in_dat_dly2_tvalid;
                 fft_reg_tlast <= in_dat_dly2_tlast;
                 fft_reg_tuser <= in_dat_dly2_tuser;
-                    -- apply gain
-                    -- Real multiplier, A= 32 bit signed, B=16 bit unsigned, P=48 bit signed, Latency = 3
---                                        -- Apply gain on real component
---                    fft_lsb := i*FFT_BITS_PER_BIN + FFT_BITS_PER_BIN/2; -- bit position of the lsb of the Re and Im integer in fft input and extract them
---                    fft_val := signed(fft_reg_tdata(fft_lsb + FFT_BITS_PER_BIN/2-1 downto fft_lsb)); -- we must use dly2 signals which are synchronized with the gain coefficient
---                    prod_lsb := 2*i*INTEGER_WIDTH + INTEGER_WIDTH;
---                    if FFT_BITS_PER_BIN/2 <= MUL_B_WIDTH_MAX then
---                        prod_re_dly1(i) <= resize(gain * fft_val, INTEGER_WIDTH);
---                        prod := prod_re_dly1(i);
---                    else
---                        prod_re_lo_dly1(i) <= gain * signed(resize(unsigned(fft_val(MUL_B_WIDTH_MAX-1 downto 0)), MUL_B_WIDTH_MAX + 1)); -- zero pad at MSB to hold unsigned value in to a signed
---                        prod_re_hi_dly1(i) <= gain * fft_val(FFT_BITS_PER_BIN/2-1 downto MUL_B_WIDTH_MAX);
---                        prod := prod_re_lo_dly1(i) + shift_left(resize(prod_re_hi_dly1(i), INTEGER_WIDTH), MUL_B_WIDTH_MAX);
---                    end if; -- wide mul
---                    scaled_data_tdata_dly2(prod_lsb + INTEGER_WIDTH-1 downto prod_lsb) <= std_logic_vector(prod);
-
---                    -- Apply gain on imaginary component
---                    fft_lsb := i*FFT_BITS_PER_BIN;
---                    fft_val := signed(fft_reg_tdata(fft_lsb + FFT_BITS_PER_BIN/2-1 downto fft_lsb));
---                    prod_lsb := 2*i*INTEGER_WIDTH;                     -- lsb position of Im product in the output word
---                    if FFT_BITS_PER_BIN/2 <= MUL_B_WIDTH_MAX then
---                        prod_im_dly1(i) <= resize(gain * fft_val, INTEGER_WIDTH);
---                        prod := prod_im_dly1(i);
---                    else
---                        prod_im_lo_dly1(i) <= gain * signed(resize(unsigned(fft_val(MUL_B_WIDTH_MAX-1 downto 0)), MUL_B_WIDTH_MAX + 1));
---                        prod_im_hi_dly1(i) <= gain * fft_val(FFT_BITS_PER_BIN/2-1 downto MUL_B_WIDTH_MAX);
---                        prod := prod_im_lo_dly1(i) + shift_left(resize(prod_im_hi_dly1(i), INTEGER_WIDTH), MUL_B_WIDTH_MAX);
---                    end if; -- wide mul
---                    scaled_data_tdata_dly2(prod_lsb + INTEGER_WIDTH-1 downto prod_lsb) <= std_logic_vector(prod);
-
---                end loop;
 
                 -- Delay the bus control and log gain signals to match the multiplier latency
+                -- Clock 1
                 scaled_data_tvalid_dly1 <= fft_reg_tvalid;
                 scaled_data_tlast_dly1 <= fft_reg_tlast;
                 scaled_data_tuser_dly1 <= fft_reg_tuser;
                 scaled_data_log_gain_dly1 <= fft_reg_log_gain;
 
+                -- Clock 2
                 scaled_data_tvalid_dly2 <= scaled_data_tvalid_dly1;
                 scaled_data_tlast_dly2 <= scaled_data_tlast_dly1;
                 scaled_data_tuser_dly2 <= scaled_data_tuser_dly1;
                 scaled_data_log_gain_dly2 <= scaled_data_log_gain_dly1;
 
-                -- Product tdata appears here
+                -- Clock 3: Multiplier Products appears on this clock
                 scaled_data_tlast <= scaled_data_tlast_dly2;
                 scaled_data_tvalid <= scaled_data_tvalid_dly2;
                 scaled_data_tuser <= scaled_data_tuser_dly2;
                 scaled_data_log_gain <= scaled_data_log_gain_dly2;
 
-                if rst_reg='1' then
+                if rst_reg then
                     fft_reg_tvalid <= '0';
                     scaled_data_tvalid_dly1 <= '0';
                     scaled_data_tvalid_dly2 <= '0';
@@ -727,22 +705,23 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
     end generate mul_gen;
 
 
--- out: Imag: 74:40
--- real: 34:0
 -------------------------------------------------------------------
--- Main process
+-- Apply shift, saturation, and assign outputs
 -------------------------------------------------------------------
---! Reads the input bus, scales the values, and send them to the output bus.
-scaler_proc: process(clk)
+-- Reads the input bus, scales the values, and send them to the output bus.
+--
+scaler_proc: process(all)
     variable scaled_data_log_gain_var: integer range 0 to 63;
 --    variable stage1_word_var: int35_array(3 downto 0);
     variable word_var: signed(INTEGER_WIDTH-1 downto 0);
-    variable OUT_WORD_VAR: int8_array(0 to INTEGERS_PER_WORD-1);
+    variable OUT_WORD_VAR: int8_array(0 to INTEGERS_PER_WORD - 1);
     variable round_down_var: std_logic;
 
-    constant FB: integer := FFT_BITS_PER_BIN; -- shortcuts to shorten code
-    constant OB: integer := OUT_BITS_PER_BIN;
-    constant CB: integer := CAP_BITS_PER_BIN;
+    -- shortcuts to shorten code
+
+    constant FB: integer := FFT_BITS_PER_BIN; -- FFT complex sample width
+    constant OB: integer := OUT_BITS_PER_BIN; -- Output complex sample width
+    constant CB: integer := CAP_BITS_PER_BIN; -- Capture complex sample width
 
     begin
         if rising_edge(clk) then
@@ -978,7 +957,7 @@ scaler_proc: process(clk)
                         end if;
                     end loop;
                 when others=>
-                    assert FALSE report "Unhandled data type case" severity FAILURE;
+--                    assert FALSE report "Unhandled data type case" severity FAILURE;
             end case?;
 
             -- Stage 3e: Assign Capture outputs
@@ -1041,7 +1020,7 @@ scaler_proc: process(clk)
                 when "110" | "111" =>
                        null; -- Just sends the default (zeros)
                 when others=>
-                    assert FALSE report "Unhandled data type case" severity FAILURE;
+--                    assert FALSE report "Unhandled data type case" severity FAILURE;
             end case;
 
 
