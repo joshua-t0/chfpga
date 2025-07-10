@@ -73,7 +73,7 @@ entity UCORR44 is
 	PORT(
 
 		-- Data be correlated & integrated. N channels (N bytes). AXI4-Streaming, non-blocking.
-		s_axis_tdata: in slv_array(0 to N_PER_CLK-1)(7 downto 0); -- Contains both (4+4) bit, Re in MSB
+		s_axis_tdata: in slv_array(0 to N_PER_CLK - 1)(7 downto 0); -- Contains both (4+4) bit, Re in MSB
 		s_axis_tlast: in std_logic;
 		s_axis_tvalid: in std_logic;
 
@@ -105,7 +105,7 @@ entity UCORR44 is
 end UCORR44;
 
 
--- @brief Implementation of the compact (4+4) bit complex multiplier/accumulator.
+-- Compact (4+4) bit N-element correlator.
 --
 -- The complex multiplier/accumulator (CMAC) takes advantage of the small bit width if the incoming
 -- complex number (4-bit real, 4-bit imaginary) to implement a full complex multiplier and
@@ -163,22 +163,22 @@ end UCORR44;
 architecture impl of UCORR44 is
 
 	-- Constants
-	constant P: integer := (N*(N+1)/2); -- number of products
+	constant P: integer := (N * (N + 1) / 2); -- number of products
 	constant NCMAC : integer := P / Nclk;
-	constant WORDS_PER_BIN: integer := N/N_PER_CLK; -- number of clocks it takes to send all the channels of one bin
+	constant WORDS_PER_BIN: integer := N / N_PER_CLK; -- number of clocks it takes to send all the channels of one bin
 	constant K: integer := BIN_DECIMATION_FACTOR; -- bin decimation factor
-	constant H: integer := N/2/Nclk; -- Number of columns processed per clock
-	--constant Nprod_per_clk: integer := N/2/Nclk/K
+	constant H: integer := N / 2 / Nclk; -- Number of columns processed per clock
+	--constant Nprod_per_clk: integer := N / 2/Nclk/K
 
 
-	signal xy_tdata: slv_array(0 to NCMAC-1)(15 downto 0);
-	signal xy_swap: std_logic_vector(0 to NCMAC-1);
+	signal xy_tdata: slv_array(0 to NCMAC - 1)(15 downto 0);
+	signal xy_swap: std_logic_vector(0 to NCMAC - 1);
 	signal xy_tvalid: std_logic;
 	signal xy_tlast: std_logic;
 	signal xy_tlast_pre: std_logic;
 
-	signal word_ctr: unsigned(3 downto 0); -- 0 to WORDS_PER_BIN-1
-	signal bin_ctr: unsigned(3 downto 0); -- 0 to K-1
+	signal word_ctr: unsigned(3 downto 0); -- 0 to WORDS_PER_BIN - 1
+	signal bin_ctr: unsigned(3 downto 0); -- 0 to K - 1
 
 
 begin
@@ -187,10 +187,10 @@ begin
 		if rising_edge(clk) then
 			if s_axis_tvalid then
 				word_ctr <= word_ctr + 1;
-				if word_ctr = WORDS_PER_BIN-1 then
+				if word_ctr = WORDS_PER_BIN - 1 then
 					word_ctr <= (others => '0');
 					bin_ctr <= bin_ctr + 1;
-					if bin_ctr = K-1 then
+					if bin_ctr = K - 1 then
 						bin_ctr <= (others => '0');
 					end if;
 				end if;
@@ -205,29 +205,29 @@ begin
 
 
     corr_blk: block
-		signal t: slv_array(0 to N-N_PER_CLK-1)(7 downto 0); -- assembly vector - don't need to store the last word
-		signal x: slv_array(0 to N-1)(7 downto 0) := (others => (others => '0')); -- fixed correlation vector. Init value for nice sims only.
-		signal y: slv_array(0 to N-1)(7 downto 0):= (others => (others => '0')); -- rotating correlation vector. Init value for nice sims only.
-		signal xsel: std_logic_vector(N/2 to N-1); -- mux selection vector, only applies to muxes fron N/2+1 to N. Elements frm 0 to N/2 are not touches and shoudl be synthesized out.
+		signal t: slv_array(0 to N - N_PER_CLK - 1)(7 downto 0); -- assembly vector - don't need to store the last word
+		signal x: slv_array(0 to N - 1)(7 downto 0) := (others => (others => '0')); -- fixed correlation vector. Init value for nice sims only.
+		signal y: slv_array(0 to N - 1)(7 downto 0):= (others => (others => '0')); -- rotating correlation vector. Init value for nice sims only.
+		signal xsel: std_logic_vector(N / 2 to N - 1); -- mux selection vector, only applies to muxes fron N / 2+1 to N. Elements frm 0 to N / 2 are not touches and shoudl be synthesized out.
 
 		signal clk_ctr: unsigned(3 downto 0);
 	begin
 
         xyj_gen: for j in 0 to H-1 generate
             xyi_gen: for i in 0 to N generate
-                xy_swap(i*H+j) <= '1' when i>= N/2+1 and (i+j>=N or xsel(i+j)='1') else '0';
-                xy_tdata(i*H+j)(15 downto 8) <= x(i-1) when i>= N/2+1 and (i+j>=N or xsel(i+j)='1') else x(i);
-                xy_tdata(i*H+j)(7 downto 0) <= y((i+j) mod N);
+                xy_swap(i * H + j) <= '1' when i>= N / 2 + 1 and (i + j >= N or xsel(i + j) = '1') else '0';
+                xy_tdata(i * H + j)(15 downto 8) <= x(i - 1) when i>= N / 2 + 1 and (i + j >= N or xsel(i + j) = '1') else x(i);
+                xy_tdata(i * H + j)(7 downto 0) <= y((i + j) mod N);
             end generate; --i
         end generate; --j
 
 		seq_proc: process(all) begin
 			if rising_edge(clk) then
 				-- Rotate y and grow xsel vectors by N. Overriden below when new data is ready.
-                y <= y(H to N-1) & y(0 to H-1);
+                y <= y(H to N - 1) & y(0 to H-1);
                 if NCLK > 1 then
-                    xsel(N/2+1 to N-1-H) <= xsel(N/2+1+H to N-1);
-                    xsel(N-H to N-1) <= (others => '1');
+                    xsel(N / 2+1 to N - 1-H) <= xsel(N / 2+1+H to N - 1);
+                    xsel(N-H to N - 1) <= (others => '1');
                 end if;
                 -- Keep xy_tvalid high for Nclk clocks and set xy_tlast on last clock
                 xy_tlast <= '0';
@@ -236,19 +236,19 @@ begin
   				    if NCLK > 1 and clk_ctr = NCLK-2 and autocorr_only='0' then
                         xy_tlast <= xy_tlast_pre;
                     end if;
-  				    if clk_ctr = NCLK-1 or autocorr_only='1' then
+  				    if clk_ctr = NCLK - 1 or autocorr_only='1' then
   				        xy_tvalid <= '0'; -- overriden below
   				    end if; -- clk_ctr
   				end if; -- xy_tvalid
 
                 -- Assemble N inputs into x and y
-				if s_axis_tvalid='1' and bin_ctr= K-1 then -- select last bin of the decimation block to make sure we get the TLAST frame
-					if word_ctr = WORDS_PER_BIN-1 then -- if last word of bin
-						y(0 to N-N_PER_CLK-1) <= t;
-						y(N-N_PER_CLK to N-1) <= s_axis_tdata;
-						x(0 to N-N_PER_CLK-1) <= t;
-						x(N-N_PER_CLK to N-1) <= s_axis_tdata;
-						xsel(N/2+1 to N-1) <= (others =>'0');
+				if s_axis_tvalid='1' and bin_ctr= K - 1 then -- select last bin of the decimation block to make sure we get the TLAST frame
+					if word_ctr = WORDS_PER_BIN - 1 then -- if last word of bin
+						y(0 to N - N_PER_CLK - 1) <= t;
+						y(N - N_PER_CLK to N - 1) <= s_axis_tdata;
+						x(0 to N - N_PER_CLK - 1) <= t;
+						x(N - N_PER_CLK to N - 1) <= s_axis_tdata;
+						xsel(N / 2+1 to N - 1) <= (others =>'0');
 						xy_tvalid <= '1'; -- restart a Nclock correlation cycle
                         if NCLK=1 or autocorr_only='1' then
     						xy_tlast <= s_axis_tlast;
@@ -257,7 +257,7 @@ begin
                         clk_ctr <= (others => '0');
                     elsif N /= N_PER_CLK then
                         -- Put incoming bytes in assembly vector and transfer to xy when ready
-                        for i in 0 to N_PER_CLK-1 loop
+                        for i in 0 to N_PER_CLK - 1 loop
                             t(to_integer(word_ctr)*N_PER_CLK+i) <= s_axis_tdata(i);
                         end loop;
 					end if;

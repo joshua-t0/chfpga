@@ -30,9 +30,9 @@ Entity documentation
 
 Read / Write Process
 --------------------
-Incoming 32-bit AXIS Data is captured and written into the DATA FIFO over a 36-bit AXIS bus and read out over a 8-bit wide AXIS Bus. Each byte in the incoming data is extended with a bit which set to '0' except for the LSB , where is set to the TLAST flag from the 32-bit AXIS Bus. The sign extenstion is show below. The HEADER FIFO is 9-bit wide write process which consitutues of all the header information for the data frame written one bit at a time accompanied with a LAST bit at bit(8). When the destination is ready, PROBER sends the header FIFO  bytes until we encounter bit(8)=1, then sends the DATA FIFO bytes until we encounter bit(8)=1 and go back to send header bytes.
+Incoming 32-bit AXIS Data is captured and written into the DATA FIFO over a 36-bit AXIS bus and read out over a 8-bit wide AXIS Bus. Each byte in the incoming data is extended with a bit which is set to '0' except for the LSB of the whole frame, which is set to the TLAST flag from the 32-bit AXIS Bus. The sign extenstion is shown below. The HEADER FIFO is 9-bit wide write process which constitutes of all the header information for the data frame written one bit at a time accompanied with a LAST bit at bit(8). When the destination is ready, PROBER sends the header FIFO  bytes until we encounter bit(8)=1, then sends the DATA FIFO bytes until we encounter bit(8)=1 and go back to send header bytes.
 
-.. figure:: ../images/prober_write_data.svg
+.. figure:: ../images/CHAN/prober_write_data.svg
     :width: 25%
 
 

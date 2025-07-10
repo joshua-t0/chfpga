@@ -58,7 +58,7 @@ entity b_ct_engine is
         -- Derived parameters
         OUTPUT_LANE_WIDTH: integer := 32;
 		NUMBER_OF_OUTPUT_LANES: integer := 8; -- Number of output streams
-        OUTPUT_WIDTH:        integer := NUMBER_OF_OUTPUT_LANES * OUTPUT_LANE_WIDTH;  -- assumes inputs are 32 bits wide, and CT preserves data rate
+        OUTPUT_WIDTH: integer := NUMBER_OF_OUTPUT_LANES * OUTPUT_LANE_WIDTH;  -- assumes inputs are 32 bits wide, and CT preserves data rate
 		NUMBER_OF_LINKS: integer        := max(LANE_TO_LINK_MAP) + 1; --  Number of physical data links (GTYs) - Do not override
     	NUMBER_OF_REFCLK: integer       := max(QUAD_TO_REFCLK_MAP) + 1; -- Number of reference clocks - Do not override
         NUMBER_OF_CROSSBAR1_OUTPUTS: integer := 16
@@ -315,8 +315,8 @@ begin
 ---------------------------------------------------------------------
 
 crossbar0_gen: if CT_LEVEL = 1 generate
-        constant IN_BITS_PER_BIN: integer := 16;
-        constant OUT_BITS_PER_BIN: integer := 8;
+        constant IN_BITS_PER_BIN: integer := INPUT_WORD_WIDTH / BINS_PER_INPUT_WORD; -- 32/2 = 16
+        constant OUT_BITS_PER_BIN: integer := 4 + 4;
 		constant CT1_OUTPUT_LANES: integer := NUMBER_OF_CROSSBAR1_OUTPUTS;
 	    constant CT1_LANE_WIDTH: integer := OUT_BITS_PER_BIN * NUMBER_OF_INPUT_LANES; -- 8*16 = 128 bits/bin
 
@@ -345,20 +345,20 @@ begin
 
 				-- pipeline channelizer data
 				-- This CT engine assumes that the channelizer data is aligned, i.e. all lanes share a common tvalid and tlast
-				cb1_in_tdata <= s_axis_tdata;
+				cb1_in_tdata  <= s_axis_tdata;
 				cb1_in_tvalid <= s_axis_tvalid when not rst_reg else '0';
-				cb1_in_tlast <= s_axis_tlast;
-                cb1_in_rst <= rst_reg;
+				cb1_in_tlast  <= s_axis_tlast;
+				cb1_in_rst    <= rst_reg;
                 -- Implement a hardwired CROSSBAR1.
                 -- We take  the dana from NUMBER_OF_INPUT_LANES lanes, each word containing values from BINS_PER_INPUT_WORD different bins,
                 -- and pack them in a single vector where data is grouped by bins (low bin on SB), each bin containing lanes (low lane on MSB),
                 -- then each lane containing 4+4 bit real/Imag components (Re in MSB)
-				for bin in 0 to BINS_PER_INPUT_WORD-1 loop -- 0 to 3
+				for bin in 0 to BINS_PER_INPUT_WORD - 1 loop -- 0 to 3
 				    rbin := BINS_PER_INPUT_WORD - 1 - bin;
-					for chan in 0 to NUMBER_OF_INPUT_LANES-1 loop -- 0 to 7
+					for chan in 0 to NUMBER_OF_INPUT_LANES - 1 loop -- 0 to 7
 					   rchan := NUMBER_OF_INPUT_LANES - 1 - chan; -- reverse input channel,  7 to 0
 					   lsb := CT1_LANE_WIDTH * rbin + OUT_BITS_PER_BIN * rchan;
-					   m_axis_tdata(lsb + OUT_BITS_PER_BIN-1 downto lsb) <= cb1_in_tdata(chan)(IN_BITS_PER_BIN*(rbin+1)-1 downto IN_BITS_PER_BIN*(rbin+1)-OUT_BITS_PER_BIN);
+					   m_axis_tdata(lsb + OUT_BITS_PER_BIN - 1 downto lsb) <= cb1_in_tdata(chan)(IN_BITS_PER_BIN * (rbin + 1) - 1 downto IN_BITS_PER_BIN * (rbin + 1) - OUT_BITS_PER_BIN);
 					end loop;
 				end loop;
                 m_axis_tvalid <= cb1_in_tvalid  when not cb1_in_rst else '0';
@@ -367,7 +367,7 @@ begin
             end if; -- clk
 		end process;
 
-else generate -- if CT_LEVEL >=2, we implement a the three crossbars and BP_SHUFFLE
+else generate -- if CT_LEVEL >=2, we implement the three crossbars and BP_SHUFFLE
 
 	signal cb1_in_rst: std_logic;
 

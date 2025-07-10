@@ -60,8 +60,8 @@ entity chfpga_crs is
         CAPTURE_TYPE: string                         := CONFIG_CHAN_CAPTURE_TYPE;
 
         -- Corner-turn engine configuration
+        CT_TYPE: integer                             := CONFIG_CT_TYPE; -- "BCT" (CHIME-like) or "UCT" (CHORD-like)
         CT_LEVEL: integer                            := CONFIG_CT_LEVEL;
-        CT_TYPE: string                              := CONFIG_CT_TYPE; -- "BCT" (CHIME-like) or "UCT" (CHORD-like)
         NUMBER_OF_CROSSBAR_INPUTS: integer           := CONFIG_NUMBER_OF_CROSSBAR_INPUTS; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
         NUMBER_OF_CROSSBAR1_OUTPUTS: integer         := CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
         NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES;

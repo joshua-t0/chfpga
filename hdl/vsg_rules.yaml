@@ -54,6 +54,11 @@ rule:
     signal_007:  # default assignment on signals
         disable: true # We allow them. Useful for sims.
 
+    # variables
+
+    variable_007: # -- default assignment
+        disable: true # We allow them
+
     # asserts
 
     assert_002: # -- Place **report** keyword on its own line.
@@ -113,6 +118,8 @@ rule:
     instantiation_033: # require COMPONENT in component instantiation
         disable: true
 
+    function_100: # space(s) between 'function', name and '(''
+        number_of_spaces: <=1
     process_002: # no space between proces and "("
         number_of_spaces: 0
     process_024: # no space between label and ":"

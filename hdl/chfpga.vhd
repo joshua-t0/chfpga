@@ -1,4 +1,4 @@
-----------------------------------------------------------------------------------
+	----------------------------------------------------------------------------------
 -- Company: McGill University
 -- Engineer: JF Cliche
 --
@@ -2858,13 +2858,12 @@ begin
 			signal ct_in1_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
 			signal ct_in1_tvalid: slv(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
 			signal ct_in1_tlast: slv(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
+			attribute shreg_extract of ct_in1_tdata, ct_in1_tuser, ct_in1_tvalid, ct_in1_tlast: signal is "no";
 
 			signal ct_in2_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(31 downto 0);
 			signal ct_in2_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
 			signal ct_in2_tvalid: slv(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
 			signal ct_in2_tlast: slv(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
-
-			attribute shreg_extract of ct_in1_tdata, ct_in1_tuser, ct_in1_tvalid, ct_in1_tlast: signal is "no";
 			attribute shreg_extract of ct_in2_tdata, ct_in2_tuser, ct_in2_tvalid, ct_in2_tlast: signal is "no";
 
 		begin
@@ -2955,11 +2954,13 @@ begin
 			signal ct_in1_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
 			signal ct_in1_tvalid: slv(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
 			signal ct_in1_tlast: slv(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
+			attribute shreg_extract of ct_in1_tdata, ct_in1_tuser, ct_in1_tvalid, ct_in1_tlast: signal is "no";
 
 			signal ct_in2_tdata: slv32_array(0 to NUMBER_OF_CHANNELIZERS - 1);
 			signal ct_in2_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
 			signal ct_in2_tvalid: slv(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
 			signal ct_in2_tlast: slv(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
+			attribute shreg_extract of ct_in2_tdata, ct_in2_tuser, ct_in2_tvalid, ct_in2_tlast: signal is "no";
 
 		begin
 			-- convert from slv_array to slv64_array
@@ -3449,6 +3450,7 @@ begin
 				signal corr_in_tdata: slv32_array(0 to NUMBER_OF_CORRELATORS - 1);
 				signal corr_in_tvalid: slv(0 to NUMBER_OF_CORRELATORS - 1);
 				signal corr_in_tlast: slv(0 to NUMBER_OF_CORRELATORS - 1);
+				attribute shreg_extract of corr_in_tdata, corr_in_tlast, corr_in_tvalid: signal is "no";
 
 				signal corr_out_tdata: slv8_array(0 to NUMBER_OF_CORRELATORS - 1);
 				signal corr_out_tvalid: slv(0 to NUMBER_OF_CORRELATORS - 1);
@@ -3522,8 +3524,10 @@ begin
 
 			when ucorr44_case:"UCORR44" =>
 				-- UCORR44 takes its data from the corner-turn engine output
-				-- We can correlate only a subset of channels if we need smaller correlators, but the number of correlators is fixed by the
-				-- number of bins per word.
+				-- In CT_LEVEL=1, we have a wired corner-turn, and we have a correlator for each bin bins per word at the channelizer output.
+				-- If we have a corner-turn engine (CT_LEVEL >=2), there is a single bin stream so there is only one correlator (this assumes we have at least a 4-way corner turn to go from 4 bins/word to 1 bin/word.
+				-- We can correlate only a subset of channels if we need smaller correlators. This is needed for multi-board correlators.
+
 				constant NCHAN: integer := sel(CT_LEVEL = 1, NUMBER_OF_CHANNELIZERS, 32); -- todo/fix: 32 depends on the platform/corner-turn level
 				constant NCORR: integer := sel(CT_LEVEL = 1, FFT_INFO(FFT_TYPE).BINS_PER_WORD, 1);
 				constant BIN_DECIMATION_FACTOR: integer := sel(CT_LEVEL = 1, 1, 4);
@@ -3543,21 +3547,18 @@ begin
 						corr_in_tdata  <= ct_out_tdata;
 						corr_in_tlast  <= ct_out_tlast;
 						corr_in_tvalid <= ct_out_tvalid;
-
-					-- debug2 <= xor(corr_in_tdata);
-
 					end if; -- clk
 				end process corr_pipe;
 
 				ucorr44_array0: entity work.ucorr44_array
 					generic map (
-						PLATFORM_ID => PLATFORM_ID, -- needed to determine the RPM spacing of the DSP and BRAM elements and choose the right primitives
-						NCHAN => NCHAN,
-						NCORR => NCORR, -- equals to the number of bins per input word
-						NBINS_PER_CORR => NBINS_PER_CORR,
+						PLATFORM_ID           => PLATFORM_ID, -- needed to determine the RPM spacing of the DSP and BRAM elements and choose the right primitives
+						NCHAN                 => NCHAN,
+						NCORR                 => NCORR, -- equals to the number of bins per input word
+						NBINS_PER_CORR        => NBINS_PER_CORR,
 						BIN_DECIMATION_FACTOR => BIN_DECIMATION_FACTOR,
-						READOUT_BINS => CONFIG_CORR_READOUT_BINS,
-						USE_OUTPUT_FIFO => CAPTURE_TYPE = "BRAM"
+						READOUT_BINS          => CONFIG_CORR_READOUT_BINS,
+						USE_OUTPUT_FIFO       => CAPTURE_TYPE = "BRAM"
 					)
 					port map (
 						-- Input data interface (AXI4-Streaning, non-blocking)
