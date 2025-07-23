@@ -128,6 +128,15 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
+        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_axi_dma_1_0/zynq_tcpipe_crs_axi_dma_1_0.xci">
+          <Proxy FileSetName="zynq_tcpipe_crs_axi_dma_1_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_axi_dma_0_0/zynq_tcpipe_crs_axi_dma_0_0.xci">
+          <Proxy FileSetName="zynq_tcpipe_crs_axi_dma_0_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_pl_clk_rst_0/zynq_tcpipe_crs_pl_clk_rst_0.xci">
+          <Proxy FileSetName="zynq_tcpipe_crs_pl_clk_rst_0"/>
+        </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_zynq_ultra_ps_e_0_0/zynq_tcpipe_crs_zynq_ultra_ps_e_0_0.xci">
           <Proxy FileSetName="zynq_tcpipe_crs_zynq_ultra_ps_e_0_0"/>
         </CompFileExtendedInfo>
@@ -136,15 +145,6 @@
         </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_rst_ps8_0_96M_0/zynq_tcpipe_crs_rst_ps8_0_96M_0.xci">
           <Proxy FileSetName="zynq_tcpipe_crs_rst_ps8_0_96M_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_pl_clk_rst_0/zynq_tcpipe_crs_pl_clk_rst_0.xci">
-          <Proxy FileSetName="zynq_tcpipe_crs_pl_clk_rst_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_axi_dma_1_0/zynq_tcpipe_crs_axi_dma_1_0.xci">
-          <Proxy FileSetName="zynq_tcpipe_crs_axi_dma_1_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_axi_dma_0_0/zynq_tcpipe_crs_axi_dma_0_0.xci">
-          <Proxy FileSetName="zynq_tcpipe_crs_axi_dma_0_0"/>
         </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/chfpga_package.vhd">
@@ -649,13 +649,13 @@
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Flow_PerfOptimized_high" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design">
-          <Option Id="NoCombineLuts">1</Option>
-          <Option Id="ShregMinSize">5</Option>
-          <Option Id="KeepEquivalentRegisters">1</Option>
           <Option Id="FsmExtraction">1</Option>
-          <Option Id="Directive">7</Option>
-          <Option Id="ResourceSharing">2</Option>
+          <Option Id="KeepEquivalentRegisters">1</Option>
+          <Option Id="ShregMinSize">5</Option>
           <Option Id="Assert">1</Option>
+          <Option Id="ResourceSharing">2</Option>
+          <Option Id="Directive">7</Option>
+          <Option Id="NoCombineLuts">1</Option>
         </Step>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -1167,6 +1167,20 @@
     <MsgAttr Name="RuleType" Val="0"/>
     <MsgAttr Name="Limit" Val="-1"/>
     <MsgAttr Name="NewSeverity" Val="ANY"/>
+    <MsgAttr Name="Id" Val="[Timing 38-35]"/>
+    <MsgAttr Name="Severity" Val="ANY"/>
+    <MsgAttr Name="ShowRule" Val="1"/>
+    <MsgAttr Name="RuleSource" Val="2"/>
+    <MsgAttr Name="StringIsRegExp" Val="0"/>
+    <MsgAttr Name="RuleId" Val="41"/>
+    <MsgAttr Name="Note" Val=""/>
+    <MsgAttr Name="Author" Val=""/>
+    <MsgAttr Name="CreatedTimestamp" Val=""/>
+  </MsgRule>
+  <MsgRule>
+    <MsgAttr Name="RuleType" Val="0"/>
+    <MsgAttr Name="Limit" Val="-1"/>
+    <MsgAttr Name="NewSeverity" Val="ANY"/>
     <MsgAttr Name="Id" Val="[Timing 38-41]"/>
     <MsgAttr Name="Severity" Val="ANY"/>
     <MsgAttr Name="ShowRule" Val="1"/>
@@ -1187,6 +1201,34 @@
     <MsgAttr Name="RuleSource" Val="2"/>
     <MsgAttr Name="StringIsRegExp" Val="0"/>
     <MsgAttr Name="RuleId" Val="43"/>
+    <MsgAttr Name="Note" Val=""/>
+    <MsgAttr Name="Author" Val=""/>
+    <MsgAttr Name="CreatedTimestamp" Val=""/>
+  </MsgRule>
+  <MsgRule>
+    <MsgAttr Name="RuleType" Val="0"/>
+    <MsgAttr Name="Limit" Val="-1"/>
+    <MsgAttr Name="NewSeverity" Val="ANY"/>
+    <MsgAttr Name="Id" Val="[Timing 38-78]"/>
+    <MsgAttr Name="Severity" Val="ANY"/>
+    <MsgAttr Name="ShowRule" Val="1"/>
+    <MsgAttr Name="RuleSource" Val="2"/>
+    <MsgAttr Name="StringIsRegExp" Val="0"/>
+    <MsgAttr Name="RuleId" Val="44"/>
+    <MsgAttr Name="Note" Val=""/>
+    <MsgAttr Name="Author" Val=""/>
+    <MsgAttr Name="CreatedTimestamp" Val=""/>
+  </MsgRule>
+  <MsgRule>
+    <MsgAttr Name="RuleType" Val="0"/>
+    <MsgAttr Name="Limit" Val="-1"/>
+    <MsgAttr Name="NewSeverity" Val="ANY"/>
+    <MsgAttr Name="Id" Val="[Timing 38-91]"/>
+    <MsgAttr Name="Severity" Val="ANY"/>
+    <MsgAttr Name="ShowRule" Val="1"/>
+    <MsgAttr Name="RuleSource" Val="2"/>
+    <MsgAttr Name="StringIsRegExp" Val="0"/>
+    <MsgAttr Name="RuleId" Val="45"/>
     <MsgAttr Name="Note" Val=""/>
     <MsgAttr Name="Author" Val=""/>
     <MsgAttr Name="CreatedTimestamp" Val=""/>
