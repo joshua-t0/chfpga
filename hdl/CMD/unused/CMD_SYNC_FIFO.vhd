@@ -33,19 +33,16 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --! @brief Implements a shallow FIFO for the command system from A to B
 entity CTRL_FIFO is
 	GENERIC (
-		DATA_WIDTH: integer := 8;
-		USER_WIDTH: integer := 0
+		DATA_WIDTH: integer := 8
 		);
      PORT (
 		-- Command streams from single slave input to multiple master outputs
 		s_axis_tdata: in std_logic_vector(DATA_WIDTH-1 downto 0);
-		s_axis_tuser: in std_logic_vector(USER_WIDTH-1 downto 0) := (others=>'0'); -- optional user fields
 		s_axis_tvalid: in std_logic;
 		s_axis_tlast: in std_logic;
 		s_axis_tready: out std_logic;
 
 		m_axis_tdata:  out std_logic_vector(DATA_WIDTH-1 downto 0);
-		m_axis_tuser:  out std_logic_vector(USER_WIDTH-1 downto 0);
 		m_axis_tvalid: out std_logic;
 		m_axis_tlast:  out std_logic;
 		m_axis_tready: in std_logic;
@@ -59,68 +56,53 @@ end CTRL_FIFO;
 
 architecture Behavioral of CTRL_FIFO is
 
-	signal m_axis_tdata_int: std_logic_vector(DATA_WIDTH-1 downto 0);
-	signal m_axis_tuser_int: std_logic_vector(USER_WIDTH-1 downto 0);
-	signal m_axis_tvalid_int: std_logic;
-	signal m_axis_tlast_int: std_logic;
+	signal fifo_tdata: std_logic_vector(DATA_WIDTH-1 downto 0);
+	signal fifo_tvalid: std_logic;
+	signal fifo_tlast: std_logic;
 
-	signal overflow_tdata: std_logic_vector(DATA_WIDTH-1 downto 0);
-	signal overflow_tuser: std_logic_vector(USER_WIDTH-1 downto 0);
-	signal overflow_tvalid: std_logic;
-	signal overflow_tlast: std_logic;
+	signal dest_ready: std_logic;
+
 
 begin
 
-s_axis_tready <= s_axis_tready_int;
-m_axis_tdata <= m_axis_tdata_int;
-m_axis_tuser <= m_axis_tuser_int;
-m_axis_tvalid <= m_axis_tvalid_int;
-m_axis_tlast <= m_axis_tlast_int;
+	dest_ready <= m_axis_tready or not m_axis_tdata; -- '1' when new data can be moved to the output (previous data is going out or there is no data)
 
-fifo_proc: process(clk)
-	variable dest_ready: std_logic;
-begin
-	if rising_edge(clk) then
+	fifo_proc: process(all)	begin
+		if rising_edge(clk) then
+			s_axis_tready <= dest_ready; -- data is moving, so we'll have room for new one
 
-		dest_ready := m_axis_tready or not m_axis_tdata_int;
-
-		s_axis_tready <= dest_ready;
-
-		-- Read from input or from overflow
-		if dest_ready='1' then
-			if overflow_tvalid='1' then
-				m_axis_tdata_int<=overflow_tdata;
-				m_axis_tuser_int<=overflow_tuser;
-				m_axis_tlast_int<=overflow_tlast;
-				m_axis_tvalid_int<='1';
-				overflow_tvalid <='0'; -- is overriden below if we write data at the same time we read it
-			else
-				m_axis_tdata_int <= s_axis_tdata;
-				m_axis_tuser_int <= s_axis_tuser;
-				m_axis_tlast_int <= s_axis_tlast;
-				m_axis_tvalid_int <= s_axis_tready and s_axis_tvalid;
+			-- Set the output with new data from input or from FIFO
+			if dest_ready then -- if data can be moved to the output
+				if fifo_tvalid then -- if the FIFO is not empty, data will come from it
+					m_axis_tdata  <= fifo_tdata;
+					m_axis_tlast  <= fifo_tlast;
+					m_axis_tvalid <= '1'; -- FIFO is not empty, so we'll have data for sure at the output
+					fifo_tvalid   <= '0'; -- is overriden below if we write data at the same time we read it
+				else -- FIFO is empty, pass data directly from input, if any
+					m_axis_tdata <= s_axis_tdata;
+					m_axis_tlast <= s_axis_tlast;
+					m_axis_tvalid <= s_axis_tready and s_axis_tvalid; -- data is taken only when we signalled we would take it
+				end if;
 			end if;
-		end if;
 
-		--Write to overflow. This block has to come after the read block because we override the overflow register.
-		if s_axis_tvalid='1' and s_axis_tready_int='1' then -- if we accept a word
-			if dest_ready='0' or overflow_tvalid='1' then -- if destination not ready to accept a word, or if there is a valid overflow word
-				overflow_tdata <= s_axis_tdata;
-				overflow_tuser <= s_axis_tuser;
-				overflow_tlast <= s_axis_tlast;
-				overflow_tvalid <= '1';
+			-- Write to FIFO. This block has to come after the read block because we override the FIFO register.
+			if s_axis_tvalid and s_axis_tready then -- if we accept a word
+				if not dest_ready or fifo_tvalid then -- if destination not ready to accept a word, or if there is a valid FIFO word
+					fifo_tdata <= s_axis_tdata;
+					fifo_tlast <= s_axis_tlast;
+					fifo_tvalid <= '1';
+				end if;
 			end if;
-		end if;
 
-		if rst='1' then
-			overflow_tvalid<='0';
-			m_axis_tvalid_int<='0';
-			s_axis_tready <= '0';
-		end if; -- rst
+			if rst then
+				fifo_tvalid <= '0';
+				m_axis_tvalid <= '0';
+				s_axis_tready <= '0';
+			end if; -- rst
 
-	end if; --clk
+		end if; --clk
 
-end process;
+	end process;
 
 
 end Behavioral;
