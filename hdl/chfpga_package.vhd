@@ -1314,11 +1314,11 @@ function clip(v:signed; width_minus_one:integer)  return signed is
 	variable r: signed(v'RANGE);
 begin
 	-- If the sign bit of the word is 0 but all the clipped bits are not 0, saturate to max positive value
-	if  sign_bit(v) = '0' and not all_zeros(v, v'HIGH, width_minus_one) then
+	if  v(v'HIGH) = '0' and not all_zeros(v, v'HIGH, width_minus_one) then
 		r := (others => '0');
 		r(width_minus_one-1 downto 0) := (others => '1');
-	-- If the sign bit of the word is 1 but all the bits down and including the MSB of our byte are not 1, saturate to -128
-	elsif sign_bit(v) = '1' and not all_ones(v, v'HIGH, width_minus_one) then
+	-- If the sign bit of the word is 1 but all the bits down and including the MSB of our byte are not 1, saturate to most negative value
+	elsif v(v'HIGH) = '1' and not all_ones(v, v'HIGH, width_minus_one) then
 		r := (others => '1');
 		r(width_minus_one-1 downto 0) := (others => '0');
 	-- There is no saturation

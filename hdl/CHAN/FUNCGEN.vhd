@@ -198,9 +198,10 @@ signal word_ctr: std_logic_vector(LOG2_WORDS_PER_FRAME-1 downto 0) := (others=>'
 signal reset_all, reset_all_reg: std_logic;
 signal soft_reset: std_logic:= '0';
 signal number_of_frames: unsigned(7 downto 0); -- Counts words from 0 to FRAME_LENGTH/4-1
-signal frame_ctr: unsigned(31-LOG2_WORDS_PER_FRAME downto 0); -- Counts words from 0 to FRAME_LENGTH/4-1. Concatenation of word_ctr & frame_ctr is always 32 bits.
+signal frame_ctr: unsigned(31-LOG2_WORDS_PER_FRAME downto 0); -- Counts frame from 0 to FRAME_LENGTH/4-1. Concatenation of word_ctr & frame_ctr is always 32 bits.
 signal enable: std_logic;
 signal send_frame: std_logic;
+-- signal a_reg: std_logic_vector(LSFR_WIDTH-1 downto 0) := (others=>'0'); --lsfr register used for noise generation
 
 --signal ram_page_lsb: std_logic_vector(2 downto 0); -- 3 bits
 --signal ram_page_msb: std_logic_vector(3 downto 0); -- 4 bits
@@ -227,12 +228,15 @@ signal ram_addr: std_logic_vector(LOG2_WORDS_PER_FRAME-1 downto 0);
 signal ram_dout_int1, ram_dout_int2: std_logic_vector(8*BYTES_PER_SAMPLE*ADC_SAMPLES_PER_WORD-1 downto 0);
 -- RAM Output word, in the same packing format as the function generator input/output word.
 signal ram_dout: std_logic_vector(BITS_PER_WORD-1 downto 0);
-signal crc_in: std_logic_vector(31 downto 0);
-signal crc_out: std_logic_vector(31 downto 0);
 
 signal delay_capture_ctr: unsigned(15 downto 0);
 signal adc_overflow_ctr: unsigned(7 downto 0);
 signal reset_stats: std_logic;
+signal rst_lfsr: std_logic;
+
+--lfsr
+signal lsfr_in: std_logic_vector(31 downto 0); -- seed for lfsr
+signal lfsr_out: std_logic_vector(ADC_SAMPLES_PER_WORD*ADC_BITS_PER_SAMPLE-1 downto 0):= (others=>'0'); --output from lfsr
 
 begin
 -----------------------------------------------------------------------------------
@@ -252,10 +256,11 @@ begin
 -- |         |  3  |  7:0 | number_of_frames     | If non-zero, only ``number_of_frames`` frames will be sent after sync |
 -- |         |  4  |  7:0 | byte_c               | Byte C, used as parameters in some functions |
 -- |         |  5  |  7:4 | ram_page[6:3]        | MSB of the RAM page number |
--- |         |     |  3:0 | shift                | Number of bits to right-shift the ADC data |
+-- |         |     |  3:0 | shift                | Number of bits to right-shift the output data |
 -- |         |  6  |  7   | stats_reset          | Clears the ADC overflow counter |
--- |         |     |  6:4 | (unused)             |  |
--- |         |     |  3:0 | clip_width           | Saturates the ADC data to a ``clip_width-1``-bit wide signed value (i.e. clip_width is the position of the sign bit). Saturation is applied after the right-shift. |
+-- |         |     |  6   | rst_lfsr             | Resets seed and output of LFSR |
+-- |         |     |  5:4 | (unused)             |   |
+-- |         |     |  3:0 | clip_width           | Saturates the output data to a ``clip_width-1``-bit wide signed value (i.e. clip_width is the position of the sign bit). Saturation is applied after the right-shift. |
 -- | STATUS  |  0  |  7:0 | ramp_word_ctr        | Last 8 bits of the word counter |
 -- |         |  1  |  7:0 | frame_ctr            | Last 8 bits of the frame counter |
 -- |         |  2  |  7:1 | (unused)             | |
@@ -287,6 +292,7 @@ shift <= unsigned(control_bytes(5)(3 downto 0));
 
 -- CONTROL Bytes 6: Saturation width and overrange count reset
 reset_stats <= control_bytes(6)(7);
+rst_lfsr  <= control_bytes(6)(6);
 clip_width <= unsigned(control_bytes(6)(3 downto 0));
 
 -- STATUS Byte 0
@@ -354,17 +360,17 @@ reorder_gen: for j in 0 to ADC_SAMPLES_PER_WORD-1 generate
     ram_dout(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) <= ram_dout_int2(8*BYTES_PER_SAMPLE*(j+1)-1 downto 8*BYTES_PER_SAMPLE*(j+1)-ADC_BITS_PER_SAMPLE);
 end generate;
 
-
-crc_in <= (byte_a & byte_b & not byte_a & not byte_b);
--- Instantiate the CRC engine, 32-bit wide input, that is used as a noise generator.
-crc32: entity work.xglink_crc32_32
+lsfr_in <= (byte_a & byte_b & not byte_a & not byte_b);
+--Instantiate LFSR used as a noise generator. Seed is 32 bit and output is the size of a word
+lfsr: entity work.lfsr
     port map(
-        data_in => crc_in,
-        crc_out => crc_out,
-        rst => rst,
-        crc_en => '1',
+        seed => lsfr_in,
+        output => lfsr_out,
+        rst => rst_lfsr or reset_all,
         clk => clk
-);
+    );
+
+
 
 ---------------------------------------------
 -------- Main process -----------------------
@@ -381,25 +387,38 @@ out_dat_tuser <= (
 funcgen_proc: process (clk)
     -- variable out_dat_var: std_logic_vector(31 downto 0);
     -- variable word_ctr: std_logic_vector(ramp_word_ctr'range);
-    variable temp_tdata: std_logic_vector(ADC_SAMPLES_PER_WORD*ADC_BITS_PER_SAMPLE-1 downto 0);
     variable sample_var: signed(ADC_BITS_PER_SAMPLE-1 downto 0);
     variable int_shift: integer;
-    variable int_clip_width: integer;
+    variable int_clip_width: integer range 0 to 15;
+
     begin
         if rising_edge(clk) then
             reset_all <= soft_reset or rst;
             reset_all_reg <= reset_all; -- pipeline
             trig_reg  <= trig;
-            -- Register the output bus. out_dat_* registers are tied to a lot of logic and can't be placed optimally to meet timing at high speeds.
-            m_axis_adc_tdata <= out_dat_tdata;
-            m_axis_adc_tvalid <= out_dat_tvalid;
-            m_axis_adc_tuser <= out_dat_tuser;
-            m_axis_adc_tlast <= out_dat_tlast;
 
+            in_dat_tuser <= s_axis_adc_tdata;
+            in_dat_tuser <= s_axis_adc_tuser;
+            in_dat_tvalid <= s_axis_adc_tvalid;
+            in_dat_tlast <= s_axis_adc_tlast;
 
             int_shift := to_integer(shift);
             int_clip_width := to_integer(clip_width);
 
+            for j in 0 to ADC_SAMPLES_PER_WORD-1 loop
+                sample_var := signed(out_dat_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j));
+                sample_var := shift_right(sample_var, int_shift);
+                if int_clip_width /= 15 then
+                    sample_var := clip(sample_var, int_clip_width);
+                end if;
+                m_axis_adc_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) <= std_logic_vector(sample_var);
+            end loop;
+
+            -- Register the output bus. out_dat_* registers are tied to a lot of logic and can't be placed optimally to meet timing at high speeds.
+            m_axis_adc_tvalid <= out_dat_tvalid;
+            m_axis_adc_tuser <= out_dat_tuser;
+            m_axis_adc_tlast <= out_dat_tlast;
+            
            --------------------------------------
             -- Generate an AXIS ramp stream
             --------------------------------------
@@ -407,22 +426,6 @@ funcgen_proc: process (clk)
             ramp_word_ctr <= ramp_word_ctr + 1;
             ramp_word_ctr_dly <= ramp_word_ctr;
             word_ctr <= std_logic_vector(ramp_word_ctr_dly); -- This is aligned with the RAM output
-
-
-            -- Shift-right the input (with sign-extend) and saturate to specified bit width
-            for j in 0 to ADC_SAMPLES_PER_WORD-1 loop
-                sample_var := signed(s_axis_adc_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j));
-                sample_var := shift_right(sample_var, int_shift);
-                if int_clip_width /= 15 then
-                    sample_var := clip(sample_var, int_clip_width);
-                end if;
-                in_dat_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) <= std_logic_vector(sample_var);
-            end loop;
-
-            in_dat_tuser <= s_axis_adc_tuser;
-            in_dat_tvalid <= s_axis_adc_tvalid;
-            in_dat_tlast <= s_axis_adc_tlast;
-
 
             if reset_stats then
                 adc_overflow_ctr <= (others => '0');
@@ -508,23 +511,8 @@ funcgen_proc: process (clk)
 
                 -- Send peudo-random noise on all samples.
                 -- The 32-bit bits of the PNRG is distributed on the MSB of all samples, and the samples are right-shifted by the value in byte_c.
-                when FN_NOISE =>
-                    temp_tdata := (others => '0');
-
-                    -- We assign the ADC_BITS_PER_SAMPLE most significant bits of the PRBS word to each sample after rotating the word by 32/ADC_SAMPLES_PER_WORD bits for each sample.
-                    -- Only top 32/ADC_SAMPLES_PER_WORD bits are truely random. The remaining bits are somewhat correlated between samples.
-                    for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
-                        temp_tdata(ADC_BITS_PER_SAMPLE*(i+1)-1 downto ADC_BITS_PER_SAMPLE*i) := msb(std_logic_vector(rotate_left(unsigned(crc_out), i*crc_out'LENGTH/ADC_SAMPLES_PER_WORD)), ADC_BITS_PER_SAMPLE);
-                    end loop;
---                    -- First distribute the 32 bits of the PRBS to the MSBs of every sample
---                    for i in 0 to 31 loop
---                        temp_tdata(ADC_BITS_PER_SAMPLE*((i MOD ADC_SAMPLES_PER_WORD)+1)-1-integer(i / ADC_SAMPLES_PER_WORD)) := crc_out(i);
---                    end loop;
-                    -- shift right the samples
-                    for j in 0 to ADC_SAMPLES_PER_WORD-1 loop
-                        temp_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) := std_logic_vector(shift_right(signed(temp_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j)), int_shift));
-                    end loop;
-                    out_dat_tdata <= temp_tdata;
+                when FN_NOISE =>                    
+                    out_dat_tdata <= lfsr_out;
                     out_dat_tvalid <= send_frame;
                     adc_overflow_flag <= '0';
 
@@ -534,7 +522,7 @@ funcgen_proc: process (clk)
                     out_dat_tvalid <= send_frame;
                     adc_overflow_flag <= ram_dout(0);
 
-                -- Send the LSBs of the frame counter on every sample of the frame
+                -- Send the The ADC_BITS_PER_SAMPLE-2 LSBs of the frame counter on every sample of the frame
                 when FN_FRAME8 =>
                     for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
                         out_dat_tdata(ADC_BITS_PER_SAMPLE*(i+1)-1 downto ADC_BITS_PER_SAMPLE*i) <= to_slv(frame_ctr(ADC_BITS_PER_SAMPLE-3 downto 0)) & "00";
