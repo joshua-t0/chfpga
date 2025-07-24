@@ -62,6 +62,9 @@ entity CHAN is
 		ADC_SAMPLES_PER_WORD: integer      := FFT_INFO(FFT_TYPE).SAMPLES_PER_WORD;
 		ADC_SAMPLES_PER_FRAME: integer     := FFT_INFO(FFT_TYPE).SAMPLES_PER_FRAME;
 		ADC_BITS_PER_WORD: integer         := ADC_BITS_PER_SAMPLE * ADC_SAMPLES_PER_WORD;
+		FUNCGEN_TUSER_BITS_PER_WORD: integer   := 1; -- adc overflow
+		FFT_TUSER_BITS_PER_WORD: integer   := 2; -- adc overflow and fft overflow
+		SCALER_TUSER_BITS_PER_WORD: integer := FFT_TUSER_BITS_PER_WORD + FFT_INFO(FFT_TYPE).BINS_PER_WORD + 1; --adc overflow, fft overflow, gain bank and scaler overflow
 		SCALER_COEFF_BITS_PER_BIN: integer := sel(SCALER_USE_COMPLEX_GAINS, 16 + 16, 16); -- use wither 16-bit real gains or (16+16i) bit complex gains
 		SIM: boolean                       := GLOBAL_SIM
 	);
@@ -85,7 +88,7 @@ entity CHAN is
 		out_dat_tdata: out std_logic_vector(OUT_BITS_PER_WORD - 1 downto 0);
 		out_dat_tvalid: out std_logic;
 		out_dat_tlast: out std_logic;
-		out_dat_tuser: out std_logic_vector(3 downto 0);
+		out_dat_tuser: out std_logic_vector(3 downto 0); -- TODO: make this also variable width and propagated at that width through ct engine
 		out_dat_almost_empty: out std_logic; -- asserts about 15 clocks before the FIFO has no more data
 		out_dat_send: in  std_logic := '1'; -- Set to '1' by the sink to indicate that output data can be sent. Has a one clock latency.
 		out_clk: in  std_logic;
@@ -163,25 +166,25 @@ architecture impl of CHAN is
 	constant OUT_BITS_PER_BIN: integer     := SCALER_BITS_PER_BIN;  -- 16 for CHIME, 8 for CHORD
 
 	signal funcgen_out_tdata: std_logic_vector(ADC_BITS_PER_WORD - 1 downto 0);
-	signal funcgen_out_tuser: std_logic_vector(3 downto 0);
+	signal funcgen_out_tuser: std_logic_vector(FUNCGEN_TUSER_BITS_PER_WORD - 1 downto 0);
 	signal funcgen_out_tvalid: std_logic;
 	signal funcgen_out_tlast: std_logic;
 
 
 	signal fft_out_tdata: std_logic_vector(FFT_BITS_PER_WORD - 1 downto 0);
-	signal fft_out_tuser: std_logic_vector(3 downto 0);
+	signal fft_out_tuser: std_logic_vector(FFT_TUSER_BITS_PER_WORD - 1 downto 0);
 	signal fft_out_tvalid: std_logic;
 	signal fft_out_tlast: std_logic;
 
 	signal scaler_out_tdata: std_logic_vector(SCALER_BITS_PER_WORD - 1 downto 0);
 	signal scaler_out_tvalid: std_logic;
 	signal scaler_out_tlast: std_logic;
-	signal scaler_out_tuser: std_logic_vector(3 downto 0);
+	signal scaler_out_tuser: std_logic_vector(SCALER_TUSER_BITS_PER_WORD - 1 downto 0);
 
 	signal scaler_cap_tdata: std_logic_vector(CAPTURE_BITS_PER_WORD - 1 downto 0);
 	signal scaler_cap_tvalid: std_logic;
 	signal scaler_cap_tlast: std_logic;
-	signal scaler_cap_tuser: std_logic_vector(3 downto 0);
+	signal scaler_cap_tuser: std_logic_vector(SCALER_TUSER_BITS_PER_WORD - 1 downto 0);
 
 	-- Signals monitored by the SCALER module
 	signal fifo_overflow: std_logic;
@@ -341,7 +344,7 @@ begin
 		attribute keep of funcgen_reset_in: signal is "true";
 
 		signal funcgen_out_pre_tdata: std_logic_vector(ADC_BITS_PER_WORD - 1 downto 0);
-		signal funcgen_out_pre_tuser: std_logic_vector(3 downto 0);
+		signal funcgen_out_pre_tuser: std_logic_vector(FUNCGEN_TUSER_BITS_PER_WORD-1 downto 0);
 		signal funcgen_out_pre_tvalid: std_logic;
 		signal funcgen_out_pre_tlast: std_logic;
 	begin
@@ -418,7 +421,8 @@ begin
 			generic map (
 				ADC_BITS_PER_SAMPLE => ADC_BITS_PER_SAMPLE,
 				ADC_SAMPLES_PER_WORD => ADC_SAMPLES_PER_WORD,
-				ADC_SAMPLES_PER_FRAME => ADC_SAMPLES_PER_FRAME
+				ADC_SAMPLES_PER_FRAME => ADC_SAMPLES_PER_FRAME,
+				FUNCGEN_TUSER_BITS_PER_WORD => FUNCGEN_TUSER_BITS_PER_WORD
 			)
 			port map (
 				-- Input from the ADC
@@ -453,7 +457,7 @@ begin
 	---------------------------------------------------------------------
 	fft_blk: block
 		signal fft_in_tdata: std_logic_vector(ADC_BITS_PER_WORD - 1 downto 0);
-		signal fft_in_tuser: std_logic_vector(3 downto 0);
+		signal fft_in_tuser: std_logic_vector(FUNCGEN_TUSER_BITS_PER_WORD - 1 downto 0); -- only adc overflow
 		signal fft_in_tvalid: std_logic;
 		signal fft_in_tlast: std_logic;
 		signal fft_reset_in: std_logic;
@@ -461,7 +465,7 @@ begin
 		attribute keep of fft_reset_in: signal is "true";
 
 		signal fft_in2_tdata: std_logic_vector(ADC_BITS_PER_WORD - 1 downto 0);
-		signal fft_in2_tuser: std_logic_vector(3 downto 0);
+		signal fft_in2_tuser: std_logic_vector(FUNCGEN_TUSER_BITS_PER_WORD - 1 downto 0);
 		signal fft_in2_tvalid: std_logic;
 		signal fft_in2_tlast: std_logic;
 		signal fft_reset_in2: std_logic;
@@ -475,7 +479,7 @@ begin
 					fft_reset_in <= funcgen_reset_out;
 
 					fft_in_tdata <= funcgen_out_tdata;
-					fft_in_tuser <= funcgen_out_tuser;
+					fft_in_tuser <= funcgen_out_tuser; -- only get adc overflow flag
 					fft_in_tlast <= funcgen_out_tlast;
 					fft_in_tvalid <= '0' when funcgen_reset_out else funcgen_out_tvalid;
 
@@ -499,7 +503,9 @@ begin
 				ADC_BITS_PER_SAMPLE  => ADC_BITS_PER_SAMPLE,
 				ADC_SAMPLES_PER_WORD => ADC_SAMPLES_PER_WORD,
 				FFT_BITS_PER_BIN     => FFT_BITS_PER_BIN,
-				ROTATE_BINS          => FFT_ROTATE_BINS
+				ROTATE_BINS          => FFT_ROTATE_BINS,
+				FUNCGEN_TUSER_BITS_PER_WORD => FUNCGEN_TUSER_BITS_PER_WORD,
+				FFT_TUSER_BITS_PER_WORD => FFT_TUSER_BITS_PER_WORD
 				)
 			port map (
 				-- Input stream from funcgen
@@ -534,7 +540,7 @@ begin
 	-- Applies a complex correction factor to each sample coming out of the FFT and scales the data back to 8 bits or 4 bits format.
 	scaler_blk: block
 		signal axis_scaler_in_tdata: std_logic_vector(FFT_BITS_PER_WORD - 1 downto 0);
-		signal axis_scaler_in_tuser: std_logic_vector(3 downto 0);
+		signal axis_scaler_in_tuser: std_logic_vector(FFT_TUSER_BITS_PER_WORD - 1 downto 0);
 		signal axis_scaler_in_tvalid: std_logic;
 		signal axis_scaler_in_tlast: std_logic;
 		signal scaler_reset_in: std_logic;
@@ -564,7 +570,9 @@ begin
 				USE_COMPLEX_GAINS => SCALER_USE_COMPLEX_GAINS,
 				COEFF_BITS_PER_BIN => SCALER_COEFF_BITS_PER_BIN, -- typically 16 or 16+16. Includes both real and imaginary part. If USE_COMPLEX_GAINS=TRUE, half the bits are used for real and half for imaginary. Must be multiple of 8 as it is configured byte-wise.
 				OUT_BITS_PER_BIN => SCALER_BITS_PER_BIN,
-				CAP_BITS_PER_WORD => CAPTURE_BITS_PER_WORD
+				CAP_BITS_PER_WORD => CAPTURE_BITS_PER_WORD,
+				FFT_TUSER_BITS_PER_WORD => FFT_TUSER_BITS_PER_WORD,
+				SCALER_TUSER_BITS_PER_WORD => SCALER_TUSER_BITS_PER_WORD
 				)
 			port map (
 				-- Input data from the FFT
@@ -583,6 +591,7 @@ begin
 				m_axis_cap_tdata => scaler_cap_tdata,
 				m_axis_cap_tvalid => scaler_cap_tvalid,
 				m_axis_cap_tlast => scaler_cap_tlast,
+				m_axis_cap_tuser => scaler_cap_tuser,
 
 				clk       => in_clk,
 				reset     => scaler_reset_in,
@@ -633,13 +642,13 @@ begin
 		signal fifo_in_tdata: std_logic_vector(OUT_BITS_PER_WORD - 1 downto 0);
 		signal fifo_in_tvalid: std_logic;
 		signal fifo_in_tlast: std_logic;
-		signal fifo_in_tuser: std_logic_vector(3 downto 0);
+		signal fifo_in_tuser: std_logic_vector(SCALER_TUSER_BITS_PER_WORD - 1 downto 0);
 
 		signal fifo_out_tdata: std_logic_vector(OUT_BITS_PER_WORD - 1 downto 0);
 		signal fifo_out_tvalid: std_logic;
 		signal fifo_out_tvalid_not_rst: std_logic;
 		signal fifo_out_tlast: std_logic;
-		signal fifo_out_tuser: std_logic_vector(3 downto 0);
+		signal fifo_out_tuser: std_logic_vector(SCALER_TUSER_BITS_PER_WORD - 1 downto 0);
 
 		signal fifo_almost_full: std_logic;
 		signal fifo_almost_empty: std_logic;
@@ -661,7 +670,7 @@ begin
 			generic map (
 				FPGA_SERIES => FPGA_SERIES,
 				DATA_WIDTH => OUT_BITS_PER_WORD,
-				USER_WIDTH  => 4
+				USER_WIDTH  => SCALER_TUSER_BITS_PER_WORD
 				)
 			port map (
 				-- User AXI-Streaming data input (nnon-blocking)
@@ -691,7 +700,7 @@ begin
 			if rising_edge(out_clk) then
 				out_dat_almost_empty <= fifo_almost_empty;
 				out_dat_tdata <= fifo_out_tdata;
-				out_dat_tuser <= fifo_out_tuser;
+				out_dat_tuser <= fifo_out_tuser(3 downto 0);
 				out_dat_tlast <= fifo_out_tlast;
 				out_dat_tvalid <= fifo_out_tvalid when out_dat_send and not out_reset else '0'; -- it is important to clear tvalid when send=0 as the FIFO still says it has new valid data but we are not sending that data
 			end if; -- clk
@@ -712,7 +721,7 @@ begin
 
 		-- funcgen pipeline
 		signal funcgen_tdata: std_logic_vector(ADC_BITS_PER_WORD - 1 downto 0);
-		signal funcgen_tuser: std_logic_vector(3 downto 0);
+		signal funcgen_tuser: std_logic_vector(FUNCGEN_TUSER_BITS_PER_WORD - 1 downto 0);
 		signal funcgen_tvalid: std_logic;
 		signal funcgen_tlast: std_logic;
 
@@ -747,7 +756,7 @@ begin
 						cap0_tdata(0)((i + 1) * CAPTURE_BITS_PER_SAMPLE - 1 downto i * CAPTURE_BITS_PER_SAMPLE) <= msb_pad(funcgen_tdata((i + 1) * ADC_BITS_PER_SAMPLE - 1 downto i * ADC_BITS_PER_SAMPLE), CAPTURE_BITS_PER_SAMPLE);
 					end loop;
 
-					cap0_tuser(0) <= funcgen_tuser;
+					cap0_tuser(0) <= "000" & funcgen_tuser;
 					cap0_tvalid(0) <= '0' when prober_reset_in else funcgen_tvalid;
 					cap0_tlast(0) <= funcgen_tlast;
 
@@ -756,6 +765,7 @@ begin
 					cap0_tdata(1) <= scaler_cap_tdata; -- Scaler output width was already made equal to the capture width.
 					cap0_tvalid(1) <= '0' when prober_reset_in else scaler_cap_tvalid;
 					cap0_tlast(1) <= scaler_cap_tlast;
+					cap0_tuser(1) <= scaler_cap_tuser(TUSER_GAINBANK_BIT + 2) & scaler_cap_tuser(TUSER_GAINBANK_BIT + 1) & scaler_cap_tuser(TUSER_GAINBANK_BIT) & scaler_cap_tuser(TUSER_ADC_OVERFLOW_BIT); -- for now, we retain scaler overflow, current gain bank and adc overflow
 				end if; -- clk
 			end process;
 

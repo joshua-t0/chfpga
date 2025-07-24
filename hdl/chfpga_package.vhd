@@ -434,17 +434,17 @@ type AXIS108_DAT_STRUCT_ARRAY is ARRAY (natural range <>) of AXIS108_DAT_STRUCT;
 -- From  ADCDAQ:
 --   Bits 0-3 are overflow flags for sample 0-3 in each word
 -- From FUNCGEN
-constant TUSER_CAPTURE_BIT: INTEGER :=0; -- Set by FUNCGEN and passed downstream to indicate to the PROBER that the data should be captured if continuous capture  mode is enabled
+-- constant TUSER_CAPTURE_BIT: INTEGER :=0; -- Set by FUNCGEN and passed downstream to indicate to the PROBER that the data should be captured if continuous capture  mode is enabled
 
 -- Flags that are set on the last N words of each packet.
 --  TLAST - 0: ADC Overflow (Downstream of FUNCGEN only)
 --  TLAST - 1: FFT Overflow (Downstream of FFT only)
 --  TLAST - 2: Gain Bank (Downstream of SCALER only)
-constant TUSER_SERIAL_FLAGS_BIT: INTEGER :=3;
+-- constant TUSER_SERIAL_FLAGS_BIT: INTEGER :=3;
 
-constant TUSER_ADC_OVERFLOW_BIT: INTEGER :=3; -- Set by SRCSEL ont he last word of a frame to indicate that ADC saturation has occured on a sample of the frame.
-constant TUSER_FFT_OVERFLOW_BIT: INTEGER :=0; -- Set by SRCSEL and passed downstream to indicate to the PROBER that the data should be captured if continuous capture  mode is enabled
-
+constant TUSER_ADC_OVERFLOW_BIT: INTEGER :=0; -- Set by SRCSEL ont he last word of a frame to indicate that ADC saturation has occured on a sample of the frame.
+constant TUSER_FFT_OVERFLOW_BIT: INTEGER :=1; -- Set by SRCSEL and passed downstream to indicate to the PROBER that the data should be captured if continuous capture  mode is enabled
+constant TUSER_GAINBANK_BIT: INTEGER := 2;    -- Set by scaler on last word of frame to indicate which gainbank was being employed
 constant TUSER_SCALER_LOW_OVERFLOW_BIT: INTEGER :=1; -- Set by SCALER to indicate ovweflow on the sample in the Low part of the word
 constant TUSER_SCALER_HIGH_OVERFLOW_BIT: INTEGER :=2; -- -- Set by SCALER to indicate ovweflow on the sample in the high part of the word
 constant TUSER_EVEN_SCALER_OVERFLOW_BIT: INTEGER := TUSER_SCALER_HIGH_OVERFLOW_BIT; -- -- Set by SCALER to indicate ovweflow on the sample in the high part of the word

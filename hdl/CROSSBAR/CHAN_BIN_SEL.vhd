@@ -165,7 +165,6 @@ constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
 
 
 signal s_axis_global_tfirst: std_logic;
-signal s_axis_tuser_dly: slv4_array(0 to NUMBER_OF_INPUTS-1); -- stores a delayed version of TUSER so we can see the SERIAL_FLAGS before TLAST
 
 signal m_axis_tdata_int:  slv32;
 signal m_axis_tvalid_int: std_logic;
@@ -764,8 +763,6 @@ fifo_wr_proc: process(clk)
 				--     data_in_odd(63:0)  = b3* b2* b1* b0* b3 b2 b1 b0
 				-- If we have a 32-bit fifo and therefore support only the 4-bit mode, we have all the data we need in the first 32 bits.
 				for j in 0 to 3 loop
-					-- Get a delayed version of TUSER so we can access the SERIAL_FLAGS at TLAST-1
-					s_axis_tuser_dly(4*i+j) <= s_axis_tuser(4*i+j);
 
 					-- EVEN bin
 					-- Remap high nibble of complex value (used both in 4 and 8 bit mode)
@@ -846,8 +843,8 @@ fifo_wr_proc: process(clk)
 				end if;
 				-- Put the ADC and FFT flags of the selected values on the frame FIFO input. These will be written only at the end of each frame
 				for j in 0 to 3 loop
-						frame_flags_fifo_din(4*i+j) <= s_axis_tuser(4*i+j)(TUSER_SERIAL_FLAGS_BIT); -- SERIAL_FLAG @ TLAST: ADC Overflow bit
-						frame_flags_fifo_din(16+4*i+j) <= s_axis_tuser_dly(4*i+j)(TUSER_SERIAL_FLAGS_BIT);  -- SERIAL_FLAG @ TLAST-1: FFT Overflow bit
+						frame_flags_fifo_din(4*i+j) <= s_axis_tuser(4*i+j)(TUSER_ADC_OVERFLOW_BIT);
+						frame_flags_fifo_din(16+4*i+j) <= s_axis_tuser(4*i+j)(TUSER_FFT_OVERFLOW_BIT);
 				end loop;
 
 			end loop; --for i in 0 to NUMBER_OF_INPUTS/4-1

@@ -72,6 +72,8 @@ entity SCALER is
         COEFF_BITS_PER_BIN: integer := 16; -- typically 16 or 16+16. Includes both real and imaginary part. If USE_COMPLEX_GAINS=TRUE, half the bits are used for real and half for imaginary. Must be multiple of 8 as it is configured byte-wise.
         OUT_BITS_PER_BIN: integer := 8+8; -- Fixed to (8+8) to support 8-bit mode or get more of the input data in bypass mode.
         CAP_BITS_PER_WORD: integer := 128; -- 32 for Iceboard, 128 for CRS
+        FFT_TUSER_BITS_PER_WORD: integer := 2; -- number of tuser bits coming from FFT (fft overflow, adc overflow)
+        SCALER_TUSER_BITS_PER_WORD: integer := FFT_BINS_PER_WORD + FFT_TUSER_BITS_PER_WORD + 1; -- add overflow bits and current gain bank
         OUT_BITS_PER_WORD: integer := OUT_BITS_PER_BIN * FFT_BINS_PER_WORD;
         CAP_BITS_PER_BIN: integer := CAP_BITS_PER_WORD / FFT_BINS_PER_WORD; -- minimum is 4+4, but can be increased to use 8-bit mode or get more of the input data in bypass mode for capture purposes.
         EIGHT_BIT_SUPPORT: boolean := OUT_BITS_PER_BIN >= 8+8 -- TRUE of the scaler supports (8+8) bit output in addition to the 4+4 bit output
@@ -81,18 +83,19 @@ entity SCALER is
         s_axis_in_tdata    : in std_logic_vector(FFT_BITS_PER_WORD-1 downto 0); -- Format: MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
         s_axis_in_tvalid   : in std_logic;
         s_axis_in_tlast    : in std_logic;
-        s_axis_in_tuser    : in std_logic_vector(3 downto 0);  --
+        s_axis_in_tuser    : in std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);  --
 
         -- Main output interface
         m_axis_out_tdata    : out std_logic_vector(OUT_BITS_PER_WORD-1 downto 0); -- Format: MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
         m_axis_out_tvalid   : out std_logic;
         m_axis_out_tlast    : out std_logic;
-        m_axis_out_tuser    : out std_logic_vector(3 downto 0);  --
+        m_axis_out_tuser    : out std_logic_vector(SCALER_TUSER_BITS_PER_WORD-1 downto 0);  --
 
         -- Capture output interface
         m_axis_cap_tdata    : out std_logic_vector(CAP_BITS_PER_WORD-1 downto 0); -- Format: MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
         m_axis_cap_tvalid   : out std_logic;
         m_axis_cap_tlast    : out std_logic;
+        m_axis_cap_tuser    : out std_logic_vector(SCALER_TUSER_BITS_PER_WORD-1 downto 0);
 
         -- Common Clock and Reset
         clk     : in  std_logic;
@@ -151,12 +154,12 @@ architecture Behavioral of SCALER is
     signal in_dat_dly1_tdata    : std_logic_vector(FFT_BITS_PER_WORD-1 downto 0);
     signal in_dat_dly1_tvalid   : std_logic;
     signal in_dat_dly1_tlast    : std_logic;
-    signal in_dat_dly1_tuser    : std_logic_vector(3 downto 0);  --
+    signal in_dat_dly1_tuser    : std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);  --
 
     signal in_dat_dly2_tdata    : std_logic_vector(FFT_BITS_PER_WORD-1 downto 0);
     signal in_dat_dly2_tvalid   : std_logic;
     signal in_dat_dly2_tlast    : std_logic;
-    signal in_dat_dly2_tuser    : std_logic_vector(3 downto 0);  --
+    signal in_dat_dly2_tuser    : std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);  --
 
     --signal IN_DAT_DLY1: AXIS72_DAT_STRUCT; --!
     --signal IN_DAT_DLY2: AXIS72_DAT_STRUCT; --!
@@ -174,20 +177,19 @@ architecture Behavioral of SCALER is
     signal stage1_overflow: std_logic_vector(0 to INTEGERS_PER_WORD-1);
     signal stage1_tvalid: std_logic;
     signal stage1_tlast: std_logic;
-    signal stage1_tuser: std_logic_vector(3 downto 0);
+    signal stage1_tuser: std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);
 
     signal stage2_word: signed_array(0 to INTEGERS_PER_WORD-1)(7 downto 0);
     signal stage2_sign: std_logic_vector(0 to INTEGERS_PER_WORD-1); --! Indicates the sign of each of the 4 numbers in the incoming word
     signal stage2_overflow: std_logic_vector(0 to INTEGERS_PER_WORD-1);
     signal stage2_tvalid: std_logic;
     signal stage2_tlast: std_logic;
-    signal stage2_tuser: std_logic_vector(3 downto 0);
+    signal stage2_tuser: std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);
 
     -- Control signals
     signal four_bits: std_logic;
     signal symmetric_saturation: std_logic;
     signal zero_on_saturation: std_logic;
-    signal force_gain_to_one: std_logic;
     signal use_float_gains: std_logic;
 
     signal rounding_mode: std_logic_vector(1 downto 0);
@@ -223,7 +225,7 @@ architecture Behavioral of SCALER is
 
     -- Multiplier output
     signal scaled_data_tvalid: std_logic;
-    signal scaled_data_tuser: std_logic_vector(3 downto 0);
+    signal scaled_data_tuser: std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);
     signal scaled_data_tlast: std_logic;
     signal scaled_data_tdata: std_logic_vector(INTEGER_WIDTH*INTEGERS_PER_WORD-1 downto 0);
     signal scaled_data_log_gain: unsigned_array(0 to FFT_BINS_PER_WORD-1)(5 downto 0);
@@ -241,6 +243,7 @@ architecture Behavioral of SCALER is
     signal stats_adc_overflows: unsigned(15 downto 0);
 
     signal stats_capture: std_logic;
+    signal stats_capture_resync: std_logic;
     signal stats_first_frame: std_logic;
     signal stats_last_frame: std_logic;
     signal stats_ready: std_logic;
@@ -290,14 +293,14 @@ begin
 -- |         |     |   5  | zero_on_saturation           | When '1', the real/imaginary pairs are zeroed if wither the real part or imaginary part encounters an overflow.|
 -- |         |     |   4  | synchronize_gain_bank_switch | When '1', The target gain bank is activated only when the target frame number has been reached|
 -- |         |     |   3  | fifo_overflow_reset          | Resets the fifo_overflow_sticky status bit
--- |         |     |   1  | force_gain_to_one            | When using complex gains, overrides gain table and uses 1+0j as gain for all bins|
+-- |         |     |   1  | (unused)                     | When using complex gains, overrides gain table and uses 1+0j as gain for all bins|
 -- |         |     |  1:0 | rounding_mode                | Specified the type of rounding: '00' = No rounding (truncation), '01'= standard rounding (ties always round up), '10' = convergent rounding (ties round toward the even values)|
 -- |         | 3:5 | 23:0 | stats_frame_count            | Number of frames to include in the statistics. 1 = 1 frame. |
 -- |         | 6:9 | 31:0 | gain_bank_switch_frame_number| Target frame number at which the next gain bank will be activated. |
 -- |         | 10  |   7  | use_float_gains              | When '1', bin-specific log gain is encoded in the upper 5 bits of the gain. For real gains only|
 -- |         |     |   6  | mon_reset_stats              | Reset mon_packet_length and mon_packet_ctr |
 -- |         |     |  4:3 | bypass_data_type             | When bypass_scaler is '1': "00": input, "01": 1+0j if any saturation, "10": 1+0j or 0+1j if positive or negative saturation respectively|
--- |         |     |  2:0 | cap_data_type                | "000": raw input, "001": scaled input, "010": 4-bit, "100": Even bins, "101": odd bins
+-- |         |     |  2:0 | cap_data_type                | "000": raw output, "001": scaled input, "010": 4-bit, "100": Even bins, "101": odd bins
 -- | STATUS  |  0  |  7   | stats_ready                  | '1' when new stats data has been captured|
 -- |         |     |  6   | current_gain_bank            | Currently used gain bank. |
 -- |         |     |  5   | eight_bit_support            | '1' when this scaler implementation supports (8+8) bit output mode|
@@ -338,7 +341,6 @@ symmetric_saturation         <= control_bytes(2)(6);
 zero_on_saturation           <= control_bytes(2)(5);
 synchronize_gain_bank_switch <= control_bytes(2)(4);
 fifo_overflow_reset          <= control_bytes(2)(3);
-force_gain_to_one            <= control_bytes(2)(2);
 rounding_mode                <= control_bytes(2)(1 downto 0);
 
 -- CONTROL Byte 3-5
@@ -351,7 +353,7 @@ gain_bank_switch_frame_number <= to_slv(control_bytes(6 to 9));
 use_float_gains <= control_bytes(10)(7); -- if True, bin-specific log gain is encoded in the upper 5 bits of the gain. For real gains only (USE_COMPLEX_GAINS=FALSE)
 mon_reset_stats <= control_bytes(10)(6);
 bypass_data_type  <= control_bytes(10)(4 downto 3); -- if bypass=1: "00": input, "01": 1+0j if any saturation, "10": 1+0j or 0+1j if positive or negative saturation respectively
-cap_data_type  <= control_bytes(10)(2 downto 0); -- "000": raw input, "001": scaled input, "010": 4-bit, "100": Even bins, "101": odd bins
+cap_data_type  <= control_bytes(10)(2 downto 0); -- "000": raw output, "001": scaled input, "010": 4-bit, "100": Even bins, "101": odd bins, "110": scaled even bins, "111": scaled odd bins
 
 -- STATUS Byte 0
 status_bytes(0)(7)   <= stats_ready;
@@ -543,8 +545,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
         -- Final scaled output format: MSB->LSB: Re(N), Im(N), Re(N+1), Im(N+1)
 
         -- Select gain coefficient for the even bin
-        coeff_even_din <= std_logic_vector(to_signed(0, 16)) & std_logic_vector(to_signed(1, 16)) when force_gain_to_one else
-                          (coeff_ram_dout(15 downto 0) & coeff_ram_dout(31 downto 16)); -- Im:Re
+        coeff_even_din <= coeff_ram_dout(15 downto 0) & coeff_ram_dout(31 downto 16); -- Im:Re
         cmul0_a_tdata <= ("000000" & in_dat_dly2_tdata(2*18+17 downto 2*18+0) & "000000" & in_dat_dly2_tdata(3*18+17 downto 3*18+0)); -- Im:Re, padded for byte align
         -- Instantiate complex multiplier for the even bin
         -- Data packing: byte-aligned, imaginary in the high bits
@@ -569,14 +570,13 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
 
 
         -- Instantiate complex multiplier for the odd bin
-         coeff_odd_din <= std_logic_vector(to_signed(0, 16)) & std_logic_vector(to_signed(1, 16)) when force_gain_to_one else
-                          (coeff_ram_dout(32+15 downto 32+0) & coeff_ram_dout(32+31 downto 32+16));
+         coeff_odd_din <= coeff_ram_dout(32+15 downto 32+0) & coeff_ram_dout(32+31 downto 32+16);
         cmul1_a_tdata <= ("000000" & in_dat_dly2_tdata(0*18+17 downto 0*18+0) & "000000" & in_dat_dly2_tdata(1*18+17 downto 1*18+0));
         cmul1: entity work.SCALER_CMUL
           PORT MAP (
             aclk => clk,
             s_axis_a_tvalid => in_dat_dly2_tvalid,
-            s_axis_a_tuser => "0000",
+            s_axis_a_tuser => "00",
             s_axis_a_tlast => in_dat_dly2_tlast,
             s_axis_a_tdata => cmul1_a_tdata,
             s_axis_b_tvalid => in_dat_dly2_tvalid,
@@ -602,12 +602,12 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
         signal fft_reg_tdata: signed_array(0 to INTEGERS_PER_WORD-1)(FFT_BITS_PER_BIN/2-1 downto 0);
         signal fft_reg_tvalid: std_logic;
         signal fft_reg_tlast: std_logic;
-        signal fft_reg_tuser: std_logic_vector(3 downto 0);
+        signal fft_reg_tuser: std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);
         signal fft_reg_log_gain: unsigned_array(0 to FFT_BINS_PER_WORD-1)(5 downto 0);
 
 --        signal scaled_data_tdata_dly1, scaled_data_tdata_dly2: std_logic_vector(INTEGER_WIDTH*INTEGERS_PER_WORD-1 downto 0);
         signal scaled_data_tvalid_dly1, scaled_data_tvalid_dly2: std_logic;
-        signal scaled_data_tuser_dly1, scaled_data_tuser_dly2: std_logic_vector(3 downto 0);
+        signal scaled_data_tuser_dly1, scaled_data_tuser_dly2: std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);
         signal scaled_data_tlast_dly1, scaled_data_tlast_dly2: std_logic;
         signal scaled_data_log_gain_dly1, scaled_data_log_gain_dly2: unsigned_array(0 to FFT_BINS_PER_WORD-1)(5 downto 0);
 
@@ -900,19 +900,16 @@ scaler_proc: process(all)
 
             -- Set defaults in case we don't assign them below
             m_axis_out_tdata<= (others => '0');
-            --m_axis_out_tuser <= (others => '0');
+            m_axis_out_tuser <= (others => '0'); -- sets flags only set on last frame to 0
             --m_axis_out_tlast <= '0';
             --m_axis_out_tvalid <= '0';
 
-            m_axis_out_tuser <= stage2_tuser; -- pass on the USER bits
-            -- insert the current bank in the TLAST-2 serial flag bit (TLAST-0 (stage2_tlast): ADC overflow, TLAST-1 (stage1_tlast) = FFT overflow, TLAST-2 (scaled_data_even_tlast) = gain bank)
-            m_axis_out_tuser(TUSER_SERIAL_FLAGS_BIT) <=
-                current_gain_bank when scaled_data_tvalid='1' and scaled_data_tlast='1' else
-                stage2_tuser(TUSER_SERIAL_FLAGS_BIT);
-            -- Set the scaler overflow bits in the user data
-            -- Warning: works only if we have 2 bins/word. To be fixed if these bits are to be used downstream.
-            m_axis_out_tuser(TUSER_SCALER_LOW_OVERFLOW_BIT) <= stage2_overflow(0) or stage2_overflow(1); -- Overflow for the low word is when either its real or imaginary value overflows
-            m_axis_out_tuser(TUSER_SCALER_HIGH_OVERFLOW_BIT) <= stage2_overflow(2) or stage2_overflow(3); -- Overflow for the low word is when either its real or imaginary value overflows
+            m_axis_out_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= stage2_tuser; -- pass on the USER bits
+            if stage2_tvalid='1' and stage2_tlast='1' then
+                m_axis_out_tuser(FFT_TUSER_BITS_PER_WORD) <= current_gain_bank; 
+            end if;
+            -- Set the scaler overflow bits in the user data.
+            
             m_axis_out_tlast <= stage2_tlast;
             m_axis_out_tvalid <= stage2_tvalid;
 
@@ -921,8 +918,8 @@ scaler_proc: process(all)
                     for i in 0 to FFT_BINS_PER_WORD-1 loop
                         m_axis_out_tdata((2*i+1)*OB/2-1 downto (2*i+0)*OB/2) <= msb_pad(std_logic_vector(OUT_WORD_VAR(2*i)), OB/2); -- MSB->LSB: 3,2,1,0 = Re(N), Im(N), Re(N+1), Im(N+1)
                         m_axis_out_tdata((2*i+2)*OB/2-1 downto (2*i+1)*OB/2) <= msb_pad(std_logic_vector(OUT_WORD_VAR(2*i+1)), OB/2); -- MSB->LSB: 3,2,1,0 = Re(N), Im(N), Re(N+1), Im(N+1)
+                        m_axis_out_tuser(FFT_TUSER_BITS_PER_WORD+i+1) <= stage2_overflow(2*i) or stage2_overflow(2*i+1); -- Set overflow flag if either Re or Im overflow
                     end loop;
-
 
                 when "100" => -- send the MSBs of the raw FFT input. Used to send FUNCGEN data to correlator/corner-turn engines with FFT bypass
                     for i in 0 to INTEGERS_PER_WORD-1 loop
@@ -930,7 +927,7 @@ scaler_proc: process(all)
                     end loop;
                     m_axis_out_tlast <= in_dat_dly1_tlast;
                     m_axis_out_tvalid <= in_dat_dly1_tvalid;
-                    m_axis_out_tuser <= in_dat_dly1_tuser;
+                    m_axis_out_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= in_dat_dly1_tuser;
 
                 when "101" => -- Send 1+0j on overflow. Autocorr counts any saturation
                     for i in 0 to FFT_BINS_PER_WORD-1 loop
@@ -962,11 +959,11 @@ scaler_proc: process(all)
 
             -- Stage 3e: Assign Capture outputs
 
-            m_axis_cap_tdata<= (others => '0'); -- ensure any unassigned bit is zero
-
+            m_axis_cap_tdata <= (others => '0'); -- ensure any unassigned bit is zero
+            m_axis_cap_tuser <= (others => '0');
+            m_axis_cap_tuser(FFT_TUSER_BITS_PER_WORD) <= m_axis_out_tuser(FFT_TUSER_BITS_PER_WORD); -- current gain bank
             m_axis_cap_tlast <= in_dat_dly1_tlast; -- default framing sources
             m_axis_cap_tvalid <= in_dat_dly1_tvalid;
-
             -- Count capture frames for debugging
             if m_axis_cap_tvalid and m_axis_cap_tlast then
                 cap_frame_ctr <= cap_frame_ctr + 1;
@@ -979,6 +976,7 @@ scaler_proc: process(all)
                     end loop;
                     m_axis_cap_tlast <= m_axis_out_tlast;
                     m_axis_cap_tvalid <= m_axis_out_tvalid;
+                    m_axis_cap_tuser <= m_axis_out_tuser;
 
                 when "001" => -- send MSBs of pre-gain (raw) FFT output
 
@@ -986,6 +984,7 @@ scaler_proc: process(all)
                     for i in 0 to INTEGERS_PER_WORD-1 loop
                         m_axis_cap_tdata((i+1)*CB/2-1 downto i*CB/2) <= msb_pad(in_dat_dly1_tdata((i+1)*FB/2-1 downto i*FB/2), CB/2);
                     end loop;
+                    m_axis_cap_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= in_dat_dly1_tuser;
 
 
                 when "010" => -- send MSBs of the post-gain FFT output with saturation
@@ -997,6 +996,7 @@ scaler_proc: process(all)
                     end loop;
                     m_axis_cap_tlast <= stage1_tlast;
                     m_axis_cap_tvalid <= stage1_tvalid;
+                    m_axis_cap_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= stage1_tuser;
 
                 when "011" => -- send the 4+4 bit scaled values
                     for i in 0 to INTEGERS_PER_WORD-1 loop
@@ -1004,21 +1004,52 @@ scaler_proc: process(all)
                     end loop;
                     m_axis_cap_tlast <= stage2_tlast;
                     m_axis_cap_tvalid <= stage2_tvalid;
+                    m_axis_cap_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= stage2_tuser;
 
                 when "100" => -- send even bins with twice the bit width
                     for i in 0 to FFT_BINS_PER_WORD/2-1 loop
                         m_axis_cap_tdata((2*i+2)*CB-1 downto (2*i+1)*CB) <= msb_pad(in_dat_dly1_tdata((4*i+4)*FB/2-1  downto (4*i+3)*FB/2), CB); -- Re part, even bin
                         m_axis_cap_tdata((2*i+1)*CB-1 downto (2*i+0)*CB) <= msb_pad(in_dat_dly1_tdata((4*i+3)*FB/2-1  downto (4*i+2)*FB/2), CB); -- Im part, even bin
                     end loop;
+                    m_axis_cap_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= in_dat_dly1_tuser;
 
                 when "101" => -- send odd bins with twice the bit width
                     for i in 0 to FFT_BINS_PER_WORD/2-1 loop
                         m_axis_cap_tdata((2*i+2)*CB-1 downto (2*i+1)*CB) <= msb_pad(in_dat_dly1_tdata((4*i+2)*FB/2-1  downto (4*i+1)*FB/2), CB); -- Re part, odd bin
                         m_axis_cap_tdata((2*i+1)*CB-1 downto (2*i+0)*CB) <= msb_pad(in_dat_dly1_tdata((4*i+1)*FB/2-1  downto (4*i+0)*FB/2), CB); -- Im part, odd bin
                     end loop;
+                    m_axis_cap_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= in_dat_dly1_tuser;
+                
+                when "110" => -- send scaled even bins with twice the bit width
+                    for i in 0 to FFT_BINS_PER_WORD/2-1 loop
+                        m_axis_cap_tdata((2*i+2)*CB-1 downto (2*i+1)*CB) <=
+                            ('1', others => '0') when stage1_overflow(i)='1' and stage1_sign(i)='1' else
+                            ('0', others => '1') when stage1_overflow(i)='1' and stage1_sign(i)='0' else
+                            msb(std_logic_vector(stage1_word(4*i+3)), CB); -- Re part
+                        m_axis_cap_tdata((2*i+1)*CB-1 downto (2*i+0)*CB) <=
+                            ('1', others => '0') when stage1_overflow(i)='1' and stage1_sign(i)='1' else
+                            ('0', others => '1') when stage1_overflow(i)='1' and stage1_sign(i)='0' else
+                            msb(std_logic_vector(stage1_word(4*i+2)), CB); -- Re part
+                    end loop;
+                    m_axis_cap_tlast <= stage1_tlast;
+                    m_axis_cap_tvalid <= stage1_tvalid;
+                    m_axis_cap_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= stage1_tuser;
+                
+                when "111" => -- send scaled odd bins with twice the bit width
+                    for i in 0 to FFT_BINS_PER_WORD/2-1 loop
+                        m_axis_cap_tdata((2*i+2)*CB-1 downto (2*i+1)*CB) <=
+                            ('1', others => '0') when stage1_overflow(i)='1' and stage1_sign(i)='1' else
+                            ('0', others => '1') when stage1_overflow(i)='1' and stage1_sign(i)='0' else
+                            msb(std_logic_vector(stage1_word(4*i+1)), CB); -- Re part
+                        m_axis_cap_tdata((2*i+1)*CB-1 downto (2*i+0)*CB) <=
+                            ('1', others => '0') when stage1_overflow(i)='1' and stage1_sign(i)='1' else
+                            ('0', others => '1') when stage1_overflow(i)='1' and stage1_sign(i)='0' else
+                            msb(std_logic_vector(stage1_word(4*i+0)), CB); -- Re part
+                    end loop;
+                    m_axis_cap_tlast <= stage1_tlast;
+                    m_axis_cap_tvalid <= stage1_tvalid;
+                    m_axis_cap_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= stage1_tuser;
 
-                when "110" | "111" =>
-                       null; -- Just sends the default (zeros)
                 when others=>
 --                    assert FALSE report "Unhandled data type case" severity FAILURE;
             end case;
@@ -1051,6 +1082,9 @@ scaler_proc: process(all)
         end if; -- clk
     end process scaler_proc;
 
+    stats_capture_cdc0: xpm_cdc_single
+		generic map (SRC_INPUT_REG => 0)
+		port map (src_clk => '0', src_in => stats_capture, dest_clk => clk, dest_out => stats_capture_resync);
     ----------------------------------
     -- Statistics process
     ----------------------------------
@@ -1104,16 +1138,16 @@ scaler_proc: process(all)
                 -- Count ADC overflows (counts how many frames have at least one overflow, as stated in the ADC_OVERFLOW flag thn TLAST=1)
                 if stats_first_frame = '1' then
                     adc_overflow_ctr <= (others => '0'); -- This is the first sample of a frame, don't have to worry about the ADC_OVERFLOW flag yet
-                elsif stage2_tlast = '1' and stage2_tuser(TUSER_ADC_OVERFLOW_BIT)='1' and signed(adc_overflow_ctr) /= -1 then
+                elsif stage2_tlast = '1' and stage2_tuser(0)='1' and signed(adc_overflow_ctr) /= -1 then
                     adc_overflow_ctr <= adc_overflow_ctr + 1;
                 end if;
             end if; -- if TVALID
 
 
             -- Capture stats when requested
-            if stats_capture = '0' then -- Clear the ready flags whenever trig is low
+            if stats_capture_resync = '0' then -- Clear the ready flags whenever trig is low
                 stats_ready <= '0';
-            elsif stage2_tvalid = '1' and stats_first_frame = '1' and stats_capture='1' then -- Capture stats of the last frame block when the new block begins
+            elsif stage2_tvalid = '1' and stats_first_frame = '1' and stats_capture_resync='1' then -- Capture stats of the last frame block when the new block begins
                 stats_scaler_overflows <= scaler_overflow_ctr;
                 stats_adc_overflows <= adc_overflow_ctr;
                 stats_ready <='1';
