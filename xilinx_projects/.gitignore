@@ -50,6 +50,10 @@
 !/chfpga_ice_corr16/
 !/chfpga_ice_corr16/*
 
+!/chfpga_crs_ct/
+!/chfpga_crs_ct/*
+
+# to be obsoleted
 !/chfpga_crs/
 !/chfpga_crs/*
 
@@ -62,6 +66,7 @@
 !/chan_tests/
 !/chan_tests/*
 
+# Testbenches
 !/scaler/
 /scaler/*
 !/scaler/*.xpr

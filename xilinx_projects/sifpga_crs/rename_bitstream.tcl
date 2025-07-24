@@ -1,1 +1,0 @@
-file copy -force chfpga_crs.bit chfpga_crs_corr.bit

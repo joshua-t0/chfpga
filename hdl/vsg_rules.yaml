@@ -149,6 +149,11 @@ rule:
         disable: true
     architecture_027: # align comments in signals
         disable: true
+    architecture_400: # align colon in attribute specs
+        disable: true
+    block_401: # align colon for all declarations in block declarative part
+        disable: true
+
     signal_012: # multiple signals aligned
         disable: true
 
@@ -233,10 +238,11 @@ rule:
     # port name case
     port_010: # port label case
         case: lower
-        severity: Warning
+        severity: Error
+
     port_map_002: # port label case
         case: lower
-        severity: Warning
+        severity: Error
 
     # constant name case
     constant_004: # constant name case
@@ -268,6 +274,17 @@ rule:
         consecutive: 4
         severity: Warning
 
+    constant_016: # Structure of multiline constants. Currently seems to require parenthesis to be on separate line
+        disable: true
+
+    constant_012: # Alignment of multiline constants.
+        align_left: yes
+        align_paren: no
+
+    if_009: # Alignment of multiline condition.
+        align_left: yes
+        align_paren: yes
+
 indent:
     tokens:
         use_clause:
@@ -287,15 +304,15 @@ indent:
         #         token: 0
         # Fix instantiation maps final parenthesis indentation
         enumeration_type_definition:
-            close_parenthesis:
-              after: -1
-              token: current  # close the parenthesis onthe same level as the previous block
-            enumeration_literal:
-              after: current
-              token: current
             open_parenthesis:
-              after: 1
               token: current
+              after: +2
+            enumeration_literal:
+              token: current
+              after: current
+            close_parenthesis:
+              token: current  # close the parenthesis onthe same level as the previous block
+              after: -1
 
         # port_clause:
         #     close_parenthesis:

@@ -55,3 +55,24 @@ ARM-SPI Memory Map
 
 .. .. include-docs:: GPIO
 ..     :start-after: GPIO Module
+
+
+Design Notes
+============
+
+Backplane Self-synchronizion and inter-board communication module
+-----------------------------------------------------------------
+
+
+We created an experimental module ``bp_buck_sync`` to allow the boards in a crate to:
+
+- collaborate to generate a single clock  that could be used to synchronize the backplane buck without requiring a master board in a specific slot.
+- communicate with each other
+
+
+This module was not used in the field, and caused implementation to fail on ZCU111 platform, so we just remove it.
+
+
+The self-sync was based on the clock-slowing principle of I2C, where any peripheral can hold the clock down to slow down the transactions, causing all the devices to operate at the speed of the slowest device on the bus.
+
+Communication between boards was acheived by modulating the clock.

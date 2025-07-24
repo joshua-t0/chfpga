@@ -1,0 +1,1 @@
+file rename -force SIFPGA_MGK7MB.bit chfpga_ice_corr16.bit
