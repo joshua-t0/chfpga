@@ -1,0 +1,13 @@
+*.cache
+*.gen
+*.hw
+*.ip_user_files
+*.sim
+*.srcs
+*.xsa
+/impl_1
+ip_upgrade.log
+# ignore all run files, except the .bit files 2 directories below
+*.runs/*/*
+!/*.runs/*/*.bit
+# chfpga_crs.bit
