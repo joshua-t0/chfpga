@@ -10,4 +10,3 @@ ip_upgrade.log
 # ignore all run files, except the .bit files 2 directories below
 *.runs/*/*
 !/*.runs/*/*.bit
-chfpga_crs.bit
