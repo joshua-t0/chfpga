@@ -397,7 +397,7 @@ funcgen_proc: process (clk)
             reset_all_reg <= reset_all; -- pipeline
             trig_reg  <= trig;
 
-            in_dat_tuser <= s_axis_adc_tdata;
+            in_dat_tdata <= s_axis_adc_tdata;
             in_dat_tuser <= s_axis_adc_tuser;
             in_dat_tvalid <= s_axis_adc_tvalid;
             in_dat_tlast <= s_axis_adc_tlast;
