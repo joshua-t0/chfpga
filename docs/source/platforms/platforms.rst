@@ -7,6 +7,6 @@ Platforms
 .. toctree::
    :maxdepth: 5
 
-   MGK7MB
+   iceboard
    CRS
    ZCU111
