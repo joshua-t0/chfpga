@@ -2897,7 +2897,7 @@ begin
 				end if; -- clk
 			end process;
 
-			ct0: entity work.b_ct_engine
+			ct0: entity work.bct_engine
 				generic map (
 					PLATFORM_ID => PLATFORM_ID,
 					NUMBER_OF_INPUT_LANES => NUMBER_OF_CHANNELIZERS, -- Number of channelizer inputs
