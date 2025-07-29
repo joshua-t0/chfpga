@@ -633,12 +633,12 @@ function any_zero(v: unsigned) return boolean; -- Return TRUE if any bit is '1'.
 function all_ones(v: std_logic_vector) return boolean; -- Return TRUE if all bits are '1'.
 function all_ones(v: unsigned) return boolean; -- Return TRUE if all bits are '1'.
 function all_ones(v: signed) return boolean; -- Return TRUE if all bits are '1'.
-function all_ones(v: signed; high:integer; low:integer) return boolean;
+function all_ones(v: std_logic_vector; high:integer; low:integer) return boolean;
 
 function all_zeros(v: std_logic_vector) return boolean; -- Return TRUE if all bits are '0'.
 function all_zeros(v: unsigned) return boolean; -- Return TRUE if all bits are '0'.
 function all_zeros(v: signed) return boolean; -- Return TRUE if all bits are '0'.
-function all_zeros(v: signed; high:integer; low:integer) return boolean;
+function all_zeros(v: std_logic_vector; high:integer; low:integer) return boolean;
 
 function cmplx(re, im:integer) return complex; -- Create a complex value out of two integer values
 function cmplx(re, im:signed) return complex; -- Create a complex value out of two signed values
@@ -1188,11 +1188,15 @@ begin
 end function;
 
 --Returns TRUE if bits in specified range are all '1'
-function all_ones(v: signed; high:integer; low:integer) return boolean is
+function all_ones(v: std_logic_vector; high:integer; low:integer) return boolean is
+	variable ones: std_logic_vector(v'range) := (others => '1');
 begin
 --	return and(v(high downto low)) = '1'; -- Error: Cannot have variable length slice in component instantiation
-    return signed(v(high downto low)) = -1;
+    -- return signed(v(high downto low)) = -1; --Do not have variable slicing! Synthesis raises no error but logic is wrong
+    return v(high downto low) = ones(high downto low);
 end function;
+
+
 
 --Returns TRUE if all bits are 'o'
 function all_zeros(v: std_logic_vector) return boolean is
@@ -1214,11 +1218,14 @@ begin
 end function;
 
 --Returns TRUE if bits in specified range are all '0'
-function all_zeros(v: signed; high:integer; low:integer) return boolean is
+function all_zeros(v: std_logic_vector; high:integer; low:integer) return boolean is
+	variable zeros: std_logic_vector(v'range) := (others => '0');
 begin
 --	return or(v(high downto low)) = '0'; -- Error: Cannot have variable length slice in component instantiation
-	return signed(v(high downto low)) = 0; -- works
+-- return signed(v(high downto low)) = 0; -- Synthesis raises no error but logic is wrong
+	return v(high downto low) = zeros(high downto low);
 end function;
+
 
 
 --Returns the log2 of a integer as a real value
@@ -1275,7 +1282,6 @@ begin
 	return std_logic_vector(shift_right(unsigned(i), n));
 end function;
 
-
 function shift_right(x:slv_array)  return slv_array is
 	variable r: slv_array(x'RANGE);
 begin
@@ -1312,13 +1318,14 @@ end function;
 
 function clip(v:signed; width_minus_one:integer)  return signed is
 	variable r: signed(v'RANGE);
+	variable v_slv: std_logic_vector(v'RANGE) := std_logic_vector(v);
 begin
 	-- If the sign bit of the word is 0 but all the clipped bits are not 0, saturate to max positive value
-	if  v(v'HIGH) = '0' and not all_zeros(v, v'HIGH, width_minus_one) then
+	if  v_slv(v_slv'HIGH) = '0' and not all_zeros(v_slv, v_slv'HIGH, width_minus_one) then
 		r := (others => '0');
 		r(width_minus_one-1 downto 0) := (others => '1');
 	-- If the sign bit of the word is 1 but all the bits down and including the MSB of our byte are not 1, saturate to most negative value
-	elsif v(v'HIGH) = '1' and not all_ones(v, v'HIGH, width_minus_one) then
+	elsif v_slv(v_slv'HIGH) = '1' and not all_ones(v_slv, v_slv'HIGH, width_minus_one) then
 		r := (others => '1');
 		r(width_minus_one-1 downto 0) := (others => '0');
 	-- There is no saturation
