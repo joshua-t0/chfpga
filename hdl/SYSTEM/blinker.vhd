@@ -25,11 +25,11 @@ use IEEE.NUMERIC_STD.ALL;
 
 -- Knight Rider's KIT2000-style LED blinker
 entity blinker is
-	GENERIC (
+	generic (
 		PING_PONG: boolean := FALSE;
 		DUMMY: boolean     := FALSE
-		);
-   PORT (
+	);
+	port (
 		-- Reset line
 		rst: in  std_logic;
 
@@ -39,7 +39,7 @@ entity blinker is
 		leds: out std_logic_vector(7 downto 0); -- Ramp up and down pattern Intensity = (0,1,2,3,2,1,0,0,0...)
 		leds_u: out std_logic_vector(7 downto 0); -- Ramp_up pattern        Intensity = (0,1,2,3,0,0,0,0,0...)
 		leds_d: out std_logic_vector(7 downto 0) -- Ramp down parrern      Intensity = (0,0,0,3,2,1,0,0,0...)
-		);
+	);
 end entity blinker;
 
 architecture impl of blinker is
@@ -48,9 +48,9 @@ architecture impl of blinker is
 
 	signal lead: unsigned(0 to 7) := "10000000"; -- The bit that bounces around
 
-	type TRAIL_TYPE is array(natural range <>) of unsigned(0 to 4);
+	type trail_type is array(natural range <>) of unsigned(0 to 4);
 
-	signal trail: TRAIL_TYPE(0 to 7); -- Memory of the passage of the bit so we can compute remanent intensity
+	signal trail: trail_type(0 to 7); -- Memory of the passage of the bit so we can compute remanent intensity
 	signal pwm_low_to_high: std_logic_vector(0 to 2); -- 3 levels of PWM
 	signal pwm_high_to_low: std_logic_vector(0 to 2); -- 3 levels of PWM
 	signal dir: std_logic := '1';
@@ -61,11 +61,11 @@ architecture impl of blinker is
 begin
 
 
-	leds <= leds_u_int or leds_d_int;
+	leds   <= leds_u_int or leds_d_int;
 	leds_u <= leds_u_int;
 	leds_d <= leds_d_int;
 
-	NODUMMY: if DUMMY=FALSE generate
+	nodummy: if DUMMY = FALSE generate
 
 		blinker: process(clk, kick) is
 		begin
@@ -76,7 +76,6 @@ begin
 					kick_pulse <= '0';
 				end if;
 			end if;
-
 			if rising_edge(clk) then
 				ctr <= ctr + 1;
 				-- Generate 3 signals with different PWM duty cycles
@@ -114,6 +113,7 @@ begin
 						trail(i) <= shift_right(trail(i), 1);
 						trail(i)(0) <= lead(i);
 					end loop;
+
 				end if; -- if trig
 
 				for i in 0 to 7 loop
@@ -122,7 +122,7 @@ begin
 				end loop;
 
 				-- synchronous resets. Overrides variables above.
-				if rst='1' then
+				if rst = '1' then
 					leds_d_int <= (others => '0');
 					leds_u_int <= (others => '0');
 					lead <= (0 => '1', others => '0');
@@ -130,7 +130,8 @@ begin
 				end if; -- if rst
 			end if; -- clk
 		end process;
-	end generate NODUMMY;
+
+	end generate nodummy;
 
 end architecture impl;
 

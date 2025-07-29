@@ -1174,7 +1174,7 @@ begin
 				ts_sample_event_trig_out <= ts_sample_event_trig_in_resync;
 				ts_sample_refclk_trig_out <= ts_sample_refclk_trig_in_resync;
 				if ts_sample_event_trig_in_resync /= ts_sample_event_trig_out or
-	   ts_sample_refclk_trig_in_resync /= ts_sample_refclk_trig_out then
+	 ts_sample_refclk_trig_in_resync /= ts_sample_refclk_trig_out then
 					ts_sample <= ts; -- register the current IRIG-B time
 				end if;
 			end if;  -- if clk200
