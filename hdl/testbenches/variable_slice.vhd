@@ -48,8 +48,8 @@ architecture impl of variable_slice is
     function allbits(v:std_logic_vector; b:integer) return boolean is
         variable target: std_logic_vector(v'range) := (others =>'1'); -- size of vector needs to be resolved to a constant
     begin
---        return v(v'HIGH downto b) = target(v'HIGH downto b);
-        return v(v'HIGH downto b) = (v'HIGH downto b => '1');
+        return v(v'HIGH downto b) = target(v'HIGH downto b); -- works
+--        return v(v'HIGH downto b) = (v'HIGH downto b => '1'); -- synth error: needs to resolve to constant
     end function allbits;
 
 begin
@@ -59,7 +59,6 @@ begin
     -- "10": 1, 0 ERROR
     -- "11": 1, 0: ERROR
     all_ones1 <= '1' when signed(value(value'HIGH downto to_integer(unsigned(width))))=-1 else '0'; 
---    all_ones <= '1' when value = (value'HIGH downto to_integer(unsigned(width)) => '1', others=>'0') else '0'; 
     all_ones2 <= '1' when value(value'HIGH downto to_integer(unsigned(width))) = test(test'HIGH downto to_integer(unsigned(width))) else '0'; 
     all_ones3 <= '1' when allbits(value, to_integer(unsigned(width))) else '0';
 
