@@ -207,7 +207,7 @@ signal send_frame: std_logic;
 --signal ram_page_msb: std_logic_vector(3 downto 0); -- 4 bits
 signal ram_page: std_logic_vector(6 downto 0); -- combined ram_page_msb and _lsb. 7 bits, more than we need. 9 bits BSB RAM addr + 7 bits page = 16 bit address = 65536 bytes.
 
-signal adc_overflow_flag: std_logic;
+signal overflow_flag: std_logic;
 signal capture_flag: std_logic;
 signal adc_tfirst: std_logic;
 signal ramp_tfirst: std_logic;
@@ -230,7 +230,7 @@ signal ram_dout_int1, ram_dout_int2: std_logic_vector(8*BYTES_PER_SAMPLE*ADC_SAM
 signal ram_dout: std_logic_vector(BITS_PER_WORD-1 downto 0);
 
 signal delay_capture_ctr: unsigned(15 downto 0);
-signal adc_overflow_ctr: unsigned(7 downto 0);
+signal overflow_ctr: unsigned(7 downto 0);
 signal reset_stats: std_logic;
 signal rst_lfsr: std_logic;
 
@@ -308,7 +308,7 @@ status_bytes(2)(0) <= send_frame;
 status_bytes(3 to 4) <= to_slv8_array(delay_capture_ctr);
 
 -- STATUS Byte 5
-status_bytes(5) <= std_logic_vector(adc_overflow_ctr);
+status_bytes(5) <= std_logic_vector(overflow_ctr);
 
 --ram_page <= ram_page_msb & ram_page_lsb;
 
@@ -379,7 +379,7 @@ lfsr: entity work.lfsr
 
 -- Set TUSER
 out_dat_tuser <= (
-    TUSER_ADC_OVERFLOW_BIT => adc_overflow_flag,
+    TUSER_ADC_OVERFLOW_BIT => overflow_flag,
     TUSER_CAPTURE_BIT      => capture_flag,
     others                 => '0'
     );
@@ -428,9 +428,9 @@ funcgen_proc: process (clk)
             word_ctr <= std_logic_vector(ramp_word_ctr_dly); -- This is aligned with the RAM output
 
             if reset_stats then
-                adc_overflow_ctr <= (others => '0');
-            elsif not all_zeros(in_dat_tuser) and not all_ones(adc_overflow_ctr) then
-                adc_overflow_ctr <= adc_overflow_ctr + 1;
+                overflow_ctr <= (others => '0');
+            elsif not all_zeros(out_dat_tuser) and not all_ones(overflow_ctr) then
+                overflow_ctr <= overflow_ctr + 1;
             end if;
 
 
@@ -474,9 +474,9 @@ funcgen_proc: process (clk)
                     if in_dat_tvalid='1' then
                         -- Cumulate the overflow flags until the end of the frame so the last word indicates if there was an overflow anywhere in the frame.
                         if adc_tfirst='1' then
-                            adc_overflow_flag <= or_reduce(in_dat_tuser);
+                            overflow_flag <= or_reduce(out_dat_tuser);
                         else
-                            adc_overflow_flag <= adc_overflow_flag or or_reduce(in_dat_tuser);
+                            overflow_flag <= overflow_flag or or_reduce(out_dat_tuser);
                         end if;
                     end if; -- if TVALID
                     out_dat_tdata <= in_dat_tdata;
@@ -485,7 +485,7 @@ funcgen_proc: process (clk)
 
 --                when FN_ADC16 => -- **OBSOLETE**
 --                    -- This mode is now identical to FN_ADC now that we handle wider buses
---                    adc_overflow_flag <= '0';
+--                    overflow_flag <= '0';
 --                    out_dat_tdata <= in_dat_tdata;
 --                    out_dat_tvalid <= in_dat_tvalid;
 --                    out_dat_tlast <= in_dat_tlast;
@@ -493,7 +493,7 @@ funcgen_proc: process (clk)
                 when FN_RAM =>
                     out_dat_tdata <= ram_dout; -- Byte at address 0 is in the MSB
                     out_dat_tvalid <= send_frame;
-                    adc_overflow_flag <= '0';
+                    overflow_flag <= '0';
 
                 -- Send bits 3:0 of RAM samples on even frames an bits 7:4 of RAM samples on odd frames.
                 -- Data is aligned on the 4 MSBs of each sample.
@@ -507,20 +507,20 @@ funcgen_proc: process (clk)
                         end if;
                     end loop;
                     out_dat_tvalid <= send_frame;
-                    adc_overflow_flag <= '0';
+                    overflow_flag <= '0';
 
                 -- Send peudo-random noise on all samples.
                 -- The 32-bit bits of the PNRG is distributed on the MSB of all samples, and the samples are right-shifted by the value in byte_c.
                 when FN_NOISE =>                    
                     out_dat_tdata <= lfsr_out;
                     out_dat_tvalid <= send_frame;
-                    adc_overflow_flag <= '0';
+                    overflow_flag <= '0';
 
                 when FN_FRAME_WORD_CTR_RAM_FLAGS =>
                     out_dat_tdata <= (others => '0');
                     out_dat_tdata(31 downto 0) <= to_slv(frame_ctr) & word_ctr; -- store frame & word counter only in the lower 32 bits.
                     out_dat_tvalid <= send_frame;
-                    adc_overflow_flag <= ram_dout(0);
+                    overflow_flag <= ram_dout(0);
 
                 -- Send the The ADC_BITS_PER_SAMPLE-2 LSBs of the frame counter on every sample of the frame
                 when FN_FRAME8 =>
@@ -528,7 +528,7 @@ funcgen_proc: process (clk)
                         out_dat_tdata(ADC_BITS_PER_SAMPLE*(i+1)-1 downto ADC_BITS_PER_SAMPLE*i) <= to_slv(frame_ctr(ADC_BITS_PER_SAMPLE-3 downto 0)) & "00";
                     end loop;
                     out_dat_tvalid <= send_frame;
-                    adc_overflow_flag <= ram_dout(0);
+                    overflow_flag <= ram_dout(0);
 
                 -- Send the 4 LSBs of the frame counter on the upper 4 MSBs of each sample in the frame
                 when FN_FRAME4 =>
@@ -537,7 +537,7 @@ funcgen_proc: process (clk)
                         out_dat_tdata(ADC_BITS_PER_SAMPLE*(i+1)-1 downto ADC_BITS_PER_SAMPLE*(i+1)-4) <= to_slv(frame_ctr(3 downto 0));
                     end loop;
                     out_dat_tvalid <= send_frame;
-                    adc_overflow_flag <= ram_dout(0);
+                    overflow_flag <= ram_dout(0);
 
                 when others =>
                     out_dat_tdata <= (others=>'0');
