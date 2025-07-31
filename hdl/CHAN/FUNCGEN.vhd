@@ -112,6 +112,7 @@ entity FUNCGEN is
     generic (
         ADC_SAMPLES_PER_WORD: integer := 8;
         ADC_BITS_PER_SAMPLE: integer := 14;
+        FUNCGEN_TUSER_BITS_PER_WORD: integer := 1;
         ADC_SAMPLES_PER_FRAME: integer := 16384;
         IMPLEMENT_DELAY_CAPTURE: boolean := FALSE
     );
@@ -129,7 +130,7 @@ entity FUNCGEN is
 
         m_axis_adc_tdata: out std_logic_vector(ADC_SAMPLES_PER_WORD*ADC_BITS_PER_SAMPLE-1 downto 0);
         m_axis_adc_tvalid: out std_logic;
-        m_axis_adc_tuser: out std_logic_vector(3 downto 0); --  Contain an overflow bit flag for group of samples.
+        m_axis_adc_tuser: out std_logic_vector(FUNCGEN_TUSER_BITS_PER_WORD-1 downto 0); --  Contain an overflow bit flag for group of samples.
         m_axis_adc_tlast: out std_logic;
 
         clk     : in  std_logic;            --! clock for both input and output streams
@@ -174,7 +175,7 @@ signal in_dat_tvalid: std_logic;
 signal in_dat_tlast: std_logic;
 
 signal out_dat_tdata: std_logic_vector(ADC_SAMPLES_PER_WORD*ADC_BITS_PER_SAMPLE-1 downto 0);
-signal out_dat_tuser: std_logic_vector(3 downto 0);
+signal out_dat_tuser: std_logic_vector(FUNCGEN_TUSER_BITS_PER_WORD-1 downto 0);
 signal out_dat_tvalid: std_logic;
 signal out_dat_tlast: std_logic;
 
@@ -379,9 +380,8 @@ lfsr: entity work.lfsr
 
 -- Set TUSER
 out_dat_tuser <= (
-    TUSER_ADC_OVERFLOW_BIT => overflow_flag,
-    TUSER_CAPTURE_BIT      => capture_flag,
-    others                 => '0'
+    TUSER_ADC_OVERFLOW_BIT => adc_overflow_flag,
+    others => '0'
     );
 
 funcgen_proc: process (clk)

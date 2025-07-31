@@ -100,6 +100,8 @@ entity FFT is
 		ADC_BITS_PER_SAMPLE    : integer := FFT_INFO(FFT_TYPE).BITS_PER_SAMPLE; -- CHIME: 8 bits, D3A/CHORD: 14 bits
 		ADC_SAMPLES_PER_WORD   : integer := FFT_INFO(FFT_TYPE).SAMPLES_PER_WORD; -- CHIME: 4, D3A/CHORD: 8
 		ADC_BITS_PER_WORD	   : integer := ADC_BITS_PER_SAMPLE * ADC_SAMPLES_PER_WORD;
+		FUNCGEN_TUSER_BITS_PER_WORD: integer := 1;
+		FFT_TUSER_BITS_PER_WORD: integer := FUNCGEN_TUSER_BITS_PER_WORD + 1; -- add 1 bit for FFT overflow
 		FFT_BITS_PER_BIN 	   : integer := FFT_INFO(FFT_TYPE).BITS_PER_BIN; -- real + imaginary
 		FFT_BINS_PER_WORD 	   : integer := FFT_INFO(FFT_TYPE).BINS_PER_WORD; -- CHIME: 2, D3A/CHORD: 4. -- we divide by 2 because the FFT outputs only the positive frequencies
 		FFT_BITS_PER_WORD 	   : integer := FFT_BITS_PER_BIN * FFT_BINS_PER_WORD
@@ -113,7 +115,7 @@ entity FFT is
 		s_axis_in_dat_tdata    : in std_logic_vector(ADC_BITS_PER_WORD-1 downto 0);
 		s_axis_in_dat_tvalid   : in std_logic;
 		s_axis_in_dat_tlast    : in std_logic;
-		s_axis_in_dat_tuser    : in std_logic_vector(3 downto 0);
+		s_axis_in_dat_tuser    : in std_logic_vector(FUNCGEN_TUSER_BITS_PER_WORD-1 downto 0);
 
 		-- Output Interface: AXI4 Streaming, non-blocking, `FFT_BITS_PER_WORD`-wide, synchronous to
 		-- `clk` Each word is made of `ADC_SAMPLES_PER_WORD/2` frequency bins (Re + Im), where the
@@ -123,7 +125,7 @@ entity FFT is
 		m_axis_out_dat_tdata   : out std_logic_vector(FFT_BITS_PER_WORD-1 downto 0);
 		m_axis_out_dat_tvalid  : out std_logic;
 		m_axis_out_dat_tlast   : out std_logic;
-		m_axis_out_dat_tuser   : out std_logic_vector(3 downto 0);
+		m_axis_out_dat_tuser   : out std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);
 
 		-- Clock and Reset
 
@@ -154,7 +156,7 @@ architecture Behavioral of FFT is
     constant FFT_LATENCY: integer := FFT_INFO(FFT_TYPE).LATENCY;
 	constant FFT_DELAY_CTR_WIDTH: integer := bitwidth(FFT_LATENCY); -- CHIME: 12, D3A/CHORD: 14
 
-	signal flags_in, flags_out: std_logic_vector(5 downto 0);
+	signal flags_in, flags_out: std_logic_vector(FUNCGEN_TUSER_BITS_PER_WORD+1 downto 0); -- add 2 bits for tlast and sync
 
 	signal fft_pipeline_delay: std_logic_vector(FFT_DELAY_CTR_WIDTH - 1 downto 0);
 	signal fft_measured_pipeline_delay: std_logic_vector(FFT_DELAY_CTR_WIDTH - 1 downto 0);
@@ -165,33 +167,33 @@ architecture Behavioral of FFT is
 	signal fft_in_tvalid       : std_logic;
 	signal fft_in_tdata        : std_logic_vector(s_axis_in_dat_tdata'RANGE);
 	signal fft_in_tlast        : std_logic;
-	signal fft_in_tuser        : std_logic_vector(3 downto 0);
+	signal fft_in_tuser        : std_logic_vector(FUNCGEN_TUSER_BITS_PER_WORD-1 downto 0);
 
     -- Rotated FFT output
 	signal fft_rot_tvalid  : std_logic;
 	signal fft_rot_tdata   : std_logic_vector(m_axis_out_dat_tdata'RANGE);
 	signal fft_rot_tlast   : std_logic;
-	signal fft_rot_tuser   : std_logic_vector(3 downto 0);
+	signal fft_rot_tuser   : std_logic_vector(FUNCGEN_TUSER_BITS_PER_WORD-1 downto 0);
     attribute shreg_extract of fft_rot_tdata, fft_rot_tuser, fft_rot_tvalid, fft_rot_tlast : signal is "no";
 
 
 	signal out_dat_pre_tvalid  : std_logic;
 	signal out_dat_pre_tdata   : std_logic_vector(m_axis_out_dat_tdata'RANGE);
 	signal out_dat_pre_tlast   : std_logic;
-	signal out_dat_pre_tuser   : std_logic_vector(3 downto 0);
+	signal out_dat_pre_tuser   : std_logic_vector(FUNCGEN_TUSER_BITS_PER_WORD-1 downto 0);
     attribute shreg_extract of out_dat_pre_tdata, out_dat_pre_tuser, out_dat_pre_tvalid, out_dat_pre_tlast : signal is "no";
 
     -- Bypass pipeline
 	signal bypass1_tvalid  : std_logic;
 	signal bypass1_tdata   : std_logic_vector(s_axis_in_dat_tdata'RANGE);
 	signal bypass1_tlast   : std_logic;
-	signal bypass1_tuser   : std_logic_vector(3 downto 0);
+	signal bypass1_tuser   : std_logic_vector(FUNCGEN_TUSER_BITS_PER_WORD-1 downto 0);
     attribute shreg_extract of bypass1_tdata, bypass1_tuser, bypass1_tvalid, bypass1_tlast : signal is "no";
 
 	signal bypass2_tvalid  : std_logic;
 	signal bypass2_tdata   : std_logic_vector(s_axis_in_dat_tdata'RANGE);
 	signal bypass2_tlast   : std_logic;
-	signal bypass2_tuser   : std_logic_vector(3 downto 0);
+	signal bypass2_tuser   : std_logic_vector(FUNCGEN_TUSER_BITS_PER_WORD-1 downto 0);
     attribute shreg_extract of bypass2_tdata, bypass2_tuser, bypass2_tvalid, bypass2_tlast : signal is "no";
 
 	signal fft_dout0_int, fft_dout1_int: std_logic_vector(FFT_BITS_PER_BIN-1 downto 0) := (others=>'0');
@@ -210,8 +212,9 @@ architecture Behavioral of FFT is
 	signal fft_overflow_d3a: std_logic_vector(1 downto 0) := (others=>'0'); -- temporary hack --fixme
 	-- signal fft_overflow: std_logic_vector(FFT_OVERFLOW_BITLENGTH-1 downto 0) := (others=>'0');
 	signal fft_overflow_sticky: std_logic;
-	signal fft_overflow_sticky_dly: std_logic;
-	signal fft_tuser: std_logic_vector(m_axis_out_dat_tuser'RANGE);
+	signal fft_rot_overflow_sticky: std_logic;
+	signal out_dat_pre_overflow_sticky: std_logic;
+	signal fft_tuser: std_logic_vector(FUNCGEN_TUSER_BITS_PER_WORD - 1 downto 0);
 	signal fft_tlast: std_logic;
 	signal fft_tvalid: std_logic;
 
@@ -393,6 +396,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
             fft_rot_tvalid <= fft_tvalid and fft_clk_en; -- The FFT outputs valid data only of the FFT is clocked AND the data has gone through the pipeline
             fft_rot_tlast  <= fft_tlast;
             fft_rot_tuser  <= fft_tuser;
+			fft_rot_overflow_sticky <= fft_overflow_sticky or overflow_force; -- incorporate last overflow
             for i in 0 to FFT_BINS_PER_WORD-1 loop
                 src_lane := (i + to_integer(word_ctr(i))) MOD FFT_BINS_PER_WORD when ROTATE_BINS else i;
                 fft_rot_tdata((i+1)*FFT_BITS_PER_BIN-1 downto i*FFT_BITS_PER_BIN) <= fft_tdata((src_lane+1)*FFT_BITS_PER_BIN -1 downto src_lane*FFT_BITS_PER_BIN);
@@ -406,7 +410,8 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 			m_axis_out_dat_tvalid <= out_dat_pre_tvalid;
 			m_axis_out_dat_tdata  <= out_dat_pre_tdata;
 			m_axis_out_dat_tlast  <= out_dat_pre_tlast;
-			m_axis_out_dat_tuser  <= out_dat_pre_tuser; -- overriden below - do not move down
+			m_axis_out_dat_tuser  <= (others => '0'); -- overriden below - do not move down
+			m_axis_out_dat_tuser(FUNCGEN_TUSER_BITS_PER_WORD-1 downto 0)  <= out_dat_pre_tuser; 
 
 			if IMPLEMENT_FFT=TRUE and bypass_fft='0' then -- if the FFT is being used
 				-- if the FFT module is present and it is not bypassed by software, pass the FFT output to the output
@@ -414,11 +419,9 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 				out_dat_pre_tlast  <= fft_rot_tlast;
 				out_dat_pre_tuser  <= fft_rot_tuser;
 				out_dat_pre_tdata  <= fft_rot_tdata;
-
-				-- Insert the FFT overflow flag in the next_to_last Serial flag bit
-				if fft_tlast='1' and fft_tvalid='1' and fft_clk_en='1' then
-					-- out_dat.TUSER(TUSER_SERIAL_FLAGS_BIT) <= fft_overflow_sticky or fft_overflow or overflow_force; -- add the FFT overflow flag, including the one on TLAST
-					m_axis_out_dat_tuser(TUSER_SERIAL_FLAGS_BIT) <= fft_overflow_sticky or overflow_force;
+				out_dat_pre_overflow_sticky <= fft_rot_overflow_sticky;
+				if out_dat_pre_tlast='1' and out_dat_pre_tvalid='1' then -- if out_data_pre_tvalid then fft_clk_en must also be true
+					m_axis_out_dat_tuser(FUNCGEN_TUSER_BITS_PER_WORD) <= out_dat_pre_overflow_sticky; -- set FFT overflow flag
 				end if;
 			else
 				-- otherwise, just pass the input to the output, adapting the data width.
@@ -430,6 +433,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 					-- Forward the adc word to the *upper* bits of the FFT output word
 					out_dat_pre_tdata((i+1)*FFT_BITS_PER_BIN/2-1 downto (i+1)*FFT_BITS_PER_BIN/2 - ADC_BITS_PER_SAMPLE) <= bypass2_tdata((i+1)*ADC_BITS_PER_SAMPLE -1 downto i*ADC_BITS_PER_SAMPLE);
 				end loop; -- if FFT is implemented
+
 
 			end if; -- bypass
 
@@ -566,12 +570,12 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 
 	--  sync_reset <= soft_reset;
 
-	flags_in(5)   <= fft_sync_in;
-	flags_in(4)   <= fft_in_TLAST;
-	flags_in(3 downto 0) <= fft_in_TUSER;
-	fft_sync_out2 <= flags_out(5); -- for validating proper delay adjustment; should align with fft_sync_out
-	fft_tlast     <= flags_out(4);
-	fft_tuser     <= flags_out(3 downto 0);
+	flags_in(FUNCGEN_TUSER_BITS_PER_WORD+1)   <= fft_sync_in;
+	flags_in(FUNCGEN_TUSER_BITS_PER_WORD)   <= fft_in_TLAST;
+	flags_in(FUNCGEN_TUSER_BITS_PER_WORD-1 downto 0) <= fft_in_TUSER;
+	fft_sync_out2 <= flags_out(FUNCGEN_TUSER_BITS_PER_WORD+1); -- for validating proper delay adjustment; should align with fft_sync_out
+	fft_tlast     <= flags_out(FUNCGEN_TUSER_BITS_PER_WORD);
+	fft_tuser     <= flags_out(FUNCGEN_TUSER_BITS_PER_WORD-1 downto 0);
 
 
 	-----------------------------------------------------------------------------------

@@ -275,7 +275,7 @@ sub_period <= unsigned(control_bytes(14)(4 downto 0)); -- Create additional capt
 -- control_bytes(11) used by capture_offset2
 
 -- STATUS Byte 0
-status_bytes(0)(7) <= in_dat_reg.TUSER(TUSER_CAPTURE_BIT); -- for debugging
+-- status_bytes(0)(7) <= in_dat_reg.TUSER(TUSER_CAPTURE_BIT); -- for debugging
 status_bytes(0)(6) <= inhibit_data; -- for debugging
 status_bytes(0)(5) <= current_source(0);
 status_bytes(0)(4) <= data_fifo_empty; -- for debugging
@@ -466,8 +466,8 @@ fifo_write_proc: process(in_clk)
                 -- Keep track of the serial flags provided with each incoming
                 -- word. We put those in N-bit shift register, so we can have
                 -- access to the last N flags of the frame.
-                serial_flags(2 downto 1) <= serial_flags(1 downto 0);
-                serial_flags(0) <= in_dat(source).TUSER(TUSER_SERIAL_FLAGS_BIT);
+                --serial_flags(2 downto 1) <= serial_flags(1 downto 0);
+                -- serial_flags(0) <= in_dat(source).TUSER(TUSER_SERIAL_FLAGS_BIT);
 
                 -- -------------------------------------------
                 -- Cumulate user flags
@@ -485,10 +485,10 @@ fifo_write_proc: process(in_clk)
                     frame_header.PROBE_ID := X"A0";
                     frame_header.PROBE_ID(0) := current_source(0);
                     frame_header.STREAM_ID := stream_id;
-                    frame_header.SERIAL_FLAGS := serial_flags(2 downto 0) & in_dat(source).TUSER(TUSER_SERIAL_FLAGS_BIT);
+                    frame_header.SERIAL_FLAGS :=  '0' & in_dat(source).TUSER(TUSER_GAINBANK_BIT downto 0); -- capture serial flags (gain bank, adc overflow, fft overflow on last word
                     frame_header.FLAGS := frame_flags or in_dat(source).TUSER;
                     -- Override the capture flag withthe overflow flags so we know  from the packet header if somewhing is amiss with the stream
-                    frame_header.FLAGS(TUSER_CAPTURE_BIT) := data_fifo_overflow_sticky or header_fifo_overflow_sticky;
+                    -- frame_header.FLAGS(TUSER_CAPTURE_BIT) := data_fifo_overflow_sticky or header_fifo_overflow_sticky;
                     frame_header.TIMESTAMP := std_logic_vector(frame_ctr(source));
                     -- Store the header into an adday of bytes for insertion into the FIFO
                     frame_header_bytes <= struct_to_bytes(frame_header);
