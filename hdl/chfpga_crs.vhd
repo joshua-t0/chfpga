@@ -80,10 +80,9 @@ entity chfpga_crs is
 
 		-- Real-time data offload links configuration
 		GPU_LINK_TYPE: string          := CONFIG_GPU_LINK_TYPE; --
-		--NUMBER_OF_GPU_LINKS: integer   := CONFIG_NUMBER_OF_GPU_LINKS; -- (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
-		--NUMBER_OF_GPU_REFCLKS: integer := CONFIG_NUMBER_OF_GPU_REFCLKS; -- Number of Reference clocks provided for the 10GE links to the GPU
-        NUMBER_OF_GPU_LINKS: integer                 := GPU_CHANNEL_QUAD'LENGTH; -- (derived)  (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
-        NUMBER_OF_GPU_REFCLKS: integer               := max(GPU_QUAD_REFCLK)+1; -- (derived) Number of Reference clocks provided for the 10GE links to the GPU
+		GPU_CHANNEL_QUAD: integer_array := (0 to 3=> 0);; -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if GPU_LINK_TYPE is NONE
+		GPU_QUAD_REFCLK: integer_array := (0 to 0=>0); -- Both QUAD0 and QUAD1 use refclk(0)
+
 
 		-- Peripheral config
 		BLINKER_PRESENT: boolean     := TRUE; -- Indicates if the LED flasher is to be implemented by setting the DUMMY flag of the BLINKER module
@@ -91,7 +90,14 @@ entity chfpga_crs is
 		NUMBER_OF_SPI_PORTS: integer := 0; -- One port for each FMC
 		IMPLEMENT_ARM_SPI: boolean   := FALSE;
 		IMPLEMEMT_LCD: boolean       := TRUE; -- OLED display clock select & clock line
-		SIM: boolean                 := FALSE -- Indicates this is running as a simulation. Used to accelerate simulations
+		SIM: boolean                 := FALSE; -- Indicates this is running as a simulation. Used to accelerate simulations
+
+		-- Derived parameters
+
+		NUMBER_OF_GPU_LINKS: integer                 := sel(GPU_LINK_TYPE /= "NONE", GPU_CHANNEL_QUAD'LENGTH, 0); -- Number of 100Gb Ethernet links. 0 if if GPU_LINK_TYPE is "NONE"
+		NUMBER_OF_GPU_REFCLKS: integer               := max(GPU_QUAD_REFCLK)+1 -- Number of Reference clocks provided for the 100GE links.
+
+
 	);
 	port (
 		-- Copy of the 10 MHz SMA reference clock that feeds the programmable PLL
@@ -830,10 +836,10 @@ begin
 			-- Real time Ethernet data streaming interface
 
 			GPU_LINK_TYPE         => GPU_LINK_TYPE,
-			--NUMBER_OF_GPU_LINKS   => NUMBER_OF_GPU_LINKS,
-			--NUMBER_OF_GPU_REFCLKS => NUMBER_OF_GPU_REFCLKS,
+			GPU_CHANNEL_QUAD                => integerarray(GPU_CHANNEL_QUAD),
+			GPU_QUAD_REFCLK                 => integerarray(GPU_QUAD_REFCLK),
 
-			-- Correlator config
+			-- Correlator
 			CORR_TYPE             => CORR_TYPE,
 			NUMBER_OF_CORRELATORS => NUMBER_OF_CORRELATORS,
 
