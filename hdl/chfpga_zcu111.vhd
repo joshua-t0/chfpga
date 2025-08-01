@@ -66,8 +66,8 @@ entity chfpga_zcu111 is
 
         -- Real-time data offload links configuration
         GPU_LINK_TYPE: string                        := CONFIG_GPU_LINK_TYPE;
-        NUMBER_OF_GPU_LINKS: integer                 := CONFIG_NUMBER_OF_GPU_LINKS; -- (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
-        NUMBER_OF_GPU_REFCLKS: integer               := CONFIG_NUMBER_OF_GPU_REFCLKS; -- Number of Reference clocks provided for the 10GE links to the GPU
+        --NUMBER_OF_GPU_LINKS: integer                 := CONFIG_NUMBER_OF_GPU_LINKS; -- (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
+        --NUMBER_OF_GPU_REFCLKS: integer               := CONFIG_NUMBER_OF_GPU_REFCLKS; -- Number of Reference clocks provided for the 10GE links to the GPU
 
         -- Peripheral config
         BLINKER_PRESENT: boolean                     := TRUE; -- Indicates if the LED flasher is to be implemented by setting the DUMMY flag of the BLINKER module

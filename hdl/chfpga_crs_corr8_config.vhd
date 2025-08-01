@@ -9,7 +9,7 @@ package chfpga_config is
 
 	constant CONFIG_NUMBER_OF_ADCS: integer := 8; -- Number of ADC inputs that are connected
 
-	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean := TRUE;
+	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean := FALSE;
 	constant CONFIG_CHAN_FFT_TYPE: integer := FFT_TYPE_CHORD; -- 14 bit samples, 8 samples/word, 16384 samples/frame, 32+32 bit output
     --constant CONFIG_FFT_BITS_PER_BIN: integer := 32+32; -- total width ( Re +Im) width of fft output. Typically 18+18 with shift schedule, or 32+32 with bit growth on CRS
 	--constant CONFIG_FFT_CTR_WIDTH: integer := 14; -- CHIME: 12, D3A/CHORD: 13. Number of bits of the delay line. Max delay = 2^CONFIG_FFT_CTR_WIDTH
@@ -45,8 +45,8 @@ package chfpga_config is
 
     -- 10/100G Ethernet Real-time data offload links configuration
     constant CONFIG_GPU_LINK_TYPE: string := "NONE";
-	constant CONFIG_NUMBER_OF_GPU_LINKS: integer                 := 0; -- Number of 10G or 100G Ethernet lanes to connecto to the GPUs (one QSFP is 4 lanes)
-	constant CONFIG_NUMBER_OF_GPU_REFCLKS: integer               := 1; -- Number of Reference clocks provided for the 10GE/100GE transmitter
+	constant CONFIG_GPU_LINK_TO_QUAD_MAP: integer_array(0 to -1) := (0 to 3=> 0); -- null range, no GTY
+	constant CONFIG_GPU_QUAD_TO_REFCLK_MAP: integer_array := (0 => 0); -- one reference clock
 
 
 

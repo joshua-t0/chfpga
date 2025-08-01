@@ -4,7 +4,7 @@
 --
 -- Create Date:    2012-03-28
 -- Design Name:    chFPGA
--- Module Name:    I2C - Behavioral
+-- Module Name:    I2C - impl
 -- Project Name: CHIME, CHORD etc.
 -- Target Devices: Virtex 6, Kintex 7, Ultrascale+
 -- Tool versions: ISE 13.4 ... Vivado 2022.2

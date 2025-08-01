@@ -1,6 +1,6 @@
-.. _chFPGA_MGK7MB_Rev2:
+.. _chfpga_ice:
 
-:entity:`chFPGA_MGK7MB_Rev2` (`chfpga_mgk7mb_rev2.vhd`)
+:entity:`chfpga_ice` (`chfpga_ice.vhd`)
 *******************************************************
 
 
@@ -25,8 +25,8 @@ The wrapper hard-codes the following parameters that are specific to the IceBoar
 Entity definition
 =================
 
-.. parse:: hdl/chfpga_mgk7mb_rev2.vhd
+.. parse:: hdl/chfpga_ice.vhd
 
-.. autoentity:: chFPGA_MGK7MB_Rev2
+.. autoentity:: chfpga_ice
 
 

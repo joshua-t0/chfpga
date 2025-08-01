@@ -1,6 +1,9 @@
-********************
+*****************
+IceBoard (MGK7MB)
+*****************
+
 Hardware Description
-********************
+====================
 
 The IceBoard is a Kintex-7-based FPGA motherboard designed by McGill Cosmology Instrumentation Laboratory. The board is optimized to be used in arrays requiring the processing of large number of analog signals.  The board provides the following capabilities:
 
@@ -17,19 +20,91 @@ The IceBoard is a Kintex-7-based FPGA motherboard designed by McGill Cosmology I
 Detailed description of the IceBoard hardware can be fount at https://winterlandcosmology.bitbucket.io/iceboard-docs/
 
 
-Platform wrapper
-================
+Platform wrapper: *chfpga_ice.vhd*
+==================================
 
-The platform wrapper for implementing `chFPGA` on the IceBoard platform is :ref:`chFPGA_MGK7MB_Rev2`.
+The platform-specific wrapper implements the `chFPGA` firmware on the IceBoard platform with the firmware capabilities defined in the `chfpga_config` package.
 
 
-Configurations
-==============
+Hardware-specific configuration
+-------------------------------
 
-There are currently two firmware configurations for the IceBoard platform:
+The wrapper hard-codes the following parameters that are specific to the IceBoard platform:
 
-	- :ref:`Corner turn <chfpga_mgk7mb_ct_config>` (``ct`` suffix), which includes the multi-board corner-turn and real time streaming, and is used by CHIME and HIRAX, both of whuch have an external X-Engine
-	- :ref:`Correlator <chfpga_mgk7mb_corr_config>` (``corr`` suffix), which includes 16-channel N^2 correlator, used for standalone operations
+- PLATFORM_ID = PLATFORM_ID_MGK7MB
+- Clocking
+
+   - System reference clock is the 125 MHz clock provided as the SFP reference clock
+   - Channelizer clock is a 200 MHz multiphase clock produced by a MMCM fed either by the 200 MHz system clock or the adc clock (software selectable)
+   - Corner-turn operates on the backplane transmitter clock ``BP_SHUFFLE_TXCLK``
+
+- ADCs:
+   - Supports two ADC FMC mezzanines
+
+- BSB interface
+
+   - BSB bus is  connected to the 1 Gb Ethernet UDP/MAC that interfaces the SFP port using a SGMII interface (serial interface implemented using the gigabit transceiver)
+
+Entity definition
+-----------------
+
+.. parse:: hdl/chfpga_ice.vhd
+
+.. autoentity:: chfpga_ice
+
+
+Firmware configurations
+=======================
+
+The platform wrapper take the constants defined in the package `chfpga_config`  and passes them to the `chFPGA` module instance in order to define the firmware capabilities. This section lists the firmware configurations that are currently implemented on IceBoard platform. Each of these files define the ``chfpga_config`` package, and the project must include one of those files to determine firmware capabilities of the build.
+
+Corner-turn: *chfpga_ice_ct_config.vhd*
+---------------------------------------
+
+The file `chfpga_ice_ct_config.vhd` defines the package `chfpga_config` that provides the constants used to configure the `chFPGA` firmware for correlator operations on the IceBoard platform.
+
+This configuration includes:
+
+- F-Engine
+
+   - 16 Channelizers
+   - FFT: 8-bit, 2048 sample CASPER FFT with (18+18) bits complex values and programmable bitshift, with sample rotation
+   - SCALER: Use floating point gains
+   - PROBER: Use distributed (per channelizer) data capture module
+
+- Corner-turn Engine
+
+   - BCT-type corner-turn with 3 stages (3 crossbars + GTY data shuffling links between each crossbars).
+   - Allows data shuffling within the board, between boards in a crate and between boards between two crates
+
+- X-Engine
+
+   + Disabled
+
+
+- Real-time data offload
+
+   - 8x10G Ethernet real-time data offload of corner-turned channelized data
+
+
+16-channel single-board correlator: *chfpga_ice_corr16_config.vhd*
+------------------------------------------------------------------
+
+The file `chfpga_ice_corr16_config.vhd` defines the package `chfpga_config` that provides the constants used to configure the `chFPGA` firmware for correlator operations on the IceBoard platform.
+
+This configuration includes:
+
+- Data acquisition from the two MGADC08 FMC ADC mezzanine
+- 16 Channelizers
+- 16-input N^2 correlator
+
+Package definition
+=================
+
+.. parse:: hdl/chfpga_ice_corr16.vhd
+
+	- :ref:`Corner turn <ice_ct_config>` (``ct`` suffix), which includes the multi-board corner-turn and real time streaming, and is used by CHIME and HIRAX, both of whuch have an external X-Engine
+	- :ref:`Correlator <ice_corr16_config>` (``corr16`` suffix), which includes 16-channel N^2 correlator, used for standalone operations
 
 Floorplanning
 =============

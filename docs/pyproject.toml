@@ -19,6 +19,7 @@
         "sphinx",
         "sphinx_rtd_theme",
         "sphinxcontrib.restbuilder",  # used for debugging output
+        "gitpython",
         "vhdl_sphinx_domain @ git+https://github.com/jfcliche/vhdl-sphinx-domain.git"
         ]
 
