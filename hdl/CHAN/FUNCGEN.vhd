@@ -364,6 +364,9 @@ end generate;
 lsfr_in <= (byte_a & byte_b & not byte_a & not byte_b);
 --Instantiate LFSR used as a noise generator. Seed is 32 bit and output is the size of a word
 lfsr: entity work.lfsr
+    generic map (
+        DATA_WIDTH => ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPLE
+        )
     port map(
         seed => lsfr_in,
         output => lfsr_out,
@@ -380,7 +383,7 @@ lfsr: entity work.lfsr
 
 -- Set TUSER
 out_dat_tuser <= (
-    TUSER_ADC_OVERFLOW_BIT => adc_overflow_flag,
+    TUSER_ADC_OVERFLOW_BIT => overflow_flag,
     others => '0'
     );
 
