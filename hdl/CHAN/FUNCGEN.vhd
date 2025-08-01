@@ -257,7 +257,7 @@ begin
 -- |         |  4  |  7:0 | byte_c               | Byte C, used as parameters in some functions |
 -- |         |  5  |  7:4 | ram_page[6:3]        | MSB of the RAM page number |
 -- |         |     |  3:0 | shift                | Number of bits to right-shift the output data |
--- |         |  6  |  7   | stats_reset          | Clears the ADC overflow counter |
+-- |         |  6  |  7   | reset_stats          | Clears the ADC overflow counter |
 -- |         |     |  6   | rst_lfsr             | Resets seed and output of LFSR |
 -- |         |     |  5:4 | (unused)             |   |
 -- |         |     |  3:0 | clip_width           | Saturates the output data to a ``clip_width-1``-bit wide signed value (i.e. clip_width is the position of the sign bit). Saturation is applied after the right-shift. |
@@ -467,18 +467,19 @@ funcgen_proc: process (clk)
                 capture_flag <= trig_reg;
             end if;
 
+            if in_dat_tvalid='1' then
+                -- Cumulate the overflow flags until the end of the frame so the last word indicates if there was an overflow anywhere in the frame.
+                if adc_tfirst='1' then
+                    overflow_flag <= or_reduce(out_dat_tuser);
+                else
+                    overflow_flag <= overflow_flag or or_reduce(out_dat_tuser);
+                end if;
+            end if; -- if TVALID
+
             -- Set TDATA
             case fn_sel is
 
                 when FN_ADC =>
-                    if in_dat_tvalid='1' then
-                        -- Cumulate the overflow flags until the end of the frame so the last word indicates if there was an overflow anywhere in the frame.
-                        if adc_tfirst='1' then
-                            overflow_flag <= or_reduce(out_dat_tuser);
-                        else
-                            overflow_flag <= overflow_flag or or_reduce(out_dat_tuser);
-                        end if;
-                    end if; -- if TVALID
                     out_dat_tdata <= in_dat_tdata;
                     out_dat_tvalid <= in_dat_tvalid;
                     out_dat_tlast <= in_dat_tlast;
@@ -555,6 +556,8 @@ funcgen_proc: process (clk)
                 ramp_tfirst <= '1';
                 trig_reg <= '0';
                 capture_flag <= '0';
+                overflow_ctr <= (others=>'0');
+                
             end if; -- reset_all
 
             if reset_all_reg='1' then
