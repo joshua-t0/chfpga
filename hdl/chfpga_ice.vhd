@@ -139,8 +139,8 @@ entity chfpga_ice is
 			-- Real-time data offload links
 
 			GPU_LINK_TYPE : string := CONFIG_GPU_LINK_TYPE;
-			GPU_CHANNEL_QUAD: integer_array := CONFIG_GPU_LINK_TO_QUAD_MAP; -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1
-			GPU_QUAD_REFCLK: integer_array := CONFIG_GPU_QUAD_TO_REFCLK_MAP; -- Both QUAD0 and QUAD1 use refclk(0)
+			GPU_CHANNEL_QUAD: integer_array := (0 to 3=> 0, 4 to 7=> 1); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if GPU_LINK_TYPE is NONE
+			GPU_QUAD_REFCLK: integer_array := (0 to 1=>0); -- Both QUAD0 and QUAD1 use refclk(0)
 
 			-- Peripherals
 
