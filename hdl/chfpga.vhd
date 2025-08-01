@@ -166,7 +166,7 @@ entity chFPGA is
 		GPU_CHANNEL_QUAD: IntegerArray := (0 => 0);
 		GPU_QUAD_REFCLK: IntegerArray  := (0 => 0);
 
-		NUMBER_OF_GPU_LINKS: integer   := GPU_CHANNEL_QUAD'LENGTH;
+		NUMBER_OF_GPU_LINKS: integer   := sel(GPU_LINK_TYPE /= "NONE", GPU_CHANNEL_QUAD'LENGTH, 0); -- prevent synth crash?
 		NUMBER_OF_GPU_REFCLKS: integer := max(GPU_QUAD_REFCLK)+1;
 
 		-- Peripheral configuration
