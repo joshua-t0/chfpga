@@ -162,11 +162,12 @@ entity chFPGA is
 
 		GPU_LINK_TYPE: string; -- "NONE", "10G", "100G"
 
-		NUMBER_OF_GPU_LINKS: integer   := GLOBAL_NUMBER_OF_GPU_LINKS;
-		NUMBER_OF_GPU_REFCLKS: integer := GLOBAL_NUMBER_OF_GPU_REFCLKS;
 
 		GPU_CHANNEL_QUAD: IntegerArray := (0 => 0);
 		GPU_QUAD_REFCLK: IntegerArray  := (0 => 0);
+
+		NUMBER_OF_GPU_LINKS: integer   := GPU_CHANNEL_QUAD'LENGTH;
+		NUMBER_OF_GPU_REFCLKS: integer := max(GPU_QUAD_REFCLK)+1;
 
 		-- Peripheral configuration
 
