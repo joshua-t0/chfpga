@@ -49,12 +49,8 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --
 --
 -- The output of FUNCGEN is also a non-blocking AXI4-Streaming bus and has the same structure as the input, except for the ``TUSER`` signal.
--- ``TUSER`` is a 4-bit vector containing the following information:
---
---   - Bit 0: (TUSER_CAPTURE_BIT): Passed downstream to indicate to the PROBER that the data should be captured if continuous capture  mode is enabled
---   - Bit 1: Unused (set to zero)
---   - Bit 2: Unused (set to zero)
---   - Bit 3: (TUSER_ADC_OVERFLOW_BIT): Set on the last word of a frame (i.e. valid only when TLAST=1) to indicate if an ADC saturation has occured on any sample of the frame.
+-- ``TUSER`` is a 1-bit vector containing the following information:
+--   - Bit 0: (TUSER_ADC_OVERFLOW_BIT): Set on the last word of a frame (i.e. valid only when TLAST=1) to indicate if an ADC saturation has occured on any sample of the frame.
 --
 -- Operation modes
 -- ---------------
@@ -63,7 +59,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --  - 0 / FN_ADC: Passes on the ADC input. The ADC overflow bits are aggregated througout the frame
 --    and the resulting TUSER_ADC_OVERFLOW_BIT TUSER but is provided on the last frame.
 --
---  - 1 / FN_RAM: Outputs the RAM contents (2048 bytes, 512 words). TUSER_ADC_OVERFLOW_BIT is always zero.
+--  - 1 / FN_RAM: Outputs the RAM contents (2048 bytes, 512 words). TUSER_ADC_OVERFLOW_BIT is set by the LSB of byte A.
 --
 --  - 2 / FN_NOISE: Outputs Pseudo-Random noise. TUSER_ADC_OVERFLOW_BIT is always zero. The noise
 --    generator is seeeded by the 8-bit A and B fields to allow each channelizer to have up to 65536
@@ -374,7 +370,7 @@ crc32: entity work.xglink_crc32_32
 
 -- Set TUSER
 out_dat_tuser <= (
-    TUSER_ADC_OVERFLOW_BIT => adc_overflow_flag,
+    TUSER_ADC_OVERFLOW_BIT => adc_overflow_flag and out_dat_tlast, -- only assert overflow flag on last word of frame
     others => '0'
     );
 
