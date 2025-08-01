@@ -141,8 +141,8 @@ entity chfpga_ice is
 			GPU_LINK_TYPE : string := CONFIG_GPU_LINK_TYPE;
 			GPU_CHANNEL_QUAD: integer_array := CONFIG_GPU_LINK_TO_QUAD_MAP; -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1
 			GPU_QUAD_REFCLK: integer_array := CONFIG_GPU_QUAD_TO_REFCLK_MAP; -- Both QUAD0 and QUAD1 use refclk(0)
-			NUMBER_OF_GPU_LINKS: integer                 := GPU_CHANNEL_QUAD'LENGTH; -- (derived)  (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
-			NUMBER_OF_GPU_REFCLKS: integer               := max(GPU_QUAD_REFCLK)+1; -- (derived) Number of Reference clocks provided for the 10GE links to the GPU
+			NUMBER_OF_GPU_LINKS: integer                 := 0; -- GPU_CHANNEL_QUAD'LENGTH; -- (derived)  (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
+			NUMBER_OF_GPU_REFCLKS: integer               := GLOBAL_NUMBER_OF_GPU_REFCLKS; -- max(GPU_QUAD_REFCLK)+1; -- (derived) Number of Reference clocks provided for the 10GE links to the GPU
 
 			-- Peripherals
 
@@ -996,6 +996,10 @@ bufr_rawclk10 : BUFR
 
 			NUMBER_OF_CROSSBAR_INPUTS       => NUMBER_OF_CROSSBAR_INPUTS,
 			NUMBER_OF_CROSSBAR1_OUTPUTS     => NUMBER_OF_CROSSBAR_OUTPUTS,
+
+			-- debug - reinserted this - elab crash
+			NUMBER_OF_GPU_LINKS             => NUMBER_OF_GPU_LINKS,
+			NUMBER_OF_GPU_REFCLKS           => NUMBER_OF_GPU_REFCLKS,
 			--NUMBER_OF_GPU_LINKS             => NUMBER_OF_GPU_LINKS,
 			--NUMBER_OF_GPU_REFCLKS           => NUMBER_OF_GPU_REFCLKS,
 			NUMBER_OF_BP_PCB_SHUFFLE_LANES  => NUMBER_OF_BP_PCB_SHUFFLE_LANES,
