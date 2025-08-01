@@ -41,9 +41,9 @@ entity bct_engine is
 		PLATFORM_ID: integer; -- necessary to select the proper FIFOs
 		NUMBER_OF_INPUT_LANES: integer := 16; -- Number of channelizer inputs
 		BINS_PER_INPUT_WORD: integer   := 2;
-		BITS_PER_INPUT_BIN: integer := 8+8;
+		BITS_PER_INPUT_BIN: integer    := 8 + 8;
 
-		INPUT_LANE_WIDTH: integer      := BINS_PER_INPUT_WORD * BITS_PER_INPUT_BIN; -- width of the scaler output word
+		INPUT_LANE_WIDTH: integer := BINS_PER_INPUT_WORD * BITS_PER_INPUT_BIN; -- width of the scaler output word
 
 		-- Corner-turning level:
 		-- - 1: single-board (local) only (no backplane),
@@ -64,11 +64,11 @@ entity bct_engine is
 
 
 		-- Derived parameters
-		INPUT_WORD_WIDTH: integer := NUMBER_OF_INPUT_LANES * INPUT_LANE_WIDTH;
-		BITS_PER_OUTPUT_BIN: integer := BITS_PER_INPUT_BIN/2; -- BCT outputs 4+4 bits data
---		OUTPUT_LANE_WIDTH: integer           := OUTPUT_WORD_WIDTH/;
---		NUMBER_OF_OUTPUT_LANES: integer      := 8; -- Number of output streams
-		OUTPUT_WORD_WIDTH: integer           := INPUT_WORD_WIDTH * BITS_PER_OUTPUT_BIN/BITS_PER_INPUT_BIN;  -- The CT preserves the data rate unless bits/bin is modified
+		INPUT_WORD_WIDTH: integer    := NUMBER_OF_INPUT_LANES * INPUT_LANE_WIDTH;
+		BITS_PER_OUTPUT_BIN: integer := BITS_PER_INPUT_BIN / 2; -- BCT outputs 4+4 bits data
+		--    OUTPUT_LANE_WIDTH: integer           := OUTPUT_WORD_WIDTH/;
+		--    NUMBER_OF_OUTPUT_LANES: integer      := 8; -- Number of output streams
+		OUTPUT_WORD_WIDTH: integer           := INPUT_WORD_WIDTH * BITS_PER_OUTPUT_BIN / BITS_PER_INPUT_BIN;  -- The CT preserves the data rate unless bits/bin is modified
 		NUMBER_OF_LINKS: integer             := max(LANE_TO_LINK_MAP) + 1; --  Number of physical data links (GTYs) - Do not override
 		NUMBER_OF_REFCLK: integer            := max(QUAD_TO_REFCLK_MAP) + 1; -- Number of reference clocks - Do not override
 		NUMBER_OF_CROSSBAR1_OUTPUTS: integer := 16;
@@ -126,21 +126,26 @@ end entity bct_engine;
 
 architecture impl of bct_engine is
 
-        function indices_of(vin: integer_array; target: integer) return integer_array is
-            variable vout: integer_array(0 to vin'LENGTH);
-            variable n: integer; -- number of matches
-        begin
+	function indices_of(vin: integer_array; target: integer) return integer_array is
+
+		variable vout: integer_array(0 to vin'LENGTH);
+		variable n: integer; -- number of matches
+
+	begin
+
             n := 0;
-            for j in vin'RANGE loop
-                if 	vin(j) = target then
+		for j in vin'RANGE loop
+			if   vin(j) = target then
                     vout(n) := j;
-                    n := n + 1;
-                end if;
-            end loop;
-            return vout(0 to n-1);
-        end function;
-  
-  
+                    n       := n + 1;
+			end if;
+		end loop;
+
+		return vout(0 to n - 1);
+
+	end function indices_of;
+
+
 	-- Attribute definitions
 
 	attribute KEEP: string;
@@ -157,11 +162,10 @@ architecture impl of bct_engine is
 	constant BSB_ROUTER_PORTS: integer := 4; -- Total number of router output ports.
 
 
-
 	constant NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer := count(LANE_TO_GROUP_MAP, 0);
 	constant NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer := count(LANE_TO_GROUP_MAP, 1);
-    constant NUMBER_OF_SHUFFLE_LANES: integer := LANE_TO_LINK_MAP'LENGTH;
-    
+	constant NUMBER_OF_SHUFFLE_LANES: integer := LANE_TO_LINK_MAP'LENGTH;
+
 	constant NUMBER_OF_GPU_LINKS: integer := NUMBER_OF_BP_QSFP_SHUFFLE_LANES;
 	constant NUMBER_OF_OUT_LANES: integer := NUMBER_OF_GPU_LINKS;
 
@@ -181,8 +185,6 @@ architecture impl of bct_engine is
 	signal bsb_router_rply_rdy: AXIS8_RDY_STRUCT_ARRAY(0 to BSB_ROUTER_PORTS - 1);
 
 
-
-
 	--    signal bp_shuffle_out_tdata64: slv64_array(0 to NUMBER_OF_LANES-1);
 	-- signal bp_shuffle_out_tuser: slv4_array(0 to NUMBER_OF_LANES-1);
 	-- signal bp_shuffle_out_tready: slv(0 to NUMBER_OF_LANES-1);
@@ -190,79 +192,79 @@ architecture impl of bct_engine is
 
 
 	-- unused ?
---	signal s_axis_tfirst: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal s_axis_tfirst: slv(0 to NUMBER_OF_INPUT_LANES - 1);
 
---	signal m_axis_tvalid_int: slv(0 to NUMBER_OF_OUTPUT_LANES - 1);
---	signal m_axis_tdata_int: slv32_array(0 to NUMBER_OF_OUTPUT_LANES - 1);
---	signal m_axis_tlast_int: slv(0 to NUMBER_OF_OUTPUT_LANES - 1);
---	signal m_axis_terror_int: slv(0 to NUMBER_OF_OUTPUT_LANES - 1);
+	--  signal m_axis_tvalid_int: slv(0 to NUMBER_OF_OUTPUT_LANES - 1);
+	--  signal m_axis_tdata_int: slv32_array(0 to NUMBER_OF_OUTPUT_LANES - 1);
+	--  signal m_axis_tlast_int: slv(0 to NUMBER_OF_OUTPUT_LANES - 1);
+	--  signal m_axis_terror_int: slv(0 to NUMBER_OF_OUTPUT_LANES - 1);
 
 	-- Internal AXI-Streaming buses
 
---	signal m_axis_fifo_tvalid: slv(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal m_axis_fifo_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal m_axis_fifo_tlast: slv(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal m_axis_fifo_tuser: slv4_array(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal m_axis_fifo_tready: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal m_axis_fifo_tvalid: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal m_axis_fifo_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal m_axis_fifo_tlast: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal m_axis_fifo_tuser: slv4_array(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal m_axis_fifo_tready: slv(0 to NUMBER_OF_INPUT_LANES - 1);
 	-- signal frame_clk:slv (0 to NUMBER_OF_INPUT_LANES-1);
 
---	signal m_axis_align_tvalid: slv(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal m_axis_align_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal m_axis_align_tlast: slv(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal m_axis_align_tuser: slv4_array(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal m_axis_align_global_tvalid: std_logic;
---	signal m_axis_align_global_tlast: std_logic;
+	--  signal m_axis_align_tvalid: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal m_axis_align_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal m_axis_align_tlast: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal m_axis_align_tuser: slv4_array(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal m_axis_align_global_tvalid: std_logic;
+	--  signal m_axis_align_global_tlast: std_logic;
 
---	signal m_axis_remap_tvalid: slv(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal m_axis_remap_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal m_axis_remap_tlast: slv(0 to NUMBER_OF_INPUT_LANES - 1);
---	-- signal m_axis_remap_tuser: slv4_array(0 to NUMBER_OF_INPUT_LANES-1);
---	signal m_axis_remap_global_tvalid: std_logic;
---	signal m_axis_remap_global_tlast: std_logic;
+	--  signal m_axis_remap_tvalid: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal m_axis_remap_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal m_axis_remap_tlast: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  -- signal m_axis_remap_tuser: slv4_array(0 to NUMBER_OF_INPUT_LANES-1);
+	--  signal m_axis_remap_global_tvalid: std_logic;
+	--  signal m_axis_remap_global_tlast: std_logic;
 
---	signal m_axis_remap_tvalid_reg: slv(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal m_axis_remap_tdata_reg: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal m_axis_remap_tlast_reg: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal m_axis_remap_tvalid_reg: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal m_axis_remap_tdata_reg: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal m_axis_remap_tlast_reg: slv(0 to NUMBER_OF_INPUT_LANES - 1);
 	-- signal m_axis_remap_tuser_reg: slv4_array(0 to NUMBER_OF_INPUT_LANES-1);
 
---	attribute shreg_extract of m_axis_remap_tvalid_reg: signal is "no";
---	attribute shreg_extract of m_axis_remap_tdata_reg: signal is "no";
---	attribute shreg_extract of m_axis_remap_tlast_reg: signal is "no";
+	--  attribute shreg_extract of m_axis_remap_tvalid_reg: signal is "no";
+	--  attribute shreg_extract of m_axis_remap_tdata_reg: signal is "no";
+	--  attribute shreg_extract of m_axis_remap_tlast_reg: signal is "no";
 
 
---	signal input_frame_ctr: u8_array(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal align_frame_ctr: u8_array(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal output_frame_ctr: u8_array(0 to NUMBER_OF_OUTPUT_LANES - 1);
---	signal packet_error_ctr: u16_array(0 to NUMBER_OF_OUTPUT_LANES - 1);
+	--  signal input_frame_ctr: u8_array(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal align_frame_ctr: u8_array(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal output_frame_ctr: u8_array(0 to NUMBER_OF_OUTPUT_LANES - 1);
+	--  signal packet_error_ctr: u16_array(0 to NUMBER_OF_OUTPUT_LANES - 1);
 	-- signal enable_fifo_frame_detection: std_logic;
 	-- signal enable_align_frame_detection: std_logic;
 	-- signal enable_remap_frame_detection: std_logic;
 	-- signal enable_output_frame_detection: std_logic;
 
---	signal lane_monitor: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal lane_monitor_sel: unsigned(3 downto 0);
---	signal lane_monitor_reset: std_logic;
---	signal input_frame_detection: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
---	-- signal fifo_frame_detection:  std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
---	signal align_frame_detection: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal remap_frame_detection: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
-----	signal output_frame_detection: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES - 1);
---	signal align_fifo_overflow: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal align_fifo_overflow_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal missing_frame: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal missing_frame_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal discarded_data: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal discarded_data_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal bad_lane_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
---	signal bad_eof_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal lane_monitor: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal lane_monitor_sel: unsigned(3 downto 0);
+	--  signal lane_monitor_reset: std_logic;
+	--  signal input_frame_detection: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  -- signal fifo_frame_detection:  std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
+	--  signal align_frame_detection: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal remap_frame_detection: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
+	----  signal output_frame_detection: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES - 1);
+	--  signal align_fifo_overflow: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal align_fifo_overflow_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal missing_frame: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal missing_frame_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal discarded_data: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal discarded_data_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal bad_lane_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
+	--  signal bad_eof_sticky: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 
---	signal frame_clk_sel: std_logic;
---	signal align_reset: std_logic;
---	signal remap_reset: std_logic;
---	signal clk_ctr: unsigned(7 downto 0);
---	-- signal frame_clk_ctr: unsigned(7 downto 0);
---	-- signal frame_clk_dly: std_logic;
---	signal align_reset_all: std_logic;
+	--  signal frame_clk_sel: std_logic;
+	--  signal align_reset: std_logic;
+	--  signal remap_reset: std_logic;
+	--  signal clk_ctr: unsigned(7 downto 0);
+	--  -- signal frame_clk_ctr: unsigned(7 downto 0);
+	--  -- signal frame_clk_dly: std_logic;
+	--  signal align_reset_all: std_logic;
 
 	--- Define Control word and its signals
 	-- signal CONTROL_BYTES: slv8_array(0 to (2 + (NUMBER_OF_INPUT_LANES+1)/2 + 2)); -- default value set in the CMD_SLAVE
@@ -279,12 +281,12 @@ architecture impl of bct_engine is
 
 	-- signal delay_capture_word_ctr: u16_array(0 to 1);
 	-- signal delay_capture_word_ctr_en: std_logic_vector(0 to 1);
---	signal delay_capture_word_ctr: unsigned(15 downto 0);
---	signal delay_capture_word_ctr_en: std_logic;
---	signal delay_capture_word_ctr_arm: std_logic;
+	--  signal delay_capture_word_ctr: unsigned(15 downto 0);
+	--  signal delay_capture_word_ctr_en: std_logic;
+	--  signal delay_capture_word_ctr_arm: std_logic;
 
---	signal delay_capture_ref_word_ctr: unsigned(15 downto 0);
---	signal delay_capture_ref_word_ctr_en: std_logic;
+	--  signal delay_capture_ref_word_ctr: unsigned(15 downto 0);
+	--  signal delay_capture_ref_word_ctr_en: std_logic;
 
 
 	signal control_bytes: slv8_array(0 to 0); -- default value set in the CMD_SLAVE
@@ -334,11 +336,11 @@ begin
 	---------------------------------------------------------------------
 
 	crossbar0_gen: if CT_LEVEL = 1 generate -- use hardwired crossbar
---		constant IN_BITS_PER_BIN: integer  := INPUT_LANE_WIDTH / BINS_PER_INPUT_WORD; -- 32/2 = 16
---		constant OUT_BITS_PER_BIN: integer := 4 + 4;
---		constant CT1_OUTPUT_LANES: integer := BINS_PER_INPUT_WORD;
-        constant NUMBER_OF_CB1_INPUT_LANES: integer := NUMBER_OF_INPUT_LANES;
-        constant CB1_INPUT_LANE_WIDTH: integer := INPUT_LANE_WIDTH;
+		--    constant IN_BITS_PER_BIN: integer  := INPUT_LANE_WIDTH / BINS_PER_INPUT_WORD; -- 32/2 = 16
+		--    constant OUT_BITS_PER_BIN: integer := 4 + 4;
+		--    constant CT1_OUTPUT_LANES: integer := BINS_PER_INPUT_WORD;
+		constant NUMBER_OF_CB1_INPUT_LANES: integer := NUMBER_OF_INPUT_LANES;
+		constant CB1_INPUT_LANE_WIDTH: integer := INPUT_LANE_WIDTH;
 
 		constant CT1_OUTPUT_LANE_WIDTH: integer   := BITS_PER_OUTPUT_BIN * NUMBER_OF_INPUT_LANES; -- 8*16 = 128 bits/bin
 
@@ -356,8 +358,10 @@ begin
 	begin
 		-- If we have CT_LEVEL=1, we perform a fixed wired internal corner-turn
 		process(all)
+
 			variable rchan, rbin: integer; -- reverse lane and bin numbers
 			variable in_lsb, out_lsb: integer;
+
 		begin
 			if rising_edge(clk) then
 				-- count CT1 input and output words
@@ -380,59 +384,58 @@ begin
 
 					for chan in 0 to NUMBER_OF_CB1_INPUT_LANES - 1 loop -- 0 to 7
 					   rchan := NUMBER_OF_CB1_INPUT_LANES - 1 - chan; -- reverse input channel,  7 to 0
-                       for i in 0 to 1 loop -- real, im
-    					   in_lsb := BITS_PER_INPUT_BIN * rbin + BITS_PER_INPUT_BIN/2*i;
-    					   out_lsb := CT1_OUTPUT_LANE_WIDTH * rbin + BITS_PER_OUTPUT_BIN * rchan + BITS_PER_OUTPUT_BIN/2 * i;
-	       				   m_axis_tdata(out_lsb + BITS_PER_OUTPUT_BIN/2 - 1 downto out_lsb) <= cb1_in_tdata(chan)(in_lsb+BITS_PER_INPUT_BIN/2-1 downto in_lsb+BITS_PER_INPUT_BIN/2-BITS_PER_OUTPUT_BIN/2); -- take MSBs
-					   end loop;
+						for i in 0 to 1 loop -- real, im
+    					   in_lsb := BITS_PER_INPUT_BIN * rbin + BITS_PER_INPUT_BIN / 2 * i;
+    					   out_lsb := CT1_OUTPUT_LANE_WIDTH * rbin + BITS_PER_OUTPUT_BIN * rchan + BITS_PER_OUTPUT_BIN / 2 * i;
+							m_axis_tdata(out_lsb + BITS_PER_OUTPUT_BIN / 2 - 1 downto out_lsb) <= cb1_in_tdata(chan)(in_lsb + BITS_PER_INPUT_BIN / 2 - 1 downto in_lsb + BITS_PER_INPUT_BIN / 2 - BITS_PER_OUTPUT_BIN / 2); -- take MSBs
+						end loop;
+
 					end loop;
 
 				end loop;
 
 				m_axis_tvalid <= cb1_in_tvalid when not cb1_in_rst else '0';
 				m_axis_tlast <= cb1_in_tlast;
---				resetdone <= not cb1_in_rst;
+			--        resetdone <= not cb1_in_rst;
 			end if; -- clk
 		end process;
 
 	else generate -- if CT_LEVEL >=2, we implement the three crossbars and BP_SHUFFLE
 
 
---		 signal axis_bp_shuffle_bypass: std_logic;
-        constant NUMBER_OF_CB1_INPUT_LANES: integer := NUMBER_OF_INPUT_LANES;
-        constant CB1_INPUT_LANE_WIDTH: integer := INPUT_LANE_WIDTH; -- hardcoded to slv32
-        constant NUMBER_OF_CB1_OUTPUT_LANES: integer := NUMBER_OF_BP_PCB_SHUFFLE_LANES;
-        constant CB1_OUTPUT_LANE_WIDTH: integer := CB1_INPUT_LANE_WIDTH; -- hardcoded to be equal to support bypass mode
+		--     signal axis_bp_shuffle_bypass: std_logic;
+		constant NUMBER_OF_CB1_INPUT_LANES: integer := NUMBER_OF_INPUT_LANES;
+		constant CB1_INPUT_LANE_WIDTH: integer := INPUT_LANE_WIDTH; -- hardcoded to slv32
+		constant NUMBER_OF_CB1_OUTPUT_LANES: integer := NUMBER_OF_BP_PCB_SHUFFLE_LANES;
+		constant CB1_OUTPUT_LANE_WIDTH: integer := CB1_INPUT_LANE_WIDTH; -- hardcoded to be equal to support bypass mode
 
-        constant PCB_INDICES: integer_array := indices_of(LANE_TO_GROUP_MAP, 0); -- return a list of indices matching the target value
-        constant PCB_LOW: integer := min(PCB_INDICES);
-        constant PCB_HIGH: integer := max(PCB_INDICES);
-    
-        constant NUMBER_OF_CB2_INPUT_LANES: integer := NUMBER_OF_CB1_OUTPUT_LANES;
-        constant CB2_INPUT_LANE_WIDTH: integer := CB1_OUTPUT_LANE_WIDTH; 
-        constant NUMBER_OF_CB2_OUTPUT_LANES: integer := NUMBER_OF_BP_QSFP_SHUFFLE_LANES;
-        constant CB2_OUTPUT_LANE_WIDTH: integer := CB2_INPUT_LANE_WIDTH; -- hardcoded to be equal to support bypass mode
+		constant PCB_INDICES: integer_array := indices_of(LANE_TO_GROUP_MAP, 0); -- return a list of indices matching the target value
+		constant PCB_LOW: integer := min(PCB_INDICES);
+		constant PCB_HIGH: integer := max(PCB_INDICES);
 
-        constant QSFP_INDICES: integer_array := indices_of(LANE_TO_GROUP_MAP, 1); -- return a list of indices matching the target value
-        constant QSFP_LOW: integer := min(QSFP_INDICES);
-        constant QSFP_HIGH: integer := max(QSFP_INDICES);
+		constant NUMBER_OF_CB2_INPUT_LANES: integer := NUMBER_OF_CB1_OUTPUT_LANES;
+		constant CB2_INPUT_LANE_WIDTH: integer := CB1_OUTPUT_LANE_WIDTH;
+		constant NUMBER_OF_CB2_OUTPUT_LANES: integer := NUMBER_OF_BP_QSFP_SHUFFLE_LANES;
+		constant CB2_OUTPUT_LANE_WIDTH: integer := CB2_INPUT_LANE_WIDTH; -- hardcoded to be equal to support bypass mode
 
-        constant NUMBER_OF_CB3_INPUT_LANES: integer := NUMBER_OF_CB2_OUTPUT_LANES;
-        constant CB3_INPUT_LANE_WIDTH: integer := CB2_OUTPUT_LANE_WIDTH; 
-        constant NUMBER_OF_CB3_OUTPUT_LANES: integer := NUMBER_OF_GPU_LINKS;
-        constant CB3_OUTPUT_LANE_WIDTH: integer := CB3_INPUT_LANE_WIDTH; -- hardcoded to be equal to support bypass mode
+		constant QSFP_INDICES: integer_array := indices_of(LANE_TO_GROUP_MAP, 1); -- return a list of indices matching the target value
+		constant QSFP_LOW: integer := min(QSFP_INDICES);
+		constant QSFP_HIGH: integer := max(QSFP_INDICES);
 
-
+		constant NUMBER_OF_CB3_INPUT_LANES: integer := NUMBER_OF_CB2_OUTPUT_LANES;
+		constant CB3_INPUT_LANE_WIDTH: integer := CB2_OUTPUT_LANE_WIDTH;
+		constant NUMBER_OF_CB3_OUTPUT_LANES: integer := NUMBER_OF_GPU_LINKS;
+		constant CB3_OUTPUT_LANE_WIDTH: integer := CB3_INPUT_LANE_WIDTH; -- hardcoded to be equal to support bypass mode
 
 
-        --------------------
-        -- CB1 signals
-        --------------------
+		--------------------
+		-- CB1 signals
+		--------------------
 
 		signal cb1_bsb_rst: std_logic;
 
 		signal cb1_in_rst: std_logic;
-        signal cb1_out_rst: std_logic;
+		signal cb1_out_rst: std_logic;
 
 		signal cb1_in_tdata_reg1: slv_array(0 to NUMBER_OF_CB1_INPUT_LANES - 1)(INPUT_LANE_WIDTH - 1 downto 0);
 		signal cb1_in_tuser_reg1: slv_array(0 to NUMBER_OF_CB1_INPUT_LANES - 1)(3 downto 0);
@@ -452,10 +455,10 @@ begin
 		signal cb1_in_tlast_reg3: std_logic;
 		attribute shreg_extract of cb1_in_tdata_reg3, cb1_in_tuser_reg3, cb1_in_tvalid_reg3, cb1_in_tlast_reg3: signal is "no";
 
-        signal cb1_out_tdata: slv32_array(0 to NUMBER_OF_CB1_OUTPUT_LANES - 1);
-        signal cb1_out_tvalid: std_logic_vector(0 to NUMBER_OF_CB1_OUTPUT_LANES - 1);
-        signal cb1_out_tlast: std_logic_vector(0 to NUMBER_OF_CB1_OUTPUT_LANES - 1);
-    
+		signal cb1_out_tdata: slv32_array(0 to NUMBER_OF_CB1_OUTPUT_LANES - 1);
+		signal cb1_out_tvalid: std_logic_vector(0 to NUMBER_OF_CB1_OUTPUT_LANES - 1);
+		signal cb1_out_tlast: std_logic_vector(0 to NUMBER_OF_CB1_OUTPUT_LANES - 1);
+
 		--   signal top_bp_shuffle_cmd_dat: AXIS8_DAT_STRUCT;
 		--   signal top_bp_shuffle_cmd_rdy: AXIS8_RDY_STRUCT;
 		--   signal top_bp_shuffle_rply_dat: AXIS8_DAT_STRUCT;
@@ -463,84 +466,83 @@ begin
 
 		-- PCB and QSFP lanes are concatenated into a single vector to be handled by a single xlink_array module.
 
-        --------------------
-        -- BP SHUFFLE signals
-        --------------------
- 
+		--------------------
+		-- BP SHUFFLE signals
+		--------------------
+
 		signal bp_shuffle_bsb_rst: std_logic;
 
 		signal bp_shuffle_in_tdata: slv32_array(0 to NUMBER_OF_SHUFFLE_LANES - 1);
---		signal bp_shuffle_in_tdata64: slv64_array(0 to NUMBER_OF_SHUFFLE_LANES - 1);
+		--    signal bp_shuffle_in_tdata64: slv64_array(0 to NUMBER_OF_SHUFFLE_LANES - 1);
 		signal bp_shuffle_in_tvalid: slv(0 to NUMBER_OF_SHUFFLE_LANES - 1);
 		signal bp_shuffle_in_tlast: slv(0 to NUMBER_OF_SHUFFLE_LANES - 1);
 		signal bp_shuffle_in_rst: std_logic_vector(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
 		signal bp_shuffle_in_rst_reg: std_logic;
 		attribute shreg_extract of bp_shuffle_in_rst_reg: signal is "no";
 
-        signal bp_shuffle_out_tdata: slv32_array(0 to NUMBER_OF_SHUFFLE_LANES - 1);
-        signal bp_shuffle_out_tvalid: slv(0 to NUMBER_OF_SHUFFLE_LANES - 1);
-        signal bp_shuffle_out_tlast: slv(0 to NUMBER_OF_SHUFFLE_LANES - 1);
-        signal bp_shuffle_out_rst: std_logic;
+		signal bp_shuffle_out_tdata: slv32_array(0 to NUMBER_OF_SHUFFLE_LANES - 1);
+		signal bp_shuffle_out_tvalid: slv(0 to NUMBER_OF_SHUFFLE_LANES - 1);
+		signal bp_shuffle_out_tlast: slv(0 to NUMBER_OF_SHUFFLE_LANES - 1);
+		signal bp_shuffle_out_rst: std_logic;
 
-        --------------------
-        -- CB2 signals
-        --------------------
- 		
- 		signal cb2_bsb_rst: std_logic;
-        attribute shreg_extract of cb2_bsb_rst: signal is "no";
+		--------------------
+		-- CB2 signals
+		--------------------
 
-        signal cb2_out_rst: std_logic;
+		signal cb2_bsb_rst: std_logic;
+		attribute shreg_extract of cb2_bsb_rst: signal is "no";
+
+		signal cb2_out_rst: std_logic;
 
 		signal cb1_in_rst_reg1, cb1_in_rst_reg2, cb1_in_rst_reg3: std_logic;
-		
-        signal cb2_in_reset: std_logic;
-        signal cb2_in_reset_reg: std_logic;
-        attribute shreg_extract of cb2_in_reset, cb2_in_reset_reg: signal is "no";
 
-        signal cb2_in_tdata_reg: slv32_array(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
-        signal cb2_in_tvalid_reg: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
-        signal cb2_in_tlast_reg: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
-        attribute shreg_extract of cb2_in_tdata_reg, cb2_in_tvalid_reg, cb2_in_tlast_reg: signal is "no";
+		signal cb2_in_reset: std_logic;
+		signal cb2_in_reset_reg: std_logic;
+		attribute shreg_extract of cb2_in_reset, cb2_in_reset_reg: signal is "no";
 
-        signal cb2_in_tdata: slv32_array(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
-        signal cb2_in_tvalid: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
-        signal cb2_in_tlast: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
-        attribute shreg_extract of cb2_in_tdata, cb2_in_tvalid, cb2_in_tlast: signal is "no";
+		signal cb2_in_tdata_reg: slv32_array(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
+		signal cb2_in_tvalid_reg: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
+		signal cb2_in_tlast_reg: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
+		attribute shreg_extract of cb2_in_tdata_reg, cb2_in_tvalid_reg, cb2_in_tlast_reg: signal is "no";
 
-        signal cb2_out_tdata: slv32_array(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
-        signal cb2_out_tvalid: slv(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
-        signal cb2_out_tlast: slv(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
-        attribute shreg_extract of cb2_out_tdata, cb2_out_tvalid, cb2_out_tlast: signal is "no";
+		signal cb2_in_tdata: slv32_array(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
+		signal cb2_in_tvalid: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
+		signal cb2_in_tlast: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
+		attribute shreg_extract of cb2_in_tdata, cb2_in_tvalid, cb2_in_tlast: signal is "no";
 
-        --------------------
-        -- CB3 signals
-        --------------------
+		signal cb2_out_tdata: slv32_array(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
+		signal cb2_out_tvalid: slv(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
+		signal cb2_out_tlast: slv(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
+		attribute shreg_extract of cb2_out_tdata, cb2_out_tvalid, cb2_out_tlast: signal is "no";
 
-        signal cb3_bsb_rst: std_logic;
-        attribute shreg_extract of cb3_bsb_rst: signal is "no";
+		--------------------
+		-- CB3 signals
+		--------------------
 
-        signal cb3_in_rst: std_logic;
-        signal cb3_out_rst: std_logic;
-        attribute shreg_extract of cb3_in_rst, cb3_out_rst: signal is "no";
-        
-        signal cb3_in_tdata: slv32_array(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
-        signal cb3_in_tvalid: slv(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
-        signal cb3_in_tlast: slv(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
-        attribute shreg_extract of cb3_in_tdata, cb3_in_tvalid, cb3_in_tlast: signal is "no";
+		signal cb3_bsb_rst: std_logic;
+		attribute shreg_extract of cb3_bsb_rst: signal is "no";
+
+		signal cb3_in_rst: std_logic;
+		signal cb3_out_rst: std_logic;
+		attribute shreg_extract of cb3_in_rst, cb3_out_rst: signal is "no";
+
+		signal cb3_in_tdata: slv32_array(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
+		signal cb3_in_tvalid: slv(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
+		signal cb3_in_tlast: slv(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
+		attribute shreg_extract of cb3_in_tdata, cb3_in_tvalid, cb3_in_tlast: signal is "no";
 
 
-        signal cb3_out_tdata: slv32_array(0 to NUMBER_OF_GPU_LINKS - 1);
-        signal cb3_out_tvalid: slv(0 to NUMBER_OF_GPU_LINKS - 1);
-        signal cb3_out_tlast: slv(0 to NUMBER_OF_GPU_LINKS - 1);
-        attribute shreg_extract of cb3_out_tdata, cb3_out_tvalid, cb3_out_tlast: signal is "no";
+		signal cb3_out_tdata: slv32_array(0 to NUMBER_OF_GPU_LINKS - 1);
+		signal cb3_out_tvalid: slv(0 to NUMBER_OF_GPU_LINKS - 1);
+		signal cb3_out_tlast: slv(0 to NUMBER_OF_GPU_LINKS - 1);
+		attribute shreg_extract of cb3_out_tdata, cb3_out_tvalid, cb3_out_tlast: signal is "no";
 
---        signal resetdone: std_logic;
+	--        signal resetdone: std_logic;
 
-      
-    
+
 	begin
 
-        assert CB1_INPUT_LANE_WIDTH=32 report "Crossbar1 supports only 32-bit inputs" severity failure;
+		assert CB1_INPUT_LANE_WIDTH = 32 report "Crossbar1 supports only 32-bit inputs" severity failure;
 
 		bsb_rst_proc: process(all) begin
 			if rising_edge(bsb_clk) then
@@ -620,12 +622,11 @@ begin
 			);
 
 
+		---------------------------------------------------------------------
+		-- BACKPLANE PCB and QSFP DATA LINKS
+		---------------------------------------------------------------------
+		-- Implements the GTX links to exchange the packetized data over to other boards on the backplane (over the backplane PCB links) or to boards on another crate (using the backplane QSFP links).
 
-        ---------------------------------------------------------------------
-        -- BACKPLANE PCB and QSFP DATA LINKS
-        ---------------------------------------------------------------------
-        -- Implements the GTX links to exchange the packetized data over to other boards on the backplane (over the backplane PCB links) or to boards on another crate (using the backplane QSFP links).
-    
 		process(all) begin
 			if rising_edge(bsb_clk) then
 				bp_shuffle_bsb_rst  <= bsb_rst;
@@ -639,23 +640,23 @@ begin
 				bp_shuffle_in_rst_reg <= bp_shuffle_in_rst(0);
 				bp_shuffle_out_rst <= bp_shuffle_in_rst_reg;
 
-                -- Assign the CB1 output to the SHUFFLE input lanes corresponding to group 0 (PCB links)
+				-- Assign the CB1 output to the SHUFFLE input lanes corresponding to group 0 (PCB links)
 				bp_shuffle_in_tdata(PCB_LOW to PCB_HIGH) <= cb1_out_tdata;
-                bp_shuffle_in_tvalid(PCB_LOW to PCB_HIGH) <= cb1_out_tvalid and not bp_shuffle_in_rst(PCB_LOW to PCB_HIGH); -- we have a vector of resets to facilitate routing
-                bp_shuffle_in_tlast(PCB_LOW to PCB_HIGH) <= cb1_out_tlast;
+				bp_shuffle_in_tvalid(PCB_LOW to PCB_HIGH) <= cb1_out_tvalid and not bp_shuffle_in_rst(PCB_LOW to PCB_HIGH); -- we have a vector of resets to facilitate routing
+				bp_shuffle_in_tlast(PCB_LOW to PCB_HIGH) <= cb1_out_tlast;
 
 				bp_shuffle_in_tdata(QSFP_LOW to QSFP_HIGH) <= cb2_out_tdata;
-                bp_shuffle_in_tvalid(QSFP_LOW to QSFP_HIGH) <= cb2_out_tvalid when not bp_shuffle_out_rst else (others => '0'); 
-                bp_shuffle_in_tlast(QSFP_LOW to QSFP_HIGH) <= cb2_out_tlast;
+				bp_shuffle_in_tvalid(QSFP_LOW to QSFP_HIGH) <= cb2_out_tvalid when not bp_shuffle_out_rst else (others => '0');
+				bp_shuffle_in_tlast(QSFP_LOW to QSFP_HIGH) <= cb2_out_tlast;
 
 
-                cb2_in_tdata  <= bp_shuffle_out_tdata(PCB_LOW to PCB_HIGH);
-                cb2_in_tvalid <= bp_shuffle_out_tvalid(PCB_LOW to PCB_HIGH) when not bp_shuffle_out_rst else (others => '0');
-                cb2_in_tlast  <= bp_shuffle_out_tlast(PCB_LOW to PCB_HIGH);
+				cb2_in_tdata  <= bp_shuffle_out_tdata(PCB_LOW to PCB_HIGH);
+				cb2_in_tvalid <= bp_shuffle_out_tvalid(PCB_LOW to PCB_HIGH) when not bp_shuffle_out_rst else (others => '0');
+				cb2_in_tlast  <= bp_shuffle_out_tlast(PCB_LOW to PCB_HIGH);
 
-                cb3_in_tdata  <= bp_shuffle_out_tdata(QSFP_LOW to QSFP_HIGH); -- QSFP shuffle lanes are concatenated after PCB shuffle lanes
-                cb3_in_tvalid <= bp_shuffle_out_tvalid(QSFP_LOW to QSFP_HIGH) when not bp_shuffle_out_rst else (others => '0');
-                cb3_in_tlast  <= bp_shuffle_out_tlast(QSFP_LOW to QSFP_HIGH);
+				cb3_in_tdata  <= bp_shuffle_out_tdata(QSFP_LOW to QSFP_HIGH); -- QSFP shuffle lanes are concatenated after PCB shuffle lanes
+				cb3_in_tvalid <= bp_shuffle_out_tvalid(QSFP_LOW to QSFP_HIGH) when not bp_shuffle_out_rst else (others => '0');
+				cb3_in_tlast  <= bp_shuffle_out_tlast(QSFP_LOW to QSFP_HIGH);
 
 			end if;
 		end process;
@@ -666,7 +667,7 @@ begin
 				LANE_GROUP_MAP     => LANE_TO_GROUP_MAP, -- We cast to make sure the synthesizer can unambiguously determine the final type and infer the entity in case the entity file is not needed (if-generate is False) and not included in the project
 				LANE_TO_QUAD_MAP   => LINK_TO_QUAD_MAP, -- Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
 				QUAD_TO_REFCLK_MAP => QUAD_TO_REFCLK_MAP, -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
-				LINK_SPEED            => BP_LINK_SPEED, -- 0: 7.5 Gb/s (244 MHz word clock), 1: 10 Gb/s (322 MHz word clock)
+				LINK_SPEED         => BP_LINK_SPEED, -- 0: 7.5 Gb/s (244 MHz word clock), 1: 10 Gb/s (322 MHz word clock)
 				IMPLEMENT_RX       => TRUE,
 				SIM                => FALSE
 			)
@@ -711,141 +712,143 @@ begin
 			);
 
 
-        ---------------------------------------------------------------------
-        -- CROSSBAR 2
-        ---------------------------------------------------------------------
-    
-        -- pipeline the bsb resets
-        process(all) begin
-            if rising_edge(bsb_clk) then
-                cb2_bsb_rst  <= bsb_rst;
-            end if;
-        end process;
+		---------------------------------------------------------------------
+		-- CROSSBAR 2
+		---------------------------------------------------------------------
 
-        -- Pipeline the backplane PCB shuffle output to the shuffle crossbar input
-        crossbar2_in_pipe_proc: process(all) begin
-            if rising_edge(clk) then
-            
-                -- Pipeline resets
-                cb2_in_reset <= bp_shuffle_out_rst;
-                cb2_in_reset_reg <= cb2_in_reset;
-                cb2_out_rst <= cb2_in_reset_reg;
+		-- pipeline the bsb resets
+		process(all) begin
+			if rising_edge(bsb_clk) then
+				cb2_bsb_rst  <= bsb_rst;
+			end if;
+		end process;
 
-                -- Pipeline data bus
-                cb2_in_tdata_reg  <= cb2_in_tdata;
-                cb2_in_tvalid_reg <= cb2_in_tvalid when not cb2_in_reset_reg else (others => '0');
-                cb2_in_tlast_reg  <= cb2_in_tlast;
-            end if;
-        end process;
+		-- Pipeline the backplane PCB shuffle output to the shuffle crossbar input
+		crossbar2_in_pipe_proc: process(all) begin
+			if rising_edge(clk) then
+				-- Pipeline resets
+				cb2_in_reset <= bp_shuffle_out_rst;
+				cb2_in_reset_reg <= cb2_in_reset;
+				cb2_out_rst <= cb2_in_reset_reg;
 
-        crossbar2: entity work.shuffle_crossbar -- use component instantiation to delay binding in if-generate block and prevent errors during elaboration
-            generic map (
-                PLATFORM_ID                        => PLATFORM_ID,  -- needed to select family-dependent FIFOs
-                NUMBER_OF_INPUT_LANES              => NUMBER_OF_BP_PCB_SHUFFLE_LANES, -- Number of input streams
-                NUMBER_OF_OUTPUT_LANES             => NUMBER_OF_BP_QSFP_SHUFFLE_LANES, -- Number of output streams
-                NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL => 4,
-                WORDS_PER_BIN_MAX                  => 4,  -- 1st crossbar outputs data for 16 channels max = 4 words
-                BINS_PER_FRAME_MAX                 => 128, -- need 128 bins in case i'm in 16
-                COMBINE_DATA_FLAGS                 => TRUE,
-                SHUFFLE_FLAGS_MASK                 => slv32'(X"00070000") -- count errors from crossbar 2 only
-            )
-            port map (
-                -- Non-blocking AXI-Streaming input
-                s_axis_tdata  => cb2_in_tdata_reg,
-                s_axis_tvalid => cb2_in_tvalid_reg,
-                s_axis_tlast  => cb2_in_tlast_reg,
-                -- s_axis_tready => axis_bp_crossbar2_in_tready,
+				-- Pipeline data bus
+				cb2_in_tdata_reg  <= cb2_in_tdata;
+				cb2_in_tvalid_reg <= cb2_in_tvalid when not cb2_in_reset_reg else (others => '0');
+				cb2_in_tlast_reg  <= cb2_in_tlast;
+			end if;
+		end process;
 
-                -- Non-blocking AXI-Streaming output
-                m_axis_tdata  => cb2_out_tdata,
-                m_axis_tvalid => cb2_out_tvalid,
-                m_axis_tlast  => cb2_out_tlast,
-                -- m_axis_tready => cb2_out_tready,
+		crossbar2: entity work.shuffle_crossbar -- use component instantiation to delay binding in if-generate block and prevent errors during elaboration
+			generic map (
+				PLATFORM_ID                        => PLATFORM_ID,  -- needed to select family-dependent FIFOs
+				NUMBER_OF_INPUT_LANES              => NUMBER_OF_BP_PCB_SHUFFLE_LANES, -- Number of input streams
+				NUMBER_OF_OUTPUT_LANES             => NUMBER_OF_BP_QSFP_SHUFFLE_LANES, -- Number of output streams
+				NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL => 4,
+				WORDS_PER_BIN_MAX                  => 4,  -- 1st crossbar outputs data for 16 channels max = 4 words
+				BINS_PER_FRAME_MAX                 => 128, -- need 128 bins in case i'm in 16
+				COMBINE_DATA_FLAGS                 => TRUE,
+				SHUFFLE_FLAGS_MASK                 => slv32'(X"00070000") -- count errors from crossbar 2 only
+			)
+			port map (
+				-- Non-blocking AXI-Streaming input
+				s_axis_tdata  => cb2_in_tdata_reg,
+				s_axis_tvalid => cb2_in_tvalid_reg,
+				s_axis_tlast  => cb2_in_tlast_reg,
+				-- s_axis_tready => axis_bp_crossbar2_in_tready,
 
-                clk => clk,
-                rst => cb2_in_reset,
+				-- Non-blocking AXI-Streaming output
+				m_axis_tdata  => cb2_out_tdata,
+				m_axis_tvalid => cb2_out_tvalid,
+				m_axis_tlast  => cb2_out_tlast,
+				-- m_axis_tready => cb2_out_tready,
 
-                --       align_pulse => debug1,
-                -- Control interface (command and reply stream buses)
-                ctrl_cmd_dat  => bsb_router_cmd_dat(BSB_CROSSBAR2_PORT),
-                ctrl_cmd_rdy  => bsb_router_cmd_rdy(BSB_CROSSBAR2_PORT),
-                ctrl_rply_dat => bsb_router_rply_dat(BSB_CROSSBAR2_PORT),
-                ctrl_rply_rdy => bsb_router_rply_rdy(BSB_CROSSBAR2_PORT),
-                ctrl_clk      => bsb_clk,
-                ctrl_rst      => cb2_bsb_rst
-            );
+				clk => clk,
+				rst => cb2_in_reset,
+
+				--       align_pulse => debug1,
+				-- Control interface (command and reply stream buses)
+				ctrl_cmd_dat  => bsb_router_cmd_dat(BSB_CROSSBAR2_PORT),
+				ctrl_cmd_rdy  => bsb_router_cmd_rdy(BSB_CROSSBAR2_PORT),
+				ctrl_rply_dat => bsb_router_rply_dat(BSB_CROSSBAR2_PORT),
+				ctrl_rply_rdy => bsb_router_rply_rdy(BSB_CROSSBAR2_PORT),
+				ctrl_clk      => bsb_clk,
+				ctrl_rst      => cb2_bsb_rst
+			);
 
 
-        ---------------------------------------------------------------------
-        -- CROSSBAR 3
-        ---------------------------------------------------------------------
+		---------------------------------------------------------------------
+		-- CROSSBAR 3
+		---------------------------------------------------------------------
 
-        -- Pipeline the BSB reset
-        process(all) begin
-            if rising_edge(bsb_clk) then
-                cb3_bsb_rst  <= cb2_bsb_rst;
-            end if;
-        end process;
+		-- Pipeline the BSB reset
+		process(all) begin
+			if rising_edge(bsb_clk) then
+				cb3_bsb_rst  <= cb2_bsb_rst;
+			end if;
+		end process;
 
-        -- Pipeline the backplane PCB shuffle output to the shuffle crossbar input
-        process(all) 
-            variable rlane, src_lsb, lsb: integer;
-        begin
-            if rising_edge(clk) then
-                -- pipeline reset
-                cb3_in_rst <= bp_shuffle_out_rst;
-                cb3_out_rst <= cb3_in_rst;
+		-- Pipeline the backplane PCB shuffle output to the shuffle crossbar input
+		process(all)
 
-                -- Assign outputs
-                for lane in 0 to NUMBER_OF_CB3_OUTPUT_LANES - 1 loop -- 0 to 7
+			variable rlane, src_lsb, lsb: integer;
+
+		begin
+			if rising_edge(clk) then
+				-- pipeline reset
+				cb3_in_rst <= bp_shuffle_out_rst;
+				cb3_out_rst <= cb3_in_rst;
+
+				-- Assign outputs
+				for lane in 0 to NUMBER_OF_CB3_OUTPUT_LANES - 1 loop -- 0 to 7
                     rlane := NUMBER_OF_CB3_OUTPUT_LANES - 1 - lane;
-                    lsb := CB3_OUTPUT_LANE_WIDTH * rlane; 
-                    m_axis_tdata(lsb + CB3_OUTPUT_LANE_WIDTH - 1 downto lsb) <= cb3_out_tdata(lane);
-                end loop;
-                m_axis_tvalid <= cb3_out_tvalid(0) and not cb3_out_rst; 
-                m_axis_tlast <= cb3_out_tlast(0); 
-            end if; -- clk
-        end process;
+                    lsb := CB3_OUTPUT_LANE_WIDTH * rlane;
+					m_axis_tdata(lsb + CB3_OUTPUT_LANE_WIDTH - 1 downto lsb) <= cb3_out_tdata(lane);
+				end loop;
+
+				m_axis_tvalid <= cb3_out_tvalid(0) and not cb3_out_rst;
+				m_axis_tlast <= cb3_out_tlast(0);
+			end if; -- clk
+		end process;
 
 
-        crossbar3: entity work.shuffle_crossbar -- use component instantiation to delay binding in if-generate block and prevent errors during elaboration
-            generic map (
-                PLATFORM_ID                        => PLATFORM_ID,  -- needed to select family-dependent FIFOs
-                NUMBER_OF_INPUT_LANES              => NUMBER_OF_CB3_INPUT_LANES, -- Number of input streams
-                NUMBER_OF_OUTPUT_LANES             => NUMBER_OF_CB3_OUTPUT_LANES, -- Number of output streams
-                NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL => 1,
-                COMBINE_DATA_FLAGS                 => FALSE,
-                WORDS_PER_BIN_MAX                  => 16,
-                BINS_PER_FRAME_MAX                 => 64,
-                BIN_SEL_FIFO_TYPE_MAP              => integer_16xN_array'(0 to 15 => (0 to 1=>0, others=>0)),
-                SHUFFLE_FLAGS_MASK                 => slv32'(X"70000700") -- Count errors from both crossbars. Use a qualified axpression to ensure type is known.
+		crossbar3: entity work.shuffle_crossbar -- use component instantiation to delay binding in if-generate block and prevent errors during elaboration
+			generic map (
+				PLATFORM_ID                        => PLATFORM_ID,  -- needed to select family-dependent FIFOs
+				NUMBER_OF_INPUT_LANES              => NUMBER_OF_CB3_INPUT_LANES, -- Number of input streams
+				NUMBER_OF_OUTPUT_LANES             => NUMBER_OF_CB3_OUTPUT_LANES, -- Number of output streams
+				NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL => 1,
+				COMBINE_DATA_FLAGS                 => FALSE,
+				WORDS_PER_BIN_MAX                  => 16,
+				BINS_PER_FRAME_MAX                 => 64,
+				BIN_SEL_FIFO_TYPE_MAP              => integer_16xN_array'(0 to 15 => (0 to 1=>0, others=>0)),
+				SHUFFLE_FLAGS_MASK                 => slv32'(X"70000700") -- Count errors from both crossbars. Use a qualified axpression to ensure type is known.
 
-            )
-            port map (
-                -- Non-blocking AXI-Streaming input
-                s_axis_tdata  => cb3_in_tdata,
-                s_axis_tvalid => cb3_in_tvalid,
-                s_axis_tlast  => cb3_in_tlast,
-                -- s_axis_tready => axis_bp_crossbar2_in_tready,
+			)
+			port map (
+				-- Non-blocking AXI-Streaming input
+				s_axis_tdata  => cb3_in_tdata,
+				s_axis_tvalid => cb3_in_tvalid,
+				s_axis_tlast  => cb3_in_tlast,
+				-- s_axis_tready => axis_bp_crossbar2_in_tready,
 
-                -- Non-blocking AXI-Streaming output
-                m_axis_tdata  => cb3_out_tdata,
-                m_axis_tvalid => cb3_out_tvalid,
-                m_axis_tlast  => cb3_out_tlast,
-                -- m_axis_tready => cb2_out_tready,
+				-- Non-blocking AXI-Streaming output
+				m_axis_tdata  => cb3_out_tdata,
+				m_axis_tvalid => cb3_out_tvalid,
+				m_axis_tlast  => cb3_out_tlast,
+				-- m_axis_tready => cb2_out_tready,
 
-                clk => clk,
-                rst => cb3_in_rst,
+				clk => clk,
+				rst => cb3_in_rst,
 
-                -- Control interface (command and reply stream buses)
-                ctrl_cmd_dat  => bsb_router_cmd_dat(BSB_CROSSBAR3_PORT),
-                ctrl_cmd_rdy  => bsb_router_cmd_rdy(BSB_CROSSBAR3_PORT),
-                ctrl_rply_dat => bsb_router_rply_dat(BSB_CROSSBAR3_PORT),
-                ctrl_rply_rdy => bsb_router_rply_rdy(BSB_CROSSBAR3_PORT),
-                ctrl_clk      => bsb_clk,
-                ctrl_rst      => cb3_bsb_rst
-            );
-   
+				-- Control interface (command and reply stream buses)
+				ctrl_cmd_dat  => bsb_router_cmd_dat(BSB_CROSSBAR3_PORT),
+				ctrl_cmd_rdy  => bsb_router_cmd_rdy(BSB_CROSSBAR3_PORT),
+				ctrl_rply_dat => bsb_router_rply_dat(BSB_CROSSBAR3_PORT),
+				ctrl_rply_rdy => bsb_router_rply_rdy(BSB_CROSSBAR3_PORT),
+				ctrl_clk      => bsb_clk,
+				ctrl_rst      => cb3_bsb_rst
+			);
+
 	end generate crossbar0_gen;
 
 end architecture impl;
