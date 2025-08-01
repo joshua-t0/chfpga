@@ -36,9 +36,6 @@ package chfpga_config is
 
     -- 10/100G Ethernet Real-time data offload links configuration
     constant CONFIG_GPU_LINK_TYPE: string:= "100GE";
-	constant CONFIG_NUMBER_OF_GPU_LINKS: integer                 := 4; -- (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
-	constant CONFIG_NUMBER_OF_GPU_REFCLKS: integer               := 1; -- Number of Reference clocks provided for the 10GE links to the GPU
-
 
 
 end chfpga_config;

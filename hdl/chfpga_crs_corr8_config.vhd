@@ -45,8 +45,6 @@ package chfpga_config is
 
     -- 10/100G Ethernet Real-time data offload links configuration
     constant CONFIG_GPU_LINK_TYPE: string := "NONE";
-	constant CONFIG_GPU_LINK_TO_QUAD_MAP: integer_array(0 to -1) := (0 to 3=> 0); -- null range, no GTY
-	constant CONFIG_GPU_QUAD_TO_REFCLK_MAP: integer_array := (0 => 0); -- one reference clock
 
 
 
