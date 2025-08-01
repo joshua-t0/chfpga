@@ -2,10 +2,90 @@
 /*
 # Add files we want in this directory
 !/.gitignore
-# Make the project directories and their contents visible
+
+# The following makes the desirable project directories and their contents visible
+
+
+# BUILDS
+
+# ---------------------
+# IceBoard-based builds (Kintex 7 FPGA)
+# ---------------------
+
+# 400 MHz-bandwidth Corner-turn configuration
+# (CHIME/HIRAX/FRB Outriggers)
+!/chfpga_ice_ct/
+!/chfpga_ice_ct/*
+
+# 400 MHz bandwidth Single-board correlator configuration
+# (For development and small interferometers)
+!/chfpga_ice_corr16/
+!/chfpga_ice_corr16/*
+
+# 1200 MHz bandwidth corner-turn configuration
+# (old CHORD candidate, not maintained)
+!/chordFPGA_MGK7MB/
+!/chordFPGA_MGK7MB/*
+
+# ---------------------
+# CRS-based builds (Ultrascale+ RfSoC FPGA)
+# ---------------------
+
+# 1600 MHz bandwidth single-board correlator configuration
+# (D3A, development, small interferometers)
+!/chfpga_crs_corr8/
+!/chfpga_crs_corr8/*
+
+
+# 1600 MHz bandwidth corner-turn configuration
+# (CHORD and its future outriggers)
+!/chfpga_crs_ct/
+!/chfpga_crs_ct/*
+
+
+
+# ---------------------
+# ML605-based builds (Virtex 6 FPGA)
+# ---------------------
+
+# 800 MHz bandwidth configuration
+# (CHIME proof of concept, not maintained)
 !/chFPGA_ML605/
 !/chFPGA_ML605/*
 
+
+# ---------------------
+# ZCU111-based builds (Ultrascale+ RfSoC FPGA)
+# ---------------------
+
+# 1600 MHz bandwidth corner-turn configuration
+# (CHORD prototyping)
+
+# Probably obsolete
+!/chfpga_zcu111/
+!/chfpga_zcu111/*
+
+!/sifpga_zcu111/
+!/sifpga_zcu111/*
+
+!/chfpga_zcu111_3/
+/chfpga_zcu111_3/*
+
+
+# OBSOLETE BUILDS
+
+
+# to be obsoleted - renamed chfpga_crs_corr8
+!/chfpga_crs/
+!/chfpga_crs/*
+
+# obsolete - renamed chfpga_ice_ct
+!/CHFPGA_MGK7MB_REV2/
+!/CHFPGA_MGK7MB_REV2/*
+
+# obsolete - renamed chfpga_ice_corr16
+!/SIFPGA_MGK7MB/
+!/SIFPGA_MGK7MB/*
 
 #!/chFPGA_KC705/
 #!/chFPGA_KC705/*
@@ -13,11 +93,12 @@
 #!/CHFPGA_MGK7MB/
 #!/CHFPGA_MGK7MB/*
 
-!/CHFPGA_MGK7MB_REV2/
-!/CHFPGA_MGK7MB_REV2/*
+# !/sifpga_crs/
+# !/sifpga_crs/*
 
-!/SIFPGA_MGK7MB/
-!/SIFPGA_MGK7MB/*
+
+
+# TESTBENCHES
 
 !/shuffle_crossbar_testbench/
 !/shuffle_crossbar_testbench/*
@@ -28,34 +109,6 @@
 !/corr_core_testbench/
 !/corr_core_testbench/*
 
-!/chordFPGA_MGK7MB/
-!/chordFPGA_MGK7MB/*
-
-!/chfpga_zcu111/
-!/chfpga_zcu111/*
-
-!/chfpga_zcu111_3/
-/chfpga_zcu111_3/*
-# !/chfpga_zcu111_3/*.xpr
-!/sifpga_zcu111/
-!/sifpga_zcu111/*
-
-# !/sifpga_crs/
-# !/sifpga_crs/*
-
-!/chfpga_crs_corr8/
-!/chfpga_crs_corr8/*
-
-
-!/chfpga_ice_corr16/
-!/chfpga_ice_corr16/*
-
-!/chfpga_crs_ct/
-!/chfpga_crs_ct/*
-
-# to be obsoleted
-!/chfpga_crs/
-!/chfpga_crs/*
 
 !/cge_tests/
 !/cge_tests/*
