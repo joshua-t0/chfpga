@@ -93,7 +93,7 @@ use UNISIM.VComponents.all;
 entity FFT is
 	generic (
 		IMPLEMENT_FFT		   : BOOLEAN := TRUE;
-		FFT_TYPE			   : integer := FFT_TYPE_CHORD; -- tells the entity which experiment-dependent Casper-generated PFB/FFT block to use. Currently accepts "CHIME" or "D3A"
+		FFT_TYPE			   : integer := FFT_TYPE_HIRAX; -- tells the entity which experiment-dependent Casper-generated PFB/FFT block to use. Currently accepts "CHIME" or "D3A"
 		ROTATE_BINS            : boolean := FALSE; -- rotate down the bins in the output by N positions, where N is the word number. Used to spread low bins to multiple word positions in cases where the FFT does not naturally do that (e.g. no unscrambler)
 
         -- Derived (but overridable) parameters
@@ -255,6 +255,8 @@ begin
 -- |         | 5:6 | 15:0 | fft_pipeline_delay   | Latency (in number of clocks) of the CASPER PFB/FFT. This is used to delay the input flags that accompany the data fed into the FFT so they come out aligned with the FFT output. This should be the values measured by fft_measured_pipeline_delay. |
 -- | STATUS  | 0:1 | 15:0 | fft_measured_pipeline_delay   | Measured latency (in number of clocks) of the CASPER PFB/FFT. This is updated when a reset is performed |
 -- |         |  2  |  7:0 | overflow_count       | Number of FFT overflows since reset (rolls back) |
+-- |         |  3  |  7:3 | fft_delay_ctr_width  | Width of the counter for the latency of the CASPER PFB/FFT |
+-- |         |     |  2:0 | fft_type             | Type of FFT implemented in the firmware |
 -- ------------------------------------------------------------------------------
 --
 
@@ -400,7 +402,8 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
             for i in 0 to FFT_BINS_PER_WORD-1 loop
                 src_lane := (i + to_integer(word_ctr(i))) MOD FFT_BINS_PER_WORD when ROTATE_BINS else i;
                 fft_rot_tdata((i+1)*FFT_BITS_PER_BIN-1 downto i*FFT_BITS_PER_BIN) <= fft_tdata((src_lane+1)*FFT_BITS_PER_BIN -1 downto src_lane*FFT_BITS_PER_BIN);
-            end loop; -- if FFT is implemented
+			end loop; -- if FFT is implemented
+			fft_rot_tdata <= fft_tdata;
 
 
 			-- Register the final output. The delay is also used so we can insert the overflow flag on the final word.
@@ -556,6 +559,28 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 
             fft_overflow <= or fft_overflow_d3a;
             fft_tdata <= (fft_dout0_int & fft_dout1_int & fft_dout2_int & fft_dout3_int);
+
+		when FFT_TYPE_HIRAX =>
+			-- Same as FFT_TYPE_CHIME, but allows bitgrowth
+			FFT0: entity work.hirax_bit_growth_0
+                PORT MAP(
+                    sync_in(0)  => fft_sync_in,
+                    pol_in1      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 0) - 1 downto ADC_BITS_PER_SAMPLE * 3),
+                    pol_in2      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 1) - 1 downto ADC_BITS_PER_SAMPLE * 2),
+                    pol_in3      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 2) - 1 downto ADC_BITS_PER_SAMPLE * 1),
+                    pol_in4      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 3) - 1 downto ADC_BITS_PER_SAMPLE * 0),
+
+                    sync_out(0) => fft_sync_out,
+                    out00    => fft_dout0_int,
+                    out01    => fft_dout1_int,
+
+                    shift    => to_slv(0, 11), -- still an input but ignored internally
+                    overflow(0) => fft_overflow,
+                    -- ce_1     => fft_clk_en,
+                    clk    => clk
+                );
+
+            fft_tdata <= (fft_dout0_int & fft_dout1_int);
 
 		when others =>
 			assert FALSE report "Invalid FFT Type" severity FAILURE;
