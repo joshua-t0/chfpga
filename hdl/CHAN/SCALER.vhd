@@ -639,6 +639,10 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
         -- Real multiplier, A= 18/32 bit signed, B=16 bit unsigned, P=34/48 bit signed, Latency = 3
         gen_rmul: for i in 2 * FFT_BINS_PER_WORD - 1 downto 0 generate
             rmul0: entity work.scaler_mul
+              generic map (
+                A_WIDTH =>  FFT_BITS_PER_BIN/2,
+                B_WIDTH =>  16
+              )
               port map (
                 CLK => clk,
                 A => std_logic_vector(fft_reg_tdata(i)), -- 18/32-bit signed
@@ -1023,13 +1027,13 @@ scaler_proc: process(all)
                 when "110" => -- send scaled even bins with twice the bit width
                     for i in 0 to FFT_BINS_PER_WORD/2-1 loop
                         m_axis_cap_tdata((2*i+2)*CB-1 downto (2*i+1)*CB) <=
-                            ('1', others => '0') when stage1_overflow(i)='1' and stage1_sign(i)='1' else
-                            ('0', others => '1') when stage1_overflow(i)='1' and stage1_sign(i)='0' else
+                            ('1', others => '0') when stage1_overflow(4*i+3)='1' and stage1_sign(4*i+3)='1' else
+                            ('0', others => '1') when stage1_overflow(4*i+3)='1' and stage1_sign(4*i+3)='0' else
                             msb(std_logic_vector(stage1_word(4*i+3)), CB); -- Re part
                         m_axis_cap_tdata((2*i+1)*CB-1 downto (2*i+0)*CB) <=
-                            ('1', others => '0') when stage1_overflow(i)='1' and stage1_sign(i)='1' else
-                            ('0', others => '1') when stage1_overflow(i)='1' and stage1_sign(i)='0' else
-                            msb(std_logic_vector(stage1_word(4*i+2)), CB); -- Re part
+                            ('1', others => '0') when stage1_overflow(4*i+2)='1' and stage1_sign(4*i+2)='1' else
+                            ('0', others => '1') when stage1_overflow(4*i+2)='1' and stage1_sign(4*i+2)='0' else
+                            msb(std_logic_vector(stage1_word(4*i+2)), CB); -- Im part
                     end loop;
                     m_axis_cap_tlast <= stage1_tlast;
                     m_axis_cap_tvalid <= stage1_tvalid;
@@ -1038,12 +1042,12 @@ scaler_proc: process(all)
                 when "111" => -- send scaled odd bins with twice the bit width
                     for i in 0 to FFT_BINS_PER_WORD/2-1 loop
                         m_axis_cap_tdata((2*i+2)*CB-1 downto (2*i+1)*CB) <=
-                            ('1', others => '0') when stage1_overflow(i)='1' and stage1_sign(i)='1' else
-                            ('0', others => '1') when stage1_overflow(i)='1' and stage1_sign(i)='0' else
+                            ('1', others => '0') when stage1_overflow(4*i+1)='1' and stage1_sign(4*i+1)='1' else
+                            ('0', others => '1') when stage1_overflow(4*i+1)='1' and stage1_sign(4*i+1)='0' else
                             msb(std_logic_vector(stage1_word(4*i+1)), CB); -- Re part
                         m_axis_cap_tdata((2*i+1)*CB-1 downto (2*i+0)*CB) <=
-                            ('1', others => '0') when stage1_overflow(i)='1' and stage1_sign(i)='1' else
-                            ('0', others => '1') when stage1_overflow(i)='1' and stage1_sign(i)='0' else
+                            ('1', others => '0') when stage1_overflow(4*i+0)='1' and stage1_sign(4*i+0)='1' else
+                            ('0', others => '1') when stage1_overflow(4*i+0)='1' and stage1_sign(4*i+0)='0' else
                             msb(std_logic_vector(stage1_word(4*i+0)), CB); -- Re part
                     end loop;
                     m_axis_cap_tlast <= stage1_tlast;
@@ -1131,14 +1135,14 @@ scaler_proc: process(all)
                 -- Count scaler overflows
                 if stats_first_frame = '1' then
                     scaler_overflow_ctr <= to_unsigned(scaler_overflow_incr, scaler_overflow_ctr'LENGTH);
-                elsif signed(scaler_overflow_ctr) /= -2 and signed(scaler_overflow_ctr) /= -1 then
+                elsif signed(scaler_overflow_ctr) /= -2 and signed(scaler_overflow_ctr) /= -1 then -- TODO: when there are more bins per word, we need to stop counting at a smaller value
                     scaler_overflow_ctr <= scaler_overflow_ctr + scaler_overflow_incr;
                 end if;
 
                 -- Count ADC overflows (counts how many frames have at least one overflow, as stated in the ADC_OVERFLOW flag thn TLAST=1)
                 if stats_first_frame = '1' then
                     adc_overflow_ctr <= (others => '0'); -- This is the first sample of a frame, don't have to worry about the ADC_OVERFLOW flag yet
-                elsif stage2_tlast = '1' and stage2_tuser(0)='1' and signed(adc_overflow_ctr) /= -1 then
+                elsif stage2_tlast = '1' and stage2_tuser(TUSER_ADC_OVERFLOW_BIT)='1' and signed(adc_overflow_ctr) /= -1 then
                     adc_overflow_ctr <= adc_overflow_ctr + 1;
                 end if;
             end if; -- if TVALID
