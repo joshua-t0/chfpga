@@ -640,6 +640,8 @@ function all_zeros(v: unsigned) return boolean; -- Return TRUE if all bits are '
 function all_zeros(v: signed) return boolean; -- Return TRUE if all bits are '0'.
 function all_zeros(v: std_logic_vector; high:integer; low:integer) return boolean;
 
+function num_ones(v: std_logic_vector) return integer; -- Return number of bits that are '1'.
+
 function cmplx(re, im:integer) return complex; -- Create a complex value out of two integer values
 function cmplx(re, im:signed) return complex; -- Create a complex value out of two signed values
 
@@ -1226,7 +1228,14 @@ begin
 	return v(high downto low) = zeros(high downto low);
 end function;
 
-
+function num_ones(v: std_logic_vector) return integer is
+	variable count: integer := 0;
+begin
+    for i in v'RANGE loop
+        count := (count + 1) when v(i);
+    end loop;
+    return count;
+end function;
 
 --Returns the log2 of a integer as a real value
 function log2(v: integer) return real is
