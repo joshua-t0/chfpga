@@ -55,16 +55,20 @@ use work.chFPGA_Package.all;
 -- A non-sticky FIFO overflow flag (on the internal rx clock) is available to detect if the FIFO has overflowed.
 entity xglink_array is
   generic (
-    NUMBER_OF_LANES: integer        := GLOBAL_NUMBER_OF_GPU_LINKS;
-    NUMBER_OF_LANE_GROUPS: integer  := 1;
-    LANE_GROUP_MAP: integerArray    := (0 to GLOBAL_NUMBER_OF_GPU_LINKS=>0);
-    NUMBER_OF_LINKS: integer        := GLOBAL_NUMBER_OF_GPU_LINKS;
-    LANE_TO_LINK_MAP: integerArray  := (0=>0, 1=>1, 2=>2, 3=>3, 4=>4, 5=>5, 6=>6, 7=>7);
-    NUMBER_OF_REFCLK: integer       := GLOBAL_NUMBER_OF_GPU_REFCLKS;
-    LANE_TO_QUAD_MAP: integerArray  := GLOBAL_GPU_CHANNEL_QUAD; -- Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-    QUAD_TO_REFCLK_MAP: integerArray:= GLOBAL_GPU_QUAD_REFCLK; -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+    LANE_TO_LINK_MAP: integer_array;
+    LANE_GROUP_MAP: integer_array;
+    LANE_TO_QUAD_MAP: integer_array; -- Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
+    QUAD_TO_REFCLK_MAP: integer_array; -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
     IMPLEMENT_RX : boolean          := FALSE;
     LINK_SPEED: integer             := 1; -- 0: 7.5 Gb/s (244 MHz word clock), 1: 10 Gb/s (322 MHz word clock)
+
+
+    -- Derived parameters
+    NUMBER_OF_LANES: integer        := LANE_TO_LINK_MAP'LENGTH;
+    NUMBER_OF_LINKS: integer        := max(LANE_TO_LINK_MAP)+1;
+    NUMBER_OF_REFCLK: integer       := max(QUAD_TO_REFCLK_MAP) + 1;
+
+
     SIM: boolean                    := FALSE
     );
   port (
@@ -122,6 +126,8 @@ architecture Implementation of xglink_array is
 attribute DONT_TOUCH: string;
 
 --- Constants
+
+constant NUMBER_OF_LANE_GROUPS: integer  := max(LANE_GROUP_MAP)+1;
 
 -- XGLINK_CORE Signals
 
@@ -461,8 +467,8 @@ core0: entity work.xglink_core
 		NUMBER_OF_TX_LANES          => NUMBER_OF_LINKS,
 		NUMBER_OF_RX_LANES          => sel(IMPLEMENT_RX, NUMBER_OF_LINKS, 0),
 		NUMBER_OF_REFCLK            => NUMBER_OF_REFCLK,
-		LANE_TO_QUAD_MAP            => LANE_TO_QUAD_MAP,
-		QUAD_TO_REFCLK_MAP          => QUAD_TO_REFCLK_MAP,
+		LANE_TO_QUAD_MAP            => integerArray(LANE_TO_QUAD_MAP),
+		QUAD_TO_REFCLK_MAP          => integerArray(QUAD_TO_REFCLK_MAP),
 		NUMBER_OF_CONTROL_BYTES     => control_bytes'Length(1),
 		NUMBER_OF_STATUS_BYTES      => status_bytes'Length(1),
 		EXAMPLE_SIMULATION          => 1,

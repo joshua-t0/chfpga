@@ -18,7 +18,6 @@ This configuration includes:
 Package definition
 =================
 
-.. parse:: hdl/chfpga_mgk7mb_config.vhd
+.. parse:: hdl/chfpga_ice_corr16.vhd
 
-.. .. autoentity:: chFPGA_MGK7MB_Rev2
 

@@ -1,0 +1,1 @@
+file rename -force chfpga_ice.bit chfpga_ice_corr16.bit

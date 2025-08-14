@@ -11,13 +11,15 @@ rule:
     function_019:  # Move parenthesis to next line.
         disable: true  # We want Single line functions to be more compact
     whitespace_002:
-        severity: Warning
+        severity: Error
     variable_assignment_001: # Move parenthesis after assignment to the next line.
         disable: true # keep short aggregates on one line
     port_012: # default value son port
         disable: true # We use that. ok with Vivado tools.
     port_map_010: # No comments on port map - hard to maintain
         disable: true # We think it still improves redabillity.
+    variable_assignment_006: # comment in multiline variable assignment
+        disable: true # We allow them to clarify assignments with a lot of signals
     signal_007:
         severity: Warning
     if_002: # We don't use parenthesis in if statements
@@ -74,6 +76,7 @@ rule:
         disable: true
     signal_006: # we don't put a space between the label and ":"
         number_of_spaces: 0
+        severity: Error
     variable_006: # spaces between label and :
         number_of_spaces: 0
     port_020: # we don't put a space between the label and ":"
@@ -82,6 +85,7 @@ rule:
         disable: true
     constant_006: # We use no space between constant label and ":"
         number_of_spaces: 0
+        severity: Error
     instantiation_003: # We use no space between label and ":"
         number_of_spaces: 0
     generate_002: # space between label and ":"
@@ -90,6 +94,7 @@ rule:
         number_of_spaces: "<=1"
     entity_specification_101: # no space between attribute signal name and :
         number_of_spaces: 0
+        severity: Warning
     attribute_declaration_101: # no space between attribute declaration label and :
         number_of_spaces: 0
     block_200: # blank line before block statement
@@ -147,8 +152,26 @@ rule:
         disable: true
     architecture_026: # align colon in signals
         disable: true
+    generate_401: # align colon in generate declarations section
+        disable: true
+    generate_403: # align colon in generate declarations section
+        disable: true
+    generate_405: # align colon in generate declarations section
+        disable: true
+    process_033: # align colon in process declarations section
+        disable: true
+    function_012: # align colon in process declarations section
+        disable: true
+
     architecture_027: # align comments in signals
         disable: true
+    architecture_400: # align colon in attribute specs
+        disable: true
+    block_401: # align colon for all declarations in block declarative part
+        disable: true
+    block_402: # align colon for all atribute specifications
+        disable: true
+
     signal_012: # multiple signals aligned
         disable: true
 
@@ -195,6 +218,8 @@ rule:
         style: allow_comment
     instantiation_019: # blank line before instantiation
         style: allow_comment
+    loop_statement_200: # blank line before for loop
+        disable: true
     loop_statement_202: # blank line before end loop
         disable: true
     process_023: # blank line before end process
@@ -205,8 +230,10 @@ rule:
     # bank line below
     case_200: # blank line below when
         style: no_blank_line
+        severity: Warning
     case_010: # blank line below end case
-        style: no_blank_line
+        style: require_blank_line
+        severity: Warning
     if_030: # blank line after end if
         style: no_blank_line
 
@@ -233,10 +260,11 @@ rule:
     # port name case
     port_010: # port label case
         case: lower
-        severity: Warning
+        severity: Error
+
     port_map_002: # port label case
         case: lower
-        severity: Warning
+        severity: Error
 
     # constant name case
     constant_004: # constant name case
@@ -268,6 +296,17 @@ rule:
         consecutive: 4
         severity: Warning
 
+    constant_016: # Structure of multiline constants. Currently seems to require parenthesis to be on separate line
+        disable: true
+
+    constant_012: # Alignment of multiline constants.
+        align_left: yes
+        align_paren: no
+
+    if_009: # Alignment of multiline condition.
+        align_left: yes
+        align_paren: yes
+
 indent:
     tokens:
         use_clause:
@@ -287,15 +326,15 @@ indent:
         #         token: 0
         # Fix instantiation maps final parenthesis indentation
         enumeration_type_definition:
-            close_parenthesis:
-              after: -1
-              token: current  # close the parenthesis onthe same level as the previous block
-            enumeration_literal:
-              after: current
-              token: current
             open_parenthesis:
-              after: 1
               token: current
+              after: +2
+            enumeration_literal:
+              token: current
+              after: current
+            close_parenthesis:
+              token: current  # close the parenthesis onthe same level as the previous block
+              after: -1
 
         # port_clause:
         #     close_parenthesis:
