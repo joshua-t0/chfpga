@@ -36,7 +36,8 @@ ENTITY funcgen_testbench IS
  	generic (
  		BITS_PER_SAMPLE: integer := 14; 
  		SAMPLES_PER_WORD: integer := 8;
- 		SAMPLES_PER_FRAME: integer := 16384
+ 		SAMPLES_PER_FRAME: integer := 16384;
+ 		FUNCGEN_TUSER_BITS_PER_WORD: integer := 1
  		);
 END funcgen_testbench;
 
@@ -58,7 +59,7 @@ ARCHITECTURE behavior OF funcgen_testbench IS
 	--Inputs
     subtype sample is std_logic_vector(BITS_PER_SAMPLE-1 downto 0); 
     type sample_array is array (0 to SAMPLES_PER_FRAME-1) of sample;
-    constant BYTES_PER_FRAME: integer := BITS_PER_SAMPLE/8*SAMPLES_PER_FRAME;
+    constant BYTES_PER_FRAME: integer := (BITS_PER_SAMPLE+7)/8*SAMPLES_PER_FRAME;
 	signal clk: std_logic; --
 	signal out_clk: std_logic; --
 	signal clk125: std_logic; --
@@ -147,9 +148,10 @@ stim_proc : process
 	variable bytes: slv8_array(0 to BYTES_PER_FRAME-1);
 	variable page_slv: std_logic_vector(6 downto 0);
 	variable cmd_byte: std_logic_vector(7 downto 0);
-	constant MODE:std_logic_vector(2 downto 0) := "010"; -- "010": Noise
+	constant MODE:std_logic_vector(2 downto 0) := "011"; -- "010": Noise
 	constant NFRAMES: integer := 0; -- 0= infinite
 	constant SHIFT: integer := 5;
+	constant STATS_PERIOD: integer := 10;
 	begin
 
         -- pulse the resets
@@ -184,18 +186,39 @@ stim_proc : process
     --		chan_reset <= '0';
         end if; -- mode
         
-        -- Set number of frames
-		fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 3, NFRAMES); -- Send 5 frames
+        if MODE="011" then
+            for i in pattern'range loop
+                pattern(i) := (others => '0');
+                pattern(i)(5) := '1';
+--                pattern(i)(BITS_PER_SAMPLE - 1) := '1';
+                bytes(2*i to 2*i+1) := to_slv8_array(pattern(i));
+            end loop;
     
-        -- Set the shift factor
-		fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 5, SHIFT); 
+            for page in 0 to (bytes'length)/512  -1 loop
+                page_slv := to_slv(page, page_slv'length);
+                cmd_byte := "00" & page_slv(2 downto 0) & "000";
+                fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, cmd_byte); -- Make sure we use page 0
+                cmd_byte := page_slv(6 downto 3) & "0000";
+                fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 5, cmd_byte); -- Make sure we use page 0
+                fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 6, "10000000");
+                fpga_write_ram(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, bytes(512*page to 512*(page+1)-1)); -- write all 2048 bytes at once.
+                
+                -- Set stats_period
+		        fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 3, 0);
+		        fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 4, STATS_PERIOD-1); 
+            end loop;
+    --		chan_reset <= '0';
+        end if; -- mode
+        
+        
+ 
     
         -- Set the mode
         sleep(clk125, 10); -- make sure we start command transmission on a CLK125 edge or we will lose some data
         fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, "00000" & MODE ); --
         fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, "01000" & MODE ); 
 
-
+        
 
 			sleep(clk,512*7);
 		-- fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, 2#01000000# + 1); -- source=funcgen, enable=1

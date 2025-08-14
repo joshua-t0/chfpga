@@ -108,6 +108,13 @@ use work.chFPGA_Package.all; -- Get all component definitions
 -- The conclusion here is that the noise generator is an experimental feature that might be useful
 -- but needs to be tested.
 --
+
+--Overflow counter
+-- ---------------
+--
+-- The overflow counter counts over ```stats_period```(user defined) frames the number of sample overflows from the ADC or the number of overflows injected through the buffer (either from modes FN_FRAME_WORD_CTR_RAM_FLAGS, FN_FRAME8 or FN_FRAME4). The overflow count for other modes (FN_RAM, FN_NOISE, FN_RAM_NIBBLE4) is 0. The maximum number of frames over which to count the number of overflows is 65535. When counting overflows from the buffer, each sample's LSB indicate if there is an overflow or not, so to simulate an overflow in a sample, set the sample value to 1. Overflow counting is enabled with ```stats_enable``` and the result can be read from ```overflow_ctr```. 
+
+
 entity FUNCGEN is
     generic (
         ADC_SAMPLES_PER_WORD: integer := 8;
@@ -180,8 +187,8 @@ signal out_dat_tlast: std_logic;
 
 
 -- Control and status bytes
-signal control_bytes: slv8_array(0 to 6); -- default value set in the CMD_SLAVE
-signal status_bytes: slv8_array(0 to 5);
+signal control_bytes: slv8_array(0 to 7); -- default value set in the CMD_SLAVE
+signal status_bytes: slv8_array(0 to 8);
 
 signal byte_a: slv8;
 signal byte_b: slv8;
@@ -197,7 +204,7 @@ signal word_ctr: std_logic_vector(LOG2_WORDS_PER_FRAME-1 downto 0) := (others=>'
 -- signal use_overflow: std_logic;
 signal reset_all, reset_all_reg: std_logic;
 signal soft_reset: std_logic:= '0';
-signal number_of_frames: unsigned(7 downto 0); -- Counts words from 0 to FRAME_LENGTH/4-1
+signal overflow_ctr_period: unsigned(15 downto 0); -- Number of frames over which to count the number of sample overflows
 signal frame_ctr: unsigned(31-LOG2_WORDS_PER_FRAME downto 0); -- Counts frame from 0 to FRAME_LENGTH/4-1. Concatenation of word_ctr & frame_ctr is always 32 bits.
 signal enable: std_logic;
 signal send_frame: std_logic;
@@ -207,7 +214,7 @@ signal send_frame: std_logic;
 --signal ram_page_msb: std_logic_vector(3 downto 0); -- 4 bits
 signal ram_page: std_logic_vector(6 downto 0); -- combined ram_page_msb and _lsb. 7 bits, more than we need. 9 bits BSB RAM addr + 7 bits page = 16 bit address = 65536 bytes.
 
-signal adc_overflow_flag: std_logic;
+signal frame_overflow_flag: std_logic;
 signal capture_flag: std_logic;
 signal adc_tfirst: std_logic;
 signal ramp_tfirst: std_logic;
@@ -230,13 +237,17 @@ signal ram_dout_int1, ram_dout_int2: std_logic_vector(8*BYTES_PER_SAMPLE*ADC_SAM
 signal ram_dout: std_logic_vector(BITS_PER_WORD-1 downto 0);
 
 signal delay_capture_ctr: unsigned(15 downto 0);
-signal adc_overflow_ctr: unsigned(7 downto 0);
-signal reset_stats: std_logic;
-signal rst_lfsr: std_logic;
+signal overflow_ctr, overflow_ctr_reg: unsigned(31 downto 0):= (others => '0');
+signal stats_enable, stats_enable_resync: std_logic;
+signal stats_done: std_logic:= '0';
+signal overflow_frame_ctr: unsigned(15 downto 0):= (others => '0');
+signal out_dat_overflows: std_logic_vector(ADC_SAMPLES_PER_WORD-1 downto 0);
+
 
 --lfsr
 signal lsfr_in: std_logic_vector(31 downto 0); -- seed for lfsr
 signal lfsr_out: std_logic_vector(ADC_SAMPLES_PER_WORD*ADC_BITS_PER_SAMPLE-1 downto 0):= (others=>'0'); --output from lfsr
+signal rst_lfsr: std_logic;
 
 begin
 -----------------------------------------------------------------------------------
@@ -253,20 +264,22 @@ begin
 -- |         |     |  2:0 | fn_sel               |   |
 -- |         |  1  |  7:0 | byte_a               | Byte A, used as parameters in some functions |
 -- |         |  2  |  7:0 | byte_b               | Byte B, used as parameters in some functions |
--- |         |  3  |  7:0 | number_of_frames     | If non-zero, only ``number_of_frames`` frames will be sent after sync |
--- |         |  4  |  7:0 | byte_c               | Byte C, used as parameters in some functions |
+-- |         | 3-4 | 15:0 | stats_period         | Number of frames during which the number of sample overflows is counted.
 -- |         |  5  |  7:4 | ram_page[6:3]        | MSB of the RAM page number |
 -- |         |     |  3:0 | shift                | Number of bits to right-shift the output data |
--- |         |  6  |  7   | stats_reset          | Clears the ADC overflow counter |
+-- |         |  6  |  7   | stats_enable         | Enables overflow_ctr update. Clears stats_done when stats_enabled cleared.|
 -- |         |     |  6   | rst_lfsr             | Resets seed and output of LFSR |
--- |         |     |  5:4 | (unused)             |   |
+-- |         |     |  5:4 | (unused)             | |
 -- |         |     |  3:0 | clip_width           | Saturates the output data to a ``clip_width-1``-bit wide signed value (i.e. clip_width is the position of the sign bit). Saturation is applied after the right-shift. |
+-- |         |  7  |  7:0 | function_number      | Function number stored in buffer. Doesn't change waveform. 
 -- | STATUS  |  0  |  7:0 | ramp_word_ctr        | Last 8 bits of the word counter |
 -- |         |  1  |  7:0 | frame_ctr            | Last 8 bits of the frame counter |
--- |         |  2  |  7:1 | (unused)             | |
--- |         |     |   0  | send_frame           | High when frame sending is enabled |
+-- |         |  2  |  7:3 | (unused)             | |
+-- |         |  2  |  2   | frame_overflow_flag  | Indicates if there is at least an adc overflow in current frame. 
+-- |         |  2  |  1   | stats_done           | overflow_ctr ready with new value for new integration period
+-- |         |     |  0   | send_frame           | High when frame sending is enabled |
 -- |         | 3-4 | 15:0 | delay_capture_ctr    | Delay capture value. |
--- |         |  5  |  7:0 | overflow_ctr         | ADC overflow counter. Saturates at 255. |
+-- |         | 5-8 | 31:0 | overflow_ctr         | Number of samples that are saturated over ``overflow_ctr_period``. The maximum number is bigger than possible amount of overflows over any initegration period, so no saturation. |
 --  ------------------------------------------------------------------------------
 
 
@@ -280,8 +293,8 @@ fn_sel       <= FN_TYPE(control_bytes(0)(2 downto 0)); --
 byte_a <= control_bytes(1);
 byte_b <= control_bytes(2);
 
--- CONTROL Byte 3
-number_of_frames <= unsigned(control_bytes(3));
+-- CONTROL Byte 3 and 4
+overflow_ctr_period <= to_unsigned(control_bytes(3 to 4));
 
 -- CONTROL Bytes 4: Byte C
 byte_c <= control_bytes(4);
@@ -291,9 +304,12 @@ ram_page(6 downto 3) <= control_bytes(5)(7 downto 4); -- 4 most significant bits
 shift <= unsigned(control_bytes(5)(3 downto 0));
 
 -- CONTROL Bytes 6: Saturation width and overrange count reset
-reset_stats <= control_bytes(6)(7);
+stats_enable <= control_bytes(6)(7);
 rst_lfsr  <= control_bytes(6)(6);
 clip_width <= unsigned(control_bytes(6)(3 downto 0));
+
+-- CONTROL Bytes 7: User defined function number
+
 
 -- STATUS Byte 0
 status_bytes(0) <= std_logic_vector(lsb(ramp_word_ctr));
@@ -302,13 +318,15 @@ status_bytes(0) <= std_logic_vector(lsb(ramp_word_ctr));
 status_bytes(1) <= std_logic_vector(lsb(frame_ctr));
 
 -- STATUS Byte 2
+status_bytes(2)(2) <= frame_overflow_flag;
+status_bytes(2)(1) <= stats_done;
 status_bytes(2)(0) <= send_frame;
 
 -- STATUS Byte 3-4
 status_bytes(3 to 4) <= to_slv8_array(delay_capture_ctr);
 
 -- STATUS Byte 5
-status_bytes(5) <= std_logic_vector(adc_overflow_ctr);
+status_bytes(5 to 8) <= to_slv8_array(overflow_ctr_reg);
 
 --ram_page <= ram_page_msb & ram_page_lsb;
 
@@ -322,10 +340,10 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
         NUMBER_OF_STATUS_BYTES  => status_bytes'Length(1), --
         DEFAULT_CONTROL_BYTES   => X"40" & -- Byte 0: soft_reset, enable, ram_page[2:0], fn_sel[2:0]
                                    X"0101" & -- Bytes 1-2: Byte A & Byte B
-                                   X"00" & -- Byte 3: number_of_frames
-                                   X"FF" & -- Byte 4: Byte C
+                                   X"0000" & -- Byte 3-4: overflow_ctr_period
                                    X"00" & -- Byte 5: ram_page[6:3], shift[3:0]
-                                   X"0F", -- Byte 6: reset_stats, unused(2:0), clip_width[3:0]
+                                   X"8F" & -- Byte 6: stats_enable, rst_lfsr, unused[1:0], clip_width[3:0]
+                                   X"00", --Byte 7: User defined function number
         ADDR_WIDTH              => 9, -- We have 9 bits of data left after routing
         RAM_DATA_WIDTH          => 8, -- 8 or 16 bits
         RAM_ADDR_WIDTH          => CMD_ADDR_WIDTH, -- Cannot exceed 9 bits with 8-bit data width because higher bits are used for routing
@@ -379,10 +397,14 @@ lfsr: entity work.lfsr
 
 -- Set TUSER
 out_dat_tuser <= (
-    TUSER_ADC_OVERFLOW_BIT => adc_overflow_flag,
-    TUSER_CAPTURE_BIT      => capture_flag,
+    TUSER_ADC_OVERFLOW_BIT => frame_overflow_flag,
+--    TUSER_CAPTURE_BIT      => capture_flag,
     others                 => '0'
     );
+
+stats_enable_cdc0: xpm_cdc_single
+		generic map (SRC_INPUT_REG => 0)
+		port map (src_clk => '0', src_in => stats_enable, dest_clk => clk, dest_out => stats_enable_resync);
 
 funcgen_proc: process (clk)
     -- variable out_dat_var: std_logic_vector(31 downto 0);
@@ -390,6 +412,8 @@ funcgen_proc: process (clk)
     variable sample_var: signed(ADC_BITS_PER_SAMPLE-1 downto 0);
     variable int_shift: integer;
     variable int_clip_width: integer range 0 to 15;
+    variable new_overflow_ctr: unsigned(overflow_ctr'RANGE);
+    variable reversed_ram_dout: std_logic_vector(ram_dout'RANGE);
 
     begin
         if rising_edge(clk) then
@@ -427,14 +451,6 @@ funcgen_proc: process (clk)
             ramp_word_ctr_dly <= ramp_word_ctr;
             word_ctr <= std_logic_vector(ramp_word_ctr_dly); -- This is aligned with the RAM output
 
-            if reset_stats then
-                adc_overflow_ctr <= (others => '0');
-            elsif not all_zeros(in_dat_tuser) and not all_ones(adc_overflow_ctr) then
-                adc_overflow_ctr <= adc_overflow_ctr + 1;
-            end if;
-
-
-
             -- Generate a tfirst signal
             if in_dat_tvalid='1' then
                 adc_tfirst <= in_dat_tlast;
@@ -449,17 +465,37 @@ funcgen_proc: process (clk)
                 ramp_tfirst <= '1';
                 out_dat_tlast <= '1';
                 if enable = '1' then
-                    if number_of_frames = 0 or (number_of_frames /= 0 and frame_ctr /= number_of_frames) then
-                        send_frame <= '1';
-                        frame_ctr <= frame_ctr + 1; -- can be overriden below
-                    else
-                        send_frame <= '0';
-                    end if;
-                end if;
-            end if;
+                    send_frame <= '1';
+                    frame_ctr <= frame_ctr + 1; 
+                else
+                    send_frame <= '0';
+                end if; -- send frame
+            end if; -- end of a frame
+
+            if out_dat_tvalid then
+                new_overflow_ctr := overflow_ctr + to_unsigned(num_ones(out_dat_overflows), overflow_ctr'LENGTH);
+                overflow_ctr <= new_overflow_ctr; --overidden below when last word of integration period 
+                if out_dat_tlast then
+                    overflow_frame_ctr <= overflow_frame_ctr + 1;
+                    if overflow_frame_ctr = overflow_ctr_period then
+                        overflow_ctr_reg <= new_overflow_ctr when stats_enable_resync;
+                        overflow_ctr <= (others => '0');
+                        overflow_frame_ctr <= (others => '0'); 
+                        stats_done <= '1';
+                    end if; --end of integration period 
+                end if; -- tlast
+            end if; -- tvalid
+
+            stats_done <= '0' when not stats_enable_resync;
+            
+            if reset_all then
+                overflow_frame_ctr <= (others => '0');
+                stats_done <= '0';
+                overflow_ctr <= (others => '0');
+                overflow_ctr_reg <= (others => '0');
+            end if; 
 
             if enable = '0' then
-                send_frame <= '0';
                 frame_ctr <= (others=>'0');
             end if;
 
@@ -471,21 +507,22 @@ funcgen_proc: process (clk)
             case fn_sel is
 
                 when FN_ADC =>
-                    if in_dat_tvalid='1' then
+                    -- if in_dat_tvalid='1' then
                         -- Cumulate the overflow flags until the end of the frame so the last word indicates if there was an overflow anywhere in the frame.
-                        if adc_tfirst='1' then
-                            adc_overflow_flag <= or_reduce(in_dat_tuser);
-                        else
-                            adc_overflow_flag <= adc_overflow_flag or or_reduce(in_dat_tuser);
-                        end if;
-                    end if; -- if TVALID
+                        -- if adc_tfirst='1' then
+                        --     frame_overflow_flag <= or_reduce(in_dat_tuser);
+                        -- else
+                        --     frame_overflow_flag <= frame_overflow_flag or or_reduce(in_dat_tuser);
+                        -- end if;
+                    -- end if; -- if TVALID
                     out_dat_tdata <= in_dat_tdata;
                     out_dat_tvalid <= in_dat_tvalid;
                     out_dat_tlast <= in_dat_tlast;
+                    out_dat_overflows <= in_dat_tuser;
 
 --                when FN_ADC16 => -- **OBSOLETE**
 --                    -- This mode is now identical to FN_ADC now that we handle wider buses
---                    adc_overflow_flag <= '0';
+--                    frame_overflow_flag <= '0';
 --                    out_dat_tdata <= in_dat_tdata;
 --                    out_dat_tvalid <= in_dat_tvalid;
 --                    out_dat_tlast <= in_dat_tlast;
@@ -493,7 +530,8 @@ funcgen_proc: process (clk)
                 when FN_RAM =>
                     out_dat_tdata <= ram_dout; -- Byte at address 0 is in the MSB
                     out_dat_tvalid <= send_frame;
-                    adc_overflow_flag <= '0';
+                    -- frame_overflow_flag <= '0';
+                    out_dat_overflows <= (others => '0');
 
                 -- Send bits 3:0 of RAM samples on even frames an bits 7:4 of RAM samples on odd frames.
                 -- Data is aligned on the 4 MSBs of each sample.
@@ -507,20 +545,28 @@ funcgen_proc: process (clk)
                         end if;
                     end loop;
                     out_dat_tvalid <= send_frame;
-                    adc_overflow_flag <= '0';
+                    -- frame_overflow_flag <= '0';
+                    out_dat_overflows <= (others => '0');
+
 
                 -- Send peudo-random noise on all samples.
                 -- The 32-bit bits of the PNRG is distributed on the MSB of all samples, and the samples are right-shifted by the value in byte_c.
                 when FN_NOISE =>                    
                     out_dat_tdata <= lfsr_out;
                     out_dat_tvalid <= send_frame;
-                    adc_overflow_flag <= '0';
+                    -- frame_overflow_flag <= '0';
+                    out_dat_overflows <= (others => '0');
+
 
                 when FN_FRAME_WORD_CTR_RAM_FLAGS =>
                     out_dat_tdata <= (others => '0');
                     out_dat_tdata(31 downto 0) <= to_slv(frame_ctr) & word_ctr; -- store frame & word counter only in the lower 32 bits.
                     out_dat_tvalid <= send_frame;
-                    adc_overflow_flag <= ram_dout(0);
+                    -- frame_overflow_flag <= ram_dout(0);
+                    for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
+                        reversed_ram_dout := reverse_bits_same_dir(ram_dout);
+                        out_dat_overflows(i) <= reversed_ram_dout(ADC_BITS_PER_SAMPLE*(i+1)-1); --reverse bits so that the MSB of ram is aligned with the MSB of tuser (first sample). The MSB of each sample indicates if there is an overflow.
+                    end loop; --overflow count per word (LSB of each sample indicates overflow)
 
                 -- Send the The ADC_BITS_PER_SAMPLE-2 LSBs of the frame counter on every sample of the frame
                 when FN_FRAME8 =>
@@ -528,7 +574,10 @@ funcgen_proc: process (clk)
                         out_dat_tdata(ADC_BITS_PER_SAMPLE*(i+1)-1 downto ADC_BITS_PER_SAMPLE*i) <= to_slv(frame_ctr(ADC_BITS_PER_SAMPLE-3 downto 0)) & "00";
                     end loop;
                     out_dat_tvalid <= send_frame;
-                    adc_overflow_flag <= ram_dout(0);
+                    for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
+                        reversed_ram_dout := reverse_bits_same_dir(ram_dout);
+                        out_dat_overflows(i) <= reversed_ram_dout(ADC_BITS_PER_SAMPLE*i); --reverse bits so that the MSB of ram is aligned with the MSB of tuser (first sample). The MSB of each sample indicates if there is an overflow.
+                    end loop;
 
                 -- Send the 4 LSBs of the frame counter on the upper 4 MSBs of each sample in the frame
                 when FN_FRAME4 =>
@@ -537,11 +586,22 @@ funcgen_proc: process (clk)
                         out_dat_tdata(ADC_BITS_PER_SAMPLE*(i+1)-1 downto ADC_BITS_PER_SAMPLE*(i+1)-4) <= to_slv(frame_ctr(3 downto 0));
                     end loop;
                     out_dat_tvalid <= send_frame;
-                    adc_overflow_flag <= ram_dout(0);
+                    for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
+                        reversed_ram_dout := reverse_bits_same_dir(ram_dout);
+                        out_dat_overflows(i) <= reversed_ram_dout(ADC_BITS_PER_SAMPLE*i); --reverse bits so that the MSB of ram is aligned with the MSB of tuser (first sample). The MSB of each sample indicates if there is an overflow.
+                    end loop;
 
                 when others =>
                     out_dat_tdata <= (others=>'0');
             end case;
+
+            if in_dat_tvalid then
+                if adc_tfirst then
+                    frame_overflow_flag <= or(out_dat_overflows);
+                else
+                    frame_overflow_flag <= frame_overflow_flag or or(out_dat_overflows);
+                end if;
+            end if;
 
             -- Synchronous resets -- override signals above
             if reset_all='1' then -- Synchronous reset
