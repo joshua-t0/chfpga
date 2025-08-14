@@ -442,8 +442,8 @@ constant TUSER_CAPTURE_BIT: INTEGER :=0; -- Set by FUNCGEN and passed downstream
 --  TLAST - 2: Gain Bank (Downstream of SCALER only)
 constant TUSER_SERIAL_FLAGS_BIT: INTEGER :=3;
 
-constant TUSER_ADC_OVERFLOW_BIT: INTEGER :=3; -- Set by SRCSEL ont he last word of a frame to indicate that ADC saturation has occured on a sample of the frame.
-constant TUSER_FFT_OVERFLOW_BIT: INTEGER :=0; -- Set by SRCSEL and passed downstream to indicate to the PROBER that the data should be captured if continuous capture  mode is enabled
+constant TUSER_ADC_OVERFLOW_BIT: INTEGER :=0; -- Set by SRCSEL ont he last word of a frame to indicate that ADC saturation has occured on a sample of the frame.
+constant TUSER_FFT_OVERFLOW_BIT: INTEGER :=1; -- Set by SRCSEL and passed downstream to indicate to the PROBER that the data should be captured if continuous capture  mode is enabled
 
 constant TUSER_SCALER_LOW_OVERFLOW_BIT: INTEGER :=1; -- Set by SCALER to indicate ovweflow on the sample in the Low part of the word
 constant TUSER_SCALER_HIGH_OVERFLOW_BIT: INTEGER :=2; -- -- Set by SCALER to indicate ovweflow on the sample in the high part of the word
@@ -639,6 +639,8 @@ function all_zeros(v: std_logic_vector) return boolean; -- Return TRUE if all bi
 function all_zeros(v: unsigned) return boolean; -- Return TRUE if all bits are '0'.
 function all_zeros(v: signed) return boolean; -- Return TRUE if all bits are '0'.
 function all_zeros(v: std_logic_vector; high:integer; low:integer) return boolean;
+
+function num_ones(v: std_logic_vector) return integer; -- Return number of bits that are '1'.
 
 function cmplx(re, im:integer) return complex; -- Create a complex value out of two integer values
 function cmplx(re, im:signed) return complex; -- Create a complex value out of two signed values
@@ -1226,7 +1228,14 @@ begin
 	return v(high downto low) = zeros(high downto low);
 end function;
 
-
+function num_ones(v: std_logic_vector) return integer is
+	variable count: integer := 0;
+begin
+    for i in v'RANGE loop
+        count := (count + 1) when v(i);
+    end loop;
+    return count;
+end function;
 
 --Returns the log2 of a integer as a real value
 function log2(v: integer) return real is
