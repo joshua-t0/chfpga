@@ -379,7 +379,7 @@ lfsr: entity work.lfsr
 
 -- Set TUSER
 out_dat_tuser <= (
-    TUSER_ADC_OVERFLOW_BIT => adc_overflow_flag and out_dat_tlast, -- only assert overflow flag on last word of frame
+    TUSER_ADC_OVERFLOW_BIT => overflow_flag and out_dat_tlast, -- only assert overflow flag on last word of frame
     others => '0'
     );
 
@@ -492,7 +492,7 @@ funcgen_proc: process (clk)
                 when FN_RAM =>
                     out_dat_tdata <= ram_dout; -- Byte at address 0 is in the MSB
                     out_dat_tvalid <= send_frame;
-                    overflow_flag <= '0';
+                    overflow_flag <= byte_a(0);
 
                 -- Send bits 3:0 of RAM samples on even frames an bits 7:4 of RAM samples on odd frames.
                 -- Data is aligned on the 4 MSBs of each sample.
@@ -506,7 +506,7 @@ funcgen_proc: process (clk)
                         end if;
                     end loop;
                     out_dat_tvalid <= send_frame;
-                    overflow_flag <= '0';
+                    overflow_flag <= byte_a(0);
 
                 -- Send peudo-random noise on all samples.
                 -- The 32-bit bits of the PNRG is distributed on the MSB of all samples, and the samples are right-shifted by the value in byte_c.
