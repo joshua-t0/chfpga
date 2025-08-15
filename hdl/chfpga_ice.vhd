@@ -40,7 +40,7 @@ entity chfpga_ice is
 			SYSTEM_CLOCK_SOURCE: string                  := "SFP_REFCLK"; --"SYSCLK": the 200 MHz clock will be taken from sysclk_p/n (CC pins) or "SFP_REFCLK": the system clock is 125 MHz from the GTX reference clock
 			SYSTEM_CLOCK_FREQ: real                      := 125.0; -- System reference clock frequency, in MHz *** IP packager does not support real. Defined as constant below ***
 
-			CHAN_CLK_SOURCE: string                      := "MMCM"; -- Channelizer clock comes from the multi-phase MMCM
+			CHAN_CLK_SOURCE: string                      := "ADC"; -- Channelizer clock comes from the multi-phase MMCM
 			ANT_CLK_SOURCE: integer                      := 0; -- Indicate which ADC is the source of the channelizer. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
 			CHAN_CLK_FREQ: real                          := 200.0; -- MHz. 200.0 or 300.0 are supported.
 			CT_CLK_SOURCE: string                        := CONFIG_CT_CLK_SOURCE; -- corner-turn operates on backplane GTY word clock (~244 MHz)
@@ -113,7 +113,7 @@ entity chfpga_ice is
 
 			NUMBER_OF_CROSSBAR_INPUTS: integer           := 16; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
 			NUMBER_OF_CROSSBAR_OUTPUTS: integer          := 8; -- (Typ. =16): Number of repacked data streams to feed to the corrleator or GPU links
-			NUMBER_OF_CORRELATORS: INTEGER               := 8; -- (0-NUMBER_OF_REORDER_OUTPUTS) Number of correlator blocks (CH_DIST+CORR+ACC) to be implemented if IMPLEMENT_CORR=TRUE
+			NUMBER_OF_CORRELATORS: INTEGER               := CONFIG_NUMBER_OF_CORRELATORS; -- (0-NUMBER_OF_REORDER_OUTPUTS) Number of correlator blocks (CH_DIST+CORR+ACC) to be implemented if IMPLEMENT_CORR=TRUE
 			NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER := GLOBAL_NUMBER_OF_CHANNELIZERS_TO_CORRELATE; -- (3 - NUMBER_OF_CHANNELIZERS) Number of channelizers outputs to be correlated for each frequency channel. This is hard coded for now. Determines how many antenna streams are fed to the CORR_BLOCK modules, and how many multipliers to implement in parallel in the CORR module.
 			NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := 0;
 			NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := 0;
