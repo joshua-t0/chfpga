@@ -769,6 +769,10 @@ architecture impl of chFPGA is
 	attribute shreg_extract of chan_out_tvalid: signal is "no";
 	attribute shreg_extract of chan_out_tlast: signal is "no";
 
+	attribute DONT_TOUCH of chan_out_tdata: signal is "yes";
+	attribute DONT_TOUCH of chan_out_tuser: signal is "yes";
+	attribute DONT_TOUCH of chan_out_tvalid: signal is "yes";
+	attribute DONT_TOUCH of chan_out_tlast: signal is "yes";
 
 	signal TRIG: std_logic; -- global trigger
 	signal ADC_DAQ_BUFR_SYNC: std_logic;
