@@ -11,10 +11,10 @@ package chfpga_config is
 
 	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean := TRUE;
 	constant CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := 16; -- only implement one channelizer with an FFT for now
-	constant CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS: boolean := TRUE;
+	constant CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS: boolean := FALSE;
 	constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer := 2;
 	constant CONFIG_CHAN_CAPTURE_TYPE: string := "BRAM";
-	constant CONFIG_CHAN_FFT_TYPE: integer := FFT_TYPE_CHIME;
+	constant CONFIG_CHAN_FFT_TYPE: integer := FFT_TYPE_HIRAX;
 	constant CONFIG_CAPTURE_BITS_PER_WORD: integer := 32;
 	constant CONFIG_FFT_ROTATE_BINS: boolean := FALSE; -- CHIME: False, D3A/CHORD: True.
 
