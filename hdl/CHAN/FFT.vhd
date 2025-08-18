@@ -399,12 +399,14 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
             fft_rot_tlast  <= fft_tlast;
             fft_rot_tuser  <= fft_tuser;
 			fft_rot_overflow_sticky <= fft_overflow_sticky or overflow_force; -- incorporate last overflow
-            for i in 0 to FFT_BINS_PER_WORD-1 loop
-                src_lane := (i + to_integer(word_ctr(i))) MOD FFT_BINS_PER_WORD when ROTATE_BINS else i;
-                fft_rot_tdata((i+1)*FFT_BITS_PER_BIN-1 downto i*FFT_BITS_PER_BIN) <= fft_tdata((src_lane+1)*FFT_BITS_PER_BIN -1 downto src_lane*FFT_BITS_PER_BIN);
-			end loop; -- if FFT is implemented
-			fft_rot_tdata <= fft_tdata;
-
+			if ROTATE_BINS then
+	            for i in 0 to FFT_BINS_PER_WORD-1 loop
+	                src_lane := (i + to_integer(word_ctr(i))) MOD FFT_BINS_PER_WORD;
+	                fft_rot_tdata((i+1)*FFT_BITS_PER_BIN-1 downto i*FFT_BITS_PER_BIN) <= fft_tdata((src_lane+1)*FFT_BITS_PER_BIN -1 downto src_lane*FFT_BITS_PER_BIN);
+				end loop; -- if FFT is implemented
+			else:
+				fft_rot_tdata <= fft_tdata;
+			end if;
 
 			-- Register the final output. The delay is also used so we can insert the overflow flag on the final word.
 			-- Warning: out_dat.TUSER is overriden below - do not move down
@@ -414,7 +416,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 			m_axis_out_dat_tdata  <= out_dat_pre_tdata;
 			m_axis_out_dat_tlast  <= out_dat_pre_tlast;
 			m_axis_out_dat_tuser  <= (others => '0'); -- overriden below - do not move down
-			m_axis_out_dat_tuser(FUNCGEN_TUSER_BITS_PER_WORD-1 downto 0)  <= out_dat_pre_tuser; 
+			m_axis_out_dat_tuser(FUNCGEN_TUSER_BITS_PER_WORD-1 downto 0)  <= out_dat_pre_tuser;
 
 			if IMPLEMENT_FFT=TRUE and bypass_fft='0' then -- if the FFT is being used
 				-- if the FFT module is present and it is not bypassed by software, pass the FFT output to the output
