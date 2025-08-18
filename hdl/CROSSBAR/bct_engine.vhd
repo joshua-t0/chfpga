@@ -80,6 +80,7 @@ entity bct_engine is
 	);
 	port (
 		-- Non-blocking input stream from the channelizer, synchronous to `clk`
+		-- All inputs are assumed to be aligned, hence the single TVALID/TLAST.
 		s_axis_tdata: in slv_array(0 to NUMBER_OF_INPUT_LANES - 1)(INPUT_LANE_WIDTH - 1 downto 0); -- data from each channelizer, each of which contains 4x (4+4)-bit bin values
 		s_axis_tuser: in slv_array(0 to NUMBER_OF_INPUT_LANES - 1)(3 downto 0); -- data from each channelizer, each of which contains 4x (4+4)-bit bin values
 		s_axis_tvalid: in std_logic;
@@ -592,15 +593,14 @@ begin
 				PLATFORM_ID            => PLATFORM_ID,  -- needed to select family-dependent FIFOs
 				NUMBER_OF_INPUT_LANES  => NUMBER_OF_CB1_INPUT_LANES,
 				NUMBER_OF_OUTPUT_LANES => NUMBER_OF_CB1_OUTPUT_LANES,
-				BINSEL_PBLOCK_MAP      => (0 to 4 => 0, 5 to 8 => 1, 9 to 12 => 1, 13 to 15 => 0),
-				EIGHT_BIT_SUPPORT      => FALSE
+				BINSEL_PBLOCK_MAP      => (0 to 4 => 0, 5 to 8 => 1, 9 to 12 => 1, 13 to 15 => 0)
 			)
 			port map (
 				-- Input stream from the channelizer (AXI4-streaming, non-blocking, on clk)
 				s_axis_tuser  => cb1_in_tuser_reg3,
-				s_axis_tvalid => (others => cb1_in_tvalid_reg3),
+				s_axis_tvalid => cb1_in_tvalid_reg3,
 				s_axis_tdata  => cb1_in_tdata_reg3,
-				s_axis_tlast  => (others => cb1_in_tlast_reg3),
+				s_axis_tlast  => cb1_in_tlast_reg3,
 
 				-- Output stream to the shuffle module (AXI4-streaming, non-blocking, on clk)
 				m_axis_tdata  => cb1_out_tdata,

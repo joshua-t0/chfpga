@@ -752,23 +752,15 @@ architecture impl of chFPGA is
 	signal chan_reset: std_logic_vector(0 to NUMBER_OF_CHAN_CLOCKS - 1);
 	signal chan_clk_src_sel: std_logic;
 
-	signal chan_out_tdata: slv32_array(0 to NUMBER_OF_CHANNELIZERS - 1);
-	signal chan_out_tuser: slv4_array(0 to NUMBER_OF_CHANNELIZERS - 1);
+	signal chan_out_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(31 downto 0);
+	signal chan_out_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
 	signal chan_out_tvalid: slv(0 to NUMBER_OF_CHANNELIZERS - 1);
 	signal chan_out_tlast: slv(0 to NUMBER_OF_CHANNELIZERS - 1);
 	signal chan_out_almost_empty: slv(0 to NUMBER_OF_CHANNELIZERS - 1);
 	signal chan_out_send: slv(0 to NUMBER_OF_CHANNELIZERS - 1) := (others => '1'); -- have the channelizer send data by default unless this is overriden
 
-	attribute equivalent_register_removal of chan_out_tdata: signal is "no";
-	attribute equivalent_register_removal of chan_out_tuser: signal is "no";
-	attribute equivalent_register_removal of chan_out_tvalid: signal is "no";
-	attribute equivalent_register_removal of chan_out_tlast: signal is "no";
-
-	attribute shreg_extract of chan_out_tdata: signal is "no";
-	attribute shreg_extract of chan_out_tuser: signal is "no";
-	attribute shreg_extract of chan_out_tvalid: signal is "no";
-	attribute shreg_extract of chan_out_tlast: signal is "no";
-
+	attribute equivalent_register_removal of chan_out_tdata, chan_out_tuser, chan_out_tvalid, chan_out_tlast: signal is "no";
+	attribute shreg_extract of chan_out_tdata, chan_out_tuser, chan_out_tvalid, chan_out_tlast: signal is "no";
 
 	signal TRIG: std_logic; -- global trigger
 	signal ADC_DAQ_BUFR_SYNC: std_logic;
@@ -2850,217 +2842,165 @@ begin
 
 	end block ct_clk_blk;
 
-	ct_gen: case CT_TYPE generate
-		when bct_case: CT_TYPE_BCT =>
+    ct_gen: if CT_TYPE /= CT_TYPE_NONE generate
+        signal ct_reset_reg0, ct_reset_reg1, ct_reset_reg2: std_logic;
 
-			signal ct_reset_reg0, ct_reset_reg1, ct_reset_reg2: std_logic;
+        signal ct_in1_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(31 downto 0);
+        signal ct_in1_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
+        signal ct_in1_tvalid: std_logic;
+        signal ct_in1_tlast: std_logic;
+        attribute shreg_extract of ct_in1_tdata, ct_in1_tuser, ct_in1_tvalid, ct_in1_tlast: signal is "no";
 
-			signal ct_in1_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(31 downto 0);
-			signal ct_in1_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
-			signal ct_in1_tvalid: slv(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
-			signal ct_in1_tlast: slv(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
-			attribute shreg_extract of ct_in1_tdata, ct_in1_tuser, ct_in1_tvalid, ct_in1_tlast: signal is "no";
+        signal ct_in2_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(31 downto 0);
+        signal ct_in2_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
+        signal ct_in2_tvalid: std_logic;
+        signal ct_in2_tlast: std_logic;
+        attribute shreg_extract of ct_in2_tdata, ct_in2_tuser, ct_in2_tvalid, ct_in2_tlast: signal is "no";
+    begin
 
-			signal ct_in2_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(31 downto 0);
-			signal ct_in2_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
-			signal ct_in2_tvalid: slv(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
-			signal ct_in2_tlast: slv(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
-			attribute shreg_extract of ct_in2_tdata, ct_in2_tuser, ct_in2_tvalid, ct_in2_tlast: signal is "no";
+       process(all) begin
+            if rising_edge(ct_clk) then
+                ct_reset_reg0 <= ct_reset;
 
-		begin
+                -- Pipeline and connect the channelizer output to the corner-turn engine inputs. The
+                -- pipelining is there to help meeting timing closure, as we need to route long
+                -- distance from the channelizer to the input of the CT Engine.
+                ct_reset_reg1 <= ct_reset_reg0;
 
-			process(all) begin
-				if rising_edge(ct_clk) then
-					ct_reset_reg0 <= ct_reset;
+                ct_in1_tdata <= chan_out_tdata; -- convert from slv32() to slv_array()(31 downto 0)
+                ct_in1_tuser <= chan_out_tuser;
+                ct_in1_tlast <= chan_out_tlast(0);
+                ct_in1_tvalid <= chan_out_tvalid(0) when not ct_reset_reg1 else '0';
 
-					-- Pipeline and connect the channelizer output to the corner-turn engine inputs. The
-					-- pipelining is there to help meeting timing closure, as we need to route long
-					-- distance from the channelizer to the input of the CT Engine.
-					ct_reset_reg1 <= ct_reset_reg0;
+                -- Pipeline 2
+                ct_reset_reg2 <= ct_reset_reg1;
 
-					for i in 0 to NUMBER_OF_CHANNELIZERS - 1 loop
-						ct_in1_tdata(i) <= chan_out_tdata(i); -- convert from slv32() to slv_array()(31 downto 0)
-						ct_in1_tuser(i) <= chan_out_tuser(i);
-						ct_in1_tlast(i) <= chan_out_tlast(i);
-						ct_in1_tvalid(i) <= '0' when ct_reset_reg1 else chan_out_tvalid(i);
-					end loop;
+                ct_in2_tdata <= ct_in1_tdata;
+                ct_in2_tuser <= ct_in1_tuser;
+                ct_in2_tlast <= ct_in1_tlast;
+                ct_in2_tvalid <= ct_in1_tvalid when not ct_reset_reg2 else '0';
 
-					-- Pipeline 2
-					ct_reset_reg2 <= ct_reset_reg1;
+            end if; -- clk
+        end process;
 
-					for i in 0 to NUMBER_OF_CHANNELIZERS - 1 loop
-						ct_in2_tdata(i) <= ct_in1_tdata(i);
-						ct_in2_tuser(i) <= ct_in1_tuser(i);
-						ct_in2_tlast(i) <= ct_in1_tlast(i);
-						ct_in2_tvalid(i) <= '0' when ct_reset_reg2 else ct_in1_tvalid(i);
-					end loop;
-
-				end if; -- clk
-			end process;
-
-			ct0: entity work.bct_engine
-				generic map (
-					PLATFORM_ID => PLATFORM_ID,
-					NUMBER_OF_INPUT_LANES => NUMBER_OF_CHANNELIZERS, -- Number of channelizer inputs
-					CT_LEVEL => CT_LEVEL, -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
-					LANE_TO_LINK_MAP => integer_array(BP_SHUFFLE_LANE_MAP), -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
-					LINK_TO_QUAD_MAP => integer_array(BP_SHUFFLE_LANE_TO_QUAD_MAP), -- integer_array  := (0,1,1); -- Indicates which quad is associated to each GTY link.
-					QUAD_TO_REFCLK_MAP => integer_array(BP_SHUFFLE_QUAD_TO_REFCLK_MAP) -- integer_array:= (0,0); -- Indicates which refclk is associated with each QUAD
-				)
-				port map (
-					-- Non-blocking input stream from the channelizer, synchronous to `clk`
-					s_axis_tdata => ct_in2_tdata,
-					s_axis_tuser => ct_in2_tuser,
-					s_axis_tvalid => ct_in2_tvalid(0), -- we assume all lanes are aligned and therefore use only one `tvalid`
-					s_axis_tlast => ct_in2_tlast(0), -- idem
-
-					-- Non-blocking output stream, synchronous to `clk`
-					m_axis_tdata => ct_out_tdata,
-					m_axis_tvalid => ct_out_tvalid,
-					m_axis_tlast => ct_out_tlast,
-
-					clk => ct_clk,
-
-					-- Backplane 25 Gbps GTY links
-					tx_p      => bp_shuffle_tx_p,
-					tx_n      => bp_shuffle_tx_n,
-					rx_p      => bp_shuffle_rx_p,
-					rx_n      => bp_shuffle_rx_n,
-					refclk_p  => bp_shuffle_refclk_p,
-					refclk_n  => bp_shuffle_refclk_n,
-
-					refclk_div2 => bp_shuffle_refclk_div2, -- divided-by-two version of the 156.25 MHz reference clock fed to the QUAD PLL
-					txclk_div2 => bp_shuffle_txclk_div2, -- divided-by-two version of the TX word clock, which is also clk_out
-
-					txclk_out => bp_shuffle_txclk, -- Word clock from the GTY TX link
-
-					rst => ct_reset_reg2, -- synchronous reset (sync to ct_clk, which is derived from corr_reset)
-					-- arst => corr_reset, -- asynchronous reset that is independent from ct_clk (because reset stops bp_shuffle_txclk and therefore ct_clk)
-
-					-- Control interface (command and reply stream buses)
-
-					bsb_cmd_dat  => top_cmd_dat(CT_BASE_PORT),
-					bsb_cmd_rdy  => top_cmd_rdy(CT_BASE_PORT),
-					bsb_rply_dat => top_rply_dat(CT_BASE_PORT),
-					bsb_rply_rdy => top_rply_rdy(CT_BASE_PORT),
-					bsb_clk      => ctrl_clk,
-					bsb_rst      => ctrl_rst
-				);
-
-		when uct_case: CT_TYPE_UCT =>
-
-			signal ct_reset_reg0, ct_reset_reg1, ct_reset_reg2: std_logic;
-
-			signal ct_in1_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(31 downto 0);
-			signal ct_in1_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
-			signal ct_in1_tvalid: slv(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
-			signal ct_in1_tlast: slv(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
-			attribute shreg_extract of ct_in1_tdata, ct_in1_tuser, ct_in1_tvalid, ct_in1_tlast: signal is "no";
-
-			signal ct_in2_tdata: slv32_array(0 to NUMBER_OF_CHANNELIZERS - 1);
-			signal ct_in2_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
-			signal ct_in2_tvalid: slv(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
-			signal ct_in2_tlast: slv(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
-			attribute shreg_extract of ct_in2_tdata, ct_in2_tuser, ct_in2_tvalid, ct_in2_tlast: signal is "no";
-
-		begin
-			-- convert from slv_array to slv64_array
-
-			process(all) begin
-				if rising_edge(ct_clk) then
-					ct_reset_reg0 <= ct_reset;
-
-					-- Pipeline and connect the channelizer output to the corner-turn engine inputs. The
-					-- pipelining is there to help meeting timing closure, as we need to route long
-					-- distance from the channelizer to the input of the CT Engine.
-					ct_reset_reg1 <= ct_reset_reg0;
-
-					for i in 0 to NUMBER_OF_CHANNELIZERS - 1 loop
-						ct_in1_tdata(i) <= chan_out_tdata(i); -- convert from slv32() to slv_array()(31 downto 0)
-						ct_in1_tuser(i) <= chan_out_tuser(i);
-						ct_in1_tlast(i) <= chan_out_tlast(i);
-						ct_in1_tvalid(i) <= '0' when ct_reset_reg1 else chan_out_tvalid(i);
-					end loop;
-
-					-- Pipeline 2
-					ct_reset_reg2 <= ct_reset_reg1;
-
-					for i in 0 to NUMBER_OF_CHANNELIZERS - 1 loop
-						ct_in2_tdata(i) <= ct_in1_tdata(i);
-						ct_in2_tuser(i) <= ct_in1_tuser(i);
-						ct_in2_tlast(i) <= ct_in1_tlast(i);
-						ct_in2_tvalid(i) <= '0' when ct_reset_reg2 else ct_in1_tvalid(i);
-					end loop;
-
-				end if; -- clk
-			end process;
-
-
-			ct0: entity work.u_ct_engine
-				generic map (
-					PLATFORM_ID => PLATFORM_ID,
-					NUMBER_OF_INPUT_LANES => NUMBER_OF_CHANNELIZERS, -- Number of channelizer inputs
-					CT_LEVEL => CT_LEVEL -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
-
-				-- LANE_TO_LINK_MAP: integer_array  := (-1,0,1,2); -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
-				-- LINK_TO_QUAD_MAP: integer_array  := (0,1,1); -- Indicates which quad is associated to each GTY link.
-				-- QUAD_TO_REFCLK_MAP: integer_array:= (0,0); -- Indicates which refclk is associated with each QUAD
-				-- NUMBER_OF_OUTPUT_LANES: integer := 8; -- Number of output streams
-				-- WORDS_PER_BIN_MAX: integer :=4; -- Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 16 words.
-				-- BINS_PER_FRAME_MAX: integer :=64; -- Maximum number of bins per frame
-				-- BIN_SEL_FIFO_TYPE_MAP: integer_16xN_array := (0 to 15 => (0 to 3=> 0, others => 0)); -- 0= Block RAM., 1=Dist RAM. By default, for every BIN_SEL, 10 FIFOS are made of BRAM and the rest is made of distributed RAM to maximize area utilization efficiency
-				-- SHUFFLE_FLAGS_MASK: slv32 -- Mask to apply to the shuffle flags to count packet errors
-				)
-				port map (
-					-- Non-blocking input stream from the channelizer, synchronous to `clk`
-					s_axis_tdata => ct_in2_tdata,
-					s_axis_tvalid => ct_in2_tvalid(0), -- we assume all lanes are aligned and therefore use only one `tvalid`
-					s_axis_tlast => ct_in2_tlast(0), -- idem
-
-					-- Non-blocking output stream, synchronous to `clk`
-					m_axis_tdata => ct_out_tdata,
-					m_axis_tvalid => ct_out_tvalid,
-					m_axis_tlast => ct_out_tlast,
-
-					axis_clk => ct_clk,
-
-					-- Backplane 25 Gbps GTY links
-					tx_p      => bp_shuffle_tx_p,
-					tx_n      => bp_shuffle_tx_n,
-					rx_p      => bp_shuffle_rx_p,
-					rx_n      => bp_shuffle_rx_n,
-					refclk_p  => bp_shuffle_refclk_p,
-					refclk_n  => bp_shuffle_refclk_n,
-
-					refclk_div2 => bp_shuffle_refclk_div2, -- divided-by-two version of the 156.25 MHz reference clock fed to the QUAD PLL
-					txclk_div2 => bp_shuffle_txclk_div2, -- divided-by-two version of the TX word clock, which is also clk_out
-
-					txclk_out => bp_shuffle_txclk, -- Word clock from the GTY TX link
-
-					rst => ct_reset_reg2, -- synchronous reset (sync to ct_clk, which is derived from corr_reset)
-					arst => corr_reset, -- asynchronous reset that is independent from ct_clk (because reset stops bp_shuffle_txclk and therefore ct_clk)
-
-					-- Control interface (command and reply stream buses)
-
-					bsb_cmd_dat  => top_cmd_dat(CT_BASE_PORT),
-					bsb_cmd_rdy  => top_cmd_rdy(CT_BASE_PORT),
-					bsb_rply_dat => top_rply_dat(CT_BASE_PORT),
-					bsb_rply_rdy => top_rply_rdy(CT_BASE_PORT),
-
-					-- bsb_cmd_dat  => open,
-					-- bsb_cmd_rdy.TREADY  => '1',
-					-- bsb_rply_dat => top_rply_dat(CT_BASE_PORT),
-					-- bsb_rply_rdy => top_rply_rdy(CT_BASE_PORT),
-					bsb_clk      => ctrl_clk,
-					bsb_rst      => ctrl_rst
-				);
-
-
-		when others =>
-			assert FALSE report "Invalid CT_TYPE" severity FAILURE;
-
-	end generate ct_gen;
-
+        ct_case: case CT_TYPE generate
+    
+            when bct_case: CT_TYPE_BCT =>
+                ct0: entity work.bct_engine
+                    generic map (
+                        PLATFORM_ID => PLATFORM_ID,
+                        NUMBER_OF_INPUT_LANES => NUMBER_OF_CHANNELIZERS, -- Number of channelizer inputs
+                        CT_LEVEL => CT_LEVEL, -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
+                        LANE_TO_LINK_MAP => integer_array(BP_SHUFFLE_LANE_MAP), -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
+                        LINK_TO_QUAD_MAP => integer_array(BP_SHUFFLE_LANE_TO_QUAD_MAP), -- integer_array  := (0,1,1); -- Indicates which quad is associated to each GTY link.
+                        QUAD_TO_REFCLK_MAP => integer_array(BP_SHUFFLE_QUAD_TO_REFCLK_MAP) -- integer_array:= (0,0); -- Indicates which refclk is associated with each QUAD
+                    )
+                    port map (
+                        -- Non-blocking input stream from the channelizer, synchronous to `clk`
+                        s_axis_tdata => ct_in2_tdata,
+                        s_axis_tuser => ct_in2_tuser,
+                        s_axis_tvalid => ct_in2_tvalid, -- we assume all lanes are aligned and therefore use only one `tvalid`
+                        s_axis_tlast => ct_in2_tlast, -- idem
+        
+                        -- Non-blocking output stream, synchronous to `clk`
+                        m_axis_tdata => ct_out_tdata,
+                        m_axis_tvalid => ct_out_tvalid,
+                        m_axis_tlast => ct_out_tlast,
+        
+                        clk => ct_clk,
+        
+                        -- Backplane 25 Gbps GTY links
+                        tx_p      => bp_shuffle_tx_p,
+                        tx_n      => bp_shuffle_tx_n,
+                        rx_p      => bp_shuffle_rx_p,
+                        rx_n      => bp_shuffle_rx_n,
+                        refclk_p  => bp_shuffle_refclk_p,
+                        refclk_n  => bp_shuffle_refclk_n,
+        
+                        refclk_div2 => bp_shuffle_refclk_div2, -- divided-by-two version of the 156.25 MHz reference clock fed to the QUAD PLL
+                        txclk_div2 => bp_shuffle_txclk_div2, -- divided-by-two version of the TX word clock, which is also clk_out
+        
+                        txclk_out => bp_shuffle_txclk, -- Word clock from the GTY TX link
+        
+                        rst => ct_reset_reg2, -- synchronous reset (sync to ct_clk, which is derived from corr_reset)
+                        -- arst => corr_reset, -- asynchronous reset that is independent from ct_clk (because reset stops bp_shuffle_txclk and therefore ct_clk)
+        
+                        -- Control interface (command and reply stream buses)
+        
+                        bsb_cmd_dat  => top_cmd_dat(CT_BASE_PORT),
+                        bsb_cmd_rdy  => top_cmd_rdy(CT_BASE_PORT),
+                        bsb_rply_dat => top_rply_dat(CT_BASE_PORT),
+                        bsb_rply_rdy => top_rply_rdy(CT_BASE_PORT),
+                        bsb_clk      => ctrl_clk,
+                        bsb_rst      => ctrl_rst
+                    );
+        
+            when uct_case: CT_TYPE_UCT =>
+                ct0: entity work.u_ct_engine
+                    generic map (
+                        PLATFORM_ID => PLATFORM_ID,
+                        NUMBER_OF_INPUT_LANES => NUMBER_OF_CHANNELIZERS, -- Number of channelizer inputs
+                        CT_LEVEL => CT_LEVEL -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
+    
+                    -- LANE_TO_LINK_MAP: integer_array  := (-1,0,1,2); -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
+                    -- LINK_TO_QUAD_MAP: integer_array  := (0,1,1); -- Indicates which quad is associated to each GTY link.
+                    -- QUAD_TO_REFCLK_MAP: integer_array:= (0,0); -- Indicates which refclk is associated with each QUAD
+                    -- NUMBER_OF_OUTPUT_LANES: integer := 8; -- Number of output streams
+                    -- WORDS_PER_BIN_MAX: integer :=4; -- Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 16 words.
+                    -- BINS_PER_FRAME_MAX: integer :=64; -- Maximum number of bins per frame
+                    -- BIN_SEL_FIFO_TYPE_MAP: integer_16xN_array := (0 to 15 => (0 to 3=> 0, others => 0)); -- 0= Block RAM., 1=Dist RAM. By default, for every BIN_SEL, 10 FIFOS are made of BRAM and the rest is made of distributed RAM to maximize area utilization efficiency
+                    -- SHUFFLE_FLAGS_MASK: slv32 -- Mask to apply to the shuffle flags to count packet errors
+                    )
+                    port map (
+                        -- Non-blocking input stream from the channelizer, synchronous to `clk`
+                        s_axis_tdata => ct_in2_tdata,
+                        s_axis_tvalid => ct_in2_tvalid, -- we assume all lanes are aligned and therefore use only one `tvalid`
+                        s_axis_tlast => ct_in2_tlast, -- idem
+    
+                        -- Non-blocking output stream, synchronous to `clk`
+                        m_axis_tdata => ct_out_tdata,
+                        m_axis_tvalid => ct_out_tvalid,
+                        m_axis_tlast => ct_out_tlast,
+    
+                        axis_clk => ct_clk,
+    
+                        -- Backplane 25 Gbps GTY links
+                        tx_p      => bp_shuffle_tx_p,
+                        tx_n      => bp_shuffle_tx_n,
+                        rx_p      => bp_shuffle_rx_p,
+                        rx_n      => bp_shuffle_rx_n,
+                        refclk_p  => bp_shuffle_refclk_p,
+                        refclk_n  => bp_shuffle_refclk_n,
+    
+                        refclk_div2 => bp_shuffle_refclk_div2, -- divided-by-two version of the 156.25 MHz reference clock fed to the QUAD PLL
+                        txclk_div2 => bp_shuffle_txclk_div2, -- divided-by-two version of the TX word clock, which is also clk_out
+    
+                        txclk_out => bp_shuffle_txclk, -- Word clock from the GTY TX link
+    
+                        rst => ct_reset_reg2, -- synchronous reset (sync to ct_clk, which is derived from corr_reset)
+                        arst => corr_reset, -- asynchronous reset that is independent from ct_clk (because reset stops bp_shuffle_txclk and therefore ct_clk)
+    
+                        -- Control interface (command and reply stream buses)
+    
+                        bsb_cmd_dat  => top_cmd_dat(CT_BASE_PORT),
+                        bsb_cmd_rdy  => top_cmd_rdy(CT_BASE_PORT),
+                        bsb_rply_dat => top_rply_dat(CT_BASE_PORT),
+                        bsb_rply_rdy => top_rply_rdy(CT_BASE_PORT),
+    
+                        -- bsb_cmd_dat  => open,
+                        -- bsb_cmd_rdy.TREADY  => '1',
+                        -- bsb_rply_dat => top_rply_dat(CT_BASE_PORT),
+                        -- bsb_rply_rdy => top_rply_rdy(CT_BASE_PORT),
+                        bsb_clk      => ctrl_clk,
+                        bsb_rst      => ctrl_rst
+                    );
+    
+            when others =>
+                assert FALSE report "Invalid CT_TYPE" severity FAILURE;
+    
+        end generate ct_case;
+    end generate ct_gen;
+    
 	-----------------------------------------------------------
 	-----------------------------------------------------------
 	-- Real-time data offload links (8x10G or 100G Ethernet links)
