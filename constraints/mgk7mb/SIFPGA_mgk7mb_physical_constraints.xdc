@@ -706,8 +706,6 @@ set_property PACKAGE_PIN G20 [get_ports {fmcb_adc1_dhdn[6]}]
 set_property PACKAGE_PIN G19 [get_ports {fmcb_adc1_dhdn[7]}]
 
 
-set_property LOC USR_ACCESS_X0Y0 [get_cells chfpga0/gpio_blk.GPIO0/USRACCESS_7.USR_ACCESS0]
-set_property LOC XADC_X0Y0 [get_cells chfpga0/sysmon_blk.SYSMON0/SYSMON7_GEN.XADC0]
 
 ##############################
 # LOCATION CONSTRAINTS
@@ -820,10 +818,10 @@ resize_pblock [get_pblocks CHAN0] -add {RAMB36_X8Y40:RAMB36_X9Y42 RAMB36_X1Y35:R
 
 create_pblock CHAN1
 add_cells_to_pblock [get_pblocks CHAN1] [get_cells -quiet [list {chfpga0/CHANGEN[1].CHANi}]]
-resize_pblock [get_pblocks CHAN1] -add {SLICE_X136Y168:SLICE_X147Y174 SLICE_X132Y162:SLICE_X135Y174 SLICE_X8Y150:SLICE_X131Y174}
+resize_pblock [get_pblocks CHAN1] -add {SLICE_X136Y168:SLICE_X147Y174 SLICE_X8Y150:SLICE_X135Y174}
 resize_pblock [get_pblocks CHAN1] -add {DSP48_X0Y60:DSP48_X7Y69}
-resize_pblock [get_pblocks CHAN1] -add {RAMB18_X1Y60:RAMB18_X7Y69 RAMB18_X0Y60:RAMB18_X0Y65}
-resize_pblock [get_pblocks CHAN1] -add {RAMB36_X1Y30:RAMB36_X7Y34 RAMB36_X0Y30:RAMB36_X0Y32}
+resize_pblock [get_pblocks CHAN1] -add {RAMB18_X1Y60:RAMB18_X8Y69 RAMB18_X0Y60:RAMB18_X0Y65}
+resize_pblock [get_pblocks CHAN1] -add {RAMB36_X1Y30:RAMB36_X8Y34 RAMB36_X0Y30:RAMB36_X0Y32}
 # add_cells_to_pblock [get_pblocks CHAN1] [get_cells -quiet [list {chfpga0/CHANGEN[1].CHANi}]]
 
 create_pblock CHAN2
@@ -878,50 +876,50 @@ resize_pblock [get_pblocks CHAN7] -add {RAMB36_X1Y15:RAMB36_X7Y19 RAMB36_X0Y17:R
 
 create_pblock CHAN8
 add_cells_to_pblock [get_pblocks CHAN8] [get_cells -quiet [list {chfpga0/CHANGEN[8].CHANi}]]
-resize_pblock [get_pblocks CHAN8] -add {SLICE_X8Y275:SLICE_X143Y299}
+resize_pblock [get_pblocks CHAN8] -add {SLICE_X8Y275:SLICE_X135Y299}
 resize_pblock [get_pblocks CHAN8] -add {DSP48_X0Y110:DSP48_X7Y119}
-resize_pblock [get_pblocks CHAN8] -add {RAMB18_X1Y110:RAMB18_X7Y119 RAMB18_X0Y110:RAMB18_X0Y115}
-resize_pblock [get_pblocks CHAN8] -add {RAMB36_X1Y55:RAMB36_X7Y59 RAMB36_X0Y55:RAMB36_X0Y57}
+resize_pblock [get_pblocks CHAN8] -add {RAMB18_X1Y110:RAMB18_X8Y119 RAMB18_X0Y110:RAMB18_X0Y115}
+resize_pblock [get_pblocks CHAN8] -add {RAMB36_X1Y55:RAMB36_X8Y59 RAMB36_X0Y55:RAMB36_X0Y57}
 # add_cells_to_pblock [get_pblocks CHAN8] [get_cells -quiet [list {chfpga0/CHANGEN[8].CHANi}]]
 
 create_pblock CHAN14
 add_cells_to_pblock [get_pblocks CHAN14] [get_cells -quiet [list {chfpga0/CHANGEN[14].CHANi}]]
 resize_pblock [get_pblocks CHAN14] -add {SLICE_X8Y375:SLICE_X135Y399}
 resize_pblock [get_pblocks CHAN14] -add {DSP48_X0Y150:DSP48_X7Y159}
-resize_pblock [get_pblocks CHAN14] -add {RAMB18_X1Y150:RAMB18_X7Y159 RAMB18_X0Y154:RAMB18_X0Y159}
-resize_pblock [get_pblocks CHAN14] -add {RAMB36_X1Y75:RAMB36_X7Y79 RAMB36_X0Y77:RAMB36_X0Y79}
+resize_pblock [get_pblocks CHAN14] -add {RAMB18_X1Y150:RAMB18_X8Y159 RAMB18_X0Y154:RAMB18_X0Y159}
+resize_pblock [get_pblocks CHAN14] -add {RAMB36_X1Y75:RAMB36_X8Y79 RAMB36_X0Y77:RAMB36_X0Y79}
 # add_cells_to_pblock [get_pblocks CHAN14] [get_cells -quiet [list {chfpga0/CHANGEN[14].CHANi}]]
 
 create_pblock CHAN15
 add_cells_to_pblock [get_pblocks CHAN15] [get_cells -quiet [list {chfpga0/CHANGEN[15].CHANi}]]
-resize_pblock [get_pblocks CHAN15] -add {SLICE_X8Y350:SLICE_X143Y374}
+resize_pblock [get_pblocks CHAN15] -add {SLICE_X8Y350:SLICE_X135Y374}
 resize_pblock [get_pblocks CHAN15] -add {DSP48_X0Y140:DSP48_X7Y149}
-resize_pblock [get_pblocks CHAN15] -add {RAMB18_X1Y140:RAMB18_X7Y149 RAMB18_X0Y140:RAMB18_X0Y145}
-resize_pblock [get_pblocks CHAN15] -add {RAMB36_X1Y70:RAMB36_X7Y74 RAMB36_X0Y70:RAMB36_X0Y72}
+resize_pblock [get_pblocks CHAN15] -add {RAMB18_X1Y140:RAMB18_X8Y149 RAMB18_X0Y140:RAMB18_X0Y145}
+resize_pblock [get_pblocks CHAN15] -add {RAMB36_X1Y70:RAMB36_X8Y74 RAMB36_X0Y70:RAMB36_X0Y72}
 # add_cells_to_pblock [get_pblocks CHAN15] [get_cells -quiet [list {chfpga0/CHANGEN[15].CHANi}]]
 
 create_pblock CHAN11
 add_cells_to_pblock [get_pblocks CHAN11] [get_cells -quiet [list {chfpga0/CHANGEN[11].CHANi}]]
-resize_pblock [get_pblocks CHAN11] -add {SLICE_X8Y325:SLICE_X143Y349}
+resize_pblock [get_pblocks CHAN11] -add {SLICE_X8Y325:SLICE_X135Y349}
 resize_pblock [get_pblocks CHAN11] -add {DSP48_X0Y130:DSP48_X7Y139}
-resize_pblock [get_pblocks CHAN11] -add {RAMB18_X1Y130:RAMB18_X7Y139 RAMB18_X0Y130:RAMB18_X0Y135}
-resize_pblock [get_pblocks CHAN11] -add {RAMB36_X1Y65:RAMB36_X7Y69 RAMB36_X0Y65:RAMB36_X0Y67}
+resize_pblock [get_pblocks CHAN11] -add {RAMB18_X1Y130:RAMB18_X8Y139 RAMB18_X0Y130:RAMB18_X0Y135}
+resize_pblock [get_pblocks CHAN11] -add {RAMB36_X1Y65:RAMB36_X8Y69 RAMB36_X0Y65:RAMB36_X0Y67}
 # add_cells_to_pblock [get_pblocks CHAN11] [get_cells -quiet [list {chfpga0/CHANGEN[11].CHANi}]]
 
 create_pblock CHAN10
 add_cells_to_pblock [get_pblocks CHAN10] [get_cells -quiet [list {chfpga0/CHANGEN[10].CHANi}]]
-resize_pblock [get_pblocks CHAN10] -add {SLICE_X8Y300:SLICE_X143Y324}
+resize_pblock [get_pblocks CHAN10] -add {SLICE_X8Y300:SLICE_X135Y324}
 resize_pblock [get_pblocks CHAN10] -add {DSP48_X0Y120:DSP48_X7Y129}
-resize_pblock [get_pblocks CHAN10] -add {RAMB18_X1Y120:RAMB18_X7Y129 RAMB18_X0Y124:RAMB18_X0Y129}
-resize_pblock [get_pblocks CHAN10] -add {RAMB36_X1Y60:RAMB36_X7Y64 RAMB36_X0Y62:RAMB36_X0Y64}
+resize_pblock [get_pblocks CHAN10] -add {RAMB18_X1Y120:RAMB18_X8Y129 RAMB18_X0Y124:RAMB18_X0Y129}
+resize_pblock [get_pblocks CHAN10] -add {RAMB36_X1Y60:RAMB36_X8Y64 RAMB36_X0Y62:RAMB36_X0Y64}
 # add_cells_to_pblock [get_pblocks CHAN10] [get_cells -quiet [list {chfpga0/CHANGEN[10].CHANi}]]
 
 create_pblock CHAN9
 add_cells_to_pblock [get_pblocks CHAN9] [get_cells -quiet [list {chfpga0/CHANGEN[9].CHANi}]]
-resize_pblock [get_pblocks CHAN9] -add {SLICE_X8Y250:SLICE_X143Y274}
+resize_pblock [get_pblocks CHAN9] -add {SLICE_X8Y250:SLICE_X135Y274}
 resize_pblock [get_pblocks CHAN9] -add {DSP48_X0Y100:DSP48_X7Y109}
-resize_pblock [get_pblocks CHAN9] -add {RAMB18_X1Y100:RAMB18_X7Y109 RAMB18_X0Y100:RAMB18_X0Y105}
-resize_pblock [get_pblocks CHAN9] -add {RAMB36_X1Y50:RAMB36_X7Y54 RAMB36_X0Y50:RAMB36_X0Y52}
+resize_pblock [get_pblocks CHAN9] -add {RAMB18_X1Y100:RAMB18_X8Y109 RAMB18_X0Y100:RAMB18_X0Y105}
+resize_pblock [get_pblocks CHAN9] -add {RAMB36_X1Y50:RAMB36_X8Y54 RAMB36_X0Y50:RAMB36_X0Y52}
 # add_cells_to_pblock [get_pblocks CHAN9] [get_cells -quiet [list {chfpga0/CHANGEN[9].CHANi}]]
 
 
@@ -935,17 +933,17 @@ resize_pblock [get_pblocks CHAN12] -add {RAMB36_X1Y43:RAMB36_X9Y44 RAMB36_X0Y40:
 
 create_pblock CHAN13
 add_cells_to_pblock [get_pblocks CHAN13] [get_cells -quiet [list {chfpga0/CHANGEN[13].CHANi}]]
-resize_pblock [get_pblocks CHAN13] -add {SLICE_X8Y225:SLICE_X143Y249}
-resize_pblock [get_pblocks CHAN13] -add {DSP48_X0Y90:DSP48_X7Y99}
-resize_pblock [get_pblocks CHAN13] -add {RAMB18_X1Y90:RAMB18_X7Y99 RAMB18_X0Y94:RAMB18_X0Y99}
-resize_pblock [get_pblocks CHAN13] -add {RAMB36_X1Y45:RAMB36_X7Y49 RAMB36_X0Y47:RAMB36_X0Y49}
+resize_pblock [get_pblocks CHAN13] -add {SLICE_X8Y225:SLICE_X135Y249}
+resize_pblock [get_pblocks CHAN13] -add {DSP48_X0Y90:DSP48_X8Y99}
+resize_pblock [get_pblocks CHAN13] -add {RAMB18_X1Y90:RAMB18_X8Y99 RAMB18_X0Y94:RAMB18_X0Y99}
+resize_pblock [get_pblocks CHAN13] -add {RAMB36_X1Y45:RAMB36_X8Y49 RAMB36_X0Y47:RAMB36_X0Y49}
 # add_cells_to_pblock [get_pblocks CHAN13] [get_cells -quiet [list {chfpga0/CHANGEN[13].CHANi}]]
 
 set_property LOC DNA_PORT_X0Y0 [get_cells chfpga0/gpio_blk.GPIO0/gen_dna7.dna0]
 
 
 create_pblock SYSTEM
-add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list chfpga0/blinker_blk.BLINKER0 chfpga0/freq_ctr_blk.FREQ_CTR0 chfpga0/gen_i2c.I2C0 chfpga0/gpio_blk.GPIO0/CTRL_SLAVE0 chfpga0/gpio_blk.GPIO0/core_regs0 chfpga0/gpio_blk.GPIO0/irigb_comparator0 chfpga0/gpio_blk.GPIO0/irigb_decoder0 chfpga0/gpio_blk.GPIO0/irigb_encoder0]]
+add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list chfpga0/blinker_blk.BLINKER0 chfpga0/freq_ctr_blk.FREQ_CTR0 chfpga0/gen_i2c.I2C0 chfpga0/gpio_blk.GPIO0/core_regs0 chfpga0/gpio_blk.GPIO0/irigb_comparator0 chfpga0/gpio_blk.GPIO0/irigb_decoder0 chfpga0/gpio_blk.GPIO0/irigb_encoder0]]
 resize_pblock [get_pblocks SYSTEM] -add {SLICE_X180Y225:SLICE_X189Y324}
 
 
@@ -962,15 +960,15 @@ set_operating_conditions -board large
 set_operating_conditions -heatsink high
 set_switching_activity -default_toggle_rate 50.000
 # set_switching_activity -toggle_rate 100.000 -type {bram_enable} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
 
 
 create_pblock CLK0
@@ -1170,63 +1168,63 @@ resize_pblock [get_pblocks ADCDAQ15] -add {RAMB36_X0Y74:RAMB36_X0Y74}
 
 
 
-set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
 
 
 set_operating_conditions -airflow 500
-set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
 
 
-set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
 
 
 
 
 
 set_switching_activity -default_toggle_rate 12.500
-set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
 set_operating_conditions -airflow 750
-set_switching_activity -toggle_rate 25.000 -type {lut} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 25.000 -type {register} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 25.000 -type {shift_register} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 25.000 -type {lut_ram} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 25.000 -type {bram} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 25.000 -type {dsp} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all
-set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all
+set_switching_activity -toggle_rate 25.000 -type {lut} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 25.000 -type {register} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 25.000 -type {shift_register} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 25.000 -type {lut_ram} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 25.000 -type {bram} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 25.000 -type {dsp} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 -all 
+set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 -all 
 
 
 
@@ -1234,11 +1232,11 @@ set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_proba
 
 
 create_pblock CORR
-add_cells_to_pblock [get_pblocks CORR] [get_cells -quiet [list chfpga0/CORRGEN.corr_sel_gen.ucorr44_case.ucorr44_array0]]
 resize_pblock [get_pblocks CORR] -add {SLICE_X180Y325:SLICE_X189Y399 SLICE_X180Y0:SLICE_X189Y136 SLICE_X132Y225:SLICE_X179Y399 SLICE_X132Y0:SLICE_X179Y169}
 resize_pblock [get_pblocks CORR] -add {DSP48_X8Y90:DSP48_X11Y159 DSP48_X8Y0:DSP48_X11Y67}
 resize_pblock [get_pblocks CORR] -add {RAMB18_X8Y90:RAMB18_X11Y159 RAMB18_X8Y0:RAMB18_X11Y67}
 resize_pblock [get_pblocks CORR] -add {RAMB36_X8Y45:RAMB36_X11Y79 RAMB36_X8Y0:RAMB36_X11Y33}
+
 
 
 

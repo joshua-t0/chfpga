@@ -49,12 +49,8 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --
 --
 -- The output of FUNCGEN is also a non-blocking AXI4-Streaming bus and has the same structure as the input, except for the ``TUSER`` signal.
--- ``TUSER`` is a 4-bit vector containing the following information:
---
---   - Bit 0: (TUSER_CAPTURE_BIT): Passed downstream to indicate to the PROBER that the data should be captured if continuous capture  mode is enabled
---   - Bit 1: Unused (set to zero)
---   - Bit 2: Unused (set to zero)
---   - Bit 3: (TUSER_ADC_OVERFLOW_BIT): Set on the last word of a frame (i.e. valid only when TLAST=1) to indicate if an ADC saturation has occured on any sample of the frame.
+-- ``TUSER`` is a 1-bit vector containing the following information:
+--   - Bit 0: (TUSER_ADC_OVERFLOW_BIT): Set on the last word of a frame (i.e. valid only when TLAST=1) to indicate if an ADC saturation has occured on any sample of the frame.
 --
 -- Operation modes
 -- ---------------
@@ -383,7 +379,7 @@ lfsr: entity work.lfsr
 
 -- Set TUSER
 out_dat_tuser <= (
-    TUSER_ADC_OVERFLOW_BIT => overflow_flag,
+    TUSER_ADC_OVERFLOW_BIT => overflow_flag and out_dat_tlast, -- only assert overflow flag on last word of frame
     others => '0'
     );
 
