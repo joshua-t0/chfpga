@@ -2132,7 +2132,7 @@
       "axi_dma_0": {
         "vlnv": "xilinx.com:ip:axi_dma:7.1",
         "xci_name": "zynq_tcpipe_crs_axi_dma_0_0",
-        "xci_path": "ip/zynq_tcpipe_crs_axi_dma_0_0/zynq_tcpipe_crs_axi_dma_0_0.xci",
+        "xci_path": "ip/zynq_tcpipe_crs_axi_dma_0_0_5/zynq_tcpipe_crs_axi_dma_0_0.xci",
         "inst_hier_path": "axi_dma_0",
         "parameters": {
           "c_addr_width": {
@@ -2199,7 +2199,7 @@
       "axi_dma_1": {
         "vlnv": "xilinx.com:ip:axi_dma:7.1",
         "xci_name": "zynq_tcpipe_crs_axi_dma_1_0",
-        "xci_path": "ip/zynq_tcpipe_crs_axi_dma_1_0/zynq_tcpipe_crs_axi_dma_1_0.xci",
+        "xci_path": "ip/zynq_tcpipe_crs_axi_dma_1_0_5/zynq_tcpipe_crs_axi_dma_1_0.xci",
         "inst_hier_path": "axi_dma_1",
         "parameters": {
           "c_addr_width": {
@@ -2251,19 +2251,19 @@
       "pl_clk_rst": {
         "vlnv": "xilinx.com:ip:proc_sys_reset:5.0",
         "xci_name": "zynq_tcpipe_crs_pl_clk_rst_0",
-        "xci_path": "ip/zynq_tcpipe_crs_pl_clk_rst_0/zynq_tcpipe_crs_pl_clk_rst_0.xci",
+        "xci_path": "ip/zynq_tcpipe_crs_pl_clk_rst_0_5/zynq_tcpipe_crs_pl_clk_rst_0.xci",
         "inst_hier_path": "pl_clk_rst"
       },
       "rst_ps8_0_96M": {
         "vlnv": "xilinx.com:ip:proc_sys_reset:5.0",
         "xci_name": "zynq_tcpipe_crs_rst_ps8_0_96M_0",
-        "xci_path": "ip/zynq_tcpipe_crs_rst_ps8_0_96M_0/zynq_tcpipe_crs_rst_ps8_0_96M_0.xci",
+        "xci_path": "ip/zynq_tcpipe_crs_rst_ps8_0_96M_0_5/zynq_tcpipe_crs_rst_ps8_0_96M_0.xci",
         "inst_hier_path": "rst_ps8_0_96M"
       },
       "smartconnect_0": {
         "vlnv": "xilinx.com:ip:smartconnect:1.0",
         "xci_name": "zynq_tcpipe_crs_smartconnect_0_0",
-        "xci_path": "ip/zynq_tcpipe_crs_smartconnect_0_0/zynq_tcpipe_crs_smartconnect_0_0.xci",
+        "xci_path": "ip/zynq_tcpipe_crs_smartconnect_0_0_5/zynq_tcpipe_crs_smartconnect_0_0.xci",
         "inst_hier_path": "smartconnect_0",
         "parameters": {
           "NUM_MI": {
@@ -2390,7 +2390,7 @@
       "system_ila_0": {
         "vlnv": "xilinx.com:ip:system_ila:1.1",
         "xci_name": "zynq_tcpipe_crs_system_ila_0_0",
-        "xci_path": "ip/zynq_tcpipe_crs_system_ila_0_0/zynq_tcpipe_crs_system_ila_0_0.xci",
+        "xci_path": "ip/zynq_tcpipe_crs_system_ila_0_0_5/zynq_tcpipe_crs_system_ila_0_0.xci",
         "inst_hier_path": "system_ila_0",
         "parameters": {
           "C_MON_TYPE": {
@@ -2522,7 +2522,7 @@
       "usp_rf_data_converter_0": {
         "vlnv": "xilinx.com:ip:usp_rf_data_converter:2.6",
         "xci_name": "zynq_tcpipe_crs_usp_rf_data_converter_0_0",
-        "xci_path": "ip/zynq_tcpipe_crs_usp_rf_data_converter_0_0/zynq_tcpipe_crs_usp_rf_data_converter_0_0.xci",
+        "xci_path": "ip/zynq_tcpipe_crs_usp_rf_data_converter_0_0_5/zynq_tcpipe_crs_usp_rf_data_converter_0_0.xci",
         "inst_hier_path": "usp_rf_data_converter_0",
         "parameters": {
           "ADC0_Multi_Tile_Sync": {
@@ -2779,7 +2779,7 @@
       "xlconcat_0": {
         "vlnv": "xilinx.com:ip:xlconcat:2.1",
         "xci_name": "zynq_tcpipe_crs_xlconcat_0_0",
-        "xci_path": "ip/zynq_tcpipe_crs_xlconcat_0_0/zynq_tcpipe_crs_xlconcat_0_0.xci",
+        "xci_path": "ip/zynq_tcpipe_crs_xlconcat_0_0_5/zynq_tcpipe_crs_xlconcat_0_0.xci",
         "inst_hier_path": "xlconcat_0",
         "parameters": {
           "NUM_PORTS": {
@@ -2793,7 +2793,7 @@
       "zynq_ultra_ps_e_0": {
         "vlnv": "xilinx.com:ip:zynq_ultra_ps_e:3.4",
         "xci_name": "zynq_tcpipe_crs_zynq_ultra_ps_e_0_0",
-        "xci_path": "ip/zynq_tcpipe_crs_zynq_ultra_ps_e_0_0/zynq_tcpipe_crs_zynq_ultra_ps_e_0_0.xci",
+        "xci_path": "ip/zynq_tcpipe_crs_zynq_ultra_ps_e_0_0_5/zynq_tcpipe_crs_zynq_ultra_ps_e_0_0.xci",
         "inst_hier_path": "zynq_ultra_ps_e_0",
         "parameters": {
           "CAN0_BOARD_INTERFACE": {

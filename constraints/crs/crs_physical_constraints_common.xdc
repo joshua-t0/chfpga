@@ -57,7 +57,7 @@ set_input_delay -clock [get_clocks SYS_CLK] -min -0.015 [get_ports sma_irig_p]
 set_property PACKAGE_PIN J11 [get_ports sma_clk10_p]
 # set_property IOSTANDARD DIFF_SSTL18_I_DCI [get_ports sma_clk10_p]
 # set_property DQS_BIAS TRUE [get_ports sma_clk10_p]
-set_property IOSTANDARD  LVDS     [get_ports sma_clk10_p]
+set_property IOSTANDARD LVDS [get_ports sma_clk10_p]
 set_property DIFF_TERM_ADV TERM_100 [get_ports sma_clk10_p]
 create_clock -period 100.000 -name SMA_CLK10 [get_ports sma_clk10_p]
 
@@ -113,8 +113,8 @@ set_property PACKAGE_PIN D19 [get_ports pll_sync]
 set_property IOSTANDARD LVCMOS18 [get_ports pll_sync]
 set_property SLEW FAST [get_ports pll_sync]
 set_property DRIVE 12 [get_ports pll_sync]
-set_output_delay -max -clock OSCOUT 1 [get_ports pll_sync]
-set_output_delay -min -clock OSCOUT -1 [get_ports pll_sync]
+set_output_delay -clock OSCOUT -max 1.000 [get_ports pll_sync]
+set_output_delay -clock OSCOUT -min -1.000 [get_ports pll_sync]
 set_multicycle_path -setup -to [get_ports pll_sync] 1
 
 # PL_CLK (Bank 69), Fabric signal processing word clock (programmable, must be ADC sampling freq / 8 samples/word)
@@ -261,10 +261,6 @@ set_property PACKAGE_PIN D9 [get_ports {fpc_d[1]}]
 # Debug core
 ###
 
-set_property C_CLK_INPUT_FREQ_HZ 300000000 [get_debug_cores dbg_hub]
-set_property C_ENABLE_CLK_DIVIDER false [get_debug_cores dbg_hub]
-set_property C_USER_SCAN_CHAIN 1 [get_debug_cores dbg_hub]
-connect_debug_port dbg_hub/clk [get_nets smp_OBUF[3]]
 
 
 
@@ -274,14 +270,7 @@ connect_debug_port dbg_hub/clk [get_nets smp_OBUF[3]]
 # These constraints are needed for the CDC synchronizers in the GTY core
 # False path constraints
 # ----------------------------------------------------------------------------------------------------------------------
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *bit_synchronizer*inst/i_in_meta_reg}] -quiet
 ##set_false_path -to [get_cells -hierarchical -filter {NAME =~ *reset_synchronizer*inst/rst_in_*_reg}] -quiet
-set_false_path -to [get_pins -filter REF_PIN_NAME=~*D -of_objects [get_cells -hierarchical -filter {NAME =~ *reset_synchronizer*inst/rst_in_meta*}]] -quiet
-set_false_path -to [get_pins -filter REF_PIN_NAME=~*PRE -of_objects [get_cells -hierarchical -filter {NAME =~ *reset_synchronizer*inst/rst_in_meta*}]] -quiet
-set_false_path -to [get_pins -filter REF_PIN_NAME=~*PRE -of_objects [get_cells -hierarchical -filter {NAME =~ *reset_synchronizer*inst/rst_in_sync1*}]] -quiet
-set_false_path -to [get_pins -filter REF_PIN_NAME=~*PRE -of_objects [get_cells -hierarchical -filter {NAME =~ *reset_synchronizer*inst/rst_in_sync2*}]] -quiet
-set_false_path -to [get_pins -filter REF_PIN_NAME=~*PRE -of_objects [get_cells -hierarchical -filter {NAME =~ *reset_synchronizer*inst/rst_in_sync3*}]] -quiet
-set_false_path -to [get_pins -filter REF_PIN_NAME=~*PRE -of_objects [get_cells -hierarchical -filter {NAME =~ *reset_synchronizer*inst/rst_in_out*}]] -quiet
 
 
 
@@ -343,8 +332,6 @@ add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list \
           {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state[3]_i_2} \
           {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state[3]_i_3} \
           {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state[3]_i_4} \
-          {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state[3]_i_5} \
-          {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state[3]_i_6} \
           {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state_reg[1]} \
           {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state_reg[2]} \
           {chfpga0/refclk_blk.REFCLK0/FSM_onehot_sync_state_reg[3]} \
@@ -355,7 +342,6 @@ add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list \
           chfpga0/refclk_blk.REFCLK0/local_sync_reg_reg \
           {chfpga0/refclk_blk.REFCLK0/sync_ctr[0]_i_1} \
           {chfpga0/refclk_blk.REFCLK0/sync_ctr[10]_i_1} \
-          {chfpga0/refclk_blk.REFCLK0/sync_ctr[10]_i_2} \
           {chfpga0/refclk_blk.REFCLK0/sync_ctr[11]_i_1} \
           {chfpga0/refclk_blk.REFCLK0/sync_ctr[12]_i_1} \
           {chfpga0/refclk_blk.REFCLK0/sync_ctr[13]_i_1} \
@@ -422,14 +408,15 @@ add_cells_to_pblock [get_pblocks DEBUG] [get_cells -quiet [list zynq/system_ila_
 resize_pblock [get_pblocks DEBUG] -add {SLICE_X0Y420:SLICE_X14Y479}
 resize_pblock [get_pblocks DEBUG] -add {DSP48E2_X0Y168:DSP48E2_X0Y191}
 resize_pblock [get_pblocks DEBUG] -add {PCIE4CE4_X0Y1:PCIE4CE4_X0Y1}
-resize_pblock [get_pblocks DEBUG] -add {RAMB18_X0Y168:RAMB18_X1Y191}
-resize_pblock [get_pblocks DEBUG] -add {RAMB36_X0Y84:RAMB36_X1Y95}
+resize_pblock [get_pblocks DEBUG] -add {RAMB18_X1Y180:RAMB18_X1Y191 RAMB18_X0Y168:RAMB18_X0Y191}
+resize_pblock [get_pblocks DEBUG] -add {RAMB36_X1Y90:RAMB36_X1Y95 RAMB36_X0Y84:RAMB36_X0Y95}
 set_property IS_SOFT FALSE [get_pblocks DEBUG]
 
 create_pblock UCAP
 add_cells_to_pblock [get_pblocks UCAP] [get_cells -quiet [list chfpga0/cap_gen.uram_case.ucap0]]
 resize_pblock [get_pblocks UCAP] -add {SLICE_X15Y420:SLICE_X21Y479}
 resize_pblock [get_pblocks UCAP] -add {DSP48E2_X1Y168:DSP48E2_X1Y191}
+resize_pblock [get_pblocks UCAP] -add {RAMB18_X1Y168:RAMB18_X1Y179}
 resize_pblock [get_pblocks UCAP] -add {URAM288_X0Y64:URAM288_X0Y79}
 set_property EXCLUDE_PLACEMENT 1 [get_pblocks UCAP]
 
@@ -471,8 +458,8 @@ set_property IS_SOFT FALSE [get_pblocks FUNCGEN0]
 
 create_pblock SCALER0
 add_cells_to_pblock [get_pblocks SCALER0] [get_cells -quiet [list {chfpga0/CHANGEN[0].CHANi/IMPL_GEN.scaler_blk.SCALER0}]]
-resize_pblock [get_pblocks SCALER0] -add {SLICE_X26Y0:SLICE_X30Y59}
-resize_pblock [get_pblocks SCALER0] -add {DSP48E2_X3Y0:DSP48E2_X3Y23}
+resize_pblock [get_pblocks SCALER0] -add {SLICE_X26Y0:SLICE_X31Y59}
+resize_pblock [get_pblocks SCALER0] -add {DSP48E2_X3Y0:DSP48E2_X4Y23}
 resize_pblock [get_pblocks SCALER0] -add {RAMB18_X2Y0:RAMB18_X2Y15}
 resize_pblock [get_pblocks SCALER0] -add {RAMB36_X2Y0:RAMB36_X2Y7}
 set_property IS_SOFT FALSE [get_pblocks SCALER0]
@@ -506,8 +493,8 @@ set_property IS_SOFT FALSE [get_pblocks FUNCGEN1]
 
 create_pblock SCALER1
 add_cells_to_pblock [get_pblocks SCALER1] [get_cells -quiet [list {chfpga0/CHANGEN[1].CHANi/IMPL_GEN.scaler_blk.SCALER0}]]
-resize_pblock [get_pblocks SCALER1] -add {SLICE_X26Y60:SLICE_X30Y119}
-resize_pblock [get_pblocks SCALER1] -add {DSP48E2_X3Y24:DSP48E2_X3Y47}
+resize_pblock [get_pblocks SCALER1] -add {SLICE_X26Y60:SLICE_X31Y119}
+resize_pblock [get_pblocks SCALER1] -add {DSP48E2_X3Y24:DSP48E2_X4Y47}
 resize_pblock [get_pblocks SCALER1] -add {RAMB18_X2Y24:RAMB18_X2Y39}
 resize_pblock [get_pblocks SCALER1] -add {RAMB36_X2Y12:RAMB36_X2Y19}
 set_property IS_SOFT FALSE [get_pblocks SCALER1]
@@ -541,8 +528,8 @@ set_property IS_SOFT FALSE [get_pblocks FUNCGEN2]
 
 create_pblock SCALER2
 add_cells_to_pblock [get_pblocks SCALER2] [get_cells -quiet [list {chfpga0/CHANGEN[2].CHANi/IMPL_GEN.scaler_blk.SCALER0}]]
-resize_pblock [get_pblocks SCALER2] -add {SLICE_X26Y120:SLICE_X30Y179}
-resize_pblock [get_pblocks SCALER2] -add {DSP48E2_X3Y48:DSP48E2_X3Y71}
+resize_pblock [get_pblocks SCALER2] -add {SLICE_X26Y120:SLICE_X31Y179}
+resize_pblock [get_pblocks SCALER2] -add {DSP48E2_X3Y48:DSP48E2_X4Y71}
 resize_pblock [get_pblocks SCALER2] -add {RAMB18_X2Y48:RAMB18_X2Y63}
 resize_pblock [get_pblocks SCALER2] -add {RAMB36_X2Y24:RAMB36_X2Y31}
 set_property IS_SOFT FALSE [get_pblocks SCALER2]
@@ -576,8 +563,8 @@ set_property IS_SOFT FALSE [get_pblocks FUNCGEN3]
 
 create_pblock SCALER3
 add_cells_to_pblock [get_pblocks SCALER3] [get_cells -quiet [list {chfpga0/CHANGEN[3].CHANi/IMPL_GEN.scaler_blk.SCALER0}]]
-resize_pblock [get_pblocks SCALER3] -add {SLICE_X26Y180:SLICE_X30Y239}
-resize_pblock [get_pblocks SCALER3] -add {DSP48E2_X3Y72:DSP48E2_X3Y95}
+resize_pblock [get_pblocks SCALER3] -add {SLICE_X26Y180:SLICE_X31Y239}
+resize_pblock [get_pblocks SCALER3] -add {DSP48E2_X3Y72:DSP48E2_X4Y95}
 resize_pblock [get_pblocks SCALER3] -add {RAMB18_X2Y72:RAMB18_X2Y87}
 resize_pblock [get_pblocks SCALER3] -add {RAMB36_X2Y36:RAMB36_X2Y43}
 set_property IS_SOFT FALSE [get_pblocks SCALER3]
@@ -611,8 +598,8 @@ set_property IS_SOFT FALSE [get_pblocks FUNCGEN4]
 
 create_pblock SCALER4
 add_cells_to_pblock [get_pblocks SCALER4] [get_cells -quiet [list {chfpga0/CHANGEN[4].CHANi/IMPL_GEN.scaler_blk.SCALER0}]]
-resize_pblock [get_pblocks SCALER4] -add {SLICE_X26Y240:SLICE_X30Y299}
-resize_pblock [get_pblocks SCALER4] -add {DSP48E2_X3Y96:DSP48E2_X3Y119}
+resize_pblock [get_pblocks SCALER4] -add {SLICE_X26Y240:SLICE_X31Y299}
+resize_pblock [get_pblocks SCALER4] -add {DSP48E2_X3Y96:DSP48E2_X4Y119}
 resize_pblock [get_pblocks SCALER4] -add {RAMB18_X2Y96:RAMB18_X2Y111}
 resize_pblock [get_pblocks SCALER4] -add {RAMB36_X2Y48:RAMB36_X2Y55}
 set_property IS_SOFT FALSE [get_pblocks SCALER4]
@@ -646,8 +633,8 @@ set_property IS_SOFT FALSE [get_pblocks FUNCGEN5]
 
 create_pblock SCALER5
 add_cells_to_pblock [get_pblocks SCALER5] [get_cells -quiet [list {chfpga0/CHANGEN[5].CHANi/IMPL_GEN.scaler_blk.SCALER0}]]
-resize_pblock [get_pblocks SCALER5] -add {SLICE_X26Y300:SLICE_X30Y359}
-resize_pblock [get_pblocks SCALER5] -add {DSP48E2_X3Y120:DSP48E2_X3Y143}
+resize_pblock [get_pblocks SCALER5] -add {SLICE_X26Y300:SLICE_X31Y359}
+resize_pblock [get_pblocks SCALER5] -add {DSP48E2_X3Y120:DSP48E2_X4Y143}
 resize_pblock [get_pblocks SCALER5] -add {RAMB18_X2Y120:RAMB18_X2Y135}
 resize_pblock [get_pblocks SCALER5] -add {RAMB36_X2Y60:RAMB36_X2Y67}
 set_property IS_SOFT FALSE [get_pblocks SCALER5]
@@ -681,8 +668,8 @@ set_property IS_SOFT FALSE [get_pblocks FUNCGEN6]
 
 create_pblock SCALER6
 add_cells_to_pblock [get_pblocks SCALER6] [get_cells -quiet [list {chfpga0/CHANGEN[6].CHANi/IMPL_GEN.scaler_blk.SCALER0}]]
-resize_pblock [get_pblocks SCALER6] -add {SLICE_X26Y360:SLICE_X30Y419}
-resize_pblock [get_pblocks SCALER6] -add {DSP48E2_X3Y144:DSP48E2_X3Y167}
+resize_pblock [get_pblocks SCALER6] -add {SLICE_X26Y360:SLICE_X31Y419}
+resize_pblock [get_pblocks SCALER6] -add {DSP48E2_X3Y144:DSP48E2_X4Y167}
 resize_pblock [get_pblocks SCALER6] -add {RAMB18_X2Y144:RAMB18_X2Y159}
 resize_pblock [get_pblocks SCALER6] -add {RAMB36_X2Y72:RAMB36_X2Y79}
 set_property IS_SOFT FALSE [get_pblocks SCALER6]
@@ -716,8 +703,8 @@ set_property IS_SOFT FALSE [get_pblocks FUNCGEN7]
 
 create_pblock SCALER7
 add_cells_to_pblock [get_pblocks SCALER7] [get_cells -quiet [list {chfpga0/CHANGEN[7].CHANi/IMPL_GEN.scaler_blk.SCALER0}]]
-resize_pblock [get_pblocks SCALER7] -add {SLICE_X26Y420:SLICE_X30Y479}
-resize_pblock [get_pblocks SCALER7] -add {DSP48E2_X3Y168:DSP48E2_X3Y191}
+resize_pblock [get_pblocks SCALER7] -add {SLICE_X26Y420:SLICE_X31Y479}
+resize_pblock [get_pblocks SCALER7] -add {DSP48E2_X3Y168:DSP48E2_X4Y191}
 resize_pblock [get_pblocks SCALER7] -add {RAMB18_X2Y168:RAMB18_X2Y183}
 resize_pblock [get_pblocks SCALER7] -add {RAMB36_X2Y84:RAMB36_X2Y91}
 set_property IS_SOFT FALSE [get_pblocks SCALER7]
@@ -733,6 +720,7 @@ resize_pblock [get_pblocks CORN] -add {DSP48E2_X0Y144:DSP48E2_X0Y167}
 resize_pblock [get_pblocks CORN] -add {RAMB18_X0Y144:RAMB18_X0Y167}
 resize_pblock [get_pblocks CORN] -add {RAMB36_X0Y72:RAMB36_X0Y83}
 set_property IS_SOFT FALSE [get_pblocks CORN]
+
 
 
 

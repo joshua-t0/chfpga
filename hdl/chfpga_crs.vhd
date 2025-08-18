@@ -80,7 +80,7 @@ entity chfpga_crs is
 
 		-- Real-time data offload links configuration
 		GPU_LINK_TYPE: string          := CONFIG_GPU_LINK_TYPE; --
-		GPU_CHANNEL_QUAD: integer_array := (0 to 3=> 0);; -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if GPU_LINK_TYPE is NONE
+		GPU_CHANNEL_QUAD: integer_array := (0 to 3=> 0); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if GPU_LINK_TYPE is NONE
 		GPU_QUAD_REFCLK: integer_array := (0 to 0=>0); -- Both QUAD0 and QUAD1 use refclk(0)
 
 
