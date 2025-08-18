@@ -3,7 +3,7 @@
 <!--                                                         -->
 <!-- Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.   -->
 
-<Project Version="7" Minor="61" Path="/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_corr16/chfpga_ice_corr16.xpr">
+<Project Version="7" Minor="61" Path="/home/icecorr/chfpga/xilinx_projects/chfpga_ice_corr16/chfpga_ice_corr16.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
     <Option Name="Id" Val="15122b86d3b949b5a5500de7da599c0b"/>
