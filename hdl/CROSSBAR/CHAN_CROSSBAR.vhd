@@ -38,14 +38,13 @@ entity chan_crossbar is
 		PLATFORM_ID: integer;
 		NUMBER_OF_INPUT_LANES: integer  := 16; -- Number of input streams
 		NUMBER_OF_OUTPUT_LANES: integer := 16; -- Number of output streams
-		BINSEL_PBLOCK_MAP: integerArray; -- Inticates to which pblock each BINSEL belongs. This is used to correctly pipeline the data.
-		EIGHT_BIT_SUPPORT: boolean      := FALSE --
+		BINSEL_PBLOCK_MAP: integer_array -- Indicates to which pblock each BINSEL belongs. This is used to correctly pipeline the data.
 	);
 	port (
 		-- Input stream from the channelizer (non-blocking)
-		s_axis_tvalid: in slv(0 to NUMBER_OF_INPUT_LANES - 1);
+		s_axis_tvalid: in std_logic;
 		s_axis_tdata: in slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
-		s_axis_tlast: in slv(0 to NUMBER_OF_INPUT_LANES - 1);
+		s_axis_tlast: in std_logic;
 		s_axis_tuser: in slv4_array(0 to NUMBER_OF_INPUT_LANES - 1);
 		-- s_axis_clk: in std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1); -- clock from each channelizer
 
@@ -73,7 +72,6 @@ end entity chan_crossbar;
 architecture impl of chan_crossbar is
 
 	attribute KEEP: string;
-	-- attribute equivalent_register_removal: string;
 	attribute ASYNC_REG: string;
 	attribute SHREG_EXTRACT: string;
 	attribute DONT_TOUCH: string;
@@ -100,14 +98,6 @@ architecture impl of chan_crossbar is
 	-- Internal AXI-Streaming buses
 
 	signal frame_clk: slv(0 to NUMBER_OF_INPUT_LANES - 1);
-
-	signal align_out_tvalid: slv(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal align_out_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal align_out_tlast: slv(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal align_out_tuser: slv4_array(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal align_out_global_tvalid: std_logic;
-	signal align_out_global_tlast: std_logic;
-
 
 	signal binsel_in_tvalid_reg: slv(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal binsel_in_tdata_reg: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
@@ -164,10 +154,7 @@ architecture impl of chan_crossbar is
 	--- Define Control word and its signals
 	signal control_bytes: slv8_array(0 to 1); -- default value set in the CMD_SLAVE
 	signal status_bytes: slv8_array(0 to 4); --
-
-
 begin
-
 
 	process(all) begin
 		if rising_edge(ctrl_clk) then
@@ -299,68 +286,9 @@ begin
 
 
 	-- frame_clk_out <= frame_clk(0);
-	frame_clk_out <= s_axis_tvalid(0) and s_axis_tlast(0);
+	frame_clk_out <= s_axis_tvalid and s_axis_tlast;
 
 
-	---------------------------------------------------------------------
-	-- ALIGN
-	---------------------------------------------------------------------
-	-- Control the Channelizer FIFO readout in  order to align the frames.
-	-- Aligning the frames is necessary because we need to grab data from multiple lanes at a time based on a single selection map.
-	--
-	-- The align module also handles missing and malformed frames, but this is not an issue here since
-	-- data is coming straight from the channelizer through the internal FPGA routing, which will not cause packet loss.
-	-- The only exception to this are for channels that do not send data due to missing ADC cards, inwhich case the ALIGN will handle those automatically.
-
-
-	--align0: entity work.CHAN_ALIGN
-	--	generic map (
-	--		PLATFORM_ID     => PLATFORM_ID,
-	--		NUMBER_OF_LANES => NUMBER_OF_INPUT_LANES
-	--	-- DATA_TIMEOUT => 2
-	--	)
-	--	port map (
-	--		-- Data from the channelizers outputs (AXI Streaming, blocking)
-	--		s_axis_tvalid => s_axis_tvalid,
-	--		s_axis_tdata  => s_axis_tdata,
-	--		s_axis_tlast  => s_axis_tlast,
-	--		s_axis_tuser  => s_axis_tuser,
-	--		-- s_axis_tready => m_axis_fifo_tready,
-
-	--		-- Data to the remapper (AXI Streaming, non-blocking)
-	--		m_axis_tvalid => align_out_tvalid,
-	--		m_axis_tdata  => align_out_tdata,
-	--		m_axis_tlast  => align_out_tlast,
-	--		m_axis_tuser  => align_out_tuser,
-
-	--		m_axis_global_tvalid => align_out_global_tvalid,
-	--		m_axis_global_tlast  => align_out_global_tlast,
-
-	--		lane_monitor        => align_lane_monitor,
-	--		lane_monitor_source => lane_monitor_source,
-
-	--		reset_stats => reset_stats,
-	--		overflow    => align_fifo_overflow_sticky,
-	--		-- missing_frame => missing_frame_sticky,
-	--		in_frame_ctr  => input_frame_ctr,
-	--		out_frame_ctr => align_frame_ctr,
-
-
-	--		clk => clk,
-	--		rst => align_reset_all
-	--	);
-
-	--lane_monitor <= lane_monitor_bit;
-
-
-	-- Bypass the align since data is already aligned by the channelizer FIFO
-	align_out_tvalid <= s_axis_tvalid;
-	align_out_tdata <= s_axis_tdata;
-	align_out_tlast <= s_axis_tlast;
-	align_out_tuser <= s_axis_tuser;
-
-	align_out_global_tvalid <= s_axis_tvalid(0);
-	align_out_global_tlast <= s_axis_tlast(0);
 
 	process(all) begin
 		if rising_edge(clk) then
@@ -391,12 +319,12 @@ begin
 			-- This pipeline is necessary to generate a delay of two clocks between the bin counter controls (bin_ctr_*) and the data.
 			-- The BIN_SEL requires the bin counter control to be in advance by two clocks relatve to compensate with the lookup RAM latency
 
-			binsel_in_tvalid_reg <= align_out_tvalid when not rst_reg else (others => '0');
-			binsel_in_tdata_reg <= align_out_tdata;
-			binsel_in_tlast_reg <= align_out_tlast;
-			binsel_in_tuser_reg <= align_out_tuser;
-			binsel_in_global_tvalid_reg <= align_out_global_tvalid when not rst_reg else '0';
-			binsel_in_global_tlast_reg  <= align_out_global_tlast;
+			binsel_in_tvalid_reg <= (others => s_axis_tvalid) when not rst_reg else (others => '0');
+			binsel_in_tdata_reg <= s_axis_tdata;
+			binsel_in_tlast_reg <= (others => s_axis_tlast);
+			binsel_in_tuser_reg <= s_axis_tuser;
+			binsel_in_global_tvalid_reg <= s_axis_tvalid when not rst_reg else '0';
+			binsel_in_global_tlast_reg  <= s_axis_tlast;
 
 			-- Another pipeline level.
 			binsel_in_tvalid_reg2 <= (others => binsel_in_tvalid_reg) when not rst_reg2 else (others => (others => '0'));
@@ -432,8 +360,8 @@ begin
 				s_axis_global_tlast  => binsel_in_global_tlast_reg2(BINSEL_PBLOCK_MAP(i)),
 
 				-- Bin counter signals: must be set two clocks before the data
-				bin_ctr_en  => align_out_global_tvalid,
-				bin_ctr_clr => align_out_global_tlast,
+				bin_ctr_en  => s_axis_tvalid,
+				bin_ctr_clr => s_axis_tlast,
 
 				-- Output data (AXI-Streaming bus, non blocking)
 
