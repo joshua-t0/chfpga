@@ -4,7 +4,7 @@
     "xci_name": "AXI4S_REG_SLICE",
     "component_reference": "xilinx.com:ip:axis_interconnect:1.1",
     "ip_revision": "20",
-    "gen_directory": "../../../xilinx_projects/sifpga_crs/sifpga_crs.gen/sources_1/ip/AXI4S_REG_SLICE",
+    "gen_directory": "gen/AXI4S_REG_SLICE",
     "parameters": {
       "component_parameters": {
         "C_NUM_SI_SLOTS": [ { "value": "1", "resolve_type": "user", "format": "long", "usage": "all" } ],
@@ -819,7 +819,7 @@
         "IPCONTEXT": [ { "value": "IP_Flow" } ],
         "IPREVISION": [ { "value": "20" } ],
         "MANAGED": [ { "value": "TRUE" } ],
-        "OUTPUTDIR": [ { "value": "../../../xilinx_projects/sifpga_crs/sifpga_crs.gen/sources_1/ip/AXI4S_REG_SLICE" } ],
+        "OUTPUTDIR": [ { "value": "gen/AXI4S_REG_SLICE" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "." } ],
         "SWVERSION": [ { "value": "2022.2" } ],
