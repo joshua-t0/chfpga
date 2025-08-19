@@ -3,3 +3,7 @@ CHAN_IP
 *.cache
 *.gen
 *.hw
+*.sim
+*.runs
+*.ip_user_files
+ip_upgrade.log
