@@ -49,39 +49,42 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --
 --
 -- The output of FUNCGEN is also a non-blocking AXI4-Streaming bus and has the same structure as the input, except for the ``TUSER`` signal.
--- ``TUSER`` is a 4-bit vector containing the following information:
+-- ``TUSER`` is a variable length vector(specified by ``FUNCGEN_TUSER_BITS_PER_WORD``) containing the following information:
 --
---   - Bit 0: (TUSER_CAPTURE_BIT): Passed downstream to indicate to the PROBER that the data should be captured if continuous capture  mode is enabled
---   - Bit 1: Unused (set to zero)
---   - Bit 2: Unused (set to zero)
---   - Bit 3: (TUSER_ADC_OVERFLOW_BIT): Set on the last word of a frame (i.e. valid only when TLAST=1) to indicate if an ADC saturation has occured on any sample of the frame.
+--   - Bit 0: (frame_overflow_flag): Set on the last word of a frame (i.e. valid only when TLAST=1) to indicate if an ADC saturation has occured on any sample of the frame.
+     - Other bits: Unused (set to zero)
 --
 -- Operation modes
 -- ---------------
 --
 -- The output of the FUNCGEN module is selected by the 3-bit `fn_sel` memory-mapped field. The supported modes are:
 --  - 0 / FN_ADC: Passes on the ADC input. The ADC overflow bits are aggregated througout the frame
---    and the resulting TUSER_ADC_OVERFLOW_BIT TUSER but is provided on the last frame.
+--    and the resulting ``frame_overflow_flag`` bit is provided on the last frame. The number of sample overflows 
+--    over a specified period of frames (through the control register ``stats_period``) can be accessed by the status register ``overflow_ctr``. 
 --
---  - 1 / FN_RAM: Outputs the RAM contents (2048 bytes, 512 words). TUSER_ADC_OVERFLOW_BIT is always zero.
+--  - 1 / FN_RAM: Outputs the RAM contents (2048 bytes, 512 words). ``frame_overflow_flag`` and ``overflow_ctr`` are always zero.
 --
---  - 2 / FN_NOISE: Outputs Pseudo-Random noise. TUSER_ADC_OVERFLOW_BIT is always zero. The noise
+--  - 2 / FN_NOISE: Outputs Pseudo-Random noise. ``frame_overflow_flag`` and ``overflow_ctr`` are always zero. The noise
 --    generator is seeeded by the 8-bit A and B fields to allow each channelizer to have up to 65536
---    different (presumamly uncorrelated) patterns.
+--    different (presumamly uncorrelated) patterns. ``frame_overflow_flag`` and ``overflow_ctr`` are always zero.
 --
 --  - 3 / FN_FRAME_WORD_CTR_RAM_FLAGS: Counts frames and words, with programmable ADC overflow bit
---    patterns. This mode is mostly used for testing. The output data is grouped in 32-bit words,
---    containing a 23-bit frame count in the MSB followed bit 9-bit word count (0-511). This pattern
+--    patterns. This mode is mostly used for testing. The output data is grouped in 32-bit words (the whole word for Iceboard and the LSB 32 bits for CRS),
+--    containing a 21-bit frame count in the MSB followed bit 11-bit word count for the Iceboard. This pattern
 --    does not generate nice data when splitted in 4-bytes (and even less when going through the
---    FFT), but it ensures that consecutive frames will contain unique data when looked word-wise.
---    In that mode, the ADC overflow flag of each sample is taken from the RAM bit 0.
+--    FFT), but it ensures that consecutive frames will contain unique data when looked word-wise. 
+--    In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` can be programmed by injecting specific values into the buffer. ``frame_overflow_flag`` will be '1' if there is any bit that is '1' in the buffer. ``overflow_ctr`` increments for every sample whose value is LSB is '1'. An overflow for a sample can thus be simulated by injecting a '1' in that sample. 
 --
---  - 4 / FN_FRAME8: Each sample is the last 8 bits of the current frame number.
---    TUSER_ADC_OVERFLOW_BIT is always zero.
+--  - 4 / FN_FRAME8: Each sample is the last 6 bits (for IceBoard)/12 bits (for CRS) of the current frame number  .
+--    In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` can be programmed by injecting specific values into the buffer. ``frame_overflow_flag`` will be '1' if there is any bit that is '1' in the buffer. ``overflow_ctr`` increments for every sample whose value is LSB is '1'. An overflow for a sample can thus be simulated by injecting a '1' in that sample. 
 --
 --  - 5 / FN_FRAME4: The most significant 4 bits of each sample is the last 4 bits of the current
---    frame number. The lower 4 bits are zero. TUSER_ADC_OVERFLOW_BIT is always zero.
+--    frame number. The lower 4 bits are zero. 
+--    In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` can be programmed by injecting specific values into the buffer. ``frame_overflow_flag`` will be '1' if there is any bit that is '1' in the buffer. ``overflow_ctr`` increments for every sample whose value is LSB is '1'. An overflow for a sample can thus be simulated by injecting a '1' in that sample. 
 --
+--  - 6 / FN_RAM_NIBBLE4: Sends bits 3:0 of RAM samples on even frames an bits 7:4 of RAM samples on odd frames. Data is aligned with the 4 MSBS
+--      of each sample, and the rest of the bits in the sample are zero. In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` are always zero.
+
 -- Waveform buffer
 -- ---------------
 --
@@ -94,25 +97,19 @@ use work.chFPGA_Package.all; -- Get all component definitions
 -- Noise generator
 -- ---------------
 --
--- The noise is generated as a 32-bit output CRC generator fed by the 8-bit A and B signals (the
+-- The noise is generated as a 32-bit output LFSR generator fed by the 8-bit A and B signals (the
 -- 32-bit input is a combination of A, B, not A, and not B). These A and B parameters act as seed.
--- The same A and B value will always result in the same sequence.
---
--- The 32-bit output values generated bu the CRC32 are simply distributed
--- amongst the 4 samples.
---
--- We have not analyzed the entropy of this generator, nor how uncorrelated the outputs are, or
--- whether some seed values are better than other. Is it ok to assume that 8-bit portions of the
--- 32-bit word are uncorrelated with others? Will some seeds provide extremely bad entropy?
---
--- The conclusion here is that the noise generator is an experimental feature that might be useful
--- but needs to be tested.
---
+-- The same A and B value will always result in the same sequence. Note that the LFSR outputs will be stuck at zero if A and B are both zero. 
+-- The sequence repeats after 2**32 - 1 words for IceBoard and (2**32 - 1)/4 word for CRS.
 
 --Overflow counter
 -- ---------------
 --
--- The overflow counter counts over ```stats_period```(user defined) frames the number of sample overflows from the ADC or the number of overflows injected through the buffer (either from modes FN_FRAME_WORD_CTR_RAM_FLAGS, FN_FRAME8 or FN_FRAME4). The overflow count for other modes (FN_RAM, FN_NOISE, FN_RAM_NIBBLE4) is 0. The maximum number of frames over which to count the number of overflows is 65535. When counting overflows from the buffer, each sample's LSB indicate if there is an overflow or not, so to simulate an overflow in a sample, set the sample value to 1. Overflow counting is enabled with ```stats_enable``` and the result can be read from ```overflow_ctr```. 
+-- The overflow counter counts over ```stats_period```(user defined) frames the number of sample overflows from the ADC or the number of overflows injected 
+-- Through the buffer (either from modes FN_FRAME_WORD_CTR_RAM_FLAGS, FN_FRAME8 or FN_FRAME4). The overflow count for other modes 
+-- (FN_RAM, FN_NOISE, FN_RAM_NIBBLE4) is 0. The maximum number of frames over which to count the number of overflows is 65535. When counting overflows from 
+-- the buffer, each sample's LSB indicate if there is an overflow or not, so to simulate an overflow in a sample, set the sample value to 1. 
+-- Overflow counting is enabled with ```stats_enable``` and the result can be read from ```overflow_ctr```. 
 
 
 entity FUNCGEN is
@@ -607,7 +604,6 @@ funcgen_proc: process (clk)
                 ramp_tfirst <= '1';
                 trig_reg <= '0';
                 capture_flag <= '0';
-                overflow_ctr <= (others=>'0');
                 
             end if; -- reset_all
 
