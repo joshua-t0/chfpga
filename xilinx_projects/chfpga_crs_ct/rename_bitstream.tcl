@@ -1,1 +1,1 @@
-file rename -force chfpga_crs.bit chfpga_crs_ct.bit
+file rename -force chfpga_crs.bit ../../chfpga_crs_ct.bit
