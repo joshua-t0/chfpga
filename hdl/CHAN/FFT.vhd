@@ -404,7 +404,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 	                src_lane := (i + to_integer(word_ctr(i))) MOD FFT_BINS_PER_WORD;
 	                fft_rot_tdata((i+1)*FFT_BITS_PER_BIN-1 downto i*FFT_BITS_PER_BIN) <= fft_tdata((src_lane+1)*FFT_BITS_PER_BIN -1 downto src_lane*FFT_BITS_PER_BIN);
 				end loop; -- if FFT is implemented
-			else:
+			else
 				fft_rot_tdata <= fft_tdata;
 			end if;
 
