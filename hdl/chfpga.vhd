@@ -2936,7 +2936,7 @@ begin
                     );
         
             when uct_case: CT_TYPE_UCT =>
-                ct0: entity work.u_ct_engine
+                ct0: entity work.uct_engine
                     generic map (
                         PLATFORM_ID => PLATFORM_ID,
                         NUMBER_OF_INPUT_LANES => NUMBER_OF_CHANNELIZERS, -- Number of channelizer inputs

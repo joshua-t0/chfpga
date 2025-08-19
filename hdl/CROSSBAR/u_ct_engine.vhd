@@ -28,7 +28,7 @@ use work.chFPGA_Package.ALL;
 --
 -- Supports 8 channelizer inputs
 -- Each channelizer inputs packs four (4+4)-bit bin values into a 32-bit value (low bin in MSB)
-entity u_ct_engine is
+entity uct_engine is
 	generic (
 		PLATFORM_ID: integer; -- necessary to select the proper FIFOs
 		NUMBER_OF_INPUT_LANES: integer := 8; -- Number of channelizer inputs
@@ -53,7 +53,7 @@ entity u_ct_engine is
 	port (
 		-- Non-blocking input stream from the channelizer, synchronous to `axis_clk
 		-- We assume all lanes are aligned and therefore share a common `tvalid` and `tlast`
-		s_axis_tdata: in slv32_array(0 to NUMBER_OF_INPUT_LANES - 1); -- data from each channelizer, each of which contains 4x (4+4)-bit bin values
+		s_axis_tdata: in slv_array(0 to NUMBER_OF_INPUT_LANES - 1)(INPUT_WORD_WIDTH-1 downto 0); -- data from each channelizer, each of which contains 4x (4+4)-bit bin values
 		s_axis_tvalid: in std_logic;
 		s_axis_tlast: in std_logic;
 
@@ -93,9 +93,9 @@ entity u_ct_engine is
 		bsb_clk: in  std_logic;
 		bsb_rst: in  std_logic
 	);
-end entity u_ct_engine;
+end entity uct_engine;
 
-architecture impl of u_ct_engine is
+architecture impl of uct_engine is
 
 	attribute KEEP: string;
 	attribute EQUIVALENT_REGISTER_REMOVAL: string;
@@ -169,7 +169,7 @@ begin
 		signal status_bytes: slv8_array(0 to 2);
 
 		-- signal cb1_in_tdata: slv_array(0 to NUMBER_OF_INPUT_LANES-1)(INPUT_WORD_WIDTH-1 downto 0);
-		signal cb1_in_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
+		signal cb1_in_tdata: slv_array(0 to NUMBER_OF_INPUT_LANES - 1)(INPUT_WORD_WIDTH-1 downto 0);
 		signal cb1_in_tvalid: std_logic;
 		signal cb1_in_tlast: std_logic;
 		attribute shreg_extract of cb1_in_tdata, cb1_in_tvalid, cb1_in_tlast: signal is "no"; -- prevent the tool form inferring a shift register
