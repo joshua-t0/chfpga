@@ -52,7 +52,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 -- ``TUSER`` is a variable length vector(specified by ``FUNCGEN_TUSER_BITS_PER_WORD``) containing the following information:
 --
 --   - Bit 0: (frame_overflow_flag): Set on the last word of a frame (i.e. valid only when TLAST=1) to indicate if an ADC saturation has occured on any sample of the frame.
-     - Other bits: Unused (set to zero)
+--     - Other bits: Unused (set to zero)
 --
 -- Operation modes
 -- ---------------
