@@ -264,6 +264,7 @@ constant FFT_TYPE_NONE: integer := 0;
 constant FFT_TYPE_CHIME: integer := 1;
 constant FFT_TYPE_D3A: integer := 2;
 constant FFT_TYPE_CHORD: integer := 3;
+constant FFT_TYPE_HIRAX: integer := 4;
 
 
 -- Platform information structure
@@ -312,6 +313,15 @@ constant FFT_INFO: FFT_INFO_ARRAY := (
 		SAMPLES_PER_WORD => 8,
 		BITS_PER_BIN => 32+32,
 		BINS_PER_WORD => 4
+		),
+
+	FFT_TYPE_HIRAX => (
+		SAMPLES_PER_FRAME => 2048,
+		LATENCY => 3230,
+		BITS_PER_SAMPLE => 8,
+		SAMPLES_PER_WORD => 4,
+		BITS_PER_BIN => 29+29,
+		BINS_PER_WORD => 2
 		)
 	);
 

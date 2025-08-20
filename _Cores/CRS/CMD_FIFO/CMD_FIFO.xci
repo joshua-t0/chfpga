@@ -4,7 +4,7 @@
     "xci_name": "CMD_FIFO",
     "component_reference": "xilinx.com:ip:fifo_generator:13.2",
     "ip_revision": "7",
-    "gen_directory": "../../../xilinx_projects/sifpga_crs/sifpga_crs.gen/sources_1/ip/CMD_FIFO",
+    "gen_directory": "gen/CMD_FIFO",
     "parameters": {
       "component_parameters": {
         "Component_Name": [ { "value": "CMD_FIFO", "resolve_type": "user", "usage": "all" } ],
@@ -399,7 +399,7 @@
         "IPCONTEXT": [ { "value": "IP_Flow" } ],
         "IPREVISION": [ { "value": "7" } ],
         "MANAGED": [ { "value": "TRUE" } ],
-        "OUTPUTDIR": [ { "value": "../../../xilinx_projects/sifpga_crs/sifpga_crs.gen/sources_1/ip/CMD_FIFO" } ],
+        "OUTPUTDIR": [ { "value": "gen/CMD_FIFO" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "." } ],
         "SWVERSION": [ { "value": "2022.2" } ],

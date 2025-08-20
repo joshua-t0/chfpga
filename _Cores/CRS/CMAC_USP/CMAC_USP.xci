@@ -4,7 +4,7 @@
     "xci_name": "CMAC_USP",
     "component_reference": "xilinx.com:ip:cmac_usplus:3.1",
     "ip_revision": "10",
-    "gen_directory": ".",
+    "gen_directory": "gen",
     "parameters": {
       "component_parameters": {
         "CMAC_CAUI4_MODE": [ { "value": "1", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
@@ -203,7 +203,7 @@
         "IPCONTEXT": [ { "value": "IP_Flow" } ],
         "IPREVISION": [ { "value": "10" } ],
         "MANAGED": [ { "value": "TRUE" } ],
-        "OUTPUTDIR": [ { "value": "." } ],
+        "OUTPUTDIR": [ { "value": "gen" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "." } ],
         "SWVERSION": [ { "value": "2022.2" } ],

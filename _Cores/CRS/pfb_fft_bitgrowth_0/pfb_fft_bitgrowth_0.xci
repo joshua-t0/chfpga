@@ -2,9 +2,9 @@
   "schema": "xilinx.com:schema:json_instance:1.0",
   "ip_inst": {
     "xci_name": "pfb_fft_bitgrowth_0",
-    "component_reference": "MCgIL:CHORD:pfb_fft_bitgrowth:1.0",
-    "ip_revision": "1",
-    "gen_directory": "../../../xilinx_projects/chfpga_crs/chfpga_crs.gen/sources_1/ip/pfb_fft_bitgrowth_0",
+    "component_reference": "user.org:user:pfb_fft_bitgrowth:1.0",
+    "ip_revision": "2",
+    "gen_directory": "gen/pfb_fft_bitgrowth_0",
     "parameters": {
       "component_parameters": {
         "Component_Name": [ { "value": "pfb_fft_bitgrowth_0", "resolve_type": "user", "usage": "all" } ]
@@ -26,9 +26,9 @@
       },
       "runtime_parameters": {
         "IPCONTEXT": [ { "value": "IP_Flow" } ],
-        "IPREVISION": [ { "value": "1" } ],
+        "IPREVISION": [ { "value": "2" } ],
         "MANAGED": [ { "value": "TRUE" } ],
-        "OUTPUTDIR": [ { "value": "../../../xilinx_projects/chfpga_crs/chfpga_crs.gen/sources_1/ip/pfb_fft_bitgrowth_0" } ],
+        "OUTPUTDIR": [ { "value": "gen/pfb_fft_bitgrowth_0" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "." } ],
         "SWVERSION": [ { "value": "2022.2" } ],

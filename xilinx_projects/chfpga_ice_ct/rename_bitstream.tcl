@@ -1,1 +1,1 @@
-file rename -force chfpga_ice.bit chfpga_ice_ct.bit
+file rename -force chfpga_ice.bit ../../chfpga_ice_ct.bit

@@ -38,14 +38,13 @@ entity chan_crossbar is
 		PLATFORM_ID: integer;
 		NUMBER_OF_INPUT_LANES: integer  := 16; -- Number of input streams
 		NUMBER_OF_OUTPUT_LANES: integer := 16; -- Number of output streams
-		BINSEL_PBLOCK_MAP: integerArray; -- Inticates to which pblock each BINSEL belongs. This is used to correctly pipeline the data.
-		EIGHT_BIT_SUPPORT: boolean      := FALSE --
+		BINSEL_PBLOCK_MAP: integer_array -- Indicates to which pblock each BINSEL belongs. This is used to correctly pipeline the data.
 	);
 	port (
 		-- Input stream from the channelizer (non-blocking)
-		s_axis_tvalid: in slv(0 to NUMBER_OF_INPUT_LANES - 1);
+		s_axis_tvalid: in std_logic;
 		s_axis_tdata: in slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
-		s_axis_tlast: in slv(0 to NUMBER_OF_INPUT_LANES - 1);
+		s_axis_tlast: in std_logic;
 		s_axis_tuser: in slv4_array(0 to NUMBER_OF_INPUT_LANES - 1);
 		-- s_axis_clk: in std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1); -- clock from each channelizer
 
@@ -73,7 +72,6 @@ end entity chan_crossbar;
 architecture impl of chan_crossbar is
 
 	attribute KEEP: string;
-	-- attribute equivalent_register_removal: string;
 	attribute ASYNC_REG: string;
 	attribute SHREG_EXTRACT: string;
 	attribute DONT_TOUCH: string;
@@ -89,63 +87,46 @@ architecture impl of chan_crossbar is
 
 	attribute dont_touch of ctrl_rst_reg2: signal is "true"; -- make sure the multiple copies of the reset register are not simplified away
 
-	-- Internally routed command buses
-	-- We have one bus for global control, and one bus for each bin selector.
-	signal xbar_cmd_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_OUTPUT_LANES downto 0);
-	signal xbar_cmd_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_OUTPUT_LANES downto 0);
-	signal xbar_rply_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_OUTPUT_LANES downto 0);
-	signal xbar_rply_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_OUTPUT_LANES downto 0);
+	-- Internally routed BSB buses
+	-- We have one port for global register, and one port for each bin selector.
+	signal bsb_router_cmd_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_OUTPUT_LANES downto 0);
+	signal bsb_router_cmd_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_OUTPUT_LANES downto 0);
+	signal bsb_router_rply_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_OUTPUT_LANES downto 0);
+	signal bsb_router_rply_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_OUTPUT_LANES downto 0);
 
 
 	-- Internal AXI-Streaming buses
 
 	signal frame_clk: slv(0 to NUMBER_OF_INPUT_LANES - 1);
 
-	signal m_axis_align_out_tvalid: slv(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal m_axis_align_out_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal m_axis_align_out_tlast: slv(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal m_axis_align_out_tuser: slv4_array(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal m_axis_align_out_global_tvalid: std_logic;
-	signal m_axis_align_out_global_tlast: std_logic;
-
-
-	signal m_axis_align_out_tvalid_reg: slv(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal m_axis_align_out_tdata_reg: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal m_axis_align_out_tlast_reg: slv(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal m_axis_align_out_tuser_reg: slv4_array(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal m_axis_align_out_global_tvalid_reg: std_logic;
-	signal m_axis_align_out_global_tlast_reg: std_logic;
+	signal binsel_in_tvalid_reg: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal binsel_in_tdata_reg: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal binsel_in_tlast_reg: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal binsel_in_tuser_reg: slv4_array(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal binsel_in_global_tvalid_reg: std_logic;
+	signal binsel_in_global_tlast_reg: std_logic;
 
 	type align_tvalid_array is array (NATURAL RANGE <>) of slv(0 to NUMBER_OF_INPUT_LANES - 1);
-
 	type align_tdata_array is array (NATURAL RANGE <>) of slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
-
 	type align_tlast_array is array (NATURAL RANGE <>) of slv(0 to NUMBER_OF_INPUT_LANES - 1);
-
 	type align_tuser_array is array (NATURAL RANGE <>) of slv4_array(0 to NUMBER_OF_INPUT_LANES - 1);
 
-	signal m_axis_align_out_tvalid_reg2: align_tvalid_array(0 to NUMBER_OF_BINSEL_PBLOCKS - 1);
-	signal m_axis_align_out_tdata_reg2: align_tdata_array(0 to NUMBER_OF_BINSEL_PBLOCKS - 1);
-	signal m_axis_align_out_tlast_reg2: align_tlast_array(0 to NUMBER_OF_BINSEL_PBLOCKS - 1);
-	signal m_axis_align_out_tuser_reg2: align_tuser_array(0 to NUMBER_OF_BINSEL_PBLOCKS - 1);
-	signal m_axis_align_out_global_tvalid_reg2: std_logic_vector(0 to NUMBER_OF_BINSEL_PBLOCKS - 1);
-	signal m_axis_align_out_global_tlast_reg2: std_logic_vector(0 to NUMBER_OF_BINSEL_PBLOCKS - 1);
+	signal binsel_in_tvalid_reg2: align_tvalid_array(0 to NUMBER_OF_BINSEL_PBLOCKS - 1);
+	signal binsel_in_tdata_reg2: align_tdata_array(0 to NUMBER_OF_BINSEL_PBLOCKS - 1);
+	signal binsel_in_tlast_reg2: align_tlast_array(0 to NUMBER_OF_BINSEL_PBLOCKS - 1);
+	signal binsel_in_tuser_reg2: align_tuser_array(0 to NUMBER_OF_BINSEL_PBLOCKS - 1);
+	signal binsel_in_global_tvalid_reg2: std_logic_vector(0 to NUMBER_OF_BINSEL_PBLOCKS - 1);
+	signal binsel_in_global_tlast_reg2: std_logic_vector(0 to NUMBER_OF_BINSEL_PBLOCKS - 1);
 
-	-- The m_axis_align_out_*_reg2 signals hold multiple copies of the align output. Each copy can be therefore placed closer to its destination pblock.
+	-- The align_out_*_reg2 signals hold multiple copies of the align output. Each copy can be therefore placed closer to its destination pblock.
 	-- These registers are equivalent, so we do not want the synthesized to merge them all into one.
-	attribute dont_touch of m_axis_align_out_tvalid_reg2: signal is "true"; --
-	attribute dont_touch of m_axis_align_out_tdata_reg2: signal is "true"; --
-	attribute dont_touch of m_axis_align_out_tlast_reg2: signal is "true"; --
-	attribute dont_touch of m_axis_align_out_tuser_reg2: signal is "true"; --
-	attribute dont_touch of m_axis_align_out_global_tvalid_reg2: signal is "true"; --
-	attribute dont_touch of m_axis_align_out_global_tlast_reg2: signal is "true"; --
+	attribute DONT_TOUCH of binsel_in_tvalid_reg2, binsel_in_tdata_reg2, binsel_in_tlast_reg2, binsel_in_tuser_reg2: signal is "yes";
+	attribute DONT_TOUCH of binsel_in_global_tvalid_reg2, binsel_in_global_tlast_reg2: signal is "yes";
 
-	signal m_axis_tvalid_int: slv(0 to NUMBER_OF_OUTPUT_LANES - 1);
 
 	signal align_reset: std_logic;
 	signal align_reset_reg: std_logic;
-	attribute async_reg of align_reset_reg: signal is "yes";
-	attribute async_reg of align_reset: signal is "yes";
+	attribute shreg_extract of align_reset, align_reset_reg: signal is "no";
 
 
 	signal align_reset_all: std_logic;
@@ -173,22 +154,19 @@ architecture impl of chan_crossbar is
 	--- Define Control word and its signals
 	signal control_bytes: slv8_array(0 to 1); -- default value set in the CMD_SLAVE
 	signal status_bytes: slv8_array(0 to 4); --
-
-
 begin
 
-
-	ctrl_rst_proc: process(ctrl_clk)
-	begin
+	process(all) begin
 		if rising_edge(ctrl_clk) then
+			-- Pipeline BSB resets
 			ctrl_rst_reg <= ctrl_rst;
 			ctrl_rst_reg2 <= (others => ctrl_rst_reg);
 		end if; -- RST/CLK
 	end process;
 
-	rst_proc: process(clk)
-	begin
+	process(all) begin
 		if rising_edge(clk) then
+			-- Pipeline data resets
 			rst_reg <= rst;
 			rst_reg2 <= rst_reg;
 			rst_reg3 <= rst_reg2;
@@ -213,10 +191,10 @@ begin
 			rply_out_rdy => ctrl_rply_rdy,
 
 
-			cmd_out_dat => xbar_cmd_dat,
-			cmd_out_rdy => xbar_cmd_rdy,
-			rply_in_dat => xbar_rply_dat,
-			rply_in_rdy => xbar_rply_rdy,
+			cmd_out_dat => bsb_router_cmd_dat,
+			cmd_out_rdy => bsb_router_cmd_rdy,
+			rply_in_dat => bsb_router_rply_dat,
+			rply_in_rdy => bsb_router_rply_rdy,
 
 			-- Slave (module) control interface
 			clk => ctrl_clk,
@@ -259,11 +237,11 @@ begin
 	-- ------------------------------------------------------------------------------------
 
 	-- CONTROL Byte 0
-	-- fifo_reset                    <= control_bytes(0)(7); --!
-	align_reset                   <= control_bytes(0)(6); --!
-	-- remap_reset                   <= control_bytes(0)(5); --! There is no remap in 1st crossbar
-	lane_monitor_reset            <= control_bytes(0)(4);          --!
-	lane_monitor_sel              <= control_bytes(0)(3 downto 0); --!
+	-- fifo_reset                    <= control_bytes(0)(7); --
+	align_reset                   <= control_bytes(0)(6); --
+	-- remap_reset                   <= control_bytes(0)(5); -- There is no remap in 1st crossbar
+	lane_monitor_reset            <= control_bytes(0)(4);          --
+	lane_monitor_sel              <= control_bytes(0)(3 downto 0); --
 
 	-- CONTROL Byte 1
 	lane_monitor_source <= control_bytes(1)(3 downto 0);
@@ -282,22 +260,11 @@ begin
 	status_bytes(2)      <= align_frame_ctr(to_integer(unsigned(lane_monitor_sel)));
 	status_bytes(3 to 4) <= to_slv8_array(delay_capture_ref_word_ctr);
 
-	-- status_bytes(0 to 1) <= to_slv8_array(resize(reverse_bits_and_dir(lane_monitor), 16));
-	-- status_bytes(2) <= to_slv(lsb(bin_ctr, 8));
-	-- STATUS Byte 2
-	-- none
-
-
-	-- STATUS Byte 5
-
-	-- status_bytes(5) <= align_frame_ctr(0); -- this is redundant: remove!
-
-
 	-----------------------------------------------------------------------------------
 	-- Memory-Mapped interface instantiation
 	-----------------------------------------------------------------------------------
-	--! Instantiates a memory-mapped interface to the control and status bytes
-	ctrl_slave0: entity work.CTRL_SLAVE
+	-- Instantiates a memory-mapped interface to the control and status bytes
+	bsb_regs0: entity work.CTRL_SLAVE
 		generic map (
 			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --
 			NUMBER_OF_STATUS_BYTES  => status_bytes'Length(1), --
@@ -306,10 +273,10 @@ begin
 
 		port map (
 			-- Control interface (command and reply stream buses)
-			ctrl_cmd_in_dat   => xbar_cmd_dat(0),
-			ctrl_cmd_in_rdy   => xbar_cmd_rdy(0),
-			ctrl_rply_out_dat => xbar_rply_dat(0),
-			ctrl_rply_out_rdy => xbar_rply_rdy(0),
+			ctrl_cmd_in_dat   => bsb_router_cmd_dat(0),
+			ctrl_cmd_in_rdy   => bsb_router_cmd_rdy(0),
+			ctrl_rply_out_dat => bsb_router_rply_dat(0),
+			ctrl_rply_out_rdy => bsb_router_rply_rdy(0),
 			ctrl_clk          => ctrl_clk,
 			ctrl_rst          => ctrl_rst_reg,
 
@@ -319,125 +286,53 @@ begin
 
 
 	-- frame_clk_out <= frame_clk(0);
-	frame_clk_out <= s_axis_tvalid(0) and s_axis_tlast(0);
+	frame_clk_out <= s_axis_tvalid and s_axis_tlast;
 
 
-	---------------------------------------------------------------------
-	-- ALIGN
-	---------------------------------------------------------------------
-	-- Control the Channelizer FIFO readout in  order to align the frames.
-	-- Aligning the frames is necessary because we need to grab data from multiple lanes at a time based on a single selection map.
-	--
-	-- The align module also handles missing and malformed frames, but this is not an issue here since
-	-- data is coming straight from the channelizer through the internal FPGA routing, which will not cause packet loss.
-	-- The only exception to this are for channels that do not send data due to missing ADC cards, inwhich case the ALIGN will handle those automatically.
 
-
-	align0: entity work.CHAN_ALIGN
-		generic map (
-			PLATFORM_ID     => PLATFORM_ID,
-			NUMBER_OF_LANES => NUMBER_OF_INPUT_LANES
-		-- DATA_TIMEOUT => 2
-		)
-		port map (
-			-- Data from the channelizers outputs (AXI Streaming, blocking)
-			s_axis_tvalid => s_axis_tvalid,
-			s_axis_tdata  => s_axis_tdata,
-			s_axis_tlast  => s_axis_tlast,
-			s_axis_tuser  => s_axis_tuser,
-			-- s_axis_tready => m_axis_fifo_tready,
-
-			-- Data to the remapper (AXI Streaming, non-blocking)
-			m_axis_tvalid => m_axis_align_out_tvalid,
-			m_axis_tdata  => m_axis_align_out_tdata,
-			m_axis_tlast  => m_axis_align_out_tlast,
-			m_axis_tuser  => m_axis_align_out_tuser,
-
-			m_axis_global_tvalid => m_axis_align_out_global_tvalid,
-			m_axis_global_tlast  => m_axis_align_out_global_tlast,
-
-			lane_monitor        => align_lane_monitor,
-			lane_monitor_source => lane_monitor_source,
-
-			reset_stats => reset_stats,
-			overflow    => align_fifo_overflow_sticky,
-			-- missing_frame => missing_frame_sticky,
-			in_frame_ctr  => input_frame_ctr,
-			out_frame_ctr => align_frame_ctr,
-
-
-			clk => clk,
-			rst => align_reset_all
-		);
-
-	lane_monitor <= lane_monitor_bit;
-
-	bin_ctr_proc: process(clk)
-	begin
+	process(all) begin
 		if rising_edge(clk) then
 			align_reset_reg <= align_reset;
 			align_reset_all <= rst_reg or align_reset_reg;
 
 			reset_stats <= lane_monitor_reset or rst_reg;
 
-			lane_monitor_bit <= align_lane_monitor(to_integer(unsigned(lane_monitor_sel)));
+			--lane_monitor_bit <= align_lane_monitor(to_integer(unsigned(lane_monitor_sel)));
 
-			if rst_reg = '1' or lane_monitor_reset = '1' then
-				delay_capture_ref_word_ctr <= (others => '0');
-				delay_capture_ref_word_ctr_en <= '1';
-				lane_monitor_bit_ctr <= (others => '0');
+			--if rst_reg or lane_monitor_reset then
+			--	delay_capture_ref_word_ctr <= (others => '0');
+			--	delay_capture_ref_word_ctr_en <= '1';
+			--	lane_monitor_bit_ctr <= (others => '0');
+			--else
+			--	lane_monitor_bit_ctr <= lane_monitor_bit_ctr + 1 when lane_monitor_bit;
 
-			else
-				if lane_monitor_bit = '1' then
-					lane_monitor_bit_ctr <= lane_monitor_bit_ctr + 1;
-				end if;
-
-				if delay_capture_ref_word_ctr_en = '1'  then
-					delay_capture_ref_word_ctr <= delay_capture_ref_word_ctr + 1;
-					if signed(delay_capture_ref_word_ctr) = -2 or align_lane_monitor(to_integer(unsigned(lane_monitor_sel))) = '1' then
-						delay_capture_ref_word_ctr_en <= '0';
-					end if;
-				end if;
-			end if;
+			--	if delay_capture_ref_word_ctr_en  then
+			--		delay_capture_ref_word_ctr <= delay_capture_ref_word_ctr + 1;
+			--		if signed(delay_capture_ref_word_ctr) = -2 or align_lane_monitor(to_integer(unsigned(lane_monitor_sel))) = '1' then
+			--			delay_capture_ref_word_ctr_en <= '0';
+			--		end if;
+			--	end if;
+			--end if;
 
 			-- Pipeline the output of the ALIGN module to facilitate timing since it goes to every BIN_SEL, which are spread over a large area
 			-- We explicitely split the data bus in many branches because the signals physically go in different directions.
 			-- This pipeline is necessary to generate a delay of two clocks between the bin counter controls (bin_ctr_*) and the data.
 			-- The BIN_SEL requires the bin counter control to be in advance by two clocks relatve to compensate with the lookup RAM latency
 
-			if rst_reg = '1' then
-				m_axis_align_out_tvalid_reg <= (others => '0');
-			else
-				m_axis_align_out_tvalid_reg <= m_axis_align_out_tvalid;
-			end if;
-			m_axis_align_out_tdata_reg <= m_axis_align_out_tdata;
-			m_axis_align_out_tlast_reg <= m_axis_align_out_tlast;
-			m_axis_align_out_tuser_reg <= m_axis_align_out_tuser;
+			binsel_in_tvalid_reg <= (others => s_axis_tvalid) when not rst_reg else (others => '0');
+			binsel_in_tdata_reg <= s_axis_tdata;
+			binsel_in_tlast_reg <= (others => s_axis_tlast);
+			binsel_in_tuser_reg <= s_axis_tuser;
+			binsel_in_global_tvalid_reg <= s_axis_tvalid when not rst_reg else '0';
+			binsel_in_global_tlast_reg  <= s_axis_tlast;
 
 			-- Another pipeline level.
-			if rst_reg2 = '1' then
-				m_axis_align_out_tvalid_reg2 <= (others => (others => '0'));
-			else
-				m_axis_align_out_tvalid_reg2 <= (others => m_axis_align_out_tvalid_reg);
-			end if;
-			m_axis_align_out_tdata_reg2 <= (others => m_axis_align_out_tdata_reg);
-			m_axis_align_out_tlast_reg2 <= (others => m_axis_align_out_tlast_reg);
-			m_axis_align_out_tuser_reg2 <= (others => m_axis_align_out_tuser_reg);
-
-
-			if rst_reg = '1' then
-				m_axis_align_out_global_tvalid_reg <= '0';
-			else
-				m_axis_align_out_global_tvalid_reg <= m_axis_align_out_global_tvalid;
-			end if;
-			m_axis_align_out_global_tlast_reg  <= m_axis_align_out_global_tlast;
-
-			if rst_reg2 = '1' then
-				m_axis_align_out_global_tvalid_reg2 <= (others => '0');
-			else
-				m_axis_align_out_global_tvalid_reg2 <= (others => m_axis_align_out_global_tvalid_reg);
-			end if;
-			m_axis_align_out_global_tlast_reg2  <= (others => m_axis_align_out_global_tlast_reg);
+			binsel_in_tvalid_reg2 <= (others => binsel_in_tvalid_reg) when not rst_reg2 else (others => (others => '0'));
+			binsel_in_tdata_reg2 <= (others => binsel_in_tdata_reg);
+			binsel_in_tlast_reg2 <= (others => binsel_in_tlast_reg);
+			binsel_in_tuser_reg2 <= (others => binsel_in_tuser_reg);
+			binsel_in_global_tvalid_reg2 <= (others => binsel_in_global_tvalid_reg) when not rst_reg2 else (others => '0');
+			binsel_in_global_tlast_reg2  <= (others => binsel_in_global_tlast_reg);
 
 		end if; -- clk
 	end process;
@@ -446,9 +341,8 @@ begin
 	bin_sel_gen: for i in 0 to NUMBER_OF_OUTPUT_LANES - 1 generate
 	begin
 		----------------------------------------
-		--! Instantiate the bin selectors
+		-- Instantiate the bin selectors
 		----------------------------------------
-		m_axis_tvalid(i) <= m_axis_tvalid_int(i);
 
 		binsel_i: entity work.chan_bin_sel
 			generic map (
@@ -457,33 +351,35 @@ begin
 				NUMBER_OF_INPUTS => NUMBER_OF_INPUT_LANES
 			)
 			port map (
-				-- Input from align (non blocking AXI-Streaming bus)
-				s_axis_tdata         => m_axis_align_out_tdata_reg2(BINSEL_PBLOCK_MAP(i)),
-				s_axis_tuser         => m_axis_align_out_tuser_reg2(BINSEL_PBLOCK_MAP(i)),
-				s_axis_tvalid        => m_axis_align_out_tvalid_reg2(BINSEL_PBLOCK_MAP(i)),
-				s_axis_tlast         => m_axis_align_out_tlast_reg2(BINSEL_PBLOCK_MAP(i)),
-				s_axis_global_tvalid => m_axis_align_out_global_tvalid_reg2(BINSEL_PBLOCK_MAP(i)),
-				s_axis_global_tlast  => m_axis_align_out_global_tlast_reg2(BINSEL_PBLOCK_MAP(i)),
+				-- Input data (AXI-Streaming bus, non blocking)
+				s_axis_tdata         => binsel_in_tdata_reg2(BINSEL_PBLOCK_MAP(i)),
+				s_axis_tuser         => binsel_in_tuser_reg2(BINSEL_PBLOCK_MAP(i)),
+				s_axis_tvalid        => binsel_in_tvalid_reg2(BINSEL_PBLOCK_MAP(i)),
+				s_axis_tlast         => binsel_in_tlast_reg2(BINSEL_PBLOCK_MAP(i)),
+				s_axis_global_tvalid => binsel_in_global_tvalid_reg2(BINSEL_PBLOCK_MAP(i)),
+				s_axis_global_tlast  => binsel_in_global_tlast_reg2(BINSEL_PBLOCK_MAP(i)),
 
 				-- Bin counter signals: must be set two clocks before the data
-				bin_ctr_en  => m_axis_align_out_global_tvalid,
-				bin_ctr_clr => m_axis_align_out_global_tlast,
+				bin_ctr_en  => s_axis_tvalid,
+				bin_ctr_clr => s_axis_tlast,
 
-				-- Output to the shuffle module (blocking AXI-Streaming bus)
+				-- Output data (AXI-Streaming bus, non blocking)
+
 				m_axis_tdata  => m_axis_tdata(i),
-				m_axis_tvalid => m_axis_tvalid_int(i),
+				m_axis_tvalid => m_axis_tvalid(i),
 				m_axis_tlast  => m_axis_tlast(i),
 
 				-- bin_number => std_logic_vector(bin_ctr), -- bin number (0 to 1023), appearing 1 clock before the corresponding data (to allow the RAM to lookup the selection bits, assuming the RAM has 1 clock latency)
 
 				rst => rst_reg2,
-				clk => clk, --! common clock for both the input and output
+				clk => clk, -- common clock for both the input and output
 
 				-- Control Interface
-				ctrl_cmd_dat  => xbar_cmd_dat(i + 1),
-				ctrl_cmd_rdy  => xbar_cmd_rdy(i + 1),
-				ctrl_rply_dat => xbar_rply_dat(i + 1),
-				ctrl_rply_rdy => xbar_rply_rdy(i + 1),
+
+				ctrl_cmd_dat  => bsb_router_cmd_dat(i + 1),
+				ctrl_cmd_rdy  => bsb_router_cmd_rdy(i + 1),
+				ctrl_rply_dat => bsb_router_rply_dat(i + 1),
+				ctrl_rply_rdy => bsb_router_rply_rdy(i + 1),
 				ctrl_clk      => ctrl_clk,
 				ctrl_rst      => ctrl_rst_reg2(BINSEL_PBLOCK_MAP(i))
 			);

@@ -1,0 +1,2 @@
+hirax_bit_growth_dist_mem_gen_i0.v,verilog,xil_defaultlib,../../../../hirax_bit_growth.gen/sources_1/ip/hirax_bit_growth_dist_mem_gen_i0/sim/hirax_bit_growth_dist_mem_gen_i0.v,
+glbl.v,Verilog,xil_defaultlib,glbl.v
