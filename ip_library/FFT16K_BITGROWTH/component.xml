@@ -1464,11 +1464,11 @@
       <xilinx:xpmLibraries>
         <xilinx:xpmLibrary>XPM_MEMORY</xilinx:xpmLibrary>
       </xilinx:xpmLibraries>
-      <xilinx:coreRevision>4</xilinx:coreRevision>
+      <xilinx:coreRevision>5</xilinx:coreRevision>
       <xilinx:upgrades>
         <xilinx:canUpgradeFrom>user.org:user:pfb_fft_bitgrowth:1.0</xilinx:canUpgradeFrom>
       </xilinx:upgrades>
-      <xilinx:coreCreationDateTime>2025-08-19T18:40:21Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2025-08-19T21:25:10Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="ui.data.coregen.df@34fbc876_ARCHIVE_LOCATION">/home/ih/casper/pfb_fft_bitgrowth/hdl_netlist/ip</xilinx:tag>
         <xilinx:tag xilinx:name="ui.data.coregen.df@5b9afac0_ARCHIVE_LOCATION">/home/ih/casper/pfb_fft_bitgrowth/hdl_netlist/ip</xilinx:tag>
