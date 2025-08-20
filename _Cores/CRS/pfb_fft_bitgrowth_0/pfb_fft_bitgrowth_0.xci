@@ -2,9 +2,9 @@
   "schema": "xilinx.com:schema:json_instance:1.0",
   "ip_inst": {
     "xci_name": "pfb_fft_bitgrowth_0",
-    "component_reference": "MCgIL:CHORD:pfb_fft_bitgrowth:1.0",
-    "ip_revision": "5",
-    "gen_directory": "../../../xilinx_projects/chfpga_crs_ct/chfpga_crs_ct.gen/sources_1/ip/pfb_fft_bitgrowth_0",
+    "component_reference": "user.org:user:pfb_fft_bitgrowth:1.0",
+    "ip_revision": "2",
+    "gen_directory": "gen/pfb_fft_bitgrowth_0",
     "parameters": {
       "component_parameters": {
         "Component_Name": [ { "value": "pfb_fft_bitgrowth_0", "resolve_type": "user", "usage": "all" } ]
@@ -26,13 +26,13 @@
       },
       "runtime_parameters": {
         "IPCONTEXT": [ { "value": "IP_Flow" } ],
-        "IPREVISION": [ { "value": "5" } ],
+        "IPREVISION": [ { "value": "2" } ],
         "MANAGED": [ { "value": "TRUE" } ],
-        "OUTPUTDIR": [ { "value": "../../../xilinx_projects/chfpga_crs_ct/chfpga_crs_ct.gen/sources_1/ip/pfb_fft_bitgrowth_0" } ],
+        "OUTPUTDIR": [ { "value": "gen/pfb_fft_bitgrowth_0" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "." } ],
         "SWVERSION": [ { "value": "2022.2" } ],
-        "SYNTHESISFLOW": [ { "value": "GLOBAL" } ]
+        "SYNTHESISFLOW": [ { "value": "OUT_OF_CONTEXT" } ]
       }
     },
     "boundary": {
@@ -61,7 +61,7 @@
           "abstraction_type": "xilinx.com:signal:clock_rtl:1.0",
           "mode": "slave",
           "parameters": {
-            "FREQ_HZ": [ { "value": "", "value_src": "constant", "usage": "all" } ],
+            "FREQ_HZ": [ { "value": "100000000", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
             "FREQ_TOLERANCE_HZ": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
             "PHASE": [ { "value": "0.0", "resolve_type": "generated", "format": "float", "is_ips_inferred": true, "is_static_object": false } ],
             "CLK_DOMAIN": [ { "value": "", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
