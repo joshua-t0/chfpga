@@ -212,7 +212,7 @@ signal send_frame: std_logic;
 --signal ram_page_msb: std_logic_vector(3 downto 0); -- 4 bits
 signal ram_page: std_logic_vector(6 downto 0); -- combined ram_page_msb and _lsb. 7 bits, more than we need. 9 bits BSB RAM addr + 7 bits page = 16 bit address = 65536 bytes.
 
-signal frame_overflow_flag;
+signal frame_overflow_flag: std_logic;
 signal adc_tfirst: std_logic;
 signal ramp_tfirst: std_logic;
 signal trig_reg: std_logic;
