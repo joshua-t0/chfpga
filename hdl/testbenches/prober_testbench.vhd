@@ -111,6 +111,9 @@ signal udp_rx_rdy: AXIS8_RDY_STRUCT;
 signal prb_dat, cmd_dat, rply_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_PROBES-1 downto 0) := (others => (tvalid=>'0', tdata=>x"00", tlast=>'0'));
 signal prb_rdy, cmd_rdy, rply_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_PROBES-1 downto 0);
 
+signal prb_tdata: slv8_array(NUMBER_OF_PROBES-1 downto 0);
+signal prb_tvalid, prb_tlast, prb_tready: slv(NUMBER_OF_PROBES-1 downto 0);
+
 begin
 
 
@@ -140,8 +143,10 @@ prober0: entity work.prober
 		in_reset => chan_reset,
 
 
-        OUT_DAT => prb_dat(0),
-        OUT_RDY => prb_rdy(0),
+        OUT_DAT.TDATA => prb_tdata(0), 
+        OUT_DAT.TVALID => prb_tvalid(0),
+        OUT_DAT.TLAST => prb_tlast(0),
+        OUT_RDY.TREADY => prb_tready(0),
         OUT_CLK => clk125,
 
 		-- CTRL_CMD_DAT => (TDATA=> cmd_tdata, TVALID => cmd_tvalid, TLAST => cmd_tlast),
@@ -176,7 +181,7 @@ master0: entity work.CTRL_MASTER
 		m_axis_udp_tx_tdata => open,
 		m_axis_udp_tx_tlast => open,
 		m_axis_udp_tx_tready => '1',
-		udp_tx_port => open,
+--		udp_tx_port => open,
 
 
 		-- Command and reply stream buses
@@ -190,7 +195,7 @@ master0: entity work.CTRL_MASTER
 		s_axis_rply_tvalid => rply_dat(0).tvalid,
 		s_axis_rply_tlast  => rply_dat(0).tlast,
 		s_axis_rply_tready => rply_rdy(0).tready,
-		rply_port_offset => "00",
+--		rply_port_offset => "00",
 
 
 		cmd_packet_counter => open,
@@ -199,15 +204,10 @@ master0: entity work.CTRL_MASTER
 
 		-- Raw Data (probe) inputs
 
-		prb_dat => prb_dat,
-			--tdata  => out_dat.tdata,
-			--tvalid => out_dat.tvalid,
-			--tlast  => out_dat.tlast,
-			--tuser => out_dat.tuser)),
-		prb_rdy => prb_rdy,
-			--tready => out_rdy.tready)),
-		prb_port_offset => (others => "01"),
-
+		s_axis_data_tdata => prb_tdata,
+		s_axis_data_tvalid => prb_tvalid,
+		s_axis_data_tlast => prb_tlast,
+		s_axis_data_tready=> prb_tready, 
 		-- System
 		host_frame_read_rate => "00100",
 		clk => clk125,
@@ -238,7 +238,11 @@ stim_proc : process
 	-- variable actual_number_of_input_lanes: integer := 16;
 	variable func: integer :=0; -- 0=adc, 1=ram, 2=noise, 3=ctr
 	variable ram_page: integer :=0; --
-	variable pattern: slv8_array(0 to 2047);
+--	variable pattern: slv8_array(0 to 2047);
+	constant BURST_LENGTH: integer := 4-1;
+	constant PRIMARY_PERIOD0: integer := 69-1;
+    constant SOURCE: integer := 0;
+
 	begin
 
 		reset <= '1';
@@ -246,8 +250,9 @@ stim_proc : process
 		sleep(clk, 10);
 		reset <= '0';
 		sleep(clk125, 10); -- make sure we start command transmission on a CLK125 edge or we will lose some data
-		fpga_write_control(clk125, udp_rx_dat.tdata, udp_rx_dat.tvalid, udp_rx_dat.tlast, udp_rx_rdy.tready, 4, 69-1, 3); -- Send 5 frames
-		fpga_write_control(clk125, udp_rx_dat.tdata, udp_rx_dat.tvalid, udp_rx_dat.tlast, udp_rx_rdy.tready, 9, 1, 2); -- Send 5 frames
+		fpga_write_control(clk125, udp_rx_dat.tdata, udp_rx_dat.tvalid, udp_rx_dat.tlast, udp_rx_rdy.tready, 0, "00" & to_slv(SOURCE , 1) & "000" & to_slv(BURST_LENGTH,2) ); 
+		fpga_write_control(clk125, udp_rx_dat.tdata, udp_rx_dat.tvalid, udp_rx_dat.tlast, udp_rx_rdy.tready, 4, PRIMARY_PERIOD0, 3); -- 3 bytes
+--		fpga_write_control(clk125, udp_rx_dat.tdata, udp_rx_dat.tvalid, udp_rx_dat.tlast, udp_rx_rdy.tready, 9, 1, 2); -- Send 5 frames
 
 		-- -- Program buffer
 		-- fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, 2#00000000# + ram_page * 8); -- source=funcgen, enable=1, select last page of ram
@@ -262,12 +267,17 @@ stim_proc : process
 		sleep(clk,20);
 		chan_reset <= '0';
 
+--		sleep(clk, 100);
+		for j in 0 to 1000 loop
+			send_axis32_packet(clk, s_axis_tdata, s_axis_tvalid, s_axis_tlast, s_axis_tready, create_packet(16#FA#, j, 512)); -- 512*244/200=624.64 clocks = actual duration of  the incoming frames
+			-- sleep(clk,1);
+		end loop;
 
-		-- Send a reset in the middle of the data to see what it does
-		sleep(clk,200);
-		chan_reset <= '1';
-		sleep(clk,210);
-		chan_reset <= '0';
+--		-- Send a reset in the middle of the data to see what it does
+--		sleep(clk,200);
+--		chan_reset <= '1';
+--		sleep(clk,210);
+--		chan_reset <= '0';
 
 
 
@@ -279,14 +289,14 @@ stim_proc : process
 		wait;
 	end process ; -- lane0_proc
 
-data_proc: process
-	begin
-		sleep(clk, 100);
-		for j in 0 to 1000 loop
-			send_axis32_packet(clk, s_axis_tdata, s_axis_tvalid, s_axis_tlast, s_axis_tready, create_packet(16#FA#, j ,624)); -- 512*244/200=624.64 clocks = actual duration of  the incoming frames
-			-- sleep(clk,1);
-		end loop;
+--data_proc: process
+--	begin
+--		sleep(clk, 100);
+--		for j in 0 to 1000 loop
+--			send_axis32_packet(clk, s_axis_tdata, s_axis_tvalid, s_axis_tlast, s_axis_tready, create_packet(16#FA#, j ,624)); -- 512*244/200=624.64 clocks = actual duration of  the incoming frames
+--			-- sleep(clk,1);
+--		end loop;
 
-	end process;
+--	end process;
 
 END;
