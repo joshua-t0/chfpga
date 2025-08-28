@@ -15,17 +15,15 @@
 # 400 MHz-bandwidth Corner-turn configuration
 # (CHIME/HIRAX/FRB Outriggers)
 !/chfpga_ice_ct/
-!/chfpga_ice_ct/*
 
 # 400 MHz bandwidth Single-board correlator configuration
 # (For development and small interferometers)
 !/chfpga_ice_corr16/
-!/chfpga_ice_corr16/*
 
 # 1200 MHz bandwidth corner-turn configuration
 # (old CHORD candidate, not maintained)
 !/chordFPGA_MGK7MB/
-!/chordFPGA_MGK7MB/*
+
 
 # ---------------------
 # CRS-based builds (Ultrascale+ RfSoC FPGA)
@@ -34,13 +32,17 @@
 # 1600 MHz bandwidth single-board correlator configuration
 # (D3A, development, small interferometers)
 !/chfpga_crs_corr8/
-!/chfpga_crs_corr8/*
+
+
+# 1600 MHz bandwidth 8-board correlator configuration
+# (t0 demonstrator)
+!/chfpga_crs_corr64/
 
 
 # 1600 MHz bandwidth corner-turn configuration
 # (CHORD and its future outriggers)
 !/chfpga_crs_ct/
-!/chfpga_crs_ct/*
+
 
 
 
@@ -51,7 +53,7 @@
 # 800 MHz bandwidth configuration
 # (CHIME proof of concept, not maintained)
 !/chFPGA_ML605/
-!/chFPGA_ML605/*
+
 
 
 # ---------------------
@@ -63,13 +65,10 @@
 
 # Probably obsolete
 !/chfpga_zcu111/
-!/chfpga_zcu111/*
 
 !/sifpga_zcu111/
-!/sifpga_zcu111/*
 
 !/chfpga_zcu111_3/
-/chfpga_zcu111_3/*
 
 
 # OBSOLETE BUILDS
@@ -77,47 +76,37 @@
 
 # to be obsoleted - renamed chfpga_crs_corr8
 !/chfpga_crs/
-!/chfpga_crs/*
 
 # obsolete - renamed chfpga_ice_ct
 !/CHFPGA_MGK7MB_REV2/
-!/CHFPGA_MGK7MB_REV2/*
 
 # obsolete - renamed chfpga_ice_corr16
 !/SIFPGA_MGK7MB/
-!/SIFPGA_MGK7MB/*
 
 #!/chFPGA_KC705/
-#!/chFPGA_KC705/*
 
 #!/CHFPGA_MGK7MB/
-#!/CHFPGA_MGK7MB/*
 
-# !/sifpga_crs/
-# !/sifpga_crs/*
+#!/sifpga_crs/
 
 
 
 # TESTBENCHES
 
 !/shuffle_crossbar_testbench/
-!/shuffle_crossbar_testbench/*
 
 !/shuffle_sim/
-!/shuffle_sim/*
 
 !/corr_core_testbench/
-!/corr_core_testbench/*
+
+!/prober_testbench/
 
 
 !/cge_tests/
-!/cge_tests/*
 
 !/uram_ct/
-!/uram_ct/*
 
 !/chan_tests/
-!/chan_tests/*
 
 # Testbenches
 !/scaler/
@@ -126,3 +115,12 @@
 !/scaler/*.wcfg
 
 !*.xpr
+
+/*/*.cache
+/*/*.hw
+/*/*.ioplanning
+/*/*.runs
+/*/*.sim
+/*/*.srcs
+/*/*.ip_user_files
+/*/ip_upgrade.log
