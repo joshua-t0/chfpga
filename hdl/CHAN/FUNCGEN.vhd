@@ -49,35 +49,42 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --
 --
 -- The output of FUNCGEN is also a non-blocking AXI4-Streaming bus and has the same structure as the input, except for the ``TUSER`` signal.
--- ``TUSER`` is a 1-bit vector containing the following information:
---   - Bit 0: (TUSER_ADC_OVERFLOW_BIT): Set on the last word of a frame (i.e. valid only when TLAST=1) to indicate if an ADC saturation has occured on any sample of the frame.
+-- ``TUSER`` is a variable length vector(specified by ``FUNCGEN_TUSER_BITS_PER_WORD``) containing the following information:
+--
+--   - Bit 0: (frame_overflow_flag): Set on the last word of a frame (i.e. valid only when TLAST=1) to indicate if an ADC saturation has occured on any sample of the frame.
+--     - Other bits: Unused (set to zero)
 --
 -- Operation modes
 -- ---------------
 --
 -- The output of the FUNCGEN module is selected by the 3-bit `fn_sel` memory-mapped field. The supported modes are:
 --  - 0 / FN_ADC: Passes on the ADC input. The ADC overflow bits are aggregated througout the frame
---    and the resulting TUSER_ADC_OVERFLOW_BIT TUSER but is provided on the last frame.
+--    and the resulting ``frame_overflow_flag`` bit is provided on the last frame. The number of sample overflows 
+--    over a specified period of frames (through the control register ``stats_period``) can be accessed by the status register ``overflow_ctr``. 
 --
---  - 1 / FN_RAM: Outputs the RAM contents (2048 bytes, 512 words). TUSER_ADC_OVERFLOW_BIT is always zero.
+--  - 1 / FN_RAM: Outputs the RAM contents (2048 bytes, 512 words). ``frame_overflow_flag`` and ``overflow_ctr`` are always zero.
 --
---  - 2 / FN_NOISE: Outputs Pseudo-Random noise. TUSER_ADC_OVERFLOW_BIT is always zero. The noise
+--  - 2 / FN_NOISE: Outputs Pseudo-Random noise. ``frame_overflow_flag`` and ``overflow_ctr`` are always zero. The noise
 --    generator is seeeded by the 8-bit A and B fields to allow each channelizer to have up to 65536
---    different (presumamly uncorrelated) patterns.
+--    different (presumamly uncorrelated) patterns. ``frame_overflow_flag`` and ``overflow_ctr`` are always zero.
 --
 --  - 3 / FN_FRAME_WORD_CTR_RAM_FLAGS: Counts frames and words, with programmable ADC overflow bit
---    patterns. This mode is mostly used for testing. The output data is grouped in 32-bit words,
---    containing a 23-bit frame count in the MSB followed bit 9-bit word count (0-511). This pattern
+--    patterns. This mode is mostly used for testing. The output data is grouped in 32-bit words (the whole word for Iceboard and the LSB 32 bits for CRS),
+--    containing a 21-bit frame count in the MSB followed bit 11-bit word count for the Iceboard. This pattern
 --    does not generate nice data when splitted in 4-bytes (and even less when going through the
---    FFT), but it ensures that consecutive frames will contain unique data when looked word-wise.
---    In that mode, the ADC overflow flag of each sample is taken from the RAM bit 0.
+--    FFT), but it ensures that consecutive frames will contain unique data when looked word-wise. 
+--    In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` can be programmed by injecting specific values into the buffer. ``frame_overflow_flag`` will be '1' if there is any bit that is '1' in the buffer. ``overflow_ctr`` increments for every sample whose value is LSB is '1'. An overflow for a sample can thus be simulated by injecting a '1' in that sample. 
 --
---  - 4 / FN_FRAME8: Each sample is the last 8 bits of the current frame number.
---    TUSER_ADC_OVERFLOW_BIT is always zero.
+--  - 4 / FN_FRAME8: Each sample is the last 6 bits (for IceBoard)/12 bits (for CRS) of the current frame number  .
+--    In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` can be programmed by injecting specific values into the buffer. ``frame_overflow_flag`` will be '1' if there is any bit that is '1' in the buffer. ``overflow_ctr`` increments for every sample whose value is LSB is '1'. An overflow for a sample can thus be simulated by injecting a '1' in that sample. 
 --
 --  - 5 / FN_FRAME4: The most significant 4 bits of each sample is the last 4 bits of the current
---    frame number. The lower 4 bits are zero. TUSER_ADC_OVERFLOW_BIT is always zero.
+--    frame number. The lower 4 bits are zero. 
+--    In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` can be programmed by injecting specific values into the buffer. ``frame_overflow_flag`` will be '1' if there is any bit that is '1' in the buffer. ``overflow_ctr`` increments for every sample whose value is LSB is '1'. An overflow for a sample can thus be simulated by injecting a '1' in that sample. 
 --
+--  - 6 / FN_RAM_NIBBLE4: Sends bits 3:0 of RAM samples on even frames an bits 7:4 of RAM samples on odd frames. Data is aligned with the 4 MSBS
+--      of each sample, and the rest of the bits in the sample are zero. In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` are always zero.
+
 -- Waveform buffer
 -- ---------------
 --
@@ -90,25 +97,19 @@ use work.chFPGA_Package.all; -- Get all component definitions
 -- Noise generator
 -- ---------------
 --
--- The noise is generated as a 32-bit output CRC generator fed by the 8-bit A and B signals (the
+-- The noise is generated as a 32-bit output LFSR generator fed by the 8-bit A and B signals (the
 -- 32-bit input is a combination of A, B, not A, and not B). These A and B parameters act as seed.
--- The same A and B value will always result in the same sequence.
---
--- The 32-bit output values generated bu the CRC32 are simply distributed
--- amongst the 4 samples.
---
--- We have not analyzed the entropy of this generator, nor how uncorrelated the outputs are, or
--- whether some seed values are better than other. Is it ok to assume that 8-bit portions of the
--- 32-bit word are uncorrelated with others? Will some seeds provide extremely bad entropy?
---
--- The conclusion here is that the noise generator is an experimental feature that might be useful
--- but needs to be tested.
---
+-- The same A and B value will always result in the same sequence. Note that the LFSR outputs will be stuck at zero if A and B are both zero. 
+-- The sequence repeats after 2**32 - 1 words for IceBoard and (2**32 - 1)/4 word for CRS.
 
 --Overflow counter
 -- ---------------
 --
--- The overflow counter counts over ```stats_period```(user defined) frames the number of sample overflows from the ADC or the number of overflows injected through the buffer (either from modes FN_FRAME_WORD_CTR_RAM_FLAGS, FN_FRAME8 or FN_FRAME4). The overflow count for other modes (FN_RAM, FN_NOISE, FN_RAM_NIBBLE4) is 0. The maximum number of frames over which to count the number of overflows is 65535. When counting overflows from the buffer, each sample's LSB indicate if there is an overflow or not, so to simulate an overflow in a sample, set the sample value to 1. Overflow counting is enabled with ```stats_enable``` and the result can be read from ```overflow_ctr```. 
+-- The overflow counter counts over ```stats_period```(user defined) frames the number of sample overflows from the ADC or the number of overflows injected 
+-- Through the buffer (either from modes FN_FRAME_WORD_CTR_RAM_FLAGS, FN_FRAME8 or FN_FRAME4). The overflow count for other modes 
+-- (FN_RAM, FN_NOISE, FN_RAM_NIBBLE4) is 0. The maximum number of frames over which to count the number of overflows is 65535. When counting overflows from 
+-- the buffer, each sample's LSB indicate if there is an overflow or not, so to simulate an overflow in a sample, set the sample value to 1. 
+-- Overflow counting is enabled with ```stats_enable``` and the result can be read from ```overflow_ctr```. 
 
 
 entity FUNCGEN is
@@ -212,7 +213,6 @@ signal send_frame: std_logic;
 signal ram_page: std_logic_vector(6 downto 0); -- combined ram_page_msb and _lsb. 7 bits, more than we need. 9 bits BSB RAM addr + 7 bits page = 16 bit address = 65536 bytes.
 
 signal frame_overflow_flag: std_logic;
-signal capture_flag: std_logic;
 signal adc_tfirst: std_logic;
 signal ramp_tfirst: std_logic;
 signal trig_reg: std_logic;
@@ -234,11 +234,12 @@ signal ram_dout_int1, ram_dout_int2: std_logic_vector(8*BYTES_PER_SAMPLE*ADC_SAM
 signal ram_dout: std_logic_vector(BITS_PER_WORD-1 downto 0);
 
 signal delay_capture_ctr: unsigned(15 downto 0);
+signal sample_var_reg: signed(ADC_BITS_PER_SAMPLE-1 downto 0);
 signal overflow_ctr, overflow_ctr_reg: unsigned(31 downto 0):= (others => '0');
 signal stats_enable, stats_enable_resync: std_logic;
 signal stats_done: std_logic:= '0';
 signal overflow_frame_ctr: unsigned(15 downto 0):= (others => '0');
-signal out_dat_overflows: std_logic_vector(ADC_SAMPLES_PER_WORD-1 downto 0);
+signal out_dat_overflows: std_logic_vector(ADC_SAMPLES_PER_WORD-1 downto 0):= (others => '0');
 
 --lfsr
 signal lsfr_in: std_logic_vector(31 downto 0); -- seed for lfsr
@@ -405,13 +406,12 @@ stats_enable_cdc0: xpm_cdc_single
 		port map (src_clk => '0', src_in => stats_enable, dest_clk => clk, dest_out => stats_enable_resync);
 
 funcgen_proc: process (clk)
-    -- variable out_dat_var: std_logic_vector(31 downto 0);
-    -- variable word_ctr: std_logic_vector(ramp_word_ctr'range);
-    variable sample_var: signed(ADC_BITS_PER_SAMPLE-1 downto 0);
     variable int_shift: integer;
     variable int_clip_width: integer range 0 to 15;
     variable new_overflow_ctr: unsigned(overflow_ctr'RANGE);
     variable reversed_ram_dout: std_logic_vector(ram_dout'RANGE);
+    variable use_ram_overflow: std_logic := '0';
+    variable sample_var, sample_var_clipped: signed(ADC_BITS_PER_SAMPLE-1 downto 0);
 
     begin
         if rising_edge(clk) then
@@ -429,11 +429,11 @@ funcgen_proc: process (clk)
 
             for j in 0 to ADC_SAMPLES_PER_WORD-1 loop
                 sample_var := signed(out_dat_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j));
-                sample_var := shift_right(sample_var, int_shift);
+                sample_var_reg <= shift_right(sample_var, int_shift);
                 if int_clip_width /= 15 then
-                    sample_var := clip(sample_var, int_clip_width);
+                    sample_var_clipped := clip(sample_var_reg, int_clip_width);
                 end if;
-                m_axis_adc_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) <= std_logic_vector(sample_var);
+                m_axis_adc_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) <= std_logic_vector(sample_var_clipped);
             end loop;
 
             -- Register the output bus. out_dat_* registers are tied to a lot of logic and can't be placed optimally to meet timing at high speeds.
@@ -497,10 +497,6 @@ funcgen_proc: process (clk)
                 frame_ctr <= (others=>'0');
             end if;
 
-            if (fn_sel = FN_ADC and adc_tfirst='1') or (fn_sel /= FN_ADC and ramp_tfirst='1') then
-                capture_flag <= trig_reg;
-            end if;
-
             -- Set TDATA
             case fn_sel is
 
@@ -520,7 +516,6 @@ funcgen_proc: process (clk)
                 when FN_RAM =>
                     out_dat_tdata <= ram_dout; -- Byte at address 0 is in the MSB
                     out_dat_tvalid <= send_frame;
-                    -- frame_overflow_flag <= '0';
                     out_dat_overflows <= (others => '0');
 
                 -- Send bits 3:0 of RAM samples on even frames an bits 7:4 of RAM samples on odd frames.
@@ -548,11 +543,7 @@ funcgen_proc: process (clk)
                     out_dat_tdata <= (others => '0');
                     out_dat_tdata(31 downto 0) <= to_slv(frame_ctr) & word_ctr; -- store frame & word counter only in the lower 32 bits.
                     out_dat_tvalid <= send_frame;
-
-                    for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
-                        reversed_ram_dout := reverse_bits_same_dir(ram_dout);
-                        out_dat_overflows(i) <= reversed_ram_dout(ADC_BITS_PER_SAMPLE*(i+1)-1); --reverse bits so that the MSB of ram is aligned with the MSB of tuser (first sample). The MSB of each sample indicates if there is an overflow.
-                    end loop; --overflow count per word (LSB of each sample indicates overflow)
+                    use_ram_overflow := '1';
 
                 -- Send the The ADC_BITS_PER_SAMPLE-2 LSBs of the frame counter on every sample of the frame
                 when FN_FRAME8 =>
@@ -560,11 +551,7 @@ funcgen_proc: process (clk)
                         out_dat_tdata(ADC_BITS_PER_SAMPLE*(i+1)-1 downto ADC_BITS_PER_SAMPLE*i) <= to_slv(frame_ctr(ADC_BITS_PER_SAMPLE-3 downto 0)) & "00";
                     end loop;
                     out_dat_tvalid <= send_frame;
-
-                    for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
-                        reversed_ram_dout := reverse_bits_same_dir(ram_dout);
-                        out_dat_overflows(i) <= reversed_ram_dout(ADC_BITS_PER_SAMPLE*i); --reverse bits so that the MSB of ram is aligned with the MSB of tuser (first sample). The MSB of each sample indicates if there is an overflow.
-                    end loop;
+                    use_ram_overflow := '1';
 
                 -- Send the 4 LSBs of the frame counter on the upper 4 MSBs of each sample in the frame
                 when FN_FRAME4 =>
@@ -573,15 +560,18 @@ funcgen_proc: process (clk)
                         out_dat_tdata(ADC_BITS_PER_SAMPLE*(i+1)-1 downto ADC_BITS_PER_SAMPLE*(i+1)-4) <= to_slv(frame_ctr(3 downto 0));
                     end loop;
                     out_dat_tvalid <= send_frame;
-
-                    for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
-                        reversed_ram_dout := reverse_bits_same_dir(ram_dout);
-                        out_dat_overflows(i) <= reversed_ram_dout(ADC_BITS_PER_SAMPLE*i); --reverse bits so that the MSB of ram is aligned with the MSB of tuser (first sample). The MSB of each sample indicates if there is an overflow.
-                    end loop;
+                    use_ram_overflow := '1';
 
                 when others =>
                     out_dat_tdata <= (others=>'0');
             end case;
+
+            if use_ram_overflow then
+                for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
+                    reversed_ram_dout := reverse_bits_same_dir(ram_dout);
+                    out_dat_overflows(i) <= reversed_ram_dout(ADC_BITS_PER_SAMPLE*(i+1)-1); --reverse bits so that the MSB of ram input is aligned with the MSB of tuser (first sample). The LSB of each sample indicates if there is an overflow.
+                end loop; --overflow count per word
+            end if; -- for modes FN_FRAME_WORD_CTR_RAM_FLAGS, FRAME8 and FRAME4
 
             if in_dat_tvalid then
                 if adc_tfirst then
@@ -602,9 +592,6 @@ funcgen_proc: process (clk)
                 adc_tfirst <= '1';
                 ramp_tfirst <= '1';
                 trig_reg <= '0';
-                capture_flag <= '0';
-                overflow_ctr <= (others=>'0');
-                
             end if; -- reset_all
 
             if reset_all_reg='1' then
