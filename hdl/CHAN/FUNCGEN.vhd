@@ -234,6 +234,7 @@ signal ram_dout_int1, ram_dout_int2: std_logic_vector(8*BYTES_PER_SAMPLE*ADC_SAM
 signal ram_dout: std_logic_vector(BITS_PER_WORD-1 downto 0);
 
 signal delay_capture_ctr: unsigned(15 downto 0);
+signal sample_var_reg: signed(ADC_BITS_PER_SAMPLE-1 downto 0);
 signal overflow_ctr, overflow_ctr_reg: unsigned(31 downto 0):= (others => '0');
 signal stats_enable, stats_enable_resync: std_logic;
 signal stats_done: std_logic:= '0';
@@ -405,14 +406,12 @@ stats_enable_cdc0: xpm_cdc_single
 		port map (src_clk => '0', src_in => stats_enable, dest_clk => clk, dest_out => stats_enable_resync);
 
 funcgen_proc: process (clk)
-    -- variable out_dat_var: std_logic_vector(31 downto 0);
-    -- variable word_ctr: std_logic_vector(ramp_word_ctr'range);
-    variable sample_var: signed(ADC_BITS_PER_SAMPLE-1 downto 0);
     variable int_shift: integer;
     variable int_clip_width: integer range 0 to 15;
     variable new_overflow_ctr: unsigned(overflow_ctr'RANGE);
     variable reversed_ram_dout: std_logic_vector(ram_dout'RANGE);
     variable use_ram_overflow: std_logic := '0';
+    variable sample_var, sample_var_clipped: signed(ADC_BITS_PER_SAMPLE-1 downto 0);
 
     begin
         if rising_edge(clk) then
@@ -430,11 +429,11 @@ funcgen_proc: process (clk)
 
             for j in 0 to ADC_SAMPLES_PER_WORD-1 loop
                 sample_var := signed(out_dat_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j));
-                sample_var := shift_right(sample_var, int_shift);
+                sample_var_reg <= shift_right(sample_var, int_shift);
                 if int_clip_width /= 15 then
-                    sample_var := clip(sample_var, int_clip_width);
+                    sample_var_clipped := clip(sample_var_reg, int_clip_width);
                 end if;
-                m_axis_adc_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) <= std_logic_vector(sample_var);
+                m_axis_adc_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) <= std_logic_vector(sample_var_clipped);
             end loop;
 
             -- Register the output bus. out_dat_* registers are tied to a lot of logic and can't be placed optimally to meet timing at high speeds.
