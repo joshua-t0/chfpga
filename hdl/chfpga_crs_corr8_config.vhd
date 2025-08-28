@@ -11,12 +11,7 @@ package chfpga_config is
 
 	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean := FALSE;
 	constant CONFIG_CHAN_FFT_TYPE: integer := FFT_TYPE_CHORD; -- 14 bit samples, 8 samples/word, 16384 samples/frame, 32+32 bit output
-    --constant CONFIG_FFT_BITS_PER_BIN: integer := 32+32; -- total width ( Re +Im) width of fft output. Typically 18+18 with shift schedule, or 32+32 with bit growth on CRS
-	--constant CONFIG_FFT_CTR_WIDTH: integer := 14; -- CHIME: 12, D3A/CHORD: 13. Number of bits of the delay line. Max delay = 2^CONFIG_FFT_CTR_WIDTH
 	constant CONFIG_FFT_ROTATE_BINS: boolean := TRUE; -- CHIME: False, D3A/CHORD: True.
-	--constant CONFIG_ADC_SAMPLES_PER_WORD: integer := 8; -- we pack 8 samples per word
-	--constant CONFIG_ADC_BITS_PER_SAMPLE: integer := 14;
-	--constant CONFIG_ADC_SAMPLES_PER_FRAME: integer := 16384;
 	constant CONFIG_CHAN_CAPTURE_TYPE: string := "URAM";
 	constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer := 2;
 	constant CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS: boolean:= FALSE;

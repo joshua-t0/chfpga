@@ -9,14 +9,9 @@ package chfpga_config is
 
 	constant CONFIG_NUMBER_OF_ADCS: integer := 8; -- Number of ADC inputs that are connected
 
-	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean := TRUE;
+	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean := FALSE;
 	constant CONFIG_CHAN_FFT_TYPE: integer := FFT_TYPE_CHORD; -- 14 bit samples, 8 samples/word, 16384 samples/frame, 32+32 bit output
-    --constant CONFIG_FFT_BITS_PER_BIN: integer := 32+32; -- total width ( Re +Im) width of fft output. Typically 18+18 with shift schedule, or 32+32 with bit growth on CRS
-	--constant CONFIG_FFT_CTR_WIDTH: integer := 14; -- CHIME: 12, D3A/CHORD: 13. Number of bits of the delay line. Max delay = 2^CONFIG_FFT_CTR_WIDTH
 	constant CONFIG_FFT_ROTATE_BINS: boolean := TRUE; -- CHIME: False, D3A/CHORD: True.
-	--constant CONFIG_ADC_SAMPLES_PER_WORD: integer := 8; -- we pack 8 samples per word
-	--constant CONFIG_ADC_BITS_PER_SAMPLE: integer := 14;
-	--constant CONFIG_ADC_SAMPLES_PER_FRAME: integer := 16384;
 	constant CONFIG_CHAN_CAPTURE_TYPE: string := "URAM";
 	constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer := 2;
 	constant CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS: boolean:= FALSE;
@@ -24,8 +19,9 @@ package chfpga_config is
 	constant CONFIG_CAPTURE_BITS_PER_WORD: integer := sel(CONFIG_CHAN_CAPTURE_TYPE="URAM", 128, 32);
 
     -- Corner-turn engine configuration
-    constant CONFIG_CT_LEVEL: integer := 2;
-    constant CONFIG_CT_TYPE: string                              := "UCT"; -- "UCT" or "BCT"
+
+    constant CONFIG_CT_TYPE: integer                              := CT_TYPE_UCT; -- "UCT" or "BCT"
+    constant CONFIG_CT_LEVEL: integer := 2; -- 2 for CORR32, 3 for CORR64
     constant CONFIG_CT_CLK_SOURCE: string                        := "ADC_CLK"; -- Run the corner-turn & correlator on the 400 MHz ADC clock
 	constant CONFIG_NUMBER_OF_CROSSBAR_INPUTS: integer           := CONFIG_NUMBER_OF_ADCS; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
 	constant CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS: integer         := 8; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.

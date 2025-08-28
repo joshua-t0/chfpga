@@ -9,7 +9,6 @@ set_property BITSTREAM.CONFIG.USR_ACCESS TIMESTAMP [current_design]
 # Frequency counter
 # ----------------
 # Constrain the frequency counter clock. The clock frequency on this net is 1/2 if the measured clock source
-create_clock -period 5.000 -name FREQ_CTR_CLK [get_pins chfpga0/freq_ctr_blk.FREQ_CTR0/V6.SRCCLK0/O]
 # correlator clock is not interacting with other clocks
 # set_clock_groups -name CORR_CLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks CORR_CLK_NOBUF]
 
@@ -18,11 +17,9 @@ create_clock -period 5.000 -name FREQ_CTR_CLK [get_pins chfpga0/freq_ctr_blk.FRE
 # Backplane signals (DC coupled at the input buffer, AC coupled to the FPGA pins)
 ####################
 # IRIG-B
-set_property PACKAGE_PIN H22 [get_ports bp_irig_p]; # Was K19
+set_property PACKAGE_PIN H22 [get_ports bp_irig_p]
 set_property IOSTANDARD LVDS [get_ports bp_irig_p]
 
-set_input_delay -clock [get_clocks SYS_CLK] -max 0.015 [get_ports bp_irig_p]
-set_input_delay -clock [get_clocks SYS_CLK] -min -0.015 [get_ports bp_irig_p]
 
 # Backplane 10 MHz reference clock (copy of the signal fed to the HMC7044)
 set_property PACKAGE_PIN H17 [get_ports bp_clk10_p]
@@ -48,8 +45,6 @@ set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets clk10_ibufds1/O]
 # # IRIG-B signal
 set_property PACKAGE_PIN K16 [get_ports sma_irig_p]
 set_property IOSTANDARD LVDS [get_ports sma_irig_p]
-set_input_delay -clock [get_clocks SYS_CLK] -max 0.015 [get_ports sma_irig_p]
-set_input_delay -clock [get_clocks SYS_CLK] -min -0.015 [get_ports sma_irig_p]
 # # Aux signal
 # set_property PACKAGE_PIN H11     [get_ports {sma_aux_p}]; # Bank  57 VCC1V8
 
@@ -711,16 +706,11 @@ set_property IS_SOFT FALSE [get_pblocks SCALER7]
 
 
 
-create_pblock CORN
-add_cells_to_pblock [get_pblocks CORN] [get_cells -quiet [list chfpga0/ct_gen.uct_case.ct0]]
-resize_pblock [get_pblocks CORN] -add {SLICE_X6Y360:SLICE_X11Y419 SLICE_X0Y330:SLICE_X5Y419}
-resize_pblock [get_pblocks CORN] -add {BUFG_GT_X0Y144:BUFG_GT_X0Y191}
-resize_pblock [get_pblocks CORN] -add {BUFG_GT_SYNC_X0Y90:BUFG_GT_SYNC_X0Y119}
-resize_pblock [get_pblocks CORN] -add {DSP48E2_X0Y144:DSP48E2_X0Y167}
-resize_pblock [get_pblocks CORN] -add {RAMB18_X0Y144:RAMB18_X0Y167}
-resize_pblock [get_pblocks CORN] -add {RAMB36_X0Y72:RAMB36_X0Y83}
-set_property IS_SOFT FALSE [get_pblocks CORN]
 
+set_property C_CLK_INPUT_FREQ_HZ 300000000 [get_debug_cores dbg_hub]
+set_property C_ENABLE_CLK_DIVIDER false [get_debug_cores dbg_hub]
+set_property C_USER_SCAN_CHAIN 1 [get_debug_cores dbg_hub]
+connect_debug_port dbg_hub/clk [get_nets smp_OBUF[3]]
 
 
 
