@@ -644,11 +644,13 @@ function all_ones(v: std_logic_vector) return boolean; -- Return TRUE if all bit
 function all_ones(v: unsigned) return boolean; -- Return TRUE if all bits are '1'.
 function all_ones(v: signed) return boolean; -- Return TRUE if all bits are '1'.
 function all_ones(v: std_logic_vector; high:integer; low:integer) return boolean;
+function all_ones(v: unsigned; high:integer; low:integer) return boolean;
 
 function all_zeros(v: std_logic_vector) return boolean; -- Return TRUE if all bits are '0'.
 function all_zeros(v: unsigned) return boolean; -- Return TRUE if all bits are '0'.
 function all_zeros(v: signed) return boolean; -- Return TRUE if all bits are '0'.
 function all_zeros(v: std_logic_vector; high:integer; low:integer) return boolean;
+function all_zeros(v: unsigned; high:integer; low:integer) return boolean;
 
 function num_ones(v: std_logic_vector) return integer; -- Return number of bits that are '1'.
 
@@ -1203,11 +1205,15 @@ end function;
 function all_ones(v: std_logic_vector; high:integer; low:integer) return boolean is
 	variable ones: std_logic_vector(v'range) := (others => '1');
 begin
---	return and(v(high downto low)) = '1'; -- Error: Cannot have variable length slice in component instantiation
-    -- return signed(v(high downto low)) = -1; --Do not have variable slicing! Synthesis raises no error but logic is wrong
+	--	return and(v(high downto low)) = '1'; -- Error: Cannot have variable length slice in component instantiation
+    -- return signed(v(high downto low)) = -1; --Does not work! Synthesis raises no error but logic is wrong
     return v(high downto low) = ones(high downto low);
 end function;
 
+function all_ones(v: unsigned; high:integer; low:integer) return boolean is
+begin
+	return all_ones(std_logic_vector(v), high, low);
+end function;
 
 
 --Returns TRUE if all bits are 'o'
@@ -1233,9 +1239,14 @@ end function;
 function all_zeros(v: std_logic_vector; high:integer; low:integer) return boolean is
 	variable zeros: std_logic_vector(v'range) := (others => '0');
 begin
---	return or(v(high downto low)) = '0'; -- Error: Cannot have variable length slice in component instantiation
--- return signed(v(high downto low)) = 0; -- Synthesis raises no error but logic is wrong
+	--	return or(v(high downto low)) = '0'; -- Error: Cannot have variable length slice in component instantiation
+	-- return signed(v(high downto low)) = 0; -- Synthesis raises no error but logic is wrong
 	return v(high downto low) = zeros(high downto low);
+end function;
+
+function all_zeros(v: unsigned; high:integer; low:integer) return boolean is
+begin
+	return all_zeros(std_logic_vector(v), high, low);
 end function;
 
 function num_ones(v: std_logic_vector) return integer is
