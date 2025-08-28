@@ -431,7 +431,7 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
                     when "01" => N :=  4; K := 2; K_WIDTH := 1; -- capturing 4 channels
                     when "10" => N :=  2; K := 4; K_WIDTH := 2; -- capturing 2 channels
                     when "11" => N :=  1; K := 8; K_WIDTH := 3; -- capturing 1 channel
-                    when others => report "Unhandled mode" severity failure;
+                    when others => assert FALSE report "Unhandled mode" severity FAILURE;
                 end case;
 
                 -- Set the source for each channel-pair mux
