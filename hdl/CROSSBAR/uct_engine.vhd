@@ -301,32 +301,20 @@ begin
 
 
 			-- Control and status bytes
+
 			signal control_bytes: slv8_array(0 to (2 + (NUMBER_OF_CT2_INPUTS + 1) / 2 + (NUMBER_OF_CT2_OUTPUTS + 1) / 2 + 2)); -- default value set in the CMD_SLAVE
 			signal status_bytes: slv8_array(0 to 14);
 
 
 			-- Remap1 control and status signals
+
 			signal lane_map: slv4_array(0 to NUMBER_OF_CT2_INPUTS - 1);
 			signal lane_postmap: slv4_array(0 to NUMBER_OF_CT2_OUTPUTS - 1);
 
 			-- Align1 control and status signals
 
-			--    signal bin_ctr : unsigned(9 downto 0); -- Up to 1024 bins per frame
 			signal align1_ignore_lane: slv(0 to NUMBER_OF_CT2_INPUTS - 1);
 			signal align1_sof_window_stop: std_logic_vector(7 downto 0);
-
-
-			--    signal header_capture_enable: std_logic;
-			--    signal header_capture_enable_reg: std_logic;
-			--    attribute ASYNC_REG of header_capture_enable_reg : signal is "true";
-			--    signal header_capture_word_ctr: unsigned(3 downto 0);
-			--    signal frame_number_capture: slv8_array(0 to NUMBER_OF_CT2_INPUTS-1);
-			--    signal stream_id_capture: slv8_array(0 to NUMBER_OF_CT2_INPUTS-1);
-			--    signal frame_number_capture_reg: slv8_array(0 to NUMBER_OF_CT2_INPUTS-1);
-			--    signal stream_id_capture_reg: slv8_array(0 to NUMBER_OF_CT2_INPUTS-1);
-
-			--    signal align1_lane_monitor_source: std_logic_vector(3 downto 0);
-			--    signal align1_lane_monitor: slv(0 to NUMBER_OF_CT2_INPUTS-1);
 
 			signal align1_lane0_tfirst_mon: std_logic;
 			signal align1_fifo_tfirst_mon: std_logic_vector(0 to NUMBER_OF_CT2_INPUTS - 1);
@@ -334,7 +322,6 @@ begin
 			signal fifo_count_mon_reg: slv10_array(0 to NUMBER_OF_CT2_INPUTS - 1);
 
 
-			---
 
 			-- resets
 			signal remap_rst: std_logic;
@@ -347,15 +334,9 @@ begin
 			signal remap_out_tvalid: std_logic_vector(0 to NUMBER_OF_CT2_INPUTS - 1);
 			signal remap_out_tlast: std_logic_vector(0 to NUMBER_OF_CT2_INPUTS - 1);
 
-
-			--    signal bp1_in_tdata: slv64_array(0 to NUMBER_OF_CT2_INPUTS-1);
-			--    signal bp1_in_tvalid: slv(0 to NUMBER_OF_CT2_INPUTS-1);
-			--    signal bp1_in_tlast: slv(0 to NUMBER_OF_CT2_INPUTS-1);
-
 			signal bp1_out_tdata: slv_array(0 to NUMBER_OF_CT2_OUTPUTS - 1)(BITS_PER_CT2_LANE_WORD - 1 downto 0);
 			signal bp1_out_tvalid: slv(0 to NUMBER_OF_CT2_OUTPUTS - 1);
 			signal bp1_out_tlast: slv(0 to NUMBER_OF_CT2_OUTPUTS - 1);
-
 
 			-- Align buses
 
@@ -367,18 +348,21 @@ begin
 
 
 			-- Align monitoring
+
 			signal align1_mon_reset: std_logic;
 			signal align1_mon_lane: std_logic_vector(3 downto 0);
 			signal align1_mon_source: std_logic_vector(3 downto 0);
 			signal align1_mon_word: std_logic_vector(15 downto 0);
 
 			-- CT2 output
+
 			signal ct2_out_tdata: slv_array(0 to NUMBER_OF_CT2_OUTPUTS - 1)(BITS_PER_CT2_LANE_WORD - 1 downto 0);
 			signal ct2_out_tvalid: std_logic;
 			signal ct2_out_tlast: std_logic;
 
 
 			-- used
+
 			signal align_reset: std_logic;
 			signal remap_reset: std_logic;
 
@@ -415,29 +399,23 @@ begin
 				);
 
 			-- Assign registers for level-2 corner-turning
+
 			-- CONTROL Byte 0
 			align1_mon_reset <= control_bytes(0)(0);
 
-
-			--    header_capture_enable         <= CONTROL_BYTES(0)(7); --!
-			--    align_reset                   <= CONTROL_BYTES(0)(6); --!
-			--    remap_reset                   <= CONTROL_BYTES(0)(5); --!
-			--    lane_monitor_reset            <= CONTROL_BYTES(0)(4); --!
-			--    lane_monitor_sel              <= unsigned(CONTROL_BYTES(0)(3 downto 0)); --!
-
-			--! CONTROL Byte 1
+			-- CONTROL Byte 1
 			-- CONTROL_BYTES(1)(7) unused
 			align1_mon_source <= control_bytes(1)(7 downto 4);
 			align1_mon_lane   <= control_bytes(1)(3 downto 0);
 
-			--! CONTROL Byte 2
+			-- CONTROL Byte 2
 			align1_sof_window_stop <= control_bytes(2);
 
 			-- CONTROL Bytes 3-4
 
 			align1_ignore_lane <= reverse_bits_and_dir(to_slv(control_bytes(3 to 4))(NUMBER_OF_CT2_INPUTS - 1 downto 0));
 
-			--! CONTROL Bytes 5-6 (lane premap) and 7-8 (lane postmap)
+			-- CONTROL Bytes 5-6 (lane premap) and 7-8 (lane postmap)
 			lane_map_gen: for i in 0 to NUMBER_OF_CT2_INPUTS - 1 generate
 				lane_map(i) <= control_bytes(5 + i / 2)(((i + 1) mod 2) * 4 + 3 downto ((i + 1) mod 2) * 4); --
 			end generate lane_map_gen;
@@ -448,55 +426,9 @@ begin
 
 
 			status_bytes(0)(0) <= '0';
-			--    STATUS_BYTES(0)(1) <= fifo_tfirst_mon(to_integer(lane_monitor_sel));
-			--    STATUS_BYTES(0)(2) <= bad_eof_sticky(to_integer(lane_monitor_sel));
-			--    STATUS_BYTES(0)(3) <= bad_lane_sticky(to_integer(lane_monitor_sel));
-			--    STATUS_BYTES(0)(4) <= discarded_data_sticky(to_integer(lane_monitor_sel));
-			--    STATUS_BYTES(0)(5) <= missing_frame_sticky(to_integer(lane_monitor_sel));
-			--    STATUS_BYTES(0)(6) <= align_fifo_overflow_sticky(to_integer(lane_monitor_sel));
 
 			-- STATUS Byte 1
 			status_bytes(1 to 2) <= to_slv8_array(align1_mon_word);
-			--    STATUS_BYTES(1)(7 downto 4) <= to_slv(NUMBER_OF_BIN_SEL, 4);
-
-			--! STATUS Byte 2
-			--    STATUS_BYTES(2) <= to_slv(input_frame_ctr(to_integer(lane_monitor_sel)));
-
-			--! STATUS Byte 3
-			--    STATUS_BYTES(3) <= to_slv(align_frame_ctr(to_integer(lane_monitor_sel)));
-
-			--! STATUS Byte 4
-			--    STATUS_BYTES(4) <= to_slv(output_frame_ctr(to_integer(lane_monitor_sel)));
-
-			--! STATUS Byte 5
-			--    STATUS_BYTES(5) <= to_slv(clk_ctr);
-
-			--! STATUS Byte 6
-			-- STATUS_BYTES(6)(1) <= capture_tvalid;
-			-- STATUS_BYTES(6)(2) <= capture_tlast;
-			-- STATUS_BYTES(6)(3) <= header_capture_enable;
-			--    STATUS_BYTES(6)(7) <= '0';
-			--    STATUS_BYTES(6)(6) <= align1_lane0_tfirst_mon;
-			--    STATUS_BYTES(6)(5) <= '0';
-			--    STATUS_BYTES(6)(4 downto 0) <= to_slv(NUMBER_OF_INPUT_LANES, 5);
-
-			--     STATUS_BYTES(7 to 10) <= to_slv8_array(capture_tdata);
-
-			--    status_bytes(7)       <= frame_number_capture_reg(to_integer(lane_monitor_sel));
-			--    status_bytes(8)       <= stream_id_capture_reg(to_integer(lane_monitor_sel));
-			--    status_bytes(9 to 10) <= to_slv8_array(delay_capture_ref_word_ctr) when lane_monitor_sel=0 else to_slv8_array(delay_capture_word_ctr);
-			--    status_bytes(11 to 12) <= to_slv8_array(fifo_count_mon_reg(to_integer(lane_monitor_sel)));
-			--    status_bytes(13 to 14) <= to_slv8_array(packet_error_ctr(to_integer(lane_monitor_sel)));
-			--    ! STATUS Byte 8
-			--     STATUS_BYTES(8)<=resize(reverse_bits_and_dir(m_axis_fifo_tvalid),8);
-
-			--    ! STATUS Byte 0
-			--     STATUS_BYTES(0)(7)<=data_fifo_empty(0);
-			--     STATUS_BYTES(0)(6)<=DATA_OVERFLOW;
-			--     STATUS_BYTES(0)(5)<=reset_all;
-			--     STATUS_BYTES(0)(4)<=to_std_logic(EIGHT_BIT_SUPPORT);
-			--     STATUS_BYTES(0)(3)<='0'; --or_reduce(in_dat_align_underflow);
-			--     STATUS_BYTES(0)(2 downto 0)<=(others=>'0');
 
 
 			--         Lane remap and bin culling
@@ -542,8 +474,8 @@ begin
 			bp_links0: entity work.xxvglink_array
 				generic map (
 					LANE_TO_LINK_MAP   => LANE_TO_LINK_MAP, -- 4 logical lane: 1 bypass lane, 3 physical links
-					LINK_TO_QUAD_MAP   => LINK_TO_QUAD_MAP, --! Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-					QUAD_TO_REFCLK_MAP => QUAD_TO_REFCLK_MAP --! Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+					LINK_TO_QUAD_MAP   => LINK_TO_QUAD_MAP, -- Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
+					QUAD_TO_REFCLK_MAP => QUAD_TO_REFCLK_MAP -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
 				)
 				port map (
 					-- Backplane link signals
@@ -568,7 +500,7 @@ begin
 					resetdone => resetdone,
 
 					-- Backplane link cloand and related clock monitoring signals
-					clk_out     => txclk_out, --! 402.8 MHz clock from TX links (25 Gbps * 66/64 / 64 bits/word =402.83203125 MHz)
+					clk_out     => txclk_out, -- 402.8 MHz clock from TX links (25 Gbps * 66/64 / 64 bits/word =402.83203125 MHz)
 					refclk_div2 => refclk_div2, -- divided-by-two version of the 156.25 MHz reference clock fed to the QUAD PLL
 					txclk_div2  => txclk_div2, -- divided-by-two version of the TX word clock, which is also clk_out
 

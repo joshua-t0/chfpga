@@ -54,11 +54,6 @@ entity xxvglink_rx is
 
 		-- Rx stats
 		fifo_overflow: out std_logic; -- non-sticky, on m_axis_rx_clk
---		reset_stats: in std_logic; -- for stats below
---		rx_frame_detect: out std_logic;
---		rx_err_ctr: out std_logic_vector(15 downto 0);
---		rx_max_frame: out std_logic_vector(12 downto 0);
---		rx_min_frame: out std_logic_vector(12 downto 0);
 		fifo_in_tvalid: out std_logic; -- on rx_clk
 		fifo_in_tlast: out std_logic; -- on rx_clk
 		fifo_in_terror: out std_logic; -- on rx_clk
@@ -68,8 +63,8 @@ entity xxvglink_rx is
 end xxvglink_rx;
 
 
---! Implementation notes:
---!   1) It is assumed that there are no Idles between the last data word and the CRC and between the CRC and the EOF
+-- Implementation notes:
+--   1) It is assumed that there are no IDLE between the last data word and the CRC and between the CRC and the EOF
 architecture impl of xxvglink_rx is
 
 
@@ -110,14 +105,6 @@ begin
 			dest_clk  => rx_clk,
 			dest_arst => rx_rst
 			);
-
-	--axrrst_cdc0: xpm_cdc_async_rst
-	--	generic map (RST_ACTIVE_HIGH => 1)
-	--	port map (
-	--		src_arst  => arst,
-	--		dest_clk  => a_clk,
-	--		dest_arst => rx_rst
-	--		);
 
     -- Instantiate the CRC engine, 32-bit wide input.
     crc32_0: entity work.crc32_64
@@ -203,7 +190,7 @@ begin
 
     -- Resync the overflow signal to the read (AXIS) domain.
     -- We use a reset synchronizer to make sure we catch any time overflow is activated
-    -- It won't be perfectly accurate, but this is for monitoring only. At least we should know if any overflow had occured. 
+    -- It won't be perfectly accurate, but this is for monitoring only. At least we should know if any overflow had occured.
 	ovf_cdc0: xpm_cdc_async_rst
 		generic map (RST_ACTIVE_HIGH => 1)
 		port map (
