@@ -2884,7 +2884,7 @@ begin
         end process;
 
         ct_case: case CT_TYPE generate
-    
+
             when bct_case: CT_TYPE_BCT =>
                 ct0: entity work.bct_engine
                     generic map (
@@ -2901,14 +2901,14 @@ begin
                         s_axis_tuser => ct_in2_tuser,
                         s_axis_tvalid => ct_in2_tvalid, -- we assume all lanes are aligned and therefore use only one `tvalid`
                         s_axis_tlast => ct_in2_tlast, -- idem
-        
+
                         -- Non-blocking output stream, synchronous to `clk`
                         m_axis_tdata => ct_out_tdata,
                         m_axis_tvalid => ct_out_tvalid,
                         m_axis_tlast => ct_out_tlast,
-        
+
                         clk => ct_clk,
-        
+
                         -- Backplane 25 Gbps GTY links
                         tx_p      => bp_shuffle_tx_p,
                         tx_n      => bp_shuffle_tx_n,
@@ -2916,17 +2916,17 @@ begin
                         rx_n      => bp_shuffle_rx_n,
                         refclk_p  => bp_shuffle_refclk_p,
                         refclk_n  => bp_shuffle_refclk_n,
-        
+
                         refclk_div2 => bp_shuffle_refclk_div2, -- divided-by-two version of the 156.25 MHz reference clock fed to the QUAD PLL
                         txclk_div2 => bp_shuffle_txclk_div2, -- divided-by-two version of the TX word clock, which is also clk_out
-        
+
                         txclk_out => bp_shuffle_txclk, -- Word clock from the GTY TX link
-        
+
                         rst => ct_reset_reg2, -- synchronous reset (sync to ct_clk, which is derived from corr_reset)
                         -- arst => corr_reset, -- asynchronous reset that is independent from ct_clk (because reset stops bp_shuffle_txclk and therefore ct_clk)
-        
+
                         -- Control interface (command and reply stream buses)
-        
+
                         bsb_cmd_dat  => top_cmd_dat(CT_BASE_PORT),
                         bsb_cmd_rdy  => top_cmd_rdy(CT_BASE_PORT),
                         bsb_rply_dat => top_rply_dat(CT_BASE_PORT),
@@ -2934,14 +2934,14 @@ begin
                         bsb_clk      => ctrl_clk,
                         bsb_rst      => ctrl_rst
                     );
-        
+
             when uct_case: CT_TYPE_UCT =>
                 ct0: entity work.uct_engine
                     generic map (
                         PLATFORM_ID => PLATFORM_ID,
                         NUMBER_OF_INPUT_LANES => NUMBER_OF_CHANNELIZERS, -- Number of channelizer inputs
                         CT_LEVEL => CT_LEVEL -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
-    
+
                     -- LANE_TO_LINK_MAP: integer_array  := (-1,0,1,2); -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
                     -- LINK_TO_QUAD_MAP: integer_array  := (0,1,1); -- Indicates which quad is associated to each GTY link.
                     -- QUAD_TO_REFCLK_MAP: integer_array:= (0,0); -- Indicates which refclk is associated with each QUAD
@@ -2956,14 +2956,14 @@ begin
                         s_axis_tdata => ct_in2_tdata,
                         s_axis_tvalid => ct_in2_tvalid, -- we assume all lanes are aligned and therefore use only one `tvalid`
                         s_axis_tlast => ct_in2_tlast, -- idem
-    
+
                         -- Non-blocking output stream, synchronous to `clk`
                         m_axis_tdata => ct_out_tdata,
                         m_axis_tvalid => ct_out_tvalid,
                         m_axis_tlast => ct_out_tlast,
-    
+
                         axis_clk => ct_clk,
-    
+
                         -- Backplane 25 Gbps GTY links
                         tx_p      => bp_shuffle_tx_p,
                         tx_n      => bp_shuffle_tx_n,
@@ -2971,22 +2971,22 @@ begin
                         rx_n      => bp_shuffle_rx_n,
                         refclk_p  => bp_shuffle_refclk_p,
                         refclk_n  => bp_shuffle_refclk_n,
-    
+
                         refclk_div2 => bp_shuffle_refclk_div2, -- divided-by-two version of the 156.25 MHz reference clock fed to the QUAD PLL
                         txclk_div2 => bp_shuffle_txclk_div2, -- divided-by-two version of the TX word clock, which is also clk_out
-    
+
                         txclk_out => bp_shuffle_txclk, -- Word clock from the GTY TX link
-    
+
                         rst => ct_reset_reg2, -- synchronous reset (sync to ct_clk, which is derived from corr_reset)
                         arst => corr_reset, -- asynchronous reset that is independent from ct_clk (because reset stops bp_shuffle_txclk and therefore ct_clk)
-    
+
                         -- Control interface (command and reply stream buses)
-    
+
                         bsb_cmd_dat  => top_cmd_dat(CT_BASE_PORT),
                         bsb_cmd_rdy  => top_cmd_rdy(CT_BASE_PORT),
                         bsb_rply_dat => top_rply_dat(CT_BASE_PORT),
                         bsb_rply_rdy => top_rply_rdy(CT_BASE_PORT),
-    
+
                         -- bsb_cmd_dat  => open,
                         -- bsb_cmd_rdy.TREADY  => '1',
                         -- bsb_rply_dat => top_rply_dat(CT_BASE_PORT),
@@ -2994,13 +2994,13 @@ begin
                         bsb_clk      => ctrl_clk,
                         bsb_rst      => ctrl_rst
                     );
-    
+
             when others =>
                 assert FALSE report "Invalid CT_TYPE" severity FAILURE;
-    
+
         end generate ct_case;
     end generate ct_gen;
-    
+
 	-----------------------------------------------------------
 	-----------------------------------------------------------
 	-- Real-time data offload links (8x10G or 100G Ethernet links)
@@ -3473,7 +3473,8 @@ begin
 				constant NCORR: integer := sel(CT_LEVEL = 1, FFT_INFO(FFT_TYPE).BINS_PER_WORD, 1);
 				constant BIN_DECIMATION_FACTOR: integer := sel(CT_LEVEL = 1, 1, 4);
 				constant BITS_PER_BIN: integer := 4 + 4;
-				constant NBINS_PER_CORR: integer := FFT_INFO(FFT_TYPE).SAMPLES_PER_FRAME / 2 / NCORR;
+				constant NBOARDS: integer := sel(CT_LEVEL = 1, 1, 4); -- number of boards participating in the correlation
+				constant NBINS_PER_CORR: integer := FFT_INFO(FFT_TYPE).SAMPLES_PER_FRAME / 2 / NBOARDS / NCORR;
 
 				signal corr_in_tdata: slv(255 downto 0);
 				signal corr_in_tvalid: std_logic;
