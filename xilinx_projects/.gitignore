@@ -75,13 +75,13 @@
 
 
 # to be obsoleted - renamed chfpga_crs_corr8
-!/chfpga_crs/
+#!/chfpga_crs/
 
 # obsolete - renamed chfpga_ice_ct
-!/CHFPGA_MGK7MB_REV2/
+#!/CHFPGA_MGK7MB_REV2/
 
 # obsolete - renamed chfpga_ice_corr16
-!/SIFPGA_MGK7MB/
+#!/SIFPGA_MGK7MB/
 
 #!/chFPGA_KC705/
 
@@ -116,11 +116,17 @@
 
 !*.xpr
 
-/*/*.cache
-/*/*.hw
-/*/*.ioplanning
-/*/*.runs
-/*/*.sim
-/*/*.srcs
-/*/*.ip_user_files
-/*/ip_upgrade.log
+/*/*
+!/*/*.bit
+!/*/*.tcl
+!/*/*.xpr
+!/*/.gitignore
+!/*/*.rqs
+
+# /*/*.hw
+# /*/*.ioplanning
+# /*/*.runs
+# /*/*.sim
+# /*/*.srcs
+# /*/*.ip_user_files
+# /*/ip_upgrade.log
