@@ -17,8 +17,12 @@ set_property BITSTREAM.CONFIG.USR_ACCESS TIMESTAMP [current_design]
 # Backplane signals (DC coupled at the input buffer, AC coupled to the FPGA pins)
 ####################
 # IRIG-B
+# Fix: Was K19, moved to K22
 set_property PACKAGE_PIN H22 [get_ports bp_irig_p]
 set_property IOSTANDARD LVDS [get_ports bp_irig_p]
+
+set_input_delay -clock [get_clocks SYS_CLK] -max 0.015 [get_ports bp_irig_p]
+set_input_delay -clock [get_clocks SYS_CLK] -min -0.015 [get_ports bp_irig_p]
 
 
 # Backplane 10 MHz reference clock (copy of the signal fed to the HMC7044)
@@ -45,6 +49,9 @@ set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets clk10_ibufds1/O]
 # # IRIG-B signal
 set_property PACKAGE_PIN K16 [get_ports sma_irig_p]
 set_property IOSTANDARD LVDS [get_ports sma_irig_p]
+set_input_delay -clock [get_clocks SYS_CLK] -max 0.015 [get_ports sma_irig_p]
+set_input_delay -clock [get_clocks SYS_CLK] -min -0.015 [get_ports sma_irig_p]
+
 # # Aux signal
 # set_property PACKAGE_PIN H11     [get_ports {sma_aux_p}]; # Bank  57 VCC1V8
 
