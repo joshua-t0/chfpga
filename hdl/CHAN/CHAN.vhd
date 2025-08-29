@@ -596,6 +596,8 @@ begin
 				clk       => in_clk,
 				reset     => scaler_reset_in,
 
+				-- FIFO monitoring
+
 				fifo_overflow => fifo_overflow, -- We ask SCALER to monitor the channel FIFO for us
 				mon_clk => out_clk,
 				mon_tvalid => out_dat_tvalid,
