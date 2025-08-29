@@ -221,8 +221,7 @@ begin
                     DIN      => resize(s_axis_tdata, 64), -- 32-bit input: Data input
                     DINP     => resize(s_axis_tuser & s_axis_tlast, 8) ,
                     WREN     => fifo_wr_en, -- 1-bit input: Write enable
-                    PROGFULL => almost_full,
-                    FULL     => full, 
+                    PROGFULL => full,
                     WRERR    => overflow,
                     WRRSTBUSY => fifo_wr_rst_busy,
 
