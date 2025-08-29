@@ -178,10 +178,11 @@ signal in_dat_tuser: std_logic_vector(ADC_SAMPLES_PER_WORD-1 downto 0);
 signal in_dat_tvalid: std_logic;
 signal in_dat_tlast: std_logic;
 
-signal out_dat_tdata: std_logic_vector(ADC_SAMPLES_PER_WORD*ADC_BITS_PER_SAMPLE-1 downto 0);
-signal out_dat_tuser: std_logic_vector(FUNCGEN_TUSER_BITS_PER_WORD-1 downto 0);
-signal out_dat_tvalid: std_logic;
-signal out_dat_tlast: std_logic;
+-- Register out_dat_* to fix timing issue caused by too much logic between sample overflow counting and sample var clipping
+signal out_dat_tdata, out_dat_tdata_reg: std_logic_vector(ADC_SAMPLES_PER_WORD*ADC_BITS_PER_SAMPLE-1 downto 0);
+signal out_dat_tuser, out_dat_tuser_reg: std_logic_vector(FUNCGEN_TUSER_BITS_PER_WORD-1 downto 0);
+signal out_dat_tvalid, out_dat_tvalid_reg: std_logic;
+signal out_dat_tlast, out_dat_tlast: std_logic;
 
 
 -- Control and status bytes
@@ -234,7 +235,6 @@ signal ram_dout_int1, ram_dout_int2: std_logic_vector(8*BYTES_PER_SAMPLE*ADC_SAM
 signal ram_dout: std_logic_vector(BITS_PER_WORD-1 downto 0);
 
 signal delay_capture_ctr: unsigned(15 downto 0);
-signal sample_var_reg: signed(ADC_BITS_PER_SAMPLE-1 downto 0);
 signal overflow_ctr, overflow_ctr_reg: unsigned(31 downto 0):= (others => '0');
 signal stats_enable, stats_enable_resync: std_logic;
 signal stats_done: std_logic:= '0';
@@ -411,7 +411,8 @@ funcgen_proc: process (clk)
     variable new_overflow_ctr: unsigned(overflow_ctr'RANGE);
     variable reversed_ram_dout: std_logic_vector(ram_dout'RANGE);
     variable use_ram_overflow: std_logic := '0';
-    variable sample_var, sample_var_clipped: signed(ADC_BITS_PER_SAMPLE-1 downto 0);
+    variable sample_var: signed(ADC_BITS_PER_SAMPLE-1 downto 0);
+    variable out_dat_tdata_reg_clipped: signed(ADC_BITS_PER_SAMPLE-1 downto 0);
 
     begin
         if rising_edge(clk) then
@@ -429,14 +430,18 @@ funcgen_proc: process (clk)
 
             for j in 0 to ADC_SAMPLES_PER_WORD-1 loop
                 sample_var := signed(out_dat_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j));
-                sample_var_reg <= shift_right(sample_var, int_shift);
+                out_dat_tdata_reg <= shift_right(sample_var, int_shift); -- register sample_var to prevent timing issues
                 if int_clip_width /= 15 then
-                    sample_var_clipped := clip(sample_var_reg, int_clip_width);
+                    out_dat_tdata_reg_clipped := clip(out_dat_tdata_reg, int_clip_width);
                 end if;
-                m_axis_adc_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) <= std_logic_vector(sample_var_clipped);
+                m_axis_adc_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) <= std_logic_vector(out_dat_tdata_reg_clipped);
             end loop;
 
-            -- Register the output bus. out_dat_* registers are tied to a lot of logic and can't be placed optimally to meet timing at high speeds.
+            -- Register the output bus. out_dat_* registers by two clks because they are tied to a lot of logic and can't be placed optimally to meet timing at high speeds.
+            out_dat_tvalid_reg <= out_dat_tvalid;
+            out_dat_tuser_reg <= out_dat_tuser;
+            out_dat_tlast_reg <= out_dat_tlast;
+            
             m_axis_adc_tvalid <= out_dat_tvalid;
             m_axis_adc_tuser <= out_dat_tuser;
             m_axis_adc_tlast <= out_dat_tlast;
