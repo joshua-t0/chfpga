@@ -108,25 +108,35 @@
 
 !/chan_tests/
 
-# Testbenches
-!/scaler/
-/scaler/*
-!/scaler/*.xpr
-!/scaler/*.wcfg
-
-!*.xpr
-
+# Exclude everything in the project files
 /*/*
-!/*/*.bit
-!/*/*.tcl
-!/*/*.xpr
-!/*/.gitignore
-!/*/*.rqs
 
-# /*/*.hw
-# /*/*.ioplanning
-# /*/*.runs
-# /*/*.sim
-# /*/*.srcs
-# /*/*.ip_user_files
-# /*/ip_upgrade.log
+# Add testbench folder and the content of its subfolders, but nothing below that
+!/testbenches
+!/testbenches/*
+/testbenches/*/*
+
+# !/test_projects
+# !/test_projects/*
+# /test_projects/*/*
+
+# Testbenches
+#!/scaler/
+#/scaler/*
+#!/scaler/*.xpr
+#!/scaler/*.wcfg
+
+# Exclude all files in project directories except the files with the specified extensions
+# We prefer to whitelist here, because Vivado has a knack for adding generated contents we did not expect.
+!*.bit
+!*.tcl
+!*.xpr
+!.gitignore
+!*.rqs
+!*.wcfg
+
+# Some harmless exceptions, used in some folders
+!*.xdc
+!*.xise
+
+
