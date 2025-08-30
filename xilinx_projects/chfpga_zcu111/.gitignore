@@ -1,11 +1,2 @@
-*.cache
-*.gen
-*.hw
-*.ip_user_files
-*.sim
-*.srcs
-*.xsa
-ip_upgrade.log
-# ignore all run files, except the .bit files 2 directories below
-*.runs/*/*
-!/*.runs/*/*.bit
+# Add files that are normally excluded
+!PLL_configuration_files
