@@ -255,9 +255,9 @@ begin
 -- | CONTROL |  0  |   7  | soft_reset           |                               |
 -- |         |     |   6  | enable               | if '1', funcgen continuously generate frame. If '0', stop generating frame and resets the frame counter.|
 -- |         |     |  5:3 | ram_page[2:0]        | LSB of the RAM page number. Each page can address 512 bytes in RAM memory space |
--- |         |     |  2:0 | fn_sel               |   |
--- |         |  1  |  7:0 | byte_a               | Byte A, used as parameters in some functions |
--- |         |  2  |  7:0 | byte_b               | Byte B, used as parameters in some functions |
+-- |         |     |  2:0 | fn_sel               | Selects the funcgen mode |
+-- |         |  1  |  7:0 | byte_a               | Byte A, used as MSB of lfsr seed |
+-- |         |  2  |  7:0 | byte_b               | Byte B, used as LSB of lfsr seed |
 -- |         | 3-4 | 15:0 | stats_period         | Number of frames during which the number of sample overflows is counted.
 -- |         |  5  |  7:4 | ram_page[6:3]        | MSB of the RAM page number |
 -- |         |     |  3:0 | shift                | Number of bits to right-shift the output data |
@@ -273,7 +273,7 @@ begin
 -- |         |  2  |  1   | stats_done           | overflow_ctr ready with new value for new integration period
 -- |         |     |  0   | send_frame           | High when frame sending is enabled |
 -- |         | 3-4 | 15:0 | delay_capture_ctr    | Delay capture value. |
--- |         | 5-8 | 31:0 | overflow_ctr         | Number of samples that are saturated over ``overflow_ctr_period``. The maximum number is bigger than possible amount of overflows over any initegration period, so no saturation. |
+-- |         | 5-8 | 31:0 | overflow_ctr         | Number of samples that are saturated over ``overflow_ctr_period`` (user specified number of frames). The maximum number is bigger than possible amount of overflows over any initegration period, so no saturation. |
 --  ------------------------------------------------------------------------------
 
 

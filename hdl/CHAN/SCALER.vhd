@@ -304,11 +304,11 @@ begin
 -- | STATUS  |  0  |  7   | stats_ready                  | '1' when new stats data has been captured|
 -- |         |     |  6   | current_gain_bank            | Currently used gain bank. |
 -- |         |     |  5   | eight_bit_support            | '1' when this scaler implementation supports (8+8) bit output mode|
--- |         |     |  4   | fifo_overflow_sticky         | Set when channeliser fifo overflows and remains set until reset|
+-- |         |     |  4   | fifo_overflow_sticky         | Set when channeliser fifo overflows and remains set until reset.|
 -- |         |     |  3   | USE_COMPLEX_GAINS            | '1' when the scaler is using complex gain coefficients|
 -- |         |     | 2:0  | coeff_page_width             |  width of the page register for bytewise access to both banks|
 -- |         | 1:2 | 15:0 | stats_scaler_overflows       | Number of scaler overflows in the last captured frame block. Saturates at 0xFFFE or 0xFFFF. |
--- |         | 3:4 | 15:0 | stats_adc_overflows          | Number of adc overflows in the last captured frame block. Saturates at 0xFFFF. |
+-- |         | 3:4 | 15:0 | stats_adc_overflows          | Number of frames that have at least one adc overflow in the last captured frame block. Saturates at 0xFFFF. |
 -- |         |  5  |  7:0 | frame_ctr                    | Last 8 bits of the frame counter. |
 -- |         | 6:7 | 15:0 | delay_capture_ctr            | Number of clocks it took for first frame of data to arrive after reset|
 -- |         | 8:9 | 15:0 | mon_packet_length            | Length in words of longest packet so far|

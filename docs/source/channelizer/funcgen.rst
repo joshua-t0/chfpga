@@ -19,6 +19,9 @@ Schematic
 .. figure:: ../images/CHAN/funcgen.svg
     :width: 100%
 
+.. figure:: ../images/CHAN/funcgen_modes.svg
+    :width: 100%
+
 Sub-modules
 ===========
 
