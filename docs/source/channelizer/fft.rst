@@ -1,8 +1,8 @@
 .. title:: FFT
 
 
-:entity:`FFT`: Fast Fourier Transform
-*************************************
+:entity:`FFT`: Fast Fourier Transform (*FFT.vhd*)
+*************************************************
 
 .. default-role:: vhdl:entity
 
