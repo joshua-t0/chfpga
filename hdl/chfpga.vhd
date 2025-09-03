@@ -1734,7 +1734,7 @@ begin
 
 
 				-- Global trigger
-				TRIG_ASYNC => TRIG,
+				TRIG_ASYNC => TRIG, -- unused
 
 				-- Resets
 				--  ADC_DAQ_BUFR_SYNC=>GPIO_BUFR_RST,
@@ -2704,11 +2704,6 @@ begin
 				out_dat_almost_empty => chan_out_almost_empty(i),
 				out_reset      => ct_reset,
 				out_clk        => ct_clk, -- output clock
-
-				-- Misc signals
-				TRIG => TRIG,
-				-- lane_monitor => chan_lane_monitor(i),
-
 
 				-- Control interface
 

@@ -53,11 +53,7 @@ COMPONENT CHAN is
     out_clk: in std_logic;
     out_reset: in std_logic;
 
-    -- System level signals
-    trig : in  std_logic; --! Global trigger/capture signal.
---    lane_monitor: out std_logic_vector(3 downto 0);
-
-    -- Control interface (command and reply stream buses)
+     -- Control interface (command and reply stream buses)
     ctrl_cmd_tdata: in std_logic_vector(7 downto 0);
     ctrl_cmd_tvalid: in std_logic;
     ctrl_cmd_tlast: in std_logic;

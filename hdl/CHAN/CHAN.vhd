@@ -62,9 +62,6 @@ entity CHAN is
 		ADC_SAMPLES_PER_WORD: integer      := FFT_INFO(FFT_TYPE).SAMPLES_PER_WORD;
 		ADC_SAMPLES_PER_FRAME: integer     := FFT_INFO(FFT_TYPE).SAMPLES_PER_FRAME;
 		ADC_BITS_PER_WORD: integer         := ADC_BITS_PER_SAMPLE * ADC_SAMPLES_PER_WORD;
-		FUNCGEN_TUSER_BITS_PER_WORD: integer   := 1; -- adc overflow
-		FFT_TUSER_BITS_PER_WORD: integer   := 2; -- adc overflow and fft overflow
-		SCALER_TUSER_BITS_PER_WORD: integer := FFT_TUSER_BITS_PER_WORD + FFT_INFO(FFT_TYPE).BINS_PER_WORD + 1; --adc overflow, fft overflow, gain bank and scaler overflow
 		SCALER_COEFF_BITS_PER_BIN: integer := sel(SCALER_USE_COMPLEX_GAINS, 16 + 16, 16); -- use wither 16-bit real gains or (16+16i) bit complex gains
 		SIM: boolean                       := GLOBAL_SIM
 	);
@@ -98,7 +95,6 @@ entity CHAN is
 		-- Global trigger/capture signal.
 		-- Indicates to SRCSEL when to start flagging the incoming frames the data capture.
 
-		trig: in  std_logic; -- For manually triggering packet generation/transmission
 		lane_monitor: out std_logic_vector(3 downto 0);
 
 		--        lane_monitor: out std_logic_vector(3 downto 0);
@@ -164,6 +160,11 @@ architecture impl of CHAN is
 	constant SCALER_BITS_PER_WORD: integer := OUT_BITS_PER_WORD;
 	constant SCALER_BITS_PER_BIN: integer  := SCALER_BITS_PER_WORD / FFT_BINS_PER_WORD; -- Note: scaler output is always 4+4 or 8+8 bits when not bypassed.
 	constant OUT_BITS_PER_BIN: integer     := SCALER_BITS_PER_BIN;  -- 16 for CHIME, 8 for CHORD
+
+    -- TUSER widths across the pipeline
+	constant FUNCGEN_TUSER_BITS_PER_WORD: integer   := 1; -- adc overflow
+	constant FFT_TUSER_BITS_PER_WORD: integer   := 2; -- adc overflow and fft overflow
+    constant SCALER_TUSER_BITS_PER_WORD: integer := FFT_TUSER_BITS_PER_WORD + FFT_INFO(FFT_TYPE).BINS_PER_WORD + 1; --adc overflow, fft overflow, gain bank and scaler overflow
 
 	signal funcgen_out_tdata: std_logic_vector(ADC_BITS_PER_WORD - 1 downto 0);
 	signal funcgen_out_tuser: std_logic_vector(FUNCGEN_TUSER_BITS_PER_WORD - 1 downto 0);
@@ -421,8 +422,7 @@ begin
 			generic map (
 				ADC_BITS_PER_SAMPLE => ADC_BITS_PER_SAMPLE,
 				ADC_SAMPLES_PER_WORD => ADC_SAMPLES_PER_WORD,
-				ADC_SAMPLES_PER_FRAME => ADC_SAMPLES_PER_FRAME,
-				FUNCGEN_TUSER_BITS_PER_WORD => FUNCGEN_TUSER_BITS_PER_WORD
+				ADC_SAMPLES_PER_FRAME => ADC_SAMPLES_PER_FRAME
 			)
 			port map (
 				-- Input from the ADC
@@ -430,7 +430,6 @@ begin
 				s_axis_adc_tvalid => axis_adc_reg2_tvalid,
 				s_axis_adc_tuser => axis_adc_reg2_tuser,
 				s_axis_adc_tlast => axis_adc_reg2_tlast,
-				trig   => trig,
 
 				-- Output stream to FFT
 				m_axis_adc_tdata => funcgen_out_pre_tdata,
