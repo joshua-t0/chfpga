@@ -108,29 +108,8 @@ begin
             m_axis_tuser <= fifo_dout(DATA_WIDTH + USER_WIDTH downto DATA_WIDTH + 1);
             m_axis_tvalid <= not empty;
             -- FIFO is asynchronous, 37 bit wide (32-bit tdata, 4-bit tuser, 1 bit tlast), FWFT, zero latency
-            --chan_fifo0 : entity work.CHAN_FIFO2
-            --    PORT MAP (
-            --        rst                => fifo_rst, -- asynchronous
-            --        wr_clk             => s_axis_clk,
-            --        wr_en              => fifo_wr_en,
-            --        din(31 downto 0)   => s_axis_tdata,
-            --        din(32)            => s_axis_tlast,
-            --        din(36 downto 33)  => s_axis_tuser,
 
-            --        rd_clk             => m_axis_clk,
-            --        rd_en              => fifo_rd_en,
-            --        dout(31 downto 0)  => m_axis_tdata,
-            --        dout(32)           => m_axis_tlast,
-            --        dout(36 downto 33) => m_axis_tuser,
-            --        valid              => m_axis_tvalid,
-            --        full               => open,
-            --        prog_full          => almost_full,
-            --        prog_empty         => almost_empty,
-            --        overflow           => full,
-            --        empty              => open
-            --    );
-
-        -- FIFO36E1 (7-Series), 512 words x 72 bits, Async, FWFT
+        -- FIFO36E1 (7-Series), 512 words x 72 bits, Async, FWFT, latency=0
         -- We need to use a FIFO36 rather than a FIFO18 because we typically need 37 bits (32 TDATA, 1 TLAST and 4 TUSER) on the 7-series platforms.
         data_fifo0 : FIFO36E1
             generic map (
@@ -221,7 +200,8 @@ begin
                     DIN      => resize(s_axis_tdata, 64), -- 32-bit input: Data input
                     DINP     => resize(s_axis_tuser & s_axis_tlast, 8) ,
                     WREN     => fifo_wr_en, -- 1-bit input: Write enable
-                    PROGFULL =>  full,
+                    FULL =>  full,
+                    PROGFULL =>  almost_full,
                     WRERR    => overflow,
                     WRRSTBUSY => fifo_wr_rst_busy,
 
@@ -253,28 +233,6 @@ begin
 
                 );
 
---            chan_fifo0 : entity work.CHAN_FIFO2_UP
---                PORT MAP (
---                    srst               => fifo_rst, -- synchronous to the write clock
---                    wr_clk             => in_clk,
---                    wr_en              => fifo_wr_en,
---                    din(31 downto 0)   => axis_fifo_in_tdata,
---                    din(32)            => axis_fifo_in_tlast,
---                    din(36 downto 33)  => axis_fifo_in_tuser,
-
---                    rd_clk             => out_clk,
---                    rd_en              => fifo_rd_en,
---                    dout(31 downto 0)  => axis_fifo_out_tdata,
---                    dout(32)           => axis_fifo_out_tlast,
---                    dout(36 downto 33) => axis_fifo_out_tuser,
---                    valid              => axis_fifo_out_tvalid,
---                    full               => open,
---                    prog_full          => fifo_almost_full,
---                    overflow           => fifo_overflow,
---                    empty              => open,
---                    wr_rst_busy        => fifo_wr_rst_busy,
---                    rd_rst_busy        => fifo_rd_rst_busy
---                );
 
         end usp_case;
 

@@ -668,6 +668,8 @@ begin
 			end if;
 		end process;
 
+		fifo_overflow <= fifo_almost_full;
+
 		fifo0: entity work.chan_fifo
 			generic map (
 				FPGA_SERIES => FPGA_SERIES,
@@ -675,7 +677,7 @@ begin
 				USER_WIDTH  => SCALER_TUSER_BITS_PER_WORD
 				)
 			port map (
-				-- User AXI-Streaming data input (nnon-blocking)
+				-- User AXI-Streaming data input (non-blocking)
 				s_axis_tdata => fifo_in_tdata,
 				s_axis_tuser => fifo_in_tuser,
 				s_axis_tlast => fifo_in_tlast,
@@ -691,7 +693,7 @@ begin
 
 				almost_full => fifo_almost_full,
 				almost_empty => fifo_almost_empty,
-				overflow => fifo_overflow,
+				overflow => open, -- ignored because we consider almost_full to be an overflow, otherwise will never happen due to protection above
 				rst => fifo_reset_in
 				);
 
