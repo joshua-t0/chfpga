@@ -82,7 +82,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --
 --  - 6 / FN_RAM_NIBBLE4: Sends bits 3:0 of RAM samples on even frames an bits 7:4 of RAM samples on odd frames. Data is aligned with the 4 MSBS
 --      of each sample, and the rest of the bits in the sample are zero. In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` are always zero.
-
+--
 -- Waveform buffer
 -- ---------------
 --
@@ -209,7 +209,8 @@ signal status_bytes: slv8_array(0 to 8);
 
 signal byte_a: slv8;
 signal byte_b: slv8;
-signal byte_c: slv8;
+
+signal fn_id: slv8;
 
 signal shift: unsigned(3 downto 0);
 signal clip_width: unsigned(3 downto 0);
@@ -256,7 +257,7 @@ begin
 -- |         |     |   6  | enable               | if '1', funcgen continuously generate frame. If '0', stop generating frame and resets the frame counter.|
 -- |         |     |  5:3 | ram_page[2:0]        | LSB of the RAM page number. Each page can address 512 bytes in RAM memory space |
 -- |         |     |  2:0 | fn_sel               | Selects the funcgen mode |
--- |         |  1  |  7:0 | byte_a               | Byte A, used as MSB of lfsr seed |
+-- |         |  1  |  7:0 | byte_a               | Byte A, used as MSB of lfsr seed and to select delay measurement method|
 -- |         |  2  |  7:0 | byte_b               | Byte B, used as LSB of lfsr seed |
 -- |         | 3-4 | 15:0 | stats_period         | Number of frames during which the number of sample overflows is counted.
 -- |         |  5  |  7:4 | ram_page[6:3]        | MSB of the RAM page number |
@@ -290,9 +291,6 @@ byte_b <= control_bytes(2);
 -- CONTROL Byte 3 and 4
 overflow_ctr_period <= to_unsigned(control_bytes(3 to 4));
 
--- CONTROL Bytes 4: Byte C
-byte_c <= control_bytes(4);
-
 -- CONTROL Bytes 5: RAM page and bit shift
 ram_page(6 downto 3) <= control_bytes(5)(7 downto 4); -- 4 most significant bits of the page register
 shift <= unsigned(control_bytes(5)(3 downto 0));
@@ -303,7 +301,7 @@ rst_lfsr  <= control_bytes(6)(6);
 clip_width <= unsigned(control_bytes(6)(3 downto 0));
 
 -- CONTROL Bytes 7: User defined function number
-
+fn_id <= control_bytes(7); -- for software only. Not used by this module.
 
 -- STATUS Byte 0
 status_bytes(0) <= std_logic_vector(lsb(word_ctr_pre2));
@@ -483,7 +481,6 @@ funcgen_proc: process (clk)
                     end loop;
 
                 -- Send peudo-random noise on all samples.
-                -- The 32-bit bits of the PNRG is distributed on the MSB of all samples, and the samples are right-shifted by the value in byte_c.
                 when FN_NOISE =>
                     out_dat_tdata <= lfsr_out;
 
