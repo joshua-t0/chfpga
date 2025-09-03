@@ -3,6 +3,7 @@
 :entity:`chfpga` (`chfpga.vhd`)
 *******************************
 
+.. default-role:: vhdl:entity
 
 Overview
 ========
@@ -15,14 +16,14 @@ chfpga is normally instantiated by a platform-specific top module that creates t
 
 - System modules
 
-    - Clocking system (:entity:`clocks`)
-    - System Bus master (:entity:`master` and routers :entity:`router` with optional :entity:`UDP_MAC` 1G Ethernet interface)
-    - GPIO and general configuration registers (:entity:`GPIO`)
-    - I2C and SPI controllers (:entity:`I2C` and :entity:`SPI`)
-    - System monitor (:entity:`SYSMON`)
-    - Reference clock/ synchroniztion sequencer (:entity:`REFCLK`)
-    - Frequency counter (:entity:`FREQCTR`)
-    - Heartbeat LED blinker (:entity:`blinker`)
+    - Clocking system (`clocks`)
+    - System Bus master (`master` and routers `router` with optional `UDP_MAC` 1G Ethernet interface)
+    - GPIO and general configuration registers (`GPIO`)
+    - I2C and SPI controllers (`I2C` and `SPI`)
+    - System monitor (`SYSMON`)
+    - Reference clock/ synchroniztion sequencer (`REFCLK`)
+    - Frequency counter (`FREQCTR`)
+    - Heartbeat LED blinker (`blinker`)
 
 
 - ADC Data acquisition logic
@@ -33,7 +34,7 @@ chfpga is normally instantiated by a platform-specific top module that creates t
 
 - X-Engine/Correlator
 
-- 40/100 G Ethernet Data real-time streaming interface
+- 10/100 G Ethernet Data real-time streaming interfaces
 
 - Data capture engine
 
@@ -42,9 +43,6 @@ Schematic
 
 .. .. figure:: ../images/chfpga.svg
 ..     :width: 100%
-
-Sub-modules
-===========
 
 
 
@@ -83,11 +81,7 @@ Top level memory map
 .. include-docs:: chfpga
     :start-after: Top-level Memoy map
 
-SYSTEM memory map
-----------------
 
-.. include-docs:: chfpga
-    :start-after: SYSTEM Memory Map
 
 Channelizers memory map
 -----------------------
@@ -98,19 +92,14 @@ Channelizers memory map
 Submodules
 ==========
 
-The following modules are instantiated directly by :entity:`chFPGA`:
+The following modules are instantiated directly by `chFPGA`:
+
 
 .. toctree::
     :maxdepth: 1
+    :hidden:
 
-    system/clocks
-    system/gpio
-    system/i2c
-    system/spi
-    system/blinker
-    system/refclk
-    system/sysmon
-    system/freq_ctr
-    channelizer/chan
+    System<system/system>
+    F-Engine<channelizer/chan>
     CT Engine <corner-turn/corner-turn>
     X Engine <correlator/correlator>

@@ -11,6 +11,8 @@ The SYSTEM modules provide general support such as GPIOs, SPI and I2C interfces,
 
 
 .. toctree::
+  :hidden:
+  :maxdepth: 1
 
     clocks
     GPIO <gpio>
@@ -28,3 +30,12 @@ The :entity:`gpio` also provides the following functionnalities:
   - Backplane Buck Synchronization
   - IRIG-B decoder (:entity:`irigb_decoder`) and generator
   - IRIG-B tagging of Referenece clock counter and Frame counters
+
+
+SYSTEM memory map
+----------------
+
+.. todo:: Add system memory map
+
+.. .. include-docs:: chfpga
+..     :start-after: SYSTEM Memory Map

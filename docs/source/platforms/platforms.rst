@@ -1,12 +1,13 @@
-*********
-Platforms
-*********
+*****************
+Platform wrappers
+*****************
 
 `chFPGA` supports the following hardware platforms:
 
 .. toctree::
-   :maxdepth: 5
+   :maxdepth: 2
 
-   iceboard
-   CRS
-   ZCU111
+   iceboard/index
+   CRS/index
+   ZCU111/ZCU111
+   bit_widths

@@ -12,8 +12,14 @@ The source code for `chfpga` is written in VHDL2008. Although the original code 
 All files in the project must be tagged to use the VHDL2008 file type, otherwise the synthesizer will fail to compile many files. The default file type of files added to a project is "VHDL", meaning VHDL93. It must explicitely be changed to VHDL2008.
 
 
+.. _platform_wrappers:
+
 Top module: platform wrappers
 =============================
+
+
+.. The platform wrapper take the constants defined in the package `chfpga_config`  and passes them to the `chFPGA` module instance in order to define the firmware capabilities. This section lists the firmware configurations that are currently implemented on IceBoard platform. Each of these files define the ``chfpga_config`` package, and the project must include one of those files to determine firmware capabilities of the build.
+
 
 The platform wrapper is the top-level file of the project. It provides the logic and parameters that are specific to a specific platform:
 
@@ -23,12 +29,24 @@ The platform wrapper is the top-level file of the project. It provides the logic
 - Instantiate the Processing System (PS) block diagram when applicable
 - Repackaging of the external signals and buses to the format expected by the `chfpga` module
 
-The platform wrapper is responsible for instantiating the  `chfpga` module and passing it all the hardware- and application-specific parameters.
+The platform wrapper is responsible for instantiating the  `chfpga` module and passing it all the hardware- and application-specific parameters taken from the firmware configuration file (see next section).
 
 The platfom wrapper shall be named using the following format::
 
    chfpga_<platform name>.vhd
 
+Configuration file
+==================
+
+The configuration file is a package that defines a number of constants needed to configure the firmware functionality. We refrain from including hardware-specific parameters in this file, e.g., parameters that can never change for a specific platform; those shall be defined in the platform-wrapper. Of course, some firmware functionalities are platform-specific (such as modules using UltraRAM for example) but could be implemented in other ways in the future, and shall therefore be defined in the configuration file.
+
+Configuration files shall define a package named ``chfpga_config``. The selection of the configuration file for a particular build is done by including the desired configuration file in the project. Configuration files must therefore have unique names in the following format::
+
+    chfpga_<platform name>_<config name>_config.vhd
+
+The labels of all constants in the package shall have the format::
+
+    CONFIG_<subsystem name>_<parameter name>
 
 
 I/O buffers
@@ -44,18 +62,6 @@ Note that some modules define their own clock or data buffers  instead having th
 
 In many cases the  exceptions exist mainly for historical reasons, but since having local buffers reduces the size and complexity of the platform file, we have not moved out the buffers from those modules.
 
-Configuration file
-==================
-
-The configuration file is a package that defines a number of constants needed to configure the firmware functionality. We refrain from including hardware-specific parameters in this file, e.g., parameters that can never change for a specific platform; those shall be defined in the platform-wrapper. Of course, some firmware functionalities are platform-specific (such as modules using UltraRAM for example) but could be implemented in other ways in the future, and shall therefore be defined in the configuration file.
-
-Configuration files shall define a package named ``chfpga_config``. The selection of the configuration file for a particular build is done by including the desired configuration file in the project. Configuration files must therefore have unique names in the following format::
-
-    chfpga_<platform name>_<config name>_config.vhd
-
-The labels of all constants in the package shall have the format::
-
-    CONFIG_<subsystem name>_<parameter name>
 
 Platform and configuration names
 ================================
@@ -87,7 +93,7 @@ There is one exception to this: out-of-context (OOC) module (i.e. modules that a
 `chfpga`: a module to rule them all
 ===================================
 
-The core firmware for every configuration of the firmware for every platform is implemented using the same :module:`chfpga` module.
+The core firmware for every configuration of the firmware for every platform is implemented using the same :entity:`chfpga` module.
 Of course, this module takes a large number of generics that are passed by the hardware platform and configuration file to enable the various hardware- and application-specific modules with the desired geometry.
 
 
@@ -211,6 +217,74 @@ Nevertherless, here are the list of strange behaviors that were observed
 - Feb 2025, Vivado 2022.2: Crash caused by a assignment outside the range of a vector. No useful message. Had to bisect-disable code to find this out.
 - Jan 2025, Vivado 2022.2: Got the impression that we could not use VHDL 2008 on the testbench, but it was ok for any submodules. But then it worked for another testbench, with or without the `-2008` simualtion option. Maybe an error on my part?
 - 2022.2: restarting a simulation after adding signals at the bottom  of the waveform list sometimes just crashes the GUI. Save often.
+
 Generic tricks
 
 - When simulaiton does not work because of missing modules, restart a full simulation instead of using the re-run button.
+
+
+
+FIFO implementation
+===================
+
+
+BRAM availability is a limiting factor in `chFPGA`, often followed closely by slice (LUT & REG) resources. We have to use BRAM is the most efficient way possible, and use embedded FIFOs whenever possible so the FIFO logic does not use fabric resources to make a FIFO out of a BRAM.
+
+There can be only one FIFO per RAMB36 site, either a FIFO18 or a FIFO36. If the FIFO18 is used, the other part of the RAMB36 site can be used as a RAMB18.
+
+
+.. image:: ./images/PLATFORMS/Kintex7/7-series_valid_FIFO_RAMB_combinations.png
+
+
+RAMB18 & FIFO18 overestimation issue
+------------------------------------
+
+In places where we need lots of FIFOs, like in the Corner-Turn engine's bin selectors, we implement odd- and even-indexed FIFOs alternatively using embedded FIFO18 and a RAMB18 soft FIFOs in order to maximize RAM usage density and minimize fabric utilization.
+
+Note that before placement, Vivado 2022.2 tools will for some reason assume that the FIFO18 and RAMB18 cannot share the same site and overestimate the resource requirements, and issues warnings if the assigned PBLOCK does not contain the overestimated number of sites (even if the placer will eventually fit everything as it should). It will fails placement if the IS_SOFT property of the PBLOCK is FALSE.
+
+The solution for very tight PBLOCKS it to use IS_SOFT=TRUE and let the logic spill out of the block.
+
+Instantiation method
+--------------------
+
+We used to use IP Generator blocks to instantiate FIFOs and RAMs, but those are stored in different files, per platform, and need to be regenerated each time the Vivado version changes, which is a pain to maintain.
+
+We generally now prefer to instantiate FIFOs using XPM macros, since those are generally portable across platforms.
+
+The exception to this rule are embedded (built-in) FIFOs: those are not supported by the XPM FIFO macro (as of Vivado 2022.2). We choose to instantiate the FIFO18 or FIFO36 directly, but need to have if-generate blocks to select the right version (E1 or E2)  based on the platform. See :entity:`CMAC44` for an example of this dual-platform use. Also look in the 1G Ethernet receiver for FIFO38, and UCAP and UCORR44 for Ultrascale memory generation
+
+
+7-series FIFO output latencies for RAMB and Embedded (built-in) FWFT FIFO implementations
+-----------------------------------------------------------------------------------------
+
+On the 7-Series FPGAs, adding the embeded output register on RAMB-based soft FIFOs and built-in FIFOs dramatically helps timing closure (on a -2, TRCK_DO = 1.8 ns, TRCK_DO_REG=0.63 ns), but in some configurations it might create a extra latencies, even in FWFT mode.
+
+- Builtin FIFO, FWFT, synchronous, DO_REG=True, Embedded only: **latency = 1**
+- Builtin FIFO, FWFT, synchronous, DO_REG=False, Embedded only: latency = 0, (large TRCK_DO delay)
+- Builtin FIFO, FWFT, asynchronous, DO_REG=True (mandatory in FIFO18 primitive): latency = 0
+- BRAM FIFO, FWFT, synchronous, DO_REG=False, Latency = 0 (large TRCK_DO delay)
+- BRAM FIFO, FWFT, synchronous, DO_REG=True, Embed only, Latency = 0
+- BRAM FIFO, FWFT, synchronous, DO_REG=True, Fabric only, Latency = 0
+- BRAM FIFO, FWFT, synchronous, DO_REG=True, Embed+Fabric, Latency = 0
+- BRAM FIFO, FWFT, asynchronous, DO_REG=False, Latency = 0 (large TRCK_DO delay)
+- BRAM FIFO, FWFT, asynchronous, DO_REG=True, Embed only, Latency = 0
+- BRAM FIFO, FWFT, asynchronous, DO_REG=True, Fabric only, Latency = 0
+- BRAM FIFO, FWFT, asynchronous, DO_REG=True, Embed+Fabric, Latency = 0
+
+All configurations with output register (DO_REG=True) have a latency of 0, except for the synchronous builtin FIFO.
+
+In other words, on a 7-series FPGA, if one need a zero latency on a low-resource embedded FIFO with output register, always use an asynchronous built-in FIFO, even if you need a synchronous one.
+
+Resources
+---------
+
+- Kintex-7 memory resources (UG473):
+
+   - Table 2-2, Figure 2-1
+   - Table 2-5, DO_REG
+
+- Kintex 7 datasheet - AC/DC characteristics (DS182)
+- Play with parameters in the FIFO generator (13.2)
+
+

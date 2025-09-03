@@ -1,11 +1,7 @@
 .. _floorplanning:
 
 Floorplanning
-*************
-
-
-
-
+=============
 
 
 General approach
@@ -29,6 +25,7 @@ that covers every clock region and let Vivado process the clock constraints
 and decide where the logic should go.
 
 The crossbars should be allocated two columns of BRAM, otherwise they become too long and signals propagating from one end to the other fail timing.
+
 
 BP_SHUFFLE
 ----------
@@ -99,12 +96,46 @@ GPU2 : CB3 BIN_SEL 4 & 5, with all GTX TX logic, next to their corresponding GTX
 GPU3 : CB3 BIN_SEL 6 & 7, with all GTX TX logic, next to their corresponding GTXes.
 
 
-.. .. figure:: ../images/banner.jpg
-..    :align:  center
-
-.. .. contents:: Table of Contents
-..    :local:
 
 
+BP4
+---
 
-.. vim: sts=3 ts=3 sw=3 tw=78 smarttab expandtab
+
+BP4 holds the logic related to the backplane shuffle. Critical resources are BRAM (~100%) and LUTs as logic (~90%) . It holds the following cells:
+
+- BPSHUFFLE:
+
+   - core0
+
+      - gtx_gen[15-18]
+      - rx_gen[15-18]
+      - tx_gen[15-18]
+
+- crossbar2
+
+   - ALIGN: = 16 RAMB18
+   - BIN_SEL[0..1]: 2 * (8 FIFO18 + 9 RAMB18) = 16 FIFO18 + 18 RAMB18
+   - CTRL_SLAVE0: 0 BRAM
+   - crossbar_router0 : 0 BRAM
+   - remap0: 0 BRAM
+
+- TOTAL: 16 FIFO18 + 34 RAMB18  = 50 RAMB16 sites
+- ALLOCATED: 27 FIFO18/RAMB18 + 27 RAMB18
+
+BPSHUFFLE.lane_gen[16-23] are the  cross-clock-domain FIFOS that feed the core0 transmitter/receiver (The first 4 are direct internal links).
+They use 16 RAMB18 and dont fit in here, but are strangely not allocated anywhere else, although they should beong here based on the data flow.
+
+Disabling IS_SOFT property causes error. Placer reports it needs 33 RAMB16 (66 FIFO18/RAMB18 sites). This could be explained if the tool does not want to assign the  unused RAMB18 of the FIFO18/RAMB18 to another cell when the FIFI18 is used. In this case we have 16 unusable  RAMB18, which brings to total to 66 RAMB18 sites, or 33 RAMB36 sites.
+
+crossbar2/BIN_SEL uses 8 RAMB18 / FIFO18 pairs to implement its 16 FIFOs, plus  one RAMB16 for the bin selection map RAM. SO it should be able to combine the RABM16/FIFO16 pair in one RAMB36 site.
+
+If we enable it to let th eplacement succeed:
+
+
+bpshuffle/lane_gen = 2 RAMB18 each
+crossbar2/BIN_SEL_GEN[i] = 8 FIFO18 + 9 RAMB18
+crossbar2/align: 16 RAMB18
+
+Enabling EXCLUDE_PLACEMENT causes warnings, as the GTXes of BP shuffle force some logic location
+

@@ -119,9 +119,9 @@ The firmware is structured so new platform wrappers and configuration files can 
 Real-world applications
 =======================
 
-``chFPGA`` was originally designed for the Canadian Hydrogen Intensity Mapping Experiment (CHIME) radiotelescope, which consists of an array of 128 IceBoards that digitizes 1024 dual-polarization feeds at 800 MHz @ 8 bits per sample, implement a 2048-sample FFT, scales and  corner-turns the data between groups of 32 boards, and feeds the real-time baseband data to a a 256-node GPU-based correlator farm.
+``chFPGA`` was originally designed for the Canadian Hydrogen Intensity Mapping Experiment (CHIME) radiotelescope, which consists of an array of 128 Kintex-7 FPGA boards (IceBoards) that digitizes 1024 dual-polarization feeds at 800 MHz @ 8 bits per sample, implement a 2048-sample FFT, scales and  corner-turns the data between groups of 32 boards, and feeds the real-time baseband data to a 256-node GPU-based correlator farm. The firmware is also used on the same platform by  ``CHIME`` outriggers and the ``HIRAX`` telescope.
 
-``chFPGA`` is also used on an array of 128 Xilinx CRS RfSoC FPGAs to digitize the signals from 512-dual-polarization feeds, sample the feeds at 3200 MSPS @ 14-bits, perform a 16384-sample FFT and on-board corner-turn, and offloads the resulting data over 100G Ethernet links through a Ethernet switch that performs the final corner-turn.
+``chFPGA`` is also used on an array of 128 Xilinx Ultrascale+ RfSoC FPGA boards (CRS platform) to digitize the signals from 512-dual-polarization feeds, sample the feeds at 3200 MSPS @ 14-bits, perform a 16384-sample FFT and on-board corner-turn, and offloads the resulting data over 100G Ethernet links through a Ethernet switch that performs the final corner-turn. Other configurations allow corner-turning between 4- , 8- or eventually 16 boards in a backplane, and allow the implementation of a single- or multi-board embedded firmware X-engine (correlator).
 
 The firmware is also used around the world on many small (2-16 element) arrays to implement single-board full N-square correlators.
 

@@ -195,7 +195,6 @@ Layout
 Memory map
 ==========
 
-.. _Memory Map
 
 .. vhdl:include-docs:: CHAN
     :start-after: Memory Map

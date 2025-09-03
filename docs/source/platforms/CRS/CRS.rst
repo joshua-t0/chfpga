@@ -1,11 +1,12 @@
-***
-CRS
-***
+Hardware Description
+********************
 
+
+The CRS** is a compact Ultrascale+ RfSoC FPGA board built by *t0 technologies* to implement next-generation high performance and large-density signal processing arrays. Th CRS provides 8 14-bit ADC (typicaly used at 3200 GSPS with `chFPGA`), 8 DACs, 100G Ethernet QSFP interface, 6x 25 Gbps SFP links, high-speed 4- and 16-board backplane capability with 25 Gbps links, clocking structure allowing deterministic synchronization of multiple boards.
 
 
 Clocking hardware
-*****************
+=================
 
 
 A 50 MHz oven-stabilized voltage-controlled crystal oscillator (VCXO) is the central clock source of the system.
@@ -110,7 +111,7 @@ Operating the ADCs require the following clocks:
 The OSCOUT (50 MHz) and copy of the PLL SMA or backplan 10 MHz referencence clocks are also required to implement unambiguous multiboard synchronization.
 
 Clock frequencies
-*****************
+=================
 
 RF_CLK
 ------
@@ -167,7 +168,7 @@ For the CRS, SYSCLK is set to 10 MHz, which is a frequency that is generated eas
 SYSCLK is a PLL-generated clock that can be optionally be aligned to the external 10 MHz reference clock once the PLL Sync procedure has been performed, but SYSCLK is present whether or not such an  external reference clock is provided or not. SYSCLK can therefore also be used as a proxy for the external reference clock, or simulate one if none is provided.
 
 Synchronization
-***************
+===============
 
 The CRS provides the signals to the FPGA allowing for both multi-tile and multi-board synchronization.
 
@@ -204,7 +205,7 @@ If the reference clock is not synchronous to the IRIG-B signal (e.g. reference c
 
 
 Constraint files
-****************
+================
 
 Timing constraints
 ------------------
@@ -213,35 +214,10 @@ Timing constraints
 Physical Constraints / Floorplanning
 ------------------------------------
 
-Platform wrapper (*chfpga_crs.vhd*)
-***********************************
-
-
-What are these generics for!!!
-
-
-Configurations
-**************
-
-
-8 ADC channels
-14 bits resolution
-ucap
-buck sync
-
-ct
-
-ucorn + 100G
-
-co
-
-8 ch ucorr
-
-test10
 
 
 Resource Utilization
-********************
+====================
 
 
 

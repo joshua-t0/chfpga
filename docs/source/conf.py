@@ -53,10 +53,6 @@ source_suffix = '.rst'
 # The master toctree document.
 master_doc = 'index'
 
-# General information about the project.
-project = 'chFPGA'
-copyright = '2016-2025, Jean-Francois Cliche'
-author = 'Jean-Francois Cliche'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -82,6 +78,11 @@ version = __version__
 # The full version, including alpha/beta/rc tags.
 release = version
 
+
+# General information about the project.
+project = 'chFPGA ' + version
+copyright = '2016-2025, Jean-Francois Cliche'
+author = 'Jean-Francois Cliche'
 
 build_info = dict(
     version=version,
@@ -179,7 +180,7 @@ html_theme_options = {
     'includehidden': True,
     'titles_only': False,
     'logo_only': False,
-    'display_version' : True,
+    # 'display_version' : True, -- deprecated
 }
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
@@ -190,10 +191,10 @@ mathjax3_config = {
 
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
-#html_title = u'chFPGA v0.1'
+html_title = u'chFPGA v0.1'
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
-#html_short_title = None
+html_short_title = 'short_title'
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
