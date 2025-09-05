@@ -106,6 +106,8 @@ entity SCALER is
         mon_clk: in std_logic := '0';
         mon_tvalid: in std_logic:= '0';
         mon_tlast: in std_logic:= '0';
+        mon_word: in std_logic_vector(15 downto 0) := (others => '0');
+        mon_ctrl: out std_logic;
 
         -- Control Interface (command and reply stream buses)
         CTRL_CMD_IN_DAT     : in  AXIS8_DAT_STRUCT;
@@ -166,7 +168,7 @@ architecture Behavioral of SCALER is
 
     --- Define Control word and its signals
     signal control_bytes: slv8_array(0 to 10); -- default value set in the CMD_SLAVE
-    signal status_bytes: slv8_array(0 to 13);
+    signal status_bytes: slv8_array(0 to 17);
 
     signal bypass_scaler: std_logic;
     signal soft_reset: std_logic;
@@ -258,7 +260,8 @@ architecture Behavioral of SCALER is
     signal mon_word_ctr: unsigned(15 downto 0);
     signal mon_packet_ctr: unsigned(7 downto 0);
     signal mon_reset_stats: std_logic;
-
+    signal mon_clk_ctr: unsigned(7 downto 0);
+    signal mon_bit_ctr: unsigned(7 downto 0);
     -- 3  33  22 22      11
     -- 4  10  76 43      65      87      0
     -- ---========--------========--------
@@ -352,6 +355,7 @@ gain_bank_switch_frame_number <= to_slv(control_bytes(6 to 9));
 -- CONTROL Byte 10
 use_float_gains <= control_bytes(10)(7); -- if True, bin-specific log gain is encoded in the upper 5 bits of the gain. For real gains only (USE_COMPLEX_GAINS=FALSE)
 mon_reset_stats <= control_bytes(10)(6);
+mon_ctrl <= control_bytes(10)(5);
 bypass_data_type  <= control_bytes(10)(4 downto 3); -- if bypass=1: "00": input, "01": 1+0j if any saturation, "10": 1+0j or 0+1j if positive or negative saturation respectively
 cap_data_type  <= control_bytes(10)(2 downto 0); -- "000": raw output, "001": scaled input, "010": 4-bit, "100": Even bins, "101": odd bins, "110": scaled even bins, "111": scaled odd bins
 
@@ -385,6 +389,10 @@ status_bytes(10) <= std_logic_vector(mon_packet_ctr);
 status_bytes(11 to 12) <= to_slv8_array(mon_word_ctr);
 
 status_bytes(13) <= std_logic_vector(cap_frame_ctr);
+
+status_bytes(14 to 15) <= to_slv8_array(mon_word);
+status_bytes(16) <= std_logic_vector(mon_clk_ctr);
+status_bytes(17) <= std_logic_vector(mon_bit_ctr);
 
 -----------------------------------------------------------------------------------
 -- Memory-Mapped interface
@@ -910,10 +918,10 @@ scaler_proc: process(all)
 
             m_axis_out_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= stage2_tuser; -- pass on the USER bits
             if stage2_tvalid='1' and stage2_tlast='1' then
-                m_axis_out_tuser(FFT_TUSER_BITS_PER_WORD) <= current_gain_bank; 
+                m_axis_out_tuser(FFT_TUSER_BITS_PER_WORD) <= current_gain_bank;
             end if;
             -- Set the scaler overflow bits in the user data.
-            
+
             m_axis_out_tlast <= stage2_tlast;
             m_axis_out_tvalid <= stage2_tvalid;
 
@@ -1023,7 +1031,7 @@ scaler_proc: process(all)
                         m_axis_cap_tdata((2*i+1)*CB-1 downto (2*i+0)*CB) <= msb_pad(in_dat_dly1_tdata((4*i+1)*FB/2-1  downto (4*i+0)*FB/2), CB); -- Im part, odd bin
                     end loop;
                     m_axis_cap_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= in_dat_dly1_tuser;
-                
+
                 when "110" => -- send scaled even bins with twice the bit width
                     for i in 0 to FFT_BINS_PER_WORD/2-1 loop
                         m_axis_cap_tdata((2*i+2)*CB-1 downto (2*i+1)*CB) <=
@@ -1038,7 +1046,7 @@ scaler_proc: process(all)
                     m_axis_cap_tlast <= stage1_tlast;
                     m_axis_cap_tvalid <= stage1_tvalid;
                     m_axis_cap_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= stage1_tuser;
-                
+
                 when "111" => -- send scaled odd bins with twice the bit width
                     for i in 0 to FFT_BINS_PER_WORD/2-1 loop
                         m_axis_cap_tdata((2*i+2)*CB-1 downto (2*i+1)*CB) <=
@@ -1169,6 +1177,8 @@ scaler_proc: process(all)
 
     process(all) begin
         if rising_edge(mon_clk) then
+            mon_clk_ctr <= mon_clk_ctr + 1;
+            mon_bit_ctr <= mon_bit_ctr + 1 when mon_word(mon_word'HIGH)=mon_ctrl;
             -- Count words
             if mon_tvalid  then
                 mon_word_ctr <= mon_word_ctr + 1;

@@ -189,7 +189,8 @@ architecture impl of CHAN is
 
 	-- Signals monitored by the SCALER module
 	signal fifo_overflow: std_logic;
-
+	signal fifo_wr_count: std_logic_vector(9 downto 0);
+    signal fifo_wr_disable: std_logic;
 	signal funcgen_reset_out: std_logic;
 	signal fft_reset_out: std_logic;
 	signal scaler_reset_out: std_logic;
@@ -601,7 +602,9 @@ begin
 				mon_clk => out_clk,
 				mon_tvalid => out_dat_tvalid,
 				mon_tlast => out_dat_tlast,
-
+				mon_word => out_dat_send & "00" & scaler_reset_out & out_reset  & out_dat_almost_empty & fifo_wr_count,
+                mon_ctrl => fifo_wr_disable,
+                
 				-- Control interface
 				CTRL_CMD_IN_DAT   => CMD_DAT(MODULE_SCALER_ADDR),
 				CTRL_CMD_IN_RDY   => CMD_RDY(MODULE_SCALER_ADDR),
@@ -693,6 +696,7 @@ begin
 				almost_full => fifo_almost_full,
 				almost_empty => fifo_almost_empty,
 				overflow => open, -- ignored because we consider almost_full to be an overflow, otherwise will never happen due to protection above
+				wr_count => fifo_wr_count,
 				rst => fifo_reset_in
 				);
 

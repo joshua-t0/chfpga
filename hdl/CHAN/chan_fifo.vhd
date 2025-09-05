@@ -161,6 +161,7 @@ begin
             signal fifo_dout: std_logic_vector(71 downto 0);
             --signal fifo_empty: std_logic;
             signal fifo_rst: std_logic;
+            signal fifo_wr_count: std_logic_vector(13 downto 0);
         begin
             ----------------------
             -- FIFO reset process.
@@ -181,11 +182,14 @@ begin
             m_axis_tlast <= fifo_dout(64);
             m_axis_tuser <= fifo_dout(64 + USER_WIDTH downto 65);
             m_axis_tvalid <= not empty;
+            wr_count <= fifo_wr_count(9 downto 0);
 
             -- FIFO36E2 is 512 words x 72 bits
             chan_fifo0 : FIFO36E2
                 generic map (
                     CLOCK_DOMAINS           => "INDEPENDENT", -- independent clock / asynchronous FIFO
+                    WRCOUNT_TYPE => "EXTENDED_DATACOUNT",
+                    RDCOUNT_TYPE => "EXTENDED_DATACOUNT",
                     PROG_EMPTY_THRESH       => ALMOST_EMPTY_THRESH_OFFSET, -- Sets the almost empty threshold (number of words from EMPTY)
                     PROG_FULL_THRESH        => 512 - ALMOST_FULL_THRESH_OFFSET, -- Almost full threshold on Ultrascale is an absolute value (not an offset from FULL)
                     READ_WIDTH              => 72, -- Sets data width to 4-36
@@ -204,6 +208,7 @@ begin
                     PROGFULL =>  almost_full,
                     WRERR    => overflow,
                     WRRSTBUSY => fifo_wr_rst_busy,
+--                    WRCOUNT => fifo_wr_count,
 
                     -- Read port
                     RDCLK    => m_axis_clk, -- 1-bit input: Read clock
@@ -213,6 +218,7 @@ begin
                     EMPTY    => empty, -- = not valid
                     PROGEMPTY => almost_empty,
                     RDRSTBUSY => fifo_rd_rst_busy,
+                    RDCOUNT => fifo_wr_count,
 
                     RST      => fifo_rst, -- synchronous to WRCLK
 
