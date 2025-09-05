@@ -3,7 +3,7 @@
 <!--                                                         -->
 <!-- Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.   -->
 
-<Project Version="7" Minor="61" Path="/home/icecorr/chfpga/xilinx_projects/chfpga_ice_corr16/chfpga_ice_corr16.xpr">
+<Project Version="7" Minor="61" Path="/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_corr16/chfpga_ice_corr16.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
     <Option Name="Id" Val="15122b86d3b949b5a5500de7da599c0b"/>
@@ -103,20 +103,6 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/PROBER_FRAME_FIFO/PROBER_FRAME_FIFO.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/PROBER_DATA_FIFO/PROBER_DATA_FIFO.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../../_Cores/KC705/SCALER_CMUL/SCALER_CMUL.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -130,56 +116,6 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/CHDIST_DATA_EMBED_FIFO/CHDIST_DATA_EMBED_FIFO.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-        <CompFileExtendedInfo CompFileName="CHDIST_DATA_EMBED_FIFO.xci" FileRelPathName="CHDIST_DATA_EMBED_FIFO/CHDIST_DATA_EMBED_FIFO.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/CHDIST_FRAME_FIFO/CHDIST_FRAME_FIFO.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-        <CompFileExtendedInfo CompFileName="CHDIST_FRAME_FIFO.xci" FileRelPathName="CHDIST_FRAME_FIFO/CHDIST_FRAME_FIFO.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/CHDIST_SCALER_FLAGS_FIFO/CHDIST_SCALER_FLAGS_FIFO.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-        <CompFileExtendedInfo CompFileName="CHDIST_SCALER_FLAGS_FIFO.xci" FileRelPathName="CHDIST_SCALER_FLAGS_FIFO/CHDIST_SCALER_FLAGS_FIFO.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/MASK_RAM/MASK_RAM.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-        <CompFileExtendedInfo CompFileName="MASK_RAM.xci" FileRelPathName="MASK_RAM_ooc.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/SHUFFLE_CROSSBAR_ALIGN_FIFO/SHUFFLE_CROSSBAR_ALIGN_FIFO.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-        <CompFileExtendedInfo CompFileName="SHUFFLE_CROSSBAR_ALIGN_FIFO.xci" FileRelPathName="SHUFFLE_CROSSBAR_ALIGN_FIFO/SHUFFLE_CROSSBAR_ALIGN_FIFO.xdc">
-          <Attr Name="UsedInImplementation" Val="0"/>
-        </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../_Cores/KC705/ADCDAQ_FIFO/ADCDAQ_FIFO.xci">
         <FileInfo>
@@ -315,24 +251,6 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/CROSSBAR/CHAN_ALIGN.vhd">
-        <FileInfo SFType="VHDL2008">
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/CROSSBAR/CHAN_BIN_SEL.vhd">
-        <FileInfo SFType="VHDL2008">
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/CROSSBAR/CHAN_CROSSBAR.vhd">
-        <FileInfo SFType="VHDL2008">
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../../hdl/CORR/CMAC44.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -453,7 +371,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/CROSSBAR/b_ct_engine.vhd">
+      <File Path="$PPRDIR/../../hdl/CROSSBAR/bct_engine.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -515,6 +433,13 @@
       </File>
       <File Path="$PPRDIR/../../hdl/chfpga_ice.vhd">
         <FileInfo SFType="VHDL2008">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../hdl/CROSSBAR/b_ct_engine.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
