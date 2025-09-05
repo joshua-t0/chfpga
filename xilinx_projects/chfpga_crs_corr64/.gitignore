@@ -1,0 +1,4 @@
+# Allow srcs folder
+!*.srcs/
+# Allow srcs subfolders
+!*.srcs/**/
