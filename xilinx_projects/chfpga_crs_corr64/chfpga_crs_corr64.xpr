@@ -463,14 +463,12 @@
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedInSteps" Val="synth_1"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../chfpga_zcu111/chfpga_zcu111.srcs/utils_1/imports/impl_1/chfpga_crs_postroute_physopted.rqs">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedInSteps" Val="impl_1"/>
           <Attr Name="AutoRqs" Val="1"/>
         </FileInfo>
       </File>
@@ -478,7 +476,6 @@
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedInSteps" Val="impl_1"/>
           <Attr Name="AutoRqs" Val="1"/>
         </FileInfo>
       </File>
@@ -568,14 +565,16 @@
   <Runs Version="1" Minor="19">
     <Run Id="synth_1" Type="Ft3:Synth" SrcSet="sources_1" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Higher performance designs, resource sharing is turned off, the global fanout guide is set to a lower number, FSM extraction forced to one-hot, LUT combining is disabled, equivalent registers are preserved, SRL are inferred  with a larger threshold" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="true" State="current" Dir="$PRUNDIR/synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PPRDIR/../chfpga_zcu111/chfpga_zcu111.srcs/utils_1/imports/synth_1" AutoRQSDir="$PPRDIR/../chfpga_zcu111/chfpga_zcu111.srcs/utils_1/imports/synth_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Flow_PerfOptimized_high" Flow="Vivado Synthesis 2022"/>
+        <StratHandle Name="Flow_PerfOptimized_high" Flow="Vivado Synthesis 2022">
+          <Desc>Higher performance designs, resource sharing is turned off, the global fanout guide is set to a lower number, FSM extraction forced to one-hot, LUT combining is disabled, equivalent registers are preserved, SRL are inferred  with a larger threshold</Desc>
+        </StratHandle>
         <Step Id="synth_design">
           <Option Id="Assert">1</Option>
           <Option Id="KeepEquivalentRegisters">1</Option>
-          <Option Id="ShregMinSize">5</Option>
           <Option Id="NoCombineLuts">1</Option>
-          <Option Id="ResourceSharing">2</Option>
           <Option Id="Directive">7</Option>
+          <Option Id="ResourceSharing">2</Option>
+          <Option Id="ShregMinSize">5</Option>
           <Option Id="FsmExtraction">1</Option>
         </Step>
       </Strategy>
@@ -583,134 +582,150 @@
       <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2022"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles>
-        <RQSFilePath>$PPRDIR/rqs_report.rqs</RQSFilePath>
+        <RQSFilePath/>
       </RQSFiles>
     </Run>
-    <Run Id="pfb_fft_bitgrowth_0_synth_1" Type="Ft3:Synth" SrcSet="pfb_fft_bitgrowth_0" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="pfb_fft_bitgrowth_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/pfb_fft_bitgrowth_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PPRDIR/../chfpga_crs_corr8/chfpga_crs_corr8.srcs/utils_1/imports/pfb_fft_bitgrowth_0_synth_1" AutoRQSDir="$PPRDIR/../chfpga_crs_corr8/chfpga_crs_corr8.srcs/utils_1/imports/pfb_fft_bitgrowth_0_synth_1">
+    <Run Id="pfb_fft_bitgrowth_0_synth_1" Type="Ft3:Synth" SrcSet="pfb_fft_bitgrowth_0" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="pfb_fft_bitgrowth_0" Description="Higher performance designs, resource sharing is turned off, the global fanout guide is set to a lower number, FSM extraction forced to one-hot, LUT combining is disabled, equivalent registers are preserved, SRL are inferred  with a larger threshold" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/pfb_fft_bitgrowth_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PPRDIR/../chfpga_crs_corr8/chfpga_crs_corr8.srcs/utils_1/imports/pfb_fft_bitgrowth_0_synth_1" AutoRQSDir="$PPRDIR/../chfpga_crs_corr8/chfpga_crs_corr8.srcs/utils_1/imports/pfb_fft_bitgrowth_0_synth_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022"/>
-        <Step Id="synth_design"/>
+        <StratHandle Name="Flow_PerfOptimized_high" Flow="Vivado Synthesis 2022">
+          <Desc>Higher performance designs, resource sharing is turned off, the global fanout guide is set to a lower number, FSM extraction forced to one-hot, LUT combining is disabled, equivalent registers are preserved, SRL are inferred  with a larger threshold</Desc>
+        </StratHandle>
+        <Step Id="synth_design">
+          <Option Id="KeepEquivalentRegisters">1</Option>
+          <Option Id="NoCombineLuts">1</Option>
+          <Option Id="Directive">7</Option>
+          <Option Id="ResourceSharing">2</Option>
+          <Option Id="ShregMinSize">5</Option>
+          <Option Id="FsmExtraction">1</Option>
+        </Step>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2022"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="impl_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Ignore timing constraints for placing Block RAM and DSPs, use wirelength instead, and perform aggressive replication of high fanout drivers." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/impl_1" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PPRDIR/../sifpga_crs/impl_1" AutoRQS="true" AutoRQSDir="$PPRDIR/../chfpga_zcu111/chfpga_zcu111.srcs/utils_1/imports/impl_1">
+    <Run Id="impl_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Similar to Peformance_Explore, but enables the physical optimization step (phys_opt_design) with the Explore directive after routing." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/impl_1" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PPRDIR/../sifpga_crs/impl_1" AutoRQSDir="$PPRDIR/../chfpga_zcu111/chfpga_zcu111.srcs/utils_1/imports/impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Performance_WLBlockPlacementFanoutOpt" Flow="Vivado Implementation 2022"/>
+        <StratHandle Name="Performance_ExplorePostRoutePhysOpt" Flow="Vivado Implementation 2022">
+          <Desc>Similar to Peformance_Explore, but enables the physical optimization step (phys_opt_design) with the Explore directive after routing.</Desc>
+        </StratHandle>
         <Step Id="init_design"/>
-        <Step Id="opt_design"/>
+        <Step Id="opt_design">
+          <Option Id="Directive">0</Option>
+        </Step>
         <Step Id="power_opt_design"/>
         <Step Id="place_design">
-          <Option Id="Directive">1</Option>
+          <Option Id="Directive">0</Option>
         </Step>
         <Step Id="post_place_power_opt_design"/>
         <Step Id="phys_opt_design">
-          <Option Id="Directive">4</Option>
+          <Option Id="Directive">0</Option>
         </Step>
         <Step Id="route_design">
           <Option Id="Directive">0</Option>
+          <Option Id="MoreOptsStr"><![CDATA[-tns_cleanup]]></Option>
         </Step>
-        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="post_route_phys_opt_design" EnableStepBool="1">
+          <Option Id="Directive">0</Option>
+        </Step>
         <Step Id="write_bitstream" PostStepTclHook="$PPRDIR/rename_bitstream.tcl"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Timing Closure Reports" Flow="Vivado Implementation 2022" CtrlBit="true">
-        <ReportConfig DisplayName="Qor Suggestions" Name="impl_1_init_report_qor_suggestions_flow" Spec="report_qor_suggestions" RunStep="init_design" ReportFile="init_report_qor_suggestions_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="Qor Suggestions" Name="impl_1_init_report_qor_suggestions_0" Spec="report_qor_suggestions" RunStep="init_design" ReportFile="init_report_qor_suggestions_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="of_objects" Type="" Value="\[get_qor_suggestions]"/>
         </ReportConfig>
-        <ReportConfig DisplayName="DRC - Opt Design" Name="impl_1_opt_report_drc_0" Spec="report_drc" RunStep="opt_design" ReportFile="opt_report_drc_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="DRC" Name="impl_1_opt_report_drc_0" Spec="report_drc" RunStep="opt_design" ReportFile="opt_report_drc_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="dummy_option" Type="string"/>
           <ReportConfigOutputOption Name="pb" Type="string" Value="opt_report_drc_0.pb"/>
           <ReportConfigOutputOption Name="rpx" Type="string" Value="opt_report_drc_0.rpx"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Utilization - Opt Design" Name="impl_1_opt_report_utilization_0" Spec="report_utilization" RunStep="opt_design" ReportFile="opt_report_utilization_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="Utilization" Name="impl_1_opt_report_utilization_0" Spec="report_utilization" RunStep="opt_design" ReportFile="opt_report_utilization_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="dummy_option" Type="string"/>
           <ReportConfigOutputOption Name="pb" Type="string" Value="opt_report_utilization_0.pb"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Methodolog - Opt Design" Name="impl_1_opt_report_methodology_0" Spec="report_methodology" RunStep="opt_design" ReportFile="opt_report_methodology_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="Methodology" Name="impl_1_opt_report_methodology_0" Spec="report_methodology" RunStep="opt_design" ReportFile="opt_report_methodology_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="dummy_option" Type="string"/>
           <ReportConfigOutputOption Name="pb" Type="string" Value="opt_report_methodology_0.pb"/>
           <ReportConfigOutputOption Name="rpx" Type="string" Value="opt_report_methodology_0.rpx"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Timing Summary - Opt Design" Name="impl_1_opt_report_timing_summary_0" Spec="report_timing_summary" RunStep="opt_design" ReportFile="opt_report_timing_summary_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="Timing Summary" Name="impl_1_opt_report_timing_summary_0" Spec="report_timing_summary" RunStep="opt_design" ReportFile="opt_report_timing_summary_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="max_paths" Type="" Value="10"/>
           <ReportConfigOption Name="report_unconstrained" Type="" Value="true"/>
           <ReportConfigOutputOption Name="pb" Type="string" Value="opt_report_timing_summary_0.pb"/>
           <ReportConfigOutputOption Name="rpx" Type="string" Value="opt_report_timing_summary_0.rpx"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Report On QoR Assessment - Opt Design" Name="impl_1_opt_report_qor_assessment_0" Spec="report_qor_assessment" RunStep="opt_design" ReportFile="opt_report_qor_assessment_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="Qor Assessment" Name="impl_1_opt_report_qor_assessment_0" Spec="report_qor_assessment" RunStep="opt_design" ReportFile="opt_report_qor_assessment_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="max_paths" Type="" Value="100"/>
         </ReportConfig>
-        <ReportConfig DisplayName="IO - Place Design" Name="impl_1_place_report_io_0" Spec="report_io" RunStep="place_design" ReportFile="place_report_io_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="IO" Name="impl_1_place_report_io_0" Spec="report_io" RunStep="place_design" ReportFile="place_report_io_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="dummy_option" Type="string"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Incremental Reuse - Place Design" Name="impl_1_place_report_incremental_reuse_0" Spec="report_incremental_reuse" RunStep="place_design" ReportFile="place_report_incremental_reuse_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="Incremental Reuse" Name="impl_1_place_report_incremental_reuse_0" Spec="report_incremental_reuse" RunStep="place_design" ReportFile="place_report_incremental_reuse_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="dummy_option" Type="string"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Timing Summary - Place Design" Name="impl_1_place_report_timing_summary_0" Spec="report_timing_summary" RunStep="place_design" ReportFile="place_report_timing_summary_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="Timing Summary" Name="impl_1_place_report_timing_summary_0" Spec="report_timing_summary" RunStep="place_design" ReportFile="place_report_timing_summary_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="max_paths" Type="" Value="10"/>
           <ReportConfigOption Name="report_unconstrained" Type="" Value="true"/>
           <ReportConfigOutputOption Name="pb" Type="string" Value="place_report_timing_summary_0.pb"/>
           <ReportConfigOutputOption Name="rpx" Type="string" Value="place_report_timing_summary_0.rpx"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Report On QoR Assessment - Place Design" Name="impl_1_place_report_qor_assessment_0" Spec="report_qor_assessment" RunStep="place_design" ReportFile="place_report_qor_assessment_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="Qor Assessment" Name="impl_1_place_report_qor_assessment_0" Spec="report_qor_assessment" RunStep="place_design" ReportFile="place_report_qor_assessment_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="max_paths" Type="" Value="100"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Timing Summary - Post-Place Phys Opt Design" Name="impl_1_phys_opt_report_timing_summary_0" Spec="report_timing_summary" RunStep="phys_opt_design" ReportFile="phys_opt_report_timing_summary_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="Timing Summary" Name="impl_1_phys_opt_report_timing_summary_0" Spec="report_timing_summary" RunStep="phys_opt_design" ReportFile="phys_opt_report_timing_summary_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="max_paths" Type="" Value="10"/>
           <ReportConfigOption Name="report_unconstrained" Type="" Value="true"/>
           <ReportConfigOutputOption Name="pb" Type="string" Value="phys_opt_report_timing_summary_0.pb"/>
           <ReportConfigOutputOption Name="rpx" Type="string" Value="phys_opt_report_timing_summary_0.rpx"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Design Analysis - Post-Place Phys Opt Design" Name="impl_1_phys_opt_report_design_analysis_0" Spec="report_design_analysis" RunStep="phys_opt_design" ReportFile="phys_opt_report_design_analysis_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="Design Analysis" Name="impl_1_phys_opt_report_design_analysis_0" Spec="report_design_analysis" RunStep="phys_opt_design" ReportFile="phys_opt_report_design_analysis_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="congestion" Type="" Value="true"/>
           <ReportConfigOption Name="timing" Type="" Value="true"/>
           <ReportConfigOption Name="logic_level_distribution" Type="" Value="true"/>
           <ReportConfigOption Name="max_paths" Type="" Value="100"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Utilization - Route Design" Name="impl_1_route_report_utilization_0" Spec="report_utilization" RunStep="route_design" ReportFile="route_report_utilization_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="Utilization" Name="impl_1_route_report_utilization_0" Spec="report_utilization" RunStep="route_design" ReportFile="route_report_utilization_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="dummy_option" Type="string"/>
           <ReportConfigOutputOption Name="pb" Type="string" Value="route_report_utilization_0.pb"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Clock Utilization - Route Design" Name="impl_1_route_report_clock_utilization_0" Spec="report_clock_utilization" RunStep="route_design" ReportFile="route_report_clock_utilization_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="Clock Utilization" Name="impl_1_route_report_clock_utilization_0" Spec="report_clock_utilization" RunStep="route_design" ReportFile="route_report_clock_utilization_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="dummy_option" Type="string"/>
         </ReportConfig>
-        <ReportConfig DisplayName="DRC - Route Design" Name="impl_1_route_report_drc_0" Spec="report_drc" RunStep="route_design" ReportFile="route_report_drc_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="DRC" Name="impl_1_route_report_drc_0" Spec="report_drc" RunStep="route_design" ReportFile="route_report_drc_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="dummy_option" Type="string"/>
           <ReportConfigOutputOption Name="pb" Type="string" Value="route_report_drc_0.pb"/>
           <ReportConfigOutputOption Name="rpx" Type="string" Value="route_report_drc_0.rpx"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Power - Route Design" Name="impl_1_route_report_power_0" Spec="report_power" RunStep="route_design" ReportFile="route_report_power_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="Power" Name="impl_1_route_report_power_0" Spec="report_power" RunStep="route_design" ReportFile="route_report_power_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="dummy_option" Type="string"/>
           <ReportConfigOutputOption Name="pb" Type="string" Value="route_report_power_summary_0.pb"/>
           <ReportConfigOutputOption Name="rpx" Type="string" Value="route_report_power_0.rpx"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Route Status - Route Design" Name="impl_1_route_report_route_status_0" Spec="report_route_status" RunStep="route_design" ReportFile="route_report_route_status_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="Route Status" Name="impl_1_route_report_route_status_0" Spec="report_route_status" RunStep="route_design" ReportFile="route_report_route_status_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="dummy_option" Type="string"/>
           <ReportConfigOutputOption Name="pb" Type="string" Value="route_report_route_status_0.pb"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Timing Summary - Route Design" Name="impl_1_route_report_timing_summary_0" Spec="report_timing_summary" RunStep="route_design" ReportFile="route_report_timing_summary_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="Timing Summary" Name="impl_1_route_report_timing_summary_0" Spec="report_timing_summary" RunStep="route_design" ReportFile="route_report_timing_summary_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="max_paths" Type="" Value="10"/>
           <ReportConfigOption Name="report_unconstrained" Type="" Value="true"/>
           <ReportConfigOption Name="warn_on_violation" Type="" Value="true"/>
           <ReportConfigOutputOption Name="pb" Type="string" Value="route_report_timing_summary_0.pb"/>
           <ReportConfigOutputOption Name="rpx" Type="string" Value="route_report_timing_summary_0.rpx"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Design Analysis - Route Design" Name="impl_1_route_report_design_analysis_0" Spec="report_design_analysis" RunStep="route_design" ReportFile="route_report_design_analysis_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="Design Analysis" Name="impl_1_route_report_design_analysis_0" Spec="report_design_analysis" RunStep="route_design" ReportFile="route_report_design_analysis_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="congestion" Type="" Value="true"/>
           <ReportConfigOption Name="timing" Type="" Value="true"/>
           <ReportConfigOption Name="logic_level_distribution" Type="" Value="true"/>
           <ReportConfigOption Name="max_paths" Type="" Value="100"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Qor Suggestions - Route Design" Name="impl_1_route_report_qor_suggestions_0" Spec="report_qor_suggestions" RunStep="route_design" ReportFile="route_report_qor_suggestions_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="Qor Suggestions" Name="impl_1_route_report_qor_suggestions_0" Spec="report_qor_suggestions" RunStep="route_design" ReportFile="route_report_qor_suggestions_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="max_paths" Type="" Value="100"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Incremental Reuse - Route Design" Name="impl_1_route_report_incremental_reuse_0" Spec="report_incremental_reuse" RunStep="route_design" ReportFile="route_report_incremental_reuse_0.rpt" Version="1" Minor="0">
+        <ReportConfig DisplayName="Incremental Reuse" Name="impl_1_route_report_incremental_reuse_0" Spec="report_incremental_reuse" RunStep="route_design" ReportFile="route_report_incremental_reuse_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="dummy_option" Type="string"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Bus Skew - Route Design" Name="impl_1_route_report_bus_skew_0" Spec="report_bus_skew" RunStep="route_design" ReportFile="route_report_bus_skew_0.rpt" Version="1" Minor="1">
+        <ReportConfig DisplayName="Bus Skew" Name="impl_1_route_report_bus_skew_0" Spec="report_bus_skew" RunStep="route_design" ReportFile="route_report_bus_skew_0.rpt" Version="1" Minor="1">
           <ReportConfigOption Name="warn_on_violation" Type="" Value="true"/>
           <ReportConfigOutputOption Name="pb" Type="string" Value="route_report_bus_skew_0.pb"/>
           <ReportConfigOutputOption Name="rpx" Type="string" Value="route_report_bus_skew_0.rpx"/>
@@ -718,28 +733,28 @@
         <ReportConfig DisplayName="implementation_log" Name="impl_1_route_implementation_log_0" Spec="" RunStep="route_design" ReportFile="chfpga_crs.vdi">
           <ReportConfigOption Name="dummy_option" Type="string"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Timing Summary - Post-Route Phys Opt Design" Name="impl_1_post_route_phys_opt_report_timing_summary_0" Spec="report_timing_summary" RunStep="post_route_phys_opt_design" Version="1" Minor="0">
+        <ReportConfig DisplayName="Timing Summary" Name="impl_1_post_route_phys_opt_report_timing_summary_0" Spec="report_timing_summary" RunStep="post_route_phys_opt_design" ReportFile="post_route_phys_opt_report_timing_summary_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="max_paths" Type="" Value="10"/>
           <ReportConfigOption Name="report_unconstrained" Type="" Value="true"/>
           <ReportConfigOption Name="warn_on_violation" Type="" Value="true"/>
-          <ReportConfigOutputOption Name="pb" Type="string" Value=""/>
-          <ReportConfigOutputOption Name="rpx" Type="string" Value=""/>
+          <ReportConfigOutputOption Name="pb" Type="string" Value="post_route_phys_opt_report_timing_summary_0.pb"/>
+          <ReportConfigOutputOption Name="rpx" Type="string" Value="post_route_phys_opt_report_timing_summary_0.rpx"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Bus Skew - Post-Route Phys Opt Design" Name="impl_1_post_route_phys_opt_report_bus_skew_0" Spec="report_bus_skew" RunStep="post_route_phys_opt_design" Version="1" Minor="1">
+        <ReportConfig DisplayName="Bus Skew" Name="impl_1_post_route_phys_opt_report_bus_skew_0" Spec="report_bus_skew" RunStep="post_route_phys_opt_design" ReportFile="post_route_phys_opt_report_bus_skew_0.rpt" Version="1" Minor="1">
           <ReportConfigOption Name="warn_on_violation" Type="" Value="true"/>
-          <ReportConfigOutputOption Name="pb" Type="string" Value=""/>
-          <ReportConfigOutputOption Name="rpx" Type="string" Value=""/>
+          <ReportConfigOutputOption Name="pb" Type="string" Value="post_route_phys_opt_report_bus_skew_0.pb"/>
+          <ReportConfigOutputOption Name="rpx" Type="string" Value="post_route_phys_opt_report_bus_skew_0.rpx"/>
         </ReportConfig>
         <ReportConfig DisplayName="report_webtalk" Name="impl_1_bitstream_report_webtalk_0" Spec="" RunStep="write_bitstream" ReportFile="usage_statistics_webtalk.html">
           <ReportConfigOption Name="dummy_option" Type="string"/>
         </ReportConfig>
-        <ReportConfig DisplayName="implementation_log" Name="impl_1_bitstream_implementation_log_0" Spec="" RunStep="write_bitstream">
+        <ReportConfig DisplayName="implementation_log" Name="impl_1_bitstream_implementation_log_0" Spec="" RunStep="write_bitstream" ReportFile="chfpga_crs.vdi">
           <ReportConfigOption Name="dummy_option" Type="string"/>
         </ReportConfig>
       </ReportStrategy>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles>
-        <RQSFilePath>$PPRDIR/../chfpga_zcu111/chfpga_zcu111.srcs/utils_1/imports/impl_1/chfpga_crs_routed.rqs</RQSFilePath>
+        <RQSFilePath/>
       </RQSFiles>
     </Run>
     <Run Id="pfb_fft_bitgrowth_0_impl_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="pfb_fft_bitgrowth_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="pfb_fft_bitgrowth_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PPRDIR/../chfpga_crs_corr8/chfpga_crs_corr8.srcs/utils_1/imports/pfb_fft_bitgrowth_0_impl_1" AutoRQSDir="$PPRDIR/../chfpga_crs_corr8/chfpga_crs_corr8.srcs/utils_1/imports/pfb_fft_bitgrowth_0_impl_1">
@@ -759,7 +774,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="i_impl_1_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/i_impl_1_1" SynthRun="synth_1" ReferenceRun="impl_1" CustomProperties="{ WRITE_BITSTREAM.TCL.POST {/home/jfcliche/chfpga/xilinx_projects/chfpga_crs_corr64/rename_bitstream.tcl} file_properties {WRITE_BITSTREAM.TCL.POST}}" IncludeInArchive="true" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1" LaunchOptions="-jobs 8 " LinkedMLRuns="i_impl_1_1_ml_1 i_impl_1_1_ml_2 i_impl_1_1_ml_3" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1">
+    <Run Id="i_impl_1_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="synth_1" ReferenceRun="impl_1" CustomProperties="{ WRITE_BITSTREAM.TCL.POST {/home/jfcliche/chfpga/xilinx_projects/chfpga_crs_corr64/rename_bitstream.tcl} file_properties {WRITE_BITSTREAM.TCL.POST}}" IncludeInArchive="true" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1" LaunchOptions="-jobs 8 " LinkedMLRuns="i_impl_1_1_ml_1 i_impl_1_1_ml_2 i_impl_1_1_ml_3" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado IDR Flow Defaults" Flow="Vivado IDR Flow 2022"/>
         <Step Id="idr_flow_rqs"/>
@@ -767,16 +782,13 @@
         <Step Id="idr_flow_incr_rqs"/>
         <Step Id="write_bitstream"/>
       </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado IDR Flow Default Reports" Flow="Vivado IDR Flow 2022"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="i_impl_1_1_rqs" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/i_impl_1_1_rqs" SynthRun="synth_1" IncludeInArchive="true" IsChild="true" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1_rqs" ParentHierarchy="i_impl_1_1:idr_flow_rqs" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1_rqs">
+    <Run Id="i_impl_1_1_rqs" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="synth_1" IncludeInArchive="true" IsChild="true" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1_rqs" ParentHierarchy="i_impl_1_1:idr_flow_rqs" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1_rqs">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado RQS Implementation Defaults" Flow="Vivado RQS Implementation 2022">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado RQS Implementation Defaults" Flow="Vivado RQS Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="cleanup_xdc"/>
         <Step Id="cleanup_utilization"/>
@@ -784,16 +796,13 @@
         <Step Id="cleanup_congestion"/>
         <Step Id="cleanup_timing"/>
       </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado RQS Implementation Default Reports" Flow="Vivado RQS Implementation 2022"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="i_impl_1_1_ml_strat_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/i_impl_1_1_ml_strat_1" SynthRun="synth_1" IncludeInArchive="true" IsChild="true" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_strat_1" ParentHierarchy="i_impl_1_1:idr_flow_ml" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_strat_1">
+    <Run Id="i_impl_1_1_ml_strat_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="synth_1" IncludeInArchive="true" IsChild="true" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_strat_1" ParentHierarchy="i_impl_1_1:idr_flow_ml" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_strat_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
@@ -804,16 +813,13 @@
         <Step Id="post_route_phys_opt_design"/>
         <Step Id="write_bitstream" PostStepTclHook="$PPRDIR/rename_bitstream.tcl"/>
       </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2022"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="i_impl_1_1_ml_strat_2" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/i_impl_1_1_ml_strat_2" SynthRun="synth_1" IncludeInArchive="true" IsChild="true" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_strat_2" ParentHierarchy="i_impl_1_1:idr_flow_ml" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_strat_2">
+    <Run Id="i_impl_1_1_ml_strat_2" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="synth_1" IncludeInArchive="true" IsChild="true" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_strat_2" ParentHierarchy="i_impl_1_1:idr_flow_ml" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_strat_2">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
@@ -824,16 +830,13 @@
         <Step Id="post_route_phys_opt_design"/>
         <Step Id="write_bitstream" PostStepTclHook="$PPRDIR/rename_bitstream.tcl"/>
       </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2022"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="i_impl_1_1_ml_strat_3" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/i_impl_1_1_ml_strat_3" SynthRun="synth_1" IncludeInArchive="true" IsChild="true" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_strat_3" ParentHierarchy="i_impl_1_1:idr_flow_ml" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_strat_3">
+    <Run Id="i_impl_1_1_ml_strat_3" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="synth_1" IncludeInArchive="true" IsChild="true" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_strat_3" ParentHierarchy="i_impl_1_1:idr_flow_ml" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_strat_3">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
@@ -844,26 +847,22 @@
         <Step Id="post_route_phys_opt_design"/>
         <Step Id="write_bitstream" PostStepTclHook="$PPRDIR/rename_bitstream.tcl"/>
       </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2022"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="i_impl_1_1_eco_flow" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/i_impl_1_1_eco_flow" SynthRun="synth_1" IncludeInArchive="true" IsChild="true" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1_eco_flow" ParentHierarchy="i_impl_1_1:idr_flow_incr_rqs" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1_eco_flow">
+    <Run Id="i_impl_1_1_eco_flow" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="synth_1" IncludeInArchive="true" IsChild="true" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1_eco_flow" ParentHierarchy="i_impl_1_1:idr_flow_incr_rqs" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1_eco_flow">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Last Mile Implementation Defaults" Flow="Vivado Last Mile Implementation 2022"/>
         <Step Id="setup_eco_flow"/>
       </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Last Mile Implementation Default Reports" Flow="Vivado Last Mile Implementation 2022"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="impl_ml" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/impl_ml" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/impl_ml" AutoRQSDir="$PSRCDIR/utils_1/imports/impl_ml">
+    <Run Id="impl_ml" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/impl_ml" AutoRQSDir="$PSRCDIR/utils_1/imports/impl_ml">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design">
           <Option Id="Directive">7</Option>
@@ -884,7 +883,6 @@
         </Step>
         <Step Id="write_bitstream" PostStepTclHook="$PSRCDIR/utils_1/impl_ml/rename_bitstream.tcl"/>
       </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2022" CtrlBit="true">
         <ReportConfig DisplayName="Timing Summary - Design Initialization" Name="impl_ml_init_report_timing_summary_0" Spec="report_timing_summary" RunStep="init_design" Version="1" Minor="0" IsDisabled="true">
           <ReportConfigOption Name="max_paths" Type="" Value="10"/>
@@ -897,8 +895,8 @@
         </ReportConfig>
         <ReportConfig DisplayName="DRC - Opt Design" Name="impl_ml_opt_report_drc_0" Spec="report_drc" RunStep="opt_design" ReportFile="chfpga_crs_drc_opted.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="dummy_option" Type="string"/>
-          <ReportConfigOutputOption Name="pb" Type="string" Value="chfpga_crs_drc_opted.pb"/>
-          <ReportConfigOutputOption Name="rpx" Type="string" Value="chfpga_crs_drc_opted.rpx"/>
+          <ReportConfigOutputOption Name="pb" Type="string" Value=""/>
+          <ReportConfigOutputOption Name="rpx" Type="string" Value=""/>
         </ReportConfig>
         <ReportConfig DisplayName="Timing Summary - Opt Design" Name="impl_ml_opt_report_timing_summary_0" Spec="report_timing_summary" RunStep="opt_design" Version="1" Minor="0" IsDisabled="true">
           <ReportConfigOption Name="max_paths" Type="" Value="10"/>
@@ -917,7 +915,7 @@
         </ReportConfig>
         <ReportConfig DisplayName="Utilization - Place Design" Name="impl_ml_place_report_utilization_0" Spec="report_utilization" RunStep="place_design" ReportFile="chfpga_crs_utilization_placed.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="dummy_option" Type="string"/>
-          <ReportConfigOutputOption Name="pb" Type="string" Value="chfpga_crs_utilization_placed.pb"/>
+          <ReportConfigOutputOption Name="pb" Type="string" Value=""/>
         </ReportConfig>
         <ReportConfig DisplayName="Control Sets - Place Design" Name="impl_ml_place_report_control_sets_0" Spec="report_control_sets" RunStep="place_design" ReportFile="chfpga_crs_control_sets_placed.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="verbose" Type="" Value="true"/>
@@ -948,28 +946,28 @@
         </ReportConfig>
         <ReportConfig DisplayName="DRC - Route Design" Name="impl_ml_route_report_drc_0" Spec="report_drc" RunStep="route_design" ReportFile="chfpga_crs_drc_routed.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="dummy_option" Type="string"/>
-          <ReportConfigOutputOption Name="pb" Type="string" Value="chfpga_crs_drc_routed.pb"/>
-          <ReportConfigOutputOption Name="rpx" Type="string" Value="chfpga_crs_drc_routed.rpx"/>
+          <ReportConfigOutputOption Name="pb" Type="string" Value=""/>
+          <ReportConfigOutputOption Name="rpx" Type="string" Value=""/>
         </ReportConfig>
         <ReportConfig DisplayName="Methodology - Route Design" Name="impl_ml_route_report_methodology_0" Spec="report_methodology" RunStep="route_design" ReportFile="chfpga_crs_methodology_drc_routed.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="dummy_option" Type="string"/>
-          <ReportConfigOutputOption Name="pb" Type="string" Value="chfpga_crs_methodology_drc_routed.pb"/>
-          <ReportConfigOutputOption Name="rpx" Type="string" Value="chfpga_crs_methodology_drc_routed.rpx"/>
+          <ReportConfigOutputOption Name="pb" Type="string" Value=""/>
+          <ReportConfigOutputOption Name="rpx" Type="string" Value=""/>
         </ReportConfig>
         <ReportConfig DisplayName="Power - Route Design" Name="impl_ml_route_report_power_0" Spec="report_power" RunStep="route_design" ReportFile="chfpga_crs_power_routed.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="dummy_option" Type="string"/>
-          <ReportConfigOutputOption Name="pb" Type="string" Value="chfpga_crs_power_summary_routed.pb"/>
-          <ReportConfigOutputOption Name="rpx" Type="string" Value="chfpga_crs_power_routed.rpx"/>
+          <ReportConfigOutputOption Name="pb" Type="string" Value=""/>
+          <ReportConfigOutputOption Name="rpx" Type="string" Value=""/>
         </ReportConfig>
         <ReportConfig DisplayName="Route Status - Route Design" Name="impl_ml_route_report_route_status_0" Spec="report_route_status" RunStep="route_design" ReportFile="chfpga_crs_route_status.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="dummy_option" Type="string"/>
-          <ReportConfigOutputOption Name="pb" Type="string" Value="chfpga_crs_route_status.pb"/>
+          <ReportConfigOutputOption Name="pb" Type="string" Value=""/>
         </ReportConfig>
         <ReportConfig DisplayName="Timing Summary - Route Design" Name="impl_ml_route_report_timing_summary_0" Spec="report_timing_summary" RunStep="route_design" ReportFile="chfpga_crs_timing_summary_routed.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="max_paths" Type="" Value="10"/>
           <ReportConfigOption Name="report_unconstrained" Type="" Value="true"/>
-          <ReportConfigOutputOption Name="pb" Type="string" Value="chfpga_crs_timing_summary_routed.pb"/>
-          <ReportConfigOutputOption Name="rpx" Type="string" Value="chfpga_crs_timing_summary_routed.rpx"/>
+          <ReportConfigOutputOption Name="pb" Type="string" Value=""/>
+          <ReportConfigOutputOption Name="rpx" Type="string" Value=""/>
         </ReportConfig>
         <ReportConfig DisplayName="Incremental Reuse - Route Design" Name="impl_ml_route_report_incremental_reuse_0" Spec="report_incremental_reuse" RunStep="route_design" ReportFile="chfpga_crs_incremental_reuse_routed.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="dummy_option" Type="string"/>
@@ -979,8 +977,8 @@
         </ReportConfig>
         <ReportConfig DisplayName="Bus Skew - Route Design" Name="impl_ml_route_report_bus_skew_0" Spec="report_bus_skew" RunStep="route_design" ReportFile="chfpga_crs_bus_skew_routed.rpt" Version="1" Minor="1">
           <ReportConfigOption Name="warn_on_violation" Type="" Value="true"/>
-          <ReportConfigOutputOption Name="pb" Type="string" Value="chfpga_crs_bus_skew_routed.pb"/>
-          <ReportConfigOutputOption Name="rpx" Type="string" Value="chfpga_crs_bus_skew_routed.rpx"/>
+          <ReportConfigOutputOption Name="pb" Type="string" Value=""/>
+          <ReportConfigOutputOption Name="rpx" Type="string" Value=""/>
         </ReportConfig>
         <ReportConfig DisplayName="implementation_log" Name="impl_ml_route_implementation_log_0" Spec="" RunStep="route_design" ReportFile="chfpga_crs.vdi">
           <ReportConfigOption Name="dummy_option" Type="string"/>
@@ -989,13 +987,13 @@
           <ReportConfigOption Name="max_paths" Type="" Value="10"/>
           <ReportConfigOption Name="report_unconstrained" Type="" Value="true"/>
           <ReportConfigOption Name="warn_on_violation" Type="" Value="true"/>
-          <ReportConfigOutputOption Name="pb" Type="string" Value="chfpga_crs_timing_summary_postroute_physopted.pb"/>
-          <ReportConfigOutputOption Name="rpx" Type="string" Value="chfpga_crs_timing_summary_postroute_physopted.rpx"/>
+          <ReportConfigOutputOption Name="pb" Type="string" Value=""/>
+          <ReportConfigOutputOption Name="rpx" Type="string" Value=""/>
         </ReportConfig>
         <ReportConfig DisplayName="Bus Skew - Post-Route Phys Opt Design" Name="impl_ml_post_route_phys_opt_report_bus_skew_0" Spec="report_bus_skew" RunStep="post_route_phys_opt_design" ReportFile="chfpga_crs_bus_skew_postroute_physopted.rpt" Version="1" Minor="1">
           <ReportConfigOption Name="warn_on_violation" Type="" Value="true"/>
-          <ReportConfigOutputOption Name="pb" Type="string" Value="chfpga_crs_bus_skew_postroute_physopted.pb"/>
-          <ReportConfigOutputOption Name="rpx" Type="string" Value="chfpga_crs_bus_skew_postroute_physopted.rpx"/>
+          <ReportConfigOutputOption Name="pb" Type="string" Value=""/>
+          <ReportConfigOutputOption Name="rpx" Type="string" Value=""/>
         </ReportConfig>
         <ReportConfig DisplayName="report_webtalk" Name="impl_ml_bitstream_report_webtalk_0" Spec="" RunStep="write_bitstream" ReportFile="usage_statistics_webtalk.html">
           <ReportConfigOption Name="dummy_option" Type="string"/>
@@ -1012,9 +1010,7 @@
     </Run>
     <Run Id="i_impl_1_1_ml_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Uses multiple algorithms for optimization, placement, and routing to get potentially better results." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_1" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Performance_Explore" Flow="Vivado Implementation 2022">
-          <Desc>Uses multiple algorithms for optimization, placement, and routing to get potentially better results.</Desc>
-        </StratHandle>
+        <StratHandle Name="Performance_Explore" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design">
           <Option Id="Directive">7</Option>
@@ -1041,9 +1037,7 @@
     </Run>
     <Run Id="i_impl_1_1_ml_2" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Uses multiple algorithms for optimization, placement, and routing to get potentially better results." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_2" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_2">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Performance_Explore" Flow="Vivado Implementation 2022">
-          <Desc>Uses multiple algorithms for optimization, placement, and routing to get potentially better results.</Desc>
-        </StratHandle>
+        <StratHandle Name="Performance_Explore" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design">
           <Option Id="Directive">7</Option>
@@ -1070,9 +1064,7 @@
     </Run>
     <Run Id="i_impl_1_1_ml_3" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="constrs_1" Description="Uses multiple algorithms for optimization, placement, and routing to get potentially better results." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_3" AutoRQSDir="$PSRCDIR/utils_1/imports/i_impl_1_1_ml_3">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Performance_Explore" Flow="Vivado Implementation 2022">
-          <Desc>Uses multiple algorithms for optimization, placement, and routing to get potentially better results.</Desc>
-        </StratHandle>
+        <StratHandle Name="Performance_Explore" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design">
           <Option Id="Directive">7</Option>
