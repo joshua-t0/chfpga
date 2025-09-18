@@ -10,3 +10,4 @@ _ISE_Projects/
 *.mif
 vivado_pid*
 .venv
+*.swp
