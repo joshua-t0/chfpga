@@ -1,0 +1,24 @@
+HOOKS
+=====
+
+This directory contains post-receive hooks that allow you to set up a
+hair-shirted remote-build framework. Using this, you can trigger builds as
+follows:
+
+   $ git push buildserver:autobuild HEAD:chfpga_crs_corr64
+
+Setting Up
+----------
+
+1. On the build server, set up a bare repository endpoint that will receive
+   your push triggers:
+
+   $ git clone --bare git@bitbucket.org:winterlandcosmology/chfpgalite.git autobuild
+   $ cp /path/to/post-receive autobuild/hooks/post-receive
+   $ chmod 755 autobuild/hooks/post-receive
+
+2. On your development machine, try it out:
+
+   $ git push buildserver:autobuild HEAD:chfpga_crs_corr64
+
+   This invokes the "chfpga_crs_corr64" target on "buildserver".
