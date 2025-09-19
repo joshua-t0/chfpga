@@ -6,6 +6,7 @@ _ISE_Projects/
 .Xil
 *.git
 *.jou
+vivado*.log
 /*.log
 *.mif
 vivado_pid*
