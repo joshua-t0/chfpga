@@ -44,14 +44,12 @@ entity align64 is
 		s_axis_tvalid: in slv(0 to NUMBER_OF_LANES - 1);
 		s_axis_tdata: in slv_array(0 to NUMBER_OF_LANES - 1)(63 downto 0);
 		s_axis_tlast: in slv(0 to NUMBER_OF_LANES - 1);
-		s_axis_tuser: in slv4_array(0 to NUMBER_OF_LANES - 1) := (others => (others => '0'));
 		-- s_axis_tready: out std_logic_vector(0 to NUMBER_OF_LANES-1);
 
 		-- Output interface (non-blocking, i.e. always sends data)
 		m_axis_tvalid: out slv(0 to NUMBER_OF_LANES - 1);
 		m_axis_tdata: out slv_array(0 to NUMBER_OF_LANES - 1)(63 downto 0);
 		m_axis_tlast: out slv(0 to NUMBER_OF_LANES - 1);
-		m_axis_tuser: out slv4_array(0 to NUMBER_OF_LANES - 1);
 
 		m_axis_global_tvalid: out std_logic; -- Active high when data is present on the longest frame. Check the individual lane's tvalid to see if a lane ended up prematurely.
 		m_axis_global_tlast: out std_logic; -- Active high on the last word of the longest frame.
@@ -161,7 +159,6 @@ architecture impl of align64 is
 	signal data_fifo_count: slv10_array(0 to NUMBER_OF_LANES - 1);
 
 	signal fifo_tdata: slv64_array(0 to NUMBER_OF_LANES - 1);
-	signal fifo_tuser: slv4_array(0 to NUMBER_OF_LANES - 1);
 	signal fifo_tvalid: slv(0 to NUMBER_OF_LANES - 1);
 	signal fifo_tlast: slv(0 to NUMBER_OF_LANES - 1);
 	signal fifo_tfirst: slv(0 to NUMBER_OF_LANES - 1);
@@ -198,10 +195,6 @@ begin
 	--
 	fifogen: for i in 0 to NUMBER_OF_LANES - 1 generate
 
-		-- data_fifo_din(i)(35 downto 33) <= s_axis_tuser(i)(3 downto 1);
-		-- data_fifo_din(i)(32) <= s_axis_tlast(i);
-		-- data_fifo_din(i)(31 downto 0) <= s_axis_tdata(i);
-
 		-- Write the FIFO except when almost full so we has room to write the TLAST frame
 		data_fifo_wr_en(i) <= s_axis_tvalid(i) and ((not data_fifo_almost_full(i)) or s_axis_tlast(i));
 
@@ -232,13 +225,11 @@ begin
 				s_axis_tvalid => data_fifo_wr_en(i),
 				s_axis_tdata  => s_axis_tdata(i),
 				s_axis_tlast  => s_axis_tlast(i),
-				s_axis_tuser  => s_axis_tuser(i),
 
 
 				m_axis_tvalid => fifo_tvalid(i),
 				m_axis_tdata  => fifo_tdata(i),
 				m_axis_tlast  => fifo_tlast(i),
-				m_axis_tuser  => fifo_tuser(i),
 				m_axis_tready => read_en(i),
 
 				overflow    => fifo_overflow(i),
@@ -356,8 +347,6 @@ begin
 				m_axis_tvalid(i) <= all_valid and valid_lane(i); -- A transfer occurs only when all the data lines are valid.  all_valid is 1 when no lane is valid, but the second term implies that at least one lane (the current lane) is valid.
 				m_axis_tdata(i) <= fifo_tdata(i);
 				m_axis_tlast(i) <= fifo_tlast(i) and valid_lane(i); -- Set the last flag from te FIFO if the lane is still being sent. If it was interrupted early and data is being discarder, EOF will not appear wit global_tlast.
-				m_axis_tuser(i)(3 downto 1) <= fifo_tuser(i)(3 downto 1);
-				m_axis_tuser(i)(0) <= '0';
 			end loop;
 
 			m_axis_global_tvalid_int <= all_valid and valid_lane(0); -- There is valid data if any lane that should be sending data has valid data

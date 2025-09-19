@@ -33,18 +33,15 @@ use work.chFPGA_Package.ALL;
 entity align64_fifo is
 	generic (
 		DATA_WIDTH: integer         := 64;
-		USER_WIDTH: integer         := 4;
 		ALMOST_FULL_THRESH: integer := 511
 	);
 	port (
 		-- User AXI-Streaming data input (non-blocking)
 		s_axis_tdata: in std_logic_vector(DATA_WIDTH - 1 downto 0);
-		s_axis_tuser: in std_logic_vector(USER_WIDTH - 1 downto 0) := (others => '0');
 		s_axis_tlast: in std_logic;
 		s_axis_tvalid: in std_logic;
 
 		m_axis_tdata: out std_logic_vector(DATA_WIDTH - 1 downto 0);
-		m_axis_tuser: out std_logic_vector(USER_WIDTH - 1 downto 0);
 		m_axis_tlast: out std_logic;
 		m_axis_tready: in std_logic := '1';
 		m_axis_tvalid: out std_logic;
@@ -68,7 +65,6 @@ begin
 
 	wr_count      <= wr_count_wide(wr_count'RANGE);
 	m_axis_tvalid <= not empty;
-	m_axis_tuser  <= fifo_doutp(USER_WIDTH downto 1);
 	m_axis_tlast  <= fifo_doutp(0);
 	-- FIFO is implemented using the FIFO36E2 primitive because the XPM_FIFO macro does not support the embedded FIFO.
 	-- RST is synchronous to WR_CLK
@@ -121,7 +117,7 @@ begin
 			rdcount  => open,
 			-- Write Data: 32-bit (each) input: Write input data
 			din(DATA_WIDTH - 1 downto 0) => s_axis_tdata, -- 64-bit input: Data input
-			dinp                         => resize(s_axis_tuser & s_axis_tlast, 8) -- 8-bit input: Parity input
+			dinp                         => 7x"00" & s_axis_tlast -- 8-bit input: Parity input
 		);
 
 end architecture impl;
