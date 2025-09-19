@@ -52,10 +52,15 @@ set_property IOSTANDARD LVDS [get_ports sma_irig_p]
 set_input_delay -clock [get_clocks SYS_CLK] -max 0.015 [get_ports sma_irig_p]
 set_input_delay -clock [get_clocks SYS_CLK] -min -0.015 [get_ports sma_irig_p]
 
-# # Aux signal
-# set_property PACKAGE_PIN H11     [get_ports {sma_aux_p}]; # Bank  57 VCC1V8
+# AUX SMA
 
-# 10 MHz clock signal (copy fed to the HMC7044 input)
+# set_property PACKAGE_PIN H11     [get_ports {sma_aux_p}]; # Bank  57 VCC1V8
+set_property PACKAGE_PIN E6     [get_ports {sma_aux_drv}]; # Bank  87 VCC3V3
+set_property IOSTANDARD LVCMOS33 [get_ports {sma_aux_drv}]
+set_property SLEW FAST [get_ports {sma_aux_drv}]
+set_property DRIVE 16 [get_ports {sma_aux_drv}]
+
+# CLK10 SMA: 10 MHz clock signal (copy fed to the HMC7044 input)
 set_property PACKAGE_PIN J11 [get_ports sma_clk10_p]
 # set_property IOSTANDARD DIFF_SSTL18_I_DCI [get_ports sma_clk10_p]
 # set_property DQS_BIAS TRUE [get_ports sma_clk10_p]

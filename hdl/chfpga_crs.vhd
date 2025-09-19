@@ -173,6 +173,9 @@ entity chfpga_crs is
 		-- User connectors
 		smp: out std_logic_vector(0 to 3);
 
+		-- AUX signals
+		sma_aux_drv: out std_logic;
+
 		-- IRIG-B signals
 		sma_irig_p: in std_logic;
 		sma_irig_n: in std_logic;
@@ -557,6 +560,7 @@ begin
 	smp(3) <= pll_oscout_bufg; -- SMP7 (3rd form top), PLL OSCOUT 50 MHz VCXO
 	smp(2) <= sysclk_bufg;     -- SMP8 (4th from top), 10 MHz clock from programmable PLL
 
+	sma_aux_drv <= sma_out(1);
 
 	zynq: entity work.zynq_tcpipe_crs
 		port map (
