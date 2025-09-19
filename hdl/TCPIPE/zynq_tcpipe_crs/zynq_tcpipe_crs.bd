@@ -5,7 +5,7 @@
       "device": "xczu47dr-ffvg1517-1-i",
       "name": "zynq_tcpipe_crs",
       "rev_ctrl_bd_flag": "RevCtrlBdOff",
-      "synth_flow_mode": "Hierarchical",
+      "synth_flow_mode": "Singular",
       "tool_version": "2022.2",
       "validated": "true"
     },
@@ -5598,12 +5598,12 @@
           },
           "PSU__PROTECTION__FPD_SEGMENTS": {
             "value": [
-              "SA:0xFD1A0000; SIZE:1280; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware        |         SA:0xFD000000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write;",
-              "subsystemId:PMU Firmware        |         SA:0xFD010000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware        |         SA:0xFD020000; SIZE:64; UNIT:KB;",
-              "RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware        |         SA:0xFD030000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware        |        ",
-              "SA:0xFD040000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware        |         SA:0xFD050000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write;",
-              "subsystemId:PMU Firmware        |         SA:0xFD610000; SIZE:512; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware        |         SA:0xFD5D0000; SIZE:64; UNIT:KB;",
-              "RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware        |        SA:0xFD1A0000 ; SIZE:1280; UNIT:KB; RegionTZ:Secure ; WrAllowed:Read/Write; subsystemId:Secure Subsystem"
+              "SA:0xFD1A0000; SIZE:1280; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware         |          SA:0xFD000000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write;",
+              "subsystemId:PMU Firmware         |          SA:0xFD010000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware         |          SA:0xFD020000; SIZE:64; UNIT:KB;",
+              "RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware         |          SA:0xFD030000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware         |         ",
+              "SA:0xFD040000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware         |          SA:0xFD050000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write;",
+              "subsystemId:PMU Firmware         |          SA:0xFD610000; SIZE:512; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware         |          SA:0xFD5D0000; SIZE:64; UNIT:KB;",
+              "RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware         |         SA:0xFD1A0000 ; SIZE:1280; UNIT:KB; RegionTZ:Secure ; WrAllowed:Read/Write; subsystemId:Secure Subsystem"
             ]
           },
           "PSU__PROTECTION__LPD_SEGMENTS": {
@@ -6491,11 +6491,11 @@
       "rst_ps8_0_96M_peripheral_aresetn1": {
         "ports": [
           "rst_ps8_0_96M/peripheral_aresetn",
+          "bsb_rst_n",
           "axi_dma_0/axi_resetn",
           "axi_dma_1/axi_resetn",
           "system_ila_0/resetn",
-          "usp_rf_data_converter_0/s_axi_aresetn",
-          "bsb_rst_n"
+          "usp_rf_data_converter_0/s_axi_aresetn"
         ]
       },
       "rst_ps8_0_96M_peripheral_reset": {
@@ -6548,27 +6548,27 @@
       "zynq_ultra_ps_e_0_pl_clk0": {
         "ports": [
           "zynq_ultra_ps_e_0/pl_clk0",
+          "aclk",
           "axi_dma_0/s_axi_lite_aclk",
           "axi_dma_0/m_axi_mm2s_aclk",
           "axi_dma_0/m_axi_s2mm_aclk",
+          "axi_dma_1/s_axi_lite_aclk",
+          "axi_dma_1/m_axi_s2mm_aclk",
           "rst_ps8_0_96M/slowest_sync_clk",
           "smartconnect_0/aclk",
           "system_ila_0/clk",
           "usp_rf_data_converter_0/s_axi_aclk",
           "zynq_ultra_ps_e_0/maxihpm0_fpd_aclk",
           "zynq_ultra_ps_e_0/saxihp0_fpd_aclk",
-          "zynq_ultra_ps_e_0/saxihp1_fpd_aclk",
-          "aclk",
-          "axi_dma_1/s_axi_lite_aclk",
-          "axi_dma_1/m_axi_s2mm_aclk"
+          "zynq_ultra_ps_e_0/saxihp1_fpd_aclk"
         ]
       },
       "zynq_ultra_ps_e_0_pl_resetn0": {
         "ports": [
           "zynq_ultra_ps_e_0/pl_resetn0",
+          "cpu_rst_n",
           "pl_clk_rst/ext_reset_in",
-          "rst_ps8_0_96M/ext_reset_in",
-          "cpu_rst_n"
+          "rst_ps8_0_96M/ext_reset_in"
         ]
       }
     },
@@ -6586,12 +6586,6 @@
                 "address_block": "/zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_LOW",
                 "offset": "0x0000000000",
                 "range": "2G"
-              },
-              "SEG_zynq_ultra_ps_e_0_HP0_LPS_OCM": {
-                "address_block": "/zynq_ultra_ps_e_0/SAXIGP2/HP0_LPS_OCM",
-                "offset": "0x00FF000000",
-                "range": "16M",
-                "is_excluded": "TRUE"
               },
               "SEG_zynq_ultra_ps_e_0_HP0_QSPI": {
                 "address_block": "/zynq_ultra_ps_e_0/SAXIGP2/HP0_QSPI",
@@ -6615,12 +6609,6 @@
                 "address_block": "/zynq_ultra_ps_e_0/SAXIGP3/HP1_DDR_LOW",
                 "offset": "0x0000000000",
                 "range": "2G"
-              },
-              "SEG_zynq_ultra_ps_e_0_HP1_LPS_OCM": {
-                "address_block": "/zynq_ultra_ps_e_0/SAXIGP3/HP1_LPS_OCM",
-                "offset": "0x00FF000000",
-                "range": "16M",
-                "is_excluded": "TRUE"
               },
               "SEG_zynq_ultra_ps_e_0_HP1_QSPI": {
                 "address_block": "/zynq_ultra_ps_e_0/SAXIGP3/HP1_QSPI",
