@@ -5,7 +5,7 @@
       "device": "xczu47dr-ffvg1517-1-i",
       "name": "zynq_tcpipe_crs",
       "rev_ctrl_bd_flag": "RevCtrlBdOff",
-      "synth_flow_mode": "Singular",
+      "synth_flow_mode": "Hierarchical",
       "tool_version": "2022.2",
       "validated": "true"
     },
@@ -6587,6 +6587,12 @@
                 "offset": "0x0000000000",
                 "range": "2G"
               },
+              "SEG_zynq_ultra_ps_e_0_HP0_LPS_OCM": {
+                "address_block": "/zynq_ultra_ps_e_0/SAXIGP2/HP0_LPS_OCM",
+                "offset": "0x00FF000000",
+                "range": "16M",
+                "is_excluded": "TRUE"
+              },
               "SEG_zynq_ultra_ps_e_0_HP0_QSPI": {
                 "address_block": "/zynq_ultra_ps_e_0/SAXIGP2/HP0_QSPI",
                 "offset": "0x00C0000000",
@@ -6609,6 +6615,12 @@
                 "address_block": "/zynq_ultra_ps_e_0/SAXIGP3/HP1_DDR_LOW",
                 "offset": "0x0000000000",
                 "range": "2G"
+              },
+              "SEG_zynq_ultra_ps_e_0_HP1_LPS_OCM": {
+                "address_block": "/zynq_ultra_ps_e_0/SAXIGP3/HP1_LPS_OCM",
+                "offset": "0x00FF000000",
+                "range": "16M",
+                "is_excluded": "TRUE"
               },
               "SEG_zynq_ultra_ps_e_0_HP1_QSPI": {
                 "address_block": "/zynq_ultra_ps_e_0/SAXIGP3/HP1_QSPI",
