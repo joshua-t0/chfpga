@@ -724,8 +724,22 @@ set_property C_ENABLE_CLK_DIVIDER false [get_debug_cores dbg_hub]
 set_property C_USER_SCAN_CHAIN 1 [get_debug_cores dbg_hub]
 connect_debug_port dbg_hub/clk [get_nets smp_OBUF[3]]
 
+# Pin the UCAP UltraRAM sites to facilitate P&R
 
-
-
-
+set_property LOC URAM288_X0Y64 [get_cells chfpga0/*ucap0/uram_gen[0]*/*/*_uram_0]
+set_property LOC URAM288_X0Y65 [get_cells chfpga0/*ucap0/uram_gen[0]*/*/*_uram_1]
+set_property LOC URAM288_X0Y66 [get_cells chfpga0/*ucap0/uram_gen[1]*/*/*_uram_0]
+set_property LOC URAM288_X0Y67 [get_cells chfpga0/*ucap0/uram_gen[1]*/*/*_uram_1]
+set_property LOC URAM288_X0Y68 [get_cells chfpga0/*ucap0/uram_gen[2]*/*/*_uram_0]
+set_property LOC URAM288_X0Y69 [get_cells chfpga0/*ucap0/uram_gen[2]*/*/*_uram_1]
+set_property LOC URAM288_X0Y70 [get_cells chfpga0/*ucap0/uram_gen[3]*/*/*_uram_0]
+set_property LOC URAM288_X0Y71 [get_cells chfpga0/*ucap0/uram_gen[3]*/*/*_uram_1]
+set_property LOC URAM288_X0Y72 [get_cells chfpga0/*ucap0/uram_gen[4]*/*/*_uram_0]
+set_property LOC URAM288_X0Y73 [get_cells chfpga0/*ucap0/uram_gen[4]*/*/*_uram_1]
+set_property LOC URAM288_X0Y74 [get_cells chfpga0/*ucap0/uram_gen[5]*/*/*_uram_0]
+set_property LOC URAM288_X0Y75 [get_cells chfpga0/*ucap0/uram_gen[5]*/*/*_uram_1]
+set_property LOC URAM288_X0Y76 [get_cells chfpga0/*ucap0/uram_gen[6]*/*/*_uram_0]
+set_property LOC URAM288_X0Y77 [get_cells chfpga0/*ucap0/uram_gen[6]*/*/*_uram_1]
+set_property LOC URAM288_X0Y78 [get_cells chfpga0/*ucap0/uram_gen[7]*/*/*_uram_0]
+set_property LOC URAM288_X0Y79 [get_cells chfpga0/*ucap0/uram_gen[7]*/*/*_uram_1]
 
