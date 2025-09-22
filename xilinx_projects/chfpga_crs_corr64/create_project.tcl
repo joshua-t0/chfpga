@@ -27,7 +27,6 @@ set ip_files [list \
 
 # HDL files, found in ../../hdl/
  set hdl_files [list  \
- "TCPIPE/zynq_tcpipe_crs/zynq_tcpipe_crs.bd" \
  "chfpga_package.vhd" \
  "CROSSBAR/align64_fifo.vhd" \
  "CROSSBAR/ALIGN64.vhd" \
@@ -76,7 +75,7 @@ set ip_files [list \
  "CHAN/ucap.vhd" \
  "chfpga.vhd" \
  "chfpga_crs.vhd" \
- ] \
+ ]
 
 # user IP library folder, in ../../
 set ip_libraries [list \
@@ -157,7 +156,6 @@ set proj_dir [get_property directory [current_project]]
 
 # Set project properties
 set obj [current_project]
-set_property -name "board_part_repo_paths" -value "[file normalize "$origin_dir/../../../../.Xilinx/Vivado/2022.2/xhub/board_store/xilinx_board_store"]" -objects $obj
 set_property -name "corecontainer.enable" -value "1" -objects $obj
 set_property -name "default_lib" -value "xil_defaultlib" -objects $obj
 set_property -name "enable_core_container" -value "1" -objects $obj
