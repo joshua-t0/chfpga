@@ -2,3 +2,5 @@
 !*.srcs/
 # Allow srcs subfolders
 !*.srcs/**/
+# Created by .tcl
+chfpga_crs_corr64.xpr
