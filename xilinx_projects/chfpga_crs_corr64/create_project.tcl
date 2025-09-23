@@ -93,12 +93,6 @@ set util_files [list \
  "rename_bitstream.tcl"\
  ]
 
-
-# Util files, in the project file
-set bd_files [list \
- "TCPIPE/zynq_tcpipe_crs/zynq_tcpipe_crs.bd"\
- ]
-
 # Expand and normaline file and folder names
 set full_ip_files  {}
 foreach f $ip_files { lappend full_ip_files [file normalize "$origin_dir/../../_Cores/$f"]}
@@ -115,17 +109,13 @@ foreach f $const_files {lappend full_const_files [file normalize "$origin_dir/..
 set full_util_files  {}
 foreach f $util_files {lappend full_util_files [file normalize "$origin_dir/$f"]}
 
-set full_bd_files  {}
-foreach f $bd_files {lappend full_bd_files [file normalize "$origin_dir/../../hdl/$f"]}
-
-
 # Check if all files required for this script exist
 # --------------------------------------------------
 
 set missing_file false
 
 # Check files
-foreach ifile [concat $full_ip_files $full_hdl_files $full_bd_files $full_const_files $full_util_files]  {
+foreach ifile [concat $full_ip_files $full_hdl_files $full_const_files $full_util_files]  {
   if { ![file isfile $ifile] } {
     puts " Could not find remote file $ifile "
     set missing_file true
@@ -198,7 +188,7 @@ if { $fileset_obj != {} } {
    update_ip_catalog -rebuild
 }
 
-add_files -norecurse -fileset $fileset_obj [concat $full_ip_files $full_bd_files $full_hdl_files]
+add_files -norecurse -fileset $fileset_obj [concat $full_ip_files $full_hdl_files]
 
 # Set 'sources_1' fileset file properties for remote files
 foreach file_obj  [get_files -of_objects $fileset_obj [list "*.xci"]] {
@@ -268,6 +258,9 @@ catch {
  set idrFlowPropertiesConstraints [get_param runs.disableIDRFlowPropertyConstraints]
  set_param runs.disableIDRFlowPropertyConstraints 1
 }
+
+# Regenerate block design
+source "../../hdl/TCPIPE/zynq_tcpipe_crs.tcl"
 
 # Create 'synth_1' run (if not found)
 if {[string equal [get_runs -quiet synth_1] ""]} {create_run -name synth_1 -part $target_part -constrset constrs_1}
