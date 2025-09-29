@@ -1532,7 +1532,7 @@ begin
 			11 => debug2,
 			12 => user_bit(0),
 			13 => user_bit(1),
-			14 => fmc_refclk(to_integer(unsigned(user_bit))),
+			14 => '0', -- formerly fmc_refclk selected by user_bit - but this is an illegal null range when fmc_refclk'length is 0
 			15 => '0'  -- output is disabled - use to read signals from the SMA on user_mux_in()
 			);
 
