@@ -605,7 +605,7 @@ architecture impl of chFPGA is
 	signal clk200_reset_reg: std_logic;
 	signal clk125_reset: std_logic;
 	signal ctrl_rst: std_logic;
-	signal ctrl_reset_pulse: std_logic;
+	signal ctrl_reset_pulse: std_logic := '0';
 	signal sysmon_reset: std_logic; -- from system clock generator
 
 	signal sysmon_user_reset: std_logic; -- from GPIO to SYSMON
