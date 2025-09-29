@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+# Check prerequisites
+for cmd in git-lfs docker make
+do
+	if ! command -v "$cmd" &> /dev/null
+	then
+		echo "ERROR: $cmd is not installed. It's an essential prerequisite."
+		exit
+	fi
+done
+
+oldrev="$1"
+newrev="$2"
+refname="$3"
+
+WORKTREE=autobuild/$newrev-$(echo "$refname" | rev | cut -d/ -f1 | rev)
+echo "Work tree: $WORKTREE"
+if ! git worktree add -d "$WORKTREE" "$newrev"
+then
+	echo "ERROR: git worktree failed."
+	exit
+fi
+
+cd "$WORKTREE"
+echo "Autobuild: working directory is $(pwd)"
+
+# Now that we're in a WORKTREE, we no longer want GIT_DIR to be carried in from
+# the post-install hook (it was a local path reference and we've just moved out
+# of it)
+unset GIT_DIR
+
+# Cosimulation targets
+source setenv.sh
+set -e  # bail immediately if something fails
+cd test
+make rtl
+make test

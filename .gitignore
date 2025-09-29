@@ -12,3 +12,4 @@ vivado*.log
 vivado_pid*
 .venv
 *.swp
+.dockerenv*

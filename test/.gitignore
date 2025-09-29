@@ -1,0 +1,11 @@
+*.wdb
+*.wcfg
+xsim.dir/
+*.o
+*.log
+ip_src.*
+*.pb
+*.ini
+*.so
+__pycache__/
+export_sim/
