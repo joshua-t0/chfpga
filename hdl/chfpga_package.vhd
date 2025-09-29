@@ -671,6 +671,18 @@ function rpm_to_string(rpm: rpm_coord_struct) return string; -- convert a RPM co
 function get_cmac44_rpm_coords_struct_array(platform_id: integer; N_CHAN: integer; layout: string) return cmac44_rpm_coord_struct_array; -- returns the locations of the CMAC44 DSPs and BRAMs for a corr44 correlator core with specified layout
 function get_corr44_rloc_origins_struct_array(platform_id:integer; N_CHAN:integer) return corr44_rloc_origins_struct_array; -- returns the layout and absolute location of each corr4 core in a corr44_array
 
+TYPE CLOCK_SOURCE_ENUM is (
+	CLOCK_SOURCE_SYSCLK,
+	CLOCK_SOURCE_SYSCLK_BUFG,
+	CLOCK_SOURCE_CLK10_BUFG,
+	CLOCK_SOURCE_SFP_REFCLK);
+
+TYPE CHAN_CLOCK_SOURCE_ENUM is (MMCM, ADC);
+TYPE PHY_TYPE_ENUM IS (GMII, SGMII, NONE);
+TYPE ADC_TYPE_ENUM IS (EV8AQ160, AXIS);
+TYPE CORR_TYPE_ENUM IS (CORR44, UCORR44, NONE);
+TYPE CT_CLK_SOURCE_ENUM IS (BP_SHUFFLE_TXCLK, ADC_CLK, CGE_CLK322, CORR_CLK);
+
 end chFPGA_Package;
 
 package body chFPGA_Package is

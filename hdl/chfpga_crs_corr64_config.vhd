@@ -22,7 +22,7 @@ package chfpga_config is
 
     constant CONFIG_CT_TYPE: integer                              := CT_TYPE_UCT; -- "UCT" or "BCT"
     constant CONFIG_CT_LEVEL: integer := 2; -- 2 for CORR32, 3 for CORR64
-    constant CONFIG_CT_CLK_SOURCE: string                        := "ADC_CLK"; -- Run the corner-turn & correlator on the 400 MHz ADC clock
+    constant CONFIG_CT_CLK_SOURCE: ct_clk_source_enum := ADC_CLK; -- Run the corner-turn & correlator on the 400 MHz ADC clock
 	constant CONFIG_NUMBER_OF_CROSSBAR_INPUTS: integer           := CONFIG_NUMBER_OF_ADCS; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
 	constant CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS: integer         := 8; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
 	constant CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := 0;
@@ -31,7 +31,7 @@ package chfpga_config is
 	constant CONFIG_NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := 1;
 
 
-    constant CONFIG_CORR_TYPE: string                            := "UCORR44";
+    constant CONFIG_CORR_TYPE: CORR_TYPE_ENUM                        := UCORR44;
 	constant CONFIG_NUMBER_OF_CORRELATORS: integer               := FFT_INFO(CONFIG_CHAN_FFT_TYPE).BINS_PER_WORD; -- One correlator per bin in the FFT output word
 	constant CONFIG_CORR_READOUT_BINS: integer_array(0 to 0) := (0 => 0); -- With CONFIG_FFT_ROTATE_BINS=True, true bins 0, 1, 2 & 3 will be used for readout
 

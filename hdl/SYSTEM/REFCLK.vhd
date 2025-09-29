@@ -32,7 +32,10 @@ use IEEE.NUMERIC_STD.ALL;
 use work.chFPGA_Package.ALL; -- Get all component definitions
 
 library UNISIM;
-use UNISIM.VComponents.ALL;
+use UNISIM.vcomponents.ALL;
+
+library xpm;
+use xpm.vcomponents.ALL;
 
 -- Handles the FMC Reference Clock generation, SYNC event detection and generation, and ADC SYNC signal generation
 entity REFCLK is
