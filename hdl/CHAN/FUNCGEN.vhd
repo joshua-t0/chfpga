@@ -178,14 +178,15 @@ signal out_dat_tdata: std_logic_vector(ADC_SAMPLES_PER_WORD*ADC_BITS_PER_SAMPLE-
 signal out_dat_tuser: std_logic_vector(0 downto 0); -- one overflow bit per frame on TLAST
 signal out_dat_tvalid: std_logic;
 signal out_dat_tlast: std_logic;
-signal out_dat_tfirst: std_logic;
 signal out_dat_overflows: std_logic_vector(ADC_SAMPLES_PER_WORD-1 downto 0):= (others => '0');
 
--- Output of the data shifter
+-- Output of the left shifter / saturator
 signal out_dat_shifted_tdata: std_logic_vector(ADC_SAMPLES_PER_WORD*ADC_BITS_PER_SAMPLE-1 downto 0);
 signal out_dat_shifted_tuser: std_logic_vector(0 downto 0);
 signal out_dat_shifted_tvalid: std_logic;
 signal out_dat_shifted_tlast: std_logic;
+signal out_dat_shifted_overflows: std_logic_vector(ADC_SAMPLES_PER_WORD-1 downto 0):= (others => '0');
+signal out_dat_shifted_tfirst: std_logic;
 
 
 -- Word counter
@@ -212,8 +213,8 @@ signal byte_b: slv8;
 
 signal fn_id: slv8;
 
-signal shift: unsigned(3 downto 0);
-signal clip_width: unsigned(3 downto 0);
+signal right_shifting: unsigned(3 downto 0);
+signal left_shifting: unsigned(3 downto 0);
 
 signal fn_sel: FN_TYPE;
 
@@ -261,11 +262,11 @@ begin
 -- |         |  2  |  7:0 | byte_b               | Byte B, used as LSB of lfsr seed |
 -- |         | 3-4 | 15:0 | stats_period         | Number of frames during which the number of sample overflows is counted.
 -- |         |  5  |  7:4 | ram_page[6:3]        | MSB of the RAM page number |
--- |         |     |  3:0 | shift                | Number of bits to right-shift the output data |
+-- |         |     |  3:0 | right_shifting       | Number of bits to right-shift the output data. This is done after the left-shift. |
 -- |         |  6  |  7   | stats_enable         | Enables overflow_ctr update. Clears stats_done when stats_enabled cleared.|
 -- |         |     |  6   | rst_lfsr             | Resets seed and output of LFSR |
 -- |         |     |  5:4 | (unused)             | |
--- |         |     |  3:0 | clip_width           | Saturates the output data to a ``clip_width-1``-bit wide signed value (i.e. clip_width is the position of the sign bit). Saturation is applied after the right-shift. |
+-- |         |     |  3:0 | left_shifting        | Number of bits to left-shift the output data. Saturates the value if the range is exceeded.  Left shift is performed before the right shift. |
 -- |         |  7  |  7:0 | function_number      | Function number stored in buffer. Doesn't change waveform.
 -- | STATUS  |  0  |  7:0 | word_ctr_pre2        | Last 8 bits of the word counter |
 -- |         |  1  |  7:0 | frame_ctr            | Last 8 bits of the frame counter |
@@ -293,21 +294,21 @@ overflow_ctr_period <= to_unsigned(control_bytes(3 to 4));
 
 -- CONTROL Bytes 5: RAM page and bit shift
 ram_page(6 downto 3) <= control_bytes(5)(7 downto 4); -- 4 most significant bits of the page register
-shift <= unsigned(control_bytes(5)(3 downto 0));
+right_shifting <= unsigned(control_bytes(5)(3 downto 0));
 
 -- CONTROL Bytes 6: Saturation width and overrange count reset
 stats_enable <= control_bytes(6)(7);
 rst_lfsr  <= control_bytes(6)(6);
-clip_width <= unsigned(control_bytes(6)(3 downto 0));
+left_shifting <= unsigned(control_bytes(6)(3 downto 0));
 
 -- CONTROL Bytes 7: User defined function number
 fn_id <= control_bytes(7); -- for software only. Not used by this module.
 
 -- STATUS Byte 0
-status_bytes(0) <= std_logic_vector(lsb(word_ctr_pre2));
+status_bytes(0) <= std_logic_vector(lsb(word_ctr_pre2, 8));
 
 -- STATUS Byte 1
-status_bytes(1) <= std_logic_vector(lsb(frame_ctr));
+status_bytes(1) <= std_logic_vector(lsb(frame_ctr, 8));
 
 -- STATUS Byte 2
 status_bytes(2)(2) <= frame_overflow_flag;
@@ -333,8 +334,8 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
         DEFAULT_CONTROL_BYTES   => X"40" & -- Byte 0: soft_reset, enable, ram_page[2:0], fn_sel[2:0]
                                    X"0101" & -- Bytes 1-2: Byte A & Byte B
                                    X"0000" & -- Byte 3-4: overflow_ctr_period
-                                   X"00" & -- Byte 5: ram_page[6:3], shift[3:0]
-                                   X"8F" & -- Byte 6: stats_enable, rst_lfsr, unused[1:0], clip_width[3:0]
+                                   X"00" & -- Byte 5: ram_page[6:3], right_shifting[3:0]
+                                   X"80" & -- Byte 6: stats_enable, rst_lfsr, unused[1:0], left_shifting[3:0]
                                    X"00", --Byte 7: User defined function number
         ADDR_WIDTH              => 9, -- We have 9 bits of data left after routing
         RAM_DATA_WIDTH          => 8, -- 8 or 16 bits
@@ -452,6 +453,7 @@ funcgen_proc: process (clk)
             out_dat_overflows <= (others => '0');
             out_dat_tvalid <= word_valid and send_frame;
             out_dat_tlast <= word_last;
+            use_ram_overflow := FALSE;
 
             -- Set output data
             case fn_sel is
@@ -518,11 +520,41 @@ funcgen_proc: process (clk)
                 end loop; --overflow count per word
             end if; -- use_ram_overflow
 
+
+            ---------------------------------------------------------------------
+            -- PHASE 4:
+            --   - out_dat_shifted
+            --   - frame overflow flag in out_dat_shifted_tuser
+            ---------------------------------------------------------------------
+
+            -- Implement left-shift and saturation
+            int_shift := to_integer(left_shifting);
+            out_dat_shifted_overflows <= out_dat_overflows;
+            for j in 0 to ADC_SAMPLES_PER_WORD-1 loop
+                sample_var := signed(out_dat_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j));
+                if not all_same(sample_var, sample_var'HIGH, sample_var'HIGH - int_shift) then
+                    sample_var(ADC_BITS_PER_SAMPLE-2 downto 0) := (others => not sample_var(ADC_BITS_PER_SAMPLE-1));
+                    out_dat_shifted_overflows(j) <= '1';
+                else
+                    sample_var := shift_left(sample_var, int_shift);
+                end if;
+                out_dat_shifted_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) <= std_logic_vector(sample_var);
+            end loop;
+            out_dat_shifted_tvalid <= out_dat_tvalid;
+            out_dat_shifted_tlast <= out_dat_tlast;
+
+            ---------------------------------------------------------------------
+            -- PHASE 5:
+            --   - overflow statistics
+            --   - right shift
+            --   - frame overflow flag
+            ---------------------------------------------------------------------
+
             -- Overflow statistics: count number of overflows within a programmable period
-            if out_dat_tvalid then
-                new_overflow_ctr := overflow_ctr + to_unsigned(num_ones(out_dat_overflows), overflow_ctr'LENGTH);
+            if out_dat_shifted_tvalid then
+                new_overflow_ctr := overflow_ctr + to_unsigned(num_ones(out_dat_shifted_overflows), overflow_ctr'LENGTH);
                 overflow_ctr <= new_overflow_ctr; --overidden below when last word of integration period
-                if out_dat_tlast then
+                if out_dat_shifted_tlast then
                     overflow_frame_ctr <= overflow_frame_ctr + 1;
                     if overflow_frame_ctr = overflow_ctr_period then
                         overflow_ctr_reg <= new_overflow_ctr when stats_enable_resync;
@@ -534,42 +566,22 @@ funcgen_proc: process (clk)
             end if; -- tvalid
             stats_done <= '0' when not stats_enable_resync; -- clear stats_done whenever we freeze statistics update for readout
 
-            ---------------------------------------------------------------------
-            -- PHASE 4:
-            --   - out_dat_shifted
-            --   - frame overflow flag in out_dat_shifted_tuser
-            ---------------------------------------------------------------------
 
-
-            -- Implement data shifting (digital attenuation)
-            int_shift := to_integer(shift);
+            -- Implement right shifting (digital attenuation)
+            int_shift := to_integer(right_shifting);
             for j in 0 to ADC_SAMPLES_PER_WORD-1 loop
-                sample_var := signed(out_dat_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j));
-                out_dat_shifted_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) <= std_logic_vector(shift_right(sample_var, int_shift));
+                sample_var := signed(out_dat_shifted_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j));
+                m_axis_adc_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) <= std_logic_vector(shift_right(sample_var, int_shift));
             end loop;
-            out_dat_shifted_tvalid <= out_dat_tvalid;
-            out_dat_shifted_tlast <= out_dat_tlast;
-
-            -- Keep track of the frame-wide ADC overflow flag to be passed into TUSER on last word of frame
-            if out_dat_tvalid then
-                out_dat_tfirst <= out_dat_tlast;
-                out_dat_shifted_tuser(TUSER_ADC_OVERFLOW_BIT) <= or(out_dat_overflows) when out_dat_tfirst else
-                                       out_dat_shifted_tuser(TUSER_ADC_OVERFLOW_BIT) or or(out_dat_overflows);
-            end if; -- in_dat_tvalid
-
-            -- Implement data clipping and assign output
-            int_clip_width := to_integer(clip_width);
-            m_axis_adc_tdata  <= out_dat_shifted_tdata; -- default value, overriden below if we clip.
-            if int_clip_width /= 15 then
-                for j in 0 to ADC_SAMPLES_PER_WORD-1 loop
-                    sample_var := signed(out_dat_shifted_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j));
-                    m_axis_adc_tdata(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j) <= std_logic_vector(clip(sample_var, int_clip_width));
-                end loop;
-            end if; -- if we clip
             m_axis_adc_tvalid <= out_dat_shifted_tvalid;
-            m_axis_adc_tuser <= out_dat_shifted_tuser;
             m_axis_adc_tlast <= out_dat_shifted_tlast;
 
+            -- Keep track of the frame-wide ADC overflow flag to be passed into TUSER on last word of frame
+            if out_dat_shifted_tvalid then
+                out_dat_shifted_tfirst <= out_dat_shifted_tlast;
+                m_axis_adc_tuser(TUSER_ADC_OVERFLOW_BIT) <= or(out_dat_shifted_overflows) when out_dat_shifted_tfirst else
+                                       '1' when  or(out_dat_shifted_overflows);
+            end if; -- in_dat_tvalid
 
             -- Synchronous resets -- override signals above
             if reset_all then -- Synchronous reset
@@ -581,7 +593,7 @@ funcgen_proc: process (clk)
                 frame_ctr <= (others=>'0');
                 send_frame <= enable;
                 out_dat_tvalid <= '0';
-                out_dat_tfirst <= '1'; -- set to '0' to skip the first frame after reset
+                out_dat_shifted_tfirst <= '1'; -- set to '0' to skip the first frame after reset
                 out_dat_shifted_tvalid <= '0';
 
                 -- Overflow statistics
