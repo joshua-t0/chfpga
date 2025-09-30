@@ -19,11 +19,10 @@
 ----------------------------------------------------------------------------------
 
 
---! Standard libraries
+-- Standard libraries
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
---use IEEE.std_logic_misc.ALL; -- for and_reduce
 
 library UNISIM;
 use UNISIM.vcomponents.all;
@@ -31,27 +30,19 @@ use UNISIM.vcomponents.all;
 library xpm;
 use xpm.vcomponents.all;
 
---! Project libraries
-use work.chFPGA_Package.all; --! Get all component definitions
+-- Project libraries
+use work.chFPGA_Package.all; -- Get all component definitions
 
 -- ucap: UltraRAM-based raw data capture engine
 --
 -- `ucap` allows the capture of raw ADC data frames, where a frame is 16384 x 16-bit samples provided 8 sample at a time.
 -- `ucap` can store 2 frames for all 8 channels, 4 frames for 4 selected channels, 8 frames for 2 selected channels, or 16 frames for 1 selected channel.
 --  Frames are captured Every N frames.
-
-
 entity ucap is
 	generic (
 	    NUMBER_OF_CHANNELS: integer := 8; -- Warning: current design works only with NUMBER_OF_CHANNELS = 8
 	    NUMBER_OF_SOURCES : integer := 2; -- Warning; current design works only with NUMBER_OF_SOURCES = 2
-
---	    ADC_BITS_PER_SAMPLE: integer := 14;
---        ADC_SAMPLES_PER_WORD: integer := 8;
---        ADC_SAMPLES_PER_FRAME: integer := 16384;
---        ADC_BITS_PER_WORD: integer := ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPLE;
-        CAPTURE_BITS_PER_WORD: integer := 128; -- must be a multiple of 8 bits
-        SIM: boolean := FALSE
+        CAPTURE_BITS_PER_WORD: integer := 128 -- must be a multiple of 8 bits
 	);
     port (
         -- Input data buses, synchronous to clk
@@ -59,7 +50,6 @@ entity ucap is
         s_axis_tdata: in slv_array(0 to NUMBER_OF_CHANNELS-1)(CAPTURE_BITS_PER_WORD -1 downto 0);
         s_axis_tvalid: in std_logic_vector(0 to NUMBER_OF_SOURCES - 1); -- common to all channels
         s_axis_tlast: in std_logic_vector(0 to NUMBER_OF_SOURCES - 1); -- common to all channels
---        s_axis_tuser: in std_logic_vector(0 to 0); -- bit 0: current source
 
         -- Remote mux control
 
@@ -93,8 +83,6 @@ entity ucap is
 		rply_rdy: in axis8_rdy_struct := (TREADY=>'0');
 		ctrl_clk : in std_logic := '0'; -- control clock
 		ctrl_rst : in std_logic := '0'
-
-
     );
 end ucap;
 
@@ -132,7 +120,6 @@ architecture impl of ucap is
 	signal ram_din: slv_array(0 to NUMBER_OF_BUFFERS-1)(CAPTURE_BITS_PER_WORD -1 downto 0);
 	signal ram_dout: slv_array(0 to NUMBER_OF_BUFFERS-1)(CAPTURE_BITS_PER_WORD -1 downto 0); -- one for each column;
 	signal ram_wr_en: std_logic_vector(0 to NUMBER_OF_BUFFERS-1);  -- one for each row
---	signal ram_wr_byte_en: std_logic_vector(31 downto 0);  -- enable for each of the 32 bytes across the row
 	signal ram_rd_en: std_logic_vector(0 to NUMBER_OF_BUFFERS-1);  -- one for each column
 
     -- BSB FIFO signals
@@ -185,7 +172,6 @@ begin
 			NUMBER_OF_STATUS_BYTES => status_bytes'Length(1) -- Number of bits in the status word.
 		)
 		PORT MAP(
-
 			control_bytes => control_bytes,
 			status_bytes => status_bytes,
 
@@ -239,16 +225,7 @@ begin
     --   16 frames from 1 channel (mode "11")
     --
 	uram_gen: for i in 0 to NUMBER_OF_BUFFERS-1 generate
---	        constant RAM_WORD_WIDTH: integer := CAPTURE_BITS_PER_WORD; -- must be a multiple of 8 bits since the readout is done byte-wise
---			constant RAM_BITS_PER_SAMPLE: integer := RAM_WORD_WIDTH / ADC_SAMPLES_PER_WORD; -- typically 16 bits/sample in RAM for 8 samples/word
-			signal ram_din_word: std_logic_vector(CAPTURE_BITS_PER_WORD-1 downto 0);
 		begin
---		    -- Remap the input word into the 128-bit URAM word.
---		    -- We realign each ADC sample on the left of each RAM sample, padding the rightmost bits with '0'
---            din_gen: for j in 0 to ADC_SAMPLES_PER_WORD-1 generate
---                   ram_din_word(RAM_BITS_PER_SAMPLE*(j+1)-1 downto RAM_BITS_PER_SAMPLE*j) <= (ram_din(i)(ADC_BITS_PER_SAMPLE*(j+1)-1 downto ADC_BITS_PER_SAMPLE*j), others => '0');
---            end generate;
-            ram_din_word <= ram_din(i);
 		   	-- xpm_memory_sdpram: Simple Dual Port RAM
 		   	-- Xilinx Parameterized Macro, version 2022.1
 		   	-- UltraRAM primitive is organized as 4K x 72 bits.
@@ -282,7 +259,7 @@ begin
 				)
 				port map (
 					-- Write port
-					dina => ram_din_word,
+					dina => ram_din(i),
 					addra => ram_wr_addr(i),
 					ena => ram_wr_en(i),
 					wea => "1",
@@ -303,7 +280,6 @@ begin
 					regceb => '1',
 					clkb => '0'
 			   );
-
 	end generate uram_gen;
 
     -- Write block: writes data to memory
@@ -326,7 +302,6 @@ begin
 
 	    wr_proc: process(clk)
 	        variable chan_int: int8; -- selected physical channel number as an integer
---		    variable tvalid: std_logic_vector(0 to NUMBER_OF_SOURCES-1); -- word currently on the bus shall be stored
 		    variable src: std_logic; -- channel source
 		    variable src_int: integer range 0 to NUMBER_OF_SOURCES-1; -- channel source as an integer
             variable capture_trig: std_logic_vector(0 to NUMBER_OF_SOURCES-1);
@@ -348,7 +323,7 @@ begin
 	            -- so we can keep track of the frame number even if the source is not selected.
 	            --
 	        	for src in 0 to NUMBER_OF_SOURCES-1 loop
-		            src_readout_trig(src) <= '0'; -- single clock pulse signal, overriden below
+		            src_readout_trig(src) <= '0'; -- single clock pulse signal, overridden below
 					if s_axis_tvalid(src) then
 						word_ctr(src) <= word_ctr(src) + 1;
 						if s_axis_tlast(src) then
@@ -384,43 +359,63 @@ begin
 					end if; --rst
 				end loop; -- source
 
-status_bytes(1) <= std_logic_vector(period_ctr(0)(7 downto 0));
-status_bytes(2) <= std_logic_vector(source_sel_in);
+                status_bytes(1) <= std_logic_vector(period_ctr(0)(7 downto 0));
+                status_bytes(2) <= std_logic_vector(source_sel_in);
 
-	            -- The muxing of the input data to the data buffers is done
-	            -- with a 4-channel mux modified with an additional 2:1 mux to allow
-	            -- the odd buffer to use the corresponding data input
-	            -- directly.  This mux allows us to implement all other modes.
-	            --
-	            -- This mux logic selects the following:
+
+                -- Implement input muxing
+                --
+                -- We need a multiplexer to select which channels are routed to each of the eight memory banks (aka data buffers).
+                -- Depending on the mode, a channel can be routed to multiple memory banks in order to store more frames but from les channels.
+                --
+                -- The brute force approach would be to put a 8:1 in from of each of the memory
+                -- bank, but that would require a lot of logic, and would be overkill as we don't
+                -- need to chose the order of the
+				-- channels, or select channels multiple times; we just need a few of
+                -- the possible muxing combinations, which are summarized in 4 modes:
+                --
+                --   - mode 0 (8-channel mode): We select all input channels and ignore the selection map: Buffers 0-7 are routed to banks 0-7, in that order.
+                --   - mode 1 (4-channel mode): The 4 selected channels are routed to 4 RAM bank pairs
+                --   - mode 2 (2-channel mode): The 2 selected channels are routed to 2 groups of 4 RAM banks
+                --   - mode 3 (1-channel mode): One selected channel is routed to all eight RAM banks
+                --
+	            -- In order to implement these modes, we implement four 8:1 muxes that feeds data from 2 programmable channels to a pair of data buffers.
+	            -- Mode 1 is simply implemented by driving the selection signal of all 4 muxes directly from the user-settable channel selection registers.
+	            -- Modes 2 and 3 are just treated as special cases of mode 1. We simply assign a subset of the user-selected channel(s) to groups of 2 or 4 muxes.
+	            -- In order to support mode 0, we add a 2:1 mux on the input of the odd buffers to use their corresponding data inputs
+	            -- (channel 1 to buffer 1, channel 3 to buffer 3 etc). If we enable that mux and force the 8:1 muxes to select channels 0, 2, 4 and 6, we have all we need.
+				--
+				-- So in summary:
 	            --    - Even buffers (i = 0,2,4,6) can select any of the 8 input, as described in chan_pair_sel(i/2)
 	            --    - Odd buffers (i = 1,3,5,7) can select either the corresponding input (i) (mux_mode=0) or the same data as the even buffer (mux_mode=1)
-	            --  8 channels mode: mux_mode=0. chan_pair_sel(i) = i/2. We ignore the selection map. Buffers 0-7 : input 0-7
-	            --  4 channels mode: mux_mode=1. Buffers 0-1: chan_pair_sel(0), 2-3: chan_pair_sel(1), 4-5: chan_pair_sel(2), 6-7: chan_pair_sel(3).
-	            --  2 channels mode: mux_mode=1. Buffers 0-3: chan_pair_sel(0), 4-7: chan_pair_sel(1).
-	            --  1 channel mode: mux_mode=1. Buffers 0-7: chan_pair_sel(0)
-				--
-				-- The synthesizer is not smart
-				-- enough to know that the 8-channel mode can be implemented with properly
-				-- selected chan_pair_sel() values, and it we tell it that it should use the inputs directly, it will infer additional 2:1 muxes to bypass the 8:1 mux.
-				--
-				-- For the 2- or 1- channel mode, the logic provide more
-				-- flexibility than needed, but trying to exploit that in
-				-- hardware also results in more muxes.
-				--
-				-- Consequently, we explicitely describe a simple
-				-- modified 4-channel-mode core and pre-process the control signals on the 4-channel mode muxes to get the desired functional mode.
-				--
-				-- This uses half the resources compared to a blunt muxing of
-				-- all 8 buffer inputs, which is overkill (we don't want to
-				-- chose the order of the channels or select channels
-				-- multiple times). The modified 4-channel mux is still
-				-- over-flexible , which suggests we might still be using
-				-- more logic than necessary, but so far we have not found a
-				-- way to make it smaller. This is good enough.
+	            --
+				-- This implementation uses half the resources compared to a blunt muxing of all 8
+				-- buffer inputs, which is overkill. The modified 4-channel mux is still
+				-- over-flexible , which suggests we might still be using more logic than necessary,
+				-- but so far we have not found a way to make it smaller. This is good enough.
+	            --
+	            -- Some more implementation details
+	            -- --------------------------------
 
-	            -- Prepare the input muxing signals to simplify the control lines that will go into the large input muxing network
---	           	ram_wr_addr <= frame(0) & std_logic_vector(word_ctr); -- 14-3 bits + 1 bit = 12 bits, 4k words/URAM
+	            -- -- The synthesizer is not smart
+				-- enough to figure out how it can use a four 8:1 and four 2:1 muxes to do all we want instead of eight 8:1 muxes, so we have to spell it out by creating the proper control signals:
+	            --
+	            -- - ``chan_pair_sel(i)`` (where i ranges from 0 to 3) is the selector signal for each 8:1 mux. The logic sets those based on the mode and the user selected input registers.
+				-- - ``mux_mode`` is high when we are *not* in mode 0
+				-- - ``chan_sel_map(j)`` (j=0-3) are the user selected input registers
+				--
+				-- Consequently:
+				--
+	            --  - Mode 0: mux_mode=0. chan_pair_sel = (0, 2, 4, 6). We ignore the user selections. Even buffers will connect to channels 0, 2, 4, 6, and mux_mode=0  will enable the 2:1 muxes so odd buffers receive channels 1,3,5 and 7.
+	            --  - Mode 1: mux_mode=1. chan_pair_sel= (chan_sel_map(0), chan_sel_map(1), chan_pair_sel(2), chan_sel_map(3)). Since mux_mode=1, both buffers in each pair receive the same data.
+	            --  - Mode 2: mux_mode=1. chan_pair_sel= (chan_sel_map(0), chan_sel_map(0), chan_pair_sel(1), chan_sel_map(1)). Same comment on mux_mode.
+	            --  - Mode 3: mux_mode=1. chan_pair_sel= (chan_sel_map(0), chan_sel_map(0), chan_pair_sel(0), chan_sel_map(0)).
+				--
+
+
+
+	            --  Prepare the input muxing variables and signals to simplify the code and logic
+	            --  -----------------------------------------------------------------------------
 
                 -- Derive the basic readout geometry parameters based on the mode
                 -- N: Number of channels to capture
@@ -434,11 +429,15 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
                     when others => assert FALSE report "Unhandled mode" severity FAILURE;
                 end case;
 
-                -- Set the source for each channel-pair mux
-                --   mode 1: (map(0), map(1), map(2), map(3)),
-                --   mode 2: (map(0), map(0), map(1), map(1)),
-                --   mode 3: (map(0), map(0), map(0), map(0))
-                mux_mode <= '0' when mode = "00" else '1'; -- Odd buffer use the same channel as even buffer
+                -- Set the 2:1 mux mode. mux_mode=0 will enable the 2:1 muxes to override the odd buffer inputs
+                mux_mode <= '0' when mode = "00" else '1';
+
+
+                -- Set the source for each 8:1 mux
+                --   mode 0: chan_pair_sel = (0, 2, 4, 6)
+                --   mode 1: chan_pair_sel = (map(0), map(1), map(2), map(3)),
+                --   mode 2: chan_pair_sel = (map(0), map(0), map(1), map(1)),
+                --   mode 3: chan_pair_sel = (map(0), map(0), map(0), map(0))
                 for i in 0 to NUMBER_OF_CHANNEL_PAIRS-1 loop -- one mux per channel pair
                     chan_pair_sel(i) <= to_unsigned(2*i/K, 3) when mode = "00" else
                                         chan_sel_map(2*i/K);
@@ -448,7 +447,11 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
                 frame_max <= to_unsigned(FRAMES_PER_BLOCK*K-1, 4); -- mode 1: 4 frames, mode 2: 8 frames, mode 3: 16 frames
 
                 -- Set the memory enable and address
-	          	ram_wr_en <= (others => '0'); -- overriden below to select which buffer is write-enabled depending on the mode and frame number
+                -- Determine when buffers will capture data based on the mode and frame number.
+                -- mode 0: Each buffer capture every frame
+                -- Mode 1: Even buffers capture even frames, odd buffers capture odd frames
+                -- Mode 2, 3: etc.
+	          	ram_wr_en <= (others => '0'); -- overridden below to select which buffer is write-enabled depending on the mode and frame number
 	          	ram_readout_trig <= ram_readout_trig and not ram_readout_trig_ack; -- clear the trig signal when buffer readout is completed
                 for i in 0 to NUMBER_OF_CHANNELS-1 loop -- for each selected channel
                     if i < N then
@@ -472,37 +475,35 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
                                     end if;
                                     ram_readout_trig(j) <= '1';
                                     ram_readout_src(j) <= source_sel_in(chan_int); -- source that has filled this buffer. Used to select the correct timestamp.
-                                end if;
-                            end if;
+                                end if; -- if src_readout_trig
+                            end if; -- if j
                         end loop;
-                     end if; -- i < N
---                        ram_wr_addr(K*i to K*(i+1)-1) <= (others => std_logic_vector(frame(src_int)(0) & std_logic_vector(word_ctr(src_int)))); -- 14-3 bits + 1 bit = 12 bits, 4k words/URAM
---                        if src_readout_trig(src_int) then
---                            -- If we try to set a readout trigger that is already triggered, set the overrun flag.
---                            if any_one(ram_readout_trig(K*i to K*(i+1)-1)) then
---                                overrun <= '1';
---                            end if;
---                            ram_readout_trig(K*i to K*(i+1)-1) <= (others => '1');
---                            ram_readout_src(K*i to K*(i+1)-1) <= (others => source_sel_in(chan_int)); -- source that has filled this buffer. Used to select the correct timestamp.
---                        end if;
---                    end if;
+                     end if; -- if i < N
                 end loop;
-				if rst = '1' or user_reset_reg = '1' then
+
+				if rst or user_reset_reg then
 	               overrun <= '0';
 	               ram_readout_trig <= (others => '0');
                 end if; -- reset
 
-	            -- Mux the 8 input channels to the 8 buffers.
+                -- Implement the muxes
+                -- -------------------
+	            -- Implement the four 8:1 and four 2:1 muxes.
+	            --
+	            --   - The 8:1 muxes feed both even and odd buffers with the same data, and select their data from chan_pair_sel
+	            --   - The 2:1 mux is enabled if mux_mode = '0', in which case the odd buffers
+	            --     select the odd channels, while the logic forced the 8:1 mux on the even bins
+	            --     to select the even channels.
 	            --
 	            -- The code is optimized to minimize resources. Muxing logic handles pair of buffers. We need:
 	            --    even buffers: 112*4 x  8:1 muxes (8:1 muxes = 2x LUT8 + F7= 4 mux/CLB, 448 x 8:1 muxes = 112 CLBs)
 	            --    odd buffers: 112*4 x  2:1 muxes (2:1 mux = 1x LUT3 = 16 mux/CLB,  448x 2:1 muxes = 28 CLBs )
 	            --  We confirm this design uses 896 LUT6 + 448 LUT3, 448 F7)
 	            --
-   	            -- Resource utlisation notes
-	            -- 	mode 8 only (baseline), full muxing: 28 CLB x 8 = 224 CLB, 8*28*8 = 1792 LUTs with 112*8 F7s
-	            -- 	M8 + M4: 230 CLBs, 1833 LUTs
-	            -- 	M8+M4+M2+M1: want to use 2525 LUTs
+   	            -- As a comparison, eight 8:1 muxes would use:
+	            -- 	 - 28 CLB x 8 = 224 CLB, 8*28*8 = 1792 LUTs with 112*8 F7s
+	            -- 	 - M8 + M4: 230 CLBs, 1833 LUTs
+	            -- 	 - M8+M4+M2+M1: tota of 2525 LUTs
 
 	            for i in 0 to NUMBER_OF_CHANNEL_PAIRS-1 loop
 		           chan_int := to_integer(unsigned(chan_pair_sel(i)));
@@ -532,15 +533,7 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
         --   15:15: frame number( 4 bits, 16 frames/capture,  counts both frame and channels. We always have a total of 16 frames from 1, 2,4, or 8 channels.)
         --   14:4: word number (11 bits, 16384/8=2048 words)
 		--   3:0: byte number (4 bits, 8 samples/word = 16 bytes/word)
---        signal ram_readout_trig_reg: std_logic_vector(0 to NUMBER_OF_BUFFERS-1);
         signal ram_readout_mask: std_logic_vector(0 to NUMBER_OF_BUFFERS-1); -- bit pattern indicating the buffers being processed as a batch
-
-
-        -- signals to send to the RAM data processor when it comes out of RAM after the read latency
---        signal header_tvalid: std_logic_vector(RAM_LATENCY downto 0);
---        signal data_tvalid: std_logic_vector(RAM_LATENCY downto 0);
---        signal data_tlast: std_logic_vector(RAM_LATENCY downto 0);
-
 
         -- read processor
         type READ_PROC_OP_TYPE is (
@@ -570,7 +563,7 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
 	begin
 
 
-	    rd_proc: process(clk)
+	    rd_proc: process(all)
 		    variable frame_header: FRAME_HEADER_STRUCT;
             variable chan_int: integer range 0 to NUMBER_OF_CHANNELS-1;
             variable chan_sel_int: integer range 0 to 3;
@@ -585,56 +578,45 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
 	    begin
 	        if rising_edge(clk) then
 
-                -- Shift right the read processor command in the delay line
-            	read_proc_op(read_proc_op'LEFT-1 downto 0) <= read_proc_op(read_proc_op'LEFT downto 1);
-                read_proc_op(read_proc_op'LEFT) <= READ_PROC_NOP; -- insert a default NOP processor command, to be overriden below when needed
-
-
-                -- Shift right the buffer number in the delay line
-                buf_ix(buf_ix'LEFT-1 downto 0) <= buf_ix(buf_ix'LEFT downto 1);
-                buf_ix(buf_ix'LEFT) <= (others => '0'); -- default value to simplify logic
-                -- Find position of the first '1' bit in the buffer readout mask vector
-                for i in 0 to NUMBER_OF_BUFFERS-1 loop
-                    if ram_readout_mask(i) then
-                        buf_ix(buf_ix'LEFT) <= to_unsigned(i,buf_ix(0)'LENGTH);
-                        exit;
-                    end if;
-                end loop;
 
 
                 -- RAM Read sequencer
                 --
-                -- The following state machine drives the readout process by generating the RAM read addresses and sending out signals to the next stage on what to do when the data arrives a few clocks later.
-                -- We use fifo_full signal to throttle the machine. Since we have tvalids in the delay pipeline, we stop writing too late.
-                -- The full threshold MUST be set so the fifo can accomodate a few extra writes after fifo_full is raised
+                -- The following state machine drives the readout process by generating the RAM read
+                -- addresses and sending out signals to the next stage on what to do when the data
+                -- arrives a few clocks later. It also generates the read_proc_op (read processor
+                -- opcode) signal that tells the RAM data processing logic what to do with the data.
+                -- That opcode signal is pipelined in order to arrive at the same time as the data.
+                --
+                -- We use fifo_full signal to throttle the readout machine. Since we receive it while there is data
+                -- in the pipeline, we will stop writing too late. The full threshold MUST
+                -- therefore be set before the FIFO is actually full (by using the almost_full
+                -- signal instead) so the fifo can accomodate a few extra writes after fifo_full is
+                -- raised. This greatly simplifies the logic.
 		    	ram_rd_addr <= (others => std_logic_vector(read_seq_byte_ctr(15 downto 4)));
-		    	ram_rd_en <= (others => '0'); -- the active read line will be overriden below
-		    	ram_readout_trig_ack <= (others => '0'); -- Single pulse buffer readout completion signal. Overriden below when appropriate.
+		    	ram_rd_en <= (others => '0'); -- the active read line will be overridden below
+		    	ram_readout_trig_ack <= (others => '0'); -- Single pulse buffer readout completion signal. Overridden below when appropriate.
 	            case read_seq_state is
 	            	when READ_SEQ_WAIT =>
-	            		-- data_tvalid =0, header_tvalid = 0, data_tlast = x.
                         header_byte_ctr <= 0;
                         -- If any buffer is ready for transmission, grab the trigger pattern so we can process them as a batch.
 	            		if any_one(ram_readout_trig and not ram_readout_trig_ack) then -- ack won't affect trig until the next clock. Anticipate the result.
                             ram_readout_mask <= ram_readout_trig;
                             read_seq_state <= READ_SEQ_SEND_HEADER;
 	            		end if;
-                    when READ_SEQ_SEND_HEADER =>
+                    when READ_SEQ_SEND_HEADER => -- Instruct the readout logic to send header data
 	                    if not fifo_full then
 	                        read_proc_op(read_proc_op'LEFT) <= READ_PROC_SEND_HEADER;
---	                        header_tvalid(header_tvalid'LEFT) <= '1';
 	                        header_byte_ctr <= header_byte_ctr + 1;
 	                        if header_byte_ctr = FRAME_HEADER_BYTE_LENGTH-1 then -- if this is the last header byte
 	                             read_proc_op(read_proc_op'LEFT) <= READ_PROC_SEND_LAST_HEADER;
---                           		 data_tlast(data_tlast'LEFT) <= '1'; -- signal last byte of header (not end of packet)
                                  header_byte_ctr <= 0; -- get ready for the next time we get here
 	                             read_seq_state <= READ_SEQ_SEND_DATA; -- start sending the data
 	                        end if;
 	                    end if; -- if header fifo & send_delay & dest_ready
-	                when READ_SEQ_SEND_DATA =>
+	                when READ_SEQ_SEND_DATA => -- Instruct the readout logic to send buffer data
 	                    if not fifo_full then
 	                        read_seq_byte_ctr <= read_seq_byte_ctr + 1;
---	                        data_tvalid(data_tvalid'LEFT) <= '1';
                             read_proc_op(read_proc_op'LEFT) <= READ_PROC_SEND_DATA;
                             -- Pulse the RAM rd_en only on byte 0 to save power
                             if read_seq_byte_ctr(3 downto 0) = 0 then
@@ -646,13 +628,10 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
                             if all_ones(read_seq_byte_ctr(12 downto 0)) then -- every 512 words x 16 bytes = 8K
                                 read_seq_state <= READ_SEQ_SEND_HEADER;
                                 read_proc_op(read_proc_op'LEFT) <= READ_PROC_SEND_LAST_PACKET_DATA;
---                        		data_tlast(data_tlast'LEFT) <= '1';
                             end if;
 
                             if all_ones(read_seq_byte_ctr) then -- if all bytes in the buffer has been sent
                                 read_proc_op(read_proc_op'LEFT) <= READ_PROC_SEND_LAST_DATA;
---                        		data_tlast(data_tlast'LEFT) <= '1'; -- redundant, but for clarity
---    	                        header_tvalid(header_tvalid'LEFT) <= '1'; -- signal end of transmission (increment timestamp)
                                 read_seq_byte_ctr <= (others => '0');
                                 -- Clear the mask bit for the current buffer so we will continue processing the next buffer.
                                 -- The new buffer index will be put on the delay pipeline 2 clocks later, but we don't need it
@@ -671,12 +650,32 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
     	                end if; -- HEADER or DATA ready to be sent
 	            end case;
 
+	            -- Pipeline the read opcode and buffer index to compendate for the RAM readout latency
 
+                -- a) Right-shift the read processor command in the delay line
+            	read_proc_op(read_proc_op'LEFT-1 downto 0) <= read_proc_op(read_proc_op'LEFT downto 1);
+                read_proc_op(read_proc_op'LEFT) <= READ_PROC_NOP; -- insert a default NOP processor command, to be overridden below when needed
+
+                -- b) Right-shift the buffer number in the delay line
+                buf_ix(buf_ix'LEFT-1 downto 0) <= buf_ix(buf_ix'LEFT downto 1);
+                buf_ix(buf_ix'LEFT) <= (others => '0'); -- default value to simplify logic
+                -- Find position of the first '1' bit in the buffer readout mask vector
+                for i in 0 to NUMBER_OF_BUFFERS-1 loop
+                    if ram_readout_mask(i) then
+                        buf_ix(buf_ix'LEFT) <= to_unsigned(i,buf_ix(0)'LENGTH);
+                        exit;
+                    end if;
+                end loop;
+
+
+
+                -- Convert useful signals to variables and integers for ease of use
                 buf := buf_ix(0);
                 src := ram_readout_src(to_integer(buf));
                 src_int := to_integer(to_unsigned(src));
 
 	            -- Prepare the frame information.
+	            --
 	            -- The header info is used in the data processor machine below.
 	            -- The signals used to build the header (high bits of read_seq_byte_ctr, timestamp) changes with the RAM read address,
 	            -- i.e. a few clocks before the frame header data it is actually used.
@@ -718,13 +717,15 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
                 -- RAM data processor
                 --
                 -- This logic processes words coming out of RAM after the read latency period.
-                -- The processing is based on control signals sent by the read sequencer and delayed to arrive at the same time as the data.
-                -- The control signals are:
-                --    - header_tvalid(0) HV: Send a header byte. A 0 to 1 transition indicates a new header.
-                --    - data_tvalid(0) DV: Send RAM data
-                --    - data_tlast(0): L This is the last byte of a group
+                -- The processing is based on the opcode sent by the read sequencer, which is delayed to arrive at the same time as the data.
+                -- The process sets the write control signals of the FIFO data source 0: tdata (8 bits), tvalid & tlast.
+                -- FIFO Data source 1 is provided externally and is not handled here.
+
+                -- Default values for the FIFO signals
                 fifo_in_tvalid(0) <= '0';
                 fifo_in_tlast(0) <= '0';
+
+
                 case read_proc_op(0) is
 
                     when READ_PROC_SEND_HEADER | READ_PROC_SEND_LAST_HEADER =>
@@ -765,8 +766,6 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
                 -- synchronous reset
 	            if rst = '1' or user_reset_reg = '1'  then
                     fifo_overflow_sticky <= '0';
---                    data_tvalid <= (others => '0');
---                    header_tvalid <= (others => '0');
 	                fifo_in_tvalid(0) <= '0'; -- needed
 	                read_seq_byte_ctr <= (others => '0');
 	                read_seq_state <= READ_SEQ_WAIT; -- needed to make sure we start with header transmission
@@ -778,6 +777,8 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
 	    end process;
     end block rd_blk;
 
+    -- Implement the readout FIFO which takes the 8-bit data from the read sequencer, stores it, and
+    -- trickles it out on the BSB bus clock.
     fifo_blk: block
         signal fifo_din: std_logic_vector(8 downto 0);
         signal fifo_dout: std_logic_vector(8 downto 0);
@@ -788,7 +789,6 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
         signal fifo_wr_rst_busy: std_logic;
         signal fifo_rst: std_logic;
         signal output_source: integer range 0 to 1;
---        type line is access string;
         use std.textio.all;
         use ieee.std_logic_textio;
 
@@ -806,11 +806,17 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
         end function;
 
     begin
+
+    	-- Select data source
+    	-- TODO: Have the source switch automatically based on available data.
         output_source <= to_integer(to_unsigned(output_source_sel));
+
+        -- Connect FIFO input to one of the two data source.
     	fifo_rst <= rst  or user_reset_reg;
         fifo_din <= fifo_in_tlast(output_source) & fifo_in_tdata(output_source);
         fifo_wr_en <= fifo_in_tvalid(output_source) and not (rst or fifo_wr_rst_busy);
 
+        -- Connect FIFO output to output port of this entity
         m_axis_bsb_tdata <= fifo_dout(7 downto 0);
         m_axis_bsb_tlast <= fifo_dout(8);
         m_axis_bsb_tvalid <= fifo_data_valid;
@@ -818,25 +824,29 @@ status_bytes(2) <= std_logic_vector(source_sel_in);
 
 
        -- BSB FIFO
-       -- There is a considerable delay between the time the read  side sees there is data on the write side (4-5 slow clocks, which is equivalent to 16-20 fast clocks).
+       --
+       -- Asynchronous FIFO, symmetric, 8+1 bit wide (data+tlast) x 512 deep, FWFT, with prog_full
+       --
+       -- FIFO depth requirements: There is a considerable delay between the time the read side sees there is data on the write side (4-5 slow clocks, which is equivalent to 16-20 fast clocks).
        -- If the FIFO is not deep enough, the readout stops needlessly. Data is good, but bandwidth is reduced needlessly.
-       -- We have to set the full threshold to 16-6 = 12 to make sure that flusing the writes in the pipeline won't overflow the FIFO.
-        -- This means the depth of the FIFO should be ~6 + 20 = 26. Te FIFO does not work properly in simulation with values not multiples of 16.
+       --
+       -- prog_full requirements: We have to set the full threshold to 16-6 = 12 to make sure that flushing the writes in the pipeline won't overflow the FIFO.
+       -- This means the depth of the FIFO should be ~6 + 20 = 26. The FIFO does not work properly in simulation with values not multiples of 16.
+       --
        -- xpm_fifo_async: Asynchronous FIFO
        -- Xilinx Parameterized Macro, version 2022.2
        fifo0 : xpm_fifo_async
            generic map (
-              FIFO_MEMORY_TYPE => "auto", -- String
-              FIFO_WRITE_DEPTH => 512,   -- DECIMAL. 16 is the minimum
-              FULL_RESET_VALUE => 1,      -- DECIMAL
-              PROG_FULL_THRESH => 256,     -- DECIMAL 11 has overflows
-              READ_DATA_WIDTH => 9,      -- DECIMAL
-              READ_MODE => "fwft",         -- String
-        --      RELATED_CLOCKS => 0,        -- DECIMAL
-              SIM_ASSERT_CHK => 1,        -- DECIMAL; 0=disable simulation messages, 1=enable simulation messages
-              USE_ADV_FEATURES => "1407", --"1003", -- xpm_async_fifo_features(overflow => true, prog_full => true, data_valid => TRUE),-- to_hex_string((0 | 1 | 12 => '1', others => '0')), -- 0:overflow, 1:prog_full, 12:data_valid
-              WRITE_DATA_WIDTH => 9,     -- DECIMAL
-              WR_DATA_COUNT_WIDTH => 5,
+              FIFO_MEMORY_TYPE => "auto",
+              FIFO_WRITE_DEPTH => 512,   -- 16 is the minimum
+              FULL_RESET_VALUE => 1,
+              PROG_FULL_THRESH => 256,     -- Must be big enough to handle the throttling signal latency. 11 has overflows
+              READ_DATA_WIDTH => 9,      -- 8 data + 1 tlast
+              READ_MODE => "fwft",
+              SIM_ASSERT_CHK => 1,        --  0=disable simulation messages, 1=enable simulation messages
+              USE_ADV_FEATURES => "1407", -- bit 0:overflow, 1:prog_full, 12:data_valid
+              WRITE_DATA_WIDTH => 9,     -- same as READ_DATA_WIDTH
+              WR_DATA_COUNT_WIDTH => 5, -- for debugging only
               RD_DATA_COUNT_WIDTH => 5
            )
            port map (
