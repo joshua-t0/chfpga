@@ -358,7 +358,7 @@ begin
 	status_bytes(0)(0)          <= frame_flags_fifo_overflow_sticky;
 
 	--! STATUS Byte 1
-	status_bytes(1) <= to_slv(lsb(timestamp_ctr));
+	status_bytes(1) <= to_slv(lsb(timestamp_ctr, 8));
 	status_bytes(2) <= to_slv(in_frame_ctr);
 	-- status_bytes(3)<=to_slv(DOUT_FRAME_CTR);
 
