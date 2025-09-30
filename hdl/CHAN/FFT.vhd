@@ -220,7 +220,7 @@ architecture Behavioral of FFT is
 
 	--- Define Control word and its signals
 	signal control_bytes: slv8_array(0 to 6);
-	signal status_bytes: slv8_array(0 to 3);
+	signal status_bytes: slv8_array(0 to 4);
 
 	signal bypass_fft: std_logic;
 	signal soft_reset: std_logic;
@@ -284,6 +284,12 @@ status_bytes(2) <= std_logic_vector(overflow_count);
 -- STATUS BYTE 3
 status_bytes(3)(2 downto 0) <= to_slv(fft_type_enum'POS(FFT_TYPE), 3);
 status_bytes(3)(7 downto 3) <= to_slv(FFT_DELAY_CTR_WIDTH, 5);
+
+-- STATUS BYTE 4
+
+status_bytes(4)(7) <= to_std_logic(IMPLEMENT_FFT);
+status_bytes(4)(6) <= to_std_logic(ROTATE_BINS);
+status_bytes(4)(5) <= sync_reset;
 
 -----------------------------------------------------------------------------------
 -- Memory-Mapped interface
