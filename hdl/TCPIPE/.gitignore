@@ -2,7 +2,8 @@
 !*/
 !/*/*.bd
 !*.xci
+!*.tcl
 #!*ultra_ps*.xci
 !.gitignore
-# !zynq_tcpipe_crs/
+zynq_tcpipe_crs/
 # !zynq_tcpipe_zcu111/
