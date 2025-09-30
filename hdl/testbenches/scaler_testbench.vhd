@@ -34,12 +34,13 @@ use work.tb_package.all;
 
 ENTITY scaler_testbench IS
  	generic (
-       FFT_BITS_PER_BIN: integer := 18+18; -- 18+18 or 32+32, Real + Imaginary part
-        FFT_BINS_PER_WORD: integer := 2;
-        FFT_BINS_PER_FRAME: integer:= 1024;
-        USE_COMPLEX_GAINS: boolean := TRUE;
-        COEFF_BITS_PER_BIN: integer := 16+16; -- typically 16 or 16+16. Includes both real and imaginary part. If USE_COMPLEX_GAINS=TRUE, half the bits are used for real and half for imaginary. Must be multiple of 8 as it is configured byte-wise.
-        OUT_BITS_PER_BIN: integer := 4+4 -- minimum is 4+4, but can be increased to use 8-bit mode or get more of the input data in bypass mode for capture purposes.
+       FFT_BITS_PER_BIN: integer := 32+32; -- 18+18 or 32+32, Real + Imaginary part
+        FFT_BINS_PER_WORD: integer := 4;
+        FFT_BINS_PER_FRAME: integer:= 8192;
+        USE_COMPLEX_GAINS: boolean := FALSE;
+        COEFF_BITS_PER_BIN: integer := 16; -- typically 16 or 16+16. Includes both real and imaginary part. If USE_COMPLEX_GAINS=TRUE, half the bits are used for real and half for imaginary. Must be multiple of 8 as it is configured byte-wise.
+        OUT_BITS_PER_BIN: integer := 4+4; -- minimum is 4+4, but can be increased to use 8-bit mode or get more of the input data in bypass mode for capture purposes.
+        TEST_STRING: string := "TEST"
    		);
 END scaler_testbench;
 
@@ -75,7 +76,7 @@ constant CLK125_period : time := 8 ns;
 	signal m_axis_tdata: std_logic_vector(OUT_BITS_PER_WORD-1 downto 0);
 	signal m_axis_tvalid: std_logic;
 	signal m_axis_tlast: std_logic;
-	signal m_axis_tuser: slv4;
+	signal m_axis_tuser: std_logic_vector(6 downto 0); -- ADC, FFT + 4 scaler + 
 
 	signal m_cap_tdata: std_logic_vector(127 downto 0);
 	signal m_cap_tvalid: std_logic;
@@ -108,7 +109,7 @@ dut0: entity work.scaler
 		s_axis_in_tdata  => s_axis_tdata,
 		s_axis_in_tvalid => s_axis_tvalid,
 		s_axis_in_tlast  => s_axis_tlast,
-		s_axis_in_tuser  => "0101", --(ADC overflow, scaler even, scaler odd, FFT overflow)
+		s_axis_in_tuser  => "00", --(ADC overflow,  FFT overflow)
 
 		m_axis_out_tdata  => m_axis_tdata,
 		m_axis_out_tvalid => m_axis_tvalid,
@@ -187,7 +188,10 @@ stim_proc : process
 		sleep(clk125, 2); -- make sure we start command transmission on a CLK125 edge or we will lose some data
 		reset <= '0';
 		sleep(clk125, 10); -- make sure we start command transmission on a CLK125 edge or we will lose some data
-
+        if TEST_STRING="BAD_TEST" then
+            assert  FALSE report "Bad string compariton" severity FAILURE;
+        end if;
+        
         lin_gain := 1;
         log_gain := 0;
         common_log_gain := 30;
@@ -233,7 +237,7 @@ stim_proc : process
         fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, SCALER_CONFIG1_REG, sym_sat*64 + round_mode); 
 
         use_float_gains := 1; -- ignored if complex gains
-        cap_mode := 2; -- 0:main out,1: raw FFT, 2: post-gain FFT, 3: 4+4 bit, 4:rawFFT, even bins, 5: raw FFT, odd bins, 
+        cap_mode := 5; -- 0: main out,1: raw FFT, 2: post-gain FFT, 3: 4+4 bit, 4:2x res 5: Full res, 6: sat flags 
 
         fpga_write_control(clk125, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, SCALER_CONFIG2_REG, use_float_gains*128 + cap_mode);  -- use_float_gains, reset_stats, unused, bypass_mode, cap_mode
 
@@ -250,8 +254,11 @@ stim_proc : process
 --                re := 16#7FFFFFFF#;
 --                re := (re * 2**(32-16)); 
 --                im := re;
-                re:= -1024;
-                im := 0;
+                re:= 2*(j+i*FFT_BINS_PER_WORD);
+                im := re+1;
+                re:= 1;
+                im := 1;
+         
                 data_words(i)((rj+1)*FFT_BITS_PER_BIN-1 downto rj*FFT_BITS_PER_BIN) := std_logic_vector(signed'(to_signed(re, FFT_BITS_PER_BIN/2) & to_signed(im, FFT_BITS_PER_BIN/2)));
             end loop;
         end loop;
