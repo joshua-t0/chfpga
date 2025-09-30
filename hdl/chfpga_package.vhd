@@ -633,11 +633,18 @@ function bit_reverse(s1:std_logic_vector) return std_logic_vector; -- reverses l
 function reverse_bits_same_dir(s1:std_logic_vector) return std_logic_vector; --! reverses left-right bit order of a vector but keep the vector original direction
 function reverse_bits_and_dir(s1:std_logic_vector) return std_logic_vector ; --! reverse both the bit order and  direction of vector.
 function reverse_bytes(s1:std_logic_vector) return std_logic_vector; --! reverses byte order of a vector. Input vector length must be a multiple of 8.
-function lsb(s1:unsigned; width:integer:=8) return unsigned; -- returns least significant byte of a word
-function lsb(s1:std_logic_vector; width:integer:=8) return std_logic_vector;
-function msb(s1:signed; width:integer:=8) return signed;
-function msb(s1:std_logic_vector; width:integer:=8) return std_logic_vector;
-function msb_pad(s1:std_logic_vector; width:integer:=8) return std_logic_vector; -- returns ``width`` leftmost bits of ``s1`, right-pad with zeros if ``s1`` is shorter then ``width`
+
+function get_subword(v: std_logic_vector; subword_width:integer; index: integer; from_msb:boolean := FALSE) return std_logic_vector;
+procedure set_subword(signal dst: inout std_logic_vector; src: std_logic_vector; index: integer; from_msb:boolean := FALSE);
+
+
+function lsb(s1:unsigned; width:integer) return unsigned; -- returns least significant byte of a word
+function lsb(s1:std_logic_vector; width:integer) return std_logic_vector;
+function msb(v:unsigned) return std_logic;
+function msb(v:signed) return std_logic;
+function msb(s1:signed; width:integer) return signed;
+function msb(s1:std_logic_vector; width:integer) return std_logic_vector;
+function msb_pad(s1:std_logic_vector; width:integer) return std_logic_vector; -- returns ``width`` leftmost bits of ``s1`, right-pad with zeros if ``s1`` is shorter then ``width`
 function sign_bit(i:signed) return std_logic; --! Returns the sign bit (the MSB) of a signed number
 function sign_bit(i:unsigned) return std_logic; --! Returns the sign bit (the MSB) of an unsigned number
 function sign_bit(i:std_logic_vector) return std_logic; --! Returns the sign bit (the MSB) of a std_logic_vector
@@ -652,6 +659,11 @@ function sel(b: BOOLEAN; if_true: slv32_array; if_false: slv32_array) return slv
 function sel(b: std_logic; if_true: std_logic_vector; if_false: std_logic_vector) return std_logic_vector;
 FUNCTION sel(key:string; si_map: si_map_array) return integer;
 
+
+FUNCTION max_value(v:signed) return integer;
+FUNCTION min_value(v:signed) return integer;
+FUNCTION max_value_vect(v:signed) return signed;
+FUNCTION min_value_vect(v:signed) return signed;
 
 function max(LEFT, RIGHT: INTEGER) return INTEGER;
 function max(vin: IntegerArray) return INTEGER;
@@ -717,6 +729,9 @@ function all_zeros(v: unsigned) return boolean; -- Return TRUE if all bits are '
 function all_zeros(v: signed) return boolean; -- Return TRUE if all bits are '0'.
 function all_zeros(v: std_logic_vector; high:integer; low:integer) return boolean;
 function all_zeros(v: unsigned; high:integer; low:integer) return boolean;
+
+function all_same(v: std_logic_vector; high:integer; low:integer) return boolean;
+function all_same(v: signed; high:integer; low:integer) return boolean;
 
 function num_ones(v: std_logic_vector) return integer; -- Return number of bits that are '1'.
 
@@ -787,28 +802,56 @@ begin
 	return rr;
 end reverse_bytes;
 
+function get_subword(v: std_logic_vector; subword_width:integer; index: integer; from_msb:boolean := FALSE) return std_logic_vector is
+begin
+    if from_msb then
+        return v(v'LENGTH - subword_width * index - 1 downto v'LENGTH - subword_width * (index + 1));
+    else
+        return v((subword_width + 1) * index -1 downto subword_width * index);
+    end if; 
+end get_subword;
 
-FUNCTION lsb(s1:unsigned; width:integer:=8) return unsigned is
+procedure set_subword(signal dst: inout std_logic_vector; src: std_logic_vector; index: integer; from_msb: boolean := FALSE) is
+begin
+    if from_msb then
+        dst(dst'LENGTH - src'LENGTH *index -1 downto dst'LENGTH - src'LENGTH * (index + 1)) <= src;
+    else
+        dst((src'LENGTH + 1)*index -1 downto src'LENGTH * index) <= src;
+    end if;
+end set_subword;
+
+FUNCTION lsb(s1:unsigned; width:integer) return unsigned is
 begin
 	return s1(width-1 downto 0);
 end lsb;
 
-FUNCTION lsb(s1:std_logic_vector; width:integer:=8) return std_logic_vector is
+FUNCTION lsb(s1:std_logic_vector; width:integer) return std_logic_vector is
 begin
 	return s1(width-1 downto 0);
 end lsb;
 
-FUNCTION msb(s1:signed; width:integer:=8) return signed is
+
+FUNCTION msb(v:signed) return std_logic is
+begin
+	return v(v'LEFT);
+end msb;
+
+FUNCTION msb(v:unsigned) return std_logic is
+begin
+	return v(v'LEFT);
+end msb;
+
+FUNCTION msb(s1:signed; width:integer) return signed is
 begin
 	return s1(s1'LEFT downto s1'LEFT-width+1);
 end msb;
 
-FUNCTION msb(s1:std_logic_vector; width:integer:=8) return std_logic_vector is
+FUNCTION msb(s1:std_logic_vector; width:integer) return std_logic_vector is
 begin
 	return s1(s1'LEFT downto s1'LEFT-width+1);
 end msb;
 
-FUNCTION msb_pad(s1:std_logic_vector; width:integer:=8) return std_logic_vector is
+FUNCTION msb_pad(s1:std_logic_vector; width:integer) return std_logic_vector is
 	variable r: std_logic_vector(width-1 downto 0) := (others => '0');
 	variable min_width: integer := minimum(width, s1'LENGTH);
 begin
@@ -830,6 +873,26 @@ FUNCTION sign_bit(i:std_logic_vector) return std_logic is --
 begin
 	return i(i'LENGTH-1);
 end sign_bit;
+
+FUNCTION max_value(v:signed) return integer is
+begin
+	return 2**(v'LENGTH - 1) - 1;
+end max_value;
+
+FUNCTION max_value_vect(v:signed) return signed is
+begin
+	return to_signed(max_value(v), v'LENGTH);
+end max_value_vect;
+
+FUNCTION min_value(v:signed) return integer is
+begin
+	return -(2**(v'LENGTH - 1));
+end min_value;
+
+FUNCTION min_value_vect(v:signed) return signed is
+begin
+	return to_signed(min_value(v), v'LENGTH);
+end min_value_vect;
 
 -- stolen from std_numeric
 function MAX(LEFT, RIGHT: INTEGER) return INTEGER is
@@ -1315,6 +1378,22 @@ function all_zeros(v: unsigned; high:integer; low:integer) return boolean is
 begin
 	return all_zeros(std_logic_vector(v), high, low);
 end function;
+
+
+--Returns TRUE if bits in specified range are all the same
+function all_same(v: std_logic_vector; high:integer; low:integer) return boolean is
+	variable bits: std_logic_vector(v'range) := (others => v(v'HIGH));
+begin
+    return v(high downto low) = bits(high downto low);
+end function;
+
+
+function all_same(v: signed; high:integer; low:integer) return boolean is
+begin
+	return all_same(std_logic_vector(v), high, low);
+end function;
+
+
 
 function num_ones(v: std_logic_vector) return integer is
 	variable count: integer := 0;
