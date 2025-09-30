@@ -66,13 +66,13 @@
     <Option Name="WTVcsLaunchSim" Val="0"/>
     <Option Name="WTRivieraLaunchSim" Val="0"/>
     <Option Name="WTActivehdlLaunchSim" Val="0"/>
-    <Option Name="WTXSimExportSim" Val="266"/>
-    <Option Name="WTModelSimExportSim" Val="266"/>
-    <Option Name="WTQuestaExportSim" Val="266"/>
+    <Option Name="WTXSimExportSim" Val="267"/>
+    <Option Name="WTModelSimExportSim" Val="267"/>
+    <Option Name="WTQuestaExportSim" Val="267"/>
     <Option Name="WTIesExportSim" Val="43"/>
-    <Option Name="WTVcsExportSim" Val="266"/>
-    <Option Name="WTRivieraExportSim" Val="266"/>
-    <Option Name="WTActivehdlExportSim" Val="266"/>
+    <Option Name="WTVcsExportSim" Val="267"/>
+    <Option Name="WTRivieraExportSim" Val="267"/>
+    <Option Name="WTActivehdlExportSim" Val="267"/>
     <Option Name="GenerateIPUpgradeLog" Val="TRUE"/>
     <Option Name="XSimRadix" Val="hex"/>
     <Option Name="XSimTimeUnit" Val="ns"/>
@@ -117,11 +117,20 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_usp_rf_data_converter_0_0/zynq_tcpipe_crs_usp_rf_data_converter_0_0.xci">
-          <Proxy FileSetName="zynq_tcpipe_crs_usp_rf_data_converter_0_0"/>
-        </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_zynq_ultra_ps_e_0_0/zynq_tcpipe_crs_zynq_ultra_ps_e_0_0.xci">
           <Proxy FileSetName="zynq_tcpipe_crs_zynq_ultra_ps_e_0_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_usp_rf_data_converter_0_0_3/zynq_tcpipe_crs_usp_rf_data_converter_0_0.xci">
+          <Proxy FileSetName="zynq_tcpipe_crs_usp_rf_data_converter_0_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_system_ila_0_0_3/zynq_tcpipe_crs_system_ila_0_0.xci">
+          <Proxy FileSetName="zynq_tcpipe_crs_system_ila_0_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_smartconnect_0_0_3/zynq_tcpipe_crs_smartconnect_0_0.xci">
+          <Proxy FileSetName="zynq_tcpipe_crs_smartconnect_0_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_rst_ps8_0_96M_0_3/zynq_tcpipe_crs_rst_ps8_0_96M_0.xci">
+          <Proxy FileSetName="zynq_tcpipe_crs_rst_ps8_0_96M_0"/>
         </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_pl_clk_rst_0/zynq_tcpipe_crs_pl_clk_rst_0.xci">
           <Proxy FileSetName="zynq_tcpipe_crs_pl_clk_rst_0"/>
@@ -129,16 +138,7 @@
         <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_axi_dma_1_0/zynq_tcpipe_crs_axi_dma_1_0.xci">
           <Proxy FileSetName="zynq_tcpipe_crs_axi_dma_1_0"/>
         </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_smartconnect_0_0/zynq_tcpipe_crs_smartconnect_0_0.xci">
-          <Proxy FileSetName="zynq_tcpipe_crs_smartconnect_0_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_system_ila_0_0/zynq_tcpipe_crs_system_ila_0_0.xci">
-          <Proxy FileSetName="zynq_tcpipe_crs_system_ila_0_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_rst_ps8_0_96M_0/zynq_tcpipe_crs_rst_ps8_0_96M_0.xci">
-          <Proxy FileSetName="zynq_tcpipe_crs_rst_ps8_0_96M_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_axi_dma_0_0/zynq_tcpipe_crs_axi_dma_0_0.xci">
+        <CompFileExtendedInfo CompFileName="zynq_tcpipe_crs.bd" FileRelPathName="ip/zynq_tcpipe_crs_axi_dma_0_0_3/zynq_tcpipe_crs_axi_dma_0_0.xci">
           <Proxy FileSetName="zynq_tcpipe_crs_axi_dma_0_0"/>
         </CompFileExtendedInfo>
       </File>
@@ -494,6 +494,13 @@
           <Attr Name="UsedIn" Val="implementation"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/rqs_report.rqs">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedInSteps" Val="impl_1"/>
+        </FileInfo>
+      </File>
       <Config>
         <Option Name="TopAutoSet" Val="TRUE"/>
       </Config>
@@ -595,9 +602,12 @@
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Flow_PerfOptimized_high" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design">
-          <Option Id="Directive">7</Option>
+          <Option Id="Assert">1</Option>
           <Option Id="NoCombineLuts">1</Option>
           <Option Id="KeepEquivalentRegisters">1</Option>
+          <Option Id="ShregMinSize">5</Option>
+          <Option Id="Directive">7</Option>
+          <Option Id="ResourceSharing">2</Option>
           <Option Id="FsmExtraction">1</Option>
           <Option Id="ShregMinSize">5</Option>
           <Option Id="ResourceSharing">2</Option>
@@ -607,9 +617,7 @@
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2022"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles>
-        <RQSFilePath>$PPRDIR/rqs_report5.rqs</RQSFilePath>
-      </RQSFiles>
+      <RQSFiles/>
     </Run>
     <Run Id="pfb_fft_bitgrowth_0_synth_1" Type="Ft3:Synth" SrcSet="pfb_fft_bitgrowth_0" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="pfb_fft_bitgrowth_0" Description="Higher performance designs, resource sharing is turned off, the global fanout guide is set to a lower number, FSM extraction forced to one-hot, LUT combining is disabled, equivalent registers are preserved, SRL are inferred  with a larger threshold" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/pfb_fft_bitgrowth_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/pfb_fft_bitgrowth_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/pfb_fft_bitgrowth_0_synth_1">
       <Strategy Version="1" Minor="2">
@@ -630,9 +638,7 @@
     </Run>
     <Run Id="zynq_tcpipe_crs_usp_rf_data_converter_0_0_synth_1" Type="Ft3:Synth" SrcSet="zynq_tcpipe_crs_usp_rf_data_converter_0_0" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="zynq_tcpipe_crs_usp_rf_data_converter_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/zynq_tcpipe_crs_usp_rf_data_converter_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_usp_rf_data_converter_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_usp_rf_data_converter_0_0_synth_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -642,9 +648,7 @@
     </Run>
     <Run Id="zynq_tcpipe_crs_zynq_ultra_ps_e_0_0_synth_1" Type="Ft3:Synth" SrcSet="zynq_tcpipe_crs_zynq_ultra_ps_e_0_0" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="zynq_tcpipe_crs_zynq_ultra_ps_e_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/zynq_tcpipe_crs_zynq_ultra_ps_e_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_zynq_ultra_ps_e_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_zynq_ultra_ps_e_0_0_synth_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -654,9 +658,7 @@
     </Run>
     <Run Id="zynq_tcpipe_crs_pl_clk_rst_0_synth_1" Type="Ft3:Synth" SrcSet="zynq_tcpipe_crs_pl_clk_rst_0" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="zynq_tcpipe_crs_pl_clk_rst_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/zynq_tcpipe_crs_pl_clk_rst_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_pl_clk_rst_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_pl_clk_rst_0_synth_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -666,9 +668,7 @@
     </Run>
     <Run Id="zynq_tcpipe_crs_axi_dma_1_0_synth_1" Type="Ft3:Synth" SrcSet="zynq_tcpipe_crs_axi_dma_1_0" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="zynq_tcpipe_crs_axi_dma_1_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/zynq_tcpipe_crs_axi_dma_1_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_axi_dma_1_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_axi_dma_1_0_synth_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -678,9 +678,7 @@
     </Run>
     <Run Id="zynq_tcpipe_crs_smartconnect_0_0_synth_1" Type="Ft3:Synth" SrcSet="zynq_tcpipe_crs_smartconnect_0_0" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="zynq_tcpipe_crs_smartconnect_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/zynq_tcpipe_crs_smartconnect_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_smartconnect_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_smartconnect_0_0_synth_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -690,9 +688,7 @@
     </Run>
     <Run Id="zynq_tcpipe_crs_system_ila_0_0_synth_1" Type="Ft3:Synth" SrcSet="zynq_tcpipe_crs_system_ila_0_0" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="zynq_tcpipe_crs_system_ila_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/zynq_tcpipe_crs_system_ila_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_system_ila_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_system_ila_0_0_synth_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -702,9 +698,7 @@
     </Run>
     <Run Id="zynq_tcpipe_crs_rst_ps8_0_96M_0_synth_1" Type="Ft3:Synth" SrcSet="zynq_tcpipe_crs_rst_ps8_0_96M_0" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="zynq_tcpipe_crs_rst_ps8_0_96M_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/zynq_tcpipe_crs_rst_ps8_0_96M_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_rst_ps8_0_96M_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_rst_ps8_0_96M_0_synth_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -712,11 +706,9 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="zynq_tcpipe_crs_axi_dma_0_0_synth_1" Type="Ft3:Synth" SrcSet="zynq_tcpipe_crs_axi_dma_0_0" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="zynq_tcpipe_crs_axi_dma_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/zynq_tcpipe_crs_axi_dma_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_axi_dma_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_axi_dma_0_0_synth_1">
+    <Run Id="pfb_fft_bitgrowth_0_synth_1" Type="Ft3:Synth" SrcSet="pfb_fft_bitgrowth_0" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="pfb_fft_bitgrowth_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/pfb_fft_bitgrowth_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/pfb_fft_bitgrowth_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/pfb_fft_bitgrowth_0_synth_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -729,7 +721,7 @@
         <StratHandle Name="Performance_ExplorePostRoutePhysOpt" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design">
-          <Option Id="Directive">0</Option>
+          <Option Id="Directive">6</Option>
         </Step>
         <Step Id="power_opt_design"/>
         <Step Id="place_design">
@@ -737,19 +729,22 @@
         </Step>
         <Step Id="post_place_power_opt_design"/>
         <Step Id="phys_opt_design">
-          <Option Id="Directive">0</Option>
+          <Option Id="Directive">2</Option>
         </Step>
         <Step Id="route_design">
-          <Option Id="Directive">0</Option>
+          <Option Id="Directive">8</Option>
           <Option Id="MoreOptsStr"><![CDATA[-tns_cleanup]]></Option>
         </Step>
         <Step Id="post_route_phys_opt_design" EnableStepBool="1">
-          <Option Id="Directive">0</Option>
+          <Option Id="Directive">1</Option>
         </Step>
         <Step Id="write_bitstream" PostStepTclHook="$PPRDIR/rename_bitstream.tcl"/>
       </Strategy>
       <ReportStrategy Name="Timing Closure Reports" Flow="Vivado Implementation 2022" CtrlBit="true">
-        <ReportConfig DisplayName="DRC - Opt Design" Name="impl_1_opt_report_drc_0" Spec="report_drc" RunStep="opt_design" Version="1" Minor="0">
+        <ReportConfig DisplayName="Qor Suggestions" Name="impl_1_init_report_qor_suggestions_flow" Spec="report_qor_suggestions" RunStep="init_design" ReportFile="init_report_qor_suggestions_0.rpt" Version="1" Minor="0">
+          <ReportConfigOption Name="of_objects" Type="" Value="\[get_qor_suggestions]"/>
+        </ReportConfig>
+        <ReportConfig DisplayName="DRC - Opt Design" Name="impl_1_opt_report_drc_0" Spec="report_drc" RunStep="opt_design" ReportFile="opt_report_drc_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="dummy_option" Type="string"/>
           <ReportConfigOutputOption Name="pb" Type="string" Value=""/>
           <ReportConfigOutputOption Name="rpx" Type="string" Value=""/>
@@ -787,10 +782,7 @@
         <ReportConfig DisplayName="Report On QoR Assessment - Place Design" Name="impl_1_place_report_qor_assessment_0" Spec="report_qor_assessment" RunStep="place_design" Version="1" Minor="0">
           <ReportConfigOption Name="max_paths" Type="" Value="100"/>
         </ReportConfig>
-        <ReportConfig DisplayName="Qor Suggestions" Name="impl_1_place_report_qor_suggestions_flow" Spec="report_qor_suggestions" RunStep="place_design" ReportFile="place_report_qor_suggestions_0.rpt" Version="1" Minor="0">
-          <ReportConfigOption Name="of_objects" Type="" Value="\[get_qor_suggestions]"/>
-        </ReportConfig>
-        <ReportConfig DisplayName="Timing Summary - Post-Place Phys Opt Design" Name="impl_1_phys_opt_report_timing_summary_0" Spec="report_timing_summary" RunStep="phys_opt_design" Version="1" Minor="0">
+        <ReportConfig DisplayName="Timing Summary - Post-Place Phys Opt Design" Name="impl_1_phys_opt_report_timing_summary_0" Spec="report_timing_summary" RunStep="phys_opt_design" ReportFile="phys_opt_report_timing_summary_0.rpt" Version="1" Minor="0">
           <ReportConfigOption Name="max_paths" Type="" Value="10"/>
           <ReportConfigOption Name="report_unconstrained" Type="" Value="true"/>
           <ReportConfigOutputOption Name="pb" Type="string" Value=""/>
@@ -870,7 +862,9 @@
         </ReportConfig>
       </ReportStrategy>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
+      <RQSFiles>
+        <RQSFilePath>$PPRDIR/rqs_report.rqs</RQSFilePath>
+      </RQSFiles>
     </Run>
     <Run Id="pfb_fft_bitgrowth_0_impl_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="pfb_fft_bitgrowth_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="pfb_fft_bitgrowth_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/pfb_fft_bitgrowth_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/pfb_fft_bitgrowth_0_impl_1">
       <Strategy Version="1" Minor="2">
@@ -891,9 +885,7 @@
     </Run>
     <Run Id="zynq_tcpipe_crs_usp_rf_data_converter_0_0_impl_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="zynq_tcpipe_crs_usp_rf_data_converter_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="zynq_tcpipe_crs_usp_rf_data_converter_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_usp_rf_data_converter_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_usp_rf_data_converter_0_0_impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
@@ -910,9 +902,7 @@
     </Run>
     <Run Id="zynq_tcpipe_crs_zynq_ultra_ps_e_0_0_impl_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="zynq_tcpipe_crs_zynq_ultra_ps_e_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="zynq_tcpipe_crs_zynq_ultra_ps_e_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_zynq_ultra_ps_e_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_zynq_ultra_ps_e_0_0_impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
@@ -929,9 +919,7 @@
     </Run>
     <Run Id="zynq_tcpipe_crs_pl_clk_rst_0_impl_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="zynq_tcpipe_crs_pl_clk_rst_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="zynq_tcpipe_crs_pl_clk_rst_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_pl_clk_rst_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_pl_clk_rst_0_impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
@@ -948,9 +936,7 @@
     </Run>
     <Run Id="zynq_tcpipe_crs_axi_dma_1_0_impl_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="zynq_tcpipe_crs_axi_dma_1_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="zynq_tcpipe_crs_axi_dma_1_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_axi_dma_1_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_axi_dma_1_0_impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
@@ -967,9 +953,7 @@
     </Run>
     <Run Id="zynq_tcpipe_crs_smartconnect_0_0_impl_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="zynq_tcpipe_crs_smartconnect_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="zynq_tcpipe_crs_smartconnect_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_smartconnect_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_smartconnect_0_0_impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
@@ -986,9 +970,7 @@
     </Run>
     <Run Id="zynq_tcpipe_crs_system_ila_0_0_impl_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="zynq_tcpipe_crs_system_ila_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="zynq_tcpipe_crs_system_ila_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_system_ila_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_system_ila_0_0_impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
@@ -1005,9 +987,7 @@
     </Run>
     <Run Id="zynq_tcpipe_crs_rst_ps8_0_96M_0_impl_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="zynq_tcpipe_crs_rst_ps8_0_96M_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="zynq_tcpipe_crs_rst_ps8_0_96M_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_rst_ps8_0_96M_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_rst_ps8_0_96M_0_impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
@@ -1024,9 +1004,7 @@
     </Run>
     <Run Id="zynq_tcpipe_crs_axi_dma_0_0_impl_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="zynq_tcpipe_crs_axi_dma_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="zynq_tcpipe_crs_axi_dma_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_axi_dma_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/zynq_tcpipe_crs_axi_dma_0_0_impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
@@ -1074,6 +1052,34 @@
     <MsgAttr Name="RuleType" Val="0"/>
     <MsgAttr Name="Limit" Val="-1"/>
     <MsgAttr Name="NewSeverity" Val="ANY"/>
+    <MsgAttr Name="Id" Val="[Timing 38-78]"/>
+    <MsgAttr Name="Severity" Val="ANY"/>
+    <MsgAttr Name="ShowRule" Val="1"/>
+    <MsgAttr Name="RuleSource" Val="2"/>
+    <MsgAttr Name="StringIsRegExp" Val="0"/>
+    <MsgAttr Name="RuleId" Val="26"/>
+    <MsgAttr Name="Note" Val=""/>
+    <MsgAttr Name="Author" Val=""/>
+    <MsgAttr Name="CreatedTimestamp" Val=""/>
+  </MsgRule>
+  <MsgRule>
+    <MsgAttr Name="RuleType" Val="0"/>
+    <MsgAttr Name="Limit" Val="-1"/>
+    <MsgAttr Name="NewSeverity" Val="ANY"/>
+    <MsgAttr Name="Id" Val="[Timing 38-91]"/>
+    <MsgAttr Name="Severity" Val="ANY"/>
+    <MsgAttr Name="ShowRule" Val="1"/>
+    <MsgAttr Name="RuleSource" Val="2"/>
+    <MsgAttr Name="StringIsRegExp" Val="0"/>
+    <MsgAttr Name="RuleId" Val="27"/>
+    <MsgAttr Name="Note" Val=""/>
+    <MsgAttr Name="Author" Val=""/>
+    <MsgAttr Name="CreatedTimestamp" Val=""/>
+  </MsgRule>
+  <MsgRule>
+    <MsgAttr Name="RuleType" Val="0"/>
+    <MsgAttr Name="Limit" Val="-1"/>
+    <MsgAttr Name="NewSeverity" Val="ANY"/>
     <MsgAttr Name="Id" Val="[Timing 38-102]"/>
     <MsgAttr Name="Severity" Val="ANY"/>
     <MsgAttr Name="ShowRule" Val="1"/>
@@ -1094,20 +1100,6 @@
     <MsgAttr Name="RuleSource" Val="2"/>
     <MsgAttr Name="StringIsRegExp" Val="0"/>
     <MsgAttr Name="RuleId" Val="29"/>
-    <MsgAttr Name="Note" Val=""/>
-    <MsgAttr Name="Author" Val=""/>
-    <MsgAttr Name="CreatedTimestamp" Val=""/>
-  </MsgRule>
-  <MsgRule>
-    <MsgAttr Name="RuleType" Val="0"/>
-    <MsgAttr Name="Limit" Val="-1"/>
-    <MsgAttr Name="NewSeverity" Val="ANY"/>
-    <MsgAttr Name="Id" Val="[Timing 38-3]"/>
-    <MsgAttr Name="Severity" Val="ANY"/>
-    <MsgAttr Name="ShowRule" Val="1"/>
-    <MsgAttr Name="RuleSource" Val="2"/>
-    <MsgAttr Name="StringIsRegExp" Val="0"/>
-    <MsgAttr Name="RuleId" Val="3"/>
     <MsgAttr Name="Note" Val=""/>
     <MsgAttr Name="Author" Val=""/>
     <MsgAttr Name="CreatedTimestamp" Val=""/>
@@ -1248,20 +1240,6 @@
     <MsgAttr Name="RuleSource" Val="2"/>
     <MsgAttr Name="StringIsRegExp" Val="0"/>
     <MsgAttr Name="RuleId" Val="39"/>
-    <MsgAttr Name="Note" Val=""/>
-    <MsgAttr Name="Author" Val=""/>
-    <MsgAttr Name="CreatedTimestamp" Val=""/>
-  </MsgRule>
-  <MsgRule>
-    <MsgAttr Name="RuleType" Val="0"/>
-    <MsgAttr Name="Limit" Val="-1"/>
-    <MsgAttr Name="NewSeverity" Val="ANY"/>
-    <MsgAttr Name="Id" Val="[Timing 38-2]"/>
-    <MsgAttr Name="Severity" Val="ANY"/>
-    <MsgAttr Name="ShowRule" Val="1"/>
-    <MsgAttr Name="RuleSource" Val="2"/>
-    <MsgAttr Name="StringIsRegExp" Val="0"/>
-    <MsgAttr Name="RuleId" Val="4"/>
     <MsgAttr Name="Note" Val=""/>
     <MsgAttr Name="Author" Val=""/>
     <MsgAttr Name="CreatedTimestamp" Val=""/>
@@ -1682,6 +1660,20 @@
     <MsgAttr Name="RuleSource" Val="2"/>
     <MsgAttr Name="StringIsRegExp" Val="0"/>
     <MsgAttr Name="RuleId" Val="67"/>
+    <MsgAttr Name="Note" Val=""/>
+    <MsgAttr Name="Author" Val=""/>
+    <MsgAttr Name="CreatedTimestamp" Val=""/>
+  </MsgRule>
+  <MsgRule>
+    <MsgAttr Name="RuleType" Val="0"/>
+    <MsgAttr Name="Limit" Val="-1"/>
+    <MsgAttr Name="NewSeverity" Val="ANY"/>
+    <MsgAttr Name="Id" Val="17-179"/>
+    <MsgAttr Name="Severity" Val="ANY"/>
+    <MsgAttr Name="ShowRule" Val="0"/>
+    <MsgAttr Name="RuleSource" Val="4294967295"/>
+    <MsgAttr Name="StringIsRegExp" Val="0"/>
+    <MsgAttr Name="RuleId" Val="68"/>
     <MsgAttr Name="Note" Val=""/>
     <MsgAttr Name="Author" Val=""/>
     <MsgAttr Name="CreatedTimestamp" Val=""/>
