@@ -39,33 +39,35 @@ entity chfpga_crs is
 		--    "SYSCLK": 200 MHz unbuffered differential clock from sysclk_p/n,
 		--    "SYSCLK_BUFG": 200 MHz BUFG-Buffered clock from sysclk_bufg,
 		--    "SFP_REFCLK": 125 MHz clock from the GTX reference clock
-		SYSTEM_CLOCK_SOURCE: string := "SYSCLK_BUFG";
+		SYSTEM_CLOCK_SOURCE: clk_source_enum := SYSCLK_BUFG;
 		SYSTEM_CLOCK_FREQ: real     := 10.0; -- System reference clock frequency, in MHz. Must be a real value (i.e. float). Used to select the system PLL divider/multiplier factors.
-		CHAN_CLK_SOURCE: string     := "ADC"; -- Clock sources for the system PLL. Here, Channelizer clock comes directly from the ADC
-		CT_CLK_SOURCE: string       := CONFIG_CT_CLK_SOURCE; -- corner-turn clock source
+		CHAN_CLK_SOURCE: chan_clk_source_enum     := ADC; -- Clock sources for the system PLL. Here, Channelizer clock comes directly from the ADC
+		CT_CLK_SOURCE: ct_clk_source_enum := CONFIG_CT_CLK_SOURCE; -- corner-turn clock source
 
 		-- Buck synchronization
 
 		BUCK_SYNC_ENABLE: boolean       := TRUE; -- default state of the buck sync enable at startup
 		BUCK_CLK_DIVIDE_FACTOR: integer := 12; -- Buck frequency is 200MHz/16/BUCK_CLK_DIVIDE_FACTOR, 12=> 1.0416 MHz, 17 => 0.73529 MHz, 24=>0.5208333 MHz
 
-		PHY_TYPE: string           := "NONE"; -- "GMII" or "SGMII"
-		SGMII_CLOCK_SOURCE: string := "REFCLK"; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
+		BAB_TYPE: bsb_type_enum       := AXIS;
+
+		PHY_TYPE: phy_type_enum       := NONE;
+		SGMII_CLOCK_SOURCE: phy_clk_source_enum := REFCLK; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 
 		-- ADC config
-		ADC_TYPE: string        := "AXIS"; -- ADC data is provided through the axis_adc port
+		ADC_TYPE: adc_type_enum        := AXIS; -- ADC data is provided through the axis_adc port
 		NUMBER_OF_ADCS: integer := CONFIG_NUMBER_OF_ADCS; -- Number of ADC inputs
 
 		-- Mezzanines
 		NUMBER_OF_ADC_BOARDS: integer := 0; -- No mezzanine, therefore no associated clocks etc.
 
 		-- Channelizer configuration
-		FFT_TYPE: integer               := CONFIG_CHAN_FFT_TYPE;
-		NUMBER_OF_CHANNELIZERS: integer := CONFIG_NUMBER_OF_ADCS;  -- (Typ. =16)  (0-NUMBER_OF_ADCS) Number of channelizer blocks to be implemented
-		CAPTURE_TYPE: string            := CONFIG_CHAN_CAPTURE_TYPE;
+		FFT_TYPE: fft_type_enum              := CONFIG_CHAN_FFT_TYPE;
+		NUMBER_OF_CHANNELIZERS: integer      := CONFIG_NUMBER_OF_ADCS;  -- (Typ. =16)  (0-NUMBER_OF_ADCS) Number of channelizer blocks to be implemented
+		CAPTURE_TYPE: chan_capture_type_enum := CONFIG_CHAN_CAPTURE_TYPE;
 
 		-- Corner-turn engine configuration
-		CT_TYPE: integer                         := CONFIG_CT_TYPE; -- "BCT" (CHIME-like) or "UCT" (CHORD-like)
+		CT_TYPE: ct_type_enum                    := CONFIG_CT_TYPE; -- "BCT" (CHIME-like) or "UCT" (CHORD-like)
 		CT_LEVEL: integer                        := CONFIG_CT_LEVEL;
 		NUMBER_OF_CROSSBAR_INPUTS: integer       := CONFIG_NUMBER_OF_CROSSBAR_INPUTS; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
 		NUMBER_OF_CROSSBAR1_OUTPUTS: integer     := CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
@@ -75,13 +77,13 @@ entity chfpga_crs is
 		NUMBER_OF_BP_SHUFFLE_REFCLKS: integer    := CONFIG_NUMBER_OF_BP_SHUFFLE_REFCLKS;
 
 		-- Correlator config
-		CORR_TYPE: string              := CONFIG_CORR_TYPE; -- "CORR44" or "UCORR44"
+		CORR_TYPE: corr_type_enum      := CONFIG_CORR_TYPE; -- "CORR44" or "UCORR44"
 		NUMBER_OF_CORRELATORS: integer := CONFIG_NUMBER_OF_CORRELATORS; -- Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
 
 		-- Real-time data offload links configuration
-		GPU_LINK_TYPE: string          := CONFIG_GPU_LINK_TYPE; --
-		GPU_CHANNEL_QUAD: integer_array := (0 to 3=> 0); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if GPU_LINK_TYPE is NONE
-		GPU_QUAD_REFCLK: integer_array := (0 to 0=>0); -- Both QUAD0 and QUAD1 use refclk(0)
+		GPU_LINK_TYPE: gpu_link_type_enum := CONFIG_GPU_LINK_TYPE; --
+		GPU_CHANNEL_QUAD: integer_array   := (0 to 3=> 0); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if GPU_LINK_TYPE is NONE
+		GPU_QUAD_REFCLK: integer_array    := (0 to 0=>0); -- Both QUAD0 and QUAD1 use refclk(0)
 
 
 		-- Peripheral config
@@ -94,7 +96,7 @@ entity chfpga_crs is
 
 		-- Derived parameters
 
-		NUMBER_OF_GPU_LINKS: integer                 := sel(GPU_LINK_TYPE /= "NONE", GPU_CHANNEL_QUAD'LENGTH, 0); -- Number of 100Gb Ethernet links. 0 if if GPU_LINK_TYPE is "NONE"
+		NUMBER_OF_GPU_LINKS: integer                 := sel(GPU_LINK_TYPE /= NONE, GPU_CHANNEL_QUAD'LENGTH, 0); -- Number of 100Gb Ethernet links. 0 if if GPU_LINK_TYPE is "NONE"
 		NUMBER_OF_GPU_REFCLKS: integer               := max(GPU_QUAD_REFCLK)+1 -- Number of Reference clocks provided for the 100GE links.
 
 
@@ -227,8 +229,8 @@ architecture impl of chfpga_crs is
 	-- fails its DRC.
 	-- "None" tells the tools not to implement an IO port. "OBUF" implements the IO port.
 	--  In the case of "OBUF", it looks like the output buffer is adapted to the type of output such as a transceiver output etc.
-	attribute io_buffer_type of qsfp_txp, qsfp_txn: signal is sel(GPU_LINK_TYPE = "100GE", "OBUF", "NONE");
-	attribute io_buffer_type of clk156_p, clk156_n: signal is sel(GPU_LINK_TYPE = "100GE", "IBUF", "NONE");
+	attribute io_buffer_type of qsfp_txp, qsfp_txn: signal is sel(GPU_LINK_TYPE = CGE, "OBUF", "NONE");
+	attribute io_buffer_type of clk156_p, clk156_n: signal is sel(GPU_LINK_TYPE = CGE, "IBUF", "NONE");
 	attribute io_buffer_type of bp_shuffle_tx_p, bp_shuffle_tx_n: signal is sel(CT_LEVEL > 1, "OBUF", "NONE");
 
 	-- BSB & CAP AXIS clock (100 MHz)

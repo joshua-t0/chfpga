@@ -44,25 +44,26 @@ entity CHAN is
 		-- GENERICS section. In that case, the defaults defined here will be
 		-- used.
 		--
-		-- For non-OOC usage, this entity can be instantiated with entity instantiation with GENERICS
+		-- For non-OOC usage, this entity can be instantiated using the entity instantiation method with GENERICS
 
 		PLATFORM_ID: integer               := CONFIG_PLATFORM_ID; -- PLATFORM_ID_MGK7MB; -- This generics is locked to the MGK7MB when using CHAN as an OOC.
 		IMPLEMENT_CHAN: boolean            := TRUE;
 		IMPLEMENT_FFT: boolean             := CONFIG_CHAN_IMPLEMENT_FFT;
-		FFT_TYPE: integer                  := CONFIG_CHAN_FFT_TYPE;
-		FFT_ROTATE_BINS: boolean           := CONFIG_FFT_ROTATE_BINS; -- enables bin rotation when true
+		FFT_TYPE: fft_type_enum            := CONFIG_CHAN_FFT_TYPE;
 		SCALER_USE_COMPLEX_GAINS: boolean  := CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS;
-		OUT_BITS_PER_WORD: integer         := 32; -- Width of the output data bus which feeds the corner-turn engine or correlator.
 		NUMBER_OF_CAPTURE_SOURCES: integer := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES;
-		CAPTURE_TYPE: string               := CONFIG_CHAN_CAPTURE_TYPE; -- "URAM" or "BRAM"
-		CAPTURE_BITS_PER_WORD: integer     := CONFIG_CAPTURE_BITS_PER_WORD; -- sel(CAPTURE_TYPE="URAM", 128, 32); -- If we use URAM capture (which has a 128-bit bus), have the scaler output be the same width so we can get more FFT resolution when the scaler is bypassed.
-
+		CAPTURE_TYPE: chan_capture_type_enum := CONFIG_CHAN_CAPTURE_TYPE; -- "URAM" or "BRAM"
+        CT_TYPE : ct_type_enum             := CONFIG_CT_TYPE; -- Used to determine the width of the output bus to the corner-turn engine
+        -- Derived parameters
 		FFT_BITS_PER_BIN: integer          := FFT_INFO(FFT_TYPE).BITS_PER_BIN; -- Re and Im parts combined
+		FFT_ROTATE_BINS: boolean           := FFT_INFO(FFT_TYPE).ROTATE; -- enables bin rotation when true
 		ADC_BITS_PER_SAMPLE: integer       := FFT_INFO(FFT_TYPE).BITS_PER_SAMPLE;
 		ADC_SAMPLES_PER_WORD: integer      := FFT_INFO(FFT_TYPE).SAMPLES_PER_WORD;
 		ADC_SAMPLES_PER_FRAME: integer     := FFT_INFO(FFT_TYPE).SAMPLES_PER_FRAME;
 		ADC_BITS_PER_WORD: integer         := ADC_BITS_PER_SAMPLE * ADC_SAMPLES_PER_WORD;
 		SCALER_COEFF_BITS_PER_BIN: integer := sel(SCALER_USE_COMPLEX_GAINS, 16 + 16, 16); -- use wither 16-bit real gains or (16+16i) bit complex gains
+		OUT_BITS_PER_WORD: integer         := CT_INFO(CT_TYPE).INPUT_WIDTH; -- Width of the output data bus which feeds the corner-turn engine. Sets the scaler output width. BCT can receive 2x (8+8)-bits bins, UCT can receive 4x (4+4)-bit bins, so always 32. 
+		CAPTURE_BITS_PER_WORD: integer     := CHAN_CAPTURE_INFO(CAPTURE_TYPE).INPUT_WIDTH; --  Sets the SCALER capture bus width to match the capture engine input bus
 		SIM: boolean                       := GLOBAL_SIM
 	);
 	port (
@@ -777,71 +778,70 @@ begin
 			end process;
 
 		-- Block-RAM-based local capture engine
-		cap_gen: if CAPTURE_TYPE = "BRAM" generate
-			 -- Slow output data stream
-			signal PRB_DAT: AXIS8_DAT_STRUCT;
-			signal PRB_RDY: AXIS8_RDY_STRUCT;
-		begin
-			-- Connect capture streams to top level port
-			prb_tdata <= prb_DAT.tdata;
-			prb_tvalid <= prb_DAT.tvalid;
-			prb_tlast <= prb_DAT.tlast;
-			prb_RDY.tready <= prb_tready;
+		cap_gen: case CAPTURE_TYPE generate
 
-			-- Instantiate the local capture module
-			PROBER0: entity work.PROBER
-				generic map (
-					SIM => SIM
-				)
-				port map (
-					-- Input data
-					in_dat0   => (
-						TDATA => cap0_tdata(0),
-						TUSER => cap0_tuser(0),
-						TVALID => cap0_tvalid(0),
-						TLAST => cap0_tlast(0)),
-					in_dat1   => (
-						TDATA => cap0_tdata(1),
-						TUSER => cap0_tuser(1),
-						TVALID => cap0_tvalid(1),
-						TLAST => cap0_tlast(1)),
-					in_clk    => in_clk, -- both inputs must run on the same clock
-					in_reset  => prober_reset_in, -- both inputs must run on the same reset
+            when prober_case:PROBER =>
+                 -- Slow output data stream
+                signal PRB_DAT: AXIS8_DAT_STRUCT;
+                signal PRB_RDY: AXIS8_RDY_STRUCT;
+            begin
+                -- Connect capture streams to top level port
+                prb_tdata <= prb_DAT.tdata;
+                prb_tvalid <= prb_DAT.tvalid;
+                prb_tlast <= prb_DAT.tlast;
+                prb_RDY.tready <= prb_tready;
+    
+                -- Instantiate the local capture module
+                PROBER0: entity work.PROBER
+                    generic map (
+                        SIM => SIM
+                    )
+                    port map (
+                        -- Input data
+                        in_dat0   => (
+                            TDATA => cap0_tdata(0),
+                            TUSER => cap0_tuser(0),
+                            TVALID => cap0_tvalid(0),
+                            TLAST => cap0_tlast(0)),
+                        in_dat1   => (
+                            TDATA => cap0_tdata(1),
+                            TUSER => cap0_tuser(1),
+                            TVALID => cap0_tvalid(1),
+                            TLAST => cap0_tlast(1)),
+                        in_clk    => in_clk, -- both inputs must run on the same clock
+                        in_reset  => prober_reset_in, -- both inputs must run on the same reset
+    
+                        -- Output data streams
+                        OUT_DAT => PRB_DAT,
+                        OUT_RDY => PRB_RDY,
+                        OUT_CLK => PRB_CLK,
+    
+                        -- Control interface
+                        CTRL_CMD_IN_DAT   => CMD_DAT(MODULE_PROBER_ADDR),
+                        CTRL_CMD_IN_RDY   => CMD_RDY(MODULE_PROBER_ADDR),
+                        CTRL_RPLY_OUT_DAT => RPLY_DAT(MODULE_PROBER_ADDR),
+                        CTRL_RPLY_OUT_RDY => RPLY_RDY(MODULE_PROBER_ADDR),
+                        CTRL_CLK          => CTRL_CLK,
+                        CTRL_RST          => CTRL_RST
+                    );
+             end prober_case;
 
-					-- Output data streams
-					OUT_DAT => PRB_DAT,
-					OUT_RDY => PRB_RDY,
-					OUT_CLK => PRB_CLK,
-
-					-- Control interface
-					CTRL_CMD_IN_DAT   => CMD_DAT(MODULE_PROBER_ADDR),
-					CTRL_CMD_IN_RDY   => CMD_RDY(MODULE_PROBER_ADDR),
-					CTRL_RPLY_OUT_DAT => RPLY_DAT(MODULE_PROBER_ADDR),
-					CTRL_RPLY_OUT_RDY => RPLY_RDY(MODULE_PROBER_ADDR),
-					CTRL_CLK          => CTRL_CLK,
-					CTRL_RST          => CTRL_RST
-				);
-
-		elsif CAPTURE_TYPE = "URAM" generate
-
-			cap_proc: process(in_clk)
-				variable src: integer range 0 to 1;
-			begin
-				if rising_edge(in_clk) then
-					cap_source_ack <= cap_source_req;
-					-- Select the data bus to pass on to the capture output
-					src := to_integer(to_unsigned(cap_source_ack));
-					m_axis_cap_tdata <= cap0_tdata(src);
-					-- Pass the tlast * tvalid for *all* sources so UCAP can continuously track the frame numbers
-					m_axis_cap_tlast <= cap0_tlast;
-					m_axis_cap_tvalid <= cap0_tvalid;
-				end if; -- clk
-			end process;
-
-		else generate
-			assert FALSE report "Unsupported CAPTURE_TYPE" & CAPTURE_TYPE severity FAILURE;
-
-		end generate cap_gen;
+             when ucap_case: UCAP =>
+                cap_proc: process(all)
+                    variable src: integer range 0 to 1;
+                begin
+                    if rising_edge(in_clk) then
+                        cap_source_ack <= cap_source_req;
+                        -- Select the data bus to pass on to the capture output
+                        src := to_integer(to_unsigned(cap_source_ack));
+                        m_axis_cap_tdata <= cap0_tdata(src);
+                        -- Pass the tlast * tvalid for *all* sources so UCAP can continuously track the frame numbers
+                        m_axis_cap_tlast <= cap0_tlast;
+                        m_axis_cap_tvalid <= cap0_tvalid;
+                    end if; -- clk
+                end process;
+             end ucap_case;
+	   end generate cap_gen;
 
 	end block cap_blk;
 

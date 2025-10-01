@@ -93,7 +93,7 @@ use UNISIM.VComponents.all;
 entity FFT is
 	generic (
 		IMPLEMENT_FFT		   : BOOLEAN := TRUE;
-		FFT_TYPE			   : integer := FFT_TYPE_HIRAX; -- tells the entity which experiment-dependent Casper-generated PFB/FFT block to use. Currently accepts "CHIME" or "D3A"
+		FFT_TYPE			   : fft_type_enum := HIRAX; -- tells the entity which experiment-dependent Casper-generated PFB/FFT block to use. Currently accepts "CHIME" or "D3A"
 		ROTATE_BINS            : boolean := FALSE; -- rotate down the bins in the output by N positions, where N is the word number. Used to spread low bins to multiple word positions in cases where the FFT does not naturally do that (e.g. no unscrambler)
 
         -- Derived (but overridable) parameters
@@ -282,7 +282,7 @@ status_bytes(0 to 1) <= to_slv8_array(resize(fft_measured_pipeline_delay, 16)); 
 status_bytes(2) <= std_logic_vector(overflow_count);
 
 -- STATUS BYTE 3
-status_bytes(3)(2 downto 0) <= to_slv(FFT_TYPE, 3);
+status_bytes(3)(2 downto 0) <= to_slv(fft_type_enum'POS(FFT_TYPE), 3);
 status_bytes(3)(7 downto 3) <= to_slv(FFT_DELAY_CTR_WIDTH, 5);
 
 -----------------------------------------------------------------------------------
@@ -481,7 +481,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 		-- Time-based data is presented 4 samples at a time,  in0 being the earliest sample. A time sample is 8 bit wide.
 		-- Output is the complex frequency samples (18 bits real + 18 bits imaginary). Out0 and out 1 provide the even and odd
 		-- frequencies respectively. The lower (even) bin is in the MSB.
-        when FFT_TYPE_CHIME =>
+        when CHIME =>
             FFT0: entity work.FFT2
                 PORT MAP(
                     sync_in  => fft_sync_in,
@@ -507,7 +507,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
         -- Time-based data is presented 8 samples at a time, in0 being the earliest sample. A time sample is 14 bits wide.
         -- Output is the complex frequency samples (18 bits real + 18 bits imaginary). out0 is the first frequency bin,
         -- out1 is the next, etc.
-        when FFT_TYPE_D3A =>
+        when D3A =>
             FFT0: entity work.pfb_fft_d3a_0
                 PORT MAP(
                     sync_in(0)  => fft_sync_in,
@@ -534,7 +534,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
             fft_overflow <= or fft_overflow_d3a;
             fft_tdata <= (fft_dout0_int & fft_dout1_int & fft_dout2_int & fft_dout3_int);
 
-        when FFT_TYPE_CHORD =>
+        when CHORD =>
     		-- Overflow-free FFT, allowing bitgrowth
             FFT0: entity work.pfb_fft_bitgrowth_0
                 PORT MAP(
@@ -562,7 +562,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
             fft_overflow <= or fft_overflow_d3a;
             fft_tdata <= (fft_dout0_int & fft_dout1_int & fft_dout2_int & fft_dout3_int);
 
-		when FFT_TYPE_HIRAX =>
+		when HIRAX =>
 			-- Same as FFT_TYPE_CHIME, but allows bitgrowth
 			FFT0: entity work.hirax_bit_growth_0
                 PORT MAP(
@@ -587,15 +587,6 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 		when others =>
 			assert FALSE report "Invalid FFT Type" severity FAILURE;
 	end generate fftype_gen;
-
-	-- -- Pass the FFT CE signal through a BUFH to avoid the signal to be replicated a large number of times to meet timing.
-	-- fft_ce_bufh : BUFH
-	--  port map (
-	--      I => fft_clk_en,
-	--      O => fft_clk_en_buf
-	--  );
-
-	--  sync_reset <= soft_reset;
 
 	flags_in(FUNCGEN_TUSER_BITS_PER_WORD+1)   <= fft_sync_in;
 	flags_in(FUNCGEN_TUSER_BITS_PER_WORD)   <= fft_in_TLAST;

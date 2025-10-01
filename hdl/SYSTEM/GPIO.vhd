@@ -69,10 +69,10 @@ entity GPIO is
 
 		NUMBER_OF_CHANNELIZERS: integer; -- Number of channelizers that are implemented
 		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer; -- Number of antenna processing blocks with an FFT module
-		FFT_TYPE: integer;
+		FFT_TYPE: fft_type_enum;
 
 		-- Corner-turn Engine info
-		CT_TYPE: integer;
+		CT_TYPE: ct_type_enum;
 		CT_LEVEL: integer;
 		NUMBER_OF_CROSSBAR_INPUTS: integer;
 		NUMBER_OF_CROSSBAR1_OUTPUTS: integer;
@@ -763,12 +763,12 @@ begin
 
 	-- STATUS Byte 42 - Corner-turn engine config Part 3
 
-	status_bytes(42)(3 downto 0) <= to_slv(CT_TYPE, 4);
+	status_bytes(42)(3 downto 0) <= to_slv(ct_type_enum'POS(CT_TYPE), 4);
 	status_bytes(42)(7 downto 4) <= to_slv(CT_LEVEL, 4);
 
 	-- STATUS Byte 43 - FFT config Part 1
 
-	status_bytes(43)(3 downto 0) <= to_slv(FFT_TYPE, 4);
+	status_bytes(43)(3 downto 0) <= to_slv(fft_type_enum'POS(FFT_TYPE), 4);
 
 
 	-----------------------------------------------------------------------------------

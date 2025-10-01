@@ -43,12 +43,12 @@ use work.chFPGA_Package.ALL; -- Get all component definitions
 entity clocks is
 	generic (
 		PLATFORM_ID: integer;
-		CLOCK_SOURCE: string      := "SFP_REFCLK"; -- Clock to use to feed the system MMCM input.  Either "SYSCLK" (uses sysclk_p/n (LVDS)), "SYSCLK_BUFG" (uses sysclk_bufg),  "SFP_REFCLK" (uses sfp_refclk_p/n (GTREFCLK)), "CLK10_BUFG" (uses clk10_bufg)
-		CLOCK_FREQ: real          := 200.0; -- Frequency of the clock source specified by CLOCK_SOURCE, in MHz
-		CHAN_CLK_SOURCE: string   := "ADC";
-		CHAN_CLK_FREQ: real       := 200.0; -- Channelizer clock frequency, in MHz
-		CHAN_RESET_DELAY: integer := 127;
-		CORR_RESET_DELAY: integer := 63
+		CLOCK_SOURCE: clk_source_enum           := SFP_REFCLK; -- Clock to use to feed the system MMCM input.  Either "SYSCLK" (uses sysclk_p/n (LVDS)), "SYSCLK_BUFG" (uses sysclk_bufg),  "SFP_REFCLK" (uses sfp_refclk_p/n (GTREFCLK)), "CLK10_BUFG" (uses clk10_bufg)
+		CLOCK_FREQ: real                        := 200.0; -- Frequency of the clock source specified by CLOCK_SOURCE, in MHz
+		CHAN_CLK_SOURCE: chan_clk_source_enum   := ADC;
+		CHAN_CLK_FREQ: real                     := 200.0; -- Channelizer clock frequency, in MHz
+		CHAN_RESET_DELAY: integer               := 127;
+		CORR_RESET_DELAY: integer               := 63
 	);
 	port (
 		-- Clock inputs
@@ -206,8 +206,9 @@ begin
 
 
 	clksel_gen: case CLOCK_SOURCE generate
+        -- Note: we use fully qualified names for the enum case values because of name collisions with locala signals and ports.
 
-		when "SYSCLK" =>
+		when work.chfpga_package.SYSCLK =>
 			-- Implement LVDS differential receiver
 			ibufgds0: IBUFGDS -- Instantiate a differential (LVDS) input pad pair
 				generic map (
@@ -226,15 +227,15 @@ begin
 					o => mmcm_clk_in -- Clock buffer output
 				);
 
-		when "SYSCLK_BUFG" =>
+		when work.chfpga_package.SYSCLK_BUFG =>
 			-- We are provided a BUFG-buffered 200 MHz clock
 			mmcm_clk_in <= sysclk_bufg;
 
-		when "CLK10_BUFG" =>
+		when work.chfpga_package.CLK10_BUFG => 
 			-- We are provided a BUFG-buffered 10 MHz clock
 			mmcm_clk_in <= clk10_bufg;
 
-		when "SFP_REFCLK" =>
+		when work.chfpga_package.SFP_REFCLK =>
 
 			gen_bufgte7: if FPGA_SERIES = FPGA_KINTEX7 generate
 
@@ -460,7 +461,7 @@ begin
 	-- for the Iceboard, generate a 8-phase clock based on either the 200 MHz ADC clock or the 200 MHz system clock
 	gen_chanpll_k7: case CHAN_CLK_SOURCE generate
 
-		when mmcm_case: "MMCM" =>
+		when mmcm_case: MMCM =>
 			-- constant IS_200MHZ: BOOLEAN := CHAN_CLK_FREQ /= "300MHZ";
 			constant CHAN_MMCM_VCO_FREQ: real := sel(CHAN_CLK_FREQ = 200.0, 1000.0, 600.0); -- CHAN MMCM VCO frequency, in MHz
 			constant CHAN_MMCM_CLKIN_FREQ: real := 200.0; -- CHAN MMCM input frequency, in MHz. Always taken from the 200 MHz clock
@@ -564,7 +565,7 @@ begin
 
 		end mmcm_case;
 
-		when  "ADC" => -- The channelizer clock is taken directly from the `adc_clock` signal
+		when ADC => -- The channelizer clock is taken directly from the `adc_clock` signal
 			-- For the ZCU111, we just send the already-buffered single ADC clock to all channel clocks
 			chan_clk_int     <= (others => adc_clk);
 			chan_mmcm_locked <= '1'; -- make sure the RESETs don't wait on the inexistent MMCM locked signal

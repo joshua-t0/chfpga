@@ -259,16 +259,44 @@ constant FPGA_SERIES_LIST: IntegerArray:=(
 constant NUMBER_OF_CHANNELIZERS_MAX: INTEGER :=16; -- Maximum number of channelizers supported by the system
 constant NUMBER_OF_ADCS_MAX: INTEGER :=16; -- Maximum number of ADC inputs supported by the system
 
--- Types of FFT
-constant FFT_TYPE_NONE: integer := 0;
-constant FFT_TYPE_CHIME: integer := 1;
-constant FFT_TYPE_D3A: integer := 2;
-constant FFT_TYPE_CHORD: integer := 3;
-constant FFT_TYPE_HIRAX: integer := 4;
+-- ------------------------------------------------------------------------------
+--   Enumerations
+-- ------------------------------------------------------------------------------
 
+type clk_source_enum is (
+    SYSCLK,
+	SYSCLK_BUFG,
+	CLK10_BUFG,
+	SFP_REFCLK
+	);
+
+-- BSB Monitor & control interface type
+type bsb_type_enum is (PHY, AXIS);
+
+-- PHY type (1G Ethernet interface)
+type phy_type_enum is (GMII, SGMII, NONE); -- NONE = AXI4-Streaming interface
+type phy_clk_source_enum is (REFCLK);
+type adc_type_enum IS (EV8AQ160, AXIS);
+
+-- Channelizer clock sources and data capture engine type
+type chan_clk_source_enum is (MMCM, ADC);
+
+-- Capture engine types and info
+type chan_capture_type_enum is (PROBER, UCAP);
+type chan_capture_info_struct is 
+    record 
+        INPUT_WIDTH: integer; 
+    end record;
+type chan_capture_info_type is array (chan_capture_type_enum) of chan_capture_info_struct; 
+constant CHAN_CAPTURE_INFO: chan_capture_info_type := (
+    PROBER => (INPUT_WIDTH => 32), 
+    UCAP => (INPUT_WIDTH =>128)
+    ); -- bit width of the capture engine input
+
+type fft_type_enum is (NONE, CHIME, D3A, CHORD, HIRAX); -- Position of enum can index the FFT_INFO array
 
 -- Platform information structure
-type FFT_INFO_STRUCT is
+type fft_info_struct is
 	record
 		SAMPLES_PER_FRAME : integer;
 		LATENCY: integer; --
@@ -276,59 +304,97 @@ type FFT_INFO_STRUCT is
 		SAMPLES_PER_WORD: integer; -- Number of ADC samples in an input word
 		BITS_PER_BIN: integer; -- Number of bits per bin (Re+Im)
 		BINS_PER_WORD: integer; -- Number of bins per output word
+		ROTATE: boolean; -- Rotate the FFT lanes for every clock when TRUE
 	end record;
-type FFT_INFO_ARRAY is array (NATURAL RANGE <>) of FFT_INFO_STRUCT;
+type fft_info_array is array (fft_type_enum) of FFT_INFO_STRUCT;
+
+
+-- Types of FFT as integers, for transient back-compatibility - to be obsoleted
+constant FFT_TYPE_NONE: integer := fft_type_enum'POS(NONE);
+constant FFT_TYPE_CHIME: integer := fft_type_enum'POS(CHIME);
+constant FFT_TYPE_D3A: integer := fft_type_enum'POS(D3A);
+constant FFT_TYPE_CHORD: integer := fft_type_enum'POS(CHORD);
+constant FFT_TYPE_HIRAX: integer := fft_type_enum'POS(HIRAX);
 
 constant FFT_INFO: FFT_INFO_ARRAY := (
-	FFT_TYPE_NONE => (
+	NONE => (
 		SAMPLES_PER_FRAME => 0,
 		LATENCY => 0,
 		BITS_PER_SAMPLE => 0,
 		SAMPLES_PER_WORD => 0,
 		BITS_PER_BIN => 0,
-		BINS_PER_WORD => 0
+		BINS_PER_WORD => 0,
+		ROTATE => FALSE
 		),
-    FFT_TYPE_CHIME => (
+    CHIME => (
 		SAMPLES_PER_FRAME => 2048,
 		LATENCY => 3230,
 		BITS_PER_SAMPLE => 8,
 		SAMPLES_PER_WORD => 4,
 		BITS_PER_BIN => 18+18,
-		BINS_PER_WORD => 2
+		BINS_PER_WORD => 2,
+		ROTATE => FALSE
 		),
 
-    FFT_TYPE_D3A => (
+    D3A => (
 		SAMPLES_PER_FRAME => 16384,
 		LATENCY => 12533,
 		BITS_PER_SAMPLE => 14,
 		SAMPLES_PER_WORD => 8,
 		BITS_PER_BIN => 18+18,
-		BINS_PER_WORD => 4
+		BINS_PER_WORD => 4,
+		ROTATE => FALSE
 		),
 
-    FFT_TYPE_CHORD => (
+    CHORD => (
 		SAMPLES_PER_FRAME => 16384,
 		LATENCY => 10452,
 		BITS_PER_SAMPLE => 14,
 		SAMPLES_PER_WORD => 8,
 		BITS_PER_BIN => 32+32,
-		BINS_PER_WORD => 4
+		BINS_PER_WORD => 4,
+		ROTATE => TRUE
 		),
 
-	FFT_TYPE_HIRAX => (
+	HIRAX => (
 		SAMPLES_PER_FRAME => 2048,
 		LATENCY => 3230,
 		BITS_PER_SAMPLE => 8,
 		SAMPLES_PER_WORD => 4,
 		BITS_PER_BIN => 29+29,
-		BINS_PER_WORD => 2
+		BINS_PER_WORD => 2,
+		ROTATE => FALSE
 		)
 	);
 
--- Types of Coner-Turn Engines
-constant CT_TYPE_NONE: integer := 0;
-constant CT_TYPE_BCT: integer := 1;
-constant CT_TYPE_UCT: integer := 2;
+-- Corner-Turn Engine types
+type ct_type_enum is (NONE, BCT, UCT);
+type ct_info_struct is 
+    record 
+        INPUT_WIDTH: integer; -- bit width of the ct-engine input bus 
+    end record;
+type ct_info_array is array (ct_type_enum) of ct_info_struct; 
+constant CT_INFO: ct_info_array := (
+    NONE => (INPUT_WIDTH => 0),
+    BCT => (INPUT_WIDTH => 32), -- 2x (8+8)-bit bins
+    UCT => (INPUT_WIDTH =>32) -- 4x (4+4)-bit bins
+    ); 
+
+constant CT_TYPE_NONE: integer := ct_type_enum'POS(NONE); -- integer representations to be obsoleted
+constant CT_TYPE_BCT: integer := ct_type_enum'POS(BCT);
+constant CT_TYPE_UCT: integer := ct_type_enum'POS(UCT);
+
+-- Corner turn engine clock sources
+type ct_clk_source_enum IS (BP_SHUFFLE_TXCLK, ADC_CLK, CGE_CLK322, CORR_CLK);
+
+-- Correlator types
+type corr_type_enum IS (CORR44, UCORR44, NONE);
+
+-- real-time offload link types
+
+
+type gpu_link_type_enum is (NONE, XGE, CGE);
+
 
 constant NUMBER_OF_CORRELATORS_MAX: INTEGER :=8; -- Maximum number of correlators supported by the system
 
@@ -670,6 +736,7 @@ PROCEDURE axis32_write_buffer(buffer_in: in Word32Array; signal stream_out: out 
 function rpm_to_string(rpm: rpm_coord_struct) return string; -- convert a RPM coordinate pair into a "XnYn" string
 function get_cmac44_rpm_coords_struct_array(platform_id: integer; N_CHAN: integer; layout: string) return cmac44_rpm_coord_struct_array; -- returns the locations of the CMAC44 DSPs and BRAMs for a corr44 correlator core with specified layout
 function get_corr44_rloc_origins_struct_array(platform_id:integer; N_CHAN:integer) return corr44_rloc_origins_struct_array; -- returns the layout and absolute location of each corr4 core in a corr44_array
+
 
 end chFPGA_Package;
 
