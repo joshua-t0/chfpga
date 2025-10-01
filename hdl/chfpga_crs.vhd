@@ -89,7 +89,7 @@ entity chfpga_crs is
 		NUMBER_OF_I2C_PORTS: integer := 0;
 		NUMBER_OF_SPI_PORTS: integer := 0; -- One port for each FMC
 		IMPLEMENT_ARM_SPI: boolean   := FALSE;
-		IMPLEMEMT_LCD: boolean       := TRUE; -- OLED display clock select & clock line
+		IMPLEMENT_LCD: boolean       := TRUE; -- OLED display clock select & clock line
 		SIM: boolean                 := FALSE; -- Indicates this is running as a simulation. Used to accelerate simulations
 
 		-- Derived parameters
@@ -855,7 +855,7 @@ begin
 			NUMBER_OF_SPI_PORTS  => NUMBER_OF_SPI_PORTS,
 			NUMBER_OF_ADC_BOARDS => NUMBER_OF_ADC_BOARDS,
 			IMPLEMENT_ARM_SPI    => IMPLEMENT_ARM_SPI, -- is implemented if not specified
-			IMPLEMENT_LCD        => IMPLEMEMT_LCD,
+			IMPLEMENT_LCD        => IMPLEMENT_LCD,
 			SIM                  => SIM
 		)
 

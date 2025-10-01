@@ -16,7 +16,7 @@
 -- Additional Comments:
 
 -- 110518 JFC: Major modifications
--- 			- The number of internal STATUS and CONTROl byte register now scales with the CONTROL and STATUS Word width
+-- 			- The number of internal STATUS and CONTROL byte register now scales with the CONTROL and STATUS Word width
 --				- The CONTROL and STATUS Words are now clocked using the  external clock to keep the clock domain crossing within this module so we can better handle the timing exceptions that are required.
 --				- The address space allocated for the CONTROL and STATUS words is now 8 bytes. All system address should be changed.
 -- 110725 JFC: Implemented 16-bit RAM mode based on the code in SYSMON. Now this module can talk to SYSMON and MGT directly without glue logic.

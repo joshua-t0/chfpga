@@ -58,7 +58,7 @@ entity CTRL_ROUTER is
 		rply_out_dat: out AXIS8_DAT_STRUCT;
 		rply_out_rdy: in AXIS8_RDY_STRUCT;
 
-		-- Monitoringn signals
+		-- Monitoring signals
 		cmd_overflow: out std_logic;
 
 		-- System interface
@@ -93,7 +93,7 @@ architecture Behavioral of CTRL_ROUTER is
 	constant PORT_NUMBER_HIGH_BIT: integer := highest_mask_bit(ADDRESS_MASK);
 	constant PORT_NUMBER_LOW_BIT: integer := lowest_mask_bit(ADDRESS_MASK);
 
-	-- Interfal post-FIFO BSB signals
+	-- Internal post-FIFO BSB signals
 	signal cmd_in_dat_int:  AXIS8_DAT_STRUCT;
 	signal cmd_in_rdy_int: AXIS8_RDY_STRUCT;
 	signal rply_out_dat_int:  AXIS8_DAT_STRUCT;
