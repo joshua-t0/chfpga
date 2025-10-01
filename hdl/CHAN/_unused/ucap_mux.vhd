@@ -22,6 +22,7 @@ use IEEE.numeric_std.ALL;
 
 library work;
 use work.chFPGA_package.all; -- Get all component definitions
+use work.chfpga_config.all;
  
 --! @brief Implements the chanelizer pipeline, consisting of a function generator (FUNCGEN), FFT module (FFT), scaler (SCALER) and a resynchrozing FIFO (CHAN_FIFO).
 entity ucap_mux is
