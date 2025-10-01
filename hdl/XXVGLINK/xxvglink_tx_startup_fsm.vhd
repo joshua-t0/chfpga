@@ -1,4 +1,4 @@
--- From : Xilinx  7 Series FPGAs Transceivers Wizard versoin 3.1 (shuffle_gtx_tx_startup_fsm.vhd)
+-- From : Xilinx  7 Series FPGAs Transceivers Wizard version 3.1 (shuffle_gtx_tx_startup_fsm.vhd)
 --  Description :     This module performs TX reset and initialization.
 
 library IEEE;
@@ -11,7 +11,7 @@ entity xxvxglink_tx_startup_fsm is
 		RETRY_COUNTER_BITWIDTH   : integer range 2 to 8  := 8;
 		TX_QPLL_USED             : boolean := False;            -- the TX and RX Reset FSMs must
 		RX_QPLL_USED             : boolean := False;            -- share these two generic values
-		PHASE_ALIGNMENT_MANUAL   : boolean := True              -- Decision if a manual phase-alignment is necessary or the automatic
+		PHASE_ALIGNMENT_MANUAL   : boolean := True              -- Decision if a manual phase alignment is necessary or the automatic
 		                                                        -- is enough. For single-lane applications the automatic alignment is
 		                                                        -- sufficient
 		);
@@ -49,8 +49,6 @@ end xxvxglink_tx_startup_fsm;
 -- * if either of PLLs is reset during TX-startup, it does not need to be reset again by RX
 --   => signal which PLL has been reset
 -- *
-
-
 
 architecture impl of xxvxglink_tx_startup_fsm is
 
@@ -133,7 +131,7 @@ architecture impl of xxvxglink_tx_startup_fsm is
   signal      qplllock_prev: std_logic := '0';
   signal      cplllock_ris_edge: std_logic := '0';
   signal      qplllock_ris_edge: std_logic := '0';
- signal      wait_time_cnt : integer range 0 to WAIT_TIME_MAX;
+  signal      wait_time_cnt : integer range 0 to WAIT_TIME_MAX;
   signal      wait_time_done :std_logic;
 
 begin
@@ -175,6 +173,7 @@ begin
 	   end if;
 	  end if;
   end process;
+
   timeouts:process(STABLE_CLOCK)
   begin
 	if rising_edge(STABLE_CLOCK) then
@@ -219,8 +218,6 @@ begin
 	  end if;
 	end if;
   end process;
-
-
 
   -- Clock Domain Crossing
 
@@ -301,7 +298,6 @@ begin
 			data_out        =>  qplllock_sync
 		 );
 
-
   process (STABLE_CLOCK)
   begin
 	if rising_edge(STABLE_CLOCK) then
@@ -332,8 +328,6 @@ begin
 	end if;
   end process;
 
-
-
   timeout_buffer_bypass:process(TXUSERCLK)
   begin
 	if rising_edge(TXUSERCLK) then
@@ -350,8 +344,7 @@ begin
 	end if;
   end process;
 
-   refclk_lost <= '1' when ((TX_QPLL_USED and QPLLREFCLKLOST='1') or (not TX_QPLL_USED and CPLLREFCLKLOST='1')) else '0';
-
+  refclk_lost <= '1' when ((TX_QPLL_USED and QPLLREFCLKLOST='1') or (not TX_QPLL_USED and CPLLREFCLKLOST='1')) else '0';
 
   timeout_max:process(STABLE_CLOCK)
   begin
@@ -389,7 +382,6 @@ begin
   begin
 	if rising_edge(STABLE_CLOCK) then
 	  if(SOFT_RESET = '1') then
-	  --if(SOFT_RESET = '1' or (not(tx_state = INIT) and not(tx_state = ASSERT_ALL_RESETS) and refclk_lost = '1')) then
 		tx_state                <= INIT;
 		TXUSERRDY               <= '0';
 		gttxreset_i               <= '0';
@@ -558,4 +550,4 @@ begin
 	end if;
   end process;
 
-end RTL;
+end impl;
