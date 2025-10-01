@@ -279,7 +279,7 @@ entity GPIO is
 		-- User-controlled global resets
 
 		user_reset: out std_logic;
-		ctrl_reset_pulse: out std_logic;
+		ctrl_reset_pulse: out std_logic := '0';
 		sysmon_user_reset: out std_logic;
 		adcdaq_reset_async: out std_logic;
 		chan_clk_reset_async: out std_logic;
@@ -435,7 +435,7 @@ architecture impl of GPIO is
 	-- External PLL
 
 	signal pll_sync_pre: std_logic;
-	signal ctrl_reset_trig: std_logic;
+	signal ctrl_reset_trig: std_logic := '0';
 
 begin
 
@@ -824,8 +824,8 @@ begin
 	-- Generates a long pulse on ctrl_reset_pulse when a low-to-high transition is seen on ctrl_reset_trig.
 	-- Operates on ctrl_clk.
 	ctrl_reset_blk: block
-		signal ctrl_reset_trig_reg: std_logic;
-		signal ctrl_reset_ctr: unsigned(3 downto 0);
+		signal ctrl_reset_trig_reg: std_logic := '0';
+		signal ctrl_reset_ctr: unsigned(3 downto 0) := (others => '0');
 	begin
 
 		ctrl_reset_proc: process(ctrl_clk)
