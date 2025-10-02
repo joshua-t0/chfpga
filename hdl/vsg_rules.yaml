@@ -10,8 +10,10 @@ rule:
         disable: true
     function_019:  # Move parenthesis to next line.
         disable: true  # We want Single line functions to be more compact
+
     whitespace_002:
         severity: Error
+
     variable_assignment_001: # Move parenthesis after assignment to the next line.
         disable: true # keep short aggregates on one line
     port_012: # default value son port
@@ -26,6 +28,10 @@ rule:
         disable: true
     instantiation_034: # We use component instantiation
         disable: true
+
+
+    entity_015:
+        severity: Error
 
     # process
     process_016: # allow label-less processes
@@ -94,7 +100,7 @@ rule:
         number_of_spaces: "<=1"
     entity_specification_101: # no space between attribute signal name and :
         number_of_spaces: 0
-        severity: Warning
+        severity: Error
     attribute_declaration_101: # no space between attribute declaration label and :
         number_of_spaces: 0
     block_200: # blank line before block statement
@@ -148,6 +154,10 @@ rule:
         disable: true
     entity_017: # align colon in ports and generic
         disable: true
+
+    entity_018: #
+        severity: Error
+        compact_alignment: yes
     entity_020: # align comments in ports and generic
         disable: true
     architecture_026: # align colon in signals
@@ -277,11 +287,11 @@ rule:
     # Architecture names
     architecture_013: # architecture name case
         case: lower
-        severity: Warning
+        severity: Error
 
     architecture_011: # end architecture name case
         case: lower
-        severity: Warning
+        severity: Error
 
     # Instantiation
     instantiation_009: # instance name case
@@ -324,17 +334,18 @@ indent:
         #     end_keyword:
         #         after: 0
         #         token: 0
+
         # Fix instantiation maps final parenthesis indentation
-        enumeration_type_definition:
-            open_parenthesis:
-              token: current
-              after: +2
-            enumeration_literal:
-              token: current
-              after: current
-            close_parenthesis:
-              token: current  # close the parenthesis onthe same level as the previous block
-              after: -1
+        # enumeration_type_definition:
+        #     open_parenthesis:
+        #       token: current
+        #       after: +2
+        #     enumeration_literal:
+        #       token: current
+        #       after: current
+        #     close_parenthesis:
+        #       token: current  # close the parenthesis onthe same level as the previous block
+        #       after: -2
 
         # port_clause:
         #     close_parenthesis:
