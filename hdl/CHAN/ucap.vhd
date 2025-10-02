@@ -578,6 +578,23 @@ begin
 	    begin
 	        if rising_edge(clk) then
 
+	            -- Pipeline the read opcode and buffer index to compendate for the RAM readout latency
+	            -- This needs to be placed before the RAM read sequencer, which overrides the input of the shift register
+
+                -- a) Right-shift the read processor command in the delay line
+            	read_proc_op(read_proc_op'LEFT-1 downto 0) <= read_proc_op(read_proc_op'LEFT downto 1);
+                read_proc_op(read_proc_op'LEFT) <= READ_PROC_NOP; -- insert a default NOP processor command, to be overridden below when needed
+
+                -- b) Right-shift the buffer number in the delay line
+                buf_ix(buf_ix'LEFT-1 downto 0) <= buf_ix(buf_ix'LEFT downto 1);
+                buf_ix(buf_ix'LEFT) <= (others => '0'); -- default value to simplify logic
+                -- Find position of the first '1' bit in the buffer readout mask vector
+                for i in 0 to NUMBER_OF_BUFFERS-1 loop
+                    if ram_readout_mask(i) then
+                        buf_ix(buf_ix'LEFT) <= to_unsigned(i,buf_ix(0)'LENGTH);
+                        exit;
+                    end if;
+                end loop;
 
 
                 -- RAM Read sequencer
@@ -650,22 +667,6 @@ begin
     	                end if; -- HEADER or DATA ready to be sent
 	            end case;
 
-	            -- Pipeline the read opcode and buffer index to compendate for the RAM readout latency
-
-                -- a) Right-shift the read processor command in the delay line
-            	read_proc_op(read_proc_op'LEFT-1 downto 0) <= read_proc_op(read_proc_op'LEFT downto 1);
-                read_proc_op(read_proc_op'LEFT) <= READ_PROC_NOP; -- insert a default NOP processor command, to be overridden below when needed
-
-                -- b) Right-shift the buffer number in the delay line
-                buf_ix(buf_ix'LEFT-1 downto 0) <= buf_ix(buf_ix'LEFT downto 1);
-                buf_ix(buf_ix'LEFT) <= (others => '0'); -- default value to simplify logic
-                -- Find position of the first '1' bit in the buffer readout mask vector
-                for i in 0 to NUMBER_OF_BUFFERS-1 loop
-                    if ram_readout_mask(i) then
-                        buf_ix(buf_ix'LEFT) <= to_unsigned(i,buf_ix(0)'LENGTH);
-                        exit;
-                    end if;
-                end loop;
 
 
 
@@ -837,7 +838,7 @@ begin
        -- Xilinx Parameterized Macro, version 2022.2
        fifo0 : xpm_fifo_async
            generic map (
-              FIFO_MEMORY_TYPE => "auto",
+              FIFO_MEMORY_TYPE => "bram",
               FIFO_WRITE_DEPTH => 512,   -- 16 is the minimum
               FULL_RESET_VALUE => 1,
               PROG_FULL_THRESH => 256,     -- Must be big enough to handle the throttling signal latency. 11 has overflows
