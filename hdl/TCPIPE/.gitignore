@@ -7,3 +7,4 @@
 !.gitignore
 zynq_tcpipe_crs/
 # !zynq_tcpipe_zcu111/
+.Xil/
