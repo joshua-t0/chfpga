@@ -45,7 +45,7 @@ export_sim:
 
 rtl_compile:
 	# Amend simulation script: append "-dll" to xelab command, and don't run simulation
-	sed -i '/xelab / s/$$/ -dll/' export_sim/xsim/chfpga_crssim.sh
+	sed -i '/xelab / s/\( -dll\)*$$/ -dll/' export_sim/xsim/chfpga_crssim.sh
 	sed -i '/^  simulate$$/d' export_sim/xsim/chfpga_crssim.sh
 	touch export_sim/xsim/design.txt  # avoid segfault - SYSMON_V6 needs this
 	cd export_sim/xsim && \
