@@ -170,10 +170,10 @@
         "PRESET": [ { "value": "GTY-100GBASE-KR4", "value_src": "user", "resolve_type": "user", "usage": "all" } ],
         "INTERNAL_PRESET": [ { "value": "100GBASE-KR4", "value_src": "user", "resolve_type": "user", "usage": "all" } ],
         "INTERNAL_PORT_USAGE_UPDATED": [ { "value": "0", "resolve_type": "generated", "format": "long", "enabled": false, "usage": "all" } ],
-        "INTERNAL_PORT_ENABLEMENT_UPDATED": [ { "value": "40", "resolve_type": "generated", "format": "long", "enabled": false, "usage": "all" } ],
+        "INTERNAL_PORT_ENABLEMENT_UPDATED": [ { "value": "24", "resolve_type": "generated", "format": "long", "enabled": false, "usage": "all" } ],
         "INTERNAL_CHANNEL_SITES_UPDATED": [ { "value": "4", "resolve_type": "generated", "format": "long", "enabled": false, "usage": "all" } ],
         "INTERNAL_CHANNEL_COLUMN_LOC_MAX": [ { "value": "96", "resolve_type": "generated", "format": "long", "enabled": false, "usage": "all" } ],
-        "INTERNAL_RX_COMMA_PRESET_UPDATE": [ { "value": "10", "resolve_type": "generated", "format": "long", "enabled": false, "usage": "all" } ],
+        "INTERNAL_RX_COMMA_PRESET_UPDATE": [ { "value": "5", "resolve_type": "generated", "format": "long", "enabled": false, "usage": "all" } ],
         "INTERNAL_UPDATE_IP_SYMBOL_drpclk_in": [ { "value": "true", "resolve_type": "generated", "format": "bool", "enabled": false, "usage": "all" } ],
         "SECONDARY_QPLL_ENABLE": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "SECONDARY_QPLL_LINE_RATE": [ { "value": "10.3125", "resolve_type": "user", "format": "float", "enabled": false, "usage": "all" } ],
@@ -844,7 +844,7 @@
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "." } ],
         "SWVERSION": [ { "value": "2022.2" } ],
-        "SYNTHESISFLOW": [ { "value": "GLOBAL" } ]
+        "SYNTHESISFLOW": [ { "value": "OUT_OF_CONTEXT" } ]
       }
     },
     "boundary": {
