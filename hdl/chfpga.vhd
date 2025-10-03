@@ -1957,8 +1957,8 @@ begin
 		end adc_case;
 
 		when others =>
-
 			assert FALSE report "Invalid CHAN_CLK_SOURCE" severity FAILURE;
+
 	end generate chan_clk_gen;
 
 	CHANGEN: for i in 0 to NUMBER_OF_CHANNELIZERS - 1 generate
@@ -2264,15 +2264,6 @@ begin
                         PLATFORM_ID => PLATFORM_ID,
                         NUMBER_OF_INPUT_LANES => NUMBER_OF_CHANNELIZERS, -- Number of channelizer inputs
                         CT_LEVEL => CT_LEVEL -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
-
-                    -- LANE_TO_LINK_MAP: integer_array  := (-1,0,1,2); -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
-                    -- LINK_TO_QUAD_MAP: integer_array  := (0,1,1); -- Indicates which quad is associated to each GTY link.
-                    -- QUAD_TO_REFCLK_MAP: integer_array:= (0,0); -- Indicates which refclk is associated with each QUAD
-                    -- NUMBER_OF_OUTPUT_LANES: integer := 8; -- Number of output streams
-                    -- WORDS_PER_BIN_MAX: integer :=4; -- Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 16 words.
-                    -- BINS_PER_FRAME_MAX: integer :=64; -- Maximum number of bins per frame
-                    -- BIN_SEL_FIFO_TYPE_MAP: integer_16xN_array := (0 to 15 => (0 to 3=> 0, others => 0)); -- 0= Block RAM., 1=Dist RAM. By default, for every BIN_SEL, 10 FIFOS are made of BRAM and the rest is made of distributed RAM to maximize area utilization efficiency
-                    -- SHUFFLE_FLAGS_MASK: slv32 -- Mask to apply to the shuffle flags to count packet errors
                     )
                     port map (
                         -- Non-blocking input stream from the channelizer, synchronous to `clk`

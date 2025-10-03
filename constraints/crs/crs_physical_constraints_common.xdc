@@ -30,21 +30,14 @@ create_clock -period 100.000 -name SMA_CLK10 [get_ports sma_clk10_p]
 
 # GTY reference clock MGTREFCLK0, 156.25 MHz from fixed PLL, Bank 131
 # Corner-turn engine GTY reference clock
-set_property PACKAGE_PIN P31 [get_ports {bp_shuffle_refclk_p[0]}]
+set_property PACKAGE_PIN W33 [get_ports {bp_shuffle_refclk_p[0]}]
+set_property PACKAGE_PIN U33 [get_ports {bp_shuffle_refclk_p[1]}]
+set_property PACKAGE_PIN P31 [get_ports {bp_shuffle_refclk_p[2]}]
+
 # set_property package_pin P32 [get_ports mgtrefclk0_x0y4_n]
 # Timing is defined in the GTY cores
-create_clock -period 6.400 -name CLK_BP_SHUFFLE_REFCLK [get_ports bp_shuffle_refclk_p]
-# set_property PACKAGE_PIN P31      [get_ports {gty_clk0_p131}] ; # GTY Bank  131, REFCLK0
-# create_clock -name GTY_P131 -period 156.25MHz [get_ports {gty_clk0_p131}]
-
-
-# GTY reference clock, 156.25 MHz from fixed PLL, Bank 129
-# 100G interface reference clock
-# This is defined in the -ct config-specific physical constraint file
-# set_property PACKAGE_PIN W33      [get_ports {gty_clk0_p129}] ; # GTY Bank 129, REFCLK0
-# set_property PACKAGE_PIN W33 [get_ports clk156_p]
-# create_clock -name CLK156 -period 6.4 [get_ports {clk156_p}]
-# create_clock -name GTY_P129 -period 156.25MHz [get_ports {gty_clk0_p129}]
+create_clock -period 6.400 -name CLK_BP_SHUFFLE_REFCLK129 [get_ports bp_shuffle_refclk_p[0]]
+create_clock -period 6.400 -name CLK_BP_SHUFFLE_REFCLK131 [get_ports bp_shuffle_refclk_p[2]]
 
 ##########################################################################
 # Secondary clocks from HMC7044 PLL (Programmable, not defined at powerup)

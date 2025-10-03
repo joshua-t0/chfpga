@@ -25,8 +25,8 @@ package chfpga_config is
 	constant CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS: integer     := 8; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
 	constant CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer  := 0;
 	constant CONFIG_NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer := 0;
-	constant CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS: integer      := 3; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
-	constant CONFIG_NUMBER_OF_BP_SHUFFLE_REFCLKS: integer    := 1;
+	constant CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS: integer      := 12; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
+	constant CONFIG_NUMBER_OF_BP_SHUFFLE_REFCLKS: integer    := 3;
 
 
 	constant CONFIG_CORR_TYPE: CORR_TYPE_ENUM                := UCORR44;
@@ -35,7 +35,5 @@ package chfpga_config is
 
     -- 10/100G Ethernet Real-time data offload links configuration
     constant CONFIG_GPU_LINK_TYPE: gpu_link_type_enum        := NONE;
-
-
 
 end chfpga_config;
