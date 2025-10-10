@@ -126,11 +126,6 @@ end CTRL_SLAVE;
 
 architecture Behavioral of CTRL_SLAVE is
 
-
-	attribute ASYNC_REG : string;
-	--attribute TO_TIG : string;
-	--attribute FROM_TIG : string;
-
 	signal ram_rd_en_int: STD_LOGIC;
 	signal ram_wr_en_int: std_logic := '0'; -- init for sim only to prevent contamination of RAM first byte
 	signal ram_din_int: std_logic_vector(15 downto 0);
