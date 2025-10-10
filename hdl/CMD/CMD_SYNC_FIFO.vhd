@@ -1,22 +1,13 @@
 ----------------------------------------------------------------------------------
---! @file
 -- Company: McGill University
 -- Engineer: J.-F. Cliche
 --
 -- Create Date:    2012-10-17
 -- Design Name:
--- Module Name:    CMD_SYNC_FIFO - Behavioral
--- Project Name: CHIME PoC
--- Target Devices: Virtex 6 or 7 series
--- Tool versions: ISE 14.2
---
--- Dependencies:
---
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 	2012-10-17 JFC: Created
-
+-- Module Name:    cmd_sync_fifo - impl
+-- Project Name: chFPGA
+-- Target Devices: Virtex 6, Kintex 7, Ultrascale+
+-- Tool versions: Vivado 2022.2
 ----------------------------------------------------------------------------------
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -34,10 +25,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 -- This FIFO is use to add a pipeline level to the command and reply channels
 -- of the bus. It is used to break TREADY combinatorial paths and make timing
 -- easier to be met.
-entity CMD_SYNC_FIFO is
-	GENERIC (
-		SIM: boolean :=FALSE
-		);
+entity cmd_sync_fifo is
      PORT (
 		-- Command streams from single slave input to multiple master outputs
 		CMD_A_DAT: in AXIS8_DAT_STRUCT;
@@ -54,70 +42,54 @@ entity CMD_SYNC_FIFO is
 		CLK: in STD_LOGIC;
 		RST : in  STD_LOGIC
 		);
-end CMD_SYNC_FIFO;
+end cmd_sync_fifo;
 
 
-architecture Behavioral of CMD_SYNC_FIFO is
-
-signal RST_N: std_logic;
-
-begin
-
-RST_N <= not RST;
-
+-- Implementation:
+--
 -- Implement a register slice for both the command and reply channels.
 --
 -- We use a AXI4S register slice, which is very compact (uses about 25 registers / 4 SLICEs, which is close to optimal)
 --
--- This implements a 1-byte-deep FIFO andn a 1-byte output register (plus TUSER bits), which is necessary because popelining
+-- This implements a 1-byte-deep FIFO andn a 1-byte output register (plus TUSER bits), which is necessary because pipelining
 -- the TREADY signal implies that the source will be notified one clock later
 -- that the destination is not ready. It the source was sending a byte while TREADY was propagating,  the incoming byte needs to be stored
 -- until the destination is ready to receive it.
-FIFOGEN_SYNC: if SIM=FALSE generate
-	CMD_FIFO0 : entity work.AXI4S_REG_SLICE
-	  PORT MAP (
-		 ACLK => CLK,
-		 ARESETN => RST_N,
-		 S00_AXIS_ACLK => CLK,
-		 S00_AXIS_ARESETN => RST_N,
-		 S00_AXIS_TVALID => CMD_A_DAT.TVALID,
-		 S00_AXIS_TREADY => CMD_A_RDY.TREADY,
-		 S00_AXIS_TDATA => CMD_A_DAT.TDATA,
-		 S00_AXIS_TLAST => CMD_A_DAT.TLAST,
-		 M00_AXIS_ACLK => CLK,
-		 M00_AXIS_ARESETN => RST_N,
-		 M00_AXIS_TVALID => CMD_B_DAT.TVALID,
-		 M00_AXIS_TREADY => CMD_B_RDY.TREADY,
-		 M00_AXIS_TDATA => CMD_B_DAT.TDATA,
-		 M00_AXIS_TLAST => CMD_B_DAT.TLAST
+architecture impl of cmd_sync_fifo is
+
+begin
+
+	cmd_fifo0 : entity work.axis_sync_fifo
+	  port map (
+		 clk => clk,
+		 rst => rst,
+
+		 s_axis_tvalid => cmd_a_dat.tvalid,
+		 s_axis_tready => cmd_a_rdy.tready,
+		 s_axis_tdata => cmd_a_dat.tdata,
+		 s_axis_tlast => cmd_a_dat.tlast,
+
+		 m_axis_tvalid => cmd_b_dat.tvalid,
+		 m_axis_tready => cmd_b_rdy.tready,
+		 m_axis_tdata => cmd_b_dat.tdata,
+		 m_axis_tlast => cmd_b_dat.tlast
 	  );
 
-	RPLY_FIFO0 : entity work.AXI4S_REG_SLICE
-	  PORT MAP (
-		 ACLK => CLK,
-		 ARESETN => RST_N,
-		 S00_AXIS_ACLK => CLK,
-		 S00_AXIS_ARESETN => RST_N,
-		 S00_AXIS_TVALID => RPLY_B_DAT.TVALID,
-		 S00_AXIS_TREADY => RPLY_B_RDY.TREADY,
-		 S00_AXIS_TDATA => RPLY_B_DAT.TDATA,
-		 S00_AXIS_TLAST => RPLY_B_DAT.TLAST,
-		 M00_AXIS_ACLK => CLK,
-		 M00_AXIS_ARESETN => RST_N,
-		 M00_AXIS_TVALID => RPLY_A_DAT.TVALID,
-		 M00_AXIS_TREADY => RPLY_A_RDY.TREADY,
-		 M00_AXIS_TDATA => RPLY_A_DAT.TDATA,
-		 M00_AXIS_TLAST => RPLY_A_DAT.TLAST
+	rply_fifo0 : entity work.axis_sync_fifo
+	  port map (
+		 clk => clk,
+		 rst => rst,
+
+		 s_axis_tvalid => rply_b_dat.tvalid,
+		 s_axis_tready => rply_b_rdy.tready,
+		 s_axis_tdata => rply_b_dat.tdata,
+		 s_axis_tlast => rply_b_dat.tlast,
+
+		 m_axis_tvalid => rply_a_dat.tvalid,
+		 m_axis_tready => rply_a_rdy.tready,
+		 m_axis_tdata => rply_a_dat.tdata,
+		 m_axis_tlast => rply_a_dat.tlast
 	  );
-end generate;
 
-FIFOGEN0_SIM: if SIM=TRUE generate
-	CMD_B_DAT<=CMD_A_DAT;
-	CMD_A_RDY<=CMD_B_RDY;
-	RPLY_A_DAT<=RPLY_B_DAT;
-	RPLY_B_RDY<=RPLY_A_RDY;
-end generate;
-
-
-end Behavioral;
+end impl;
 

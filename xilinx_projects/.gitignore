@@ -11,6 +11,7 @@
 !/.gitignore
 
 # The following makes the desirable project directories and their contents visible
+!testbenches/
 !testbenches/*/
 # !test_projects/*/
 

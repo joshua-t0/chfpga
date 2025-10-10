@@ -19,7 +19,6 @@ set target_part "xczu47dr-ffvg1517-1-i"
 # IP core files, found in ../../_Cores/
 set ip_files [list \
  "CRS/pfb_fft_bitgrowth_0/pfb_fft_bitgrowth_0.xci" \
- "CRS/AXI4S_REG_SLICE/AXI4S_REG_SLICE.xci" \
  "CRS/GTY/gtwizard_ultrascale_0.xci" \
  "CRS/CMD_FIFO/CMD_FIFO.xci" \
  ]
@@ -31,6 +30,7 @@ set ip_files [list \
  "CROSSBAR/align64_fifo.vhd" \
  "CROSSBAR/ALIGN64.vhd" \
  "chfpga_crs_corr64_config.vhd" \
+ "CMD/axis_sync_fifo.vhd" \
  "CMD/CMD_SYNC_FIFO.vhd" \
  "CMD/CMD_ROUTER.vhd" \
  "CMD/CMD_SLAVE2.vhd" \
