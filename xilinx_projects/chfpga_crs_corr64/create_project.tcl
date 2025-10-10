@@ -267,7 +267,7 @@ if {[string equal [get_runs -quiet synth_1] ""]} {create_run -name synth_1 -part
 
 set obj [get_runs synth_1]
 set_property strategy "Flow_PerfOptimized_high" $obj
-set_property flow "Vivado Synthesis 2022" $obj
+# set_property flow "Vivado Synthesis 2022" $obj
 set_property set_report_strategy_name 1 $obj
 set_property report_strategy {Vivado Synthesis Default Reports} $obj
 set_property set_report_strategy_name 0 $obj
@@ -292,7 +292,7 @@ if {[string equal [get_runs -quiet impl_1] ""]} {create_run -name impl_1 -part $
 
 set obj [get_runs impl_1]
 set_property strategy "Performance_ExplorePostRoutePhysOpt" $obj
-set_property flow "Vivado Implementation 2022" $obj
+# set_property flow "Vivado Implementation 2022" $obj
 set_property set_report_strategy_name 1 $obj
 set_property report_strategy {Timing Closure Reports} $obj
 set_property set_report_strategy_name 0 $obj
