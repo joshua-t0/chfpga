@@ -188,7 +188,7 @@ architecture Behavioral of SCALER is
     signal stage1_tvalid: std_logic;
     signal stage1_tlast: std_logic;
     signal stage1_tuser: std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);
-    
+
     -- stage 2: rounding result
     signal stage2_word: signed_array(0 to INTEGERS_PER_WORD-1)(7 downto 0);
     signal stage2_sign: std_logic_vector(0 to INTEGERS_PER_WORD-1); --! Indicates the sign of each of the 4 numbers in the incoming word
@@ -210,7 +210,7 @@ architecture Behavioral of SCALER is
     signal symmetric_saturation: std_logic;
     signal zero_on_saturation: std_logic;
     signal use_float_gains: std_logic;
-    
+
     signal rounding_mode: std_logic_vector(1 downto 0);
     constant ROUNDING_MODE_TRUNCATE: std_logic_vector(1 downto 0):= "00";
     constant ROUNDING_MODE_ROUND: std_logic_vector(1 downto 0):= "01";
@@ -426,7 +426,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
                                 X"02" & -- Byte 2: stats_capture=0, symmetric_saturation=0,, zero_on_saturation=0, synchronize_gain_bank_switch=0,, fifo_overflow_reset=0, stats_single_bin=0, rounding_mode =2
                                 X"05F5E1" & -- Bytes 3-5: stats_frame_count
                                 X"00000000" & --Bytes 6-9: gain_bank_switch_frame_number
-                                X"00"& -- Byte 10: use_float_gains=0,mon_reset_stats=0, mon_ctrl=0, bypass_data_type[1:0]="00", cap_data_type[1:0]="00"  
+                                X"00"& -- Byte 10: use_float_gains=0,mon_reset_stats=0, mon_ctrl=0, bypass_data_type[1:0]="00", cap_data_type[1:0]="00"
                                 X"0000", -- Bytes 11-12: stats_bin_number
         RAM_ADDR_WIDTH => BSB_RAM_ADDR_WIDTH,
         RAM_LATENCY=> RAM_LATENCY
@@ -781,7 +781,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             in_dat_dly1_tlast  <= s_axis_in_tlast;
             in_dat_dly1_tuser  <= s_axis_in_tuser;
 
-           
+
             in_dat_dly2_tdata  <= in_dat_dly1_tdata;
             in_dat_dly2_tvalid <= in_dat_dly1_tvalid;
             in_dat_dly2_tlast  <= in_dat_dly1_tlast;
@@ -926,7 +926,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                     OUT_WORD_VAR(i)(3 downto 0) := "0000";
                 end loop;
             end if;
-            
+
             -- Register saturated/zeroed/encoded outputs
             stage3_word <= OUT_WORD_VAR;
             stage3_tvalid <= stage2_tvalid;
@@ -946,7 +946,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 frame_ctr <= (others=> '0');
                 current_gain_bank <= '0';
             end if; -- IF RST
-        
+
         end if; -- clk
     end process scaler_proc;
 
@@ -955,11 +955,11 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
         process(all) begin
             if rising_edge(clk) then
                 -- Stage 4a: Assign Main outputs
-    
+
                 -- Set defaults in case we don't assign them below
                 m_axis_out_tdata<= (others => '0');
                 m_axis_out_tuser <= (others => '0'); -- sets flags only set on last frame to 0
-    
+
                 m_axis_out_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= stage3_tuser; -- pass on the USER bits
                 -- Add gain bank flag
                 -- Todo: make sure the gain flag is synchronized
@@ -969,7 +969,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
 
                 m_axis_out_tlast <= stage3_tlast;
                 m_axis_out_tvalid <= stage3_tvalid;
-    
+
                 case? bypass_scaler & bypass_data_type is
                     when "0--" => -- send the 4+4 bit scaled values
                         for i in 0 to FFT_BINS_PER_WORD-1 loop
@@ -977,7 +977,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                             m_axis_out_tdata((2*i+2)*OB/2-1 downto (2*i+1)*OB/2) <= msb_pad(std_logic_vector(stage3_word(2*i+1)), OB/2); -- MSB->LSB: 3,2,1,0 = Re(N), Im(N), Re(N+1), Im(N+1)
                             m_axis_out_tuser(FFT_TUSER_BITS_PER_WORD+i+1) <= stage3_overflow(2*i) or stage3_overflow(2*i+1); -- Set overflow flag if either Re or Im overflow
                         end loop;
-    
+
                     when "100" => -- send the MSBs of the raw FFT input. Used to send FUNCGEN data to correlator/corner-turn engines with FFT bypass
                         for i in 0 to INTEGERS_PER_WORD-1 loop
                             m_axis_out_tdata((i+1)*OB/2-1 downto i*OB/2) <= msb_pad(in_dat_dly1_tdata((i+1)*FB/2-1 downto i*FB/2), OB/2);
@@ -985,7 +985,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         m_axis_out_tlast <= in_dat_dly1_tlast;
                         m_axis_out_tvalid <= in_dat_dly1_tvalid;
                         m_axis_out_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= in_dat_dly1_tuser;
-    
+
                     when "101" => -- Send 1+0j on overflow. Autocorr counts any saturation
                         for i in 0 to FFT_BINS_PER_WORD-1 loop
                              m_axis_out_tdata((2*i+2)*OB/2-4) <= '1' when stage3_overflow(2*i)='1' or stage3_overflow(2*i+1)='1'; -- set LSB of upper 4 bits, Re only
@@ -1025,36 +1025,36 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
 
 
     -- Assign CAPTURE OUTPUT
-    cap_blk: block 
+    cap_blk: block
 
         signal fres_tdata: slv_array(0 to 1)(FFT_BITS_PER_BIN/2-1 downto 0); -- Delayed Re/Im pair
         signal fres_flags: slv_array(0 to 1)(1 downto 0);
-        
+
 --        signal fres_tuser_reg, fres_tuser_reg2: std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);
 
 --        signal fres_send_im, fres_send_tlast: std_logic;
---        signal fres_frame_reg, fres_word_reg, fres_tlast_reg: std_logic;    
+--        signal fres_frame_reg, fres_word_reg, fres_tlast_reg: std_logic;
 
 --        signal in_dat_dly1_tdata_reg  : std_logic_vector(FFT_BITS_PER_WORD-1 downto 0);
 --        signal in_dat_dly1_tvalid_reg : std_logic;
 --        signal in_dat_dly1_tlast_reg  : std_logic;
 --        signal in_dat_dly1_tuser_reg  : std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);  --
-    
+
         signal in_dat_dly1_word_ctr   : unsigned(1 downto 0); -- counts words for double and quad resolution modes
         signal in_dat_dly1_frame_ctr  : unsigned(INTEGER_LOG2(FFT_BINS_PER_WORD) downto 0); -- counts frames double and full resolution modes. Needs 2 frames (Re, Im) per bin in full res mode.
 --        signal subword_ctr  : unsigned(1 downto 0); -- counts transmitted words for double and quad resolution modes
     begin
-        process(all) 
+        process(all)
             variable pos: integer; -- integer representation of subword_ctr
 --            variable subword_ctr_width: integer range 1 to 2; -- number of bits needed to count subwords
-            variable fres_re_var, fres_im_var: std_logic_vector(FFT_BITS_PER_BIN/2-1 downto 0);  
-            variable fres_tdata_var: slv_array(0 to 2)(FFT_BITS_PER_BIN/2-1 downto 0);  
-            variable fres_flags_var: slv_array(0 to 2)(1 downto 0);  
+            variable fres_re_var, fres_im_var: std_logic_vector(FFT_BITS_PER_BIN/2-1 downto 0);
+            variable fres_tdata_var: slv_array(0 to 2)(FFT_BITS_PER_BIN/2-1 downto 0);
+            variable fres_flags_var: slv_array(0 to 2)(1 downto 0);
         begin
             if rising_edge(clk) then
 
 
-                -- Count words and frames on in_dat_dly1 
+                -- Count words and frames on in_dat_dly1
                 if in_dat_dly1_tvalid then
                     in_dat_dly1_word_ctr <= in_dat_dly1_word_ctr + 1;
                     if in_dat_dly1_tlast then
@@ -1063,14 +1063,14 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                     end if;
                 end if;
                 if rst_reg then
-                    in_dat_dly1_word_ctr <= (others => '0');                    
+                    in_dat_dly1_word_ctr <= (others => '0');
                     in_dat_dly1_frame_ctr <= (others => '0');
                 end if;
-     
+
 
 
                 -- Stage 3e: Assign Capture outputs
-    
+
                 m_axis_cap_tdata <= (others => '0'); -- ensure any unassigned bit is zero
                 m_axis_cap_tuser <= (others => '0');
                 m_axis_cap_tuser(FFT_TUSER_BITS_PER_WORD) <= m_axis_out_tuser(FFT_TUSER_BITS_PER_WORD); -- current gain bank
@@ -1080,7 +1080,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 if m_axis_cap_tvalid and m_axis_cap_tlast then
                     cap_frame_ctr <= cap_frame_ctr + 1;
                 end if;
-    
+
                 case cap_data_type is
                     when "000" => -- send main scaler output (default)
                         for i in 0 to INTEGERS_PER_WORD-1 loop
@@ -1089,16 +1089,16 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         m_axis_cap_tlast <= m_axis_out_tlast;
                         m_axis_cap_tvalid <= m_axis_out_tvalid;
                         m_axis_cap_tuser <= m_axis_out_tuser;
-    
+
                     when "001" => -- send MSBs of pre-gain (raw) FFT output
-    
+
                         -- We forward the upper N bits of the FFT integers to the upper N bits of the output integer
                         for i in 0 to INTEGERS_PER_WORD-1 loop
                             m_axis_cap_tdata((i+1)*CB/2-1 downto i*CB/2) <= msb_pad(in_dat_dly1_tdata((i+1)*FB/2-1 downto i*FB/2), CB/2);
                         end loop;
                         m_axis_cap_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= in_dat_dly1_tuser;
-    
-    
+
+
                     when "010" => -- send MSBs of the post-gain FFT output with saturation
                         for i in 0 to INTEGERS_PER_WORD-1 loop
                             m_axis_cap_tdata((i+1)*CB/2-1 downto i*CB/2) <=
@@ -1109,7 +1109,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         m_axis_cap_tlast <= stage1_tlast;
                         m_axis_cap_tvalid <= stage1_tvalid;
                         m_axis_cap_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= stage1_tuser;
-    
+
                     when "011" => -- send the 4+4 bit scaled values
                         for i in 0 to INTEGERS_PER_WORD-1 loop
                             m_axis_cap_tdata((i+1)*CB/2-1 downto i*CB/2) <= msb_pad(std_logic_vector(stage3_word(i)), CB/2); -- MSB->LSB: 3,2,1,0 = Re(N), Im(N), Re(N+1), Im(N+1)
@@ -1117,18 +1117,18 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         m_axis_cap_tlast <= stage3_tlast;
                         m_axis_cap_tvalid <= stage3_tvalid;
                         m_axis_cap_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= stage3_tuser;
-    
+
                     when "100"  => -- Double  resolution modes: send even bins on even frames and odd bins on odd frames at twice the bit width
                         -- for CRS: CB=128/4= 32 bits/bin (CB/2+CB/2) = (16+16) = 32 bits/bin, 2x mode => (CB+CB)= (32 + 32) = 2*CB  = 64 bits/bin,  4/2=2 bins/word, 8/2= 4 integers/word
                         -- for ICE: CB=32/2= 16 bits/bin= (CB/2+CB/2) = (8+8) , 2x mode => 32 bits/bin, (16+16)= 32 bits/bin,  2/2=1 bin/word, 4/2= 2 integers/word
-    
+
                         pos := to_integer(in_dat_dly1_frame_ctr(0 downto 0));
                         for i in 0 to IPW/4-1 loop -- 0 to 1 for CRS, 0 to 0 for ICE
                             set_subword(m_axis_cap_tdata, msb_pad(get_subword(in_dat_dly1_tdata, FB/2, 4*i+2*pos, from_msb => TRUE), CB), 2*i, from_msb => TRUE); -- Re
                             set_subword(m_axis_cap_tdata, msb_pad(get_subword(in_dat_dly1_tdata, FB/2, 4*i+2*pos+1, from_msb => TRUE), CB), 2*i+1, from_msb => TRUE); -- Im
 --                            m_axis_cap_tdata((IPW/4-i)*CB-1 downto (IPW/4-i-1)*CB) <= msb_pad(in_dat_dly1_tdata((IPW/2 - IPW/4 * subword - i) * FB - 1  downto (IPW/2 - IPW/4 * subword -i -1) * FB), CB);
                         end loop;
-                    when  "101" => -- Full resolution mode (Re and Im each in their full capture word) sent over 2*B frames, where B is the number fo bins per word, 
+                    when  "101" => -- Full resolution mode (Re and Im each in their full capture word) sent over 2*B frames, where B is the number fo bins per word,
                         --
                         -- Full resolution mode sends each Re or Im component of the raw FFT output with the full witdh of the capture output.
                         -- We send Re on one clock and Im on the following clock, as it is important that both component come from the same frame.
@@ -1136,18 +1136,18 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         -- Since a FFT word contains multiple bins, we send the top bin on the first 2 frames, then the next bins on the next 2 frames etc.
                         -- If the FFT has 2 bins per word, it takes 4 consecutive frames to transmit all bins. It it has 4 bins per frames, it takes 8 consicutive frames,
                         -- Due to memory limitations, we cannot store the first frame and send the captured data in multiple subsequent frames.
-                        -- Each frame is based on new input data, so arteftacts may occur is the spectrum of the measured signal varies between frames. 
+                        -- Each frame is based on new input data, so arteftacts may occur is the spectrum of the measured signal varies between frames.
                         --
                         -- In this implementation, we implement a 2-element shift register FIFO to store the even bins on even frames and odd bins on odd frames.
                         -- The Re and Im parts are placed in the FIFO, with a flag indicating their status:
-                        --   "00": no element 
+                        --   "00": no element
                         --   "01": Valid element , but seed to grab tlast on next odd word
                         --   "10": Valid element, tlast=0
                         --   "11": Valid element, tlast=1
-                        -- In order not to miss the tlast on the original stream (which is always on an odd word), 
-                        -- Im bin grabbed on an even word are flagged so the tlast signal on the following odd word will be applied to it. 
-                        -- A word is not pushed out of the FIFO until its tlast status is resolved, so we can operate even if words are widely spaced (with a lot of tvalid=0). 
-        
+                        -- In order not to miss the tlast on the original stream (which is always on an odd word),
+                        -- Im bin grabbed on an even word are flagged so the tlast signal on the following odd word will be applied to it.
+                        -- A word is not pushed out of the FIFO until its tlast status is resolved, so we can operate even if words are widely spaced (with a lot of tvalid=0).
+
                         -- Extract a single complex number from the FFT vector
                         pos := to_integer(in_dat_dly1_frame_ctr(INTEGER_LOG2(FFT_BINS_PER_WORD) downto 1));
                         fres_re_var := get_subword(in_dat_dly1_tdata, FFT_BITS_PER_BIN/2, 2*pos, from_msb => TRUE);
@@ -1156,24 +1156,24 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         m_axis_cap_tvalid <='0';
 
                         -- get the current flags and data, allowing one extra slot in case we need it
-                        -- We will shift left: the element to be sent out is in posiiton 0 
+                        -- We will shift left: the element to be sent out is in posiiton 0
                         fres_flags_var:= (fres_flags(0), fres_flags(1), "00");
                         fres_tdata_var := (fres_tdata(0), fres_tdata(1), (others => '0'));
-                        
+
                         -- Append new Re/Im pair to the list when on the right word and frame
-                        if in_dat_dly1_tvalid='1' and in_dat_dly1_frame_ctr(0) = in_dat_dly1_word_ctr(0)  then -- Put odd or even word at end of fifo 
+                        if in_dat_dly1_tvalid='1' and in_dat_dly1_frame_ctr(0) = in_dat_dly1_word_ctr(0)  then -- Put odd or even word at end of fifo
                             pos := 0 when fres_flags_var(0) = "00" else 1 when fres_flags_var(1)="00" else 2; -- first free slot
                             assert pos <=1 report "fres: full res overflow" severity ERROR;
                             fres_tdata_var(pos) := fres_re_var;  fres_flags_var(pos) := "10"; -- Store Re. It is valid  and not tlast,
                             fres_tdata_var(pos + 1) := fres_im_var; fres_flags_var(pos + 1) := "01"; -- Store Im. Its tlast needs to be resolved
-                        end if;  
+                        end if;
 
                         -- Resolve pending tlast on odd words. This is either an even bin aded previously, or an odd bin that was just added now
                         for i in 0 to 2 loop
-                            fres_flags_var(i) := ('1' , in_dat_dly1_tlast) when fres_flags_var(i)="01" and in_dat_dly1_tvalid = '1' and in_dat_dly1_word_ctr(0)='1'; 
-                        end loop;                        
-                        
-                        -- Shift out element 0 to output if we have data ready to go                        
+                            fres_flags_var(i) := ('1' , in_dat_dly1_tlast) when fres_flags_var(i)="01" and in_dat_dly1_tvalid = '1' and in_dat_dly1_word_ctr(0)='1';
+                        end loop;
+
+                        -- Shift out element 0 to output if we have data ready to go
                         if fres_flags_var(0) ?= "1-" then
                             m_axis_cap_tdata <= msb_pad(fres_tdata_var(0),  m_axis_cap_tdata'LENGTH);
                             m_axis_cap_tvalid <= fres_flags_var(0)(1);
@@ -1186,9 +1186,9 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         fres_tdata <= fres_tdata_var(0 to 1);
                         fres_flags <= fres_flags_var(0 to 1);
 
-                        
+
                     when "110" => -- send saturation flags, for each Re and Im part: 0 = no sat, 1 = positive sat, -1 = negative sat
-    
+
                         for i in 0 to IPW-1 loop
                             m_axis_cap_tdata((i+1)*CB/2-1 downto i*CB/2) <=
                                 ('1', others => '0') when stage1_overflow(i)='1' and stage1_sign(i)='1' else
@@ -1198,8 +1198,8 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         m_axis_cap_tlast <= stage1_tlast;
                         m_axis_cap_tvalid <= stage1_tvalid;
                         m_axis_cap_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= stage1_tuser;
-    
-       
+
+
                     when others =>
     --                    assert FALSE report "Unhandled data type case" severity FAILURE;
                 end case;
@@ -1211,7 +1211,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
 
             end if; --clk
         end process;
-    end block cap_blk;    
+    end block cap_blk;
 
     dlycap_blk: block begin
         process(all) begin
@@ -1226,7 +1226,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         delay_capture_ctr_en <= '0';
                     end if;
                 end if;
-    
+
             end if; -- clk
         end process;
     end block dlycap_blk;
@@ -1234,28 +1234,28 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
     ----------------------------------
     -- Statistics logic
     ----------------------------------
-    -- Counts the number of scaler and ADC frame overflows over a specific number of frames    
-    
+    -- Counts the number of scaler and ADC frame overflows over a specific number of frames
+
     stats_blk: block
         signal stats_frame_ctr: unsigned(23 downto 0);
-        signal stats_word_ctr: unsigned(LOG2_FFT_WORDS_PER_FRAME-1 downto 0); 
+        signal stats_word_ctr: unsigned(LOG2_FFT_WORDS_PER_FRAME-1 downto 0);
 
         signal scaler_overflow_ctr: unsigned(15+1 downto 0); -- one extra bit for carry
         signal adc_overflow_ctr: unsigned(15+1 downto 0);
-    
+
         signal stats_capture_resync: std_logic;
 --        signal stats_first_frame: std_logic;
         signal last_frame: std_logic;
-    
-        signal n_sat1: unsigned(3 downto 0); -- 0 to 8 saturations 
+
+        signal n_sat1: unsigned(3 downto 0); -- 0 to 8 saturations
         signal use_bin1: std_logic;
 --        signal add_bin1: std_logic;
         signal last_bin1, last_bin2: std_logic;
         signal first_bin0, first_bin1: std_logic;
         signal adc_flag1: std_logic;
-                
+
     begin
-    
+
         -- resynchronize the stats_capture signal to make sure we have clean captures
         stats_capture_cdc0: xpm_cdc_single
             generic map (SRC_INPUT_REG => 0)
@@ -1267,29 +1267,29 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             variable n_sat_var: unsigned(n_sat1'RANGE);
         begin
             if rising_edge(clk) then
-    
+
                 -- Channel FIFO overflow monitoring
                 --if rst_reg='1' or fifo_overflow_reset='1' then
                 --    fifo_overflow_sticky <= '0';
                 --elsif fifo_overflow='1' then
                 --    fifo_overflow_sticky <= '1';
                 --end if;
-    
+
                 fifo_overflow_sticky <= '0' when rst_reg or fifo_overflow_reset else
                                         '1' when fifo_overflow;
-    
-    
-    
+
+
+
                 -- Phase 0
                 ----------
                 -- Set n_sat, use_bin, first_bin, new_integ
-                 
+
                 -- Register the last frame flag to help timing. Changes on tlast, and we use it only on the following tlast, so we don't mind the latency
                 last_frame <=  to_std_logic(stats_frame_ctr = stats_frame_count);
 
                 use_bin1 <= '0'; -- inactive unless overriden below
                 last_bin1 <= '0'; -- single pulse, overriden below
---                add_bin1 <= '0' when last_bin1 else 
+--                add_bin1 <= '0' when last_bin1 else
 --                            '1' when use_bin1; -- overriden below. Start adding as soon as we've processed usable bin
                 adc_flag1 <= '0';
                 if stage3_tvalid then
@@ -1308,13 +1308,13 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         end if;
                     end if;
                 end if;
-                
+
                 -- Count scaler overflows
                 -- Determine if how many scaler overflows we have on this word sample
                 -- We count a saturation on either the real or imaginary part as a single count
                 n_sat_var := (others => '0');
                 for i in 0 to FFT_BINS_PER_WORD-1 loop
-                    if stage3_overflow(2*i) or stage3_overflow(2*i+1) then 
+                    if stage3_overflow(2*i) or stage3_overflow(2*i+1) then
                         n_sat_var := n_sat_var +1;
                     end if;
                 end loop;
@@ -1323,19 +1323,19 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                -- Phase 2
                -- Add sats
                if first_bin1 then
-                    scaler_overflow_ctr <= resize(n_sat1, scaler_overflow_ctr'LENGTH) when use_bin1  else 
+                    scaler_overflow_ctr <= resize(n_sat1, scaler_overflow_ctr'LENGTH) when use_bin1  else
                                            (others => '0');
-               elsif use_bin1 and not msb(scaler_overflow_ctr) then -- stop adding if the carry is set: we have overflown                    
+               elsif use_bin1 and not msb(scaler_overflow_ctr) then -- stop adding if the carry is set: we have overflown
                          scaler_overflow_ctr <= scaler_overflow_ctr + resize(n_sat1, scaler_overflow_ctr'LENGTH) ;
                end if;
 
                last_bin2 <= last_bin1;
-   
+
                     -- Count ADC overflows (counts how many frames have at least one overflow, as stated in the ADC_OVERFLOW flag thn TLAST=1)
-                    adc_overflow_ctr <= (others => '0') when first_bin1 else 
+                    adc_overflow_ctr <= (others => '0') when first_bin1 else
                                         adc_overflow_ctr + 1 when adc_flag1 and not msb(adc_overflow_ctr); -- This is the first sample of a frame, don't have to worry about the ADC_OVERFLOW flag yet
-    
-    
+
+
                 -- Phase 3
                 -- Capture stats when requested
 
@@ -1346,7 +1346,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                     stats_adc_overflows <= adc_overflow_ctr(stats_adc_overflows'RANGE);
                     stats_ready <='1';
                 end if;
-    
+
                 if rst_reg='1' then
                     stats_ready <= '0';
                     stats_frame_ctr <= (0=>'1', others=>'0');
@@ -1377,7 +1377,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         mon_packet_ctr <= mon_packet_ctr + 1;
                         mon_packet_length <= mon_word_ctr when mon_word_ctr > mon_packet_length;
                     end if;
-    
+
                 end if;
                 if mon_reset_stats then
                     mon_packet_length <= (others =>'0');
@@ -1385,7 +1385,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 end if;
             end if; -- clk
         end process;
-    end block mon_blk;    
+    end block mon_blk;
 
 end Behavioral;
 
