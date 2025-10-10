@@ -376,7 +376,8 @@ begin
 				INIT_7B         => X"0000", -- DUAL1 Register
 				INIT_7C         => X"0000", -- DUAL2 Register
 				INIT_7D         => X"0000", -- DUAL3 Register
-				SIM_DEVICE      => "ZYNQ_ULTRASCALE"
+				SIM_DEVICE      => "ZYNQ_ULTRASCALE",
+				SIM_MONITOR_FILE => "/home/jfcliche/chfpga/xilinx_projects/testbenches/sysmon_testbench/sysmon_sim_data.txt"
 			)
 			port map (
 				-- DRP port

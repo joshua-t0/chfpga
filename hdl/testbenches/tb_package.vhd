@@ -41,6 +41,8 @@ package tb_package is
 	procedure send_buffer( signal CLK : IN STD_LOGIC; signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0); signal tvalid: OUT STD_LOGIC; signal tlast: OUT STD_LOGIC; signal tready: in std_logic; data: IN slv8_array);
 	function to_command_bytes( opcode: slv3; increment: integer:=1; log2_length: integer :=0; addr: integer) return slv8_array;
 	procedure fpga_read(  signal CLK : IN STD_LOGIC;  signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0); signal tvalid: OUT STD_LOGIC; signal tlast: OUT STD_LOGIC; signal tready: in std_logic;  addr: integer; log2_length: integer := 0);
+	procedure fpga_read_ram(signal CLK : IN STD_LOGIC;  signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0); signal tvalid: OUT STD_LOGIC; signal tlast: OUT STD_LOGIC; signal tready: in std_logic;  addr: integer; log2_length: integer := 0);
+
 	procedure fpga_write_control(  signal CLK : IN STD_LOGIC;  signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0); signal tvalid: OUT STD_LOGIC; signal tlast: OUT STD_LOGIC;  signal tready: in std_logic; addr: integer; data: integer; nbytes: integer:=1);
 	procedure fpga_write_control(  signal CLK : IN STD_LOGIC;  signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0); signal tvalid: OUT STD_LOGIC; signal tlast: OUT STD_LOGIC;  signal tready: in std_logic; addr: integer; data: std_logic_vector(7 downto 0));
 
@@ -131,6 +133,27 @@ package body tb_package is
 		buf := to_command_bytes(opcode=>opcode, log2_length => log2_length, addr => addr);
 		send_buffer(clk, tdata, tvalid, tlast, tready, buf);
 	end procedure fpga_read;
+
+
+	procedure fpga_read_ram (
+			signal CLK : IN STD_LOGIC;
+			signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0);
+			signal tvalid: out std_logic;
+			signal tlast: OUT STD_LOGIC;
+			signal tready: in std_logic;
+			-- port_number: in integer;
+			-- module_number: in integer;
+			addr: IN integer;
+			log2_length: integer := 0
+			) is
+		variable buf: slv8_array(0 to 2);
+		variable opcode: slv3;
+		variable addr_vect: slv19;
+	begin
+		opcode:=READ_RAM;
+		buf := to_command_bytes(opcode=>opcode, log2_length => log2_length, addr => addr);
+		send_buffer(clk, tdata, tvalid, tlast, tready, buf);
+	end procedure fpga_read_ram;
 
 
 

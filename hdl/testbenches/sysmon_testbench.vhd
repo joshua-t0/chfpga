@@ -40,9 +40,8 @@ constant CTRL_CLK_PERIOD : time := 10 ns; --
 	--signal reset : std_logic := '0';
 
 
-	signal clk: std_logic; -- 200 MHz
+	signal clk, ctrl_clk: std_logic := '0'; 
 	signal rst, ctrl_rst: std_logic := '1';
-	signal ctrl_clk: std_logic; -- 200 MHz
 
 	signal tlast_in, tlast_out, tvalid_in, tvalid_out: std_logic;
 	signal tdata_in, tdata_out: std_logic_vector(255 downto 0);
@@ -52,84 +51,40 @@ constant CTRL_CLK_PERIOD : time := 10 ns; --
     signal rply_dat: axis8_dat_struct;
     signal rply_rdy: axis8_rdy_struct := (TREADY=>'0');
 
-	constant NUMBER_OF_PACKETS : integer :=500;
-
--- Tests
--- Normal mode
--- Borderline delay
--- Missing frame
--- Short frame
--- One lane with bursts on back-to-back 1 word frame
--- All single word, back-to-back packets: cannot work because  too fast for the frame clock processing
-
-	-- signal t1: slv8;
-	-- signal t2,t3: std_logic;
 begin
 
-
-	--dut_inst: entity work.cge_test
-	--	port map (
-	--		tx_p=> txp,
-	--		tx_n=> txn,
-	--		gt_ref_clk_p => clk,
-	--		gt_ref_clk_n => not clk
-	--	);
-
-
-	refclk_process: process
-	   begin
-	       wait for 1 us;
-           while  True loop
-			clk <= '0';
-			wait for CLK_PERIOD/2;
-			clk <= '1';
-			wait for CLK_PERIOD/2;
-        end loop;
-	   end process;
-
-    bsbclk_process: process
-	   begin
-			ctrl_clk <= '0';
-			wait for CTRL_CLK_PERIOD/2;
-			ctrl_clk <= '1';
-			wait for CTRL_CLK_PERIOD/2;
-	   end process;
-
-
-SYSMON0: entity work.SYSMON_XADC
-	GENERIC MAP (
-		PLATFORM_ID => PLATFORM_ID_ZCU111
-		)
-	PORT MAP(
-		-- Control interface
-		CTRL_CMD_IN_DAT => CMD_DAT,
-		CTRL_CMD_IN_RDY => CMD_RDY,
-		CTRL_RPLY_OUT_DAT => RPLY_DAT,
-		CTRL_RPLY_OUT_RDY => RPLY_RDY,
-		CTRL_CLK => CTRL_CLK,
-		CTRL_RST => ctrl_rst, -- pipelined synchronous reset
-
-		-- Analog inputs
-		VAUX_CURR_N => '0',
-		VAUX_CURR_P => '0',
-		VAUX_VOLT_N => '0',
-		VAUX_VOLT_P => '0',
-		VP => '0',
-		VN => '0',
-
---		debug_out => debug_out,
-		sysmon_clk => clk,
-		SYSMON_RST => rst 
-	);
-
-
-    rply_rdy.TREADY <= '1';
-    --	rst_proc: process(clk)
-    --	begin
-    --		if rising_edge(clk) then
-    --		end if;
-    --	end process;
+    clk <= not clk after CLK_PERIOD/2;
+    ctrl_clk <= not ctrl_clk after CTRL_CLK_PERIOD/2; 
     
+    
+    SYSMON0: entity work.SYSMON_XADC
+        GENERIC MAP (
+            PLATFORM_ID => PLATFORM_ID_ZCU111
+            )
+        PORT MAP(
+            -- Control interface
+            CTRL_CMD_IN_DAT => CMD_DAT,
+            CTRL_CMD_IN_RDY => CMD_RDY,
+            CTRL_RPLY_OUT_DAT => RPLY_DAT,
+            CTRL_RPLY_OUT_RDY => RPLY_RDY,
+            CTRL_CLK => CTRL_CLK,
+            CTRL_RST => ctrl_rst, -- pipelined synchronous reset
+    
+            -- Analog inputs
+            VAUX_CURR_N => '0',
+            VAUX_CURR_P => '0',
+            VAUX_VOLT_N => '0',
+            VAUX_VOLT_P => '0',
+            VP => '0',
+            VN => '0',
+    
+    --		debug_out => debug_out,
+            sysmon_clk => clk,
+            SYSMON_RST => rst 
+        );
+    
+    
+    rply_rdy.TREADY <= '1';
 
 	sim_proc: process
 
@@ -146,10 +101,10 @@ SYSMON0: entity work.SYSMON_XADC
 		sleep(ctrl_clk, 10);
 
 
-        -- Enable playlist write
-        fpga_write_control(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
-                           addr=> 0, data => 0);
-
+        for i in 0 to 1000 loop
+        fpga_read_ram(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
+                           addr=> 0, log2_length=>1);
+        end loop;
 		wait;
 	end process;
 

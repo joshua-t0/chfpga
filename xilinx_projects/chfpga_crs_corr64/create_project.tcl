@@ -20,7 +20,6 @@ set target_part "xczu47dr-ffvg1517-1-i"
 set ip_files [list \
  "CRS/pfb_fft_bitgrowth_0/pfb_fft_bitgrowth_0.xci" \
  "CRS/GTY/gtwizard_ultrascale_0.xci" \
- "CRS/CMD_FIFO/CMD_FIFO.xci" \
  ]
 
 

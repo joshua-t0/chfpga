@@ -24,6 +24,7 @@
 !.gitignore
 !*.rqs
 !*.wcfg
+!*.txt
 
 # Some harmless exceptions, used in some folders
 !*.xdc
