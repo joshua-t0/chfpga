@@ -534,7 +534,7 @@ status_bytes(13)(1) <= fifo_rd_en;
 status_bytes(13)(2) <= fifo_data_valid;
 status_bytes(13)(3) <= data_ready_int;
 
-status_bytes(15)<=to_slv(LSB(output_word_ctr));
+status_bytes(15)<=to_slv(lsb(output_word_ctr), 8);
 
 -- STATUS BYTES 16-17: Not used
 
