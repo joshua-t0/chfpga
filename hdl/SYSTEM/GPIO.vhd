@@ -9,8 +9,6 @@
 -- Target Devices: Virtex 6, 7 series, Ultrascale+
 -- Tool versions: ISE 13.1, 14.2 ... Vivado 2022.2
 --
--- Dependencies:
---
 -- Revision:
 --  2011-08-29 JFC: Added USER_ACCESS to obtain the bitstream date (or other user info inserted at bitstream-generation time)
 --  2011-09-14 JFC: Added global reset signal
@@ -194,17 +192,10 @@ entity GPIO is
 		lcd_rs: out  std_logic;
 		lcd_rw: out  std_logic;
 
-		-- Backplane signals
-
-		-- Slot sensing system (measures capacitance on the sense line to identify the slot number)
-
-		slot_probe: in std_logic_vector(1 downto 0); -- Signal used to probe the capacitance of the backplane slot-sense line
-		slot_sense: in std_logic_vector( 1 downto 0); -- Returns the logic level change in response to the probe edge, which is used to determine the board capacitance.
 
 		-- Backplane synchronization signal
 
 		bp_buck_sync: inout std_logic;
-		bp_buck_sync_mon: out std_logic;
 
 		-- Backplane global interrupt line
 
@@ -274,7 +265,7 @@ entity GPIO is
 
 		-- Channelizer clock source selection
 
-		chan_clk_source: out std_logic;
+		chan_clk_sel: out std_logic;
 
 		-- User-controlled global resets
 
@@ -339,9 +330,6 @@ architecture impl of GPIO is
 	signal fan_tach_ctr: unsigned(16 downto 0); -- the length of this counter sets the number of clk200 cycles  the debouncing waits before deciding that the state is stable
 	signal fan_tach_target: std_logic := '0'; --
 	signal fan_tach_div2_int: std_logic := '0';
-
-	signal slot_probe_dly: std_logic_vector(1 downto 0);
-	signal slot_sense_ctr: slv8_array( 1 downto 0);
 
 	signal dna_dout: std_logic;
 	signal dna_read: std_logic := '1'; -- First clock is a read
@@ -451,7 +439,7 @@ begin
 	-- | CONTROL |  0  |  7   | CTRL_FLAG_GLOBAL_TRIG       | (Possibly unused) |
 	-- |         |     |  6   | CTRL_FLAG_BUCK_SYNC_ENABLE  | Enables the generation of the Buck switcher synchronization signals. If '0', all sync lines are held low to let the switcher free-run.|
 	-- |         |     |  5   | CHAN_CLK_RESET              | Resets the MMCM that generates the channelizer clocks |
-	-- |         |     |  4   | CHAN_CLK_SOURCE             | Selects the source of the channelizer clocks: 0: ADC clock, 1: 200 MHz system clock. CHAN_CLK_RESET or ADCDAQ_RESET must be asserted after the change for the MMCM to relock.|
+	-- |         |     |  4   | CHAN_CLK_Sel             | Selects the source of the channelizer clocks: 0: ADC clock, 1: 200 MHz system clock. CHAN_CLK_RESET or ADCDAQ_RESET must be asserted after the change for the MMCM to relock.|
 	-- |         |     |  3   | ADCDAQ_RESET                | Resets all ADCDAQ modules. This also resets the channelizer clock MMCM, the channelizers and the correlators.|
 	-- |         |     |  2   | (unused)                    | |
 	-- |         |     | 1:0  | ADC_RESET                   | ADC RESET line (active High) for each FMC ADC boards (bit 0 is for ADC board 0, etc) |
@@ -516,8 +504,8 @@ begin
 	-- |         |  6  | 7:0  | NUMBER_OF_GPU_LINKS         | Indicates how GPU Links are implemented. If zero, the GPU module is not present at all (not even the common registers)|
 	-- |         | 7-10| 31:0 | firmware_timestamp          | 32-bit word containing the timestamp of the firmware inserted during the bitgen process |
 	-- |         |  11 | 7:0  | PLATFORM_ID                 | Type of platform on which the firmware is running. 0=ML605, 1=KC705, 3=MGK7MB, 4=ZCU111 |
-	-- |         |12-19| 63:57| (unused)                    | FPGA unique serial number |
-	-- |         |     | 56:0 | FPGA_DNA                    | |
+	-- |         |12-19| 63:57| (unused)                    | (unused) |
+	-- |         |     | 56:0 | FPGA_DNA                    | FPGA unique serial number|
 	-- |         |  20 | 7:0  | NUMBER_OF_CROSSBAR_INPUTS   | Indicates how many channelizers are connected to the crossbar inputs. Those will be channeizers 0 to N-1|
 	-- |         |  21 | 7:0  | NUMBER_OF_CROSSBAR1_OUTPUTS | Indicates the number of crossbar1 outputs. Those outputs feed the GPU links and the FPGA correlators (if implemented).
 	-- |         |22-23| 15:0 | PROTOCOL_VERSION            | 16-bit value indicating the protocol version. A change in the version means that some change is needed on host control software. |
@@ -528,8 +516,8 @@ begin
 	-- |         |  28 | 7:0  | adc_cal_signal_detect       | RfSoC ADC calibration signal detected (bit 0-7 => ADC0-7) |
 	-- |         |  29 | 7:0  | adc_or                      | RfSoC ADC overrange (bit 0-7 => ADC0-7) |
 	-- |         |  30 | 7:0  | adc_ov                      | RfSoC ADC overvoltage (bit 0-7 => ADC0-7) |
-	-- |         |  31 | 7:0  | slot_sense_ctr(0)           | (unused) |
-	-- |         |  32 | 7:0  | slot_sense_ctr(1)           | (unused) |
+	-- |         |  31 | 7:0  | (unused)                    | (unused) |
+	-- |         |  32 | 7:0  | (unused)                    | (unused) |
 	-- |         |  33 | 7:6  | adc_pll_lock                | ICEBoard Mezzanine PLL lock signal |
 	-- |         |     | 5:0  | (unused)                    | |
 	-- |         |  34 | 7:0  | cmd_packet_counter          | Number of command packets received |
@@ -555,7 +543,7 @@ begin
 	ctrl_flag_global_trig      <= control_bytes(0)(7);
 	ctrl_flag_buck_sync_enable <= control_bytes(0)(6);
 	chan_clk_reset_async       <= control_bytes(0)(5);
-	chan_clk_source            <= control_bytes(0)(4);
+	chan_clk_sel            <= control_bytes(0)(4);
 	adcdaq_reset_async         <= control_bytes(0)(3);
 	adc_rst                    <= reverse_bits_and_dir(control_bytes(0)(NUMBER_OF_ADC_BOARDS - 1 downto 0));
 
@@ -727,8 +715,8 @@ begin
 
 	-- STATUS Bytes 31-32
 
-	status_bytes(31) <= slot_sense_ctr(0); -- is this still used?
-	status_bytes(32) <= slot_sense_ctr(1);
+	status_bytes(31) <= (others => '0'); -- Unused
+	status_bytes(32) <= (others => '0'); -- Unused
 
 	-- STATUS Bytes 33: FMC PLLs
 
@@ -1513,23 +1501,6 @@ begin
 		fan_tach_div2 <= fan_tach_div2_int;
 		fan_pwm       <= '1'; -- Fan is always operating at 100% speed
 	end generate gen_fan;
-
-
-	slotproc: process(ctrl_clk)
-	begin
-		if rising_edge(ctrl_clk) then
-			slot_probe_dly <= slot_probe;
-
-			for i in 0 to 1 loop
-				if slot_probe_dly(i) = '0' and slot_probe(i) = '1' then
-					slot_sense_ctr(i) <= (others => '0');
-				elsif slot_probe(i) = '1' and slot_sense(i) = '0' and signed(slot_sense_ctr(i)) /= -1 then
-					slot_sense_ctr(i) <= std_logic_vector(unsigned(slot_sense_ctr(i)) + 1);
-				end if;
-			end loop;
-
-		end if; -- CLK
-	end process;
 
 
 	------ PWM generator process  ------------------

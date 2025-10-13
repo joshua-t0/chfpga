@@ -35,6 +35,7 @@ entity SYSMON_XADC is
 	);
 	port (
 		-- Control interface
+
 		ctrl_cmd_in_dat: in AXIS8_DAT_STRUCT; -- Command stream input, signals from master (Data, Valid, Last)
 		ctrl_cmd_in_rdy: out AXIS8_RDY_STRUCT; -- Command stream input, signals to master (Ready)
 		ctrl_rply_out_dat: out AXIS8_DAT_STRUCT; -- Reply stream output, signals to slave (Data, Valid, Last)
@@ -43,6 +44,7 @@ entity SYSMON_XADC is
 		ctrl_rst: in std_logic;
 
 		--  Current and voltage monitors
+
 		vaux_curr_n: in  std_logic;
 		vaux_curr_p: in  std_logic; -- External current monitor on the 12V supply line
 		vaux_volt_n: in  std_logic;
@@ -50,13 +52,8 @@ entity SYSMON_XADC is
 		vp: in  std_logic;
 		vn: in  std_logic;
 
+		-- Clocks & Resets
 
-		-- FPGA FAN signals
-		fan_pwm: out std_logic; -- Fan control pin. Can be pulse modulated to produce variable speed (not implemented)
-		fan_tach: in std_logic := '0'; -- Fan speed monitor pin. Pulses twice per rotation. Is very glitchy and needs serious debouncing.
-
-		-- debug_out: out slv32;
-		-- System-level signals
 		sysmon_clk: in  std_logic; -- System monitor clock. Clocks the SYSMON hardware block.
 		sysmon_rst: in std_logic -- synchronous to sysmon_clk
 	);
@@ -72,12 +69,6 @@ architecture impl of SYSMON_XADC is
 
 	signal control_bytes: slv8_array(0 to 0); --
 	signal status_bytes: slv8_array(0 to 1);
-
-	signal control_bytes_fan_en: std_logic;
-
-	signal ctrl_cmd_in_rdy_int: AXIS8_RDY_STRUCT;
-	signal ctrl_rply_out_dat_int: AXIS8_DAT_STRUCT;
-
 
 	-- SYSMON signals
 	signal sysmon_dout: std_logic_vector(15 downto 0);
@@ -115,9 +106,7 @@ begin
 	-- ----------------------------------------------------------------------------------------
 	-- | Page    | Addr|Bit(s)|     Name               | Description                           |
 	-- |---------|-----|-----|-------------------------|---------------------------------------|
-	-- | CONTROL |  0  | 7:2 | (unused)                |  |
-	-- |         |     |  1  | fan_en                  |  Force HIGH on the fan PWM signal |
-	-- |         |     | 0   | (unused)                |  |
+	-- | CONTROL |  0  | 7:0 | (unused)                |  |
 	-- | STATUS  |  0  | 7:2 | sysmon_alm              | SYSMON alarm signals |
 	-- |         |     |  1  | sysmon_overtemp         | SYSMON overtemperature alarm|
 	-- |         |     |  0  | sysmon_busy             | SYSMON data conversion busy |
@@ -128,7 +117,6 @@ begin
 	-- ------------------------------------------------------------------------------
 
 	-- Assign signals to CONTROL and STATUS WORDS
-	control_bytes_fan_en <= control_bytes(0)(1);
 
 	status_bytes(0)(7 downto 2) <= sysmon_alm(5 downto 0);
 	status_bytes(0)(1)          <= sysmon_overtemp;
@@ -140,19 +128,14 @@ begin
 	status_bytes(1)(4 downto 0) <= sysmon_channel(4 downto 0);
 
 
-	fan_pwm <= control_bytes_fan_en or sysmon_overtemp or '1';
-
-	ctrl_cmd_in_rdy   <= ctrl_cmd_in_rdy_int;
-	ctrl_rply_out_dat <= ctrl_rply_out_dat_int;
-
 	-- Implement an an asynchronous FIFO to bridge the BSB bus from the ctrl_clk
 	-- to the sysmon_clk domains to allow the DRP signals will be synchronous to
 	-- that clock
 	fifo0: entity work.CMD_ASYNC_FIFO
 		port map (
 			cmd_a_dat  => ctrl_cmd_in_dat,
-			cmd_a_rdy  => ctrl_cmd_in_rdy_int,
-			rply_a_dat => ctrl_rply_out_dat_int,
+			cmd_a_rdy  => ctrl_cmd_in_rdy,
+			rply_a_dat => ctrl_rply_out_dat,
 			rply_a_rdy => ctrl_rply_out_rdy,
 			a_clk      => ctrl_clk,
 
