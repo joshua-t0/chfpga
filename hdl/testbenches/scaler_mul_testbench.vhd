@@ -6,7 +6,7 @@
 -- Design Name: scaler_mul_testbench
 -- Project Name: chFPGA
 -- Target Device: 7-Series, Ultrascale+
--- Tool versions: Vivado 2022.2 
+-- Tool versions: Vivado 2022.2
 -- Programming language: VHDL 2008
 -- Description:
 --------------------------------------------------------------------------------
@@ -63,14 +63,14 @@ ARCHITECTURE behavior OF scaler_mul_testbench IS
 
 
     signal a_values: signed_array(0 to 4)(A_WIDTH-1 downto 0) := (
-        (others =>'0'), 
+        (others =>'0'),
         (others => '1'),
         (0 => '1', others => '0'),
         (A_WIDTH-1 => '1', others=>'0'),
         (A_WIDTH-1 => '0', others=>'1')
         );
     signal b_values: integer_array(0 to 8) := (0, 1, 100, 17000, 27812, 32767, 32768, 40000, 65535);
-    
+
 begin
 
 
@@ -111,7 +111,7 @@ stim_proc : process begin
             b <= unsigned(test_pattern(B_WIDTH, j));
             v <= '1';
             sleep(clk);
-        end loop;    
+        end loop;
     end loop;
     v <= '0';
     sleep(clk,10);
@@ -121,7 +121,7 @@ end process ; -- lane0_proc
 check_proc: process(clk)
     variable a_var: signed(A_WIDTH-1 downto 0);
     variable b_var: unsigned(B_WIDTH-1 downto 0);
-    variable prod, p_var : signed(P_WIDTH downto 0); -- add one bit to 
+    variable prod, p_var : signed(P_WIDTH downto 0); -- add one bit to
     variable buf: line;
 
 begin
@@ -129,8 +129,8 @@ begin
         v1 <= v; v2 <= v1; v3 <= v2;
         a1 <= a; a2 <= a1; a3 <= a2;
         b1 <= b; b2 <= b1; b3 <= b2;
-    
-        if v3='1' then    
+
+        if v3='1' then
             a_var := a3;
             b_var := b3;
             prod := a3 * signed(resize(b3,b3'LENGTH+1));
@@ -141,9 +141,9 @@ begin
             else
                 write(buf, string'(" ERROR!"));
             end if;
-                
-            writeline(output, buf);
-            assert p_var=prod report "Bad product!" SEVERITY FAILURE; 
+
+                writeline(output, buf);
+            assert p_var=prod report "Bad product!" SEVERITY FAILURE;
         end if; -- valid
     end if; -- clk
 end process;
