@@ -24,7 +24,7 @@ ENTITY ucap_testbench IS
 	    NUMBER_OF_CHANNELS: integer := 8; -- Warning: current design works only with NUMBER_OF_CHANNELS = 8
 	    NUMBER_OF_SOURCES : integer := 2; -- Warning; current design works only with NUMBER_OF_SOURCES = 2
 
- 		BITS_PER_SAMPLE: integer := 14; 
+ 		BITS_PER_SAMPLE: integer := 16; 
  		SAMPLES_PER_WORD: integer := 8;
  		SAMPLES_PER_FRAME: integer := 16384
  		);
@@ -59,6 +59,11 @@ ARCHITECTURE behavior OF ucap_testbench IS
     signal tlast_out, tvalid_out, tready_out: std_logic;
     signal tdata_out: std_logic_vector(7 downto 0);
 
+	signal cmd_tdata: slv8;
+	signal cmd_tvalid: std_logic;
+	signal cmd_tlast: std_logic;
+	signal cmd_tready: std_logic;
+
 
 	constant NUMBER_OF_PACKETS : integer :=500;
 
@@ -88,11 +93,11 @@ begin
 	UCAP: entity work.ucap
         generic map (
             NUMBER_OF_CHANNELS => NUMBER_OF_CHANNELS,
-            NUMBER_OF_SOURCES => NUMBER_OF_SOURCES,
-            ADC_BITS_PER_SAMPLE => BITS_PER_SAMPLE,
-            ADC_SAMPLES_PER_WORD => SAMPLES_PER_WORD,
-            ADC_SAMPLES_PER_FRAME => SAMPLES_PER_FRAME,
-            SIM => TRUE
+            NUMBER_OF_SOURCES => NUMBER_OF_SOURCES
+--            ADC_BITS_PER_SAMPLE => BITS_PER_SAMPLE,
+--            ADC_SAMPLES_PER_WORD => SAMPLES_PER_WORD,
+--            ADC_SAMPLES_PER_FRAME => SAMPLES_PER_FRAME,
+--            SIM => TRUE
         )
 		port map (
 
@@ -105,6 +110,7 @@ begin
 			m_axis_bsb_tvalid => tvalid_out,
 			m_axis_bsb_tlast => tlast_out,
             m_axis_bsb_tready => '1',
+
             bsb_clk => bsb_clk,
     
             source_sel_out => source_sel_out,
@@ -112,6 +118,16 @@ begin
     
 			clk=> clk,
 			rst => rst,
+
+		-- CTRL_CMD_DAT => (TDATA=> cmd_tdata, TVALID => cmd_tvalid, TLAST => cmd_tlast),
+		CMD_DAT.TDATA => cmd_tdata,
+		CMD_DAT.TVALID => cmd_tvalid,
+		CMD_DAT.TLAST => cmd_tlast,
+		CMD_RDY.TREADY =>cmd_tready,
+
+		RPLY_DAT => open,
+		RPLY_RDY => (TREADY => '1'),
+
 			ctrl_clk => bsb_clk,
 			ctrl_rst => bsb_rst
 		 );
@@ -122,7 +138,8 @@ begin
         variable data: std_logic_vector(255 downto 0);
         variable addr, eop, eot: integer;
         variable dat: slv8_array(0 to 127);
-        variable src: integer := 0;    
+        variable src: integer := 0;  
+        variable mode, ch0, ch1: integer;  
 	begin
 
 		-- wait for init and synchronize to clock
@@ -136,6 +153,11 @@ begin
 		sleep(clk, 10);
 		rst <= '0';
         sleep(clk, 10); 
+
+        mode := 2;
+        ch0:= 0;
+        ch1 := 1;
+        fpga_write_control(bsb_clk, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, mode*64 + ch1*8 + ch0);  -- 64=bypass
 
         -- send channelizer data
         for frame in 0 to 1500 loop

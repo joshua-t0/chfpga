@@ -167,7 +167,7 @@ begin
 
 	bsb_regs0: entity work.CTRL_SLAVE
 		GENERIC MAP (
-			DEFAULT_CONTROL_BYTES=> X"08_1A_02cb41_02cb41_1F_00_00",
+			DEFAULT_CONTROL_BYTES=> X"08_1A_02cb41_02cb41_17_00_00",
 			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), -- Number of bits in the control word
 			NUMBER_OF_STATUS_BYTES => status_bytes'Length(1) -- Number of bits in the status word.
 		)
@@ -336,7 +336,7 @@ begin
            						src_readout_trig(src) <= capture_en(src); -- pulse the
 								capture_en(src) <= '0';
 							end if;
-							if period_ctr(src) = base_period(src) or signed(period_ctr(src)(to_integer(sub_period) downto 0)) = -1 then
+							if period_ctr(src) = base_period(src) or all_ones(period_ctr(src), to_integer(sub_period), 0) then
 								capture_en(src) <= '1';
 	                            frame(src) <= (others => '0');
 								period_ctr(src) <= (others => '0');
@@ -426,7 +426,8 @@ begin
                     when "01" => N :=  4; K := 2; K_WIDTH := 1; -- capturing 4 channels
                     when "10" => N :=  2; K := 4; K_WIDTH := 2; -- capturing 2 channels
                     when "11" => N :=  1; K := 8; K_WIDTH := 3; -- capturing 1 channel
-                    when others => assert FALSE report "Unhandled mode" severity FAILURE;
+                    when others => 
+--                    assert FALSE report "Unhandled mode" severity FAILURE;
                 end case;
 
                 -- Set the 2:1 mux mode. mux_mode=0 will enable the 2:1 muxes to override the odd buffer inputs
@@ -700,17 +701,17 @@ begin
 	                when "01" => -- 4-channel mode   (pkt ctr = 2 bit chan, 2 bit seq, 2 bit subframe)
 	                    -- STREAM_ID = "00" [2-bit frame #] [8-bit crate/slot #] "0" [3-bit chan #]
 			            frame_header.STREAM_ID(13 downto 12) := std_logic_vector'(buf(0) & read_proc_pkt_ctr(2)); -- frame (0-3)
-			            frame_header.STREAM_ID(2 downto 0) := std_logic_vector(chan_pair_sel(to_integer(buf(2 downto 1)))); -- channel (0-7)
+			            frame_header.STREAM_ID(2 downto 0) := std_logic_vector(chan_pair_sel(to_integer(buf(2 downto 1)))); -- channel (0-7) from chan_pair_sel(buf/2)
 	                when "10" => -- 2-channel mode (pkt ctr = 1 bit chan, 3 bit seq, 2 bit subframe)
 	                    -- STREAM_ID = "0" [3-bit frame #] [8-bit crate/slot #] "0" [3-bit chan #]
 			            frame_header.STREAM_ID(14 downto 12) := std_logic_vector(buf(1 downto 0) & read_proc_pkt_ctr(2));
-			            frame_header.STREAM_ID(2 downto 0) := std_logic_vector(chan_pair_sel(to_integer(buf(2 downto 2))));
+			            frame_header.STREAM_ID(2 downto 0) := std_logic_vector(chan_pair_sel(to_integer(buf(2 downto 1)))); -- channel (0-7) from chan_pair_sel(buf/2)
 	                when "11" => -- 1-channel mode (pkt ctr =  4 bit seq, 2 bit subframe)
 	                    -- STREAM_ID = [4-bit frame #] [8-bit crate/slot #] "0" [3-bit chan #]
 			            frame_header.STREAM_ID(15 downto 12) := std_logic_vector(buf(2 downto 0) & read_proc_pkt_ctr(2));
-			            frame_header.STREAM_ID(2 downto 0) := std_logic_vector(chan_pair_sel(0));
+			            frame_header.STREAM_ID(2 downto 0) := std_logic_vector(chan_pair_sel(to_integer(buf(2 downto 1)))); -- channel (0-7) from chan_pair_sel(buf/2)
                     when others =>
-                        assert False report "Unhandled mode" severity failure;
+--                        assert False report "Unhandled mode" severity failure;
 	            end case;
                 -- Convert to an array of bytes
 	            frame_header_bytes := struct_to_bytes(frame_header);
