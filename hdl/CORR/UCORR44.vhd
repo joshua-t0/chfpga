@@ -60,11 +60,11 @@ use xpm.vcomponents.all;
 entity UCORR44 is
 	GENERIC (
 		PLATFORM_ID: integer := PLATFORM_ID_CRS;
-		N: integer := 64; -- Number of inputs to correlate
-		N_PER_CLK: integer := 32; -- Number of inputs provided on each clock
+		NCHAN: integer := 64; -- Number of inputs to correlate
+		NCHAN_PER_CLK: integer := 32; -- Number of inputs provided on each clock
 		NBINS: integer; -- Number of bins to be processed by this correlator (before decimation)
 		BIN_DECIMATION_FACTOR: integer := 1; -- Only 1 out of every BIN_DECIMATION_FACTOR bin is processed in order to provide extra comoputing cycles and use less resources
-		Nclk: integer := BIN_DECIMATION_FACTOR * N / N_PER_CLK; -- Number of clocks  the correlator should take to compute the products
+		NCLK: integer := BIN_DECIMATION_FACTOR * NCHAN / NCHAN_PER_CLK; -- Number of clocks  the correlator should take to compute the products
 		CORR_NUMBER: integer := 0; -- correlator number to be used in packet headers
         NCORR: integer := 1;
 		URAM_MAX: integer := 64;
@@ -72,8 +72,8 @@ entity UCORR44 is
 		);
 	PORT(
 
-		-- Data be correlated & integrated. N channels (N bytes). AXI4-Streaming, non-blocking.
-		s_axis_tdata: in slv_array(0 to N_PER_CLK - 1)(7 downto 0); -- Contains both (4+4) bit, Re in MSB
+		-- Data be correlated & integrated. NCHAN channels (NCHAN bytes). AXI4-Streaming, non-blocking.
+		s_axis_tdata: in slv_array(0 to NCHAN_PER_CLK - 1)(7 downto 0); -- Contains both (4+4) bit, Re in MSB
 		s_axis_tlast: in std_logic;
 		s_axis_tvalid: in std_logic;
 
@@ -105,7 +105,7 @@ entity UCORR44 is
 end UCORR44;
 
 
--- Compact (4+4) bit N-element correlator.
+-- Compact (4+4) bit NCHAN-element correlator.
 --
 -- The complex multiplier/accumulator (CMAC) takes advantage of the small bit width if the incoming
 -- complex number (4-bit real, 4-bit imaginary) to implement a full complex multiplier and
@@ -163,12 +163,12 @@ end UCORR44;
 architecture impl of UCORR44 is
 
 	-- Constants
-	constant P: integer := (N * (N + 1) / 2); -- number of products
-	constant NCMAC : integer := P / Nclk;
-	constant WORDS_PER_BIN: integer := N / N_PER_CLK; -- number of clocks it takes to send all the channels of one bin
+	constant P: integer := (NCHAN * (NCHAN + 1) / 2); -- number of products
+	constant NCMAC : integer := P / NCLK;
+	constant WORDS_PER_BIN: integer := NCHAN / NCHAN_PER_CLK; -- number of clocks it takes to send all the channels of one bin
 	constant K: integer := BIN_DECIMATION_FACTOR; -- bin decimation factor
-	constant H: integer := N / 2 / Nclk; -- Number of columns processed per clock
-	--constant Nprod_per_clk: integer := N / 2/Nclk/K
+	constant H: integer := NCHAN / 2 / NCLK; -- Number of columns processed per clock
+	--constant Nprod_per_clk: integer := NCHAN / 2/NCLK/K
 
 
 	signal xy_tdata: slv_array(0 to NCMAC - 1)(15 downto 0);
@@ -205,31 +205,31 @@ begin
 
 
     corr_blk: block
-		signal t: slv_array(0 to N - N_PER_CLK - 1)(7 downto 0); -- assembly vector - don't need to store the last word
-		signal x: slv_array(0 to N - 1)(7 downto 0) := (others => (others => '0')); -- fixed correlation vector. Init value for nice sims only.
-		signal y: slv_array(0 to N - 1)(7 downto 0):= (others => (others => '0')); -- rotating correlation vector. Init value for nice sims only.
-		signal xsel: std_logic_vector(N / 2 to N - 1); -- mux selection vector, only applies to muxes fron N / 2+1 to N. Elements frm 0 to N / 2 are not touches and shoudl be synthesized out.
+		signal t: slv_array(0 to NCHAN - NCHAN_PER_CLK - 1)(7 downto 0); -- assembly vector - don't need to store the last word
+		signal x: slv_array(0 to NCHAN - 1)(7 downto 0) := (others => (others => '0')); -- fixed correlation vector. Init value for nice sims only.
+		signal y: slv_array(0 to NCHAN - 1)(7 downto 0):= (others => (others => '0')); -- rotating correlation vector. Init value for nice sims only.
+		signal xsel: std_logic_vector(NCHAN / 2 to NCHAN - 1); -- mux selection vector, only applies to muxes fron NCHAN / 2+1 to NCHAN. Elements frm 0 to NCHAN / 2 are not touches and shoudl be synthesized out.
 
 		signal clk_ctr: unsigned(3 downto 0);
 	begin
 
         xyj_gen: for j in 0 to H-1 generate
-            xyi_gen: for i in 0 to N generate
-                xy_swap(i * H + j) <= '1' when i>= N / 2 + 1 and (i + j >= N or xsel(i + j) = '1') else '0';
-                xy_tdata(i * H + j)(15 downto 8) <= x(i - 1) when i>= N / 2 + 1 and (i + j >= N or xsel(i + j) = '1') else x(i);
-                xy_tdata(i * H + j)(7 downto 0) <= y((i + j) mod N);
+            xyi_gen: for i in 0 to NCHAN generate
+                xy_swap(i * H + j) <= '1' when i>= NCHAN / 2 + 1 and (i + j >= NCHAN or xsel(i + j) = '1') else '0';
+                xy_tdata(i * H + j)(15 downto 8) <= x(i - 1) when i>= NCHAN / 2 + 1 and (i + j >= NCHAN or xsel(i + j) = '1') else x(i);
+                xy_tdata(i * H + j)(7 downto 0) <= y((i + j) mod NCHAN);
             end generate; --i
         end generate; --j
 
 		seq_proc: process(all) begin
 			if rising_edge(clk) then
-				-- Rotate y and grow xsel vectors by N. Overriden below when new data is ready.
-                y <= y(H to N - 1) & y(0 to H-1);
+				-- Rotate y and grow xsel vectors by NCHAN. Overriden below when new data is ready.
+                y <= y(H to NCHAN - 1) & y(0 to H-1);
                 if NCLK > 1 then
-                    xsel(N / 2+1 to N - 1-H) <= xsel(N / 2+1+H to N - 1);
-                    xsel(N-H to N - 1) <= (others => '1');
+                    xsel(NCHAN / 2+1 to NCHAN - 1-H) <= xsel(NCHAN / 2+1+H to NCHAN - 1);
+                    xsel(NCHAN-H to NCHAN - 1) <= (others => '1');
                 end if;
-                -- Keep xy_tvalid high for Nclk clocks and set xy_tlast on last clock
+                -- Keep xy_tvalid high for NCLK clocks and set xy_tlast on last clock
                 xy_tlast <= '0';
                 if xy_tvalid then
                     clk_ctr <= clk_ctr + 1;
@@ -241,24 +241,24 @@ begin
   				    end if; -- clk_ctr
   				end if; -- xy_tvalid
 
-                -- Assemble N inputs into x and y
+                -- Assemble NCHAN inputs into x and y
 				if s_axis_tvalid='1' and bin_ctr= K - 1 then -- select last bin of the decimation block to make sure we get the TLAST frame
 					if word_ctr = WORDS_PER_BIN - 1 then -- if last word of bin
-						y(0 to N - N_PER_CLK - 1) <= t;
-						y(N - N_PER_CLK to N - 1) <= s_axis_tdata;
-						x(0 to N - N_PER_CLK - 1) <= t;
-						x(N - N_PER_CLK to N - 1) <= s_axis_tdata;
-						xsel(N / 2+1 to N - 1) <= (others =>'0');
+						y(0 to NCHAN - NCHAN_PER_CLK - 1) <= t;
+						y(NCHAN - NCHAN_PER_CLK to NCHAN - 1) <= s_axis_tdata;
+						x(0 to NCHAN - NCHAN_PER_CLK - 1) <= t;
+						x(NCHAN - NCHAN_PER_CLK to NCHAN - 1) <= s_axis_tdata;
+						xsel(NCHAN / 2+1 to NCHAN - 1) <= (others =>'0');
 						xy_tvalid <= '1'; -- restart a Nclock correlation cycle
                         if NCLK=1 or autocorr_only='1' then
     						xy_tlast <= s_axis_tlast;
     				    end if;
   						xy_tlast_pre <= s_axis_tlast;
                         clk_ctr <= (others => '0');
-                    elsif N /= N_PER_CLK then
+                    elsif NCHAN /= NCHAN_PER_CLK then
                         -- Put incoming bytes in assembly vector and transfer to xy when ready
-                        for i in 0 to N_PER_CLK - 1 loop
-                            t(to_integer(word_ctr)*N_PER_CLK+i) <= s_axis_tdata(i);
+                        for i in 0 to NCHAN_PER_CLK - 1 loop
+                            t(to_integer(word_ctr)*NCHAN_PER_CLK+i) <= s_axis_tdata(i);
                         end loop;
 					end if;
 				end if; -- tvalid and right bin
@@ -275,10 +275,10 @@ begin
 	corr0: entity work.UCMAC44_ARRAY
 		generic map (
 			NCMAC => NCMAC,
-			NPROD => NBINS / BIN_DECIMATION_FACTOR * Nclk,
+			NPROD => NBINS / BIN_DECIMATION_FACTOR * NCLK,
 			AUTOCORR_STRIDE => H,
 			CORR_NUMBER => CORR_NUMBER,
-			N_CORR => NCORR,
+			NCORR => NCORR,
 			URAM_MAX => URAM_MAX,
 			READOUT_BIN => READOUT_BIN
 		)

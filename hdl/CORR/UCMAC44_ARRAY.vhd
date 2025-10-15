@@ -51,7 +51,7 @@ entity UCMAC44_ARRAY is
 		NPROD: integer := 2048; -- Number of products to be stored by each CMAC. Sets memory depth. Must be 2048 if URAM_MAX > 0
 		AUTOCORR_STRIDE: integer:= 1; -- Spacing (in CMACs) between autocorrelation products. We assume there will be NCMAC/AUTOCORR_STRIDE-1 autocorrelations
 		CORR_NUMBER: integer; -- correlator number to be used in packet headers
-        N_CORR: integer := 1; -- Total number of correlators. Used only in computing the STREAM_ID (id = bin*N_CORR+CORR_NUMBER)
+        NCORR: integer := 1; -- Total number of correlators. Used only in computing the STREAM_ID (id = bin*NCORR+CORR_NUMBER)
 		URAM_MAX: integer := 64; -- Maximum number of URAM that will be used. The rest will use BRAMs.
 		READOUT_BIN: integer := 0 -- Bin number sacrificed for the readout cycle
 		);
@@ -166,7 +166,7 @@ architecture impl of UCMAC44_ARRAY is
 	-- Constants
 	constant BYTES_PER_PRODUCT: integer := 5; -- (18+18) bits + 4 extra bits = 40 bits = 5 bytes
 --	constant NBINS_TO_READOUT: integer := 2048; -- maximum number of bins that will be read and sent
-    constant LOG2_NCORR: integer := integer_log2(N_CORR);
+    constant LOG2_NCORR: integer := integer_log2(NCORR);
 
 	attribute KEEP_HIERARCHY of impl: architecture is "YES";
 	--attribute RLOC_ORIGIN of Behavioral: architecture is ORIGIN;

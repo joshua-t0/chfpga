@@ -91,14 +91,14 @@ architecture Behavioral of UCORR44_ARRAY is
     --attribute RLOC_ORIGIN : string;
 
     constant N: integer := NCHAN;
-    constant N_CHAN_PER_CLK: integer  := INPUT_WIDTH/NCORR/N_BITS_PER_BIN;
+    constant NCHAN_PER_CLK: integer  := INPUT_WIDTH/NCORR/N_BITS_PER_BIN;
     constant URAM_MAX: integer := sel(PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES=FPGA_ULTRASCALEPLUS, 64 / NCORR, 0);
     signal rst_reg: slv(0 to NCORR-1);
     attribute DONT_TOUCH of rst_reg: signal is "true";
 
     -- Control signals
     signal control_bytes: slv8_array(0 to 2);
-    signal status_bytes: slv8_array(0 to 4);
+    signal status_bytes: slv8_array(0 to 5);
     signal user_reset: std_logic;
     signal user_reset_resync: std_logic;
     signal overrun_reset, overrun_reset_resync: std_logic;
@@ -132,8 +132,8 @@ begin
 		GENERIC MAP (
 			DEFAULT_CONTROL_BYTES=> "0000000" & to_std_logic(SOFT_AUTOCORR_ONLY) &
 			                        to_slv(SOFT_NINTEG-1,16),
-			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), -- Number of bits in the control word
-			NUMBER_OF_STATUS_BYTES => status_bytes'Length(1) -- Number of bits in the status word.
+			NUMBER_OF_CONTROL_BYTES => control_bytes'LENGTH(1), -- Number of bits in the control word
+			NUMBER_OF_STATUS_BYTES => status_bytes'LENGTH(1) -- Number of bits in the status word.
 		)
 		PORT MAP(
 
@@ -177,6 +177,8 @@ begin
     -- Status Byte 4
     status_bytes(4) <= std_logic_vector(out_frame_ctr);
 
+    -- Status Byte 5
+    status_bytes(5)(3 downto 0) <= to_slv(NCHAN_PER_CLK, 4);
 
 
 	-- Synchronize the software-controlled user reset to the correlator clock to ensure proper release from reset
@@ -205,7 +207,7 @@ begin
                 rcorr := NCORR-1-corr;
 				for chan in 0 to NCHAN-1 loop
 				    rchan := NCHAN-1-chan;
-				    lsb := N_BITS_PER_BIN*(rcorr*N_CHAN_PER_CLK + rchan);
+				    lsb := N_BITS_PER_BIN*(rcorr*NCHAN_PER_CLK + rchan);
 					corr_in_tdata(corr)(chan) <= s_axis_data_tdata(lsb + N_BITS_PER_BIN -1 downto lsb);
 				end loop;
 				corr_in_tvalid(corr) <= s_axis_data_tvalid;
@@ -297,8 +299,8 @@ begin
 				CORR_NUMBER           => i, -- will be used in the packet header and to determine the RPM location of the CORR44 cores
 				NCORR                 => NCORR, -- used only to format STREAM ID
 				NBINS                 => NBINS_PER_CORR, -- number of bins per correlator
-				N                     => NCHAN,
-				N_PER_CLK             => NCHAN,
+				NCHAN                 => NCHAN,
+				NCHAN_PER_CLK         => NCHAN_PER_CLK,
 				BIN_DECIMATION_FACTOR => BIN_DECIMATION_FACTOR,
 				URAM_MAX              => URAM_MAX,
 				READOUT_BIN           => READOUT_BINS(i)
