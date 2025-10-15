@@ -752,6 +752,8 @@ function rpm_to_string(rpm: rpm_coord_struct) return string; -- convert a RPM co
 function get_cmac44_rpm_coords_struct_array(platform_id: integer; N_CHAN: integer; layout: string) return cmac44_rpm_coord_struct_array; -- returns the locations of the CMAC44 DSPs and BRAMs for a corr44 correlator core with specified layout
 function get_corr44_rloc_origins_struct_array(platform_id:integer; N_CHAN:integer) return corr44_rloc_origins_struct_array; -- returns the layout and absolute location of each corr4 core in a corr44_array
 
+pure function flatten(x : slv_array) return std_logic_vector;
+pure function unflatten(s : std_logic_vector; num_slices : positive) return slv_array;
 
 end chFPGA_Package;
 
@@ -1761,6 +1763,29 @@ begin
 
 end function;
 
+pure function unflatten(s : std_logic_vector; num_slices : positive)
+return slv_array
+is
+	constant w : positive := s'length / num_slices;
+	alias sa : std_logic_vector(s'length-1 downto 0) is s;
+	variable r : slv_array(0 to num_slices-1)(w-1 downto 0);
+begin
+	for i in r'range loop
+		r(i) := sa((i+1)*w-1 downto i*w);
+	end loop;
+	return r;
+end function;
 
+-- Pack an array of SLVs back into a flat SLV.
+pure function flatten(x : slv_array) return std_logic_vector is
+	constant w : natural := x(x'low)'length;
+	constant n : natural := x'length;
+	variable r : std_logic_vector(n*w-1 downto 0);
+begin
+	for i in x'range loop
+		r((i-x'low+1)*w-1 downto (i-x'low)*w) := x(i);
+	end loop;
+	return r;
+end function;
 
 end chFPGA_Package;

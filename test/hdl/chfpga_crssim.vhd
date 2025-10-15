@@ -22,9 +22,9 @@ entity chfpga_crssim is
 		--    "SYSCLK": 200 MHz unbuffered differential clock from sysclk_p/n,
 		--    "SYSCLK_BUFG": 200 MHz BUFG-Buffered clock from sysclk_bufg,
 		--    "SFP_REFCLK": 125 MHz clock from the GTX reference clock
-		SYSTEM_CLOCK_SOURCE: CLOCK_SOURCE_ENUM := CLOCK_SOURCE_SYSCLK_BUFG;
+		SYSTEM_CLOCK_SOURCE: clk_source_enum := SYSCLK_BUFG;
 		SYSTEM_CLOCK_FREQ: real     := 10.0; -- System reference clock frequency, in MHz. Must be a real value (i.e. float). Used to select the system PLL divider/multiplier factors.
-		CHAN_CLK_SOURCE: CHAN_CLOCK_SOURCE_ENUM := ADC; -- Clock sources for the system PLL. Here, Channelizer clock comes directly from the ADC
+		CHAN_CLK_SOURCE: chan_clk_source_enum := ADC; -- Clock sources for the system PLL. Here, Channelizer clock comes directly from the ADC
 		CT_CLK_SOURCE: ct_clk_source_enum := CONFIG_CT_CLK_SOURCE; -- corner-turn clock source
 
 		-- Buck synchronization
@@ -43,12 +43,12 @@ entity chfpga_crssim is
 		NUMBER_OF_ADC_BOARDS: integer := 0; -- No mezzanine, therefore no associated clocks etc.
 
 		-- Channelizer configuration
-		FFT_TYPE: integer               := CONFIG_CHAN_FFT_TYPE;
+		FFT_TYPE: fft_type_enum         := CONFIG_CHAN_FFT_TYPE;
 		NUMBER_OF_CHANNELIZERS: integer := CONFIG_NUMBER_OF_ADCS;  -- (Typ. =16)  (0-NUMBER_OF_ADCS) Number of channelizer blocks to be implemented
-		CAPTURE_TYPE: string            := CONFIG_CHAN_CAPTURE_TYPE;
+		CAPTURE_TYPE: chan_capture_type_enum := CONFIG_CHAN_CAPTURE_TYPE;
 
 		-- Corner-turn engine configuration
-		CT_TYPE: integer                         := CONFIG_CT_TYPE; -- "BCT" (CHIME-like) or "UCT" (CHORD-like)
+		CT_TYPE: ct_type_enum                    := CONFIG_CT_TYPE; -- "BCT" (CHIME-like) or "UCT" (CHORD-like)
 		CT_LEVEL: integer                        := CONFIG_CT_LEVEL;
 		NUMBER_OF_CROSSBAR_INPUTS: integer       := CONFIG_NUMBER_OF_CROSSBAR_INPUTS; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
 		NUMBER_OF_CROSSBAR1_OUTPUTS: integer     := CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
@@ -62,7 +62,7 @@ entity chfpga_crssim is
 		NUMBER_OF_CORRELATORS: integer := CONFIG_NUMBER_OF_CORRELATORS; -- Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
 
 		-- Real-time data offload links configuration
-		GPU_LINK_TYPE: string          := CONFIG_GPU_LINK_TYPE; --
+		GPU_LINK_TYPE: gpu_link_type_enum := CONFIG_GPU_LINK_TYPE; --
 		GPU_CHANNEL_QUAD: integer_array := (0 to 3 => 0); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if GPU_LINK_TYPE is NONE
 		GPU_QUAD_REFCLK: integer_array := (0 to 0 =>0 ); -- Both QUAD0 and QUAD1 use refclk(0)
 
@@ -77,7 +77,7 @@ entity chfpga_crssim is
 
 		-- Derived parameters
 
-		NUMBER_OF_GPU_LINKS: integer                 := sel(GPU_LINK_TYPE /= "NONE", GPU_CHANNEL_QUAD'LENGTH, 0); -- Number of 100Gb Ethernet links. 0 if if GPU_LINK_TYPE is "NONE"
+		NUMBER_OF_GPU_LINKS: integer := sel(GPU_LINK_TYPE /= NONE, GPU_CHANNEL_QUAD'LENGTH, 0); -- Number of 100Gb Ethernet links. 0 if if GPU_LINK_TYPE is "NONE"
 		NUMBER_OF_GPU_REFCLKS: integer               := max(GPU_QUAD_REFCLK)+1 -- Number of Reference clocks provided for the 100GE links.
 
 
@@ -137,7 +137,6 @@ entity chfpga_crssim is
 		qsfp_txp: out std_logic_vector(0 to 3);
 
 		-- Corner-turn engine shuffle links
-
 		bp_shuffle_tx_p: out std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS - 1);
 		bp_shuffle_tx_n: out std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS - 1);
 		bp_shuffle_rx_p: in std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS - 1);

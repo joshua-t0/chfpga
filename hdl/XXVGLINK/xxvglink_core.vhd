@@ -241,7 +241,7 @@ signal rx_cdrlock_counter  :   integer range 0 to WAIT_TIME_CDRLOCK:= 0 ;
 signal rx_cdrlocked                    : std_logic;
 
 signal gt_dmonitorout_out: slv8_array(0 to NUMBER_OF_LINKS-1);
-signal gt_rxmonitorout_out: slv7_array(0 to NUMBER_OF_LINKS-1);
+signal gt_rxmonitorout_out: slv8_array(0 to NUMBER_OF_LINKS-1);
 signal gt_rxmonitorsel_in: slv2_array(0 to NUMBER_OF_LINKS-1) := (others=>"00");
 
 signal gt_loopback_in: slv3_array(0 to NUMBER_OF_LINKS-1);
@@ -1024,7 +1024,7 @@ begin
 		rxprbscntreset_in(i) <= gt_rxprbscntreset_in(i);
 	    gt_rxprbserr_out(i) <= rxprbserr_out(i);
 
-		gt_rxmonitorout_out(i) <= rxmonitorout_out(7*(i+1)-1 downto 7*i);
+		gt_rxmonitorout_out(i) <= rxmonitorout_out(8*(i+1)-1 downto 8*i);
 
 	    gt_rxprbslocked_out(i) <= rxprbslocked_out(i);
 
@@ -1264,11 +1264,11 @@ gtx_gen: for i in 0 to NUMBER_OF_LINKS-1 generate
 	-- STATUS BYTE 5
 		gt_status_bytes(i)(5)(7 downto 6) <= gt_rxheader_capture(i);
 		gt_status_bytes(i)(5)(5) <= gt_rxgearboxslip_in(i); --optional
+		gt_status_bytes(i)(5)(3) <= gt_rxprbslocked_out(i);
 		gt_status_bytes(i)(5)(2 downto 0) <= gt_rxbufstatus_out(i);
 
 		-- STATUS BYTE 6
-		gt_status_bytes(i)(6)(7) <= gt_rxprbslocked_out(i);
-		gt_status_bytes(i)(6)(6 downto 0) <= gt_rxmonitorout_out(i); -- Needed for link tests?
+		gt_status_bytes(i)(6) <= gt_rxmonitorout_out(i); -- Needed for link tests?
 
 		-- STATUS BYTE 7-10
 		gt_status_bytes(i)(7 to 10) <= to_slv8_array(rx_data_capture(i)(31 downto 0)); -- Capture only the lower 31 bits
