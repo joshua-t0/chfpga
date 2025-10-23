@@ -165,8 +165,9 @@ architecture impl of xxvglink_array is
 	signal lane_mon_type: integer range 0 to 15; --unsigned(3 downto 0);
 	signal lane_mon_src: integer range 0 to 3; -- unsigned(1 downto 0);
 	signal reset_stats: std_logic; -- resets the fifo overflow  and error counter
+	signal lane_mon_en: std_logic; -- Enables updates to the monitoring word
 	signal bypass: std_logic_vector(NUMBER_OF_LANE_GROUPS-1 downto 0);
-
+	signal rx_lane0_tfirst: std_logic; -- lane 0 (bypass lane) internal rx tfirst for rx monitoring
     signal tx_mon_word: unsigned(15 downto 0) := (others => '0'); -- init for sims
 	signal rx_fifo_in_tvalid: std_logic_vector(0 to NUMBER_OF_LANES-1);
 	signal rx_fifo_in_tlast: std_logic_vector(0 to NUMBER_OF_LANES-1);
@@ -204,7 +205,7 @@ begin
 	bypass              <= control_bytes(5)(NUMBER_OF_LANE_GROUPS-1 downto 0);
 
 	-- CONTROL byte 6
-
+	lane_mon_en <= control_bytes(6)(6);
 	lane_mon_src        <= to_integer(unsigned(control_bytes(6)(5 downto 4))); -- selects from which source on selected lane data is being monitored
 	lane_mon_type        <= to_integer(unsigned(control_bytes(6)(3 downto 0))); -- selects what kind of data is to be monitored
 
@@ -357,6 +358,11 @@ begin
 				m_axis_rx_tlast  => rx_tlast,
 				m_axis_rx_terror => rx_terror,
 
+				-- RX monitoring (on clk)
+				fifo_overflow    => open, -- we already monitor rx_fifo_overflow
+				fifo_in_tvalid   => rx_fifo_in_tvalid(i),
+				fifo_in_tlast    => rx_fifo_in_tlast(i),
+
 				clk => axis_clk,
 				arst => not axisclk_resetdone
 				);
@@ -477,79 +483,137 @@ begin
     --------------------------------------
     -- Stats on local receiver clocks
     --------------------------------------
+
+        process(all) begin
+            if rising_edge(axis_clk) then
+                rx_lane0_tfirst <= rx_fifo_in_tlast(0) when rx_fifo_in_tvalid(0);
+                --rx_lane0_clk_ctr_clr <= '1' when (rx_fifo_in_tvalid(0) and rx_lane0_tfirst) else '1';
+            end if; --clk
+        end process;
+
+
+
     rxmon_gen: for i in 0 to NUMBER_OF_LANES-1 generate
         constant link: integer range -1 to NUMBER_OF_LINKS-1 := LANE_TO_LINK_MAP(i);
         signal word_ctr: unsigned(15 downto 0) := (others => '0'); -- init for sims
         signal tvalid, tlast, err, fifo_overflow: std_logic;
         signal rst: std_logic;
         signal rx_capture_en_reg: std_logic;
+        signal lane_mon_en_resync: std_logic;
+        signal rx_mon_word_int: unsigned(15 downto 0);
+
+
+        signal tfirst: std_logic;
+        signal lane0_tfirst_resync: std_logic;
+        signal lane0_clk_ctr: unsigned(15 downto 0) := (others => '0'); -- init for sims
+        signal rx_clk: std_logic;
+
     begin
-        rxlink_gen: if link >= 0 generate
+
+        rx_clk <= xglink_rx_clk(link) when link >= 0 else axis_clk;
 
         cap_cdc0: xpm_cdc_single
             generic map (SRC_INPUT_REG => 0)
             port map (
                 src_clk => ctrl_clk,
                 src_in => rx_capture_en,
-                dest_clk => xglink_rx_clk(link),
+                dest_clk => rx_clk,
                 dest_out => rx_capture_en_reg
             );
 
-        process(all) begin
-            if rising_edge(xglink_rx_clk(link)) then
-                rst <= reset_stats or not xglink_rx_resetdone(link);
 
-                -- capture word
-                if rx_capture_en_reg='1' and (rx_capture_word_number = X"FFFF" or rx_capture_word_number=word_ctr) then
-                    rx_capture_data(i) <= xglink_rx_data(link) when xglink_rx_data_valid(link);
-                    rx_capture_header(i) <= xglink_rx_header(link) when xglink_rx_header_valid(link);
-                end if;
+        en_cdc0: xpm_cdc_single
+            generic map (SRC_INPUT_REG => 0)
+            port map (
+                src_clk => ctrl_clk,
+                src_in => lane_mon_en,
+                dest_clk => rx_clk,
+                dest_out => lane_mon_en_resync
+            );
 
-                tvalid <= rx_fifo_in_tvalid(i);
-                tlast <= rx_fifo_in_tlast(i);
-                err <= rx_fifo_in_terror(i);
+        tfirst_cdc0: xpm_cdc_single
+            generic map (SRC_INPUT_REG => 0)
+            port map (
+                src_clk => '0',
+                src_in => rx_lane0_tfirst,
+                dest_clk => rx_clk,
+                dest_out => lane0_tfirst_resync
+            );
 
-                if tvalid then
-                    word_ctr <= (others => '0') when tlast else word_ctr + 1;
-                end if;
+        --rxlink_gen: if link >= 0 generate
 
-                case lane_mon_type is
-                    when 0 => -- clock counter
-                        rx_mon_word(i) <= rx_mon_word(i) + 1;
-                    when 1 => -- word counter
-                        rx_mon_word(i) <= word_ctr;
-                    when 2 => -- frame counter
-                        rx_mon_word(i) <= (others => '0') when rst else rx_mon_word(i)+1 when tvalid and tlast;
-                    when 3 => -- frame length
-                        rx_mon_word(i) <= (others => '0') when rst else word_ctr when tvalid and tlast;
-                    when 4 => -- min frame len
-                        rx_mon_word(i) <= (others => '1') when rst else word_ctr when ??(tvalid and tlast) and word_ctr < rx_mon_word(i);
-                    when 5 => -- max frame len
-                        rx_mon_word(i) <= (others => '0') when rst else word_ctr when ??(tvalid and tlast) and word_ctr > rx_mon_word(i);
-                    when 6 => -- error counter
-                        rx_mon_word(i) <= (others => '0') when rst else (rx_mon_word(i) + 1) when (tvalid='1' and tlast='1' and err='1' and signed(rx_mon_word(i))/=-1);
-                     when others => -- flags
-                        rx_mon_word(i) <= (
-                            0 => tvalid,
-                            1 => tlast,
-                            4 => rst,
-                            others => '0');
-                end case; -- lane_mon_sel
-            end if; -- clk
-        end process;
-    else generate
-        rx_mon_word(i) <= (others => '0');
-    end generate; -- if link is present
+
+	        process(all) begin
+	            if rising_edge(rx_clk) then
+
+		            rst <= reset_stats or not xglink_rx_resetdone(link) when link >=0 else reset_stats;
+
+	                if link >= 0 then
+		                -- capture word
+		                if rx_capture_en_reg='1' and (rx_capture_word_number = X"FFFF" or rx_capture_word_number=word_ctr) then
+		                    rx_capture_data(i) <= xglink_rx_data(link) when xglink_rx_data_valid(link);
+		                    rx_capture_header(i) <= xglink_rx_header(link) when xglink_rx_header_valid(link);
+		                end if;
+		            end if;
+
+
+					lane0_clk_ctr <= (others => '0') when lane0_tfirst_resync else lane0_clk_ctr + 1 when not all_ones(lane0_clk_ctr);
+	                tvalid <= rx_fifo_in_tvalid(i);
+	                tlast <= rx_fifo_in_tlast(i);
+	                err <= rx_fifo_in_terror(i);
+	                tfirst <= tlast when tvalid;
+
+			        --rx_mon_word_int <= (others => '0');
+
+
+
+	                if tvalid then
+	                    word_ctr <= (others => '0') when tlast else word_ctr + 1;
+	                end if;
+
+	                rx_mon_word(i) <= rx_mon_word_int when lane_mon_en_resync;
+	                case lane_mon_type is
+	                    when 0 => -- clock counter
+	                        rx_mon_word_int <= rx_mon_word_int + 1;
+	                    when 1 => -- word counter
+	                        rx_mon_word_int <= word_ctr;
+	                    when 2 => -- frame counter
+	                        rx_mon_word_int <= (others => '0') when rst else rx_mon_word_int + 1 when tvalid and tlast;
+	                    when 3 => -- frame length
+	                        rx_mon_word_int <= (others => '0') when rst else word_ctr when tvalid and tlast;
+	                    when 4 => -- min frame len
+	                        rx_mon_word_int <= (others => '1') when rst else word_ctr when ??(tvalid and tlast) and word_ctr < rx_mon_word_int;
+	                    when 5 => -- max frame len
+	                        rx_mon_word_int <= (others => '0') when rst else word_ctr when ??(tvalid and tlast) and word_ctr > rx_mon_word_int;
+	                    when 6 => -- error counter
+	                        rx_mon_word_int <= (others => '0') when rst else (rx_mon_word_int + 1) when (tvalid='1' and tlast='1' and err='1' and not all_ones(rx_mon_word_int));
+	                    when 8 => -- delay since lane0 tlast
+	                        rx_mon_word_int <= (others => '0') when rst else lane0_clk_ctr when tvalid and tfirst;
+	                    when others => -- flags
+	                        rx_mon_word_int <= (
+	                            0 => tvalid,
+	                            1 => tlast,
+	                            4 => rst,
+	                            others => '0');
+	                end case; -- lane_mon_sel
+	            end if; -- clk
+	        end process;
+	    --else generate -- no link is present
+	    --end generate; -- if link is present
     end generate; -- for lane
 
 
-   txmon_blk: block
+   txmon_blk: block is
         signal word_ctr: unsigned(15 downto 0) := (others => '0'); -- init for sims
+        signal tx_mon_word_int: unsigned(15 downto 0);
         signal rst: std_logic;
-        signal tvalid, tlast, err, fifo_overflow: std_logic;
+        signal tvalid, tlast, tfirst, lane0_tfirst, err, fifo_overflow: std_logic;
+        signal lane0_clk_ctr: unsigned(15 downto 0) := (others => '0'); -- init for sims
+        signal lane_mon_en_resync: std_logic;
+
     begin
 
-    	cap_blk: block
+    	cap_blk: block is
     	    signal link: integer range -1 to NUMBER_OF_LINKS-1;
             signal capture_en_reg: std_logic;
         begin
@@ -563,6 +627,7 @@ begin
 	                dest_out => capture_en_reg
 	            );
 
+
 	        process(all) begin
 	            if rising_edge(tx_clk) then
 	                -- capture word
@@ -574,10 +639,20 @@ begin
 	        end process;
 	    end block;
 
+        en_cdc0: xpm_cdc_single
+            generic map (SRC_INPUT_REG => 0)
+            port map (
+                src_clk => ctrl_clk,
+                src_in => lane_mon_en,
+                dest_clk => axis_clk,
+                dest_out => lane_mon_en_resync
+            );
+
      -- Gather stats ob AXIS buses in the axis_clk clock domain
         process(all) begin
             if rising_edge(axis_clk) then
                 rst <= reset_stats or not axisclk_resetdone;
+
 
                 case lane_mon_src is
                     when 0 =>
@@ -585,43 +660,55 @@ begin
                         tlast <= s_axis_tx_tlast(lane_sel);
                         err <= '0';
                         fifo_overflow <= tx_fifo_overflow(lane_sel);
+                        lane0_tfirst <= s_axis_tx_tlast(0) when s_axis_tx_tvalid(0);
+                        lane0_clk_ctr <= (others => '0') when rst or (s_axis_tx_tvalid(0) and lane0_tfirst) else lane0_clk_ctr + 1 when not all_ones(lane0_clk_ctr);
                     when 1 =>
                         tvalid <= m_axis_rx_tvalid(lane_sel);
                         tlast <= m_axis_rx_tlast(lane_sel);
                         err <= m_axis_rx_terror(lane_sel);
                         fifo_overflow <= rx_fifo_overflow(lane_sel);
+                        lane0_tfirst <= m_axis_rx_tlast(0) when m_axis_rx_tvalid(0);
+                        lane0_clk_ctr <= (others => '0') when rst or (m_axis_rx_tvalid(0) and lane0_tfirst) else lane0_clk_ctr + 1 when not all_ones(lane0_clk_ctr);
                     when others =>
                         tvalid <= '0';
                         tlast <= '0';
                         err <= '0';
                         fifo_overflow <= '0';
+                        lane0_tfirst <= '0';
+                        lane0_clk_ctr <= (others => '0');
                          -- do nothing
                 end case;
+
+                tfirst <= tlast when tvalid;
 
                 -- Count words
                 if tvalid then
                     word_ctr <= (others => '0') when tlast else word_ctr + 1;
                 end if;
 
+                tx_mon_word <= tx_mon_word_int when lane_mon_en_resync;
                 case lane_mon_type is
                     when 0 => -- clock counter
-                        tx_mon_word <= tx_mon_word + 1;
+                        tx_mon_word_int <= tx_mon_word_int + 1;
                     when 1 => -- word counter
-                        tx_mon_word <= word_ctr;
+                        tx_mon_word_int <= word_ctr;
                     when 2 => -- frame counter
-                        tx_mon_word <= (others => '0') when rst else tx_mon_word+1 when tvalid and tlast;
+                        tx_mon_word_int <= (others => '0') when rst else tx_mon_word_int + 1 when tvalid and tlast;
                     when 3 => -- frame length
-                        tx_mon_word <= (others => '0') when rst else word_ctr when tvalid and tlast;
+                        tx_mon_word_int <= (others => '0') when rst else word_ctr when tvalid and tlast;
                     when 4 => -- min frame len
-                        tx_mon_word <= (others => '1') when rst else word_ctr when ??(tvalid and tlast) and word_ctr < tx_mon_word;
+                        tx_mon_word_int <= (others => '1') when rst else word_ctr when ??(tvalid and tlast) and word_ctr < tx_mon_word_int;
                     when 5 => -- max frame len
-                        tx_mon_word <= (others => '0') when rst else word_ctr when ??(tvalid and tlast) and word_ctr > tx_mon_word;
+                        tx_mon_word_int <= (others => '0') when rst else word_ctr when ??(tvalid and tlast) and word_ctr > tx_mon_word_int;
                     when 6 => -- error counter
-                        tx_mon_word <= (others => '0') when rst else (tx_mon_word + 1) when (tvalid='1' and tlast='1' and err='1' and signed(tx_mon_word)/=-1);
+                        tx_mon_word_int <= (others => '0') when rst else (tx_mon_word_int + 1) when (tvalid='1' and tlast='1' and err='1' and not all_ones(tx_mon_word_int));
                     when 7 => -- fifo overflow counter
-                        tx_mon_word <= (others => '0') when rst else tx_mon_word + 1 when fifo_overflow='1' and not all_ones(tx_mon_word);
+                        tx_mon_word_int <= (others => '0') when rst else tx_mon_word_int + 1 when fifo_overflow='1' and not all_ones(tx_mon_word_int);
+                    when 8 => -- delay since lane0 tlast
+                        tx_mon_word_int <= (others => '0') when rst else lane0_clk_ctr when tvalid and tfirst;
+
                     when others => -- flags
-                        tx_mon_word <= (
+                        tx_mon_word_int <= (
                             0 => tvalid,
                             1 => tlast,
                             2 => err,

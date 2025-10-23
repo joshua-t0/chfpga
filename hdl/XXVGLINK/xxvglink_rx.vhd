@@ -194,7 +194,7 @@ begin
 	ovf_cdc0: xpm_cdc_async_rst
 		generic map (RST_ACTIVE_HIGH => 1)
 		port map (
-			src_arst  => fifo_overflow_int,
+			src_arst  => fifo_almost_full, -- use almost_full as overflow indicator because we stop writing then
 			dest_clk  => m_axis_rx_clk,
 			dest_arst => fifo_overflow
 			);
