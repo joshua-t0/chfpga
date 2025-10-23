@@ -190,7 +190,7 @@ begin
 			dest_arst => freq_ctr_start_srcclk
 		);
 
-	-- Control signal from clrl_clk to clk200
+	-- Control signal from ctrl_clk to clk200
 	freq_start_cdc: xpm_cdc_single
 		port map (
 			src_clk  => ctrl_clk, -- optional; required when SRC_INPUT_REG = 1
@@ -211,7 +211,7 @@ begin
 	-- Source clock counter process
 	--
 	-- When freq_ctr_start_clk200 goes down to 0 on the CLK200 edge, gate counter is asynchronously reset, even if there is no src_clk.
-	-- When freq_cctr_start_sync goes up, We are certain that  the counter is zero, and gate_en_sync is also zero assuming 1) there is a src_clk and 2) freq_ctr_start_clk200 was held low long enough for gate_en_sync to propagate through the synchronizer.
+	-- When freq_ctr_start_sync goes up, We are certain that  the counter is zero, and gate_en_sync is also zero assuming 1) there is a src_clk and 2) freq_ctr_start_clk200 was held low long enough for gate_en_sync to propagate through the synchronizer.
 	-- Since gate_en_sync is zero when  freq_cctr_start_sync goes up, we don't have to worry that any part of the counter will start counting anomalously.
 	-- Eventually, the gate_en signal will propagate to gate_en_sync (on the src_clk clk) and count will start.
 	-- If gate_en is held high for time T, gate_en_sync will also be held high for the same time, plus or minus a src_clk cycle, since the synchronizer latency is fixed.

@@ -1,5 +1,4 @@
 ----------------------------------------------------------------------------------
---! @file
 -- Company: McGill University
 -- Engineer: JF Cliche
 --
@@ -27,10 +26,9 @@ use IEEE.math_real.all; -- needed for ceil()
 use IEEE.math_complex.all;
 use IEEE.STD_LOGIC_MISC.ALL; -- for or_reduce()
 -------- chFPGA Package ------------
---! @brief Defines the system-level constants and data types, declares the components used in the system, and provide support functions and procedures
+
+-- Defines the system-level constants and data types, declares the components used in the system, and provide support functions and procedures
 package chFPGA_Package is
-
-
 
 -- generic types and subtypes
 subtype Byte is std_logic_vector(7 downto 0);
@@ -984,7 +982,7 @@ begin
 	return vout;
 end count;
 
-FUNCTION to_std_logic(i:boolean) return std_logic is -- converts boot to std_logic
+FUNCTION to_std_logic(i:boolean) return std_logic is -- converts bool to std_logic
 begin
 	if i then
 		return '1';
