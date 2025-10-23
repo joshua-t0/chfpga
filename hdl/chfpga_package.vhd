@@ -281,13 +281,13 @@ type chan_clk_source_enum is (MMCM, ADC);
 
 -- Capture engine types and info
 type chan_capture_type_enum is (PROBER, UCAP);
-type chan_capture_info_struct is 
-    record 
-        INPUT_WIDTH: integer; 
+type chan_capture_info_struct is
+    record
+        INPUT_WIDTH: integer;
     end record;
-type chan_capture_info_type is array (chan_capture_type_enum) of chan_capture_info_struct; 
+type chan_capture_info_type is array (chan_capture_type_enum) of chan_capture_info_struct;
 constant CHAN_CAPTURE_INFO: chan_capture_info_type := (
-    PROBER => (INPUT_WIDTH => 32), 
+    PROBER => (INPUT_WIDTH => 32),
     UCAP => (INPUT_WIDTH =>128)
     ); -- bit width of the capture engine input
 
@@ -351,7 +351,7 @@ constant FFT_INFO: FFT_INFO_ARRAY := (
 		SAMPLES_PER_WORD => 8,
 		BITS_PER_BIN => 32+32,
 		BINS_PER_WORD => 4,
-		ROTATE => TRUE
+		ROTATE => FALSE -- JFC: for debugging, must be TRUE
 		),
 
 	HIRAX => (
@@ -367,16 +367,16 @@ constant FFT_INFO: FFT_INFO_ARRAY := (
 
 -- Corner-Turn Engine types
 type ct_type_enum is (NONE, BCT, UCT);
-type ct_info_struct is 
-    record 
-        INPUT_WIDTH: integer; -- bit width of the ct-engine input bus 
+type ct_info_struct is
+    record
+        INPUT_WIDTH: integer; -- bit width of the ct-engine input bus
     end record;
-type ct_info_array is array (ct_type_enum) of ct_info_struct; 
+type ct_info_array is array (ct_type_enum) of ct_info_struct;
 constant CT_INFO: ct_info_array := (
     NONE => (INPUT_WIDTH => 0),
     BCT => (INPUT_WIDTH => 32), -- 2x (8+8)-bit bins
     UCT => (INPUT_WIDTH =>32) -- 4x (4+4)-bit bins
-    ); 
+    );
 
 constant CT_TYPE_NONE: integer := ct_type_enum'POS(NONE); -- integer representations to be obsoleted
 constant CT_TYPE_BCT: integer := ct_type_enum'POS(BCT);
@@ -808,7 +808,7 @@ begin
         return v(v'LENGTH - subword_width * index - 1 downto v'LENGTH - subword_width * (index + 1));
     else
         return v((subword_width + 1) * index -1 downto subword_width * index);
-    end if; 
+    end if;
 end get_subword;
 
 procedure set_subword(signal dst: inout std_logic_vector; src: std_logic_vector; index: integer; from_msb: boolean := FALSE) is

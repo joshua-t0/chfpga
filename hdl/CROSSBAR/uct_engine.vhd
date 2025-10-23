@@ -459,10 +459,12 @@ begin
 
 					for lane in 0 to NUMBER_OF_CT2_INPUTS - 1 loop
 					source_lane := to_integer(unsigned(lane_map(lane)));
-						remap_out_tdata(lane) <= cb1_out_tdata(source_lane);
-					drop_bin := PRE_DECIMATE and (word_ctr(10 downto 8) = 0) and (word_ctr(1 downto 0) = source_lane);
-						remap_out_tvalid(lane) <= cb1_out_tvalid when not (??remap_rst or drop_bin) else '0';
-						remap_out_tlast(lane) <= cb1_out_tlast;
+					remap_out_tdata(lane) <= cb1_out_tdata(source_lane);
+					--drop_bin := PRE_DECIMATE and (word_ctr(10 downto 8) = 0) and (word_ctr(1 downto 0) = source_lane);
+					--drop_bin := word_ctr(10 downto 6) = 0; -- drop first 64 words
+					drop_bin := (word_ctr(4 downto 0) = 16) and cb1_out_tlast='0'; -- drop word 16 for every 32 words. 2048/32 = 64 words dropped total
+					remap_out_tvalid(lane) <= cb1_out_tvalid when not (??remap_rst or drop_bin) else '0';
+					remap_out_tlast(lane) <= cb1_out_tlast;
 					end loop;
 
 				end if; -- clk
