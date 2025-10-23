@@ -45,9 +45,9 @@ signal send_data : std_logic := '0';
 
 signal ctr: unsigned(6 downto 0):=(others=>'0'); -- init for sim
 
-signal clk: std_logic; -- 402 MHx Tx_clk clock
-signal chan_clk: std_logic; -- 400 MHx Tx_clk clock
-signal clk125: std_logic; --
+signal clk: std_logic := '0'; -- 402 MHx Tx_clk clock
+signal chan_clk: std_logic := '0'; -- 400 MHx Tx_clk clock
+signal clk125: std_logic := '0'; --
 signal rst : STD_LOGIC; -- asynchronous reset
 
 signal tx_ctr: unsigned(7 downto 0):= (others=>'0'); -- init needed for sim
@@ -55,11 +55,11 @@ signal word_ctr: unsigned(10 downto 0) := (others => '0'); -- counts 2048 words
 signal word_ctr2: u11_array(0 to NUMBER_OF_LANES-1) := (others => (others => '0')); -- counts 2048 words
 signal frame_ctr: unsigned(11 downto 0) := (others => '0');
 
-signal cb1_out_tdata: slv64_array(0 to NUMBER_OF_LANES-1);
+signal cb1_out_tdata: slv_array(0 to NUMBER_OF_LANES-1)(63 downto 0);
 signal cb1_out_tvalid: std_logic_vector(0 to NUMBER_OF_LANES-1);
 signal cb1_out_tlast: std_logic_vector(0 to NUMBER_OF_LANES-1);
 
-signal fifo_out_tdata: slv64_array(0 to NUMBER_OF_LANES-1);
+signal fifo_out_tdata: slv_array(0 to NUMBER_OF_LANES-1)(63 downto 0);
 signal fifo_out_tvalid: std_logic_vector(0 to NUMBER_OF_LANES-1);
 signal fifo_out_tlast: std_logic_vector(0 to NUMBER_OF_LANES-1);
 
@@ -182,11 +182,11 @@ signal rx_p: std_logic_vector(0 to NUMBER_OF_LINKS-1);
 signal rx_n: std_logic_vector(0 to NUMBER_OF_LINKS-1);
 signal tx_p: std_logic_vector(0 to NUMBER_OF_LINKS-1);
 signal tx_n: std_logic_vector(0 to NUMBER_OF_LINKS-1);
-signal refclk_p: std_logic;
+signal refclk_p: std_logic := '0';
 signal refclk_n: std_logic;
 
 --subtype slv32_array is slv_array(0 to NCHAN-1)(31 downto 0);
-signal s_axis_tx_tdata: slv32_array(0 to NCHAN-1);
+signal s_axis_tx_tdata: slv_array(0 to NCHAN-1)(31 downto 0);
 signal s_axis_tx_tvalid: std_logic;
 signal s_axis_tx_tlast: std_logic;
 
@@ -223,7 +223,7 @@ gen1: for i in  0 to data'length-1 generate
 end generate;
 
 
-dut0: entity work.u_ct_engine
+dut0: entity work.uct_engine
 	generic map (
 	    PLATFORM_ID => PLATFORM_ID_CRS,
         NUMBER_OF_INPUT_LANES => NCHAN,
@@ -275,32 +275,13 @@ dut0: entity work.u_ct_engine
 
 
 
+refclk_p <= not refclk_p  after REFCLK_PERIOD/2;
+refclk_n <= not refclk_p;
 
-refclk_process :process
-   begin
-		refclk_p <= '0';
-		refclk_n <= '1';
-		wait for REFCLK_PERIOD/2;
-		refclk_p <= '1';
-		refclk_n <= '0';
-		wait for REFCLK_PERIOD/2;
-   end process;
+clk125 <= not clk125 after clk125_period/2;
 
-clk125_process :process
-   begin
-		clk125 <= '0';
-		wait for clk125_period/2;
-		clk125 <= '1';
-		wait for clk125_period/2;
-   end process;
+chan_clk <= not chan_clk after chan_clk_period/2;
 
-chan_clk_process :process
-   begin
-		chan_clk <= '0';
-		wait for chan_clk_period/2;
-		chan_clk <= '1';
-		wait for chan_clk_period/2;
-   end process;
 reset_process: process
 	begin
 	CPU_RESET <= '1';
@@ -331,7 +312,7 @@ end process;
 --        );
 --end generate;
 -- Stimulus: send data packets
-chan_proc: process(chan_clk) begin
+chan_proc: process(all) begin
     if rising_edge(chan_clk) then
 		s_axis_tx_tdata  <= (others=> (others => '0'));
 		s_axis_tx_tvalid <= '0';

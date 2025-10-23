@@ -382,7 +382,7 @@ begin
 				generic map (
 					NUMBER_OF_CONTROL_BYTES => control_bytes'LENGTH(1), --
 					NUMBER_OF_STATUS_BYTES  => status_bytes'LENGTH(1), --
-					DEFAULT_CONTROL_BYTES   => X"80_07_64_0000_0123_0123"
+					DEFAULT_CONTROL_BYTES   => X"80_01_64_0000_0123_0123"
 				)
 
 				port map (
