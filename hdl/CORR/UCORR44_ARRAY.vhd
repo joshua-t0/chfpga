@@ -33,7 +33,6 @@ use xpm.vcomponents.all;
 -- Each complex data point from a channelizer is made of 4-bit Real part aligned toward sthe MSB, followed by the 4-bit Imaginary part.
 -- Both real and imaginary parts are two's complement signed values.
 --
-
 entity UCORR44_ARRAY is
 	GENERIC (
 		PLATFORM_ID: integer;
@@ -54,7 +53,7 @@ entity UCORR44_ARRAY is
 		-- Input data AXI-S bus , non-blocking
 		-- Data ordering from MSB to LSB => (Corr0,Chan0), (Corr0,Chan1), ... (Corr0,ChanN-1), ... (CorrM-1, ChanN-1)
 		-- Re in MSB of byte
-		s_axis_data_tdata : in  slv(INPUT_WIDTH-1 downto 0); --! input data stream containing the channelized data from every antenna processor. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
+		s_axis_data_tdata : in  slv(INPUT_WIDTH-1 downto 0); --! input data stream containing the channelized data from every channelizer. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
 		s_axis_data_tvalid : in  std_logic; --
 		s_axis_data_tlast : in  std_logic; --
 
@@ -91,7 +90,8 @@ architecture Behavioral of UCORR44_ARRAY is
     --attribute RLOC_ORIGIN : string;
 
     constant N: integer := NCHAN;
-    constant NCHAN_PER_CLK: integer  := INPUT_WIDTH/NCORR/N_BITS_PER_BIN;
+    constant NCHAN_PER_CLK: integer  := INPUT_WIDTH/NCORR/N_BITS_PER_BIN; -- Number of channels
+    constant NCLK_PER_BIN: integer := NCHAN / NCHAN_PER_CLK; -- Number of clock needed to send all channels for one bin
     constant URAM_MAX: integer := sel(PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES=FPGA_ULTRASCALEPLUS, 64 / NCORR, 0);
     signal rst_reg: slv(0 to NCORR-1);
     attribute DONT_TOUCH of rst_reg: signal is "true";
@@ -178,7 +178,7 @@ begin
     status_bytes(4) <= std_logic_vector(out_frame_ctr);
 
     -- Status Byte 5
-    status_bytes(5)(3 downto 0) <= to_slv(NCHAN_PER_CLK, 4);
+    status_bytes(5)(3 downto 0) <= to_slv(NCLK_PER_BIN, 4);
 
 
 	-- Synchronize the software-controlled user reset to the correlator clock to ensure proper release from reset

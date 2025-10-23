@@ -61,10 +61,9 @@ entity UCORR44 is
 	GENERIC (
 		PLATFORM_ID: integer := PLATFORM_ID_CRS;
 		NCHAN: integer := 64; -- Number of inputs to correlate
-		NCHAN_PER_CLK: integer := 32; -- Number of inputs provided on each clock
+		NCHAN_PER_CLK: integer := 32; -- Number of channels provided on each clock
 		NBINS: integer; -- Number of bins to be processed by this correlator (before decimation)
 		BIN_DECIMATION_FACTOR: integer := 1; -- Only 1 out of every BIN_DECIMATION_FACTOR bin is processed in order to provide extra comoputing cycles and use less resources
-		NCLK: integer := BIN_DECIMATION_FACTOR * NCHAN / NCHAN_PER_CLK; -- Number of clocks  the correlator should take to compute the products
 		CORR_NUMBER: integer := 0; -- correlator number to be used in packet headers
         NCORR: integer := 1;
 		URAM_MAX: integer := 64;
@@ -164,12 +163,12 @@ architecture impl of UCORR44 is
 
 	-- Constants
 	constant P: integer := (NCHAN * (NCHAN + 1) / 2); -- number of products
+	constant NCLK_PER_BIN: integer := NCHAN / NCHAN_PER_CLK; -- number of clocks it takes to send all the channels of one bin
+	constant NCLK: integer := BIN_DECIMATION_FACTOR * NCLK_PER_BIN; -- Number of clocks the correlator should take to compute the products
+
 	constant NCMAC : integer := P / NCLK;
-	constant WORDS_PER_BIN: integer := NCHAN / NCHAN_PER_CLK; -- number of clocks it takes to send all the channels of one bin
 	constant K: integer := BIN_DECIMATION_FACTOR; -- bin decimation factor
 	constant H: integer := NCHAN / 2 / NCLK; -- Number of columns processed per clock
-	--constant Nprod_per_clk: integer := NCHAN / 2/NCLK/K
-
 
 	signal xy_tdata: slv_array(0 to NCMAC - 1)(15 downto 0);
 	signal xy_swap: std_logic_vector(0 to NCMAC - 1);
@@ -177,7 +176,7 @@ architecture impl of UCORR44 is
 	signal xy_tlast: std_logic;
 	signal xy_tlast_pre: std_logic;
 
-	signal word_ctr: unsigned(3 downto 0); -- 0 to WORDS_PER_BIN - 1
+	signal word_ctr: unsigned(3 downto 0); -- 0 to NCLK_PER_BIN - 1
 	signal bin_ctr: unsigned(3 downto 0); -- 0 to K - 1
 
 
@@ -187,7 +186,7 @@ begin
 		if rising_edge(clk) then
 			if s_axis_tvalid then
 				word_ctr <= word_ctr + 1;
-				if word_ctr = WORDS_PER_BIN - 1 then
+				if word_ctr = NCLK_PER_BIN - 1 then
 					word_ctr <= (others => '0');
 					bin_ctr <= bin_ctr + 1;
 					if bin_ctr = K - 1 then
@@ -243,7 +242,7 @@ begin
 
                 -- Assemble NCHAN inputs into x and y
 				if s_axis_tvalid='1' and bin_ctr= K - 1 then -- select last bin of the decimation block to make sure we get the TLAST frame
-					if word_ctr = WORDS_PER_BIN - 1 then -- if last word of bin
+					if word_ctr = NCLK_PER_BIN - 1 then -- if last word of bin
 						y(0 to NCHAN - NCHAN_PER_CLK - 1) <= t;
 						y(NCHAN - NCHAN_PER_CLK to NCHAN - 1) <= s_axis_tdata;
 						x(0 to NCHAN - NCHAN_PER_CLK - 1) <= t;
