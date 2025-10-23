@@ -75,6 +75,24 @@ architecture behavior of xxvglink_array_testbench is
 	signal m_axis_rx_tvalid: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	signal m_axis_rx_tlast: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 
+
+			-- Align buses
+
+			signal align1_out_tdata: slv_array(0 to NUMBER_OF_LANES - 1)(64 - 1 downto 0);
+			signal align1_out_tvalid: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+			signal align1_out_tlast: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+			signal align1_out_global_tvalid: std_logic;
+			signal align1_out_global_tlast: std_logic;
+
+
+			-- Align monitoring
+
+			signal align1_mon_reset: std_logic;
+			signal align1_mon_lane: std_logic_vector(3 downto 0);
+			signal align1_mon_source: std_logic_vector(3 downto 0);
+			signal align1_mon_word: std_logic_vector(15 downto 0);
+
+
 	signal resetdone: std_logic;
 
 	signal cmd_tdata: slv8 := x"00";
@@ -161,6 +179,41 @@ begin
 			);
 	end generate fifo_gen;
 
+    -- Instantiate packet aligner
+    align1: entity work.align64
+        generic map (
+            NUMBER_OF_LANES         => NUMBER_OF_LANES,
+            ENABLE_MONITORING_LOGIC => TRUE
+        )
+        port map (
+            -- Data from the channelizers outputs (AXI Streaming, blocking)
+            s_axis_tvalid => m_axis_rx_tvalid,
+            s_axis_tdata  => m_axis_rx_tdata,
+            s_axis_tlast  => m_axis_rx_tlast,
+
+            -- Data to the remapper (AXI Streaming, non-blocking)
+            m_axis_global_tvalid => align1_out_global_tvalid,
+            m_axis_global_tlast  => align1_out_global_tlast,
+            m_axis_tvalid        => align1_out_tvalid,
+            m_axis_tdata         => align1_out_tdata,
+            m_axis_tlast         => align1_out_tlast,
+
+
+            -- Aligner configuration
+            sof_window_stop => X"30",
+            ignore_lane     => (others => '0'),
+
+            -- Monitoring (if enabled)
+            mon_reset  => '0',
+            mon_lane   => X"1",
+            mon_source => X"1",
+            mon_word   => align1_mon_word,
+
+            clk => clk,
+            rst => rst
+        );
+
+
 	-- Stimulus: generate data packets for FIFO
 	chan_proc: process(chan_clk)
 	begin
@@ -206,7 +259,8 @@ begin
 					end if;
 					cb1_out_tdata(i) <= fifo_out_tdata(i);
 					cb1_out_tvalid(i) <= fifo_out_tvalid(i);
-					if cpu_reset = '1' or (word_ctr2(i)(10 downto 8) = 0 and word_ctr2(i)(1 downto 0) = i and fifo_out_tlast(i) = '0') then
+--					if cpu_reset = '1' or (word_ctr2(i)(10 downto 8) = 0 and word_ctr2(i)(1 downto 0) = i and fifo_out_tlast(i) = '0') then
+					if cpu_reset = '1' or (word_ctr2(i)(10 downto 6) = 0) then
 						cb1_out_tvalid(i) <= '0';
 					end if;
 					cb1_out_tlast(i) <= fifo_out_tlast(i);
