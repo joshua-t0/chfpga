@@ -16,7 +16,6 @@ package chfpga_config is
 	constant CONFIG_CHAN_FFT_TYPE: integer := FFT_TYPE_CHIME;
 	constant CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := 16; -- only implement one channelizer with an FFT for now
 	constant CONFIG_CAPTURE_BITS_PER_WORD: integer := 32;
-	constant CONFIG_FFT_ROTATE_BINS: boolean := FALSE; -- CHIME: False, D3A/CHORD: True.
 
 	-- Correlator config
 

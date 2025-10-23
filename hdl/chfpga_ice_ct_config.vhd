@@ -16,7 +16,6 @@ package chfpga_config is
 	constant CONFIG_CHAN_CAPTURE_TYPE: string := "BRAM";
 	constant CONFIG_CHAN_FFT_TYPE: integer := FFT_TYPE_HIRAX;
 	constant CONFIG_CAPTURE_BITS_PER_WORD: integer := 32;
-	constant CONFIG_FFT_ROTATE_BINS: boolean := FALSE; -- CHIME: False, D3A/CHORD: True.
 
 	-- Corner-turn engine configuration
 
