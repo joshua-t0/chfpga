@@ -71,10 +71,10 @@ entity system is
 
 
         -- SYSTEM info
-        
+
         NUMBER_OF_SPI_PORTS: integer;
         NUMBER_OF_I2C_PORTS: integer;
-        
+
 		MAC_ADDRESS_OUI_CODE: std_logic_vector(23 downto 0) := X"000A35"; -- Xilinx OUI code used to identify the first 3 bytes of the MAC address
 		NUMBER_OF_USER_SMA_SIGNALS: integer                 := 8;
 		IMPLEMENT_LCD: BOOLEAN                              := FALSE;
@@ -83,9 +83,9 @@ entity system is
 		IMPLEMENT_ARM_SPI: BOOLEAN                          := TRUE;
         BLINKER_PRESENT: BOOLEAN := TRUE;
 		SIM: boolean                                        := FALSE;
-		
+
 		-- derived parameters
-		
+
 	   NUMBER_OF_ADCS_OR_CHANNELIZERS: integer := max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS)
 
 	);
@@ -102,24 +102,28 @@ entity system is
 		-- IP Port setting
 
 		host_frame_read_rate: out std_logic_vector(4 downto 0);
-
-		-- UDP local Rx networking configuration
 		local_mac_addr: out std_logic_vector(47 downto 0);
 		local_ip_addr: out std_logic_vector(31 downto 0);
 		local_ip_port: out std_logic_vector(15 downto 0);
 		local_subarray: out std_logic_vector(1 downto 0);
-		-- UDP TX channel 0 remote network configuration
-		--   MAC & IP addresses are hardwired to be those of the perviously received packet
+		remote_mac_addr: out std_logic_vector(47 downto 0);
+		remote_ip_addr: out std_logic_vector(31 downto 0);
 		remote_ip_port0: out std_logic_vector(15 downto 0); -- normally set to zero to reply to the same port as the last command
-
-		-- UDP TX channel 1 remote network configuration
-		remote_mac_addr1: out std_logic_vector(47 downto 0);
-		remote_ip_addr1: out std_logic_vector(31 downto 0);
 		remote_ip_port1: out std_logic_vector(15 downto 0);
 
-		-- Buck control signals
+		-- Communication link monitoring
 
-		buck_sync: out std_logic_vector(0 to NUMBER_OF_BUCK_SYNC_LINES - 1);
+		udp_tx_frame: in std_logic;
+		udp_rx_frame: in std_logic;
+		udp_tx_overflow: in std_logic;
+		udp_rx_overflow: in std_logic;
+		sfp_status_vector: in std_logic_vector(15 downto 0);
+		sfp_config_vector: out std_logic_vector(31 downto 0);
+		cmd_packet_counter: in std_logic_vector(7 downto 0);
+		rply_packet_counter: in std_logic_vector(7 downto 0);
+		udp_stack_reset: out std_logic;
+		ctrl_master_reset: out std_logic;
+
 
 		-- ARM SPI interface
 
@@ -154,13 +158,56 @@ entity system is
 		uart_tx_out: out std_logic;
 		uart_tx_oe: out std_logic;
 
-		-- FAN control signals (for on-board fan found on some evaluation boards)
+		-- Backplane global interrupt line. Could be used to communicate between boards.
 
-		fan_pwm: out std_logic; -- PWM control of the fan
-		fan_tach: in std_logic; -- Tachymeter input from the fan (two pulses per revolution). A debouncer cleans this signal before measuring the fan frequency.
+		bp_gpio_int_out: out std_logic;
+		bp_gpio_int_in: in std_logic;
+		bp_gpio_int_oe: out std_logic;
+
+		-- Buck converters synchronization signal
+		bp_buck_sync: inout std_logic;
+		buck_sync: out std_logic_vector(0 to NUMBER_OF_BUCK_SYNC_LINES - 1);
+
+
+		-- TIME & TRIG signals
+
+		bp_time_in: in std_logic;
+		bp_trig_in: in std_logic;
+
+
+		-- Event (Frame) counter
+
+		event_ctr_clk: in std_logic;
+		event_ctr_en: in std_logic;
+		event_ctr_inc: in std_logic;
+		event_ctr_reset: in std_logic;
+
+		-- PWM signal
+
+		pwm_clk: in std_logic;
+		pwm_ctr_en: in std_logic; -- Active when the pwm counter is to be enabled.
+		pwm_reset: in std_logic;
+
+		-- External PLL control
+
+		pll_sync: out std_logic;
+
+		-- User output selection
+
+		user_mux_in: in std_logic_vector(0 to NUMBER_OF_USER_SMA_SIGNALS - 1); -- User selectable signals (typically PWM, 1PPS, SYNC, ?)
+		user_mux_out: out std_logic_vector(0 to 3); -- User selected signal
+		user_mux_oe: out std_logic_vector(0 to 3);
 
 		-- ADC control signals
 
+		adc_rst: out std_logic_vector(0 to NUMBER_OF_ADC_BOARDS - 1);
+		refclk_m2c_p: in std_logic_vector(0 to NUMBER_OF_ADC_BOARDS - 1) := (others => '0'); -- copy of the 10 MHz reference clock received by the FMC boards (through its SMA connector )and forwarded to the FPGA as a LVDS signal. May contain encoded SYNC information.
+		refclk_m2c_n: in std_logic_vector(0 to NUMBER_OF_ADC_BOARDS - 1)  := (others => '1');
+		fmc_refclk: out std_logic_vector(0 to NUMBER_OF_ADC_BOARDS - 1); -- Delayed and BUFG'ed version of refclk_m2c
+		adc_sync_p: out std_logic_vector(0 to NUMBER_OF_ADC_BOARDS - 1); -- SYNC signal to the ADC (or the recynchronization circuit that drives the ADC SYNC)
+		adc_sync_n: out std_logic_vector(0 to NUMBER_OF_ADC_BOARDS - 1);
+
+		adc_pll_lock: in std_logic_vector(0 to NUMBER_OF_ADC_BOARDS - 1); -- Lock signal for the ADC PLL on each mezzanine
 		adc_cal_freeze: out std_logic_vector(0 to NUMBER_OF_ADCS - 1);
 		adc_cal_frozen: in std_logic_vector(0 to NUMBER_OF_ADCS - 1)        := (others => '0');
 		adc_cal_signal_detect: in std_logic_vector(0 to NUMBER_OF_ADCS - 1) := (others => '0');
@@ -172,111 +219,34 @@ entity system is
 		adc_ot1: in std_logic_vector(0 to NUMBER_OF_ADCS - 1)               := (others => '0');
 		adc_ot2: in std_logic_vector(0 to NUMBER_OF_ADCS - 1)               := (others => '0');
 		adc_ov: in std_logic_vector(0 to NUMBER_OF_ADCS - 1)                := (others => '0');
-		adc_pll_lock: in std_logic_vector(0 to NUMBER_OF_ADC_BOARDS - 1); -- Lock signal for the ADC PLL on each mezzanine
 
-		-- LCD (on some evaluation boards)
+		-- FAN control signals (for on-board fan found on some evaluation boards)
+
+		fan_pwm: out std_logic; -- PWM control of the fan
+		fan_tach: in std_logic; -- Tachymeter input from the fan (two pulses per revolution). A debouncer cleans this signal before measuring the fan frequency.
+
+		-- OLED or LCD Display (on some evaluation boards)
 
 		lcd_db: out  std_logic_vector(7 downto 4);
 		lcd_e: out  std_logic;
 		lcd_rs: out  std_logic;
 		lcd_rw: out  std_logic;
 
-		-- Backplane synchronization signal
+		-- LEDs
 
-		bp_buck_sync: inout std_logic;
---		bp_buck_sync_mon: out std_logic;
-
-		-- Backplane global interrupt line
-
-		bp_gpio_int_out: out std_logic;
-		bp_gpio_int_in: in std_logic;
-		bp_gpio_int_oe: out std_logic;
-
-		-- UDP Communication link monitoring
-
-		udp_tx_frame: in std_logic;
-		udp_rx_frame: in std_logic;
-		udp_tx_overflow: in std_logic;
-		udp_rx_overflow: in std_logic;
-		sfp_status_vector: in std_logic_vector(15 downto 0);
-		sfp_config_vector: out std_logic_vector(31 downto 0);
-
-		cmd_packet_counter: in std_logic_vector(7 downto 0);
-		rply_packet_counter: in std_logic_vector(7 downto 0);
-		udp_stack_reset: out std_logic;
-		ctrl_master_reset: out std_logic;
-
-		-- General signals
-
-		trig_async: out std_logic;
-
-
-		-- External PLL control
-
-		pll_sync: out std_logic;
-
-		-- PWM signal
-
-		pwm_clk: in std_logic;
-		pwm_ctr_en: in std_logic; -- Active when the pwm counter is to be enabled.
-		pwm_reset: in std_logic;
-
-		-- Event (Frame) counter
-
-		event_ctr_clk: in std_logic;
-		event_ctr_en: in std_logic;
-		event_ctr_inc: in std_logic;
-		event_ctr_reset: in std_logic;
-
-		-- User output selection
-
-		user_mux_in: in std_logic_vector(0 to NUMBER_OF_USER_SMA_SIGNALS - 1); -- User selectable signals (typically PWM, 1PPS, SYNC, ?)
-		user_mux_out: out std_logic_vector(0 to 3); -- User selected signal
-		user_mux_oe: out std_logic_vector(0 to 3);
-		user_bit: out std_logic_vector(1 downto 0);
-
-
-		-- *** new to be classified***
-		bp_time_in: in std_logic;
-		bp_trig_in: in std_logic;
 		gpio_led: out  std_logic_vector(7 downto 0); -- Row of 8 leds on the Motherboard
 
+		-- SPI Interface
 
-		-- ***End of new
-
-
-
-		-- IRIG-B time (GPIO)
-
-		--irigb_mux_in: in std_logic_vector(0 to 7); -- IRIG-B time signals
-		--irigb_before_target: out std_logic;
-		--irigb_pps: out std_logic;
-		--irigb_out: out std_logic;
-		--irigb_delay: out std_logic_vector(4 downto 0); -- Delay to apply to the IRIG-B signals on the IOB
-		--irigb_delay_reset: out std_logic;
-		-- User-controlled global resets
-
-		user_reset: out std_logic;
-		ctrl_reset_pulse: out std_logic := '0';
-		adcdaq_reset_async: out std_logic;
-		chan_clk_reset_async: out std_logic;
-		chan_reset_async: out std_logic;
-		corr_reset_async: out std_logic;
-
-		refclk_adcdaq_reset: out std_logic;
-
-
-		-- SPI
-
+		spi_rst_n: out std_logic; -- SPI Reset signal directly controlled by a register bitfield
 		spi_sck: out std_logic; -- SPI clock output
 		spi_miso: in std_logic_vector(0 to NUMBER_OF_SPI_PORTS - 1); -- Data input from each SPI device
 		spi_mosi: out std_logic; -- Data output , common to all slave devices
 		spi_cs_n: out std_logic_vector(0 to NUMBER_OF_SPI_PORTS - 1); -- Active low chip select signals. Only the bit specified in the SPI port register is active low during the transaction
 		spi_addr: out std_logic_vector(2 downto 0);
-		spi_rst_n: out std_logic; -- SPI Reset signal directly controlled by a register bitfield
 
 
-		-- I2C
+		-- I2C Interface
 		i2c_sck: inout std_logic_vector(NUMBER_OF_I2C_PORTS - 1 downto 0);
 		i2c_sda: inout std_logic_vector(NUMBER_OF_I2C_PORTS - 1 downto 0);
 
@@ -289,44 +259,57 @@ entity system is
 		vn: in  std_logic;
 
 
-		refclk_m2c_p: in std_logic_vector(0 to NUMBER_OF_ADC_BOARDS - 1) := (others => '0'); -- copy of the 10 MHz reference clock received by the FMC boards (through its SMA connector )and forwarded to the FPGA as a LVDS signal. May contain encoded SYNC information.
-		refclk_m2c_n: in std_logic_vector(0 to NUMBER_OF_ADC_BOARDS - 1)  := (others => '1');
-		fmc_refclk: out std_logic_vector(0 to NUMBER_OF_ADC_BOARDS - 1);
-		adc_sync_p: out std_logic_vector(0 to NUMBER_OF_ADC_BOARDS - 1); -- SYNC signal to the ADC (or the recynchronization circuit that drives the ADC SYNC)
-		adc_sync_n: out std_logic_vector(0 to NUMBER_OF_ADC_BOARDS - 1);
-		adc_rst: out std_logic_vector(0 to NUMBER_OF_ADC_BOARDS - 1);
-		clk10_out: out  std_logic; -- delayed REFCLK
-
-		-- Clock monitoring
+		-- Clock monitoring signals
 		adc_clk_div2: in std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1);
 		fmc_mgt_pll_refclk_div2: in std_logic_vector(0 to max(NUMBER_OF_ADC_BOARDS, 4) - 1);
 		gpu_refclk_div2: in std_logic_vector(0 to NUMBER_OF_GPU_REFCLKS - 1);
 		gpu_txclk_div2: in std_logic;
 		bp_shuffle_refclk_div2: in std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_REFCLKS - 1);
 		bp_shuffle_txclk_div2: in std_logic;
+		ct_clk_div2: in std_logic;
+		corr_clk_div2: in std_logic;
+		raw_clk10_div2: in std_logic;
+		clk10_div2: in std_logic;
+		clk200_div2: in std_logic;
+		ctrl_clk_div2: in std_logic;
+		chan_clk_div2: in std_logic;
+		sysmon_clk_div2: in std_logic;
+		mgt_clk100_div2: in std_logic;
+		mgt_clk200_div2: in std_logic;
+		mgt_clk125_div2: in std_logic;
+		pll_oscout_div2: in std_logic;
+        sfp_refclk_div2: in std_logic;
 
-		-- Clocks
+		-- REFCLK signals
+
+		refclk_adcdaq_reset: out std_logic; -- CHAN/CT/CORR Reset sequencer start signal
+		clk10_out: out  std_logic; -- delayed REFCLK
+
+		-- Clocks & Resets
 
 		clk200: in std_logic; -- 200 MHz clock, used for many things
 		clk200_reset: in std_logic; --
-		clk10: in std_logic; -- 10 MHZ reference clock, in phase for every board in the system
-		clk10_sel: out std_logic;
-		sysmon_clk: in std_logic; -- SYSMON & DNA clock (max 97 MHz)
-        sysmon_reset: in std_logic;     
-   		chan_clk: in std_logic; -- Channelizer clock from channel 0
-   		chan_clk_sel: out std_logic;
 
-        chan_reset: in std_logic;     
-        sfp_refclk_buf: in std_logic;
-        
-		-- Clocks for frequency monitoring only. Maybe should be divided externally to avoid constraining the clock network
-		pll_oscout: in std_logic;
-		ct_clk: in std_logic;
-		corr_clk: in std_logic;
-		raw_clk10: in std_logic;
-		mgt_clk100: in std_logic;
-		mgt_clk200: in std_logic;
-		mgt_clk125: in std_logic
+		clk10: in std_logic; -- 10 MHZ reference clock, in phase for every board in the system
+		clk10_sel: out std_logic; -- 10 MHz reference source selection
+
+		sysmon_clk: in std_logic; -- SYSMON & DNA clock (max 97 MHz)
+        sysmon_reset: in std_logic;
+
+		adcdaq_reset_async: out std_logic; -- Manual user ADCDAQ reset
+
+   		chan_clk: in std_logic; -- Channelizer clock from channel 0
+        chan_reset: in std_logic;
+   		chan_clk_sel: out std_logic; -- channelizer PLL clock selection
+		chan_clk_reset_async: out std_logic; -- Channelizer PLL reset
+		chan_reset_async: out std_logic; -- Manual user chan reset
+
+		corr_reset_async: out std_logic; -- Manual user corr reset
+
+		ctrl_reset_pulse: out std_logic := '0'; -- User initiated BSB reset pulse
+
+		user_reset: out std_logic -- Manual user general reset
+
 
 	);
 end entity system;
@@ -337,7 +320,7 @@ architecture impl of system is
 	attribute TARGET_PBLOCK: string; -- custom attribute
 	attribute DONT_TOUCH: string;
 	attribute IOB: string;
-	
+
 	-- SYSTEM sub-modules port numbers
 
 	constant MODULE_GPIO_ADDR: integer      := 0;
@@ -359,7 +342,6 @@ architecture impl of system is
 
 	-- GLobal REFCLK - GPIO signals
 	signal irigb_before_target: std_logic;
-	signal refclk_irigb_sync_in: std_logic;
 	signal sync_out: std_logic;
 
 	signal fan_tach_div2: std_logic; -- logic signal pulsing at half the fan rotation speed
@@ -434,7 +416,7 @@ begin
 	-- GPIO interface instantiation
 	---------------------------------------------------------------------
 	--  Controls the global hardware lines and system registers like the ADC RESET, LCD, Buck Regulators  etc.
-	gpio_blk: block
+	gpio_blk: block is
 		signal clk200_reset_reg: std_logic;
 		attribute DONT_TOUCH of clk200_reset_reg: signal is "true";
 
@@ -461,9 +443,9 @@ begin
 		signal bp_trig_io_reg: std_logic;
 		attribute IOB of bp_trig_io_reg: signal is "true";
 
-		signal gpio_irib_mux_in: std_logic_vector(0 to 7);
-		signal gpio_pwm_ctr_en: std_logic;
-		signal gpio_pwm_ctr_en_reg: std_logic;
+		signal irib_mux_in: std_logic_vector(0 to 7);
+		signal pwm_ctr_en_reg1: std_logic;
+		signal pwm_ctr_en_reg2: std_logic;
 		constant NUMBER_OF_USER_SMA_SIGNALS: integer := 16;
 		signal gpio_user_mux_signals: std_logic_vector(0 to NUMBER_OF_USER_SMA_SIGNALS - 1);
 
@@ -476,9 +458,6 @@ begin
 		signal irigb_delay: std_logic_vector(4 downto 0);
 		signal irigb_delay_reset: std_logic;
 
-		-- buck sync
---		signal bp_buck_sync_mon: std_logic;
-
 		signal bsb_rst_reg1, bsb_rst_reg2: std_logic;
 		attribute DONT_TOUCH of bsb_rst_reg1, bsb_rst_reg2: signal is "true";
 	begin
@@ -489,7 +468,7 @@ begin
 		SYS_RPLY_DAT(MODULE_GPIO_ADDR) <= SYS_GPIO_RPLY_DAT;
 
 		-- Pipeline reset signal
-		bsb_rst_proc: process(all) begin
+		process(all) begin
 			if rising_edge(ctrl_clk) then
 				bsb_rst_reg1 <= ctrl_rst;
 				bsb_rst_reg2 <= bsb_rst_reg1;
@@ -497,7 +476,7 @@ begin
 		end process;
 
 		-- Pipeline the clk200 reset
-		gpio_rst_proc: process(all) begin
+		process(all) begin
 			if rising_edge(clk200) then
 				clk200_reset_reg <= clk200_reset;
 			end if; -- clk
@@ -561,7 +540,7 @@ begin
 		end process;
 
 		-- Sources for the IRIG-B signals
-		gpio_irib_mux_in <= (
+		irib_mux_in <= (
 			0 => bp_trig_reg, -- backplane trig signal
 			1 => bp_time_reg, -- backplane time signal
 			2 => irigb_gen_out, -- internal IRIG-B generator
@@ -593,18 +572,22 @@ begin
 
 
 		-- Pipeline event counter signals since they need to go across the FPGA from the ADCDAQ to GPIO areas
-		eventclkproc: process(all) begin
-			if rising_edge(chan_clk) then
+		process(all) begin
+			if rising_edge(event_ctr_clk) then
 				gpio_event_ctr_en_reg <= event_ctr_en; -- pipeline. we have a long way to go between ADCDAQ[0] and GPIO
 				gpio_event_ctr_inc_reg <= event_ctr_inc; -- pipeline. we have a long way to go between ADCDAQ[0] and GPIO
-				gpio_event_ctr_reset_reg <= chan_reset;
+				gpio_event_ctr_reset_reg <= event_ctr_reset;
 
-				gpio_pwm_ctr_en <= pwm_ctr_en;
-				gpio_pwm_ctr_en_reg <= gpio_pwm_ctr_en; -- pipeline. we have a long way to go between ADCDAQ[0] and GPIO
 			end if; -- RST/CLK
 		end process;
 
-		bp_gpio_int_out <= user_mux_out(3);
+		process(all) begin
+			if rising_edge(pwm_clk) then
+				pwm_ctr_en_reg1 <= pwm_ctr_en;
+				pwm_ctr_en_reg2 <= pwm_ctr_en_reg1; -- pipeline. we have a long way to go between ADCDAQ[0] and GPIO
+			end if; -- clk
+		end process;
+
 
 		GPIO0: entity work.GPIO
 			generic map (
@@ -661,11 +644,9 @@ begin
 				local_base_ip_addr   => local_ip_addr,
 				local_base_ip_port   => local_ip_port,
 				local_subarray       => local_subarray,
-				-- remote_mac_addr   => remote_mac_addr,
+				remote_mac_addr1     => remote_mac_addr,
+				remote_ip_addr1      => remote_ip_addr,
 				remote_ip_port0      => remote_ip_port0,
-
-				remote_mac_addr1     => remote_mac_addr1,
-				remote_ip_addr1      => remote_ip_addr1,
 				remote_ip_port1      => remote_ip_port1,
 
 				udp_stack_reset   => udp_stack_reset,
@@ -707,11 +688,11 @@ begin
 				bp_buck_sync     => bp_buck_sync,
 
 				bp_gpio_int_in => bp_gpio_int_in,
-				bp_gpio_int_out => open, -- Driven by user_mux_out(3)
+				bp_gpio_int_out => bp_gpio_int_out,
 				bp_gpio_int_oe => bp_gpio_int_oe,
 
 				-- IRIG-B decoder
-				irigb_mux_in => gpio_irib_mux_in,
+				irigb_mux_in => irib_mux_in,
 				irigb_before_target => irigb_before_target, -- out
 				irigb_pps => pps_out, -- To user output mux
 				irigb_out => irigb_gen_out,
@@ -727,8 +708,8 @@ begin
 
 				-- PWM Generator (generates Frame-aligned PWM waveform)
 				pwm_clk => pwm_clk,
-				pwm_ctr_en => gpio_pwm_ctr_en_reg,
-				pwm_reset => gpio_event_ctr_reset_reg, -- just a register version of chan(0) reset
+				pwm_ctr_en => pwm_ctr_en_reg2,
+				pwm_reset => pwm_reset, -- just a register version of chan(0) reset
 				pwm_out => pwm_out,
 
 				-- External pll
@@ -964,25 +945,10 @@ begin
 	-- Frequency counter
 	---------------------------------------------------------------------
 	--   Measures the toggling frequency of a number of logic signals.
-	freq_ctr_blk: block
+	freq_ctr_blk: block is
 		-- Frequency counter-related signals and constants
-		constant NUMBER_OF_FREQ_CTR_PORTS: integer := 40;
+		constant NUMBER_OF_FREQ_CTR_PORTS: integer := 41;
 		signal freq_ctr_in_vect: std_logic_vector(0 to NUMBER_OF_FREQ_CTR_PORTS - 1);
-		signal sfp_refclk_div2: std_logic := '0'; -- init required for sims
-		signal clk10_div2: std_logic := '0'; -- init required for sims
-		signal clk200_div2: std_logic := '0'; -- Initialization required
-		signal ctrl_clk_div2: std_logic := '0'; -- Initialization required
-		signal chan_clk_div2: std_logic := '0'; -- -- Initialization required
-		signal corr_clk_div2: std_logic := '0';  -- Initialization required
-		signal sysmon_clk_div2: std_logic := '0'; -- Initialization required
-
-		signal raw_clk10_div2: std_logic := '0'; -- Initialization required for sims
-		signal mgt_clk100_div2: std_logic := '0'; -- Initialization required for sims
-		signal mgt_clk200_div2: std_logic := '0'; -- Initialization required for sims
-		signal mgt_clk125_div2: std_logic := '0'; -- Initialization required for sims
-		signal ct_clk_div2: std_logic;
-		--signal fan_tach_div2: std_logic;
-		signal pll_oscout_div2: std_logic;
 
 		signal bsb_rst_reg1, bsb_rst_reg2: std_logic;
 		attribute DONT_TOUCH of bsb_rst_reg1, bsb_rst_reg2: signal is "true";
@@ -993,80 +959,6 @@ begin
 				bsb_rst_reg1 <= ctrl_rst;
 				bsb_rst_reg2 <= bsb_rst_reg1;
 			end if;
-		end process;
-
-		-------------------------------------------------------------------------
-		-- Divided system clocks for the frequency Counter
-		-------------------------------------------------------------------------
-		process(all) begin
-			sfp_refclk_div2 <= not sfp_refclk_div2 when rising_edge(sfp_refclk_buf);
-		end process;
-
-		process(all) begin
-			clk10_div2 <= not clk10_div2 when rising_edge(clk10);
-		end process;
-
-		process(all) begin
-			clk200_div2 <= not clk200_div2 when rising_edge(clk200);
-		end process;
-
-		process(all) begin
-			ctrl_clk_div2 <= not ctrl_clk_div2 when rising_edge(CTRL_CLK);
-		end process;
-
-		-- Corner-turn engine clock monitor
-		process(all) begin
-			ct_clk_div2 <= not ct_clk_div2 when rising_edge(ct_clk);
-		end process;
-
-		process(all) begin
-			pll_oscout_div2 <= not pll_oscout_div2 when rising_edge(pll_oscout);
-		end process;
-
-		---------------------------------------------------------------------
-		--  Generate chan_clk_div2
-		---------------------------------------------------------------------
-		-- Generates a logic signal chan_clk_div2 pulsing at half of the chan_clk frequency. To be used for the frequency counter to measure the channelizer clock frequency generated by the PLL from the selected clock source.
-		-- This signal can be routed using standard fabric ressources and does not require a dedicated clock line.
-		---------------------------------------------------------------------
-		process(all) begin
-			chan_clk_div2 <= not chan_clk_div2 when rising_edge(chan_clk);
-		end process;
-
-		---------------------------------------------------------------------
-		--  Generate COR_CLK_DIV2
-		---------------------------------------------------------------------
-		-- Generates a logic signal corr_clk_div2 pulsing at half of the CORR_CLK frequency. To be used for the frequency counter to measure the Correlator clock frequency.
-		-- This signal can be routed using standard fabric ressources and does not require a dedicated clock line.
-		---------------------------------------------------------------------
-		process(all) begin
-			corr_clk_div2 <= not corr_clk_div2 when rising_edge(corr_clk);
-		end process;
-
-		---------------------------------------------------------------------
-		--  Generate sysmon_clk_div2
-		---------------------------------------------------------------------
-		-- Generates a logic signal sysmon_clk_div2 pulsing at half of the sysmon_clk frequency. To be used for the frequency counter to measure the System Monitor clock frequency.
-		-- This signal can be routed using standard fabric ressources and does not require a dedicated clock line.
-		---------------------------------------------------------------------
-		process(all) begin
-			sysmon_clk_div2 <= not sysmon_clk_div2 when rising_edge(sysmon_clk);
-		end process;
-
-		process(all) begin
-			raw_clk10_div2 <= not raw_clk10_div2 when rising_edge(raw_clk10);
-		end process;
-
-		process(all) begin
-			mgt_clk100_div2 <= not mgt_clk100_div2 when rising_edge(mgt_clk100);
-		end process;
-
-		process(all) begin
-			mgt_clk200_div2 <= not mgt_clk200_div2 when rising_edge(mgt_clk200);
-		end process;
-
-		process(all) begin
-			mgt_clk125_div2 <= not mgt_clk125_div2 when rising_edge(mgt_clk125);
 		end process;
 
 		-- Here we assign the clock monitoring signal to each of the frequency counter input channels
@@ -1107,6 +999,8 @@ begin
 		end generate gen_freq38;
 
 		freq_ctr_in_vect(39) <= pll_oscout_div2;
+
+		freq_ctr_in_vect(40) <= corr_clk_div2;
 
 		FREQ_CTR0: entity work.FREQ_CTR
 			generic map (
@@ -1155,8 +1049,6 @@ begin
 			end if;
 		end process;
 
-		refclk_irigb_sync_in <= not irigb_before_target;
-
 		REFCLK0: entity work.REFCLK
 			generic map (
 				PLATFORM_ID => PLATFORM_ID,
@@ -1171,19 +1063,19 @@ begin
 				CTRL_CLK          => CTRL_CLK,
 				CTRL_RST          => refclk_ctrl_rst,
 
-				FMC_REFCLK_P => REFCLK_M2C_P, -- IBUFDS instantiated by the module
-				FMC_REFCLK_N => REFCLK_M2C_N,
+				FMC_REFCLK_P => refclk_m2c_p, -- IBUFDS instantiated by the module
+				FMC_REFCLK_N => refclk_m2c_n,
 
 				fmc_refclk => fmc_refclk, -- BUFG'ed reference clocks from the 2 mezzanones
 				FMC_REFCLK_DIV2 => fmc_refclk_div2(0 to NUMBER_OF_ADC_BOARDS - 1), -- Logic signal toggling at 1/2 the Mezzanine's reference clocks, for the frequency counter
 
-				ADC_SYNC_P => ADC_SYNC_P, -- OBUFDS is instantiated by the module
-				ADC_SYNC_N => ADC_SYNC_N,
+				ADC_SYNC_P => adc_sync_p, -- Differential SYNC signal to the ADC. OBUFDS is instantiated by the REFCLK module
+				ADC_SYNC_N => adc_sync_n,
 
 				clk10 => clk10, -- Backplane reference clock
 				-- Sync source signals
 				sync_in => (0 => bp_trig_in, -- Corresponds to source #2 in REFCLK
-							1 => refclk_irigb_sync_in, -- Corresponds to source #3
+							1 => not irigb_before_target, -- Corresponds to source #3
 							2 => bp_time_in, -- Corresponds to source #4
 							3 => bp_gpio_int_in, -- Corresponds to source #5
 							4 => user_mux_in(0), -- Corresponds to source #6 - sma_a
@@ -1193,7 +1085,7 @@ begin
 
 				sync_out => sync_out,
 
-				ADCDAQ_RESET => REFCLK_ADCDAQ_RESET,
+				ADCDAQ_RESET => refclk_adcdaq_reset,
 
 				clk200 => clk200,
 				RST => refclk_rst

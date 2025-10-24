@@ -393,7 +393,6 @@ architecture impl of GPIO is
 	signal pwm_offset: unsigned(31 downto 0);
 	signal pwm_ctr: unsigned(31 downto 0);
 	signal pwm_active: std_logic;
-	signal pwm_out_int: std_logic;
 	signal pwm_soft_reset: std_logic;
 
 	-- Event counter and capture
@@ -1277,7 +1276,7 @@ begin
 	-- represented by the reference counter) and the GPS time (as obtained by the
 	-- IRIG-B capture)
 	--
-	refclk_capture_blk: block
+	refclk_capture_blk: block is
 		signal manual_refclk_sample_trig_resync: std_logic;
 		signal manual_refclk_sample_trig_dly: std_logic;
 		signal ts_sample_refclk_trig_out_resync: std_logic;
@@ -1390,8 +1389,7 @@ begin
 
 
 	-- Read the 57-bit DNA
-	dna_proc: process(dna_clk)
-	begin
+	dna_proc: process(all) begin
 		if rising_edge(dna_clk) then
 			dna_read <= '0';
 			if dna_read = '0' and dna_shift = '1' then -- when data is ready and we have not finished shifting
@@ -1405,8 +1403,7 @@ begin
 		end if;
 	end process;
 
-	network_setup_proc: process(ctrl_clk)
-	begin
+	network_setup_proc: process(all) begin
 		if rising_edge(ctrl_clk) then
 			-- Set core_reg_wr_en to conditionally enable writing to the core registers.
 			-- When target_network_config_source="00", core register writes are always allowed.
@@ -1443,8 +1440,7 @@ begin
 
 	gen_sw_sync_proc: if IMPLEMENT_SWITCHER_SYNC generate
 		-- Generates the buck switching regulator synchronization signal
-		buckproc: process(clk200)
-		begin
+		buckproc: process(all) begin
 			if rising_edge(clk200) then
 				if ctrl_flag_buck_sync_enable = '0' then
 					clk_ctr <= (0=> '1', others => '0');
@@ -1504,10 +1500,7 @@ begin
 
 
 	------ PWM generator process  ------------------
-	pwm_out <= pwm_out_int;
-
-	pwm_proc: process(pwm_clk)
-	begin
+	pwm_proc: process(all) begin
 		if rising_edge(pwm_clk) then
 			if pwm_ctr_en then
 				pwm_ctr <= pwm_ctr + 1;
@@ -1515,14 +1508,14 @@ begin
 					if pwm_ctr = pwm_offset then
 						pwm_active <= '1';
 						pwm_ctr <= (others => '0');
-						pwm_out_int <= '1';
+						pwm_out <= '1';
 					end if;
 				else
 					if pwm_ctr = pwm_high_time then
-						pwm_out_int <= '0';
+						pwm_out <= '0';
 					elsif pwm_ctr = pwm_period then
 						pwm_ctr <= (others => '0');
-						pwm_out_int <= '1';
+						pwm_out <= '1';
 					end if;
 				end if;
 			end if; -- if ctr_en
@@ -1530,7 +1523,7 @@ begin
 			if pwm_reset or pwm_soft_reset then
 				pwm_active <= '0';
 				pwm_ctr <= (others => '0');
-				pwm_out_int <= '0';
+				pwm_out <= '0';
 			end if;
 		end if; -- CLK
 	end process;
