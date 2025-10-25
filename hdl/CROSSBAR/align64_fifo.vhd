@@ -38,7 +38,8 @@ use work.chFPGA_Package.ALL;
 entity align64_fifo is
 	generic (
 		DATA_WIDTH: integer         := 64; -- Currently limited to 64 or less. Could be more if we used unused parity bits.
-		ALMOST_FULL_THRESH: integer := 511
+		ALMOST_FULL_THRESH: integer := 511;
+		ALMOST_EMPTY_THRESH: integer := 1
 	);
 	port (
 		-- User AXI-Streaming data input (non-blocking)
@@ -53,6 +54,7 @@ entity align64_fifo is
 
 		empty: out std_logic;
 		full: out std_logic;
+		almost_empty: out std_logic;
 		almost_full: out std_logic;
 		overflow: out std_logic;
 		wr_count: out std_logic_vector(9 downto 0);
@@ -81,7 +83,7 @@ begin
 	acc_fifo0: FIFO36E2
 		generic map (
 			CLOCK_DOMAINS => "COMMON", -- synchronous FIFO
-			-- PROG_EMPTY_THRESH     => 128, -- Sets the almost empty threshold
+			PROG_EMPTY_THRESH => ALMOST_EMPTY_THRESH, -- Sets the almost empty threshold
 			PROG_FULL_THRESH => ALMOST_FULL_THRESH, -- Almost full threshold. This is an absolute value.
 			READ_WIDTH       => 72, --  4-72. Todo: use generics...
 			WRITE_WIDTH      => 72, --  4-72
@@ -113,6 +115,7 @@ begin
 			rstreg => '0',
 			sleep  => '0',
 			empty  => empty,
+			progempty => almost_empty,
 
 			-- Write Control Signals
 			wrclk    => clk,
