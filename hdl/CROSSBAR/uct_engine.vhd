@@ -341,10 +341,8 @@ begin
 			-- Align buses
 
 			signal align1_out_tdata: slv_array(0 to NUMBER_OF_CT2_OUTPUTS - 1)(BITS_PER_CT2_LANE_WORD - 1 downto 0);
-			signal align1_out_tvalid: std_logic_vector(0 to NUMBER_OF_CT2_OUTPUTS - 1);
-			signal align1_out_tlast: std_logic_vector(0 to NUMBER_OF_CT2_OUTPUTS - 1);
-			signal align1_out_global_tvalid: std_logic;
-			signal align1_out_global_tlast: std_logic;
+			signal align1_out_tvalid: std_logic;
+			signal align1_out_tlast: std_logic;
 
 
 			-- Align monitoring
@@ -530,15 +528,12 @@ begin
 					s_axis_tlast  => bp1_out_tlast,
 
 					-- Data to the remapper (AXI Streaming, non-blocking)
-					m_axis_global_tvalid => align1_out_global_tvalid,
-					m_axis_global_tlast  => align1_out_global_tlast,
 					m_axis_tvalid        => align1_out_tvalid,
 					m_axis_tdata         => align1_out_tdata,
 					m_axis_tlast         => align1_out_tlast,
 
 
 					-- Aligner configuration
-					sof_window_stop => align1_sof_window_stop,
 					ignore_lane     => align1_ignore_lane,
 
 					-- Monitoring (if enabled)
@@ -563,8 +558,8 @@ begin
 						ct2_out_tdata(lane) <= align1_out_tdata(source_lane);
 					end loop;
 
-					ct2_out_tvalid <= '0' when align1_rst_reg else align1_out_global_tvalid;
-					ct2_out_tlast <= align1_out_global_tlast;
+					ct2_out_tvalid <= '0' when align1_rst_reg else align1_out_tvalid;
+					ct2_out_tlast <= align1_out_tlast;
 				end if; -- clk
 			end process;
 
