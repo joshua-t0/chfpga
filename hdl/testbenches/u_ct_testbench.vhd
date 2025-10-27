@@ -213,8 +213,10 @@ signal cmd_tready: std_logic;
 
 BEGIN
 
-rx_p <= tx_p;
-rx_n <= tx_n;
+gen_link: for i in 0 to NUMBER_OF_LINKS-1 generate
+    rx_p(i) <= transport tx_p(i) after 7ns*i;
+    rx_n(i) <= transport tx_n(i) after 7ns*i;
+end generate;
 
 gen1: for i in  0 to data'length-1 generate
 	tdata(i) <= data(i)(63 downto 0);
