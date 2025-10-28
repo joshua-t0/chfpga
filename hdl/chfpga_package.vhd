@@ -351,7 +351,7 @@ constant FFT_INFO: FFT_INFO_ARRAY := (
 		SAMPLES_PER_WORD => 8,
 		BITS_PER_BIN => 32+32,
 		BINS_PER_WORD => 4,
-		ROTATE => FALSE -- JFC: for debugging, must be TRUE
+		ROTATE => TRUE
 		),
 
 	HIRAX => (
