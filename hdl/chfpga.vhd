@@ -2067,8 +2067,8 @@ begin
 		end adc_case;
 
 		when others =>
-
 			assert FALSE report "Invalid CHAN_CLK_SOURCE" severity FAILURE;
+
 	end generate chan_clk_gen;
 
 	CHANGEN: for i in 0 to NUMBER_OF_CHANNELIZERS - 1 generate
