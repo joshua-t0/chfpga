@@ -6,6 +6,13 @@
 ############################################################################
 
 
+# GTY reference clock MGTREFCLK0, 156.25 MHz from fixed PLL, Bank 131
+# Corner-turn engine GTY reference clock
+set_property PACKAGE_PIN W33 [get_ports {bp_shuffle_refclk_p[1]}]
+create_clock -period 6.400 -name CLK_BP_SHUFFLE_REFCLK129 [get_ports bp_shuffle_refclk_p[1]]
+# set_property PACKAGE_PIN U33 [get_ports {bp_shuffle_refclk_p[1]}]
+
+
 create_pblock CORR
 add_cells_to_pblock [get_pblocks CORR] [get_cells -quiet [list chfpga0/CORRGEN.corr_sel_gen.ucorr44_case.ucorr44_array0]]
 resize_pblock [get_pblocks CORR] -add {SLICE_X6Y180:SLICE_X25Y419}
