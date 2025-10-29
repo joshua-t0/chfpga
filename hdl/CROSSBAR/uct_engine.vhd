@@ -40,13 +40,15 @@ entity uct_engine is
 		CT_LEVEL: integer := 2;
 
 		LANE_TO_LINK_MAP: integer_array   := (-1, 0, 1, 2); -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
-		LINK_TO_QUAD_MAP: integer_array   := (0, 1, 1); -- Indicates which quad is associated to each GTY link.
-		QUAD_TO_REFCLK_MAP: integer_array := (0, 0); -- Indicates which refclk is associated with each QUAD
-		LANE_TO_GROUP_MAP: integer_array  := (0, 0, 0, 0); -- Indicates to which lane group each lane is associated with
+		LINK_TO_QUAD_MAP: integer_array   := (
+				0 to 3 => 0,
+				4 to 7 => 1,
+				8 to 11 => 2); -- Indicates which quad is associated to each GTY link.
+		QUAD_TO_REFCLK_MAP: integer_array := (1, 0, 0); -- Indicates which refclk is associated with each QUAD
 
 		-- Dervived parameters
 		OUTPUT_WIDTH: integer     := NUMBER_OF_INPUT_LANES * INPUT_WORD_WIDTH;  -- assumes inputs are 32 bits wide, and CT preserves data rate
-		NUMBER_OF_LINKS: integer  := max(LANE_TO_LINK_MAP) + 1; --  Number of physical data links (GTYs) - Do not override
+		NUMBER_OF_LINKS: integer  := LINK_TO_QUAD_MAP'LENGTH; --  Number of physical data links (GTYs) - Do not override
 		NUMBER_OF_REFCLK: integer := max(QUAD_TO_REFCLK_MAP) + 1; -- Number of reference clocks - Do not override
 		PRE_DECIMATE: boolean     := CT_LEVEL > 1 -- True if we want to decimate the first 256 bins of the spectrum before entering the backplane shuffle
 	);
@@ -475,7 +477,9 @@ begin
 				generic map (
 					LANE_TO_LINK_MAP   => LANE_TO_LINK_MAP, -- 4 logical lane: 1 bypass lane, 3 physical links
 					LINK_TO_QUAD_MAP   => LINK_TO_QUAD_MAP, -- Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-					QUAD_TO_REFCLK_MAP => QUAD_TO_REFCLK_MAP -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+					QUAD_TO_REFCLK_MAP => QUAD_TO_REFCLK_MAP, -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+					NUMBER_OF_LINKS => NUMBER_OF_LINKS,
+					NUMBER_OF_REFCLK => NUMBER_OF_REFCLK
 				)
 				port map (
 					-- Backplane link signals

@@ -73,8 +73,14 @@ entity chfpga_crs is
 		NUMBER_OF_CROSSBAR1_OUTPUTS: integer     := CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
 		NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer  := CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES;
 		NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer := CONFIG_NUMBER_OF_BP_QSFP_SHUFFLE_LANES;
-		NUMBER_OF_BP_SHUFFLE_LINKS: integer      := CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
-		NUMBER_OF_BP_SHUFFLE_REFCLKS: integer    := CONFIG_NUMBER_OF_BP_SHUFFLE_REFCLKS;
+		BP_SHUFFLE_LANE_TO_LINK_MAP: integer_array   := (-1, 6, 8, 10); -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
+		BP_SHUFFLE_LINK_TO_QUAD_MAP: integer_array   := (
+				0 to 3 => 0,
+				4 to 7 => 1,
+				8 to 11 => 2); -- Indicates which quad is associated to each GTY link.
+		BP_SHUFFLE_QUAD_TO_REFCLK_MAP: integer_array := (1, 0, 0); -- Indicates which refclk is associated with each QUAD
+		NUMBER_OF_BP_SHUFFLE_LINKS: integer      := BP_SHUFFLE_LINK_TO_QUAD_MAP'LENGTH; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
+		NUMBER_OF_BP_SHUFFLE_REFCLKS: integer    := max(BP_SHUFFLE_QUAD_TO_REFCLK_MAP) + 1;
 
 		-- Correlator config
 		CORR_TYPE: corr_type_enum      := CONFIG_CORR_TYPE; -- "CORR44" or "UCORR44"
@@ -836,9 +842,11 @@ begin
 
 			NUMBER_OF_BP_PCB_SHUFFLE_LANES  => NUMBER_OF_BP_PCB_SHUFFLE_LANES,
 			NUMBER_OF_BP_QSFP_SHUFFLE_LANES => NUMBER_OF_BP_QSFP_SHUFFLE_LANES,
-			NUMBER_OF_BP_SHUFFLE_LINKS      => NUMBER_OF_BP_SHUFFLE_LINKS,
-			NUMBER_OF_BP_SHUFFLE_REFCLKS    => NUMBER_OF_BP_SHUFFLE_REFCLKS,
-
+			--NUMBER_OF_BP_SHUFFLE_LINKS      => NUMBER_OF_BP_SHUFFLE_LINKS,
+			--NUMBER_OF_BP_SHUFFLE_REFCLKS    => NUMBER_OF_BP_SHUFFLE_REFCLKS,
+			BP_SHUFFLE_LANE_TO_LINK_MAP => BP_SHUFFLE_LANE_TO_LINK_MAP,
+			BP_SHUFFLE_LINK_TO_QUAD_MAP => BP_SHUFFLE_LINK_TO_QUAD_MAP,
+			BP_SHUFFLE_QUAD_TO_REFCLK_MAP => BP_SHUFFLE_QUAD_TO_REFCLK_MAP,
 			-- Real time Ethernet data streaming interface
 
 			GPU_LINK_TYPE         => GPU_LINK_TYPE,

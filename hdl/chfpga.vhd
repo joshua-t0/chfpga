@@ -145,12 +145,14 @@ entity chFPGA is
 		NUMBER_OF_CROSSBAR1_OUTPUTS: integer; -- number of CROSSBAR1 output lanes. Should be 8 for URAM-based CROSSBAR1.
 		NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer     := 4;
 		NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer    := 4;
-		NUMBER_OF_BP_SHUFFLE_LINKS: integer         := 3;
-		NUMBER_OF_BP_SHUFFLE_REFCLKS: integer       := 2;
+		BP_SHUFFLE_LANE_TO_LINK_MAP: integer_array   := (0 => -1, 1 => 0, 2 => 1, 3 => 2, 4 to 7 => -1); -- List indicating the GTX/GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
+		BP_SHUFFLE_LINK_TO_QUAD_MAP: integer_array   := (0 => 0); -- Indicates which quad is associated to each GTY link.
+		BP_SHUFFLE_QUAD_TO_REFCLK_MAP: integer_array := (0 => 0); -- Indicates which refclk is associated with each QUAD
+
+		NUMBER_OF_BP_SHUFFLE_LINKS: integer      := BP_SHUFFLE_LINK_TO_QUAD_MAP'LENGTH; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
+		NUMBER_OF_BP_SHUFFLE_REFCLKS: integer    := max(BP_SHUFFLE_QUAD_TO_REFCLK_MAP) + 1;
+
 		BP_LINK_SPEED: integer                      := 0; -- 0=7.5 Gbps, 1-10Gbps.
-		BP_SHUFFLE_LANE_MAP: integerArray           := (0 => -1, 1 => 0, 2 => 1, 3 => 2, 4 to 7 => -1); --
-		BP_SHUFFLE_LANE_TO_QUAD_MAP: integerArray   := (0 => 0); -- LANE_TO_QUAD_MAP Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-		BP_SHUFFLE_QUAD_TO_REFCLK_MAP: integerArray := (0 => 0); -- QUAD_TO_REFCLK_MAP Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
 
 		-- Correlator config
 		CORR_TYPE: corr_type_enum                    := CORR44; -- "CORR44" or "UCORR44"
@@ -2324,8 +2326,8 @@ begin
                         PLATFORM_ID => PLATFORM_ID,
                         NUMBER_OF_INPUT_LANES => NUMBER_OF_CHANNELIZERS, -- Number of channelizer inputs
                         CT_LEVEL => CT_LEVEL, -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
-                        LANE_TO_LINK_MAP => integer_array(BP_SHUFFLE_LANE_MAP), -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
-                        LINK_TO_QUAD_MAP => integer_array(BP_SHUFFLE_LANE_TO_QUAD_MAP), -- integer_array  := (0,1,1); -- Indicates which quad is associated to each GTY link.
+                        LANE_TO_LINK_MAP => integer_array(BP_SHUFFLE_LANE_TO_LINK_MAP), -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
+                        LINK_TO_QUAD_MAP => integer_array(BP_SHUFFLE_LINK_TO_QUAD_MAP), -- integer_array  := (0,1,1); -- Indicates which quad is associated to each GTY link.
                         QUAD_TO_REFCLK_MAP => integer_array(BP_SHUFFLE_QUAD_TO_REFCLK_MAP) -- integer_array:= (0,0); -- Indicates which refclk is associated with each QUAD
                     )
                     port map (
@@ -2373,8 +2375,13 @@ begin
                     generic map (
                         PLATFORM_ID => PLATFORM_ID,
                         NUMBER_OF_INPUT_LANES => NUMBER_OF_CHANNELIZERS, -- Number of channelizer inputs
-                        CT_LEVEL => CT_LEVEL -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
+                        CT_LEVEL => CT_LEVEL, -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
 
+						LANE_TO_LINK_MAP => BP_SHUFFLE_LANE_TO_LINK_MAP,
+						LINK_TO_QUAD_MAP => BP_SHUFFLE_LINK_TO_QUAD_MAP,
+						QUAD_TO_REFCLK_MAP => BP_SHUFFLE_QUAD_TO_REFCLK_MAP
+
+                    -- Parameters to be re-introduced from the top level
                     -- LANE_TO_LINK_MAP: integer_array  := (-1,0,1,2); -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
                     -- LINK_TO_QUAD_MAP: integer_array  := (0,1,1); -- Indicates which quad is associated to each GTY link.
                     -- QUAD_TO_REFCLK_MAP: integer_array:= (0,0); -- Indicates which refclk is associated with each QUAD

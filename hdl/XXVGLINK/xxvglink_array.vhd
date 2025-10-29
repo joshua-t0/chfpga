@@ -67,9 +67,9 @@ use work.chFPGA_Package.all;
 entity xxvglink_array is
 	generic (
 
-		LANE_TO_LINK_MAP: integer_array  := (0 => 0, 1 => 1, 2=> 2); -- List indictiong the GTY link number associated to each lane
+		LANE_TO_LINK_MAP: integer_array  := (0 => 0, 1 => 1, 2=> 2); -- List indicating the GTY link number associated to each lane
 		LINK_TO_QUAD_MAP: integer_array  := (0 to 1=> 0, 2 => 1); -- Indicates which quad is associated to each GTY link.
-		QUAD_TO_REFCLK_MAP: integer_array:= (0 => 0, 1=> 0); -- Indicates which refclk is associated with each quad
+		QUAD_TO_REFCLK_MAP: integer_array:= (0 => 0, 1=> 0, 2 => 0); -- Indicates which refclk is associated with each quad
 		IMPLEMENT_RX : boolean          := TRUE;
 
 	    -- Derived parameters
@@ -431,6 +431,7 @@ begin
 	core0: entity work.xxvglink_core
 		generic map (
 			IMPLEMENT_RX                => IMPLEMENT_RX,
+			IMPLEMENT_RX_TX_LOGIC => (FALSE, FALSE,FALSE,FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, FALSE, TRUE, FALSE),
 			LINK_TO_QUAD_MAP            => LINK_TO_QUAD_MAP,
 			QUAD_TO_REFCLK_MAP          => QUAD_TO_REFCLK_MAP,
 			NUMBER_OF_CONTROL_BYTES     => control_bytes'LENGTH(1),
@@ -439,6 +440,11 @@ begin
 			EXAMPLE_SIM_GTRESET_SPEEDUP => "TRUE",    -- simulation setting for GT SecureIP model
 			DONT_RESET_ON_DATA_ERROR_IN => '0',
 			SIM                         => SIM
+
+			--NUMBER_OF_REFCLK => NUMBER_OF_REFCLK,
+			--NUMBER_OF_TX_LINKS => NUMBER_OF_LINKS,
+			--NUMBER_OF_RX_LINKS => NUMBER_OF_LINKS,
+			--NUMBER_OF_LINKS => NUMBER_OF_LINKS
 			)
 		port map (
 			tx_p => tx_p,
