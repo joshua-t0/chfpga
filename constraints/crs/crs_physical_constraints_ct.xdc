@@ -8,10 +8,6 @@
 # -- QSFP Connector for 100G Ethernet (CGE)
 # -- GTY QSFP28 ports - Bank 128
 # Note: The pin assignments here overrides the pins assigned in the CMAC IP
-#set_property PACKAGE_PIN Y35 [get_ports {qsfp_txp[0]}]
-#set_property PACKAGE_PIN V35 [get_ports {qsfp_txp[1]}]
-#set_property PACKAGE_PIN T35 [get_ports {qsfp_txp[2]}]
-#set_property PACKAGE_PIN R33 [get_ports {qsfp_txp[3]}]
 set_property PACKAGE_PIN Y35 [get_ports {qsfp_txp[0]}]
 set_property PACKAGE_PIN V35 [get_ports {qsfp_txp[1]}]
 set_property PACKAGE_PIN T35 [get_ports {qsfp_txp[2]}]
