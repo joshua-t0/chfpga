@@ -55,25 +55,29 @@ entity chfpga_crs is
 		SGMII_CLOCK_SOURCE: phy_clk_source_enum := REFCLK; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 
 		-- ADC config
+
 		ADC_TYPE: adc_type_enum        := AXIS; -- ADC data is provided through the axis_adc port
 		NUMBER_OF_ADCS: integer := CONFIG_NUMBER_OF_ADCS; -- Number of ADC inputs
 
 		-- Mezzanines
+
 		NUMBER_OF_ADC_BOARDS: integer := 0; -- No mezzanine, therefore no associated clocks etc.
 
 		-- Channelizer configuration
+
 		FFT_TYPE: fft_type_enum              := CONFIG_CHAN_FFT_TYPE;
 		NUMBER_OF_CHANNELIZERS: integer      := CONFIG_NUMBER_OF_ADCS;  -- (Typ. =16)  (0-NUMBER_OF_ADCS) Number of channelizer blocks to be implemented
 		CAPTURE_TYPE: chan_capture_type_enum := CONFIG_CHAN_CAPTURE_TYPE;
 
 		-- Corner-turn engine configuration
+
 		CT_TYPE: ct_type_enum                    := CONFIG_CT_TYPE; -- "BCT" (CHIME-like) or "UCT" (CHORD-like)
 		CT_LEVEL: integer                        := CONFIG_CT_LEVEL;
 		NUMBER_OF_CROSSBAR_INPUTS: integer       := CONFIG_NUMBER_OF_CROSSBAR_INPUTS; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
 		NUMBER_OF_CROSSBAR1_OUTPUTS: integer     := CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
 		NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer  := CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES;
 		NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer := CONFIG_NUMBER_OF_BP_QSFP_SHUFFLE_LANES;
-		BP_SHUFFLE_LANE_TO_LINK_MAP: integer_array   := (-1, 6, 8, 10); -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
+		BP_SHUFFLE_LANE_TO_LINK_MAP: integer_array   := (-1, 6, 8, 10); -- List indicating the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
 		BP_SHUFFLE_LINK_TO_QUAD_MAP: integer_array   := (
 				0 to 3 => 0,
 				4 to 7 => 1,
@@ -83,16 +87,19 @@ entity chfpga_crs is
 		NUMBER_OF_BP_SHUFFLE_REFCLKS: integer    := max(BP_SHUFFLE_QUAD_TO_REFCLK_MAP) + 1;
 
 		-- Correlator config
+
 		CORR_TYPE: corr_type_enum      := CONFIG_CORR_TYPE; -- "CORR44" or "UCORR44"
 		NUMBER_OF_CORRELATORS: integer := CONFIG_NUMBER_OF_CORRELATORS; -- Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
 
 		-- Real-time data offload links configuration
+
 		GPU_LINK_TYPE: gpu_link_type_enum := CONFIG_GPU_LINK_TYPE; --
 		GPU_CHANNEL_QUAD: integer_array   := (0 to 3=> 0); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if GPU_LINK_TYPE is NONE
 		GPU_QUAD_REFCLK: integer_array    := (0 to 0=>0); -- Both QUAD0 and QUAD1 use refclk(0)
 
 
 		-- Peripheral config
+
 		BLINKER_PRESENT: boolean     := TRUE; -- Indicates if the LED flasher is to be implemented by setting the DUMMY flag of the BLINKER module
 		NUMBER_OF_I2C_PORTS: integer := 0;
 		NUMBER_OF_SPI_PORTS: integer := 0; -- One port for each FMC
