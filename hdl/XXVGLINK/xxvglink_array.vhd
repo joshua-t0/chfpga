@@ -431,7 +431,7 @@ begin
 	core0: entity work.xxvglink_core
 		generic map (
 			IMPLEMENT_RX                => IMPLEMENT_RX,
-			IMPLEMENT_RX_TX_LOGIC => (FALSE, FALSE,FALSE,FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, FALSE, TRUE, FALSE),
+			USED_LINKS                  => LANE_TO_LINK_MAP, -- list of links that won't be bare (no scrambling etc). -1 values don't matter.
 			LINK_TO_QUAD_MAP            => LINK_TO_QUAD_MAP,
 			QUAD_TO_REFCLK_MAP          => QUAD_TO_REFCLK_MAP,
 			NUMBER_OF_CONTROL_BYTES     => control_bytes'LENGTH(1),
@@ -440,11 +440,6 @@ begin
 			EXAMPLE_SIM_GTRESET_SPEEDUP => "TRUE",    -- simulation setting for GT SecureIP model
 			DONT_RESET_ON_DATA_ERROR_IN => '0',
 			SIM                         => SIM
-
-			--NUMBER_OF_REFCLK => NUMBER_OF_REFCLK,
-			--NUMBER_OF_TX_LINKS => NUMBER_OF_LINKS,
-			--NUMBER_OF_RX_LINKS => NUMBER_OF_LINKS,
-			--NUMBER_OF_LINKS => NUMBER_OF_LINKS
 			)
 		port map (
 			tx_p => tx_p,

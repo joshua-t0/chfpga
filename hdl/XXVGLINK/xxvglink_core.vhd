@@ -29,7 +29,7 @@ entity xxvglink_core is
 	generic (
 		LINK_TO_QUAD_MAP: integer_array        := (0 to 1=> 0, 2 => 1); --! LINK_TO_QUAD_MAP Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
 		QUAD_TO_REFCLK_MAP: integer_array      := (0, 0); --! QUAD_TO_REFCLK_MAP Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
-		IMPLEMENT_RX_TX_LOGIC: bool_array;
+		USED_LINKS: integer_array := (others => 0); -- list of links that are used. The others will be stripped from scrambling/unscrambling/block locking logic
 		IMPLEMENT_TX: boolean                  := TRUE;
 		IMPLEMENT_RX: boolean                  := TRUE;
 		DONT_RESET_ON_DATA_ERROR_IN: std_logic := '0';
@@ -179,8 +179,6 @@ architecture behavioral of xxvglink_core is
 
 	constant STABLE_CLOCK_PERIOD: integer := 6; -- in fact 1/156.25 = 6.4 ns
 	constant WAIT_TIME_CDRLOCK: integer := sel(SIM, 1000,  50000 / integer(10.3125)) / STABLE_CLOCK_PERIOD;
-	signal   rx_cdrlock_counter: integer range 0 to WAIT_TIME_CDRLOCK := 0;
-	signal   rx_cdrlocked: std_logic;
 
 	signal gt_dmonitorout_out: slv8_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_rxmonitorout_out: slv8_array(0 to NUMBER_OF_LINKS - 1);
@@ -193,37 +191,30 @@ architecture behavioral of xxvglink_core is
 	signal gt_rxprbssel_in: slv3_array(0 to NUMBER_OF_LINKS - 1) := (others => "000");
 	signal gt_txprbssel_in: slv3_array(0 to NUMBER_OF_LINKS - 1) := (others => "000");
 	signal gt_rxprbscntreset_in: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0');
-	signal gt_rxbufstatus_out: slv3_array(0 to NUMBER_OF_LINKS - 1);
+	signal gt_rxbufstatus_out: slv3_array(0 to NUMBER_OF_LINKS - 1); -- unused
 	signal gt_rxdfeagchold_in: slv(0 to NUMBER_OF_LINKS - 1);
 	signal gt_rxdfelfhold_in: slv(0 to NUMBER_OF_LINKS - 1);
-	signal gt_rxoutclk_out: slv(0 to NUMBER_OF_LINKS - 1);
 	signal gt_rxdatavalid_out: slv(0 to NUMBER_OF_LINKS - 1);
 	signal gt_rxheader_out: slv2_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_rxheader_capture: slv2_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_rxheadervalid_out: slv(0 to NUMBER_OF_LINKS - 1);
-	signal gt_rxstartofseq_out: slv(0 to NUMBER_OF_LINKS - 1);
 	signal gt_rxgearboxslip_in: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0');
 	signal gt_rxgearboxforceslip: slv(0 to NUMBER_OF_LINKS - 1);
 	signal gt_txpostcursor_in: slv5_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_txprecursor_in: slv5_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_txprbsforceerr_in: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0');
-	signal gt_txbufstatus_out: slv2_array(0 to NUMBER_OF_LINKS - 1);
+	signal gt_txbufstatus_out: slv2_array(0 to NUMBER_OF_LINKS - 1); -- unused
 	signal gt_txdiffctrl_in: slv4_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_txinhibit_in: slv(0 to NUMBER_OF_LINKS - 1);
 	signal gt_txdata_in: slv64_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_user_tx_data: slv64_array(0 to NUMBER_OF_LINKS - 1);
-	signal gt_user_tx_data_int: slv64_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_user_source_sel: slv(0 to NUMBER_OF_LINKS - 1);
-	signal gt_txoutclk_out: slv(0 to NUMBER_OF_LINKS - 1);
 	signal gt_txheader_in: slv2_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_user_tx_header: slv2_array(0 to NUMBER_OF_LINKS - 1);
-	signal gt_gtrxreset_in: slv(0 to NUMBER_OF_LINKS - 1);
 	signal gt_txsequence_in: unsigned_array(0 to NUMBER_OF_LINKS - 1)(6 downto 0);
 	signal gt_rxresetdone_out: slv(0 to NUMBER_OF_LINKS - 1); -- txresetdone from GTY
 	signal gt_txresetdone_out: slv(0 to NUMBER_OF_LINKS - 1); -- rxresetdone form GTY
 	signal gt_block_lock: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0'); -- default provided to attempt to squash undriven warnings when there is no RX
-	signal quad_sel: std_logic_vector(1 downto 0);
-	signal gt_seq_counter: unsigned_array(0 to NUMBER_OF_LINKS - 1)(6 downto 0); -- counts from 0 to 65
 	signal gt_scramble_en: slv(0 to NUMBER_OF_LINKS - 1);
 	signal gt_descramble_en: slv(0 to NUMBER_OF_LINKS - 1);
 	signal gt_block_lock_reset: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0');
@@ -231,9 +222,7 @@ architecture behavioral of xxvglink_core is
 	signal gt_unscrambler_reset: slv(0 to NUMBER_OF_LINKS - 1);
 	signal gt_err_ctr: slv32_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_capture_en: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0');
-	signal gt_user_gttxreset: slv(0 to NUMBER_OF_LINKS - 1);
-	signal gt_user_gtrxreset: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0');
-	signal gt_user_reset: slv(0 to NUMBER_OF_LINKS - 1);
+	signal gt_user_gtrxreset: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0'); -- unused
 
 	signal gt_rxdfelpmreset_in: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0');
 	signal gt_rxlpmen_in: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0');
@@ -242,9 +231,6 @@ architecture behavioral of xxvglink_core is
 	signal tx_ready_int: slv(0 to NUMBER_OF_LINKS - 1);
 
 	signal rx_data_capture: slv64_array(0 to NUMBER_OF_LINKS - 1);
-
-	signal tx_fsm_soft_reset: slv(0 to NUMBER_OF_LINKS - 1);
-	signal rx_fsm_soft_reset: slv(0 to NUMBER_OF_LINKS - 1);
 
 begin
 
@@ -576,8 +562,8 @@ begin
 	-- -----------------------------------------------------------------------------
 	gtycore_blk: block
 
-		constant NL: integer := 12; --  number of lanes in core
-		constant NQ: integer := 3; -- number of QUADs (COMMON)
+		constant NL: integer := NUMBER_OF_LINKS; --  number of lanes in core
+		constant NQ: integer := NUMBER_OF_QUADS; -- number of QUADs (COMMON)
 
 		-- Differential data inputs/outputs
 		signal gtyrxn_in: std_logic_vector(NL - 1 downto 0);
@@ -586,7 +572,7 @@ begin
 		signal gtytxp_out: std_logic_vector(NL - 1 downto 0);
 
 		-- Reference clocks
-		signal gtrefclk00_in: std_logic_vector(NQ - 1 downto 0);
+		signal gtrefclk00_in: std_logic_vector(NQ - 1 downto 0); -- Should be NUMBER_OF_REFCLKS?
 
 		-- QPLL DRP
 		signal drpaddr_common_in: std_logic_vector(16 * NQ - 1 downto 0);
@@ -661,29 +647,29 @@ begin
 
 		-- Debugging signals
 
-		signal loopback_in: std_logic_vector(NUMBER_OF_LINKS * gt_loopback_in(0)'LENGTH-1 downto 0);
-		signal rxdfeagchold_in: std_logic_vector(gt_rxdfeagchold_in'RANGE);
-		signal rxdfelfhold_in: std_logic_vector(gt_rxdfelfhold_in'RANGE);
-		signal rxdfelpmreset_in: std_logic_vector(gt_rxdfelpmreset_in'RANGE);
-		signal rxlpmen_in: std_logic_vector(gt_rxlpmen_in'RANGE);
-		signal rxlpmoshold_in: std_logic_vector(NUMBER_OF_LINKS - 1 downto 0);
-		signal rxmonitorsel_in: std_logic_vector(NUMBER_OF_LINKS * gt_rxmonitorsel_in(0)'LENGTH-1 downto 0);
-		signal rxprbscntreset_in: std_logic_vector(gt_rxprbscntreset_in'RANGE);
-		signal rxprbssel_in: std_logic_vector(NUMBER_OF_LINKS * (gt_rxprbssel_in(0)'LENGTH+1) - 1 downto 0); -- extra bit
-		signal txdiffctrl_in: std_logic_vector(NUMBER_OF_LINKS * (gt_txdiffctrl_in(0)'LENGTH+1) - 1 downto 0); -- extra bit
-		signal txinhibit_in: std_logic_vector(gt_txinhibit_in'RANGE);
-		signal txpostcursor_in: std_logic_vector(NUMBER_OF_LINKS * gt_txpostcursor_in(0)'LENGTH-1 downto 0);
-		signal txprbsforceerr_in: std_logic_vector(gt_txprbsforceerr_in'RANGE);
-		signal txprbssel_in: std_logic_vector(NUMBER_OF_LINKS * (gt_txprbssel_in(0)'LENGTH+1) - 1 downto 0); -- extra bit
-		signal txprecursor_in: std_logic_vector(NUMBER_OF_LINKS * gt_txprecursor_in(0)'LENGTH-1 downto 0);
-		signal rxmonitorout_out: std_logic_vector(NUMBER_OF_LINKS * gt_rxmonitorout_out(0)'LENGTH-1 downto 0);
-		signal rxprbserr_out: std_logic_vector(gt_rxprbserr_out'RANGE);
-		signal rxprbslocked_out: std_logic_vector(gt_rxprbslocked_out'RANGE);
+		signal loopback_in: std_logic_vector(3 * NL - 1 downto 0);
+		signal rxdfeagchold_in: std_logic_vector(NL - 1 downto 0);
+		signal rxdfelfhold_in: std_logic_vector(NL - 1 downto 0);
+		signal rxdfelpmreset_in: std_logic_vector(NL - 1 downto 0);
+		signal rxlpmen_in: std_logic_vector(NL - 1 downto 0);
+		signal rxlpmoshold_in: std_logic_vector(NL - 1 downto 0);
+		signal rxmonitorsel_in: std_logic_vector(2 * NL - 1 downto 0);
+		signal rxprbscntreset_in: std_logic_vector(NL - 1 downto 0);
+		signal rxprbssel_in: std_logic_vector(4 * NL - 1 downto 0); -- extra bit in GTY compared to GTX
+		signal txdiffctrl_in: std_logic_vector(5 * NL - 1 downto 0); -- extra bit in GTY compared to GTX
+		signal txinhibit_in: std_logic_vector(NL - 1 downto 0);
+		signal txpostcursor_in: std_logic_vector(5 * NL -1 downto 0);
+		signal txprbsforceerr_in: std_logic_vector(NL - 1 downto 0);
+		signal txprbssel_in: std_logic_vector(4 * NL - 1 downto 0); -- extra bit in GTY compared to GTX
+		signal txprecursor_in: std_logic_vector(5 * NL -1 downto 0);
+		signal rxmonitorout_out: std_logic_vector(8 * NL -1 downto 0);
+		signal rxprbserr_out: std_logic_vector(NL - 1 downto 0);
+		signal rxprbslocked_out: std_logic_vector(NL - 1 downto 0);
 	begin
 
 		-- Map all vectorized signals to the GTY core signals
 
-		-- Quad signals
+		-- Connect Quad signals
 		quad_gen: for i in 0 to NQ - 1 generate
 
 			-- QPLL input reference clocks
@@ -704,7 +690,7 @@ begin
 		end generate quad_gen; -- for each quad
 
 
-		-- Lane signals
+		-- Connect Channel signals
 		lane_gen: for i in 0 to NL - 1 generate
 
 			-- Differential signals
@@ -783,6 +769,7 @@ begin
 			txpostcursor_in(5 * (i + 1) - 1 downto 5 * i) <= gt_txpostcursor_in(i);
 			txprecursor_in(5 * (i + 1) - 1 downto 5 * i)  <= gt_txprecursor_in(i);
 
+			-- PRBS
 			txprbssel_in(4 * (i + 1) - 1 downto 4 * i) <= '0' & gt_txprbssel_in(i);
 			rxprbssel_in(4 * (i + 1) - 1 downto 4 * i) <= '0' & gt_rxprbssel_in(i);
 			txprbsforceerr_in(i)                       <= gt_txprbsforceerr_in(i);
@@ -830,7 +817,7 @@ begin
 			port map (
 				gtwiz_userclk_tx_reset_in => gtwiz_userclk_tx_reset_in,
 				-- gtwiz_userclk_tx_srcclk_out => gtwiz_userclk_tx_srcclk_out, -- nc
-				-- gtwiz_userclk_tx_usrclk_out => gtwiz_userclk_tx_usrclk_out, -- nou used
+				-- gtwiz_userclk_tx_usrclk_out => gtwiz_userclk_tx_usrclk_out, -- not used
 				gtwiz_userclk_tx_usrclk2_out => gtwiz_userclk_tx_usrclk2_out, -- user clock
 				gtwiz_userclk_tx_active_out  => gtwiz_userclk_tx_active_out, -- not used
 				gtwiz_userclk_rx_reset_in    => gtwiz_userclk_rx_reset_in, -- must be held in reset until clocks
@@ -940,8 +927,6 @@ begin
 		--------------------
 
 		-- CONTROL Byte 0
-		-- gt_user_reset(i)                <= gt_control_bytes(i)(0)(7); -- unused with core
-		-- gt_user_gttxreset(i)            <= gt_control_bytes(i)(0)(6);-- unused with core
 
 		gt_scramble_en(i)               <= gt_control_bytes(i)(0)(7);
 		gt_rxgearboxforceslip(i)        <= gt_control_bytes(i)(0)(6);
@@ -1001,7 +986,7 @@ begin
 		-- STATUS BYTE 0
 		gt_status_bytes(i)(0)(7)          <= gt_txresetdone_out(i);
 		gt_status_bytes(i)(0)(6)          <= gt_rxresetdone_out(i);
-		gt_status_bytes(i)(0)(5 downto 4) <= gt_txbufstatus_out(i);
+		gt_status_bytes(i)(0)(5 downto 4) <= gt_txbufstatus_out(i); -- unused
 		gt_status_bytes(i)(0)(3)          <= tx_resetdone(i);
 		gt_status_bytes(i)(0)(2)          <= rx_resetdone(i);
 		gt_status_bytes(i)(0)(1)          <= gt_block_lock(i);
@@ -1017,7 +1002,7 @@ begin
 			gt_status_bytes(i)(5)(7 downto 6) <= gt_rxheader_capture(i);
 			gt_status_bytes(i)(5)(5)          <= gt_rxgearboxslip_in(i); -- optional
 			gt_status_bytes(i)(5)(3)          <= gt_rxprbslocked_out(i);
-			gt_status_bytes(i)(5)(2 downto 0) <= gt_rxbufstatus_out(i);
+			gt_status_bytes(i)(5)(2 downto 0) <= gt_rxbufstatus_out(i); -- unused
 
 			-- STATUS BYTE 6
 			gt_status_bytes(i)(6) <= gt_rxmonitorout_out(i); -- Needed for link tests?
@@ -1065,207 +1050,207 @@ begin
 	-- TX Data Logic
 	----------------------------------------------
 	tx_gen: for i in  0 to NUMBER_OF_TX_LINKS - 1 generate
-	tx_impl: if IMPLEMENT_RX_TX_LOGIC(i) generate
+		tx_impl: if is_in(i, USED_LINKS) generate
 
-		signal user_tx_data_reg: slv64;
-		signal user_tx_header_reg: slv2;
+			signal user_tx_data_reg: slv64;
+			signal user_tx_header_reg: slv2;
 
-		signal tx_header_reg: slv2;
-		signal tx_data_reg: slv64 := (others => '0'); -- init for sim
-		signal tx_data_scr_bypass: slv64 := (others => '0'); -- init for sim
-		signal tx_data_scr: slv64 := (others => '0'); -- init for sim
-		signal tx_header_scr: slv2 := (others => '0'); -- init for sim
-		signal txsequence_bit: std_logic;
+			signal tx_header_reg: slv2;
+			signal tx_data_reg: slv64 := (others => '0'); -- init for sim
+			signal tx_data_scr_bypass: slv64 := (others => '0'); -- init for sim
+			signal tx_data_scr: slv64 := (others => '0'); -- init for sim
+			signal tx_header_scr: slv2 := (others => '0'); -- init for sim
+			signal txsequence_bit: std_logic;
 
-		signal scrambler_reset: std_logic;
+			signal scrambler_reset: std_logic;
 
-	begin
+		begin
 
-		tx_ready(i)     <= tx_ready_int(i) after DLY;
-		tx_resetdone(i) <= tx_resetdone_int(i) after DLY;
+			tx_ready(i)     <= tx_ready_int(i) after DLY;
+			tx_resetdone(i) <= tx_resetdone_int(i) after DLY;
 
-		process(all) begin
-			if rising_edge(txusrclk2) then
-				txsequence_bit <= not txsequence_bit;
-				if txsequence_bit then
-					gt_txsequence_in(i) <= gt_txsequence_in(i) + 1 after DLY;
-					gt_txsequence_in(i) <= (others => '0') after DLY when gt_txsequence_in(i) = 32;
-					tx_ready_int(i) <= '0' when gt_txsequence_in(i) = 31 else '1'; -- we need the delays to ensure the signal changes after all copies of the clock
-				end if; -- txsequence_bit
-				-- Resets
-				if tx_reset(i) then
-					txsequence_bit <= '0';
-					gt_txsequence_in(i) <= (others => '0');
-				end if;
-			end if; -- clk
-		end process;
-
-
-		-- Data tranmission path
-		-- User_data => reverse bytes => scramble => reverse bits => GTY Tx
-		txproc: process(all) begin
-			if rising_edge(txusrclk2) then
-				user_tx_data_reg <= gt_user_tx_data(i); -- Pipeline user data and header words.
-				user_tx_header_reg <= gt_user_tx_header(i);
-
-				if tx_ready(i) then
-					tx_data_reg <= reverse_bytes(tx_data(i));
-					tx_header_reg <= tx_header(i);
-
-					-- Override with user-specified register values if source_sel=1
-					if gt_user_source_sel(i) = '1' then -- select values from registers
-						tx_data_reg <= reverse_bytes(user_tx_data_reg);
-						tx_header_reg <= user_tx_header_reg;
+			process(all) begin
+				if rising_edge(txusrclk2) then
+					txsequence_bit <= not txsequence_bit;
+					if txsequence_bit then
+						gt_txsequence_in(i) <= gt_txsequence_in(i) + 1 after DLY;
+						gt_txsequence_in(i) <= (others => '0') after DLY when gt_txsequence_in(i) = 32;
+						tx_ready_int(i) <= '0' when gt_txsequence_in(i) = 31 else '1'; -- we need the delays to ensure the signal changes after all copies of the clock
+					end if; -- txsequence_bit
+					-- Resets
+					if tx_reset(i) then
+						txsequence_bit <= '0';
+						gt_txsequence_in(i) <= (others => '0');
 					end if;
+				end if; -- clk
+			end process;
 
-					-- Delay tx_header and data to compensate for the scrambler latency
-					tx_data_scr_bypass <= tx_data_reg; -- for scrambler bypass path
-					tx_header_scr <= tx_header_reg;
 
-					-- Send data to GTY, scrambled or not
-					gt_txdata_in(i) <= reverse_bits_same_dir(tx_data_scr) when gt_scramble_en(i) else
-	                   reverse_bits_same_dir(tx_data_scr_bypass);
-					gt_txheader_in(i) <= tx_header_scr;
-				end if; -- tx_ready
-			end if; -- clk
-		end process;
+			-- Data tranmission path
+			-- User_data => reverse bytes => scramble => reverse bits => GTY Tx
+			txproc: process(all) begin
+				if rising_edge(txusrclk2) then
+					user_tx_data_reg <= gt_user_tx_data(i); -- Pipeline user data and header words.
+					user_tx_header_reg <= gt_user_tx_header(i);
 
-		------------------------------------------------
-		-- SCRAMBLER
-		------------------------------------------------
+					if tx_ready(i) then
+						tx_data_reg <= reverse_bytes(tx_data(i));
+						tx_header_reg <= tx_header(i);
 
-		scrambler_reset <= tx_reset(i) or not tx_resetdone_int(i) or gt_scrambler_reset(i);
+						-- Override with user-specified register values if source_sel=1
+						if gt_user_source_sel(i) = '1' then -- select values from registers
+							tx_data_reg <= reverse_bytes(user_tx_data_reg);
+							tx_header_reg <= user_tx_header_reg;
+						end if;
 
-		scrambler0: entity work.xxvglink_scrambler
-			port map (
-				-- User Interface
-				unscrambled_data_in => tx_data_reg, -- first bit transmitted is in the LSB
-				scrambled_data_out  => tx_data_scr, -- first bit transmitted is in the LSB
-				data_valid_in       => tx_ready_int(i),
+						-- Delay tx_header and data to compensate for the scrambler latency
+						tx_data_scr_bypass <= tx_data_reg; -- for scrambler bypass path
+						tx_header_scr <= tx_header_reg;
 
-				-- System Interface
-				user_clk     => txusrclk2,
-				system_reset => scrambler_reset
-			);
-	end generate tx_impl;
+						-- Send data to GTY, scrambled or not
+						gt_txdata_in(i) <= reverse_bits_same_dir(tx_data_scr) when gt_scramble_en(i) else
+		                   reverse_bits_same_dir(tx_data_scr_bypass);
+						gt_txheader_in(i) <= tx_header_scr;
+					end if; -- tx_ready
+				end if; -- clk
+			end process;
+
+			------------------------------------------------
+			-- SCRAMBLER
+			------------------------------------------------
+
+			scrambler_reset <= tx_reset(i) or not tx_resetdone_int(i) or gt_scrambler_reset(i);
+
+			scrambler0: entity work.xxvglink_scrambler
+				port map (
+					-- User Interface
+					unscrambled_data_in => tx_data_reg, -- first bit transmitted is in the LSB
+					scrambled_data_out  => tx_data_scr, -- first bit transmitted is in the LSB
+					data_valid_in       => tx_ready_int(i),
+
+					-- System Interface
+					user_clk     => txusrclk2,
+					system_reset => scrambler_reset
+				);
+		end generate tx_impl;
 	end generate tx_gen; -- for NUMBER_OF_TX_LINKS
 
 	----------------------------------------------
 	-- RX Data Logic
 	----------------------------------------------
 	rx_gen: for i in  0 to NUMBER_OF_RX_LINKS - 1 generate
-	rx_impl: if IMPLEMENT_RX_TX_LOGIC(i) generate
+		rx_impl: if is_in(i, USED_LINKS) generate
 
-		signal block_sync_reset: std_logic;
+			signal block_sync_reset: std_logic;
 
-		signal rx_data_unscr_bypass: slv64;
-		signal rx_data_unscr: slv64;
-		signal rx_data_valid_reg: std_logic;
-		signal rx_header_reg: slv2;
-		signal rx_header_valid_reg: std_logic;
+			signal rx_data_unscr_bypass: slv64;
+			signal rx_data_unscr: slv64;
+			signal rx_data_valid_reg: std_logic;
+			signal rx_header_reg: slv2;
+			signal rx_header_valid_reg: std_logic;
 
-		signal rx_capture_en: std_logic;
-		signal unscrambler_reset: std_logic;
+			signal rx_capture_en: std_logic;
+			signal unscrambler_reset: std_logic;
 
-		signal rx_data_int: slv64;
-		signal rx_data_valid_int: std_logic;
-		signal rx_header_int: slv2;
-		signal rx_header_valid_int: std_logic;
+			signal rx_data_int: slv64;
+			signal rx_data_valid_int: std_logic;
+			signal rx_header_int: slv2;
+			signal rx_header_valid_int: std_logic;
 
-	begin
-		-- Assign clock and reset outputs
-		rx_clk(i)       <= rxusrclk2(i); --! Danger Will Robinson! In sims, the clock assignment might be evaluated AFTER the output signals are evaluated, causing the data to appear on the wrong clock. That's why we have a DLY for each output purt assignments.
-		rx_resetdone(i) <= rx_resetdone_int(i) after DLY;
+		begin
+			-- Assign clock and reset outputs
+			rx_clk(i)       <= rxusrclk2(i); --! Danger Will Robinson! In sims, the clock assignment might be evaluated AFTER the output signals are evaluated, causing the data to appear on the wrong clock. That's why we have a DLY for each output purt assignments.
+			rx_resetdone(i) <= rx_resetdone_int(i) after DLY;
 
-		-- apply output with delays for simulations
-		rx_data(i)         <= rx_data_int after DLY;
-		rx_data_valid(i)   <= rx_data_valid_int after DLY;
-		rx_header(i)       <= rx_header_int after DLY;
-		rx_header_valid(i) <= rx_header_valid_int after DLY;
-		------------------------------------------------
-		-- RX BLOCK SYNCHRONIZATION
-		------------------------------------------------
-		block_sync_reset <= rx_reset(i) or not rx_resetdone_int(i) or gt_block_lock_reset(i);
+			-- apply output with delays for simulations
+			rx_data(i)         <= rx_data_int after DLY;
+			rx_data_valid(i)   <= rx_data_valid_int after DLY;
+			rx_header(i)       <= rx_header_int after DLY;
+			rx_header_valid(i) <= rx_header_valid_int after DLY;
+			------------------------------------------------
+			-- RX BLOCK SYNCHRONIZATION
+			------------------------------------------------
+			block_sync_reset <= rx_reset(i) or not rx_resetdone_int(i) or gt_block_lock_reset(i);
 
-		block_sync0: entity work.xxvglink_block_sync
-			generic map (
-				SH_CNT_MAX         => 64,
-				SH_INVALID_CNT_MAX => 16
-			)
-			port map (
-				-- User Interface
-				blocksync_out     => gt_block_lock(i),
-				rxgearboxslip_out => gt_rxgearboxslip_in(i),
-				rxheader_in       => gt_rxheader_out(i),
-				rxheadervalid_in  => gt_rxheadervalid_out(i),
+			block_sync0: entity work.xxvglink_block_sync
+				generic map (
+					SH_CNT_MAX         => 64,
+					SH_INVALID_CNT_MAX => 16
+				)
+				port map (
+					-- User Interface
+					blocksync_out     => gt_block_lock(i),
+					rxgearboxslip_out => gt_rxgearboxslip_in(i),
+					rxheader_in       => gt_rxheader_out(i),
+					rxheadervalid_in  => gt_rxheadervalid_out(i),
 
-				-- System Interface
-				clk => rxusrclk2(i),
-				rst => block_sync_reset
-			);
+					-- System Interface
+					clk => rxusrclk2(i),
+					rst => block_sync_reset
+				);
 
-		-- Synchronize the capture signal to the local rx clock
-		cap_cdc0: xpm_cdc_single
-			generic map (
-				SRC_INPUT_REG => 0
-			)
-			port map (
-				src_clk  => ctrl_clk,
-				src_in   => gt_capture_en(i),
-				dest_clk => rxusrclk2(i),
-				dest_out => rx_capture_en
-			);
+			-- Synchronize the capture signal to the local rx clock
+			cap_cdc0: xpm_cdc_single
+				generic map (
+					SRC_INPUT_REG => 0
+				)
+				port map (
+					src_clk  => ctrl_clk,
+					src_in   => gt_capture_en(i),
+					dest_clk => rxusrclk2(i),
+					dest_out => rx_capture_en
+				);
 
-		-- Data receive path
-		--   GTY Rx => reverse_bits => descrambler => reverse bytes => user data
-		-- Also Capture descrambled or unscambled data when valid and capture=1
-		process(all) begin
-			if rising_edge(rxusrclk2(i)) then
-				-- Compensate unscrambler latency
-				rx_data_unscr_bypass <= reverse_bits_same_dir(gt_rxdata_out(i)); -- descrambler bypass
-				rx_data_valid_reg <= gt_rxdatavalid_out(i);
-				rx_header_reg <= gt_rxheader_out(i);
-				rx_header_valid_reg <= gt_rxheadervalid_out(i);
+			-- Data receive path
+			--   GTY Rx => reverse_bits => descrambler => reverse bytes => user data
+			-- Also Capture descrambled or unscambled data when valid and capture=1
+			process(all) begin
+				if rising_edge(rxusrclk2(i)) then
+					-- Compensate unscrambler latency
+					rx_data_unscr_bypass <= reverse_bits_same_dir(gt_rxdata_out(i)); -- descrambler bypass
+					rx_data_valid_reg <= gt_rxdatavalid_out(i);
+					rx_header_reg <= gt_rxheader_out(i);
+					rx_header_valid_reg <= gt_rxheadervalid_out(i);
 
-				if rx_reset(i) or not rx_resetdone_int(i) then -- Added reset to try to prevent spurious sends after reset
-					rx_header_reg <= "00";
-					rx_header_valid_reg <= '0';
-					rx_data_valid_reg <= '0';
-				end if;
+					if rx_reset(i) or not rx_resetdone_int(i) then -- Added reset to try to prevent spurious sends after reset
+						rx_header_reg <= "00";
+						rx_header_valid_reg <= '0';
+						rx_data_valid_reg <= '0';
+					end if;
 
-				-- Assign user outputs, scrambled or unscrambled
-				-- Add assignment delays to make sure the signal changes AFTER all copies of the clocks have propagated in simulation
-				rx_data_int <= reverse_bytes(rx_data_unscr) when gt_descramble_en(i) else
-	               reverse_bytes(rx_data_unscr_bypass); -- first byte received is in bits 31-24 (MSB-LSB)
-				rx_data_valid_int <= rx_data_valid_reg;
-				rx_header_int <= rx_header_reg;
-				rx_header_valid_int <= rx_header_valid_reg;
+					-- Assign user outputs, scrambled or unscrambled
+					-- Add assignment delays to make sure the signal changes AFTER all copies of the clocks have propagated in simulation
+					rx_data_int <= reverse_bytes(rx_data_unscr) when gt_descramble_en(i) else
+		               reverse_bytes(rx_data_unscr_bypass); -- first byte received is in bits 31-24 (MSB-LSB)
+					rx_data_valid_int <= rx_data_valid_reg;
+					rx_header_int <= rx_header_reg;
+					rx_header_valid_int <= rx_header_valid_reg;
 
-				-- Word capture logic
-				if rx_capture_en then
-					rx_data_capture(i) <= rx_data_int when rx_data_valid_int;
-					gt_rxheader_capture(i) <= rx_header_int when rx_header_valid_int;
-				end if;
-			end if; -- clk
-		end process;
+					-- Word capture logic
+					if rx_capture_en then
+						rx_data_capture(i) <= rx_data_int when rx_data_valid_int;
+						gt_rxheader_capture(i) <= rx_header_int when rx_header_valid_int;
+					end if;
+				end if; -- clk
+			end process;
 
-		------------------------------------------------
-		-- RX DESCRAMBLER
-		------------------------------------------------
-		unscrambler_reset <= rx_reset(i) or not rx_resetdone_int(i) or gt_unscrambler_reset(i);
+			------------------------------------------------
+			-- RX DESCRAMBLER
+			------------------------------------------------
+			unscrambler_reset <= rx_reset(i) or not rx_resetdone_int(i) or gt_unscrambler_reset(i);
 
-		descrambler0: entity work.xxvglink_descrambler
-			port map (
-				-- User Interface
-				scrambled_data_in    => reverse_bits_same_dir(gt_rxdata_out(i)), -- first bit received is in the LSB
-				data_valid_in        => gt_rxdatavalid_out(i),
-				unscrambled_data_out => rx_data_unscr, -- first bit received is in the LSB
+			descrambler0: entity work.xxvglink_descrambler
+				port map (
+					-- User Interface
+					scrambled_data_in    => reverse_bits_same_dir(gt_rxdata_out(i)), -- first bit received is in the LSB
+					data_valid_in        => gt_rxdatavalid_out(i),
+					unscrambled_data_out => rx_data_unscr, -- first bit received is in the LSB
 
-				-- System Interface
-				clk => rxusrclk2(i),
-				rst => unscrambler_reset -- or not gt_block_lock(i)
-			);
-	end generate rx_impl;
+					-- System Interface
+					clk => rxusrclk2(i),
+					rst => unscrambler_reset -- or not gt_block_lock(i)
+				);
+		end generate rx_impl;
 	end generate rx_gen; -- for RX lane
 
 end architecture behavioral;
