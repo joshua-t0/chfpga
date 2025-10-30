@@ -12,9 +12,10 @@ set_property PACKAGE_PIN W33 [get_ports {bp_shuffle_refclk_p[1]}]
 create_clock -period 6.400 -name CLK_BP_SHUFFLE_REFCLK129 [get_ports {bp_shuffle_refclk_p[1]}]
 # set_property PACKAGE_PIN U33 [get_ports {bp_shuffle_refclk_p[1]}]
 
-set_property LOC BUFG_GT_X0Y134 [get_cells {chfpga0/ct_gen.ct_case.uct_case.ct0/ct1_blk.ct2_gen.bp_links0/core0/refclk_blk.ibuf_gen[1].refclk_bufg0}]
-set_property LOC BUFG_GT_SYNC_X0Y89 [get_cells {chfpga0/ct_gen.ct_case.uct_case.ct0/ct1_blk.ct2_gen.bp_links0/core0/BUFG_GT_SYNC_1}]
-set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets chfpga0/ct_gen.ct_case.uct_case.ct0/ct1_blk.ct2_gen.bp_links0/core0/refclk_blk.refclk_div_nobuf_0]
+# LOCs below was for GTY REFCLK1, but we can't route it to BUFG_GT_SYNC
+#set_property LOC BUFG_GT_X0Y134 [get_cells {chfpga0/ct_gen.ct_case.uct_case.ct0/ct1_blk.ct2_gen.bp_links0/core0/refclk_blk.ibuf_gen[1].refclk_bufg0}]
+#set_property LOC BUFG_GT_SYNC_X0Y89 [get_cells {chfpga0/ct_gen.ct_case.uct_case.ct0/ct1_blk.ct2_gen.bp_links0/core0/BUFG_GT_SYNC_1}]
+#set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets chfpga0/ct_gen.ct_case.uct_case.ct0/ct1_blk.ct2_gen.bp_links0/core0/refclk_blk.refclk_div_nobuf_0]
 
 create_pblock CORR
 add_cells_to_pblock [get_pblocks CORR] [get_cells -quiet [list chfpga0/CORRGEN.corr_sel_gen.ucorr44_case.ucorr44_array0]]

@@ -936,7 +936,7 @@ set_property IS_SOFT FALSE [get_pblocks CHAN7]
 # resize_pblock [get_pblocks SCALER7] -add {DSP48E2_X3Y168:DSP48E2_X4Y191}
 
 # Allow last elements of SRLs to become registers to help timing
-set_property SRL_STYLE srl_reg [get_cells -hier -filter {PRIMITIVE_TYPE =~ CLB.SRL.* && NAME =~  "*FFT*" }]
+#set_property SRL_STYLE srl_reg [get_cells -hier -filter {PRIMITIVE_TYPE =~ CLB.SRL.* && NAME =~  "*FFT*" }]
 
 
 # Pin the UCAP UltraRAM sites to facilitate P&R
