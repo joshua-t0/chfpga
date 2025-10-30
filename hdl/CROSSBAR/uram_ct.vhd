@@ -105,8 +105,6 @@ end entity uram_ct;
 
 architecture impl of uram_ct is
 
-	attribute KEEP: string;
-
 	signal control_bytes: slv8_array(0 to 7);
 	signal status_bytes: slv8_array(0 to 2);
 
