@@ -361,7 +361,6 @@ begin
 
 		signal fmc_refclk_buf: std_logic;
 		signal fmc_refclk_dly: std_logic;
-		signal fmc_refclk_int: std_logic;
 
 		-- Make sure the ADC SYNC registers are placed in the IO block with the OBUFDS buffer to ensure
 		-- timing reproducibility and low jitter
@@ -464,7 +463,7 @@ begin
 				fmcbufg0: BUFG
 					port map (
 						i => fmc_refclk_bufr,
-						o => fmc_refclk_int -- 1-bit Clock Output pin
+						o => fmc_refclk(i) -- 1-bit Clock Output pin
 					);
 			end v6_case;
 
@@ -473,25 +472,23 @@ begin
 				fmcbufg0: BUFG
 					port map (
 						i => fmc_refclk_dly,
-						o => fmc_refclk_int -- 1-bit Clock Output pin
+						o => fmc_refclk(i) -- 1-bit Clock Output pin
 					);
 
 		--   -- We might have used the BUFH in the past
 		--   FMCBUFH0 : BUFH
 		--     port map (
 		--       I => fmc_refclk_dly(i),
-		--       O => fmc_refclk_int -- 1-bit Clock Output pin
+		--       O => fmc_refclk(i) -- 1-bit Clock Output pin
 		--     );
 
 		end generate refclk_bufg_gen;
 
-		fmc_refclk(i) <= fmc_refclk_int; -- This clock has a BUFG and can reach every ADCDAQs for clock waveform sampling
 
 
 		-- Generate a logic signal pulsing at half the Reference Clock frequency to be used for the frequency counter.
-		fmcrefclklogic: process(fmc_refclk_int)
-		begin
-			if rising_edge(fmc_refclk_int) then
+		process(all) begin
+			if rising_edge(fmc_refclk(i)) then
 				fmc_refclk_div2(i) <= not fmc_refclk_div2(i);
 			end if;
 		end process;
@@ -515,9 +512,8 @@ begin
 		-- reference, which happens hald a cycle (50 ns) later. This should gives
 		-- us plenty of setup and hold time (50 us of each ideally).
 		--
-		adcsync_proc: process(fmc_refclk_int)
-		begin
-			if rising_edge(fmc_refclk_int) then -- rising edge happens 50 us after the adc_sync_pre toggle.
+		process(all) begin
+			if rising_edge(fmc_refclk(i)) then -- rising edge happens 50 us after the adc_sync_pre toggle.
 				adc_sync <= adc_sync_pre;
 			-- adc_sync_pre2(i) <= adc_sync_pre;
 			end if;
