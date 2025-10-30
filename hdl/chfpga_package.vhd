@@ -731,6 +731,7 @@ function all_zeros(v: unsigned; high:integer; low:integer) return boolean;
 function all_same(v: std_logic_vector; high:integer; low:integer) return boolean;
 function all_same(v: signed; high:integer; low:integer) return boolean;
 
+function is_in(i:integer; list:integer_array) return boolean;
 function num_ones(v: std_logic_vector) return integer; -- Return number of bits that are '1'.
 
 function cmplx(re, im:integer) return complex; -- Create a complex value out of two integer values
@@ -1393,6 +1394,15 @@ begin
 	return all_same(std_logic_vector(v), high, low);
 end function;
 
+function is_in(i:integer; list:integer_array) return boolean is
+begin
+    for ii in list'RANGE loop
+        if list(ii) = i then
+        	return TRUE;
+        end if;
+    end loop;
+    return FALSE;
+end function;
 
 
 function num_ones(v: std_logic_vector) return integer is
