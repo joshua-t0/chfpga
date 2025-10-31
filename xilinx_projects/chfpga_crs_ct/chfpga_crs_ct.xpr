@@ -92,23 +92,7 @@
   <FileSets Version="1" Minor="31">
     <FileSet Name="sources_1" Type="DesignSrcs" RelSrcDir="$PSRCDIR/sources_1" RelGenDir="$PGENDIR/sources_1">
       <Filter Type="Srcs"/>
-      <File Path="$PPRDIR/../../_Cores/CRS/AXI4S_REG_SLICE/AXI4S_REG_SLICE.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/CRS/CMD_FIFO/CMD_FIFO.xci">
-        <FileInfo>
-          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/CRS/CMD_FIFO/CMD_FIFO.xci"/>
-          <Attr Name="ImportTime" Val="1670654932"/>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/TCPIPE/zynq_tcpipe_crs/zynq_tcpipe_crs.bd">
+      <File Path="$PPRDIR/../chfpga_crs_corr64/TCPIPE/zynq_tcpipe_crs/zynq_tcpipe_crs.bd">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -122,6 +106,12 @@
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../hdl/chfpga_crs_ct_config.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../hdl/CMD/axis_sync_fifo.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -313,6 +303,12 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/../../hdl/SYSTEM/system.vhdl">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <File Path="$PPRDIR/../../hdl/CROSSBAR/uct_engine.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -463,13 +459,13 @@
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Flow_PerfOptimized_high" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design">
-          <Option Id="NoCombineLuts">1</Option>
-          <Option Id="KeepEquivalentRegisters">1</Option>
-          <Option Id="ShregMinSize">5</Option>
           <Option Id="FsmExtraction">1</Option>
-          <Option Id="ResourceSharing">2</Option>
-          <Option Id="Directive">7</Option>
+          <Option Id="ShregMinSize">5</Option>
+          <Option Id="KeepEquivalentRegisters">1</Option>
           <Option Id="Assert">1</Option>
+          <Option Id="Directive">7</Option>
+          <Option Id="ResourceSharing">2</Option>
+          <Option Id="NoCombineLuts">1</Option>
         </Step>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -491,9 +487,7 @@
     </Run>
     <Run Id="pfb_fft_bitgrowth_0_synth_1" Type="Ft3:Synth" SrcSet="pfb_fft_bitgrowth_0" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="pfb_fft_bitgrowth_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/pfb_fft_bitgrowth_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/pfb_fft_bitgrowth_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/pfb_fft_bitgrowth_0_synth_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -759,9 +753,7 @@
     </Run>
     <Run Id="pfb_fft_bitgrowth_0_impl_1" Type="Ft2:EntireDesign" Part="xczu47dr-ffvg1517-1-i" ConstrsSet="pfb_fft_bitgrowth_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="pfb_fft_bitgrowth_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/pfb_fft_bitgrowth_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/pfb_fft_bitgrowth_0_impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
@@ -1669,6 +1661,20 @@
     <MsgAttr Name="RuleSource" Val="2"/>
     <MsgAttr Name="StringIsRegExp" Val="0"/>
     <MsgAttr Name="RuleId" Val="67"/>
+    <MsgAttr Name="Note" Val=""/>
+    <MsgAttr Name="Author" Val=""/>
+    <MsgAttr Name="CreatedTimestamp" Val=""/>
+  </MsgRule>
+  <MsgRule>
+    <MsgAttr Name="RuleType" Val="0"/>
+    <MsgAttr Name="Limit" Val="-1"/>
+    <MsgAttr Name="NewSeverity" Val="ANY"/>
+    <MsgAttr Name="Id" Val="17-179"/>
+    <MsgAttr Name="Severity" Val="ANY"/>
+    <MsgAttr Name="ShowRule" Val="0"/>
+    <MsgAttr Name="RuleSource" Val="4294967295"/>
+    <MsgAttr Name="StringIsRegExp" Val="0"/>
+    <MsgAttr Name="RuleId" Val="68"/>
     <MsgAttr Name="Note" Val=""/>
     <MsgAttr Name="Author" Val=""/>
     <MsgAttr Name="CreatedTimestamp" Val=""/>
