@@ -51,11 +51,23 @@ constant CTRL_CLK_PERIOD : time := 10 ns; --
     signal rply_dat: axis8_dat_struct;
     signal rply_rdy: axis8_rdy_struct := (TREADY=>'0');
 
+    signal a: std_logic_vector(7 downto 0) := X"AA";
+    signal b: std_logic_vector(0 to 7) := X"BB";
+    signal c: std_logic_vector(0 to 7) := X"BB";
+    
+    subtype slv8i is std_logic_vector(0 to 7);
+    signal d: slv8 := X"12";
+    signal e: slv8i;
+    
 begin
 
     clk <= not clk after CLK_PERIOD/2;
     ctrl_clk <= not ctrl_clk after CTRL_CLK_PERIOD/2; 
     
+    b <= a;
+    c <= a(a'right downto a'left);
+    
+    e <= d;
     
     SYSMON0: entity work.SYSMON_XADC
         GENERIC MAP (
