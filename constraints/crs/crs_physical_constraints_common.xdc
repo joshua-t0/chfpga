@@ -171,10 +171,17 @@ set_property PACKAGE_PIN E6 [get_ports sma_aux_drv]
 set_property IOSTANDARD LVCMOS33 [get_ports sma_aux_drv]
 set_property SLEW FAST [get_ports sma_aux_drv]
 set_property DRIVE 16 [get_ports sma_aux_drv]
-# set_output_delay -clock [get_clocks PL_CLK] -max 0.015 [get_ports sma_aux_drv]
-# set_output_delay -clock [get_clocks PL_CLK] -min -0.015 [get_ports sma_aux_drv]
+set_output_delay -clock [get_clocks SYS_CLK] -max 0.015 [get_ports sma_aux_drv]
+set_output_delay -clock [get_clocks SYS_CLK] -min -0.015 [get_ports sma_aux_drv]
 
+# Add multicycle paths to prvent timing errors between IRIG-B/AUX  signals and the internal clocks that generate or capture those signals.
+set_multicycle_path -hold -from [get_clocks SYS_CLK] -to [get_clocks clk200_nobuf] 1
 
+set_multicycle_path -hold  -end -from [get_clocks PL_CLK] -to [get_clocks SYS_CLK] 1
+set_multicycle_path -setup -from [get_clocks PL_CLK] -to [get_clocks SYS_CLK] 2
+
+set_multicycle_path -setup -from [get_clocks clk200_nobuf] -to [get_clocks SYS_CLK] 2
+set_multicycle_path -hold  -end -from [get_clocks clk200_nobuf] -to [get_clocks SYS_CLK] 1
 
 # #############################################
 # # Buck SYNC signals
