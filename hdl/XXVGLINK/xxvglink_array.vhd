@@ -74,7 +74,7 @@ entity xxvglink_array is
 
 	    -- Derived parameters
 		NUMBER_OF_LANES: integer        := LANE_TO_LINK_MAP'LENGTH; -- Number of logical data link - Do not override
-		NUMBER_OF_LINKS: integer        := max(LANE_TO_LINK_MAP) + 1; --  Number of physical data links (GTYs) - Do not override
+		NUMBER_OF_LINKS: integer        := LINK_TO_QUAD_MAP'LENGTH; --  Number of physical data links (GTYs) - Do not override
 	    LANE_GROUP_MAP: integer_array    := (0 to NUMBER_OF_LANES-1 => 0); -- Array indicating the group to which each lane is assiciated with
 		NUMBER_OF_LANE_GROUPS: integer  := max(LANE_GROUP_MAP) + 1; -- Do not override
 		NUMBER_OF_REFCLK: integer       := max(QUAD_TO_REFCLK_MAP) + 1; -- Number of reference clocks - Do not override
