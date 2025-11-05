@@ -107,7 +107,7 @@ architecture Behavioral of UCORR44_ARRAY is
     signal integ_period: std_logic_vector(15 downto 0);
     signal corr_id: std_logic_vector(3 downto 0);
 
-    type slv_2darray is array (natural range <>) of slv_array(0 to NCHAN-1)(N_BITS_PER_BIN-1 downto 0);
+    type slv_2darray is array (natural range <>) of slv_array(0 to NCHAN_PER_CLK-1)(N_BITS_PER_BIN-1 downto 0);
     signal corr_in_tdata: slv_2darray(0 to NCORR-1);
     signal corr_in_tlast: std_logic_vector(0 to NCORR-1);
     signal corr_in_tvalid: std_logic_vector(0 to NCORR-1);
@@ -205,8 +205,8 @@ begin
 			-- split the input word into NCORR correlator inputs and N channels
 			for corr in 0 to NCORR-1 loop
                 rcorr := NCORR-1-corr;
-				for chan in 0 to NCHAN-1 loop
-				    rchan := NCHAN-1-chan;
+				for chan in 0 to NCHAN_PER_CLK-1 loop
+				    rchan := NCHAN_PER_CLK-1-chan;
 				    lsb := N_BITS_PER_BIN*(rcorr*NCHAN_PER_CLK + rchan);
 					corr_in_tdata(corr)(chan) <= s_axis_data_tdata(lsb + N_BITS_PER_BIN -1 downto lsb);
 				end loop;
