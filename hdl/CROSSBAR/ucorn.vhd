@@ -70,7 +70,7 @@ use work.chFPGA_Package.ALL;
 -- The remaining address bins (frame and bank) are taken from paging registers. There are 32 pages of 64Kbytes.
 -- Writing one 64K  page might require multiple transactions as to not overflow the command buffers and the Ethernet MTU.
 
-entity uram_ct is
+entity ucorn is
 	generic (
 		SIM: boolean := false
 	);
@@ -101,9 +101,9 @@ entity uram_ct is
 
 	-- areset: in std_logic --! asynchronous reset
 	);
-end entity uram_ct;
+end entity ucorn;
 
-architecture impl of uram_ct is
+architecture impl of ucorn is
 
 	signal control_bytes: slv8_array(0 to 7);
 	signal status_bytes: slv8_array(0 to 2);
@@ -136,14 +136,14 @@ architecture impl of uram_ct is
 	signal tx_length: unsigned(7 downto 0);
 	signal tx_enable: std_logic;
 	signal tx_reset: std_logic;
-	signal play_ram_wr_en: std_logic;
-	signal play_ram_wr_byte_en: std_logic_vector(0 downto 0);
+	--signal play_ram_wr_en: std_logic;
+	--signal play_ram_wr_byte_en: std_logic_vector(0 downto 0);
 	signal play_ram_rd_addr: unsigned(12 downto 0);
 	signal play_ram_rd_en: std_logic;
 	signal play_ram_dout: std_logic_vector(15 downto 0);
 	signal bsb_ram_sel: std_logic;
-
-	signal in_frame_ctr: unsigned(7 downto 0);
+	signal mask_ram_sel: std_logic;
+ 	signal in_frame_ctr: unsigned(7 downto 0);
 	signal out_frame_ctr: unsigned(7 downto 0);
 	signal cmd_rdy_out: axis8_rdy_struct;
 	signal rply_dat_out: axis8_dat_struct;
@@ -213,16 +213,16 @@ begin
 
 	-- CONTROL byte 0
 
-	bsb_ram_sel   <= control_bytes(0)(5); -- write data target:  0: data buffer, 1: playlist buffer
-	bsb_ram_bank  <= control_bytes(0)(4);
+	bsb_ram_sel   <= control_bytes(0)(5); -- write data target:  0: data buffer, 1: playlist/mask buffer
+	bsb_ram_bank  <= control_bytes(0)(4); -- if bsb_ram_sel=0, selects rd/wr bank; if bsb_ram_sel=1, selects playlist memory (0) or mask memory (1)
 	bsb_ram_frame <= control_bytes(0)(3 downto 0);
 
 	-- CONTROL byte 1
-	rx_write_enable      <= control_bytes(1)(7); -- When '1', incoming data is written to the data buffer.
+	rx_write_enable      <= control_bytes(1)(7); -- When '1', incoming data is written to the data buffer, otherwise incoming data is not written.
 	tx_trig_sel          <= control_bytes(1)(6); -- 0: Data transmission starts when an incoming frame set is completed; 1: data transmission starts every `TX_PERIOD` clocks.
 	tx_enable            <= control_bytes(1)(5); -- '1' to enable data transmission. '0' data transmission is muted.
 	tx_reset             <= control_bytes(1)(4); -- '1' resets the data transmitter
-	tx_toggle_bank       <= control_bytes(1)(3);
+	tx_toggle_bank       <= control_bytes(1)(3); -- '1' allows the read and write banks to alternate. Normally '0' for generating test patterns, and '1' for live data.
 	tx_insert_timestamp  <= control_bytes(1)(2);
 	rx_mask_low_bins     <= control_bytes(1)(1);
 	tx_override_data     <= control_bytes(1)(0);
@@ -311,46 +311,98 @@ begin
 
 	end generate uram_row_gen;
 
+
+
 	-- Write the incoming data to the 4x4 UltraRAM cell array.
 	--
 	-- Bins form one frame are written in all cells in one row.
 	-- Consecutive frames are written in consecutive rows.
 	-- Consecutive sets of 16 frames are stored in alternate banks.
 	-- One row stores two banks of 4 frames.
-	ram_wr_block: block
-		signal bin_ctr: unsigned(10 downto 0); -- 8k/4 = 2k bins -- we recive and count 4 bins at a time
+	ram_wr_block: block is
+		signal word_ctr: unsigned(10 downto 0); -- 8k/4 = 2k bins -- we recive and count 4 bins at a time
 		signal frame_ctr: unsigned(3 downto 0); -- 16 frames per bank
+		signal mask_ram_dout_pre: std_logic_vector(3 downto 0);
 	--    signal bin_frame_ctr: unsigned(14 downto 0); -- 8k bins/4 * 16 frames
+
+	signal ram_wr_addr_pre: std_logic_vector(13 downto 0);
+	signal ram_din_pre: std_logic_vector(255 downto 0);
+	signal ram_wr_row_en_pre: std_logic_vector(3 downto 0);  -- one for each row
+	signal ram_wr_bsb_byte_en_pre: std_logic_vector(31 downto 0);  -- enable for each of the 32 bytes across the row
+	signal use_mask_byte_en_pre: std_logic;
 	begin
 
-		ram_wr_proc: process(clk)
+
+		-- Write mask RAM
+		mask_ram0: xpm_memory_sdpram
+			generic map (
+				MEMORY_PRIMITIVE => "block",      -- force the use of block ram
+				CLOCKING_MODE => "common_clock", -- BSB is FIFO'ed in the data clock domain
+				-- write bus A
+				ADDR_WIDTH_A       => 10,        -- 8k bins/ 8 bits/byte (10 bits), 1024 bytes
+				WRITE_DATA_WIDTH_A => 8,        -- 8 byte (64 bits) wide write bus
+				BYTE_WRITE_WIDTH_A => 8,          -- We use 8-bit-wide-byte-enabled write, i.e. we have 8 byte enable bits
+				-- Read bus B
+				ADDR_WIDTH_B      => 11,         -- 8K bits/4 bits = 2K,
+				READ_DATA_WIDTH_B => 4,         -- 4 bits per word, 1 bit per bin
+				MEMORY_SIZE => 8192,         -- Number of bins
+				READ_LATENCY_B => 1,             -- Need the data immediately.
+				SIM_ASSERT_CHK => 1,             -- DECIMAL; 0=disable simulation messages, 1=enable simulation messages
+				WRITE_MODE_B  => "read_first",     -- has to be read_first for assymetrical data ports, otherwise raises error on synthesis
+				WRITE_PROTECT => 1               -- DECIMAL
+			)
+			port map (
+				-- Write port
+				dina  => bsb_ram_din,
+				addra => bsb_ram_addr(9 downto 0),
+				ena   => bsb_ram_en and bsb_ram_sel and bsb_ram_bank,
+				wea   => (0 => bsb_ram_we),
+
+				-- read port
+				doutb(3 downto 0)  => mask_ram_dout_pre, -- Byte written at low address on din appears in LSB in dout
+				addrb              => std_logic_vector(word_ctr),
+				enb                => '1',
+
+				-- clock and reset
+				clka => clk,
+				rstb => rst,
+
+				-- unused signals
+				sleep          => '0',
+				injectsbiterra => '0',
+				injectdbiterra => '0',
+				regceb         => '1',
+				clkb           => '0'
+			);
+
+		ram_wr_proc: process(all)
 
 			variable row, byte: integer;
 			variable bank: std_logic;                     -- 2 banks
 			variable frame: std_logic_vector(3 downto 0); -- 16 frames
 			variable bin: std_logic_vector(10 downto 0);  -- 8k/4 = 2k bins
 			variable wr_en: std_logic;
+			variable rcol: integer;
 
 		begin
 			if rising_edge(clk) then
 				wr_en := '0'; -- overriden below
-				bin := std_logic_vector(bin_ctr);
+				bin := std_logic_vector(word_ctr);
 				frame := std_logic_vector(frame_ctr);
 				bank := wr_bank;
 
 				-- Always set byte enables and din by default to make sure we don't infer unnecessary enables
-				ram_wr_byte_en <= (others => '1'); -- we write all 32 bytes (4 columns) by default
-				ram_din <= s_axis_in_tdata;
-				if s_axis_in_tvalid = '1' then
-					in_frame_ctr <= in_frame_ctr + 1;
-
-					bin_ctr <= bin_ctr + 1; -- we receive bins 4 at a time
+				use_mask_byte_en_pre <= '1';
+				ram_din_pre <= s_axis_in_tdata;
+				if s_axis_in_tvalid then
+					word_ctr <= word_ctr + 1; -- Each word contains 4 bins
 					-- Write data unless we rx_mask_low_bins=1 and we are receiving bins 0-127
-					if not(rx_mask_low_bins = '1' and bin_ctr(10 downto 5) = 0) then  -- 128 bins / (4 bins/count) = 32 counts = last 5 bits
-						wr_en := rx_write_enable;
-					end if;
+					--if not(rx_mask_low_bins = '1' and word_ctr(10 downto 5) = 0) then  -- 128 bins / (4 bins/count) = 32 counts = last 5 bits
+					wr_en := rx_write_enable;
+--					end if;
 					if s_axis_in_tlast = '1' then
-						bin_ctr <= (others => '0');
+						in_frame_ctr <= in_frame_ctr + 1; -- counts frames for debugging only
+						word_ctr <= (others => '0');
 						frame_ctr <= frame_ctr + 1;
 						if frame_ctr = 15 then
 							wr_bank <= not wr_bank;
@@ -359,32 +411,47 @@ begin
 				end if;
 
 				--  Write from BSB overrides incoming stream write
-				if bsb_ram_en = '1' and bsb_ram_we = '1' and bsb_ram_sel = '0' then
+				if bsb_ram_en and bsb_ram_we and not bsb_ram_sel then
 					byte := to_integer(unsigned(not bsb_ram_addr(4 downto 0))); -- 8 channels * 4 cols = 32 bytes, addr 0 = byte 31
 					bin := bsb_ram_addr(15 downto 5);
 					frame := bsb_ram_frame;
 					bank := bsb_ram_bank;
 
 					wr_en := '1';
-					ram_wr_byte_en <= (others => '0');
-					ram_wr_byte_en(byte) <= '1';
-
+					ram_wr_bsb_byte_en_pre <= (others => '0');
+					ram_wr_bsb_byte_en_pre(byte) <= '1';
+					use_mask_byte_en_pre <= '0';
 					for i in 0 to 31 loop
-						ram_din(8 * i + 7 downto 8 * i) <= bsb_ram_din;
+						ram_din_pre(8 * i + 7 downto 8 * i) <= bsb_ram_din;
 					end loop;
 
 				end if;
 
 				-- generate address and row enable
-				ram_wr_addr <= bank & frame(3 downto 2) & bin; -- 1 + 2 + 11 = 14 bits, 16 kwords = 128 kB/cell = 4x32 kB
+				ram_wr_addr_pre <= bank & frame(3 downto 2) & bin; -- 1 + 2 + 11 = 14 bits, 16 kwords = 128 kB/cell = 4x32 kB
 				row := to_integer(unsigned(not frame(1 downto 0)));
-				ram_wr_row_en <= (others => '0'); -- overriden below
-				ram_wr_row_en(row) <= wr_en;
+				ram_wr_row_en_pre <= (others => '0'); -- overriden below
+				ram_wr_row_en_pre(row) <= wr_en;
+
+				-- On this clock, the address, data and row enables are ready in pre, as well as the BSB byte enable and mask RAM 4-bit output.
+				-- We pipeline those to ease routing, and also compute the final byte mask patten.
+				ram_din <= ram_din_pre;
+				ram_wr_row_en <= ram_wr_row_en_pre;
+				ram_wr_addr <= ram_wr_addr_pre;
+				-- Assign the byte enable from either the BSB write logic or the MASK RAM
+				if use_mask_byte_en_pre then
+					for col in 0 to 3 loop
+						rcol := 3 - col;
+						ram_wr_byte_en(8 * col + 7 downto 8 * col) <= (others => mask_ram_dout_pre(rcol)); -- Select which bin is written. Mask bit 0 selects bin in the MSB, i.e. the first to be transmitted.
+					end loop;
+				else
+					ram_wr_byte_en <= ram_wr_bsb_byte_en_pre;
+				end if; -- use_mask_byte_en
 
 				if rst = '1' then
 					-- bin_frame_ctr <= (others => '0');
 					frame_ctr <= (others => '0');
-					bin_ctr <= (others => '0');
+					word_ctr <= (others => '0');
 					wr_bank <= '0';
 					in_frame_ctr <= (others => '0');
 				end if; -- rst
@@ -396,6 +463,7 @@ begin
 	play_ram0: xpm_memory_sdpram
 		generic map (
 			MEMORY_PRIMITIVE => "auto",      -- force the use of UltraRAM
+			CLOCKING_MODE => "common_clock", -- BSB is FIFO'ed in the data clk domain
 			-- write bus A
 			ADDR_WIDTH_A       => 14,               -- 4k (12 bits) per URAM, +2 because we cascade 4 of them.
 			WRITE_DATA_WIDTH_A => 8,        -- 8 byte (64 bits) wide write bus
@@ -403,19 +471,9 @@ begin
 			-- Read bus B
 			ADDR_WIDTH_B      => 13,               -- same
 			READ_DATA_WIDTH_B => 16,         -- 8 byte (64 bits) wide read bus
-			-- CASCADE_HEIGHT => 0,             -- Auto detect
-			-- MEMORY_OPTIMIZATION => "true",   -- String
 			MEMORY_SIZE => 16 * 8192,         -- 64-bit word * 4096 words/URAM * 4 URAMs
-			-- MESSAGE_CONTROL => 0,            -- DECIMAL
 			READ_LATENCY_B => 1,             -- Needs to be >= of cascade height to allow registering.
-			-- READ_RESET_VALUE_B => "0",       -- String
-			-- RST_MODE_A => "SYNC",            -- String
-			-- RST_MODE_B => "SYNC",            -- String
 			SIM_ASSERT_CHK => 1,             -- DECIMAL; 0=disable simulation messages, 1=enable simulation messages
-			-- USE_EMBEDDED_CONSTRAINT => 0,    -- DECIMAL
-			-- USE_MEM_INIT => 1,               -- DECIMAL
-			-- USE_MEM_INIT_MMI => 0,           -- DECIMAL
-			-- WAKEUP_TIME => "disable_sleep",  -- String
 			WRITE_MODE_B  => "read_first",     -- has to be read_first for assymetrical data ports, otherwise raises error on synthesis
 			WRITE_PROTECT => 1               -- DECIMAL
 		)
@@ -423,8 +481,8 @@ begin
 			-- Write port
 			dina  => bsb_ram_din,
 			addra => bsb_ram_addr(13 downto 0),
-			ena   => play_ram_wr_en,
-			wea   => play_ram_wr_byte_en,
+			ena   => bsb_ram_en and bsb_ram_sel and not bsb_ram_bank,
+			wea   => (0 => bsb_ram_we),
 
 			-- read port
 			doutb(7 downto 0)  => play_ram_dout(15 downto 8), -- Byte written at low address on din appears in LSB in dout
@@ -433,7 +491,7 @@ begin
 			enb                => play_ram_rd_en,
 
 			-- clock and reset
-			clka => clk,
+			clka => clk, -- Clocks ports A and B in common clock mode
 			rstb => rst,
 
 			-- unused signals
@@ -441,11 +499,8 @@ begin
 			injectsbiterra => '0',
 			injectdbiterra => '0',
 			regceb         => '1',
-			clkb           => '0'
+			clkb           => '0' -- not used in common clock mode
 		);
-
-	play_ram_wr_en      <= bsb_ram_en and bsb_ram_sel;
-	play_ram_wr_byte_en <= (0 => bsb_ram_we);
 
 	-- Reads data from 4x4 UltraRAM cell array in the specified order.
 	--
@@ -591,9 +646,7 @@ begin
 				tlast_reg <= tlast(tvalid'RIGHT);
 
 				-- keep track of output frames for debugging
-				if tvalid_reg = '1' and tlast_reg = '1' then
-					out_frame_ctr <= out_frame_ctr + 1;
-				end if;
+				out_frame_ctr <= out_frame_ctr + 1 when tvalid_reg and tlast_reg;
 
 				-- increment timestamp
 				if eot(eot'RIGHT) = '1' then
