@@ -49,9 +49,7 @@ entity system is
 		CT_LEVEL: integer;
 		NUMBER_OF_CROSSBAR_INPUTS: integer;
 		NUMBER_OF_CROSSBAR1_OUTPUTS: integer;
-		NUMBER_OF_BP_SHUFFLE_LINKS: integer;
-        NUMBER_OF_BP_SHUFFLE_REFCLKS: integer;
-        NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer;
+        NUMBER_OF_CT_REFCLKS: integer;
         -- Real-time data link info
 
 		NUMBER_OF_GPU_LINKS: integer;
@@ -264,7 +262,7 @@ entity system is
 		fmc_mgt_pll_refclk_div2: in std_logic_vector(0 to max(NUMBER_OF_ADC_BOARDS, 4) - 1);
 		gpu_refclk_div2: in std_logic_vector(0 to NUMBER_OF_GPU_REFCLKS - 1);
 		gpu_txclk_div2: in std_logic;
-		bp_shuffle_refclk_div2: in std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_REFCLKS - 1);
+		bp_shuffle_refclk_div2: in std_logic_vector(0 to NUMBER_OF_CT_REFCLKS - 1);
 		bp_shuffle_txclk_div2: in std_logic;
 		ct_clk_div2: in std_logic;
 		corr_clk_div2: in std_logic;
@@ -610,7 +608,6 @@ begin
 				-- Corner-turn Engine Info
 				CT_TYPE                     => CT_TYPE,
 				CT_LEVEL                    => CT_LEVEL,
-				NUMBER_OF_BP_SHUFFLE_LINKS  => NUMBER_OF_BP_PCB_SHUFFLE_LANES,
 				NUMBER_OF_CROSSBAR_INPUTS   => NUMBER_OF_CROSSBAR_INPUTS,
 				NUMBER_OF_CROSSBAR1_OUTPUTS => NUMBER_OF_CROSSBAR1_OUTPUTS,
 				NUMBER_OF_GPU_LINKS         => NUMBER_OF_GPU_LINKS,
@@ -979,7 +976,7 @@ begin
 
 		freq_ctr_in_vect(26) <= gpu_txclk_div2;
 
-		gen_freq27: if NUMBER_OF_BP_SHUFFLE_REFCLKS > 0 generate
+		gen_freq27: if NUMBER_OF_CT_REFCLKS > 0 generate
 			freq_ctr_in_vect(27) <= bp_shuffle_refclk_div2(0); -- MGT
 		end generate gen_freq27;
 
@@ -994,7 +991,7 @@ begin
 		freq_ctr_in_vect(36) <= clk10_div2; -- MGT
 		freq_ctr_in_vect(37) <= mgt_clk125_div2; -- MGT
 
-		gen_freq38: if NUMBER_OF_BP_SHUFFLE_REFCLKS > 1 generate
+		gen_freq38: if NUMBER_OF_CT_REFCLKS > 1 generate
 			freq_ctr_in_vect(38) <= bp_shuffle_refclk_div2(1); -- MGT
 		end generate gen_freq38;
 

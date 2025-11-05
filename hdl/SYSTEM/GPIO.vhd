@@ -74,7 +74,6 @@ entity GPIO is
 		CT_LEVEL: integer;
 		NUMBER_OF_CROSSBAR_INPUTS: integer;
 		NUMBER_OF_CROSSBAR1_OUTPUTS: integer;
-		NUMBER_OF_BP_SHUFFLE_LINKS: integer;
 		NUMBER_OF_GPU_LINKS: integer;
 
 		-- Correlator info
@@ -521,7 +520,7 @@ begin
 	-- |         |     | 5:0  | (unused)                    | |
 	-- |         |  34 | 7:0  | cmd_packet_counter          | Number of command packets received |
 	-- |         |  35 | 7:0  | rply_packet_counter         | Number of replies sent |
-	-- |         |  36 | 7:0  | NUMBER_OF_BP_SHUFFLE_LINKS  | Number of GTY links in the corner-turn engine (both backplane PCB and backplane QSDP links) |
+	-- |         |  36 | 7:0  | (unused)                    | (unused) |
 	-- |         |  37 |  7   | core_reg_wr_en              | (debug) High when writing to the core register is allowed |
 	-- |         |     |  6   | bp_gpio_int_in              | IceBoard I/O |
 	-- |         |     |  5   | gpio_irq_in                 | IceBoard I/O |
@@ -728,7 +727,7 @@ begin
 
 	-- STATUS Byte 36 - Corner-turn engine config Part 2
 
-	status_bytes(36) <= to_slv(NUMBER_OF_BP_SHUFFLE_LINKS, 8);
+	status_bytes(36) <= (others => '0'); -- Unused
 
 	-- STATUS Byte 37: IceBoard Extra I/Os
 
