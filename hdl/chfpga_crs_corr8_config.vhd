@@ -9,6 +9,8 @@ package chfpga_config is
 
 	constant CONFIG_NUMBER_OF_ADCS: integer := 8; -- Number of ADC inputs that are connected
 
+	-- F-Engine/channelizer configuration
+
 	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean := TRUE;
 	constant CONFIG_CHAN_FFT_TYPE: fft_type_enum := CHORD; -- 14 bit samples, 8 samples/word, 16384 samples/frame, 32+32 bit output
 	constant CONFIG_CHAN_CAPTURE_TYPE: chan_capture_type_enum := UCAP;
@@ -25,8 +27,8 @@ package chfpga_config is
 	constant CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS: integer         := 0; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
 	constant CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := 0;
 	constant CONFIG_NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := 0;
-	constant CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS: integer          := 3; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
-	constant CONFIG_NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := 1;
+	--constant CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS: integer          := 3; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
+	--constant CONFIG_NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := 1;
 
 	-- Correlator
 

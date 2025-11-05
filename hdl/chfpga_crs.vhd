@@ -75,16 +75,18 @@ entity chfpga_crs is
 		CT_LEVEL: integer                        := CONFIG_CT_LEVEL;
 		NUMBER_OF_CROSSBAR_INPUTS: integer       := CONFIG_NUMBER_OF_CROSSBAR_INPUTS; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
 		NUMBER_OF_CROSSBAR1_OUTPUTS: integer     := CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
-		NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer  := CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES;
-		NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer := CONFIG_NUMBER_OF_BP_QSFP_SHUFFLE_LANES;
-		BP_SHUFFLE_LANE_TO_LINK_MAP: integer_array   := (-1, 6, 8, 10); -- List indicating the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
-		BP_SHUFFLE_LINK_TO_QUAD_MAP: integer_array   := (
+		-- List indicating the GTY link number associated to each lane. -1 means a bypass  lane (no
+		-- GTY, stays internal to the board). Links that are listed in the LINK_TO_QUAD map but are
+		-- not in this list will have minimal low-level logic (i.e. enough for BER tests).
+		CT_LANE_TO_LINK_MAP: integer_array   := CONFIG_CT_LANE_TO_LINK_MAP;
+		-- List Indicating which quad is associated to each GTY link. ``len(list)`` GTY links and ``max(list)+1`` QPLLs will be implemented.
+		CT_LINK_TO_QUAD_MAP: integer_array   := (
 				0 to 3 => 0,
 				4 to 7 => 1,
-				8 to 11 => 2); -- Indicates which quad is associated to each GTY link.
-		BP_SHUFFLE_QUAD_TO_REFCLK_MAP: integer_array := (1, 0, 0); -- Indicates which refclk is associated with each QUAD
-		NUMBER_OF_BP_SHUFFLE_LINKS: integer      := BP_SHUFFLE_LINK_TO_QUAD_MAP'LENGTH; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
-		NUMBER_OF_BP_SHUFFLE_REFCLKS: integer    := max(BP_SHUFFLE_QUAD_TO_REFCLK_MAP) + 1;
+				8 to 11 => 2);
+		-- Indicates which refclk is associated with each QUAD. max(list)+1 REFCLKs will be implemented.
+		CT_QUAD_TO_REFCLK_MAP: integer_array := (1, 0, 0);
+
 
 		-- Correlator config
 
@@ -109,8 +111,10 @@ entity chfpga_crs is
 
 		-- Derived parameters
 
-		NUMBER_OF_GPU_LINKS: integer                 := sel(GPU_LINK_TYPE /= NONE, GPU_CHANNEL_QUAD'LENGTH, 0); -- Number of 100Gb Ethernet links. 0 if if GPU_LINK_TYPE is "NONE"
-		NUMBER_OF_GPU_REFCLKS: integer               := max(GPU_QUAD_REFCLK)+1 -- Number of Reference clocks provided for the 100GE links.
+		NUMBER_OF_CT_LINKS: integer    := CT_LINK_TO_QUAD_MAP'LENGTH; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
+		NUMBER_OF_CT_REFCLKS: integer  := max(CT_QUAD_TO_REFCLK_MAP) + 1;
+		NUMBER_OF_GPU_LINKS: integer   := sel(GPU_LINK_TYPE /= NONE, GPU_CHANNEL_QUAD'LENGTH, 0); -- Number of 100Gb Ethernet links. 0 if if GPU_LINK_TYPE is "NONE"
+		NUMBER_OF_GPU_REFCLKS: integer := max(GPU_QUAD_REFCLK)+1 -- Number of Reference clocks provided for the 100GE links.
 
 
 	);
@@ -160,12 +164,12 @@ entity chfpga_crs is
 
 		-- Corner-turn engine shuffle links
 
-		bp_shuffle_tx_p: out std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS - 1);
-		bp_shuffle_tx_n: out std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS - 1);
-		bp_shuffle_rx_p: in std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS - 1);
-		bp_shuffle_rx_n: in std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS - 1);
-		bp_shuffle_refclk_p: in std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_REFCLKS - 1);
-		bp_shuffle_refclk_n: in std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_REFCLKS - 1);
+		bp_shuffle_tx_p: out std_logic_vector(0 to NUMBER_OF_CT_LINKS - 1);
+		bp_shuffle_tx_n: out std_logic_vector(0 to NUMBER_OF_CT_LINKS - 1);
+		bp_shuffle_rx_p: in std_logic_vector(0 to NUMBER_OF_CT_LINKS - 1);
+		bp_shuffle_rx_n: in std_logic_vector(0 to NUMBER_OF_CT_LINKS - 1);
+		bp_shuffle_refclk_p: in std_logic_vector(0 to NUMBER_OF_CT_REFCLKS - 1);
+		bp_shuffle_refclk_n: in std_logic_vector(0 to NUMBER_OF_CT_REFCLKS - 1);
 
 		-- Buck sync signals
 
@@ -236,7 +240,7 @@ architecture impl of chfpga_crs is
 	attribute DONT_TOUCH: string;
 	attribute IOB: string;
 
-	signal bp_shuffle_tx_p_int, bp_shuffle_tx_n_int: std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS - 1);
+	signal bp_shuffle_tx_p_int, bp_shuffle_tx_n_int: std_logic_vector(0 to NUMBER_OF_CT_LINKS - 1);
 	-- Tell the tools not to infer buffers and autoplace IO ports for the following if the ports are not connected
 	-- If 100GE is not implemented, the placer assigns random IOs to these ports, and since those have no specifiec IO standard, the bitstream
 	-- fails its DRC.
@@ -846,14 +850,9 @@ begin
 			CT_LEVEL                    => CT_LEVEL,
 			NUMBER_OF_CROSSBAR_INPUTS   => NUMBER_OF_CROSSBAR_INPUTS,
 			NUMBER_OF_CROSSBAR1_OUTPUTS => NUMBER_OF_CROSSBAR1_OUTPUTS,
-
-			NUMBER_OF_BP_PCB_SHUFFLE_LANES  => NUMBER_OF_BP_PCB_SHUFFLE_LANES,
-			NUMBER_OF_BP_QSFP_SHUFFLE_LANES => NUMBER_OF_BP_QSFP_SHUFFLE_LANES,
-			--NUMBER_OF_BP_SHUFFLE_LINKS      => NUMBER_OF_BP_SHUFFLE_LINKS,
-			--NUMBER_OF_BP_SHUFFLE_REFCLKS    => NUMBER_OF_BP_SHUFFLE_REFCLKS,
-			BP_SHUFFLE_LANE_TO_LINK_MAP => BP_SHUFFLE_LANE_TO_LINK_MAP,
-			BP_SHUFFLE_LINK_TO_QUAD_MAP => BP_SHUFFLE_LINK_TO_QUAD_MAP,
-			BP_SHUFFLE_QUAD_TO_REFCLK_MAP => BP_SHUFFLE_QUAD_TO_REFCLK_MAP,
+			CT_LANE_TO_LINK_MAP => CT_LANE_TO_LINK_MAP,
+			CT_LINK_TO_QUAD_MAP => CT_LINK_TO_QUAD_MAP,
+			CT_QUAD_TO_REFCLK_MAP => CT_QUAD_TO_REFCLK_MAP,
 			-- Real time Ethernet data streaming interface
 
 			GPU_LINK_TYPE         => GPU_LINK_TYPE,
