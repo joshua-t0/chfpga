@@ -44,16 +44,15 @@ set_property IS_SOFT FALSE [get_pblocks CGE]
 
 create_pblock UCORN
 add_cells_to_pblock [get_pblocks UCORN] [get_cells -quiet [list chfpga0/GPU_GEN.gpu_sel_gen.cge_case.uram0]]
-resize_pblock [get_pblocks UCORN] -add {SLICE_X15Y180:SLICE_X19Y419 SLICE_X13Y220:SLICE_X14Y239}
-resize_pblock [get_pblocks UCORN] -add {RAMB18_X1Y88:RAMB18_X1Y95}
-resize_pblock [get_pblocks UCORN] -add {RAMB36_X1Y44:RAMB36_X1Y47}
+resize_pblock [get_pblocks UCORN] -add {SLICE_X15Y180:SLICE_X19Y419 SLICE_X13Y220:SLICE_X14Y249}
+resize_pblock [get_pblocks UCORN] -add {RAMB18_X1Y88:RAMB18_X1Y99}
+resize_pblock [get_pblocks UCORN] -add {RAMB36_X1Y44:RAMB36_X1Y49}
 set_property EXCLUDE_PLACEMENT 1 [get_pblocks UCORN]
 set_property IS_SOFT FALSE [get_pblocks UCORN]
 
 
 
 create_pblock CORN
-add_cells_to_pblock [get_pblocks CORN] [get_cells -quiet [list chfpga0/ct_gen.uct_case.ct0]]
 resize_pblock [get_pblocks CORN] -add {SLICE_X6Y360:SLICE_X11Y419 SLICE_X0Y330:SLICE_X5Y419}
 resize_pblock [get_pblocks CORN] -add {BUFG_GT_X0Y144:BUFG_GT_X0Y191}
 resize_pblock [get_pblocks CORN] -add {BUFG_GT_SYNC_X0Y90:BUFG_GT_SYNC_X0Y119}
@@ -61,6 +60,8 @@ resize_pblock [get_pblocks CORN] -add {DSP48E2_X0Y144:DSP48E2_X0Y167}
 resize_pblock [get_pblocks CORN] -add {RAMB18_X0Y144:RAMB18_X0Y167}
 resize_pblock [get_pblocks CORN] -add {RAMB36_X0Y72:RAMB36_X0Y83}
 set_property IS_SOFT FALSE [get_pblocks CORN]
+add_cells_to_pblock [get_pblocks CORN] [get_cells -quiet [list chfpga0/ct_gen.uct_case.ct0]]
+
 
 
 
