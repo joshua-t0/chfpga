@@ -135,11 +135,18 @@ type BUFMRIndexArrayArray is  array (NATURAL RANGE <>) of BUFMRIndexArray;
 subtype PortOffset is std_logic_vector(1 downto 0);
 type PortOffsetArray is array (natural range <>) of PortOffset;
 
-type si_map_entry is record -- string-integer tuple
+-- Implement static maps (dictionaries) for lookups. See sel() to lookup.
+type si_map_item is record -- string-integer map element
 	key: string;
 	value: integer;
 end record;
-type si_map_array is array (NATURAL RANGE <>) of si_map_entry; -- string-integer map as a list of string-integer tuples
+type si_map is array (NATURAL RANGE <>) of si_map_item; -- string-integer map as a list of string-integer tuples
+
+type ii_map_item is record -- integer-integer map element
+	key: integer;
+	value: integer;
+end record;
+type ii_map is array (NATURAL RANGE <>) of ii_map_item; -- string-integer map as a list of string-integer tuples
 
 --type ADCOut is array (0 to 7) of STD_LOGIC_VECTOR(31 downto 0); -- 8 64-bit words provided by the two ADCs ;
 
@@ -655,7 +662,8 @@ function sel(b: BOOLEAN; if_true: std_logic; if_false: std_logic) return std_log
 function sel(b: BOOLEAN; if_true: std_logic_vector; if_false: std_logic_vector) return std_logic_vector;
 function sel(b: BOOLEAN; if_true: slv32_array; if_false: slv32_array) return slv32_array;
 function sel(b: std_logic; if_true: std_logic_vector; if_false: std_logic_vector) return std_logic_vector;
-FUNCTION sel(key:string; si_map: si_map_array) return integer;
+function sel(key:string; imap: si_map) return integer;
+function sel(key:integer; imap: ii_map) return integer;
 
 
 FUNCTION max_value(v:signed) return integer;
@@ -1269,14 +1277,24 @@ begin
 	end if;
 end sel;
 
-FUNCTION sel(key:string; si_map: si_map_array) return integer is
+FUNCTION sel(key:string; imap: si_map) return integer is
 begin
-    for i in 0 to si_map'LENGTH-1 loop
-        if si_map(i).key = key then
-            return si_map(i).value;
+    for i in 0 to imap'LENGTH-1 loop
+        if imap(i).key = key then
+            return imap(i).value;
         end if;
     end loop;
     assert FALSE report "Invalid key: " & key severity failure;
+end sel;
+
+FUNCTION sel(key:integer; imap: ii_map) return integer is
+begin
+    for i in 0 to imap'LENGTH-1 loop
+        if imap(i).key = key then
+            return imap(i).value;
+        end if;
+    end loop;
+    assert FALSE report "Invalid key: " & to_string(key) severity failure;
 end sel;
 
 function repeat( V: std_logic_vector; N: natural) return std_logic_vector is
