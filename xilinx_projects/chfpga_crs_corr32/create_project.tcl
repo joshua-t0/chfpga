@@ -1,4 +1,4 @@
-#!/usr/bin/env -S vivado -mode batch -source
+#!/usr/bin/env -S vivado -mode batch -notrace -source
 #*****************************************************************************************
 # Vivado (TM) v2022.2 (64-bit)
 #
@@ -13,9 +13,12 @@
 
 
 
-# cd to the script folder
 
-cd [file dirname [info script]]
+# Set the project directory for source file relative paths (by default the value is script directory path)
+set proj_dir [file normalize [file dirname [info script]]]
+
+# cd to the script folder
+cd $proj_dir
 
 # Set the project name based on the folder name
 set proj_name [file tail [pwd]]
@@ -23,9 +26,6 @@ set proj_name [file tail [pwd]]
 # Set the repo directory to access files outside of the project dir
 # We assume we are two levels down from the repo root, e.g. repo_dir/xilinx_projects/my_project_name/.
 set repo_dir [file normalize "../../"]
-
-# Set the project directory for source file relative paths (by default the value is script directory path)
-set proj_dir [pwd]
 
 puts ""
 puts "------------------------------------------------------------------------------------------------------------"
@@ -39,11 +39,31 @@ set target_part "xczu47dr-ffvg1517-1-i"
 
 # Regenerate block design
 set bd_name "zynq_tcpipe_crs"
-set bd_dir "${repo_dir}/hdl/TCPIPE/"
-set ::origin_dir_loc ${bd_dir}
-if { ![file exists "${bd_dir}/${bd_name}"]} {
+set bd_dir "${repo_dir}/hdl/TCPIPE"
+if { ![file exists "${bd_dir}/${bd_name}/${bd_name}.bd"]} {
+  puts ""
+  puts "    -----------------------------------------------"
+  puts "    Creating block diagram ${bd_name}.bd in folder ${bd_dir}/${bd_name}"
+  puts "    -----------------------------------------------"
+  puts ""
+
+  # The tcl script that builds the block diagram will put it in the folder specified in the global
+  # variable ::origin_dir_loc. Since a project is not currently open, it will create a project
+  # 'myproj' in the current directory and will fail if that project already exists, so we have to
+  # delete it beforehand.
+  set ::origin_dir_loc ${bd_dir}
+  file delete -force "$bd_dir/myproj"
+  cd $bd_dir
   source "${bd_dir}/${bd_name}.tcl"
+  file delete -force "$bd_dir/myproj"
+  cd $proj_dir
 }
+
+puts ""
+puts "    -----------------------------------------------"
+puts "    Gathering project files"
+puts "    -----------------------------------------------"
+puts ""
 
 # # BD files, path relative to the bd_dir
 set bd_files [list \
@@ -154,6 +174,12 @@ foreach f $util_files {lappend full_util_files [file normalize "$proj_dir/$f"]}
 # Check if all files required for this script exist
 # --------------------------------------------------
 
+puts ""
+puts "    -----------------------------------------------"
+puts "    Checking project files"
+puts "    -----------------------------------------------"
+puts ""
+
 set missing_file false
 
 # Check files
@@ -179,12 +205,18 @@ if { $missing_file } {
 
 
 
+puts ""
+puts "    -----------------------------------------------"
+puts "    Create project"
+puts "    -----------------------------------------------"
+puts ""
+
 
 # Create project
 create_project -force ${proj_name} . -part $target_part
 
 # Set the directory path for the new project
-set proj_dir [get_property directory [current_project]]
+# set proj_dir [get_property directory [current_project]]
 
 # Set project properties
 set obj [current_project]
@@ -303,6 +335,12 @@ catch {
 }
 
 
+puts ""
+puts "    -----------------------------------------------"
+puts "    Setting-up runs"
+puts "    -----------------------------------------------"
+puts ""
+
 # Create 'synth_1' run (if not found)
 if {[string equal [get_runs -quiet synth_1] ""]} {create_run -name synth_1 -part $target_part -constrset constrs_1}
 
@@ -362,6 +400,12 @@ catch {
  }
 }
 
+puts ""
+puts "    -----------------------------------------------"
+puts "    Generate FFT OOC"
+puts "    -----------------------------------------------"
+puts ""
+
 # Create FFT OOC run and set its synth directive
 set file_obj  [get_files -filter {NAME =~ "*pfb_fft_bitgrowth_0.xci"}]
 generate_target all $file_obj
@@ -371,6 +415,11 @@ create_ip_run $file_obj -force
 set ip_run [get_runs *fft_bitgrowth*synth*]
 set_property strategy "Flow_PerfOptimized_high" -objects $ip_run
 
+puts ""
+puts "    -----------------------------------------------"
+puts "    Project creation successful"
+puts "    -----------------------------------------------"
+puts ""
 
 puts "INFO: Project created:${proj_name}"
 
