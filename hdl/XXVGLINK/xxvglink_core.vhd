@@ -96,8 +96,10 @@ architecture behavioral of xxvglink_core is
 
 	--- CONSTANTS
 	constant DLY: time := 10 ps; -- delta delay used to ensure the simulator changes the data after the clock edge (which is a problem because we do a clock assignment which might be evaluated in any order)
-
 	constant NUMBER_OF_QUADS: integer := MAX(LINK_TO_QUAD_MAP(0 to NUMBER_OF_LINKS - 1)) + 1; --! get the maximum QUAD index from the list of actually implemented channels
+	constant NUMBER_OF_MODULES: integer := NUMBER_OF_QUADS + NUMBER_OF_LINKS + 1; -- One common module, and one for each quad (QPLL) and channel (GTX)
+	constant MODULE_ADDR_WIDTH: integer := 10; -- number of remaining addressable space for each module
+
 
 	---- CLOCKS
 	signal txusrclk2: std_logic; --! txusrclk2 for all GTX
@@ -109,7 +111,7 @@ architecture behavioral of xxvglink_core is
 	-- Reset signals
 
 	signal reset_all: std_logic; -- all reset sources combined, including manual and ffrom reset FSM
-	signal reset_rx_datapath: std_logic; -- reset from reset FSM to GTY
+	--signal reset_rx_datapath: std_logic; -- reset from reset FSM to GTY
 	signal tx_reset: std_logic_vector(0 to NUMBER_OF_LINKS - 1); -- User Tx logic reset from reset FSM
 	signal rx_reset: std_logic_vector(0 to NUMBER_OF_LINKS - 1); -- User Rx logic reset from reset FSM
 	signal tx_resetdone_int: std_logic_vector(0 to NUMBER_OF_LINKS - 1); -- User TX reset done, in txclk clock domain
@@ -123,12 +125,10 @@ architecture behavioral of xxvglink_core is
 	signal qplllock, qplllock_debug: std_logic_vector(0 to NUMBER_OF_QUADS - 1);
 	signal not_qplllock: std_logic;
 
-	constant NUMBER_OF_MODULES: integer := NUMBER_OF_QUADS + NUMBER_OF_LINKS + 1; -- One common module, and one for each quad (QPLL) and channel (GTX)
-	constant MODULE_ADDR_WIDTH: integer := 10; -- number of remaining addressable space for each module
-	signal   module_cmd_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_MODULES - 1 downto 0);
-	signal   module_cmd_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_MODULES - 1 downto 0);
-	signal   module_rply_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_MODULES - 1 downto 0);
-	signal   module_rply_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_MODULES - 1 downto 0);
+	signal module_cmd_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_MODULES - 1 downto 0);
+	signal module_cmd_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_MODULES - 1 downto 0);
+	signal module_rply_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_MODULES - 1 downto 0);
+	signal module_rply_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_MODULES - 1 downto 0);
 
 	signal ctrl_rst_reg: std_logic_vector(NUMBER_OF_MODULES - 1 downto 0);
 	attribute dont_touch of ctrl_rst_reg: signal is "true";
@@ -163,9 +163,9 @@ architecture behavioral of xxvglink_core is
 	signal common_user_reset: std_logic;
 	signal common_user_tx_data: std_logic_vector(23 downto 0);
 	signal common_rx_pll_datapath_reset: std_logic;
+	signal common_tx_pll_datapath_reset: std_logic;
 	signal common_rx_datapath_reset: std_logic;
-	signal common_rx_reset: std_logic;
-	signal common_tx_reset: std_logic;
+	signal common_tx_datapath_reset: std_logic;
 	signal common_rx_cdr_stable_out: std_logic;
 	signal common_drp_page: std_logic_vector(0 downto 0);
 
@@ -177,8 +177,8 @@ architecture behavioral of xxvglink_core is
 	signal gt_drp_en: slv(NUMBER_OF_LINKS - 1 downto 0);
 	signal gt_drp_wr_en: slv(NUMBER_OF_LINKS - 1 downto 0);
 
-	constant STABLE_CLOCK_PERIOD: integer := 6; -- in fact 1/156.25 = 6.4 ns
-	constant WAIT_TIME_CDRLOCK: integer := sel(SIM, 1000,  50000 / integer(10.3125)) / STABLE_CLOCK_PERIOD;
+	--constant STABLE_CLOCK_PERIOD: integer := 6; -- in fact 1/156.25 = 6.4 ns
+	--constant WAIT_TIME_CDRLOCK: integer := sel(SIM, 1000,  50000 / integer(10.3125)) / STABLE_CLOCK_PERIOD;
 
 	signal gt_dmonitorout_out: slv8_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_rxmonitorout_out: slv8_array(0 to NUMBER_OF_LINKS - 1);
@@ -212,8 +212,8 @@ architecture behavioral of xxvglink_core is
 	signal gt_txheader_in: slv2_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_user_tx_header: slv2_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_txsequence_in: unsigned_array(0 to NUMBER_OF_LINKS - 1)(6 downto 0);
-	signal gt_rxresetdone_out: slv(0 to NUMBER_OF_LINKS - 1); -- txresetdone from GTY
-	signal gt_txresetdone_out: slv(0 to NUMBER_OF_LINKS - 1); -- rxresetdone form GTY
+	--signal gt_rxresetdone_out: slv(0 to NUMBER_OF_LINKS - 1); -- txresetdone from GTY
+	--signal gt_txresetdone_out: slv(0 to NUMBER_OF_LINKS - 1); -- rxresetdone form GTY
 	signal gt_block_lock: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0'); -- default provided to attempt to squash undriven warnings when there is no RX
 	signal gt_scramble_en: slv(0 to NUMBER_OF_LINKS - 1);
 	signal gt_descramble_en: slv(0 to NUMBER_OF_LINKS - 1);
@@ -322,149 +322,154 @@ begin
 	-- MASTER RESET SEQUENCER
 	-------------------------------------------------------------------------------
 
-	rst_blk: block
-		constant P_FREERUN_FREQUENCY: real     := 200.0; -- MHz, worst case
-		constant P_TX_TIMER_DURATION_US: real  := sel(SIM, 25.0, 30000.0); -- us
-		constant P_RX_TIMER_DURATION_US: real  := sel(SIM, 40.0, 130000.0); -- us
+	reset_all         <= areset or common_user_reset;
+	--reset_rx_datapath <= common_rx_reset;
 
-		constant P_TX_TIMER_TERM_CYC_INT: unsigned(24 downto 0) := to_unsigned(integer(P_TX_TIMER_DURATION_US * P_FREERUN_FREQUENCY), 25);
-		constant P_RX_TIMER_TERM_CYC_INT: unsigned(24 downto 0) := to_unsigned(integer(P_RX_TIMER_DURATION_US * P_FREERUN_FREQUENCY), 25);
+	--rst_blk: block
+	--	constant P_FREERUN_FREQUENCY: real     := 200.0; -- MHz, worst case
+	--	constant P_TX_TIMER_DURATION_US: real  := sel(SIM, 25.0, 30000.0); -- us
+	--	constant P_RX_TIMER_DURATION_US: real  := sel(SIM, 40.0, 130000.0); -- us
 
-		signal reset_all_out: std_logic;
-		signal reset_all_sync: std_logic;
-		signal reset_rx_out: std_logic;
-		signal tx_resetdone_sync: std_logic; -- resetdone sync'ed to stable_clk
-		signal rx_resetdone_sync: std_logic;
-		signal rx_data_good_sync: std_logic := '1';
-		signal init_done_out: std_logic; -- not used
+	--	constant P_TX_TIMER_TERM_CYC_INT: unsigned(24 downto 0) := to_unsigned(integer(P_TX_TIMER_DURATION_US * P_FREERUN_FREQUENCY), 25);
+	--	constant P_RX_TIMER_TERM_CYC_INT: unsigned(24 downto 0) := to_unsigned(integer(P_RX_TIMER_DURATION_US * P_FREERUN_FREQUENCY), 25);
 
-		signal timer_clr: std_logic := '1';
-		signal timer_ctr: unsigned (24 downto 0) := (others => '0');
-		signal tx_timer_sat, rx_timer_sat: std_logic;
+	--	signal reset_all_out: std_logic;
+	--	signal reset_all_sync: std_logic;
+	--	signal reset_rx_out: std_logic;
+	--	signal tx_resetdone_sync: std_logic; -- resetdone sync'ed to stable_clk
+	--	signal rx_resetdone_sync: std_logic;
+	--	--signal rx_data_good_sync: std_logic := '1';
+	--	signal init_done_out: std_logic; -- not used
 
-		signal retry_ctr_incr: std_logic;
-		signal retry_ctr_out: unsigned(3 downto 0) := (others => '0');
+	--	signal timer_clr: std_logic := '1';
+	--	signal timer_ctr: unsigned (24 downto 0) := (others => '0');
+	--	signal tx_timer_sat, rx_timer_sat: std_logic;
 
-		type state_type is (ST_START, ST_TX_WAIT, ST_RX_WAIT, ST_MONITOR);
+	--	signal retry_ctr_incr: std_logic;
+	--	signal retry_ctr_out: unsigned(3 downto 0) := (others => '0');
 
-		signal state: state_type := ST_START;
-		signal sm_init_active: std_logic;
-	begin
-		reset_all         <= areset or common_user_reset or reset_all_out;
-		reset_rx_datapath <= reset_rx_out;
+	--	type state_type is (ST_START, ST_TX_WAIT, ST_RX_WAIT, ST_MONITOR);
 
-		rall_cdc0: xpm_cdc_single
-			generic map (
-				SRC_INPUT_REG => 0
-			)
-			port map (
-				src_clk  => '0',
-				src_in   => reset_all,
-				dest_clk => stable_clk,
-				dest_out => reset_all_sync
-			);
+	--	signal state: state_type := ST_START;
+	--	signal sm_init_active: std_logic;
+	--begin
+	--	reset_all         <= areset or common_user_reset or reset_all_out;
+	--	reset_rx_datapath <= reset_rx_out;
 
-		txdone_cdc0: xpm_cdc_single
-			generic map (
-				SRC_INPUT_REG => 0
-			)
-			port map (
-				src_clk  => '0',
-				src_in   => and gt_txresetdone_out,
-				dest_clk => stable_clk,
-				dest_out => tx_resetdone_sync
-			);
 
-		rxdone_cdc0: xpm_cdc_single
-			generic map (
-				SRC_INPUT_REG => 0
-			)
-			port map (
-				src_clk  => '0',
-				src_in   => and gt_rxresetdone_out,
-				dest_clk => stable_clk,
-				dest_out => rx_resetdone_sync
-			);
 
-		process(all) begin
-			-- Timer: raises the tx and rx timout flags after specified time
-			if rising_edge(stable_clk) then
-				timer_clr      <= '0'; -- single pulse
-				tx_timer_sat <= '1' when timer_ctr = P_TX_TIMER_TERM_CYC_INT;
-				rx_timer_sat <= '1' when timer_ctr = P_RX_TIMER_TERM_CYC_INT;
-				timer_ctr <= timer_ctr + 1 when not rx_timer_sat;
-				if timer_clr then
-					timer_ctr    <= (others => '0');
-					tx_timer_sat <= '0';
-					rx_timer_sat <= '0';
-				end if;
+	--	rall_cdc0: xpm_cdc_single
+	--		generic map (
+	--			SRC_INPUT_REG => 0
+	--		)
+	--		port map (
+	--			src_clk  => '0',
+	--			src_in   => reset_all,
+	--			dest_clk => stable_clk,
+	--			dest_out => reset_all_sync
+	--		);
 
-				-- count retries
-				retry_ctr_incr <= '0'; -- single pulse
-				retry_ctr_out <= retry_ctr_out + 1 when ??retry_ctr_incr and not all_ones(retry_ctr_out);
+	--	txdone_cdc0: xpm_cdc_single
+	--		generic map (
+	--			SRC_INPUT_REG => 0
+	--		)
+	--		port map (
+	--			src_clk  => '0',
+	--			src_in   => and tx_resetdone_int,
+	--			dest_clk => stable_clk,
+	--			dest_out => tx_resetdone_sync
+	--		);
 
-				-- State machine
-				case state is
+	--	rxdone_cdc0: xpm_cdc_single
+	--		generic map (
+	--			SRC_INPUT_REG => 0
+	--		)
+	--		port map (
+	--			src_clk  => '0',
+	--			src_in   => and rx_resetdone_int,
+	--			dest_clk => stable_clk,
+	--			dest_out => rx_resetdone_sync
+	--		);
 
-					when ST_START =>
-						if sm_init_active then
-							timer_clr      <= '1';
-							reset_all_out  <= '0';
-							reset_rx_out   <= '0';
-							state          <= ST_TX_WAIT;
-						end if;
+	--	process(all) begin
+	--		-- Timer: raises the tx and rx timout flags after specified time
+	--		if rising_edge(stable_clk) then
+	--			timer_clr      <= '0'; -- single pulse
+	--			tx_timer_sat <= '1' when timer_ctr = P_TX_TIMER_TERM_CYC_INT;
+	--			rx_timer_sat <= '1' when timer_ctr = P_RX_TIMER_TERM_CYC_INT;
+	--			timer_ctr <= timer_ctr + 1 when not rx_timer_sat;
+	--			if timer_clr then
+	--				timer_ctr    <= (others => '0');
+	--				tx_timer_sat <= '0';
+	--				rx_timer_sat <= '0';
+	--			end if;
 
-					when ST_TX_WAIT =>
-						if tx_resetdone_sync then
-							timer_clr <= '1';
-							state   <= ST_RX_WAIT;
-						elsif tx_timer_sat then
-							timer_clr      <= '1'; -- redundant
-							reset_all_out  <= '1';
-							retry_ctr_incr <= '1';
-							state          <= ST_START;
-						end if;
+	--			-- count retries
+	--			retry_ctr_incr <= '0'; -- single pulse
+	--			retry_ctr_out <= retry_ctr_out + 1 when ??retry_ctr_incr and not all_ones(retry_ctr_out);
 
-					when ST_RX_WAIT =>
-						if rx_timer_sat then
-							if rx_resetdone_sync and rx_data_good_sync then
-								init_done_out <= '1';
-								state         <= ST_MONITOR;
-							else
-								timer_clr      <= '1';
-								reset_rx_out   <= '1';
-								retry_ctr_incr <= '1';
-								state          <= ST_START;
-							end if; -- rx done
-						else
-							timer_clr <= '0';
-						end if; -- rx timeout
+	--			-- State machine
+	--			case state is
 
-					when ST_MONITOR =>
-						if (not rx_resetdone_sync or not rx_data_good_sync) then
-							init_done_out  <= '0';
-							timer_clr      <= '1';
-							reset_rx_out   <= '1';
-							retry_ctr_incr <= '1';
-							state          <= ST_START;
-						end if;
+	--				when ST_START =>
+	--					if sm_init_active then
+	--						timer_clr      <= '1';
+	--						reset_all_out  <= '0';
+	--						reset_rx_out   <= '0';
+	--						state          <= ST_TX_WAIT;
+	--					end if;
 
-				end case;
+	--				when ST_TX_WAIT =>
+	--					if tx_resetdone_sync then
+	--						timer_clr <= '1';
+	--						state   <= ST_RX_WAIT;
+	--					elsif tx_timer_sat then
+	--						timer_clr      <= '1'; -- redundant
+	--						reset_all_out  <= '1';
+	--						retry_ctr_incr <= '1';
+	--						state          <= ST_START;
+	--					end if;
 
-				-- State machine reset
-				if reset_all_sync then
-					timer_clr      <= '1';
-					reset_all_out  <= '0';
-					reset_rx_out   <= '0';
-					retry_ctr_incr <= '0';
-					init_done_out  <= '0';
-					sm_init_active <= '1';
-					state          <= ST_START;
-				end if; -- reset
-			end if; -- clk
-		end process;
+	--				when ST_RX_WAIT =>
+	--					if rx_timer_sat then
+	--						if rx_resetdone_sync then
+	--							init_done_out <= '1';
+	--							state         <= ST_MONITOR;
+	--						else
+	--							timer_clr      <= '1';
+	--							reset_rx_out   <= '1';
+	--							retry_ctr_incr <= '1';
+	--							state          <= ST_START;
+	--						end if; -- rx done
+	--					else
+	--						timer_clr <= '0';
+	--					end if; -- rx timeout
 
-	end block rst_blk;
+	--				when ST_MONITOR =>
+	--					if not rx_resetdone_sync then
+	--						init_done_out  <= '0';
+	--						timer_clr      <= '1';
+	--						reset_rx_out   <= '1';
+	--						retry_ctr_incr <= '1';
+	--						state          <= ST_START;
+	--					end if;
+
+	--			end case;
+
+	--			-- State machine reset
+	--			if reset_all_sync then
+	--				timer_clr      <= '1';
+	--				reset_all_out  <= '0';
+	--				reset_rx_out   <= '0';
+	--				retry_ctr_incr <= '0';
+	--				init_done_out  <= '0';
+	--				sm_init_active <= '1';
+	--				state          <= ST_START;
+	--			end if; -- reset
+	--		end if; -- clk
+	--	end process;
+
+	--end block rst_blk;
 
 	----------------------------------
 	-- REFERENCE CLOCK-BASED RESETS
@@ -490,10 +495,10 @@ begin
 	-- CONTROL Byte 0
 	common_user_reset                <= common_control_bytes(0)(7);
 	common_drp_page                  <= common_control_bytes(0)(4 downto 4);
-	common_tx_reset                  <= common_control_bytes(0)(3); -- core only
+	common_tx_datapath_reset         <= common_control_bytes(0)(3); -- core only
 	common_rx_pll_datapath_reset     <= common_control_bytes(0)(2); -- core only
 	common_rx_datapath_reset         <= common_control_bytes(0)(1); -- core only
-	common_rx_reset                  <= common_control_bytes(0)(0); -- core only
+	common_tx_pll_datapath_reset     <= common_control_bytes(0)(0); -- core only
 
 	-- CONTROL Byte 1-3
 	common_user_tx_data <= to_slv(common_control_bytes(1 to 3));
@@ -713,9 +718,7 @@ begin
 			rxusrclk2(i) <= gtwiz_userclk_rx_usrclk2_out(0);
 
 			-- reset outputs
-			gt_txresetdone_out(i) <= gtwiz_reset_rx_done_out(0);
-			tx_resetdone_int(i)   <= gtwiz_reset_rx_done_out(0);
-			gt_rxresetdone_out(i) <= gtwiz_reset_rx_done_out(0);
+			tx_resetdone_int(i)   <= gtwiz_reset_tx_done_out(0);
 			rx_resetdone_int(i)   <= gtwiz_reset_rx_done_out(0);
 
 			-- reset to be used by RX user logic, on rxclk(i)
@@ -794,7 +797,7 @@ begin
 
 		-- Resets inputs
 		gtwiz_reset_all_in(0)         <= reset_all;
-		gtwiz_reset_rx_datapath_in(0) <= reset_rx_datapath or common_rx_datapath_reset;
+		gtwiz_reset_rx_datapath_in(0) <= common_rx_datapath_reset;
 
 		-- // The TX user clocking helper block should be held in reset until the clock source of that block is known to be
 		-- // stable. The following assignment is an example of how that stability can be determined, based on the selected TX
@@ -808,8 +811,8 @@ begin
 
 
 		-- Optional resets
-		gtwiz_reset_tx_pll_and_datapath_in(0) <= '0';
-		gtwiz_reset_tx_datapath_in(0)         <= '0';
+		gtwiz_reset_tx_pll_and_datapath_in(0) <= common_tx_pll_datapath_reset;
+		gtwiz_reset_tx_datapath_in(0)         <= common_tx_datapath_reset;
 		gtwiz_reset_rx_pll_and_datapath_in(0) <= common_rx_pll_datapath_reset; -- not necessary
 
 
@@ -984,8 +987,8 @@ begin
 		------------------
 
 		-- STATUS BYTE 0
-		gt_status_bytes(i)(0)(7)          <= gt_txresetdone_out(i);
-		gt_status_bytes(i)(0)(6)          <= gt_rxresetdone_out(i);
+		gt_status_bytes(i)(0)(7)          <= tx_resetdone_int(i);
+		gt_status_bytes(i)(0)(6)          <= rx_resetdone_int(i);
 		gt_status_bytes(i)(0)(5 downto 4) <= gt_txbufstatus_out(i); -- unused
 		gt_status_bytes(i)(0)(3)          <= tx_resetdone(i);
 		gt_status_bytes(i)(0)(2)          <= rx_resetdone(i);

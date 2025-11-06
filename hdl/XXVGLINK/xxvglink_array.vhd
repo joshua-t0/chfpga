@@ -149,7 +149,7 @@ architecture impl of xxvglink_array is
 	signal xglink_rx_reset: std_logic_vector(0 to NUMBER_OF_LINKS-1);
 
 	signal axisclk_resetdone: std_logic; -- synchronous to axis_clk
-	signal txclk_resetdone: std_logic; -- synchronous to clk_out
+	--signal txclk_resetdone: std_logic; -- synchronous to clk_out
 
 	signal rx_p_dly: std_logic_vector(0 to NUMBER_OF_LINKS-1);
 	signal rx_n_dly: std_logic_vector(0 to NUMBER_OF_LINKS-1);
@@ -273,18 +273,18 @@ begin
 	clk_out <= tx_clk;
 	resetdone <= axisclk_resetdone;
 
-	txclk_rstdone_cdc0: xpm_cdc_async_rst
-		generic map (RST_ACTIVE_HIGH => 0)
-		port map (
-			src_arst  => not areset and and(xglink_tx_resetdone) and and(xglink_rx_resetdone),
-			dest_clk  => tx_clk,
-			dest_arst => txclk_resetdone
-			);
+	--txclk_rstdone_cdc0: xpm_cdc_async_rst
+	--	generic map (RST_ACTIVE_HIGH => 0)
+	--	port map (
+	--		src_arst  => not areset and and(xglink_tx_resetdone) and and(xglink_rx_resetdone),
+	--		dest_clk  => tx_clk,
+	--		dest_arst => txclk_resetdone
+	--		);
 
 	axis_rstdone_cdc0: xpm_cdc_async_rst
 		generic map (RST_ACTIVE_HIGH => 0)
 		port map (
-			src_arst  => txclk_resetdone,
+			src_arst  => not areset,
 			dest_clk  => axis_clk,
 			dest_arst => axisclk_resetdone
 			);
