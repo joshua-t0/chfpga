@@ -2,6 +2,7 @@
 -- Company: McGill University
 -- Engineer: J.-F. Cliche
 --
+-- Description: Robustly aligns multiple AXI-S streams to a common TVALID/TLAST framing 
 -- Create Date:    2025-01-30
 -- Design Name: chFPGA
 -- Module Name:    ALIGN64
@@ -27,9 +28,12 @@ use work.chFPGA_Package.ALL; -- Get all component definitions
 
 -- Aligns 64-bit data streams from multiple sources (lanes).
 --
--- Buffer the incoming non-blocking streams for a fixed time after the lane 0 has arrived then start sending the data from all lanes.
+-- Lane 0 is used as a reference for the alignment, and the output tvalid/tlast are delayed verison of it.
+-- tvalid/tlast will always be present even if a lane is missing, misalign etc. 
+-- ``lane_error`` indicates that the data on a specific lane is no longer reliable.
 --
--- Lanes that do not present a start-of-frame word at the FIFO after the window are flushed.
+-- Lanes that do not start at the same time as lane 0 after the FIFO are flushed from the FIFO until the FIFO is empty and an TLAST is encountered, and re-alignment is tested on the next Lane 0 start.
+
 -- Lanes that start before the window, or any data that extends beyond lane 0, are also discarded.
 -- Lanes that don't end are flushed until the next window.
 --
@@ -45,6 +49,7 @@ entity align64 is
 	generic (
 		NUMBER_OF_LANES: integer         := 4; -- Number of buses to align
 		ENABLE_MONITORING_LOGIC: BOOLEAN := FALSE; -- Enable additional monitoring logic for debugging
+
 		-- Minimun number of words that will be stored before data is sent out. Must be large enough
 		-- to account for 1) delay between lanes, plus 2) maximum dead times (tvalid=0) once data
 		-- started arriving. Cannot exceed the FIFO depth, which is 512 words. Typical delays between bypass and GTY lanes are 35-45 words.
@@ -63,58 +68,48 @@ entity align64 is
 		m_axis_tdata: out slv_array(0 to NUMBER_OF_LANES - 1)(63 downto 0);
 		m_axis_tlast: out std_logic;
 
-		-- Operational parameters
+        lane_error: out std_logic_vector(0 to NUMBER_OF_LANES - 1);
 
-		ignore_lane: in std_logic_vector(0 to NUMBER_OF_LANES - 1);
+		-- Optional Monitoring port (if ENABLE_MONITORING_LOGIC=TRUE)
 
-
-		-- Monitoring port (if ENABLE_MONITORING_LOGIC=TRUE)
-		mon_reset: in std_logic;
-		mon_lane: in std_logic_vector(3 downto 0);
-		mon_source: in std_logic_vector(3 downto 0);
+		mon_reset: in std_logic := '0';
+		mon_lane: in std_logic_vector(3 downto 0) := (others => '0');
+		mon_source: in std_logic_vector(3 downto 0) := (others => '0');
 		mon_word: out std_logic_vector(15 downto 0);
 
 		clk: in std_logic;
-		rst: in std_logic -- Synchronous reset synchronized to CLK
+		rst: in std_logic -- Synchronous to CLK
 	);
 end entity align64;
 
 
--- This is a pipelined implementation of the aligner that reduces the logic depth.
--- This design works on a 400 MHz clock on Ultrascale+.
+-- This is a pipelined implementation of the aligner that reduces the combinatorial logic depth.
+-- This design works at 400 MHz clock on Ultrascale+.
 --
--- This implementation
--- introduces a 2-clock dead time between the time the a SOF (start of frame)
--- is detected valid and the time readout begins. This means that the input
--- must have 2 idle cycles (no valid data) on average per frame. Fortunately,
--- these are naturally introduced by the packet framing protocol.
+-- Principle of operations:
 --
--- The ``valid_lane`` vector indicates if the data for the corresponding lane
--- is to be send to the output ('1') or if it is to be discarded ('0').
+-- 
+-- We implement an array of FIFOs, one per lane, to absorb time difference between lanes.
+-- The challenge is to make the alignment process resilient to mangled or missing frames, while avoiding combinatorial logic between FIFOs.
 --
--- When ``valid_lane(i)`` is '0', the input of the corresponding FIFO is read continuously in
--- order to flush the data, but will not read out a SOF if it appears during
--- the SOF window. Since on average the FIFO is emptied faster than it is filled, the
--- FIFO will eventuelly be emptied of any packet that do not start in a valid
--- window.
+-- Lane 0 is our time reference. Our goal is to align all lanes to lane 0 at the output of the FIFOs.
+-- Lane 0 is ALWAYS read when the buffer has at least  BUFFERING_DEPTH words in it, whatever happens to the other lanes. This is effectively a delay line, and ensures that all the other lanes have had time to catch up on lane 0, which is assumed to be faster than the other lanes.
+-- If LANE 0 delay is long enough, the other lanes will also always have some words queued up in in the FIFO. This brings many key benefits:
 --
--- When ``valid_lane(i)`` is '1', the FIFO output will be read out only if all
--- currently valid lanes have data (tvalid=1). In that case, the data is
--- passed on to the output.
+-- - This guarantees that data exists on other lanes when lane 0 is read. So no need to have combinatorial read-enable logic that immediately reacts to the FIFO status.
+-- - We can tolerate a latency between the almost_full and actual FIFO read enable, allowing the registering of the read enable signal distributed between FIFOs.
 --
--- ``valid_lane(i)`` is set on the last clock of the SOF window. By that time, any
--- frame that started within the SOF window will have a SOF word waiting at
--- the FIFO's output. ``valid_lane(i)`` is set to '1' for any lane where the FIFO
--- offers an SOF, and '0' for the others.
+-- All lanes are completely independent from each other. The only signal that is shared between lanes is Lane 0 read enable signal, which is a registered version of ``not almost_empty``..
 --
--- When an EOF is read out of a FIFO, its ``valid_lane(i)`` is set to 0 to
--- indicate that we should not wait for data on that lane anymore. This is
--- needed in the case where a lane is shorter than the other ones so we don't
--- fill up the FIFO while waiting for data that is not coming.
+-- A simple state machine controls the readout of each lane.
 --
--- ``valid_lane(i)`` is also set to '0' when EOF is read out of the reference
--- lane. Normally all lanes read out their EOF at the same time. However, this will
--- flush a lane that is too long relative to the reference lane.
+-- In the READ state, all lanes are extected to be aligned, and we simultaneously read words from all lanes when lane 0 does so. 
+-- If a lane is not starting when lane 0 starts, we enter the FLUSH_UNTIL_EMPTY to bring the FIFO to almost empty, then enter FLUSH_UNTIL_EOF to continue flushing but stop after TLAST is read out.
+-- We then hold the following SOF (if anything is coming) until the next Lane 0 SOF which puts us back in READ mode. If SOF alignment is not yet acheived, we repeat te process, otherwise we stay in READ mode.
+--
+-- Flushing down to almost_empty is performed to prevent the FIFO from having its occupancy gradually creep up when bad alignments happen.
+--
+-- Flushing works only if the incoming data is not valid on every clock cycle. These dead times are necessary for the flush operation to empty the FIFO faster than it fills up.
 --
 architecture impl of align64 is
 
@@ -124,21 +119,8 @@ architecture impl of align64 is
 
 	--- Signal definitions ------------------------------------
 
-	signal ignore_lane_reg: std_logic_vector(0 to NUMBER_OF_LANES - 1); -- registered verson of the lanes to be ignored
-
 	signal is_sof: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	signal is_eof: std_logic_vector(0 to NUMBER_OF_LANES - 1);
-
-	signal read_en: std_logic_vector(0 to NUMBER_OF_LANES - 1);
-
-	-- Monitoring signals
-	signal valid_lane: std_logic_vector(0 to NUMBER_OF_LANES - 1);
-	signal missing_frame: std_logic_vector(0 to NUMBER_OF_LANES - 1);
-	signal bad_frame_length: std_logic_vector(0 to NUMBER_OF_LANES - 1);
-	signal fifo_tfirst_mon: std_logic_vector(0 to NUMBER_OF_LANES - 1);
-	signal fifo_underflow: std_logic_vector(0 to NUMBER_OF_LANES - 1);
-	signal fifo_overflow: std_logic_vector(0 to NUMBER_OF_LANES - 1);
-
 
 	signal fifo_wr_en: slv(0 to NUMBER_OF_LANES - 1);
 	signal fifo_tdata: slv64_array(0 to NUMBER_OF_LANES - 1);
@@ -149,11 +131,14 @@ architecture impl of align64 is
 	signal fifo_empty: slv(0 to NUMBER_OF_LANES - 1);
 	signal fifo_almost_full: slv(0 to NUMBER_OF_LANES - 1);
 	signal fifo_almost_empty: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_lane0_almost_empty_reg: slv(0 to NUMBER_OF_LANES - 1);
 	signal fifo_wr_count: slv10_array(0 to NUMBER_OF_LANES - 1);
 
-	attribute DONT_TOUCH of fifo_lane0_almost_empty_reg: signal is "yes"; -- Don't remove equivalent registers, we use those to ease distribution
+	signal fifo_lane0_rd_en: slv(0 to NUMBER_OF_LANES - 1);
+	attribute DONT_TOUCH of fifo_lane0_rd_en: signal is "yes"; -- Don't remove equivalent registers, we use those to ease distribution
 
+	type LANE_STATE_TYPE is (READ, FLUSH_UNTIL_EMPTY, FLUSH_UNTIL_EOF, HOLD);
+	type lane_state_array is array(0 to NUMBER_OF_LANES - 1) of LANE_STATE_TYPE;
+	signal lane_state: LANE_STATE_ARRAY;
 
 begin
 
@@ -168,17 +153,21 @@ begin
 	--
 	fifogen: for i in 0 to NUMBER_OF_LANES - 1 generate
 
-		-- Write the FIFO except when almost full so we has room to write the TLAST frame
+		-- Write the FIFO except when almost full so we has room to write the TLAST frame which will help recovering sync faster
 		fifo_wr_en(i) <= s_axis_tvalid(i) and ((not fifo_almost_full(i)) or s_axis_tlast(i));
 
 		-- Read FIFO only if read is requested and lane 0 is not almost empty. Almost empty
 		-- threshold should be large enough so data from other lanes are guaranteed to have arrived
 		-- by the time lane 0 is not almost empty.
-		fifo_rd_en(i) <= read_en(i) and not fifo_lane0_almost_empty_reg(i);
+		fifo_rd_en(i) <= '1' when lane_state(i)=READ and fifo_lane0_rd_en(i)='1' else
+		                 '1' when lane_state(i)=FLUSH_UNTIL_EMPTY else
+		                 '1' when lane_state(i)=FLUSH_UNTIL_EOF else
+		                 '0';
 
 		fifo0: entity work.align64_fifo
 			generic map (
-				ALMOST_EMPTY_THRESH => BUFFERING_DEPTH
+				ALMOST_EMPTY_THRESH => BUFFERING_DEPTH,
+				ALMOST_FULL_THRESH => 500  -- keep enough room to make sure we don't miss any TLAST flags
 				)
 			port map (
 				s_axis_tvalid => fifo_wr_en(i),
@@ -204,57 +193,39 @@ begin
 	-- useful flags
 	is_sof          <= fifo_tvalid and fifo_tfirst;
 	is_eof          <= fifo_tvalid and fifo_tlast;
-
+    
 	out_proc: process(all) begin
 		if rising_edge(clk) then
-			-- register the ignore_lane flags to facilitate timing closure.
-			ignore_lane_reg <= ignore_lane;
-
-
-			-- Generate a tfirst signal for the data coming out of the FIFO. Used to generate is_sof()
-			for i in 0 to NUMBER_OF_LANES - 1 loop
-				fifo_tfirst(i) <= fifo_tlast(i) when fifo_tvalid(i) and read_en(i);
-			end loop;
-
 
 			for i in 0 to NUMBER_OF_LANES - 1 loop
+
+    			-- Generate a tfirst signal for the data coming out of the FIFO. Used to generate is_sof()
+				fifo_tfirst(i) <= fifo_tlast(i) when fifo_tvalid(i) and fifo_rd_en(i);
 
 				-- Register and distribute the Lane 0 almost empty flag that will be used by each FIFO.
-				fifo_lane0_almost_empty_reg(i) <= fifo_almost_empty(0);
+				fifo_lane0_rd_en(i) <= not fifo_almost_empty(0);
 
-				fifo_underflow(i) <= fifo_rd_en(i) and not fifo_tvalid(i);
-				fifo_overflow(i) <= fifo_almost_full(i);
+				-- FLag lane alignment errors
+				lane_error(i) <= '1' when fifo_rd_en(0) and ((is_sof(0) xor is_sof(i)) or (is_eof(0) xor is_eof(i))) else
+				                 '0' when fifo_rd_en(0) and is_sof(0) and is_sof(i);
 
-				-- bad_frame_length is pulsed if we read out an EOF on lane i but not on lane 0
-				bad_frame_length(i) <= '0' when ignore_lane_reg(i) else (is_eof(i) and fifo_rd_en(i)) and not (is_eof(0) and fifo_rd_en(0));
-				-- missing_frame is pulsed if lane i is not SOF when lane 0 is
-				missing_frame(i) <= '0' when ignore_lane_reg(i) else not is_sof(i) and is_sof(0);
-				-- valid_lane is '1' if lane i starts at the same time as lane 0
-				valid_lane(i) <= '1' when ignore_lane_reg(i) else is_sof(i) when is_sof(0);
-
-
-				-- Always start reading the FIFO when we have a lane 0 SOF window to eigher read valid data or flush bad one.
-				-- Stop reading the FIFO when an EOF has been read out.
-				read_en(i) <= '1' when is_sof(0) or ignore_lane_reg(i) else
-				           '0' when is_eof(i) and fifo_rd_en(i);
-				-- Note
-				--  - If the frame is longer than a period, bad_frame_length and valid_frame will be flagged and flushing reads will continue
-				--  - If there is no data, flush reading will be still enabled. If the frame comes later, it will be flushed.
+                -- Manage lane state
+				lane_state(i) <= READ when fifo_lane0_rd_en(i)='1' and is_eof(0)='1' else -- All lanes go to read state so they are ready for alignment test
+							     FLUSH_UNTIL_EMPTY when lane_state(i)=READ and fifo_lane0_rd_en(i)='1' and is_sof(0) /= is_sof(i)  else -- Start flushing if a lane does not start when lane 0 starts
+				                 FLUSH_UNTIL_EOF when lane_state(i)=FLUSH_UNTIL_EMPTY and fifo_almost_empty(i)='1' else -- Wait until an EOF is found and flushed
+				                 HOLD when lane_state(i)=FLUSH_UNTIL_EOF and is_eof(i)='1'; -- hold the following SOF
 
 				-- Register the FIFO output data
 				m_axis_tdata(i) <= fifo_tdata(i);
 			end loop;
-			m_axis_tvalid <= fifo_tvalid(0) and fifo_rd_en(0); -- A transfer occurs only when all the data lines are valid.  all_valid is 1 when no lane is valid, but the second term implies that at least one lane (the current lane) is valid.
+			m_axis_tvalid <= fifo_tvalid(0) and fifo_lane0_rd_en(0); -- A transfer occurs only when all the data lines are valid.  all_valid is 1 when no lane is valid, but the second term implies that at least one lane (the current lane) is valid.
 			m_axis_tlast <= fifo_tlast(0); -- Set the last flag from the FIFO if the lane is still being sent. If it was interrupted early and data is being discarded, EOF will not appear with global_tlast.
 
-			-- Synchronous reset
-			-- The reset code is placed at the end to avoid the non-resetted signals to hold their value during reset (which requires additional logic).
-			if rst = '1' then
+			-- Synchronous resets
+			if rst  then
 				fifo_tfirst <= (others => '1');
-				--bad_frame_length <= (others => '0');
-				--missing_frame <= (others => '0');
-				valid_lane <= (others => '1');
-				read_en <= (others => '0');
+				lane_error <= (others => '0');
+                lane_state <= (others => READ);
 				m_axis_tvalid <= '0';
 			end if; -- rst
 
@@ -266,6 +237,14 @@ begin
 	-- Stats/counter/sticky bits are reset when ``mon_reset`` is high.
 	--
 	mon_gen: if ENABLE_MONITORING_LOGIC generate
+
+        -- Monitoring signals
+        signal missing_frame: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+        signal bad_frame_length: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+        signal fifo_tfirst_mon: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+        signal fifo_underflow: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+        signal fifo_overflow: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+    
 		signal mon_reset_all: std_logic;
 		signal s_axis_tfirst: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 		signal clk_ctr: unsigned(15 downto 0);
@@ -276,7 +255,7 @@ begin
 		signal fifo_underflow_sticky: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 		signal missing_frame_sticky: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 		signal bad_frame_length_sticky: std_logic_vector(0 to NUMBER_OF_LANES - 1);
-		signal valid_lane_sticky: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+		signal lane_error_sticky: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 		signal mon_word_int: unsigned(15 downto 0);
 	begin
 
@@ -297,9 +276,18 @@ begin
 			if rising_edge(clk) then
 				lane := to_integer(unsigned(mon_lane));
 
+
 				-- Generate a tfirst signal for the incoming data. Used for incoming data differential delay monitoring.
 				for i in 0 to NUMBER_OF_LANES - 1 loop
 					s_axis_tfirst(i) <= '0' when mon_reset_all else s_axis_tlast(i) when s_axis_tvalid(i);
+
+                    -- Flags for monitoring only
+                    fifo_underflow(i) <= fifo_rd_en(i) and not fifo_tvalid(i);
+                    fifo_overflow(i) <= fifo_almost_full(i);
+                    bad_frame_length(i) <=  (is_eof(i) and fifo_rd_en(i)) and not (is_eof(0) and fifo_rd_en(0));
+                    missing_frame(i) <=  is_sof(0) and fifo_rd_en(0) and not is_sof(i);
+    
+
 				end loop;
 
 				clk_ctr <= (others => '0') when mon_reset_all or (s_axis_tvalid(0) and s_axis_tfirst(0)) else clk_ctr + 1 when not all_ones(clk_ctr);
@@ -310,7 +298,7 @@ begin
 				missing_frame_sticky <= (others => '0') when mon_reset_all else (missing_frame_sticky or missing_frame);
 
 				bad_frame_length_sticky <= (others => '0') when mon_reset_all = '1' else (bad_frame_length_sticky or bad_frame_length);
-				valid_lane_sticky <= (others => '1') when mon_reset_all else valid_lane_sticky and valid_lane;
+				lane_error_sticky <= (others => '0') when mon_reset_all else lane_error_sticky or lane_error;
 
 				case to_integer(unsigned(mon_source)) is
 
@@ -321,7 +309,7 @@ begin
 						 9      => or fifo_underflow_sticky,
 						 10      => or missing_frame_sticky,
 						 11      => or bad_frame_length_sticky,
-						 12      => or (not valid_lane_sticky),
+						 12      => or lane_error_sticky,
 						 others => '0'
 						);
 
@@ -332,13 +320,13 @@ begin
 						 1      => fifo_underflow(lane),
 						 3      => missing_frame(lane),
 						 4      => bad_frame_length(lane),
-						 5      => not valid_lane(lane),
+						 5      => lane_error(lane),
 
 						 8      => fifo_overflow_sticky(lane),
 						 9      => fifo_underflow_sticky(lane),
 						 10      => missing_frame_sticky(lane),
 						 11      => bad_frame_length_sticky(lane),
-						 12      => not valid_lane_sticky(lane),
+						 12      => lane_error_sticky(lane),
 						 others => '0'
 						);
 
@@ -358,7 +346,7 @@ begin
 						mon_word_int <= (others => '0') when mon_reset_all else mon_word_int + 1 when bad_frame_length(lane);
 
 					when 8 => -- invalid lane counter
-						mon_word_int <= (others => '0') when mon_reset_all else mon_word_int + 1 when not valid_lane(lane);
+						mon_word_int <= (others => '0') when mon_reset_all else mon_word_int + 1 when lane_error(lane);
 
 					when 9 => -- clock counter since lane 0 tfirst
 						mon_word_int <= clk_ctr;
