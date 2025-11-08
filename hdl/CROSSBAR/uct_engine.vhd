@@ -324,8 +324,6 @@ begin
 
 			signal lane_map: slv4_array(0 to NUMBER_OF_CT2_INPUTS - 1);
 			signal lane_postmap: slv4_array(0 to NUMBER_OF_CT2_OUTPUTS - 1);
-			signal align1_ignore_lane: slv(0 to NUMBER_OF_CT2_INPUTS - 1);
-			--signal align1_sof_window_stop: std_logic_vector(7 downto 0);
 
 			-- Cull & Remap process signals & buses
 			signal word_ctr: unsigned(10 downto 0);
@@ -416,8 +414,8 @@ begin
 			--align1_sof_window_stop <= control_bytes(2);
 
 			-- CONTROL Bytes 3-4
+			-- (Unused)
 
-			align1_ignore_lane <= reverse_bits_and_dir(to_slv(ct2_control_bytes(3 to 4))(NUMBER_OF_CT2_INPUTS - 1 downto 0));
 
 			-- CONTROL Bytes 5-6 (lane premap) and 7-8 (lane postmap)
 			lane_map_gen: for i in 0 to NUMBER_OF_CT2_INPUTS - 1 generate
@@ -545,9 +543,7 @@ begin
 					m_axis_tdata         => align1_out_tdata,
 					m_axis_tlast         => align1_out_tlast,
 
-
-					-- Aligner configuration
-					ignore_lane     => align1_ignore_lane,
+					lane_error     => open,
 
 					-- Monitoring (if enabled)
 					mon_reset  => align1_mon_reset,
@@ -611,9 +607,9 @@ begin
 
 			else generate -- implement Level-3 corner turning
 
-				signal ct3_in_rst: std_logic;
-				signal ct3_out_rst: std_logic;
-				signal word_ctr: unsigned(10 downto 0);
+			signal ct3_in_rst: std_logic;
+			signal ct3_out_rst: std_logic;
+			signal word_ctr: unsigned(10 downto 0);
 
 
 			-- Bin selector bus
@@ -635,7 +631,7 @@ begin
 			signal align2_in_tlast: slv(0 to NUMBER_OF_CT3_OUTPUTS - 1);
 
 			-- Align monitoring signals
-            signal align2_ignore_lane: std_logic_vector(0 to NUMBER_OF_CT3_INPUTS-1);
+
 			signal align2_mon_reset: std_logic;
 			signal align2_mon_lane: std_logic_vector(3 downto 0);
 			signal align2_mon_source: std_logic_vector(3 downto 0);
@@ -682,12 +678,12 @@ begin
 			-- Assign registers for level-2 corner-turning
 
 			-- CONTROL Byte 0
-			align2_mon_reset <= ct3_control_bytes(0)(0);
-			align2_ignore_lane <= reverse_bits_and_dir(ct3_control_bytes(0)(NUMBER_OF_CT3_INPUTS - 1 downto 0));
+			align2_mon_reset <= ct3_control_bytes(0)(7);
+			crate <= ct3_control_bytes(0)(6);
 
 			-- CONTROL Byte 1
 			align2_mon_source <= ct3_control_bytes(1)(7 downto 4);
-			align2_mon_lane   <= ct3_control_bytes(1)(3 downto 0);
+				align2_mon_lane   <= ct3_control_bytes(1)(3 downto 0);
 
 			-- STATUS Byte 0
             ct3_status_bytes(0)(0) <= ct3_in_rst;
@@ -710,7 +706,7 @@ begin
 						ct3_out_rst <= ct3_in_rst;
 
 						if ct2_out_tvalid then
-							word_ctr <= word_ctr + 1 when not cb1_out_tlast else (others => '0');
+							word_ctr <= word_ctr + 1 when not ct2_out_tlast else (others => '0');
 						end if;
 						word_ctr <= (others => '0') when ct3_in_rst;
 
@@ -724,7 +720,7 @@ begin
 							end if;
 						end loop;
 						for i in 0 to NUMBER_OF_CT3_INPUTS/2 - 1 loop
-							if ct2_out_tvalid='1' then
+							if ct2_out_tvalid then
 								dlane := 0 when word_ctr(0) = crate else NUMBER_OF_CT3_INPUTS/2;
 								binsel_out_tdata(dlane + i) <= ct2_out_tdata(i);
 								binsel_out_tvalid(dlane + i) <= ct2_out_tvalid;
@@ -770,8 +766,7 @@ begin
 						m_axis_tlast         => ct3_out_tlast,
 
 
-						-- Aligner configuration
-						ignore_lane     => align2_ignore_lane,
+						lane_error     => open,
 
 						-- Monitoring (if enabled)
 						mon_reset  => align2_mon_reset,

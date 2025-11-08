@@ -21,9 +21,14 @@ use work.tb_package.all;
 
 ENTITY uct_testbench IS
 	generic (
+	   CT_LEVEL: integer := 3;
 		NCHAN: integer := 8;
-		NUMBER_OF_LANES: integer := 4;
-		NUMBER_OF_LINKS: integer := 3
+		LANE_TO_LINK_MAP: integer_array := (-1,0,1,2,-1,-1,3,4);
+		LINK_TO_QUAD_MAP: integer_array:= (0,1,1,2,2, 2,2,2,2,2,2,2);
+		QUAD_TO_REFCLK_MAP: integer_array := (0,0,0);
+
+		NUMBER_OF_LANES: integer := LANE_TO_LINK_MAP'LENGTH;
+		NUMBER_OF_LINKS: integer := LINK_TO_QUAD_MAP'LENGTH
 		);
 END uct_testbench;
 
@@ -229,10 +234,10 @@ dut0: entity work.uct_engine
 	generic map (
 	    PLATFORM_ID => PLATFORM_ID_CRS,
         NUMBER_OF_INPUT_LANES => NCHAN,
-		LANE_TO_LINK_MAP       => (-1,0,1,2),
-		LINK_TO_QUAD_MAP       => (0,1,1),
-		QUAD_TO_REFCLK_MAP     => (0,0),
-		CT_LEVEL => 2
+		LANE_TO_LINK_MAP       => LANE_TO_LINK_MAP,
+		LINK_TO_QUAD_MAP       => LINK_TO_QUAD_MAP,
+		QUAD_TO_REFCLK_MAP     => QUAD_TO_REFCLK_MAP,
+		CT_LEVEL => CT_LEVEL
 		)
 	port map (
         -- Inputs form channelizers
