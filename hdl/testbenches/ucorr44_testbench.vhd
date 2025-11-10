@@ -24,10 +24,11 @@ use work.tb_package.all;
 
 ENTITY ucorr44_testbench IS
 	generic (
-	    N: integer := 8; -- Warning: current design works only with NUMBER_OF_CHANNELS = 8
-	    N_PER_CLK: integer := 8;
-	    N_BINS: integer := 10; -- must be >
-	    N_INTEG: integer := 150
+	    N: integer := 64; -- Warning: current design works only with NUMBER_OF_CHANNELS = 8
+	    NCHAN_PER_CLK: integer := 32;
+	    N_BINS: integer := 128; -- must be >
+	    N_INTEG: integer := 150;
+	    BIN_DECIMATION_FACTOR: integer := 8
  		);
 END ucorr44_testbench;
 
@@ -38,7 +39,7 @@ ARCHITECTURE behavior OF ucorr44_testbench IS
    -- constant CLK_PERIOD : time := 3.2 ns;
 
     constant CLK_PERIOD : time := 2 ns; -- 375 MHz
-
+    constant NCLK_PER_BIN: integer := N/NCHAN_PER_CLK;
 	--Inputs
 	--signal reset : std_logic := '0';
 
@@ -48,7 +49,7 @@ ARCHITECTURE behavior OF ucorr44_testbench IS
 --	signal bsb_clk: std_logic; -- 200 MHz
 --	signal bsb_rst: std_logic := '1';
  	signal tlast_in, tvalid_in: std_logic := '0';
-	signal tdata_in: slv_array(0 to N_PER_CLK-1)(7 downto 0);
+	signal tdata_in: slv_array(0 to NCHAN_PER_CLK-1)(7 downto 0);
 
     signal tlast_out, tvalid_out: std_logic;
     signal tdata_out: std_logic_vector(7 downto 0);
@@ -68,9 +69,12 @@ begin
 
  	UCORR440: entity work.ucorr44
         generic map (
-            N => N,
-            N_PER_CLK => N_PER_CLK,
-            NCLK => 1*N/N_PER_CLK
+            NCHAN => N,
+            NCHAN_PER_CLK => NCHAN_PER_CLK,
+            NBINS => N_BINS,
+            BIN_DECIMATION_FACTOR => BIN_DECIMATION_FACTOR,
+            NCORR => 8,
+            CORR_NUMBER => 0
         )
 		port map (
 			s_axis_tdata => tdata_in, -- First byte to transmit is in in most significant byte
@@ -85,7 +89,10 @@ begin
             integ_period => to_slv(N_INTEG-1, 16),
             autocorr_only => '0',
             no_accum => '0',
-    
+            corr_id => "0000",
+
+            overrun_reset => '0',
+
 			clk=> clk,
 			rst => rst
 		 );
@@ -109,16 +116,18 @@ begin
         sleep(clk, 10); 
 
         -- send channelizer data
-        for frame in 0 to 10*N_INTEG loop
+        for frame in 0 to 1000*N_INTEG loop
             for bin in 0 to N_BINS-1 loop
-                for word in 0 to N/N_PER_CLK-1 loop
-                    for sample in 0 to N_PER_CLK-1 loop
-                        tdata_in(sample) <= to_slv(sample + N_PER_CLK * (word + N/N_PER_CLK * bin), 8) and x"07";
+                for word in 0 to NCLK_PER_BIN-1 loop
+                    for sample in 0 to NCHAN_PER_CLK-1 loop
+--                        tdata_in(sample) <= x"10" when bin=BIN_DECIMATION_FACTOR-1 and word=0 and sample=0 else x"00";
+--                        tdata_in(sample) <= to_slv(sample + NCHAN_PER_CLK * (word + NCLK_PER_BIN * bin), 8) and x"07";
+                        tdata_in(sample) <= to_slv(word*32+sample, 8);
 --                        tdata_in(sample) <= to_slv(1, 8);
                     end loop; -- sample
                     tvalid_in <= '1';
                     tlast_in <= '0';
-                    if word = N/N_PER_CLK-1 and bin=N_BINS-1 then
+                    if word = NCLK_PER_BIN-1 and bin=N_BINS-1 then
                         tlast_in <= '1';
                     end if;
                     sleep(clk);
