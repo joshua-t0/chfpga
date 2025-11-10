@@ -607,50 +607,52 @@ begin
 
 			else generate -- implement Level-3 corner turning
 
-			signal ct3_in_rst: std_logic;
-			signal ct3_out_rst: std_logic;
-			signal word_ctr: unsigned(10 downto 0);
+				signal ct3_in_rst: std_logic;
+				signal ct3_out_rst: std_logic;
+				signal word_ctr: unsigned(10 downto 0);
 
 
-			-- Bin selector bus
+				-- Bin selector bus
 
-			signal binsel_out_tdata: slv_array(0 to NUMBER_OF_CT3_INPUTS - 1)(BITS_PER_CT3_LANE_WORD - 1 downto 0);
-			signal binsel_out_tvalid: slv(0 to NUMBER_OF_CT3_INPUTS - 1);
-			signal binsel_out_tlast: slv(0 to NUMBER_OF_CT3_INPUTS - 1);
+				signal binsel_tdata: slv_array(0 to NUMBER_OF_CT3_INPUTS - 1)(BITS_PER_CT3_LANE_WORD - 1 downto 0);
+				signal binsel_tvalid: slv(0 to NUMBER_OF_CT3_INPUTS - 1);
+				signal binsel_tlast: slv(0 to NUMBER_OF_CT3_INPUTS - 1);
 
-			-- Registered bin selector
+				-- Registered bin selector words. We neen only to store NUMBER_OF_CT3_INPUTS/2 words.
 
-			signal binsel_out_reg_tdata: slv_array(0 to NUMBER_OF_CT3_INPUTS - 1)(BITS_PER_CT3_LANE_WORD - 1 downto 0); -- stores 2nd word
-			signal binsel_out_reg_tvalid: slv(0 to NUMBER_OF_CT3_INPUTS - 1);
-			signal binsel_out_reg_tlast: slv(0 to NUMBER_OF_CT3_INPUTS - 1);
+				signal binsel_reg_tdata: slv_array(0 to NUMBER_OF_CT3_INPUTS/2 - 1)(BITS_PER_CT3_LANE_WORD - 1 downto 0); -- stores 2nd word
+				signal binsel_reg_tvalid: slv(0 to NUMBER_OF_CT3_INPUTS/2 - 1);
+				signal binsel_reg_tlast: slv(0 to NUMBER_OF_CT3_INPUTS/2 - 1);
 
-			-- Align buses
+				-- Align buses
 
-			signal align2_in_tdata: slv_array(0 to NUMBER_OF_CT3_OUTPUTS - 1)(BITS_PER_CT3_LANE_WORD - 1 downto 0);
-			signal align2_in_tvalid: slv(0 to NUMBER_OF_CT3_OUTPUTS - 1);
-			signal align2_in_tlast: slv(0 to NUMBER_OF_CT3_OUTPUTS - 1);
+				signal align2_in_tdata: slv_array(0 to NUMBER_OF_CT3_OUTPUTS - 1)(BITS_PER_CT3_LANE_WORD - 1 downto 0);
+				signal align2_in_tvalid: slv(0 to NUMBER_OF_CT3_OUTPUTS - 1);
+				signal align2_in_tlast: slv(0 to NUMBER_OF_CT3_OUTPUTS - 1);
+				signal align2_lane_error: slv(0 to NUMBER_OF_CT3_OUTPUTS - 1);
 
-			-- Align monitoring signals
+				-- Align monitoring signals
 
-			signal align2_mon_reset: std_logic;
-			signal align2_mon_lane: std_logic_vector(3 downto 0);
-			signal align2_mon_source: std_logic_vector(3 downto 0);
-			signal align2_mon_word: std_logic_vector(15 downto 0);
+				signal align2_mon_reset: std_logic;
+				signal align2_mon_lane: std_logic_vector(3 downto 0);
+				signal align2_mon_source: std_logic_vector(3 downto 0);
+				signal align2_mon_word: std_logic_vector(15 downto 0);
 
-			-- CT2 output
+				-- CT2 output
 
-			signal ct3_out_tdata: slv_array(0 to NUMBER_OF_CT3_OUTPUTS - 1)(BITS_PER_CT3_LANE_WORD - 1 downto 0);
-			signal ct3_out_tvalid: std_logic;
-			signal ct3_out_tlast: std_logic;
+				signal ct3_out_tdata: slv_array(0 to NUMBER_OF_CT3_OUTPUTS - 1)(BITS_PER_CT3_LANE_WORD - 1 downto 0);
+				signal ct3_out_tvalid: std_logic;
+				signal ct3_out_tlast: std_logic;
 
-			--signal ct3_out_tdata: slv_array(0 to NUMBER_OF_CT2_OUTPUTS - 1)(BITS_PER_CT2_LANE_WORD - 1 downto 0);
-			--signal ct2_out_tvalid: std_logic;
-			--signal ct2_out_tlast: std_logic;
+				--signal ct3_out_tdata: slv_array(0 to NUMBER_OF_CT2_OUTPUTS - 1)(BITS_PER_CT2_LANE_WORD - 1 downto 0);
+				--signal ct2_out_tvalid: std_logic;
+				--signal ct2_out_tlast: std_logic;
 
-            signal ct3_control_bytes: slv8_array(0 to 1);
-            signal ct3_status_bytes: slv8_array(0 to 2);
+	            signal ct3_control_bytes: slv8_array(0 to 1);
+	            signal ct3_status_bytes: slv8_array(0 to 2);
 
-            signal crate: std_logic;
+	            signal slot_group: std_logic;
+	            signal zero_data_on_lane_error: std_logic;
 
 			begin
 
@@ -679,7 +681,8 @@ begin
 
 			-- CONTROL Byte 0
 			align2_mon_reset <= ct3_control_bytes(0)(7);
-			crate <= ct3_control_bytes(0)(6);
+			slot_group <= ct3_control_bytes(0)(6);
+			zero_data_on_lane_error <= ct3_control_bytes(0)(5);
 
 			-- CONTROL Byte 1
 			align2_mon_source <= ct3_control_bytes(1)(7 downto 4);
@@ -698,7 +701,7 @@ begin
 				-- We need to store all incoming 128 bits of a bin, and send them in two clocks.
 				process(all)
 
-    				variable dlane: integer;
+    				variable dlane0, dlane1: integer;
 				begin
 
 					if rising_edge(axis_clk) then
@@ -710,37 +713,44 @@ begin
 						end if;
 						word_ctr <= (others => '0') when ct3_in_rst;
 
+						binsel_tvalid <= (others => '0');
 
-						for i in 0 to NUMBER_OF_CT3_INPUTS - 1 loop
-							if binsel_out_reg_tvalid(i) then
-							 	binsel_out_tdata(i) <= binsel_out_reg_tdata(i);
-							 	binsel_out_tvalid(i) <= binsel_out_reg_tvalid(i);
-							 	binsel_out_tlast(i) <= binsel_out_reg_tlast(i);
-							 	binsel_out_reg_tvalid(i) <= '0';
+						dlane0 := 0 when word_ctr(0) = slot_group else NUMBER_OF_CT3_INPUTS/2;
+						dlane1 := NUMBER_OF_CT3_INPUTS/2 when word_ctr(0) = slot_group else 0;
+
+						for i in 0 to NUMBER_OF_CT3_INPUTS/2 - 1 loop
+							if ct2_out_tvalid or (binsel_reg_tvalid(i) and binsel_reg_tlast(i)) then
+							 	binsel_tdata(dlane1+i) <= binsel_reg_tdata(i);
+							 	binsel_tvalid(dlane1+i) <= binsel_reg_tvalid(i);
+							 	binsel_tlast(dlane1+i) <= binsel_reg_tlast(i);
+								binsel_reg_tvalid(i) <= '0';
 							end if;
 						end loop;
+
+
 						for i in 0 to NUMBER_OF_CT3_INPUTS/2 - 1 loop
 							if ct2_out_tvalid then
-								dlane := 0 when word_ctr(0) = crate else NUMBER_OF_CT3_INPUTS/2;
-								binsel_out_tdata(dlane + i) <= ct2_out_tdata(i);
-								binsel_out_tvalid(dlane + i) <= ct2_out_tvalid;
-								binsel_out_tlast(dlane + i) <= '0';
+								binsel_tdata(dlane0 + i) <= ct2_out_tdata(i);
+								binsel_tvalid(dlane0+i) <= ct2_out_tvalid;
+								binsel_tlast(dlane0+i) <= '0';
+								binsel_tlast(dlane1+i) <= '1' when ct2_out_tlast; -- Make sure the 2nd word of the top lanes (which are being set o this clock) have a tlast.
 
-								binsel_out_reg_tdata(dlane + i) <= ct2_out_tdata(i);
-								binsel_out_reg_tvalid(dlane + i) <= ct2_out_tvalid;
-								binsel_out_reg_tlast(dlane + i) <= ct2_out_tlast;
+								binsel_reg_tdata(i) <= ct2_out_tdata(i+2);
+								binsel_reg_tvalid(i) <= ct2_out_tvalid;
+								binsel_reg_tlast(i) <= ct2_out_tlast;
 							end if;
 						end loop;
-						binsel_out_tvalid <= (others => '0') when ct3_in_rst;
-						binsel_out_reg_tvalid <= (others => '0') when ct3_in_rst;
+
+						binsel_tvalid <= (others => '0') when ct3_in_rst;
+						binsel_reg_tvalid <= (others => '0') when ct3_in_rst;
 					end if; -- clk
 				end process;
 
 
 				-- Connect the bin selection output to the shuffle links
-				shuffle_in_tdata(NUMBER_OF_CT2_INPUTS to NUMBER_OF_CT2_INPUTS + NUMBER_OF_CT3_INPUTS -1) <= binsel_out_tdata;
-				shuffle_in_tvalid(NUMBER_OF_CT2_INPUTS to NUMBER_OF_CT2_INPUTS + NUMBER_OF_CT3_INPUTS -1) <= binsel_out_tvalid;
-				shuffle_in_tlast(NUMBER_OF_CT2_INPUTS to NUMBER_OF_CT2_INPUTS + NUMBER_OF_CT3_INPUTS -1) <= binsel_out_tlast;
+				shuffle_in_tdata(NUMBER_OF_CT2_INPUTS to NUMBER_OF_CT2_INPUTS + NUMBER_OF_CT3_INPUTS -1) <= binsel_tdata;
+				shuffle_in_tvalid(NUMBER_OF_CT2_INPUTS to NUMBER_OF_CT2_INPUTS + NUMBER_OF_CT3_INPUTS -1) <= binsel_tvalid;
+				shuffle_in_tlast(NUMBER_OF_CT2_INPUTS to NUMBER_OF_CT2_INPUTS + NUMBER_OF_CT3_INPUTS -1) <= binsel_tlast;
 
 				-- Connect the shuffle link outputs to the aligner
 				align2_in_tdata <= shuffle_out_tdata(NUMBER_OF_CT2_INPUTS to NUMBER_OF_CT2_INPUTS + NUMBER_OF_CT3_INPUTS - 1);
@@ -766,7 +776,7 @@ begin
 						m_axis_tlast         => ct3_out_tlast,
 
 
-						lane_error     => open,
+						lane_error     => align2_lane_error,
 
 						-- Monitoring (if enabled)
 						mon_reset  => align2_mon_reset,
@@ -780,14 +790,16 @@ begin
 
 
 				-- Assign align output to output bus
+				-- Swap the even and odd halves on odd slot group  to keep low channels in the MSB
 				process(all)
-					variable rlane: integer; -- reverse lane number
+					variable slane, rlane: integer; -- reverse lane number
 				begin
 					if rising_edge(axis_clk) then
 						for lane in 0 to NUMBER_OF_CT3_OUTPUTS - 1 loop
-                        rlane := NUMBER_OF_CT3_OUTPUTS - 1 - lane;
-							m_axis_tdata(BITS_PER_CT3_LANE_WORD * (rlane + 1) - 1  downto BITS_PER_CT3_LANE_WORD * rlane) <= ct3_out_tdata(lane);
-						end loop;
+                            slane := lane when slot_group = '0' else (lane +  NUMBER_OF_CT3_OUTPUTS/2) MOD NUMBER_OF_CT3_OUTPUTS;
+                            rlane := NUMBER_OF_CT3_OUTPUTS - 1 - lane;
+                                m_axis_tdata(BITS_PER_CT3_LANE_WORD * (rlane + 1) - 1  downto BITS_PER_CT3_LANE_WORD * rlane) <= (others => '0') when zero_data_on_lane_error and  align2_lane_error(slane) else ct3_out_tdata(slane);
+                        end loop;
 						m_axis_tvalid <= '0' when ct3_out_rst else ct3_out_tvalid;
 						m_axis_tlast <= ct3_out_tlast;
 					end if; -- bsb_clk
