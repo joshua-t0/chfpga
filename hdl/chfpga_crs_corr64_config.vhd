@@ -11,7 +11,7 @@ package chfpga_config is
 
 	-- F-Engine/channelizer configuration
 
-	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean               := FALSE;
+	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean               := TRUE;
 	constant CONFIG_CHAN_FFT_TYPE: fft_type_enum              := CHORD; -- 14 bit samples, 8 samples/word, 16384 samples/frame, 32+32 bit output
 	constant CONFIG_CHAN_CAPTURE_TYPE: chan_capture_type_enum := UCAP;
 	constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer   := 2;
