@@ -2,7 +2,7 @@
 -- Company: McGill University
 -- Engineer: J.-F. Cliche
 --
--- Description: Robustly aligns multiple AXI-S streams to a common TVALID/TLAST framing 
+-- Description: Robustly aligns multiple AXI-S streams to a common TVALID/TLAST framing
 -- Create Date:    2025-01-30
 -- Design Name: chFPGA
 -- Module Name:    ALIGN64
@@ -29,7 +29,7 @@ use work.chFPGA_Package.ALL; -- Get all component definitions
 -- Aligns 64-bit data streams from multiple sources (lanes).
 --
 -- Lane 0 is used as a reference for the alignment, and the output tvalid/tlast are delayed verison of it.
--- tvalid/tlast will always be present even if a lane is missing, misalign etc. 
+-- tvalid/tlast will always be present even if a lane is missing, misalign etc.
 -- ``lane_error`` indicates that the data on a specific lane is no longer reliable.
 --
 -- Lanes that do not start at the same time as lane 0 after the FIFO are flushed from the FIFO until the FIFO is empty and an TLAST is encountered, and re-alignment is tested on the next Lane 0 start.
@@ -53,7 +53,7 @@ entity align64 is
 		-- Minimun number of words that will be stored before data is sent out. Must be large enough
 		-- to account for 1) delay between lanes, plus 2) maximum dead times (tvalid=0) once data
 		-- started arriving. Cannot exceed the FIFO depth, which is 512 words. Typical delays between bypass and GTY lanes are 35-45 words.
- 		BUFFERING_DEPTH: integer := 64
+ 		BUFFERING_DEPTH: integer := 128
 	);
 	port (
 		-- Input interface (non-blocking, i.e. always accepts data)
@@ -88,7 +88,7 @@ end entity align64;
 --
 -- Principle of operations:
 --
--- 
+--
 -- We implement an array of FIFOs, one per lane, to absorb time difference between lanes.
 -- The challenge is to make the alignment process resilient to mangled or missing frames, while avoiding combinatorial logic between FIFOs.
 --
@@ -103,7 +103,7 @@ end entity align64;
 --
 -- A simple state machine controls the readout of each lane.
 --
--- In the READ state, all lanes are extected to be aligned, and we simultaneously read words from all lanes when lane 0 does so. 
+-- In the READ state, all lanes are extected to be aligned, and we simultaneously read words from all lanes when lane 0 does so.
 -- If a lane is not starting when lane 0 starts, we enter the FLUSH_UNTIL_EMPTY to bring the FIFO to almost empty, then enter FLUSH_UNTIL_EOF to continue flushing but stop after TLAST is read out.
 -- We then hold the following SOF (if anything is coming) until the next Lane 0 SOF which puts us back in READ mode. If SOF alignment is not yet acheived, we repeat te process, otherwise we stay in READ mode.
 --
@@ -193,7 +193,7 @@ begin
 	-- useful flags
 	is_sof          <= fifo_tvalid and fifo_tfirst;
 	is_eof          <= fifo_tvalid and fifo_tlast;
-    
+
 	out_proc: process(all) begin
 		if rising_edge(clk) then
 
@@ -244,7 +244,7 @@ begin
         signal fifo_tfirst_mon: std_logic_vector(0 to NUMBER_OF_LANES - 1);
         signal fifo_underflow: std_logic_vector(0 to NUMBER_OF_LANES - 1);
         signal fifo_overflow: std_logic_vector(0 to NUMBER_OF_LANES - 1);
-    
+
 		signal mon_reset_all: std_logic;
 		signal s_axis_tfirst: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 		signal clk_ctr: unsigned(15 downto 0);
@@ -286,7 +286,7 @@ begin
                     fifo_overflow(i) <= fifo_almost_full(i);
                     bad_frame_length(i) <=  (is_eof(i) and fifo_rd_en(i)) and not (is_eof(0) and fifo_rd_en(0));
                     missing_frame(i) <=  is_sof(0) and fifo_rd_en(0) and not is_sof(i);
-    
+
 
 				end loop;
 
