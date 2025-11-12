@@ -72,7 +72,7 @@ begin
             NCHAN => N,
             NCHAN_PER_CLK => NCHAN_PER_CLK,
             NBINS => N_BINS,
-            BIN_DECIMATION_FACTOR => BIN_DECIMATION_FACTOR,
+            NDECIM => BIN_DECIMATION_FACTOR,
             NCORR => 8,
             CORR_NUMBER => 0
         )
@@ -87,6 +87,7 @@ begin
             z_out_send => '1',
 
             integ_period => to_slv(N_INTEG-1, 16),
+            bin_set => to_slv(7,4),
             autocorr_only => '0',
             no_accum => '0',
             corr_id => "0000",
@@ -122,7 +123,8 @@ begin
                     for sample in 0 to NCHAN_PER_CLK-1 loop
 --                        tdata_in(sample) <= x"10" when bin=BIN_DECIMATION_FACTOR-1 and word=0 and sample=0 else x"00";
 --                        tdata_in(sample) <= to_slv(sample + NCHAN_PER_CLK * (word + NCLK_PER_BIN * bin), 8) and x"07";
-                        tdata_in(sample) <= to_slv(word*32+sample, 8);
+--                        tdata_in(sample) <= to_slv(word*32+sample, 8);
+                        tdata_in(sample) <= to_slv((bin/BIN_DECIMATION_FACTOR mod 16)*16, 8) when word=0 and sample=0 else x"00";
 --                        tdata_in(sample) <= to_slv(1, 8);
                     end loop; -- sample
                     tvalid_in <= '1';

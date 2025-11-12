@@ -15,6 +15,8 @@ LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 USE ieee.numeric_std.ALL;
 
+USE std.env.finish;
+
 library work;
 USE work.chFPGA_Package.all;
 use work.tb_package.all;
@@ -23,12 +25,14 @@ use std.textio.all;
 ENTITY ucorr44_array_testbench IS
 	generic (
 	   PLATFORM_ID: integer  := PLATFORM_ID_CRS;
-	    NCHAN: integer := 8; 
-        NBINS: integer := 2048;-- bins per correlator (not total)
+	    NCHAN: integer := 64;
+	    NCHAN_PER_CLK: integer := 32; 
+        NBINS: integer := 32;-- bins per correlator (not total)
         NBINS_MAX: integer := 2048;-- max bins per correlator (not total) - sets memory depth
-	    NCORR: integer := 4;
-	    NINTEG: integer := 8192; -- 1024 is ok for autocorr only. requires 2048*1024*2.5ns clocks,= 
-	    N_BINS_PER_WORD: integer := 4;
+	    NCORR: integer := 1;
+	    NINTEG: integer := 100; -- 1024 is ok for autocorr only. requires 2048*1024*2.5ns clocks,= 
+	    NDECIM: integer := 8;
+--	    N_BINS_PER_WORD: integer := 4;
 	    N_BITS_PER_BIN: integer := 4+4;
 	    AUTOCORR_ONLY: boolean := TRUE 
  		);
@@ -43,10 +47,11 @@ ARCHITECTURE behavior OF ucorr44_array_testbench IS
     constant CLK_PERIOD : time := 1000000/400 * 1 ps; -- 400 MHz
     constant BSB_CLK_PERIOD : time := 10 ns; --
 	constant NUMBER_OF_PACKETS : integer :=500;
+   constant NCLK_PER_BIN: integer := NCHAN/NCHAN_PER_CLK;
 
 
 	signal clk: std_logic; -- 400 MHz
-	signal rst: std_logic := '1';
+	signal rst, corr_rst: std_logic := '1';
 	signal bsb_clk: std_logic; -- 200 MHz
 	signal bsb_rst: std_logic := '1';
 
@@ -63,7 +68,7 @@ ARCHITECTURE behavior OF ucorr44_array_testbench IS
 
 
 
-    signal ct_in_tdata: slv32_array(0 to NCHAN - 1) := (others => (others => '0'));
+    signal ct_in_tdata: slv_array(0 to NCHAN - 1)(31 downto 0) := (others => (others => '0'));
     signal ct_in_tuser: slv_array(0 to NCHAN - 1)(3 downto 0);
     signal ct_in_tvalid: std_logic;
     signal ct_in_tlast: std_logic;
@@ -98,45 +103,45 @@ begin
         wait for BSB_CLK_PERIOD/2;
    end process;
 
-    ct0: entity work.u_ct_engine
-        generic map (
-            PLATFORM_ID => PLATFORM_ID,
-            NUMBER_OF_INPUT_LANES => NCHAN, -- Number of channelizer inputs
-            CT_LEVEL => 1 -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
-        )
-        port map (
-            -- Non-blocking input stream from the channelizer, synchronous to `clk`
-            s_axis_tdata => ct_in_tdata,
-            s_axis_tvalid => ct_in_tvalid, -- we assume all lanes are aligned and therefore use only one `tvalid`
-            s_axis_tlast => ct_in_tlast, -- idem
+--    ct0: entity work.uct_engine
+--        generic map (
+--            PLATFORM_ID => PLATFORM_ID,
+--            NUMBER_OF_INPUT_LANES => NCHAN, -- Number of channelizer inputs
+--            CT_LEVEL => 1 -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
+--        )
+--        port map (
+--            -- Non-blocking input stream from the channelizer, synchronous to `clk`
+--            s_axis_tdata => ct_in_tdata,
+--            s_axis_tvalid => ct_in_tvalid, -- we assume all lanes are aligned and therefore use only one `tvalid`
+--            s_axis_tlast => ct_in_tlast, -- idem
 
-            -- Non-blocking output stream, synchronous to `clk`
-            m_axis_tdata => tdata_in,
-            m_axis_tvalid => tvalid_in,
-            m_axis_tlast => tlast_in,
+--            -- Non-blocking output stream, synchronous to `clk`
+--            m_axis_tdata => tdata_in,
+--            m_axis_tvalid => tvalid_in,
+--            m_axis_tlast => tlast_in,
 
-            axis_clk => clk,
+--            axis_clk => clk,
 
-            -- Backplane 25 Gbps GTY links
---            tx_p      => bp_shuffle_tx_p,
---            tx_n      => bp_shuffle_tx_n,
---            rx_p      => bp_shuffle_rx_p,
---            rx_n      => bp_shuffle_rx_n,
---            refclk_p  => bp_shuffle_refclk_p,
---            refclk_n  => bp_shuffle_refclk_n,
+--            -- Backplane 25 Gbps GTY links
+----            tx_p      => bp_shuffle_tx_p,
+----            tx_n      => bp_shuffle_tx_n,
+----            rx_p      => bp_shuffle_rx_p,
+----            rx_n      => bp_shuffle_rx_n,
+----            refclk_p  => bp_shuffle_refclk_p,
+----            refclk_n  => bp_shuffle_refclk_n,
 
 
-            rst => rst, -- synchronous reset (sync to ct_clk, which is derived from corr_reset)
-            arst => rst, -- asynchronous reset that is independent from ct_clk (because reset stops bp_shuffle_txclk and therefore ct_clk)
+--            rst => rst, -- synchronous reset (sync to ct_clk, which is derived from corr_reset)
+--            arst => rst, -- asynchronous reset that is independent from ct_clk (because reset stops bp_shuffle_txclk and therefore ct_clk)
 
-            -- Control interface (command and reply stream buses)
-            bsb_cmd_dat  => (TDATA=>(others => '0'),TVALID=>'0',TLAST=>'0'),
-            bsb_cmd_rdy  => open,
-            bsb_rply_dat => open,
-            bsb_rply_rdy => (TREADY => '1'),
-            bsb_clk      => bsb_clk,
-            bsb_rst      => bsb_rst
-        );
+--            -- Control interface (command and reply stream buses)
+--            bsb_cmd_dat  => (TDATA=>(others => '0'),TVALID=>'0',TLAST=>'0'),
+--            bsb_cmd_rdy  => open,
+--            bsb_rply_dat => open,
+--            bsb_rply_rdy => (TREADY => '1'),
+--            bsb_clk      => bsb_clk,
+--            bsb_rst      => bsb_rst
+--        );
 
 
 
@@ -145,8 +150,8 @@ begin
                 PLATFORM_ID => PLATFORM_ID_CRS, -- needed to determine the RPM spacing of the DSP and BRAM elements and choose the right primitives
                 NCHAN => NCHAN, 
                 NCORR   => NCORR,
-                NBINS_PER_CORR => NBINS_MAX,
-                BIN_DECIMATION_FACTOR => 1,
+                NBINS_PER_CORR => NBINS,
+                BIN_DECIMATION_FACTOR => NDECIM,
                 SOFT_NINTEG => NINTEG,
                 SOFT_AUTOCORR_ONLY => AUTOCORR_ONLY,
                 READOUT_BINS => (others=>0)
@@ -160,7 +165,7 @@ begin
                 s_axis_data_tdata  => tdata_in,
     
                 clk => clk,
-                rst => rst,
+                rst => corr_rst,
     
                 -- Correlated data output interface (AXI4-Streaning, 8-bit wide, blocking)
     
@@ -179,63 +184,127 @@ begin
                 CTRL_RST => bsb_rst
                 );
 
-	sim_proc: process
+--	sim_proc: process
 
-        variable data: std_logic_vector(255 downto 0);
-        variable addr, eop, eot: integer;
-        variable dat: slv8_array(0 to 127);
-        variable src: integer := 0;
-        variable bin:integer; 
-        variable rb: integer;
-        variable re, im: integer;
-        variable lsb, rch, rbin: integer;   
+--        variable data: std_logic_vector(255 downto 0);
+--        variable addr, eop, eot: integer;
+--        variable dat: slv8_array(0 to 127);
+--        variable src: integer := 0;
+--        variable bin:integer; 
+--        variable rb: integer;
+--        variable re, im: integer;
+--        variable lsb, rch, rbin: integer;   
+--	begin
+
+--		-- wait for init and synchronize to clock
+--		ct_in_tlast <= '0';
+--		ct_in_tvalid <= '0';
+--		rst <= '1';
+--		bsb_rst <= '1';
+--		sleep(bsb_clk, 10);
+--		bsb_rst <= '0';
+--		sleep(bsb_clk, 10);
+--		sleep(clk, 10);
+--		rst <= '0';
+--        sleep(clk, 10); 
+
+--        -- send channelizer data
+--        loop
+--            for word in 0 to NBINS-1 loop
+--                for ch in 0 to NCHAN-1 loop
+--                    rch := NCHAN-1-ch;
+--                    for b in 0 to N_BINS_PER_WORD-1 loop
+--                        rbin := N_BINS_PER_WORD-1-b;
+--                        bin := N_BINS_PER_WORD * word + b; -- bin number
+--                        rb := N_BINS_PER_WORD-1-b;  -- reverse-order bin index in word
+----                        re := (bin MOD 16);
+----                        im := -1;
+--                          re := 1;
+--                          im := 0;
+----                        lsb := N_BITS_PER_BIN * (rbin + rch*N_BINS_PER_WORD);
+----                        tdata_in(lsb + N_BITS_PER_BIN -1 downto lsb) <= to_slv(re, N_BITS_PER_BIN/2) & to_slv(im, N_BITS_PER_BIN/2);
+--                        ct_in_tdata(ch)(8*(rbin+1)-1 downto 8*(rbin+1)-N_BITS_PER_BIN) <= to_slv(re, N_BITS_PER_BIN/2) & to_slv(im, N_BITS_PER_BIN/2);
+--                    end loop;
+--                end loop;
+----        		tdata_in <=(X"10101010", X"20202020", X"30303030", X"40404040", X"50505050", X"60606060", X"70707070",X"F0F0F0F0");
+----                tvalid_in <='1';
+----                tlast_in <= '0';
+--                ct_in_tvalid <='1';
+--                ct_in_tlast <= '0';
+
+--                if word = NBINS-1 then
+--                    ct_in_tlast <= '1';
+--                end if;
+--                sleep(clk);
+--            end loop; -- bin
+--        end loop; --frame
+--        ct_in_tvalid <='0';
+--		wait;
+--	end process;
+
+reset_proc: process begin
+
+    corr_rst <= '1';
+    rst <='1';
+    sleep(clk, 100);
+    corr_rst <= '0';
+    sleep(clk, 100);
+    rst <= '0';
+    sleep(clk, 50000);
+    corr_rst <= '1';
+    sleep(clk, 100);
+    corr_rst <= '0';
+    sleep(clk, 50000);
+    
+end process;
+
+
+stim_blk: block is
+
+    signal word, bin, frame, ctr: integer;
+begin
+
+	sim_proc: process(all)
+
+--        variable data: std_logic_vector(255 downto 0);
+--        variable addr, eop, eot: integer;
+--        variable dat: slv8_array(0 to 127);
+--        variable src: integer := 0;
+--        variable ix: integer;     
 	begin
 
-		-- wait for init and synchronize to clock
-		ct_in_tlast <= '0';
-		ct_in_tvalid <= '0';
-		rst <= '1';
-		bsb_rst <= '1';
-		sleep(bsb_clk, 10);
-		bsb_rst <= '0';
-		sleep(bsb_clk, 10);
-		sleep(clk, 10);
-		rst <= '0';
-        sleep(clk, 10); 
+        if rising_edge(clk) then
 
-        -- send channelizer data
-        loop
-            for word in 0 to NBINS-1 loop
-                for ch in 0 to NCHAN-1 loop
-                    rch := NCHAN-1-ch;
-                    for b in 0 to N_BINS_PER_WORD-1 loop
-                        rbin := N_BINS_PER_WORD-1-b;
-                        bin := N_BINS_PER_WORD * word + b; -- bin number
-                        rb := N_BINS_PER_WORD-1-b;  -- reverse-order bin index in word
---                        re := (bin MOD 16);
---                        im := -1;
-                          re := 1;
-                          im := 0;
---                        lsb := N_BITS_PER_BIN * (rbin + rch*N_BINS_PER_WORD);
---                        tdata_in(lsb + N_BITS_PER_BIN -1 downto lsb) <= to_slv(re, N_BITS_PER_BIN/2) & to_slv(im, N_BITS_PER_BIN/2);
-                        ct_in_tdata(ch)(8*(rbin+1)-1 downto 8*(rbin+1)-N_BITS_PER_BIN) <= to_slv(re, N_BITS_PER_BIN/2) & to_slv(im, N_BITS_PER_BIN/2);
-                    end loop;
-                end loop;
---        		tdata_in <=(X"10101010", X"20202020", X"30303030", X"40404040", X"50505050", X"60606060", X"70707070",X"F0F0F0F0");
---                tvalid_in <='1';
---                tlast_in <= '0';
-                ct_in_tvalid <='1';
-                ct_in_tlast <= '0';
+             tvalid_in <= '0';
 
-                if word = NBINS-1 then
-                    ct_in_tlast <= '1';
-                end if;
-                sleep(clk);
-            end loop; -- bin
-        end loop; --frame
-        ct_in_tvalid <='0';
-		wait;
+            ctr <= ctr + 1;
+            if (ctr + 5) mod 13 /= 0 then
+                word <= word + 1;
+                if word = NCLK_PER_BIN-1 then
+                    word <= 0;
+                    bin <= bin + 1;
+                    if bin = NBINS-1 then
+                        bin <= 0;
+                        frame <= frame + 1;
+                    end if;
+                 end if;
+                 tdata_in <= (others => '0');
+                 tdata_in(255 downto 240)  <= to_slv(bin, 16);
+                 tvalid_in <= '1';
+                 tlast_in <= '1' when word = NCLK_PER_BIN-1 and bin = NBINS-1 else '0';
+            end if; --ctr     
+            if rst then
+                tvalid_in <= '0';
+                word <= 0;
+                frame <= 0;
+                bin <= 0;
+                ctr <= 0;
+            end if;
+                            
+        end if; -- clk
 	end process;
+
+end block;
 
 decode_proc: process(clk)
         constant NPROD: integer := NCHAN*(NCHAN+1)/2;
@@ -243,7 +312,7 @@ decode_proc: process(clk)
         variable data: unsigned(8*(10+5*NPROD)-1 downto 0);
         variable byte_ctr: integer := 0;
         variable cookie: integer;
-        variable bin: integer;
+        variable bin, bin_set: integer;
         variable ts: integer;
         variable flags: std_logic_vector(7 downto 0);
         variable re, im: integer;
@@ -266,9 +335,10 @@ decode_proc: process(clk)
                     bin := to_integer(to_unsigned(bytes(1 to 2)));
                     ts := to_integer(to_unsigned(bytes(4 to 9)));
                     flags := bytes(3);
+                    bin_set := to_integer(unsigned(flags(7 downto 4)));
                     assert flags(0) = '0' report "Overrun" severity WARNING;
 
-                    write(buf, "ts=" & str(ts) & " bin=" & str(bin) & ": ");
+                    write(buf, "ts=" & str(ts) & " bin=" & str(bin) & " bin_set=" & str(bin_set) & ": ");
 --                    writeline(output, buf);
                     for p in 0 to (byte_ctr-10)/5-1 loop
                         prod_bits := reverse_bytes(std_logic_vector(to_unsigned(bytes(10+5*P to 10+5*p+5-1))));
