@@ -63,6 +63,7 @@ entity UCMAC44_ARRAY is
 		s_axis_xy_tvalid: in std_logic;
         s_axis_xy_swap: in std_logic_vector(0 to NCMAC-1); -- swap A and B (in practice, conjugate A instead of B)
 
+        bin_set: in std_logic_vector(3 downto 0) := "0000"; -- current bin set, used in header only.
         integ_period: in std_logic_vector(15 downto 0);
         autocorr_only: in std_logic := '1';
 	    no_accum: in std_logic := '1'; -- when '1', there is no accumulation: only the last product of the accumulation period is kept. (for debugging)
@@ -203,7 +204,7 @@ begin
 		signal ro_active: std_logic := '0'; -- bank readout busy
 		signal ro_shift: std_logic := '0'; -- data available for shift out
 		signal ro_last: std_logic := '0'; -- is the last shift out of the integ period
-
+		signal ro_bin_set: std_logic_vector(3 downto 0); -- bin set to be placed in the headers
 		signal dc_busy: std_logic := '0'; -- daisy chain readout busy
 		signal timestamp, integ_timestamp, readout_timestamp: unsigned(47 downto 0);
 	begin
@@ -243,10 +244,9 @@ begin
                         timestamp <= next_timestamp;
 						if frame=unsigned(integ_period) then -- if last frame of the integration period
 	                        frame <= (others => '0'); -- restart the readout from word 0
-                            if ro_active then
-                                overrun <= '1';
-                            end if;
+                            overrun <= '1' when ro_active;
 							ro_active <= '1'; -- start readout of the readout bank
+							ro_bin_set <= bin_set; --  register the bin set on the last word of the last frame of the integ period
 							readout_timestamp <= integ_timestamp;
 							integ_timestamp <= next_timestamp; -- timestamp+1 should reuses the logic above
 							s_axis_z_send <= '0'; -- tell the upstream cascaded correlators we stop accepting data
@@ -327,6 +327,7 @@ begin
                         frame_header.STREAM_ID(10 downto 0) := std_logic_vector(ro_word_ctr1);
                         --frame_header.STREAM_ID(LOG2_NCORR-1 downto 0) := to_slv(CORR_NUMBER, LOG2_NCORR);
                         frame_header.TIMESTAMP := std_logic_vector(readout_timestamp);
+                        frame_header.SERIAL_FLAGS := ro_bin_set;
                         frame_header.FLAGS(0) := overrun;
                         frame_header.FLAGS(1) := autocorr_only;
                         bytes(0 to FRAME_HEADER_BYTE_LENGTH-1) <= struct_to_bytes(frame_header);

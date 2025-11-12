@@ -36,9 +36,9 @@ use xpm.vcomponents.all;
 entity UCORR44_ARRAY is
 	GENERIC (
 		PLATFORM_ID: integer;
-		NCORR: integer; -- number of correlators
-		NCHAN: integer; -- number of channels to correlate per correlator
-		NBINS_PER_CORR: integer; -- Number of bins to be processed by each correlator
+		NCORR: integer := 1; -- number of correlators
+		NCHAN: integer :=8; -- number of channels to correlate per correlator
+		NBINS_PER_CORR: integer :=2048; -- Number of bins to be processed by each correlator
 		BIN_DECIMATION_FACTOR: integer := 1; -- Only 1 out of every BIN_DECIMATION_FACTOR bin is processed in order to provide extra comoputing cycles and use less resources
 		N_BITS_PER_BIN: integer := 4+4; -- The correlator only supports 4+4 bit format.
 		SOFT_NINTEG: integer := 8192; -- default integration period (number of frames)
@@ -95,17 +95,22 @@ architecture Behavioral of UCORR44_ARRAY is
     constant URAM_MAX: integer := sel(PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES=FPGA_ULTRASCALEPLUS, 64 / NCORR, 0);
     signal rst_reg: slv(0 to NCORR-1);
     attribute DONT_TOUCH of rst_reg: signal is "true";
-
     -- Control signals
-    signal control_bytes: slv8_array(0 to 2);
+    signal control_bytes: slv8_array(0 to 3);
     signal status_bytes: slv8_array(0 to 5);
     signal user_reset: std_logic;
     signal user_reset_resync: std_logic;
     signal overrun_reset, overrun_reset_resync: std_logic;
     signal autocorr_only: std_logic;
+    signal auto_bin_set: std_logic;
+    signal offset_encoding: std_logic;
+    signal manual_bin_set: unsigned(3 downto 0);
     signal no_accum: std_logic; -- when '1', there is no accumulation: only th elast product of the accumulation period is kept.
     signal integ_period: std_logic_vector(15 downto 0);
     signal corr_id: std_logic_vector(3 downto 0);
+
+    signal bin_set: std_logic_vector(3 downto 0);
+--    signal frame_ctr: unsigned(15 downto 0);
 
     type slv_2darray is array (natural range <>) of slv_array(0 to NCHAN_PER_CLK-1)(N_BITS_PER_BIN-1 downto 0);
     signal corr_in_tdata: slv_2darray(0 to NCORR-1);
@@ -123,6 +128,7 @@ architecture Behavioral of UCORR44_ARRAY is
     signal out_frame_ctr: unsigned(7 downto 0);
 begin
 
+    assert FALSE report "N="  & to_string(N) & " NCHAN_PER_CLK=" & to_string(NCHAN_PER_CLK);
 
     --------------------------------------------
     -- Memory mapped registers
@@ -131,7 +137,8 @@ begin
 	bsb_regs0: entity work.CTRL_SLAVE
 		GENERIC MAP (
 			DEFAULT_CONTROL_BYTES=> "0000000" & to_std_logic(SOFT_AUTOCORR_ONLY) &
-			                        to_slv(SOFT_NINTEG-1,16),
+			                        to_slv(SOFT_NINTEG-1,16) &
+			                        X"40", -- COntrol byte 3: no autobin, offset_encoding=0, manual_bin_set=0
 			NUMBER_OF_CONTROL_BYTES => control_bytes'LENGTH(1), -- Number of bits in the control word
 			NUMBER_OF_STATUS_BYTES => status_bytes'LENGTH(1) -- Number of bits in the status word.
 		)
@@ -157,6 +164,11 @@ begin
 
     -- control byte 1-2
     integ_period <= to_slv(control_bytes(1 to 2));
+
+    offset_encoding <= control_bytes(3)(7);
+    auto_bin_set <= control_bytes(3)(6);
+    bin_set      <= control_bytes(3)(3 downto 0);
+
 
     -- Status Byte 0
     status_bytes(0)(0) <= or(overrun);
@@ -210,9 +222,25 @@ begin
 				    lsb := N_BITS_PER_BIN*(rcorr*NCHAN_PER_CLK + rchan);
 					corr_in_tdata(corr)(chan) <= s_axis_data_tdata(lsb + N_BITS_PER_BIN -1 downto lsb);
 				end loop;
-				corr_in_tvalid(corr) <= s_axis_data_tvalid;
+				corr_in_tvalid(corr) <= '0' when rst_reg(corr) else s_axis_data_tvalid;
 				corr_in_tlast(corr) <= s_axis_data_tlast;
 			end loop;
+
+
+--			-- Generate auto bin set
+--			if corr_in_tvalid(0) and corr_in_tlast(0) then
+--				frame_ctr <= frame_ctr + 1;
+--				if frame_ctr = unsigned(integ_period) then
+--					frame_ctr <= (others => '0');
+--					bin_set <= manual_bin_set when not auto_bin_set else
+--					               (others => '0') when bin_set = BIN_DECIMATION_FACTOR -1 else
+--					               bin_set + 1;
+--		        end if;
+--			end if;
+--            frame_ctr <= (others => '0') when rst_reg(0);
+--            bin_set <= (others => '0') when rst_reg(0);
+
+--            bin_set_dly <= bin_set;
 
 			-- Count the input and output frames for debugging
 			in_frame_ctr <= in_frame_ctr + 1 when s_axis_data_tvalid and s_axis_data_tlast;
@@ -301,7 +329,7 @@ begin
 				NBINS                 => NBINS_PER_CORR, -- number of bins per correlator
 				NCHAN                 => NCHAN,
 				NCHAN_PER_CLK         => NCHAN_PER_CLK,
-				BIN_DECIMATION_FACTOR => BIN_DECIMATION_FACTOR,
+				NDECIM => BIN_DECIMATION_FACTOR,
 				URAM_MAX              => URAM_MAX,
 				READOUT_BIN           => READOUT_BINS(i)
 				)
@@ -310,12 +338,15 @@ begin
 				s_axis_tlast  => corr_in_tlast(i),
 				s_axis_tdata  => corr_in_tdata(i),
 
-				integ_period  => integ_period,
-				autocorr_only => autocorr_only,
-				no_accum      => no_accum,
-				overrun       => overrun(i),
-				overrun_reset => overrun_reset,
-				corr_id       => corr_id,
+				integ_period    => integ_period,
+				auto_bin_set => auto_bin_set,
+				bin_set         => bin_set,
+				offset_encoding => offset_encoding,
+				autocorr_only   => autocorr_only,
+				no_accum        => no_accum,
+				overrun         => overrun(i),
+				overrun_reset   => overrun_reset,
+				corr_id         => corr_id,
 
 				z_out_tdata  => z_tdata(i),
 				z_out_tvalid => z_tvalid(i),

@@ -63,7 +63,7 @@ entity UCORR44 is
 		NCHAN: integer := 64; -- Number of inputs to correlate
 		NCHAN_PER_CLK: integer := 32; -- Number of channels provided on each clock
 		NBINS: integer; -- Number of bins to be processed by this correlator (before decimation)
-		BIN_DECIMATION_FACTOR: integer := 1; -- Only 1 out of every BIN_DECIMATION_FACTOR bin is processed in order to provide extra comoputing cycles and use less resources
+		NDECIM: integer := 1; -- Only 1 out of every NDECIM bin is processed in order to provide extra comoputing cycles and use less resources
 		CORR_NUMBER: integer := 0; -- correlator number to be used in packet headers
         NCORR: integer := 1;
 		URAM_MAX: integer := 64;
@@ -76,7 +76,9 @@ entity UCORR44 is
 		s_axis_tlast: in std_logic;
 		s_axis_tvalid: in std_logic;
 
-
+		bin_set: in std_logic_vector(3 downto 0); -- Bin to select, from 0 to NDECIM-1.
+		auto_bin_set: in std_logic;
+		offset_encoding: in std_logic := '0'; -- '1' if incoming data uses offset binary encoding, so it can be undone before the correlator.
         integ_period: in std_logic_vector(15 downto 0);
         autocorr_only: in std_logic := '1';
 	    no_accum: in std_logic := '1'; -- when '1', there is no accumulation: only th elast product of the accumulation period is kept.
@@ -164,103 +166,118 @@ architecture impl of UCORR44 is
 	-- Constants
 	constant P: integer := (NCHAN * (NCHAN + 1) / 2); -- number of products
 	constant NCLK_PER_BIN: integer := NCHAN / NCHAN_PER_CLK; -- number of clocks it takes to send all the channels of one bin
-	constant NCLK: integer := BIN_DECIMATION_FACTOR * NCLK_PER_BIN; -- Number of clocks the correlator should take to compute the products
-
+	constant NCLK: integer := NDECIM * NCLK_PER_BIN; -- Number of clocks the correlator should take to compute the products
 	constant NCMAC : integer := P / NCLK;
-	constant K: integer := BIN_DECIMATION_FACTOR; -- bin decimation factor
-	constant H: integer := NCHAN / 2 / NCLK; -- Number of columns processed per clock
+	constant NCOL_PER_CLK: integer := NCHAN / 2 / NCLK; -- Number of columns if the squarified prodict matrix (NCHAN+1 rows bu NCHAN/2 cols) to processed per clock
 
 	signal xy_tdata: slv_array(0 to NCMAC - 1)(15 downto 0);
 	signal xy_swap: std_logic_vector(0 to NCMAC - 1);
 	signal xy_tvalid: std_logic;
 	signal xy_tlast: std_logic;
-	signal xy_tlast_pre: std_logic;
+
+	signal xy_bin_set: std_logic_vector(3 downto 0);
 
 	signal word_ctr: unsigned(3 downto 0); -- 0 to NCLK_PER_BIN - 1
-	signal bin_ctr: unsigned(3 downto 0); -- 0 to K - 1
+	signal bin_ctr: unsigned(3 downto 0); -- 0 to NDECIM - 1
 
 
 begin
 
 	bin_sel: process(all) begin
 		if rising_edge(clk) then
-			if s_axis_tvalid then
-				word_ctr <= word_ctr + 1;
-				if word_ctr = NCLK_PER_BIN - 1 then
-					word_ctr <= (others => '0');
-					bin_ctr <= bin_ctr + 1;
-					if bin_ctr = K - 1 then
-						bin_ctr <= (others => '0');
-					end if;
-				end if;
-			end if; -- tvalid
-			-- synchronous resets
-			if rst or (s_axis_tvalid and s_axis_tlast) then
-				word_ctr <= (others => '0');
-				bin_ctr <= (others => '0');
-			end if; --rst
 		end if;
 	end process bin_sel;
 
 
-    corr_blk: block
-		signal t: slv_array(0 to NCHAN - NCHAN_PER_CLK - 1)(7 downto 0); -- assembly vector - don't need to store the last word
+    corr_blk: block is
+		signal staging_tdata: slv_array(0 to NCHAN - 1)(7 downto 0); -- data staging (assembly) vector
+		signal staging_tvalid: std_logic;
+		signal staging_tlast: std_logic;
+		signal staging_bin_set: std_logic_vector(3 downto 0);
+    	signal xy_tlast_reg: std_logic;
+
 		signal x: slv_array(0 to NCHAN - 1)(7 downto 0) := (others => (others => '0')); -- fixed correlation vector. Init value for nice sims only.
 		signal y: slv_array(0 to NCHAN - 1)(7 downto 0):= (others => (others => '0')); -- rotating correlation vector. Init value for nice sims only.
 		signal xsel: std_logic_vector(NCHAN / 2 to NCHAN - 1); -- mux selection vector, only applies to muxes fron NCHAN / 2+1 to NCHAN. Elements frm 0 to NCHAN / 2 are not touches and shoudl be synthesized out.
 
-		signal clk_ctr: unsigned(3 downto 0);
+		signal clk_ctr: unsigned(4 downto 0); -- counts from 0 to NCLK (inclusively)
+		signal bin_set_int: unsigned(3 downto 0);
+		signal frame_ctr: unsigned(15 downto 0);
 	begin
 
-        xyj_gen: for j in 0 to H-1 generate
+        xyj_gen: for j in 0 to NCOL_PER_CLK-1 generate
             xyi_gen: for i in 0 to NCHAN generate
-                xy_swap(i * H + j) <= '1' when i>= NCHAN / 2 + 1 and (i + j >= NCHAN or xsel(i + j) = '1') else '0';
-                xy_tdata(i * H + j)(15 downto 8) <= x(i - 1) when i>= NCHAN / 2 + 1 and (i + j >= NCHAN or xsel(i + j) = '1') else x(i);
-                xy_tdata(i * H + j)(7 downto 0) <= y((i + j) mod NCHAN);
+                xy_swap(i * NCOL_PER_CLK + j) <= '1' when i>= NCHAN / 2 + 1 and (i + j >= NCHAN or xsel(i + j) = '1') else '0';
+                xy_tdata(i * NCOL_PER_CLK + j)(15 downto 8) <= x(i - 1) when i>= NCHAN / 2 + 1 and (i + j >= NCHAN or xsel(i + j) = '1') else x(i);
+                xy_tdata(i * NCOL_PER_CLK + j)(7 downto 0) <= y((i + j) mod NCHAN);
             end generate; --i
         end generate; --j
 
 		seq_proc: process(all) begin
 			if rising_edge(clk) then
-				-- Rotate y and grow xsel vectors by NCHAN. Overriden below when new data is ready.
-                y <= y(H to NCHAN - 1) & y(0 to H-1);
-                if NCLK > 1 then
-                    xsel(NCHAN / 2+1 to NCHAN - 1-H) <= xsel(NCHAN / 2+1+H to NCHAN - 1);
-                    xsel(NCHAN-H to NCHAN - 1) <= (others => '1');
-                end if;
-                -- Keep xy_tvalid high for NCLK clocks and set xy_tlast on last clock
-                xy_tlast <= '0';
-                if xy_tvalid then
-                    clk_ctr <= clk_ctr + 1;
-  				    if NCLK > 1 and clk_ctr = NCLK-2 and autocorr_only='0' then
-                        xy_tlast <= xy_tlast_pre;
-                    end if;
-  				    if clk_ctr = NCLK - 1 or autocorr_only='1' then
-  				        xy_tvalid <= '0'; -- overriden below
-  				    end if; -- clk_ctr
-  				end if; -- xy_tvalid
 
-                -- Assemble NCHAN inputs into x and y
-				if s_axis_tvalid='1' and bin_ctr= K - 1 then -- select last bin of the decimation block to make sure we get the TLAST frame
-					if word_ctr = NCLK_PER_BIN - 1 then -- if last word of bin
-						y(0 to NCHAN - NCHAN_PER_CLK - 1) <= t;
-						y(NCHAN - NCHAN_PER_CLK to NCHAN - 1) <= s_axis_tdata;
-						x(0 to NCHAN - NCHAN_PER_CLK - 1) <= t;
-						x(NCHAN - NCHAN_PER_CLK to NCHAN - 1) <= s_axis_tdata;
-						xsel(NCHAN / 2+1 to NCHAN - 1) <= (others =>'0');
-						xy_tvalid <= '1'; -- restart a Nclock correlation cycle
-                        if NCLK=1 or autocorr_only='1' then
-    						xy_tlast <= s_axis_tlast;
-    				    end if;
-  						xy_tlast_pre <= s_axis_tlast;
-                        clk_ctr <= (others => '0');
-                    elsif NCHAN /= NCHAN_PER_CLK then
-                        -- Put incoming bytes in assembly vector and transfer to xy when ready
-                        for i in 0 to NCHAN_PER_CLK - 1 loop
-                            t(to_integer(word_ctr)*NCHAN_PER_CLK+i) <= s_axis_tdata(i);
-                        end loop;
+				-- Count bins and words within bins
+				if s_axis_tvalid then
+					word_ctr <= word_ctr + 1;
+					if word_ctr = NCLK_PER_BIN - 1 then
+						word_ctr <= (others => '0');
+						bin_ctr <= (others => '0') when bin_ctr = NDECIM - 1 else bin_ctr + 1;
 					end if;
-				end if; -- tvalid and right bin
+				end if; -- tvalid
+				-- Extra counter resets when reset or end of frame is reached
+				word_ctr <= (others => '0') when rst or (s_axis_tvalid and s_axis_tlast);
+				bin_ctr <= (others => '0') when rst or (s_axis_tvalid and s_axis_tlast);
+
+				-- Phase 1: Assemble the data into the staging vector, and undo offset binary encoding if present
+
+				staging_tvalid <= '0'; -- Overriden below - Make sure tvalid is a single clock pulse
+				if s_axis_tvalid then
+					if bin_ctr = to_integer(bin_set_int) then -- if bin is in the selected bin set
+                        for i in 0 to NCHAN_PER_CLK - 1 loop
+                            staging_tdata(to_integer(word_ctr)*NCHAN_PER_CLK+i) <= s_axis_tdata(i) xor x"88" when offset_encoding else s_axis_tdata(i);
+                        end loop;
+                    end if;
+					if (bin_ctr = NDECIM - 1 and word_ctr=NCLK_PER_BIN - 1) or s_axis_tlast='1' then -- set tvalid and tlast on the last word of the decimation block
+						staging_tvalid <= '1'; -- pulse tvalid to start a new Nclock correlation cycle
+   						staging_tlast <= s_axis_tlast;
+		   				staging_bin_set <= std_logic_vector(bin_set_int);
+   					end if;
+   				end if;
+				staging_tvalid <= '0' when rst;
+
+				-- Generate auto bin set
+				if staging_tvalid and staging_tlast then
+					frame_ctr <= frame_ctr + 1;
+					if frame_ctr = unsigned(integ_period) then
+						frame_ctr <= (others => '0');
+						bin_set_int <= unsigned(bin_set) when not auto_bin_set else
+						               (others => '0') when bin_set_int = NDECIM - 1 else
+						               bin_set_int + 1;
+			        end if;
+				end if;
+	            frame_ctr <= (others => '0') when rst;
+	            bin_set_int <= (others => '0') when rst;
+
+   				-- Phase 2: Load and rotate X & Y registers NCLK times
+
+				clk_ctr <= clk_ctr + 1;  -- Counts NCLKs - overriden below of new loads, otherwise free-running
+				xy_tlast <= xy_tlast_reg when ??xy_tvalid and NCLK > 1 and clk_ctr = NCLK-2; -- set tlast on the last clock
+ 				xy_tvalid <= '0' when clk_ctr = NCLK-1 or ??autocorr_only; -- Processing complete
+				-- Rotate y and grow xsel vectors by NCHAN. Overriden below when new data is ready.
+                y <= y(NCOL_PER_CLK to NCHAN - 1) & y(0 to NCOL_PER_CLK-1);
+                xsel(NCHAN / 2+1 to NCHAN - 1-NCOL_PER_CLK) <= xsel(NCHAN / 2+1+NCOL_PER_CLK to NCHAN - 1);
+                xsel(NCHAN-NCOL_PER_CLK to NCHAN - 1) <= (others => '1');
+                -- Load up XY and start new NCLK cycle upon valid staging word pulse
+				if staging_tvalid then
+					x <= staging_tdata;
+					y <= staging_tdata;
+					xsel(NCHAN / 2+1 to NCHAN - 1) <= (others =>'0');
+                    clk_ctr <= (others => '0');
+					xy_tvalid <= '1'; -- x & y contains valid data
+					xy_tlast <= staging_tlast when NCLK = 1 or ??autocorr_only else '0'; -- Store tlast immediately if NCLK=1, otherwise it will be set at the end of the cycle
+					xy_tlast_reg <= staging_tlast; -- store tlast to apply at then end on NCLK cycle if NCLK > 1
+	   				xy_bin_set <= staging_bin_set when staging_tlast;
+                end if;
 
 				if rst then
     				xsel <= (others =>'0');
@@ -274,8 +291,8 @@ begin
 	corr0: entity work.UCMAC44_ARRAY
 		generic map (
 			NCMAC => NCMAC,
-			NPROD => NBINS / BIN_DECIMATION_FACTOR * NCLK,
-			AUTOCORR_STRIDE => H,
+			NPROD => NBINS / NDECIM * NCLK,
+			AUTOCORR_STRIDE => NCOL_PER_CLK,
 			CORR_NUMBER => CORR_NUMBER,
 			NCORR => NCORR,
 			URAM_MAX => URAM_MAX,
@@ -287,7 +304,9 @@ begin
 			s_axis_xy_tlast => xy_tlast,
 			s_axis_xy_swap => xy_swap,
 
+
 	        integ_period => integ_period,
+            bin_set => xy_bin_set,
 		    no_accum => no_accum,
 	        overrun => overrun,
 	        overrun_reset => overrun_reset,
