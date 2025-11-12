@@ -24,7 +24,7 @@ set const_dir "${repo_dir}/constraints/"
 
 
 
-
+# set crs ip_repo_path [list $ip_dir]
 set crs_ip_files [list \
  "CRS/pfb_fft_bitgrowth_0/pfb_fft_bitgrowth_0.xci" \
  "CRS/GTY/gtwizard_ultrascale_0.xci" \

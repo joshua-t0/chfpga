@@ -138,9 +138,10 @@ puts ""
 # Create project
 create_project -force ${proj_name} . -part $target_part
 
-# set irp [get_property ip_repo_paths [current_project]]
-# puts "*** IP repo paths = $irp"
-# set_property ip_repo_paths $ip_dir [current_project]
+set irp [concat [get_property ip_repo_paths [current_project]] [list $ip_dir]]
+
+puts "*** IP repo paths = $irp"
+set_property ip_repo_paths $ip_dir [current_project]
 
 # Set the directory path for the new project
 # set proj_dir [get_property directory [current_project]]
@@ -189,11 +190,11 @@ if { $fileset_obj != {} } {
    update_ip_catalog -rebuild
 }
 
-add_files -norecurse -fileset $fileset_obj [concat $full_bd_files $full_hdl_files ]
 
-puts "Importing IPs"
+add_files -norecurse -fileset $fileset_obj [concat $full_bd_files $full_hdl_files $full_ip_files]
 
-import_ip $full_ip_files
+# puts "Importing IPs"
+# import_ip $full_ip_files
 
 # Set 'sources_1' fileset file properties for remote files
 foreach file_obj  [get_files -of_objects $fileset_obj [list "*.xci"]] {
