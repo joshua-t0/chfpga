@@ -67,6 +67,7 @@ architecture impl of align64_fifo is
 
 	signal fifo_doutp: std_logic_vector(7 downto 0);
 	signal wr_count_wide: std_logic_vector(13 downto 0);
+	signal rd_rst_busy, wr_rst_busy: std_logic;
 
 begin
 
@@ -109,23 +110,25 @@ begin
 
 			-- Read Control Signals
 			rdclk  => clk,
-			rden   => m_axis_tready,
+			rden   => m_axis_tready and not rd_rst_busy,
 			regce  => '1', -- Output regirter clock enable
 			rst    => rst, -- reset, synchronous to WR_CLK
 			rstreg => '0',
 			sleep  => '0',
 			empty  => empty,
 			progempty => almost_empty,
+			rdcount  => open,
+            rdrstbusy => rd_rst_busy,
 
 			-- Write Control Signals
 			wrclk    => clk,
-			wren     => s_axis_tvalid,
+			wren     => s_axis_tvalid and not wr_rst_busy,
 			full     => full,
 			progfull => almost_full,
 			rderr    => open,
 			wrerr    => overflow,
 			wrcount  => wr_count_wide,
-			rdcount  => open,
+            wrrstbusy => wr_rst_busy,
 			-- Write Data: 32-bit (each) input: Write input data
 			din(DATA_WIDTH - 1 downto 0) => s_axis_tdata, -- 64-bit input: Data input
 			dinp                         => 7x"00" & s_axis_tlast -- 8-bit input: Parity input

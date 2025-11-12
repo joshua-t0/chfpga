@@ -388,7 +388,7 @@ begin
 				tx_ready  => xglink_tx_ready(link),
 				tx_clk       => tx_clk,
 
-			    arst => not axisclk_resetdone -- make sure we hold reset until the clock is available, otherwise the reset does not happen
+			    arst => not axisclk_resetdone or not xglink_tx_resetdone(link) -- make sure we hold reset until the clock is available, otherwise the reset does not happen
 			  );
 		end generate; -- tx
 
@@ -413,7 +413,7 @@ begin
 					fifo_overflow    => rx_fifo_overflow(i),
 					fifo_in_tvalid   => rx_fifo_in_tvalid(i),
 					fifo_in_tlast    => rx_fifo_in_tlast(i),
-					arst             => not axisclk_resetdone
+					arst             => not axisclk_resetdone or not xglink_rx_resetdone(link)
 				 );
 		end generate; -- rx
 	end generate; -- for each lane

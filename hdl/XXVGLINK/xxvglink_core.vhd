@@ -1163,7 +1163,7 @@ begin
 		begin
 			-- Assign clock and reset outputs
 			rx_clk(i)       <= rxusrclk2(i); --! Danger Will Robinson! In sims, the clock assignment might be evaluated AFTER the output signals are evaluated, causing the data to appear on the wrong clock. That's why we have a DLY for each output purt assignments.
-			rx_resetdone(i) <= rx_resetdone_int(i) after DLY;
+			rx_resetdone(i) <= (rx_resetdone_int(i) and gt_block_lock(i)) after DLY;
 
 			-- apply output with delays for simulations
 			rx_data(i)         <= rx_data_int after DLY;
