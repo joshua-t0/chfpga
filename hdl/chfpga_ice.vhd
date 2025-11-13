@@ -37,22 +37,22 @@ entity chfpga_ice is
 
 			-- Clocking
 
-			SYSTEM_CLOCK_SOURCE: string                  := "SFP_REFCLK"; --"SYSCLK": the 200 MHz clock will be taken from sysclk_p/n (CC pins) or "SFP_REFCLK": the system clock is 125 MHz from the GTX reference clock
+			SYSTEM_CLOCK_SOURCE: clk_source_enum                  := SFP_REFCLK; --"SYSCLK": the 200 MHz clock will be taken from sysclk_p/n (CC pins) or "SFP_REFCLK": the system clock is 125 MHz from the GTX reference clock
 			SYSTEM_CLOCK_FREQ: real                      := 125.0; -- System reference clock frequency, in MHz *** IP packager does not support real. Defined as constant below ***
 
-			CHAN_CLK_SOURCE: string                      := "ADC"; -- Channelizer clock comes from the multi-phase MMCM
+			CHAN_CLK_SOURCE: chan_clk_source_enum        := ADC; -- Channelizer clock comes from the multi-phase MMCM
 			ANT_CLK_SOURCE: integer                      := 0; -- Indicate which ADC is the source of the channelizer. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
 			CHAN_CLK_FREQ: real                          := 200.0; -- MHz. 200.0 or 300.0 are supported.
-			CT_CLK_SOURCE: string                        := CONFIG_CT_CLK_SOURCE; -- corner-turn operates on backplane GTY word clock (~244 MHz)
+			CT_CLK_SOURCE: ct_clk_source_enum                        := CONFIG_CT_CLK_SOURCE; -- corner-turn operates on backplane GTY word clock (~244 MHz)
 
 			-- BSB interface
 
-			PHY_TYPE: string                             := "SGMII"; -- "GMII" or "SGMII"
-			SGMII_CLOCK_SOURCE: string                   := "REFCLK"; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
+			PHY_TYPE: phy_type_enum                      := SGMII; -- "GMII" or "SGMII"
+			SGMII_CLOCK_SOURCE: phy_clk_source_enum      := REFCLK; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 
 			-- ADC configuration
 
-			ADC_TYPE: string := "EV8AQ160"; -- Type of ADC to use.
+			ADC_TYPE: adc_type_enum := EV8AQ160; -- Type of ADC to use.
 			NUMBER_OF_ADC_BOARDS: integer                := 2; -- Sets the number of SPI and SYNC lines (one for each FMC)
 			NUMBER_OF_ADCS: INTEGER                      := 16; -- Number of ADC Data acquisition blocks to implement
 
@@ -103,12 +103,12 @@ entity chfpga_ice is
 			-- Channelizers
 
 			NUMBER_OF_CHANNELIZERS:INTEGER               := 16;  --(Typ. =16)  (0-NUMBER_OF_ADCS) Number of antenna processing blocks to be implemented
-            FFT_TYPE : integer := CONFIG_CHAN_FFT_TYPE;
+            FFT_TYPE : fft_type_enum     := CONFIG_CHAN_FFT_TYPE;
 
 
 			-- Corner-turn engine
 
-	        CT_TYPE: integer                             := CONFIG_CT_TYPE;
+	        CT_TYPE: ct_type_enum                             := CONFIG_CT_TYPE;
 			CT_LEVEL: integer                            := CONFIG_CT_LEVEL;
 
 			NUMBER_OF_CROSSBAR_INPUTS: integer           := 16; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
@@ -117,7 +117,7 @@ entity chfpga_ice is
 			NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER := GLOBAL_NUMBER_OF_CHANNELIZERS_TO_CORRELATE; -- (3 - NUMBER_OF_CHANNELIZERS) Number of channelizers outputs to be correlated for each frequency channel. This is hard coded for now. Determines how many antenna streams are fed to the CORR_BLOCK modules, and how many multipliers to implement in parallel in the CORR module.
 			NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := 0;
 			NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := 0;
-			BP_SHUFFLE_LANE_MAP: integerArray            := ( -- Associate the concatenated BP PCB and QUAD lanes to GTX links. -1 means a bypass lane.
+			BP_SHUFFLE_LANE_MAP: integer_array            := ( -- Associate the concatenated BP PCB and QUAD lanes to GTX links. -1 means a bypass lane.
 			                                                -- Backplane PCB Lanes
 			                                                 0=>-1, -- Bypass lane
 			                                                 1=>0, 2=> 1, 3 => 2, 4 =>3,  5 =>4,  6 =>5,  7 =>6, 8=>7,
@@ -126,19 +126,19 @@ entity chfpga_ice is
 			                                                 16 to 19=>-1, -- Bypass lane
 			                                                 20=>15, 21=>16, 22=>17, 23=>18
 			                                                );
-			BP_SHUFFLE_LANE_TO_QUAD_MAP : integerArray   := (0 to 3=>0, 4 to 7=>1, 8 to 11=> 2, 12 to 14 => 3, 15 to 18=> 4); --  Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-			BP_SHUFFLE_QUAD_TO_REFCLK_MAP : integerArray := (0 => 1, 1 => 0, 2 => 0, 3=> 1, 4 => 1); -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+			BP_SHUFFLE_LANE_TO_QUAD_MAP : integer_array   := (0 to 3=>0, 4 to 7=>1, 8 to 11=> 2, 12 to 14 => 3, 15 to 18=> 4); --  Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
+			BP_SHUFFLE_QUAD_TO_REFCLK_MAP : integer_array := (0 => 1, 1 => 0, 2 => 0, 3=> 1, 4 => 1); -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
 
 			NUMBER_OF_BP_SHUFFLE_LINKS: integer          := max(BP_SHUFFLE_LANE_MAP)+1; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
 			NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := max(BP_SHUFFLE_QUAD_TO_REFCLK_MAP)+1;
 
 			-- Correlator
 
-			CORR_TYPE: string := CONFIG_CORR_TYPE;
+			CORR_TYPE: corr_type_enum := CONFIG_CORR_TYPE;
 
 			-- Real-time data offload links
 
-			GPU_LINK_TYPE : string := CONFIG_GPU_LINK_TYPE;
+			GPU_LINK_TYPE : gpu_link_type_enum := CONFIG_GPU_LINK_TYPE;
 			GPU_CHANNEL_QUAD: integer_array := (0 to 3=> 0, 4 to 7=> 1); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if GPU_LINK_TYPE is NONE
 			GPU_QUAD_REFCLK: integer_array := (0 to 1=>0); -- Both QUAD0 and QUAD1 use refclk(0)
 
@@ -153,7 +153,7 @@ entity chfpga_ice is
 
 			-- Derived parameters
 
-			NUMBER_OF_GPU_LINKS: integer                 := sel(GPU_LINK_TYPE /= "NONE", GPU_CHANNEL_QUAD'LENGTH, 0); -- Number of 10Gb Ethernet links. 0 if if GPU_LINK_TYPE is "NONE"
+			NUMBER_OF_GPU_LINKS: integer                 := sel(GPU_LINK_TYPE /= NONE, GPU_CHANNEL_QUAD'LENGTH, 0); -- Number of 10Gb Ethernet links. 0 if if GPU_LINK_TYPE is "NONE"
 			NUMBER_OF_GPU_REFCLKS: integer               := max(GPU_QUAD_REFCLK)+1 -- Number of Reference clocks provided for the 10GE links to the GPU.
 
 	);
@@ -1002,10 +1002,10 @@ bufr_rawclk10 : BUFR
 
 			--NUMBER_OF_GPU_LINKS             => NUMBER_OF_GPU_LINKS,
 			--NUMBER_OF_GPU_REFCLKS           => NUMBER_OF_GPU_REFCLKS,
-			NUMBER_OF_BP_PCB_SHUFFLE_LANES  => NUMBER_OF_BP_PCB_SHUFFLE_LANES,
-			NUMBER_OF_BP_QSFP_SHUFFLE_LANES => NUMBER_OF_BP_QSFP_SHUFFLE_LANES,
-			NUMBER_OF_BP_SHUFFLE_LINKS      => NUMBER_OF_BP_SHUFFLE_LINKS,
-			NUMBER_OF_BP_SHUFFLE_REFCLKS    => NUMBER_OF_BP_SHUFFLE_REFCLKS,
+--			NUMBER_OF_BP_PCB_SHUFFLE_LANES  => NUMBER_OF_BP_PCB_SHUFFLE_LANES,
+--			NUMBER_OF_BP_QSFP_SHUFFLE_LANES => NUMBER_OF_BP_QSFP_SHUFFLE_LANES,
+--			NUMBER_OF_BP_SHUFFLE_LINKS      => NUMBER_OF_BP_SHUFFLE_LINKS,
+--			NUMBER_OF_BP_SHUFFLE_REFCLKS    => NUMBER_OF_BP_SHUFFLE_REFCLKS,
 
 			-- Correlator
 
@@ -1013,9 +1013,9 @@ bufr_rawclk10 : BUFR
 			NUMBER_OF_CORRELATORS           => NUMBER_OF_CORRELATORS,
 
 
-			BP_SHUFFLE_LANE_MAP             => BP_SHUFFLE_LANE_MAP,
-			BP_SHUFFLE_LANE_TO_QUAD_MAP     => BP_SHUFFLE_LANE_TO_QUAD_MAP,
-			BP_SHUFFLE_QUAD_TO_REFCLK_MAP   => BP_SHUFFLE_QUAD_TO_REFCLK_MAP,
+			CT_LANE_TO_LINK_MAP             => BP_SHUFFLE_LANE_MAP,
+			CT_LINK_TO_QUAD_MAP     => BP_SHUFFLE_LANE_TO_QUAD_MAP,
+			CT_QUAD_TO_REFCLK_MAP   => BP_SHUFFLE_QUAD_TO_REFCLK_MAP,
 			NUMBER_OF_I2C_PORTS             => NUMBER_OF_I2C_PORTS,
 			NUMBER_OF_SPI_PORTS             => NUMBER_OF_SPI_PORTS,
 

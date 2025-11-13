@@ -27,6 +27,8 @@ use IEEE.NUMERIC_STD.ALL;
 library UNISIM;
 use UNISIM.VComponents.all;
 
+use work.chfpga_package.all; -- Get all component definitions
+
 -- UDP_MAC: Lightweight UDP/IP/Ethernet 1G Ethernet packet transmitter/receiver stack
 --
 -- This module implements a Gigabit Ethernet UDP packet transmitter/receiver. It is comprised of a
@@ -54,7 +56,7 @@ use UNISIM.VComponents.all;
 --
 entity udp_mac is
 	GENERIC (
-		PHY_TYPE: string; -- -- "GMII": Alaska 881111 PHY,  or "SGMII": SFP module
+		PHY_TYPE: phy_type_enum; -- -- "GMII": Alaska 881111 PHY,  or "SGMII": SFP module
 		BROADCAST_IP_PORT: integer;-- ! Port on which broadcast requests and replies are made. This is fixed as it is used to discover the boards on the network and configure them.
 		SIM: boolean := FALSE --
 		);
@@ -273,7 +275,7 @@ begin
 
 
 	phy_gen: case PHY_TYPE generate
-		when "GMII" =>
+		when GMII =>
 			-- bridge between mac GMII output and GMII I/Os (forces some buffer instantiation)
 
 			phy_reset_l       <= gmii_reset_l; -- pass the active low reset signal
@@ -308,7 +310,7 @@ begin
 			sfp_tx_p <='Z';
 			sfp_tx_n <='Z';
 
-		when "SGMII" =>
+		when SGMII =>
 
 			gmii_txclk <= gmii_clk; -- use the clock provided by the SGMII core (userclk2) for the GMII TX bus
 			gmii_rxclk <= gmii_clk; -- use the clock provided by the SGMII core (userclk2) for the GMII RX bus
