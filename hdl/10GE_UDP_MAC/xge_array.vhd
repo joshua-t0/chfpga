@@ -145,7 +145,7 @@ begin
 	test_packet_period <= to_unsigned(control_bytes(3 to 4));
 
 	-- STATUS Byte 2
-	status_bytes(0) <= to_slv(lsb(test_packet_ctr));
+	status_bytes(0) <= to_slv(lsb(test_packet_ctr, 8));
 	-- STATUS Byte 3
 	status_bytes(1) <= to_slv(frame_ctr);
 	-- STATUS Byte 4
