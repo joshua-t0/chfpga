@@ -30,6 +30,11 @@ set crs_ip_files [list \
  "CRS/GTY/gtwizard_ultrascale_0.xci" \
  ]
 
+set crs_ct_ip_files [list \
+ "CRS/pfb_fft_bitgrowth_0/pfb_fft_bitgrowth_0.xci" \
+ "CRS/CMAC_USP/CMAC_USP.xci" \
+ ]
+
 # HDL files, found in $repo_dir/hdl/
 
 
