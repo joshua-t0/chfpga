@@ -29,38 +29,20 @@ puts "Creating project ${proj_name} in folder ${proj_dir}"
 puts "------------------------------------------------------------------------------------------------------------"
 puts ""
 
-# Regenerate block design
-if { ![file exists "${bd_dir}/${bd_name}/${bd_name}.bd"]} {
-  puts ""
-  puts "    -----------------------------------------------"
-  puts "    Creating block diagram ${bd_name}.bd in folder ${bd_dir}/${bd_name}"
-  puts "    -----------------------------------------------"
-  puts ""
-
-  # The tcl script that builds the block diagram will put it in the folder specified in the global
-  # variable ::origin_dir_loc. Since a project is not currently open, it will create a project
-  # 'myproj' in the current directory and will fail if that project already exists, so we have to
-  # delete it beforehand.
-  set ::origin_dir_loc ${bd_dir}
-  file delete -force "$bd_dir/myproj"
-  cd $bd_dir
-  source "${bd_dir}/${bd_name}.tcl"
-  file delete -force "$bd_dir/myproj"
-  cd $proj_dir
-}
-
-
 puts ""
 puts "    -----------------------------------------------"
 puts "    Gathering project files"
 puts "    -----------------------------------------------"
 puts ""
 
-# # BD files, path relative to the bd_dir
-set bd_files [list \
-  "${bd_name}/${bd_name}.bd" \
-  ]
 
+# # BD files, path relative to the bd_dir
+set bd_files {}
+if { ${bd_name} ne ""} {
+  set bd_files [list \
+    "${bd_name}/${bd_name}.bd" \
+    ]
+}
 
 
 # user IP library folder, in $repo_dir/
@@ -73,9 +55,16 @@ set util_files [list \
  "tcl/rename_bitstream.tcl"\
  ]
 
+
+
+
+
 # Expand and normaline file and folder names
 set full_ip_files  {}
 foreach f $ip_files { lappend full_ip_files [file normalize "$ip_dir/$f"]}
+
+set full_ooc_ip_files  {}
+foreach f $ooc_ip_files { lappend full_ooc_ip_files [file normalize "$ip_dir/$f"]}
 
 set full_bd_files  {}
 foreach f $bd_files { lappend full_bd_files [file normalize "$bd_dir/$f"]}
@@ -127,6 +116,28 @@ if { $missing_file } {
 }
 
 
+# Regenerate block design
+if { ${bd_name} ne ""} {
+  if { ![file exists "${bd_dir}/${bd_name}/${bd_name}.bd"]} {
+    puts ""
+    puts "    -----------------------------------------------"
+    puts "    Creating block diagram ${bd_name}.bd in folder ${bd_dir}/${bd_name}"
+    puts "    -----------------------------------------------"
+    puts ""
+
+    # The tcl script that builds the block diagram will put it in the folder specified in the global
+    # variable ::origin_dir_loc. Since a project is not currently open, it will create a project
+    # 'myproj' in the current directory and will fail if that project already exists, so we have to
+    # delete it beforehand.
+    set ::origin_dir_loc ${bd_dir}
+    file delete -force "$bd_dir/myproj"
+    cd $bd_dir
+    source "${bd_dir}/${bd_name}.tcl"
+    file delete -force "$bd_dir/myproj"
+    cd $proj_dir
+  }
+}
+
 
 puts ""
 puts "    -----------------------------------------------"
@@ -138,10 +149,11 @@ puts ""
 # Create project
 create_project -force ${proj_name} . -part $target_part
 
-set irp [concat [get_property ip_repo_paths [current_project]] [list $ip_dir]]
+set irp [concat [get_property ip_repo_paths [current_project]] [list $ip_dir] "${ip_dir}KC705/hirax_bit_growth_0"]
 
 puts "*** IP repo paths = $irp"
 set_property ip_repo_paths $ip_dir [current_project]
+update_ip_catalog
 
 # Set the directory path for the new project
 # set proj_dir [get_property directory [current_project]]
@@ -341,15 +353,45 @@ puts "    Generate FFT OOC"
 puts "    -----------------------------------------------"
 puts ""
 
+set ip_list {}
+# Note: Vivado 2023+ uses FILE_NAME
+set ips [get_ips]
+puts "ips=  $ips"
+
+foreach ip_obj  [get_ips] {
+  set ip_name [get_property NAME $ip_obj]
+  puts "CHecking if $ip_name is in $ooc_ip_files"
+  if {[lsearch $ooc_ip_files "*/$ip_name.*"] >=0} {
+      puts "Adding $ip_name"
+    lappend ip_list $ip_obj
+  }
+}
 # Create FFT OOC run and set its synth directive
-set file_obj  [get_files -filter {NAME =~ "*fft*.xci"}]
-set file_obj  [get_ips "*fft*"]
-generate_target all $file_obj
-catch { config_ip_cache -export [get_ips -all *fft*] }
-export_ip_user_files -of_objects $file_obj -no_script -sync -force -quiet
-create_ip_run $file_obj -force
-set ip_run [get_runs *fft*synth*]
-set_property strategy "Flow_PerfOptimized_high" -objects $ip_run
+# set file_obj  [get_files -filter {NAME =~ "*fft*.xci"}]
+# set file_obj  [get_ips "*fft*"]
+# set file_obj  [get_ips $full_ooc_ip_files]
+puts "OOC ip files are $ip_list"
+
+# export_ip_user_files -of_objects  [get_files  /home/jfcliche/chfpga/_Cores/KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci] -sync -lib_map_path [list {modelsim=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/modelsim} {questa=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/questa} {xcelium=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/xcelium} {vcs=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/vcs} {riviera=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/riviera}] -force -quiet
+# set_property generate_synth_checkpoint true [get_files  /home/jfcliche/chfpga/_Cores/KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci]
+# generate_target all [get_files  /home/jfcliche/chfpga/_Cores/KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci]
+
+
+
+export_ip_user_files -of_objects $ip_list -no_script -sync -force -quiet
+set_property generate_synth_checkpoint true [get_files $full_ooc_ip_files]
+generate_target all $ip_list
+catch { config_ip_cache -export $ip_list }
+foreach ip $ip_list {
+  # removed the -force option to avoid regeneration
+  set ip_run_name [create_ip_run $ip]
+  puts "Configuring IP run properties for $ip_run_name"
+  set_property strategy "Flow_PerfOptimized_high" -objects [get_runs $ip_run_name]
+}
+
+# }
+
+
 
 puts ""
 puts "    -----------------------------------------------"
