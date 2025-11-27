@@ -7,6 +7,10 @@
 #*****************************************************************************************
 
 
+# directives
+set no_lc "1"
+
+
 # List of files used in this project
 
 # Set the repo directory to access files outside of the project dir
@@ -61,11 +65,8 @@ set hdl_base_files [list  \
 
 set ice_target_part "xc7k420tffg901-2"
 set ice_bd_name ""
-set ice_top_wrapper_file  "chfpga_ice.vhd"
 
-
-#   "KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci" \
-
+set ice_ooc_ip_files "KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci"
 set ice_ct_ip_files [list \
   "KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci" \
   "KC705/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci"\
@@ -90,6 +91,8 @@ set ice_ct_ip_files [list \
 
 
 set ice_hdl_base_files [concat $hdl_base_files [list \
+  "chfpga_ice.vhd" \
+  \
   "SYSTEM/SPI.vhd" \
   "SYSTEM/I2C.vhd" \
   "CMD/arm_spi.vhd" \
@@ -134,32 +137,27 @@ set ice_ct_hdl_files [concat $ice_hdl_base_files [list \
   ]]
 
 
-# mgk7mb/chfpga_mgk7mb_timing_constraints.xdc
-# mgk7mb/chFPGA_mgk7mb_Rev2_physical_constraints.xdc
-
-
 #*****************************************************************************************
 # CRS Platform
 #*****************************************************************************************
 
 set crs_target_part "xczu47dr-ffvg1517-1-i"
 set crs_bd_name "zynq_tcpipe_crs"
-set crs_top_wrapper_file  "chfpga_crs.vhd"
 
-# set crs ip_repo_path [list $ip_dir]
-set crs_ip_files [list \
- "CRS/pfb_fft_bitgrowth_0/pfb_fft_bitgrowth_0.xci" \
+set crs_ooc_ip_files "CRS/pfb_fft_bitgrowth_0/pfb_fft_bitgrowth_0.xci"
+
+set crs_corr_ip_files [list \
  "CRS/GTY/gtwizard_ultrascale_0.xci" \
  ]
 
-set crs_ct_ip_files [list \
- "CRS/pfb_fft_bitgrowth_0/pfb_fft_bitgrowth_0.xci" \
+set crs_ct_ip_files [concat [list \
  "CRS/CMAC_USP/CMAC_USP.xci" \
- ]
+ ]]
 
 
 
 set crs_hdl_base_files [concat $hdl_base_files [list \
+ "chfpga_crs.vhd" \
  "CHAN/ucap.vhd" \
  "CROSSBAR/uct_engine.vhd" \
  ]]

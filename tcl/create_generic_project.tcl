@@ -38,23 +38,18 @@ puts ""
 
 # # BD files, path relative to the bd_dir
 set bd_files {}
-if { ${bd_name} ne ""} {
-  set bd_files [list \
-    "${bd_name}/${bd_name}.bd" \
-    ]
-}
+if { ${bd_name} ne ""} {lappend bd_files "${bd_name}/${bd_name}.bd"}
 
 
 # user IP library folder, in $repo_dir/
-set ip_libraries [list \
-  "ip_library/" \
-  ]
+set ip_libraries [list "ip_library/" ]
 
 # Util files, from the repo root
-set util_files [list \
- "tcl/rename_bitstream.tcl"\
- ]
+# set util_files [list \
+#  "tcl/rename_bitstream.tcl"\
+#  ]
 
+set util_files {}
 
 
 
@@ -70,8 +65,8 @@ set full_bd_files  {}
 foreach f $bd_files { lappend full_bd_files [file normalize "$bd_dir/$f"]}
 
 set full_hdl_files  {}
-lappend full_hdl_files [file normalize "$hdl_dir/$config_file"]
-lappend full_hdl_files [file normalize "$hdl_dir/$top_wrapper_file"]
+# lappend full_hdl_files [file normalize "$hdl_dir/$config_file"]
+# lappend full_hdl_files [file normalize "$hdl_dir/$top_wrapper_file"]
 foreach f $hdl_files {lappend full_hdl_files [file normalize "$hdl_dir/$f"]}
 
 set full_ip_libraries  {}
@@ -95,7 +90,7 @@ puts ""
 set missing_file false
 
 # Check files
-foreach ifile [concat $full_bd_files $full_ip_files $full_hdl_files $full_const_files $full_util_files]  {
+foreach ifile [concat $full_bd_files $full_ip_files $full_ooc_ip_files $full_hdl_files $full_const_files $full_util_files]  {
   if { ![file isfile $ifile] } {
     puts " Could not find remote file $ifile "
     set missing_file true
@@ -272,14 +267,14 @@ set_property -name "top_lib" -value "xil_defaultlib" -objects $obj
 # Create utils fileset
 # ----------------------------
 
-set obj [get_filesets utils_1]
-add_files -norecurse -fileset $obj $full_util_files
-set_property -name "file_type" -value "TCL" -objects [get_files -of_objects $obj "*.tcl"]
-set idrFlowPropertiesConstraints ""
-catch {
- set idrFlowPropertiesConstraints [get_param runs.disableIDRFlowPropertyConstraints]
- set_param runs.disableIDRFlowPropertyConstraints 1
-}
+# set obj [get_filesets utils_1]
+# add_files -norecurse -fileset $obj $full_util_files
+# set_property -name "file_type" -value "TCL" -objects [get_files -of_objects $obj "*.tcl"]
+# set idrFlowPropertiesConstraints ""
+# catch {
+#  set idrFlowPropertiesConstraints [get_param runs.disableIDRFlowPropertyConstraints]
+#  set_param runs.disableIDRFlowPropertyConstraints 1
+# }
 
 
 puts ""
@@ -307,7 +302,7 @@ set_property -name "steps.synth_design.args.directive" -value "PerformanceOptimi
 set_property -name "steps.synth_design.args.fsm_extraction" -value "one_hot" -obj $synth_obj
 set_property -name "steps.synth_design.args.keep_equivalent_registers" -value "1" -obj $synth_obj
 set_property -name "steps.synth_design.args.resource_sharing" -value "off" -obj $synth_obj
-set_property -name "steps.synth_design.args.no_lc" -value "1" -obj $synth_obj
+set_property -name "steps.synth_design.args.no_lc" -value $no_lc -obj $synth_obj
 set_property -name "steps.synth_design.args.shreg_min_size" -value "5" -obj $synth_obj
 set_property -name "steps.synth_design.args.assert" -value "1" -obj $synth_obj
 
@@ -385,8 +380,10 @@ catch { config_ip_cache -export $ip_list }
 foreach ip $ip_list {
   # removed the -force option to avoid regeneration
   set ip_run_name [create_ip_run $ip]
+  set ip_run [get_runs $ip_run_name]
   puts "Configuring IP run properties for $ip_run_name"
-  set_property strategy "Flow_PerfOptimized_high" -objects [get_runs $ip_run_name]
+  set_property strategy "Flow_PerfOptimized_high" -objects $ip_run
+  set_property -name "steps.synth_design.args.no_lc" -value $no_lc -obj $ip_run
 }
 
 # }
