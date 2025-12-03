@@ -133,6 +133,31 @@ begin
     --------------------------------------------
     -- Memory mapped registers
     --------------------------------------------
+    -- Memory Map
+    -- ------------------------------------------------------------------------------
+    -- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+    -- |---------|-----|------|----------------------|-------------------------------|
+    -- | CONTROL |  0  |  7   | user_reset            | Reset the correlator |
+    -- |         |     |  6   | overrun_reset          | Reset overrun counters |
+    -- |         |     | 5:2  | corr_id                | Correlator ID |
+    -- |         |     |  1   | no_accum               | No accumulation mode |
+    -- |         |     |  0   | autocorr_only          | Autocorrelation only mode |
+    -- |         | 1-2 | 15:0 | integ_period           | Integration period (number of frames) |
+    -- |         |  3  |  7   | offset_encoding        | Offset binary encoding |
+    -- |         |     |  6   | auto_bin_set            | Auto bin set |
+    -- |         |     | 3:0  | bin_set                 | Manual bin set |
+    -- | STATUS  |  0  |  0   | or(overrun)            | OR of all overrun flags |
+    -- |         |     |  1   | rst                     | Reset status |
+    -- |         |     |  2   | s_axis_data_tvalid      | Input data valid |
+    -- |         |     |  3   | s_axis_data_tlast       | Input data last |
+    -- |         |  1  | 7:0  | NCHAN                   | Number of channels |
+    -- |         |  2  | 7:4  | NCORR                    | Number of correlators |
+    -- |         |     | 3:0  | BIN_DECIMATION_FACTOR   | Bin decimation factor |
+    -- |         |  3  | 7:0  | in_frame_ctr            | Input frame counter |
+    -- |         |  4  | 7:0  | out_frame_ctr           | Output frame counter |
+    -- |         |  5  | 3:0  | NCLK_PER_BIN            | Number of clocks per bin |
+    -- |         |     | 7:4  | (unused)                | |
+    -- ------------------------------------------------------------------------------
 
 	bsb_regs0: entity work.CTRL_SLAVE
 		GENERIC MAP (

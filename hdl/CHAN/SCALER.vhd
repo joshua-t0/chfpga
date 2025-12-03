@@ -293,32 +293,32 @@ begin
 -- SCALER Module Memory Map
 --
 -- ----------------------------------------------------------------------------------------------
--- |  Page   | Addr|Bit(s)|     Name                     | Description
--- |---------|-----|------|------------------------------|---------------------------------------
+-- |  Page   | Addr|Bit(s)|     Name                     | Description                   |
+-- |---------|-----|------|------------------------------|-------------------------------|
 -- | CONTROL |  0  |  7   | soft_reset                   |  |
 -- |         |     |   6  | bypass_scaler                |  |
 -- |         |     |   5  | four_bits                    | Is '1' when only the top 4 bits are of interest (i.e. rounding is done on the 5th bit). In this case the lower 4 bits of the results are zero.  |
 -- |         |     |  4:0 | post_scaler_left_shift       |  Post-scaler |
--- |         |  1  |   7  | (unused)                     |  |
+-- |         |  1  |   7  | gain_table_page(5)           | MSB of gain table page address |
 -- |         |     |   6  | use_offset_binary            | When '1', Offset_binary encoding is used on the output of the scaler. The input data and gains are not affected and are always provided in 2's complement. |
--- |         |     |   5  | (unused)                     |  |
+-- |         |     |   5  | gain_table_page(4)            | Bit 4 of gain table page address |
 -- |         |     |   4  | next_gain_bank               | Indicates which bank of gain coefficients is to be used by the scaler|
--- |         |     |  3:0 | gain_table_page              | Indicates which page of gain coefficients table is being read or written to by the user.|
+-- |         |     |  3:0 | gain_table_page(3:0)         | LSBs of gain table page address. Indicates which page of gain coefficients table is being read or written to by the user.|
 -- |         |  2  |   7  | stats_capture                | '0' clears the stats_done flag. when '1', the stats are captured and stats_done is set to '1' when the next frame block completes |
 -- |         |     |   6  | symmetric_saturation         | When '1', negative values will saturate to -127 (8-bit mode) or -7 (4-bit mode). Otherwise they saturate on -128 and -8 respectively. |
 -- |         |     |   5  | zero_on_saturation           | When '1', the real/imaginary pairs are zeroed if wither the real part or imaginary part encounters an overflow.|
 -- |         |     |   4  | synchronize_gain_bank_switch | When '1', The target gain bank is activated only when the target frame number has been reached|
--- |         |     |   3  | fifo_overflow_reset          | Resets the fifo_overflow_sticky status bit
--- |         |     |   3  | stats_single_bin             | When '1', overflow stats operate only on bin specified in stats_bin_number|
+-- |         |     |   3  | fifo_overflow_reset          | Resets the fifo_overflow_sticky status bit |
+-- |         |     |   2  | stats_single_bin             | When '1', overflow stats operate only on bin specified in stats_bin_number|
 -- |         |     |  1:0 | rounding_mode                | Specified the type of rounding: '00' = No rounding (truncation), '01'= standard rounding (ties always round up), '10' = convergent rounding (ties round toward the even values)|
 -- |         | 3:5 | 23:0 | stats_frame_count            | Number of frames to include in the statistics. 1 = 1 frame. |
 -- |         | 6:9 | 31:0 | gain_bank_switch_frame_number| Target frame number at which the next gain bank will be activated. |
 -- |         | 10  |   7  | use_float_gains              | When '1', bin-specific log gain is encoded in the upper 5 bits of the gain. For real gains only|
 -- |         |     |   6  | mon_reset_stats              | Reset mon_packet_length and mon_packet_ctr |
+-- |         |     |   5  | mon_ctrl                     | Monitor control signal |
 -- |         |     |  4:3 | bypass_data_type             | When bypass_scaler is '1': "00": input, "01": 1+0j if any saturation, "10": 1+0j or 0+1j if positive or negative saturation respectively|
 -- |         |     |  2:0 | cap_data_type                | "000": raw output, "001": scaled input, "010": 4-bit, "100": Even bins, "101": odd bins
 -- |         |11:12| 15:0 | stats_bin_number             | Bin number on which to measure overflow stats when stats_single_bin='1'. |
-
 -- | STATUS  |  0  |  7   | stats_ready                  | '1' when new stats data has been captured|
 -- |         |     |  6   | current_gain_bank            | Currently used gain bank. |
 -- |         |     |  5   | eight_bit_support            | '1' when this scaler implementation supports (8+8) bit output mode|
@@ -333,6 +333,9 @@ begin
 -- |         | 10  | 7:0  | mon_packet_ctr               | Number of packets so far|
 -- |         |11:12| 15:0 | mon_word_ctr                 | Number of words in current packet so far|
 -- |         | 13  | 7:0  | cap_frame_ctr                | Number of frames of data captured by capture outputs so far |
+-- |         |14:15| 15:0 | mon_word                     | Monitor word value |
+-- |         | 16  | 7:0  | mon_clk_ctr                  | Monitor clock counter |
+-- |         | 17  | 7:0  | mon_bit_ctr                  | Monitor bit counter |
 -- -----------------------------------------------------------------------------------------------
 
 

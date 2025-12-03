@@ -300,22 +300,30 @@ begin
 	--! ------------------------------------------------------------------------------
 	--! |  Page   | Addr|Bit(s)|     Name             | Description                   |
 	--! |---------|-----|------|----------------------|-------------------------------|
-	--! | CONTROL |  0  |   7  | user_reset               | Reset the CH_DIST and clears the FIFOs.|
-	--! |         |     |   6  | four_bits                | The input data is in 4-bit mode. The word streams will be combined 2-by-2 to pack 4 (4+4) bits samples in the output word|
-	--! |         |     |   5  | use_offset_binary        | Indicates if the data is encoded in offset_binary or 2's complement. This is not used by this module, but is passed in the header flags. |
-	--! |         |     |   4  | send_flags               | Indicates if we want the packets to contain scaler and adc flags. Need to reset the module if this is changes to ensure proper FIFO synchronization|
-	--! |         |     |   3  |                          | |
-	--! |         |     | 2-0  | (unused)                 |   |
-	--! |         | 1-2 | 15:0 | STREAM_ID                 | Stream ID to be used for tagging the output frames |
-	--! |         |  3  | 7:0  | number_of_selected_bins  | Indicates the number of words (frequency bin pairs) that are selected. This must match the number of '1' bits in the word selection map.|
-	--! |         |  4  | 2:0  | frames_per_packet        | Number of input frames to group into an output packet.|
-	--! |         |  5  | 7:6  | (unused)                 |  |
-	--! |         |     |   4  | bypass                   | Pass data from lane LANE_NUMBER directly to the output without flags.|
-	--! |         |     | 4:0  | number_of_input_lanes    | Number of input lanes from which data is gathered. Must be a multiple of 4. |
-	--! | STATUS  |  0  |   7  | data_fifo_empty          | EMPTY status flag of the DATA FIFO for antenna processor 0. Active HIGH. |
-	--! |         |     |   6  | data_fifo_overflow       | Sticky flag indicating that one of the DATA FIFO has overflown. Cleared only by a reset of the module.|
-	--! |         |     | 5:0  | '0'                      | Unused   |
-	--! |         |  1  |  7:0 | FRAME_CTR                | Counts the number of frames written into the FIFOs. Rolls over.|
+--! | CONTROL |  0  |   7  | user_reset               | Reset the CH_DIST and clears the FIFOs.|
+--! |         |     |   6  | four_bits                | The input data is in 4-bit mode. The word streams will be combined 2-by-2 to pack 4 (4+4) bits samples in the output word|
+--! |         |     |   5  | use_offset_binary        | Indicates if the data is encoded in offset_binary or 2's complement. This is not used by this module, but is passed in the header flags. |
+--! |         |     |   4  | send_flags               | Indicates if we want the packets to contain scaler and adc flags. Need to reset the module if this is changes to ensure proper FIFO synchronization|
+--! |         |     |   3  | overflow_reset           | Resets the overflow counter |
+--! |         |     | 2:0  | frames_per_packet        | Number of input frames to group into an output packet.|
+--! |         |  1  | 7:0  | STREAM_ID(11:4)          | Upper 8 bits of Stream ID to be used for tagging the output frames |
+--! |         |  2  | 7:4  | STREAM_ID(3:0)           | Lower 4 bits of Stream ID |
+--! |         |     | 2:0  | number_of_selected_bins(10:8)| Upper 3 bits of number of selected bins |
+--! |         |  3  | 7:0  | number_of_selected_bins(7:0)| Lower 8 bits of number of selected bins. Indicates the number of words (frequency bin pairs) that are selected. This must match the number of '1' bits in the word selection map.|
+--! |         |  4  | 7:6  | (unused)                 |                               |
+--! |         |     |   5  | bypass                   | Pass data from lane directly to the output without flags.|
+--! |         |     |   4  | combine_data_flags       | Combine data flags |
+--! |         |     | 3:2  | first_fifo_number       | First FIFO number |
+--! |         |     | 1:0  | last_fifo_number         | Last FIFO number |
+--! | STATUS  |  0  |   7  | data_fifo_empty          | EMPTY status flag of the DATA FIFO for antenna processor 0. Active HIGH. |
+--! |         |     |   6  | data_fifo_overflow_sticky| Sticky flag indicating that one of the DATA FIFO has overflown. Cleared only by a reset of the module.|
+--! |         |     |   5  | reset_all                | Reset all status |
+--! |         |     |   4  | 8-bit support (always 0)                 |                               |
+--! |         |     | 3:2  | frame_ctr                | Frame per packet counter (2 bits) |
+--! |         |     |   1  | data_flags_fifo_overflow_sticky | Sticky flag for data flags FIFO overflow |
+--! |         |     |   0  | frame_flags_fifo_overflow_sticky | Sticky flag for frame flags FIFO overflow |
+--! |         |  1  |  7:0 | timestamp_ctr            | Last 8 bits of timestamp counter |
+--! |         |  2  |  7:0 | in_frame_ctr             | Input frame counter |
 	--! | RAM     | 0-63 | -   | MASK_RAM                 | Word selection map. Each of the 512 bit indicates whether the corresponding word (frequency bin pair) is retained by this correlator. |
 	--! ------------------------------------------------------------------------------
 	--!

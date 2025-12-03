@@ -178,6 +178,30 @@ begin
 			b_rst_out => ctrl_rst_int  -- ctrl_reset, resynchronized to the B_CLK
 		);
 
+	-- Memory Map
+	-- ------------------------------------------------------------------------------
+	-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+	-- |---------|-----|------|----------------------|-------------------------------|
+	-- | CONTROL |  0  |  5   | bsb_ram_sel          | Write data target: 0=data buffer, 1=playlist/mask buffer |
+	-- |         |     |  4   | bsb_ram_bank          | If bsb_ram_sel=0, selects rd/wr bank; if bsb_ram_sel=1, selects playlist memory (0) or mask memory (1) |
+	-- |         |     | 3:0  | bsb_ram_frame         | Frame number |
+	-- |         |  1  |  7   | rx_write_enable       | When '1', incoming data is written to the data buffer |
+	-- |         |     |  6   | tx_trig_sel           | 0: Data transmission starts when an incoming frame set is completed; 1: data transmission starts every TX_PERIOD clocks |
+	-- |         |     |  5   | tx_enable             | '1' to enable data transmission. '0' data transmission is muted |
+	-- |         |     |  4   | tx_reset              | '1' resets the data transmitter |
+	-- |         |     |  3   | tx_toggle_bank         | '1' allows the read and write banks to alternate |
+	-- |         |     |  2   | tx_insert_timestamp    | Insert timestamp in output |
+	-- |         |     |  1   | rx_mask_low_bins      | Mask low bins |
+	-- |         |     |  0   | tx_override_data       | Override data |
+	-- |         | 2-5 | 31:0 | tx_period              | Number of clocks between data transmission starts (32 bits) |
+	-- |         |  6  | 7:0  | tx_length              | Transmission length |
+	-- |         |  7  | 4:0  | timestamp_incr        | Timestamp increment value |
+	-- | STATUS  |  0  |  0   | overrun               | Overrun flag |
+	-- |         |  1  | 7:0  | in_frame_ctr           | Input frame counter |
+	-- |         |  2  | 7:0  | out_frame_ctr          | Output frame counter |
+	-- | RAM     | 0-65535 | - | Data/Playlist/Mask RAM | RAM for data buffer, playlist, or mask depending on bsb_ram_sel and bsb_ram_bank |
+	-- ------------------------------------------------------------------------------
+
 	bsb_regs0: entity work.CTRL_SLAVE
 		generic map (
 			DEFAULT_CONTROL_BYTES   => X"00_66_00010000_FF_10",

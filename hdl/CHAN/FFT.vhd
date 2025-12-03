@@ -257,6 +257,10 @@ begin
 -- |         |  2  |  7:0 | overflow_count       | Number of FFT overflows since reset (rolls back) |
 -- |         |  3  |  7:3 | fft_delay_ctr_width  | Width of the counter for the latency of the CASPER PFB/FFT |
 -- |         |     |  2:0 | fft_type             | Type of FFT implemented in the firmware |
+-- |         |  4  |   7  | IMPLEMENT_FFT        | '1' when FFT is implemented |
+-- |         |     |   6  | ROTATE_BINS          | '1' when bin rotation is enabled |
+-- |         |     |   5  | sync_reset           | Synchronous reset status |
+-- |         |     | 4:0  | (unused)             |                               |
 -- ------------------------------------------------------------------------------
 --
 

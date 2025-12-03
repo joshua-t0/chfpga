@@ -22,8 +22,23 @@ use UNISIM.VComponents.ALL;
 library xpm;
 use xpm.vcomponents.ALL;
 
-use work.chFPGA_package.ALL; -- Get all component definitions
+use work.chFPGA_package.ALL; 
 
+-- The SYSTEM module provides general support functions such as GPIOs, SPI and I2C interfaces,
+-- clock generation, system monitoring, and reference clock management. It acts as a container
+-- for all system-level infrastructure modules that are not part of the main signal processing
+-- pipeline.
+--
+-- The SYSTEM module consists of the following sub-modules:
+--
+-- - `GPIO`: General purpose I/O, buck synchronization, IRIG-B decoder/generator/trigger, IRIG-B tagging of Reference clock counter and Frame counters
+-- - `SYSMON_XADC`: FPGA system monitor (temperature, voltage)
+-- - `FREQ_CTR`: Frequency counter for clock monitoring
+-- - `SPI`: SPI master interface
+-- - `REFCLK`: Reference clock and synchronization management
+-- - `I2C`: I2C master interface
+-- - `BLINKER`: Heartbeat LED blinker
+--
 entity system is
 	generic (
 		PLATFORM_ID: integer; -- identifies the type of platform on which the firmware is running

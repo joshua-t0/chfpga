@@ -162,9 +162,9 @@ begin
 	-- |         |     |  4  | user_sync               | Drives the sync_out signl, reclocked to the *falling* edge of clk10. Does NOT cause a local sync. If the 10 MHz clock generator logic is present, a rising edge causes the generation of a clock-encoded sync on that clock. |
 	-- |         |     | 3:2 | (unused)                |  |
 	-- |         |     | 1:0 | sync_source             | Selects the source of the SYNC signal: '00': local sync only, '01': sync recovered from the clock, '01': backplane sync, '11': IRIG-B-based sync|
-	-- |         |  1  |  7  | REFCLK_SEL              | Selects the source of the REFCLK needed for SYNC generation. 0=FMC, 1=internal REFCLK generator. |
-	-- |         |     | 6:5 | (unused)                | |
-	-- |         |     | 4:0 | REFCLK1_DLY             | Delay on the Mezzanine 1 REFCLK, used to scan the ADC clock waveform and set the ADC SYNC timing. |
+-- |         |  1  |  7  | (unused)                |                               |
+-- |         |     | 6:5 | (unused)                |                               |
+-- |         |     | 4:0 | REFCLK1_DLY             | Delay on the Mezzanine 1 REFCLK, used to scan the ADC clock waveform and set the ADC SYNC timing. |
 	-- |         |  2  |  7  | REFCLK_DLY_RST          | Resets the REFCLK delay line. Needed to load a new delay value.|
 	-- |         |     | 4:0 | REFCLK0_DLY             | Delay on Mezzanine 0 REFCLK, used to scan the ADC clock waveform and set the ADC SYNC timing. |
 	-- | STATUS  |  0  | 7:4 | sync_event_ctr          | |
@@ -173,9 +173,13 @@ begin
 	-- |         |     |  1  | SYNC                    | |
 	-- |         |     |  0  | adcdaq_reset        | |
 	-- |         |  1  | 7:0 | (unused)                | |
-	-- |         |  2  | 7:6 | (unused)                | |
-	-- |         |     |  5  | sync_done               | |
-	-- |         |     | 4:0 | (unused)                | |
+-- |         |  2  | 7:6 | (unused)                |                               |
+-- |         |     |  5  | sync_done               | Indicates when sync sequence is completed |
+-- |         |     |  4  | (unused)                |                               |
+-- |         |     |  3  | (unused)                |                               |
+-- |         |     |  2  | sync_in(2)              | Debug: monitors sync input 2 |
+-- |         |     |  1  | sync_in(1)              | Debug: monitors sync input 1 |
+-- |         |     |  0  | sync_in(0)              | Debug: monitors sync input 0 |
 	-- ------------------------------------------------------------------------------
 	--
 

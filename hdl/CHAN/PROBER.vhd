@@ -153,11 +153,11 @@ begin
 -----------------------------------------------------------------------------------
 -- CAPTURE (PROBER) Module Memory Map
 --
---  ------------------------------------------------------------------------------
+-- ------------------------------------------------------------------------------
 -- |  Page   | Addr|Bit(s)|     Name             | Description                   |
 -- |---------|-----|------|----------------------|-------------------------------|
 -- | CONTROL |  0  |  7   | Soft reset           |                |
--- |         |     |  6   | fifo_reset           |                |
+-- |         |     |  6   | (unused)             |                |
 -- |         |     |  5   | input source         |                |
 -- |         |     | 4:3  | (unused)             |                |
 -- |         |     |  2   | prober_user_flags    | If True, returns user flags in last 4 bits captured from scaler |
@@ -167,16 +167,17 @@ begin
 -- |         | 7-8 | 15:0 | stream_id(15:0)      |                |
 -- |         | 9-10| 15:0 | send_delay           | Time to wait before sending captured data |
 -- |         |11-13| 23:0 | primary_period(1)    |                |
--- |         | 14  | 4:0  | sub_period           | range: 0-23.  Create additional captures every N=2^(sub_period+1) frames after the primary period. If N > primary_period, only the primary period frames are captured. If the primary period is not a multiple of N, the last sub capture of a period might be close to the beginning of the next period.|
--- | STATUS  |  0  |   7  | TUSER_CAPTURE_BIT    | For debugging. |
--- |         |     |   6  | inhibit_data         | For debugging. |
+-- |         | 14  | 7:5  | (unused)             |                               |
+-- |         |     | 4:0  | sub_period           | range: 0-23.  Create additional captures every N=2^(sub_period+1) frames after the primary period. If N > primary_period, only the primary period frames are captured. If the primary period is not a multiple of N, the last sub capture of a period might be close to the beginning of the next period.|
+-- | STATUS  |  0  |   7  | (unused)             |                               |
+-- |         |     |   6  | (unused)             |                               |
 -- |         |     |   5  | current_source       |  |
--- |         |     |   4  | data_fifo_4mpty      | For debugging. |
+-- |         |     |   4  | data_fifo_empty      | For debugging. |
 -- |         |     |   3  | data_fifo_overflow   | For debugging. |
 -- |         |     |   2  | data_fifo_overflow_sticky |           |
--- |         |     |   1  | header_fifo_overflow | For debugging. |
--- |         |     |   0  | '0'                  |                |
---  ------------------------------------------------------------------------------
+-- |         |     |   1  | overrun              | High if we attempted to capture a new burst when the readout of the previous one was not finished |
+-- |         |     |   0  | (unused)             |                               |
+-- ------------------------------------------------------------------------------
 
 -- CONTROL Byte 0
 soft_reset <= control_bytes(0)(7);

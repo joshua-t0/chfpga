@@ -286,22 +286,25 @@ begin
 
 -----------------------------------------------------------------------------------
 -- CONTROL and STATUS Bytes
------------------------------------------------------------------------------------
---! \addtogroup memory_map
---! ACC Module
---! =============
 --! ------------------------------------------------------------------------------
 --! |  Page   | Addr|Bit(s)|     Name             | Description                   |
 --! |---------|-----|------|----------------------|-------------------------------|
---! | CONTROL |  0  |  7   | USER_RESET          | Reset the CH_DIST and clears the FIFOs.|
---! |         | 1-4 | 31:0 | INTEGRATION_PERIOD   | Number of frames that are integrated before the intergation starts over. 32 bit value, must be >=3.  |
---! |         | 5-8 | 31:0 | CAPTURE_PERIOD       | Number of frames between the transmission of the current integrated result. 32 bit value, must be >=3. |
---! |         |   9 | 7:0  | PROBE_ID             | First byte of the transmitted correlation frame |
---! | STATUS  |  0  | 7:0  | FRAME_CTR            | Received frame counter (wraps around) |
---! |         |  1  |  0   | CAPTURE_OVERFLOW     | An overflow was detected on any of the CAPTURE FIFO. Cleared by any reset. |
---! |         |     |  1   | CAPTURE_UNDERFLOW    | An underflow was detected on any of the CAPTURE FIFO. Cleared by any reset. |
---! |         |     |  2   | ACCUM_OVERFLOW       | An underflow was detected on any of the CAPTURE FIFO. Cleared by any reset. |
---! |         |     |  3   | ACCUM_UNDERFLOW      | An underflow was detected on any of the CAPTURE FIFO. Cleared by any reset. |
+--! | CONTROL |  0  |  7   | user_reset           | Reset the correlator |
+--! |         |     |  6   | autocorr_only        | Autocorrelation only mode |
+--! |         |     |  5   | no_accum             | No accumulation mode |
+--! |         |     | 3:0  | user_id              | User ID |
+--! |         | 1-4 | 31:0 | integration_period   | Number of frames that are integrated before the integration starts over. 32 bit value, must be >=3. |
+--! |         | 5-6 | 17:0 | number_of_bins_per_frame | Number of bins per frame (18 bits) |
+--! | STATUS  |  0  |  0   | rst_all              | Reset all status |
+--! |         |     |  1   | data_fifo_prog_full  | Data FIFO program full |
+--! |         |     |  2   | data_fifo_overflow_sticky | Data FIFO overflow sticky flag |
+--! |         |     |  3   | cmac_z_local_data(0) | CMAC Z local data |
+--! |         |     |  4   | m_axis_data_out_tready | Output data ready |
+--! |         |     |  5   | cmac_readout_err(0)  | CMAC readout error |
+--! |         |     |  6   | cmac_wr_err(0)       | CMAC write error |
+--! |         |     |  7   | cmac_rd_err(0)       | CMAC read error |
+--! |         |  1  | 7:0  | in_frame_ctr_reg     | Input frame counter |
+--! |         |  2  | 7:0  | out_frame_ctr_reg    | Output frame counter |
 --! ------------------------------------------------------------------------------
 --!
 -- CONTROL Byte 0

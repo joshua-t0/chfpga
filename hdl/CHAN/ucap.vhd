@@ -37,7 +37,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --
 -- `ucap` allows the capture of raw ADC data frames, where a frame is 16384 x 16-bit samples provided 8 sample at a time.
 -- `ucap` can store 2 frames for all 8 channels, 4 frames for 4 selected channels, 8 frames for 2 selected channels, or 16 frames for 1 selected channel.
---  Frames are captured Every N frames.
+-- Frames are captured Every N frames.
 entity ucap is
 	generic (
 	    NUMBER_OF_CHANNELS: integer := 8; -- Warning: current design works only with NUMBER_OF_CHANNELS = 8
@@ -141,29 +141,33 @@ begin
 	s_axis_stream_in_tready <= fifo_in_tready(1);
 	fifo_in_tready <= (others => not fifo_full);
 
-    --------------------------------------------
-    ---- UCAP Memory Map
-    -- --------------------------------------------------------------------------
-	--  ------------------------------------------------------------------------------
-	-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
-	-- |---------|-----|------|----------------------|-------------------------------|
-	-- | CONTROL |  0  | 7:6  | mode                 | "00": 8-channel mode, "01": 4-channel, "10": 2-channel, "11": 1-channel |
-	-- |         |     | 5:3  | chan_sel(1)          | Physical Channel connected to logical channel 1 (used only in 4-, 2-channel mode) |
-	-- |         |     | 2:0  | chan_sel(0)          | Physical Channel connected to logical channel 0 (used only in 4-, 2-, 1-channel mode) |
-	-- |         |  1  | 7:6  | user_reset           | When '1', resets the module |
-	-- |         |     | 5:3  | chan_sel(3)          | Physical Channel connected to logical channel 3 (used only in 4-channel mode) |
-	-- |         |     | 2:0  | chan_sel(2)          | Physical Channel connected to logical channel 0 (used only in 4- and 2-channel mode) |
-	-- |         | 2-4 | 23:0 | base_period(0)       | Capture period for source 0 |
-	-- |         | 5-7 | 23:0 | base_period(1)       | Capture period for source 1 |
-	-- |         | 8   | 7:5  | (unused)       |  |
-	-- |         |     | 4:0 | sub-period capture rate               |   |
-	-- |         |  9  | 7:0 | source_sel           | Source selection for each physical channel (bit 0 = channel 0)|
-	-- | STATUS  |  0  | 7:4 | (unused)        | |
-	-- |         |  0  |  3  | fifo_overflow_sticky        | |
-	-- |         |  0  |  2  | overrun        | |
-	-- |         |  0  |  1  | rst        | |
-	-- |         |  0  |  0  | user_reset        | |
-	--  ------------------------------------------------------------------------------
+-- --------------------------------------------
+-- UCAP Memory Map
+--
+--
+-- ------------------------------------------------------------------------------
+-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+-- |---------|-----|------|----------------------|-------------------------------|
+-- | CONTROL |  0  | 7:6  | mode                 | "00": 8-channel mode, "01": 4-channel, "10": 2-channel, "11": 1-channel |
+-- |         |     | 5:3  | chan_sel(1)          | Physical Channel connected to logical channel 1 (used only in 4-, 2-channel mode) |
+-- |         |     | 2:0  | chan_sel(0)          | Physical Channel connected to logical channel 0 (used only in 4-, 2-, 1-channel mode) |
+-- |         |  1  | 7   | user_reset           | When '1', resets the module |
+-- |         |     |  6  | output_source_sel     | Selects which data stream is sent out. 0=UCAP data, 1=auxiliary data|
+-- |         |     | 5:3  | chan_sel(3)          | Physical Channel connected to logical channel 3 (used only in 4-channel mode) |
+-- |         |     | 2:0  | chan_sel(2)          | Physical Channel connected to logical channel 0 (used only in 4- and 2-channel mode) |
+-- |         | 2-4 | 23:0 | base_period(0)       | Capture period for source 0 |
+-- |         | 5-7 | 23:0 | base_period(1)       | Capture period for source 1 |
+-- |         | 8   | 7:5  | (unused)       | |
+-- |         |     | 4:0 | sub-period capture rate               | |
+-- |         |  9  | 7:0 | source_sel           | Source selection for each physical channel (bit 0 = channel 0)|
+-- | STATUS  |  0  | 7:4 | (unused)        | |
+-- |         |  0  |  3  | fifo_overflow_sticky        | |
+-- |         |  0  |  2  | overrun        | |
+-- |         |  0  |  1  | rst        | |
+-- |         |  0  |  0  | user_reset        | |
+-- |         |  1  | 7:0 | period_ctr(0)    | Last 8 bits of period counter for source 0 |
+-- |         |  2  | 7:0 | source_sel_in     | Source selection input (bit 0 = channel 0) |
+-- ------------------------------------------------------------------------------
 
 	bsb_regs0: entity work.CTRL_SLAVE
 		GENERIC MAP (

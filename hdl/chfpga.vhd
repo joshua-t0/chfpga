@@ -1179,18 +1179,18 @@ begin
 	-- TOP-LEVEL COMMAND ROUTER
 	--------------------------------------------------
 
-	-- Top-level Memoy map
+	-- Top-level Memory map
 	--
-	-- | #  | Base Addr| Subaddresses                       | Description |
-	-- |    |----------|------------------------------------|-------------|
-	-- |  0 | 0x00000  | SYSTEM                             |             |
-	-- |  1 | 0x10000  | ADC & Channelizers                 |             |
-	-- |  2 | 0x20000  | Corner-turn engine                 |             |
-	-- |  3 | 0x30000  | GPU Links                          |             |
-	-- |  4 | 0x40000  | (unused)                           |             |
-	-- |  5 | 0x50000  | BP Shuffle                         |             |
-	-- |  6 | 0x60000  | Crossbar 2                         |             |
-	-- |  7 | 0x70000  | UCAP                               |             |
+	-- | #  | Base Addr| Module                             | Description |
+	-- |----|----------|------------------------------------|-------------|
+	-- |  0 | 0x00000  | SYSTEM                             | System modules (GPIO, clocks, SPI, I2C, etc.) |
+	-- |  1 | 0x10000  | ADCDAQ & CHAN                      | F-Engines (channelizers) and ADC data acquisition |
+	-- |  2 | 0x20000  | BCT_ENGINE or UCT_ENGINE           | Corner-turn engine |
+	-- |  3 | 0x30000  | XGE or CGE                         | Real-time data offload Links, 10G or 100G Ethernet |
+	-- |  4 | 0x40000  | CORR44 or UCORR44                  | X-Engine/Correlator subsystem |
+	-- |  5 | 0x50000  | UCORN                              | Frame aggregator and packetizer (Ultrascale+ only) |
+	-- |  6 | 0x60000  | (unused)                           |             |
+	-- |  7 | 0x70000  | UCAP                               | UltraRAM-based data capture engine (Ultrascale+ only) |
 
 	top_router_blk: block
 		attribute TARGET_PBLOCK of top_router0: label is "SYSTEM"; -- assign top router to SYSTEM Pblock
@@ -1975,7 +1975,7 @@ begin
 	--------------------------------------------------
 
 	-- Channel Memory Map
-	-- ==============================
+	--
 	-- |#   | Base Addr       | Subaddresses | Description |
 	-- |----|-----------------|------------- |-------------|
 	-- | 0  | Base + 0x00000  | CHAN 0       |             |

@@ -205,25 +205,23 @@ begin
 	-----------------------------------------------------------------------------------
 	-- CONTROL and STATUS Bytes
 	-----------------------------------------------------------------------------------
-	-- Memory Map
-	-- -----------------------------------------------------------------------------------
-	-- |  Page   | Addr|Bit(s)|     Name                 | Description                   |
-	-- |---------|-----|------|--------------------------|-------------------------------|
-	-- | CONTROL |  0  |   7  | USER_RESET               | Reset the CH_DIST and clears the FIFOs.|
-	-- |         |     |   6  | FOUR_BITS                | The input data is in 4-bit mode. The word streams will be combined 2-by-2 to pack 4 (4+4) bits samples in the output word|
-	-- |         |     |   5  | USE_OFFSET_BINARY        | Indicates if the data is encoded in offset_binary or 2's complement. This is not used by this module, but is passed in the header flags.
-	-- |         |     |   4  | SEND_FLAGS               | Indicates if we want the packets to contain scaler and adc flags.|
-	-- |         |     |   3  |                          |   |
-	-- |         |     | 2-0  | (unused)                 |   |
-	-- |         | 1-2 | 15:0 | STREAM_ID                | Stream ID to be used for tagging the output frames |
-	-- |         |  3  | 7:0  | number_of_selected_bins  | Indicates the number of words (frequency bin pairs) that are selected. This must match the number of '1' bits in the word selection map.|
-	-- |         |  4  | 2:0  | frames_per_packet        | Number of input frames to group into an output packet.|
-	-- |         |  5  | 7:5  |                          |   |
-	-- |         |     | 4:0  | number_of_input_lanes    | Number of input lanes from which data is gathered. Must be a multiple of 4. |
-	-- | STATUS  |  0  |   7  |                          | EMPTY status flag of the DATA FIFO for antenna processor 0. Active HIGH. |
-	-- |         |     |   6  |                          | Sticky flag indicating that one of the DATA FIFO has overflown. Cleared only by a reset of the module.|
-	-- |         |     | 5:0  | '0'                      | Unused   |
-	-- |         |  1  |  7:0 | FRAME_CTR                | Counts the number of frames written into the FIFOs. Rolls over.|
+-- Memory Map
+-- -----------------------------------------------------------------------------------
+-- |  Page   | Addr|Bit(s)|     Name                 | Description                   |
+-- |---------|-----|------|--------------------------|-------------------------------|
+-- | CONTROL |  0  |   7  | (unused)                |                               |
+-- |         |     |   6  | align_reset              | Manually resets the align module |
+-- |         |     |   5  | (unused)                 |                               |
+-- |         |     |   4  | lane_monitor_reset        | Resets the lane monitoring statistics |
+-- |         |     | 3:0  | lane_monitor_sel         | Selects for which lane lane monitoring statistics are presented |
+-- |         |  1  | 3:0  | lane_monitor_source      | Lane monitor source selection |
+-- | STATUS  |  0  | 7:3  | lane_monitor_bit_ctr     | Lane monitor bit counter |
+-- |         |     |   2  | lane_monitor_bit         | Lane monitor bit value |
+-- |         |     |   1  | align_fifo_overflow_sticky | Align FIFO overflow sticky flag for selected lane |
+-- |         |     |   0  | rst_reg                  | Reset register status |
+-- |         |  1  | 7:0  | input_frame_ctr          | Input frame counter for selected lane |
+-- |         |  2  | 7:0  | align_frame_ctr          | Align frame counter for selected lane |
+-- |         | 3:4 |15:0  | delay_capture_ref_word_ctr | Delay capture reference word counter |
 	-- | RAM     |0-63 |  -   | MASK_RAM                 | Word selection map. Each of the 512 bit indicates whether the corresponding word (frequency bin pair) is retained by this correlator. |
 	-- ----------------------------------------------------------------------------------
 	--

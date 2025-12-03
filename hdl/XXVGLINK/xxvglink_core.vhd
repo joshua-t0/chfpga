@@ -474,6 +474,30 @@ begin
 	----------------------------------
 	-- REFERENCE CLOCK-BASED RESETS
 	----------------------------------
+	-- Common Registers Memory Map
+	-- ------------------------------------------------------------------------------
+	-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+	-- |---------|-----|------|----------------------|-------------------------------|
+	-- | CONTROL |  0  |  7   | common_user_reset    | User reset |
+	-- |         |     |  4   | common_drp_page      | DRP page selection |
+	-- |         |     |  3   | common_tx_datapath_reset | TX datapath reset (core only) |
+	-- |         |     |  2   | common_rx_pll_datapath_reset | RX PLL datapath reset (core only) |
+	-- |         |     |  1   | common_rx_datapath_reset | RX datapath reset (core only) |
+	-- |         |     |  0   | common_tx_pll_datapath_reset | TX PLL datapath reset (core only) |
+	-- |         | 1-3 | 23:0 | common_user_tx_data   | User TX data (24 bits) |
+	-- |         | 4+  | -    | control_bytes         | Per-link control bytes (passed to individual links) |
+	-- | STATUS  |  0  | 7:5  | NUMBER_OF_QUADS       | Number of quads |
+	-- |         |     | 4:0  | NUMBER_OF_LINKS      | Number of links |
+	-- |         |  1  |  4   | (tx_reset and rx_reset status) | TX and RX reset status |
+	-- |         |     |  3   | qpllreset            | QPLL reset status |
+	-- |         |     |  2   | common_rx_cdr_stable_out | RX CDR stable (core only) |
+	-- |         |     | 1:0  | (unused)             |                               |
+	-- |         |     |  5   | (unused)             |                               |
+	-- |         |     | 7:6  | (unused)             |                               |
+	-- |         | 2+  | -    | status_bytes         | Per-link status bytes (from individual links) |
+	-- ------------------------------------------------------------------------------
+	-- Note: This module also has per-quad and per-lane CTRL_SLAVE instances for DRP access.
+	-- See quad_regs0 and lane_regs0 instances for per-instance memory maps.
 
 	common_regs0: entity work.CTRL_SLAVE
 		generic map (

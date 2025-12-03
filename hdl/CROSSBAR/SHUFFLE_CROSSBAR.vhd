@@ -274,10 +274,29 @@ begin
 	--! |         |     | 2:0 | (unused)                  | Unused |
 	--! |         |  2  | 7:0  | sof_window_stop          | Sets how long after the start of lane 0 ALIGN will wait for the start of the other lanes. Passed this, late lanes will be discarded. |
 	--! |         |3-6/10| 7:0  | lane_map                | Lanes input map. N/s bytes, where N is the numeb rof input lanes. Each 4-bit nibble is an input lane number.|
-	--! | STATUS  |  0  |   7  | data_fifo_empty          | EMPTY status flag of the DATA FIFO for antenna processor 0. Active HIGH. |
-	--! |         |     |   6  | data_align_fifo_overflow       | Sticky flag indicating that one of the DATA FIFO has overflown. Cleared only by a reset of the module.|
-	--! |         |     | 5:0  | '0'                      | Unused   |
-	--! |         |  1  |  7:0 | FRAME_CTR                | Counts the number of frames written into the FIFOs. Rolls over.|
+--! | STATUS  |  0  |   0  | (unused)                |                               |
+--! |         |     |   1  | fifo_tfirst_mon         | Monitor FIFO TFIRST for selected lane |
+--! |         |     |   2  | bad_eof_sticky          | Bad EOF sticky flag for selected lane |
+--! |         |     |   3  | bad_lane_sticky          | Bad lane sticky flag for selected lane |
+--! |         |     |   4  | discarded_data_sticky   | Discarded data sticky flag for selected lane |
+--! |         |     |   5  | missing_frame_sticky     | Missing frame sticky flag for selected lane |
+--! |         |     |   6  | align_fifo_overflow_sticky | Align FIFO overflow sticky flag for selected lane |
+--! |         |     |   7  | (unused)                |                               |
+--! |         |  1  | 3:0  | NUMBER_OF_OUTPUT_LANES  | Number of output lanes |
+--! |         |     | 7:4  | NUMBER_OF_BIN_SEL       | Number of bin selectors |
+--! |         |  2  | 7:0  | input_frame_ctr         | Input frame counter for selected lane |
+--! |         |  3  | 7:0  | align_frame_ctr         | Align frame counter for selected lane |
+--! |         |  4  | 7:0  | output_frame_ctr        | Output frame counter for selected lane |
+--! |         |  5  | 7:0  | clk_ctr                 | Clock counter |
+--! |         |  6  |   7  | (unused)                |                               |
+--! |         |     |   6  | lane0_tfirst_mon        | Lane 0 TFIRST monitor |
+--! |         |     |   5  | (unused)                |                               |
+--! |         |     | 4:0  | NUMBER_OF_INPUT_LANES   | Number of input lanes |
+--! |         |  7  | 7:0  | frame_number_capture_reg| Frame number capture for selected lane |
+--! |         |  8  | 7:0  | stream_id_capture_reg    | Stream ID capture for selected lane |
+--! |         | 9:10|15:0  | delay_capture           | Delay capture (ref word ctr if lane 0, else word ctr) |
+--! |         |11:12|15:0  | fifo_count_mon_reg      | FIFO count monitor for selected lane |
+--! |         |13:14|15:0  | packet_error_ctr        | Packet error counter for selected lane |
 	--! | RAM     | 0-63 | -   | MASK_RAM                 | Word selection map. Each of the 512 bit indicates whether the corresponding word (frequency bin pair) is retained by this correlator. |
 	--! ------------------------------------------------------------------------------
 

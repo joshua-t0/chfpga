@@ -64,168 +64,180 @@ use UNISIM.VComponents.all;
 ----------- ENTITY DECLARATIONS -----------------------------------------------------------
 
 
---! Implements the **data acquisition** of one channel of a EV8AQ160 ADC
---!     in non-DMUX mode and send the output as a non-blocking, 32-bit wide
---!     AXI4 STREAMING bus.
---!
---! Input interface
---! ===============
---!
---! The input data of `ADCDAQ` comes in as a 8-bit LVDS data bus (i.e 8 pairs) clocked
---! on a LVDS DDR clock. The module implements the clock and data
---! differential buffers (IBUFGDS and IBUFDS).
---!
---! The data from the High bus (AH,BH,CH or DH) of the EV8AQ160 is used. This means that the DMUX mode (which uses the Low buses AL...DL) is not supported.
---! The maximum tested input data rate is 850 MSPS, which corresponds to an input clock of 425 MHz DDR.
---! Higher speeds are possible, but the design should be re-implemented with the corresponding timing constraints to ensure proper opertion.
---! Also, the MMCM configuration should be checked to make sure it still operates within valid parameters (e.g PFB frequency, VCO freqency, bandwidth etc).
---!
---! The clock and data lines are equipped with delay lines. The data delay lines should be adjusted to set the bit sampling at the optimum point of the incoming data. The PCB trace length variations and the delays inside the FPGA make this tuning mandatory to obtain error-free data acquisition.
---! The clock line do not need delay adjustment unless external clocking is used (see below).
---!
---! Output data
---! ===========
---! The incoming ADC data is packaged in groups of 4 bytes
---! and combines them into a 4-byte-wide (32 bits) output word operating at 1/4 the sampling rate (nominally 200 MHz for a 800Msps sampling rate).
---!
---! The data is output as a AXI4 STREAMING bus containing the following signals:
---!   - **TDATA**: 32-bit word containing 4 data samples. The first sample is placed in the most significant bits. The data is coded in two's complement format.
---!   - **TUSER**: 4-bit vector indicating if each of the byte is overranging. The MSB corresponds to the first byte. See below for overrange detection method.
---!   - **TVALID**: Active high whan valid word is present on the bus
---!   - **TLAST**: Active high when the last word of a frame is placed on the bus.
---!
---! The output stream is provided through a FIFO that sends the data out on the clock provided by the user readout clock (adc_clk).
---! This allows the processing pipeline to operate on clocks with different phases. The FIFO is not deep and can buffer a few samples before overflowing.
---! To prevent overflow/underflow, the readout clock must be at the same frequency as the ADC.
---! In other terms, the readout word clock  must have a constant phase relationship with the actual ADC output clock.
---!
---! The data_ready signal is set to '1' when the module is ready to send data.
---! However, it will not start sending the data until the send_data line is set to '1'.
---! This allows multiple ADCDAQ outputs to be synchronized by
---!    1) waiting for all their data_ready lines to be '1', and then
---!    2) set the send_data line simulataneously on all modules.
---!
---! Note that the FIFO has already begun filling when data_ready is set.
---! send_data must be therefore set quickly after data_ready is set to prevent the FIFO from overflowing.
---!
---! The module provides a word clock derived from the ADC clock.
---!
---! The module automatically groups the data in frames by setting the TLAST bit every N words. N is set at compile time and is not programmable.
---! For a 2048-sample fame, N is set to 512.,
---!
---! Note: A number samples are discarded after reset in order to allow time for the PLL to lock.
---!    The number of samples is counted from the ADC clock and is independent of the PLL lock time.
---!    The timing of the first sample provided by the module is therefore repeatable.
---!
---! Overrange detection
---! ===================
---! Each word is accompanied by four Overrange bits (in the 4-bit TUSER field) indicating if each of the 4 samples was judged out of range by the ADCDAQ module.
---! Since the hardware Overrange (OR) lines from the ADC chip could not be routed to the FPGA through the FMC conector (not enough pins), we simulate the overrange detection by firmware.
---! In our scheme, the overrrange is assumed if the input sample is at its extreme values of -128 or +127. This works because the ADC nicely saturates its output codes to these extremes in case of an actual overrange.
---! The drawback of this method is that if we decide to discard samples that are overrange, we reduce te dynamic range of he ADC by 2 codes out of 256.
---!
---! Clocking modes
---! ==============
---! The data acquisition can be done either using the ADC clock or by using a externally provided clock generated from an other ADCDAQ.
---!
---! Internal clocking
---! -----------------
---! The internal clocking is simpler and is the preferred method, but can be used only if the data
---! lines are in the same bank or the bank above or below the bank where the clock line comes in. This
---! is due to the BUFR and BUFIO limitations in the FPGA.
---! This mode is used when USE_EXT_DATA_CLK=FALSE. When this mode is used, the bit clock (ioclk_vect) and word clocks
---! (divclk) are internally generated and buffered. The ioclk_vect is simply the input clock buffered
---! by a BUFIO, and the word clock is the input clock divided by two using a BUFR.
---!
---! External clocking
---! -----------------
---! If if some data lines are not within the reach of the clock, one of the ADCDAQ module is implemented with a PLL that generates a bit and word clock based on the ADC clock, and provides them on global clock lines using BUFGs.
---! These clocks can reach any I/O.
---! The ADCDAQ modules associated with the same ADC chip can set USE_EXT_DATA_CLK=TRUE to use these clocks to perform the data acquisition on the data lines,
---! wherever they are on the chip.
---!
---!
---! Local word counter and internal CLK_VALID signal
---! ================================================
---! Whatever the clocking mode, a divide-by-two BUFR is always instantiated to generate a local word clock (divclk_local_vect(0)) and a word counter.
---! This clock divider is resettable and does not require any lock time and can therefore start accurately counting words coming out of the ADC when it comes out of SYNC mode.
---! This local clock is used to count the incoming words and set the CLK_VALID signal once a fixed number of words have been received in order to instruct the rest of the module to start storing data. By the time CLK_VALID is set, the PLL has had time to lock and stabilize.
---! The modules using the PLL can therefore be perfectly synchronized to the ones that don't.
---! This is essential to produce phase-unambiguous, reproducible data acquisition across all modules across multiple boards for every reset or SYNC events.
---!
---! Clock delay adjustment in external clocking mode
---! ================================================
---! If the external clocking mode is used, the locally generated CLK_VALID signal (clocked on the local ADC clock) can be significantly shifted relative to the
---! word clock (generated by a PLL based on another ADC clock) due to PCB trace length and internal FPGA delays. If the timing is too wrong, the ADCDAQ will start storing the data a byte earlier or later, or could be in a boderline case where the word alignment is unpredictable.
---! Normally, the data alignment should be the same as with internally clocked ADCDAQ modules (this can be seen by acquiring ramps generated digitally by the ADC).
---! In order to make the external clocking work, the following provisions should be made:
---!   1) The timing constraints in the UCF file should define the ADC clocks of the module using an external clock as a function of the ADC clock that is used as the external source.
---!      This related clock will tell the implementation tools to consider the timing between the two clocks. Otherwise, the timing relationship will be totally ignored and the logic delays between the CLK_VALID source register and the destination register clocked on the external clock will be random.
---!      A phase relationship could be indicated in the constraint file, but there might be a board to board variation, so software delay adjustment is pefrable as described in the next point.
---!   2) Adjust the clock delays of all concerned clocks in order to align them. The ADC clock sampling system can be used to measure the clock arrival time relative to a clock common to all ADCs.
---!
---! PLL
---! ===
---! If INSTANTIATE_PLL=TRUE, a PLL (MMCM) is instantiated and generates externally accessible bit and word clocks that can be used by ADCDAQ modules to perform the data acquisition.
---!
---! The PLL input clock is the output of a BUFR which divides the ADC clock by 2 to produce the word clock.
---!
---! The PLL generates 3 clocks:
---!    - a bit clock (typ. 400 MHz). This is buffered by a BUFG, and is used to clock the input of the SERDES in this or other ADCDAQ modules.
---!    - a data acquisition word clock (200 MHz). This is buffered by a BUFG, and is used to clock the output of the SERDES in this or other ADCDAQ modules.
---!    - an antenna processor word clock (200 MHz). This is buffered by a BUFG, and is used to clock the antenna processors. This is not used internally by this module.
---!
---! The PLL input is fed by the 200 MHz word clock coming from divclk_local_vect(0) instead of using the 400 MHz clock from the ADC as would normally be done.
---! The reason for this is to ensure that the output clocks are not a divided version of the input clock, which can cause phase ambiguities. This does not happen if the output clock is at the same frequency or twice the frequency of the input clock.
---! We did not find a way to reliably force the PLL to generate a consistent phase if the output clock frequency was a fraction of the input clock frequency.
---!
---! NOTE: It was observed that the PLL should be used with a HIGH bandwidth if the reference clock source is too jittery, and that otherwise a few bytes per million were erroneously acquired.
---! Using a HIGH bandwidth imposes constraints on the minimum PFD frequency (i.e the input clock divider must be set to 1)
---!
---! NOTE: Clocking Wizard 3.6 (coming with ISE 14.2) does not work with Virtex 6. Simulation shows no output. Xilinx says to use Clocking Wizard 3.5 instead.
---!
---!
---! SYNC and RESET sequence
---! =======================
---! This module is designed to allow the data acquisition to start in a deterministic way after an ADC SYNC event.
---! An ADC SYNC event consist in asserting the ADC SYNC line and releasing it accurately on a known edge of the 1600 MHz ADC input clock.
---! When the SYNC is asserted,  the internal sampling system of the ADC chip is reset and its internal clock dividers are put in a known state
---! (the output clock frequency of the ADC is 1/4 of its input clock).
---! The output clocks of the ADC are stopped during a SYNC event, meaning that a PLL will loose lock if one is used.
---! When the SYNC is released, the first analog sample is taken a fixed amount of time after the next 1600 MHz ADC clock edge, the ADC output clock starts clocking, and valid data comes out a fixed number of ADC clocks later.
---!
---! SYNCing can be used to ensure that the sampling of multiple ADC chips on multiple boards results in deterministic delays between the actual samples that are being acquired and packaged in frames.
---!
---! This ADCDAQ module does not generate the ADC SYNC itself, but provides a adcdaq_reset input line and logic that ensures that the data coming out of the ADC is always timed consistently when the ADC SYNC sequence is performed.
---!
---! The operation of the adcdaq_reset in the context of an ADC SYNC event is as follows:
---!    1. The ADC SYNC line is asserted. This stops the ADC clocks. The ADCDAQ PLL is unlocked, and there is no clock to the antenna processor.
---!    2. The adcdaq_reset line is asserted. This does the following asynchronously (since there is no clocks anymore):
---!
---!       - The ADCDAQ PLL is reset (if there is one in this instance). divclk stops on all instances using this PLL as an external clock.
---!       - The BUFR RST line is asserted. This resets the internal divider and sets the clock output to '0'. divclk_local_vect(0) stops. divclk also stops if the internal clock is used.
---!       - The adc_clk_valid and input word counter (word_ctr) are cleared to zero. This counter will count the local ADC clocks (not the PLL clocks) and will set adc_clk_valid after a fixed number of clocks to indicate when to start storing the data. This gives time to the PLL to lock.
---!       - The SERDES RST line is asserted (serdes_auto_reset). Note that the SERDES is not resetted yet because it needs an input clock to do so. That will come later.
---!       - fifo_wr_en is disabled and the SERDES output word counter is cleared. This will be used to decide when to start writing the SERDES data to the FIFO when the target count is reached.
---!       - The data_ready and TVALID flags are cleared.
---!
---!    3. Five divclk clocks later, fifo_rst is set. This was to allow the WR_EN to propagate before the reset (I recall some timing issues with this). Now this is not very useful as the clock is stopped already. The reset will be done when the clock starts again.
---!    4. ADCDAC_RESET is released. Since there is no local or external divclk, nothing happens
---!    5. The ADC SYNC is released. The ADC clock starts clocking again.
---!
---!       - The PLL receives the LOCAL_DIVCLK lock and starts its locking process, which will take a while
---!       - The input word counter starts counting the incoming ADC words on LOCAL_DIVCLK
---!
---!    6. After some time, the PLL is locked. Modules using both a local or external divclk now have a valid divclk.
---!    7. The fifo_reset line is released five divclk clocks later while fifo_wr_en is '0'. This (hopefully) allows enough clocks the FIFO internals to reset properly
---!    8. When the input word counter counting divclk_local_vect(0) reaches a target value, adc_clk_valid is set on the LOCAL_DIVCLK edge.
---!    9. When the adc_clk_valid is detected (in the divclk edge), SERDES_RESET is released on the next divclk
---!    10. When SERDES_CLK is not active the SERDES word counter starts counting on divclk edges.
---!    11. When the SERDES counter reaches a given value, valid data is now at the output of the SERDES. fifo_rd_en is set so thsi data is stored into the FIFO on divclk.
---!    12. When the FIFO length reaches a threshold, the DATA ready is set on the adc_clk readout clock
---!    13. The user sets the ADC_SEND_DATA flag on adc_clk
---!    14. The fifo_rd_en is set on adc_clk and the FIFO output is placed on the output data bus with TVALID='1' on adc_clk.
---!
+-- Implements the **data acquisition** of one channel of a EV8AQ160 ADC
+-- in non-DMUX mode and send the output as a non-blocking, 32-bit wide
+-- AXI4 STREAMING bus.
+--
+-- Input interface
+-- ===============
+--
+-- The input data of `ADCDAQ` comes in as a 8-bit LVDS data bus (i.e 8 pairs) clocked
+-- on a LVDS DDR clock. The module implements the clock and data
+-- differential buffers (IBUFGDS and IBUFDS).
+--
+-- The data from the High bus (AH,BH,CH or DH) of the EV8AQ160 is used. This means that the DMUX mode (which uses the Low buses AL...DL) is not supported.
+-- The maximum tested input data rate is 850 MSPS, which corresponds to an input clock of 425 MHz DDR.
+-- Higher speeds are possible, but the design should be re-implemented with the corresponding timing constraints to ensure proper opertion.
+-- Also, the MMCM configuration should be checked to make sure it still operates within valid parameters (e.g PFB frequency, VCO freqency, bandwidth etc).
+--
+-- The clock and data lines are equipped with delay lines. The data delay lines should be adjusted to set the bit sampling at the optimum point of the incoming data. The PCB trace length variations and the delays inside the FPGA make this tuning mandatory to obtain error-free data acquisition.
+-- The clock line do not need delay adjustment unless external clocking is used (see below).
+--
+-- Output data
+-- ===========
+--
+-- The incoming ADC data is packaged in groups of 4 bytes
+-- and combines them into a 4-byte-wide (32 bits) output word operating at 1/4 the sampling rate (nominally 200 MHz for a 800Msps sampling rate).
+--
+-- The data is output as a AXI4 STREAMING bus containing the following signals:
+--
+-- - **TDATA**: 32-bit word containing 4 data samples. The first sample is placed in the most significant bits. The data is coded in two's complement format.
+-- - **TUSER**: 4-bit vector indicating if each of the byte is overranging. The MSB corresponds to the first byte. See below for overrange detection method.
+-- - **TVALID**: Active high whan valid word is present on the bus
+-- - **TLAST**: Active high when the last word of a frame is placed on the bus.
+--
+-- The output stream is provided through a FIFO that sends the data out on the clock provided by the user readout clock (adc_clk).
+-- This allows the processing pipeline to operate on clocks with different phases. The FIFO is not deep and can buffer a few samples before overflowing.
+-- To prevent overflow/underflow, the readout clock must be at the same frequency as the ADC.
+-- In other terms, the readout word clock  must have a constant phase relationship with the actual ADC output clock.
+--
+-- The data_ready signal is set to '1' when the module is ready to send data.
+-- However, it will not start sending the data until the send_data line is set to '1'.
+-- This allows multiple ADCDAQ outputs to be synchronized by
+--
+-- 1) waiting for all their data_ready lines to be '1', and then
+-- 2) set the send_data line simulataneously on all modules.
+--
+-- Note that the FIFO has already begun filling when data_ready is set.
+-- send_data must be therefore set quickly after data_ready is set to prevent the FIFO from overflowing.
+--
+-- The module provides a word clock derived from the ADC clock.
+--
+-- The module automatically groups the data in frames by setting the TLAST bit every N words. N is set at compile time and is not programmable.
+-- For a 2048-sample fame, N is set to 512.,
+--
+-- Note: A number samples are discarded after reset in order to allow time for the PLL to lock.
+--    The number of samples is counted from the ADC clock and is independent of the PLL lock time.
+--    The timing of the first sample provided by the module is therefore repeatable.
+--
+-- Overrange detection
+-- ===================
+--
+-- Each word is accompanied by four Overrange bits (in the 4-bit TUSER field) indicating if each of the 4 samples was judged out of range by the ADCDAQ module.
+-- Since the hardware Overrange (OR) lines from the ADC chip could not be routed to the FPGA through the FMC conector (not enough pins), we simulate the overrange detection by firmware.
+-- In our scheme, the overrrange is assumed if the input sample is at its extreme values of -128 or +127. This works because the ADC nicely saturates its output codes to these extremes in case of an actual overrange.
+-- The drawback of this method is that if we decide to discard samples that are overrange, we reduce te dynamic range of he ADC by 2 codes out of 256.
+--
+-- Clocking modes
+-- ==============
+--
+-- The data acquisition can be done either using the ADC clock or by using a externally provided clock generated from an other ADCDAQ.
+--
+-- Internal clocking
+-- -----------------
+--
+-- The internal clocking is simpler and is the preferred method, but can be used only if the data
+-- lines are in the same bank or the bank above or below the bank where the clock line comes in. This
+-- is due to the BUFR and BUFIO limitations in the FPGA.
+-- This mode is used when USE_EXT_DATA_CLK=FALSE. When this mode is used, the bit clock (ioclk_vect) and word clocks
+-- (divclk) are internally generated and buffered. The ioclk_vect is simply the input clock buffered
+-- by a BUFIO, and the word clock is the input clock divided by two using a BUFR.
+--
+-- External clocking
+-- -----------------
+--
+-- If if some data lines are not within the reach of the clock, one of the ADCDAQ module is implemented with a PLL that generates a bit and word clock based on the ADC clock, and provides them on global clock lines using BUFGs.
+-- These clocks can reach any I/O.
+-- The ADCDAQ modules associated with the same ADC chip can set USE_EXT_DATA_CLK=TRUE to use these clocks to perform the data acquisition on the data lines,
+-- wherever they are on the chip.
+--
+-- Local word counter and internal CLK_VALID signal
+-- ================================================
+--
+-- Whatever the clocking mode, a divide-by-two BUFR is always instantiated to generate a local word clock (divclk_local_vect(0)) and a word counter.
+-- This clock divider is resettable and does not require any lock time and can therefore start accurately counting words coming out of the ADC when it comes out of SYNC mode.
+-- This local clock is used to count the incoming words and set the CLK_VALID signal once a fixed number of words have been received in order to instruct the rest of the module to start storing data. By the time CLK_VALID is set, the PLL has had time to lock and stabilize.
+-- The modules using the PLL can therefore be perfectly synchronized to the ones that don't.
+-- This is essential to produce phase-unambiguous, reproducible data acquisition across all modules across multiple boards for every reset or SYNC events.
+--
+-- Clock delay adjustment in external clocking mode
+-- ================================================
+--
+-- If the external clocking mode is used, the locally generated CLK_VALID signal (clocked on the local ADC clock) can be significantly shifted relative to the
+-- word clock (generated by a PLL based on another ADC clock) due to PCB trace length and internal FPGA delays. If the timing is too wrong, the ADCDAQ will start storing the data a byte earlier or later, or could be in a boderline case where the word alignment is unpredictable.
+-- Normally, the data alignment should be the same as with internally clocked ADCDAQ modules (this can be seen by acquiring ramps generated digitally by the ADC).
+-- In order to make the external clocking work, the following provisions should be made:
+--
+-- 1) The timing constraints in the UCF file should define the ADC clocks of the module using an external clock as a function of the ADC clock that is used as the external source.
+--    This related clock will tell the implementation tools to consider the timing between the two clocks. Otherwise, the timing relationship will be totally ignored and the logic delays between the CLK_VALID source register and the destination register clocked on the external clock will be random.
+--    A phase relationship could be indicated in the constraint file, but there might be a board to board variation, so software delay adjustment is pefrable as described in the next point.
+-- 2) Adjust the clock delays of all concerned clocks in order to align them. The ADC clock sampling system can be used to measure the clock arrival time relative to a clock common to all ADCs.
+--
+-- PLL
+-- ---
+--
+-- If INSTANTIATE_PLL=TRUE, a PLL (MMCM) is instantiated and generates externally accessible bit and word clocks that can be used by ADCDAQ modules to perform the data acquisition.
+--
+-- The PLL input clock is the output of a BUFR which divides the ADC clock by 2 to produce the word clock.
+--
+-- The PLL generates 3 clocks:
+--
+-- - a bit clock (typ. 400 MHz). This is buffered by a BUFG, and is used to clock the input of the SERDES in this or other ADCDAQ modules.
+-- - a data acquisition word clock (200 MHz). This is buffered by a BUFG, and is used to clock the output of the SERDES in this or other ADCDAQ modules.
+-- - an antenna processor word clock (200 MHz). This is buffered by a BUFG, and is used to clock the antenna processors. This is not used internally by this module.
+--
+-- The PLL input is fed by the 200 MHz word clock coming from divclk_local_vect(0) instead of using the 400 MHz clock from the ADC as would normally be done.
+-- The reason for this is to ensure that the output clocks are not a divided version of the input clock, which can cause phase ambiguities. This does not happen if the output clock is at the same frequency or twice the frequency of the input clock.
+-- We did not find a way to reliably force the PLL to generate a consistent phase if the output clock frequency was a fraction of the input clock frequency.
+--
+-- NOTE: It was observed that the PLL should be used with a HIGH bandwidth if the reference clock source is too jittery, and that otherwise a few bytes per million were erroneously acquired.
+-- Using a HIGH bandwidth imposes constraints on the minimum PFD frequency (i.e the input clock divider must be set to 1)
+--
+-- NOTE: Clocking Wizard 3.6 (coming with ISE 14.2) does not work with Virtex 6. Simulation shows no output. Xilinx says to use Clocking Wizard 3.5 instead.
+--
+--
+-- SYNC and RESET sequence
+-- =======================
+--
+-- This module is designed to allow the data acquisition to start in a deterministic way after an ADC SYNC event.
+-- An ADC SYNC event consist in asserting the ADC SYNC line and releasing it accurately on a known edge of the 1600 MHz ADC input clock.
+-- When the SYNC is asserted,  the internal sampling system of the ADC chip is reset and its internal clock dividers are put in a known state
+-- (the output clock frequency of the ADC is 1/4 of its input clock).
+-- The output clocks of the ADC are stopped during a SYNC event, meaning that a PLL will loose lock if one is used.
+-- When the SYNC is released, the first analog sample is taken a fixed amount of time after the next 1600 MHz ADC clock edge, the ADC output clock starts clocking, and valid data comes out a fixed number of ADC clocks later.
+--
+-- SYNCing can be used to ensure that the sampling of multiple ADC chips on multiple boards results in deterministic delays between the actual samples that are being acquired and packaged in frames.
+--
+-- This ADCDAQ module does not generate the ADC SYNC itself, but provides a adcdaq_reset input line and logic that ensures that the data coming out of the ADC is always timed consistently when the ADC SYNC sequence is performed.
+--
+-- The operation of the adcdaq_reset in the context of an ADC SYNC event is as follows:
+--    1. The ADC SYNC line is asserted. This stops the ADC clocks. The ADCDAQ PLL is unlocked, and there is no clock to the antenna processor.
+--    2. The adcdaq_reset line is asserted. This does the following asynchronously (since there is no clocks anymore):
+--
+--       - The ADCDAQ PLL is reset (if there is one in this instance). divclk stops on all instances using this PLL as an external clock.
+--       - The BUFR RST line is asserted. This resets the internal divider and sets the clock output to '0'. divclk_local_vect(0) stops. divclk also stops if the internal clock is used.
+--       - The adc_clk_valid and input word counter (word_ctr) are cleared to zero. This counter will count the local ADC clocks (not the PLL clocks) and will set adc_clk_valid after a fixed number of clocks to indicate when to start storing the data. This gives time to the PLL to lock.
+--       - The SERDES RST line is asserted (serdes_auto_reset). Note that the SERDES is not resetted yet because it needs an input clock to do so. That will come later.
+--       - fifo_wr_en is disabled and the SERDES output word counter is cleared. This will be used to decide when to start writing the SERDES data to the FIFO when the target count is reached.
+--       - The data_ready and TVALID flags are cleared.
+--
+--    3. Five divclk clocks later, fifo_rst is set. This was to allow the WR_EN to propagate before the reset (I recall some timing issues with this). Now this is not very useful as the clock is stopped already. The reset will be done when the clock starts again.
+--    4. ADCDAC_RESET is released. Since there is no local or external divclk, nothing happens
+--    5. The ADC SYNC is released. The ADC clock starts clocking again.
+--
+--       - The PLL receives the LOCAL_DIVCLK lock and starts its locking process, which will take a while
+--       - The input word counter starts counting the incoming ADC words on LOCAL_DIVCLK
+--
+--    6. After some time, the PLL is locked. Modules using both a local or external divclk now have a valid divclk.
+--    7. The fifo_reset line is released five divclk clocks later while fifo_wr_en is '0'. This (hopefully) allows enough clocks the FIFO internals to reset properly
+--    8. When the input word counter counting divclk_local_vect(0) reaches a target value, adc_clk_valid is set on the LOCAL_DIVCLK edge.
+--    9. When the adc_clk_valid is detected (in the divclk edge), SERDES_RESET is released on the next divclk
+--    10. When SERDES_CLK is not active the SERDES word counter starts counting on divclk edges.
+--    11. When the SERDES counter reaches a given value, valid data is now at the output of the SERDES. fifo_rd_en is set so thsi data is stored into the FIFO on divclk.
+--    12. When the FIFO length reaches a threshold, the DATA ready is set on the adc_clk readout clock
+--    13. The user sets the ADC_SEND_DATA flag on adc_clk
+--    14. The fifo_rd_en is set on adc_clk and the FIFO output is placed on the output data bus with TVALID='1' on adc_clk.
+--
 entity ADCDAQ is
 	GENERIC (
 		SAMPLES_PER_FRAME       : integer := 2048; -- Number of samples per frame, used to packetize the output data stream
@@ -484,7 +496,72 @@ signal send_data_reg: std_logic;
 signal data_ready_int: std_logic;
 signal data_mask: std_logic_vector(7 downto 0);
 signal force_data_ready: std_logic;
+
 begin
+
+
+-- Memory Map
+--
+-- ------------------------------------------------------------------------------
+-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+-- |---------|-----|------|----------------------|-------------------------------|
+-- | CONTROL | 0-7 | 4:0  | data_iodelay_value   | IODELAY tap delay values for data lines 0-7 (5 bits per line) |
+-- |         |  8  | 4:0  | clk_iodelay_value    | IODELAY tap delay value for clock line (5 bits) |
+-- |         |     | 7:5  | (unused)             |                               |
+-- |         |  9  |   7  | pll_soft_reset       | Soft reset for PLL            |
+-- |         |     |   6  | (unused)             |                               |
+-- |         |     |   5  | clk_iodelay_soft_reset| Soft reset for clock IODELAY  |
+-- |         |     |   4  | enable_ramp           | Enable ADC test ramp pattern |
+-- |         |     |   3  | idelayctrl_rst        | Reset IODELAY controller     |
+-- |         |     |   2  | bufr_soft_reset       | Soft reset for BUFR           |
+-- |         |     |   1  | serdes_soft_reset     | Soft reset for SERDES         |
+-- |         |     |   0  | data_iodelay_soft_reset| Soft reset for data IODELAY  |
+-- |         | 10  |   7  | (unused)             |                               |
+-- |         |     |   6  | force_data_ready      | Force data_ready signal high  |
+-- |         |     |   5  | ramp_err_clear        | Clear ramp error counter     |
+-- |         |     |   4  | clear_fifo_flags      | Clear FIFO overflow/underflow flags |
+-- |         |     | 3:0  | sample_delay(11:8)   | Upper 4 bits of sample delay  |
+-- |         | 11  | 7:0  | sample_delay(7:0)     | Lower 8 bits of sample delay  |
+-- |         | 12  | 7:0  | capture2_period       | Period for pattern capture   |
+-- |         | 13  | 7:0  | capture2_word_number  | Word number for pattern capture |
+-- |         | 14  | 7:0  | data_mask             | Data mask for output         |
+-- | STATUS  | 0-7 | 4:0  | data_iodelay_cntvalueout| IODELAY tap delay readback for data lines 0-7 |
+-- |         |     | 7:5  | (unused)             |                               |
+-- |         |  8  | 4:0  | clk_iodelay_cntvalueout| IODELAY tap delay readback for clock line |
+-- |         |     | 7:5  | (unused)             |                               |
+-- |         |  9  |   7  | (unused)             |                               |
+-- |         |     |   6  | (unused)             |                               |
+-- |         |     |   5  | (unused)             |                               |
+-- |         |     |   4  | (unused)             |                               |
+-- |         |     |   3  | pll_locked            | PLL lock status               |
+-- |         |     |   2  | fifo_rst               | FIFO reset status             |
+-- |         |     |   1  | idelayctrl_present     | IODELAY controller present    |
+-- |         |     |   0  | idelayctrl_rdy        | IODELAY controller ready     |
+-- |         | 10  |   7  | fifo_overflow         | FIFO overflow flag            |
+-- |         |     |   6  | fifo_underflow        | FIFO underflow flag           |
+-- |         |     |   5  | fifo_empty             | FIFO empty flag               |
+-- |         |     |   4  | fifo_overflow_sticky  | FIFO overflow sticky flag     |
+-- |         |     |   3  | fifo_underflow_sticky | FIFO underflow sticky flag    |
+-- |         |     |   2  | fifo_empty_sticky      | FIFO empty sticky flag        |
+-- |         |     | 1:0  | (unused)             |                               |
+-- |         |11-12|15:0  | ramp_err_ctr          | Ramp error counter            |
+-- |         | 13  |   7  | (unused)             |                               |
+-- |         |     |   6  | (unused)             |                               |
+-- |         |     |   5  | (unused)             |                               |
+-- |         |     |   4  | (unused)             |                               |
+-- |         |     |   3  | data_ready_int        | Internal data ready signal    |
+-- |         |     |   2  | fifo_data_valid       | FIFO data valid flag          |
+-- |         |     |   1  | fifo_rd_en            | FIFO read enable              |
+-- |         |     |   0  | fifo_wr_en            | FIFO write enable              |
+-- |         | 14  | 7:0  | (unused)             |                               |
+-- |         | 15  | 7:0  | output_word_ctr       | Last 8 bits of output word counter |
+-- |         |16-17|15:0  | (unused)             |                               |
+-- |         | 18  | 7:2  | (unused)             |                               |
+-- |         |     | 1:0  | adc_clk_sample        | ADC clock sample value       |
+-- |         |19-22|31:0  | capture2_pattern      | Captured ADC test pattern    |
+-- |         |23-26|31:0  | ramp_bit_err_ctr      | Ramp bit error counter (8 x 4-bit counters) |
+-- ------------------------------------------------------------------------------
+
 ---------------------------------------------------------------------------------
 -- Control interface
 ---------------------------------------------------------------------------------

@@ -97,6 +97,20 @@ architecture impl of FREQ_CTR is
 	signal gate_period: unsigned(31 downto 0); -- gate_period=40E6 Corresponds to a gate_period/CLK200_FREQ= 0.2s second gate time. Since inputs are divided by 2, real frequency is 100*count.
 -- signal gate_period_minus_1: unsigned(31 downto 0);
 
+-----------------------------------------------------------------------------------
+-- Memory map
+--
+-- ------------------------------------------------------------------------------
+-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+-- |---------|-----|------|----------------------|-------------------------------|
+-- | CONTROL | 0:3 | 31:0 | gate_period          | Gate time in CLK200 cycles. The frequency counter counts source clock edges during this period. |
+-- |         |  4  |   7  | freq_ctr_start       | Start a frequency measurement. Set to '1' to begin, then clear to '0' before starting a new measurement. |
+-- |         |     |  6:0 | freq_ctr_src_sel     | Selects which clock input (0 to 127) to measure. |
+-- | STATUS  | 0:3 | 31:0 | freq_ctr             | Measured frequency count (number of source clock edges during gate period). |
+-- |         |  4  |  7:1 | (unused)             |                               |
+-- |         |     |   0  | freq_ctr_rdy         | Ready flag. Set to '1' when measurement is complete and freq_ctr is valid. |
+-- ------------------------------------------------------------------------------
+
 begin
 
 	-- CONTROL Byte 0-3

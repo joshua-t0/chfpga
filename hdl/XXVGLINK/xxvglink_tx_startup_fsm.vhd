@@ -1,5 +1,5 @@
 -- From : Xilinx  7 Series FPGAs Transceivers Wizard version 3.1 (shuffle_gtx_tx_startup_fsm.vhd)
---  Description :     This module performs TX reset and initialization.
+-- Description :     This module performs TX reset and initialization.
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
