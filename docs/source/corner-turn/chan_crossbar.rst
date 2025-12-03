@@ -1,7 +1,8 @@
-:entity:`CHAN_CROSSBAR`: 1st stage corner-turn
-**********************************************
-
 .. title:: CHAN_CROSSBAR
+
+******************************************************************
+:entity:`CHAN_CROSSBAR` (*CHAN_CROSSBAR.vhd*): 1st stage corner-turn
+******************************************************************
 
 .. .. figure:: ../images/channelizer.svg
 ..     :width: 75%

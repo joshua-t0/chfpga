@@ -1,7 +1,8 @@
-:entity:`SHUFFLE_BIN_SEL`: 2nd and 3rd stage corner-turn bin selector
-*********************************************************************
-
 .. title:: SHUFFLE_BIN_SEL
+
+********************************************************************************************
+:entity:`SHUFFLE_BIN_SEL` (*SHUFFLE_BIN_SEL.vhd*): 2nd and 3rd stage corner-turn bin selector
+********************************************************************************************
 
 .. .. figure:: ../images/channelizer.svg
 ..     :width: 75%

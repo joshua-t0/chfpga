@@ -1,7 +1,8 @@
-:entity:`CHAN_BIN_SEL`: 1st stage corner-turn bin selector
-**********************************************************
-
 .. title:: CHAN_BIN_SEL
+
+******************************************************************************
+:entity:`CHAN_BIN_SEL` (*CHAN_BIN_SEL.vhd*): 1st stage corner-turn bin selector
+******************************************************************************
 
 .. .. figure:: ../images/channelizer.svg
 ..     :width: 75%
@@ -34,7 +35,7 @@ Additional details
 Memory map
 ----------
 
-.. .. include-docs:: chan_bin_sel
+.. include-docs:: CHAN_BIN_SEL
     :start-after: CHAN_BIN_SEL Memory Map
 
 Implementation details

@@ -1,5 +1,8 @@
-:entity:`PROBER_DATA_FIFO`: Prober Data FIFO
-********************************************
+.. title:: PROBER_DATA_FIFO
+
+********************************************************************
+:entity:`PROBER_DATA_FIFO` (*PROBER_DATA_FIFO.vhd*): Prober Data FIFO
+********************************************************************
 
 .. image:: ../images/xilinx_modules/prober_data_fifo.png
     :width: 25%

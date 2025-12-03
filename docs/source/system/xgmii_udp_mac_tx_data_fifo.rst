@@ -1,7 +1,3 @@
-.. title:: xgmii_udp_mac_tx_data_fifo
-
-
-
 
 
 .. XGMII UDP MAC Tx Data FIFO

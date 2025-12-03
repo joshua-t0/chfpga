@@ -1,7 +1,8 @@
+.. title:: chfpga
 
-*******************************
-:entity:`chfpga` (`chfpga.vhd`)
-*******************************
+**********************************************************
+:entity:`chfpga` (*chfpga.vhd*): Top-level firmware module
+**********************************************************
 
 .. default-role:: vhdl:entity
 
@@ -79,7 +80,7 @@ Top level memory map
 --------------------
 
 .. include-docs:: chfpga
-    :start-after: Top-level Memoy map
+    :start-after: Top-level Memory map
 
 
 

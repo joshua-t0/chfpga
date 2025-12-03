@@ -1,5 +1,8 @@
-:entity:`PROBER_FRAME_FIFO`: Prober Frame FIFO
-**********************************************
+.. title:: PROBER_FRAME_FIFO
+
+************************************************************************
+:entity:`PROBER_FRAME_FIFO` (*PROBER_FRAME_FIFO.vhd*): Prober Frame FIFO
+************************************************************************
 
 .. image:: ../images/xilinx_modules/prober_frame_fifo.png
     :width: 25%

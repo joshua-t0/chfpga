@@ -1,8 +1,8 @@
-***************************
-:entity:`CHAN` (`CHAN.vhd`)
-***************************
+.. title:: CHAN
 
-.. title:: CHAN: Channelizer
+****************************************
+:entity:`CHAN` (*CHAN.vhd*): Channelizer
+****************************************
 
 .. default-role:: entity
 
@@ -188,7 +188,7 @@ Layout
 ------
 
 
-..todo:: Describe layout constraints
+.. todo:: Describe layout constraints
     - pipelining of ADC data to CHAN
     - meeting the route from the ADCs to the `CHAN` instance, which can be pretty far away. It is important to not include `CHAN` in a PBLOCK so the pipelining registers can be freely placed.
 

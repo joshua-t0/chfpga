@@ -1,7 +1,8 @@
-:entity:`SHUFFLE_CROSSBAR`: 2nd and 3rd stage corner-turn
-*********************************************************
-
 .. title:: SHUFFLE_CROSSBAR
+
+***********************************************************************************
+:entity:`SHUFFLE_CROSSBAR` (*SHUFFLE_CROSSBAR.vhd*): 2nd and 3rd stage corner-turn
+***********************************************************************************
 
 .. .. figure:: ../images/channelizer.svg
 ..     :width: 75%

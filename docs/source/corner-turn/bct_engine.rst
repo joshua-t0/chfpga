@@ -1,5 +1,8 @@
-:entity:`BCT_Engine` (*bct_engine.vhd*)
-***************************************
+.. title:: BCT_Engine
+
+*********************************************************************
+:entity:`BCT_Engine` (*bct_engine.vhd*): Kintex-7 Corner-turn engine
+*********************************************************************
 
 .. parse:: hdl/CROSSBAR/bct_engine.vhd
 .. default-role:: vhdl:entity

@@ -1,7 +1,8 @@
+.. title:: clocks
 
-
-:entity:`clocks` (`clocks.vhd`)
-*******************************
+************************************************
+:entity:`clocks` (*clocks.vhd*): Clocking system
+************************************************
 
 
 The SYSTEM/CLOCKS module takes the 125 MHz reference clock coming from the MGT (and also used for the SFP+ interface) and generates the following clocks:

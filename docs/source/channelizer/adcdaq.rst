@@ -1,8 +1,8 @@
-.. title:: ADCDAQ: Analog to Digital Converter Data Aquisistion
+.. title:: ADCDAQ
 
-*********************************
-:entity:`ADCDAQ` (``ADCDAQ.vhd``)
-*********************************
+*****************************************************************************
+:entity:`ADCDAQ` (*ADCDAQ.vhd*): Analog to Digital Converter Data Acquisition
+*****************************************************************************
 
 .. default-role:: vhdl:entity
 
@@ -42,5 +42,5 @@ Schematic
 =========
 
 
-.. figure:: ../images/CHAN/ADCDAQ/  adcdaq_pll_unambiguous_phase_config.svg
+.. figure:: ../images/CHAN/ADCDAQ/adcdaq_pll_unambiguous_phase_config.svg
     :width: 50%

@@ -36,6 +36,8 @@
    channelizer/index
    CT Engine <corner-turn/corner-turn>
    X Engine <correlator/correlator>
+   XXVGLINK <xxvglink/index>
+   100G Ethernet <100GE_UDP_MAC/index>
 
 .. toctree::
    :maxdepth: 1

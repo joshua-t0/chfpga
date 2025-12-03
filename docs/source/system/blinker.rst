@@ -1,10 +1,8 @@
-..   .. title:: blinker
+.. title:: blinker
 
-********************************
-:entity:`blinker` (*binker.vhd*)
-********************************
-
-.. title:: BLINKER
+*******************************************************
+:entity:`blinker` (*blinker.vhd*): Heartbeat LED blinker
+*******************************************************
 
 .. .. figure:: ../images/blinker.svg
 ..     :width: 100%

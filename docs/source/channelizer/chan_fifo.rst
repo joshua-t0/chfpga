@@ -1,7 +1,8 @@
 .. title:: CHAN_FIFO
 
-:entity:`CHAN_FIFO`: Channelizer asynchronous output FIFO
-*********************************************************
+***************************************************************************
+:entity:`CHAN_FIFO` (*CHAN_FIFO.vhd*): Channelizer asynchronous output FIFO
+***************************************************************************
 
 .. image:: ../images/xilinx_modules/chan_fifo2.png
     :width: 25%

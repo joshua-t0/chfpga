@@ -1,41 +1,46 @@
+.. title:: SYSTEM
 
-System modules
-**************
+**********************************************
+:entity:`SYSTEM` (*system.vhd*): System module
+**********************************************
 
-.. xxx   .. title: system
+.. parse:: hdl/SYSTEM/system.vhd
 
-.. .. figure:: ../images/system.svg
-..     :width: 100%
+.. default-role:: vhdl:entity
 
-The SYSTEM modules provide general support such as GPIOs, SPI and I2C interfces, etc.
+.. figure:: ../images/SYSTEM/system.svg
+    :width: 50%
 
+    SYSTEM module block diagram showing the command router and sub-modules.
+
+
+
+Sub-modules
+===========
 
 .. toctree::
-  :hidden:
-  :maxdepth: 1
+   :maxdepth: 1
+   :hidden:
 
-    clocks
-    GPIO <gpio>
-    i2c
-    spi
-    blinker
-    refclk
-    sysmon
-    freq_ctr
-
-
-The :entity:`gpio` also provides the following functionnalities:
-
-  - Motherboard Buck Synchronization
-  - Backplane Buck Synchronization
-  - IRIG-B decoder (:entity:`irigb_decoder`) and generator
-  - IRIG-B tagging of Referenece clock counter and Frame counters
+   clocks
+   GPIO <gpio>
+   i2c
+   spi
+   blinker
+   refclk
+   sysmon
+   freq_ctr
 
 
-SYSTEM memory map
-----------------
+Entity documentation
+====================
 
-.. todo:: Add system memory map
+.. autoentity:: system
 
-.. .. include-docs:: chfpga
-..     :start-after: SYSTEM Memory Map
+
+Memory map
+==========
+
+.. include-docs:: system
+    :start-after: SYSTEM Memory Map
+

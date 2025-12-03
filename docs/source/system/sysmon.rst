@@ -1,8 +1,8 @@
-..   .. title:: SYSMON_XADC
+.. title:: SYSMON_XADC
 
-***************************************
-:entity:`SYSMON_XADC` (*SYSMON_V6.vhd*)
-***************************************
+*******************************************************
+:entity:`SYSMON_XADC` (*SYSMON_V6.vhd*): System monitor
+*******************************************************
 
 
 .. .. figure:: ../images/SYSMON.svg

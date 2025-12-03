@@ -1,4 +1,7 @@
-:entity:`PROBER`: Data capture (*prober.vhd*)
+.. title:: PROBER
+
+*********************************************
+:entity:`PROBER` (*prober.vhd*): Data capture
 *********************************************
 
 Overview

@@ -1,6 +1,8 @@
-************************
-:entity:`SCALER`: Scaler
-************************
+.. title:: SCALER
+
+***************************************
+:entity:`SCALER` (*SCALER.vhd*): Scaler
+***************************************
 
 Overview
 ========
@@ -61,17 +63,18 @@ Each of these outputs are configurable seperately, which allows for other data t
 Note that whenever the data being output is wider than the width of the corresponding output, the MSBs are taken.
 
 Bypass data type
----------------
+----------------
 
 If the bypass register is set to 0, the science output produces its normal value, e.g. the 4+4 bit scaled FFT data. However, if bypass is set to 1, then the output depends on the bypass_data_type register:
 	- 0: The input FFT data is forwarded directly to the output.
 	- 1: If an over- or underflow occurs in either the real or imaginary component of the bin, 1+0j is output for that bin. Otherwise, 0+0j is output.
 	- 2: If a positive overflow occurs in the real component of the bin, 1+0j is output for that bin. If a negative underflow occurs in that component, 0+1j is output. Otherwise, 0+0j is output.
 	- 3: If a positive overflow occurs in the imaginary component of the bin, 1+0j is output for that bin. If a negative underflow occurs in that component, 0+1j is output. Otherwise, 0+0j is output.
+
 The latter three modes essentially turn autocorrelation into a counter that determines how many over- and underflows occur in the input data.
 
 Capture data type
-----------------
+-----------------
 
 The cap_data_type register determines what is output on the scaler's capture output.
 

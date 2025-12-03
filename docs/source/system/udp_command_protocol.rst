@@ -38,6 +38,7 @@ We originally considered possible architectures for a command system:
     - Read/write controls: write_enable (WEN), read_enable (REN), cknowledge (RACK)
 
   This interface assumes the module is always ready to accept a word. Slow write devices (DRP) might require.
+
 - 2) serialized bus
 
 

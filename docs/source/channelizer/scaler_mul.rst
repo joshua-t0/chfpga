@@ -1,5 +1,8 @@
-:entity:`SCALER_MUL`: Scaler Multiplier
-***************************************
+.. title:: SCALER_MUL
+
+**********************************************************
+:entity:`SCALER_MUL` (*SCALER_MUL.vhd*): Scaler Multiplier
+**********************************************************
 
 .. image:: ../images/xilinx_modules/scaler_mul.png
 	:width: 25%

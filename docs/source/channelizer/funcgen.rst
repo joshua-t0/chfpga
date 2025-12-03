@@ -1,7 +1,8 @@
 .. title:: FUNCGEN
 
-:entity:`FUNCGEN`: Data source selector and Function Generator
-**************************************************************
+******************************************************************************
+:entity:`FUNCGEN` (*FUNCGEN.vhd*): Data source selector and Function Generator
+******************************************************************************
 
 
 Overview

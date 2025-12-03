@@ -1,5 +1,8 @@
-:entity:`FUNCGEN_RAM`: Test waveform Block RAM
-**********************************************
+.. title:: FUNCGEN_RAM
+
+******************************************************************
+:entity:`FUNCGEN_RAM` (*FUNCGEN_RAM.vhd*): Test waveform Block RAM
+******************************************************************
 
 .. image:: ../images/xilinx_modules/funcgen_ram.png
 	:width: 25%

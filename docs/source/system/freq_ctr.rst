@@ -1,9 +1,8 @@
-..   .. title:: FREQ_CTR
-
-:entity:`FREQ_CTR` (FREQ_CTR.vhd)
-*************************************
-
 .. title:: FREQ_CTR
+
+******************************************************
+:entity:`FREQ_CTR` (*FREQ_CTR.vhd*): Frequency counter
+******************************************************
 
 .. .. figure:: ../images/FREQCTR.svg
 ..     :width: 100%

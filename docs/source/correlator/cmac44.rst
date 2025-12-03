@@ -1,6 +1,8 @@
+.. title:: CMAC44
 
-CMAC44: (4+4) bit Complex Multiply-and-Accumulate Core
-******************************************************
+******************************************************************************
+:entity:`CMAC44` (*CMAC44.vhd*): (4+4) bit Complex Multiply-and-Accumulate Core
+******************************************************************************
 
 .. default-role:: math
 
@@ -44,9 +46,9 @@ The sampling rate of CHIME is 800MSPS, with data grouped in 2048 sample frames, 
 
 The output data rate is `B_{out} = N_p F_r N_b/P`, where `P` is the integration period. Increasing `P` reduces `B_{out}`, but increases the probability that the `N_b`-wide accumulated product will saturate during that period.
 
-The worst case (nonrealistic) maximum integration period can be computed by assuming the products is constantly the maximum real or imaginary value possible. The maximum real or imaginary product is 64 (e.g. (-8 + 0j) * (-8 + 0j)). The number of bits required to store thr integration is `N_b = 2 log2(64*P)`, or `P = 2^{N_b/2}/64`. This requires 6 bits. For a `N`=16 correlator generating 1 Gbps, we would require
+The worst case (nonrealistic) maximum integration period can be computed by assuming the products is constantly the maximum real or imaginary value possible. The maximum real or imaginary product is 64 (e.g. (-8 + 0j) * (-8 + 0j)). The number of bits required to store thr integration is `N_b = 2 log2(64*P)`, or `P = 2^{N_b/2}/64`. This requires 6 bits. For a `N=16` correlator generating 1 Gbps, we would require
 
-`Nb P = B_{out}/Np/Fr = N_b 2^{N_b/2)/64`
+`Nb P = B_{out}/Np/Fr = N_b 2^{N_b/2}/64`
 
 
 The table shows that in the worst case, we need (19+19) bit products, but (17+17) bit is sufficient with t e constant mid-range ADC signal. There is also the consideration of the FPGA resources. It happens that the 7-Series BRAMs width can be configured to be 36, 18, 9, etc.. bits wide, meaning that a (18+18) bit accumulated product value would fit conveniently both in memory and in bandwidth. The next step, (9+9) bit products, is not feasable even if 10G links were available.

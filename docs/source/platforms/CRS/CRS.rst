@@ -15,8 +15,7 @@ A 50 MHz oven-stabilized voltage-controlled crystal oscillator (VCXO) is the cen
 The VCXO feeds the two on-board PLLs:
 
 
-- AD9574 Fixed-frequency PLL, which receives a divided-by-two (25 MHz) version of the oscillator to generate fixed system clocks and provides the basic system clocks needed to boot the board, namely the FPGA's
-processing system.
+- AD9574 Fixed-frequency PLL, which receives a divided-by-two (25 MHz) version of the oscillator to generate fixed system clocks and provides the basic system clocks needed to boot the board, namely the FPGA's processing system.
 - HMC7044 Programmable PLL, which can 1) phase-lock the VCXO to a reference clock if needed and 2) generate a number of frequencies for the FPGA.
 
 
@@ -88,11 +87,11 @@ The following table summarizes the clocks generated throughout the board:
 +-----------------+----------+------------------+---------------------------------------+--------------------------------+
 | SMA P1          | Copy 1   | SMA_CLK_10MHZ    | 10 MHz SMA reference clock            | HMC7044 CLKIN2                 |
 +-----------------+----------+------------------+---------------------------------------+--------------------------------+
-|                 | Copy 2   | PL_SMA_CLK_10MHZ | 10 MHz SMA reference clock            | **FPGA PL Bank 68 **           |
+|                 | Copy 2   | PL_SMA_CLK_10MHZ | 10 MHz SMA reference clock            | **FPGA PL Bank 68**            |
 +-----------------+----------+------------------+---------------------------------------+--------------------------------+
 | Backplane       | Copy 1   | BP_CLK_10MHZ     | 10 MHz Backplane reference clock      | HMC7044 CLKIN1                 |
 +-----------------+----------+------------------+---------------------------------------+--------------------------------+
-|                 | Copy 2   | PL_BP_CLK_10MHZ  | 10 MHz Backplane reference clock      | **FPGA PL Bank 69 **           |
+|                 | Copy 2   | PL_BP_CLK_10MHZ  | 10 MHz Backplane reference clock      | **FPGA PL Bank 69**            |
 +-----------------+----------+------------------+---------------------------------------+--------------------------------+
 | FPGA PL Bank 69 |          | PL_REC_CLK       | (unused)                              | HMC7044 CLKIN3                 |
 +-----------------+----------+------------------+---------------------------------------+--------------------------------+
