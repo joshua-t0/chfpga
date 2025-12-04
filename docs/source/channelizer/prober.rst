@@ -16,12 +16,6 @@ Schematic
 
 .. parse:: hdl/CHAN/PROBER.vhd
 
-.. toctree::
-   :titlesonly:
-
-   prober_data_fifo
-   prober_frame_fifo
-
 
 Entity documentation
 --------------------

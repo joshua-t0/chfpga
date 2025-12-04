@@ -21,7 +21,7 @@ Overview
 Schematic
 =========
 
-.. figure:: ../images/gpio.svg
+.. figure:: ../images/SYSTEM/gpio.svg
     :width: 100%
 
 Sub-modules

@@ -4,7 +4,7 @@
 :entity:`SPI` (*SPI.vhd*): SPI peripheral
 *****************************************
 
-.. figure:: ../images/spi.svg
+.. figure:: ../images/SYSTEM/spi.svg
     :width: 100%
 
 Entity documentation

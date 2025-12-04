@@ -29,7 +29,7 @@ Sub-modules
 .. toctree::
     :titlesonly:
 
-    funcgen_ram
+    lfsr
 
 
 

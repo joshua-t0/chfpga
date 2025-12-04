@@ -28,7 +28,7 @@ Sub-modules
    spi
    blinker
    refclk
-   sysmon
+   sysmon_xadc
    freq_ctr
 
 
