@@ -16,7 +16,6 @@ package chfpga_config is
 	constant CONFIG_CHAN_CAPTURE_TYPE: chan_capture_type_enum := UCAP;
 	constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer   := 2;
 	constant CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS: boolean    := FALSE;
-	constant CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT: integer  := 8;
 
     -- Corner-turn engine configuration
 

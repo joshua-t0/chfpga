@@ -41,7 +41,6 @@ entity system is
 		-- Channelizer info
 
 		NUMBER_OF_CHANNELIZERS: integer; -- Number of channelizers that are implemented
-		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer; -- Number of antenna processing blocks with an FFT module
 		FFT_TYPE: fft_type_enum;
 
 		-- Corner-turn Engine info
@@ -602,7 +601,6 @@ begin
 				-- F-Engine/Channelizer info
 				CHANNELIZERS_CLOCK_SOURCE       => CHAN_CLK_SOURCE,
 				NUMBER_OF_CHANNELIZERS          => NUMBER_OF_CHANNELIZERS,
-				NUMBER_OF_CHANNELIZERS_WITH_FFT => NUMBER_OF_CHANNELIZERS_WITH_FFT,
 				FFT_TYPE                        => FFT_TYPE,
 
 				-- Corner-turn Engine Info
