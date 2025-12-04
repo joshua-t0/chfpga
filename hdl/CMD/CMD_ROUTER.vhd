@@ -70,7 +70,7 @@ end CTRL_ROUTER;
 
 architecture Behavioral of CTRL_ROUTER is
 
-	function highest_mask_bit(mask:std_logic_vector) return integer is --! returns the position of the highest nonzero bit
+	function highest_mask_bit(mask:std_logic_vector) return integer is -- returns the position of the highest nonzero bit
 		begin
 			for i in mask'high downto mask'low loop
 				if mask(i)='1' then
@@ -80,7 +80,7 @@ architecture Behavioral of CTRL_ROUTER is
 			return -1; -- invalid
 		end highest_mask_bit;
 
-	function lowest_mask_bit(mask:std_logic_vector) return integer is --! returns the position of the lowest nonzero bit
+	function lowest_mask_bit(mask:std_logic_vector) return integer is -- returns the position of the lowest nonzero bit
 		begin
 			for i in mask'low to mask'high loop
 				if mask(i)='1' then
@@ -141,7 +141,7 @@ gen_cmd_out: for i in 0 to NUMBER_OF_PORTS-1 generate
 end generate;
 
 
---! Instantiate a FIFO at the input port
+-- Instantiate a FIFO at the input port
 FIFO0 : entity work.CMD_SYNC_FIFO
   PORT MAP (
   		-- External command input interface

@@ -1,5 +1,4 @@
 ----------------------------------------------------------------------------------
---! \file
 -- Company: McGill University Cosmology Instrumentation Lab
 -- Engineer: J.-F. Cliche
 --
@@ -19,7 +18,9 @@
 --      2012-04-11 JFC: pipelined the scaler to remove timing closure bottleneck
 --      2013-11-29 JFC: implemented FOUR_BIT flag and 4-bit rounding.
 --      2015-01-27 JFC: refactored to include saturation at -127/-7, zero on saturation, add stats to the registers
+
 ------ LIBRARY DECLARATIONS -------------------------------------------------------------------------------
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
@@ -28,6 +29,7 @@ library xpm;
 use xpm.vcomponents.all;
 
 use work.chFPGA_Package.all; -- Get all component definitions
+
 -------- ENTITY DECLARATION ---------------------
 
 -- Scales the FFT output into (8+8) bits or (4+4) bits complex values
@@ -99,7 +101,7 @@ entity SCALER is
 
         -- Common Clock and Reset
         clk     : in  std_logic;
-        reset   : in  std_logic; --! clk-synchronous reset
+        reset   : in  std_logic; -- clk-synchronous reset
 
         -- Channel FIFO monitoring
         fifo_overflow   : in std_logic:= '0'; -- Used to monitor the channelizer FIFO since it does not haveits own BSB registers.
@@ -123,7 +125,7 @@ entity SCALER is
 end SCALER;
 
 ------- ARCHITECTURE DECLARATION and DEFINITION ---------------------
---! Implements the functional code of the SCALER
+-- Implements the functional code of the SCALER
 architecture Behavioral of SCALER is
 
     constant COEFF_BITS_PER_WORD: integer := COEFF_BITS_PER_BIN * FFT_BINS_PER_WORD;
@@ -170,8 +172,8 @@ architecture Behavioral of SCALER is
     signal in_dat_dly2_tlast    : std_logic;
     signal in_dat_dly2_tuser    : std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);  --
 
-    --signal IN_DAT_DLY1: AXIS72_DAT_STRUCT; --!
-    --signal IN_DAT_DLY2: AXIS72_DAT_STRUCT; --!
+    --signal IN_DAT_DLY1: AXIS72_DAT_STRUCT; --
+    --signal IN_DAT_DLY2: AXIS72_DAT_STRUCT; --
 
     --- Define Control word and its signals
     signal control_bytes: slv8_array(0 to 12); -- default value set in the CMD_SLAVE
@@ -183,7 +185,7 @@ architecture Behavioral of SCALER is
 
     -- Stage 1: shift result
     signal stage1_word: signed_array(0 to INTEGERS_PER_WORD-1)(INTEGER_WIDTH-1 downto 0);
-    signal stage1_sign: std_logic_vector(0 to INTEGERS_PER_WORD-1); --! Indicates the sign of each of the 4 numbers in the incoming word
+    signal stage1_sign: std_logic_vector(0 to INTEGERS_PER_WORD-1); -- Indicates the sign of each of the 4 numbers in the incoming word
     signal stage1_overflow: std_logic_vector(0 to INTEGERS_PER_WORD-1);
     signal stage1_tvalid: std_logic;
     signal stage1_tlast: std_logic;
@@ -191,7 +193,7 @@ architecture Behavioral of SCALER is
 
     -- stage 2: rounding result
     signal stage2_word: signed_array(0 to INTEGERS_PER_WORD-1)(7 downto 0);
-    signal stage2_sign: std_logic_vector(0 to INTEGERS_PER_WORD-1); --! Indicates the sign of each of the 4 numbers in the incoming word
+    signal stage2_sign: std_logic_vector(0 to INTEGERS_PER_WORD-1); -- Indicates the sign of each of the 4 numbers in the incoming word
     signal stage2_overflow: std_logic_vector(0 to INTEGERS_PER_WORD-1);
     signal stage2_tvalid: std_logic;
     signal stage2_tlast: std_logic;
@@ -199,7 +201,7 @@ architecture Behavioral of SCALER is
 
     -- stage 3: saturation and output
     signal stage3_word: signed_array(0 to INTEGERS_PER_WORD-1)(7 downto 0);
-    signal stage3_sign: std_logic_vector(0 to INTEGERS_PER_WORD-1); --! Indicates the sign of each of the 4 numbers in the incoming word
+    signal stage3_sign: std_logic_vector(0 to INTEGERS_PER_WORD-1); -- Indicates the sign of each of the 4 numbers in the incoming word
     signal stage3_overflow: std_logic_vector(0 to INTEGERS_PER_WORD-1);
     signal stage3_tvalid: std_logic;
     signal stage3_tlast: std_logic;
@@ -419,7 +421,7 @@ status_bytes(17) <= std_logic_vector(mon_bit_ctr);
 -----------------------------------------------------------------------------------
 -- Memory-Mapped interface
 -----------------------------------------------------------------------------------
---! Instantiates a memory-mapped interface to the control and status bytes
+-- Instantiates a memory-mapped interface to the control and status bytes
 CTRL_SLAVE0: entity work.CTRL_SLAVE
     GENERIC MAP (
         NUMBER_OF_CONTROL_BYTES=>control_bytes'Length(1), -- Number of bits in the control word

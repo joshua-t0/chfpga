@@ -26,17 +26,14 @@ use work.chFPGA_Package.all; -- Get all component definitions
 library UNISIM;
 use UNISIM.VComponents.all;
 
-------------------------------------
-------- CORR ENTITY ----------
-------------------------------------
---! Implements a correlator block, which consists of
---!   1) a correlator that computes the products of all antennas for every channel and
---!   2) an accumulator that cumulates the results over time and periodically sends the sum over the capture (Ethernet) interface.
---!   3) a command router that routes the commands to one of the modules above based on the destination address
---!
---! The correlator received a packaged stream consisting of a frame header, frequency bin data from all antennas for one channel, then the frequency bin data for another channel etc.
---! The products between every antenna for each channels are computed and integrated, and the result is framed and streamed through a 8-bit interface  for transmission over the (prober) control channel.
---!
+-- Implements a correlator block, which consists of
+--   1) a correlator that computes the products of all antennas for every channel and
+--   2) an accumulator that cumulates the results over time and periodically sends the sum over the capture (Ethernet) interface.
+--   3) a command router that routes the commands to one of the modules above based on the destination address
+--
+-- The correlator received a packaged stream consisting of a frame header, frequency bin data from all antennas for one channel, then the frequency bin data for another channel etc.
+-- The products between every antenna for each channels are computed and integrated, and the result is framed and streamed through a 8-bit interface  for transmission over the (prober) control channel.
+--
 entity CORR44_ARRAY is
 	GENERIC (
 		PLATFORM_ID: integer;
@@ -52,12 +49,12 @@ entity CORR44_ARRAY is
 
 	PORT (
 
-		s_axis_tdata : in  slv32_array(0 to NUMBER_OF_CORRELATORS-1); --! input data stream containing the channelized data from every antenna processor. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
-		s_axis_tvalid : in  slv(0 to NUMBER_OF_CORRELATORS-1); --!
-		s_axis_tlast : in  slv(0 to NUMBER_OF_CORRELATORS-1); --!
+		s_axis_tdata : in  slv32_array(0 to NUMBER_OF_CORRELATORS-1); -- input data stream containing the channelized data from every antenna processor. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
+		s_axis_tvalid : in  slv(0 to NUMBER_OF_CORRELATORS-1); --
+		s_axis_tlast : in  slv(0 to NUMBER_OF_CORRELATORS-1); --
 
-		in_clk : in std_logic; --! Input clock channelized data.
-		in_rst: in std_logic; --! Reset synchronous to the input clock
+		in_clk : in std_logic; -- Input clock channelized data.
+		in_rst: in std_logic; -- Reset synchronous to the input clock
 
 
 		-- Integrated product output
@@ -68,8 +65,8 @@ entity CORR44_ARRAY is
 		m_axis_data_out_tlast: out slv(0 to NUMBER_OF_CORRELATORS-1);
 		m_axis_data_out_tready: in slv(0 to NUMBER_OF_CORRELATORS-1);
 
-		out_clk : in std_logic; --! clock for the integrated product outputs
-		out_rst: in std_logic; --! Reset synchronous to the output clock
+		out_clk : in std_logic; -- clock for the integrated product outputs
+		out_rst: in std_logic; -- Reset synchronous to the output clock
 
 		-- Control and reply streams
 		cmd_dat:  in AXIS8_DAT_STRUCT;
@@ -96,9 +93,9 @@ constant N: integer := 4 * NUMBER_OF_WORDS_PER_BIN; -- number of complex samples
 constant corr44_rpm: corr44_rloc_origins_struct_array := get_corr44_rloc_origins_struct_array(PLATFORM_ID, N);
 
 
-signal s_axis_tdata_reg: slv32_array(0 to NUMBER_OF_CORRELATORS-1); --! input data stream containing the channelized data from every antenna processor. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
-signal s_axis_tvalid_reg: slv(0 to NUMBER_OF_CORRELATORS-1); --!
-signal s_axis_tlast_reg: slv(0 to NUMBER_OF_CORRELATORS-1); --!
+signal s_axis_tdata_reg: slv32_array(0 to NUMBER_OF_CORRELATORS-1); -- input data stream containing the channelized data from every antenna processor. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
+signal s_axis_tvalid_reg: slv(0 to NUMBER_OF_CORRELATORS-1); --
+signal s_axis_tlast_reg: slv(0 to NUMBER_OF_CORRELATORS-1); --
 signal in_rst_reg: slv(0 to NUMBER_OF_CORRELATORS-1);
 signal out_rst_reg: slv(0 to NUMBER_OF_CORRELATORS-1);
 
@@ -132,8 +129,8 @@ begin
 
 
 ---------------------------------------------------------------------
---! Instantiate the Command router
---! Routes the commands to the requested correlator unit
+-- Instantiate the Command router
+-- Routes the commands to the requested correlator unit
 ---------------------------------------------------------------------
 
 CTRL_ROUTER0: entity work.CTRL_ROUTER
@@ -160,9 +157,9 @@ CTRL_ROUTER0: entity work.CTRL_ROUTER
 	);
 
 ---------------------------------------------------------------------
---! Correlator input pipelining process
+-- Correlator input pipelining process
 ---------------------------------------------------------------------
---! Pipeline the reset and data buses inputs to facilitate routing and timing closure.
+-- Pipeline the reset and data buses inputs to facilitate routing and timing closure.
 inpipe_proc: process(in_clk)
 	begin
 		if rising_edge(in_clk) then

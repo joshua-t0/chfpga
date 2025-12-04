@@ -91,7 +91,7 @@ type TX_STATE_TYPE is (
 
 signal TX_STATE: TX_STATE_TYPE := TX_STATE_STANDBY_IDLE0; -- Initialization needed
 
-signal tx_half: std_logic; --! Indicates which half of the 64-bit block is expected on the bus
+signal tx_half: std_logic; -- Indicates which half of the 64-bit block is expected on the bus
 
 signal tdata1: slv32;
 signal tvalid1: std_logic;
@@ -112,7 +112,7 @@ signal tx_fifo_overflow_int: std_logic;
 signal tx_reset_done: std_logic;
 signal tx_reset_ctr: unsigned(3 downto 0);
 
-signal send_data: std_logic_vector(1 downto 0); --! Identifies when we are in either of the data sending phases so we don't have to decode the state
+signal send_data: std_logic_vector(1 downto 0); -- Identifies when we are in either of the data sending phases so we don't have to decode the state
 
 signal crc_calc: std_logic:='0'; --
 signal crc_init: std_logic:='0'; --

@@ -1,4 +1,3 @@
---!@file
 ----------------------------------------------------------------------------------
 -- Company: McGill Univ.
 -- Engineer: JF Cliche
@@ -9,14 +8,14 @@
 -- Project Name:
 -- Target Devices: Kintex 7
 -- Tool versions: Vivado 2014.2
---! Description: Depacketizes data incoming from the xglink GTX interface. The AXI stream starts after a 'start of frame' control code is detected on the link and ends just before the CRC, which is the last received word before a 'end of frame' control code.
---! An error line is asserted on the last word of the stream (at the same time as tlast) if the frame is invalid (bad CRC or other causes).
---! The framing is identical to that used by 10G Ethernet (IEEE 802.3ae).
---! This receiver is meant to be very lightweight in terms or resource utilization.
---!
---! On the link, the byte in the MSB of the user data word is received first (big-endian). In other words, bit 24 is received first.
---! This is consistent with the ordering used by the xglink core, and is easier to visualize in simulations.
---! The endianness is not configurable.
+-- Description: Depacketizes data incoming from the xglink GTX interface. The AXI stream starts after a 'start of frame' control code is detected on the link and ends just before the CRC, which is the last received word before a 'end of frame' control code.
+-- An error line is asserted on the last word of the stream (at the same time as tlast) if the frame is invalid (bad CRC or other causes).
+-- The framing is identical to that used by 10G Ethernet (IEEE 802.3ae).
+-- This receiver is meant to be very lightweight in terms or resource utilization.
+--
+-- On the link, the byte in the MSB of the user data word is received first (big-endian). In other words, bit 24 is received first.
+-- This is consistent with the ordering used by the xglink core, and is easier to visualize in simulations.
+-- The endianness is not configurable.
 
 -- History:
 -- 	140617 JFC: File Created
@@ -72,8 +71,8 @@ entity xglink_rx is
 end xglink_rx;
 
 
---! Implementation notes:
---!   1) It is assumed that there are no Idles between the last data word and the CRC and between the CRC and the EOF
+-- Implementation notes:
+--   1) It is assumed that there are no Idles between the last data word and the CRC and between the CRC and the EOF
 architecture Behavioral of xglink_rx is
 
 

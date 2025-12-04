@@ -1,5 +1,4 @@
 ----------------------------------------------------------------------------------
---! @file
 -- Company: McGill University
 -- Engineer: JF Cliche & Graeme Smecher
 --
@@ -43,7 +42,7 @@ package icecore_package is
 	type INTEGER_ARRAY_TYPE is array (natural range <>) of integer;
 
 	function to_std_logic(i:boolean) return std_logic; -- converts bool to std_logic
-	function width(len: integer) return integer; --! computes the number of bits needed to represent a number from 0 to len-1
+	function width(len: integer) return integer; -- computes the number of bits needed to represent a number from 0 to len-1
 
 end icecore_package;
 
@@ -59,7 +58,7 @@ package body icecore_package is
 		end to_std_logic;
 
 
---! Compute the number of bits needed to represent `len` values (from 0 to len-1)
+-- Compute the number of bits needed to represent `len` values (from 0 to len-1)
 function width(len: integer) return integer is
 	begin
 		return integer(ceil(log2(real(len))));

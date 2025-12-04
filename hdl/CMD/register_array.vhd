@@ -1,6 +1,5 @@
 ----------------------------------------------------------------------------------
---! @file
---! @brief Core firmware registers extected to be present on every IceBoard application
+-- Description: Core firmware registers extected to be present on every IceBoard application
 -- Company: McGill University
 -- Engineers: JF Cliche (JFC Inc) & Graeme Smecher (Three-Speed Logic, Inc)
 --
@@ -10,6 +9,7 @@
 -- Project Name:   Generic
 -- Target Devices:  Kintex 7 on IceBoard (McGill Model MGK7MB)
 -- Tool versions:  Vivado 2014.4
+
 ---  LIBRARY DECLARATIONS ----------------------------------------------------
 
 library ieee;
@@ -22,14 +22,14 @@ use UNISIM.VComponents.all;
 
 use work.icecore_package.all;
 
-
+-- Implements an array of 32-bit core registers accessible via a req/acq 32-bit bus and a 8-bit rd_en/wr_en bus.
 entity register_array is
 	generic (
 		ADDRESS_MASK: std_logic_vector(31 downto 0); -- X"000010--" means that we respond to s_addr(31:16)=x"000010" and that we have 8 bits of local address (i.e. 64 registers or less)
 		NUMBER_OF_REGISTERS: integer := 1;
 		DEFAULT_REGISTER_VALUES: slv32_array;
 		ADDRESS_WIDTH: integer := 32;
-		SIM: BOOLEAN:= FALSE --! Indicates this is running as a simulation. Used to accelerate simulations
+		SIM: BOOLEAN:= FALSE -- Indicates this is running as a simulation. Used to accelerate simulations
 	);
 	port (
 		-- Control interface (*** JFC: to be replaced by an AXI4-Lite bus)
@@ -59,7 +59,7 @@ architecture IMPL of register_array is
 
 	constant LOCAL_ADDRESS_WIDTH: integer := width(NUMBER_OF_REGISTERS); -- we ignore the address mask
 
-	function find_local_address_width_from_mask(mask:std_logic_vector) return integer is --! returns the number of 32-bit registers. mask must be 'downto' direction.
+	function find_local_address_width_from_mask(mask:std_logic_vector) return integer is -- returns the number of 32-bit registers. mask must be 'downto' direction.
 		begin
 			for i in mask'low to mask'high loop
 				if mask(i)='0' or mask(i)='1' then
@@ -99,7 +99,7 @@ begin
 			local_addr_int <= unsigned(s_addr(LOCAL_ADDRESS_WIDTH+1 downto 2)); -- strip last two bits to convert byte address to word address;
 			reg_number_var := to_integer(local_addr_int); -- To do: add checks against actual number of registers
 			s_wdat_int <= s_wdat;
-			s_rdat <= (others => '0'); --! This is important to make sure that s_rdat is 0 when we are not accessing this module.
+			s_rdat <= (others => '0'); -- This is important to make sure that s_rdat is 0 when we are not accessing this module.
 
 			if s_addr(ADDRESS_WIDTH-1 downto LOCAL_ADDRESS_WIDTH+2) = ADDRESS_MASK(ADDRESS_WIDTH-1 downto LOCAL_ADDRESS_WIDTH+2) then
 				s_rreq_int <= s_rreq;

@@ -1,4 +1,3 @@
---! @file
 ----------------------------------------------------------------------------------
 -- Company:  McGill University
 -- Engineer: JF CLiche
@@ -99,7 +98,7 @@ entity ucorn is
 		ctrl_clk: in std_logic        := '0'; -- control clock
 		ctrl_rst: in std_logic        := '0'
 
-	-- areset: in std_logic --! asynchronous reset
+	-- areset: in std_logic -- asynchronous reset
 	);
 end entity ucorn;
 

@@ -27,8 +27,8 @@ use work.chFPGA_Package.ALL;
 
 entity xxvglink_core is
 	generic (
-		LINK_TO_QUAD_MAP: integer_array        := (0 to 1=> 0, 2 => 1); --! LINK_TO_QUAD_MAP Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-		QUAD_TO_REFCLK_MAP: integer_array      := (0, 0); --! QUAD_TO_REFCLK_MAP Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+		LINK_TO_QUAD_MAP: integer_array        := (0 to 1=> 0, 2 => 1); -- LINK_TO_QUAD_MAP Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
+		QUAD_TO_REFCLK_MAP: integer_array      := (0, 0); -- QUAD_TO_REFCLK_MAP Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
 		USED_LINKS: integer_array := (others => 0); -- list of links that are used. The others will be stripped from scrambling/unscrambling/block locking logic
 		IMPLEMENT_TX: boolean                  := TRUE;
 		IMPLEMENT_RX: boolean                  := TRUE;
@@ -58,18 +58,18 @@ entity xxvglink_core is
 		refclk_div2: out std_logic_vector(0 to NUMBER_OF_REFCLK - 1); -- 156.25 MHz reference clock
 		txclk_div2: out std_logic; -- Data clock generated from MMCM
 
-		tx_data: in slv64_array(0 to NUMBER_OF_TX_LINKS - 1); --! The most significant byte is transmitted first
+		tx_data: in slv64_array(0 to NUMBER_OF_TX_LINKS - 1); -- The most significant byte is transmitted first
 		tx_header: in slv2_array(0 to NUMBER_OF_TX_LINKS - 1);
-		tx_ready: out std_logic_vector(0 to NUMBER_OF_TX_LINKS - 1); --! Indicates when the transmitter will accept the data on the data bus
+		tx_ready: out std_logic_vector(0 to NUMBER_OF_TX_LINKS - 1); -- Indicates when the transmitter will accept the data on the data bus
 		tx_clk: out std_logic; -- 244.140625 MHz for LINK_SPEED=0, 322.265615 MHz for LINK_SPEED=1.
-		tx_resetdone: out std_logic_vector(0 to NUMBER_OF_TX_LINKS - 1); --! Indicates that the transmitter is ready to send data
+		tx_resetdone: out std_logic_vector(0 to NUMBER_OF_TX_LINKS - 1); -- Indicates that the transmitter is ready to send data
 
 		rx_data: out slv64_array(0 to max(NUMBER_OF_RX_LINKS - 1, 0));
-		rx_data_valid: out std_logic_vector(0 to max(NUMBER_OF_RX_LINKS - 1, 0)); --! Active high when  valid data is  placed on the bus
+		rx_data_valid: out std_logic_vector(0 to max(NUMBER_OF_RX_LINKS - 1, 0)); -- Active high when  valid data is  placed on the bus
 		rx_header: out slv2_array(0 to max(NUMBER_OF_RX_LINKS - 1, 0));
-		rx_header_valid: out std_logic_vector(0 to max(NUMBER_OF_RX_LINKS - 1, 0)); --! Indicates when the header is valid. This happen on the first half of each word.
-		rx_clk: out std_logic_vector(0 to max(NUMBER_OF_RX_LINKS - 1, 0)); --! clock synchronous with the rx data. Recovered from the received link.
-		rx_resetdone: out std_logic_vector(0 to max(NUMBER_OF_RX_LINKS - 1, 0)); --! Indicates that the receiver is ready to receive data
+		rx_header_valid: out std_logic_vector(0 to max(NUMBER_OF_RX_LINKS - 1, 0)); -- Indicates when the header is valid. This happen on the first half of each word.
+		rx_clk: out std_logic_vector(0 to max(NUMBER_OF_RX_LINKS - 1, 0)); -- clock synchronous with the rx data. Recovered from the received link.
+		rx_resetdone: out std_logic_vector(0 to max(NUMBER_OF_RX_LINKS - 1, 0)); -- Indicates that the receiver is ready to receive data
 
 		stable_clk: in std_logic; -- free-running stable clock for reset state machines.
 
@@ -84,7 +84,7 @@ entity xxvglink_core is
 		ctrl_clk: in std_logic; -- control clock
 		ctrl_rst: in std_logic;
 
-		areset: in std_logic --! asynchronous reset
+		areset: in std_logic -- asynchronous reset
 	);
 end entity xxvglink_core;
 
@@ -96,17 +96,17 @@ architecture behavioral of xxvglink_core is
 
 	--- CONSTANTS
 	constant DLY: time := 10 ps; -- delta delay used to ensure the simulator changes the data after the clock edge (which is a problem because we do a clock assignment which might be evaluated in any order)
-	constant NUMBER_OF_QUADS: integer := MAX(LINK_TO_QUAD_MAP(0 to NUMBER_OF_LINKS - 1)) + 1; --! get the maximum QUAD index from the list of actually implemented channels
+	constant NUMBER_OF_QUADS: integer := MAX(LINK_TO_QUAD_MAP(0 to NUMBER_OF_LINKS - 1)) + 1; -- get the maximum QUAD index from the list of actually implemented channels
 	constant NUMBER_OF_MODULES: integer := NUMBER_OF_QUADS + NUMBER_OF_LINKS + 1; -- One common module, and one for each quad (QPLL) and channel (GTX)
 	constant MODULE_ADDR_WIDTH: integer := 10; -- number of remaining addressable space for each module
 
 
 	---- CLOCKS
-	signal txusrclk2: std_logic; --! txusrclk2 for all GTX
-	signal rxusrclk2: slv(0 to NUMBER_OF_LINKS - 1); --! rxusrclk2 for all GTX
+	signal txusrclk2: std_logic; -- txusrclk2 for all GTX
+	signal rxusrclk2: slv(0 to NUMBER_OF_LINKS - 1); -- rxusrclk2 for all GTX
 
-	signal refclk_nobuf: std_logic_vector(0 to NUMBER_OF_REFCLK - 1); --! unbuffered GTX reference clock
-	signal refclk_buf: std_logic_vector(0 to NUMBER_OF_REFCLK - 1); --! buffered GTX reference clock
+	signal refclk_nobuf: std_logic_vector(0 to NUMBER_OF_REFCLK - 1); -- unbuffered GTX reference clock
+	signal refclk_buf: std_logic_vector(0 to NUMBER_OF_REFCLK - 1); -- buffered GTX reference clock
 
 	-- Reset signals
 
@@ -119,7 +119,7 @@ architecture behavioral of xxvglink_core is
 
 
 	--- QPLL signals
-	signal qpllreset: std_logic; --! QPLL reset signal for all QPLLs, generated after 500us following the release of areset
+	signal qpllreset: std_logic; -- QPLL reset signal for all QPLLs, generated after 500us following the release of areset
 	signal qplloutclk: std_logic_vector(0 to NUMBER_OF_QUADS - 1);
 	signal qplloutrefclk: std_logic_vector(0 to NUMBER_OF_QUADS - 1);
 	signal qplllock, qplllock_debug: std_logic_vector(0 to NUMBER_OF_QUADS - 1);
@@ -275,7 +275,7 @@ begin
 	-- refclk[0] (aka clk156) is sent to a BUFG to be used as an always-on control logic clock and frequency monitor. The control logic can be spread across multiple clock regions.
 	-- refclk[1:n] are send to BUFH to be used only in the frequency monitor located in the bank where it arrives.
 	refclk_blk: block
-		signal refclk_div_nobuf: std_logic_vector(0 to NUMBER_OF_REFCLK - 1); --! unbuffered GTX reference clock
+		signal refclk_div_nobuf: std_logic_vector(0 to NUMBER_OF_REFCLK - 1); -- unbuffered GTX reference clock
 	begin
 
 		-- Instantiate reference clock buffers for each reference clock
@@ -1186,7 +1186,7 @@ begin
 
 		begin
 			-- Assign clock and reset outputs
-			rx_clk(i)       <= rxusrclk2(i); --! Danger Will Robinson! In sims, the clock assignment might be evaluated AFTER the output signals are evaluated, causing the data to appear on the wrong clock. That's why we have a DLY for each output purt assignments.
+			rx_clk(i)       <= rxusrclk2(i); -- Danger Will Robinson! In sims, the clock assignment might be evaluated AFTER the output signals are evaluated, causing the data to appear on the wrong clock. That's why we have a DLY for each output purt assignments.
 			rx_resetdone(i) <= (rx_resetdone_int(i) and gt_block_lock(i)) after DLY;
 
 			-- apply output with delays for simulations

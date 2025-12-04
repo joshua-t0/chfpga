@@ -1,5 +1,4 @@
 --------------------------------------------------------------------------------
--- @file
 -- Company:
 -- Engineer:
 --
@@ -241,7 +240,7 @@ fifo_gen: for i in 0 to NUMBER_OF_INPUT_LANES-1 generate
 			m_axis_tuser => m_axis_fifo_tuser(i),
 			m_axis_tready => '1',
 			m_axis_clk => out_clk,
-			frame_clk => open, --! Frame clock, toggling on the first word of each frame fed INTO the fifo. The data will appear a few FIFO latency cycles later. This is used by the frame aligner to detect frame timeout.
+			frame_clk => open, -- Frame clock, toggling on the first word of each frame fed INTO the fifo. The data will appear a few FIFO latency cycles later. This is used by the frame aligner to detect frame timeout.
 			rst => reset
 		);
 end generate;

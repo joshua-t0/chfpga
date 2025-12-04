@@ -128,8 +128,8 @@ type integer_array is array (natural range <>) of INTEGER;
 type bool_array is array (natural range <>) of boolean;
 type integer_16xN_array is array (natural range <>) of integer_array(0 to 15);
 
-type FanoutArray is array (NATURAL RANGE <>) of std_logic_vector(0 downto 0); --! used to create a vector of independent signals used to fan out signal without having the map tool pack them into a single slice because of "register ordering"
-type BUFMRIndexArray is array (0 to 8) of INTEGER range -1 to 2; --! used to indicate which BUFMR to use for each bit and the clock of the ADC output
+type FanoutArray is array (NATURAL RANGE <>) of std_logic_vector(0 downto 0); -- used to create a vector of independent signals used to fan out signal without having the map tool pack them into a single slice because of "register ordering"
+type BUFMRIndexArray is array (0 to 8) of INTEGER range -1 to 2; -- used to indicate which BUFMR to use for each bit and the clock of the ADC output
 type BUFMRIndexArrayArray is  array (NATURAL RANGE <>) of BUFMRIndexArray;
 -- Application specific types and subtypes
 subtype PortOffset is std_logic_vector(1 downto 0);
@@ -407,34 +407,34 @@ constant NUMBER_OF_CORRELATORS_MAX: INTEGER :=8; -- Maximum number of correlator
 constant NUMBER_OF_CMACS_MAX : integer := (NUMBER_OF_CHANNELIZERS_MAX + 1) * 2;
 
 
---! Basic system configuration
---! These constants are defined globally in this package because the CHAN and CORR modules cannot be implemented
---! out of contect if they have generics.
+-- Basic system configuration
+-- These constants are defined globally in this package because the CHAN and CORR modules cannot be implemented
+-- out of contect if they have generics.
 --constant GLOBAL_IMPLEMENT_FFT: boolean := TRUE;
 constant GLOBAL_NUMBER_OF_CHANNELIZERS_TO_CORRELATE: integer := 8;
 constant GLOBAL_SIM: boolean := FALSE;
-constant GLOBAL_NUMBER_OF_GPU_LINKS: integer := 8; --! (0- NUMBER_OF_CHANNELIZERS) Number of 10Gb Ethernet links to connecto to the GPUs
-constant GLOBAL_NUMBER_OF_GPU_REFCLKS: integer := 1; --! Number of Reference clocks provided for the 10GE links to the GPU
+constant GLOBAL_NUMBER_OF_GPU_LINKS: integer := 8; -- (0- NUMBER_OF_CHANNELIZERS) Number of 10Gb Ethernet links to connecto to the GPUs
+constant GLOBAL_NUMBER_OF_GPU_REFCLKS: integer := 1; -- Number of Reference clocks provided for the 10GE links to the GPU
 constant GLOBAL_GPU_CHANNEL_QUAD: IntegerArray := (0 to 3=> 0, 4 to 7=> 1); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1
 constant GLOBAL_GPU_QUAD_REFCLK: IntegerArray := (0 to 1=>0); -- Both QUAD0 and QUAD1 use refclk(0)
 
 
 
 
---constant FRAME_LENGTH: integer:= 2048; --! 2048 time samples per frame (1024 frame samples per frame)
---constant LOG2_FRAME_LENGTH: integer :=11; --! Number of time samples per frame. 2^11 = 2048 time samples per frame
---constant LOG2_FREQ_SAMPLES_PER_FRAME: integer :=LOG2_FRAME_LENGTH-1; --! Number of frequency samples per frame. 1/2 of the time samples as we discard negative frequencies
---constant LOG2_WORDS_PER_FRAME: integer :=LOG2_FRAME_LENGTH-2; --! Number of words per frame. One word is 4 8-bit time samples or 2 8+8-bits frequency samples.
+--constant FRAME_LENGTH: integer:= 2048; -- 2048 time samples per frame (1024 frame samples per frame)
+--constant LOG2_FRAME_LENGTH: integer :=11; -- Number of time samples per frame. 2^11 = 2048 time samples per frame
+--constant LOG2_FREQ_SAMPLES_PER_FRAME: integer :=LOG2_FRAME_LENGTH-1; -- Number of frequency samples per frame. 1/2 of the time samples as we discard negative frequencies
+--constant LOG2_WORDS_PER_FRAME: integer :=LOG2_FRAME_LENGTH-2; -- Number of words per frame. One word is 4 8-bit time samples or 2 8+8-bits frequency samples.
 
 --type frame_word_ctr_array is array (natural range <>) of unsigned(LOG2_WORDS_PER_FRAME-1 downto 0);
 
 --	Control bus parameters
-constant CTRL_CMD_BYTE_LENGTH: integer :=3; --! Number of bytes in the command word
-constant CTRL_CMD_WORD_WIDTH: integer := CTRL_CMD_BYTE_LENGTH * 8; --! Number of bits in the command word
-constant CTRL_CMD_BYTE_COUNT_WIDTH: integer :=2; --! number of bits requird to count the number of bytes in a command
-constant CTRL_CMD_OPCODE_WIDTH: integer :=3; --! Number of bits in the opcode
+constant CTRL_CMD_BYTE_LENGTH: integer :=3; -- Number of bytes in the command word
+constant CTRL_CMD_WORD_WIDTH: integer := CTRL_CMD_BYTE_LENGTH * 8; -- Number of bits in the command word
+constant CTRL_CMD_BYTE_COUNT_WIDTH: integer :=2; -- number of bits requird to count the number of bytes in a command
+constant CTRL_CMD_OPCODE_WIDTH: integer :=3; -- Number of bits in the opcode
 constant CTRL_CMD_COUNT_WIDTH: integer:=2;
-constant CTRL_CMD_ADDR_WIDTH: integer := CTRL_CMD_WORD_WIDTH - CTRL_CMD_OPCODE_WIDTH - CTRL_CMD_COUNT_WIDTH; --! Total number of address bits. The address is in the LSBs of the command word (i.e. downto 0)
+constant CTRL_CMD_ADDR_WIDTH: integer := CTRL_CMD_WORD_WIDTH - CTRL_CMD_OPCODE_WIDTH - CTRL_CMD_COUNT_WIDTH; -- Total number of address bits. The address is in the LSBs of the command word (i.e. downto 0)
 
 -- AXI4 STREAMING data structure used for the control system (Command and Reply buses)
 type AXIS8_DAT_STRUCT is -- control/data bus used to communicate from  master to slave
@@ -556,18 +556,18 @@ type COMPLEX48_STRUCT is -- (54 Re + 54 Im) = 108 bits wide combined -- maximum 
 	end record;
 type COMPLEX48_STRUCT_ARRAY is array (NATURAL RANGE <>) of COMPLEX48_STRUCT;
 
---! Raw data capture (PROBER) frame header
+-- Raw data capture (PROBER) frame header
 constant FRAME_HEADER_BYTE_LENGTH: integer := 10; -- Number of 32-bit words taken by a header
 type FRAME_HEADER_STRUCT is
 	record  -- In transmission order (bytewise)
 		-- Byte 0
 		PROBE_ID: std_logic_vector(7 downto 0); -- 1 byte, user-defined. Generally a cookie, but can be used by user to convey more info (e.g. extend the number of channels)
 		-- Bytes 1-2
-		STREAM_ID: std_logic_vector(15 downto 0); --! 16 bit value used to uniquely define the data stream and lookup . Defined as listed below:
-			--! Bits 15-12 (4 bits). Software defined. Identifies the data source (0 = adc/funcgen, 1=fft/scaler).
-			--! Bits 12-8 (4 bits). Software defined. Identifies the crate_number.
-			--! Bits 7-4 (4 bits). Software defined. Identifies slot number (zero-based).
-			--! Bits 3-0 (4 bits). Hardware defined. Identifies the 10Gb/s lane (1st shuffle has 15 lanes, 2nd shuffle has 4 lanes, GPU link has 8 lanes).
+		STREAM_ID: std_logic_vector(15 downto 0); -- 16 bit value used to uniquely define the data stream and lookup . Defined as listed below:
+			-- Bits 15-12 (4 bits). Software defined. Identifies the data source (0 = adc/funcgen, 1=fft/scaler).
+			-- Bits 12-8 (4 bits). Software defined. Identifies the crate_number.
+			-- Bits 7-4 (4 bits). Software defined. Identifies slot number (zero-based).
+			-- Bits 3-0 (4 bits). Hardware defined. Identifies the 10Gb/s lane (1st shuffle has 15 lanes, 2nd shuffle has 4 lanes, GPU link has 8 lanes).
 		-- Byte 3
 		SERIAL_FLAGS: std_logic_vector(3 downto 0); -- last 4 bits of the TUSER_SERIAL_FLAGS_BIT field (meaning depends on the data source)
 		FLAGS: std_logic_vector(3 downto 0); -- 4 bits: aggregated TUSER bits at the input source
@@ -582,25 +582,25 @@ constant SHUFFLE_FRAME_HEADER_PROTOCOL_VERSION: std_logic_vector(3 downto 0) := 
 type SHUFFLE_FRAME_HEADER_STRUCT is
 	record
 		-- Word 0
-		STREAM_ID: std_logic_vector(15 downto 0); --! 16 bit value used to uniquely define the data stream and lookup . Defined as listed below:
-			--! Bits 15-12 (4 bits). Software defined. Identifies the data source within the internal pipeline (1st shuffle, 2nd shufle, raw data etc.).
-			--! Bits 12-8 (4 bits). Software defined. Identifies the crate_number.
-			--! Bits 7-4 (4 bits). Software defined. Identifies slot number (zero-based).
-			--! Bits 3-0 (4 bits). Hardware defined. Identifies the 10Gb/s lane (1st shuffle has 15 lanes, 2nd shuffle has 4 lanes, GPU link has 8 lanes).
-		PROTOCOL_VERSION: std_logic_vector(3 downto 0); --! Along with the cookie, identifies how the data is encoded in this header and the data. The cookie will have to change if we run out of space for versions.
-		HEADER_LENGTH_IN_WORDS: std_logic_vector(3 downto 0); --! Number of 32-bit words in this header, to help the GPU skip this part if needed
-		COOKIE: std_logic_vector(7 downto 0); --! 8 Bits (hardcoded) used to identify the type of frame. The cookie is last in the word so it appears first in the packet.
+		STREAM_ID: std_logic_vector(15 downto 0); -- 16 bit value used to uniquely define the data stream and lookup . Defined as listed below:
+			-- Bits 15-12 (4 bits). Software defined. Identifies the data source within the internal pipeline (1st shuffle, 2nd shufle, raw data etc.).
+			-- Bits 12-8 (4 bits). Software defined. Identifies the crate_number.
+			-- Bits 7-4 (4 bits). Software defined. Identifies slot number (zero-based).
+			-- Bits 3-0 (4 bits). Hardware defined. Identifies the 10Gb/s lane (1st shuffle has 15 lanes, 2nd shuffle has 4 lanes, GPU link has 8 lanes).
+		PROTOCOL_VERSION: std_logic_vector(3 downto 0); -- Along with the cookie, identifies how the data is encoded in this header and the data. The cookie will have to change if we run out of space for versions.
+		HEADER_LENGTH_IN_WORDS: std_logic_vector(3 downto 0); -- Number of 32-bit words in this header, to help the GPU skip this part if needed
+		COOKIE: std_logic_vector(7 downto 0); -- 8 Bits (hardcoded) used to identify the type of frame. The cookie is last in the word so it appears first in the packet.
 		-- Word 1
-		ENCODING: std_logic_vector(3 downto 0); --! bit 0: '0' = 8 bit mode, '1' = 4 bit mode; bit 1: '0'= 2's complement, '1'=offset binary, bits 2-3: reserved
-		NUMBER_OF_FRAMES: std_logic_vector(3 downto 0); --! number of frames per packet (1-255)
-		NUMBER_OF_BINS: std_logic_vector(11 downto 0); --! Number of frequency bins included in each frame (1-4095) (there are up to 1024 bins in full CHIME)
-		NUMBER_OF_ANTENNAS: std_logic_vector(11 downto 0); --! Number of antennas included for each frequency bin (1-4095) (there are up to 2560 antennas in full CHIME)
+		ENCODING: std_logic_vector(3 downto 0); -- bit 0: '0' = 8 bit mode, '1' = 4 bit mode; bit 1: '0'= 2's complement, '1'=offset binary, bits 2-3: reserved
+		NUMBER_OF_FRAMES: std_logic_vector(3 downto 0); -- number of frames per packet (1-255)
+		NUMBER_OF_BINS: std_logic_vector(11 downto 0); -- Number of frequency bins included in each frame (1-4095) (there are up to 1024 bins in full CHIME)
+		NUMBER_OF_ANTENNAS: std_logic_vector(11 downto 0); -- Number of antennas included for each frequency bin (1-4095) (there are up to 2560 antennas in full CHIME)
 
 		-- Word 2
-		ANCILLARY_DATA: std_logic_vector(31 downto 0); --! Ancillary data channel to trickle a statistical (or other low rate) data stream
+		ANCILLARY_DATA: std_logic_vector(31 downto 0); -- Ancillary data channel to trickle a statistical (or other low rate) data stream
 
 		-- Word 3
-		TIMESTAMP: std_logic_vector(31 downto 0); -- --! 32-bit frame number of the *first* frame in the packet. The data sampling time relative to the last SYNC event is directly computed from the frame number. Rolls back every ~3h @ 800MSPS, 2048 time samples/frame.
+		TIMESTAMP: std_logic_vector(31 downto 0); -- -- 32-bit frame number of the *first* frame in the packet. The data sampling time relative to the last SYNC event is directly computed from the frame number. Rolls back every ~3h @ 800MSPS, 2048 time samples/frame.
 	end record;
 
 type rpm_coord_struct is record
@@ -635,9 +635,9 @@ type corr44_rloc_origins_struct_array is array (NATURAL RANGE 0 to NUMBER_OF_COR
 
 
 function bit_reverse(s1:std_logic_vector) return std_logic_vector; -- reverses left-right bit order of a vector AND the direction of the vector
-function reverse_bits_same_dir(s1:std_logic_vector) return std_logic_vector; --! reverses left-right bit order of a vector but keep the vector original direction
-function reverse_bits_and_dir(s1:std_logic_vector) return std_logic_vector ; --! reverse both the bit order and  direction of vector.
-function reverse_bytes(s1:std_logic_vector) return std_logic_vector; --! reverses byte order of a vector. Input vector length must be a multiple of 8.
+function reverse_bits_same_dir(s1:std_logic_vector) return std_logic_vector; -- reverses left-right bit order of a vector but keep the vector original direction
+function reverse_bits_and_dir(s1:std_logic_vector) return std_logic_vector ; -- reverse both the bit order and  direction of vector.
+function reverse_bytes(s1:std_logic_vector) return std_logic_vector; -- reverses byte order of a vector. Input vector length must be a multiple of 8.
 
 function get_subword(v: std_logic_vector; subword_width:integer; index: integer; from_msb:boolean := FALSE) return std_logic_vector;
 procedure set_subword(signal dst: inout std_logic_vector; src: std_logic_vector; index: integer; from_msb:boolean := FALSE);
@@ -650,9 +650,9 @@ function msb(v:signed) return std_logic;
 function msb(s1:signed; width:integer) return signed;
 function msb(s1:std_logic_vector; width:integer) return std_logic_vector;
 function msb_pad(s1:std_logic_vector; width:integer) return std_logic_vector; -- returns ``width`` leftmost bits of ``s1`, right-pad with zeros if ``s1`` is shorter then ``width`
-function sign_bit(i:signed) return std_logic; --! Returns the sign bit (the MSB) of a signed number
-function sign_bit(i:unsigned) return std_logic; --! Returns the sign bit (the MSB) of an unsigned number
-function sign_bit(i:std_logic_vector) return std_logic; --! Returns the sign bit (the MSB) of a std_logic_vector
+function sign_bit(i:signed) return std_logic; -- Returns the sign bit (the MSB) of a signed number
+function sign_bit(i:unsigned) return std_logic; -- Returns the sign bit (the MSB) of an unsigned number
+function sign_bit(i:std_logic_vector) return std_logic; -- Returns the sign bit (the MSB) of a std_logic_vector
 
 function sel(b: BOOLEAN; if_true: string; if_false: string) return string;
 function sel(b: BOOLEAN; if_true: real; if_false: real) return real;
@@ -704,13 +704,13 @@ function to_unsigned(i:slv8_array; n: integer) return unsigned; -- concatenate b
 function to_unsigned(i:slv8_array) return unsigned; -- concatenate bytes in a slv8_array and return them as an unsigned
 function to_unsigned(i:std_logic) return unsigned; -- converts a std_logic into a one element unsigned
 function str(i:integer) return string; -- converts integer to a string. Allows expressions, contrary to to_string().
-function repeat( V: std_logic_vector; N: natural) return std_logic_vector; --! Concatenates a vector N times
+function repeat( V: std_logic_vector; N: natural) return std_logic_vector; -- Concatenates a vector N times
 
 function log2(v: integer) return real; -- Returns the log2 of an integer as a real (overloads the library log2())
 function integer_log2(v: integer) return integer; -- Returns the log2 of an integer as an integer
 function integer_log2(v: real) return integer; -- Returns the log2 of a real as an integer
-function width(len: integer) return integer; --! computes the minimum number of bits needed to represent len-1
-function bitwidth(value: integer) return integer;--! Computes the minimum number of bits needed to represent value
+function width(len: integer) return integer; -- computes the minimum number of bits needed to represent len-1
+function bitwidth(value: integer) return integer;-- Computes the minimum number of bits needed to represent value
 
 function shift_left(i:std_logic_vector; n: integer) return std_logic_vector; -- shift left a STD_LOGIC_VECTOR
 function shift_left(ARG:slv8_array; COUNT: natural) return slv8_array; -- shift left a byte array
@@ -766,8 +766,8 @@ end chFPGA_Package;
 
 package body chFPGA_Package is
 
---! Same as reverse_bits_and_dir()
---! Reverses both the left-right bit order and the direction of the vector.
+-- Same as reverse_bits_and_dir()
+-- Reverses both the left-right bit order and the direction of the vector.
 FUNCTION bit_reverse(s1:std_logic_vector) return std_logic_vector is
 	variable result: std_logic_vector(s1'REVERSE_RANGE);
 begin
@@ -777,8 +777,8 @@ begin
 	return result;
 end bit_reverse;
 
---! reverses the order of the bits but yield a vector indexed in the same direction
---! i.e. x(3 downto 0) := "1100"; y(3 downto 0) = reverse_bits_same_dir(x) = "0011"
+-- reverses the order of the bits but yield a vector indexed in the same direction
+-- i.e. x(3 downto 0) := "1100"; y(3 downto 0) = reverse_bits_same_dir(x) = "0011"
 FUNCTION reverse_bits_same_dir(s1:std_logic_vector) return std_logic_vector is
 	variable result: std_logic_vector(s1'RANGE);
 begin
@@ -1450,13 +1450,13 @@ begin
 	return integer(log2(v));
 end function;
 
---! Compute the number of bits needed to represent `len` values (from 0 to len-1)
+-- Compute the number of bits needed to represent `len` values (from 0 to len-1)
 function width(len: integer) return integer is
 begin
 	return integer(ceil(log2(real(len))));
 end function;
 
---! Compute the number of bits needed to represent 'value' as an unsigned value
+-- Compute the number of bits needed to represent 'value' as an unsigned value
 function bitwidth(value: integer) return integer is
 begin
 	return integer(ceil(log2(real(value+1))));

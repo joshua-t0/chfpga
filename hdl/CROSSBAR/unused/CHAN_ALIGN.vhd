@@ -1,5 +1,4 @@
 ----------------------------------------------------------------------------------
--- @file
 -- Company: McGill University
 -- Engineer: J.-F. Cliche
 --
@@ -34,7 +33,7 @@ use work.chFPGA_Package.ALL; -- Get all component definitions
 entity CHAN_ALIGN is
 	generic (
 		PLATFORM_ID: integer;
-		NUMBER_OF_LANES: integer --! Number of channelizer lanes to align
+		NUMBER_OF_LANES: integer -- Number of channelizer lanes to align
 	);
 	port (
 		s_axis_tvalid: in slv(0 to NUMBER_OF_LANES - 1);
@@ -48,8 +47,8 @@ entity CHAN_ALIGN is
 		m_axis_tlast: out slv(0 to NUMBER_OF_LANES - 1);
 		m_axis_tuser: out slv4_array(0 to NUMBER_OF_LANES - 1);
 
-		m_axis_global_tvalid: out std_logic; --! Active high when data is present on the longest frame. Check the individual lane's tvalid to see if a lane ended up prematurely.
-		m_axis_global_tlast: out std_logic; --! Active high on the last word of the longest frame.
+		m_axis_global_tvalid: out std_logic; -- Active high when data is present on the longest frame. Check the individual lane's tvalid to see if a lane ended up prematurely.
+		m_axis_global_tlast: out std_logic; -- Active high on the last word of the longest frame.
 
 		lane_monitor: out slv(0 to max(NUMBER_OF_LANES, 16) - 1);
 		lane_monitor_source: in std_logic_vector(3 downto 0);
@@ -61,12 +60,12 @@ entity CHAN_ALIGN is
 		out_frame_ctr: out slv8_array(0 to NUMBER_OF_LANES - 1);
 
 		clk: in std_logic;
-		rst: in std_logic --! Synchronous  reset synchronized to CLK
+		rst: in std_logic -- Synchronous  reset synchronized to CLK
 	);
 end entity CHAN_ALIGN;
 
 --- ARCHITECTURE DECLARATION and DEFINITION ---------------------
---! Describes the logic that implement the entity's functionnalities. See this architecture for the implementation details.
+-- Describes the logic that implement the entity's functionnalities. See this architecture for the implementation details.
 architecture impl of CHAN_ALIGN is
 
 	constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);

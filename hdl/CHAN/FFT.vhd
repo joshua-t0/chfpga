@@ -129,9 +129,9 @@ entity FFT is
 
 		-- Clock and Reset
 
-		clk     : in  std_logic; --! Processing clock, common to the input and output bus
-		reset   : in  std_logic; --! clk-synchronous Antenna processor reset.
-		                         --! In this module, resets the SYNC generator and send SYNC signals to the FFT
+		clk     : in  std_logic; -- Processing clock, common to the input and output bus
+		reset   : in  std_logic; -- clk-synchronous Antenna processor reset.
+		                         -- In this module, resets the SYNC generator and send SYNC signals to the FFT
 
 		-- Control bus (Byte-Serial-Bus protocol)
 
@@ -268,9 +268,9 @@ begin
 soft_reset <= control_bytes(0)(7);
 overflow_reset <= control_bytes(0)(2);
 overflow_force <= control_bytes(0)(3);
-bypass_fft <= control_bytes(0)(0); --!
+bypass_fft <= control_bytes(0)(0); --
 
---! CONTROL Byte 1-2
+-- CONTROL Byte 1-2
 fft_shift_schedule <= to_slv(control_bytes(1 to 2),fft_shift_schedule'LENGTH); --Sets the shifting schedule through the FFT to prevent overflow. Bit 0 specifies the behavior of stage 0, bit 1 of stage 1, and so on.
 
 -- CONTROL Bytes 3-4
@@ -298,7 +298,7 @@ status_bytes(4)(5) <= sync_reset;
 -----------------------------------------------------------------------------------
 -- Memory-Mapped interface
 -----------------------------------------------------------------------------------
---! Instantiates a memory-mapped interface to the control and status bytes
+-- Instantiates a memory-mapped interface to the control and status bytes
 CTRL_SLAVE0: entity work.CTRL_SLAVE
 	GENERIC MAP (
 		NUMBER_OF_CONTROL_BYTES => control_bytes'LENGTH(1), -- Number of bits in the control word
@@ -464,7 +464,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 				-- Clock the FFT with a SYNC input
 				-- fft_in.TVALID <= '0';
 				-- fft_in.TDATA <= (others=>'X');
-				-- out_dat.TVALID <= '0'; --! needed to make sure we don't send invalid data after reset.
+				-- out_dat.TVALID <= '0'; -- needed to make sure we don't send invalid data after reset.
 --				fft_in_tvalid <= '0';
 				fft_in_tdata <= (others=>'X');
 				m_axis_out_dat_tvalid <= '0'; -- needed to make sure we don't send invalid data after reset
@@ -609,7 +609,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 	-----------------------------------------------------------------------------------
 	-- Pipeline Delay measurer/generator
 	-----------------------------------------------------------------------------------
-	--! Measures the CASPER block pipelining delay and propagate a vector containing the data flags with the same delay
+	-- Measures the CASPER block pipelining delay and propagate a vector containing the data flags with the same delay
 		DELAY0: entity work.FFT_DELAY
 			GENERIC MAP (
 				CTR_WIDTH  => fft_pipeline_delay'LENGTH,

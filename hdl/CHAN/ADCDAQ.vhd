@@ -1,5 +1,4 @@
 ----------------------------------------------------------------------------------
---! @file
 -- Company: McGill University
 -- Engineer:  JF Cliche
 --
@@ -241,24 +240,24 @@ use UNISIM.VComponents.all;
 entity ADCDAQ is
 	GENERIC (
 		SAMPLES_PER_FRAME       : integer := 2048; -- Number of samples per frame, used to packetize the output data stream
-		IMPLEMENT_ADCDAQ 		: BOOLEAN:= TRUE; --! Indicates if the block is to be implemented. If False, a dummy module will be generated but the I/Os will be preserved.
-		INSTANTIATE_IDELAYCTRL 	: BOOLEAN:= TRUE;  --! Indicates if this module implements a IDELAYCTRL. Only one of the DAQ modules needs to implemt it. The tools will generate and place the other ones automatically.
-		INSTANTIATE_PLL 		: BOOLEAN:= FALSE; --! Indicates if this module instantiate a PLL to generate a I/O and a word clock.
-		BUFMR_MAP 				: BUFMRIndexArray := (others=>0); --! For K7 designs, indicates to which BUFR/BUFIO each data line (array element 0 to 7) and the clock line (array element 8) are connected. BUFR/BUFIO number start at 0. Implies that one BUFMR will be generated, UNLESS all entries are -1 indicating that the BUFMR is non needed and that all lines connect to a single BUFR/BUFIO.
-		IS_DIFFERENTIAL 		: BUFMRIndexArray := (others=>1); --! Indicates whether each data line (array element 0 to 7) and the clock line (array element 8) uses a differential receiver. An IBUFGS in instantiated if the element value is non-zero. In this case, only the P input is used.
-		PROVIDE_BUFFERED_DIVCLK : BOOLEAN:= FALSE; --! Indicates if this modules provides a buffered (BUFG) 200 MHz ADC clock (to be used to generate the processing clocks). Needs to be set only on those channels that will actually use it because we'll quickly run ot or BUFGs otherwise.
-		USE_EXT_DATA_CLK 		: BOOLEAN:= TRUE;  --! Indicates if this modules uses the IO and WORD clocks coming from ioclk_in and divclk_in (TRUE) or of these cloks are generated directly from the ADC (FALSE)
-		CLK_VALID_OFFSET 		: INTEGER:= -3;   --! Number of clocks to wait after a full frame before data is declared valid. The software-configurable sample_delay also offsets this delay.
-		SIM 					: BOOLEAN:= FALSE --! Indicates if this is code is being simulated. Used to shorten simulation times.
+		IMPLEMENT_ADCDAQ 		: BOOLEAN:= TRUE; -- Indicates if the block is to be implemented. If False, a dummy module will be generated but the I/Os will be preserved.
+		INSTANTIATE_IDELAYCTRL 	: BOOLEAN:= TRUE;  -- Indicates if this module implements a IDELAYCTRL. Only one of the DAQ modules needs to implemt it. The tools will generate and place the other ones automatically.
+		INSTANTIATE_PLL 		: BOOLEAN:= FALSE; -- Indicates if this module instantiate a PLL to generate a I/O and a word clock.
+		BUFMR_MAP 				: BUFMRIndexArray := (others=>0); -- For K7 designs, indicates to which BUFR/BUFIO each data line (array element 0 to 7) and the clock line (array element 8) are connected. BUFR/BUFIO number start at 0. Implies that one BUFMR will be generated, UNLESS all entries are -1 indicating that the BUFMR is non needed and that all lines connect to a single BUFR/BUFIO.
+		IS_DIFFERENTIAL 		: BUFMRIndexArray := (others=>1); -- Indicates whether each data line (array element 0 to 7) and the clock line (array element 8) uses a differential receiver. An IBUFGS in instantiated if the element value is non-zero. In this case, only the P input is used.
+		PROVIDE_BUFFERED_DIVCLK : BOOLEAN:= FALSE; -- Indicates if this modules provides a buffered (BUFG) 200 MHz ADC clock (to be used to generate the processing clocks). Needs to be set only on those channels that will actually use it because we'll quickly run ot or BUFGs otherwise.
+		USE_EXT_DATA_CLK 		: BOOLEAN:= TRUE;  -- Indicates if this modules uses the IO and WORD clocks coming from ioclk_in and divclk_in (TRUE) or of these cloks are generated directly from the ADC (FALSE)
+		CLK_VALID_OFFSET 		: INTEGER:= -3;   -- Number of clocks to wait after a full frame before data is declared valid. The software-configurable sample_delay also offsets this delay.
+		SIM 					: BOOLEAN:= FALSE -- Indicates if this is code is being simulated. Used to shorten simulation times.
 		);
 	PORT
 		(
 
 		-- ADC High Port
 
-		adc_data_h_p: in  std_logic_vector(7 downto 0); --! Data bus from the ADC
+		adc_data_h_p: in  std_logic_vector(7 downto 0); -- Data bus from the ADC
 		adc_data_h_n: in  std_logic_vector(7 downto 0);
-		adc_clk_h_p : in  std_logic; --! Clock signal from the ADC (Double data rate, i.e one byte both on the rising and falling edge)
+		adc_clk_h_p : in  std_logic; -- Clock signal from the ADC (Double data rate, i.e one byte both on the rising and falling edge)
 		adc_clk_h_n : in  std_logic;
 
 		-- Readout Interface
@@ -268,28 +267,28 @@ entity ADCDAQ is
 		m_axis_adc_tlast  	: out std_logic;
 		m_axis_adc_tuser 	: out std_logic_vector(3 downto 0);
 
-		data_ready 	: out std_logic; --! Indicates when the ADC is ready to start sending data. The data won't start to be pushed out until send_data is True. Synchronous to adc_clk;
-		send_data 	: in std_logic:= '1'; --! Indicates that we can start sending data on ADC_OUT_DAT. This input signal is used to allow the data transmission to be aligned betweeen all ADC channels. Synchronous to adc_clk.
+		data_ready 	: out std_logic; -- Indicates when the ADC is ready to start sending data. The data won't start to be pushed out until send_data is True. Synchronous to adc_clk;
+		send_data 	: in std_logic:= '1'; -- Indicates that we can start sending data on ADC_OUT_DAT. This input signal is used to allow the data transmission to be aligned betweeen all ADC channels. Synchronous to adc_clk.
 
-		adc_clk 	: in std_logic; --! Clock for the readout interface. Should be the same speed or faster than the
+		adc_clk 	: in std_logic; -- Clock for the readout interface. Should be the same speed or faster than the
 
 		-- Output Clocks
 
-		ioclk_out_pll 	: out  std_logic; --! PLL-generated ioclk_vect clock buffered by BUFG, available if INSTANTIATE_PLL=TRUE. To be used to clock the ISERDES' ioclk_vect when they are spread in non-adjacent banks
-		divclk_out_pll 	: out  std_logic; --! PLL-generated divclk clock buffered by BUFG, available if INSTANTIATE_PLL=TRUE. To be used to clock the ISERDES' divclk and FIFO input logic when they are spread in non-adjacent banks
+		ioclk_out_pll 	: out  std_logic; -- PLL-generated ioclk_vect clock buffered by BUFG, available if INSTANTIATE_PLL=TRUE. To be used to clock the ISERDES' ioclk_vect when they are spread in non-adjacent banks
+		divclk_out_pll 	: out  std_logic; -- PLL-generated divclk clock buffered by BUFG, available if INSTANTIATE_PLL=TRUE. To be used to clock the ISERDES' divclk and FIFO input logic when they are spread in non-adjacent banks
 
-		divclk_out_bufr : out  std_logic; --! 200-MHz divclk generated directly from the ADC clock using a BUFR. Can be fed to a MMCM/PLL in the clocking region covered by the BUFR (to generate channelizer clock). This clock stops when adcdaq_reset is asserted, and starts forwarding the ADC clock immediately when deasserted.
-		divclk_out_bufg : out  std_logic; --! Buffered verison divclk_out_bufr, provided only if PROVIDE_BUFFERED_DIVCLK is TRUE.
-		adc_clk_out_div2: out  std_logic:='0'; --! Logic line (not a clock) pulsing at half the local divclk frequency, to be used by the frequency counter (Must be initialized for simulations?)
+		divclk_out_bufr : out  std_logic; -- 200-MHz divclk generated directly from the ADC clock using a BUFR. Can be fed to a MMCM/PLL in the clocking region covered by the BUFR (to generate channelizer clock). This clock stops when adcdaq_reset is asserted, and starts forwarding the ADC clock immediately when deasserted.
+		divclk_out_bufg : out  std_logic; -- Buffered verison divclk_out_bufr, provided only if PROVIDE_BUFFERED_DIVCLK is TRUE.
+		adc_clk_out_div2: out  std_logic:='0'; -- Logic line (not a clock) pulsing at half the local divclk frequency, to be used by the frequency counter (Must be initialized for simulations?)
 
 		-- External clocks
 
-		ioclk_in : in  std_logic; --! ioclk_vect used by ISERDES if USE_EXT_DATA_CLK=TRUE. Otherwise uses the ioclk_vect generated directly from the ADC clock.
-		divclk_in : in  std_logic; --! divclk used by ISERDES and the FIFO input logic if USE_EXT_DATA_CLK=TRUE. Otherwise uses the ioclk_vect generated directly from the ADC clock.
+		ioclk_in : in  std_logic; -- ioclk_vect used by ISERDES if USE_EXT_DATA_CLK=TRUE. Otherwise uses the ioclk_vect generated directly from the ADC clock.
+		divclk_in : in  std_logic; -- divclk used by ISERDES and the FIFO input logic if USE_EXT_DATA_CLK=TRUE. Otherwise uses the ioclk_vect generated directly from the ADC clock.
 
 		-- Global synchronization lines
 
-		adcdaq_reset : in  std_logic; --! Resets the ADCDAQ module asynchronously. Restart the word counters. To be released before the ADC SYNC is released so it count incoming words properly.
+		adcdaq_reset : in  std_logic; -- Resets the ADCDAQ module asynchronously. Restart the word counters. To be released before the ADC SYNC is released so it count incoming words properly.
 
 		-- Control interface (command and reply stream buses)
 
@@ -306,8 +305,8 @@ entity ADCDAQ is
 end ADCDAQ;
 
 ------------- ADCDAQ Implementation ---------------
---! @brief Implements the ADC Data acquisition system
---!
+-- Implements the ADC Data acquisition system
+--
 
 architecture Implementation of ADCDAQ is
 
@@ -385,9 +384,9 @@ attribute DONT_TOUCH of divclk_local_vect_d: signal is "yes"; -- preserve clock 
 signal adc_clk_out_div2_int: std_logic :='0'; -- Init required
 signal clk_fb_bufg_out: std_logic;
 signal clk_fb_bufg_in: std_logic;
--- signal ADC_CLK_OUT_PLL_NOBUF: std_logic; --! PLL-generated clock before BUFG buffering
-signal ioclk_out_pll_nobuf: std_logic; --! PLL-generated clock before BUFG buffering
-signal divclk_out_pll_nobuf: std_logic; --! PLL-generated clock before BUFG buffering
+-- signal ADC_CLK_OUT_PLL_NOBUF: std_logic; -- PLL-generated clock before BUFG buffering
+signal ioclk_out_pll_nobuf: std_logic; -- PLL-generated clock before BUFG buffering
+signal divclk_out_pll_nobuf: std_logic; -- PLL-generated clock before BUFG buffering
 
 attribute DONT_TOUCH of ioclk_out_pll_nobuf: signal is "yes"; -- preserve clock net name to facilitate timing constraining and analysis
 attribute DONT_TOUCH of divclk_out_pll_nobuf: signal is "yes"; -- preserve clock net name to facilitate timing constraining and analysis
@@ -426,7 +425,7 @@ signal clk_iodelay_clk: std_logic;
 signal clk_iodelay_load: std_logic;
 
 signal adcdaq_reset_all: std_logic;
-signal serdes_auto_reset: std_logic_vector(7 downto 0); --! SERDES automatically generated in sequence. Many SERDES resets signals are generated to ease routing delays when reaching the SERDES in various banks. We add one to be used for the readout logic.
+signal serdes_auto_reset: std_logic_vector(7 downto 0); -- SERDES automatically generated in sequence. Many SERDES resets signals are generated to ease routing delays when reaching the SERDES in various banks. We add one to be used for the readout logic.
 signal pll_reset_all: std_logic;
 
 attribute KEEP  of serdes_auto_reset:signal is "true";
@@ -669,8 +668,8 @@ IMPL: if IMPLEMENT_ADCDAQ=TRUE generate
 
 ---------------------------------------------------------------------------------------
 ----- CLOCK signal generation
---! Generates the bit and word clock
---! The technique varies whether a PLL is used or not (The PLL is used to generate the word clock when some input lines are in regions that cannot be reached by a simple BUFR).
+-- Generates the bit and word clock
+-- The technique varies whether a PLL is used or not (The PLL is used to generate the word clock when some input lines are in regions that cannot be reached by a simple BUFR).
 ---------------------------------------------------------------------------------------
 gen_no_clk_ibuf: if IS_DIFFERENTIAL(8)=0 generate
 		clka <= adc_clk_h_p;
@@ -729,7 +728,7 @@ end generate;
  --	);
 
 
---! Synchronize the IDELAY control signals to their clock
+-- Synchronize the IDELAY control signals to their clock
 clk_iodelay_clk <= divclk_local_vect_d(BUFMR_MAP(8)-BUFR_INDEX_MIN); -- clock to be used by the IDELAY
 clk_iodelay_proc: process(clk_iodelay_clk)
 	begin
@@ -771,8 +770,8 @@ CLKDLY0: IDELAYE2 -- For 7-series
 
 status_bytes(8)(7 downto 5)<=(others=>'0');
 
---! Instantiate BUFMRs if needed for a 7-series FPGA
---! This is needed to allow the clock signal to reach the BUFIO and BUFRs in adjacent clocking regions.
+-- Instantiate BUFMRs if needed for a 7-series FPGA
+-- This is needed to allow the clock signal to reach the BUFIO and BUFRs in adjacent clocking regions.
 NOBUFMR: if not INSTANTIATE_BUFMR generate
 	clka_bufmr <= clka_dly;
 end generate;
@@ -786,11 +785,11 @@ YESBUFMR: if INSTANTIATE_BUFMR generate
 end generate;
 
 
---! Instantiate BUFR
---! The BUFR clocks the local logic and I/O ressources and divide the incoming clock by two.
---! If the external clocks (from another PLL) is used for the data acquisition, it is used only for clocking the local logic and determine when a sufficient number of bytes have passed to activate data storage.
---! Otherwise, the BUFR drives the output clock of the SERDES and the input of the FIFO.
---! Very impotaantly, this divider is resettable so we know its phase relating to the data clock.
+-- Instantiate BUFR
+-- The BUFR clocks the local logic and I/O ressources and divide the incoming clock by two.
+-- If the external clocks (from another PLL) is used for the data acquisition, it is used only for clocking the local logic and determine when a sufficient number of bytes have passed to activate data storage.
+-- Otherwise, the BUFR drives the output clock of the SERDES and the input of the FIFO.
+-- Very impotaantly, this divider is resettable so we know its phase relating to the data clock.
 BUFRGEN: for i in 0 to NUMBER_OF_BUFR-1 generate
 	BUFRn : BUFR
 		generic map (
@@ -810,11 +809,11 @@ divclk_local_vect <= divclk_local_vect_d after 100 ps; -- to make simulations mo
 divclk_out_bufr <= divclk_local_vect(0); -- Make the divclk BUFR output acessible to the outside
 
 
---! Clock sampler
---! samples the ADC clock using the 10 MHz reference clock.
---! Since the reference clock can be delayed (See REFCLK module), and the ADC clock is synchronous to this reference clock,
---! we can scan the reference clock delay and acquire the ADC clock waveform.
---! Phase jumps caused by the timing of the ADC SYNC signal  vs the ADC input clock can be thus measured, and the timing can be optimized.
+-- Clock sampler
+-- samples the ADC clock using the 10 MHz reference clock.
+-- Since the reference clock can be delayed (See REFCLK module), and the ADC clock is synchronous to this reference clock,
+-- we can scan the reference clock delay and acquire the ADC clock waveform.
+-- Phase jumps caused by the timing of the ADC SYNC signal  vs the ADC input clock can be thus measured, and the timing can be optimized.
 IDDR_CLK:IDDR
 	generic map(
 		DDR_CLK_EDGE=>"SAME_EDGE_PIPELINED"--"OPPOSITE_EDGE","SAME_EDGE"--or "SAME_EDGE_PIPELINED"
@@ -842,7 +841,7 @@ end generate;
 
 USEPLL: if INSTANTIATE_PLL=TRUE generate
 	-- Implement the PLL that will generate the global bit and global word clock from the ADC clock
-	--! ** WARNING: Clocking Wizard 3.6 (coming winth ISE 14.2) does not work with Virtex 6. Simulation shows no output. Xilinx says to use 3.5 instead.
+	-- ** WARNING: Clocking Wizard 3.6 (coming winth ISE 14.2) does not work with Virtex 6. Simulation shows no output. Xilinx says to use 3.5 instead.
 	-- PLL0: IO_PLL
 	-- 	port map(
 	-- 		-- Clock in ports
@@ -919,7 +918,7 @@ USEPLL: if INSTANTIATE_PLL=TRUE generate
 		);
 
 
-	--! Feedback buffer, to cancel out the delays from the PLL to the loads
+	-- Feedback buffer, to cancel out the delays from the PLL to the loads
 	BUFG_IO0 : BUFG
 		port map (
 			I => ioclk_out_pll_nobuf, -- Clock buffer input
@@ -939,7 +938,7 @@ USEPLL: if INSTANTIATE_PLL=TRUE generate
 
 end generate;
 
---! If the PLL is not instantiated, tie the related output signals to fixed values
+-- If the PLL is not instantiated, tie the related output signals to fixed values
 NOPLL: if INSTANTIATE_PLL=FALSE generate
 	-- ADC_CLK_OUT_PLL<='0';
 	ioclk_out_pll <= '0';
@@ -1029,12 +1028,12 @@ GBIT: for i in 0 to 7 generate
 	end generate;
 
 
-	--! Select clocks
+	-- Select clocks
 
 	serdes_clk(i) <= ioclk_vect(BUFMR_MAP(i)-BUFIO_INDEX_MIN); -- 1-bit Clock input
 	serdes_clkdiv(i) <= divclk_vect(BUFMR_MAP(i)-BUFR_INDEX_MIN); -- 1-bit Divided clock input
 
-	--! Synchronize the IDELAY control signals to their clock
+	-- Synchronize the IDELAY control signals to their clock
 	data_iodelay_clk(i) <= serdes_clkdiv(i); -- clock to be used by the IDELAY. Must use the same clock as the SERDES clkdiv.
 	data_iodelay_proc: process(data_iodelay_clk(i))
 		begin
@@ -1189,13 +1188,13 @@ adc_clk_out_div2 <= adc_clk_out_div2_int;
 ---------------------------------------------------------------------------------
 ----- Clock valid process
 ---------------------------------------------------------------------------------
---! Waits a number or local divclk cycles before setting adc_clk_valid and start capturing data.
---! If USE_EXT_DATA_CLK = TRUE, we wait longer to make sure that the MMCMs had time to finish their lock.
---! Otherwise we wait just a single frame
---! We shorten the wait with CLK_VALID_OFFSET to account for the time it takes to take the SERDES out of reset.
---! We have to use the local (ADC-Derived) divclk because divclk_vect might come from the PLL and will not be clocking until locked.
---! Every ADCs will discard the same number of samples on their local clock, allowing synchronization to be maintained independent of the MMCM lock delay.
---! NOTE: The adc_clk_valid is set ont the divclk_local_vect(0) clock, but it is used by processes clocked on divclk (which is either from divclk_local or from the PLL). We assume the tools are smart enough to know the delays between the two and ensure proper timing.
+-- Waits a number or local divclk cycles before setting adc_clk_valid and start capturing data.
+-- If USE_EXT_DATA_CLK = TRUE, we wait longer to make sure that the MMCMs had time to finish their lock.
+-- Otherwise we wait just a single frame
+-- We shorten the wait with CLK_VALID_OFFSET to account for the time it takes to take the SERDES out of reset.
+-- We have to use the local (ADC-Derived) divclk because divclk_vect might come from the PLL and will not be clocking until locked.
+-- Every ADCs will discard the same number of samples on their local clock, allowing synchronization to be maintained independent of the MMCM lock delay.
+-- NOTE: The adc_clk_valid is set ont the divclk_local_vect(0) clock, but it is used by processes clocked on divclk (which is either from divclk_local or from the PLL). We assume the tools are smart enough to know the delays between the two and ensure proper timing.
 clkvalid_proc: process(divclk_local_vect(0), adcdaq_reset_all)
 		begin
 			if adcdaq_reset_all='1' then
@@ -1213,9 +1212,9 @@ clkvalid_proc: process(divclk_local_vect(0), adcdaq_reset_all)
 	---------------------------------------------------------------------------------
 	--------- SERDES RESET Process ----------
 	---------------------------------------------------------------------------------
-	--! Resets the SERDES when adcdaq_reset is asserted, and releases it when valid data is coming into the SERDES
-	--! When we are ready to acquire data, Release the ISERDES reset. Data will come out in a few cycles after the SERDES pipeline delay.
-	--! Note that adc_clk_valid is clocked by divclk_local_vect(0), while this process is clocked on divclk, which may come from the PLL if we use an external clock.
+	-- Resets the SERDES when adcdaq_reset is asserted, and releases it when valid data is coming into the SERDES
+	-- When we are ready to acquire data, Release the ISERDES reset. Data will come out in a few cycles after the SERDES pipeline delay.
+	-- Note that adc_clk_valid is clocked by divclk_local_vect(0), while this process is clocked on divclk, which may come from the PLL if we use an external clock.
 SERDES_RESET_GEN: for i in 0 to 7 generate
 	serdes_rst_proc: process(serdes_clkdiv(i), adcdaq_reset_all)
 			begin
@@ -1231,24 +1230,24 @@ end generate;
 ---------------------------------------------------------------------------------
 -- Reset process (overall process)
 ---------------------------------------------------------------------------------
---! Uses the local divclk, which is always obtained directly fron a BUFR (is not dependent on PLL locking delay if one is used)
---! Upon reset
---!  a) reset the FIFO
---!  b) disable FIFO writes
---!  c) resets the SERDES
---!  d) clears the word counter
---! After N divclk_local_vect(0) clocks, release ISERDES reset and stars writing incomung words in the FIFO
+-- Uses the local divclk, which is always obtained directly fron a BUFR (is not dependent on PLL locking delay if one is used)
+-- Upon reset
+--  a) reset the FIFO
+--  b) disable FIFO writes
+--  c) resets the SERDES
+--  d) clears the word counter
+-- After N divclk_local_vect(0) clocks, release ISERDES reset and stars writing incomung words in the FIFO
 
 ---------------------------------------------------------------------------------
 ------- FIFO Reset process ------
 ---------------------------------------------------------------------------------
---! Resets the data FIFO in a way consistent with the FIFO requiremenmts
---! The fifo_rst line is a delayed version of the adcdaq_reset_all.
---! Upon the reset event, the fifo_wr_en is set immediately to zero.
---! We need to RESEt the fifo a few clocks later to make sure that the change in WR_EN is registered.
---! When adcdaq_reset_all is released, the FIFO is released a few clocks later.
---! We will not miss any data because the FIFO  data writes will not start until a large number of words have passed in otder to allow time for the PLL to lock.
---! By the time the fifo_wr_en is set, the fifo_rst is already cleared.
+-- Resets the data FIFO in a way consistent with the FIFO requiremenmts
+-- The fifo_rst line is a delayed version of the adcdaq_reset_all.
+-- Upon the reset event, the fifo_wr_en is set immediately to zero.
+-- We need to RESEt the fifo a few clocks later to make sure that the change in WR_EN is registered.
+-- When adcdaq_reset_all is released, the FIFO is released a few clocks later.
+-- We will not miss any data because the FIFO  data writes will not start until a large number of words have passed in otder to allow time for the PLL to lock.
+-- By the time the fifo_wr_en is set, the fifo_rst is already cleared.
 --fifo_rst_proc: process(divclk, RST)
 --		begin
 --			-- generate the fifo_rst, which is a delayed version of the adcdaq_reset_all.
@@ -1260,10 +1259,10 @@ end generate;
 --				fifo_rst<=serdes_sync_dly(5);
 --			end if;
 --		end process;
---! Ensures that the FIFO RST is held active for at least 1 WR clock, + 3 WR clocks to complete the reset process
---! But we release RST on the read clock
---! We now use a built-in FIFO. The reset controld the PRE input of a register clocked on the wr clock.
---! And the core generator includes logic to stretch the pulse.
+-- Ensures that the FIFO RST is held active for at least 1 WR clock, + 3 WR clocks to complete the reset process
+-- But we release RST on the read clock
+-- We now use a built-in FIFO. The reset controld the PRE input of a register clocked on the wr clock.
+-- And the core generator includes logic to stretch the pulse.
 fifo_rst_proc: process(divclk_vect(0), adcdaq_reset_all)
 		begin
 			-- generate the fifo_rst, which is a delayed version of the adcdaq_reset_all.
@@ -1280,7 +1279,7 @@ fifo_rst_proc: process(divclk_vect(0), adcdaq_reset_all)
 
 -- fifo_rst <= fifo_rst_int; -- for the built-in FIFO, the reset circuitry is in the divclk clock domain
 
--- --! Ensures that the FIFO RESET is released on the RD clock
+-- -- Ensures that the FIFO RESET is released on the RD clock
 -- fifo_rst_proc2: process(adc_clk, adcdaq_reset_all)
 -- 		begin
 -- 			-- generate the fifo_rst, which is a delayed version of the adcdaq_reset_all.
@@ -1295,12 +1294,12 @@ fifo_rst_proc: process(divclk_vect(0), adcdaq_reset_all)
 ---------------------------------------------------------------------------------
 -------- FIFO Write process -------
 ---------------------------------------------------------------------------------
---! Determines when to start writing the SERDES output data in the FIFO. Also handles the SERDES automatic RESET.
---! When a adcdaq_reset event occur, all writes to the FIFO are stopped and the SERDES are put into reset.
---! When the reset event is released, we wait for divclk to return.
---! On the first divclk occuring with adc_clk_valid='1, we clear the SERDES reset and start counting words to account for the propagation delays in the SERDES and tis process logic.
---! When we reach a certain count we start storing the data into the FIFO.
---! In order to delay the data with a byte granularity, we delay and realign the SERDES output word based on the last 2 bits of the delay.
+-- Determines when to start writing the SERDES output data in the FIFO. Also handles the SERDES automatic RESET.
+-- When a adcdaq_reset event occur, all writes to the FIFO are stopped and the SERDES are put into reset.
+-- When the reset event is released, we wait for divclk to return.
+-- On the first divclk occuring with adc_clk_valid='1, we clear the SERDES reset and start counting words to account for the propagation delays in the SERDES and tis process logic.
+-- When we reach a certain count we start storing the data into the FIFO.
+-- In order to delay the data with a byte granularity, we delay and realign the SERDES output word based on the last 2 bits of the delay.
 fifo_wr_proc: process(divclk_vect(0), adcdaq_reset_all)
 	begin
 		if adcdaq_reset_all='1' then
@@ -1349,9 +1348,9 @@ fifo_wr_proc: process(divclk_vect(0), adcdaq_reset_all)
 -- FIFO readout process
 ---------------------------------------------------------------------------------
 
---! FIFO readout process
---! Sets ADC_READY when there is something in the FIFO
---! Readout is performed when ADC_RD_EN is active. This should be done not too late after ADC_READY so the FIFO does not overflow
+-- FIFO readout process
+-- Sets ADC_READY when there is something in the FIFO
+-- Readout is performed when ADC_RD_EN is active. This should be done not too late after ADC_READY so the FIFO does not overflow
 fifo_rd_proc: process(adc_clk, adcdaq_reset_all)
 	variable i,k: INTEGER;
 	variable ramp_word : std_logic_vector(31 downto 0);
@@ -1513,11 +1512,11 @@ FIFO0 : entity work.ADCDAQ_FIFO
 -----------------------------------------------------------------------------------
 --  Pattern capture process (to support delay adjustment)
 -----------------------------------------------------------------------------------
---! The process takes advantage that the ADC test pattern is 11 samples, whereas we aquire samples by groups of 4 samples.
---! This means that a one-sample long pulse will have appeared on each byte of the captured 4-byte word, with a repetition pattern of 11 words
---! The sequence is: 1000 0000 0001 0000 0000 0010 0000 0000 0100 0000 0000 (all bits in the byte are ideally the same)
---! This capture engine  bypasses FIFO and samples absolute sample numbers
---! It clocks on the same clock that the ISERDES works, i.e. either the internal or external divclk
+-- The process takes advantage that the ADC test pattern is 11 samples, whereas we aquire samples by groups of 4 samples.
+-- This means that a one-sample long pulse will have appeared on each byte of the captured 4-byte word, with a repetition pattern of 11 words
+-- The sequence is: 1000 0000 0001 0000 0000 0010 0000 0000 0100 0000 0000 (all bits in the byte are ideally the same)
+-- This capture engine  bypasses FIFO and samples absolute sample numbers
+-- It clocks on the same clock that the ISERDES works, i.e. either the internal or external divclk
 capture2_proc: process(divclk_vect(0), ctrl_rst, fifo_wr_en)
 		begin
 			if (ctrl_rst='1' or fifo_wr_en='0') then

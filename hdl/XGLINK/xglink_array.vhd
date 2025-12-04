@@ -1,4 +1,3 @@
---! @file
 ----------------------------------------------------------------------------------
 -- Company:  McGill University
 -- Engineer: JF CLiche
@@ -38,7 +37,9 @@ use work.chFPGA_Package.all;
 -- NUMBER_OF_REFCLK indicate how many reference clocks are provided, and QUAD_TO_REFCLK_MAP indicate which reference clock (numbered from 0 to NUMBER_OF_REFCLK-1) is to be used for each quad.
 -- Also, the LANE_TO_QUAD_MAP generics specify which quad is associated with each lane.
 --
--- *** INPUT (slave AXIS interface)
+-- INPUT (slave AXIS interface)
+-- ----------------------------
+--
 -- The input is a 32-bit wide, blocking AXI-Streaming interface. Valid data is indicated by tvalid='1'.
 -- The data is actually consumed by the module when tready (which is provided by the module) is high.
 -- In order to minimize its resource footprint, this module does not implement any FIFO as the flow control is performed entirely by tready, so It is important to change the input data (tdata and tvalid) only when tready='1'.
@@ -48,7 +49,9 @@ use work.chFPGA_Package.all;
 -- The transmitter will add a start-of-frame control code at the beginning of the packets, and will add a CRC32 and an end-of-frame code at the end of the packet.
 -- The input interface for every transmit lane operate on a single transmit clock, which is generated from the GTX reference clock.
 --
--- *** OUTPUT (master AXIS interface)
+-- OUTPUT (master AXIS interface)
+-- ------------------------------
+--
 -- Each RX lane provides data on its own recovered clock, which is buffered by a BUFH and is therefore available only in the clock region where the receiver is.
 -- However, a 512-word deep asynchronous FIFO provides an output data flow on the clock provided by the user on m_axis_rx_clk(i).
 -- Typically, every RX clock will be connected to the clock provided by the tranmitter (clk_out) so the logic can operate on a single clock domain.
@@ -219,8 +222,8 @@ begin
 
 -- link_enable <= control_bytes(0)(0);
 -- CONTROL byte 4
-lane_sel            <= unsigned(control_bytes(0)(7 downto 3)); --! selects from which lane
-reset_stats         <= control_bytes(0)(2); --!
+lane_sel            <= unsigned(control_bytes(0)(7 downto 3)); -- selects from which lane
+reset_stats         <= control_bytes(0)(2); --
 --tx_test_enable      <= control_bytes(0)(1);
 
 
@@ -259,8 +262,8 @@ begin
 	end if; --tx_clk
 end process;
 
---! Data source selector
---! We implement it as a combinatorial mux because we don't want to implement a FIFO to deal with tready if we can avoid it.
+-- Data source selector
+-- We implement it as a combinatorial mux because we don't want to implement a FIFO to deal with tready if we can avoid it.
 
 --------------------------------------
 -- Test pattern generator
@@ -413,7 +416,7 @@ lane_gen: for i in 0 to NUMBER_OF_LANES-1 generate
 
 			clk       => tx_clk,
 
-		    rst => xglink_tx_reset(LANE_TO_LINK_MAP(i)) --! make sure we hold reset until the clock is available, otherwise the reset does not happen
+		    rst => xglink_tx_reset(LANE_TO_LINK_MAP(i)) -- make sure we hold reset until the clock is available, otherwise the reset does not happen
 		  );
 	end generate;
 
@@ -421,7 +424,7 @@ lane_gen: for i in 0 to NUMBER_OF_LANES-1 generate
 
 	rx_gen: if LANE_TO_LINK_MAP(i) >= 0 and IMPLEMENT_RX generate
 		rx_resetdone_int(i) <= xglink_rx_resetdone(LANE_TO_LINK_MAP(i));
-		xglink_rx_reset(LANE_TO_LINK_MAP(i)) <= reset_reg(i) or not xglink_rx_resetdone(LANE_TO_LINK_MAP(i)); --! make sure we reset the de-framer until the clock is available, otherwise the reset does not happen
+		xglink_rx_reset(LANE_TO_LINK_MAP(i)) <= reset_reg(i) or not xglink_rx_resetdone(LANE_TO_LINK_MAP(i)); -- make sure we reset the de-framer until the clock is available, otherwise the reset does not happen
 
 		rx0: entity work.xglink_rx
 			port map (
@@ -511,8 +514,8 @@ core0: entity work.xglink_core
 		CTRL_CLK => CTRL_CLK,
 		CTRL_RST => CTRL_RST,
 
-		-- clk: in std_logic; --! AXI-S data clock. Not related to the 10G Ethernet clocks.
-		areset=> areset --! asynchronous reset
+		-- clk: in std_logic; -- AXI-S data clock. Not related to the 10G Ethernet clocks.
+		areset=> areset -- asynchronous reset
 	 );
 
 

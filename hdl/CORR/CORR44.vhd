@@ -27,9 +27,6 @@ use work.chfpga_config.all; -- Get all component definitions
 library UNISIM;
 use UNISIM.VComponents.all;
 
-------------------------------------
-------- CORR ENTITY ----------
-------------------------------------
 -- Implements a correlator block, which consists of
 --   1) a correlator that computes the products between all inputs for every freqyency bin in the input frame
 --   2) an accumulator that cumulates the results over time and periodically sends the sum over the capture (Ethernet) interface.
@@ -63,12 +60,12 @@ entity CORR44 is
 
 		-- Non-blocking AXI-Stream data input
 
-		s_axis_tdata : in  slv32; --! input data stream containing the channelized data from every antenna processor. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
-		s_axis_tvalid : in  std_logic; --!
-		s_axis_tlast : in  std_logic; --!
+		s_axis_tdata : in  slv32; -- input data stream containing the channelized data from every antenna processor. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
+		s_axis_tvalid : in  std_logic; --
+		s_axis_tlast : in  std_logic; --
 
-		in_clk : in std_logic; --! Input clock channelized data.
-		in_rst: in std_logic; --! Reset synchronous to the input clock
+		in_clk : in std_logic; -- Input clock channelized data.
+		in_rst: in std_logic; -- Reset synchronous to the input clock
 
 		-- Integrated product output
 		-- AXI4-Streaming, blocking, 8-bit wide
@@ -78,8 +75,8 @@ entity CORR44 is
 		m_axis_data_out_tlast: out std_logic;
 		m_axis_data_out_tready: in std_logic;
 
-		out_clk : in std_logic; --! clock for the integrated product outputs
-		out_rst: in std_logic; --! Reset synchronous to the output clock
+		out_clk : in std_logic; -- clock for the integrated product outputs
+		out_rst: in std_logic; -- Reset synchronous to the output clock
 
 		-- Control interface
 		cmd_dat: in AXIS8_DAT_STRUCT;
@@ -91,13 +88,13 @@ entity CORR44 is
 
 
 		-- -- Correlator clock
-		-- clk: in STD_LOGIC; --! Correlator clock, which operates independently from the antenna processors. Should be higher rate than the input clock to allow for the freame header overheads
-		-- CORR_RESET: in std_logic; --! Reset synchronous to the correlator clock
+		-- clk: in STD_LOGIC; -- Correlator clock, which operates independently from the antenna processors. Should be higher rate than the input clock to allow for the freame header overheads
+		-- CORR_RESET: in std_logic; -- Reset synchronous to the correlator clock
 
 		-- -- Data Probe output interface (blocking)
-		-- PRB_DAT : out  AXIS8_DAT_STRUCT; --! Output data stream containing the integrated values. Packaged in 8 bit stream for transmission over the Ethernet.
-		-- PRB_RDY : in  AXIS8_RDY_STRUCT; --! Handshaking for the output data stream to control the data flow
-		-- PRB_CLK : in STD_LOGIC; --! Output data stream clock
+		-- PRB_DAT : out  AXIS8_DAT_STRUCT; -- Output data stream containing the integrated values. Packaged in 8 bit stream for transmission over the Ethernet.
+		-- PRB_RDY : in  AXIS8_RDY_STRUCT; -- Handshaking for the output data stream to control the data flow
+		-- PRB_CLK : in STD_LOGIC; -- Output data stream clock
 
 
 		-- -- Control and reply streams
@@ -112,9 +109,9 @@ entity CORR44 is
 end CORR44;
 
 
---! @brief Correlator Implementation
---!
---! The correlator must process the data at the same rate it comes in. If it takes 4 clocks to bring
+-- Correlator Implementation
+--
+-- The correlator must process the data at the same rate it comes in. If it takes 4 clocks to bring
 --all the complex values to correlate, all the correlation products must be produced in 4 clocks.
 --
 -- Given N samples, a matrix of N rows x N columns would take N clocks to compute, column by column.
@@ -234,23 +231,23 @@ signal no_accum_reg: std_logic; --timing
 FUNCTION corr_header_words(
 		-- Word 0
 		---- Byte 0 - sent first
-		COOKIE: std_logic_vector(7 downto 0) := X"BF"; --! 8 Bits (hardcoded) used to identify the type of frame. The cookie is last in the word so it appears first in the packet.
+		COOKIE: std_logic_vector(7 downto 0) := X"BF"; -- 8 Bits (hardcoded) used to identify the type of frame. The cookie is last in the word so it appears first in the packet.
 		---- Byte 1
-		PROTOCOL_VERSION: std_logic_vector(3 downto 0) := X"1"; --! Along with the cookie, identifies how the data is encoded in this header and the data. The cookie will have to change if we run out of space for versions.
-		HEADER_LENGTH_IN_WORDS: std_logic_vector(3 downto 0) := X"3"; --! Number of 32-bit words in this header, to help the GPU skip this part if needed
+		PROTOCOL_VERSION: std_logic_vector(3 downto 0) := X"1"; -- Along with the cookie, identifies how the data is encoded in this header and the data. The cookie will have to change if we run out of space for versions.
+		HEADER_LENGTH_IN_WORDS: std_logic_vector(3 downto 0) := X"3"; -- Number of 32-bit words in this header, to help the GPU skip this part if needed
 		---- Byte 2
-		USER_ID: std_logic_vector(3 downto 0); --! 4-bit value arbitrary user ID
-		CORR_ID: std_logic_vector(3 downto 0); --! 4-bit value that identifies the corrlator core number
+		USER_ID: std_logic_vector(3 downto 0); -- 4-bit value arbitrary user ID
+		CORR_ID: std_logic_vector(3 downto 0); -- 4-bit value that identifies the corrlator core number
 		---- Byte 3
-		CMAC_ID: std_logic_vector(7 downto 0); --! 8-bit value that identifies from which CMAC the data is coming (0 .. 2(N+1)-1), (0..33 for N=16)
+		CMAC_ID: std_logic_vector(7 downto 0); -- 8-bit value that identifies from which CMAC the data is coming (0 .. 2(N+1)-1), (0..33 for N=16)
 
 		-- Word 1
-		UNUSED: std_logic_vector(7 downto 0) := X"00"; --! bit 0: '0' = 8 bit mode, '1' = 4 bit mode; bit 1: '0'= 2's complement, '1'=offset binary, bits 2-3: reserved
-		NUMBER_OF_BINS_PER_FRAME: std_logic_vector(11 downto 0); --! Number of frequency bins included in each frame (1-4095) (there are up to 1024 bins in full CHIME)
-		NUMBER_OF_CHANNELS: std_logic_vector(11 downto 0); --! Number of ADC analog channels included for each frequency bin (1-4095) (there are up to 2560 antennas in full CHIME)
+		UNUSED: std_logic_vector(7 downto 0) := X"00"; -- bit 0: '0' = 8 bit mode, '1' = 4 bit mode; bit 1: '0'= 2's complement, '1'=offset binary, bits 2-3: reserved
+		NUMBER_OF_BINS_PER_FRAME: std_logic_vector(11 downto 0); -- Number of frequency bins included in each frame (1-4095) (there are up to 1024 bins in full CHIME)
+		NUMBER_OF_CHANNELS: std_logic_vector(11 downto 0); -- Number of ADC analog channels included for each frequency bin (1-4095) (there are up to 2560 antennas in full CHIME)
 
 		-- Word 2
-		INTEGRATION_NUMBER: std_logic_vector(31 downto 0) -- --! 32-bit number that counts the integration periods.
+		INTEGRATION_NUMBER: std_logic_vector(31 downto 0) -- -- 32-bit number that counts the integration periods.
 		) return slv32_array is
 	variable w : slv32_array(0 to 2);
 	begin
@@ -264,11 +261,11 @@ FUNCTION corr_header_words(
 begin
 
 ---------------------------------------------------------------------
---! Correlator input pipelining process
+-- Correlator input pipelining process
 ---------------------------------------------------------------------
---! Pipelines the correlator input to facilitate routing and timing closure to the correlators
---! This pileline stage will be located within the PBLOCK associated with this correlator, so it won't help long-distance routing but still might help internally
---! 130204 JFC: removed reset from most registers to eliminate timing constraints from that signal on the registers
+-- Pipelines the correlator input to facilitate routing and timing closure to the correlators
+-- This pileline stage will be located within the PBLOCK associated with this correlator, so it won't help long-distance routing but still might help internally
+-- 130204 JFC: removed reset from most registers to eliminate timing constraints from that signal on the registers
 -- inpipe_proc: process(clk)
 --  begin
 --      if rising_edge(clk) then
@@ -281,32 +278,32 @@ begin
 --  end process;
 
 ---------------------------------------------------------------------
---! Instantiate the memory-mapped registers
+-- Instantiate the memory-mapped registers
 ---------------------------------------------------------------------
 
 -----------------------------------------------------------------------------------
 -- CONTROL and STATUS Bytes
---! ------------------------------------------------------------------------------
---! |  Page   | Addr|Bit(s)|     Name             | Description                   |
---! |---------|-----|------|----------------------|-------------------------------|
---! | CONTROL |  0  |  7   | user_reset           | Reset the correlator |
---! |         |     |  6   | autocorr_only        | Autocorrelation only mode |
---! |         |     |  5   | no_accum             | No accumulation mode |
---! |         |     | 3:0  | user_id              | User ID |
---! |         | 1-4 | 31:0 | integration_period   | Number of frames that are integrated before the integration starts over. 32 bit value, must be >=3. |
---! |         | 5-6 | 17:0 | number_of_bins_per_frame | Number of bins per frame (18 bits) |
---! | STATUS  |  0  |  0   | rst_all              | Reset all status |
---! |         |     |  1   | data_fifo_prog_full  | Data FIFO program full |
---! |         |     |  2   | data_fifo_overflow_sticky | Data FIFO overflow sticky flag |
---! |         |     |  3   | cmac_z_local_data(0) | CMAC Z local data |
---! |         |     |  4   | m_axis_data_out_tready | Output data ready |
---! |         |     |  5   | cmac_readout_err(0)  | CMAC readout error |
---! |         |     |  6   | cmac_wr_err(0)       | CMAC write error |
---! |         |     |  7   | cmac_rd_err(0)       | CMAC read error |
---! |         |  1  | 7:0  | in_frame_ctr_reg     | Input frame counter |
---! |         |  2  | 7:0  | out_frame_ctr_reg    | Output frame counter |
---! ------------------------------------------------------------------------------
---!
+-- ------------------------------------------------------------------------------
+-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+-- |---------|-----|------|----------------------|-------------------------------|
+-- | CONTROL |  0  |  7   | user_reset           | Reset the correlator |
+-- |         |     |  6   | autocorr_only        | Autocorrelation only mode |
+-- |         |     |  5   | no_accum             | No accumulation mode |
+-- |         |     | 3:0  | user_id              | User ID |
+-- |         | 1-4 | 31:0 | integration_period   | Number of frames that are integrated before the integration starts over. 32 bit value, must be >=3. |
+-- |         | 5-6 | 17:0 | number_of_bins_per_frame | Number of bins per frame (18 bits) |
+-- | STATUS  |  0  |  0   | rst_all              | Reset all status |
+-- |         |     |  1   | data_fifo_prog_full  | Data FIFO program full |
+-- |         |     |  2   | data_fifo_overflow_sticky | Data FIFO overflow sticky flag |
+-- |         |     |  3   | cmac_z_local_data(0) | CMAC Z local data |
+-- |         |     |  4   | m_axis_data_out_tready | Output data ready |
+-- |         |     |  5   | cmac_readout_err(0)  | CMAC readout error |
+-- |         |     |  6   | cmac_wr_err(0)       | CMAC write error |
+-- |         |     |  7   | cmac_rd_err(0)       | CMAC read error |
+-- |         |  1  | 7:0  | in_frame_ctr_reg     | Input frame counter |
+-- |         |  2  | 7:0  | out_frame_ctr_reg    | Output frame counter |
+-- ------------------------------------------------------------------------------
+--
 -- CONTROL Byte 0
 user_reset <= control_bytes(0)(7);
 autocorr_only <= control_bytes(0)(6);
@@ -318,7 +315,7 @@ integration_period <= to_slv(control_bytes(1 to 4));
 -- CONTROL Byte 5
 number_of_bins_per_frame <= "000" & to_slv(control_bytes(5 to 6))(8 downto 0);
 
---! STATUS Byte 0
+-- STATUS Byte 0
 --status_bytes(0)(7 downto 4) <= (others=>'0');
 --status_bytes(0)(3)          <= ACCUM_UNDERFLOW;
 --status_bytes(0)(2)          <= ACCUM_OVERFLOW;

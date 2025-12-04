@@ -10,14 +10,14 @@ use ieee.numeric_std.all;
 --use work.chFPGA_Package.all;
 
 -------- udp_mac package ------------
---! Defines the udp_mac entity as a component so we can  defer binding in conditional if-generate blocks
+-- Defines the udp_mac entity as a component so we can  defer binding in conditional if-generate blocks
 package udp_mac_package is
 
 COMPONENT udp_mac is
   GENERIC (
     PHY_TYPE: string; -- -- "GMII": Alaska 881111 PHY,  or "SGMII": SFP module
-    SGMII_CLOCK_SOURCE: string; --! *** NOT USED *** Selects the 125MHz clock source; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
-    BROADCAST_IP_PORT: integer;-- ! Port on which broadcast requests and replies are made. This is fixed as it is used to discover the boards on the network and configure them.
+    SGMII_CLOCK_SOURCE: string; -- *** NOT USED *** Selects the 125MHz clock source; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
+    BROADCAST_IP_PORT: integer;-- Port on which broadcast requests and replies are made. This is fixed as it is used to discover the boards on the network and configure them.
     SIM: boolean := FALSE --
     );
 
@@ -26,7 +26,7 @@ COMPONENT udp_mac is
     local_mac_addr: in std_logic_vector(47 downto 0);
     local_ip_addr: in std_logic_vector(31 downto 0);
     local_ip_port: in std_logic_vector(15 downto 0);
-    local_subarray: in std_logic_vector(1 downto 0); --! Defines on which of the 4 broadcast ports this fpga will respond.
+    local_subarray: in std_logic_vector(1 downto 0); -- Defines on which of the 4 broadcast ports this fpga will respond.
 
     -- Remote addresses
     remote_mac_addr0: in std_logic_vector(47 downto 0) := X"000000000000";
@@ -56,9 +56,9 @@ COMPONENT udp_mac is
     -- (SFP transceiver, used if PHY_TYPE="SGMII")
     ------------------------------------
 
-    sfp_tx_p : out std_logic; --! serialized data from the fpga mgt to the sfp
+    sfp_tx_p : out std_logic; -- serialized data from the fpga mgt to the sfp
     sfp_tx_n : out std_logic;
-    sfp_rx_p : in std_logic := '0'; --! serialized data from the sfp to the fpga mgt
+    sfp_rx_p : in std_logic := '0'; -- serialized data from the sfp to the fpga mgt
     sfp_rx_n : in std_logic := '1';
     sfp_refclk_nobuf: in std_logic; -- Unbuffered 125 MHz SFP GTX reference clock reference clock for SGMII operation
     sfp_refclk_buf: in std_logic; -- Buffered 125 MHz SFP GTX reference clock reference clock for SGMII operation

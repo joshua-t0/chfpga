@@ -110,7 +110,7 @@ entity CMAC44 is
 
 end CMAC44;
 
--- @brief Implementation of the compact (4+4) bit complex multiplier/accumulator.
+-- Implementation of the compact (4+4) bit complex multiplier/accumulator.
 --
 -- The complex multiplier/accumulator (CMAC) takes advantage of the small bit width if the incoming
 -- complex number (4-bit real, 4-bit imaginary) to implement a full complex multiplier, accumulator

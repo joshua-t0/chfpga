@@ -1,5 +1,4 @@
 --------------------------------------------------------------------------------
--- @file
 -- Company:
 -- Engineer:
 --
@@ -60,7 +59,7 @@ constant CTRL_CLK_PERIOD : time := 10 ns; --
     signal bsb_rply_tvalid: std_logic;
     signal bsb_rply_tlast: std_logic;
     signal bsb_rply_tready: std_logic;
-    
+
     constant NUMBER_OF_PORTS: integer :=4;
 
     signal top_cmd_dat: axis8_dat_struct_array(NUMBER_OF_PORTS-1 downto 0);
@@ -72,15 +71,15 @@ constant CTRL_CLK_PERIOD : time := 10 ns; --
 
     signal control_bytes: slv8_array(0 to 15); -- default value set in the CMD_SLAVE
     signal status_bytes: slv8_array(0 to 4);
-        
+
     signal ram_ctrl_addr: std_logic_vector(11 downto 0); -- 2048 bytes x 2
     signal ram_ctrl_addr_paged: std_logic_vector(11 downto 0); -- 2048 bytes x 2
     signal ram_ctrl_wr_en: std_logic;
     signal ram_ctrl_din: std_logic_vector(7 downto 0);
     signal ram_ctrl_dout: std_logic_vector(7 downto 0);
-    
+
     signal cmd_overflow: std_logic;
-    
+
 -- Tests
 -- Normal mode
 -- Borderline delay
@@ -175,7 +174,7 @@ begin
 
 			CMD_IN_DAT =>  (TDATA=>bsb_cmd_tdata, TVALID=>bsb_cmd_tvalid, TLAST=>bsb_cmd_tlast),
 			CMD_IN_RDY.TREADY => bsb_cmd_tready,
-			RPLY_OUT_DAT.TDATA =>bsb_rply_tdata, 
+			RPLY_OUT_DAT.TDATA =>bsb_rply_tdata,
 			RPLY_OUT_DAT.TVALID=>bsb_rply_tvalid,
 			RPLY_OUT_DAT.TLAST=>bsb_rply_tlast,
 			RPLY_OUT_RDY => (TREADY=>bsb_rply_tready),
@@ -229,7 +228,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
     --		if rising_edge(clk) then
     --		end if;
     --	end process;
-    
+
 
 sim_proc: process
 
@@ -247,16 +246,16 @@ sim_proc: process
 
 
 --        -- Enable playlist write
---        fpga_write_control(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
+--        fpga_write_control(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY,
 --                           addr=> 0, data => 66);
 
---        fpga_write_ram(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
+--        fpga_write_ram(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY,
 --                           addr=> 0, data => (0 to 100=> X"55"));
---        fpga_read(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY, 
+--        fpga_read(clk=> ctrl_CLK , tdata => cmd_dat.TDATA, tvalid=>cmd_dat.TVALID, tlast => cmd_dat.TLAST, tready=>cmd_rdy.TREADY,
 --                           addr=> 16#23E#, log2_length=>3);
         for i in 0 to 9 loop
-            fpga_write_mask(ctrl_clk, cmd_dat.tdata, cmd_dat.tvalid, cmd_dat.tlast, cmd_rdy.tready, 
-              addr => 5, 
+            fpga_write_mask(ctrl_clk, cmd_dat.tdata, cmd_dat.tvalid, cmd_dat.tlast, cmd_rdy.tready,
+              addr => 5,
               data => slv8_array'(X"01",X"02",X"03",X"04",X"05",X"06",X"07",X"08"),
               mask => slv8_array'(X"FF",X"FF",X"FF",X"FF",X"FF",X"FF",X"FF",X"FF"));  --
             sleep(ctrl_clk, 10);

@@ -61,7 +61,7 @@ use work.chFPGA_Package.all;
 --
 -- Each RX lane provides data on its own recovered clock.
 --
--- (***check) However, a 512-word deep asynchronous FIFO provides an output data flow on the clock provided by the user on m_axis_rx_clk(i).
+-- (**check**) However, a 512-word deep asynchronous FIFO provides an output data flow on the clock provided by the user on m_axis_rx_clk(i).
 -- Typically, every RX clock will be connected to the clock provided by the tranmitter (clk_out) so the logic can operate on a single clock domain.
 -- A non-sticky FIFO overflow flag (on the internal rx clock) is available to detect if the FIFO has overflowed.
 entity xxvglink_array is
@@ -477,7 +477,7 @@ begin
 			CTRL_CLK => CTRL_CLK,
 			CTRL_RST => CTRL_RST,
 
-			areset=> areset --! asynchronous reset
+			areset=> areset -- asynchronous reset
 		 );
 
     --------------------------------------

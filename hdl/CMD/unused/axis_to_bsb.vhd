@@ -42,7 +42,7 @@ entity axis_to_bsb is
 
 
 		clk: in std_logic;
-		rstn: in std_logic --! Reset, synchronous to CTRL_CLK
+		rstn: in std_logic -- Reset, synchronous to CTRL_CLK
 		-- System interface
 		);
 
@@ -63,6 +63,6 @@ begin
 		m_axis_tvalid <= s_bsb_axis_tvalid;
 		s_bsb_axis_tready <= m_axis_tready;
 end architecture impl;
-			
-			
+
+
 

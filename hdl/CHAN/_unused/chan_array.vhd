@@ -1,5 +1,4 @@
 ----------------------------------------------------------------------------------
---! @file
 -- Company: McGill University
 -- Engineer: JF Cliche
 --
@@ -40,9 +39,9 @@ use UNISIM.VComponents.all;
 entity chan_array is
     GENERIC (
         NUMBER_OF_CHANNELIZERS : integer := 16
-    --    --! Indicates if the channelizer is implemented. If not, a dummy module will be put in its place.
-    --    --! In this case, an dummy ADCDAQ module is still instantiated to ensure that the LVDS receivers are instantiated
-    --    --! (which would otherwise cause errors unless they were removed from the UCF file)
+    --    -- Indicates if the channelizer is implemented. If not, a dummy module will be put in its place.
+    --    -- In this case, an dummy ADCDAQ module is still instantiated to ensure that the LVDS receivers are instantiated
+    --    -- (which would otherwise cause errors unless they were removed from the UCF file)
     --    IMPLEMENT_CHAN  : BOOLEAN :=TRUE; -- (and that woul dbe bad)
     --    IMPLEMENT_FFT   : BOOLEAN :=GLOBAL_IMPLEMENT_FFT;
     --    SIM             : BOOLEAN :=GLOBAL_SIM
@@ -50,19 +49,19 @@ entity chan_array is
 
     PORT (
 
-        --! Input Interface from ADC
-        --! 32-bit wide, using the AXI4-Streaming Prototol
+        -- Input Interface from ADC
+        -- 32-bit wide, using the AXI4-Streaming Prototol
 
         in_dat_tdata    : in slv32_array(0 to NUMBER_OF_CHANNELIZERS-1);
         in_dat_tvalid   : in std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1);
         in_dat_tlast    : in std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1);
         in_dat_tuser    : in slv4_array(0 to NUMBER_OF_CHANNELIZERS-1);
-        in_clk          : in std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1); --! Input and signal processing clock
-        in_reset        : in std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1); --! Resets all the channelizer modules,
-                                        --! except ADCDAQ. Must be synchronous to in_clk.
+        in_clk          : in std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1); -- Input and signal processing clock
+        in_reset        : in std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1); -- Resets all the channelizer modules,
+                                        -- except ADCDAQ. Must be synchronous to in_clk.
 
-        ----! Output Interface
-        ----! Output Data Stream in 32bit AXI4-Streaming
+        ---- Output Interface
+        ---- Output Data Stream in 32bit AXI4-Streaming
 
         out_dat_tdata   : out slv32_array(0 to NUMBER_OF_CHANNELIZERS-1);
         out_dat_tvalid  : out std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1);
@@ -71,14 +70,14 @@ entity chan_array is
         out_clk         : in  std_logic;
         out_reset       : in  std_logic;
 
-        ----! Common data interface signals
-        ----! Global trigger/capture signal.
-        ----! Indicates to SRCSEL when to start flagging the incoming frames the data capture.
+        ---- Common data interface signals
+        ---- Global trigger/capture signal.
+        ---- Indicates to SRCSEL when to start flagging the incoming frames the data capture.
 
         --trig            : in  std_logic;
         --lane_monitor    : out std_logic_vector(3 downto 0);
 
-        ----! UDP Command Control Interface (command and reply stream buses)
+        ---- UDP Command Control Interface (command and reply stream buses)
 
         ctrl_cmd_tdata  : in  std_logic_vector(7 downto 0);
         ctrl_cmd_tvalid : in  std_logic;
@@ -92,7 +91,7 @@ entity chan_array is
         ctrl_clk        : in  std_logic;
         ctrl_rst        : in  std_logic;
 
-        ----! Control Interface to be hooked-up  to the corresponding ADCDAQ module
+        ---- Control Interface to be hooked-up  to the corresponding ADCDAQ module
 
         --adc_cmd_tdata   : out std_logic_vector(7 downto 0);
         --adc_cmd_tvalid  : out std_logic;
@@ -110,7 +109,7 @@ entity chan_array is
         prb_tvalid      : out std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1);
         prb_tlast       : out std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1);
         prb_tready      : in  std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1);
-        prb_clk         : in  std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1) --! Data capture clock
+        prb_clk         : in  std_logic_vector(0 to NUMBER_OF_CHANNELIZERS-1) -- Data capture clock
         );
 end chan_array;
 
@@ -136,28 +135,27 @@ begin
 --------------------------------------------------
 -- CHAN COMMAND ROUTER
 --------------------------------------------------
---! @addtogroup memory_map
---! Channel Memoy Map/ Base addresses
---! Offset = Channel # x 0x02000
---! ==============================
---! |#   | Base Addr       | Subaddresses | Description |
---! |----|-----------------|------------- |-------------|
---! | 0  | Base + 0x00000  | CHAN 0       |             |
---! | 1  | Base + 0x02000  | CHAN 1       |             |
---! | 2  | Base + 0x04000  | CHAN 2       |             |
---! | 3  | Base + 0x06000  | CHAN 3       |             |
---! | 4  | Base + 0x08000  | CHAN 4       |             |
---! | 5  | Base + 0x0A000  | CHAN 5       |             |
---! | 6  | Base + 0x0C000  | CHAN 6       |             |
---! | 7  | Base + 0x0E000  | CHAN 7       |             |
---! | 8  | Base + 0x10000  | CHAN 8       |             |
---! | 9  | Base + 0x12000  | CHAN 9       |             |
---! | 10 | Base + 0x14000  | CHAN 10      |             |
---! | 11 | Base + 0x16000  | CHAN 11      |             |
---! | 12 | Base + 0x18000  | CHAN 12      |             |
---! | 13 | Base + 0x1A000  | CHAN 13      |             |
---! | 14 | Base + 0x1C000  | CHAN 14      |             |
---! | 15 | Base + 0x1E000  | CHAN 15      |             |
+-- Channel Memoy Map/ Base addresses
+-- Offset = Channel # x 0x02000
+-- ==============================
+-- |#   | Base Addr       | Subaddresses | Description |
+-- |----|-----------------|------------- |-------------|
+-- | 0  | Base + 0x00000  | CHAN 0       |             |
+-- | 1  | Base + 0x02000  | CHAN 1       |             |
+-- | 2  | Base + 0x04000  | CHAN 2       |             |
+-- | 3  | Base + 0x06000  | CHAN 3       |             |
+-- | 4  | Base + 0x08000  | CHAN 4       |             |
+-- | 5  | Base + 0x0A000  | CHAN 5       |             |
+-- | 6  | Base + 0x0C000  | CHAN 6       |             |
+-- | 7  | Base + 0x0E000  | CHAN 7       |             |
+-- | 8  | Base + 0x10000  | CHAN 8       |             |
+-- | 9  | Base + 0x12000  | CHAN 9       |             |
+-- | 10 | Base + 0x14000  | CHAN 10      |             |
+-- | 11 | Base + 0x16000  | CHAN 11      |             |
+-- | 12 | Base + 0x18000  | CHAN 12      |             |
+-- | 13 | Base + 0x1A000  | CHAN 13      |             |
+-- | 14 | Base + 0x1C000  | CHAN 14      |             |
+-- | 15 | Base + 0x1E000  | CHAN 15      |             |
 
 
 
@@ -197,9 +195,9 @@ chan_router0: entity work.CTRL_ROUTER
 
 CHANGEN: for i in 0 to NUMBER_OF_CHANNELIZERS-1 generate
 
-    --PRB_PORT_OFFSET(CHAN_PROBE_BASE_PORT+i) <= DATA_IP_PORT_OFFSET ; --! Assign the IP port number to be used for the returned data
+    --PRB_PORT_OFFSET(CHAN_PROBE_BASE_PORT+i) <= DATA_IP_PORT_OFFSET ; -- Assign the IP port number to be used for the returned data
 
-    --! Pipeline the channel synchronous reset line to the channelizers and correlator inputs
+    -- Pipeline the channel synchronous reset line to the channelizers and correlator inputs
     rst_proc: process(in_clk(i))
         begin
             if rising_edge(in_clk(i)) then

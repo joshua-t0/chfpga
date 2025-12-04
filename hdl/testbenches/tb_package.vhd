@@ -66,7 +66,7 @@ end tb_package;
 
 package body tb_package is
 
---! @brief Sends an array of words to the UDP/MAC interface
+-- Sends an array of words to the UDP/MAC interface
 	procedure send_buffer (
 			signal clk : IN STD_LOGIC;
 			signal tdata: OUT STD_LOGIC_VECTOR(7 downto 0);
@@ -95,7 +95,7 @@ package body tb_package is
 
 
 
-	--! Builds a command word based on its various fields
+	-- Builds a command word based on its various fields
 	function to_command_bytes( opcode: slv3; increment: integer:=1;  log2_length: integer :=0; addr: integer) return slv8_array is
 		variable c: slv8_array(0 to 2);
 	begin
@@ -108,7 +108,7 @@ package body tb_package is
 	end to_command_bytes;
 
 
-	--! Reads a single word from specified address
+	-- Reads a single word from specified address
 
 	procedure fpga_read (
 			signal CLK : IN STD_LOGIC;
@@ -369,7 +369,7 @@ package body tb_package is
 	end procedure send_axis_packet;
 
 
---! @brief Sends an AXIS32 frame
+-- Sends an AXIS32 frame
 	procedure send_axis32_packet (
 			signal clk: in std_logic;
 			signal m_axis_tdata: out slv32;
@@ -415,7 +415,7 @@ package body tb_package is
 	end procedure send_axis32_packet;
 
 
---! @brief Sends an AXIS32 frame
+-- Sends an AXIS32 frame
 	procedure sleep (
 			signal clk: IN std_logic;
 			delay: IN integer := 1
