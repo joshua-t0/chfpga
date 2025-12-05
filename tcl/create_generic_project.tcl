@@ -198,7 +198,7 @@ if { $fileset_obj != {} } {
 }
 
 
-add_files -norecurse -fileset $fileset_obj [concat $full_bd_files $full_hdl_files $full_ip_files]
+add_files -norecurse -fileset $fileset_obj [concat $full_bd_files $full_hdl_files $full_ip_files $full_ooc_ip_files]
 
 # puts "Importing IPs"
 # import_ip $full_ip_files
@@ -344,18 +344,18 @@ catch {
 
 puts ""
 puts "    -----------------------------------------------"
-puts "    Generate FFT OOC"
+puts "    Generate OOC modules"
 puts "    -----------------------------------------------"
 puts ""
 
 set ip_list {}
-# Note: Vivado 2023+ uses FILE_NAME
 set ips [get_ips]
 puts "ips=  $ips"
 
 foreach ip_obj  [get_ips] {
+  # Note: Vivado 2023+ uses FILE_NAME
   set ip_name [get_property NAME $ip_obj]
-  puts "CHecking if $ip_name is in $ooc_ip_files"
+  puts "Checking if $ip_name is in $ooc_ip_files"
   if {[lsearch $ooc_ip_files "*/$ip_name.*"] >=0} {
       puts "Adding $ip_name"
     lappend ip_list $ip_obj
@@ -370,7 +370,6 @@ puts "OOC ip files are $ip_list"
 # export_ip_user_files -of_objects  [get_files  /home/jfcliche/chfpga/_Cores/KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci] -sync -lib_map_path [list {modelsim=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/modelsim} {questa=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/questa} {xcelium=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/xcelium} {vcs=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/vcs} {riviera=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/riviera}] -force -quiet
 # set_property generate_synth_checkpoint true [get_files  /home/jfcliche/chfpga/_Cores/KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci]
 # generate_target all [get_files  /home/jfcliche/chfpga/_Cores/KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci]
-
 
 
 export_ip_user_files -of_objects $ip_list -no_script -sync -force -quiet
