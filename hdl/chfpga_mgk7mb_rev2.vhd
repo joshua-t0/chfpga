@@ -98,7 +98,7 @@ entity chFPGA_MGK7MB_Rev2 is
 
 			-- Channelizer config
 			FFT_TYPE: integer                            := CONFIG_CHAN_FFT_TYPE;
-			NUMBER_OF_CHANNELIZERS: INTEGER               := 16;  --!(Typ. =16)  (0-NUMBER_OF_ADCS) Number of antenna processing blocks to be implemented
+			NUMBER_OF_CHANNELIZERS:INTEGER               := 16;  --!(Typ. =16)  (0-NUMBER_OF_ADCS) Number of antenna processing blocks to be implemented
 
 			-- Corner-turn engine config
 			CROSSBAR1_TYPE: string                       := "BRAM"; -- "BRAM" or "URAM"

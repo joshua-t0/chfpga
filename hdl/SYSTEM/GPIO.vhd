@@ -66,6 +66,7 @@ entity GPIO is
 		-- Channelizer info
 
 		NUMBER_OF_CHANNELIZERS: integer; -- Number of channelizers that are implemented
+		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer; -- Number of antenna processing blocks with an FFT module
 		FFT_TYPE: fft_type_enum;
 
 		-- Corner-turn Engine info
@@ -496,7 +497,7 @@ begin
 	-- |         |  2  | 7:0  | NUMBER_OF_CHANNELIZERS      | Number of antennas processing pipelines implemented in the firmware |
 	-- |         |  3  | 7:0  | NUMBER_OF_CORRELATORS       | Number of correlators implemented in the firmware |
 	-- |         |  4  | 7:0  | NUMBER_OF_CHANNELIZERS_TO_CORRELATE | Number of antennas connected to the correlators. Only antennas 0 to N-1 will be connected. This sets the numbe rof parallel multipliers and accumulators in the correlator. |
--- 	   |         |  5  | 7:0  | (unused)  					 | Previously used for NUMBER_OF_CHANNELIZERS_WITH_FFT. Use NUMBER_OF_CHANNELIZERS instead in status_bytes(2)
+	-- |         |  5  | 7:0  | NUMBER_OF_CHANNELIZERS_WITH_FFT   | Indicates how many channelizers have a FFT module. Those will be channeizers 0 to N-1|
 	-- |         |  6  | 7:0  | NUMBER_OF_GPU_LINKS         | Indicates how GPU Links are implemented. If zero, the GPU module is not present at all (not even the common registers)|
 	-- |         | 7-10| 31:0 | firmware_timestamp          | 32-bit word containing the timestamp of the firmware inserted during the bitgen process |
 	-- |         |  11 | 7:0  | PLATFORM_ID                 | Type of platform on which the firmware is running. 0=ML605, 1=KC705, 3=MGK7MB, 4=ZCU111 |
@@ -668,7 +669,7 @@ begin
 	-- STATUS Byte 4-6
 
 	status_bytes(4) <= to_slv(NUMBER_OF_CHANNELIZERS_TO_CORRELATE, 8);
-	-- status_bytes(5) <= to_slv(NUMBER_OF_CHANNELIZERS_WITH_FFT, 8);
+	status_bytes(5) <= to_slv(NUMBER_OF_CHANNELIZERS_WITH_FFT, 8);
 	status_bytes(6) <= to_slv(NUMBER_OF_GPU_LINKS, 8);
 
 	-- STATUS Bytes 7-10
