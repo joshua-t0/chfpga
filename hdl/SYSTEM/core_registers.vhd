@@ -20,10 +20,10 @@ use ieee.std_logic_misc.all; -- for or_reduce()
 library UNISIM;
 use UNISIM.VComponents.all;
 
-use work.icecore_package.all;
+use work.irigb_package.all;
 
 -- Implements an array of 32-bit core registers accessible via a req/acq 32-bit bus and a 8-bit rd_en/wr_en bus.
-entity register_array is
+entity core_registers is
 	generic (
 		ADDRESS_MASK: std_logic_vector(31 downto 0); -- X"000010--" means that we respond to s_addr(31:16)=x"000010" and that we have 8 bits of local address (i.e. 64 registers or less)
 		NUMBER_OF_REGISTERS: integer := 1;
@@ -53,9 +53,9 @@ entity register_array is
 
 		clk: in std_logic -- Control interface clock
 	);
-end register_array;
+end core_registers;
 
-architecture IMPL of register_array is
+architecture IMPL of core_registers is
 
 	constant LOCAL_ADDRESS_WIDTH: integer := width(NUMBER_OF_REGISTERS); -- we ignore the address mask
 
@@ -137,3 +137,4 @@ begin
 	end process;
 
 end IMPL;
+

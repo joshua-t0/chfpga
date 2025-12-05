@@ -15,7 +15,7 @@ use IEEE.math_real.all; -- needed for ceil()
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.ALL;
 
-package icecore_package is
+package irigb_package is
 
 	type irigb is record
 		s,m : unsigned(6 downto 0);
@@ -44,9 +44,9 @@ package icecore_package is
 	function to_std_logic(i:boolean) return std_logic; -- converts bool to std_logic
 	function width(len: integer) return integer; -- computes the number of bits needed to represent a number from 0 to len-1
 
-end icecore_package;
+end irigb_package;
 
-package body icecore_package is
+package body irigb_package is
 
 	FUNCTION to_std_logic(i:boolean) return std_logic is -- converts bool to std_logic
 		begin
@@ -64,4 +64,5 @@ function width(len: integer) return integer is
 		return integer(ceil(log2(real(len))));
 	end function;
 
-end icecore_package;
+end irigb_package;
+

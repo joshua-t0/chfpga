@@ -33,11 +33,11 @@ set hdl_base_files [list  \
  "CMD/CMD_SLAVE2.vhd" \
  "CMD/CMD_ASYNC_FIFO.vhd" \
  "CMD/CMD_MASTER.vhd" \
- "CMD/icecore_package.vhd" \
- "CMD/register_array.vhd" \
- "CMD/irigb_decoder.vhd" \
- "CMD/irigb_comparator.vhd" \
- "CMD/irigb_encoder.vhd" \
+ "SYSTEM/irigb_package.vhd" \
+ "SYSTEM/core_registers.vhd" \
+ "SYSTEM/irigb_decoder.vhd" \
+ "SYSTEM/irigb_comparator.vhd" \
+ "SYSTEM/irigb_encoder.vhd" \
  "SYSTEM/system.vhd" \
  "SYSTEM/GPIO.vhd" \
  "SYSTEM/FREQ_CTR.vhd" \
@@ -95,7 +95,7 @@ set ice_hdl_base_files [concat $hdl_base_files [list \
   \
   "SYSTEM/SPI.vhd" \
   "SYSTEM/I2C.vhd" \
-  "CMD/arm_spi.vhd" \
+  "SYSTEM/arm_spi.vhd" \
   \
   "CHAN/PROBER.vhd" \
   "CHAN/ADCDAQ.vhd" \

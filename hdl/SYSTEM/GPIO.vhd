@@ -26,8 +26,8 @@ use ieee.std_logic_misc.ALL; -- for or_reduce()
 
 use work.chFPGA_Package.ALL; -- Get all component definitions
 
-use work.icecore_package.slv32_array;
-use work.icecore_package.irigb;
+use work.irigb_package.slv32_array;
+use work.irigb_package.irigb;
 
 library UNISIM;
 use UNISIM.VComponents.ALL;
@@ -315,9 +315,9 @@ architecture impl of GPIO is
 	signal spi_rreq, spi_rack, spi_wreq, spi_wack: std_logic := '0'; -- important to have default value in case the ARM SPI receiver is not instantiated.
 
 	constant NUMBER_OF_CORE_REGISTERS: integer := 26;
-	signal   core_reg_wr_value: work.icecore_package.slv32_array(0 to NUMBER_OF_CORE_REGISTERS - 1);
-	signal   core_reg_rd_value: work.icecore_package.slv32_array(0 to NUMBER_OF_CORE_REGISTERS - 1);
-	constant CORE_REG_DEFAULT_VALUES: work.icecore_package.slv32_array(0 to NUMBER_OF_CORE_REGISTERS - 1) := (
+	signal   core_reg_wr_value: work.irigb_package.slv32_array(0 to NUMBER_OF_CORE_REGISTERS - 1);
+	signal   core_reg_rd_value: work.irigb_package.slv32_array(0 to NUMBER_OF_CORE_REGISTERS - 1);
+	constant CORE_REG_DEFAULT_VALUES: work.irigb_package.slv32_array(0 to NUMBER_OF_CORE_REGISTERS - 1) := (
 	 7      => X"00000000", -- MAC
 	 8      => X"0000_0000", -- MAC, Port
 	 9      => X"00000000", -- IP
@@ -1021,7 +1021,7 @@ begin
 	spi_fpga_ch1_remote_ip_address           <= core_reg_wr_value(25);
 
 
-	core_regs0: entity work.register_array
+	core_regs0: entity work.core_registers
 		generic map (
 			ADDRESS_MASK            => X"000000" & "------XX",
 			NUMBER_OF_REGISTERS     => NUMBER_OF_CORE_REGISTERS,
