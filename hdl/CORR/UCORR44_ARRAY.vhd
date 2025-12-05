@@ -53,7 +53,7 @@ entity UCORR44_ARRAY is
 		-- Input data AXI-S bus , non-blocking
 		-- Data ordering from MSB to LSB => (Corr0,Chan0), (Corr0,Chan1), ... (Corr0,ChanN-1), ... (CorrM-1, ChanN-1)
 		-- Re in MSB of byte
-		s_axis_data_tdata : in  slv(INPUT_WIDTH-1 downto 0); --! input data stream containing the channelized data from every channelizer. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
+		s_axis_data_tdata : in  slv(INPUT_WIDTH-1 downto 0); -- input data stream containing the channelized data from every channelizer. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
 		s_axis_data_tvalid : in  std_logic; --
 		s_axis_data_tlast : in  std_logic; --
 
@@ -133,6 +133,31 @@ begin
     --------------------------------------------
     -- Memory mapped registers
     --------------------------------------------
+    -- Memory Map
+    -- ------------------------------------------------------------------------------
+    -- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+    -- |---------|-----|------|----------------------|-------------------------------|
+    -- | CONTROL |  0  |  7   | user_reset            | Reset the correlator |
+    -- |         |     |  6   | overrun_reset          | Reset overrun counters |
+    -- |         |     | 5:2  | corr_id                | Correlator ID |
+    -- |         |     |  1   | no_accum               | No accumulation mode |
+    -- |         |     |  0   | autocorr_only          | Autocorrelation only mode |
+    -- |         | 1-2 | 15:0 | integ_period           | Integration period (number of frames) |
+    -- |         |  3  |  7   | offset_encoding        | Offset binary encoding |
+    -- |         |     |  6   | auto_bin_set            | Auto bin set |
+    -- |         |     | 3:0  | bin_set                 | Manual bin set |
+    -- | STATUS  |  0  |  0   | or(overrun)            | OR of all overrun flags |
+    -- |         |     |  1   | rst                     | Reset status |
+    -- |         |     |  2   | s_axis_data_tvalid      | Input data valid |
+    -- |         |     |  3   | s_axis_data_tlast       | Input data last |
+    -- |         |  1  | 7:0  | NCHAN                   | Number of channels |
+    -- |         |  2  | 7:4  | NCORR                    | Number of correlators |
+    -- |         |     | 3:0  | BIN_DECIMATION_FACTOR   | Bin decimation factor |
+    -- |         |  3  | 7:0  | in_frame_ctr            | Input frame counter |
+    -- |         |  4  | 7:0  | out_frame_ctr           | Output frame counter |
+    -- |         |  5  | 3:0  | NCLK_PER_BIN            | Number of clocks per bin |
+    -- |         |     | 7:4  | (unused)                | |
+    -- ------------------------------------------------------------------------------
 
 	bsb_regs0: entity work.CTRL_SLAVE
 		GENERIC MAP (

@@ -1,10 +1,8 @@
-..   .. title:: system
-
-*******************************
-:entity:`REFCLK` (*REFCLK.vhd*)
-*******************************
-
 .. title:: REFCLK
+
+**********************************************************
+:entity:`REFCLK` (*REFCLK.vhd*): Reference clock sequencer
+**********************************************************
 
 .. .. figure:: ../images/REFCLK.svg
 ..     :width: 100%

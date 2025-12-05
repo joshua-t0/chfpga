@@ -2,46 +2,20 @@
 VHDL Coding Conventions
 ***********************
 
-VHDL Editor
-===========
+=============
+VHDL standard
+=============
 
-A good text editor with VHDL syntax highlighting is recommended. Here are a few we have used:
+The source code for `chfpga` is written in VHDL2008. Although the original code was written for VHDL93, the modules have gradually been using VHDL2008 as it significantly simplifies the code. We have not attempted to preserve VHDL93 compatibility.
 
-Editor selection
-----------------
-
-Vivado can be configured to use any external editor.
+All files in the project must be tagged to use the VHDL2008 file type, otherwise the synthesizer will fail to compile many files. The default file type of files added to a project is "VHDL", meaning VHDL93. It must explicitely be changed to VHDL2008.
 
 
-Vivado integrated editor
-------------------------
+=============
+Documentation
+=============
 
-The internal Vivado text editor is not bad. It lacks advanced editing functions (column editor, multi-cursor, code alignment) but it has a live checker that will highlight  in real time not only syntax errors, but undefined signals/variables and type/dimensions mismatches. This live checking is very useful and allow reducing the number of synthesis-error-fix loops.
-
-We often do large edits in a good editor, nd then re-open the file in the Vinado editor to check for errors before launching systhesis.
-
-
-Sublime Text
-------------
-
-The chFPGA code was written mainly using Sublime Text (https://www.sublimetext.com/), which is free, works on any platform, and has a large ecosystem of plug-ins that are useful for VHDL source file and documentation editing. Sublime Text significant increases productivity. One of its best feature is the multi-cursor which allows for editing multiple lines at once, which happens a lot when working on port assignments in VHDL. The following Sublime Text packages were used:
-
-   * VHDL: provides syntax highlighting of VHDL code
-   * Alignment: (:kbd:`control-alt-a`): allows block of code to be aligned to ``<=``, ``:`` or other key characters with a single keystroke, making the code easier to read.
-   * WrapPlus (:kbd:`alt-q`): nicely reformat comment blocks, even in in VHDL
-   * TrailingSpaces: removes any trailing spaces when the file is saved
-
-Sublime Text also has modules for writing and building reStructeredText, LaTeX documents, Vivado TCL files etc. This all-in-one character made it our daily editor.
-
-What Sublime Text lacks is a VHDL linting tool, which would interactively show us syntax errors, unused variables etc. We have not found good, free VHDL linting tools. That would be very useful.
-Sigasi offer a non-free specialized HDL editor that seems very good and offers many advanced features (like linting), but we have not tried it out.
-
-Visual Studio Code
-------------------
-
-
-Documentation methodology
-=========================
+VHDL documentation is generated using Sphinx using a home-made VHDL domain extension.
 
 We use a hybrid document methodology, where short descriptions and memory map tables that are tightly coupled to the code is placed in the VHDL source files as comment blocks, but longer descriptions on principle of operations and graphics are written in standalone Restructuredtext files.
 
@@ -52,19 +26,31 @@ Sphinx is used to compile the documentation into stand-alone HTML files. A Bitbu
 
 
 
-Other auto-documentation tools
-------------------------------
 
-Long time ago we used ``doxygen`` to automatically generate documentation based on the content of the source files. For this reason, you might still find some Doxygen-style comments in the source code.
 
-We liked that the tool automatically generated hiearchy diagrams and hyperlinked entities/signals etc. But adding custom information to the pages was a bit tedious.
 
-In the end, we favored Restructuredtext over Markdown as a documentation format because of its ability to add extensions and language-specific roles and directives. We also favored Sphinx because we already used it to document the closely inter-related Python package ``pychfpga`` and we try to minimize the number of tools and text format that we need to use.
+Sphinx documentation conventions
+--------------------------------
+
+
+http://documentation-style-guide-sphinx.readthedocs.io/en/latest/style-guide.html
+
+* Header levels:
+
+    - #_#, *_*, ===, ---, ^^^, """
+    - Index doc - main title: no header
+    - Index sections (contents, Quick links): ####_####
+    - Main sections: ***_***
+
+The `toctree` directive includes a RST file one level down from the current level, i.e. the top heading level of that document becomes a sub-heading in the master document, independent from the heading style (``**``, ``===`` etc.).  The heading levels of RST documents included `toctree` are independent from each other.
+
+Content included with the `include` directive is as if it was typed in that document, so this is essentially a single RST document in which case the heading levels must be consistent.)
+
 
 
 
 Building the documentation
-==========================
+--------------------------
 
 Activate the Python environment in which the `pychfpga` docuemntation tools were installed::
 
@@ -86,7 +72,7 @@ To automatically build the documentation and refresh open browser pages when a f
     ./automake.sh
 
 
-
+==============================
 Running the code style checker
 ==============================
 
@@ -112,6 +98,7 @@ To process all files specified in vsg_filed.yaml::
 The checker runs in various phases. Once a phase is fixed (or has only warnings), the batch of errors from the next phase are shown etc.
 
 
+===============
 Version control
 ===============
 
@@ -150,6 +137,7 @@ Of all the standard commit types proposed above, we typically use:
 
 
 
+============================
 Filenames and file structure
 ============================
 
@@ -167,8 +155,9 @@ synthesized, but that does not happen often.
 Another package file is used to define components representing Xilinx cores.
 
 
-Our VHDL coding style
-=====================
+=================
+VHDL coding style
+=================
 
 Line width
 ----------

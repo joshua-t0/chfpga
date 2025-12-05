@@ -1,5 +1,4 @@
 --------------------------------------------------------------------------------
--- @file
 -- Company:
 -- Engineer:
 --
@@ -95,7 +94,7 @@ begin
 	   end process;
 --    ctrl_clk <= clk;
      ctrl_clkb <= not ctrl_clk;
-    
+
 	refclk_process: process
 	   begin
 			refclk <= '0';

@@ -1,4 +1,3 @@
---!@file
 ----------------------------------------------------------------------------------
 -- Company: McGill Univ.
 -- Engineer: JF Cliche
@@ -81,7 +80,7 @@ signal m_axis_rx_tvalid_int: std_logic;
 signal m_axis_rx_tlast_int: std_logic;
 
 signal tx_ctr: unsigned(6 downto 0) := (others=>'0'); -- counts clocks (0-65) to implement RX FIFO throttling
-signal read_en: std_logic; --!
+signal read_en: std_logic; --
 
 signal rx_max_frame_int: unsigned(12 downto 0); -- maximum detected frame size (max 8191)
 signal rx_min_frame_int: unsigned(12 downto 0); -- minimum detecteed frame size

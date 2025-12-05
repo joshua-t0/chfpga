@@ -30,7 +30,7 @@ use xpm.vcomponents.all;
 
 use work.chFPGA_Package.all; -- Get all component definitions
 
--- @brief Periodically captures a subset of AXI-S 32-bit wide data packets and send them over a 8-bit AXI-S interface.
+-- Periodically captures a subset of AXI-S 32-bit wide data packets and send them over a 8-bit AXI-S interface.
 --
 -- Captures and buffer data frames and makes them available over a 8-bit AXI4 STREAM interface for transmission over Ethernet
 -- A frame header is added to the data to profide flags, frame number, stream ID etc.
@@ -115,7 +115,7 @@ architecture impl of PROBER is
     --signal DATA_FIFO_OUT_DAT: AXIS8_DAT_STRUCT;
     --signal DATA_FIFO_OUT_RDY: AXIS8_RDY_STRUCT;
 
-  
+
     -- Control and status bytes
 
     signal control_bytes: slv8_array(0 to 14); -- default value set in the CMD_SLAVE
@@ -136,7 +136,7 @@ architecture impl of PROBER is
     signal overrun: std_logic;
 
     signal rd_rst, wr_rst: std_logic;
-    
+
     -- Communication between the write and read logic
 
     signal readout_req: std_logic; -- readout request flag , on the write clock
@@ -153,11 +153,11 @@ begin
 -----------------------------------------------------------------------------------
 -- CAPTURE (PROBER) Module Memory Map
 --
---  ------------------------------------------------------------------------------
+-- ------------------------------------------------------------------------------
 -- |  Page   | Addr|Bit(s)|     Name             | Description                   |
 -- |---------|-----|------|----------------------|-------------------------------|
 -- | CONTROL |  0  |  7   | Soft reset           |                |
--- |         |     |  6   | fifo_reset           |                |
+-- |         |     |  6   | (unused)             |                |
 -- |         |     |  5   | input source         |                |
 -- |         |     | 4:3  | (unused)             |                |
 -- |         |     |  2   | prober_user_flags    | If True, returns user flags in last 4 bits captured from scaler |
@@ -167,16 +167,17 @@ begin
 -- |         | 7-8 | 15:0 | stream_id(15:0)      |                |
 -- |         | 9-10| 15:0 | send_delay           | Time to wait before sending captured data |
 -- |         |11-13| 23:0 | primary_period(1)    |                |
--- |         | 14  | 4:0  | sub_period           | range: 0-23.  Create additional captures every N=2^(sub_period+1) frames after the primary period. If N > primary_period, only the primary period frames are captured. If the primary period is not a multiple of N, the last sub capture of a period might be close to the beginning of the next period.|
--- | STATUS  |  0  |   7  | TUSER_CAPTURE_BIT    | For debugging. |
--- |         |     |   6  | inhibit_data         | For debugging. |
+-- |         | 14  | 7:5  | (unused)             |                               |
+-- |         |     | 4:0  | sub_period           | range: 0-23.  Create additional captures every N=2^(sub_period+1) frames after the primary period. If N > primary_period, only the primary period frames are captured. If the primary period is not a multiple of N, the last sub capture of a period might be close to the beginning of the next period.|
+-- | STATUS  |  0  |   7  | (unused)             |                               |
+-- |         |     |   6  | (unused)             |                               |
 -- |         |     |   5  | current_source       |  |
--- |         |     |   4  | data_fifo_4mpty      | For debugging. |
+-- |         |     |   4  | data_fifo_empty      | For debugging. |
 -- |         |     |   3  | data_fifo_overflow   | For debugging. |
 -- |         |     |   2  | data_fifo_overflow_sticky |           |
--- |         |     |   1  | header_fifo_overflow | For debugging. |
--- |         |     |   0  | '0'                  |                |
---  ------------------------------------------------------------------------------
+-- |         |     |   1  | overrun              | High if we attempted to capture a new burst when the readout of the previous one was not finished |
+-- |         |     |   0  | (unused)             |                               |
+-- ------------------------------------------------------------------------------
 
 -- CONTROL Byte 0
 soft_reset <= control_bytes(0)(7);
@@ -250,7 +251,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
 
 
     fifo_blk: block
-    
+
         signal por_rst: std_logic := '1'; -- Initialize to 1 to ensure power on reset.
 
     begin
@@ -264,12 +265,12 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
         --
         -- This works only for the 7-Series platforms.
         --
-        -- Lower 32 bits are the data. Bit 32 is TLAST. Others are unused. 
-        
+        -- Lower 32 bits are the data. Bit 32 is TLAST. Others are unused.
+
         data_fifo_valid <= to_std_logic(all_zeros(data_fifo_empty)); -- We have valid data when none of the FIFOs are empty
-         
+
         data_fifo_gen: for i in 0 to 1 generate -- Implement two FIFOs
-    
+
             -- Define native wide data buses. Only part of those are actually used.
             signal di, do: std_logic_vector(63 downto 0);
             signal dip, dop: std_logic_vector(7 downto 0);
@@ -297,7 +298,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
                     dip        => dip,
                     --almostfull => almost_full, -- 1-bit output: Almost full flag
                     full       => data_fifo_full(i),
-                       
+
                     -- Read interface
                     rdclk       => out_clk, -- Read clock
                     rden        => data_fifo_rd_en and not rd_rst and to_std_logic(all_zeros(data_fifo_empty)), -- Read enable
@@ -306,27 +307,27 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
                     dop         => dop,
                     --almostempty => almost_empty,
                     empty       => data_fifo_empty(i),
-    
+
                     -- ECC Signals (unused)
                     injectdbiterr => '0',
                     injectsbiterr => '0',
-    
+
                     -- Resets
                     rst    => rd_rst, -- Async -- write domain reset reset, must be high at least 5 cycles of the slowest clock
                     rstreg => '0'  -- Output register reset
                 );
         end generate;
-    
+
         -- Clear Power-on reset as soon as we have a clock
         process(all) begin
             por_rst <= '0' when rising_edge(out_clk);
         end process;
-        
+
         -- Implement proper FIFO resets: reset pulse must be 5 clocks long (i.e 5 clocks of the slowest clock), and rd_en/wr_en must be masked by reset signals
         --
         -- Slow clock reset. 5x rd_clk.
         -- Async assert on por, external reset or user reset; sync deassert on rd_clk
-       rd_rst0: xpm_cdc_async_rst 
+       rd_rst0: xpm_cdc_async_rst
             generic map (
                 RST_ACTIVE_HIGH => 1, -- Active high reset
                 DEST_SYNC_FF => 5 -- Reset pulse minimum width
@@ -336,7 +337,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
                 dest_clk => out_clk,
                 dest_arst => rd_rst
             );
-        
+
         -- Extend wr reset until rd_reset is finished. Used only to mask wr_en.
         wr_rst0: xpm_cdc_async_rst
             generic map (
@@ -347,7 +348,7 @@ CTRL_SLAVE0: entity work.CTRL_SLAVE
                 dest_clk => in_clk,
                 dest_arst => wr_rst
             );
-end block fifo_blk;        
+end block fifo_blk;
 
 write_blk: block is
     -----------------------------
@@ -533,9 +534,9 @@ begin
     --
     -- We Use the data stored in burst_source, burst_timestamp and burst_flags to populate the headers of each packet. These are in the write clock domain, but we assume those are stable and unchanging when used in this readout clock domain. The delay in the readout_req CDC ensures those have stabilized before being used. The interlocking between readout_req and reasout_acq functionally ensures those are not changing until the readout is completed.
     --
-    -- We use a large (16:1) mux to select bytes from the header or data words in order to minimize resource utilization. 
+    -- We use a large (16:1) mux to select bytes from the header or data words in order to minimize resource utilization.
     -- Muxin the header avoids duplicaiton of the burst info registers above and opens possibilities for simplifications.
-    -- Muxing the data words into bytes allows the use of embedded FIFO, which uses much less LUTs and REGs than a assymetric BRAM with external FIFO logic. 
+    -- Muxing the data words into bytes allows the use of embedded FIFO, which uses much less LUTs and REGs than a assymetric BRAM with external FIFO logic.
     --
     -- Implementation Note:
     --    - The FIFO readout signals are generated combinatorially from the external OUT_RDY.TREADY signal and additional locally registered signals.
@@ -545,7 +546,7 @@ begin
     read_proc: process(all)
         variable byte: integer;
         variable frame_header: FRAME_HEADER_STRUCT;
-        variable frame_header_bytes: slv8_array(0 to FRAME_HEADER_BYTE_LENGTH-1); 
+        variable frame_header_bytes: slv8_array(0 to FRAME_HEADER_BYTE_LENGTH-1);
     begin
         if rising_edge(OUT_CLK) then
 --            out_rst <= ctrl_rst or soft_reset; -- Retime the reset to OUT_CLK (which is normally ctrl_clk). We use an ASYNC_REG attribute because soft_reset is in the in_clk domain.
@@ -584,7 +585,7 @@ begin
             case send_state is
                 when SEND_STDBY => -- wait until burst data is ready
                     send_delay_ctr <= (others => '0');
-                    send_state <= SEND_DELAY when readout_req_resync /= readout_req_dly; -- start readong out data when readout_req toggles 
+                    send_state <= SEND_DELAY when readout_req_resync /= readout_req_dly; -- start readong out data when readout_req toggles
 
                 when SEND_DELAY => -- pre-burst readout delay
                     byte_ctr <= (others => '0');

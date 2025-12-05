@@ -1,0 +1,40 @@
+.. title:: crc32_64
+
+*********************************************************************
+:entity:`crc32_64` (*crc32_64.vhd*): 64-bit CRC-32 Computation Module
+*********************************************************************
+
+.. parse:: hdl/XXVGLINK/crc32_64.vhd
+
+.. default-role:: vhdl:entity
+
+Entity documentation
+--------------------
+
+.. autoentity:: crc32_64
+
+Principle of Operations
+=======================
+
+The `crc32_64` module computes a 32-bit CRC (Cyclic Redundancy Check) checksum for 64-bit data streams. It processes 64-bit words and generates a CRC-32 value that can be used for error detection in packet transmission.
+
+The module implements a pipelined CRC computation using a Linear Feedback Shift Register (LFSR) that processes one 64-bit word per clock cycle. The CRC polynomial and initialization values are configured for compatibility with standard CRC-32 algorithms used in networking protocols.
+
+Key Features
+------------
+
+- **Pipelined operation**: Processes one 64-bit word per clock cycle
+- **64-bit data width**: Operates on 64-bit input words
+- **32-bit CRC output**: Generates a 32-bit CRC checksum
+- **Synchronous reset**: Includes reset functionality for initialization
+
+Usage in XXVGLINK
+-----------------
+
+The `crc32_64` module is instantiated in both the :entity:`xxvglink_tx` (transmitter) and :entity:`xxvglink_rx` (receiver) modules:
+
+- **In xxvglink_tx**: Computes the CRC for outgoing packets to be appended to the packet data
+- **In xxvglink_rx**: Computes the CRC for incoming packets to verify data integrity
+
+The CRC computation is used to detect transmission errors in the high-speed serial link data streams.
+

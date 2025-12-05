@@ -1,5 +1,4 @@
 ----------------------------------------------------------------------------------
---! @file
 -- Company: McGill University
 -- Engineer: J.-F. Cliche
 --
@@ -31,7 +30,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 
 
 
---! @brief Implements a shallow FIFO for the command system from A to B
+-- Implements a shallow FIFO for the command system from A to B
 entity CTRL_SLICE is
      PORT (
 		-- Command streams from single slave input to multiple master outputs

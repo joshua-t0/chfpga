@@ -1,5 +1,4 @@
 ----------------------------------------------------------------------------------
---! @file
 -- Company: McGill University
 -- Engineer: JF Cliche
 --
@@ -9,7 +8,7 @@
 -- Project Name     : CHORD
 -- Target Devices   : Ultrascale+
 -- Tool versions    : Vivado 2022.2
--- Description      : Source selector for the data capture block  
+-- Description      : Source selector for the data capture block
 --
 -- Dependencies:
 --
@@ -23,8 +22,8 @@ use IEEE.numeric_std.ALL;
 library work;
 use work.chFPGA_package.all; -- Get all component definitions
 use work.chfpga_config.all;
- 
---! @brief Implements the chanelizer pipeline, consisting of a function generator (FUNCGEN), FFT module (FFT), scaler (SCALER) and a resynchrozing FIFO (CHAN_FIFO).
+
+-- Implements the chanelizer pipeline, consisting of a function generator (FUNCGEN), FFT module (FFT), scaler (SCALER) and a resynchrozing FIFO (CHAN_FIFO).
 entity ucap_mux is
     generic (
         PLATFORM_ID     : integer := CONFIG_PLATFORM_ID;-- PLATFORM_ID_MGK7MB; -- This generics is locked to the MGK7MB when using ucap_mux as an OOC.
@@ -33,8 +32,8 @@ entity ucap_mux is
         );
 
     port (
-        --! Input Interface from ADC
-        --! 64-bit wide (4x 16-bit samples), using the AXI4-Streaming Prototol
+        -- Input Interface from ADC
+        -- 64-bit wide (4x 16-bit samples), using the AXI4-Streaming Prototol
 
         s_axis_in0_tdata    : in std_logic_vector(ADC_BITS_PER_SAMPLE * ADC_SAMPLES_PER_WORD-1 downto 0);
         s_axis_in0_tvalid   : in std_logic;
@@ -49,8 +48,8 @@ entity ucap_mux is
         m_axis_out_tvalid   : out std_logic;
         m_axis_out_tlast    : out std_logic;
 
-        clk             : in std_logic; 
-        rst             : in std_logic; 
+        clk             : in std_logic;
+        rst             : in std_logic;
 
         -- UDP Command Control Interface (command and reply stream buses)
 
@@ -72,7 +71,7 @@ end ucap_mux;
 
 
 ------ Channelizer implementation
---! Implements the channelizer blocks
+-- Implements the channelizer blocks
 architecture impl of ucap_mux is
 
     -- Control and status bytes
@@ -85,7 +84,7 @@ begin
     --
     -- Make sure we change source only when a new frame begins.
     sel_proc: process(clk) is
-        variable last: std_logic; 
+        variable last: std_logic;
     begin
         if rising_edge(in_clk) then
 
@@ -106,7 +105,7 @@ begin
             m_axis_out_tuser(2) <= current_src;
 
 
-            if current_src /= new_src then -- If we changed source, wait for the end of the packet on the current source then disable transmisson 
+            if current_src /= new_src then -- If we changed source, wait for the end of the packet on the current source then disable transmisson
                 if last = '1' then
                     send_enable <= '0';
                     current_src <= new_src;

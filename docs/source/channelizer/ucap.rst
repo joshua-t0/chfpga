@@ -1,13 +1,18 @@
-:entity:`UCAP`: UltraRAM-based data capture
-*******************************************
+.. title:: UCAP
+
+********************************************************
+:entity:`UCAP` (*ucap.vhd*): UltraRAM-based data capture
+********************************************************
 
 Overview
 --------
+
 UCAP periodically captures raw data frames coming from eight 128-bit AXI-Stream channels and streams  out the totality of the captured data  through a single 8-bit AXI stream bus. This module is typically used to capture raw ADC of FFT data from the 'CHAN' module and stream it through UDP packets over a Gigabit Ethernet interface.
 
 
 Features
 --------
+
 - `UCAP` is a centralized capture engine , as opposed to a channelizer-based capture engine.
 - It makes use of the Ultrascale UltraRAM blocks to allow capture of long frames of high bit-width data samples.
 - Operation of `UCAP` is configured over a memory-mapped interface through a Byte-serial bus (BSB)
@@ -48,7 +53,7 @@ Schematic
 Entity documentation
 --------------------
 
-.. autoentity:: UCAP
+ .. autoentity:: UCAP
 
 
 Principle of operation
@@ -121,8 +126,8 @@ Read / Write Process
 
 Incoming 32-bit AXIS Data is captured and written into the DATA FIFO over a 36-bit AXIS bus and read out over a 8-bit wide AXIS Bus. Each byte in the incoming data is extended with a bit which set to '0' except for the LSB , where is set to the TLAST flag from the 32-bit AXIS Bus. The sign extenstion is show below. The HEADER FIFO is 9-bit wide write process which consitutues of all the header information for the data frame written one bit at a time accompanied with a LAST bit at bit(8). When the destination is ready, PROBER sends the header FIFO  bytes until we encounter bit(8)=1, then sends the DATA FIFO bytes until we encounter bit(8)=1 and go back to send header bytes.
 
-.. figure:: ../images/prober_write_data.svg
-    :width: 25%
+.. .. figure:: ../images/prober_write_data.svg
+..     :width: 25%
 
 
 

@@ -38,9 +38,8 @@ use xpm.vcomponents.all;
 
 
 
--- ----------------------------------
 -- UCMAC44: (4+4) bit complex vector multiplier-and-accumulate core
--- ----------------------------------
+--
 -- Casadable, compact (4+4) bit 512-element complex vector
 -- multiplier/accumulator that uses two DSP48E1 and two RAMB16 blocks.
 --
@@ -50,7 +49,7 @@ use xpm.vcomponents.all;
 -- can be stored.
 --
 -- The data is accumulated in a FIFO as a saturated (18+18) bit value. ! When
--- the `last_frame` flag is set, the final accumulated values are transferred
+-- the ``last_frame`` flag is set, the final accumulated values are transferred
 -- in a BRAM readout ! buffer and are read slowly through a 36-bit bus while
 -- another integration in is progress. A readout input port allows the CMACs
 -- to be connected in a readout chain.

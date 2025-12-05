@@ -308,25 +308,34 @@ begin
 	-----------------------------------------------------------------------------------
 	-- CONTROL and STATUS Bytes
 	-----------------------------------------------------------------------------------
-	-- SHUFFLE_BIN_SEL Memory Map
-	-- ------------------------------------------------------------------------------
-	-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
-	-- |---------|-----|------|----------------------|-------------------------------|
-	-- | CONTROL |  0  |   7  | user_reset               | Reset the CH_DIST and clears the FIFOs.|
-	-- |         |     |   6  | FOUR_BITS                | The input data is in 4-bit mode. The word streams will be combined 2-by-2 to pack 4 (4+4) bits samples in the output word|
-	-- |         |     |   5  | USE_OFFSET_BINARY        | Indicates if the data is encoded in offset_binary or 2's complement. This is not used by this module, but is passed in the header flags. It must be set consistently with the type of encoding of the source data.|
-	-- |         |     |   4  | SEND_FLAGS               | Indicates if we want the packets to contain scaler and adc flags.|
-	-- |         |     |   3  | dual_bins                | Indicates if we want to send the pairs of odd-even bins together. If enabled, the numbe of selected bins MUST be even.|
-	-- |         |     | 2-0  | (unused)                 |   |
-	-- |         | 1-2 | 15:0 | STREAM_ID                 | Stream ID to be used for tagging the output frames |
-	-- |         |  3  | 7:0  | number_of_input_bins_per_frame  | Indicates the number of words (frequency bin pairs) that are selected by this correlators. This must match the number of '1' bits in the word selection map.|
-	-- |         |  4  | 7:0  | frames_per_packet        | Number of input frames to group into an output packet.|
-	-- |         |  5  | 7:4  | first_input_number       | Index of the first input lane to be included in the output |
-	-- |         |     | 3:0  | last_input_number        | Index of the last input labe to be included in the output. The value must be consistent with the operation mode (see below) |
-	-- | STATUS  |  0  |   7  | data_fifo_empty          | EMPTY status flag of the DATA FIFO for antenna processor 0. Active HIGH. |
-	-- |         |     |   6  | data_fifo_overflow       | Sticky flag indicating that one of the DATA FIFO has overflown. Cleared only by a reset of the module.|
-	-- |         |     | 5:0  | '0'                      | Unused   |
-	-- |         |  1  |  7:0 | FRAME_CTR                | Counts the number of frames written into the FIFOs. Rolls over.|
+-- SHUFFLE_BIN_SEL Memory Map
+-- ------------------------------------------------------------------------------
+-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+-- |---------|-----|------|----------------------|-------------------------------|
+-- | CONTROL |  0  |   7  | user_reset           | Reset the module and clears the FIFOs.|
+-- |         |     |   6  | lane0_bypass         | Bypass lane 0 |
+-- |         |     | 5:4  | number_of_input_data_flags_words_per_bin | Number of input data flags words per bin |
+-- |         |     | 3:0  | first_lane           | First input lane number |
+-- |         |  1  | 7:0  | STREAM_ID(11:4)      | Upper 8 bits of Stream ID to be used for tagging the output frames |
+-- |         |  2  | 7:4  | STREAM_ID(3:0)       | Lower 4 bits of Stream ID |
+-- |         |     |   3  | zero_packet_flags    | Zero packet flags |
+-- |         |     | 2:0  | number_of_input_frame_flags_words_per_frame | Number of input frame flags words per frame |
+-- |         |  3  | 7:0  | number_of_input_bins_per_frame | Number of input bins per frame |
+-- |         |  4  |   7  | overflow_reset        | Reset overflow counters |
+-- |         |     | 6:0  | number_of_input_words_per_bin | Number of input words per bin |
+-- |         |  5  | 7:5  | frames_per_packet    | Number of frames per packet |
+-- |         |     | 3:0  | last_lane            | Last input lane number |
+-- |         |  6  | 7:0  | number_of_output_words_per_bin | Number of output words per bin (for header) |
+-- |         |  7  |   7  | four_bits            | Four bits mode (for header) |
+-- |         |     |   6  | use_offset_binary    | Use offset binary encoding (for header) |
+-- |         |     |   5  | send_flags           | Send flags in packets |
+-- |         |     | 4:0  | number_of_output_bins_per_frame | Number of output bins per frame |
+-- | STATUS  |  0  |   7  | data_fifo_empty      | EMPTY status flag of the DATA FIFO for lane 0. Active HIGH. |
+-- |         |     |   6  | flags_fifo_overflow_sticky | Sticky flag indicating that flags FIFO has overflown. |
+-- |         |     |   5  | reset_all_reg        | Reset all register status |
+-- |         |     |   4  | COMBINE_DATA_FLAGS   | Combine data flags status |
+-- |         |     | 3:0  | NUMBER_OF_OUTPUTS    | Number of outputs |
+-- |         | 1:2 |15:0  | data_fifo_overflow_sticky | Data FIFO overflow sticky flags (one per output) |
 	-- | RAM     | 0-63 | -   | MASK_RAM                 | Word selection map. Each of the 512 bit indicates whether the corresponding word (frequency bin pair) is retained by this correlator. |
 	-- ------------------------------------------------------------------------------
 	--

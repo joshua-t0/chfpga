@@ -12,8 +12,8 @@
 -- CRC module for data(63:0)
 --   lfsr(31:0)=1+x^1+x^2+x^4+x^5+x^7+x^8+x^10+x^11+x^12+x^16+x^22+x^23+x^26+x^32;
 -------------------------------------------------------------------------------
---! Code from outputlogic.com
---! The input data assumes that bit 0 is transmitted first.
+-- Code from outputlogic.com
+-- The input data assumes that bit 0 is transmitted first.
 library ieee;
 use ieee.std_logic_1164.all;
 

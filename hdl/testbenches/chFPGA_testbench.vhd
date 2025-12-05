@@ -1,5 +1,4 @@
 --------------------------------------------------------------------------------
--- @file
 -- Company:
 -- Engineer:
 --
@@ -36,17 +35,17 @@ use work.tb_package.all;
 
 ENTITY chFPGA_testbench IS
 	 GENERIC (
-		PLATFORM_ID: INTEGER:= PLATFORM_ID_MGK7MB; --! identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705, 2= ICEBoard
+		PLATFORM_ID: INTEGER:= PLATFORM_ID_MGK7MB; -- identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705, 2= ICEBoard
 
-		BLINKER_PRESENT: BOOLEAN :=TRUE; --! Indicates if the LED flasher is to be implemented by setting the DUMMY flag of the BLINKER module
+		BLINKER_PRESENT: BOOLEAN :=TRUE; -- Indicates if the LED flasher is to be implemented by setting the DUMMY flag of the BLINKER module
 
 		-- System configuration
-		NUMBER_OF_ADCS: INTEGER :=16; --!
-		NUMBER_OF_CHANNELIZERS: INTEGER :=16; --! Number of antenna processing blocks to be implemented
+		NUMBER_OF_ADCS: INTEGER :=16; --
+		NUMBER_OF_CHANNELIZERS: INTEGER :=16; -- Number of antenna processing blocks to be implemented
 		NUMBER_OF_CROSSBAR_INPUTS : integer := 16;
 		NUMBER_OF_CROSSBAR_OUTPUTS: integer := 0;
-		NUMBER_OF_CORRELATORS: INTEGER :=0; --! Number of correlator blocks (CH_DIST+CORR+ACC) to be implemented if IMPLEMENT_CORR=TRUE
-		NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER :=0; --! Number of antennas to be correlated for each frequency channel. Must be >=3. This is hard coded for now. Determines how many antenna streams are fed to the CORR_BLOCK modules, and how many multipliers to implement in parallel in the CORR module.
+		NUMBER_OF_CORRELATORS: INTEGER :=0; -- Number of correlator blocks (CH_DIST+CORR+ACC) to be implemented if IMPLEMENT_CORR=TRUE
+		NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER :=0; -- Number of antennas to be correlated for each frequency channel. Must be >=3. This is hard coded for now. Determines how many antenna streams are fed to the CORR_BLOCK modules, and how many multipliers to implement in parallel in the CORR module.
 		NUMBER_OF_GPU_LINKS: integer := 0*GLOBAL_NUMBER_OF_GPU_LINKS;
 		NUMBER_OF_GPU_REFCLKS: integer := 1; --0*GLOBAL_NUMBER_OF_GPU_REFCLKS;
 		NUMBER_OF_BP_SHUFFLE_LINKS: integer := 3;
@@ -55,11 +54,11 @@ ENTITY chFPGA_testbench IS
 		NUMBER_OF_SPI_PORTS: integer :=1;
 		NUMBER_OF_ADC_BOARDS: integer := 1;
 		ADC_TO_ADC_BOARD_MAP: IntegerArray(0 to NUMBER_OF_ADCS_MAX-1):=(0 to 15 => 0);
-		SYSTEM_CLOCK_SOURCE: string := "SFP_REFCLK"; --!"SYSCLK": the 200 MHz clock will be taken from sysclk_p/n (CC pins) or "SFP_REFCLK": the system clock is 125 MHz from the GTX reference clock
+		SYSTEM_CLOCK_SOURCE: string := "SFP_REFCLK"; --"SYSCLK": the 200 MHz clock will be taken from sysclk_p/n (CC pins) or "SFP_REFCLK": the system clock is 125 MHz from the GTX reference clock
 
 		-- Ethernet MAC Configuration
 		PHY_TYPE: string := "GMII"; -- "GMII" or "SGMII"
-		SGMII_CLOCK_SOURCE: string :="REFCLK"; --! Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
+		SGMII_CLOCK_SOURCE: string :="REFCLK"; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 
 		-- IMPLEMENT_ANT: BoolArray(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(0 to 7 => TRUE, others=>FALSE); -- Selects for which antenna a processing pipeline is implemented
 		-- IMPLEMENT_FFT: BoolArray(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(others=>FALSE); -- Selects if the FFT block is implemented for each antenna (otherwise the timestream go through directly)
@@ -75,8 +74,8 @@ ENTITY chFPGA_testbench IS
 		ANT_CLK_SOURCE: integer :=0; -- Indicate which ADC is the source of the antenna processing clock. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
 
 		-- Simulation parameters
-		ADC_SAMPLING_FREQUENCY: REAL:= 800.0E6; --! MHz. Must be a multiple of 10 MHz. Must be exactly 800 MHz if CLK200 is used for the antenna processor clock.
-		IMPLEMENT_ADC_BOARD: BOOLEAN:= TRUE; --! If used, make sure to implement ANT(1) to provide the system clock
+		ADC_SAMPLING_FREQUENCY: REAL:= 800.0E6; -- MHz. Must be a multiple of 10 MHz. Must be exactly 800 MHz if CLK200 is used for the antenna processor clock.
+		IMPLEMENT_ADC_BOARD: BOOLEAN:= TRUE; -- If used, make sure to implement ANT(1) to provide the system clock
 		SIM: BOOLEAN := TRUE
 		);
 
@@ -148,8 +147,8 @@ ARCHITECTURE behavior OF chFPGA_testbench IS
 	constant FFT_OFFSET     : integer := 2 * CHAN_SUBSYSTEM_INCREMENT;
 	constant SCALER_OFFSET  : integer := 3 * CHAN_SUBSYSTEM_INCREMENT;
 	constant PROBER_OFFSET  : integer := 4 * CHAN_SUBSYSTEM_INCREMENT;
-	constant FUNCGEN_OFFSET : integer := 5 * CHAN_SUBSYSTEM_INCREMENT; --! Address of the function generator module
-	constant INJECT_OFFSET  : integer := 6 * CHAN_SUBSYSTEM_INCREMENT; --! Address of the data injection module
+	constant FUNCGEN_OFFSET : integer := 5 * CHAN_SUBSYSTEM_INCREMENT; -- Address of the function generator module
+	constant INJECT_OFFSET  : integer := 6 * CHAN_SUBSYSTEM_INCREMENT; -- Address of the data injection module
 
 
 	--Inputs
@@ -350,8 +349,8 @@ CHFPGA0: entity work.chFPGA
 		NUMBER_OF_SPI_PORTS           => NUMBER_OF_SPI_PORTS,
 		NUMBER_OF_ADC_BOARDS          => NUMBER_OF_ADC_BOARDS,
 		ADC_TO_ADC_BOARD_MAP          => ADC_TO_ADC_BOARD_MAP,
-		BP_SHUFFLE_LANE_TO_QUAD_MAP   => (0 to 3=>0, 4 to 7=>1, 8 to 11=> 2, 12 to 14 => 3, 15 => 4), --!  Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-		BP_SHUFFLE_QUAD_TO_REFCLK_MAP => (0|3 => 1, 1|2 => 0, 4 =>2), --! Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+		BP_SHUFFLE_LANE_TO_QUAD_MAP   => (0 to 3=>0, 4 to 7=>1, 8 to 11=> 2, 12 to 14 => 3, 15 => 4), --  Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
+		BP_SHUFFLE_QUAD_TO_REFCLK_MAP => (0|3 => 1, 1|2 => 0, 4 =>2), -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
 		-- IMPLEMENT_ANT              =>IMPLEMENT_ANT, -- Selects for which antenna a processing pipeline is implemented
 		-- IMPLEMENT_FFT              =>IMPLEMENT_FFT, -- Selects if the FFT block is implemented for each antenna (otherwise the timestream go through directly)
 		-- IMPLEMENT_CORR             =>IMPLEMENT_CORR,

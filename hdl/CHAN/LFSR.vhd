@@ -1,16 +1,8 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
 use IEEE.NUMERIC_STD.ALL;
 use work.chFPGA_Package.all; 
-
--- Uncomment the following library declaration if instantiating
--- any Xilinx leaf cells in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
-
 
 entity lfsr is
     generic (
@@ -33,7 +25,7 @@ architecture impl of lfsr is
 
 begin
     
-myprocess: process(clk)
+myprocess: process(all)
  
     variable xorres: std_logic;
     variable a_reg_var: std_logic_vector(0 to SHIFT_REG_WIDTH - 1) := (others=>'0');

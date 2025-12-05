@@ -237,6 +237,35 @@ begin
 
 	status_bytes(5) <= capture_byte;
 
+	-- Memory Map
+	-- ------------------------------------------------------------------------------
+	-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+	-- |---------|-----|------|----------------------|-------------------------------|
+	-- | CONTROL |  0  |  0   | cmac_reset_tx_datapath | Reset CMAC TX datapath |
+	-- |         |     |  1   | cmac_reset_rx_datapath | Reset CMAC RX datapath |
+	-- |         |     |  2   | cmac_sys_reset         | CMAC system reset |
+	-- |         |     |  3   | cmac_core_tx_reset     | CMAC core TX reset |
+	-- |         |     |  4   | (unused)                |                               |
+	-- |         |     |  5   | (unused)                |                               |
+	-- |         |     |  6   | (unused)                |                               |
+	-- |         |     |  7   | enable_packet_generator | Enable packet generator |
+	-- |         |  1  | 7:0  | number_of_udp_words     | Number of UDP words |
+	-- |         | 2-3 |15:0  | packet_spacing_in_words | Packet spacing in words (16 bits) |
+	-- |         | 4-5 |15:0  | capture_byte_number     | Capture byte number (16 bits) |
+	-- | STATUS  |  0  |  0   | tx_gt_locked_led        | TX GT locked LED |
+	-- |         |     |  1   | tx_ovfout_sticky        | TX overflow output sticky |
+	-- |         |     |  2   | tx_unfout_sticky        | TX underflow output sticky |
+	-- |         |     |  3   | fifo_overflow_sticky    | FIFO overflow sticky |
+	-- |         |     |  4   | flag_fifo_overflow_sticky | Flag FIFO overflow sticky |
+	-- |         |     |  5   | capture_tlast           | Capture TLAST (always reads 0) |
+	-- |         |     |  6   | rst                     | Reset status |
+	-- |         |     |  7   | usr_tx_reset            | User TX reset (from CMAC) |
+	-- |         |  1  | 7:0  | in_frame_ctr            | Input frame counter |
+	-- |         |  2  | 7:0  | out_frame_ctr           | Output frame counter |
+	-- |         | 3-4 |15:0  | packet_length            | Packet length (16 bits) |
+	-- |         |  5  | 7:0  | capture_byte            | Capture byte |
+	-- | RAM     | 0-1023 | - | CMAC_DRP                | CMAC DRP register access (10-bit address) |
+	-- ------------------------------------------------------------------------------
 
 	bsb_mmr0: entity work.CTRL_SLAVE
 		generic map (

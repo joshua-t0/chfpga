@@ -1,12 +1,10 @@
 .. title:: SPI
 
-*************************
-:entity:`SPI` (*SPI.vhd*)
-*************************
+*****************************************
+:entity:`SPI` (*SPI.vhd*): SPI peripheral
+*****************************************
 
-.. title:: SPI Peripheral
-
-.. figure:: ../images/spi.svg
+.. figure:: ../images/SYSTEM/spi.svg
     :width: 100%
 
 Entity documentation

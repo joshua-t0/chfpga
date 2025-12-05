@@ -1,7 +1,8 @@
+.. title:: clocks
 
-
-:entity:`clocks` (`clocks.vhd`)
-*******************************
+************************************************
+:entity:`clocks` (*clocks.vhd*): Clocking system
+************************************************
 
 
 The SYSTEM/CLOCKS module takes the 125 MHz reference clock coming from the MGT (and also used for the SFP+ interface) and generates the following clocks:
@@ -14,7 +15,7 @@ The SYSTEM/CLOCKS module takes the 125 MHz reference clock coming from the MGT (
 A MMCM takes the 200 MHz word clock from one ADC (ADC0, bus A on Mezzanine A) and generates an 8-phase 200 MHz clock to feed all 16 channelizers.
 
 
-.. figure:: ../images/clocks.svg
+.. figure:: ../images/SYSTEM/clocks.svg
     :width: 50%
 
 Entity documentation

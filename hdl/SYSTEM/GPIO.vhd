@@ -429,8 +429,7 @@ begin
 	-----------------------------------------------------------------------------------
 	--
 	-- GPIO Module
-	-- =============
-	--  -------------------------------------------------------------------
+	--
 	-- |  Page   | Addr|Bit(s)|     Name                    | Description |
 	-- |---------|-----|------|-----------------------------|-------------|
 	-- | CONTROL |  0  |  7   | CTRL_FLAG_GLOBAL_TRIG       | (Possibly unused) |
@@ -438,8 +437,8 @@ begin
 	-- |         |     |  5   | CHAN_CLK_RESET              | Resets the MMCM that generates the channelizer clocks |
 	-- |         |     |  4   | CHAN_CLK_Sel             | Selects the source of the channelizer clocks: 0: ADC clock, 1: 200 MHz system clock. CHAN_CLK_RESET or ADCDAQ_RESET must be asserted after the change for the MMCM to relock.|
 	-- |         |     |  3   | ADCDAQ_RESET                | Resets all ADCDAQ modules. This also resets the channelizer clock MMCM, the channelizers and the correlators.|
-	-- |         |     |  2   | (unused)                    | |
-	-- |         |     | 1:0  | ADC_RESET                   | ADC RESET line (active High) for each FMC ADC boards (bit 0 is for ADC board 0, etc) |
+-- |         |     |  2   | (unused)                    | |
+-- |         |     | 1:0  | ADC_RESET                   | ADC RESET line (active High) for each FMC ADC boards (bit 0 is for ADC board 0, etc). Number of bits depends on NUMBER_OF_ADC_BOARDS generic. |
 	-- |         |  1  | 7:0  | CTRL_FLAG_BUCK_CLK_DIV      | System clock frequency divider ratio used to set the buck sync frequency|
 	-- |         |  2  |  7   | LCD_E                       | LCD Enable |
 	-- |         |     |  6   | LCD_RS                      | LCD Command/Data flag|
@@ -462,8 +461,8 @@ begin
 	-- |         |  15 | 7:0  | adc_clear_ov                | RfSoC ADC overvoltage flag clear (bits 0-7 => ADC 0-7)|
 	-- |         |16-24|      | (unused)                    | |
 	-- |         |25-32| 63:57| (unused)                    | |
-	-- |         |     | 56:0 | target_fpga_serial_number   | Target FPGA serial number: The core registers can be written via BSB commands if this target serial number matches the actual serial number of the FPGA |
-	-- |         |  33 |      | target_network_config_source| Selects when core registers arewritable. "00": core reg write always enabled; "01", "10" or "11": core reg write only when target serial matches the FPGA's serial |
+-- |         |     | 56:0 | target_fpga_serial_number   | Target FPGA serial number: The core registers can be written via BSB commands if this target serial number matches the actual serial number of the FPGA |
+-- |         |  33 | 3:2  | target_network_config_source| Selects when core registers are writable. "00": core reg write always enabled; "01", "10" or "11": core reg write only when target serial matches the FPGA's serial |
 	-- |         |34-37| 31:0 | pwm_offset                  | Number of events (frames) to delay before starting to generate the first High of the PWM output|
 	-- |         |38-41| 31:0 | pwm_high_time               | Number of events (frames) to keep the PWM output at High|
 	-- |         |42-45| 31:0 | pwm_period                  | Number of events (frames) between PWM High (i.e PWM period)|
@@ -532,6 +531,10 @@ begin
 	-- |         |  39 | 7:0  | adc_cm_uv                   | RfSoC ADC common mode undervoltage (bit 0-7 => ADC0-7) |
 	-- |         |  40 | 7:0  | adc_ot1                     | RfSoC ADC over threshold 1 (bit 0-7 => ADC0-7) |
 	-- |         |  41 | 7:0  | adc_ot2                     | RfSoC ADC over threshold 2 (bit 0-7 => ADC0-7) |
+	-- |         |  42 | 7:4  | CT_LEVEL                    | Corner-turn level |
+	-- |         |     | 3:0  | CT_TYPE                    | Corner-turn type |
+	-- |         |  43 | 3:0  | FFT_TYPE                    | FFT type |
+	-- |         |     | 7:4  | (unused)                    | |
 	--  ------------------------------------------------------------------------------
 	--
 

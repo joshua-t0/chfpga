@@ -13,16 +13,8 @@
 
    introduction
    firmware_architecture
-   source_code_information
-.. requirements
-.. implementation
-.. internal_buses
-.. udp_command_protocol
-.. modules
-.. clocking
-.. channelizer
-.. crossbar
-.. backplane_shuffle
+   coding_conventions
+   tools_and_tips
 
 .. toctree::
    :maxdepth: 5
@@ -34,8 +26,11 @@
    chfpga
    system/system
    channelizer/index
-   CT Engine <corner-turn/corner-turn>
-   X Engine <correlator/correlator>
+   CT Engine <corner-turn/index>
+   X Engine <correlator/index>
+   data_links/index
+   bsb/index
+   Testbenches <testbenches/index>
 
 .. toctree::
    :maxdepth: 1

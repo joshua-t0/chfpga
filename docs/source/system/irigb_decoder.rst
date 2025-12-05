@@ -1,7 +1,8 @@
-.. title:: IRIG-B Decoder
+.. title:: irigb_decoder
 
-:entity:`irigb_decoder`: IRIG-B signal decoder
-**********************************************
+********************************************************************
+:entity:`irigb_decoder` (*irigb_decoder.vhd*): IRIG-B signal decoder
+********************************************************************
 
 Schematic
 =========

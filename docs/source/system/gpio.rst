@@ -1,6 +1,8 @@
-****************************
-:entity:`GPIO`: (*GPIO.vhd*)
-****************************
+.. title:: GPIO
+
+*********************************************************
+:entity:`GPIO` (*GPIO.vhd*): General Purpose Input/Output
+*********************************************************
 
 The :entity:`gpio` provides a bank of configuration registers as well as:
 
@@ -19,7 +21,7 @@ Overview
 Schematic
 =========
 
-.. figure:: ../images/gpio.svg
+.. figure:: ../images/SYSTEM/gpio.svg
     :width: 100%
 
 Sub-modules

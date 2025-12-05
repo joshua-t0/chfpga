@@ -24,10 +24,19 @@ use UNISIM.VComponents.ALL;
 
 use work.chFPGA_Package.ALL;
 
--- Ultrascale corner-turn engine -
+-- UCT Engine: Ultrascale+ Corner-Turn Engine
 --
--- Supports 8 channelizer inputs
--- Each channelizer inputs packs four (4+4)-bit bin values into a 32-bit value (low bin in MSB)
+-- The UCT Engine is the corner-turn engine typically used for Ultrascale+ FPGA platforms
+-- (such as the CRS board). It performs single-board (8 inputs) and multi-board (up to 32 inputs)
+-- corner turns using GTY transceivers for sharing data between boards.
+--
+-- The UCT Engine supports 8 channelizer inputs, where each input packs four (4+4)-bit bin values
+-- into a 32-bit word. The corner-turn level can be configured to support:
+--
+-- - **Level 1**: Single-board (local) corner-turn only, no backplane communication
+-- - **Level 2**: Level 1 plus 4x4 sub-backplane corner-turn (4 boards, using GTY links)
+-- - **Level 3**: Level 2 plus additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
+--
 entity uct_engine is
 	generic (
 		PLATFORM_ID: integer; -- necessary to select the proper FIFOs
@@ -199,6 +208,20 @@ begin
 				cb1_rst <= rst;
 			end if; -- RST/CLK
 		end process;
+
+		-- Level 1 Corner-Turn Memory Map
+		-- ------------------------------------------------------------------------------
+		-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+		-- |---------|-----|------|----------------------|-------------------------------|
+		-- | CONTROL |  0  | 7:0  | (unused)             |                               |
+		-- | STATUS  |  0  | 1:0  | CT_LEVEL             | Corner-turn level (read-only) |
+		-- |         |     |  2   | cb1_rst              | Crossbar 1 reset status |
+		-- |         |     |  3   | rst                  | Reset status |
+		-- |         |     |  4   | arst                 | Asynchronous reset status |
+		-- |         |     | 7:5  | (unused)             |                               |
+		-- |         |  1  | 7:0  | in_frame_ctr         | Input frame counter |
+		-- |         |  2  | 7:0  | out_frame_ctr        | Output frame counter |
+		-- ------------------------------------------------------------------------------
 
 		-- Instantiate level-1 corner turning registers
 		ct1_regs0: entity work.CTRL_SLAVE
@@ -378,6 +401,23 @@ begin
 					ct2_out_rst <= align1_rst;
 				end if; -- bsb_clk
 			end process;
+
+			-- Level 2 Corner-Turn Memory Map
+			-- ------------------------------------------------------------------------------
+			-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+			-- |---------|-----|------|----------------------|-------------------------------|
+			-- | CONTROL |  0  |  0   | align1_mon_reset     | Reset align1 monitor |
+			-- |         |     | 7:1  | (unused)             |                               |
+			-- |         |  1  | 7:4  | align1_mon_source   | Align1 monitor source selection |
+			-- |         |     | 3:0  | align1_mon_lane      | Align1 monitor lane selection |
+			-- |         |  2  | 7:0  | (unused)             |                               |
+			-- |         | 3-4 |15:0  | (unused)             |                               |
+			-- |         | 5-8 |31:0  | lane_map             | Lane mapping (premap) - 4 bits per lane |
+			-- |         | 9-12|31:0  | lane_postmap         | Lane post-mapping - 4 bits per lane |
+			-- | STATUS  |  0  |  0   | (unused)             |                               |
+			-- |         |     | 7:1  | (unused)             |                               |
+			-- |         | 1-2 |15:0  | align1_mon_word      | Align1 monitor word (16 bits) |
+			-- ------------------------------------------------------------------------------
 
 			-- Instantiate registers for Level 2 corner turning
 			ct2_regs0: entity work.CTRL_SLAVE
@@ -655,6 +695,21 @@ begin
 	            signal zero_data_on_lane_error: std_logic;
 
 			begin
+
+				-- Level 3 Corner-Turn Memory Map
+				-- ------------------------------------------------------------------------------
+				-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+				-- |---------|-----|------|----------------------|-------------------------------|
+				-- | CONTROL |  0  |  7   | align2_mon_reset     | Reset align2 monitor |
+				-- |         |     |  6   | slot_group            | Slot group selection |
+				-- |         |     |  5   | zero_data_on_lane_error | Zero data on lane error |
+				-- |         |     | 4:0  | (unused)             |                               |
+				-- |         |  1  | 7:4  | align2_mon_source     | Align2 monitor source selection |
+				-- |         |     | 3:0  | align2_mon_lane       | Align2 monitor lane selection |
+				-- | STATUS  |  0  |  0   | ct3_in_rst            | CT3 input reset status |
+				-- |         |     | 7:1  | (unused)             |                               |
+				-- |         | 1-2 |15:0  | align2_mon_word       | Align2 monitor word (16 bits) |
+				-- ------------------------------------------------------------------------------
 
 				-- Instantiate registers for level-3 corner turning
 				ct3_regs0: entity work.CTRL_SLAVE

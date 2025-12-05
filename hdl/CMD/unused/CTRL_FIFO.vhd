@@ -1,5 +1,4 @@
 ----------------------------------------------------------------------------------
---! @file
 -- Company: McGill University
 -- Engineer: J.-F. Cliche
 --
@@ -30,7 +29,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 
 
 
---! @brief Implements a shallow FIFO for the command system from A to B
+-- Implements a shallow FIFO for the command system from A to B
 entity CTRL_FIFO is
 	GENERIC (
 		USE_ASYNC_FIFO: boolean;

@@ -1,4 +1,3 @@
---!@file
 ----------------------------------------------------------------------------------
 -- Company: McGill Univ.
 -- Engineer: JF Cliche
@@ -40,7 +39,7 @@ use work.chFPGA_Package.all;
 
 entity XGE_UDP_MAC_TX is
 	generic (
-		USE_LITTLE_ENDIAN: boolean := TRUE --! TRUE: Byte is LSB is transmitted first (i.e. bit 0 of word transmitted first). FALSE: Byte in MSB is transmitted first (i.e. bit 24 of word is transmitted first)
+		USE_LITTLE_ENDIAN: boolean := TRUE -- TRUE: Byte is LSB is transmitted first (i.e. bit 0 of word transmitted first). FALSE: Byte in MSB is transmitted first (i.e. bit 24 of word is transmitted first)
 		);
 	port (
 		MAC_SRC_ADDR:  in std_logic_vector(47 downto 0):=X"1234567890AB";
@@ -51,7 +50,7 @@ entity XGE_UDP_MAC_TX is
 
 
 		-- User-side streaming interface
-		s_axis_tx_tdata: in std_logic_vector(31 downto 0);--! See USE_LITTLE_ENDIAN for transmission order
+		s_axis_tx_tdata: in std_logic_vector(31 downto 0); -- See USE_LITTLE_ENDIAN for transmission order
 		s_axis_tx_tvalid: in std_logic;
 		s_axis_tx_tlast: in std_logic;
 		s_axis_tx_tready: out std_logic;
@@ -264,11 +263,11 @@ crc_out_reg <= not reverse_bytes(reverse_bits_same_dir(crc_out_reg_int)); -- Fir
 -- We consume data if we are sending the second word, or we are sending the first word of the block and we are the last word of the frame or we expect a second word
 -- data_fifo_rd_en <= to_std_logic(tx_ready='1' and (tx_state = TX_STATE_DATA_FIRST0 or tx_state = TX_STATE_DATA));
 
---! FIFO input management
---!  Counts incoming bytes and stores the frame length in the frame FIFO once a frame is finished. This allows the TX state machine :
---!   1) to know that a full frame is available in the TX data FIFO, therefore ensuring uninterrupted transmission of the data on the GMII interface
---!   2) know in advance how many bytes are in the buffer so we can use that information to set the IP Length and UDP Length fields before we start reading the data
---!  Also inserts a dummy frame if an odd amount of 32-bit words is received to make sure that the data will appear on the 64-bit output of the FIFO
+-- FIFO input management
+--  Counts incoming bytes and stores the frame length in the frame FIFO once a frame is finished. This allows the TX state machine :
+--   1) to know that a full frame is available in the TX data FIFO, therefore ensuring uninterrupted transmission of the data on the GMII interface
+--   2) know in advance how many bytes are in the buffer so we can use that information to set the IP Length and UDP Length fields before we start reading the data
+--  Also inserts a dummy frame if an odd amount of 32-bit words is received to make sure that the data will appear on the 64-bit output of the FIFO
 s_axis_tx_tready <= '1';
 tx_front_end : process(s_axis_tx_clk)
 	begin
@@ -362,7 +361,7 @@ begin
 
 		if tx_ready='1' then -- If the destination is ready to receive a word
 
-			txd_dly <= data_fifo_dout(15 downto 0); --! preserve the last 16 bits to send on the next cycle
+			txd_dly <= data_fifo_dout(15 downto 0); -- preserve the last 16 bits to send on the next cycle
 			data_fifo_rd_en<='0';
 
 			case tx_state is
@@ -539,7 +538,7 @@ begin
 
 -- IP CHECKSUM process
 
---! Completes computation of the IP checksum
+-- Completes computation of the IP checksum
 ip_checksum_dout<=std_logic_vector(not(ip_checksum_sum(15 downto 0))); -- Checksum is 1's complement of sum
 ip_checksum_proc: process(clk)
 	begin

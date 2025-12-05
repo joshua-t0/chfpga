@@ -15,7 +15,9 @@ F-Engine
    fft
    scaler
    prober
+   ucap
    chan_fifo
+   fft_delay
 
 
 

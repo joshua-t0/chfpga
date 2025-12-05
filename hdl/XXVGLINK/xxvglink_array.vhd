@@ -61,7 +61,7 @@ use work.chFPGA_Package.all;
 --
 -- Each RX lane provides data on its own recovered clock.
 --
--- (***check) However, a 512-word deep asynchronous FIFO provides an output data flow on the clock provided by the user on m_axis_rx_clk(i).
+-- (**check**) However, a 512-word deep asynchronous FIFO provides an output data flow on the clock provided by the user on m_axis_rx_clk(i).
 -- Typically, every RX clock will be connected to the clock provided by the tranmitter (clk_out) so the logic can operate on a single clock domain.
 -- A non-sticky FIFO overflow flag (on the internal rx clock) is available to detect if the FIFO has overflowed.
 entity xxvglink_array is
@@ -73,12 +73,11 @@ entity xxvglink_array is
 		IMPLEMENT_RX : boolean          := TRUE;
 
 	    -- Derived parameters
-		NUMBER_OF_LANES: integer        := LANE_TO_LINK_MAP'LENGTH; -- Number of logical data link - Do not override
+		NUMBER_OF_LANES: integer        := LANE_TO_LINK_MAP; -- Number of logical data link - Do not override
 		NUMBER_OF_LINKS: integer        := LINK_TO_QUAD_MAP'LENGTH; --  Number of physical data links (GTYs) - Do not override
-	    LANE_GROUP_MAP: integer_array    := (0 to NUMBER_OF_LANES-1 => 0); -- Array indicating the group to which each lane is assiciated with
+		LANE_GROUP_MAP: integer_array    := (0 to NUMBER_OF_LANES-1 => 0); -- Array indicating the group to which each lane is assiciated with
 		NUMBER_OF_LANE_GROUPS: integer  := max(LANE_GROUP_MAP) + 1; -- Do not override
 		NUMBER_OF_REFCLK: integer       := max(QUAD_TO_REFCLK_MAP) + 1; -- Number of reference clocks - Do not override
-
 		SIM: boolean                    := FALSE
 	);
 	port (
@@ -478,7 +477,7 @@ begin
 			CTRL_CLK => CTRL_CLK,
 			CTRL_RST => CTRL_RST,
 
-			areset=> areset --! asynchronous reset
+			areset=> areset -- asynchronous reset
 		 );
 
     --------------------------------------

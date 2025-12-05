@@ -331,8 +331,8 @@ end process;
 			-- GTX interface
 			gtrefclk               => gtrefclk_nobuf, -- reference clock. Can be direct output from IBUFGDS_GTE2, but coming from a BUFG also works
 			gtrefclk_bufg          => gtrefclk_buf, -- new in v15
-			gt0_qplloutclk_in      => '0', --! The core does not use the QPLL
-			gt0_qplloutrefclk_in   => '0', --! The core does not use the QPLL
+			gt0_qplloutclk_in      => '0', -- The core does not use the QPLL
+			gt0_qplloutrefclk_in   => '0', -- The core does not use the QPLL
 			txp                    => txp,
 			txn                    => txn,
 			rxp                    => rxp,

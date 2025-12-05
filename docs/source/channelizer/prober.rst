@@ -1,4 +1,7 @@
-:entity:`PROBER`: Data capture (*prober.vhd*)
+.. title:: PROBER
+
+*********************************************
+:entity:`PROBER` (*prober.vhd*): Data capture
 *********************************************
 
 Overview
@@ -12,12 +15,6 @@ Schematic
     :width: 50%
 
 .. parse:: hdl/CHAN/PROBER.vhd
-
-.. toctree::
-   :titlesonly:
-
-   prober_data_fifo
-   prober_frame_fifo
 
 
 Entity documentation

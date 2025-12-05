@@ -1,5 +1,4 @@
 --------------------------------------------------------------------------------
--- @file
 -- Company:
 -- Engineer:
 --
@@ -38,8 +37,8 @@ ENTITY xge_array_testbench IS
 	 GENERIC (
 		NUMBER_OF_LANES             : integer := 1;
 		NUMBER_OF_REFCLK            : integer := 1;
-		LANE_TO_QUAD_MAP            : integerArray := (0=>0, 1=>1); --! Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-		QUAD_TO_REFCLK_MAP          : integerArray := (0=>0, 1=>1) --! Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+		LANE_TO_QUAD_MAP            : integerArray := (0=>0, 1=>1); -- Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
+		QUAD_TO_REFCLK_MAP          : integerArray := (0=>0, 1=>1) -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
 		);
 END xge_array_testbench;
 
@@ -77,7 +76,7 @@ ARCHITECTURE behavior OF xge_array_testbench IS
 	signal s_axis_tx_tvalid: std_logic_vector(0 to NUMBER_OF_LANES-1);
 	signal s_axis_tx_tlast: std_logic_vector(0 to NUMBER_OF_LANES-1);
 	signal s_axis_tx_tready: std_logic_vector(0 to NUMBER_OF_LANES-1);
-	signal s_axis_tx_clk: std_logic; --! AXI-S data clock. Not related to the 10G Ethernet clocks.
+	signal s_axis_tx_clk: std_logic; -- AXI-S data clock. Not related to the 10G Ethernet clocks.
 
 
 -- Pattern generator signals
@@ -174,8 +173,8 @@ udp0: entity work.xge_array
 		CTRL_CLK => CLK125,
 		CTRL_RST => '0',
 
-		-- clk: in std_logic; --! AXI-S data clock. Not related to the 10G Ethernet clocks.
-		areset=> CPU_RESET --! asynchronous reset
+		-- clk: in std_logic; -- AXI-S data clock. Not related to the 10G Ethernet clocks.
+		areset=> CPU_RESET -- asynchronous reset
 	 );
 
 pcs0: entity work.ten_gig_eth_pcs_pma_0_example_design

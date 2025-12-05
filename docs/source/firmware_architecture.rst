@@ -56,7 +56,7 @@ In general, the clock and data buffers shall be instantiated in the platform wra
 
 Note that some modules define their own clock or data buffers  instead having those be defined in the platform module. Some exceptions are:
 
-- `clock` module: defines the clock input buffer based on the clock source parameter.
+- `clocks` module: defines the clock input buffer based on the clock source parameter.
 -  SPI or I2C peripherals: defines their own data buffers to facilitate tristate operation or improve timing.
 -  Modules using GTXes or GTYs typically define their own buffers.
 
@@ -171,12 +171,6 @@ The commands are:
 - Write DRP/RAM
 - Read DRP/RAM
 
-.. Internal buses
-.. ----------------
-
-.. include:: internal_buses.rst
-
-
 
 Software interface
 ==================
@@ -198,7 +192,31 @@ We use exclusively AXI4-Streaming to carry both the science data and the control
 
 Generally non-blocking. There is generally no point in blocking the main pipeline: data rate is so high that we can't block for a significant amout of time and not run out of memory. Slow control interfaces are not in this case.
 Blocking brings issues with timing. Tready cannot be registered unless we introduce a 1-deep FIFO at each stage. Bad for timing.
-Sometimes implement loose backpressure: to avoid confusion, we use the `send` signal instead of tready since we break protocol. Send can be pipelined, but it is expected that data in the pipe will continue flowing until the send has made its way to the source. This is fixed by having an elastic FIFO at the end that requests stop sending before there is no more space left in the FIFO (i.e. use almost full to drive send). This greatly simplifies the logic by using a free feature of the FIFOs. This is used at the output of the channelizer (to allow their outputs to be aligned), and on the daisy-chained outputs of the correlator.
+Sometimes implement loose backpressure: to avoid confusion, we use the ``send`` signal instead of TREADY since we break protocol. Send can be pipelined, but it is expected that data in the pipe will continue flowing until the send has made its way to the source. This is fixed by having an elastic FIFO at the end that requests stop sending before there is no more space left in the FIFO (i.e. use almost full to drive send). This greatly simplifies the logic by using a free feature of the FIFOs. This is used at the output of the channelizer (to allow their outputs to be aligned), and on the daisy-chained outputs of the correlator.
+
+Building Gotchas
+================
+
+
+
+Bad cell path/name in constraints
+---------------------------------
+
+When synthesizing and implementing, check for critical warnings.
+
+- Object not found in the constraint file. This can be caused by hierarchical paths that have changed name because labels have been changed, or some code has been encapsulated in block or generate statements. Open the synthesized or implemented design and look at the ectual path of the object. Test the constraint in the TCL console.
+
+not-found objects will cause timing and placement constraints nott be applied properly. This, for example, will likely cause the placer to fail for some obscure reason .
+
+Incremental reuse overrides
+---------------------------
+
+
+
+Disable incremental reuse on implementation if physical constraints (e.g. PBLOCKS) are changes, otherwise the new constrains will be ignored.
+
+This may apply to syhthesis as well.
+
 
 
 Vivado quirks
@@ -215,7 +233,7 @@ Nevertherless, here are the list of strange behaviors that were observed
 
 
 - Feb 2025, Vivado 2022.2: Crash caused by a assignment outside the range of a vector. No useful message. Had to bisect-disable code to find this out.
-- Jan 2025, Vivado 2022.2: Got the impression that we could not use VHDL 2008 on the testbench, but it was ok for any submodules. But then it worked for another testbench, with or without the `-2008` simualtion option. Maybe an error on my part?
+- Jan 2025, Vivado 2022.2: Got the impression that we could not use VHDL 2008 on the testbench, but it was ok for any submodules. But then it worked for another testbench, with or without the ``-2008`` simualtion option. Maybe an error on my part?
 - 2022.2: restarting a simulation after adding signals at the bottom  of the waveform list sometimes just crashes the GUI. Save often.
 
 Generic tricks

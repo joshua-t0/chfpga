@@ -33,6 +33,7 @@ use UNISIM.VComponents.ALL;
 
 use work.chFPGA_Package.ALL; -- Get all component definitions
 
+-- Implements a 2nd and 3rd-level corner-turn operation with data that is already packetized with header and flags.
 entity shuffle_crossbar is
 	generic (
 		PLATFORM_ID: integer; -- necessary to select the proper FIFOs
@@ -41,26 +42,24 @@ entity shuffle_crossbar is
 		NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL: integer := 1;
 		EIGHT_BIT_SUPPORT: boolean                  := FALSE; --
 		COMBINE_DATA_FLAGS: boolean                 := TRUE;
-		WORDS_PER_BIN_MAX: integer                  := 4; --! Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 16 words.
-		BINS_PER_FRAME_MAX: integer                 := 64; --! Maximum number of bins per frame
+		WORDS_PER_BIN_MAX: integer                  := 4; -- Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 16 words.
+		BINS_PER_FRAME_MAX: integer                 := 64; -- Maximum number of bins per frame
 		BIN_SEL_FIFO_TYPE_MAP: integer_16xN_array   := (0 to 15 => (0 to 3=> 0, others => 0)); -- 0= Block RAM., 1=Dist RAM. By default, for every BIN_SEL, 10 FIFOS are made of BRAM and the rest is made of distributed RAM to maximize area utilization efficiency
 		SHUFFLE_FLAGS_MASK: slv32 -- Mask to apply to the shuffle flags to count packet errors
 	);
 	port (
 		-- Non-blocking input stream from the backplane shuffle receiver
+
 		s_axis_tvalid: in slv(0 to NUMBER_OF_INPUT_LANES - 1);
 		s_axis_tdata: in slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
 		s_axis_tlast: in slv(0 to NUMBER_OF_INPUT_LANES - 1);
-		-- s_axis_tready: out slv(0 to NUMBER_OF_INPUT_LANES-1);
-		-- s_axis_clk: in std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1); -- clock from each channelizer
 
 		-- Non-blocking output stream
+
 		m_axis_tvalid: out slv(0 to NUMBER_OF_OUTPUT_LANES - 1);
 		m_axis_tdata: out slv32_array(0 to NUMBER_OF_OUTPUT_LANES - 1);
 		m_axis_tlast: out slv(0 to NUMBER_OF_OUTPUT_LANES - 1);
-		-- m_axis_tready: in slv(0 to NUMBER_OF_OUTPUT_LANES-1);
 
-		-- frame_clk_in: in std_logic;
 		clk: in  std_logic; -- clocks all align, remap and bin selection and output bus logic.
 		rst: in std_logic;
 
@@ -231,9 +230,9 @@ begin
 	end process;
 
 	---------------------------------------------------------------------
-	--! ROUTER
+	-- ROUTER
 	---------------------------------------------------------------------
-	--! Routes the commands and replies to/from the crossbar subsystems
+	-- Routes the commands and replies to/from the crossbar subsystems
 
 	crossbar_router0: entity work.CTRL_ROUTER
 		generic map (
@@ -260,47 +259,66 @@ begin
 
 
 	-----------------------------------------------------------------------------------
-	--! SHUFFLE_CROSSBAR Memory Map
-	--! ------------------------------------------------------------------------------
-	--! |  Page   | Addr|Bit(s)|     Name             | Description                   |
-	--! |---------|-----|------|----------------------|-------------------------------|
-	--! | CONTROL |  0  |   7  | header_capture_enable    | |
-	--! |         |     |   6  | align_reset              | manually resets the align module |
-	--! |         |     |   5  | remap_reset              | manually resets the remap module |
-	--! |         |     |   4  | lane_monitor_reset       | resets the lane monitoring statistics|
-	--! |         |     |  3:0 | lane_monitor_sel         | Selects for which lane lane monitoring statistics are presented|
-	--! |         |  1  |  7   | (unused)                 | Unused|
-	--! |         |     | 6:3  | align_lane_monitor_source| Selects the Align module lane monitoring signal (only if compile option is provided) |
-	--! |         |     | 2:0 | (unused)                  | Unused |
-	--! |         |  2  | 7:0  | sof_window_stop          | Sets how long after the start of lane 0 ALIGN will wait for the start of the other lanes. Passed this, late lanes will be discarded. |
-	--! |         |3-6/10| 7:0  | lane_map                | Lanes input map. N/s bytes, where N is the numeb rof input lanes. Each 4-bit nibble is an input lane number.|
-	--! | STATUS  |  0  |   7  | data_fifo_empty          | EMPTY status flag of the DATA FIFO for antenna processor 0. Active HIGH. |
-	--! |         |     |   6  | data_align_fifo_overflow       | Sticky flag indicating that one of the DATA FIFO has overflown. Cleared only by a reset of the module.|
-	--! |         |     | 5:0  | '0'                      | Unused   |
-	--! |         |  1  |  7:0 | FRAME_CTR                | Counts the number of frames written into the FIFOs. Rolls over.|
-	--! | RAM     | 0-63 | -   | MASK_RAM                 | Word selection map. Each of the 512 bit indicates whether the corresponding word (frequency bin pair) is retained by this correlator. |
-	--! ------------------------------------------------------------------------------
+	-- SHUFFLE_CROSSBAR Memory Map
+	-- ------------------------------------------------------------------------------
+	-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+	-- |---------|-----|------|----------------------|-------------------------------|
+	-- | CONTROL |  0  |   7  | header_capture_enable    | |
+	-- |         |     |   6  | align_reset              | manually resets the align module |
+	-- |         |     |   5  | remap_reset              | manually resets the remap module |
+	-- |         |     |   4  | lane_monitor_reset       | resets the lane monitoring statistics|
+	-- |         |     |  3:0 | lane_monitor_sel         | Selects for which lane lane monitoring statistics are presented|
+	-- |         |  1  |  7   | (unused)                 | Unused|
+	-- |         |     | 6:3  | align_lane_monitor_source| Selects the Align module lane monitoring signal (only if compile option is provided) |
+	-- |         |     | 2:0 | (unused)                  | Unused |
+	-- |         |  2  | 7:0  | sof_window_stop          | Sets how long after the start of lane 0 ALIGN will wait for the start of the other lanes. Passed this, late lanes will be discarded. |
+	-- |         |3-6/10| 7:0  | lane_map                | Lanes input map. N/s bytes, where N is the numeb rof input lanes. Each 4-bit nibble is an input lane number.|
+-- | STATUS  |  0  |   0  | (unused)                |                               |
+-- |         |     |   1  | fifo_tfirst_mon         | Monitor FIFO TFIRST for selected lane |
+-- |         |     |   2  | bad_eof_sticky          | Bad EOF sticky flag for selected lane |
+-- |         |     |   3  | bad_lane_sticky          | Bad lane sticky flag for selected lane |
+-- |         |     |   4  | discarded_data_sticky   | Discarded data sticky flag for selected lane |
+-- |         |     |   5  | missing_frame_sticky     | Missing frame sticky flag for selected lane |
+-- |         |     |   6  | align_fifo_overflow_sticky | Align FIFO overflow sticky flag for selected lane |
+-- |         |     |   7  | (unused)                |                               |
+-- |         |  1  | 3:0  | NUMBER_OF_OUTPUT_LANES  | Number of output lanes |
+-- |         |     | 7:4  | NUMBER_OF_BIN_SEL       | Number of bin selectors |
+-- |         |  2  | 7:0  | input_frame_ctr         | Input frame counter for selected lane |
+-- |         |  3  | 7:0  | align_frame_ctr         | Align frame counter for selected lane |
+-- |         |  4  | 7:0  | output_frame_ctr        | Output frame counter for selected lane |
+-- |         |  5  | 7:0  | clk_ctr                 | Clock counter |
+-- |         |  6  |   7  | (unused)                |                               |
+-- |         |     |   6  | lane0_tfirst_mon        | Lane 0 TFIRST monitor |
+-- |         |     |   5  | (unused)                |                               |
+-- |         |     | 4:0  | NUMBER_OF_INPUT_LANES   | Number of input lanes |
+-- |         |  7  | 7:0  | frame_number_capture_reg| Frame number capture for selected lane |
+-- |         |  8  | 7:0  | stream_id_capture_reg    | Stream ID capture for selected lane |
+-- |         | 9:10|15:0  | delay_capture           | Delay capture (ref word ctr if lane 0, else word ctr) |
+-- |         |11:12|15:0  | fifo_count_mon_reg      | FIFO count monitor for selected lane |
+-- |         |13:14|15:0  | packet_error_ctr        | Packet error counter for selected lane |
+	-- | RAM     | 0-63 | -   | MASK_RAM                 | Word selection map. Each of the 512 bit indicates whether the corresponding word (frequency bin pair) is retained by this correlator. |
+	-- ------------------------------------------------------------------------------
 
 
-	--! CONTROL Byte 0
-	header_capture_enable         <= control_bytes(0)(7);                    --!
-	align_reset                   <= control_bytes(0)(6);                    --!
-	remap_reset                   <= control_bytes(0)(5);                    --!
-	lane_monitor_reset            <= control_bytes(0)(4);                    --!
-	lane_monitor_sel              <= unsigned(control_bytes(0)(3 downto 0)); --!
+	-- CONTROL Byte 0
+	header_capture_enable         <= control_bytes(0)(7);                    --
+	align_reset                   <= control_bytes(0)(6);                    --
+	remap_reset                   <= control_bytes(0)(5);                    --
+	lane_monitor_reset            <= control_bytes(0)(4);                    --
+	lane_monitor_sel              <= unsigned(control_bytes(0)(3 downto 0)); --
 
-	--! CONTROL Byte 1
+	-- CONTROL Byte 1
 	-- CONTROL_BYTES(1)(7) unused
-	align_lane_monitor_source <= control_bytes(1)(6 downto 3); --!
+	align_lane_monitor_source <= control_bytes(1)(6 downto 3); --
 
-	--! CONTROL Byte 2
+	-- CONTROL Byte 2
 	sof_window_stop <= control_bytes(2);
 
 	-- CONTROL Bytes 3-4
 
 	ignore_lane <= reverse_bits_and_dir(to_slv(control_bytes(3 to 4))(NUMBER_OF_INPUT_LANES - 1 downto 0));
 
-	--! CONTROL Bytes 5-12 (crossbar2) or 5-8 (crossbar3)
+	-- CONTROL Bytes 5-12 (crossbar2) or 5-8 (crossbar3)
 	lane_map_gen: for i in 0 to NUMBER_OF_INPUT_LANES - 1 generate
 		lane_map(i) <= control_bytes(5 + i / 2)((i mod 2) * 4 + 3 downto (i mod 2) * 4); --
 	end generate lane_map_gen;
@@ -314,23 +332,23 @@ begin
 	status_bytes(0)(5) <= missing_frame_sticky(to_integer(lane_monitor_sel));
 	status_bytes(0)(6) <= align_fifo_overflow_sticky(to_integer(lane_monitor_sel));
 
-	--! STATUS Byte 1
+	-- STATUS Byte 1
 	status_bytes(1)(3 downto 0) <= to_slv(NUMBER_OF_OUTPUT_LANES, 4);
 	status_bytes(1)(7 downto 4) <= to_slv(NUMBER_OF_BIN_SEL, 4);
 
-	--! STATUS Byte 2
+	-- STATUS Byte 2
 	status_bytes(2) <= to_slv(input_frame_ctr(to_integer(lane_monitor_sel)));
 
-	--! STATUS Byte 3
+	-- STATUS Byte 3
 	status_bytes(3) <= to_slv(align_frame_ctr(to_integer(lane_monitor_sel)));
 
-	--! STATUS Byte 4
+	-- STATUS Byte 4
 	status_bytes(4) <= to_slv(output_frame_ctr(to_integer(lane_monitor_sel)));
 
-	--! STATUS Byte 5
+	-- STATUS Byte 5
 	status_bytes(5) <= to_slv(clk_ctr);
 
-	--! STATUS Byte 6
+	-- STATUS Byte 6
 	-- STATUS_BYTES(6)(1) <= capture_tvalid;
 	-- STATUS_BYTES(6)(2) <= capture_tlast;
 	-- STATUS_BYTES(6)(3) <= header_capture_enable;
@@ -346,10 +364,10 @@ begin
 	status_bytes(9 to 10)  <= to_slv8_array(delay_capture_ref_word_ctr) when lane_monitor_sel = 0 else to_slv8_array(delay_capture_word_ctr);
 	status_bytes(11 to 12) <= to_slv8_array(fifo_count_mon_reg(to_integer(lane_monitor_sel)));
 	status_bytes(13 to 14) <= to_slv8_array(packet_error_ctr(to_integer(lane_monitor_sel)));
-	--! STATUS Byte 8
+	-- STATUS Byte 8
 	-- STATUS_BYTES(8)<=resize(reverse_bits_and_dir(m_axis_fifo_tvalid),8);
 
-	--! STATUS Byte 0
+	-- STATUS Byte 0
 	-- STATUS_BYTES(0)(7)<=data_fifo_empty(0);
 	-- STATUS_BYTES(0)(6)<=DATA_OVERFLOW;
 	-- STATUS_BYTES(0)(5)<=reset_all;
@@ -361,7 +379,7 @@ begin
 	-----------------------------------------------------------------------------------
 	-- Memory-Mapped interface instantiation
 	-----------------------------------------------------------------------------------
-	--! Instantiates a memory-mapped interface to the control and status bytes
+	-- Instantiates a memory-mapped interface to the control and status bytes
 	ctrl_slave0: entity work.CTRL_SLAVE
 		generic map (
 			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --
@@ -385,20 +403,20 @@ begin
 		);
 
 	---------------------------------------------------------------------
-	--! CHANNELIZER FIFO
+	-- CHANNELIZER FIFO
 	---------------------------------------------------------------------
-	--! Implements an elastic FIFO that allows for frame alignment to compensate
-	--! for the multiphase channelizer clocks and compensate for the programmable
-	--! data acquisition delay used to compensate cable length.
-	--!
-	--! The reading of each the FIFO is orchestrated by the ALIGN module in order to allow the frames to be aligned.
-	--!
-	--! The Channelizer FIFO block below also generates a pre-FIFO frame clock that is used as a fixed timing reference by the ALIGN module to determining when the frames should start.
-	--! This is needed to avoid the ALIGNER to accumulate delays beyond the capacity of the FIFO.
-	--!
-	--! The channelizer FIFO is instantiated here instead of the Channelizer module because the channelizer data can be easily pipelined since it is a non-blocking AXI-Streamig interface.
-	--! Also, the ALIGN module has a large number of combinatorial connections to the FIFO module.
-	--! Keeping the two close will make timing colure easier to acheive.
+	-- Implements an elastic FIFO that allows for frame alignment to compensate
+	-- for the multiphase channelizer clocks and compensate for the programmable
+	-- data acquisition delay used to compensate cable length.
+	--
+	-- The reading of each the FIFO is orchestrated by the ALIGN module in order to allow the frames to be aligned.
+	--
+	-- The Channelizer FIFO block below also generates a pre-FIFO frame clock that is used as a fixed timing reference by the ALIGN module to determining when the frames should start.
+	-- This is needed to avoid the ALIGNER to accumulate delays beyond the capacity of the FIFO.
+	--
+	-- The channelizer FIFO is instantiated here instead of the Channelizer module because the channelizer data can be easily pipelined since it is a non-blocking AXI-Streamig interface.
+	-- Also, the ALIGN module has a large number of combinatorial connections to the FIFO module.
+	-- Keeping the two close will make timing colure easier to acheive.
 
 	-- frame_ctr_proc: process(clk)
 	--   begin
@@ -537,14 +555,14 @@ begin
 
 
 	---------------------------------------------------------------------
-	--! ALIGN
+	-- ALIGN
 	---------------------------------------------------------------------
-	--! Control the Channelizer FIFO readout in  order to align the frames.
-	--! Aligning the frames is necessary because we need to grab data from multiple lanes at a time based on a single selection map.
-	--!
-	--! The align module also handles missing and malformed frames, but this is not an issue here since
-	--! data is coming straight from the channelizer through the internal FPGA routing, which will not cause packet loss.
-	--! The only exception to this are for channels that do not send data due to missing ADC cards, inwhich case the ALIGN will handle those automatically.
+	-- Control the Channelizer FIFO readout in  order to align the frames.
+	-- Aligning the frames is necessary because we need to grab data from multiple lanes at a time based on a single selection map.
+	--
+	-- The align module also handles missing and malformed frames, but this is not an issue here since
+	-- data is coming straight from the channelizer through the internal FPGA routing, which will not cause packet loss.
+	-- The only exception to this are for channels that do not send data due to missing ADC cards, inwhich case the ALIGN will handle those automatically.
 	align_rst_prog: process(clk)
 	begin
 		if rising_edge(clk) then
@@ -749,7 +767,7 @@ begin
 				-- lane_map => lane_map,
 
 				rst => rst_reg,
-				clk => clk, --! common clock for both the input and output
+				clk => clk, -- common clock for both the input and output
 
 				shuffle_flags_mask => SHUFFLE_FLAGS_MASK,
 

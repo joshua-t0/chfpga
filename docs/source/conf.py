@@ -33,8 +33,8 @@ extensions = [
     'sphinxcontrib.restbuilder',
     'sphinx.ext.todo',
     'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.napoleon',
+    # 'sphinx.ext.autosummary',
+    # 'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
     'vhdl_sphinx_domain',
 ]
@@ -53,6 +53,7 @@ source_suffix = '.rst'
 # The master toctree document.
 master_doc = 'index'
 
+nitpicky = True
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -182,6 +183,9 @@ html_theme_options = {
     'logo_only': False,
     # 'display_version' : True, -- deprecated
 }
+
+# Add custom JavaScript
+html_js_files = ['hide-nav.js']
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
 
@@ -208,7 +212,7 @@ html_logo = 'images/chfpga_logo.svg'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-# html_static_path = ['_static']
+html_static_path = ['_static']
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied

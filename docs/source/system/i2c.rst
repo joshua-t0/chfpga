@@ -1,10 +1,10 @@
-*************************
-:entity:`I2C` (*I2C.vhd*)
-*************************
+.. title:: I2C
 
-.. title   :: I2C
+*****************************************
+:entity:`I2C` (*I2C.vhd*): I2C peripheral
+*****************************************
 
-.. figure:: ../images/i2c.svg
+.. figure:: ../images/SYSTEM/i2c.svg
     :width: 100%
 
 Entity documentation

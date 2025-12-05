@@ -1,5 +1,4 @@
 --------------------------------------------------------------------------------
--- @file
 -- Company:
 -- Engineer:
 --
@@ -194,7 +193,7 @@ lane_gen: for i in 0 to NUMBER_OF_LANES-1 generate
 	-- 		m_axis_tready => '1', -- always stream data
 	-- 		m_axis_clk => out_clk,
 
-	-- 		-- frame_clk => frame_clk(i), --! Frame clock, toggling on the first word of each frame fed INTO the fifo. The data will appear a few FIFO latency cycles later. This is used by the frame aligner to detect frame timeout.
+	-- 		-- frame_clk => frame_clk(i), -- Frame clock, toggling on the first word of each frame fed INTO the fifo. The data will appear a few FIFO latency cycles later. This is used by the frame aligner to detect frame timeout.
 
 	-- 		rst => reset
 	-- 	);

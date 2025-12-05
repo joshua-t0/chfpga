@@ -104,8 +104,8 @@ use work.chFPGA_Package.ALL; -- Get all component definitions
 entity chan_bin_sel is
 	generic (
 		PLATFORM_ID: integer;
-		LANE_NUMBER: integer; --!
-		NUMBER_OF_INPUTS: integer --! Number of antennas to capture simultaneously. Must be a multiple of 4 between 4 and 16.
+		LANE_NUMBER: integer; --
+		NUMBER_OF_INPUTS: integer -- Number of antennas to capture simultaneously. Must be a multiple of 4 between 4 and 16.
 	-- EIGHT_BIT_SUPPORT: boolean:= FALSE --
 	);
 	port (
@@ -115,8 +115,8 @@ entity chan_bin_sel is
 		s_axis_tvalid: in std_logic_vector(0 to NUMBER_OF_INPUTS - 1);
 		s_axis_tlast: in std_logic_vector(0 to NUMBER_OF_INPUTS - 1);  -- unused
 
-		s_axis_global_tvalid: in std_logic; --! active while the longest packet is active
-		s_axis_global_tlast: in std_logic; --! active when the longest packet is at its last word
+		s_axis_global_tvalid: in std_logic; -- active while the longest packet is active
+		s_axis_global_tlast: in std_logic; -- active when the longest packet is at its last word
 
 		bin_ctr_en: in std_logic;
 		bin_ctr_clr: in std_logic;
@@ -128,8 +128,8 @@ entity chan_bin_sel is
 		m_axis_tvalid: out std_logic;
 		m_axis_tlast:  out std_logic;
 
-		clk: in  std_logic; --! Input clock, common to all input and output buses
-		rst: in std_logic; --! reset, synchronous to clk
+		clk: in  std_logic; -- Input clock, common to all input and output buses
+		rst: in std_logic; -- reset, synchronous to clk
 
 		-- Control interface (command and reply stream buses)
 		ctrl_cmd_dat: in AXIS8_DAT_STRUCT;
@@ -142,13 +142,13 @@ entity chan_bin_sel is
 end entity chan_bin_sel;
 
 --- ARCHITECTURE DECLARATION and DEFINITION ---------------------
---! Describes the logic that implement the entity's functionnalities. See this architecture for the implementation details.
---!
---! The writing process waits for all channels to have valid data, and if the filter bit is '1', the data from each antenna is written in their respective FIFO.
---! Then the filter RAM 'bit' pointer is incremented.
---! When the last word of a frame is detected, the pointer is reset, the header is constructed and is written in the HEADER FIFO.
---! This assumes that all the input data streams are aligned.
---!
+-- Describes the logic that implement the entity's functionnalities. See this architecture for the implementation details.
+--
+-- The writing process waits for all channels to have valid data, and if the filter bit is '1', the data from each antenna is written in their respective FIFO.
+-- Then the filter RAM 'bit' pointer is incremented.
+-- When the last word of a frame is detected, the pointer is reset, the header is constructed and is written in the HEADER FIFO.
+-- This assumes that all the input data streams are aligned.
+--
 architecture impl of chan_bin_sel is
 
 	attribute KEEP_HIERARCHY: string;
@@ -191,12 +191,12 @@ signal s_axis_global_tfirst: std_logic;
 	signal data_flags_fifo_dout: slv33;
 	-- signal data_type_fifo_count: std_logic_vector(8 downto 0);
 
-	signal data_flags_fifo_overflow_sticky: std_logic; --! indicates that one of the data FIFO has overflown.
+	signal data_flags_fifo_overflow_sticky: std_logic; -- indicates that one of the data FIFO has overflown.
 
 	signal scaler_flags: std_logic_vector(31 downto 0);
 	signal scaler_flags_word_ctr: unsigned(11 downto 0); -- cannot exceed the size of the GPU link buffer (16Kbytes = 4Kwords);
-	signal scaler_flags_ctr: unsigned(4 downto 0); --! counts the number of flags in the scaler flag register.
-	signal scaler_flags_ctr_max: unsigned(4 downto 0); --!
+	signal scaler_flags_ctr: unsigned(4 downto 0); -- counts the number of flags in the scaler flag register.
+	signal scaler_flags_ctr_max: unsigned(4 downto 0); --
 
 	-- ADC flags FIFO signals
 	signal frame_flags_fifo_rd_en: std_logic := '0';
@@ -208,7 +208,7 @@ signal s_axis_global_tfirst: std_logic;
 	signal frame_flags_fifo_din: slv33 := (others => '0'); -- needed for sims so we don't confuse xglink
 	signal frame_flags_fifo_dout: slv33;
 	--
-	signal frame_flags_fifo_overflow_sticky: std_logic; --! indicates that one of the data FIFO has overflown.
+	signal frame_flags_fifo_overflow_sticky: std_logic; -- indicates that one of the data FIFO has overflown.
 
 	-- DATA FIFO signals
 	signal data_fifo_rd_en: std_logic;
@@ -227,7 +227,7 @@ signal s_axis_global_tfirst: std_logic;
 	signal data_fifo_dout: slv65;
 	signal data_fifo_dout32: slv36;
 
-	signal data_fifo_overflow_sticky: std_logic; --! indicates that one of the data FIFO has overflown.
+	signal data_fifo_overflow_sticky: std_logic; -- indicates that one of the data FIFO has overflown.
 
 	signal store_data: std_logic;
 
@@ -256,12 +256,12 @@ signal s_axis_global_tfirst: std_logic;
 	signal overflow_reset: std_logic;
 	signal use_offset_binary: std_logic;
 	signal send_flags: std_logic;
-	signal number_of_selected_bins: unsigned(10 downto 0); --! number of words that are selected by the word selection map
+	signal number_of_selected_bins: unsigned(10 downto 0); -- number of words that are selected by the word selection map
 	signal word_ctr: unsigned(10 downto 0);
-	signal frames_per_packet: unsigned(2 downto 0); --! number of input frames to put in one output frame
-	signal packet_frame_ctr: unsigned(7 downto 0); --! Counts the current number of frames in the output packet
-	signal packet_frame_ctr_max: unsigned(7 downto 0); --! Counts the current number of frames in the output packet
-	signal in_frame_ctr: unsigned(7 downto 0); --! Counts incoming frames. Used for debugging.
+	signal frames_per_packet: unsigned(2 downto 0); -- number of input frames to put in one output frame
+	signal packet_frame_ctr: unsigned(7 downto 0); -- Counts the current number of frames in the output packet
+	signal packet_frame_ctr_max: unsigned(7 downto 0); -- Counts the current number of frames in the output packet
+	signal in_frame_ctr: unsigned(7 downto 0); -- Counts incoming frames. Used for debugging.
 	signal bypass: std_logic;
 	signal bypass_reg: std_logic;
 	signal combine_data_flags: std_logic;
@@ -280,7 +280,7 @@ signal s_axis_global_tfirst: std_logic;
 	signal first_fifo_number: unsigned(1 downto 0); --
 	signal last_fifo_number: unsigned(1 downto 0); --
 	signal last_fifo_number_int: unsigned(1 downto 0); --
-	-- signal lane_errors: std_logic_vector(15 downto 0); --! Represents errors received for each lane.
+	-- signal lane_errors: std_logic_vector(15 downto 0); -- Represents errors received for each lane.
 	-- signal half: std_logic;
 
 	signal bin_number: unsigned(9 downto 0); -- Up to 1024 bins per frame
@@ -296,51 +296,59 @@ begin
 	-----------------------------------------------------------------------------------
 	-- CONTROL and STATUS Bytes
 	-----------------------------------------------------------------------------------
-	--! CHAN_BIN_SEL Memory Map
-	--! ------------------------------------------------------------------------------
-	--! |  Page   | Addr|Bit(s)|     Name             | Description                   |
-	--! |---------|-----|------|----------------------|-------------------------------|
-	--! | CONTROL |  0  |   7  | user_reset               | Reset the CH_DIST and clears the FIFOs.|
-	--! |         |     |   6  | four_bits                | The input data is in 4-bit mode. The word streams will be combined 2-by-2 to pack 4 (4+4) bits samples in the output word|
-	--! |         |     |   5  | use_offset_binary        | Indicates if the data is encoded in offset_binary or 2's complement. This is not used by this module, but is passed in the header flags. |
-	--! |         |     |   4  | send_flags               | Indicates if we want the packets to contain scaler and adc flags. Need to reset the module if this is changes to ensure proper FIFO synchronization|
-	--! |         |     |   3  |                          | |
-	--! |         |     | 2-0  | (unused)                 |   |
-	--! |         | 1-2 | 15:0 | STREAM_ID                 | Stream ID to be used for tagging the output frames |
-	--! |         |  3  | 7:0  | number_of_selected_bins  | Indicates the number of words (frequency bin pairs) that are selected. This must match the number of '1' bits in the word selection map.|
-	--! |         |  4  | 2:0  | frames_per_packet        | Number of input frames to group into an output packet.|
-	--! |         |  5  | 7:6  | (unused)                 |  |
-	--! |         |     |   4  | bypass                   | Pass data from lane LANE_NUMBER directly to the output without flags.|
-	--! |         |     | 4:0  | number_of_input_lanes    | Number of input lanes from which data is gathered. Must be a multiple of 4. |
-	--! | STATUS  |  0  |   7  | data_fifo_empty          | EMPTY status flag of the DATA FIFO for antenna processor 0. Active HIGH. |
-	--! |         |     |   6  | data_fifo_overflow       | Sticky flag indicating that one of the DATA FIFO has overflown. Cleared only by a reset of the module.|
-	--! |         |     | 5:0  | '0'                      | Unused   |
-	--! |         |  1  |  7:0 | FRAME_CTR                | Counts the number of frames written into the FIFOs. Rolls over.|
-	--! | RAM     | 0-63 | -   | MASK_RAM                 | Word selection map. Each of the 512 bit indicates whether the corresponding word (frequency bin pair) is retained by this correlator. |
-	--! ------------------------------------------------------------------------------
-	--!
-	--! ------------------------------------------------------------------------------------
-	--! | overflow_reset | four_bits | Number of selected_bins                | Number of inputs |
-	--! |----------|-----------|----------------------------------------|------------------|
-	--! |    0     |     0     |                                        | Multiple of 2    |
-	--! |    0     |     1     |                                        | Multiple of 4    |
-	--! |    1     |     0     | Even, odd-even pair selected together  | Any              |
-	--! |    1     |     1     | Even, odd-even pair selected together  | Multiple of 2    |
-	--! ------------------------------------------------------------------------------------
+	-- CHAN_BIN_SEL Memory Map
+	-- ------------------------------------------------------------------------------
+	-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+	-- |---------|-----|------|----------------------|-------------------------------|
+-- | CONTROL |  0  |   7  | user_reset               | Reset the CH_DIST and clears the FIFOs.|
+-- |         |     |   6  | four_bits                | The input data is in 4-bit mode. The word streams will be combined 2-by-2 to pack 4 (4+4) bits samples in the output word|
+-- |         |     |   5  | use_offset_binary        | Indicates if the data is encoded in offset_binary or 2's complement. This is not used by this module, but is passed in the header flags. |
+-- |         |     |   4  | send_flags               | Indicates if we want the packets to contain scaler and adc flags. Need to reset the module if this is changes to ensure proper FIFO synchronization|
+-- |         |     |   3  | overflow_reset           | Resets the overflow counter |
+-- |         |     | 2:0  | frames_per_packet        | Number of input frames to group into an output packet.|
+-- |         |  1  | 7:0  | STREAM_ID(11:4)          | Upper 8 bits of Stream ID to be used for tagging the output frames |
+-- |         |  2  | 7:4  | STREAM_ID(3:0)           | Lower 4 bits of Stream ID |
+-- |         |     | 2:0  | number_of_selected_bins(10:8)| Upper 3 bits of number of selected bins |
+-- |         |  3  | 7:0  | number_of_selected_bins(7:0)| Lower 8 bits of number of selected bins. Indicates the number of words (frequency bin pairs) that are selected. This must match the number of '1' bits in the word selection map.|
+-- |         |  4  | 7:6  | (unused)                 |                               |
+-- |         |     |   5  | bypass                   | Pass data from lane directly to the output without flags.|
+-- |         |     |   4  | combine_data_flags       | Combine data flags |
+-- |         |     | 3:2  | first_fifo_number       | First FIFO number |
+-- |         |     | 1:0  | last_fifo_number         | Last FIFO number |
+-- | STATUS  |  0  |   7  | data_fifo_empty          | EMPTY status flag of the DATA FIFO for antenna processor 0. Active HIGH. |
+-- |         |     |   6  | data_fifo_overflow_sticky| Sticky flag indicating that one of the DATA FIFO has overflown. Cleared only by a reset of the module.|
+-- |         |     |   5  | reset_all                | Reset all status |
+-- |         |     |   4  | 8-bit support (always 0)                 |                               |
+-- |         |     | 3:2  | frame_ctr                | Frame per packet counter (2 bits) |
+-- |         |     |   1  | data_flags_fifo_overflow_sticky | Sticky flag for data flags FIFO overflow |
+-- |         |     |   0  | frame_flags_fifo_overflow_sticky | Sticky flag for frame flags FIFO overflow |
+-- |         |  1  |  7:0 | timestamp_ctr            | Last 8 bits of timestamp counter |
+-- |         |  2  |  7:0 | in_frame_ctr             | Input frame counter |
+	-- | RAM     | 0-63 | -   | MASK_RAM                 | Word selection map. Each of the 512 bit indicates whether the corresponding word (frequency bin pair) is retained by this correlator. |
+	-- ------------------------------------------------------------------------------
+	--
+	-- ------------------------------------------------------------------------------------
+	-- | overflow_reset | four_bits | Number of selected_bins                | Number of inputs |
+	-- |----------|-----------|----------------------------------------|------------------|
+	-- |    0     |     0     |                                        | Multiple of 2    |
+	-- |    0     |     1     |                                        | Multiple of 4    |
+	-- |    1     |     0     | Even, odd-even pair selected together  | Any              |
+	-- |    1     |     1     | Even, odd-even pair selected together  | Multiple of 2    |
+	-- ------------------------------------------------------------------------------------
 
-	--! CONTROL Byte 0
-	user_reset        <= control_bytes(0)(7);                    --! Used in both IN_CLK and OUT_CLK domain
-	four_bits         <= control_bytes(0)(6);                    --!
-	use_offset_binary <= control_bytes(0)(5);                    --!
+	-- CONTROL Byte 0
+	user_reset        <= control_bytes(0)(7);                    -- Used in both IN_CLK and OUT_CLK domain
+	four_bits         <= control_bytes(0)(6);                    --
+	use_offset_binary <= control_bytes(0)(5);                    --
 	send_flags        <= control_bytes(0)(4);
 	overflow_reset    <= control_bytes(0)(3);
 	frames_per_packet <= unsigned(control_bytes(0)(2 downto 0)); -- used in IN_CLK domain
 
-	--! CONTROL Byte 1-3
+	-- CONTROL Byte 1-3
 	stream_id               <= (control_bytes(1) & control_bytes(2)(7 downto 4));                            --
 	number_of_selected_bins <= unsigned(std_logic_vector'(control_bytes(2)(2 downto 0) & control_bytes(3))); -- used in IN_CLK domain
 
-	--! CONTROL Byte 4
+	-- CONTROL Byte 4
 
 	bypass             <= control_bytes(4)(5);
 	combine_data_flags <= control_bytes(4)(4);
@@ -348,7 +356,7 @@ begin
 	last_fifo_number   <= unsigned(control_bytes(4)(1 downto 0));
 	-- number_of_input_lanes <= unsigned(control_bytes(4)(4 downto 0)); --
 
-	--! STATUS Byte 0
+	-- STATUS Byte 0
 	status_bytes(0)(7)          <= data_fifo_empty;
 	status_bytes(0)(6)          <= data_fifo_overflow_sticky;
 	status_bytes(0)(5)          <= reset_all;
@@ -357,12 +365,12 @@ begin
 	status_bytes(0)(1)          <= data_flags_fifo_overflow_sticky;
 	status_bytes(0)(0)          <= frame_flags_fifo_overflow_sticky;
 
-	--! STATUS Byte 1
+	-- STATUS Byte 1
 	status_bytes(1) <= to_slv(lsb(timestamp_ctr, 8));
 	status_bytes(2) <= to_slv(in_frame_ctr);
 	-- status_bytes(3)<=to_slv(DOUT_FRAME_CTR);
 
-	--! debug ports
+	-- debug ports
 	-- status_bytes(4)(6)<= data_fifo_rd_en;
 	-- status_bytes(4)(7)<=data_fifo_rd_en;
 
@@ -372,14 +380,14 @@ begin
 	-----------------------------------------------------------------------------------
 	-- Memory-Mapped interface instantiation
 	-----------------------------------------------------------------------------------
-	--! Instantiates a memory-mapped interface to the control and status bytes
+	-- Instantiates a memory-mapped interface to the control and status bytes
 	ctrl_slave0: entity work.CTRL_SLAVE
 		generic map (
 			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --
 			NUMBER_OF_STATUS_BYTES  => status_bytes'Length(1), --
 			DEFAULT_CONTROL_BYTES   => X"74_123_010_03",
 			RAM_ADDR_WIDTH          => 7,
-			RAM_LATENCY             => 2,  --! Control port of RAM has an output register that creates a 2-clock latency total
+			RAM_LATENCY             => 2,  -- Control port of RAM has an output register that creates a 2-clock latency total
 			USE_RAM_DOUT_RDY        => FALSE
 		)
 
@@ -406,13 +414,13 @@ begin
 	------------------------------------------------
 	-- Bin selection map RAM instantiation
 	------------------------------------------------
-	--! Indicates which data is to be stored (one bit per sample)
-	--! Dual port RAM used to store the channel selection mask pattern
-	--! The control side has 2 clock latency, as we use the embedded output registers to relax timing.
-	--! The system-side port uses 2 clock output latency (no output registers) to avoid pipeling the wide data bus unnecessarily to align the ram content with the corresponding word.
-	--! Port A is an 8-bit wide interface allowing the control system to program the RAM
-	--! Port B is a 2-bit interface that the processing process reads to identify if a word is to be kept.
-	--! We need to use a Block RAM (as opposed to distributed RAM) so we can have assymetric aspect ratio
+	-- Indicates which data is to be stored (one bit per sample)
+	-- Dual port RAM used to store the channel selection mask pattern
+	-- The control side has 2 clock latency, as we use the embedded output registers to relax timing.
+	-- The system-side port uses 2 clock output latency (no output registers) to avoid pipeling the wide data bus unnecessarily to align the ram content with the corresponding word.
+	-- Port A is an 8-bit wide interface allowing the control system to program the RAM
+	-- Port B is a 2-bit interface that the processing process reads to identify if a word is to be kept.
+	-- We need to use a Block RAM (as opposed to distributed RAM) so we can have assymetric aspect ratio
 	mask_ram0: entity work.MASK_RAM
 		port map (
 			clka   => ctrl_clk,
@@ -422,9 +430,9 @@ begin
 			douta  => mask_ram_ctrl_dout,
 
 			clkb  => clk,
-			web   => (others=>'0'), --! we never write from this side
-			dinb  => (others=>'0'), --! we never write from this side
-			addrb => std_logic_vector(bin_number(9 downto 1)), --! we strip one bit because we read flags in pairs
+			web   => (others=>'0'), -- we never write from this side
+			dinb  => (others=>'0'), -- we never write from this side
+			addrb => std_logic_vector(bin_number(9 downto 1)), -- we strip one bit because we read flags in pairs
 			doutb => mask_ram_dout -- two flags for each bin number
 		);
 
@@ -432,40 +440,40 @@ begin
 	---------------------------------------------------
 	-- Data FIFOs
 	---------------------------------------------------
-	--! The DATA FIFO stores the data for the selected bins.
-	--!
-	--! This is a synchronous, First Word Fall-through FIFO, implemented in
-	--! BRAM. Reset is synchronous with no default value to save logic. VALID
-	--! flag is needed. EMPTY and OVERFLOW flags are used for diagnosis.
-	--! Embedded registers are needed to meet timing and save space.
-	--!
-	--!
-	--! We have a single FIFO for all 16 input stream. The FIFO is 36 bits
-	--! wide (32 bit for data, 1 bit for the LAST flag, others unused). It
-	--! stores four (4+4) bits complex values at a time in 4-bit mode. All 16
-	--! complex values are captured in a holding register and are written
-	--! sequentially four at a time in the FIFO.
-	--!
+	-- The DATA FIFO stores the data for the selected bins.
+	--
+	-- This is a synchronous, First Word Fall-through FIFO, implemented in
+	-- BRAM. Reset is synchronous with no default value to save logic. VALID
+	-- flag is needed. EMPTY and OVERFLOW flags are used for diagnosis.
+	-- Embedded registers are needed to meet timing and save space.
+	--
+	--
+	-- We have a single FIFO for all 16 input stream. The FIFO is 36 bits
+	-- wide (32 bit for data, 1 bit for the LAST flag, others unused). It
+	-- stores four (4+4) bits complex values at a time in 4-bit mode. All 16
+	-- complex values are captured in a holding register and are written
+	-- sequentially four at a time in the FIFO.
+	--
 	--
 	-- All data FIFOs are Embedded FIFOs. They are paired with the DATA flag FIFOs which are BRAM-based.
-	--! ** No longer supported** : If EIGHT_BIT_SUPPORT is true, a second FIFO is instantiated. The first
-	--! FIFO stores the upper nibbles and the second FIFO stores the lower
-	--! nibbles of every complex number. The second FIFO is then used only if
-	--! eight-bit mode is selected by software. EIGHT-BIT support is generally disabled to save BRAM resources.
-	--!
-	--! This FIFO needs to be deep enough to accomodate:
-	--!   -( *Not true anymore *) M*N/4 word, where M is the number of selected bins and N is the
-	--!     number of input lanes. For 16 output lanes, M is typically
-	--!     1024/16=64 and N=16, which corresponds to a depth of 256 words. A
-	--!     block RAM offers 512 words. Since the FIFO input is multiplexed by
-	--!     4:1, selected 'words' have to be separated by at least 3 non-
-	--!     selected 'words'. We therefore cannot select more than 512 words/frame / 4 * 16/4 lanes =512
-	--!     words or bins.
-	--!   - Data is streamed in real time from the FIFO right after the header, without waiting for the end of the packet. Therefore there is no need to store a full packet.
-	--!     However, the FIFO must be deep enough to buffer incoming data while the header of the current frame or the flags from the previous frame are sent.
-	--!
-	--! A 36-bit wide x 512-word deep FIFO fits in a single 18K BRAM.
-	--!
+	-- ** No longer supported** : If EIGHT_BIT_SUPPORT is true, a second FIFO is instantiated. The first
+	-- FIFO stores the upper nibbles and the second FIFO stores the lower
+	-- nibbles of every complex number. The second FIFO is then used only if
+	-- eight-bit mode is selected by software. EIGHT-BIT support is generally disabled to save BRAM resources.
+	--
+	-- This FIFO needs to be deep enough to accomodate:
+	--   -( *Not true anymore *) M*N/4 word, where M is the number of selected bins and N is the
+	--     number of input lanes. For 16 output lanes, M is typically
+	--     1024/16=64 and N=16, which corresponds to a depth of 256 words. A
+	--     block RAM offers 512 words. Since the FIFO input is multiplexed by
+	--     4:1, selected 'words' have to be separated by at least 3 non-
+	--     selected 'words'. We therefore cannot select more than 512 words/frame / 4 * 16/4 lanes =512
+	--     words or bins.
+	--   - Data is streamed in real time from the FIFO right after the header, without waiting for the end of the packet. Therefore there is no need to store a full packet.
+	--     However, the FIFO must be deep enough to buffer incoming data while the header of the current frame or the flags from the previous frame are sent.
+	--
+	-- A 36-bit wide x 512-word deep FIFO fits in a single 18K BRAM.
+	--
 	data_fifo_din_sel(63 downto 0) <= data_fifo_din(to_integer(data_fifo_wr_ctr))(63 downto 0);
 	data_fifo_din_sel(64)          <= data_fifo_last and to_std_logic(data_fifo_wr_ctr = last_fifo_number_int);
 
@@ -543,20 +551,20 @@ begin
 	---------------------------------------------------
 	-- Data flags FIFOs
 	---------------------------------------------------
-	--! Stores the scaler flags so they can be transmitted at the end of the packet.
-	--!
-	--! This is a synchronous First-Word-Fall-Through BRAM FIFO. VALID is needed.
-	--! EMPTY and OVERFLOW are used for diagnosis. We used embedded registers to
-	--! meet timing and save resources.
-	--!
-	--! There is one data flag word per selected bin, each word containing
-	--! between 4 to 16 flags depending on what input lanes is selected.
-	--!
-	--! The FIFO is 17-bit wide (16 bits for flags, 1 bit for LAST). We need to store:
-	--!   - 1 word per selected bin per frame. (512/4 max words/frame * 4
-	--!     frames/packet = 512 word-deep FIFO).
-	--!
-	--! A 17-bit wide x 512-word deep FIFO fits in a single 18K BRAM.
+	-- Stores the scaler flags so they can be transmitted at the end of the packet.
+	--
+	-- This is a synchronous First-Word-Fall-Through BRAM FIFO. VALID is needed.
+	-- EMPTY and OVERFLOW are used for diagnosis. We used embedded registers to
+	-- meet timing and save resources.
+	--
+	-- There is one data flag word per selected bin, each word containing
+	-- between 4 to 16 flags depending on what input lanes is selected.
+	--
+	-- The FIFO is 17-bit wide (16 bits for flags, 1 bit for LAST). We need to store:
+	--   - 1 word per selected bin per frame. (512/4 max words/frame * 4
+	--     frames/packet = 512 word-deep FIFO).
+	--
+	-- A 17-bit wide x 512-word deep FIFO fits in a single 18K BRAM.
 	-- We use a BRAM-based FIFO, so we can have a synchronous reset on any platform
 	data_flags_fifo0: entity work.chdist_scaler_flags_fifo
 		port map (
@@ -577,18 +585,18 @@ begin
 		);
 
 	---------------------------------------------------
-	--! Frame flags FIFOs
+	-- Frame flags FIFOs
 	---------------------------------------------------
-	--! Stores the ADC and FFT saturation flags for each channelizer
-	--!
-	--! Uses a 33-bit word x 16 word deep, synchronous distributed RAM FIFO to save BRAM
-	--! resources. We did not use Shift-register FIFO because FWFT is not native
-	--! (would need extra logic). We need VALID flag. EMPTY and OVERFLOW are useful for diagnosis.
-	--!
-	--! We need 16 bits for ADC flags, 16 bits for FFT flags, and 1 bit for the
-	--! last word indicator. The FIFO must accomodate F words, where F is the
-	--! number of frames per packet (typically 4). 16-word deep is the smallest we can get.
-	--!
+	-- Stores the ADC and FFT saturation flags for each channelizer
+	--
+	-- Uses a 33-bit word x 16 word deep, synchronous distributed RAM FIFO to save BRAM
+	-- resources. We did not use Shift-register FIFO because FWFT is not native
+	-- (would need extra logic). We need VALID flag. EMPTY and OVERFLOW are useful for diagnosis.
+	--
+	-- We need 16 bits for ADC flags, 16 bits for FFT flags, and 1 bit for the
+	-- last word indicator. The FIFO must accomodate F words, where F is the
+	-- number of frames per packet (typically 4). 16-word deep is the smallest we can get.
+	--
 	frame_flags_fifo0: entity work.chdist_frame_fifo
 		port map (
 			rst => reset_all,
@@ -608,9 +616,9 @@ begin
 		);
 
 
-	--! FIFO write process
-	--! -------------------
-	--! Sequences the data writes to the FIFO
+	-- FIFO write process
+	-- -------------------
+	-- Sequences the data writes to the FIFO
 
 	fifo_wr_proc: process(clk)
 
@@ -962,7 +970,7 @@ begin
 			-----------
 			header_word_array := struct_to_word(frame_header);
 			if send_header = '1' and send_strobe = '1' then
-				m_axis_tdata_int <= header_word_array(to_integer(header_word_ctr)); --!
+				m_axis_tdata_int <= header_word_array(to_integer(header_word_ctr)); --
 				m_axis_tvalid_int <= '1';
 				m_axis_tlast_int <= '0';
 				header_word_ctr <= header_word_ctr + 1;
@@ -970,7 +978,7 @@ begin
 					header_word_ctr <= (others => '0'); -- Clear counter in preparation for next header. could be moved up to save logic.
 					send_header <= '0';
 					send_data <= '1';
-					timestamp_ctr <= timestamp_ctr + frames_per_packet; --! Continuously count frames to provide a timestamp (32 bit counter). NOTE: if the FIFO overflows, we will miscount the frame number. That ia a fatal error.
+					timestamp_ctr <= timestamp_ctr + frames_per_packet; -- Continuously count frames to provide a timestamp (32 bit counter). NOTE: if the FIFO overflows, we will miscount the frame number. That ia a fatal error.
 					send_strobe <= '0';
 				end if;
 			end if;

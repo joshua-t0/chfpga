@@ -56,32 +56,33 @@ use work.chFPGA_Package.all; -- Get all component definitions
 -- ---------------
 --
 -- The output of the FUNCGEN module is selected by the 3-bit `fn_sel` memory-mapped field. The supported modes are:
---  - 0 / FN_ADC: Passes on the ADC input. The ADC overflow bits are aggregated througout the frame
---    and the resulting ``frame_overflow_flag`` bit is provided on the last frame. The number of sample overflows
---    over a specified period of frames (through the control register ``stats_period``) can be accessed by the status register ``overflow_ctr``.
 --
---  - 1 / FN_RAM: Outputs the RAM contents (2048 bytes, 512 words). ``frame_overflow_flag`` and ``overflow_ctr`` are always zero.
+-- - 0: FN_ADC: Passes on the ADC input. The ADC overflow bits are aggregated througout the frame
+--   and the resulting ``frame_overflow_flag`` bit is provided on the last frame. The number of sample overflows
+--   over a specified period of frames (through the control register ``stats_period``) can be accessed by the status register ``overflow_ctr``.
 --
---  - 2 / FN_NOISE: Outputs Pseudo-Random noise. ``frame_overflow_flag`` and ``overflow_ctr`` are always zero. The noise
---    generator is seeeded by the 8-bit A and B fields to allow each channelizer to have up to 65536
---    different (presumamly uncorrelated) patterns. ``frame_overflow_flag`` and ``overflow_ctr`` are always zero.
+-- - 1: FN_RAM: Outputs the RAM contents (2048 bytes, 512 words). ``frame_overflow_flag`` and ``overflow_ctr`` are always zero.
 --
---  - 3 / FN_FRAME_WORD_CTR_RAM_FLAGS: Counts frames and words, with programmable ADC overflow bit
---    patterns. This mode is mostly used for testing. The output data is grouped in 32-bit words (the whole word for Iceboard and the LSB 32 bits for CRS),
---    containing a 21-bit frame count in the MSB followed bit 11-bit word count for the Iceboard. This pattern
---    does not generate nice data when splitted in 4-bytes (and even less when going through the
---    FFT), but it ensures that consecutive frames will contain unique data when looked word-wise.
---    In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` can be programmed by injecting specific values into the buffer. ``frame_overflow_flag`` will be '1' if there is any bit that is '1' in the buffer. ``overflow_ctr`` increments for every sample whose value is LSB is '1'. An overflow for a sample can thus be simulated by injecting a '1' in that sample.
+-- - 2: FN_NOISE: Outputs Pseudo-Random noise. ``frame_overflow_flag`` and ``overflow_ctr`` are always zero. The noise
+--   generator is seeeded by the 8-bit A and B fields to allow each channelizer to have up to 65536
+--   different (presumamly uncorrelated) patterns. ``frame_overflow_flag`` and ``overflow_ctr`` are always zero.
 --
---  - 4 / FN_FRAME8: Each sample is the last 6 bits (for IceBoard)/12 bits (for CRS) of the current frame number  .
---    In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` can be programmed by injecting specific values into the buffer. ``frame_overflow_flag`` will be '1' if there is any bit that is '1' in the buffer. ``overflow_ctr`` increments for every sample whose value is LSB is '1'. An overflow for a sample can thus be simulated by injecting a '1' in that sample.
+-- - 3: FN_FRAME_WORD_CTR_RAM_FLAGS: Counts frames and words, with programmable ADC overflow bit
+--   patterns. This mode is mostly used for testing. The output data is grouped in 32-bit words (the whole word for Iceboard and the LSB 32 bits for CRS),
+--   containing a 21-bit frame count in the MSB followed bit 11-bit word count for the Iceboard. This pattern
+--   does not generate nice data when splitted in 4-bytes (and even less when going through the
+--   FFT), but it ensures that consecutive frames will contain unique data when looked word-wise.
+--   In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` can be programmed by injecting specific values into the buffer. ``frame_overflow_flag`` will be '1' if there is any bit that is '1' in the buffer. ``overflow_ctr`` increments for every sample whose value is LSB is '1'. An overflow for a sample can thus be simulated by injecting a '1' in that sample.
 --
---  - 5 / FN_FRAME4: The most significant 4 bits of each sample is the last 4 bits of the current
---    frame number. The lower 4 bits are zero.
---    In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` can be programmed by injecting specific values into the buffer. ``frame_overflow_flag`` will be '1' if there is any bit that is '1' in the buffer. ``overflow_ctr`` increments for every sample whose value is LSB is '1'. An overflow for a sample can thus be simulated by injecting a '1' in that sample.
+-- - 4: FN_FRAME8: Each sample is the last 6 bits (for IceBoard)/12 bits (for CRS) of the current frame number.
+--   In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` can be programmed by injecting specific values into the buffer. ``frame_overflow_flag`` will be '1' if there is any bit that is '1' in the buffer. ``overflow_ctr`` increments for every sample whose value is LSB is '1'. An overflow for a sample can thus be simulated by injecting a '1' in that sample.
 --
---  - 6 / FN_RAM_NIBBLE4: Sends bits 3:0 of RAM samples on even frames an bits 7:4 of RAM samples on odd frames. Data is aligned with the 4 MSBS
---      of each sample, and the rest of the bits in the sample are zero. In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` are always zero.
+-- - 5: FN_FRAME4: The most significant 4 bits of each sample is the last 4 bits of the current
+--   frame number. The lower 4 bits are zero.
+--   In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` can be programmed by injecting specific values into the buffer. ``frame_overflow_flag`` will be '1' if there is any bit that is '1' in the buffer. ``overflow_ctr`` increments for every sample whose value is LSB is '1'. An overflow for a sample can thus be simulated by injecting a '1' in that sample.
+--
+-- - 6: FN_RAM_NIBBLE4: Sends bits 3:0 of RAM samples on even frames an bits 7:4 of RAM samples on odd frames. Data is aligned with the 4 MSBS
+--   of each sample, and the rest of the bits in the sample are zero. In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` are always zero.
 --
 -- Waveform buffer
 -- ---------------
@@ -97,17 +98,17 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --
 -- The noise is generated as a 32-bit output LFSR generator fed by the 8-bit A and B signals (the
 -- 32-bit input is a combination of A, B, not A, and not B). These A and B parameters act as seed.
--- The same A and B value will always result in the same sequence. Note that the LFSR outputs will be stuck at zero if A and B are both zero.
+-- The same A and B value will always result in the same sequence.
 -- The sequence repeats after 2**32 - 1 words for IceBoard and (2**32 - 1)/4 word for CRS.
 --
 -- Overflow counter
--- ---------------
+-- ----------------
 --
--- The overflow counter counts over ```stats_period```(user defined) frames the number of sample overflows from the ADC or the number of overflows injected
+-- The overflow counter counts over ``stats_period`` (user defined) frames the number of sample overflows from the ADC or the number of overflows injected
 -- Through the buffer (either from modes FN_FRAME_WORD_CTR_RAM_FLAGS, FN_FRAME8 or FN_FRAME4). The overflow count for other modes
 -- (FN_RAM, FN_NOISE, FN_RAM_NIBBLE4) is 0. The maximum number of frames over which to count the number of overflows is 65535. When counting overflows from
 -- the buffer, each sample's LSB indicate if there is an overflow or not, so to simulate an overflow in a sample, set the sample value to 1.
--- Overflow counting is enabled with ```stats_enable``` and the result can be read from ```overflow_ctr```.
+-- Overflow counting is enabled with ``stats_enable`` and the result can be read from ``overflow_ctr``.
 --
 entity FUNCGEN is
     generic (
@@ -132,8 +133,8 @@ entity FUNCGEN is
         m_axis_adc_tuser: out std_logic_vector(0 downto 0); --  Contains one overflow bit per frame on TLAST.
         m_axis_adc_tlast: out std_logic;
 
-        clk     : in  std_logic;            --! clock for both input and output streams
-        rst     : in  std_logic;            --! synchronous reset
+        clk     : in  std_logic;            -- clock for both input and output streams
+        rst     : in  std_logic;            -- synchronous reset
 
         -- BSB Control Interface (command and reply stream buses)
 
@@ -160,7 +161,7 @@ constant FN_RAM_NIBBLE4              : FN_TYPE:="110"; -- Current frame number i
 constant FN_UNUSED                   : FN_TYPE:="111"; -- Unused
 
 constant WORDS_PER_FRAME: integer := ADC_SAMPLES_PER_FRAME / ADC_SAMPLES_PER_WORD;
-constant LOG2_WORDS_PER_FRAME: integer := integer_log2(WORDS_PER_FRAME); --! Number of words per frame. One word is 4 8-bit time samples or 2 8+8-bits frequency samples.
+constant LOG2_WORDS_PER_FRAME: integer := integer_log2(WORDS_PER_FRAME); -- Number of words per frame. One word is 4 8-bit time samples or 2 8+8-bits frequency samples.
 constant LOG2_ADC_SAMPLES_PER_FRAME: integer := integer_log2(ADC_SAMPLES_PER_FRAME);
 constant BYTES_PER_SAMPLE: integer := integer(ceil(real(ADC_BITS_PER_SAMPLE) / 8.0));
 constant BYTES_PER_FRAME: integer := ADC_SAMPLES_PER_FRAME * BYTES_PER_SAMPLE;
@@ -251,7 +252,7 @@ begin
 -----------------------------------------------------------------------------------
 -- Function Generator Memory Map
 --
---  ------------------------------------------------------------------------------
+-- ------------------------------------------------------------------------------
 -- |  Page   | Addr|Bit(s)|     Name             | Description                   |
 -- |---------|-----|------|----------------------|-------------------------------|
 -- | CONTROL |  0  |   7  | soft_reset           |                               |
@@ -276,7 +277,7 @@ begin
 -- |         |     |  0   | send_frame           | High when frame sending is enabled |
 -- |         | 3-4 | 15:0 | delay_capture_ctr    | Delay capture value. |
 -- |         | 5-8 | 31:0 | overflow_ctr         | Number of samples that are saturated over ``overflow_ctr_period`` (user specified number of frames). The maximum number is bigger than possible amount of overflows over any initegration period, so no saturation. |
---  ------------------------------------------------------------------------------
+-- ------------------------------------------------------------------------------
 
 
 -- CONTROL Byte 0

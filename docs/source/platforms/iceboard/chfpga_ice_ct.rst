@@ -33,7 +33,7 @@ This configuration includes:
 
 
 Package definition
-=================
+==================
 
 .. parse:: hdl/chfpga_ice_ct_config.vhd
 

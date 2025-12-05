@@ -25,7 +25,7 @@ Introduction
 A block diagram of the firmware is provided below.
 
 .. figure:: ./images/chfpga_simple_block_diagram_v2.svg
-   :width: 100%
+   :width: 70%
 
 
 Features
@@ -95,8 +95,8 @@ Python control software
 `chFPGA` is operated through the ``pychfpga`` Python package, which provides a Python high-level interface to every subsystem of the `chFPGA` firmware and provides platform wrappers and servers for on-site automated operations.
 
 
-Hardware platforms
-==================
+Supported hardware platforms
+=============================
 
 ``chFPGA`` has been used on multiple hardware platforms FPGAs:
 
@@ -185,3 +185,80 @@ During this evolution, the `chFPGA` code base was improved incrementally to add 
 .. Note that this document does not cover GPU-based processing firmware/software and hardware, but only the means to send data to these units.
 
 
+.. Use UTF-8 encoding
+
+.. Online documentation can be found at: https://winterlandcosmology.bitbucket.io/pychfpga
+
+
+
+Requirements
+============
+
+
+Repository Access
+-----------------
+
+``chfpga`` and many of its dependencies are hosted in a private git repository on ``bitbucket``.
+
+Before you start, you therefore need:
+
+- A bitbucket (free) account (https://bitbucket.org)
+- A ssh private/public key pair, with the public key attached to your bitbucket account
+
+
+Software tools
+--------------
+
+- The following programs should be installed
+   - Ubuntu operating system.  
+       - 22.04 LTS: is the version we  tested
+       - Scripts are written for bash, so it is recommended to use a bash-compatible shell.
+
+	- git LFS (git >1.8.2 includes LFS by default. Make sure ``git-lfs`` is initialized on your account.)
+
+   - AMD (Xilinx) Vivado IDE:
+      - 2022.2: Tested and works with Ubuntu 2022.2
+      - 2025.1: Does not meet timing constraints
+      - Licenses:
+         - Standard synthesis/implementation license
+         - CMAC (100G Ethernet hardware corelicense is required for building on Ultrascale+ platforms with corner-turn configurations
+
+Hardware
+--------
+
+Vivado is resource-hungry, especially for large projects. For decent speed, it is recommended to have a computer with:
+- At least 4  **fast** CPU cores. * is preferably better. Vivado is not that great at parallelizing the work, so fewer fast cores is better than more slow cores.
+- At least 32G of RAM. Fast DDR memory will probably help
+
+
+Cloning the repository
+======================
+
+Get the ``chfpga`` repository::
+
+	$ git clone git@bitbucket.org:winterlandcosmology/chfpgalite.git  # add the ``-b`` option to specify a branch
+
+
+
+
+Building the firmware
+=====================
+
+First, activate the Vivado environment you want to use to build the project. For example::
+
+   source /tools/Xilinx/Vivado/2022.2/settings64.sh
+
+
+``cd`` to the xilinx_project subfolder that corresponds to the platform and configuration you are building.
+
+To create the .xpr file for the project, run::
+
+   ./create_project.tcl
+
+You can then open the generated .xpr file in Vivado IDE and take it from there.
+
+If you want to buidl the firmware and generate a bitstream, you can directly run the following command (the ``create_project.tcl`` script will be called automatically)::
+
+   ./build_project.tcl 
+
+When finished (this can take up to 45-50 minutes for the largest projects on a decent machine), a  bitstream named ``chfpga_<platform>_<configuration>.bit`` will be placed in the project folder. 

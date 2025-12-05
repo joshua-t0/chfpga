@@ -1,4 +1,3 @@
---! @file
 ----------------------------------------------------------------------------------
 -- Company:  McGill University
 -- Engineer: JF CLiche
@@ -30,16 +29,15 @@ use UNISIM.VComponents.all;
 
 library work;
 use work.chFPGA_Package.all;
---use work.ip_package.all; -- Import definition of components used in this module
 
 entity xglink_core is
 	generic (
-		LINK_SPEED                  : integer := 1; --! 0: 7.8125 Gbps, 1: 10.3125 Gbps line rate, assuming a 156.25 MHz reference clock.
+		LINK_SPEED                  : integer := 1; -- 0: 7.8125 Gbps, 1: 10.3125 Gbps line rate, assuming a 156.25 MHz reference clock.
 		NUMBER_OF_TX_LANES          : integer := 2;
 		NUMBER_OF_RX_LANES          : integer := 2;
 		NUMBER_OF_REFCLK            : integer := 2;
-		LANE_TO_QUAD_MAP            : integerArray := (0 to 3=>0, 4 to 7=>1, 8 to 11=> 2, 12 to 14 => 3); --! LANE_TO_QUAD_MAP Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-		QUAD_TO_REFCLK_MAP          : integerArray := (1,0,0,1); --! QUAD_TO_REFCLK_MAP Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+		LANE_TO_QUAD_MAP            : integerArray := (0 to 3=>0, 4 to 7=>1, 8 to 11=> 2, 12 to 14 => 3); -- LANE_TO_QUAD_MAP Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
+		QUAD_TO_REFCLK_MAP          : integerArray := (1,0,0,1); -- QUAD_TO_REFCLK_MAP Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
 		EXAMPLE_SIMULATION          : integer :=1;
 		EXAMPLE_SIM_GTRESET_SPEEDUP : string := "TRUE";    -- simulation setting for GT SecureIP model
 		DONT_RESET_ON_DATA_ERROR_IN : std_logic := '0';
@@ -58,18 +56,18 @@ entity xglink_core is
 		refclk_div2: out std_logic_vector(0 to NUMBER_OF_REFCLK-1); -- 156.25 MHz reference clock
 		txclk_div2: out std_logic; -- Data clock generated from MMCM
 
-		tx_data: in slv32_array(0 to NUMBER_OF_TX_LANES-1); --! The most significant byte is transmitted first
+		tx_data: in slv32_array(0 to NUMBER_OF_TX_LANES-1); -- The most significant byte is transmitted first
 		tx_header: in slv2_array(0 to NUMBER_OF_TX_LANES-1);
-		tx_ready: out std_logic_vector(0 to NUMBER_OF_TX_LANES-1); --! Indicates when the transmitter will accept the data on the data bus
+		tx_ready: out std_logic_vector(0 to NUMBER_OF_TX_LANES-1); -- Indicates when the transmitter will accept the data on the data bus
 		tx_clk: out std_logic; -- 244.140625 MHz for LINK_SPEED=0, 322.265615 MHz for LINK_SPEED=1.
-		tx_resetdone: out std_logic_vector(0 to NUMBER_OF_TX_LANES-1); --! Indicates that the transmitter is ready to send data
+		tx_resetdone: out std_logic_vector(0 to NUMBER_OF_TX_LANES-1); -- Indicates that the transmitter is ready to send data
 
 		rx_data: out slv32_array(0 to max(NUMBER_OF_RX_LANES-1, 0));
-		rx_data_valid: out std_logic_vector(0 to max(NUMBER_OF_RX_LANES-1, 0)); --! Active high when  valid data is  placed on the bus
+		rx_data_valid: out std_logic_vector(0 to max(NUMBER_OF_RX_LANES-1, 0)); -- Active high when  valid data is  placed on the bus
 		rx_header: out slv2_array(0 to max(NUMBER_OF_RX_LANES-1, 0));
-		rx_header_valid: out std_logic_vector(0 to max(NUMBER_OF_RX_LANES-1, 0)); --! Indicates when the header is valid. This happen on the first half of each word.
-		rx_clk: out std_logic_vector(0 to max(NUMBER_OF_RX_LANES-1, 0)); --! clock synchronous with the rx data. Recovered from the received link.
-		rx_resetdone: out std_logic_vector(0 to max(NUMBER_OF_RX_LANES-1, 0)); --! Indicates that the receiver is ready to receive data
+		rx_header_valid: out std_logic_vector(0 to max(NUMBER_OF_RX_LANES-1, 0)); -- Indicates when the header is valid. This happen on the first half of each word.
+		rx_clk: out std_logic_vector(0 to max(NUMBER_OF_RX_LANES-1, 0)); -- clock synchronous with the rx data. Recovered from the received link.
+		rx_resetdone: out std_logic_vector(0 to max(NUMBER_OF_RX_LANES-1, 0)); -- Indicates that the receiver is ready to receive data
 
 		control_bytes: out slv8_array(0 to NUMBER_OF_CONTROL_BYTES-1);
 		status_bytes: in slv8_array(0 to NUMBER_OF_STATUS_BYTES-1):=(others=>(others=>'0'));
@@ -82,8 +80,8 @@ entity xglink_core is
 		CTRL_CLK : IN std_logic; -- control clock
 		CTRL_RST : in std_logic;
 
-		-- clk: in std_logic; --! AXI-S data clock. Not related to the 10G Ethernet clocks.
-		areset: in std_logic --! asynchronous reset
+		-- clk: in std_logic; -- AXI-S data clock. Not related to the 10G Ethernet clocks.
+		areset: in std_logic -- asynchronous reset
 	 );
 
 end xglink_core;
@@ -98,7 +96,7 @@ attribute DONT_TOUCH : string;
 constant DLY : time := 1 ps; -- delta delay used to ensure the simulator changes the data after the clock edge (which is a problem because we do a clock assignment which might be evaluated in any order)
 
 constant NUMBER_OF_GTX : integer := max(NUMBER_OF_RX_LANES, NUMBER_OF_TX_LANES);
-constant NUMBER_OF_QUADS : integer := MAX(LANE_TO_QUAD_MAP(0 to NUMBER_OF_GTX-1))+1; --! get the maximum QUAD index from the list of actually implemented channels
+constant NUMBER_OF_QUADS : integer := MAX(LANE_TO_QUAD_MAP(0 to NUMBER_OF_GTX-1))+1; -- get the maximum QUAD index from the list of actually implemented channels
 
 
 -- QPLL parameters
@@ -140,23 +138,23 @@ constant QPLL_CFG: std_logic_vector(26 downto 0) := QPLL_CFG_TABLE(LINK_SPEED)(2
 constant QPLL_REFCLK_DIV: integer := QPLL_REFCLK_DIV_TABLE(LINK_SPEED);
 
 ---- CLOCKS
--- signal clk156_nobuf : std_logic; --! unbuffered 156.25 MHz data clock at the output of MMCM
-signal clk156 : std_logic; --! buffered 156.25 MHz data clock derived from the reference clock
+-- signal clk156_nobuf : std_logic; -- unbuffered 156.25 MHz data clock at the output of MMCM
+signal clk156 : std_logic; -- buffered 156.25 MHz data clock derived from the reference clock
 
--- signal txclk322_nobuf : std_logic_vector(0 to NUMBER_OF_GTX-1); --! Unbuffered TXOUTCLK from each GTX
-signal txclk322 : std_logic; --! buffered TXOUTCLK used to clock all GTX TX subsystems
-signal rxclk322 : slv(0 to NUMBER_OF_GTX-1); --!
+-- signal txclk322_nobuf : std_logic_vector(0 to NUMBER_OF_GTX-1); -- Unbuffered TXOUTCLK from each GTX
+signal txclk322 : std_logic; -- buffered TXOUTCLK used to clock all GTX TX subsystems
+signal rxclk322 : slv(0 to NUMBER_OF_GTX-1); --
 
-signal txusrclk : std_logic; --! txusrclk for all GTX
-signal txusrclk2 : std_logic; --! txusrclk2 for all GTX
-signal rxusrclk : slv(0 to NUMBER_OF_GTX-1); --! rxusrclk for all GTX
-signal rxusrclk2 : slv(0 to NUMBER_OF_GTX-1); --! rxusrclk2 for all GTX
+signal txusrclk : std_logic; -- txusrclk for all GTX
+signal txusrclk2 : std_logic; -- txusrclk2 for all GTX
+signal rxusrclk : slv(0 to NUMBER_OF_GTX-1); -- rxusrclk for all GTX
+signal rxusrclk2 : slv(0 to NUMBER_OF_GTX-1); -- rxusrclk2 for all GTX
 
-signal refclk_nobuf : std_logic_vector(0 to NUMBER_OF_REFCLK-1); --! unbuffered GTX reference clock
-signal refclk_buf : std_logic_vector(0 to NUMBER_OF_REFCLK-1); --! buffered GTX reference clock
+signal refclk_nobuf : std_logic_vector(0 to NUMBER_OF_REFCLK-1); -- unbuffered GTX reference clock
+signal refclk_buf : std_logic_vector(0 to NUMBER_OF_REFCLK-1); -- buffered GTX reference clock
 
 --- QPLL signals
-signal qpllreset : std_logic; --! QPLL reset signal for all QPLLs, generated after 500us following the release of areset
+signal qpllreset : std_logic; -- QPLL reset signal for all QPLLs, generated after 500us following the release of areset
 signal qplloutclk : std_logic_vector(0 to NUMBER_OF_QUADS-1);
 signal qplloutrefclk : std_logic_vector(0 to NUMBER_OF_QUADS-1);
 signal qplllock, qplllock_debug : std_logic_vector(0 to NUMBER_OF_QUADS-1);
@@ -177,8 +175,8 @@ signal rx_resetdone_int: std_logic_vector(0 to NUMBER_OF_GTX-1);
 signal scrambler_reset: std_logic_vector(0 to NUMBER_OF_GTX-1);
 
 
--- signal areset_refclk_tmp : std_logic; --!
--- signal areset_refclk : std_logic; --! user reset, synchronized to refclk
+-- signal areset_refclk_tmp : std_logic; --
+-- signal areset_refclk : std_logic; -- user reset, synchronized to refclk
 
 -- attribute ASYNC_REG of areset_refclk_tmp : signal is "true";
 -- attribute ASYNC_REG of areset_refclk : signal is "true";
@@ -188,10 +186,10 @@ signal scrambler_reset: std_logic_vector(0 to NUMBER_OF_GTX-1);
 -- attribute ASYNC_REG of areset_clk156_tmp : signal is "true";
 -- attribute ASYNC_REG of areset_clk156 : signal is "true";
 
--- signal gttxreset : std_logic; --! Generated 500 us after areset release. Synchronous to refclk. Goes to all PCS/PMAs.
+-- signal gttxreset : std_logic; -- Generated 500 us after areset release. Synchronous to refclk. Goes to all PCS/PMAs.
 
 -- signal gttxreset_txusrclk2_tmp : std_logic;
--- signal gttxreset_txusrclk2 : std_logic; --! Generated 500 us after areset release. Synchronous to txusrclk2. Goes to all PCS/PMAs.
+-- signal gttxreset_txusrclk2 : std_logic; -- Generated 500 us after areset release. Synchronous to txusrclk2. Goes to all PCS/PMAs.
 -- attribute ASYNC_REG of gttxreset_txusrclk2_tmp : signal is "true";
 -- attribute ASYNC_REG of gttxreset_txusrclk2 : signal is "true";
 
@@ -397,9 +395,9 @@ end process;
 
 ---------------------------------------------------------------------
 -- Instantiate the Command splitter
---! Routes the commands to the requested module
+-- Routes the commands to the requested module
 ---------------------------------------------------------------------
---! Address format:
+-- Address format:
 -- DRP:    xxxMMMMMxa1aaaaaaaaa (10 address bits, 512 words (0x000 - 1FF)
 -- CONTROL:xxxMMMMMxx00aaaaaaaa
 -- STATUS :xxxMMMMMxx01aaaaaaaa
@@ -437,7 +435,7 @@ CTRL_ROUTER0: entity work.CTRL_ROUTER
 -- refclk[0] (aka clk156) is sent to a BUFG to be used as an always-on control logic clock and frequency monitor. The control logic can be spread across multiple clock regions.
 -- refclk[1:n] are send to BUFH to be used only in the frequency monitor located in the bank where it arrives.
 
---! Instantiate reference clock buffers for each reference clock
+-- Instantiate reference clock buffers for each reference clock
 ibuf_gen: for i in 0 to NUMBER_OF_REFCLK-1 generate
 	ibufds0 : IBUFDS_GTE2
 		-- generic map(
@@ -511,8 +509,8 @@ cdrlock_timeout:process(clk156)
 -- Hold off release the GT resets until 500ns after configuration.
 -- 128 ticks at 6.4ns period will be >> 500 ns.
 
---! Reset counter process
---! Clear counter on areset, and increment until bit 7 = '1' otherwise
+-- Reset counter process
+-- Clear counter on areset, and increment until bit 7 = '1' otherwise
 reset_ctr_proc: process (clk156)
 	begin
 		if rising_edge(clk156) then
@@ -526,8 +524,8 @@ reset_ctr_proc: process (clk156)
 		end if;
 	end process;
 
---! Once the counter reaches its limit, generate a 3 refclk reset pulse
---! on gttxreset, gtrxreset and qpllreset
+-- Once the counter reaches its limit, generate a 3 refclk reset pulse
+-- on gttxreset, gtrxreset and qpllreset
 reset_pulse_proc: process (clk156)
 	begin
 	 if rising_edge(clk156) then
@@ -543,10 +541,10 @@ qpllreset  <=     reset_pulse(0); -- resets all QPLLs directly
 
 
 ---------------------------------
---! TXOUTCLK buffer
---! Buffer the TXOUTCLK generated by the first GTX to generate the txusrclk and txusrclk2 for ALL channels
---! There is only one per array since all transceivers are clocked by the same reference clock
---! Since the GTX is configured with a 4-byte external interface  and 4-byte internal data path, both txusrclk and txusrclk2 are at the same frequency.
+-- TXOUTCLK buffer
+-- Buffer the TXOUTCLK generated by the first GTX to generate the txusrclk and txusrclk2 for ALL channels
+-- There is only one per array since all transceivers are clocked by the same reference clock
+-- Since the GTX is configured with a 4-byte external interface  and 4-byte internal data path, both txusrclk and txusrclk2 are at the same frequency.
 ---------------------------------
 txoutclk_bufg0 : BUFG
 	port map (
@@ -556,6 +554,27 @@ txoutclk_bufg0 : BUFG
 
 txusrclk2 <= txclk322;
 txusrclk <= txclk322;
+
+----------------------------------
+-- Common Module Memory Map
+--
+-- Memory Map for common_slave0 (Module 0)
+-- Address format: xxx00000xx00aaaaaaaa (module index = 0)
+-- ------------------------------------------------------------------------------
+-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+-- |---------|-----|------|----------------------|-------------------------------|
+-- | CONTROL |  0  |  7   | common_user_reset    | User reset signal |
+-- |         |     | 6:0  | (reserved)           | Reserved |
+-- |         | 1-3 | 23:0 | common_user_tx_data  | User TX data (24 bits) |
+-- |         | 4+  | -    | control_bytes        | User-defined control bytes |
+-- | STATUS  |  0  | 7:5  | NUMBER_OF_QUADS      | Number of quads (3 bits) |
+-- |         |     | 4:0  | NUMBER_OF_GTX        | Number of GTX channels (5 bits) |
+-- |         |  1  |  5   | reset_pulse          | Reset pulse status |
+-- |         |     |  4   | resetdone            | All TX/RX reset done |
+-- |         |     |  3   | qpllreset            | QPLL reset status |
+-- |         |     | 2:0  | (reserved)           | Reserved |
+-- |         | 2+  | -    | status_bytes         | User-defined status bytes |
+-- ------------------------------------------------------------------------------
 
 common_slave0: entity work.CTRL_SLAVE
 	GENERIC MAP (
@@ -609,9 +628,23 @@ common_status_bytes(2 to 2 + NUMBER_OF_STATUS_BYTES-1) <= slv8_array(status_byte
 --------------------------------------
 -- GTXE2_COMMON (QPLL)
 --------------------------------------
---! Instantiates a GTXE2_COMMON (QPLL) block for each quad
---! The refeence clock use for each quad is specified in the QUAD_TO_REFCLK_MAP list.
+-- Instantiates a GTXE2_COMMON (QPLL) block for each quad
+-- The refeence clock use for each quad is specified in the QUAD_TO_REFCLK_MAP list.
 quad_gen: for i in 0 to NUMBER_OF_QUADS-1 generate
+
+	----------------------------------
+	-- Quad Module Memory Map
+	--
+	-- Memory Map for quad_slave0 (Module i+1, where i is quad index)
+	-- Address format: xxxMMMMMxx00aaaaaaaa (module index = i+1)
+	-- ------------------------------------------------------------------------------
+	-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+	-- |---------|-----|------|----------------------|-------------------------------|
+	-- | CONTROL |  0  | 7:0  | (reserved)           | Reserved |
+	-- | STATUS  |  0  |  0   | qplllock             | QPLL lock status |
+	-- |         |     | 7:1  | (reserved)           | Reserved |
+	-- | DRP     | 0x100-0x1FF | - | GTXE2_COMMON DRP | GTXE2_COMMON DRP access (16-bit words, 8-bit address) |
+	-- ------------------------------------------------------------------------------
 
 	quad_slave0: entity work.CTRL_SLAVE
 		GENERIC MAP (
@@ -718,6 +751,55 @@ end generate;
 
 
 gtx_gen: for i in 0 to NUMBER_OF_GTX-1 generate
+
+	----------------------------------
+	-- GTX Module Memory Map
+	--
+	-- Memory Map for gt_slave0 (Module i+NUMBER_OF_QUADS+1, where i is GTX channel index)
+	-- Address format: xxxMMMMMxx00aaaaaaaa (module index = i+NUMBER_OF_QUADS+1)
+	-- ------------------------------------------------------------------------------
+	-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+	-- |---------|-----|------|----------------------|-------------------------------|
+	-- | CONTROL |  0  |  7   | gt_user_reset       | User reset |
+	-- |         |     |  6   | gt_user_gttxreset   | GTX TX reset |
+	-- |         |     |  5   | gt_txinhibit_in     | TX inhibit |
+	-- |         |     | 4:0  | gt_txpostcursor_in  | TX postcursor (5 bits) |
+	-- |         |  1  | 7:4  | gt_txdiffctrl_in    | TX differential control (4 bits) |
+	-- |         |     |  3   | (reserved)          | Reserved |
+	-- |         |     | 2:0  | gt_loopback_in      | Loopback mode (3 bits) |
+	-- |         |  2  |  7   | gt_user_source_sel  | User source select |
+	-- |         |     | 6:2  | gt_txprecursor_in   | TX precursor (5 bits) |
+	-- |         |     | 1:0  | gt_user_tx_header   | User TX header (2 bits) |
+	-- |         |  3  | 7:0  | gt_user_tx_data[7:0]| User TX data byte 0 |
+	-- |         |  4  |  7   | gt_rxdfelpmreset_in | RX DFE LPM reset |
+	-- |         |     |  6   | gt_user_gtrxreset   | GTX RX reset |
+	-- |         |     |  5   | gt_rxlpmen_in      | RX LPM enable |
+	-- |         |     | 4:3  | gt_rxmonitorsel_in | RX monitor select (2 bits) |
+	-- |         |     |  2   | gt_capture_en      | Capture enable |
+	-- |         |     |  1   | gt_block_lock_reset| Block lock reset |
+	-- |         |     |  0   | (reserved)         | Reserved |
+	-- |         |  5  |  7   | gt_rxprbscntreset_in| RX PRBS counter reset |
+	-- |         |     |  6   | gt_txprbsforceerr_in| TX PRBS force error |
+	-- |         |     | 5:3  | gt_txprbssel_in    | TX PRBS select (3 bits) |
+	-- |         |     | 2:0  | gt_rxprbssel_in    | RX PRBS select (3 bits) |
+	-- | STATUS  |  0  |  7   | gt_txresetdone_out | TX reset done |
+	-- |         |     |  6   | gt_rxresetdone_out | RX reset done |
+	-- |         |     | 5:4  | gt_txbufstatus_out | TX buffer status (2 bits) |
+	-- |         |     |  3   | tx_resetdone_int   | TX reset done internal |
+	-- |         |     |  2   | rx_resetdone_int   | RX reset done internal |
+	-- |         |     |  1   | gt_block_lock      | Block lock status |
+	-- |         |     |  0   | RX_PRESENT         | RX present indicator |
+	-- |         | 1-4 | 31:0 | gt_err_ctr         | Error counter (32 bits) |
+	-- |         |  5  | 7:6  | gt_rxheader_capture| RX header capture (2 bits, RX only) |
+	-- |         |     | 5:3  | (reserved)        | Reserved (RX only) |
+	-- |         |     | 2:0  | gt_rxbufstatus_out | RX buffer status (3 bits, RX only) |
+	-- |         |  6  |  7   | (reserved)        | Reserved (RX only) |
+	-- |         |     | 6:0  | gt_rxmonitorout_out| RX monitor output (7 bits, RX only) |
+	-- |         | 7-10| 31:0 | rx_data_capture    | RX data capture (32 bits, RX only) |
+	-- |         | 11  | 7:0  | gt_dmonitorout_out | DFE monitor output (8 bits, RX only) |
+	-- | DRP     | 0x200-0x3FF | - | GTX DRP      | GTX DRP access (16-bit words, 9-bit address) |
+	-- ------------------------------------------------------------------------------
+	-- Note: RX status bytes (5-11) are only present when NUMBER_OF_RX_LANES > 0
 
 	gt_slave0: entity work.CTRL_SLAVE
 		GENERIC MAP (
@@ -1219,7 +1301,7 @@ end generate; -- for NUMBER_OF_TX_LANES
 ----------------------------------------------
 rx_gen: for i in  0 to NUMBER_OF_RX_LANES-1 generate
 
-	rx_clk(i) <= rxusrclk2(i); --! Danger Will Robinson! In sims, the clock assignment might be evaluated AFTER the output signals are evaluated, causing the data to appear on the wrong clock. That's why we have a DLY for each output purt assignments.
+	rx_clk(i) <= rxusrclk2(i); -- Danger Will Robinson! In sims, the clock assignment might be evaluated AFTER the output signals are evaluated, causing the data to appear on the wrong clock. That's why we have a DLY for each output purt assignments.
 
 
 	------------------------------------------------

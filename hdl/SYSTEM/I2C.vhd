@@ -191,12 +191,10 @@ begin
 	-- |         |  5  |  7  | RESET                   | Resets the I2C logic |
 	-- |         |     |  6  | ALWAYS_CLK              | When High, the I2C clock always toggle even when there are no transactions on the bus. |
 	-- |         |     | 5:4 | PORT                    | Indicates which I2C port to use |
-	-- |         |     |  3  | FORCE_SCK               | When High, Force SCK line to the value set by SCK_STATE |
-	-- |         |     |  2  | FORCE_SDA               | When High, Force SDA line to the value set by SDA_STATE |
-	-- |         |     |  1  | SCK_STATE               | Value forced on the SCK line when FORCE_SCK='1'|
-	-- |         |     |  0  | SDA_STATE               | Value forced on the SDA line when FORCE_SDA='1'|
-	-- |         |     |  1  | (reserved)              | Might be used to expand the number of SPI ports.|
-	-- |         |     |  0  | PORT                    | Indicates to which port the transation will be made. |
+-- |         |     |  3  | FORCE_SCK               | When High, Force SCK line to the value set by SCK_STATE |
+-- |         |     |  2  | FORCE_SDA               | When High, Force SDA line to the value set by SDA_STATE |
+-- |         |     |  1  | SCK_STATE               | Value forced on the SCK line when FORCE_SCK='1'|
+-- |         |     |  0  | SDA_STATE               | Value forced on the SDA line when FORCE_SDA='1'|
 	-- | STATUS  | 0-3 | 31:0| RX_DATA                 | Data received during the transation. |
 	-- |         |  4  |  7  | bus_idle                | High when the bus is IDLE|
 	-- |         |     | 6:5 | (unused)                | |
@@ -206,11 +204,10 @@ begin
 	-- |         |     |  1  | sda_in                  | Current state of the SDA line.|
 	-- |         |     |  0  | done                    | High when the transation is complete|
 	-- |         |  5  | 7:0 | ACK_STATUS              | Indicates the value of the ACK bits for each bytes transferred|
-	-- |         |  6  |  7  | (unused)                | |
-	-- |         |     | 6:4 | byte_ctr                | For debugging |
-	-- |         |     |  3  | dir                     | For debugging |
-	-- |         |     | 2:0 | bit_ctr                 | For debugging |
-	-- |         |     | 2:0 | bit_ctr                 | For debugging |
+-- |         |  6  |  7  | (unused)                |                               |
+-- |         |     | 6:4 | byte_ctr                | For debugging |
+-- |         |     |  3  | dir                     | For debugging |
+-- |         |     | 2:0 | bit_ctr                 | For debugging |
 	-- |         |  7  | 7:4 | start_ctr               | For debugging |
 	-- |         |     | 3:0 | done_ctr                | For debugging |
 	-- |         |  8  | 7:0 | (unused)                | |

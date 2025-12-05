@@ -90,13 +90,12 @@ architecture impl of SPI is
 
 begin
 
-	-- Assign signals to CONTROL and STATUS WORDS
-	-----------------------------------------------------------------------------------
-	-- CONTROL and STATUS Bytes
 	-----------------------------------------------------------------------------------
 	-- Memory map
-	-- ----------------------------------------------------------------------------------------
-	-- | Page    |Addr |Bit(s)|     Name               | Description                           |
+	--
+	--
+	-- -----------------------------------------------------------------------------------------
+	-- | Page    |Addr | Bit(s) |     Name               | Description                           |
 	-- |---------|-----|-----|-------------------------|---------------------------------------|
 	-- | CONTROL | 0-3 | 31:0| tx_data                 | Data to be sent. MSB is in byte 0 and is sent first. |
 	-- |         |  4  | 7:4 | addr                    | Address of the SPI device to access. Note that there are only 3 hardware address lines. ADDR[4] is always '0' |

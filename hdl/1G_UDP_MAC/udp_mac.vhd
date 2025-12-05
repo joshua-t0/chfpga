@@ -43,12 +43,12 @@ use work.chfpga_package.all; -- Get all component definitions
 --
 -- The UDP transmitter can send data to two MAC/IP/port destinations (a.k.a. transmit channels).
 -- Those destinations are also set by ``std_logic_vector`` signals. Each packet presented on the
--- data input interface is accompanied by a `tx_port` signal that tags this packet for one or the
+-- data input interface is accompanied by a ``tx_port`` signal that tags this packet for one or the
 -- other transmit channels. If the destination MAC/IP/Port is set to zero, the tranmitter will send
 -- the packet to the source MAC/IP/Port of the last packet that was received.
 --
 -- The user data interfce is implemented as a AXI4-Streaming blocking interface with a 8-bit-wide
--- data bus. Both the tx and rx data is clocked on a single `clk125`` clock.
+-- data bus. Both the tx and rx data is clocked on a single ``clk125`` clock.
 --
 -- If the SGMII interface is used, an connection to an external reference clock that can drive the
 -- GTX transceiver has to be provided. A BUFG-buffered version of the same clock shall also be
@@ -66,7 +66,7 @@ entity udp_mac is
 		local_mac_addr: in std_logic_vector(47 downto 0);
 		local_ip_addr: in std_logic_vector(31 downto 0);
 		local_ip_port: in std_logic_vector(15 downto 0);
-		local_subarray: in std_logic_vector(1 downto 0); --! Defines on which of the 4 broadcast ports this fpga will respond.
+		local_subarray: in std_logic_vector(1 downto 0); -- Defines on which of the 4 broadcast ports this fpga will respond.
 
 		-- Remote addresses
 		remote_mac_addr0: in std_logic_vector(47 downto 0) := X"000000000000";
@@ -96,14 +96,14 @@ entity udp_mac is
 		-- (SFP transceiver, used if PHY_TYPE="SGMII")
 		------------------------------------
 
-		sfp_tx_p : out std_logic; --! serialized data from the fpga mgt to the sfp
+		sfp_tx_p : out std_logic; -- serialized data from the fpga mgt to the sfp
 		sfp_tx_n : out std_logic;
-		sfp_rx_p : in std_logic := '0'; --! serialized data from the sfp to the fpga mgt
+		sfp_rx_p : in std_logic := '0'; -- serialized data from the sfp to the fpga mgt
 		sfp_rx_n : in std_logic := '1';
 		sfp_refclk_nobuf: in std_logic; -- Unbuffered 125 MHz SFP GTX reference clock reference clock for SGMII operation
 		sfp_refclk_buf: in std_logic; -- Buffered 125 MHz SFP GTX reference clock reference clock for SGMII operation
 		signal_detect: in std_logic := '1';
-		
+
 		-- Debugging/status signals
 
 		status_vector : out std_logic_vector(15 downto 0); -- Core status.

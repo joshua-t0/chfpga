@@ -1,5 +1,3 @@
-.. _floorplanning:
-
 Floorplanning
 =============
 

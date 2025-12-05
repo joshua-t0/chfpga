@@ -1,8 +1,8 @@
-***************************
-:entity:`CHAN` (`CHAN.vhd`)
-***************************
+.. title:: CHAN
 
-.. title:: CHAN: Channelizer
+****************************************
+:entity:`CHAN` (*CHAN.vhd*): Channelizer
+****************************************
 
 .. default-role:: entity
 
@@ -20,9 +20,7 @@ The Channelizer consists of the following sub-modules:
 - :entity:`scaler`
 - :entity:`chan_fifo`: FIFO to cross data between the channelizer and the corner-turn or correlator engines
 - :entity:`prober`: Captures and buffer a subset of the raw ADC or SCALER output data and send it back over the control channel
-    - :entity:`prober_data_fifo`: FIFO to store the captured data and cross between the channelizer and control system clock domains
-    - :entity:`prober_frame_fifo`: FIFO to store the frame header to be sent before the captured data
-- :entity:`router`: The router recieves commands through the UDP Command Protocol backbone from
+- :entity:`ctrl_router`: The router recieves commands through the UDP Command Protocol backbone from
   chFPGA and relays them to all the necessary sub-modules relevent to the channelizer. The addresses
   for each sub-module are shown below.
 
@@ -101,7 +99,7 @@ This feature can be useful for simulation or implementing a lightweight design f
 ADC input
 ---------
 
-The ADC data is provided as a non-blocking AXI-S bus ``in_dat``. The data word consists of ``ADC_SAMPLES_PER_WORD`` samples, each representing ``ADC_BITS_PER_SAMPLE`` - bit-wide ADC samples. The data acquisition, and subsequent signal processing all the way to the output FIFO, is operating synchronously with the `in_clk`, which is typically the ADC clock.
+The ADC data is provided as a non-blocking AXI-S bus ``in_dat``. The data word consists of ``ADC_SAMPLES_PER_WORD`` samples, each representing ``ADC_BITS_PER_SAMPLE`` - bit-wide ADC samples. The data acquisition, and subsequent signal processing all the way to the output FIFO, is operating synchronously with the ``in_clk``, which is typically the ADC clock.
 
 ``ADC_SAMPLES_PER_WORD`` and ``ADC_BITS_PER_SAMPLE`` are bound to the corresponding  parameters set in the configuration file, namely ``CONFIG_ADC_BITS_PER_SAMPLE`` and ``CONFIG_ADC_BITS_PER_SAMPLE``. Following the CASPER convention, the first sample appears in the MSBs of the word.
 
@@ -188,7 +186,7 @@ Layout
 ------
 
 
-..todo:: Describe layout constraints
+.. todo:: Describe layout constraints
     - pipelining of ADC data to CHAN
     - meeting the route from the ADCs to the `CHAN` instance, which can be pretty far away. It is important to not include `CHAN` in a PBLOCK so the pipelining registers can be freely placed.
 
