@@ -1,0 +1,30 @@
+#!/usr/bin/env -S vivado -mode batch  -source
+#*****************************************************************************************
+# create_project.tcl: Tcl script for re-creating the project in the folder of this script
+#*****************************************************************************************
+
+# Make sure the cwd is the folder containing this script
+
+cd [file normalize [file dirname [info script]]]
+
+# Get variables that will be used to define the project sources
+source ../../tcl/project_sources.tcl
+
+
+set target_part $ice_target_part
+
+set bd_name $ice_bd_name
+set ooc_ip_files $ice_corr16_ooc_ip_files
+set ip_files $ice_corr16_ip_files
+set hdl_files [concat $ice_corr16_hdl_files "chfpga_ice_corr16_config.vhd" ]
+
+set const_files [list \
+	"mgk7mb/SIFPGA_mgk7mb_timing_constraints.xdc" \
+	"mgk7mb/SIFPGA_mgk7mb_physical_constraints.xdc"\
+]
+
+# Enable LUT combining, otherwise the design does not fit
+set no_lc "0"
+
+
+source ../../tcl/create_generic_project.tcl
