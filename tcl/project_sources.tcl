@@ -66,7 +66,51 @@ set hdl_base_files [list  \
 set ice_target_part "xc7k420tffg901-2"
 set ice_bd_name ""
 
-set ice_ooc_ip_files "KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci"
+set ice_hdl_base_files [concat $hdl_base_files [list \
+  "chfpga_ice.vhd" \
+  \
+  "SYSTEM/SPI.vhd" \
+  "SYSTEM/I2C.vhd" \
+  "CMD/arm_spi.vhd" \
+  \
+  "CHAN/PROBER.vhd" \
+  "CHAN/ADCDAQ.vhd" \
+  \
+  "CROSSBAR/bct_engine.vhd"\
+  \
+  "1G_UDP_MAC/udp_mac_crc32.vhd" \
+  "1G_UDP_MAC/udp_mac_tx.vhd" \
+  "1G_UDP_MAC/udp_mac_rx.vhd" \
+  "1G_UDP_MAC/udp_mac_gmii_to_sgmii.vhd" \
+  "1G_UDP_MAC/udp_mac.vhd" \
+  ]]
+
+# === Corr16 files ===
+set ice_corr16_ooc_ip_files [list "KC705/FFT2/FFT2.xci"]
+set ice_corr16_ip_files [list \
+  "KC705/FFT2/FFT2.xci" \
+  "KC705/ADCDAQ_FIFO/ADCDAQ_FIFO.xci" \
+  "KC705/AXI4S_REG_SLICE/AXI4S_REG_SLICE.xci" \
+  "KC705/CMD_FIFO/CMD_FIFO.xci" \
+  "KC705/CORR44_DATA_FIFO/CORR44_DATA_FIFO.xci" \
+  "KC705/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci"\
+  "KC705/SCALER_CMUL/SCALER_CMUL.xci"\
+  "KC705/UDP_MAC_TX_DATA_FIFO/udp_mac_tx_data_fifo.xci" \
+  "KC705/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci" \
+ ]
+
+set ice_corr16_hdl_files [concat $ice_hdl_base_files [list \
+  "CORR/UCMAC44_ARRAY.vhd"\
+  "CORR/CMAC44.vhd"\
+  "CORR/UCORR44.vhd"\
+  "CORR/UCORR44_ARRAY.vhd"\
+  "CORR/CORR44.vhd"\
+  "CORR/CORR44_ARRAY.vhd"\
+  ]]
+
+
+# === Corner-turn files ===
+set ice_ct_ooc_ip_files "KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci"
 set ice_ct_ip_files [list \
   "KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci" \
   "KC705/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci"\
@@ -88,27 +132,6 @@ set ice_ct_ip_files [list \
   "KC705/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci" \
   "KC705/UDP_MAC_TX_DATA_FIFO/udp_mac_tx_data_fifo.xci" \
  ]
-
-
-set ice_hdl_base_files [concat $hdl_base_files [list \
-  "chfpga_ice.vhd" \
-  \
-  "SYSTEM/SPI.vhd" \
-  "SYSTEM/I2C.vhd" \
-  "CMD/arm_spi.vhd" \
-  \
-  "CHAN/PROBER.vhd" \
-  "CHAN/ADCDAQ.vhd" \
-  \
-  "CROSSBAR/bct_engine.vhd"\
-  \
-  "1G_UDP_MAC/udp_mac_crc32.vhd" \
-  "1G_UDP_MAC/udp_mac_tx.vhd" \
-  "1G_UDP_MAC/udp_mac_rx.vhd" \
-  "1G_UDP_MAC/udp_mac_gmii_to_sgmii.vhd" \
-  "1G_UDP_MAC/udp_mac.vhd" \
-  ]]
-
 
 set ice_ct_hdl_files [concat $ice_hdl_base_files [list \
   "CROSSBAR/ALIGN2.vhd"\

@@ -355,9 +355,9 @@ puts "ips=  $ips"
 
 foreach ip_obj  [get_ips] {
   set ip_name [get_property NAME $ip_obj]
-  puts "CHecking if $ip_name is in $ooc_ip_files"
+  puts "Checking if $ip_name is in OOC list: $ooc_ip_files"
   if {[lsearch $ooc_ip_files "*/$ip_name.*"] >=0} {
-      puts "Adding $ip_name"
+      puts "Adding $ip_name, specifically adding $ip_obj to IP list"
     lappend ip_list $ip_obj
   }
 }
@@ -374,14 +374,28 @@ puts "OOC ip files are $ip_list"
 
 
 export_ip_user_files -of_objects $ip_list -no_script -sync -force -quiet
-set_property generate_synth_checkpoint true [get_files $full_ooc_ip_files]
 generate_target all $ip_list
 catch { config_ip_cache -export $ip_list }
 foreach ip $ip_list {
   # removed the -force option to avoid regeneration
   set ip_run_name [create_ip_run $ip]
-  set ip_run [get_runs $ip_run_name]
+
+  # if this fails (e.g. legacy/pre-generated IP like FFT2), skip it
+  if {$ip_run_name eq ""} {
+    set ip_name [get_property NAME $ip]
+    puts "WARNING: could not create IP run for IP '$ip_name' – skipping run configuration (probably pre-generated core)"
+    continue
+  }
+
+  # resolve the run object
+  set ip_run [get_runs -quiet $ip_run_name]
+  if {$ip_run eq ""} {
+    puts "WARNING: get_runs returned no object for run '$ip_run_name' – skipping"
+    continue
+  }
+
   puts "Configuring IP run properties for $ip_run_name"
+  puts "DEBUG: ip=$ip ip_run_name='$ip_run_name' ip_run='$ip_run'"
   set_property strategy "Flow_PerfOptimized_high" -objects $ip_run
   set_property -name "steps.synth_design.args.no_lc" -value $no_lc -obj $ip_run
 }

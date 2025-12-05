@@ -18,7 +18,7 @@ set bd_name $ice_bd_name
 
 
 # Define list of IP files, with path relative to $ip_dir
-set ooc_ip_files $ice_ooc_ip_files
+set ooc_ip_files $ice_ct_ooc_ip_files
 set ip_files $ice_ct_ip_files
 set hdl_files [concat $ice_ct_hdl_files "chfpga_ice_ct_config.vhd" ]
 
