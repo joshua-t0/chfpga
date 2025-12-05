@@ -4,6 +4,19 @@
 :entity:`SYSTEM` (*system.vhd*): System module
 **********************************************
 
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   gpio
+   i2c
+   spi
+   blinker
+   refclk
+   sysmon_xadc
+   freq_ctr
+   ../navbar_separator
+
 .. parse:: hdl/SYSTEM/system.vhd
 
 .. default-role:: vhdl:entity
@@ -13,23 +26,6 @@
 
     SYSTEM module block diagram showing the command router and sub-modules.
 
-
-
-Sub-modules
-===========
-
-.. toctree::
-   :maxdepth: 1
-   :hidden:
-
-   clocks
-   GPIO <gpio>
-   i2c
-   spi
-   blinker
-   refclk
-   sysmon_xadc
-   freq_ctr
 
 
 Entity documentation

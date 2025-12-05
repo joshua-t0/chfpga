@@ -1,6 +1,6 @@
 .. _chfpga_crs:
 
-Platform Wrapper: :entity:`chfpga_crs` (*chfpga_crs.vhd*)
+:entity:`chfpga_crs` platform wrapper (*chfpga_crs.vhd*)
 *********************************************************
 
 

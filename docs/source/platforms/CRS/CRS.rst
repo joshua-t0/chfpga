@@ -1,8 +1,16 @@
-Hardware Description
-********************
+CRS
+***
 
 
-The CRS** is a compact Ultrascale+ RfSoC FPGA board built by *t0 technologies* to implement next-generation high performance and large-density signal processing arrays. Th CRS provides 8 14-bit ADC (typicaly used at 3200 GSPS with `chFPGA`), 8 DACs, 100G Ethernet QSFP interface, 6x 25 Gbps SFP links, high-speed 4- and 16-board backplane capability with 25 Gbps links, clocking structure allowing deterministic synchronization of multiple boards.
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   chfpga_crs
+   crs_configs
+   ../../navbar_separator
+   
+The CRS is a compact Ultrascale+ RfSoC FPGA board built by *t0 technologies* to implement next-generation high performance and large-density signal processing arrays. Th CRS provides 8 14-bit ADC (typicaly used at 3200 GSPS with `chFPGA`), 8 DACs, 100G Ethernet QSFP interface, 6x 25 Gbps SFP links, high-speed 4- and 16-board backplane capability with 25 Gbps links, clocking structure allowing deterministic synchronization of multiple boards.
 
 
 Clocking hardware

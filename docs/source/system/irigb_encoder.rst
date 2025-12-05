@@ -4,7 +4,7 @@
 :entity:`irigb_encoder` (*irigb_encoder.vhd*): IRIG-B Time Code Encoder
 ***********************************************************************
 
-.. parse:: hdl/CMD/irigb_encoder.vhd
+.. parse:: hdl/SYSTEM/irigb_encoder.vhd
 
 .. default-role:: vhdl:entity
 

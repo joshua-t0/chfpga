@@ -1,22 +1,22 @@
-.. title:: register_array
+.. title:: core_registers
 
 **********************************************************************
-:entity:`register_array` (*register_array.vhd*): Register Array Module
+:entity:`core_registers` (*core_registers.vhd*): Core Registers Module
 **********************************************************************
 
-.. parse:: hdl/CMD/register_array.vhd
+.. parse:: hdl/SYSTEM/core_registers.vhd
 
 .. default-role:: vhdl:entity
 
 Entity documentation
 --------------------
 
-.. autoentity:: register_array
+.. autoentity:: core_registers
 
 Principle of Operations
 =======================
 
-The `register_array` module implements an array of 32-bit registers that are accessible via two interfaces:
+The `core_registers` module implements an array of 32-bit registers that are accessible via two interfaces:
 
 1. **32-bit req/ack bus**: Standard memory-mapped interface with address, write data, read data, write request, write acknowledge, read request, and read acknowledge signals
 2. **8-bit byte-wide bus**: Alternative interface using 8-bit data and byte addresses
@@ -35,5 +35,5 @@ Key Features
 Usage
 -----
 
-The `register_array` module is used in the IceBoard platform to implement core firmware registers that are expected to be present in every application. It provides a flexible way to create memory-mapped register banks with configurable addressing.
+The `core_registers` module is used in the IceBoard platform to implement core firmware registers that are expected to be present in every application. It provides a flexible way to create memory-mapped register banks with configurable addressing.
 
