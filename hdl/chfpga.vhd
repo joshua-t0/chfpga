@@ -141,7 +141,7 @@ entity chFPGA is
 		CT_TYPE: ct_type_enum;
 		CT_LEVEL: integer := 1;
 
-		NUMBER_OF_CROSSBAR_INPUTS: integer          := GLOBAL_NUMBER_OF_CHANNELIZERS_TO_CORRELATE;
+		NUMBER_OF_CROSSBAR_INPUTS: integer          := NUMBER_OF_CHANNELIZERS;
 		NUMBER_OF_CROSSBAR1_OUTPUTS: integer; -- number of CROSSBAR1 output lanes. Should be 8 for URAM-based CROSSBAR1.
 		CT_LANE_TO_LINK_MAP: integer_array   := (0 => -1, 1 => 0, 2 => 1, 3 => 2, 4 to 7 => -1); -- List indicating the GTX/GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
 		CT_LINK_TO_QUAD_MAP: integer_array   := (0 => 0); -- Indicates which quad is associated to each GTY link.
@@ -153,7 +153,6 @@ entity chFPGA is
 		-- Correlator config
 		CORR_TYPE: corr_type_enum                    := CORR44; -- "CORR44" or "UCORR44"
 		NUMBER_OF_CORRELATORS: integer               := 8; -- Number of correlator blocks (XMUL+ACC) to be implemented
-		NUMBER_OF_CHANNELIZERS_TO_CORRELATE: integer := NUMBER_OF_CHANNELIZERS; -- Number of channelizers to be correlated for each frequency channel. This is hard coded for now. Determines how many channelizer streams are fed to the CORR modules, and how many multipliers to implement in parallel in the CORR module.
 
 		-- Data offload configuration
 

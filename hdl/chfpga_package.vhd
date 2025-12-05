@@ -408,10 +408,7 @@ constant NUMBER_OF_CMACS_MAX : integer := (NUMBER_OF_CHANNELIZERS_MAX + 1) * 2;
 
 
 -- Basic system configuration
--- These constants are defined globally in this package because the CHAN and CORR modules cannot be implemented
--- out of contect if they have generics.
---constant GLOBAL_IMPLEMENT_FFT: boolean := TRUE;
-constant GLOBAL_NUMBER_OF_CHANNELIZERS_TO_CORRELATE: integer := 8;
+-- These global constants are defined globally in this package so they can be used by OOC modules
 constant GLOBAL_SIM: boolean := FALSE;
 constant GLOBAL_NUMBER_OF_GPU_LINKS: integer := 8; -- (0- NUMBER_OF_CHANNELIZERS) Number of 10Gb Ethernet links to connecto to the GPUs
 constant GLOBAL_NUMBER_OF_GPU_REFCLKS: integer := 1; -- Number of Reference clocks provided for the 10GE links to the GPU
