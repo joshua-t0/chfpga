@@ -11,9 +11,11 @@ package chfpga_config is
 
 	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean               := TRUE;
 	constant CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS: boolean    := FALSE;
-	constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer   := 2;
-	constant CONFIG_CHAN_CAPTURE_TYPE: chan_capture_type_enum := PROBER;
 	constant CONFIG_CHAN_FFT_TYPE: fft_type_enum              := HIRAX;
+
+	-- Capture engine config
+	constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer := 2;
+	constant CONFIG_CHAN_CAPTURE_TYPE: chan_capture_type_enum := PROBER;
 	constant CONFIG_CAPTURE_BITS_PER_WORD: integer            := 32;
 
 	-- Corner-turn engine configuration
@@ -24,7 +26,7 @@ package chfpga_config is
 
 	constant CONFIG_NUMBER_OF_CROSSBAR_OUTPUTS: integer := 16 ; -- 8 on corr config
 	constant CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer := 16; -- 0 for corr config
-	constant CONFIG_NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer := 8; -- o for corr config
+	constant CONFIG_NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer := 8; -- 0 for corr config
 	constant CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS: integer := 19; -- 0 for corr config
 	--constant CONFIG_NUMBER_OF_GPU_LINKS: integer := 8; -- 0 for corr config
 
