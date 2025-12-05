@@ -29,3 +29,6 @@ pipelines:
           - git diff-index --quiet HEAD -- || git commit -m "Auto update of $DOC_PUBLISH_FOLDER documentation"
           - git push
 
+        concurrency: # Make sure multiple pipelines are not run at the same time (repo lock collision)
+          group: docs-deploy
+          cancel_in_progress: false
