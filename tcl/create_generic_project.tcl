@@ -378,11 +378,15 @@ generate_target all $ip_list
 catch { config_ip_cache -export $ip_list }
 foreach ip $ip_list {
   # removed the -force option to avoid regeneration
-  set ip_run_name [create_ip_run $ip]
-  set ip_run [get_runs $ip_run_name]
-  puts "Configuring IP run properties for $ip_run_name"
-  set_property strategy "Flow_PerfOptimized_high" -objects $ip_run
-  set_property -name "steps.synth_design.args.no_lc" -value $no_lc -obj $ip_run
+  set ip_run_name [create_ip_run -force $ip]
+  if {$ip_run_name ne ""} {
+    set ip_run [get_runs $ip_run_name]
+    puts "Configuring IP run properties for $ip_run_name"
+    set_property strategy "Flow_PerfOptimized_high" -objects $ip_run
+    set_property -name "steps.synth_design.args.no_lc" -value $no_lc -obj $ip_run
+    } else {
+      puts "IP $ip is already cached"
+    }
 }
 
 # }
