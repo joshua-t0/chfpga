@@ -48,7 +48,7 @@ UDP_MAC: Next to the corresponding GTX.
 BP_BUCK_SYNC
 CLK0
 
-ALIGN2: Crossbar0 CTRL_SLAVE and CHAN_ALIGN block.
+ALIGN2: Crossbar0 bsb_regs and CHAN_ALIGN block.
 
 ALIGN3:
 	- Located between the GPU blocks
@@ -57,7 +57,7 @@ ALIGN3:
 	    - XGLINK QUAD_GEN, CTRL_SLVE, etc.
 	- Crossbar 3 common logic
 
-	    + CTRL_ROUTER & CTRL_SLAVE
+	    + CTRL_ROUTER & bsb_regs
 	    + ALIGN
 	    + REMAP
 	    + Bus pipelining registers
@@ -114,7 +114,7 @@ BP4 holds the logic related to the backplane shuffle. Critical resources are BRA
 
    - ALIGN: = 16 RAMB18
    - BIN_SEL[0..1]: 2 * (8 FIFO18 + 9 RAMB18) = 16 FIFO18 + 18 RAMB18
-   - CTRL_SLAVE0: 0 BRAM
+   - bsb_regs0: 0 BRAM
    - crossbar_router0 : 0 BRAM
    - remap0: 0 BRAM
 

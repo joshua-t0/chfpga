@@ -4,7 +4,7 @@
 :entity:`CTRL_ROUTER` (*CMD_ROUTER.vhd*): Command Bus Router
 ******************************************************************
 
-.. parse:: hdl/CMD/CMD_ROUTER.vhd
+.. parse:: hdl/BSB/CMD_ROUTER.vhd
 
 .. default-role:: vhdl:entity
 

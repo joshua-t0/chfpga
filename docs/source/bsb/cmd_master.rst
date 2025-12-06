@@ -4,7 +4,7 @@
 :entity:`CTRL_MASTER` (*CMD_MASTER.vhd*): Command Bus Master
 ************************************************************
 
-.. parse:: hdl/CMD/CMD_MASTER.vhd
+.. parse:: hdl/BSB/CMD_MASTER.vhd
 
 .. default-role:: vhdl:entity
 

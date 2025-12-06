@@ -4,7 +4,7 @@
 :entity:`ALIGN` (*ALIGN2.vhd*): 32-bit Multi-Lane Frame Alignment Module
 ************************************************************************
 
-.. parse:: hdl/CROSSBAR/ALIGN2.vhd
+.. parse:: hdl/CT/ALIGN2.vhd
 
 .. default-role:: vhdl:entity
 

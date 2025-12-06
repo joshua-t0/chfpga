@@ -10,7 +10,7 @@
    align64
    ../../navbar_separator
 
-.. parse:: hdl/CROSSBAR/uct_engine.vhd
+.. parse:: hdl/CT/uct_engine.vhd
 .. default-role:: vhdl:entity
 
 

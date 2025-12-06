@@ -16,7 +16,7 @@ Entity documentation
 Memory Map
 ==========
 
-The `xglink_core` module uses a control router to distribute commands to multiple CTRL_SLAVE instances. Each CTRL_SLAVE provides a memory-mapped interface for configuration and monitoring.
+The `xglink_core` module uses a control router to distribute commands to multiple bsb_regs instances. Each bsb_regs provides a memory-mapped interface for configuration and monitoring.
 
 Address Format
 --------------

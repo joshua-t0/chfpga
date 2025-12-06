@@ -29,7 +29,7 @@ The module contains a set of control and monitoring memory-map registers.
 Entity documentation
 --------------------
 
-.. parse:: hdl/CROSSBAR/CHAN_BIN_SEL.vhd
+.. parse:: hdl/CT/CHAN_BIN_SEL.vhd
 
 .. autoentity:: chan_bin_sel
 

@@ -4,7 +4,7 @@
 :entity:`UCORN` (*ucorn.vhd*): UltraRAM-based Corner-Turn Engine
 ****************************************************************
 
-.. parse:: hdl/CROSSBAR/ucorn.vhd
+.. parse:: hdl/CT/ucorn.vhd
 
 .. default-role:: vhdl:entity
 

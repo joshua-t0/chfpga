@@ -4,7 +4,7 @@
 :entity:`CMD_ASYNC_FIFO` (*CMD_ASYNC_FIFO.vhd*): Command Bus Asynchronous FIFO
 ******************************************************************************
 
-.. parse:: hdl/CMD/CMD_ASYNC_FIFO.vhd
+.. parse:: hdl/BSB/CMD_ASYNC_FIFO.vhd
 
 .. default-role:: vhdl:entity
 

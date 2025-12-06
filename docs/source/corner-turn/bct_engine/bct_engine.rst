@@ -14,7 +14,7 @@
    shuffle_crossbar
    ../../navbar_separator
 
-.. parse:: hdl/CROSSBAR/bct_engine.vhd
+.. parse:: hdl/CT/bct_engine.vhd
 .. default-role:: vhdl:entity
 
 

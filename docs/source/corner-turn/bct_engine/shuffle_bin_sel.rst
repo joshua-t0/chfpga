@@ -26,7 +26,7 @@ The module contains a set of control and monitoring memory-map registers.
 Entity documentation
 --------------------
 
-.. parse:: hdl/CROSSBAR/SHUFFLE_BIN_SEL.vhd
+.. parse:: hdl/CT/SHUFFLE_BIN_SEL.vhd
 
 .. autoentity:: shuffle_bin_sel
 

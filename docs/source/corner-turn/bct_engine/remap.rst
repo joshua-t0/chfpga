@@ -4,7 +4,7 @@
 :entity:`REMAP` (*REMAP.vhd*): Lane Remapping Module
 ********************************************************************
 
-.. parse:: hdl/CROSSBAR/REMAP.vhd
+.. parse:: hdl/CT/REMAP.vhd
 
 .. default-role:: vhdl:entity
 

@@ -1,15 +1,15 @@
-.. title:: CTRL_SLAVE
+.. title:: bsb_regs
 
 ******************************************************************
-:entity:`CTRL_SLAVE` (*CMD_SLAVE2.vhd*): Command Bus Slave
+:entity:`bsb_regs` (*bsb_regs.vhd*): BSB Register Interface
 ******************************************************************
 
-.. parse:: hdl/CMD/CMD_SLAVE2.vhd
+.. parse:: hdl/BSB/bsb_regs.vhd
 
 .. default-role:: vhdl:entity
 
 Entity documentation
 --------------------
 
-.. autoentity:: CTRL_SLAVE
+.. autoentity:: bsb_regs
 

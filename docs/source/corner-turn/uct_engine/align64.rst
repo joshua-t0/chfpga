@@ -11,7 +11,7 @@
    align64_fifo
    ../../navbar_separator
 
-.. parse:: hdl/CROSSBAR/ALIGN64.vhd
+.. parse:: hdl/CT/ALIGN64.vhd
 
 .. default-role:: vhdl:entity
 

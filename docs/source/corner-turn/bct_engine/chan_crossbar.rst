@@ -37,7 +37,7 @@ Generics are used to specialize the module for the first stage corner-turn opera
 Entity documentation
 --------------------
 
-.. parse:: hdl/CROSSBAR/CHAN_CROSSBAR.vhd
+.. parse:: hdl/CT/CHAN_CROSSBAR.vhd
 
 .. autoentity:: CHAN_CROSSBAR
 
