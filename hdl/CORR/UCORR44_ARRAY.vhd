@@ -159,7 +159,7 @@ begin
     -- |         |     | 7:4  | (unused)                | |
     -- ------------------------------------------------------------------------------
 
-	bsb_regs0: entity work.CTRL_SLAVE
+	bsb_regs0: entity work.bsb_regs
 		GENERIC MAP (
 			DEFAULT_CONTROL_BYTES=> "0000000" & to_std_logic(SOFT_AUTOCORR_ONLY) &
 			                        to_slv(SOFT_NINTEG-1,16) &

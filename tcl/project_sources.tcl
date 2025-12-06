@@ -22,17 +22,17 @@ set bd_dir "${repo_dir}/hdl/TCPIPE"
 set ip_dir "${repo_dir}/_Cores/"
 set hdl_dir "${repo_dir}/hdl/"
 set const_dir "${repo_dir}/constraints/"
-
+set bd_name ""
 
 set hdl_base_files [list  \
  "chfpga_package.vhd" \
  "chfpga.vhd" \
- "CMD/axis_sync_fifo.vhd" \
- "CMD/CMD_SYNC_FIFO.vhd" \
- "CMD/CMD_ROUTER.vhd" \
- "CMD/CMD_SLAVE2.vhd" \
- "CMD/CMD_ASYNC_FIFO.vhd" \
- "CMD/CMD_MASTER.vhd" \
+ "BSB/axis_sync_fifo.vhd" \
+ "BSB/CMD_SYNC_FIFO.vhd" \
+ "BSB/CMD_ROUTER.vhd" \
+ "BSB/bsb_regs.vhd" \
+ "BSB/CMD_ASYNC_FIFO.vhd" \
+ "BSB/CMD_MASTER.vhd" \
  "SYSTEM/irigb_package.vhd" \
  "SYSTEM/core_registers.vhd" \
  "SYSTEM/irigb_decoder.vhd" \
@@ -60,7 +60,7 @@ set hdl_base_files [list  \
 
 set fft_type_chime "KC705/FFT2/FFT2.xci"
 set fft_type_hirax "KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci"
-
+set fft_type_chord "CRS/pfb_fft_bitgrowth_0/pfb_fft_bitgrowth_0.xci"
 
 #*****************************************************************************************
 # ICE Platform
@@ -68,8 +68,6 @@ set fft_type_hirax "KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci"
 
 
 set ice_target_part "xc7k420tffg901-2"
-set ice_bd_name ""
-
 
 set ice_ct_ooc_ip_files $fft_type_hirax
 set ice_corr16_ooc_ip_files $fft_type_chime
@@ -116,7 +114,7 @@ set ice_hdl_base_files [concat $hdl_base_files [list \
   "CHAN/PROBER.vhd" \
   "CHAN/ADCDAQ.vhd" \
   \
-  "CROSSBAR/bct_engine.vhd"\
+  "CT/bct_engine.vhd"\
   \
   "1G_UDP_MAC/udp_mac_crc32.vhd" \
   "1G_UDP_MAC/udp_mac_tx.vhd" \
@@ -127,12 +125,12 @@ set ice_hdl_base_files [concat $hdl_base_files [list \
 
 
 set ice_ct_hdl_files [concat $ice_hdl_base_files [list \
-  "CROSSBAR/ALIGN2.vhd"\
-  "CROSSBAR/CHAN_BIN_SEL.vhd"\
-  "CROSSBAR/CHAN_CROSSBAR.vhd"\
-  "CROSSBAR/REMAP.vhd"\
-  "CROSSBAR/SHUFFLE_BIN_SEL.vhd"\
-  "CROSSBAR/SHUFFLE_CROSSBAR.vhd"\
+  "CT/ALIGN2.vhd"\
+  "CT/CHAN_BIN_SEL.vhd"\
+  "CT/CHAN_CROSSBAR.vhd"\
+  "CT/REMAP.vhd"\
+  "CT/SHUFFLE_BIN_SEL.vhd"\
+  "CT/SHUFFLE_CROSSBAR.vhd"\
   \
   "XGLINK/xglink_bypass.vhd"\
   "XGLINK/xglink_crc32_32.vhd"\
@@ -173,7 +171,7 @@ set ice_corr16_hdl_files [concat $ice_hdl_base_files [list \
 set crs_target_part "xczu47dr-ffvg1517-1-i"
 set crs_bd_name "zynq_tcpipe_crs"
 
-set crs_ooc_ip_files "CRS/pfb_fft_bitgrowth_0/pfb_fft_bitgrowth_0.xci"
+set crs_ooc_ip_files $fft_type_chord
 
 set crs_corr_ip_files [list \
  "CRS/GTY/gtwizard_ultrascale_0.xci" \
@@ -188,13 +186,13 @@ set crs_ct_ip_files [concat [list \
 set crs_hdl_base_files [concat $hdl_base_files [list \
  "chfpga_crs.vhd" \
  "CHAN/ucap.vhd" \
- "CROSSBAR/uct_engine.vhd" \
+ "CT/uct_engine.vhd" \
  ]]
 
 
 set crs_corr_hdl_files [concat $crs_hdl_base_files [list \
- "CROSSBAR/align64_fifo.vhd" \
- "CROSSBAR/ALIGN64.vhd" \
+ "CT/align64_fifo.vhd" \
+ "CT/ALIGN64.vhd" \
  "XXVGLINK/xxvglink_data_fifo.vhd" \
  "XXVGLINK/xxvglink_bypass.vhd" \
  "XXVGLINK/crc32_64.vhd" \
@@ -211,7 +209,7 @@ set crs_corr_hdl_files [concat $crs_hdl_base_files [list \
  ]]
 
 set crs_ct_hdl_files [concat $crs_hdl_base_files [list \
-  "CROSSBAR/ucorn.vhd" \
+  "CT/ucorn.vhd" \
   "100GE_UDP_MAC/cge.vhd"\
   ]]
 

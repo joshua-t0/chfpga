@@ -496,10 +496,10 @@ begin
 	-- |         |     | 7:6  | (unused)             |                               |
 	-- |         | 2+  | -    | status_bytes         | Per-link status bytes (from individual links) |
 	-- ------------------------------------------------------------------------------
-	-- Note: This module also has per-quad and per-lane CTRL_SLAVE instances for DRP access.
+	-- Note: This module also has per-quad and per-lane bsb_regs instances for DRP access.
 	-- See quad_regs0 and lane_regs0 instances for per-instance memory maps.
 
-	common_regs0: entity work.CTRL_SLAVE
+	common_regs0: entity work.bsb_regs
 		generic map (
 			DEFAULT_CONTROL_BYTES   => X"00_FF2833" & repeat(X"00", NUMBER_OF_CONTROL_BYTES),
 			NUMBER_OF_CONTROL_BYTES => common_control_bytes'Length(1), -- Number of bits in the control word
@@ -551,7 +551,7 @@ begin
 
 	quad_gen: for i in 0 to NUMBER_OF_QUADS - 1 generate
 
-		quad_regs0: entity work.CTRL_SLAVE
+		quad_regs0: entity work.bsb_regs
 			generic map (
 				DEFAULT_CONTROL_BYTES   => X"00",
 				USE_RAM_DOUT_RDY        => TRUE, -- need to wait for the RDY signal on RAM read accesses
@@ -921,7 +921,7 @@ begin
 
 	gtx_gen: for i in 0 to NUMBER_OF_LINKS - 1 generate
 
-		lane_regs0: entity work.CTRL_SLAVE
+		lane_regs0: entity work.bsb_regs
 			generic map (
 				DEFAULT_CONTROL_BYTES   => X"80_00_01_40_00_00",
 				USE_RAM_DOUT_RDY        => TRUE, -- need to wait for the RDY signal on RAM read accesses

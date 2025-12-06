@@ -331,7 +331,7 @@ status_bytes(0)(7) <= cmac_rd_err(0);
 status_bytes(1) <= to_slv(in_frame_ctr_reg);
 status_bytes(2) <= to_slv(out_frame_ctr_reg);
 
-CTRL_SLAVE0: entity work.CTRL_SLAVE
+CTRL_SLAVE0: entity work.bsb_regs
 	generic map (
 		NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --
 		NUMBER_OF_STATUS_BYTES  => status_bytes'Length(1), --

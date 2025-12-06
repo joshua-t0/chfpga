@@ -631,7 +631,7 @@ idelayctrl_reset_all <= ctrl_rst or idelayctrl_rst; -- resets the IODELAY Contro
 adcdaq_reset_all     <= ctrl_rst or adcdaq_reset or serdes_soft_reset or bufr_soft_reset; -- Reset the SERDES on 1) Global chip reset, 2) Software reset flag or 3) Global external SERDES reset line
 pll_reset_all        <= ctrl_rst or pll_soft_reset or bufr_soft_reset or adcdaq_reset;
 
-CTRL_SLAVE0: entity work.CTRL_SLAVE
+CTRL_SLAVE0: entity work.bsb_regs
 	GENERIC MAP (
 		USE_RAM_DOUT_RDY => TRUE, -- need to wait for the RDY signal on RAM read accesses
 		RAM_DATA_WIDTH   => 16,

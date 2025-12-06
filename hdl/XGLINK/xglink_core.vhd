@@ -576,7 +576,7 @@ txusrclk <= txclk322;
 -- |         | 2+  | -    | status_bytes         | User-defined status bytes |
 -- ------------------------------------------------------------------------------
 
-common_slave0: entity work.CTRL_SLAVE
+common_slave0: entity work.bsb_regs
 	GENERIC MAP (
 		DEFAULT_CONTROL_BYTES=> X"00_FF2833" & repeat(X"00", NUMBER_OF_CONTROL_BYTES),
 		NUMBER_OF_CONTROL_BYTES=>common_control_bytes'Length(1) , -- Number of bits in the control word
@@ -646,7 +646,7 @@ quad_gen: for i in 0 to NUMBER_OF_QUADS-1 generate
 	-- | DRP     | 0x100-0x1FF | - | GTXE2_COMMON DRP | GTXE2_COMMON DRP access (16-bit words, 8-bit address) |
 	-- ------------------------------------------------------------------------------
 
-	quad_slave0: entity work.CTRL_SLAVE
+	quad_slave0: entity work.bsb_regs
 		GENERIC MAP (
 			DEFAULT_CONTROL_BYTES=> X"00",
 			USE_RAM_DOUT_RDY=>TRUE, -- need to wait for the RDY signal on RAM read accesses
@@ -801,7 +801,7 @@ gtx_gen: for i in 0 to NUMBER_OF_GTX-1 generate
 	-- ------------------------------------------------------------------------------
 	-- Note: RX status bytes (5-11) are only present when NUMBER_OF_RX_LANES > 0
 
-	gt_slave0: entity work.CTRL_SLAVE
+	gt_slave0: entity work.bsb_regs
 		GENERIC MAP (
 			DEFAULT_CONTROL_BYTES=>
 				X"00_00_01_40_00_00",

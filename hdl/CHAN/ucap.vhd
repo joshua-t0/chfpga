@@ -169,7 +169,7 @@ begin
 -- |         |  2  | 7:0 | source_sel_in     | Source selection input (bit 0 = channel 0) |
 -- ------------------------------------------------------------------------------
 
-	bsb_regs0: entity work.CTRL_SLAVE
+	bsb_regs0: entity work.bsb_regs
 		GENERIC MAP (
 			DEFAULT_CONTROL_BYTES=> X"08_1A_02cb41_02cb41_17_00_00",
 			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), -- Number of bits in the control word

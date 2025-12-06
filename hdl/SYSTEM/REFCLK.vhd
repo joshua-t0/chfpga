@@ -218,7 +218,7 @@ begin
 	-- BSB Memory-Mapped Registers
 	-----------------------------------------------------------------------------------
 	-- Instantiates control and status bytes accessibled from the BSB
-	bsb_regs0: entity work.CTRL_SLAVE
+	bsb_regs0: entity work.bsb_regs
 		generic map (
 			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), -- Number of bits in the control word
 			NUMBER_OF_STATUS_BYTES  => status_bytes'Length(1), -- Number of bits in the status word.

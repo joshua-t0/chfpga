@@ -149,7 +149,7 @@ begin
 			rst => ctrl_rst -- Asynchronous. The module internally extends the pulse for a number of A_CLK and B_CLK when they come.
 		);
 
-	ctrl_slave0: entity work.CTRL_SLAVE
+	ctrl_slave0: entity work.bsb_regs
 		generic map (
 			USE_RAM_DOUT_RDY        => TRUE, -- need to wait for the RDY signal on RAM read accesses
 			RAM_DATA_WIDTH          => 16,

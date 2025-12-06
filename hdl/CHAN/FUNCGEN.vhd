@@ -328,7 +328,7 @@ status_bytes(5 to 8) <= to_slv8_array(overflow_ctr_reg);
 -- Memory-Mapped interface instantiation
 -----------------------------------------------------------------------------------
 -- Instantiates the memory-mapped registers
-CTRL_SLAVE0: entity work.CTRL_SLAVE
+CTRL_SLAVE0: entity work.bsb_regs
     GENERIC MAP (
         NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --
         NUMBER_OF_STATUS_BYTES  => status_bytes'Length(1), --

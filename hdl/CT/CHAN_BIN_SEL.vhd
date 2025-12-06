@@ -381,7 +381,7 @@ begin
 	-- Memory-Mapped interface instantiation
 	-----------------------------------------------------------------------------------
 	-- Instantiates a memory-mapped interface to the control and status bytes
-	ctrl_slave0: entity work.CTRL_SLAVE
+	ctrl_slave0: entity work.bsb_regs
 		generic map (
 			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --
 			NUMBER_OF_STATUS_BYTES  => status_bytes'Length(1), --

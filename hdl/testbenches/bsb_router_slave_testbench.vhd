@@ -192,7 +192,7 @@ begin
 			RST => ctrl_rst
 		);
 
-CTRL_SLAVE0: entity work.CTRL_SLAVE
+CTRL_SLAVE0: entity work.bsb_regs
     GENERIC MAP (
         NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --
         NUMBER_OF_STATUS_BYTES  => status_bytes'Length(1), --

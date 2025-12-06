@@ -224,7 +224,7 @@ begin
 		-- ------------------------------------------------------------------------------
 
 		-- Instantiate level-1 corner turning registers
-		ct1_regs0: entity work.CTRL_SLAVE
+		ct1_regs0: entity work.bsb_regs
 			generic map (
 				NUMBER_OF_CONTROL_BYTES => control_bytes'LENGTH(1), --
 				NUMBER_OF_STATUS_BYTES  => status_bytes'LENGTH(1), --
@@ -420,7 +420,7 @@ begin
 			-- ------------------------------------------------------------------------------
 
 			-- Instantiate registers for Level 2 corner turning
-			ct2_regs0: entity work.CTRL_SLAVE
+			ct2_regs0: entity work.bsb_regs
 				generic map (
 					NUMBER_OF_CONTROL_BYTES => ct2_control_bytes'LENGTH(1), --
 					NUMBER_OF_STATUS_BYTES  => ct2_status_bytes'LENGTH(1), --
@@ -712,7 +712,7 @@ begin
 				-- ------------------------------------------------------------------------------
 
 				-- Instantiate registers for level-3 corner turning
-				ct3_regs0: entity work.CTRL_SLAVE
+				ct3_regs0: entity work.bsb_regs
 					generic map (
 						NUMBER_OF_CONTROL_BYTES => ct3_control_bytes'LENGTH(1), --
 						NUMBER_OF_STATUS_BYTES  => ct3_status_bytes'LENGTH(1), --

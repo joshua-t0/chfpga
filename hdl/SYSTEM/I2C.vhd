@@ -256,7 +256,7 @@ begin
 
 	-- CLK <= CLK200; -- select clock
 
-	ctrl_slave0: entity work.CTRL_SLAVE
+	ctrl_slave0: entity work.bsb_regs
 		generic map (
 			NUMBER_OF_CONTROL_BYTES => control_bytes'LENGTH(1), -- Length of array in the first dimension: number of bytes
 			NUMBER_OF_STATUS_BYTES  => status_bytes'LENGTH(1),

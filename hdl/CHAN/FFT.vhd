@@ -299,7 +299,7 @@ status_bytes(4)(5) <= sync_reset;
 -- Memory-Mapped interface
 -----------------------------------------------------------------------------------
 -- Instantiates a memory-mapped interface to the control and status bytes
-CTRL_SLAVE0: entity work.CTRL_SLAVE
+CTRL_SLAVE0: entity work.bsb_regs
 	GENERIC MAP (
 		NUMBER_OF_CONTROL_BYTES => control_bytes'LENGTH(1), -- Number of bits in the control word
 		NUMBER_OF_STATUS_BYTES  => status_bytes'LENGTH(1), -- Number of bits in the status word.

@@ -4,7 +4,7 @@
 --
 -- Create Date:    14:41:37 04/26/2011
 -- Design Name:
--- Module Name:    CMD_SLAVE - Behavioral
+-- Module Name:    bsb_regs - Behavioral
 -- Project Name:
 -- Target Devices:
 -- Tool versions:
@@ -83,7 +83,7 @@ use UNISIM.VComponents.all;
 --   NOTE: The even address (LSB) must be read/write before the odd (MSB) for the 16-bit access to succeed
 --
 
-entity CTRL_SLAVE is
+entity bsb_regs is
 	GENERIC (
 		DEFAULT_CONTROL_BYTES: std_logic_vector := X"00000000"; -- Vector of bits to initialize the control register to a known value
 		NUMBER_OF_CONTROL_BYTES: integer        := 1; -- Number of bytes in the control word
@@ -122,9 +122,9 @@ entity CTRL_SLAVE is
 		RAM_RD_EN : OUT  STD_LOGIC;
 		RAM_EN : OUT  STD_LOGIC
 		);
-end CTRL_SLAVE;
+end bsb_regs;
 
-architecture Behavioral of CTRL_SLAVE is
+architecture Behavioral of bsb_regs is
 
 	signal ram_rd_en_int: STD_LOGIC;
 	signal ram_wr_en_int: std_logic := '0'; -- init for sim only to prevent contamination of RAM first byte

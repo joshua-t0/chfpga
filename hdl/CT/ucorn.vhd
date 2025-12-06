@@ -201,7 +201,7 @@ begin
 	-- | RAM     | 0-65535 | - | Data/Playlist/Mask RAM | RAM for data buffer, playlist, or mask depending on bsb_ram_sel and bsb_ram_bank |
 	-- ------------------------------------------------------------------------------
 
-	bsb_regs0: entity work.CTRL_SLAVE
+	bsb_regs0: entity work.bsb_regs
 		generic map (
 			DEFAULT_CONTROL_BYTES   => X"00_66_00010000_FF_10",
 			USE_RAM_DOUT_RDY        => FALSE, -- need to wait for the RDY signal on RAM read accesses

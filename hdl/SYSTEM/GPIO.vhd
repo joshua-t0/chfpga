@@ -559,7 +559,7 @@ begin
 		lcd_rs <= control_bytes(2)(6);
 		lcd_rw <= control_bytes(2)(5);
 		lcd_db <= control_bytes(2)(3 downto 0);
-	else generate -- make sure the outputs are driven while the associated CTRL_SLAVE logic is synthesized out
+	else generate -- make sure the outputs are driven while the associated bsb_regs logic is synthesized out
 		lcd_e  <= '0';
 		lcd_rs <= '0';
 		lcd_rw <= '0';
@@ -764,7 +764,7 @@ begin
 	-- Memory-Mapped interface
 	-----------------------------------------------------------------------------------
 	-- Instantiates a memory-mapped interface to the control and status bytes
-	ctrl_slave0: entity work.CTRL_SLAVE
+	ctrl_slave0: entity work.bsb_regs
 		generic map (
 			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), -- Length of array in the first dimension: number of bytes
 			NUMBER_OF_STATUS_BYTES  => status_bytes'Length(1),
