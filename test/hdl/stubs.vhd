@@ -130,7 +130,7 @@ end stub;
 library ieee;
 use ieee.std_logic_1164.all;
 use work.chfpga_package.all;
-entity SYSMON_XADC is
+entity sysmon is
 	generic (
 		PLATFORM_ID: integer
 	);
@@ -152,8 +152,8 @@ entity SYSMON_XADC is
 		sysmon_clk: in  std_logic;
 		sysmon_rst: in std_logic
 	);
-end entity SYSMON_XADC;
-architecture stub of SYSMON_XADC is
+end entity sysmon;
+architecture stub of sysmon is
 begin
 end stub;
 

@@ -267,7 +267,7 @@ begin
 	-- | RAM     | 0-1023 | - | CMAC_DRP                | CMAC DRP register access (10-bit address) |
 	-- ------------------------------------------------------------------------------
 
-	bsb_mmr0: entity work.bsb_regs
+	bsb_regs0: entity work.bsb_regs
 		generic map (
 			DEFAULT_CONTROL_BYTES => X"00_11_0020_0000",
 			USE_RAM_DOUT_RDY => TRUE, -- need to wait for the RDY signal on RAM read accesses

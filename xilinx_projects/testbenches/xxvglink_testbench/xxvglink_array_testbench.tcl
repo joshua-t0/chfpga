@@ -11,10 +11,10 @@ add_files -fileset sources_1		\
 	"$hdl/testbenches/xxvglink_array_testbench.vhd"	\
 	"$hdl/testbenches/tb_package.vhd"		\
 	[ glob $hdl/XXVGLINK/*.vhd ]	\
-	"$hdl/BSB/bsb_regs.vhd"		\
-	"$hdl/BSB/CMD_ROUTER.vhd"		\
-	"$hdl/BSB/CMD_SYNC_FIFO.vhd"	\
-	"$hdl/BSB/axis_sync_fifo.vhd"	\
+	"$hdl/bsb/bsb_regs.vhd"		\
+	"$hdl/bsb/bsb_router.vhd"		\
+	"$hdl/bsb/bsb_sync_fifo.vhd"	\
+	"$hdl/bsb/axis_sync_fifo.vhd"	\
 	"$hdl/chfpga_package.vhd"	\
 	"$core/GTY/gtwizard_ultrascale_0.xci"
 
