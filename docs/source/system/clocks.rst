@@ -21,7 +21,7 @@ A MMCM takes the 200 MHz word clock from one ADC (ADC0, bus A on Mezzanine A) an
 Entity documentation
 ====================
 
-.. parse:: hdl/SYSTEM/clocks.vhd
+.. parse:: hdl/system/clocks.vhd
 
 .. autoentity:: clocks
 

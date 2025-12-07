@@ -1,13 +1,13 @@
 .. title:: CHAN_BIN_SEL
 
 *******************************************************************************
-:entity:`CHAN_BIN_SEL` (*CHAN_BIN_SEL.vhd*): 1st stage corner-turn bin selector
+:entity:`chan_bin_sel` (*chan_bin_sel.vhd*): 1st stage corner-turn bin selector
 *******************************************************************************
 
 .. .. figure:: ../../images/channelizer.svg
 ..     :width: 75%
 
-:entity:`CHAN_BIN_SEL` receives the raw data frames and flags from all the local channelizers and selects a subset of their frequency bins. The data, scaler flags and frame flags (ADC/FFT overflows) are stored in separate FIFOs and are streamed out along with a header and a final packer flag word. The buffering is done to allow the data is sent as one contiguous block, followed by the scaler flag block and a frame flag block. This packet format is intended to facilitate further corner-turn operations and also ultimately allowing the receifing node to efficiently transfer the data part of the packet using single DMA requests. This feature, however, comes at the cost of additional buffering and complexifies the logic of the bin selector code.
+:entity:`chan_bin_sel` receives the raw data frames and flags from all the local channelizers and selects a subset of their frequency bins. The data, scaler flags and frame flags (ADC/FFT overflows) are stored in separate FIFOs and are streamed out along with a header and a final packer flag word. The buffering is done to allow the data is sent as one contiguous block, followed by the scaler flag block and a frame flag block. This packet format is intended to facilitate further corner-turn operations and also ultimately allowing the receifing node to efficiently transfer the data part of the packet using single DMA requests. This feature, however, comes at the cost of additional buffering and complexifies the logic of the bin selector code.
 
 
 The module contains a set of control and monitoring memory-map registers.
@@ -29,7 +29,7 @@ The module contains a set of control and monitoring memory-map registers.
 Entity documentation
 --------------------
 
-.. parse:: hdl/CT/CHAN_BIN_SEL.vhd
+.. parse:: hdl/ct/chan_bin_sel.vhd
 
 .. autoentity:: chan_bin_sel
 
@@ -42,7 +42,7 @@ Memory map
 ----------
 
 .. include-docs:: CHAN_BIN_SEL
-    :start-after: CHAN_BIN_SEL Memory Map
+    :start-after: chan_bin_sel Memory Map
 
 Implementation details
 ----------------------

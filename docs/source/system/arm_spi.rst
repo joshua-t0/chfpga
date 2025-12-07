@@ -4,7 +4,7 @@
 :entity:`arm_spi` (*arm_spi.vhd*): ARM SPI Interface Module
 ********************************************************************
 
-.. parse:: hdl/SYSTEM/arm_spi.vhd
+.. parse:: hdl/system/arm_spi.vhd
 
 .. default-role:: vhdl:entity
 

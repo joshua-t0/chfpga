@@ -1,7 +1,7 @@
-.. title:: FREQ_CTR
+.. title:: freq_ctr
 
 ******************************************************
-:entity:`FREQ_CTR` (*FREQ_CTR.vhd*): Frequency counter
+:entity:`freq_ctr` (*freq_ctr.vhd*): Frequency counter
 ******************************************************
 
 .. .. figure:: ../images/FREQCTR.svg
@@ -10,9 +10,9 @@
 Entity documentation
 ====================
 
-.. parse:: hdl/SYSTEM/FREQ_CTR.vhd
+.. parse:: hdl/system/freq_ctr.vhd
 
-.. autoentity:: FREQ_CTR
+.. autoentity:: freq_ctr
 
 
 Additional details
@@ -31,14 +31,14 @@ To make a measurment, the user sets ``start`` to 0 and then 1, polls the ``ready
 Measured clock signals
 ----------------------
 
-`FREQ_CTR` does not measure the clock signals directly for a few reasons.
+`freq_ctr` does not measure the clock signals directly for a few reasons.
 
 - Some clocks are very fast, perhaps faster than the logic allows
 - Routing the  clocks into a mux is awkward and source of many warnings
 - But most importantly, routing all the clock signals to a single point utilizes precious clock routing resources and clock buffers. We often run out of BUFH or equivalent local regional clock buffers on the FREQ_CTR clock region, and might even not have enough inferred BUFG.
 
 
-For this reason, `FREQ_CTR` is provided by a logic signal that toggles at half the rate of the clock. This signal is simply a divide-by-two signal (an inverter and a flip-flop). If that divider is kept local to where the clock is used, we do not use any additional clock buffers. Routing now used standard fabric, not clock lines. The frequency is now in range. And is is easy to mux the clocks signals since they are now standard fabric signals.
+For this reason, `freq_ctr` is provided by a logic signal that toggles at half the rate of the clock. This signal is simply a divide-by-two signal (an inverter and a flip-flop). If that divider is kept local to where the clock is used, we do not use any additional clock buffers. Routing now used standard fabric, not clock lines. The frequency is now in range. And is is easy to mux the clocks signals since they are now standard fabric signals.
 
 Software can account for the fact that we measure only half the frequency.
 
@@ -95,6 +95,6 @@ This will require more investigations.
 Memory map
 ==========
 
-.. include-docs:: FREQ_CTR
+.. include-docs:: freq_ctr
     :start-after: Memory map
 

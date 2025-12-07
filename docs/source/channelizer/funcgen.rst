@@ -36,7 +36,7 @@ Sub-modules
 Entity documentation
 ====================
 
-.. parse:: hdl/CHAN/FUNCGEN.vhd
+.. parse:: hdl/chan/FUNCGEN.vhd
 
 .. autoentity:: FUNCGEN
 

@@ -18,12 +18,12 @@ chfpga is normally instantiated by a platform-specific top module that creates t
 - System modules
 
     - Clocking system (`clocks`)
-    - System Bus master (`ctrl_master` and routers `ctrl_router` with optional `UDP_MAC` 1G Ethernet interface)
-    - GPIO and general configuration registers (`GPIO`)
-    - I2C and SPI controllers (`I2C` and `SPI`)
-    - System monitor (`SYSMON_XADC`)
-    - Reference clock/ synchroniztion sequencer (`REFCLK`)
-    - Frequency counter (`FREQ_CTR`)
+    - System Bus master (`bsb_master` and routers `bsb_router` with optional `UDP_MAC` 1G Ethernet interface)
+    - GPIO and general configuration registers (`gpio`)
+    - I2C and SPI controllers (`i2c` and `spi`)
+    - System monitor (`sysmon`)
+    - Reference clock/ synchroniztion sequencer (`refclk`)
+    - Frequency counter (`freq_ctr`)
     - Heartbeat LED blinker (`blinker`)
 
 

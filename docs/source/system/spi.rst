@@ -1,7 +1,7 @@
-.. title:: SPI
+.. title:: spi
 
 *****************************************
-:entity:`SPI` (*SPI.vhd*): SPI peripheral
+:entity:`spi` (*spi.vhd*): SPI peripheral
 *****************************************
 
 .. figure:: ../images/SYSTEM/spi.svg
@@ -10,9 +10,9 @@
 Entity documentation
 ====================
 
-.. parse:: hdl/SYSTEM/SPI.vhd
+.. parse:: hdl/system/spi.vhd
 
-.. autoentity:: SPI
+.. autoentity:: spi
 
 
 
@@ -37,6 +37,6 @@ A transaction is performed as follows:
 Memory map
 ==========
 
-.. include-docs:: SPI
+.. include-docs:: spi
     :start-after: Memory map
 

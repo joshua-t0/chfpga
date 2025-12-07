@@ -10,7 +10,7 @@
 Entity documentation
 ====================
 
-.. parse:: hdl/SYSTEM/blinker.vhd
+.. parse:: hdl/system/blinker.vhd
 
 .. autoentity:: BLINKER
 

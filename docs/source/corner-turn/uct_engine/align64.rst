@@ -1,7 +1,7 @@
 .. title:: ALIGN64
 
 ***************************************************************************
-:entity:`ALIGN64` (*ALIGN64.vhd*): 64-bit Multi-Lane Frame Alignment Module
+:entity:`align64` (*align64.vhd*): 64-bit Multi-Lane Frame Alignment Module
 ***************************************************************************
 
 .. toctree::
@@ -11,7 +11,7 @@
    align64_fifo
    ../../navbar_separator
 
-.. parse:: hdl/CT/ALIGN64.vhd
+.. parse:: hdl/ct/align64.vhd
 
 .. default-role:: vhdl:entity
 
@@ -23,7 +23,7 @@ Entity documentation
 Principle of Operations
 =======================
 
-The `ALIGN64` module robustly aligns multiple 64-bit AXI-Streaming data streams to a common ``tvalid`` / ``tlast`` framing. It is designed for Ultrascale+ FPGAs and operates at high clock frequencies (up to 400 MHz). Lane 0 is used as a reference for alignment, and the output ``tvalid``/``tlast`` are delayed versions of lane 0, ensuring they are always present even if other lanes are missing or misaligned.
+The `align64` module robustly aligns multiple 64-bit AXI-Streaming data streams to a common ``tvalid`` / ``tlast`` framing. It is designed for Ultrascale+ FPGAs and operates at high clock frequencies (up to 400 MHz). Lane 0 is used as a reference for alignment, and the output ``tvalid``/``tlast`` are delayed versions of lane 0, ensuring they are always present even if other lanes are missing or misaligned.
 
 Key Features
 ------------
@@ -87,7 +87,7 @@ When ``ENABLE_MONITORING_LOGIC`` is set to ``TRUE``, the module provides compreh
 Usage in UCT_Engine
 -------------------
 
-The `ALIGN64` module is used in the :entity:`uct_engine` to align incoming data streams from multiple sources (direct connections and GTY transceiver links). It ensures that 64-bit data words from all lanes are properly aligned before being processed by downstream corner-turn stages.
+The `align64` module is used in the :entity:`uct_engine` to align incoming data streams from multiple sources (direct connections and GTY transceiver links). It ensures that 64-bit data words from all lanes are properly aligned before being processed by downstream corner-turn stages.
 
 The module is critical for reliable operation in multi-board corner-turn configurations where data arrives from different physical sources with variable delays.
 

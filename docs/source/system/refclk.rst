@@ -1,7 +1,7 @@
-.. title:: REFCLK
+.. title:: refclk
 
 **********************************************************
-:entity:`REFCLK` (*REFCLK.vhd*): Reference clock sequencer
+:entity:`refclk` (*refclk.vhd*): Reference clock sequencer
 **********************************************************
 
 .. .. figure:: ../images/REFCLK.svg
@@ -10,9 +10,9 @@
 Entity documentation
 ====================
 
-.. parse:: hdl/SYSTEM/REFCLK.vhd
+.. parse:: hdl/system/refclk.vhd
 
-.. autoentity:: REFCLK
+.. autoentity:: refclk
 
 
 
@@ -24,6 +24,6 @@ Additional details
 Memory map
 ==========
 
-.. include-docs:: REFCLK
+.. include-docs:: refclk
     :start-after: Memory Map
 

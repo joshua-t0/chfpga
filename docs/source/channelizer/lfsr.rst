@@ -14,7 +14,7 @@ The `LFSR` module implements a Linear Feedback Shift Register (LFSR) pseudo-rand
 Entity documentation
 ====================
 
-.. parse:: hdl/CHAN/LFSR.vhd
+.. parse:: hdl/chan/LFSR.vhd
 
 .. autoentity:: LFSR
 

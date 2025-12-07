@@ -180,7 +180,7 @@ shuffle_crossbar
 
 **Xilinx Project:** ``xilinx_projects/testbenches/shuffle_crossbar_testbench/``
 
-Tests the second and third-stage corner-turn crossbar (shuffle crossbar). Verifies ALIGN, REMAP, and SHUFFLE_BIN_SEL functionality, data combining, and packet routing.
+Tests the second and third-stage corner-turn crossbar (shuffle crossbar). Verifies align, remap, and shuffle_bin_sel functionality, data combining, and packet routing.
 
 shuffle
 ~~~~~~~

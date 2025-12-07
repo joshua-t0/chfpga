@@ -1,7 +1,7 @@
-.. title:: I2C
+.. title:: i2c
 
 *****************************************
-:entity:`I2C` (*I2C.vhd*): I2C peripheral
+:entity:`i2c` (*i2c.vhd*): I2C peripheral
 *****************************************
 
 .. figure:: ../images/SYSTEM/i2c.svg
@@ -10,9 +10,9 @@
 Entity documentation
 --------------------
 
-.. parse:: hdl/SYSTEM/I2C.vhd
+.. parse:: hdl/system/i2c.vhd
 
-.. autoentity:: I2C
+.. autoentity:: i2c
 
 
 Additional details
@@ -21,6 +21,6 @@ Additional details
 Memory map
 ----------
 
-.. include-docs:: I2C
+.. include-docs:: i2c
     :start-after: Memory map
 

@@ -1,7 +1,7 @@
-.. title:: GPIO
+.. title:: gpio
 
 *********************************************************
-:entity:`GPIO` (*GPIO.vhd*): General Purpose Input/Output
+:entity:`gpio` (*gpio.vhd*): General Purpose Input/Output
 *********************************************************
 
 .. toctree::
@@ -41,21 +41,21 @@ Schematic
 Entity documentation
 ====================
 
-.. parse:: hdl/SYSTEM/GPIO.vhd
+.. parse:: hdl/system/gpio.vhd
 
-.. autoentity:: GPIO
+.. autoentity:: gpio
 
 
 UDP Memory Map
 ==============
 
-.. include-docs:: GPIO
+.. include-docs:: gpio
     :start-after: GPIO Module
 
 ARM-SPI Memory Map
 ==================
 
-.. .. include-docs:: GPIO
+.. .. include-docs:: gpio
 ..     :start-after: GPIO Module
 
 

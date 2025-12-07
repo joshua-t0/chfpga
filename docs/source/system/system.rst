@@ -13,11 +13,11 @@
    spi
    blinker
    refclk
-   sysmon_xadc
+   sysmon
    freq_ctr
    ../navbar_separator
 
-.. parse:: hdl/SYSTEM/system.vhd
+.. parse:: hdl/system/system.vhd
 
 .. default-role:: vhdl:entity
 

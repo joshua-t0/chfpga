@@ -1,15 +1,15 @@
-.. title:: cmd_async_fifo
+.. title:: bsb_async_fifo
 
 ******************************************************************************
-:entity:`CMD_ASYNC_FIFO` (*CMD_ASYNC_FIFO.vhd*): Command Bus Asynchronous FIFO
+:entity:`bsb_async_fifo` (*bsb_async_fifo.vhd*): Command Bus Asynchronous FIFO
 ******************************************************************************
 
-.. parse:: hdl/BSB/CMD_ASYNC_FIFO.vhd
+.. parse:: hdl/bsb/bsb_async_fifo.vhd
 
 .. default-role:: vhdl:entity
 
 Entity documentation
 --------------------
 
-.. autoentity:: CMD_ASYNC_FIFO
+.. autoentity:: bsb_async_fifo
 

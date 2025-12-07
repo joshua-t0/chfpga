@@ -59,7 +59,7 @@ ALIGN3:
 
 	    + CTRL_ROUTER & bsb_regs
 	    + ALIGN
-	    + REMAP
+	    + remap
 	    + Bus pipelining registers
 	- Uses 8 RAMB18 for ALIGN. 12 are unused.
 	- Limited by logic.
@@ -71,7 +71,7 @@ BP2
 BP3
 
 BP4: (logic that feeds the backplane QSFP link (4 GTX))
-	CB2 ALIGN, REMAP, BIN_SEL[0..1]
+	CB2 align, remap, BIN_SEL[0..1]
 	BP_TX[15..18]
 
 	Usage:
@@ -112,7 +112,7 @@ BP4 holds the logic related to the backplane shuffle. Critical resources are BRA
 
 - crossbar2
 
-   - ALIGN: = 16 RAMB18
+   - align: = 16 RAMB18
    - BIN_SEL[0..1]: 2 * (8 FIFO18 + 9 RAMB18) = 16 FIFO18 + 18 RAMB18
    - bsb_regs0: 0 BRAM
    - crossbar_router0 : 0 BRAM

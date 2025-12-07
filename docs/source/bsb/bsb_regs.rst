@@ -4,7 +4,7 @@
 :entity:`bsb_regs` (*bsb_regs.vhd*): BSB Register Interface
 ******************************************************************
 
-.. parse:: hdl/BSB/bsb_regs.vhd
+.. parse:: hdl/bsb/bsb_regs.vhd
 
 .. default-role:: vhdl:entity
 

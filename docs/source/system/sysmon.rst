@@ -1,7 +1,7 @@
-.. title:: SYSMON_XADC
+.. title:: sysmon
 
 *******************************************************
-:entity:`SYSMON_XADC` (*SYSMON_V6.vhd*): System monitor
+:entity:`sysmon` (*sysmon.vhd*): System monitor
 *******************************************************
 
 
@@ -11,9 +11,9 @@
 Entity documentation
 ====================
 
-.. parse:: hdl/SYSTEM/SYSMON_V6.vhd
+.. parse:: hdl/system/sysmon.vhd
 
-.. autoentity:: SYSMON_XADC
+.. autoentity:: sysmon
 
 
 
@@ -25,6 +25,6 @@ Additional details
 Memory map
 ==========
 
-.. include-docs:: SYSMON_XADC
+.. include-docs:: sysmon
     :start-after: Memory map
 

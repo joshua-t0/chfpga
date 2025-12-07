@@ -32,7 +32,7 @@ Memory map
 
 Ports
 -----
-.. literalinclude:: ../../hdl/CHAN/CHAN.vhd
+.. literalinclude:: ../../hdl/chan/CHAN.vhd
      :language: vhdl
      :start-after: entity CHAN is
      :end-before: end CHAN;

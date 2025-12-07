@@ -1,22 +1,22 @@
 .. title:: REMAP
 
 ********************************************************************
-:entity:`REMAP` (*REMAP.vhd*): Lane Remapping Module
+:entity:`remap` (*remap.vhd*): Lane Remapping Module
 ********************************************************************
 
-.. parse:: hdl/CT/REMAP.vhd
+.. parse:: hdl/ct/remap.vhd
 
 .. default-role:: vhdl:entity
 
 Entity documentation
 --------------------
 
-.. autoentity:: REMAP
+.. autoentity:: remap
 
 Principle of Operations
 =======================
 
-The `REMAP` module reorganizes the ordering of data lanes by routing any input lane to any output lane based on a configurable mapping. This module is used in the shuffle crossbars to compensate for slot-dependent lane ordering caused by backplane wiring, or for reordering bin order depending on the corner-turn mode of operation.
+The `remap` module reorganizes the ordering of data lanes by routing any input lane to any output lane based on a configurable mapping. This module is used in the shuffle crossbars to compensate for slot-dependent lane ordering caused by backplane wiring, or for reordering bin order depending on the corner-turn mode of operation.
 
 The remapping operation is performed by a simple combinatorial routing network that connects each output lane to a source input lane specified by the ``lane_map`` register. The mapping is applied to all AXI-Streaming signals (``tvalid``, ``tdata``, ``tlast``) simultaneously.
 
@@ -31,7 +31,7 @@ Key Features
 Usage in SHUFFLE_CROSSBAR
 --------------------------
 
-The `REMAP` module is instantiated in the :entity:`SHUFFLE_CROSSBAR` after the alignment stage and before the bin selector stage. It is used to:
+The `remap` module is instantiated in the :entity:`shuffle_crossbar` after the alignment stage and before the bin selector stage. It is used to:
 
 1. **Compensate for backplane connectivity**: The backplane wiring may cause data from slot 0 to arrive on a different physical lane than expected. The remapper reorders the lanes so that post-remap lane 0 gets its data from slot 0, lane 1 from slot 1, etc.
 

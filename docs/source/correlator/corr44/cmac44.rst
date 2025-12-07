@@ -6,7 +6,7 @@
 
 .. default-role:: math
 
-.. parse:: hdl/CORR/CMAC44.vhd
+.. parse:: hdl/corr/CMAC44.vhd
 
 
 Entity documentation

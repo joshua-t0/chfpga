@@ -14,7 +14,7 @@
    shuffle_crossbar
    ../../navbar_separator
 
-.. parse:: hdl/CT/bct_engine.vhd
+.. parse:: hdl/ct/bct_engine.vhd
 .. default-role:: vhdl:entity
 
 
@@ -98,7 +98,7 @@ This considerably relaxes the FPGA timing constraints and improves the GTX signa
 Channelizer crossbar
 --------------------
 
-The crossbar consist of an array of 16 bin selectors (`CHAN_BIN_SEL`).
+The crossbar consist of an array of 16 bin selectors (`chan_bin_sel`).
 
 The channelizer frame aliger is pretty simple since  the data it receives is reliable, i.e. there is no possibility of
 packet loss or malformed packets since it is coming directly from the
@@ -187,7 +187,7 @@ combine the data flags from two consecutive bins in a single word.  This brings 
 
 
 rate to fit within the corner turn's engine internal data bus bandwidth (see
-discussion in `CHAN_BIN_SEL`). The combined words cannot be split apart
+discussion in `chan_bin_sel`). The combined words cannot be split apart
 by the bin selection of downstream bin_selectors, but there is no need to
 since those will be bypassed.
 

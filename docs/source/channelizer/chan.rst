@@ -20,7 +20,7 @@ The Channelizer consists of the following sub-modules:
 - :entity:`scaler`
 - :entity:`chan_fifo`: FIFO to cross data between the channelizer and the corner-turn or correlator engines
 - :entity:`prober`: Captures and buffer a subset of the raw ADC or SCALER output data and send it back over the control channel
-- :entity:`ctrl_router`: The router recieves commands through the UDP Command Protocol backbone from
+- :entity:`bsb_router`: The router recieves commands through the UDP Command Protocol backbone from
   chFPGA and relays them to all the necessary sub-modules relevent to the channelizer. The addresses
   for each sub-module are shown below.
 
@@ -29,7 +29,7 @@ The Channelizer consists of the following sub-modules:
 Entity
 ======
 
-.. parse:: hdl/CHAN/CHAN.vhd
+.. parse:: hdl/chan/CHAN.vhd
 
 .. autoentity:: CHAN
 

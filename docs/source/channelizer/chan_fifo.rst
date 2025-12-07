@@ -4,7 +4,7 @@
 :entity:`chan_fifo` (*chan_fifo.vhd*): Channelizer Asynchronous Output FIFO
 ***************************************************************************
 
-.. parse:: hdl/CHAN/chan_fifo.vhd
+.. parse:: hdl/chan/chan_fifo.vhd
 
 .. default-role:: vhdl:entity
 

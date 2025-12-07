@@ -14,7 +14,7 @@ Schematic
 .. figure:: ../images/CHAN/prober.svg
     :width: 50%
 
-.. parse:: hdl/CHAN/PROBER.vhd
+.. parse:: hdl/chan/PROBER.vhd
 
 
 Entity documentation

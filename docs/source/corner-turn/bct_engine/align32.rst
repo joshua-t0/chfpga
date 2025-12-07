@@ -1,22 +1,22 @@
-.. title:: ALIGN2
+.. title:: align32
 
-************************************************************************
-:entity:`ALIGN` (*ALIGN2.vhd*): 32-bit Multi-Lane Frame Alignment Module
-************************************************************************
+***************************************************************************
+:entity:`align32` (*align32.vhd*): 32-bit Multi-Lane Frame Alignment Module
+***************************************************************************
 
-.. parse:: hdl/CT/ALIGN2.vhd
+.. parse:: hdl/ct/align32.vhd
 
 .. default-role:: vhdl:entity
 
 Entity documentation
 --------------------
 
-.. autoentity:: ALIGN
+.. autoentity:: align32
 
 Principle of Operations
 =======================
 
-The `ALIGN` module aligns multiple 32-bit AXI-Streaming data streams from different sources (lanes) to a common frame timing. It buffers incoming non-blocking streams and ensures that frames from all lanes start and end at the same time, compensating for delays, errors, and lost packets that can occur when data is transmitted over board-to-board GTX links.
+The `align32` module aligns multiple 32-bit AXI-Streaming data streams from different sources (lanes) to a common frame timing. It buffers incoming non-blocking streams and ensures that frames from all lanes start and end at the same time, compensating for delays, errors, and lost packets that can occur when data is transmitted over board-to-board GTX links.
 
 Key Features
 ------------
@@ -68,7 +68,7 @@ When ``ENABLE_MONITORING_LOGIC`` is set to ``TRUE``, the module provides extensi
 Usage in SHUFFLE_CROSSBAR
 -------------------------
 
-The `ALIGN` module is instantiated in the :entity:`SHUFFLE_CROSSBAR` to align incoming packetized data from multiple GTX links. It ensures that packets from different physical lanes (including direct connections and remote GTX links) are properly aligned before being processed by the remapping and bin selection stages.
+The `align32` module is instantiated in the :entity:`SHUFFLE_CROSSBAR` to align incoming packetized data from multiple GTX links. It ensures that packets from different physical lanes (including direct connections and remote GTX links) are properly aligned before being processed by the remapping and bin selection stages.
 
 The aligner is critical for reliable operation because GTX links can introduce variable delays, packet loss, or malformed packets. The aligner must robustly handle these situations to minimize data loss and maintain system operation.
 

@@ -1,15 +1,15 @@
-.. title:: CTRL_ROUTER
+.. title:: bsb_router
 
 ******************************************************************
-:entity:`CTRL_ROUTER` (*CMD_ROUTER.vhd*): Command Bus Router
+:entity:`bsb_router` (*bsb_router.vhd*): Command Bus Router
 ******************************************************************
 
-.. parse:: hdl/BSB/CMD_ROUTER.vhd
+.. parse:: hdl/bsb/bsb_router.vhd
 
 .. default-role:: vhdl:entity
 
 Entity documentation
 --------------------
 
-.. autoentity:: CTRL_ROUTER
+.. autoentity:: bsb_router
 

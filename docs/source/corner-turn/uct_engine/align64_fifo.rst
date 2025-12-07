@@ -4,7 +4,7 @@
 :entity:`align64_fifo` (*align64_fifo.vhd*): 64-bit Alignment FIFO
 ********************************************************************
 
-.. parse:: hdl/CT/align64_fifo.vhd
+.. parse:: hdl/ct/align64_fifo.vhd
 
 .. default-role:: vhdl:entity
 

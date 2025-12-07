@@ -1,15 +1,15 @@
-.. title:: cmd_sync_fifo
+.. title:: bsb_sync_fifo
 
 ***************************************************************************
-:entity:`CMD_SYNC_FIFO` (*CMD_SYNC_FIFO.vhd*): Command Bus Synchronous FIFO
+:entity:`bsb_sync_fifo` (*bsb_sync_fifo.vhd*): Command Bus Synchronous FIFO
 ***************************************************************************
 
-.. parse:: hdl/BSB/CMD_SYNC_FIFO.vhd
+.. parse:: hdl/bsb/bsb_sync_fifo.vhd
 
 .. default-role:: vhdl:entity
 
 Entity documentation
 --------------------
 
-.. autoentity:: cmd_sync_fifo
+.. autoentity:: bsb_sync_fifo
 

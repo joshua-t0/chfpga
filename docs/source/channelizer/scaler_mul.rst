@@ -4,7 +4,7 @@
 :entity:`SCALER_MUL` (*scaler_mul.vhd*): Scaler Multiplier
 ******************************************************************
 
-.. parse:: hdl/CHAN/scaler_mul.vhd
+.. parse:: hdl/chan/scaler_mul.vhd
 
 .. default-role:: vhdl:entity
 

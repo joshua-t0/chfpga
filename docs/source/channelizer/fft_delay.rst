@@ -4,7 +4,7 @@
 :entity:`FFT_DELAY` (*SYNC.vhd*): FFT Delay Line Module
 ********************************************************************
 
-.. parse:: hdl/CHAN/SYNC.vhd
+.. parse:: hdl/chan/SYNC.vhd
 
 .. default-role:: vhdl:entity
 

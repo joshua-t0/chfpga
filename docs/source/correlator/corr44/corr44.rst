@@ -4,7 +4,7 @@
 :entity:`CORR44` (*CORR44.vhd*): (4+4) bit Correlator Core
 **********************************************************
 
-.. parse:: hdl/CORR/CORR44.vhd
+.. parse:: hdl/corr/CORR44.vhd
 
 .. default-role:: vhdl:entity
 
