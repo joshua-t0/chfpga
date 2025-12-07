@@ -27,33 +27,33 @@ set bd_name ""
 set hdl_base_files [list  \
  "chfpga_package.vhd" \
  "chfpga.vhd" \
- "BSB/axis_sync_fifo.vhd" \
- "BSB/CMD_SYNC_FIFO.vhd" \
- "BSB/CMD_ROUTER.vhd" \
- "BSB/bsb_regs.vhd" \
- "BSB/CMD_ASYNC_FIFO.vhd" \
- "BSB/CMD_MASTER.vhd" \
- "SYSTEM/irigb_package.vhd" \
- "SYSTEM/core_registers.vhd" \
- "SYSTEM/irigb_decoder.vhd" \
- "SYSTEM/irigb_comparator.vhd" \
- "SYSTEM/irigb_encoder.vhd" \
- "SYSTEM/system.vhd" \
- "SYSTEM/GPIO.vhd" \
- "SYSTEM/FREQ_CTR.vhd" \
- "SYSTEM/REFCLK.vhd" \
- "SYSTEM/SYSMON_V6.vhd" \
- "SYSTEM/blinker.vhd" \
- "SYSTEM/clocks.vhd" \
- "CHAN/chan_package.vhd" \
- "CHAN/CHAN.vhd" \
- "CHAN/LFSR.vhd" \
- "CHAN/FUNCGEN.vhd" \
- "CHAN/SYNC.vhd" \
- "CHAN/FFT.vhd" \
- "CHAN/scaler_mul.vhd" \
- "CHAN/SCALER.vhd" \
- "CHAN/chan_fifo.vhd" \
+ "bsb/axis_sync_fifo.vhd" \
+ "bsb/bsb_sync_fifo.vhd" \
+ "bsb/bsb_router.vhd" \
+ "bsb/bsb_regs.vhd" \
+ "bsb/bsb_async_fifo.vhd" \
+ "bsb/bsb_master.vhd" \
+ "system/irigb_package.vhd" \
+ "system/core_registers.vhd" \
+ "system/irigb_decoder.vhd" \
+ "system/irigb_comparator.vhd" \
+ "system/irigb_encoder.vhd" \
+ "system/system.vhd" \
+ "system/gpio.vhd" \
+ "system/freq_ctr.vhd" \
+ "system/refclk.vhd" \
+ "system/sysmon.vhd" \
+ "system/blinker.vhd" \
+ "system/clocks.vhd" \
+ "chan/chan_package.vhd" \
+ "chan/CHAN.vhd" \
+ "chan/LFSR.vhd" \
+ "chan/FUNCGEN.vhd" \
+ "chan/SYNC.vhd" \
+ "chan/FFT.vhd" \
+ "chan/scaler_mul.vhd" \
+ "chan/SCALER.vhd" \
+ "chan/chan_fifo.vhd" \
  ]
 
 
@@ -107,14 +107,14 @@ set ice_corr16_ip_files $ice_base_ip_files
 set ice_hdl_base_files [concat $hdl_base_files [list \
   "chfpga_ice.vhd" \
   \
-  "SYSTEM/SPI.vhd" \
-  "SYSTEM/I2C.vhd" \
-  "SYSTEM/arm_spi.vhd" \
+  "system/spi.vhd" \
+  "system/i2c.vhd" \
+  "system/arm_spi.vhd" \
   \
-  "CHAN/PROBER.vhd" \
-  "CHAN/ADCDAQ.vhd" \
+  "chan/PROBER.vhd" \
+  "chan/ADCDAQ.vhd" \
   \
-  "CT/bct_engine.vhd"\
+  "ct/bct_engine.vhd"\
   \
   "1G_UDP_MAC/udp_mac_crc32.vhd" \
   "1G_UDP_MAC/udp_mac_tx.vhd" \
@@ -125,12 +125,12 @@ set ice_hdl_base_files [concat $hdl_base_files [list \
 
 
 set ice_ct_hdl_files [concat $ice_hdl_base_files [list \
-  "CT/ALIGN2.vhd"\
-  "CT/CHAN_BIN_SEL.vhd"\
-  "CT/CHAN_CROSSBAR.vhd"\
-  "CT/REMAP.vhd"\
-  "CT/SHUFFLE_BIN_SEL.vhd"\
-  "CT/SHUFFLE_CROSSBAR.vhd"\
+  "ct/align32.vhd"\
+  "ct/chan_bin_sel.vhd"\
+  "ct/chan_crossbar.vhd"\
+  "ct/remap.vhd"\
+  "ct/shuffle_bin_sel.vhd"\
+  "ct/shuffle_crossbar.vhd"\
   \
   "XGLINK/xglink_bypass.vhd"\
   "XGLINK/xglink_crc32_32.vhd"\
@@ -152,15 +152,15 @@ set ice_ct_hdl_files [concat $ice_hdl_base_files [list \
 
 
 set ice_corr16_hdl_files [concat $ice_hdl_base_files [list \
-  "CORR/UCMAC44_ARRAY.vhd"\
-  "CORR/UCORR44.vhd"\
-  "CORR/UCORR44_ARRAY.vhd"\
+  "corr/UCMAC44_ARRAY.vhd"\
+  "corr/UCORR44.vhd"\
+  "corr/UCORR44_ARRAY.vhd"\
   ]]
 
 
-#CORR/CMAC44.vhd
-#CORR/CORR44.vhd
-#CORR/CORR44_ARRAY.vhd
+#corr/CMAC44.vhd
+#corr/CORR44.vhd
+#corr/CORR44_ARRAY.vhd
 
 
 
@@ -185,14 +185,14 @@ set crs_ct_ip_files [concat [list \
 
 set crs_hdl_base_files [concat $hdl_base_files [list \
  "chfpga_crs.vhd" \
- "CHAN/ucap.vhd" \
- "CT/uct_engine.vhd" \
+ "chan/ucap.vhd" \
+ "ct/uct_engine.vhd" \
  ]]
 
 
 set crs_corr_hdl_files [concat $crs_hdl_base_files [list \
- "CT/align64_fifo.vhd" \
- "CT/ALIGN64.vhd" \
+ "ct/align64_fifo.vhd" \
+ "ct/align64.vhd" \
  "XXVGLINK/xxvglink_data_fifo.vhd" \
  "XXVGLINK/xxvglink_bypass.vhd" \
  "XXVGLINK/crc32_64.vhd" \
@@ -203,13 +203,13 @@ set crs_corr_hdl_files [concat $crs_hdl_base_files [list \
  "XXVGLINK/xxvglink_descrambler.vhd" \
  "XXVGLINK/xxvglink_core.vhd" \
  "XXVGLINK/xxvglink_array.vhd" \
- "CORR/UCMAC44_ARRAY.vhd" \
- "CORR/UCORR44.vhd" \
- "CORR/UCORR44_ARRAY.vhd" \
+ "corr/UCMAC44_ARRAY.vhd" \
+ "corr/UCORR44.vhd" \
+ "corr/UCORR44_ARRAY.vhd" \
  ]]
 
 set crs_ct_hdl_files [concat $crs_hdl_base_files [list \
-  "CT/ucorn.vhd" \
+  "ct/ucorn.vhd" \
   "100GE_UDP_MAC/cge.vhd"\
   ]]
 
