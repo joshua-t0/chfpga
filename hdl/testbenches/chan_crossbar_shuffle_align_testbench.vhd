@@ -354,7 +354,7 @@ axis_align_in_tdata <= axis_rx_fifo_out_tdata;
 axis_align_in_tvalid <= axis_rx_fifo_out_tvalid and lane_active;
 axis_align_in_tlast <= axis_rx_fifo_out_tlast and lane_active;
 
-shuffle_align0: entity work.align
+shuffle_align0: entity work.align32
 	generic map (
 		NUMBER_OF_LANES => NUMBER_OF_OUTPUT_LANES
 		)

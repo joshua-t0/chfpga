@@ -244,7 +244,7 @@ begin
 	---------------------------------------------------------------------
 	-- Instantiate the BSB packet router
 	-- Routes the commands to the requested module
-	bsb_router0: entity work.CTRL_ROUTER
+	bsb_router0: entity work.bsb_router
 		generic map (
 			NUMBER_OF_PORTS => NUMBER_OF_MODULES,
 			ADDRESS_MASK    => "-----1111----------" -- 4-bit routing address (1 common, 4 PLL max, 11 GTY max),  10-bit internal address

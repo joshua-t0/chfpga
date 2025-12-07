@@ -78,7 +78,7 @@ begin
 
 SYSMON_DOUT <= X"1234";
 
-CTRL_SLAVE0: entity work.bsb_regs
+bsb_regs0: entity work.bsb_regs
 	GENERIC MAP (
         DEFAULT_CONTROL_BYTES=> X"00000000_00000000",
 		USE_RAM_DOUT_RDY => TRUE, -- need to wait for the RDY signal on RAM read accesses

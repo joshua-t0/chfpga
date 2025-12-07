@@ -121,7 +121,7 @@ begin
 			wait for CTRL_CLK_PERIOD/2;
 	   end process;
 
-    ctrl_master0: entity work.ctrl_master
+    ctrl_master0: entity work.bsb_master
         GENERIC MAP (
             NUMBER_OF_PROBES=>8  -- number of data stream buses
             )
@@ -164,7 +164,7 @@ begin
             RST => ctrl_rst
         );
 
-	router0: entity work.CTRL_ROUTER
+	router0: entity work.bsb_router
 		generic map (
 			NUMBER_OF_PORTS => NUMBER_OF_PORTS,
 			ADDRESS_MASK => "111----------------" --'1': used to generate port index, '-' = don't care,
@@ -192,7 +192,7 @@ begin
 			RST => ctrl_rst
 		);
 
-CTRL_SLAVE0: entity work.bsb_regs
+bsb_regs0: entity work.bsb_regs
     GENERIC MAP (
         NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --
         NUMBER_OF_STATUS_BYTES  => status_bytes'Length(1), --

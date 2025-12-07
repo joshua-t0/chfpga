@@ -1124,7 +1124,7 @@ begin
 			ctrl_master_rst <= ctrl_rst or ctrl_master_reset when rising_edge(ctrl_clk);
 		end process;
 
-		ctrl_master0: entity work.ctrl_master
+		ctrl_master0: entity work.bsb_master
 			generic map (
 				NUMBER_OF_PROBES => NUMBER_OF_PROBES  -- number of data stream buses
 			)
@@ -1217,7 +1217,7 @@ begin
 			end if;
 		end process;
 
-		top_router0: entity work.CTRL_ROUTER
+		top_router0: entity work.bsb_router
 			generic map (
 				TARGET_PBLOCK => "SYSTEM",
 				NUMBER_OF_PORTS => NUMBER_OF_PORTS,
@@ -2006,7 +2006,7 @@ begin
 		end process;
 
 
-		chan_router0: entity work.CTRL_ROUTER
+		chan_router0: entity work.bsb_router
 			generic map (
 				NUMBER_OF_PORTS => NUMBER_OF_CHANNELIZERS,
 				ADDRESS_MASK => "---1111------------" -- '1': used to generate port index, '-' = don't care,
