@@ -27,12 +27,14 @@ package chfpga_config is
 	constant CONFIG_NUMBER_OF_CROSSBAR_INPUTS: integer       := CONFIG_NUMBER_OF_ADCS; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
 	constant CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS: integer     := 8; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
 
+	-- Correlator configuration
 
-	constant CONFIG_CORR_TYPE: CORR_TYPE_ENUM                := UCORR44;
-	constant CONFIG_NUMBER_OF_CORRELATORS: integer           := 1; -- One correlator only since we have corner-turned the data sufficiently (CT_LEVEL=2) to end up with only one bin stream
+	constant CONFIG_CORR_TYPE: corr_type_enum                := UCORR44;
+	constant CONFIG_NUMBER_OF_CORRELATORS: integer           := 1; -- One correlator only since we have corner-turned the data sufficiently (CT_LEVEL=2 or 3) to end up with only one bin stream
 	constant CONFIG_CORR_READOUT_BINS: integer_array(0 to 0) := (0 => 0); -- With CONFIG_FFT_ROTATE_BINS=True, true bins 0, 1, 2 & 3 will be used for readout
 
     -- 10/100G Ethernet Real-time data offload links configuration
+
     constant CONFIG_GPU_LINK_TYPE: gpu_link_type_enum        := NONE;
 
 end chfpga_config;
