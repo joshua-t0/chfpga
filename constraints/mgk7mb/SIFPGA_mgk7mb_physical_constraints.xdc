@@ -995,7 +995,7 @@ resize_pblock [get_pblocks CROSSBAR0] -add {RAMB36_X8Y34:RAMB36_X11Y39}
 
 # create_pblock BP1
 # add_cells_to_pblock [get_pblocks BP1] [get_cells -quiet {}]
-# # add_cells_to_pblock [get_pblocks BP1] [get_cells chfpga0/BPSHFGEN.bp_shuffle0/core0/quad_gen[1].quad_slave0]
+# # add_cells_to_pblock [get_pblocks BP1] [get_cells chfpga0/BPSHFGEN.bp_shuffle0/core0/quad_gen[1].quad_regs0]
 # resize_pblock [get_pblocks BP1] -add {SLICE_X142Y0:SLICE_X189Y40}
 # resize_pblock [get_pblocks BP1] -add {DSP48_X9Y0:DSP48_X11Y15}
 # resize_pblock [get_pblocks BP1] -add {RAMB18_X9Y0:RAMB18_X11Y15}

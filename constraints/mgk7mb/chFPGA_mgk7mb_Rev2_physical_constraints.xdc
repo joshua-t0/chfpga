@@ -1012,7 +1012,7 @@ add_cells_to_pblock [get_pblocks BP3] [get_cells { {chfpga0/BPSHFGEN.bp_shuffle0
 # resize_pblock [get_pblocks BP3] -add {RAMB36_X9Y42:RAMB36_X11Y46}
 
 
-add_cells_to_pblock [get_pblocks BP4] [get_cells  { chfpga0/CROSSBAR23_GEN.crossbar2/align0 {chfpga0/CROSSBAR23_GEN.crossbar2/BIN_SEL_GEN[0].*} {chfpga0/CROSSBAR23_GEN.crossbar2/BIN_SEL_GEN[1].*} chfpga0/CROSSBAR23_GEN.crossbar2/CTRL_SLAVE0 chfpga0/CROSSBAR23_GEN.crossbar2/crossbar_router0 chfpga0/CROSSBAR23_GEN.crossbar2/remap0
+add_cells_to_pblock [get_pblocks BP4] [get_cells  { chfpga0/CROSSBAR23_GEN.crossbar2/align0 {chfpga0/CROSSBAR23_GEN.crossbar2/BIN_SEL_GEN[0].*} {chfpga0/CROSSBAR23_GEN.crossbar2/BIN_SEL_GEN[1].*} chfpga0/CROSSBAR23_GEN.crossbar2/bsb_regs0 chfpga0/CROSSBAR23_GEN.crossbar2/crossbar_router0 chfpga0/CROSSBAR23_GEN.crossbar2/remap0
 {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[15].*} {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[16].*} {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[17].*} {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[18].*}
 {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[16].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[17].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[18].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[19].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[20].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[21].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[22].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[23].*}
 }]
@@ -1027,7 +1027,7 @@ add_cells_to_pblock [get_pblocks BP4] [get_cells  { chfpga0/CROSSBAR23_GEN.cross
 # set_property EXCLUDE_PLACEMENT TRUE [get_pblocks BP4]
 
 
-add_cells_to_pblock [get_pblocks ALIGN2] [get_cells -quiet { chfpga0/*chan_crossbar0/CTRL_SLAVE0 chfpga0/*chan_crossbar0/align0 }]
+add_cells_to_pblock [get_pblocks ALIGN2] [get_cells -quiet { chfpga0/*chan_crossbar0/bsb_regs0 chfpga0/*chan_crossbar0/align0 }]
 
 # set_property IS_SOFT FALSE [get_pblocks ALIGN2]
 
