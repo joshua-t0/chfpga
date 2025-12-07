@@ -78,6 +78,29 @@ foreach f $const_files {lappend full_const_files [file normalize "$const_dir/$f"
 set full_util_files  {}
 foreach f $util_files {lappend full_util_files [file normalize "$repo_dir/$f"]}
 
+
+# Regenerate block design to make sure the .bd file is there
+if { ${bd_name} ne ""} {
+  if { ![file exists "${bd_dir}/${bd_name}/${bd_name}.bd"]} {
+    puts ""
+    puts "    -----------------------------------------------"
+    puts "    Creating block diagram ${bd_name}.bd in folder ${bd_dir}/${bd_name}"
+    puts "    -----------------------------------------------"
+    puts ""
+
+    # The tcl script that builds the block diagram will put it in the folder specified in the global
+    # variable ::origin_dir_loc. Since a project is not currently open, it will create a project
+    # 'myproj' in the current directory and will fail if that project already exists, so we have to
+    # delete it beforehand.
+    set ::origin_dir_loc ${bd_dir}
+    file delete -force "$bd_dir/myproj"
+    cd $bd_dir
+    source "${bd_dir}/${bd_name}.tcl"
+    file delete -force "$bd_dir/myproj"
+    cd $proj_dir
+  }
+}
+
 # Check if all files required for this script exist
 # --------------------------------------------------
 
@@ -111,27 +134,6 @@ if { $missing_file } {
 }
 
 
-# Regenerate block design
-if { ${bd_name} ne ""} {
-  if { ![file exists "${bd_dir}/${bd_name}/${bd_name}.bd"]} {
-    puts ""
-    puts "    -----------------------------------------------"
-    puts "    Creating block diagram ${bd_name}.bd in folder ${bd_dir}/${bd_name}"
-    puts "    -----------------------------------------------"
-    puts ""
-
-    # The tcl script that builds the block diagram will put it in the folder specified in the global
-    # variable ::origin_dir_loc. Since a project is not currently open, it will create a project
-    # 'myproj' in the current directory and will fail if that project already exists, so we have to
-    # delete it beforehand.
-    set ::origin_dir_loc ${bd_dir}
-    file delete -force "$bd_dir/myproj"
-    cd $bd_dir
-    source "${bd_dir}/${bd_name}.tcl"
-    file delete -force "$bd_dir/myproj"
-    cd $proj_dir
-  }
-}
 
 
 puts ""
