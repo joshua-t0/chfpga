@@ -12,6 +12,7 @@ source ../../tcl/project_sources.tcl
 
 set target_part $ice_target_part
 set bd_name $ice_bd_name
+set top_module $ice_top_module
 
 # Define config files, with path relative to $hdl_dir
 # set config_file "chfpga_ice_ct_config.vhd"

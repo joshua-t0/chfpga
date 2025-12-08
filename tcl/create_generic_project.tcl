@@ -234,7 +234,7 @@ foreach file_obj  [get_files $full_hdl_files] {
 
 # Set 'sources_1' fileset properties
 set_property -name "dataflow_viewer_settings" -value "min_width=16" -objects $fileset_obj
-set_property -name "top" -value "chfpga_crs" -objects $fileset_obj
+set_property -name "top" -value $top_module -objects $fileset_obj
 set_property -name "top_auto_set" -value "0" -objects $fileset_obj
 
 
@@ -259,7 +259,7 @@ set_property -name "target_part" -value $target_part -objects $fileset_obj
 if {[string equal [get_filesets -quiet sim_1] ""]} {create_fileset -simset sim_1}
 set obj [get_filesets sim_1]
 
-set_property -name "top" -value "chfpga_crs" -objects $obj
+set_property -name "top" -value $top_module -objects $obj
 set_property -name "top_auto_set" -value "0" -objects $obj
 set_property -name "top_lib" -value "xil_defaultlib" -objects $obj
 
