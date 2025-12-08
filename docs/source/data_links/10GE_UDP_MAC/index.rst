@@ -20,7 +20,7 @@ The 10G Ethernet UDP/MAC modules implement 10 Gigabit Ethernet UDP/IP/Ethernet p
 The 10G UDP/MAC system consists of:
 
 - :entity:`xge_array`: Array wrapper that manages multiple 10G Ethernet transmitters, each encapsulating data as UDP packets
-- :entity:`XGE_UDP_MAC_TX`: Transmitter module that handles UDP/IP/Ethernet packet encapsulation and transmission over 10G Ethernet links
+- :entity:`xge_udp_mac_tx`: Transmitter module that handles UDP/IP/Ethernet packet encapsulation and transmission over 10G Ethernet links
 
 The system uses :entity:`xglink_core` for the physical layer transmission over GTX transceivers.
 

@@ -1,7 +1,7 @@
 .. title:: ADCDAQ
 
 *****************************************************************************
-:entity:`ADCDAQ` (*ADCDAQ.vhd*): Analog to Digital Converter Data Acquisition
+:entity:`adcdaq` (*adcdaq.vhd*): Analog to Digital Converter Data Acquisition
 *****************************************************************************
 
 .. default-role:: vhdl:entity
@@ -22,9 +22,9 @@ Schematic
 Entity documentation
 ====================
 
-.. parse:: hdl/chan/ADCDAQ.vhd
+.. parse:: hdl/chan/adcdaq.vhd
 
-.. autoentity:: ADCDAQ
+.. autoentity:: adcdaq
 
 
 .. .. highlight:: vhdl

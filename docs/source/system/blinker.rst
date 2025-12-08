@@ -12,7 +12,7 @@ Entity documentation
 
 .. parse:: hdl/system/blinker.vhd
 
-.. autoentity:: BLINKER
+.. autoentity:: blinker
 
 
 

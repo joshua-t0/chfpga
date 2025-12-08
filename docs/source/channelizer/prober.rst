@@ -1,7 +1,7 @@
 .. title:: PROBER
 
 *********************************************
-:entity:`PROBER` (*prober.vhd*): Data capture
+:entity:`prober` (*prober.vhd*): Data capture
 *********************************************
 
 Overview
@@ -14,14 +14,14 @@ Schematic
 .. figure:: ../images/CHAN/prober.svg
     :width: 50%
 
-.. parse:: hdl/chan/PROBER.vhd
+.. parse:: hdl/chan/prober.vhd
 
 
 Entity documentation
 --------------------
 
 
-.. autoentity:: PROBER
+.. autoentity:: prober
 
 
 
@@ -37,5 +37,5 @@ Incoming 32-bit AXIS Data is captured and written into the DATA FIFO over a 36-b
 Memory Map
 ----------
 
-.. include-docs:: PROBER
+.. include-docs:: prober
     :start-after: CAPTURE (PROBER) Module Memory Map

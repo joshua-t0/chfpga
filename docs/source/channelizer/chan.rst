@@ -1,7 +1,7 @@
 .. title:: CHAN
 
 ****************************************
-:entity:`CHAN` (*CHAN.vhd*): Channelizer
+:entity:`chan` (*chan.vhd*): Channelizer
 ****************************************
 
 .. default-role:: entity
@@ -29,9 +29,9 @@ The Channelizer consists of the following sub-modules:
 Entity
 ======
 
-.. parse:: hdl/chan/CHAN.vhd
+.. parse:: hdl/chan/chan.vhd
 
-.. autoentity:: CHAN
+.. autoentity:: chan
 
 
 Additional details

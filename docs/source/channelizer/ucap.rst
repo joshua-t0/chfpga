@@ -53,7 +53,7 @@ Schematic
 Entity documentation
 --------------------
 
- .. autoentity:: UCAP
+ .. autoentity:: ucap
 
 
 Principle of operation
