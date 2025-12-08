@@ -45,7 +45,6 @@ ENTITY chFPGA_testbench IS
 		NUMBER_OF_CROSSBAR_INPUTS : integer := 16;
 		NUMBER_OF_CROSSBAR_OUTPUTS: integer := 0;
 		NUMBER_OF_CORRELATORS: INTEGER :=0; -- Number of correlator blocks (CH_DIST+CORR+ACC) to be implemented if IMPLEMENT_CORR=TRUE
-		NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER :=0; -- Number of antennas to be correlated for each frequency channel. Must be >=3. This is hard coded for now. Determines how many antenna streams are fed to the CORR_BLOCK modules, and how many multipliers to implement in parallel in the CORR module.
 		NUMBER_OF_GPU_LINKS: integer := 0*GLOBAL_NUMBER_OF_GPU_LINKS;
 		NUMBER_OF_GPU_REFCLKS: integer := 1; --0*GLOBAL_NUMBER_OF_GPU_REFCLKS;
 		NUMBER_OF_BP_SHUFFLE_LINKS: integer := 3;

@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library work;
-use work.icecore_package.irigb;
+use work.irigb_package.irigb;
 
 entity irigb_comparator is
 	port (
@@ -103,3 +103,4 @@ begin
 	end process;
 
 end behav;
+

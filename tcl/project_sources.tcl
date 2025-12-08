@@ -33,11 +33,11 @@ set hdl_base_files [list  \
  "CMD/CMD_SLAVE2.vhd" \
  "CMD/CMD_ASYNC_FIFO.vhd" \
  "CMD/CMD_MASTER.vhd" \
- "CMD/icecore_package.vhd" \
- "CMD/register_array.vhd" \
- "CMD/irigb_decoder.vhd" \
- "CMD/irigb_comparator.vhd" \
- "CMD/irigb_encoder.vhd" \
+ "SYSTEM/irigb_package.vhd" \
+ "SYSTEM/core_registers.vhd" \
+ "SYSTEM/irigb_decoder.vhd" \
+ "SYSTEM/irigb_comparator.vhd" \
+ "SYSTEM/irigb_encoder.vhd" \
  "SYSTEM/system.vhd" \
  "SYSTEM/GPIO.vhd" \
  "SYSTEM/FREQ_CTR.vhd" \
@@ -56,6 +56,10 @@ set hdl_base_files [list  \
  "CHAN/chan_fifo.vhd" \
  ]
 
+
+
+set fft_type_chime "KC705/FFT2/FFT2.xci"
+set fft_type_hirax "KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci"
 
 
 #*****************************************************************************************
@@ -114,8 +118,9 @@ set ice_ct_ooc_ip_files "KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci"
 set ice_ct_ip_files [list \
   "KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci" \
   "KC705/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci"\
-  "KC705/XG_UDP_MAC_TX_HEADER_FIFO/XGMII_UDP_MAC_TX_HEADER_FIFO.xci" \
-  "KC705/XG_UDP_MAC_TX_DATA_FIFO/XGMII_UDP_MAC_TX_DATA_FIFO.xci" \
+]
+
+set ice_ct_ip_files [concat $ice_base_ip_files [list \
   "KC705/SHUFFLE_BIN_SEL_FLAGS_FIFO4/SHUFFLE_BIN_SEL_FLAGS_FIFO4.xci" \
   "KC705/SHUFFLE_BIN_SEL_DATA_FIFO_EMBED/SHUFFLE_BIN_SEL_DATA_FIFO_EMBED.xci" \
   "KC705/SHUFFLE_BIN_SEL_DATA_FIFO_BRAM/SHUFFLE_BIN_SEL_DATA_FIFO_BRAM.xci" \
@@ -128,10 +133,14 @@ set ice_ct_ip_files [list \
   "KC705/CHDIST_SCALER_FLAGS_FIFO/CHDIST_SCALER_FLAGS_FIFO.xci" \
   "KC705/CHDIST_DATA_EMBED_FIFO/CHDIST_DATA_EMBED_FIFO.xci" \
   "KC705/MASK_RAM/MASK_RAM.xci" \
-  "KC705/ADCDAQ_FIFO/ADCDAQ_FIFO.xci" \
-  "KC705/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci" \
-  "KC705/UDP_MAC_TX_DATA_FIFO/udp_mac_tx_data_fifo.xci" \
- ]
+  "KC705/XG_UDP_MAC_TX_HEADER_FIFO/XGMII_UDP_MAC_TX_HEADER_FIFO.xci" \
+  "KC705/XG_UDP_MAC_TX_DATA_FIFO/XGMII_UDP_MAC_TX_DATA_FIFO.xci" \
+ ]]
+
+set ice_corr16_ip_files $ice_base_ip_files
+
+#  "KC705/CORR44_DATA_FIFO/CORR44_DATA_FIFO.xci" \
+
 
 set ice_ct_hdl_files [concat $ice_hdl_base_files [list \
   "CROSSBAR/ALIGN2.vhd"\
@@ -158,6 +167,19 @@ set ice_ct_hdl_files [concat $ice_hdl_base_files [list \
   "10GE_UDP_MAC/xge_udp_mac_tx2.vhd" \
   "10GE_UDP_MAC/xge_array.vhd" \
   ]]
+
+
+set ice_corr16_hdl_files [concat $ice_hdl_base_files [list \
+  "CORR/UCMAC44_ARRAY.vhd"\
+  "CORR/UCORR44.vhd"\
+  "CORR/UCORR44_ARRAY.vhd"\
+  ]]
+
+
+#CORR/CMAC44.vhd
+#CORR/CORR44.vhd
+#CORR/CORR44_ARRAY.vhd
+
 
 
 #*****************************************************************************************

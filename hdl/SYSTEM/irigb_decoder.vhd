@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.icecore_package.irigb;
+use work.irigb_package.irigb;
 
 -- IRIG-B time decoder
 --
@@ -173,8 +173,8 @@ begin
 			-- be the next incoming bit. This is the only way we get out of the STUFFED state.
 			--
 			-- Note that getting a double P does not mean we successfully decoded the frame. It
-			-- might have been interrupted mid-frame. We have a valid frame only if we made it all
-			-- the way to P0 and then we receive a marker. This is handled further below.
+			-- might have been interrupted mid-frame. We have a valid frame only if we made it all the
+			-- way to P0 and then we receive a marker. This is handled further below.
 			if strobe_p='1' and last_p='1' then
 				state <= S1;
 				s <= (others => '0');
@@ -349,3 +349,4 @@ begin
 	ts_pre.ss <= ss(28 downto 1);
 
 end rtl;
+

@@ -13,10 +13,6 @@ BSB (Byte-Serial Bus): Control Bus Modules
    cmd_sync_fifo
    cmd_async_fifo
    axis_sync_fifo
-   arm_spi
-   register_array
-   irigb_encoder
-   irigb_comparator
    ../navbar_separator
    bsb_protocol
 
@@ -32,9 +28,5 @@ The BSB system consists of:
 - :entity:`cmd_sync_fifo`: Synchronous FIFO for pipelining command and reply streams
 - :entity:`CMD_ASYNC_FIFO`: Asynchronous FIFO for clock domain crossing of command and reply streams
 - :entity:`axis_sync_fifo`: AXI-Streaming synchronous FIFO used by cmd_sync_fifo
-- :doc:`arm_spi`: ARM SPI interface module for IceBoard platforms
-- :doc:`register_array`: Register array module for memory-mapped register banks
-- :doc:`irigb_encoder`: IRIG-B time code encoder
-- :doc:`irigb_comparator`: IRIG-B time comparator for time-based event triggering
 
 See :doc:`bsb_protocol` for more details on the BSB protocol.

@@ -4,6 +4,18 @@
 :entity:`GPIO` (*GPIO.vhd*): General Purpose Input/Output
 *********************************************************
 
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   irigb_decoder
+   irigb_encoder
+   irigb_comparator
+   core_registers
+   arm_spi
+   ../navbar_separator
+
+
 The :entity:`gpio` provides a bank of configuration registers as well as:
 
 - Motherboard Buck Synchronization
@@ -23,18 +35,6 @@ Schematic
 
 .. figure:: ../images/SYSTEM/gpio.svg
     :width: 100%
-
-Sub-modules
-===========
-
-.. toctree::
-    :titlesonly:
-
-    irigb_decoder
-..    bp_buck_sync
-..    irigb_encoder
-..    register_array
-..    arm_spi
 
 
 

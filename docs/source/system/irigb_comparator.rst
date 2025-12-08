@@ -4,7 +4,7 @@
 :entity:`irigb_comparator` (*irigb_comparator.vhd*): IRIG-B Time Comparator
 ***************************************************************************
 
-.. parse:: hdl/CMD/irigb_comparator.vhd
+.. parse:: hdl/SYSTEM/irigb_comparator.vhd
 
 .. default-role:: vhdl:entity
 

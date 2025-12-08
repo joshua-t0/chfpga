@@ -24,7 +24,7 @@
 
    platforms/platforms
    chfpga
-   system/system
+   system/index
    channelizer/index
    CT Engine <corner-turn/index>
    X Engine <correlator/index>

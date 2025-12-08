@@ -31,7 +31,6 @@ library UNISIM;
 use UNISIM.VComponents.ALL;
 
 use work.chFPGA_Package.ALL; -- Get all component definitions
--- use work.ip_package.all; -- Import definition of components used in this module
 
 entity chan_crossbar is
 	generic (

@@ -1,5 +1,14 @@
-Platform information
-********************
+IceBoard (MGK7MB)
+*****************
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   chfpga_ice
+   chfpga_ice_corr16
+   chfpga_ice_ct
+   ../../navbar_separator
 
 
 Hardware description

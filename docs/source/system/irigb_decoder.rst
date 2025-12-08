@@ -14,7 +14,7 @@ Schematic
 Entity documentation
 ====================
 
-.. parse:: hdl/CMD/irigb_decoder.vhd
+.. parse:: hdl/SYSTEM/irigb_decoder.vhd
 
 .. autoentity:: irigb_decoder
 

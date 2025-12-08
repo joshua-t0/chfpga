@@ -7,7 +7,7 @@ Platform wrappers
 .. toctree::
    :maxdepth: 2
 
-   iceboard/index
-   CRS/index
+   iceboard/iceboard
+   CRS/CRS
    ZCU111/ZCU111
    bit_widths
