@@ -37,7 +37,7 @@ library work;
 use work.chFPGA_Package.all;
 
 
-entity XGE_UDP_MAC_TX is
+entity xge_udp_mac_tx is
 	generic (
 		USE_LITTLE_ENDIAN: boolean := TRUE -- TRUE: Byte is LSB is transmitted first (i.e. bit 0 of word transmitted first). FALSE: Byte in MSB is transmitted first (i.e. bit 24 of word is transmitted first)
 		);
@@ -69,7 +69,7 @@ entity XGE_UDP_MAC_TX is
 		RST : in std_logic -- asynchronous reset
 		);
 
-end XGE_UDP_MAC_TX;
+end xge_udp_mac_tx;
 
 architecture Behavioral of XGE_UDP_MAC_TX is
 

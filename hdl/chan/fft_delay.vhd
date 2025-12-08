@@ -37,7 +37,7 @@ use work.chFPGA_config.all; -- get platform-specific configurations
 library UNISIM;
 use UNISIM.VComponents.all;
 
-entity FFT_DELAY is
+entity fft_delay is
 	generic (
 		CTR_WIDTH: INTEGER; -- number of bits of the delay line. Max delay = 2^CTR_WIDTH
 		DATA_WIDTH: INTEGER := 4 -- number of flag bits to propagate through the delay line.
@@ -57,7 +57,7 @@ entity FFT_DELAY is
 		rst : in  STD_LOGIC
 		);
 
-end FFT_DELAY;
+end fft_delay;
 
 architecture Behavioral of FFT_DELAY is
 

@@ -41,7 +41,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --
 -- The capture output format is documented [here][Ethernet_frame_formats]
 --
-entity PROBER is
+entity prober is
     generic (
         SIM: BOOLEAN :=FALSE;
         NUMBER_OF_INPUTS : INTEGER := 2
@@ -70,7 +70,7 @@ entity PROBER is
         ctrl_rst            : in  std_logic
     );
 
-end PROBER;
+end prober;
 
 ---- ARCHITECTURE DECLARATION and DEFINITION --------------------------
 

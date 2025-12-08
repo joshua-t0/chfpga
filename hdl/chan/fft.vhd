@@ -90,7 +90,7 @@ use UNISIM.VComponents.all;
 --      The most significant 36 bits contains the value for the first (even) frequency bins, the next contains the value for
 --      the following odd bin, etc.
 --      The Most significant bits of a complex value contains the real part.
-entity FFT is
+entity fft is
 	generic (
 		IMPLEMENT_FFT		   : BOOLEAN := TRUE;
 		FFT_TYPE			   : fft_type_enum := HIRAX; -- tells the entity which experiment-dependent Casper-generated PFB/FFT block to use. Currently accepts "CHIME" or "D3A"
@@ -142,7 +142,7 @@ entity FFT is
 		ctrl_clk            : in  std_logic;
 		ctrl_rst            : in  std_logic
 		);
-end FFT;
+end fft;
 
 
 --------- FFT architecture --------------------
@@ -610,7 +610,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 	-- Pipeline Delay measurer/generator
 	-----------------------------------------------------------------------------------
 	-- Measures the CASPER block pipelining delay and propagate a vector containing the data flags with the same delay
-		DELAY0: entity work.FFT_DELAY
+		DELAY0: entity work.fft_delay
 			GENERIC MAP (
 				CTR_WIDTH  => fft_pipeline_delay'LENGTH,
 				DATA_WIDTH => flags_in'LENGTH

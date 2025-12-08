@@ -64,7 +64,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 -- The BYPASS mode, if also enabled in the SCALER module, allows the FUNCGEN output to be passed
 -- directly to the output of the channelizer.
 --
-entity SCALER is
+entity scaler is
     generic (
         FFT_BITS_PER_BIN: integer := 32+32; --18+18; -- Real + Imaginary part
         FFT_BINS_PER_WORD: integer := 4;
@@ -122,7 +122,7 @@ entity SCALER is
 
     attribute DONT_TOUCH: string;
     attribute DONT_TOUCH of SCALER: entity is "yes";
-end SCALER;
+end scaler;
 
 ------- ARCHITECTURE DECLARATION and DEFINITION ---------------------
 -- Implements the functional code of the SCALER

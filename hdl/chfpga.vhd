@@ -73,7 +73,7 @@ use work.chFPGA_config.all; -- Get implementation-specific definitions
 --
 -- The code is configurable for multiple platforms (Virtex 6, Kintex 7, Ultrascale+) with optional GMII or SFP+ Ethernet interface, various clock sources, etc) through the generics.
 -- A platform-specific wrapper file is used to define these generics for a specific platform and expose the useful ports.
-entity chFPGA is
+entity chfpga is
 	generic (
 		PLATFORM_ID: integer      := 0; -- identifies the type of platform on which the firmware is running. 0=Motherboard, 1=KC705
 		PROTOCOL_VERSION: integer := 10;
@@ -459,7 +459,7 @@ entity chFPGA is
 		m_axis_cap_tready: in std_logic := '0';
 		axis_cap_clk: in std_logic := '0'
 	);
-end entity chFPGA;
+end entity chfpga;
 
 ---------- chFPGA implementation ------
 -- Implements the chFPGA top level functionalities.
@@ -552,7 +552,6 @@ architecture impl of chFPGA is
 	constant ADC_BITS_PER_WORD: integer := ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPLE;
 
 	constant NUMBER_OF_ADCS_OR_CHANNELIZERS: integer := max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS);
-	constant IMPLEMENT_CORR: boolean := NUMBER_OF_CORRELATORS > 0 and CORR_TYPE /= NONE;
 	constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
 
 	-- Top level memory-mapped address ranges
@@ -1797,7 +1796,7 @@ begin
 
 				-- ADCDAQ is still implemented if IMPLEMENT_ANT=FALSE, but its IMPLEMENT_ADCDAQ generics is forced  to FALSE to the appropriate differential buffers are instantiated and prevent UCF errors.
 				-- ADC_CLK_OUT_PLL<=ADC_CLK_OUT_PLL_INT;
-				ADCDAQ0: entity work.ADCDAQ
+				ADCDAQ0: entity work.adcdaq
 					generic map (
 						IMPLEMENT_ADCDAQ        => TRUE, --
 						PROVIDE_BUFFERED_DIVCLK => ADC_PROVIDE_BUFFERED_DIVCLK(i),
@@ -2793,7 +2792,7 @@ begin
 	--
 	-- The correlator is clocked by ct_clk, which is selected by CONFIG_CT_CLK_SOURCE
 	--
-	CORRGEN: if IMPLEMENT_CORR generate
+	CORRGEN: if CORR_TYPE /= NONE generate
 
 		signal corr_cmd_dat: AXIS8_DAT_STRUCT; -- shared with CROSSBAR3
 		signal corr_cmd_rdy: AXIS8_RDY_STRUCT;

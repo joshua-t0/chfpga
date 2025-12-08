@@ -41,7 +41,7 @@ package chan_package is
     -- CHAN: Channelizer module component definition
     ----------------------------------------------------------------------------------
     ----------------------------------------------------------------------------------
-    COMPONENT CHAN is
+    COMPONENT chan is
         -- We cannot have GENERICS here if the module is to be used as an Out-Of-Contect (OOC) module.
         -- That is true EVEN IF all the GENERICS have default values and we don't have a GENERICS section in the component
         -- instantiation...

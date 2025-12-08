@@ -23,7 +23,7 @@ use UNISIM.VComponents.all;
 -- Returns signed product P=A*B where a is a signed value up to 42 bits, and B is a signed value up to 17 bits. 
 -- The module uses one DSP48 if A is 25 bits or less, otherwise it uses two.  
 -- Latency is 3 clock cycles in any case. 
-entity SCALER_MUL is
+entity scaler_mul is
 	generic (
 		A_WIDTH: integer := 18; -- should be <= 42 bits
 		B_WIDTH: integer := 16; -- should <= 17 bits
@@ -36,7 +36,7 @@ entity SCALER_MUL is
 		clk : in  std_logic
 		);
 
-end SCALER_MUL;
+end scaler_mul;
 
 architecture impl of SCALER_MUL is
 

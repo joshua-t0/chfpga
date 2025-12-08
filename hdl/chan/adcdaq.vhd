@@ -237,7 +237,7 @@ use UNISIM.VComponents.all;
 --    13. The user sets the ADC_SEND_DATA flag on adc_clk
 --    14. The fifo_rd_en is set on adc_clk and the FIFO output is placed on the output data bus with TVALID='1' on adc_clk.
 --
-entity ADCDAQ is
+entity adcdaq is
 	GENERIC (
 		SAMPLES_PER_FRAME       : integer := 2048; -- Number of samples per frame, used to packetize the output data stream
 		IMPLEMENT_ADCDAQ 		: BOOLEAN:= TRUE; -- Indicates if the block is to be implemented. If False, a dummy module will be generated but the I/Os will be preserved.
@@ -302,7 +302,7 @@ entity ADCDAQ is
 		ref_clk: in std_logic; -- Clock used to sample the ADC CLK
 		clk200: in  std_logic -- Clock for the IODELAYCTRL (when implemented)
 		);
-end ADCDAQ;
+end adcdaq;
 
 ------------- ADCDAQ Implementation ---------------
 -- Implements the ADC Data acquisition system

@@ -959,7 +959,7 @@ bufr_rawclk10 : BUFR
 	fmcb_spi_cs_n <= spi_cs_n(1);
 	fmcb_spi_rst_n_alt <= spi_rst_n;
 
-	chfpga0: entity work.chFPGA
+	chfpga0: entity work.chfpga
 		GENERIC MAP(
 			PLATFORM_ID                     => PLATFORM_ID,
 

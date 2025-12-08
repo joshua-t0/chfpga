@@ -46,13 +46,13 @@ set hdl_base_files [list  \
  "system/blinker.vhd" \
  "system/clocks.vhd" \
  "chan/chan_package.vhd" \
- "chan/CHAN.vhd" \
- "chan/LFSR.vhd" \
- "chan/FUNCGEN.vhd" \
- "chan/SYNC.vhd" \
- "chan/FFT.vhd" \
+ "chan/chan.vhd" \
+ "chan/lfsr.vhd" \
+ "chan/funcgen.vhd" \
+ "chan/fft_delay.vhd" \
+ "chan/fft.vhd" \
  "chan/scaler_mul.vhd" \
- "chan/SCALER.vhd" \
+ "chan/scaler.vhd" \
  "chan/chan_fifo.vhd" \
  ]
 
@@ -111,8 +111,8 @@ set ice_hdl_base_files [concat $hdl_base_files [list \
   "system/i2c.vhd" \
   "system/arm_spi.vhd" \
   \
-  "chan/PROBER.vhd" \
-  "chan/ADCDAQ.vhd" \
+  "chan/prober.vhd" \
+  "chan/adcdaq.vhd" \
   \
   "ct/bct_engine.vhd"\
   \
@@ -146,7 +146,7 @@ set ice_ct_hdl_files [concat $ice_hdl_base_files [list \
   "XGLINK/xglink_array.vhd"\
   "XGLINK/xglink_sync_block.vhd"\
   \
-  "10GE_UDP_MAC/xge_udp_mac_tx2.vhd" \
+  "10GE_UDP_MAC/xge_udp_mac_tx.vhd" \
   "10GE_UDP_MAC/xge_array.vhd" \
   ]]
 

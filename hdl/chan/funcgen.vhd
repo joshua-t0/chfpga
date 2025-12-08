@@ -110,7 +110,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 -- the buffer, each sample's LSB indicate if there is an overflow or not, so to simulate an overflow in a sample, set the sample value to 1.
 -- Overflow counting is enabled with ``stats_enable`` and the result can be read from ``overflow_ctr``.
 --
-entity FUNCGEN is
+entity funcgen is
     generic (
         ADC_SAMPLES_PER_WORD: integer := 8;
         ADC_BITS_PER_SAMPLE: integer := 14;
@@ -145,7 +145,7 @@ entity FUNCGEN is
         ctrl_clk            : in  std_logic;
         ctrl_rst            : in  std_logic
     );
-end FUNCGEN;
+end funcgen;
 
 architecture impl of FUNCGEN is
 
