@@ -65,9 +65,16 @@ puts "--------------------------------------------------------------------------
 puts "Synthesizing OOC modules"
 puts "------------------------------------------------------------------------------------------------------------"
 puts ""
-  reset_run *_synth_1
-  launch_runs *_synth_1 -jobs 8 -verbose
-  wait_on_run *_synth_1
+
+  set synth_runs [get_runs *_synth_1]
+  
+  if {[llength $synth_runs] == 0} {
+    puts "INFO: no synth runs to execute, skipping"
+  } else {
+      reset_run   $synth_runs
+      launch_runs $synth_runs -jobs 8 -verbose
+      wait_on_run $synth_runs
+  }
 
 
 puts ""

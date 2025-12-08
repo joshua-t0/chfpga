@@ -378,7 +378,11 @@ generate_target all $ip_list
 catch { config_ip_cache -export $ip_list }
 foreach ip $ip_list {
   # removed the -force option to avoid regeneration
-  set ip_run_name [create_ip_run $ip]
+  puts "INFO: creating ip run for $ip"
+  if {[catch { set ip_run_name [create_ip_run $ip] } msg]} {
+        puts "INFO: skipping $ip (no OOC synth / can't create run): $msg"
+        continue
+    }
 
   # if this fails (e.g. legacy/pre-generated IP like FFT2), skip it
   if {$ip_run_name eq ""} {
