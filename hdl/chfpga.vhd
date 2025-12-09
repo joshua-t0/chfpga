@@ -878,7 +878,7 @@ begin
 	-------------------------------------------------------------------
 
 	-- Instantiate the system clock generator that generates the local 200 MHz and 125 MHz from the external 200 MHz lines
-	CLK0: entity work.CLOCKS
+	clk0: entity work.clocks
 		generic map (
 			PLATFORM_ID => PLATFORM_ID,
 			CLOCK_SOURCE => SYSTEM_CLOCK_SOURCE, -- "SYSCLK", "SYSCLK_BUFG", "SFP_REFCLK" or "CLK10_BUFG"
@@ -1796,7 +1796,7 @@ begin
 
 				-- ADCDAQ is still implemented if IMPLEMENT_ANT=FALSE, but its IMPLEMENT_ADCDAQ generics is forced  to FALSE to the appropriate differential buffers are instantiated and prevent UCF errors.
 				-- ADC_CLK_OUT_PLL<=ADC_CLK_OUT_PLL_INT;
-				ADCDAQ0: entity work.adcdaq
+				adcdaq0: entity work.adcdaq
 					generic map (
 						IMPLEMENT_ADCDAQ        => TRUE, --
 						PROVIDE_BUFFERED_DIVCLK => ADC_PROVIDE_BUFFERED_DIVCLK(i),

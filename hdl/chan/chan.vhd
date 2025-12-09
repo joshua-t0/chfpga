@@ -277,7 +277,7 @@ begin
 	-- Instantiate the Command router
 	-- Routes the commands to the requested module
 	---------------------------------------------------------------------
-	CTRL_ROUTER0: entity work.bsb_router
+	bsb_router0: entity work.bsb_router
 		generic map (
 			NUMBER_OF_PORTS => NUMBER_OF_MODULES,
 			ADDRESS_MASK => "-------111---------" -- '1': used to generate port index, '-' = don't care,
@@ -420,7 +420,7 @@ begin
 		-- FUNCTION GENERATOR instance
 		---------------------------------------------------------------------
 		-- The Function Generator either forwards the ADC data or injects user-programmable arbitrary waveforms
-		FUNCGEN0: entity work.funcgen
+		funcgen0: entity work.funcgen
 			generic map (
 				ADC_BITS_PER_SAMPLE => ADC_BITS_PER_SAMPLE,
 				ADC_SAMPLES_PER_WORD => ADC_SAMPLES_PER_WORD,
@@ -497,7 +497,7 @@ begin
 
 		-- This is a wrapper for the CASPER FFT so it can operate with AXI4 Streaming buses.
 		-- Also adds a control interface to control the FFT operation.
-		FFT0: entity work.fft
+		fft0: entity work.fft
 			generic map (
 				IMPLEMENT_FFT        => IMPLEMENT_FFT,
 				FFT_TYPE             => FFT_TYPE,
@@ -563,7 +563,7 @@ begin
 			end if;
 		end process;
 
-		SCALER0: entity work.scaler
+		scaler0: entity work.scaler
 			generic map (
 				FFT_BITS_PER_BIN => FFT_BITS_PER_BIN, -- Real + Imaginary part
 				FFT_BINS_PER_WORD => FFT_BINS_PER_WORD, -- half the number of ADC samples per word because the FFT drops half the spectrum (the negative frequencies)
@@ -792,7 +792,7 @@ begin
                 prb_RDY.tready <= prb_tready;
     
                 -- Instantiate the local capture module
-                PROBER0: entity work.prober
+                prober0: entity work.prober
                     generic map (
                         SIM => SIM
                     )

@@ -364,7 +364,7 @@ architecture impl of system is
 	signal sysmon_user_reset: std_logic; -- from GPIO to SYSMON
 
     -- debug
-	signal debug2: std_logic;
+	signal debug2: std_logic := '0';
 
 
 begin
@@ -602,7 +602,7 @@ begin
 		end process;
 
 
-		GPIO0: entity work.gpio
+		gpio0: entity work.gpio
 			generic map (
 				PLATFORM_ID => PLATFORM_ID,
 				PROTOCOL_VERSION => PROTOCOL_VERSION,
@@ -828,7 +828,7 @@ begin
 			end if;
 		end process;
 
-		SPI0: entity work.spi
+		spi0: entity work.spi
 			generic map (
 				NUMBER_OF_PORTS => NUMBER_OF_SPI_PORTS
 			)
@@ -926,7 +926,7 @@ begin
 
 		sysmon_reset_all <= sysmon_reset or sysmon_user_reset;
 
-		SYSMON0: entity work.sysmon
+		sysmon0: entity work.sysmon
 			generic map (
 				PLATFORM_ID => PLATFORM_ID
 			)
@@ -1014,7 +1014,7 @@ begin
 
 		freq_ctr_in_vect(40) <= corr_clk_div2;
 
-		FREQ_CTR0: entity work.freq_ctr
+		freq_ctr0: entity work.freq_ctr
 			generic map (
 				FPGA_SERIES => FPGA_SERIES,
 				NUMBER_OF_CLK_IN_PORTS => NUMBER_OF_FREQ_CTR_PORTS
@@ -1061,7 +1061,7 @@ begin
 			end if;
 		end process;
 
-		REFCLK0: entity work.refclk
+		refclk0: entity work.refclk
 			generic map (
 				PLATFORM_ID => PLATFORM_ID,
 				NUMBER_OF_MEZZANINES => NUMBER_OF_ADC_BOARDS,
@@ -1131,7 +1131,7 @@ begin
 		--blinker_kick <= udp_rx_tvalid and udp_rx_tlast; -- blink faster when packets are received
 		blinker_kick <= udp_rx_frame; -- blink faster when packets are received
 
-		BLINKER0: entity work.BLINKER
+		blinker0: entity work.blinker
 			generic map (
 				DUMMY => not BLINKER_PRESENT,
 				PING_PONG => PLATFORM_ID=PLATFORM_ID_ZCU111 or PLATFORM_ID=PLATFORM_ID_KC705 or PLATFORM_ID=PLATFORM_ID_ML605 -- We have 8 LEDS on these platform to perform a nice light show

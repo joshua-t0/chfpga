@@ -401,7 +401,7 @@ end process;
 -- DRP:    xxxMMMMMxa1aaaaaaaaa (10 address bits, 512 words (0x000 - 1FF)
 -- CONTROL:xxxMMMMMxx00aaaaaaaa
 -- STATUS :xxxMMMMMxx01aaaaaaaa
-CTRL_ROUTER0: entity work.bsb_router
+bsb_router0: entity work.bsb_router
 	generic map (
 		NUMBER_OF_PORTS=> NUMBER_OF_MODULES,
 		ADDRESS_MASK => "---11111-----------" --'1': used to generate port index, '-' = don't care,

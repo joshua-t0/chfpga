@@ -158,7 +158,7 @@ FIFOGEN_ASYNC: if USE_ASYNC_FIFO=TRUE generate
 --		 M00_AXIS_TLAST => RPLY_A_DAT.TLAST
 --	  );
 
-	CMD_FIFO0: entity work.CMD_FIFO
+	cmd_fifo0: entity work.CMD_FIFO
 	  PORT MAP (
 		 m_aclk => B_CLK,
 		 s_aclk => A_CLK,

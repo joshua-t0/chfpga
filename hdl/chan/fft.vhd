@@ -492,7 +492,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 		-- Output is the complex frequency samples (18 bits real + 18 bits imaginary). Out0 and out 1 provide the even and odd
 		-- frequencies respectively. The lower (even) bin is in the MSB.
         when CHIME =>
-            FFT0: entity work.FFT2
+            fft0: entity work.FFT2
                 PORT MAP(
                     sync_in  => fft_sync_in,
                     in0      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 0) - 1 downto ADC_BITS_PER_SAMPLE * 3),
@@ -518,7 +518,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
         -- Output is the complex frequency samples (18 bits real + 18 bits imaginary). out0 is the first frequency bin,
         -- out1 is the next, etc.
         when D3A =>
-            FFT0: entity work.pfb_fft_d3a_0
+            fft0: entity work.pfb_fft_d3a_0
                 PORT MAP(
                     sync_in(0)  => fft_sync_in,
                     in0      => fft_in_tdata(ADC_BITS_PER_SAMPLE * 8 - 1 downto ADC_BITS_PER_SAMPLE * 7),
@@ -546,7 +546,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 
         when CHORD =>
     		-- Overflow-free FFT, allowing bitgrowth
-            FFT0: entity work.pfb_fft_bitgrowth_0
+            fft0: entity work.pfb_fft_bitgrowth_0
                 PORT MAP(
                     sync_in(0)  => fft_sync_in,
                     in0      => fft_in_tdata(ADC_BITS_PER_SAMPLE * 8 - 1 downto ADC_BITS_PER_SAMPLE * 7),
@@ -574,7 +574,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 
 		when HIRAX =>
 			-- Same as FFT_TYPE_CHIME, but allows bitgrowth
-			FFT0: entity work.hirax_bit_growth_0
+			fft0: entity work.hirax_bit_growth_0
                 PORT MAP(
                     sync_in(0)  => fft_sync_in,
                     pol_in1      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 0) - 1 downto ADC_BITS_PER_SAMPLE * 3),
@@ -610,7 +610,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 	-- Pipeline Delay measurer/generator
 	-----------------------------------------------------------------------------------
 	-- Measures the CASPER block pipelining delay and propagate a vector containing the data flags with the same delay
-		DELAY0: entity work.fft_delay
+		delay0: entity work.fft_delay
 			GENERIC MAP (
 				CTR_WIDTH  => fft_pipeline_delay'LENGTH,
 				DATA_WIDTH => flags_in'LENGTH

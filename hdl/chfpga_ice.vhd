@@ -37,13 +37,13 @@ entity chfpga_ice is
 
 			-- Clocking
 
-			SYSTEM_CLOCK_SOURCE: clk_source_enum                  := SFP_REFCLK; --"SYSCLK": the 200 MHz clock will be taken from sysclk_p/n (CC pins) or "SFP_REFCLK": the system clock is 125 MHz from the GTX reference clock
-			SYSTEM_CLOCK_FREQ: real                      := 125.0; -- System reference clock frequency, in MHz *** IP packager does not support real. Defined as constant below ***
+			SYSTEM_CLOCK_SOURCE: clk_source_enum  := SFP_REFCLK; --"SYSCLK": the 200 MHz clock will be taken from sysclk_p/n (CC pins) or "SFP_REFCLK": the system clock is 125 MHz from the GTX reference clock
+			SYSTEM_CLOCK_FREQ: real               := 125.0; -- System reference clock frequency, in MHz *** IP packager does not support real. Defined as constant below ***
 
-			CHAN_CLK_SOURCE: chan_clk_source_enum        := ADC; -- Channelizer clock comes from the multi-phase MMCM
-			ANT_CLK_SOURCE: integer                      := 0; -- Indicate which ADC is the source of the channelizer. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
-			CHAN_CLK_FREQ: real                          := 200.0; -- MHz. 200.0 or 300.0 are supported.
-			CT_CLK_SOURCE: ct_clk_source_enum                        := CONFIG_CT_CLK_SOURCE; -- corner-turn operates on backplane GTY word clock (~244 MHz)
+			CHAN_CLK_SOURCE: chan_clk_source_enum := ADC; -- Channelizer clock is a single-phase clock derived from one ADC.
+			ANT_CLK_SOURCE: integer               := 0; -- Indicate which ADC is the source of the channelizer. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
+			CHAN_CLK_FREQ: real                   := 200.0; -- MHz. 200.0 or 300.0 are supported. Used only when using MMCM source.
+			CT_CLK_SOURCE: ct_clk_source_enum     := CONFIG_CT_CLK_SOURCE; -- corner-turn operates on backplane GTY word clock (~244 MHz)
 
 			-- BSB interface
 

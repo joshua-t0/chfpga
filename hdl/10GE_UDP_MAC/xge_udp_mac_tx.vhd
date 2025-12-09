@@ -216,7 +216,7 @@ begin
 tx_data <= tx_data_int;
 tx_header <= tx_header_int;
 
-DATA_FIFO0 : entity work.XGMII_UDP_MAC_TX_DATA_FIFO
+data_fifo0 : entity work.XGMII_UDP_MAC_TX_DATA_FIFO
 		port map (
 			rst => RST,
 			wr_clk => s_axis_tx_clk,
@@ -231,7 +231,7 @@ DATA_FIFO0 : entity work.XGMII_UDP_MAC_TX_DATA_FIFO
 			);
 data_fifo_dout_last <= data_fifo_dout(32);
 
-FRAME_FIFO0 : entity work.XGMII_UDP_MAC_TX_HEADER_FIFO
+frame_fifo0 : entity work.XGMII_UDP_MAC_TX_HEADER_FIFO
 		port map (
 			rst => RST,
 			wr_clk => s_axis_tx_clk,

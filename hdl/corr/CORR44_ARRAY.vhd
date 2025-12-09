@@ -133,7 +133,7 @@ begin
 -- Routes the commands to the requested correlator unit
 ---------------------------------------------------------------------
 
-CTRL_ROUTER0: entity work.bsb_router
+bsb_router0: entity work.bsb_router
 	GENERIC MAP (
 		NUMBER_OF_PORTS=>NUMBER_OF_CORRELATORS,
 		ADDRESS_MASK => "---1111------------" --'1': used to generate port index, '-' = don't care,

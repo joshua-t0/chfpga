@@ -336,6 +336,9 @@ begin
 			end if; -- rst/CLK
 		end process;
 
+    else generate
+        recovered_sync <= '0';  -- make sure the net is driven to prevent warnings
+        clk10_out <= '0';
 	end generate encodedsync_gen; -- if IMPLEMENT_CLOCK_ENCODED_SYNC
 
 	-- Pass the user-controlled sync signal to the output after resynchronizing it to clk10

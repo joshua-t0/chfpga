@@ -397,7 +397,6 @@ architecture impl of gpio is
 	-- Event counter and capture
 
 	signal event_sample: unsigned(47 downto 0); -- Captured value
-	signal event_ctr_soft_reset: std_logic;
 
 	signal manual_event_sample_trig: std_logic;
 
@@ -468,7 +467,8 @@ begin
 	-- |         |38-41| 31:0 | pwm_high_time               | Number of events (frames) to keep the PWM output at High|
 	-- |         |42-45| 31:0 | pwm_period                  | Number of events (frames) between PWM High (i.e PWM period)|
 	-- |         | 46  | 7    | pwm_soft_reset              | Software reset of the PWM module. Active high. |
-	-- |         |     | 6:5  | (unused)                    | |
+	-- |         |     | 6:4  | (unused)                    | |
+	-- |         |     |  5   | bp_gpio_int_out             | IceBoard: GPIO_INT Output signal (when output enable is enabled) |
 	-- |         |     |  4   | bp_gpio_int_oe              | IceBoard: Enables tristate output of GPIO_INT_OE |
 	-- |         |     | 3:0  | user_mux_source(0)          | Selects which user source to send to the user output 0. |
 	-- |         | 47  |  7   | uart_tx_oe                  | IceBoard I/O |
@@ -613,6 +613,7 @@ begin
 	-- CONTROL byte 46: PWM reset, IO for QC tests, user output 0 mux control
 
 	pwm_soft_reset     <= control_bytes(46)(7);
+	bp_gpio_int_out    <= control_bytes(46)(5);
 	bp_gpio_int_oe     <= control_bytes(46)(4);
 	user_mux_source(0) <= control_bytes(46)(3 downto 0);
 
@@ -1240,7 +1241,7 @@ begin
 					event_sample_en <= '1';
 				end if;
 
-				if event_ctr_reset = '1' or event_ctr_soft_reset = '1' then
+				if event_ctr_reset = '1' then
 					event_ctr <= (others => '0');
 					event_sample_arm <= '0';
 					event_sample_en <= '1'; -- sample the first incoming frame after reset

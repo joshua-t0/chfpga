@@ -57,32 +57,32 @@ use work.chFPGA_Package.all; -- Get all component definitions
 --
 -- The output of the FUNCGEN module is selected by the 3-bit `fn_sel` memory-mapped field. The supported modes are:
 --
--- - 0: FN_ADC: Passes on the ADC input. The ADC overflow bits are aggregated througout the frame
---   and the resulting ``frame_overflow_flag`` bit is provided on the last frame. The number of sample overflows
---   over a specified period of frames (through the control register ``stats_period``) can be accessed by the status register ``overflow_ctr``.
+-- - 0: FN_ADC: Passes on the ADC input. The overflow flags are taken from the ADC. 
 --
--- - 1: FN_RAM: Outputs the RAM contents (2048 bytes, 512 words). ``frame_overflow_flag`` and ``overflow_ctr`` are always zero.
+-- - 1: FN_RAM: Outputs the RAM contents (2048 bytes, 512 words). The overflow flags are always zero.
 --
--- - 2: FN_NOISE: Outputs Pseudo-Random noise. ``frame_overflow_flag`` and ``overflow_ctr`` are always zero. The noise
+-- - 2: FN_NOISE: Outputs Pseudo-Random noise. The overflow flags are always zero. The noise
 --   generator is seeeded by the 8-bit A and B fields to allow each channelizer to have up to 65536
---   different (presumamly uncorrelated) patterns. ``frame_overflow_flag`` and ``overflow_ctr`` are always zero.
+--   different (presumamly uncorrelated) patterns. 
 --
 -- - 3: FN_FRAME_WORD_CTR_RAM_FLAGS: Counts frames and words, with programmable ADC overflow bit
 --   patterns. This mode is mostly used for testing. The output data is grouped in 32-bit words (the whole word for Iceboard and the LSB 32 bits for CRS),
 --   containing a 21-bit frame count in the MSB followed bit 11-bit word count for the Iceboard. This pattern
 --   does not generate nice data when splitted in 4-bytes (and even less when going through the
 --   FFT), but it ensures that consecutive frames will contain unique data when looked word-wise.
---   In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` can be programmed by injecting specific values into the buffer. ``frame_overflow_flag`` will be '1' if there is any bit that is '1' in the buffer. ``overflow_ctr`` increments for every sample whose value is LSB is '1'. An overflow for a sample can thus be simulated by injecting a '1' in that sample.
 --
 -- - 4: FN_FRAME8: Each sample is the last 6 bits (for IceBoard)/12 bits (for CRS) of the current frame number.
---   In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` can be programmed by injecting specific values into the buffer. ``frame_overflow_flag`` will be '1' if there is any bit that is '1' in the buffer. ``overflow_ctr`` increments for every sample whose value is LSB is '1'. An overflow for a sample can thus be simulated by injecting a '1' in that sample.
+--   The overflow flag is taken from the buffer.
 --
 -- - 5: FN_FRAME4: The most significant 4 bits of each sample is the last 4 bits of the current
 --   frame number. The lower 4 bits are zero.
---   In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` can be programmed by injecting specific values into the buffer. ``frame_overflow_flag`` will be '1' if there is any bit that is '1' in the buffer. ``overflow_ctr`` increments for every sample whose value is LSB is '1'. An overflow for a sample can thus be simulated by injecting a '1' in that sample.
+--   The overflow flag is taken from the buffer.
 --
 -- - 6: FN_RAM_NIBBLE4: Sends bits 3:0 of RAM samples on even frames an bits 7:4 of RAM samples on odd frames. Data is aligned with the 4 MSBS
---   of each sample, and the rest of the bits in the sample are zero. In this mode, ``frame_overflow_flag`` and ``overflow_ctr`` are always zero.
+--   of each sample, and the rest of the bits in the sample are zero. In this mode, The overflow flag are always zero.
+--
+-- Left and right shift
+-- --------------------
 --
 -- Waveform buffer
 -- ---------------
@@ -101,8 +101,16 @@ use work.chFPGA_Package.all; -- Get all component definitions
 -- The same A and B value will always result in the same sequence.
 -- The sequence repeats after 2**32 - 1 words for IceBoard and (2**32 - 1)/4 word for CRS.
 --
--- Overflow counter
--- ----------------
+-- Frame overflow flag
+-- -------------------
+--
+-- The overflow flag is set if the data source indicates an overflow or if the left shift operation caused the value to exceed a valid range.  
+--
+-- These overflow flags are aggregated througout the frame
+--   and the resulting  bit is provided on TUSER on the last word of the frame and can be read through the register ``frame_overflow_flag`` for debugging. 
+
+-- Overflow statistics counter
+-- ---------------------------
 --
 -- The overflow counter counts over ``stats_period`` (user defined) frames the number of sample overflows from the ADC or the number of overflows injected
 -- Through the buffer (either from modes FN_FRAME_WORD_CTR_RAM_FLAGS, FN_FRAME8 or FN_FRAME4). The overflow count for other modes
@@ -375,7 +383,7 @@ lfsr: entity work.lfsr
         clk => clk
     );
 
-
+frame_overflow_flag <= m_axis_adc_tuser(TUSER_ADC_OVERFLOW_BIT);
 
 ---------------------------------------------
 -------- Main process -----------------------
