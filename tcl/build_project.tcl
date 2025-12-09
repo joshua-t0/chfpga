@@ -66,7 +66,7 @@ puts "Synthesizing OOC modules"
 puts "------------------------------------------------------------------------------------------------------------"
 puts ""
   reset_run *_synth_1
-  launch_runs *_synth_1 -jobs 8 -verbose
+  launch_runs *_synth_1 -jobs 16 -verbose
   wait_on_run *_synth_1
 
 
@@ -75,7 +75,7 @@ puts "--------------------------------------------------------------------------
 puts "Synthesizing global project"
 puts "------------------------------------------------------------------------------------------------------------"
 puts ""
-  launch_runs synth_1 -jobs 8 -verbose
+  launch_runs synth_1 -jobs 16 -verbose
   wait_on_run synth_1
 
 puts ""
@@ -83,7 +83,7 @@ puts "--------------------------------------------------------------------------
 puts "Implementing"
 puts "------------------------------------------------------------------------------------------------------------"
 puts ""
-  launch_runs impl_1 -to_step write_bitstream -jobs 8 -verbose
+  launch_runs impl_1 -to_step write_bitstream -jobs 16 -verbose
   wait_on_run impl_1
 
 #   foreach r [get_runs -filter {IS_SYNTHESIS}] {
