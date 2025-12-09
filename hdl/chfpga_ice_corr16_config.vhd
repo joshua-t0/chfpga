@@ -12,6 +12,8 @@ package chfpga_config is
 	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean := TRUE;
 	constant CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS: boolean := FALSE;
 	constant CONFIG_CHAN_FFT_TYPE: fft_type_enum := CHIME;
+	constant CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT: integer  := 16; -- Only Channelizers 0 to N-1 will have an FFT
+
 
 	-- Capture engine config
 	constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer := 2;
@@ -38,8 +40,8 @@ package chfpga_config is
 
 	-- Correlator config
 
-	constant CONFIG_CORR_TYPE: corr_type_enum := CORR44;
-	constant CONFIG_NUMBER_OF_CORRELATORS: integer := 8; -- each correlator handles 128 bins
+	constant CONFIG_CORR_TYPE: corr_type_enum := UCORR44;
+	constant CONFIG_NUMBER_OF_CORRELATORS: integer := 2; -- each correlator handles 128 bins
 	constant CONFIG_CORR_READOUT_BINS: integer_array(0 to CONFIG_NUMBER_OF_CORRELATORS-1) := (0, 0);
 
 
