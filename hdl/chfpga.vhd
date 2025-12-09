@@ -1339,6 +1339,12 @@ begin
 		signal ctrl_clk_div2: std_logic := '0'; -- Initialization required
 		signal chan_clk_div2: std_logic := '0'; -- -- Initialization required
 
+		signal bp_time_in_reg1, bp_time_in_reg2, bp_time_in_reg3 : std_logic;
+		signal bp_trig_in_reg1, bp_trig_in_reg2, bp_trig_in_reg3: std_logic;
+		attribute IOB of bp_time_in_reg1, bp_trig_in_reg1: signal is "true"; -- make sure the IRIG-B signals are captured on the IOB register to ensure repeatable timing
+		attribute shreg_extract of bp_time_in_reg1, bp_time_in_reg2, bp_time_in_reg3, bp_trig_in_reg1, bp_trig_in_reg2, bp_trig_in_reg3: signal is "no";
+
+
 	begin
 
 		-- The SPI reset signal is sent to two separate ports to support different versions of SPI-enabled FMC mezzanines
@@ -1404,6 +1410,31 @@ begin
 
 		process(all) begin
 			chan_clk_div2 <= not chan_clk_div2 when rising_edge(chan_clk(0));
+		end process;
+
+		-- Pipeline bp_time_in and bp_trig_in to allow them to propagate across the chip
+		-- The IRIG-B decoder uses these signals and is clocked by clk200
+		-- Capture IRIG-B on the falling edge of clk200 to provide mamimum setup/hold margin, assuming that
+		-- clk200 is phase aligned with the reference clock and the IRIG-B signal
+		bp_time_trig_reg_proc: process(all) begin
+			if falling_edge(clk200) then
+				bp_time_in_reg1 <= bp_time_in;
+				bp_trig_in_reg1 <= bp_trig_in;
+			end if;
+		end process;
+
+		-- Pipeline backplane time (IRIG-B) and trig signals to allow them to propagate across the chip
+		-- Re-sample IRIG-B on the rising edge of clk200
+		process(all) begin
+			if rising_edge(clk200) then
+				bp_time_in_reg2 <= bp_time_in_reg1;
+				bp_trig_in_reg2 <= bp_trig_in_reg1;
+
+				bp_time_in_reg3 <= bp_time_in_reg2;
+				bp_trig_in_reg3 <= bp_trig_in_reg2;
+
+
+			end if; -- RST/CLK
 		end process;
 
 		system0: entity work.system
@@ -1533,8 +1564,8 @@ begin
 
 
 					-- TIME & TRIG signals
-					bp_time_in => bp_time_in,
-					bp_trig_in => bp_trig_in,
+					bp_time_in => bp_time_in_reg3,
+					bp_trig_in => bp_trig_in_reg3,
 
 					-- Event counter (counts and capture frame numbers with time)
 					event_ctr_clk => chan_clk(0),

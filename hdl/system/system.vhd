@@ -22,7 +22,7 @@ use UNISIM.VComponents.ALL;
 library xpm;
 use xpm.vcomponents.ALL;
 
-use work.chFPGA_package.ALL; 
+use work.chFPGA_package.ALL;
 
 -- The SYSTEM module provides general support functions such as GPIOs, SPI and I2C interfaces,
 -- clock generation, system monitoring, and reference clock management. It acts as a container
@@ -332,7 +332,7 @@ architecture impl of system is
 
 	attribute TARGET_PBLOCK: string; -- custom attribute
 	attribute DONT_TOUCH: string;
-	attribute IOB: string;
+	--attribute IOB: string;
 
 	-- SYSTEM sub-modules port numbers
 
@@ -447,14 +447,7 @@ begin
 		signal SYS_GPIO_RPLY_RDY: AXIS8_RDY_STRUCT;
 
 		signal bp_time_reg: std_logic;
-		signal bp_time_io_dly: std_logic;
-		signal bp_time_io_reg: std_logic;
-		attribute IOB of bp_time_io_reg: signal is "true";
-
 		signal bp_trig_reg: std_logic;
-		signal bp_trig_io_dly: std_logic;
-		signal bp_trig_io_reg: std_logic;
-		attribute IOB of bp_trig_io_reg: signal is "true";
 
 		signal irib_mux_in: std_logic_vector(0 to 7);
 		signal pwm_ctr_en_reg1: std_logic;
@@ -495,74 +488,27 @@ begin
 			end if; -- clk
 		end process;
 
-		timedelay_gen: if FPGA_SERIES = FPGA_KINTEX7 generate
-
-			bp_time_dly0: IODELAYE1
-				generic map (
-					CINVCTRL_SEL => FALSE, -- Dynamically inverts the Clock (C) polarity.
-					DELAY_SRC => "I", -- Specifies the source to the IODELAY component. "I" means it will be connected directly to an input port or IBUF (input mode)
-					HIGH_PERFORMANCE_MODE => TRUE, -- When TRUE, this attribute reduces the output jitter.
-					IDELAY_TYPE => "VAR_LOADABLE", -- Specifies a fixed, variable or default (eliminate hold time) input delay.
-					REFCLK_FREQUENCY => 200.0, -- When using an associated IDELAYCTRL, specifies the input reference frequency to the component.
-
-					-- SIGNAL_PATTERN: Used by the delay calculator to determine different propagation
-					-- delays through the IODELAY block based on the setting. DATA will be the addition of per tap delay and per tap jitter. No jitter is
-					-- introduced for clock-like signals.
-					SIGNAL_PATTERN => "CLOCK"
-				)
-				port map (
-					-- Inputs
-					IDATAIN => bp_time_in, -- 1-bit Data input to device from the I/O (connect directly to port, I/O Buffer). When IDATAIN is used, DATAIN must be tied to a logic zero (ground).
-					CLKIN => '0', -- 1-bit Clock Access into the IODELAY (from the IO CLKMUX)
-					DATAIN => '0', -- 1-bit Data input for the internal datapath delay. When DATAIN is used, IDATAIN and ODATAIN must be tied to a logic zero (ground).
-					ODATAIN => '0', -- 1-bit Data input for the output datapath from the device (connect to output data source). When ODATAIN is used, DATAIN must be tied to a logic zero (ground).
-					T => '1', -- 1-bit 3-state input control. Tie high for input-only or internal delay or tie low for output only.
-					CINVCTRL => '0', -- 1-bit Dynamically inverts the Clock (C) polarity
-
-					-- Delayed output
-					DATAOUT => bp_time_io_dly, -- 1-bit Delayed data output from input port (connect to input datapath logic)
-
-					-- Delay control
-					CNTVALUEOUT => open, -- 5-bit Counter value going to fabric for monitoring purpose
-					CNTVALUEIN => irigb_delay, -- 5-bit Counter value from fabric for loadable counter application
-					C => CTRL_CLK, -- 1-bit Clock input (Must be connected for variable mode)
-					INC => '0', -- 1-bit Increment / Decrement tap delay
-					CE => '0', -- 1-bit Active high enable increment/decrement function
-					RST => irigb_delay_reset -- 1-bit Active high, synchronous reset, resets delay chain to IDELAY_VALUE/
-
-				);
-		else generate
-			bp_time_io_dly <= bp_time_in; -- bypass the delay element
-		end generate timedelay_gen;
-
-
-		-- Pipeline backplane time (IRIG-B) and trig signals to allow them to propagate across the chip
-		-- The IRIG-B decoder uses these signals and is clocked by clk200
-		bp_trig_sync_proc: process(all) begin
-			-- Capture IRIG-B on the falling edge of clk200 to provide mamimum setup/hold margin, assuming that
-			-- clk200 is phase aligned with the reference clock and the IRIG-B signal
-			if falling_edge(clk200) then
-				bp_time_io_reg <= bp_time_io_dly; -- this is registered on the IO pad for optimal timing predictability
-				bp_trig_io_reg <= bp_trig_in; -- this is registered on the IO pad for optimal timing predictability
-			end if; -- RST/CLK
-			-- re-sample IRIG-B on the rising edge of clk200
+		-- Pipeline backplane time (IRIG-B) and trig signals
+		process(clk200) begin
 			if rising_edge(clk200) then
-				bp_time_reg <= bp_time_io_reg;
-				bp_trig_reg <= bp_trig_io_reg;
+				bp_time_reg <= bp_time_in;
+				bp_trig_reg <= bp_trig_in;
 			end if; -- RST/CLK
 		end process;
 
-		-- Sources for the IRIG-B signals
-		irib_mux_in <= (
-			0 => bp_trig_reg, -- backplane trig signal
-			1 => bp_time_reg, -- backplane time signal
-			2 => irigb_gen_out, -- internal IRIG-B generator
-			3 => bp_gpio_int_in, -- backplane interrupt line (connects to every board in a crate)
-			4 => user_mux_in(0), -- sma_a
-			5 => user_mux_in(1), -- led2_sma_b
-			6 => user_mux_in(2), -- led1_bp_sma
-			7 => user_mux_in(3)
-			);
+
+
+		 -- Sources for the IRIG-B signals
+		 irib_mux_in <= (
+		 	0 => bp_trig_reg, -- backplane trig signal
+		 	1 => bp_time_reg, -- backplane time signal
+    	 	2 => irigb_gen_out, -- internal IRIG-B generator
+		 	3 => bp_gpio_int_in, -- backplane interrupt line (connects to every board in a crate)
+		 	4 => user_mux_in(0), -- sma_a
+		 	5 => user_mux_in(1), -- led2_sma_b
+		 	6 => user_mux_in(2), -- led1_bp_sma
+		 	7 => user_mux_in(3)
+		 	);
 
 		gpio_user_mux_signals <= ( -- source of the USER--controlled SMA output
 			0 => sync_out, -- Sync signal
@@ -708,8 +654,6 @@ begin
 				irigb_before_target => irigb_before_target, -- out
 				irigb_pps => pps_out, -- To user output mux
 				irigb_out => irigb_gen_out,
-				irigb_delay => irigb_delay, -- delay to apply to the IRIG-B inputs on the IOB
-				irigb_delay_reset => irigb_delay_reset,
 
 				-- Event counter (counts and capture frame numbers with time)
 				event_ctr_clk => event_ctr_clk,

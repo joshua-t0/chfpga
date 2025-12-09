@@ -259,8 +259,6 @@ entity gpio is
 		irigb_before_target: out std_logic;
 		irigb_pps: out std_logic;
 		irigb_out: out std_logic;
-		irigb_delay: out std_logic_vector(4 downto 0); -- Delay to apply to the IRIG-B signals on the IOB
-		irigb_delay_reset: out std_logic;
 
 		-- Channelizer clock source selection
 
@@ -488,8 +486,8 @@ begin
 	-- |         |     | 3:0  | user_mux_source(1)          | Selects the output sent to user output 1 |
 	-- |         | 50  |  7   | user_bit(1)                 | User bit 1 (multiple functions) |
 	-- |         |     |  6   | user_bit(0)                 | user bit 0 (multiple functions) |
-	-- |         |     |  5   | irigb_delay_reset           | Loads the delays to the IRIG-B signal |
-	-- |         |     | 4:0  | irigb_delay                 | Delayed to be applied to the IRIG-B signal |
+	-- |         |     |  5   | (unused)                    | |
+	-- |         |     | 4:0  | (unused)                    | |
 	-- | STATUS  |  0  |  7   | USER_DATA_VALID             | is '1' when the ACCESS0 register data (firmware timestamp) is valid |
 	-- |         |     | 6:0  | COOKIE                      | Defined as a GENERIC (default = 0x42)|
 	-- |         |  1  | 7:5  | LOG2_SAMPLES_PER_WORD       | Base-2 log of the number of samples per word |
@@ -646,8 +644,6 @@ begin
 
 	user_bit(1)       <= control_bytes(50)(7);
 	user_bit(0)       <= control_bytes(50)(6);
-	irigb_delay_reset <= control_bytes(50)(5);
-	irigb_delay       <= control_bytes(50)(4 downto 0);
 
 	-- STATUS Byte 0
 
@@ -784,7 +780,7 @@ begin
 			                      X"00" & -- Byte 47: IceBoard IO's for QC tests
 			                      X"00" & -- Byte 48: User output 3 mux control, various IO's for QC tests
 			                      X"89" & -- Byte 49: User output 1 & 2 mux control
-			                      X"00"), -- Byte 50: User bits, IRIG-B delay control
+			                      X"00"), -- Byte 50: User bits
 			RAM_DATA_WIDTH          => 8, -- 8 or 16 bits
 			RAM_ADDR_WIDTH          => 5 + 2,  -- 6 bits (32 register words) + 2 bits (4 bytes per word)
 			RAM_LATENCY             => 1
