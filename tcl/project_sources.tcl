@@ -98,9 +98,9 @@ set ice_base_ip_files [list \
 ]
 
 # === Corr16 files ===
-set ice_corr16_ooc_ip_files [list "KC705/FFT2/FFT2.xci"]
+xf
 set ice_corr16_ip_files [concat $ice_base_ip_files [list \
-  "KC705/FFT2/FFT2.xci" \
+  $fft_type_chime \
   "KC705/AXI4S_REG_SLICE/AXI4S_REG_SLICE.xci" \
   "KC705/CMD_FIFO/CMD_FIFO.xci" \
   "KC705/CORR44_DATA_FIFO/CORR44_DATA_FIFO.xci" \
@@ -115,9 +115,10 @@ set ice_corr16_hdl_files [concat $ice_hdl_base_files [list \
 
 
 # === Corner-turn files ===
-set ice_ct_ooc_ip_files "KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci"
+set ice_ct_ooc_ip_files $fft_type_hirax
 
 set ice_ct_ip_files [concat $ice_base_ip_files [list \
+  $fft_type_hirax \
   "KC705/SHUFFLE_BIN_SEL_FLAGS_FIFO4/SHUFFLE_BIN_SEL_FLAGS_FIFO4.xci" \
   "KC705/SHUFFLE_BIN_SEL_DATA_FIFO_EMBED/SHUFFLE_BIN_SEL_DATA_FIFO_EMBED.xci" \
   "KC705/SHUFFLE_BIN_SEL_DATA_FIFO_BRAM/SHUFFLE_BIN_SEL_DATA_FIFO_BRAM.xci" \
