@@ -290,7 +290,7 @@ process(in_clk) begin
 end process;
 
 -- frame_clk <= s_axis_tvalid and s_axis_tlast;
-align0: entity work.align
+align0: entity work.align32
 	generic map (
 		NUMBER_OF_LANES => NUMBER_OF_LANES
 		)

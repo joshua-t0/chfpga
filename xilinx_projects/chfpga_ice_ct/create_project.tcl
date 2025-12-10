@@ -4,12 +4,12 @@
 #*****************************************************************************************
 
 # Make sure the cwd is the folder containing this script
-
 cd [file normalize [file dirname [info script]]]
 
-# Get variables that will be used to define the project sources
+# Get variables defining project sources
 source ../../tcl/project_sources.tcl
 
+# Set project target part and source files
 set target_part $ice_target_part
 set bd_name $ice_bd_name
 set top_module $ice_top_module
@@ -22,7 +22,6 @@ set top_module $ice_top_module
 set ooc_ip_files $ice_ct_ooc_ip_files
 set ip_files $ice_ct_ip_files
 set hdl_files [concat $ice_ct_hdl_files "chfpga_ice_ct_config.vhd" ]
-
 set const_files [list \
 	"mgk7mb/chfpga_mgk7mb_timing_constraints.xdc" \
 	"mgk7mb/chFPGA_mgk7mb_Rev2_physical_constraints.xdc" \
@@ -31,5 +30,5 @@ set const_files [list \
 # Enable LUT combining, otherwise the design does not fit
 set no_lc "0"
 
-
+# Create project
 source ../../tcl/create_generic_project.tcl

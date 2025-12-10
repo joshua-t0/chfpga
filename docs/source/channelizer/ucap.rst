@@ -44,7 +44,7 @@ Schematic
 .. .. figure:: ../images/ucap.svg
 ..     :width: 50%
 
-.. parse:: hdl/CHAN/ucap.vhd
+.. parse:: hdl/chan/ucap.vhd
 
 .. toctree::
    :titlesonly:
@@ -53,7 +53,7 @@ Schematic
 Entity documentation
 --------------------
 
- .. autoentity:: UCAP
+ .. autoentity:: ucap
 
 
 Principle of operation

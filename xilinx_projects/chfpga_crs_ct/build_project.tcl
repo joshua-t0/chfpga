@@ -9,5 +9,7 @@
 #      ./build_project.tcl
 #
 #*****************************************************************************************
+# Make sure the cwd is the folder containing this script
+cd [file normalize [file dirname [info script]]]
 
 source ../../tcl/build_project.tcl

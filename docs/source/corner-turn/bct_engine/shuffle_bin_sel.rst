@@ -1,17 +1,17 @@
 .. title:: SHUFFLE_BIN_SEL
 
 *********************************************************************************************
-:entity:`SHUFFLE_BIN_SEL` (*SHUFFLE_BIN_SEL.vhd*): 2nd and 3rd stage corner-turn bin selector
+:entity:`shuffle_bin_sel` (*shuffle_bin_sel.vhd*): 2nd and 3rd stage corner-turn bin selector
 *********************************************************************************************
 
 .. .. figure:: ../../images/channelizer.svg
 ..     :width: 75%
 
-:entity:`SHUFFLE_BIN_SEL` Selects specified frequency bins from multiple incoming data streams (the input lanes) and merges them into a single output stream.  The incoming streams are presumed to contain header, data, scaler flags, frame flags and footer. The outgoing stream maintains the same structure.
+:entity:`shuffle_bin_sel` Selects specified frequency bins from multiple incoming data streams (the input lanes) and merges them into a single output stream.  The incoming streams are presumed to contain header, data, scaler flags, frame flags and footer. The outgoing stream maintains the same structure.
 
 Generics are used to specialize the module for second or third stage corner-turn operations. Software-controlled registers can be used to change the operation of these bin selectors to support different packet geometry and allow the implementation of all the corner turn engine modes of operation.
 
-The :entity:`SHUFFLE_BIN_SEL` can process incoming packets that has been packed to contain data and flags from  multiple frames.  A multi-frame packet has data bytes from multiple frames are grouped into a single contiguous block, followed by a block of data flags (Scaling overflow), frame flags (ADC/FFT overflows) and packet flags. A multi-frame packet facilitate downstream processing of the data by the X-Engine by allowing single operation block memory transfers. This feature, however, comes at the cost of additional buffering and complexifies the logic of the bin selector code.
+The :entity:`shuffle_bin_sel` can process incoming packets that has been packed to contain data and flags from  multiple frames.  A multi-frame packet has data bytes from multiple frames are grouped into a single contiguous block, followed by a block of data flags (Scaling overflow), frame flags (ADC/FFT overflows) and packet flags. A multi-frame packet facilitate downstream processing of the data by the X-Engine by allowing single operation block memory transfers. This feature, however, comes at the cost of additional buffering and complexifies the logic of the bin selector code.
 
 The module contains a set of control and monitoring memory-map registers.
 
@@ -26,7 +26,7 @@ The module contains a set of control and monitoring memory-map registers.
 Entity documentation
 --------------------
 
-.. parse:: hdl/CROSSBAR/SHUFFLE_BIN_SEL.vhd
+.. parse:: hdl/ct/shuffle_bin_sel.vhd
 
 .. autoentity:: shuffle_bin_sel
 
@@ -39,7 +39,7 @@ Memory map
 ----------
 
 .. include-docs:: shuffle_bin_sel
-    :start-after: SHUFFLE_BIN_SEL Memory Map
+    :start-after: shuffle_bin_sel Memory Map
 
 Implementation details
 ----------------------

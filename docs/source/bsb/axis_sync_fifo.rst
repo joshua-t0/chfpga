@@ -4,7 +4,7 @@
 :entity:`axis_sync_fifo` (*axis_sync_fifo.vhd*): AXI-Streaming Synchronous FIFO
 *******************************************************************************
 
-.. parse:: hdl/CMD/axis_sync_fifo.vhd
+.. parse:: hdl/bsb/axis_sync_fifo.vhd
 
 .. default-role:: vhdl:entity
 

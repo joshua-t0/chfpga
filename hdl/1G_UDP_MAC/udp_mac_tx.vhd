@@ -56,7 +56,7 @@ library UNISIM;
 use UNISIM.VComponents.all;
 
 
-entity UDP_MAC_TX is
+entity udp_mac_tx is
 
 	PORT (
 			-- User-side streaming interface
@@ -103,7 +103,7 @@ entity UDP_MAC_TX is
 		);
 
 
-end UDP_MAC_TX;
+end udp_mac_tx;
 
 -- UDP MAC TX implementation
 --------------------------
@@ -653,7 +653,7 @@ begin
 end process; --tx_back_end
 
 -- Instantiate CRC32 computing engine
-crc32_0: entity work.CRC32 -- we explicitely specify the work library because CRC32 also exists in the unisim lirbary
+crc32_0: entity work.udp_mac_crc32 -- we explicitely specify the work library because CRC32 also exists in the unisim lirbary
 	PORT MAP(
 		crc_reg => eth_crc,
 		crc     => crc_out,

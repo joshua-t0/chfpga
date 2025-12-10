@@ -1,7 +1,7 @@
 .. title:: FUNCGEN
 
 ******************************************************************************
-:entity:`FUNCGEN` (*FUNCGEN.vhd*): Data source selector and Function Generator
+:entity:`funcgen` (*funcgen.vhd*): Data source selector and Function Generator
 ******************************************************************************
 
 
@@ -36,15 +36,15 @@ Sub-modules
 Entity documentation
 ====================
 
-.. parse:: hdl/CHAN/FUNCGEN.vhd
+.. parse:: hdl/chan/funcgen.vhd
 
-.. autoentity:: FUNCGEN
+.. autoentity:: funcgen
 
 
 UDP Control Memory Map
 ======================
 
-.. include-docs:: FUNCGEN
+.. include-docs:: funcgen
     :start-after: Function Generator Memory Map
 
 Design notes

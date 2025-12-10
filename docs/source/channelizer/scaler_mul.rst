@@ -1,17 +1,17 @@
 .. title:: scaler_mul
 
 ******************************************************************
-:entity:`SCALER_MUL` (*scaler_mul.vhd*): Scaler Multiplier
+:entity:`scaler_mul` (*scaler_mul.vhd*): Scaler Multiplier
 ******************************************************************
 
-.. parse:: hdl/CHAN/scaler_mul.vhd
+.. parse:: hdl/chan/scaler_mul.vhd
 
 .. default-role:: vhdl:entity
 
 Entity documentation
 --------------------
 
-.. autoentity:: SCALER_MUL
+.. autoentity:: scaler_mul
 
 Implementation
 ==============
@@ -59,4 +59,4 @@ The final product is assembled by concatenating the upper bits from DSP2 with th
 Usage in SCALER
 ----------------
 
-The `SCALER_MUL` module is instantiated by the :entity:`SCALER` module to multiply FFT output data with gain coefficients. Multiple instances are used in parallel to process all frequency bins in a word simultaneously.
+The `SCALER_MUL` module is instantiated by the :entity:`scaler` module to multiply FFT output data with gain coefficients. Multiple instances are used in parallel to process all frequency bins in a word simultaneously.

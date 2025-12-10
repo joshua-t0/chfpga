@@ -89,7 +89,7 @@ begin
 	   end process;
 
 
-	UCAP: entity work.ucap
+	ucap0: entity work.ucap
         generic map (
             NUMBER_OF_CHANNELS => NUMBER_OF_CHANNELS,
             NUMBER_OF_SOURCES => NUMBER_OF_SOURCES

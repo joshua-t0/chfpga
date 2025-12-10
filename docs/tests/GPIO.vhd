@@ -560,7 +560,7 @@ lcd_gen: if IMPLEMENT_LCD generate
 	LCD_RS <= CONTROL_BYTES(2)(6);
 	LCD_RW <= CONTROL_BYTES(2)(5);
 	LCD_DB <= CONTROL_BYTES(2)(3 downto 0);
-else generate-- make sure the outputs are driven while the associated CTRL_SLAVE logic is synthesized out
+else generate-- make sure the outputs are driven while the associated bsb_regs logic is synthesized out
 	LCD_E  <= '0';
 	LCD_RS <= '0';
 	LCD_RW <= '0';
@@ -727,7 +727,7 @@ STATUS_BYTES(37)(7) <= core_reg_wr_en; -- debug
 -- Memory-Mapped interface
 -----------------------------------------------------------------------------------
 --! Instantiates a memory-mapped interface to the control and status bytes
-CTRL_SLAVE0: entity work.CTRL_SLAVE
+CTRL_SLAVE0: entity work.bsb_regs
 	GENERIC MAP (
 		--NUMBER_OF_CONTROL_BYTES => CONTROL_BYTES'Length(1), -- Length of array in the first dimension: number of bytes
 		NUMBER_OF_STATUS_BYTES => STATUS_BYTES'Length(1),

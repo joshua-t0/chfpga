@@ -4,7 +4,7 @@
 :entity:`chan_fifo` (*chan_fifo.vhd*): Channelizer Asynchronous Output FIFO
 ***************************************************************************
 
-.. parse:: hdl/CHAN/chan_fifo.vhd
+.. parse:: hdl/chan/chan_fifo.vhd
 
 .. default-role:: vhdl:entity
 
@@ -75,7 +75,7 @@ For Ultrascale+, the data is split into:
 Usage in Channelizer
 ====================
 
-The `chan_fifo` is instantiated at the output of the :entity:`CHAN` (channelizer) module to:
+The `chan_fifo` is instantiated at the output of the :entity:`chan` (channelizer) module to:
 
 1. **Clock domain crossing**: Buffer data when transitioning from the channelizer clock domain to the corner-turn or output clock domain
 2. **Rate matching**: Absorb rate differences between the channelizer output rate and the downstream processing rate

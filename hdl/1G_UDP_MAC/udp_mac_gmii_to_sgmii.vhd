@@ -32,7 +32,7 @@ library work;
 -- The entity declaration for the example design
 --------------------------------------------------------------------------------
 
-entity gmii_to_sgmii is
+entity udp_mac_gmii_to_sgmii is
 	generic (
 		SIM: BOOLEAN := FALSE
 		);
@@ -69,11 +69,11 @@ entity gmii_to_sgmii is
 		reset         : in std_logic  -- Asynchronous reset for entire core.
 		);
 
-end gmii_to_sgmii;
+end udp_mac_gmii_to_sgmii;
 
 
 
-architecture top_level of gmii_to_sgmii is
+architecture top_level of udp_mac_gmii_to_sgmii is
 
 	-- Attribute definitions
 	attribute DONT_TOUCH: string;

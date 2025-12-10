@@ -1,7 +1,7 @@
 .. title:: LFSR
 
 ***********************************************************
-:entity:`LFSR` (*LFSR.vhd*): Linear Feedback Shift Register
+:entity:`lfsr` (*lfsr.vhd*): Linear Feedback Shift Register
 ***********************************************************
 
 .. default-role:: entity
@@ -9,14 +9,14 @@
 Overview
 ========
 
-The `LFSR` module implements a Linear Feedback Shift Register (LFSR) pseudo-random number generator. It is used in the :entity:`FUNCGEN` module as a noise generator to produce pseudo-random test patterns. The LFSR generates a configurable number of output bits per clock cycle, making it suitable for high-throughput applications.
+The `LFSR` module implements a Linear Feedback Shift Register (LFSR) pseudo-random number generator. It is used in the :entity:`funcgen` module as a noise generator to produce pseudo-random test patterns. The LFSR generates a configurable number of output bits per clock cycle, making it suitable for high-throughput applications.
 
 Entity documentation
 ====================
 
-.. parse:: hdl/CHAN/LFSR.vhd
+.. parse:: hdl/chan/lfsr.vhd
 
-.. autoentity:: LFSR
+.. autoentity:: lfsr
 
 Principle of Operations
 =======================
@@ -61,7 +61,7 @@ The LFSR polynomial is defined by the tap positions in the ``TAPS`` generic. The
 Usage in FUNCGEN
 ----------------
 
-In the :entity:`FUNCGEN` module, the LFSR is instantiated with:
+In the :entity:`funcgen` module, the LFSR is instantiated with:
 - ``DATA_WIDTH`` set to ``ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPLE`` to generate a full word of pseudo-random data per clock cycle
 - A seed constructed from control register bytes A and B: ``(byte_a & byte_b & not byte_a & not byte_b)``
 

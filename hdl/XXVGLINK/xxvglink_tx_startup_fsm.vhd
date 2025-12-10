@@ -5,7 +5,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
-entity xxvxglink_tx_startup_fsm is
+entity xxvglink_tx_startup_fsm is
 	generic (
 		STABLE_CLOCK_PERIOD      : integer range 4 to 250 := 8; --Period of the stable clock driving this state-machine, unit is [ns]
 		RETRY_COUNTER_BITWIDTH   : integer range 2 to 8  := 8;
@@ -40,7 +40,7 @@ entity xxvxglink_tx_startup_fsm is
 		RETRY_COUNTER            : out  STD_LOGIC_VECTOR (RETRY_COUNTER_BITWIDTH-1 downto 0):=(others=>'0')-- Number of
 														-- Retries it took to get the transceiver up and running
 		);
-end xxvxglink_tx_startup_fsm;
+end xxvglink_tx_startup_fsm;
 
 --Interdependencies:
 -- * Timing depends on the frequency of the stable clock. Hence counters-sizes

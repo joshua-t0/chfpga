@@ -20,8 +20,8 @@ set_property CONFIG_VOLTAGE 3.3 [current_design]
 #################################
 # LOC CONSTRAINTS
 #################################
-# Force the CLK0 MMCM to be in the same half of the FPGA as the ADCDAQ PLL so their outputs can reach a single BUFGMUX that select which clock is to be used for data processing.
-#set_property LOC MMCME2_ADV_X0Y4 [get_cells CLK0/CLK200/MMCM0]
+# Force the clk0 MMCM to be in the same half of the FPGA as the ADCDAQ PLL so their outputs can reach a single BUFGMUX that select which clock is to be used for data processing.
+#set_property LOC MMCME2_ADV_X0Y4 [get_cells clk0/CLK200/MMCM0]
 
 
 #################################
@@ -330,7 +330,7 @@ set_property PACKAGE_PIN AF6 [get_ports mgt_clk200_p]
 
 # 125 MHz  reference clock on CLK_FPGA_B (MGTREFCLK1, Bank 116 from PLL1 Port 3)
 # Force ibufgs placement. Vivado provisionnally placed it at X0Y11 which cannot work.
-# set_property LOC IBUFDS_GTE2_X0Y11 [get_cells chfpga0/CLK0/use_sfp_refclk.ibufds_gtrefclk] -- 2022-09 JFC: not now fails after ZCU111 merge.
+# set_property LOC IBUFDS_GTE2_X0Y11 [get_cells chfpga0/clk0/use_sfp_refclk.ibufds_gtrefclk] -- 2022-09 JFC: not now fails after ZCU111 merge.
 set_property PACKAGE_PIN H6 [get_ports sfp_clk_p]
 
 # SFP line son the PCI_SFP GTX transceiver( MGT3, Bank 115)
@@ -443,7 +443,7 @@ set_property PACKAGE_PIN R8 [get_ports {bp_shuffle_refclk_p[1]}]
 #set_property PACKAGE_PIN B34 [get_ports VAUX_VOLT_P]
 #set_property PACKAGE_PIN T14 [get_ports VN]
 #set_property PACKAGE_PIN R15 [get_ports VP]
-# [Netlist 29-55] Pins VAUXN[6], VAUXN[7], VAUXN[13], VAUXN[14], VAUXN[15], VAUXP[6], VAUXP[7], VAUXP[13], VAUXP[14] or VAUXP[15] are used on XADC instance 'SYSMON0/SYSMON_TIMING_IGNORE'. Please ensure that all of these pins are unconnected in order to avoid an unroutable situation. This instance will be converted to a black box element.
+# [Netlist 29-55] Pins VAUXN[6], VAUXN[7], VAUXN[13], VAUXN[14], VAUXN[15], VAUXP[6], VAUXP[7], VAUXP[13], VAUXP[14] or VAUXP[15] are used on XADC instance 'sysmon0/SYSMON_TIMING_IGNORE'. Please ensure that all of these pins are unconnected in order to avoid an unroutable situation. This instance will be converted to a black box element.
 #NET  XADC_VAUX0P_R             LOC = J23  | IOSTANDARD=LVCMOS25; # Bank  15 VCCO - VCC2V5_FPGA - IO_L1P_T0_AD0P_15
 #NET  XADC_VAUX0N_R             LOC = J24  | IOSTANDARD=LVCMOS25; # Bank  15 VCCO - VCC2V5_FPGA - IO_L1N_T0_AD0N_15
 #NET  XADC_VAUX8P_R             LOC = L22  | IOSTANDARD=LVCMOS25; # Bank  15 VCCO - VCC2V5_FPGA - IO_L2P_T0_AD8P_15
@@ -484,7 +484,7 @@ set_property PACKAGE_PIN AB22 [get_ports fmca_adc_pll_lock]
 # FMC Reference Clock
 #------------------
 set_property IOSTANDARD LVDS_25 [get_ports fmc?_refclk_m2c_p]
-#set_property LOC IDELAY_X0Y28 [get_cells chfpga0/REFCLK0/REFCLKDLY0]
+#set_property LOC IDELAY_X0Y28 [get_cells chfpga0/refclk0/REFCLKDLY0]
 # set_property PACKAGE_PIN AE23 [get_ports fmca_refclk_m2c_p]
 # set_property PACKAGE_PIN AF23 [get_ports fmca_refclk_m2c_n]
 set_property PACKAGE_PIN AH17 [get_ports fmca_refclk_m2c_n]
@@ -515,7 +515,7 @@ set_property PACKAGE_PIN T23 [get_ports fmca_adc_sync_n]
 # Make all ADC inputs LVDS by default
 set_property IOSTANDARD LVDS_25 [get_ports {fmc?_adc?_?hdp fmc?_adc?_?drp}]
 
-set_property LOC BUFMRCE_X0Y6 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[0].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y6 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[0].adcdaq0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN U25 [get_ports fmca_adc0_adrn]
 set_property PACKAGE_PIN T26 [get_ports {fmca_adc0_ahdn[0]}]
 set_property PACKAGE_PIN T27 [get_ports {fmca_adc0_ahdn[1]}]
@@ -534,7 +534,7 @@ set_property PACKAGE_PIN U30 [get_ports {fmca_adc0_bhdn[4]}]
 set_property PACKAGE_PIN W23 [get_ports {fmca_adc0_bhdn[5]}]
 set_property PACKAGE_PIN R25 [get_ports {fmca_adc0_bhdn[6]}]
 set_property PACKAGE_PIN T28 [get_ports {fmca_adc0_bhdn[7]}]
-set_property LOC BUFMRCE_X0Y5 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[2].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y5 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[2].adcdaq0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AD28 [get_ports fmca_adc0_cdrn]
 set_property PACKAGE_PIN AD22 [get_ports {fmca_adc0_chdn[0]}]
 set_property PACKAGE_PIN AK26 [get_ports {fmca_adc0_chdn[1]}]
@@ -544,7 +544,7 @@ set_property PACKAGE_PIN AA25 [get_ports {fmca_adc0_chdn[4]}]
 set_property PACKAGE_PIN AG28 [get_ports {fmca_adc0_chdn[5]}]
 set_property PACKAGE_PIN AC24 [get_ports {fmca_adc0_chdn[6]}]
 set_property PACKAGE_PIN AC30 [get_ports {fmca_adc0_chdn[7]}]
-set_property LOC BUFMRCE_X0Y4 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[3].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y4 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[3].adcdaq0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AB27 [get_ports fmca_adc0_ddrn]
 set_property PACKAGE_PIN AK23 [get_ports {fmca_adc0_dhdn[0]}]
 set_property PACKAGE_PIN AK25 [get_ports {fmca_adc0_dhdn[1]}]
@@ -554,7 +554,7 @@ set_property PACKAGE_PIN AB30 [get_ports {fmca_adc0_dhdn[4]}]
 set_property PACKAGE_PIN AA30 [get_ports {fmca_adc0_dhdn[5]}]
 set_property PACKAGE_PIN AB28 [get_ports {fmca_adc0_dhdn[6]}]
 set_property PACKAGE_PIN W29 [get_ports {fmca_adc0_dhdn[7]}]
-set_property LOC BUFMRCE_X0Y1 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[4].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y1 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[4].adcdaq0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AF16 [get_ports fmca_adc1_adrn]
 set_property PACKAGE_PIN AE19 [get_ports {fmca_adc1_ahdn[0]}]
 set_property PACKAGE_PIN AK14 [get_ports {fmca_adc1_ahdn[1]}]
@@ -564,7 +564,7 @@ set_property PACKAGE_PIN AJ19 [get_ports {fmca_adc1_ahdn[4]}]
 set_property PACKAGE_PIN AB18 [get_ports {fmca_adc1_ahdn[5]}]
 set_property PACKAGE_PIN AE14 [get_ports {fmca_adc1_ahdn[6]}]
 set_property PACKAGE_PIN AA18 [get_ports {fmca_adc1_ahdn[7]}]
-set_property LOC BUFMRCE_X0Y0 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[5].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y0 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[5].adcdaq0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AG17 [get_ports fmca_adc1_bdrn]
 set_property PACKAGE_PIN AD19 [get_ports {fmca_adc1_bhdn[0]}]
 set_property PACKAGE_PIN AH20 [get_ports {fmca_adc1_bhdn[1]}]
@@ -574,7 +574,7 @@ set_property PACKAGE_PIN AG15 [get_ports {fmca_adc1_bhdn[4]}]
 set_property PACKAGE_PIN AD17 [get_ports {fmca_adc1_bhdn[5]}]
 set_property PACKAGE_PIN AH15 [get_ports {fmca_adc1_bhdn[6]}]
 set_property PACKAGE_PIN AJ17 [get_ports {fmca_adc1_bhdn[7]}]
-set_property LOC BUFMRCE_X0Y3 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[6].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y3 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[6].adcdaq0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN AG23 [get_ports fmca_adc1_cdrn]
 set_property PACKAGE_PIN AH24 [get_ports {fmca_adc1_chdn[0]}]
 set_property PACKAGE_PIN AG25 [get_ports {fmca_adc1_chdn[1]}]
@@ -630,7 +630,7 @@ set_property PACKAGE_PIN L25 [get_ports fmcb_refclk_m2c_n]
 set_property PACKAGE_PIN U8 [get_ports {fmcb_mgt_pll_refclk_p[0]}]
 set_property PACKAGE_PIN W8 [get_ports {fmcb_mgt_pll_refclk_p[1]}]
 
-set_property LOC BUFMRCE_X0Y10 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[8].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y10 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[8].adcdaq0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN E26 [get_ports fmcb_adc0_adrn]
 set_property PACKAGE_PIN F26 [get_ports {fmcb_adc0_ahdn[0]}]
 set_property PACKAGE_PIN C26 [get_ports {fmcb_adc0_ahdn[1]}]
@@ -648,7 +648,7 @@ set_property PACKAGE_PIN J29 [get_ports {fmcb_adc0_bhdn[4]}]
 set_property PACKAGE_PIN G29 [get_ports {fmcb_adc0_bhdn[5]}]
 set_property PACKAGE_PIN D27 [get_ports {fmcb_adc0_bhdn[6]}]
 set_property PACKAGE_PIN A26 [get_ports {fmcb_adc0_bhdn[7]}]
-set_property LOC BUFMRCE_X0Y13 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[10].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y13 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[10].adcdaq0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN E21 [get_ports fmcb_adc0_cdrn]
 set_property PACKAGE_PIN A16 [get_ports {fmcb_adc0_chdn[0]}]
 set_property PACKAGE_PIN C17 [get_ports {fmcb_adc0_chdn[1]}]
@@ -658,7 +658,7 @@ set_property PACKAGE_PIN A30 [get_ports {fmcb_adc0_chdn[4]}]
 set_property PACKAGE_PIN E19 [get_ports {fmcb_adc0_chdn[5]}]
 set_property PACKAGE_PIN A28 [get_ports {fmcb_adc0_chdn[6]}]
 set_property PACKAGE_PIN D19 [get_ports {fmcb_adc0_chdn[7]}]
-set_property LOC BUFMRCE_X0Y12 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[11].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y12 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[11].adcdaq0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN F21 [get_ports fmcb_adc0_ddrn]
 set_property PACKAGE_PIN A14 [get_ports {fmcb_adc0_dhdn[0]}]
 set_property PACKAGE_PIN B15 [get_ports {fmcb_adc0_dhdn[1]}]
@@ -668,7 +668,7 @@ set_property PACKAGE_PIN A21 [get_ports {fmcb_adc0_dhdn[4]}]
 set_property PACKAGE_PIN B23 [get_ports {fmcb_adc0_dhdn[5]}]
 set_property PACKAGE_PIN C22 [get_ports {fmcb_adc0_dhdn[6]}]
 set_property PACKAGE_PIN D23 [get_ports {fmcb_adc0_dhdn[7]}]
-set_property LOC BUFMRCE_X0Y8 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[12].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y8 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[12].adcdaq0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN L27 [get_ports fmcb_adc1_adrn]
 set_property PACKAGE_PIN L28 [get_ports {fmcb_adc1_ahdn[0]}]
 set_property PACKAGE_PIN P28 [get_ports {fmcb_adc1_ahdn[1]}]
@@ -678,7 +678,7 @@ set_property PACKAGE_PIN K24 [get_ports {fmcb_adc1_ahdn[4]}]
 set_property PACKAGE_PIN P18 [get_ports {fmcb_adc1_ahdn[5]}]
 set_property PACKAGE_PIN L21 [get_ports {fmcb_adc1_ahdn[6]}]
 set_property PACKAGE_PIN M20 [get_ports {fmcb_adc1_ahdn[7]}]
-set_property LOC BUFMRCE_X0Y9 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[13].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y9 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[13].adcdaq0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN M24 [get_ports fmcb_adc1_bdrn]
 set_property PACKAGE_PIN K29 [get_ports {fmcb_adc1_bhdn[0]}]
 set_property PACKAGE_PIN K30 [get_ports {fmcb_adc1_bhdn[1]}]
@@ -688,7 +688,7 @@ set_property PACKAGE_PIN P29 [get_ports {fmcb_adc1_bhdn[4]}]
 set_property PACKAGE_PIN M22 [get_ports {fmcb_adc1_bhdn[5]}]
 set_property PACKAGE_PIN K26 [get_ports {fmcb_adc1_bhdn[6]}]
 set_property PACKAGE_PIN N26 [get_ports {fmcb_adc1_bhdn[7]}]
-set_property LOC BUFMRCE_X0Y15 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[14].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y15 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[14].adcdaq0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN C16 [get_ports fmcb_adc1_cdrn]
 set_property PACKAGE_PIN E16 [get_ports {fmcb_adc1_chdn[0]}]
 set_property PACKAGE_PIN D16 [get_ports {fmcb_adc1_chdn[1]}]
@@ -698,7 +698,7 @@ set_property PACKAGE_PIN H17 [get_ports {fmcb_adc1_chdn[4]}]
 set_property PACKAGE_PIN G14 [get_ports {fmcb_adc1_chdn[5]}]
 set_property PACKAGE_PIN F17 [get_ports {fmcb_adc1_chdn[6]}]
 set_property PACKAGE_PIN A17 [get_ports {fmcb_adc1_chdn[7]}]
-set_property LOC BUFMRCE_X0Y14 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[15].ADCDAQ0/IMPL.YESBUFMR.BUFMRn}]
+set_property LOC BUFMRCE_X0Y14 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[15].adcdaq0/IMPL.YESBUFMR.BUFMRn}]
 set_property PACKAGE_PIN F15 [get_ports fmcb_adc1_ddrn]
 set_property PACKAGE_PIN J23 [get_ports {fmcb_adc1_dhdn[0]}]
 set_property PACKAGE_PIN F23 [get_ports {fmcb_adc1_dhdn[1]}]
@@ -710,8 +710,8 @@ set_property PACKAGE_PIN G20 [get_ports {fmcb_adc1_dhdn[6]}]
 set_property PACKAGE_PIN G19 [get_ports {fmcb_adc1_dhdn[7]}]
 
 
-set_property LOC USR_ACCESS_X0Y0 [get_cells chfpga0/gpio_blk.GPIO0/USRACCESS_7.USR_ACCESS0]
-set_property LOC XADC_X0Y0 [get_cells chfpga0/sysmon_blk.SYSMON0/SYSMON7_GEN.XADC0]
+set_property LOC USR_ACCESS_X0Y0 [get_cells chfpga0/*.system0/*.gpio0/usraccess_7.usr_access0]
+set_property LOC XADC_X0Y0 [get_cells chfpga0/*.system0/*.sysmon0/sysmon7_gen.xadc0]
 
 ##############################
 # LOCATION CONSTRAINTS
@@ -719,10 +719,10 @@ set_property LOC XADC_X0Y0 [get_cells chfpga0/sysmon_blk.SYSMON0/SYSMON7_GEN.XAD
 
 ### MMCMs ###
 # We need to put the ADCDAQ PLL in the same bank as the BUFR that drives it (Bank 13)
-#set_property LOC MMCME2_ADV_X0Y3 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[0].ADCDAQ0/IMPL.USEPLL.PLL0/U0/mmcm_adv_inst}]
-# The Channelizer MMCM has 2 inputs:  ADCDAQ0 and System MMCM (CLK200). If Tey are there were driven directly (no BUFG) by both the ADCDAQ BUFR and Sysntem MMCM output, . The MMCM must be adjacent, but on a half that has enough BUFGs
-#set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/CLK0/gen_chanpll_k7.chan_mmcm0]
-set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/CLK0/gen_chanpll_k7.mmcm_case.chan_mmcm0]
+#set_property LOC MMCME2_ADV_X0Y3 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[0].adcdaq0/IMPL.USEPLL.PLL0/U0/mmcm_adv_inst}]
+# The Channelizer MMCM has 2 inputs:  adcdaq0 and System MMCM (CLK200). If Tey are there were driven directly (no BUFG) by both the ADCDAQ BUFR and Sysntem MMCM output, . The MMCM must be adjacent, but on a half that has enough BUFGs
+#set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/clk0/gen_chanpll_k7.chan_mmcm0]
+#set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/clk0/gen_chanpll_k7.mmcm_case.chan_mmcm0]
 # The system MMCM also drives the Channelizer MMCM, and also needs to be adjacent.
 
 # Make sure that the BUFG instantiated by the SGMII core is on the same half as the IBUFGDS that drives it. For some reason Vivado places it on the wrong half and fails.
@@ -738,26 +738,26 @@ set_property LOC BUFGCTRL_X0Y19 [get_cells chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/
 # REFCLK is in bank 11, coming from a SRCC pins.
 # IBUFGDS and IDELAY are automatically placed on that pad
 # The BUFR must be in the same region
-# set_property LOC BUFR_X0Y3 [get_cells {chfpga0/REFCLK0/FMCBUFR0}]; # Place REFCLK BUFR in same region as the pad.
+# set_property LOC BUFR_X0Y3 [get_cells {chfpga0/refclk0/FMCBUFR0}]; # Place REFCLK BUFR in same region as the pad.
 # The BUFGMUX must be in the same half
-# set_property LOC BUFGCTRL_X0Y0 [get_cells chfpga0/REFCLK0/FMCBUFG0]
+# set_property LOC BUFGCTRL_X0Y0 [get_cells chfpga0/refclk0/FMCBUFG0]
 
 # CH2
 # NOTE: It is assumed that the ADCDAQ logic is located in the same bank as the clock so it can be clocked out of the BUFR in that region
-set_property LOC BUFR_X0Y4 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[2].ADCDAQ0/IMPL.BUFRGEN[1].BUFRn}]
-set_property LOC BUFR_X0Y8 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[2].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
+set_property LOC BUFR_X0Y4 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[2].adcdaq0/IMPL.BUFRGEN[1].BUFRn}]
+set_property LOC BUFR_X0Y8 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[2].adcdaq0/IMPL.BUFRGEN[0].BUFRn}]
 
 # CH3
 # NOTE: It is assumed that the ADCDAQ logic is located in the same bank as the clock so it can be clocked out of the BUFR in that region
-set_property LOC BUFR_X0Y5 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[3].ADCDAQ0/IMPL.BUFRGEN[1].BUFRn}]
-set_property LOC BUFR_X0Y9 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[3].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
+set_property LOC BUFR_X0Y5 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[3].adcdaq0/IMPL.BUFRGEN[1].BUFRn}]
+set_property LOC BUFR_X0Y9 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[3].adcdaq0/IMPL.BUFRGEN[0].BUFRn}]
 
 set_property PACKAGE_PIN F28 [get_ports fmcb_adc0_bdrn]
-set_property LOC BUFR_X0Y22 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[9].ADCDAQ0/IMPL.BUFRGEN[0].BUFRn}]
+set_property LOC BUFR_X0Y22 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[9].adcdaq0/IMPL.BUFRGEN[0].BUFRn}]
 
-set_property LOC BUFIO_X0Y27 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[14].ADCDAQ0/IMPL.NOEXTCLK.BUFIOGEN[1].BUFIO0}]
+set_property LOC BUFIO_X0Y27 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[14].adcdaq0/IMPL.NOEXTCLK.BUFIOGEN[1].BUFIO0}]
 
-set_property LOC BUFIO_X0Y25 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[15].ADCDAQ0/IMPL.NOEXTCLK.BUFIOGEN[0].BUFIO0}]
+set_property LOC BUFIO_X0Y25 [get_cells {chfpga0/adc_gen.ev8aq160_case.ADCGEN[15].adcdaq0/IMPL.NOEXTCLK.BUFIOGEN[0].BUFIO0}]
 
 
 ###################################
@@ -944,12 +944,12 @@ resize_pblock [get_pblocks CHAN13] -add {RAMB18_X9Y90:RAMB18_X9Y93 RAMB18_X1Y90:
 resize_pblock [get_pblocks CHAN13] -add {RAMB36_X9Y45:RAMB36_X9Y46 RAMB36_X1Y45:RAMB36_X8Y49}
 # add_cells_to_pblock [get_pblocks CHAN13] [get_cells -quiet [list {chfpga0/CHANGEN[13].CHANi}]]
 
-set_property LOC DNA_PORT_X0Y0 [get_cells chfpga0/gpio_blk.GPIO0/gen_dna7.dna0]
+set_property LOC DNA_PORT_X0Y0 [get_cells chfpga0/*.system0/*.gpio0/gen_dna7.dna0]
 
 
 
 create_pblock SYSTEM
-add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list chfpga0/blinker_blk.BLINKER0 chfpga0/freq_ctr_blk.FREQ_CTR0 chfpga0/gen_i2c.I2C0 chfpga0/gen_spi.SPI0 chfpga0/gpio_blk.GPIO0/core_regs0 chfpga0/gpio_blk.GPIO0/irigb_comparator0 chfpga0/gpio_blk.GPIO0/irigb_decoder0 chfpga0/gpio_blk.GPIO0/irigb_encoder0]]
+add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list chfpga0/*.system0/blinker_blk.blinker0 chfpga0/*.system0/freq_ctr_blk.freq_ctr0 chfpga0/*.system0/gen_i2c.I2C0 chfpga0/*.system0/gen_spi.spi0 chfpga0/*.system0/gpio_blk.gpio0/core_regs0 chfpga0/*.system0/gpio_blk.gpio0/irigb_comparator0 chfpga0/*.system0/gpio_blk.gpio0/irigb_decoder0 chfpga0/*.system0/gpio_blk.gpio0/irigb_encoder0]]
 resize_pblock [get_pblocks SYSTEM] -add {SLICE_X166Y350:SLICE_X189Y374}
 resize_pblock [get_pblocks SYSTEM] -add {DSP48_X11Y140:DSP48_X11Y149}
 resize_pblock [get_pblocks SYSTEM] -add {RAMB18_X11Y140:RAMB18_X11Y149}
@@ -964,12 +964,12 @@ resize_pblock [get_pblocks UDP_MAC] -add {RAMB36_X9Y47:RAMB36_X11Y49}
 
 
 create_pblock CLK0
-add_cells_to_pblock [get_pblocks CLK0] [get_cells -quiet [list chfpga0/CLK0]]
+add_cells_to_pblock [get_pblocks CLK0] [get_cells -quiet [list chfpga0/clk0]]
 resize_pblock [get_pblocks CLK0] -add {SLICE_X0Y248:SLICE_X7Y249 SLICE_X0Y150:SLICE_X7Y151}
 
 
 create_pblock ARM_SPI
-add_cells_to_pblock [get_pblocks ARM_SPI] [get_cells -quiet [list chfpga0/gpio_blk.GPIO0/gen_armspi.arm_spi0]]
+add_cells_to_pblock [get_pblocks ARM_SPI] [get_cells -quiet [list chfpga0/*.system0/*.gpio0/gen_armspi.arm_spi0]]
 resize_pblock [get_pblocks ARM_SPI] -add {SLICE_X0Y187:SLICE_X7Y206}
 
 # create_pblock I2C
@@ -981,8 +981,8 @@ resize_pblock [get_pblocks ARM_SPI] -add {SLICE_X0Y187:SLICE_X7Y206}
 # create_pblock BP_BUCK_SYNC
 # resize_pblock [get_pblocks BP_BUCK_SYNC] -add {SLICE_X0Y117:SLICE_X7Y124}
 
-
-add_cells_to_pblock [get_pblocks BP0] [get_cells { {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[0].*} {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[1].*} {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[2].*} {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[3].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[0].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[1].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[2].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[3].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[4].*} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[0].*} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[1].*} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[2].*} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[3].*} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[4].*} }]
+#create_pblock BP0
+#add_cells_to_pblock [get_pblocks BP0] [get_cells { {chfpga0/*.ct0/*.bp_shuffle0/core0/*x_gen[0].*} {chfpga0/*.ct0/*.bp_shuffle0/core0/*x_gen[1].*} {chfpga0/*.ct0/*.bp_shuffle0/core0/*x_gen[2].*} {chfpga0/*.ct0/*.bp_shuffle0/core0/*x_gen[3].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[0].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[1].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[2].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[3].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[4].*} {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[0].*} {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[1].*} {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[2].*} {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[3].*} {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[4].*} }]
 # Below may be too tight
 # resize_pblock [get_pblocks BP0] -add {SLICE_X144Y160:SLICE_X189Y199}
 # resize_pblock [get_pblocks BP0] -add {DSP48_X10Y64:DSP48_X11Y79}
@@ -990,13 +990,13 @@ add_cells_to_pblock [get_pblocks BP0] [get_cells { {chfpga0/BPSHFGEN.bp_shuffle0
 # resize_pblock [get_pblocks BP0] -add {RAMB36_X9Y32:RAMB36_X11Y39}
 
 
-add_cells_to_pblock [get_pblocks BP1] [get_cells { {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[4].*} {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[5].*} {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[6].*} {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[7].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[5].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[6].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[7].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[8].*} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[5].*} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[6].*} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[7].*} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[8].*} }]
+# add_cells_to_pblock [get_pblocks BP1] [get_cells { {chfpga0/*.ct0/*.bp_shuffle0/core0/*x_gen[4].*} {chfpga0/*.ct0/*.bp_shuffle0/core0/*x_gen[5].*} {chfpga0/*.ct0/*.bp_shuffle0/core0/*x_gen[6].*} {chfpga0/*.ct0/*.bp_shuffle0/core0/*x_gen[7].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[5].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[6].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[7].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[8].*} {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[5].*} {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[6].*} {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[7].*} {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[8].*} }]
 # Below may be too tight
 # resize_pblock [get_pblocks BP1] -add {SLICE_X144Y0:SLICE_X189Y39}
 # resize_pblock [get_pblocks BP1] -add {DSP48_X10Y0:DSP48_X11Y15}
 
 
-add_cells_to_pblock [get_pblocks BP2] [get_cells { {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[8].*} {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[9].*} {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[10].*} {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[11].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[9].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[10].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[11].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[12].*} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[9].*} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[10].*} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[11].*} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[12].*} }]
+# add_cells_to_pblock [get_pblocks BP2] [get_cells { {chfpga0/*.ct0/*.bp_shuffle0/core0/*x_gen[8].*} {chfpga0/*.ct0/*.bp_shuffle0/core0/*x_gen[9].*} {chfpga0/*.ct0/*.bp_shuffle0/core0/*x_gen[10].*} {chfpga0/*.ct0/*.bp_shuffle0/core0/*x_gen[11].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[9].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[10].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[11].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[12].*} {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[9].*} {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[10].*} {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[11].*} {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[12].*} }]
 # Below may be too tight
 # resize_pblock [get_pblocks BP2] -add {SLICE_X180Y45:SLICE_X189Y94 SLICE_X144Y45:SLICE_X179Y74}
 # resize_pblock [get_pblocks BP2] -add {DSP48_X11Y18:DSP48_X11Y37 DSP48_X10Y18:DSP48_X10Y29}
@@ -1004,7 +1004,7 @@ add_cells_to_pblock [get_pblocks BP2] [get_cells { {chfpga0/BPSHFGEN.bp_shuffle0
 # resize_pblock [get_pblocks BP2] -add {RAMB36_X9Y9:RAMB36_X11Y14}
 
 
-add_cells_to_pblock [get_pblocks BP3] [get_cells { {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[12].*} {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[13].*} {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[14].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[13].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[14].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[15].*} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[13].*} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[14].*} {chfpga0/*chan_crossbar0/BIN_SEL_GEN[15].*} }]
+# add_cells_to_pblock [get_pblocks BP3] [get_cells { {chfpga0/*.ct0/*.bp_shuffle0/core0/*x_gen[12].*} {chfpga0/*.ct0/*.bp_shuffle0/core0/*x_gen[13].*} {chfpga0/*.ct0/*.bp_shuffle0/core0/*x_gen[14].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[13].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[14].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[15].*} {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[13].*} {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[14].*} {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[15].*} }]
 # Below may be too tight
 # resize_pblock [get_pblocks BP3] -add {SLICE_X140Y210:SLICE_X189Y234}
 # resize_pblock [get_pblocks BP3] -add {DSP48_X9Y84:DSP48_X11Y93}
@@ -1012,13 +1012,13 @@ add_cells_to_pblock [get_pblocks BP3] [get_cells { {chfpga0/BPSHFGEN.bp_shuffle0
 # resize_pblock [get_pblocks BP3] -add {RAMB36_X9Y42:RAMB36_X11Y46}
 
 
-add_cells_to_pblock [get_pblocks BP4] [get_cells  { chfpga0/CROSSBAR23_GEN.crossbar2/align0 {chfpga0/CROSSBAR23_GEN.crossbar2/BIN_SEL_GEN[0].*} {chfpga0/CROSSBAR23_GEN.crossbar2/BIN_SEL_GEN[1].*} chfpga0/CROSSBAR23_GEN.crossbar2/CTRL_SLAVE0 chfpga0/CROSSBAR23_GEN.crossbar2/crossbar_router0 chfpga0/CROSSBAR23_GEN.crossbar2/remap0
-{chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[15].*} {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[16].*} {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[17].*} {chfpga0/BPSHFGEN.bp_shuffle0/core0/*x_gen[18].*}
-{chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[16].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[17].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[18].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[19].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[20].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[21].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[22].*} {chfpga0/BPSHFGEN.bp_shuffle0/lane_gen[23].*}
-}]
+# add_cells_to_pblock [get_pblocks BP4] [get_cells  { chfpga0/*.ct0/*.crossbar2/align0 {chfpga0/*.ct0/*.crossbar2/BIN_SEL_GEN[0].*} {chfpga0/*.ct0/*.crossbar2/BIN_SEL_GEN[1].*} chfpga0/*.ct0/*.crossbar2/bsb_regs0 chfpga0/*.ct0/*.crossbar2/crossbar_router0 chfpga0/*.ct0/*.crossbar2/remap0
+# {chfpga0/*.ct0/*.bp_shuffle0/core0/*x_gen[15].*} {chfpga0/*.ct0/*.bp_shuffle0/core0/*x_gen[16].*} {chfpga0/*.ct0/*.bp_shuffle0/core0/*x_gen[17].*} {chfpga0/*.ct0/*.bp_shuffle0/core0/*x_gen[18].*}
+# {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[16].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[17].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[18].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[19].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[20].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[21].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[22].*} {chfpga0/*.ct0/*.bp_shuffle0/lane_gen[23].*}
+# }]
 
 # Not included
-# {chfpga0/*chan_crossbar0/BIN_SEL_GEN[16].*} # {chfpga0/*chan_crossbar0/BIN_SEL_GEN[17].*} # {chfpga0/*chan_crossbar0/BIN_SEL_GEN[18].*} # {chfpga0/*chan_crossbar0/BIN_SEL_GEN[19].*} # {chfpga0/*chan_crossbar0/BIN_SEL_GEN[20].*} # {chfpga0/*chan_crossbar0/BIN_SEL_GEN[21].*} # {chfpga0/*chan_crossbar0/BIN_SEL_GEN[22].*} # {chfpga0/*chan_crossbar0/BIN_SEL_GEN[23].*}
+# {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[16].*} # {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[17].*} # {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[18].*} # {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[19].*} # {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[20].*} # {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[21].*} # {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[22].*} # {chfpga0/*.ct0/*.chan_crossbar0/BIN_SEL_GEN[23].*}
 # below may be too tight
 # resize_pblock [get_pblocks BP4] -add {SLICE_X140Y95:SLICE_X189Y159 SLICE_X166Y85:SLICE_X179Y94}
 # resize_pblock [get_pblocks BP4] -add {DSP48_X9Y38:DSP48_X11Y63}
@@ -1027,7 +1027,7 @@ add_cells_to_pblock [get_pblocks BP4] [get_cells  { chfpga0/CROSSBAR23_GEN.cross
 # set_property EXCLUDE_PLACEMENT TRUE [get_pblocks BP4]
 
 
-add_cells_to_pblock [get_pblocks ALIGN2] [get_cells -quiet { chfpga0/*chan_crossbar0/CTRL_SLAVE0 chfpga0/*chan_crossbar0/align0 }]
+# add_cells_to_pblock [get_pblocks ALIGN2] [get_cells -quiet { chfpga0/*.ct0/*.chan_crossbar0/bsb_regs0 chfpga0/*.ct0/*.chan_crossbar0/align0 }]
 
 # set_property IS_SOFT FALSE [get_pblocks ALIGN2]
 
@@ -1164,7 +1164,7 @@ resize_pblock [get_pblocks ADCDAQ15] -add {RAMB36_X0Y74:RAMB36_X0Y74}
 
 
 create_pblock CT
-add_cells_to_pblock [get_pblocks CT] [get_cells -quiet [list chfpga0/ct_gen.bct_case.ct0/bsb_router0 chfpga0/ct_gen.bct_case.ct0/crossbar0_gen.bp_shuffle0 chfpga0/ct_gen.bct_case.ct0/crossbar0_gen.chan_crossbar0 chfpga0/ct_gen.bct_case.ct0/crossbar0_gen.crossbar2 chfpga0/ct_gen.bct_case.ct0/crossbar0_gen.crossbar3]]
+add_cells_to_pblock [get_pblocks CT] [get_cells -quiet [list chfpga0/*.ct0/bsb_router0 chfpga0/*.ct0/*.bp_shuffle0 chfpga0/*.ct0/*.chan_crossbar0 chfpga0/*.ct0/*.crossbar2 chfpga0/*.ct0/*.crossbar3]]
 resize_pblock [get_pblocks CT] -add {SLICE_X166Y375:SLICE_X189Y399 SLICE_X166Y290:SLICE_X189Y309 SLICE_X156Y0:SLICE_X189Y234 SLICE_X142Y250:SLICE_X165Y399 SLICE_X142Y0:SLICE_X155Y149}
 resize_pblock [get_pblocks CT] -add {RAMB18_X10Y150:RAMB18_X11Y159 RAMB18_X10Y116:RAMB18_X11Y123 RAMB18_X10Y0:RAMB18_X11Y93 RAMB18_X9Y100:RAMB18_X9Y159 RAMB18_X9Y0:RAMB18_X9Y59}
 resize_pblock [get_pblocks CT] -add {RAMB36_X10Y75:RAMB36_X11Y79 RAMB36_X10Y58:RAMB36_X11Y61 RAMB36_X10Y0:RAMB36_X11Y46 RAMB36_X9Y50:RAMB36_X9Y79 RAMB36_X9Y0:RAMB36_X9Y29}

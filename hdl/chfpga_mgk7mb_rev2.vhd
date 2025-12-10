@@ -32,7 +32,7 @@ use work.chfpga_config.all; -- get all configuratoin parameters
 -- This is the _top level_ entity of the CHIME ICEboard-based data acquisition/channelizer/correlator.
 --
 -- The ports of this top-level entity correspond to physical pins on the Kintex 7 FPGA on that board. The location of these pins are defined in the constraint file.
-entity chFPGA_MGK7MB_Rev2 is
+entity chfpga_mgk7mb_rev2 is
 	 generic (
 			PLATFORM_ID: INTEGER                         := PLATFORM_ID_MGK7MB; -- identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705
 
@@ -407,7 +407,7 @@ entity chFPGA_MGK7MB_Rev2 is
 			fmcb_mgt_pll_refclk_n: in std_logic_vector(0 to 1)
 
 			 );
-end chFPGA_MGK7MB_Rev2;
+end chfpga_mgk7mb_rev2;
 
 ---------- chFPGA implementaPLATFORM_ID_MGK7MBion ------
 -- Implements the chFPGA CHIME PoC Data acquisition/channelizer/corrrlator for the KC705 evaluation board (equipped with a Kintex 7 7K355 FPGA).
@@ -915,7 +915,7 @@ bufr_rawclk10 : BUFR
 	fmcb_spi_cs_n <= spi_cs_n(1);
 	fmcb_spi_rst_n_alt <= spi_rst_n;
 
-	chfpga0: entity work.chFPGA
+	chfpga0: entity work.chfpga
 		GENERIC MAP(
 			PLATFORM_ID                     => PLATFORM_ID,
 

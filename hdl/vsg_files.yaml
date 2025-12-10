@@ -1,10 +1,10 @@
 file_list:
     - "*.vhd"
     - "*UDP_MAC/*.vhd"
-    - CHAN/*.vhd
-    - CMD/*.vhd
-    - CORR/*.vhd
-    - CROSSBAR/*.vhd
-    - SIM/*.vhd
-    - SYSTEM/*.vhd
+    - chan/*.vhd
+    - bsb/*.vhd
+    - corr/*.vhd
+    - ct/*.vhd
+    - sim/*.vhd
+    - system/*.vhd
     - testbenches/*.vhd

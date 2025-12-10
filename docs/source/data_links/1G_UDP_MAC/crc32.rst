@@ -1,8 +1,8 @@
 .. title:: crc32
 
-******************************************************************
-:entity:`CRC32` (*udp_mac_crc32.vhd*): Ethernet CRC32 Computation
-******************************************************************
+*************************************************************************
+:entity:`udp_mac_crc32` (*udp_mac_crc32.vhd*): Ethernet CRC32 Computation
+*************************************************************************
 
 .. parse:: hdl/1G_UDP_MAC/udp_mac_crc32.vhd
 
@@ -11,5 +11,5 @@
 Entity documentation
 --------------------
 
-.. autoentity:: CRC32
+.. autoentity:: udp_mac_crc32
 

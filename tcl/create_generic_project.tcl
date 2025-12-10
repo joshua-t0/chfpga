@@ -78,6 +78,29 @@ foreach f $const_files {lappend full_const_files [file normalize "$const_dir/$f"
 set full_util_files  {}
 foreach f $util_files {lappend full_util_files [file normalize "$repo_dir/$f"]}
 
+
+# Regenerate block design to make sure the .bd file is there
+if { ${bd_name} ne ""} {
+  if { ![file exists "${bd_dir}/${bd_name}/${bd_name}.bd"]} {
+    puts ""
+    puts "    -----------------------------------------------"
+    puts "    Creating block diagram ${bd_name}.bd in folder ${bd_dir}/${bd_name}"
+    puts "    -----------------------------------------------"
+    puts ""
+
+    # The tcl script that builds the block diagram will put it in the folder specified in the global
+    # variable ::origin_dir_loc. Since a project is not currently open, it will create a project
+    # 'myproj' in the current directory and will fail if that project already exists, so we have to
+    # delete it beforehand.
+    set ::origin_dir_loc ${bd_dir}
+    file delete -force "$bd_dir/myproj"
+    cd $bd_dir
+    source "${bd_dir}/${bd_name}.tcl"
+    file delete -force "$bd_dir/myproj"
+    cd $proj_dir
+  }
+}
+
 # Check if all files required for this script exist
 # --------------------------------------------------
 
@@ -111,27 +134,6 @@ if { $missing_file } {
 }
 
 
-# Regenerate block design
-if { ${bd_name} ne ""} {
-  if { ![file exists "${bd_dir}/${bd_name}/${bd_name}.bd"]} {
-    puts ""
-    puts "    -----------------------------------------------"
-    puts "    Creating block diagram ${bd_name}.bd in folder ${bd_dir}/${bd_name}"
-    puts "    -----------------------------------------------"
-    puts ""
-
-    # The tcl script that builds the block diagram will put it in the folder specified in the global
-    # variable ::origin_dir_loc. Since a project is not currently open, it will create a project
-    # 'myproj' in the current directory and will fail if that project already exists, so we have to
-    # delete it beforehand.
-    set ::origin_dir_loc ${bd_dir}
-    file delete -force "$bd_dir/myproj"
-    cd $bd_dir
-    source "${bd_dir}/${bd_name}.tcl"
-    file delete -force "$bd_dir/myproj"
-    cd $proj_dir
-  }
-}
 
 
 puts ""
@@ -377,30 +379,15 @@ generate_target all $ip_list
 catch { config_ip_cache -export $ip_list }
 foreach ip $ip_list {
   # removed the -force option to avoid regeneration
-  puts "INFO: creating ip run for $ip"
-  if {[catch { set ip_run_name [create_ip_run $ip] } msg]} {
-        puts "INFO: skipping $ip (no OOC synth / can't create run): $msg"
-        continue
+  set ip_run_name [create_ip_run -force $ip]
+  if {$ip_run_name ne ""} {
+    set ip_run [get_runs $ip_run_name]
+    puts "Configuring IP run properties for $ip_run_name"
+    set_property strategy "Flow_PerfOptimized_high" -objects $ip_run
+    set_property -name "steps.synth_design.args.no_lc" -value $no_lc -obj $ip_run
+    } else {
+      puts "IP $ip is already cached"
     }
-
-  # if this fails (e.g. legacy/pre-generated IP like FFT2), skip it
-  if {$ip_run_name eq ""} {
-    set ip_name [get_property NAME $ip]
-    puts "WARNING: could not create IP run for IP '$ip_name' – skipping run configuration (probably pre-generated core)"
-    continue
-  }
-
-  # resolve the run object
-  set ip_run [get_runs -quiet $ip_run_name]
-  if {$ip_run eq ""} {
-    puts "WARNING: get_runs returned no object for run '$ip_run_name' – skipping"
-    continue
-  }
-
-  puts "Configuring IP run properties for $ip_run_name"
-  puts "DEBUG: ip=$ip ip_run_name='$ip_run_name' ip_run='$ip_run'"
-  set_property strategy "Flow_PerfOptimized_high" -objects $ip_run
-  set_property -name "steps.synth_design.args.no_lc" -value $no_lc -obj $ip_run
 }
 
 # }

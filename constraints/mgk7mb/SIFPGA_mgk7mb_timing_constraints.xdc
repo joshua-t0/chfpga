@@ -49,7 +49,7 @@ set_clock_groups -name ADCCLK14_GROUP -asynchronous -group [get_clocks -include_
 set_clock_groups -name ADCCLK15_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK15]
 
 # Remove timing constraints from the FIFO Reset signal
-#set_false_path -from [get_pins {chfpga0/ADCGEN[*].ADCDAQ0/IMPL.FIFO_RST_INT_reg/C}] -to [get_pins {chfpga0/ADCGEN[*].ADCDAQ0/IMPL.FIFO_RST_reg/D}]
+#set_false_path -from [get_pins {chfpga0/ADCGEN[*].adcdaq0/IMPL.FIFO_RST_INT_reg/C}] -to [get_pins {chfpga0/ADCGEN[*].adcdaq0/IMPL.FIFO_RST_reg/D}]
 
 #set_clock_groups -name ADCCLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK?]
 
@@ -81,7 +81,7 @@ set_clock_groups -name REFCLK_GROUP -asynchronous -group [get_clocks -include_ge
 # Frequency counter
 # ----------------
 # Constrain the frequency counter clock. The clock frequency on this net is 1/2 if the measured clock source
-create_clock -period 3.200 -name FREQ_CTR [get_pins */freq_ctr_blk.FREQ_CTR0/K7.SRCCLK0/I]
+create_clock -period 3.200 -name FREQ_CTR [get_pins */freq_ctr_blk.freq_ctr0/K7.SRCCLK0/I]
 set_clock_groups -name FREQ_CTR_GROUP -asynchronous -group [get_clocks FREQ_CTR]
 
 # Motherboard raw (single-ended) 10 MHz Reference clock
@@ -195,15 +195,15 @@ set_input_delay -clock [get_clocks arm_spi_virt_clk] 0.000 [get_ports {arm_irq_n
 set_false_path -from [get_ports {arm_irq_n bp_buck_sync cpu_reset_n flash_spi_cs_n gpio_irq_n gpio_rst_n uart_rx uart_tx}]
 
 
-#create_clock -period 100.000 -name CLK10 -waveform {0.000 50.000} [get_nets CHFPGA0/REFCLK0/CLK10]
-#create_clock -period 5.000 -name FREQ_CTR_SRC_CLOCK -waveform {0.000 2.500} [get_nets CHFPGA0/freq_ctr_blk.FREQ_CTR0/SRC_CLK_FABRIC]
+#create_clock -period 100.000 -name CLK10 -waveform {0.000 50.000} [get_nets CHFPGA0/refclk0/CLK10]
+#create_clock -period 5.000 -name FREQ_CTR_SRC_CLOCK -waveform {0.000 2.500} [get_nets CHFPGA0/freq_ctr_blk.freq_ctr0/SRC_CLK_FABRIC]
 
 #
 
 
-#create_clock -period 5.000 -name CLK200 -waveform {0.000 2.500} [get_nets CHFPGA0/CLK0/CLK200_MMCM_NOBUF]
-#create_clock -period 8.000 -name CLK125 -waveform {0.000 4.000} [get_nets CHFPGA0/CLK0/CLK125_NOBUF]
-#create_clock -period 4.000 -name CORR_CLK -waveform {0.000 2.000} [get_nets CHFPGA0/CLK0/CORR_CLK_NOBUF]
+#create_clock -period 5.000 -name CLK200 -waveform {0.000 2.500} [get_nets CHFPGA0/clk0/CLK200_MMCM_NOBUF]
+#create_clock -period 8.000 -name CLK125 -waveform {0.000 4.000} [get_nets CHFPGA0/clk0/CLK125_NOBUF]
+#create_clock -period 4.000 -name CORR_CLK -waveform {0.000 2.000} [get_nets CHFPGA0/clk0/CORR_CLK_NOBUF]
 #set_clock_groups -name CLK200_GROUP -asynchronous -group [get_clocks CLK200]
 #set_clock_groups -name SYSCLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks SYSCLK]
 #set_clock_groups -name CLK10_GROUP -asynchronous -group [get_clocks -include_generated_clocks CLK10]
@@ -213,7 +213,7 @@ set_false_path -from [get_ports {arm_irq_n bp_buck_sync cpu_reset_n flash_spi_cs
 #set_false_path -through [get_cells -match_style UCF *TIMING_IGNORE*]
 #set_clock_groups -name FREQ_CTR_GROUP -asynchronous -group [get_clocks FREQ_CTR_SRC_CLOCK]
 
-#set_false_path -from [get_cells chfpga0/CLK0/*TIMING_IGNORE_reg]
+#set_false_path -from [get_cells chfpga0/clk0/*TIMING_IGNORE_reg]
 
 #set_false_path -from [get_cells *TIMING_IGNORE* -hierarchical]
 
@@ -227,7 +227,7 @@ set_false_path -from [get_ports {arm_irq_n bp_buck_sync cpu_reset_n flash_spi_cs
 
 
 # Eliminate paths ending to synchronizing registers in the clock module (CLK0)
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ "*/CLK0/*" && ASYNC_REG == TRUE}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ "*/clk0/*" && ASYNC_REG == TRUE}]
 
 #set_false_path -through [get_ports rst] -to [get_pins inst_fifo_gen/gconvfifo.rf/grf.rf/rstblk/*/CLR]
 

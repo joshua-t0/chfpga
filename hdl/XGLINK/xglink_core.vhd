@@ -401,7 +401,7 @@ end process;
 -- DRP:    xxxMMMMMxa1aaaaaaaaa (10 address bits, 512 words (0x000 - 1FF)
 -- CONTROL:xxxMMMMMxx00aaaaaaaa
 -- STATUS :xxxMMMMMxx01aaaaaaaa
-CTRL_ROUTER0: entity work.CTRL_ROUTER
+bsb_router0: entity work.bsb_router
 	generic map (
 		NUMBER_OF_PORTS=> NUMBER_OF_MODULES,
 		ADDRESS_MASK => "---11111-----------" --'1': used to generate port index, '-' = don't care,
@@ -558,7 +558,7 @@ txusrclk <= txclk322;
 ----------------------------------
 -- Common Module Memory Map
 --
--- Memory Map for common_slave0 (Module 0)
+-- Memory Map for common_regs0 (Module 0)
 -- Address format: xxx00000xx00aaaaaaaa (module index = 0)
 -- ------------------------------------------------------------------------------
 -- |  Page   | Addr|Bit(s)|     Name             | Description                   |
@@ -576,7 +576,7 @@ txusrclk <= txclk322;
 -- |         | 2+  | -    | status_bytes         | User-defined status bytes |
 -- ------------------------------------------------------------------------------
 
-common_slave0: entity work.CTRL_SLAVE
+common_regs0: entity work.bsb_regs
 	GENERIC MAP (
 		DEFAULT_CONTROL_BYTES=> X"00_FF2833" & repeat(X"00", NUMBER_OF_CONTROL_BYTES),
 		NUMBER_OF_CONTROL_BYTES=>common_control_bytes'Length(1) , -- Number of bits in the control word
@@ -635,7 +635,7 @@ quad_gen: for i in 0 to NUMBER_OF_QUADS-1 generate
 	----------------------------------
 	-- Quad Module Memory Map
 	--
-	-- Memory Map for quad_slave0 (Module i+1, where i is quad index)
+	-- Memory Map for quad_regs0 (Module i+1, where i is quad index)
 	-- Address format: xxxMMMMMxx00aaaaaaaa (module index = i+1)
 	-- ------------------------------------------------------------------------------
 	-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
@@ -646,7 +646,7 @@ quad_gen: for i in 0 to NUMBER_OF_QUADS-1 generate
 	-- | DRP     | 0x100-0x1FF | - | GTXE2_COMMON DRP | GTXE2_COMMON DRP access (16-bit words, 8-bit address) |
 	-- ------------------------------------------------------------------------------
 
-	quad_slave0: entity work.CTRL_SLAVE
+	quad_regs0: entity work.bsb_regs
 		GENERIC MAP (
 			DEFAULT_CONTROL_BYTES=> X"00",
 			USE_RAM_DOUT_RDY=>TRUE, -- need to wait for the RDY signal on RAM read accesses
@@ -755,7 +755,7 @@ gtx_gen: for i in 0 to NUMBER_OF_GTX-1 generate
 	----------------------------------
 	-- GTX Module Memory Map
 	--
-	-- Memory Map for gt_slave0 (Module i+NUMBER_OF_QUADS+1, where i is GTX channel index)
+	-- Memory Map for gt_regs0 (Module i+NUMBER_OF_QUADS+1, where i is GTX channel index)
 	-- Address format: xxxMMMMMxx00aaaaaaaa (module index = i+NUMBER_OF_QUADS+1)
 	-- ------------------------------------------------------------------------------
 	-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
@@ -801,7 +801,7 @@ gtx_gen: for i in 0 to NUMBER_OF_GTX-1 generate
 	-- ------------------------------------------------------------------------------
 	-- Note: RX status bytes (5-11) are only present when NUMBER_OF_RX_LANES > 0
 
-	gt_slave0: entity work.CTRL_SLAVE
+	gt_regs0: entity work.bsb_regs
 		GENERIC MAP (
 			DEFAULT_CONTROL_BYTES=>
 				X"00_00_01_40_00_00",

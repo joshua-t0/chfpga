@@ -1,7 +1,7 @@
 .. title:: SCALER
 
 ***************************************
-:entity:`SCALER` (*SCALER.vhd*): Scaler
+:entity:`scaler` (*scaler.vhd*): Scaler
 ***************************************
 
 Overview
@@ -9,7 +9,7 @@ Overview
 
 Scales the FFT output (in 18+18 bits, 32+32 or other formats) into (4+4) bits complex values by applying a real or complex gain in each freqency bin and truncate or round the value to the desired bit width. `SCALER` offers various main output options and and independent capture channels also with various format options.
 
-.. parse:: hdl/CHAN/SCALER.vhd
+.. parse:: hdl/chan/scaler.vhd
 
 
 .. toctree::
@@ -22,7 +22,7 @@ Entity documentation
 ====================
 
 
-.. autoentity:: SCALER
+.. autoentity:: scaler
 
 
 Floating point gains

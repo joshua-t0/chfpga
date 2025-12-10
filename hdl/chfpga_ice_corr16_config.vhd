@@ -36,10 +36,10 @@ package chfpga_config is
 	constant CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer := 0;
 	constant CONFIG_NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer := 0;
 	constant CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS: integer := 0;
-	constant CONFIG_NUMBER_OF_GPU_LINKS: integer := 0;
 
 	-- Correlator config
 
+	constant CONFIG_CORR_TYPE: corr_type_enum := UCORR44;
 	constant CONFIG_CORR_TYPE: corr_type_enum := UCORR44;
 	constant CONFIG_NUMBER_OF_CORRELATORS: integer := 2; -- each correlator handles 128 bins
 	constant CONFIG_CORR_READOUT_BINS: integer_array(0 to CONFIG_NUMBER_OF_CORRELATORS-1) := (0, 0);
@@ -47,6 +47,7 @@ package chfpga_config is
 
 	-- Real-time data offload
 
+    constant CONFIG_GPU_LINK_TYPE: gpu_link_type_enum := NONE;
     constant CONFIG_GPU_LINK_TYPE: gpu_link_type_enum := NONE;
 	--constant CONFIG_GPU_LINK_TO_QUAD_MAP: integer_array := (0 to 3=> 0, 4 to 7=> 1); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1
 	--constant CONFIG_GPU_LINK_TO_QUAD_MAP: integer_array(0 to -1); -- **this crashes the synth* NULL range, no GTX connections.

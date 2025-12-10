@@ -73,7 +73,7 @@ use work.chFPGA_config.all; -- Get implementation-specific definitions
 --
 -- The code is configurable for multiple platforms (Virtex 6, Kintex 7, Ultrascale+) with optional GMII or SFP+ Ethernet interface, various clock sources, etc) through the generics.
 -- A platform-specific wrapper file is used to define these generics for a specific platform and expose the useful ports.
-entity chFPGA is
+entity chfpga is
 	generic (
 		PLATFORM_ID: integer      := 0; -- identifies the type of platform on which the firmware is running. 0=Motherboard, 1=KC705
 		PROTOCOL_VERSION: integer := 10;
@@ -459,7 +459,7 @@ entity chFPGA is
 		m_axis_cap_tready: in std_logic := '0';
 		axis_cap_clk: in std_logic := '0'
 	);
-end entity chFPGA;
+end entity chfpga;
 
 ---------- chFPGA implementation ------
 -- Implements the chFPGA top level functionalities.
@@ -552,7 +552,6 @@ architecture impl of chFPGA is
 	constant ADC_BITS_PER_WORD: integer := ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPLE;
 
 	constant NUMBER_OF_ADCS_OR_CHANNELIZERS: integer := max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS);
-	constant IMPLEMENT_CORR: boolean := NUMBER_OF_CORRELATORS > 0 and CORR_TYPE /= NONE;
 	constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
 
 	-- Top level memory-mapped address ranges
@@ -879,7 +878,7 @@ begin
 	-------------------------------------------------------------------
 
 	-- Instantiate the system clock generator that generates the local 200 MHz and 125 MHz from the external 200 MHz lines
-	CLK0: entity work.CLOCKS
+	clk0: entity work.clocks
 		generic map (
 			PLATFORM_ID => PLATFORM_ID,
 			CLOCK_SOURCE => SYSTEM_CLOCK_SOURCE, -- "SYSCLK", "SYSCLK_BUFG", "SFP_REFCLK" or "CLK10_BUFG"
@@ -1124,7 +1123,7 @@ begin
 			ctrl_master_rst <= ctrl_rst or ctrl_master_reset when rising_edge(ctrl_clk);
 		end process;
 
-		ctrl_master0: entity work.ctrl_master
+		ctrl_master0: entity work.bsb_master
 			generic map (
 				NUMBER_OF_PROBES => NUMBER_OF_PROBES  -- number of data stream buses
 			)
@@ -1217,7 +1216,7 @@ begin
 			end if;
 		end process;
 
-		top_router0: entity work.CTRL_ROUTER
+		top_router0: entity work.bsb_router
 			generic map (
 				TARGET_PBLOCK => "SYSTEM",
 				NUMBER_OF_PORTS => NUMBER_OF_PORTS,
@@ -1340,6 +1339,12 @@ begin
 		signal ctrl_clk_div2: std_logic := '0'; -- Initialization required
 		signal chan_clk_div2: std_logic := '0'; -- -- Initialization required
 
+		signal bp_time_in_reg1, bp_time_in_reg2, bp_time_in_reg3 : std_logic;
+		signal bp_trig_in_reg1, bp_trig_in_reg2, bp_trig_in_reg3: std_logic;
+		attribute IOB of bp_time_in_reg1, bp_trig_in_reg1: signal is "true"; -- make sure the IRIG-B signals are captured on the IOB register to ensure repeatable timing
+		attribute shreg_extract of bp_time_in_reg1, bp_time_in_reg2, bp_time_in_reg3, bp_trig_in_reg1, bp_trig_in_reg2, bp_trig_in_reg3: signal is "no";
+
+
 	begin
 
 		-- The SPI reset signal is sent to two separate ports to support different versions of SPI-enabled FMC mezzanines
@@ -1405,6 +1410,31 @@ begin
 
 		process(all) begin
 			chan_clk_div2 <= not chan_clk_div2 when rising_edge(chan_clk(0));
+		end process;
+
+		-- Pipeline bp_time_in and bp_trig_in to allow them to propagate across the chip
+		-- The IRIG-B decoder uses these signals and is clocked by clk200
+		-- Capture IRIG-B on the falling edge of clk200 to provide mamimum setup/hold margin, assuming that
+		-- clk200 is phase aligned with the reference clock and the IRIG-B signal
+		bp_time_trig_reg_proc: process(all) begin
+			if falling_edge(clk200) then
+				bp_time_in_reg1 <= bp_time_in;
+				bp_trig_in_reg1 <= bp_trig_in;
+			end if;
+		end process;
+
+		-- Pipeline backplane time (IRIG-B) and trig signals to allow them to propagate across the chip
+		-- Re-sample IRIG-B on the rising edge of clk200
+		process(all) begin
+			if rising_edge(clk200) then
+				bp_time_in_reg2 <= bp_time_in_reg1;
+				bp_trig_in_reg2 <= bp_trig_in_reg1;
+
+				bp_time_in_reg3 <= bp_time_in_reg2;
+				bp_trig_in_reg3 <= bp_trig_in_reg2;
+
+
+			end if; -- RST/CLK
 		end process;
 
 		system0: entity work.system
@@ -1534,8 +1564,8 @@ begin
 
 
 					-- TIME & TRIG signals
-					bp_time_in => bp_time_in,
-					bp_trig_in => bp_trig_in,
+					bp_time_in => bp_time_in_reg3,
+					bp_trig_in => bp_trig_in_reg3,
 
 					-- Event counter (counts and capture frame numbers with time)
 					event_ctr_clk => chan_clk(0),
@@ -1797,7 +1827,7 @@ begin
 
 				-- ADCDAQ is still implemented if IMPLEMENT_ANT=FALSE, but its IMPLEMENT_ADCDAQ generics is forced  to FALSE to the appropriate differential buffers are instantiated and prevent UCF errors.
 				-- ADC_CLK_OUT_PLL<=ADC_CLK_OUT_PLL_INT;
-				ADCDAQ0: entity work.ADCDAQ
+				adcdaq0: entity work.adcdaq
 					generic map (
 						IMPLEMENT_ADCDAQ        => TRUE, --
 						PROVIDE_BUFFERED_DIVCLK => ADC_PROVIDE_BUFFERED_DIVCLK(i),
@@ -2006,7 +2036,7 @@ begin
 		end process;
 
 
-		chan_router0: entity work.CTRL_ROUTER
+		chan_router0: entity work.bsb_router
 			generic map (
 				NUMBER_OF_PORTS => NUMBER_OF_CHANNELIZERS,
 				ADDRESS_MASK => "---1111------------" -- '1': used to generate port index, '-' = don't care,
@@ -2793,7 +2823,7 @@ begin
 	--
 	-- The correlator is clocked by ct_clk, which is selected by CONFIG_CT_CLK_SOURCE
 	--
-	CORRGEN: if IMPLEMENT_CORR generate
+	CORRGEN: if CORR_TYPE /= NONE generate
 
 		signal corr_cmd_dat: AXIS8_DAT_STRUCT; -- shared with CROSSBAR3
 		signal corr_cmd_rdy: AXIS8_RDY_STRUCT;

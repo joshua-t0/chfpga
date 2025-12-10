@@ -68,7 +68,7 @@ begin
     
     e <= d;
     
-    SYSMON0: entity work.SYSMON_XADC
+    sysmon0: entity work.sysmon
         GENERIC MAP (
             PLATFORM_ID => PLATFORM_ID_ZCU111
             )

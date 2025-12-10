@@ -161,7 +161,7 @@ prober0: entity work.prober
 		CTRL_RST => reset
 	);
 
-master0: entity work.CTRL_MASTER
+master0: entity work.bsb_master
 	generic map (
 		NUMBER_OF_PROBES => NUMBER_OF_PROBES
 	)

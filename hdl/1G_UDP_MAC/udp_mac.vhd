@@ -317,7 +317,7 @@ begin
 
 			-- sfp_refclk <= gtrefclk; -- pass the GTX reference clock
 
-			sgmii0: entity work.gmii_to_sgmii
+			sgmii0: entity work.udp_mac_gmii_to_sgmii
 				generic map (
 					SIM => SIM
 					)

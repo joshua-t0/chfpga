@@ -1,19 +1,19 @@
 .. title:: FFT
 
 *************************************************
-:entity:`FFT` (*FFT.vhd*): Fast Fourier Transform
+:entity:`fft` (*fft.vhd*): Fast Fourier Transform
 *************************************************
 
 .. default-role:: vhdl:entity
 
 
-.. parse:: hdl/CHAN/FFT.vhd
+.. parse:: hdl/chan/fft.vhd
 
 
 Entity documentation
 ====================
 
-.. autoentity:: FFT
+.. autoentity:: fft
 
 
 
@@ -29,7 +29,7 @@ In our implementation the CASPER PFB/FFT is generated using Xilinx System Genera
 Memory Map
 ==========
 
-.. include-docs:: FFT
+.. include-docs:: fft
     :start-after: Memory Map
 
 

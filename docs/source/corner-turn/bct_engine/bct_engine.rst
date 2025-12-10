@@ -1,7 +1,7 @@
 .. title:: BCT_Engine
 
 ********************************************************************
-:entity:`BCT_Engine` (*bct_engine.vhd*): Kintex-7 Corner-turn engine
+:entity:`bct_engine` (*bct_engine.vhd*): Kintex-7 Corner-turn engine
 ********************************************************************
 
 
@@ -14,13 +14,36 @@
    shuffle_crossbar
    ../../navbar_separator
 
-.. parse:: hdl/CROSSBAR/bct_engine.vhd
+.. parse:: hdl/ct/bct_engine.vhd
 .. default-role:: vhdl:entity
 
 
 
-The BCT Engine is is the corner-turn engine typically used for 7-Series FPGA platforms. It uses 7-Series BRAM and FIFO primitives when XPM macros can't be used, has a 32-bit data bus per lane, and uses GTX (10 Gbps) transceivers for sharing data between boards.  The mapping of the bins to the output lanes is almost fully user-configurable. The BCT Engine expects the F-Engine to issue data for two bins per clock in (4+4) or (8+8)-bit format (the later to be used in bypass modes only), and allows ADC, FFT and SCALER overflow flags to be grouped and send as a block at the top of the payload.
+The BCT Engine is is the corner-turn engine typically used for 7-Series FPGA platforms. It is selected by setting ``CT_TYPE=BCT`` in the configuration package. It can perform corner-turning internal to the board, between 16 IceBoard boards in a crate or between 32 Iceboards boards in two crates.  `bct_engine` has a 32-bit data bus per lane, and uses GTX (10 Gbps) transceivers for sharing data between boards through the backplane PCB full mesh links and its backplane QSFP connections.
 
+If `bct_engine` is implemented with CT_LEVEL=1, a minimalist corner-turn operation is performed, which is sufficient for using the embedded X-Engine. In this case, the bct engine regroups the data from each channel and creates a stream for each bin  provided within a SCALER/FFT output word. No headers are added to the packets, and ADC/FFT/SCALER flags are not passed on. There is no software configurability.  But very little resources are used, leaving more for downstream processing blocks.
+
+With ``CT_LEVEL > 1``, the 2nd- and 3rd-stage corner-turn logic and all the associated data shuffle links are all automatically implemented. Unneeded modules the modules can be bypassed through software-controlled registers depending on the desired mode of operation (``shuffle16``, ``shuffle256`` etc.). Bypasses can also be used to pass on the raw channelizer data, wich allows  real-time data streaming when the output is connected to a high-speed link (``chan4`` or ``chan4`` modes).  The same firmware can therefore be used for multiple array configurations. The mapping of the bins to the output lanes is almost fully user-configurable. With ``CT_LEVEL > 1``, the BCT Engine expects the F-Engine to issue data for two bins per clock in (4+4) or (8+8)-bit format (the later to be used in bypass modes only). It packetizes each data frame with headers, and regroups the data and ADC/FFC/SCALER flags into blocks for more efficient downstream processing.
+
+
+
+`bct_engine` supports the following modes of operation:
+   - ``shuffle512``:  Corner-turns the F-Engine data from 2 crates (512 analog channels). Each board produces 8x 10G Ethernet streams, each containing (4+4)-bit channelizer data for 4 bins x 512 channels.
+   - ``shuffle256``:  Corner-turns the data from 1 crate (256 analog channels). Each board produces 8x 10G Ethernet streams, each containing  (4+4)-bit F-Engine data the F-Engine data for 8 bins x 256 channels.
+   - ``shuffle16``:  Corner-turns the F-Engine data from a single board (16 analog channels). Each board produces 8x 10G Ethernet streams, each containing (4+4)-bit F-Engine data for 128 bins x 16 channels.
+   - ``chan8``: Streams the (8+8) data from half (8) of the board's F-Engine to 8 of the 10G Ethernet ports (6.4 Gbps per lane)
+   - ``chan4``: Stream the (4+4) data from all the 16 channelizers to 8 of the 10G Ethernet ports (6.4 Gbps  data per lane)
+   - ``corr16``: Corner-turns the data from a single board (16 analog channels) and feeds the data to an internal N^2 firmware correlator.
+
+The corner-turn operations are performed in the following stages:
+
+1) The first crossbar, called the *channelizer crossbar* (`chan_crossbar`) takes the output of the 16 channelizers, exchanges and reorganizes the data between those, packetizes frames into packets with headers, data flags, frame flags, and produce 16 streams of data.
+2) The backplane PCB links transmit 15 of the streams to other boards in the same crate, and receives data from those crates as well. The stream from lane 0 is passed directly to the next stage in the same FPGA.
+3) The second crossbar (`shuffle_crossbar`) takes the data from the local lane and the 15 remote lanes, realigns the packets, and reorganizes the data in 8 streams.
+4) The backplane QSFP links transmit 4 of those streams to the corresponding board in another crate, and receives 4 streams from those boards. Lanes 0-3 are passed directly to the next stage.
+5) The 3rd crossbar (another shuffle crossbar) takes the data from the 4 local lanes and 4 remote lanes, realigns the packets, and reorder their contents into 8 streams.
+
+The 8 resulting streams are then fed to 8 10G Ethernet packetizers/transmitters that send their data through two motherboard QSFP+ connectors.
 
 The BCT Engine system consists of:
 
@@ -31,28 +54,6 @@ The BCT Engine system consists of:
 - :doc:`shuffle_bin_sel`: Bin selector used in shuffle crossbars
 - Supporting FIFOs and memory modules for data buffering and flag handling
 
-
-The corner turn engine can be configured in software to reorder F-Engine data from single board, a single crate, or a pair of crates. It also allow various bypass modes to stream raw channelizer in real time when the output is connected to a high-speed link.
-
-The supported modes of operation:
-   - ``shuffle512``:  Corner-turns the F-Engine data from 2 crates (512 analog channels). Each board produces 8x 10G Ethernet streams, each containing (4+4)-bit channelizer data for 4 bins x 512 channels.
-   - ``shuffle256``:  Corner-turns the data from 1 crate (256 analog channels). Each board produces 8x 10G Ethernet streams, each containing  (4+4)-bit F-Engine data the F-Engine data for 8 bins x 256 channels.
-   - ``shuffle16``:  Corner-turns the F-Engine data from a single board (16 analog channels). Each board produces 8x 10G Ethernet streams, each containing (4+4)-bit F-Engine data for 128 bins x 16 channels.
-   - ``chan8``: Streams the (8+8) data from half (8) of the board's F-Engine to 8 of the 10G Ethernet ports (6.4 Gbps per lane)
-   - ``chan4``: Stream the (4+4) data from all the 16 channelizers to 8 of the 10G Ethernet ports (6.4 Gbps  data per lane)
-   - ``corr16``: Corner-turns the data from a single board (16 analog channels) and feeds the data to an internal N^2 firmware correlator.
-
-The corner-turn operations are performed in five stages:
-
-1) The first crossbar, (channelizer crossbar `chan_crossbar`) takes the output of 16 on-board channelizers, realigned the data frames, exchanges and reorganizes the data between those, packetizes frames into packets with headers, data flags, frame flags, and produce 16 streams of data.
-2) The backplane PCB links transmit 15 of the streams to other boards in the same crate, and receives data from those crates as well. The stream from lane 0 is passed directly to the next stage in the same FPGA.
-3) The second crossbar (shuffle_crossbar) takes the data from the local lane and the 15 remote lanes, realigns the packets, and reorganizes the data in 8 streams.
-4) The backplane QSFP links transmit 4 of those streams to the corresponding board in another crate, and receives 4 streams from those boards. Lanes 0-3 are passed directly to the next stage.
-5) The 3rd crossbar (another shuffle crossbar) takes the data from the 4 local lanes and 4 remote lanes, realigns the packets, and reorder their contents into 8 streams.
-
-The 8 resulting streams are then fed to 8 10G Ethernet packetizers/transmitters that send their data through two QSFP+ connectors.
-
-The modules that implement each of these stages are configured differnetly by software depending on the desired mode of operation.
 
 
 Entity documentation
@@ -98,7 +99,7 @@ This considerably relaxes the FPGA timing constraints and improves the GTX signa
 Channelizer crossbar
 --------------------
 
-The crossbar consist of an array of 16 bin selectors (`CHAN_BIN_SEL`).
+The crossbar consist of an array of 16 bin selectors (`chan_bin_sel`).
 
 The channelizer frame aliger is pretty simple since  the data it receives is reliable, i.e. there is no possibility of
 packet loss or malformed packets since it is coming directly from the
@@ -187,7 +188,7 @@ combine the data flags from two consecutive bins in a single word.  This brings 
 
 
 rate to fit within the corner turn's engine internal data bus bandwidth (see
-discussion in `CHAN_BIN_SEL`). The combined words cannot be split apart
+discussion in `chan_bin_sel`). The combined words cannot be split apart
 by the bin selection of downstream bin_selectors, but there is no need to
 since those will be bypassed.
 

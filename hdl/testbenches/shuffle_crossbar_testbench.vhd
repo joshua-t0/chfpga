@@ -9,10 +9,10 @@
 -- Target Device:
 -- Tool versions:
 --
--- Description: This testbench tests the SHUFFLE_CROSSBAR module. The crossbar
+-- Description: This testbench tests the shuffle_crossbar module. The crossbar
 -- is configured through commands, and input data stream is generated
 -- programmatically. Data timing may differ from reality, as we do not
--- implement BP_SHUFFLE. Good for testing ALIGN, REMAP and SHUFFLE_BIN_SEL (data combining etc).
+-- implement BP_SHUFFLE. Good for testing align, remap and shuffle_bin_sel (data combining etc).
 
 --------------------------------------------------------------------------------
 LIBRARY ieee;

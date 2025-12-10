@@ -4,7 +4,7 @@
 :entity:`core_registers` (*core_registers.vhd*): Core Registers Module
 **********************************************************************
 
-.. parse:: hdl/SYSTEM/core_registers.vhd
+.. parse:: hdl/system/core_registers.vhd
 
 .. default-role:: vhdl:entity
 

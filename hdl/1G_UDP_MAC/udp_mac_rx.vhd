@@ -220,7 +220,7 @@ gmii_rx_d <= gmii_rxd;
 rx_payload_length <= (unsigned(rx_udp_length)-8);
 
 -- Instantiate CRC32 Engine
-CRC32_0: entity work.crc32
+crc32_0: entity work.udp_mac_crc32
 	port map(
 --		crc_reg => eth_crc,
 		crc     => rx_crc_out,
