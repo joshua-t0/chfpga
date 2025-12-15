@@ -4,7 +4,7 @@
 
 # Tell the tool to analyze only the timing when the ADCCLK is selected by the chan_mmcm (as opposed to the internal 200 MHz clock)
 # The following line does this by forcing the CLKINSEL input to '0'
-set_case_analysis 1 [get_pins -hierarchical gen_chanpll_k7.mmcm_case.chan_mmcm0/CLKINSEL]
+# set_case_analysis 1 [get_pins -hierarchical gen_chanpll_k7.mmcm_case.chan_mmcm0/CLKINSEL]
 
 
 # ADC clocks
@@ -81,7 +81,7 @@ set_clock_groups -name REFCLK_GROUP -asynchronous -group [get_clocks -include_ge
 # Frequency counter
 # ----------------
 # Constrain the frequency counter clock. The clock frequency on this net is 1/2 if the measured clock source
-create_clock -period 3.200 -name FREQ_CTR [get_pins */freq_ctr_blk.freq_ctr0/K7.SRCCLK0/I]
+create_clock -period 3.200 -name FREQ_CTR [get_pins */*.system0/freq_ctr_blk.freq_ctr0/k7.srcclk0/I]
 set_clock_groups -name FREQ_CTR_GROUP -asynchronous -group [get_clocks FREQ_CTR]
 
 # Motherboard raw (single-ended) 10 MHz Reference clock

@@ -76,36 +76,6 @@ set ice_corr16_ooc_ip_files $fft_type_chime
 
 # KC705/SCALER_CMUL/SCALER_CMUL.xci to be added if using complex gains
 
-set ice_base_ip_files [list \
-  "KC705/ADCDAQ_FIFO/ADCDAQ_FIFO.xci" \
-  "KC705/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci" \
-  "KC705/UDP_MAC_TX_DATA_FIFO/udp_mac_tx_data_fifo.xci" \
-  "KC705/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci"\
-]
-
-set ice_ct_ip_files [concat $ice_base_ip_files [list \
-  "KC705/SHUFFLE_BIN_SEL_FLAGS_FIFO4/SHUFFLE_BIN_SEL_FLAGS_FIFO4.xci" \
-  "KC705/SHUFFLE_BIN_SEL_DATA_FIFO_EMBED/SHUFFLE_BIN_SEL_DATA_FIFO_EMBED.xci" \
-  "KC705/SHUFFLE_BIN_SEL_DATA_FIFO_BRAM/SHUFFLE_BIN_SEL_DATA_FIFO_BRAM.xci" \
-  "KC705/SHUFFLE_BIN_SEL_FLAGS_FIFO6/SHUFFLE_BIN_SEL_FLAGS_FIFO6.xci" \
-  "KC705/SHUFFLE_BIN_SEL_MASK_RAM/SHUFFLE_BIN_SEL_MASK_RAM.xci" \
-  "KC705/SHUFFLE_CROSSBAR_ALIGN_FIFO/SHUFFLE_CROSSBAR_ALIGN_FIFO.xci" \
-  "KC705/XGLINK_RX_DATA_FIFO/XGLINK_RX_DATA_FIFO.xci" \
-  "KC705/XGLINK_TX_DATA_FIFO/XGLINK_TX_DATA_FIFO.xci" \
-  "KC705/CHDIST_FRAME_FIFO/CHDIST_FRAME_FIFO.xci" \
-  "KC705/CHDIST_SCALER_FLAGS_FIFO/CHDIST_SCALER_FLAGS_FIFO.xci" \
-  "KC705/CHDIST_DATA_EMBED_FIFO/CHDIST_DATA_EMBED_FIFO.xci" \
-  "KC705/MASK_RAM/MASK_RAM.xci" \
-  "KC705/XG_UDP_MAC_TX_HEADER_FIFO/XGMII_UDP_MAC_TX_HEADER_FIFO.xci" \
-  "KC705/XG_UDP_MAC_TX_DATA_FIFO/XGMII_UDP_MAC_TX_DATA_FIFO.xci" \
- ]]
-
-set ice_corr16_ip_files $ice_base_ip_files
-
-#  "KC705/CORR44_DATA_FIFO/CORR44_DATA_FIFO.xci" \
-
-
-
 set ice_hdl_base_files [concat $hdl_base_files [list \
   "chfpga_ice.vhd" \
   \
@@ -126,26 +96,23 @@ set ice_hdl_base_files [concat $hdl_base_files [list \
   ]]
 
 set ice_base_ip_files [list \
+  $fft_type_chime \
   "KC705/ADCDAQ_FIFO/ADCDAQ_FIFO.xci" \
   "KC705/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci" \
   "KC705/UDP_MAC_TX_DATA_FIFO/udp_mac_tx_data_fifo.xci" \
   "KC705/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci"\
 ]
 
-# === Corr16 files ===
-xf
-set ice_corr16_ip_files [concat $ice_base_ip_files [list \
-  $fft_type_chime \
-  "KC705/AXI4S_REG_SLICE/AXI4S_REG_SLICE.xci" \
-  "KC705/CMD_FIFO/CMD_FIFO.xci" \
-  "KC705/CORR44_DATA_FIFO/CORR44_DATA_FIFO.xci" \
-  "KC705/SCALER_CMUL/SCALER_CMUL.xci"\
- ]]
+set ice_corr16_ip_files $ice_base_ip_files
 
+#  "KC705/CORR44_DATA_FIFO/CORR44_DATA_FIFO.xci" \
+
+
+# === Corr16 files ===
 set ice_corr16_hdl_files [concat $ice_hdl_base_files [list \
-  "CORR/UCMAC44_ARRAY.vhd"\
-  "CORR/UCORR44.vhd"\
-  "CORR/UCORR44_ARRAY.vhd"\
+  "corr/UCMAC44_ARRAY.vhd"\
+  "corr/UCORR44.vhd"\
+  "corr/UCORR44_ARRAY.vhd"\
   ]]
 
 
@@ -194,13 +161,6 @@ set ice_ct_hdl_files [concat $ice_hdl_base_files [list \
   \
   "10GE_UDP_MAC/xge_udp_mac_tx.vhd" \
   "10GE_UDP_MAC/xge_array.vhd" \
-  ]]
-
-
-set ice_corr16_hdl_files [concat $ice_hdl_base_files [list \
-  "corr/UCMAC44_ARRAY.vhd"\
-  "corr/UCORR44.vhd"\
-  "corr/UCORR44_ARRAY.vhd"\
   ]]
 
 
