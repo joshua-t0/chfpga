@@ -105,17 +105,17 @@ begin
 			s_axis_tvalid => tvalid_in,
 			s_axis_tlast => tlast_in,
 
-			m_axis_bsb_tdata => tdata_out,
-			m_axis_bsb_tvalid => tvalid_out,
-			m_axis_bsb_tlast => tlast_out,
-            m_axis_bsb_tready => '1',
+			m_axis_tdata => tdata_out,
+			m_axis_tvalid => tvalid_out,
+			m_axis_tlast => tlast_out,
+            m_axis_tready => '1',
 
-            bsb_clk => bsb_clk,
+            m_axis_clk => bsb_clk,
     
             source_sel_out => source_sel_out,
             source_sel_in => source_sel_in,
     
-			clk=> clk,
+			s_axis_clk => clk,
 			rst => rst,
 
 		-- CTRL_CMD_DAT => (TDATA=> cmd_tdata, TVALID => cmd_tvalid, TLAST => cmd_tlast),

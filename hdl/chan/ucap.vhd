@@ -45,7 +45,7 @@ entity ucap is
         CAPTURE_BITS_PER_WORD: integer := 128 -- must be a multiple of 8 bits
 	);
     port (
-        -- Input data buses, synchronous to clk
+        -- Input data buses, synchronous to s_axis_clk
 
         s_axis_tdata: in slv_array(0 to NUMBER_OF_CHANNELS-1)(CAPTURE_BITS_PER_WORD -1 downto 0);
         s_axis_tvalid: in std_logic_vector(0 to NUMBER_OF_SOURCES - 1); -- common to all channels
@@ -57,23 +57,23 @@ entity ucap is
         source_sel_in: in std_logic_vector(0 to NUMBER_OF_CHANNELS - 1); -- curent data source on tdata for each channel
 
 
-        -- Auxiliary capture stream input, synchronous to clk
+        -- Auxiliary capture stream input, synchronous to s_axis_clk
 
 		s_axis_stream_in_data: in std_logic_vector(7 downto 0) := X"00";
 		s_axis_stream_in_tvalid: in std_logic := '0';
 		s_axis_stream_in_tlast: in std_logic := '0';
 		s_axis_stream_in_tready: out std_logic := '0';
 
-        clk: in std_logic;
-        rst: in std_logic; -- synchronous to clk
+        s_axis_clk: in std_logic;
+        rst: in std_logic; -- synchronous to s_axis_clk
 
-        -- Output data bus, synchronous to bsb_clk
+        -- Output data bus, synchronous to m_axis_clk
 
-        m_axis_bsb_tdata: out std_logic_vector(7 downto 0); -- 8-bit output bus
-		m_axis_bsb_tvalid: out std_logic;
-		m_axis_bsb_tlast: out std_logic;
-		m_axis_bsb_tready: in std_logic := '1';
-        bsb_clk: in std_logic;
+        m_axis_tdata: out std_logic_vector(7 downto 0); -- 8-bit output bus
+		m_axis_tvalid: out std_logic;
+		m_axis_tlast: out std_logic;
+		m_axis_tready: in std_logic := '1';
+        m_axis_clk: in std_logic;
 
 		-- BSB Control interface
 
@@ -274,7 +274,7 @@ begin
 					enb => ram_rd_en(i),
 
 					-- clock and reset
-					clka => clk,
+					clka => s_axis_clk,
 					rstb => rst,
 
 					-- unused signals
@@ -304,7 +304,7 @@ begin
         signal mux_mode: std_logic;
 	begin
 
-	    wr_proc: process(clk)
+	    wr_proc: process(all)
 	        variable chan_int: int8; -- selected physical channel number as an integer
 		    variable src: std_logic; -- channel source
 		    variable src_int: integer range 0 to NUMBER_OF_SOURCES-1; -- channel source as an integer
@@ -314,7 +314,7 @@ begin
             variable K_WIDTH: integer; -- number of bits needed to represent the memory block for each channel
             constant FRAMES_PER_BLOCK: integer := 2; -- number of frames that can be stored by each memory block. *Do not change: This parameter is implicitely hardcoded in some logic such as the memory enable and memory address.
 	    begin
-	        if rising_edge(clk) then
+	        if rising_edge(s_axis_clk) then
 
 	        	-- Register user reset
 	            user_reset_reg <= user_reset;
@@ -522,7 +522,7 @@ begin
 	               end if;
 	            end loop;
 
-	            end if; --clk
+	            end if; --s_axis_clk
 	    end process;
 	end block wr_blk;
 
@@ -581,7 +581,7 @@ begin
             variable ram_readout_ack_var: std_logic_vector(0 to NUMBER_OF_BUFFERS-1);
 
 	    begin
-	        if rising_edge(clk) then
+	        if rising_edge(s_axis_clk) then
 
 	            -- Pipeline the read opcode and buffer index to compendate for the RAM readout latency
 	            -- This needs to be placed before the RAM read sequencer, which overrides the input of the shift register
@@ -779,7 +779,7 @@ begin
                     read_proc_pkt_ctr <= (others=> '0'); -- needed for the first frame header transmission
 	            end if; -- reset
 
-	        end if; --clk
+	        end if; --s_axis_clk
 	    end process;
     end block rd_blk;
 
@@ -823,10 +823,10 @@ begin
         fifo_wr_en <= fifo_in_tvalid(output_source) and not (rst or fifo_wr_rst_busy);
 
         -- Connect FIFO output to output port of this entity
-        m_axis_bsb_tdata <= fifo_dout(7 downto 0);
-        m_axis_bsb_tlast <= fifo_dout(8);
-        m_axis_bsb_tvalid <= fifo_data_valid;
-        fifo_rd_en <= m_axis_bsb_tready and not fifo_rd_rst_busy and fifo_data_valid; -- valid in included to prevent reads during resets
+        m_axis_tdata <= fifo_dout(7 downto 0);
+        m_axis_tlast <= fifo_dout(8);
+        m_axis_tvalid <= fifo_data_valid;
+        fifo_rd_en <= m_axis_tready and not fifo_rd_rst_busy and fifo_data_valid; -- valid in included to prevent reads during resets
 
 
        -- BSB FIFO
@@ -860,13 +860,13 @@ begin
               wr_en =>      fifo_wr_en,  --  Must be low when rst=1 or wr_rst_busy=1
               prog_full =>  fifo_full,
               overflow =>   fifo_overflow,
-              wr_clk =>     clk,
+              wr_clk =>     s_axis_clk,
               rst =>        fifo_rst,         -- synchronous to wr_clk.
 
               dout =>       fifo_dout,
               data_valid => fifo_data_valid,
               rd_en =>      fifo_rd_en, -- Must be low when rst=1 or rd_rst_busy=1
-              rd_clk =>     bsb_clk,
+              rd_clk =>     m_axis_clk,
 
               rd_rst_busy => fifo_rd_rst_busy,
               wr_rst_busy => fifo_wr_rst_busy,

@@ -2773,29 +2773,29 @@ begin
 				-- ADC_SAMPLES_PER_FRAME => ADC_SAMPLES_PER_FRAME
 				)
 				port map (
-					-- Data monitoring port, synchronous to clk
+					-- Data monitoring port, synchronous to s_axis_clk
 					s_axis_tdata   => chan_mon_reg2_tdata,
 					s_axis_tvalid  => chan_mon_reg2_tvalid,
 					s_axis_tlast   => chan_mon_reg2_tlast,
 					source_sel_out => chan_mon_source_req_pre,
 					source_sel_in  => ucap_source_ack2,
 
-					-- Auxiliary input stream, synchronous to clk
+					-- Auxiliary input stream, synchronous to s_axis_clk
 					s_axis_stream_in_data   => ucap_corr_in_tdata,
 					s_axis_stream_in_tvalid => ucap_corr_in_tvalid,
 					s_axis_stream_in_tlast  => ucap_corr_in_tlast,
 					s_axis_stream_in_tready => ucap_corr_in_tready,
 
-					clk => ucap_clk,
+					s_axis_clk => ucap_clk,
 					rst => ucap_rst_reg,
 
-					-- Output stream, synchronous to bsb_clk
-					m_axis_bsb_tdata  => m_axis_cap_tdata,
-					m_axis_bsb_tvalid => m_axis_cap_tvalid,
-					m_axis_bsb_tlast  => m_axis_cap_tlast,
-					m_axis_bsb_tready => m_axis_cap_tready,
+					-- Output stream, synchronous to m_axis_clk
+					m_axis_tdata  => m_axis_cap_tdata,
+					m_axis_tvalid => m_axis_cap_tvalid,
+					m_axis_tlast  => m_axis_cap_tlast,
+					m_axis_tready => m_axis_cap_tready,
 
-					bsb_clk => axis_cap_clk,
+					m_axis_clk => axis_cap_clk,
 
 					-- BSB interface
 					cmd_dat  => ucap_cmd_dat,
