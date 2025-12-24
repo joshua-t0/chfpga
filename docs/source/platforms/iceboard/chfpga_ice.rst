@@ -63,6 +63,7 @@ BSB bus is connected to the 1 Gb Ethernet UDP/MAC that interfaces the SFP port u
 
 - ADCs:
    - Supports two ADC FMC mezzanines
+
 Entity definition
 =================
 

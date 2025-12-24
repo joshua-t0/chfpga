@@ -93,7 +93,7 @@ build_info = dict(
 # Update build info if possible
 try:
     from git import Repo
-    repo = Repo('../')
+    repo = Repo(os.path.abspath('../..'))  # Go up two levels from docs/source/ to repo root
     head_commit = repo.head.commit  # Get the latest commit on the current branch
 
     build_info['author_name'] = head_commit.author.name
@@ -110,7 +110,8 @@ except Exception as e:
 
 import json
 import os
-builddir = os.path.join('..', os.environ.get('BUILDDIR','build'), 'html')
+# Make the build directory path absolute to avoid issues with working directory
+builddir = os.path.abspath(os.path.join('..', os.environ.get('BUILDDIR','build'), 'html'))
 os.makedirs(builddir, exist_ok=True)
 with open(os.path.join(builddir, "build_info.json"), "w") as f:
     json.dump(build_info, f, indent=4)
