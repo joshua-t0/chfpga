@@ -5,8 +5,6 @@
 *************************************************
 
 .. default-role:: vhdl:entity
-
-
 .. parse:: hdl/chan/fft.vhd
 
 Schematic

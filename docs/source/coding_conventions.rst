@@ -17,7 +17,7 @@ Documentation
 
 VHDL documentation is generated using Sphinx using a home-made VHDL domain extension.
 
-We use a hybrid document methodology, where short descriptions and memory map tables that are tightly coupled to the code is placed in the VHDL source files as comment blocks, but longer descriptions on principle of operations and graphics are written in standalone Restructuredtext files.
+We use a hybrid documentation methodology, where short descriptions and memory map tables that are tightly coupled to the code is placed in the VHDL source files as comment blocks, but longer descriptions on principle of operations and graphics are written in standalone Restructuredtext files.
 
 We use Sphinx and a custom-made Sphinx extension to semi-automatically fetch the documentation form the VHDL source files and combine them in the RestructuredText files using special directives.   The user is responsible for manually creating a master file for each module (we don't have a autodoc-like capability).
 
@@ -162,11 +162,23 @@ VHDL coding style
 Line width
 ----------
 
-Ideally, lines should not exceed 100 characters, but that is enforced only very loosely.  On a 16:9 monitor, editors can easily show 160 characters per line with a decent font size. The line length mostly matter if the code is to be viewed on web-based viewers (like BitBucket, GitHub), or in diff tools, so it is still worth the trouble to try and mainting a decent line length.
+The maximum line length is 256 characters, enforced as a Warning by the VSG style checker (rule ``length_001``). While this is quite generous, shorter lines are preferred for readability, especially when viewing code in web-based viewers (like BitBucket, GitHub) or in diff tools. Ideally, lines should not exceed 100 characters, but that is enforced only very loosely.  On a 16:9 monitor, editors can 
+easily show 160 characters per line with a decent font size. The line length mostly matter if the code is to be viewed on 
+web-based viewers (like BitBucket, GitHub), or in diff tools, so it is still worth the trouble to try and mainting a decent 
+line length.
 
-We avoided breaking down long lines of code in multiple lines if that made the code harder to read.  But maybe that is just lazyness.
+We avoided breaking down long lines of code in multiple lines if that made the code harder to read.  But maybe that is just laziness.
 
 We certainly didn't refrain from putting comments at the end because of the line length target. Having comments is more important that having good formatting. The comment cna be modes to the previous line in a cleanup phase.
+
+Spacing rules
+-------------
+
+The following spacing rules are enforced by VSG:
+
+- **No space between label and colon**: This applies to signals, ports, constants, generics, instantiations, generates, attributes, and processes. 
+- **No space between process and opening parenthesis**: Use ``process(all)`` not ``process (all)``.
+- **Function spacing**: At most one space between 'function', the function name, and the opening parenthesis. 
 
 File Headers
 ------------
@@ -200,6 +212,77 @@ The code tries to follow the smart tabbing convention, where:
 
 This approach is convenient because it makes typing the code faster (almost every line is indented) and is not impacted much if the editor tab size in changed.
 
+Note that architecture indentation is disabled in VSG to save horizontal space, as most of the file content would be indented with little clarity benefit.
+
+**Alignment preferences** (enforced by VSG):
+
+   - **Entity ports/generics**: Compact alignment (colons aligned, but compact spacing).
+
+     Rule: ``entity_018``
+
+   - **Multiline constants**: Left alignment (subsequent lines aligned with the left edge of the assignment target).
+
+     Rule: ``constant_012``
+
+   - **Multiline if conditions**: Left alignment with parentheses aligned (subsequent lines aligned with the left edge, and opening/closing parentheses aligned).
+
+     Rule: ``if_009``
+
+Note that many alignment rules are disabled for flexibility, allowing developers to choose the most readable format for specific situations.
+
+Allowed practices
+-----------------
+
+The following practices are explicitly allowed (corresponding VSG rules are disabled):
+
+   - **Default values on ports**: Ports may have default values.
+
+     Rule: ``port_012``
+
+   - **Default assignments on signals**: Signals may have default assignments (useful for simulations).
+
+     Rule: ``signal_007``
+
+   - **Default assignments on variables**: Variables may have default assignments.
+
+     Rule: ``variable_007``
+
+   - **Comments on port maps**: Comments are allowed on port maps to improve readability.
+
+     Rule: ``port_map_010``
+
+   - **Label-less processes**: Processes may be declared without labels.
+
+     Rule: ``process_016``
+
+   - **``process (all) begin`` syntax**: The ``process (all)`` syntax is allowed.
+
+     Rules: ``process_010``, ``process_012``
+
+   - **Entity instantiation**: Entity instantiation is preferred over component instantiation (component instantiation rule is disabled).
+
+     Rule: ``instantiation_034``
+
+   - **Single-line functions with parenthesis on same line**: Functions may have the opening parenthesis on the same line as the function declaration.
+
+     Rule: ``function_019``
+
+   - **Short aggregates on one line**: Short aggregates may be kept on a single line.
+
+     Rule: ``variable_assignment_001``
+
+   - **Comments in multiline variable assignments**: Comments are allowed in multiline variable assignments to clarify assignments with many signals.
+
+     Rule: ``variable_assignment_006``
+
+   - **No parentheses in if statements**: Parentheses around if conditions are not required.
+
+     Rule: ``if_002``
+
+   - **No 'is' keyword in blocks**: The 'is' keyword is not required in block statements.
+
+     Rule: ``block_002``
+
 Instantiation
 -------------
 
@@ -213,6 +296,10 @@ Signal and variable names
         - names are lowercase, with underscores to separate words. Some early Xilix example code used all uppercase signal names (probably before there was good syntax highlighting editors), and that habit was used for a long time in our code. We converted some of the code to lowercase, but you will find modules that are still in uppercase.
         - variables are suffixed by _var.
         - signals have no suffix in our code
+        - Maximum 4 consecutive signals may be declared in the same statement (Warning severity).
+
+          Rule: ``signal_015``
+
         - Additional prefix/suffixes
 
             - _int : denote an internal signal. It is often used to represent a copy of a signal that connects to an output port so the signal can be read.
@@ -223,6 +310,51 @@ Signal and variable names
             - AXI bus ports: prefixed with m_axis_function_item for master port, s_axis_function_item for slave port. Wehre function is the function of the bus, and item is tvalid, tdata, tuser, tlast, tready.
             - AXI buses between modules: no m or s prefix.
 
+Case conventions
+----------------
+
+The following case conventions are enforced by VSG:
+
+**Port names**: Must be lowercase (Error severity). Examples: ``clk``, ``data_in``, ``reset_n``.
+
+   Rules: ``port_010``, ``port_map_002``
+
+**Architecture names**: Must be lowercase (Error severity). Examples: ``rtl``, ``behavioral``.
+
+   Rules: ``architecture_013``, ``architecture_011``
+
+**Constants**: Must be uppercase with underscores. Examples: ``MAX_VALUE``, ``DEFAULT_WIDTH``.
+
+   Rule: ``constant_004``
+
+**Generics**: Must be uppercase with underscores. Examples: ``DATA_WIDTH``, ``ADDR_WIDTH``.
+
+   Rules: ``generic_007``, ``generic_map_002``
+
+**Entities**: Case is flexible (upper_or_lower). Examples: ``MyEntity``, ``my_entity``, ``MY_ENTITY`` are all acceptable.
+
+   Rules: ``entity_008``, ``entity_012``, ``architecture_014``, ``instantiation_028``
+
+**Instance names**: Case is flexible (upper_or_lower). Examples: ``inst_my_module``, ``InstMyModule``.
+
+   Rule: ``instantiation_009``
+
+**Attributes**: Must be uppercase. Examples: ``KEEP``, ``ASYNC_REG``.
+
+   Rule: ``attribute_500``
+
+**Enumeration elements**: Must be uppercase. Examples: ``IDLE``, ``RUNNING``, ``DONE``.
+
+   Rule: ``type_500``
+
+**USE clause ALL**: Must be uppercase. Example: ``use IEEE.STD_LOGIC_1164.ALL;``.
+
+   Rule: ``use_clause_503``
+
+**Bit string literals**: Must be uppercase. Examples: ``"1010"``, ``X"A5"``.
+
+   Rule: ``bit_string_literal_500``
+
     - generics and constants:
 
         - All uppercase with underscores
@@ -230,7 +362,7 @@ Signal and variable names
 
     - entities and architectures:
 
-        - All uppercase with underscores
+        - Case is flexible (upper_or_lower), though uppercase with underscores is common
         - We did not use prefix or suffix to distinguish between constants and generics.
 
     - labels
@@ -244,7 +376,41 @@ Signal and variable names
 
             - All lowercase with underscores with the '_proc' suffix
 
+Blank lines
+-----------
 
+The following blank line rules are enforced by VSG:
+
+**General rule**: Up to 2 consecutive blank lines are allowed.
+
+   Rule: ``whitespace_200``
+
+**No blank line below**: The following keywords must not be followed by a blank line:
+
+   - ``begin`` (in processes)
+   - ``if``
+   - ``when`` (in case statements)
+   - ``end if``
+
+   Rules: ``process_022``, ``if_006``, ``case_200``, ``if_030``
+
+**Require blank line below**: ``end case`` must be followed by a blank line.
+
+   Rule: ``case_010``
+
+**No blank line before**: ``end process`` must not be preceded by a blank line.
+
+   Rule: ``process_023``
+
+**Allow blank lines before** (with comments allowed): The following constructs may have blank lines before them (comments are also allowed):
+
+   - ``entity``
+   - ``architecture``
+   - ``type``
+   - ``generate``
+   - ``instantiation``
+
+   Rules: ``entity_003``, ``architecture_003``, ``type_010``, ``generate_004``, ``instantiation_019``
 
 Array indexing
 --------------
