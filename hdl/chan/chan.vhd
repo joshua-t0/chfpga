@@ -607,12 +607,16 @@ begin
                 mon_ctrl => fifo_wr_disable,
                 
 				-- Control interface
-				CTRL_CMD_IN_DAT   => CMD_DAT(MODULE_SCALER_ADDR),
-				CTRL_CMD_IN_RDY   => CMD_RDY(MODULE_SCALER_ADDR),
-				CTRL_RPLY_OUT_DAT => RPLY_DAT(MODULE_SCALER_ADDR),
-				CTRL_RPLY_OUT_RDY => RPLY_RDY(MODULE_SCALER_ADDR),
-				CTRL_CLK          => CTRL_CLK,
-				CTRL_RST          => CTRL_RST
+				s_axis_bsb_tdata  => CMD_DAT(MODULE_SCALER_ADDR).TDATA,
+				s_axis_bsb_tvalid => CMD_DAT(MODULE_SCALER_ADDR).TVALID,
+				s_axis_bsb_tlast  => CMD_DAT(MODULE_SCALER_ADDR).TLAST,
+				s_axis_bsb_tready => CMD_RDY(MODULE_SCALER_ADDR).TREADY,
+				m_axis_bsb_tdata  => RPLY_DAT(MODULE_SCALER_ADDR).TDATA,
+				m_axis_bsb_tvalid => RPLY_DAT(MODULE_SCALER_ADDR).TVALID,
+				m_axis_bsb_tlast  => RPLY_DAT(MODULE_SCALER_ADDR).TLAST,
+				m_axis_bsb_tready => RPLY_RDY(MODULE_SCALER_ADDR).TREADY,
+				bsb_clk           => CTRL_CLK,
+				bsb_rst           => CTRL_RST
 			);
 	end block scaler_blk;
 
