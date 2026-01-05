@@ -77,6 +77,7 @@ entity xxvglink_core is
 		status_bytes: in slv8_array(0 to NUMBER_OF_STATUS_BYTES - 1) := (others => (others => '0')); -- additional status bytes appended to the common status registers
 
 		-- Control and reply streams
+		
 		cmd_dat: in AXIS8_DAT_STRUCT;
 		cmd_rdy: out AXIS8_RDY_STRUCT;
 		rply_dat: out AXIS8_DAT_STRUCT;

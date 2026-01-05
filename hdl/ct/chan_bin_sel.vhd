@@ -110,6 +110,7 @@ entity chan_bin_sel is
 	);
 	port (
 		-- Input interface (non-blocking, i.e. always accepts data)
+		
 		s_axis_tdata: in slv32_array(0 to NUMBER_OF_INPUTS - 1);
 		s_axis_tuser: in slv4_array(0 to NUMBER_OF_INPUTS - 1);
 		s_axis_tvalid: in std_logic_vector(0 to NUMBER_OF_INPUTS - 1);
@@ -124,6 +125,7 @@ entity chan_bin_sel is
 		-- bin_number: in std_logic_vector(9 downto 0); -- bin number (0 to 1023), appearing 1 clock before the corresponding data (to allow the RAM to lookup the selection bits, assuming the RAM has 1 clock latency)
 
 		-- Output interface (non-blocking AXI4-Streaming)
+		
 		m_axis_tdata:  out slv32;
 		m_axis_tvalid: out std_logic;
 		m_axis_tlast:  out std_logic;
@@ -132,6 +134,7 @@ entity chan_bin_sel is
 		rst: in std_logic; -- reset, synchronous to clk
 
 		-- Control interface (command and reply stream buses)
+		
 		ctrl_cmd_dat: in AXIS8_DAT_STRUCT;
 		ctrl_cmd_rdy: out AXIS8_RDY_STRUCT;
 		ctrl_rply_dat: out AXIS8_DAT_STRUCT;
@@ -381,6 +384,7 @@ begin
 	-- Memory-Mapped interface instantiation
 	-----------------------------------------------------------------------------------
 	-- Instantiates a memory-mapped interface to the control and status bytes
+	
 	bsb_regs0: entity work.bsb_regs
 		generic map (
 			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --

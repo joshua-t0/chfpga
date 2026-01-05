@@ -41,6 +41,7 @@ entity chan_crossbar is
 	);
 	port (
 		-- Input stream from the channelizer (non-blocking)
+		
 		s_axis_tvalid: in std_logic;
 		s_axis_tdata: in slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
 		s_axis_tlast: in std_logic;
@@ -48,6 +49,7 @@ entity chan_crossbar is
 		-- s_axis_clk: in std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1); -- clock from each channelizer
 
 		-- Output stream to the shuffle module (non-blocking)
+		
 		m_axis_tvalid: out slv(0 to NUMBER_OF_OUTPUT_LANES - 1);
 		m_axis_tdata: out slv32_array(0 to NUMBER_OF_OUTPUT_LANES - 1);
 		m_axis_tlast: out slv(0 to NUMBER_OF_OUTPUT_LANES - 1);
@@ -59,6 +61,7 @@ entity chan_crossbar is
 		rst: in std_logic; -- reset, synchronous to clk
 
 		-- Control interface (command and reply stream buses)
+		
 		ctrl_cmd_dat: in AXIS8_DAT_STRUCT;
 		ctrl_cmd_rdy: out AXIS8_RDY_STRUCT;
 		ctrl_rply_dat: out AXIS8_DAT_STRUCT;

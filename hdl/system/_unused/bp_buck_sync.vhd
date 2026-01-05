@@ -40,6 +40,7 @@ use UNISIM.VComponents.ALL;
 entity bp_buck_sync is
 	port (
 		-- Buck sync
+		
 		sync: inout std_logic;
 		sync_mon: out std_logic;
 
@@ -53,6 +54,7 @@ entity bp_buck_sync is
 		-- sync_ctr_mon: out std_logic_vector(7 downto 0);
 
 		-- System-level signals
+		
 		clk10: in std_logic;
 		rst: in std_logic -- synchronous to clk10
 	);

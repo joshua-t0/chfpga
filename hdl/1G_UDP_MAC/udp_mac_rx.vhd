@@ -83,6 +83,7 @@ entity udp_mac_rx is
 		);
 	port (
 		-- User-side streaming interface
+		
 		local_mac_addr         : in std_logic_vector(47 downto 0);
 		local_ip_addr          : in std_logic_vector(31 downto 0);
 		local_ip_port          : in std_logic_vector(15 downto 0);
@@ -104,11 +105,13 @@ entity udp_mac_rx is
 
 
 		-- gmii interface
+		
 		gmii_rxclk             : in  std_logic; -- receive clock from phy
 		gmii_rxctrl_rxdv       : in  std_logic; -- receive data valid
 		gmii_rxd               : in  std_logic_vector(7 downto 0); -- receive data
 
 		-- system
+		
 		rx_overflow            : out std_logic;
 		rst                    : in std_logic
 		);

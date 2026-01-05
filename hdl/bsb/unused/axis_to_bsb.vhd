@@ -14,12 +14,14 @@ entity axis_to_bsb is
 		-- AXIS 32-bit wide interface
 
 		-- Command input stream
+		
 		s_axis_tdata: in std_logic_vector(31 downto 0);
 		s_axis_tvalid: in std_logic;
 		s_axis_tlast: in std_logic;
 		s_axis_tready: out std_logic;
 
 		-- Reply output stream
+		
 		m_axis_tdata: out std_logic_vector(31 downto 0);
 		m_axis_tvalid: out std_logic;
 		m_axis_tlast: out std_logic;
@@ -28,6 +30,7 @@ entity axis_to_bsb is
 		-- BSB (AXIS 8-bit-wide) interface
 
 		-- Reply input stream
+		
 		s_bsb_axis_tdata: in std_logic_vector(7 downto 0);
 		s_bsb_axis_tvalid: in std_logic;
 		s_bsb_axis_tlast: in std_logic;
@@ -35,6 +38,7 @@ entity axis_to_bsb is
 		s_bsb_axis_tuser: in std_logic_vector(1 downto 0) := "00";
 
 		-- Command output stream
+		
 		m_bsb_axis_tdata: out std_logic_vector(7 downto 0);
 		m_bsb_axis_tvalid: out std_logic;
 		m_bsb_axis_tlast: out std_logic;

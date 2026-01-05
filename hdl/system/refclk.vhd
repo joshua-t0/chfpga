@@ -47,6 +47,7 @@ entity refclk is
 	);
 	port (
 		-- Control interface
+		
 		ctrl_cmd_in_dat: in AXIS8_DAT_STRUCT; -- Command stream input, signals from master (Data, Valid, Last)
 		ctrl_cmd_in_rdy: out AXIS8_RDY_STRUCT; -- Command stream input, signals to master (Ready)
 		ctrl_rply_out_dat: out AXIS8_DAT_STRUCT; -- Reply stream output, signals to slave (Data, Valid, Last)
@@ -69,16 +70,20 @@ entity refclk is
 		--------------------------------------------------------------------------
 
 		-- Reference clocks from mezzanines (LVDS)
+		
 		fmc_refclk_p: in std_logic_vector(0 to NUMBER_OF_MEZZANINES - 1); -- Reference Clock LVDS input from the FMC. The Input pad is instantiated in this module.
 		fmc_refclk_n: in std_logic_vector(0 to NUMBER_OF_MEZZANINES - 1);
 
 		-- Buffered reference clocks from mezzanines
+		
 		fmc_refclk: out std_logic_vector(0 to NUMBER_OF_MEZZANINES - 1); -- BUFG-buffered, delayed FMC Mezzanine reference clock, used to scan the ADC clock waveform
 
 		-- Divide-by-2 version of the mezzanine clocks for monitoring
+		
 		fmc_refclk_div2: out std_logic_vector(0 to NUMBER_OF_MEZZANINES - 1); -- Logic signal pulsing at half the REFCLK frequency to be used by the Frequency Counter.
 
 		-- LVDS SYNC signal outputs to the mezzanines
+		
 		adc_sync_p: out std_logic_vector(0 to NUMBER_OF_MEZZANINES - 1); -- LVDS ADC SYNC output. The LVDS output pad is instantiated in this module.
 		adc_sync_n: out std_logic_vector(0 to NUMBER_OF_MEZZANINES - 1);
 
@@ -92,6 +97,7 @@ entity refclk is
 
 		clk200: in std_logic;
 		-- System-level signals
+		
 		rst: in std_logic -- synchronous to clk200
 	);
 end entity refclk;

@@ -50,6 +50,7 @@ entity xge_udp_mac_tx is
 
 
 		-- User-side streaming interface
+		
 		s_axis_tx_tdata: in std_logic_vector(31 downto 0); -- See USE_LITTLE_ENDIAN for transmission order
 		s_axis_tx_tvalid: in std_logic;
 		s_axis_tx_tlast: in std_logic;
@@ -61,6 +62,7 @@ entity xge_udp_mac_tx is
 		frame_overflow: out std_logic;
 
 		-- xgblip interface
+		
 		tx_data: out  std_logic_vector(31 downto 0); -- Transmit data word. MSB is transmitted first
 		tx_header: out  std_logic_vector(1 downto 0); -- 2-bit header of the 66 bit block
 		tx_ready: in std_logic;

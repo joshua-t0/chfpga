@@ -34,6 +34,7 @@ entity SPI_SLAVE is
 		);
     port ( 
 		--SPI signals
+		
 		SPI_SCK: in STD_LOGIC;
 		SPI_MISO: out STD_LOGIC;
 		SPI_MOSI: in STD_LOGIC;
@@ -41,6 +42,7 @@ entity SPI_SLAVE is
 		SPI_RST_N: in STD_LOGIC;
 		
 		-- System-level signals
+		
 		RST: in STD_LOGIC
 	);
 

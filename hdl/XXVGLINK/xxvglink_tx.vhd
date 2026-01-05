@@ -43,6 +43,7 @@ use work.chFPGA_Package.all;
 entity xxvglink_tx is
 	port (
 			-- User-side streaming interface
+			
 		s_axis_tx_tdata: in slv64; -- Fisrt *byte* transmitted is in the MSB (i.e. first bit transmitted is bit 24)
 		s_axis_tx_tvalid: in std_logic;
 		s_axis_tx_tlast: in std_logic;
@@ -52,6 +53,7 @@ entity xxvglink_tx is
 		fifo_overflow: out std_logic; -- transient flag indicating that the TX FIFO has a overflow condition. Synchronous to s_axis_tx_clk
 
 		-- XGLINK core interface
+		
 		tx_data: out slv64 := X"1E000000_00000000"; -- init important for sims
 		tx_header: out slv2; -- '10' for control, '01' for data
 		tx_ready: in std_logic; -- The data is accepted only on clocks where tx_ready is High

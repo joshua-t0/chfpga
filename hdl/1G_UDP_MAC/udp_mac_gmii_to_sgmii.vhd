@@ -39,6 +39,7 @@ entity udp_mac_gmii_to_sgmii is
 	port (
 
 		-- Tranceiver Interface
+		
 		gtrefclk_nobuf       : in std_logic;                     --  unbuffered GTX reference clock for tranceiver: 125MHz, very high quality
 		gtrefclk_buf         : in std_logic;                     --  BUFG-buffered GTX reference clock for tranceiver: 125MHz, very high quality
 		txp                  : out std_logic;                    -- Differential +ve of serial transmission from PMA to PMD.
@@ -59,6 +60,7 @@ entity udp_mac_gmii_to_sgmii is
 		gmii_rx_er           : out std_logic;                    -- Received control signal to client MAC.
 
 		-- General IO's
+		
 		status_vector : out std_logic_vector(15 downto 0); -- Core status.
 		config_vector : in std_logic_vector(31 downto 0); -- Core config.
 		signal_detect : in std_logic;                      -- Input from PMD to indicate presence of optical input.

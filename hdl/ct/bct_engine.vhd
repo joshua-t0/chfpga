@@ -87,6 +87,7 @@ entity bct_engine is
 		s_axis_tlast: in std_logic;
 
 		-- Non-blocking output stream, synchronous to `clk`
+		
 		m_axis_tvalid: out std_logic;
 		m_axis_tdata: out slv(OUTPUT_WORD_WIDTH - 1 downto 0);
 		m_axis_tlast: out std_logic;
@@ -116,6 +117,7 @@ entity bct_engine is
 		align_pulse: out std_logic;
 
 		-- Control interface (command and reply stream buses)
+		
 		bsb_cmd_dat: in AXIS8_DAT_STRUCT;
 		bsb_cmd_rdy: out AXIS8_RDY_STRUCT;
 		bsb_rply_dat: out AXIS8_DAT_STRUCT;

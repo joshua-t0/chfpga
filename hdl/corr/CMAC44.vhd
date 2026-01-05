@@ -94,6 +94,7 @@ entity CMAC44 is
 		s_axis_z_in_start: out std_logic;
 
 		-- Debugging outputs
+		
 		no_accum: in std_logic := '0';
 		-- re: out signed(17 downto 0);
 		-- im: out signed(17 downto 0);

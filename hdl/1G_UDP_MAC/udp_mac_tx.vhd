@@ -60,15 +60,18 @@ entity udp_mac_tx is
 
 	PORT (
 			-- User-side streaming interface
+			
 		local_mac_addr: in std_logic_vector(47 downto 0);
 		local_ip_addr: in std_logic_vector(31 downto 0);
 
 		-- Primary destination (tx_port_offset = 0)
+		
 		remote_mac_addr0: in std_logic_vector(47 downto 0);
 		remote_ip_addr0: in std_logic_vector(31 downto 0);
 		remote_ip_port0: in std_logic_vector(15 downto 0);
 
 		-- Secondary destination (tx_port_offset = 1)
+		
 		remote_mac_addr1: in std_logic_vector(47 downto 0);
 		remote_ip_addr1: in std_logic_vector(31 downto 0);
 		remote_ip_port1: in std_logic_vector(15 downto 0);

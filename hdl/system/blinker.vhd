@@ -31,9 +31,11 @@ entity blinker is
 	);
 	port (
 		-- Reset line
+		
 		rst: in  std_logic;
 
 		-- Clock
+		
 		clk: in  std_logic;
 		kick: in std_logic := '0'; -- increases the blink speed when '1'
 		leds: out std_logic_vector(7 downto 0); -- Ramp up and down pattern Intensity = (0,1,2,3,2,1,0,0,0...)

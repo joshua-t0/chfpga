@@ -28,6 +28,7 @@ entity axis_sync_fifo is
 		);
      PORT (
 		-- Command streams from single slave input to multiple master outputs
+		
 		s_axis_tdata: in std_logic_vector(DATA_WIDTH-1 downto 0);
 		s_axis_tvalid: in std_logic := '0';
 		s_axis_tlast: in std_logic;

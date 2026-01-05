@@ -112,15 +112,18 @@ entity gpio is
 		host_frame_read_rate: out std_logic_vector(4 downto 0);
 
 		-- UDP local Rx networking configuration
+		
 		local_mac_addr: out std_logic_vector(47 downto 0);
 		local_base_ip_addr: out std_logic_vector(31 downto 0);
 		local_base_ip_port: out std_logic_vector(15 downto 0);
 		local_subarray: out std_logic_vector(1 downto 0);
 		-- UDP TX channel 0 remote network configuration
 		--   MAC & IP addresses are hardwired to be those of the perviously received packet
+		
 		remote_ip_port0: out std_logic_vector(15 downto 0); -- normally set to zero to reply to the same port as the last command
 
 		-- UDP TX channel 1 remote network configuration
+		
 		remote_mac_addr1: out std_logic_vector(47 downto 0);
 		remote_ip_addr1: out std_logic_vector(31 downto 0);
 		remote_ip_port1: out std_logic_vector(15 downto 0);

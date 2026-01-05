@@ -91,6 +91,7 @@ entity ucorn is
 		-- init_clk: in std_logic; -- continuous clock
 
 		-- Control and reply streams
+		
 		cmd_dat: in axis8_dat_struct  := (TDATA=> (others => '0'), TVALID=> '0', TLAST=> '0');
 		cmd_rdy: out axis8_rdy_struct;
 		rply_dat: out axis8_dat_struct;

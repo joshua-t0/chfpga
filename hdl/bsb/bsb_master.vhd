@@ -73,12 +73,14 @@ entity bsb_master is
 		-- UDP Transmitter/Receiver interface
 
 		-- UDP Rx interface (synchronous to clk)
+		
 		s_axis_udp_rx_tdata  : in std_logic_vector (7 downto 0);
 		s_axis_udp_rx_tvalid : in std_logic;
 		s_axis_udp_rx_tlast  : in std_logic;
 		s_axis_udp_rx_tready : out std_logic;
 
 		-- UDP Tx interface (synchronous to clk)
+		
 		m_axis_udp_tx_tvalid : out std_logic;
 		m_axis_udp_tx_tdata : out  std_logic_vector (7 downto 0); -- will be axis_tx_tdata
 		m_axis_udp_tx_tlast : out std_logic;
@@ -87,6 +89,7 @@ entity bsb_master is
 
 
 		-- Command and reply stream buses
+		
 		m_axis_cmd_tdata  : out std_logic_vector(7 downto 0);
 		m_axis_cmd_tvalid : out std_logic;
 		m_axis_cmd_tlast  : out std_logic;
@@ -109,6 +112,7 @@ entity bsb_master is
 		--prb_rdy: out axis8_rdy_struct_array(NUMBER_OF_PROBES-1 downto 0);
 
 		-- System
+		
 		cmd_packet_counter: out std_logic_vector(7 downto 0);
 		rply_packet_counter: out std_logic_vector(7 downto 0);
 		host_frame_read_rate: in std_logic_vector(4 downto 0);

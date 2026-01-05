@@ -46,6 +46,7 @@ entity bsb_router is
     PORT (
 
 		-- Command streams from single slave input to multiple master outputs
+		
 		cmd_in_dat: in AXIS8_DAT_STRUCT;
 		cmd_in_rdy: out AXIS8_RDY_STRUCT;
 		cmd_out_dat: out AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_PORTS-1 downto 0);
@@ -53,15 +54,18 @@ entity bsb_router is
 
 
 		-- Reply streams from multiple slave inputs to single master output
+		
 		rply_in_dat: in AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_PORTS-1 downto 0);
 		rply_in_rdy: out AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_PORTS-1 downto 0);
 		rply_out_dat: out AXIS8_DAT_STRUCT;
 		rply_out_rdy: in AXIS8_RDY_STRUCT;
 
 		-- Monitoring signals
+		
 		cmd_overflow: out std_logic;
 
 		-- System interface
+		
 		clk: in STD_LOGIC;
 		rst : in  STD_LOGIC
 		);

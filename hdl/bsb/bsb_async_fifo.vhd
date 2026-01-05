@@ -32,6 +32,7 @@ entity bsb_async_fifo is
 		);
      PORT (
 		-- Command streams from single slave input to multiple master outputs
+		
 		cmd_a_dat: in AXIS8_DAT_STRUCT;
 		cmd_a_rdy: out AXIS8_RDY_STRUCT;
 		rply_a_dat: out AXIS8_DAT_STRUCT;
@@ -45,6 +46,7 @@ entity bsb_async_fifo is
 		b_clk: in std_logic;
 
 		-- System interface
+		
 		rst: in std_logic;
 		a_rst_out: out std_logic; -- extended reset pulse synchronous to a_clk
 		b_rst_out: out std_logic -- extended reset pulse synchronous to b_clk

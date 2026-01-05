@@ -35,6 +35,7 @@ use work.chFPGA_Package.all;
 entity xglink_bypass is
 	port (
 		-- User AXI-Streaming data input (nnon-blocking)
+		
 		s_axis_tx_tdata: in slv32; -- Fisrt *byte* transmitted is in the MSB (i.e. first bit transmitted is bit 24)
 		s_axis_tx_tvalid: in std_logic;
 		s_axis_tx_tlast: in std_logic;
@@ -48,6 +49,7 @@ entity xglink_bypass is
 		rx_min_frame: out std_logic_vector(12 downto 0);
 
 		-- User AXI-Streaming data output (non-blocking)
+		
 		m_axis_rx_tdata: out slv32;
 		m_axis_rx_tvalid: out std_logic;
 		m_axis_rx_tlast: out std_logic;

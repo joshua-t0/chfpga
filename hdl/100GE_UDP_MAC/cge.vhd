@@ -44,6 +44,7 @@ entity cge is
 		);
 	port (
 		-- 100G Serial interface
+		
 		tx_p: out std_logic_vector(0 to 3);
 		tx_n: out std_logic_vector(0 to 3);
 		refclk_p: in std_logic; -- 156.250 reference clock input
@@ -61,6 +62,7 @@ entity cge is
 		-- init_clk: in std_logic; -- continuous clock
 
 		-- Control and reply streams
+		
 		cmd_dat: in axis8_dat_struct := (TDATA => (others => '0'), TVALID => '0', TLAST => '0');
 		cmd_rdy: out axis8_rdy_struct;
 		rply_dat: out axis8_dat_struct;

@@ -53,6 +53,7 @@ entity UCORR44_ARRAY is
 		-- Input data AXI-S bus , non-blocking
 		-- Data ordering from MSB to LSB => (Corr0,Chan0), (Corr0,Chan1), ... (Corr0,ChanN-1), ... (CorrM-1, ChanN-1)
 		-- Re in MSB of byte
+		
 		s_axis_data_tdata : in  slv(INPUT_WIDTH-1 downto 0); -- input data stream containing the channelized data from every channelizer. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
 		s_axis_data_tvalid : in  std_logic; --
 		s_axis_data_tlast : in  std_logic; --
@@ -71,6 +72,7 @@ entity UCORR44_ARRAY is
 		out_clk: in std_logic := '0'; -- ouput clock if USE_OUTPUT_FIFO=TRUE
 
 		-- Control and reply streams
+		
 		s_axis_bsb_dat:  in AXIS8_DAT_STRUCT := (TDATA => X"00", TVALID => '0', TLAST =>'0');
 		s_axis_bsb_rdy:  out AXIS8_RDY_STRUCT := (TREADY => '1');
 		m_axis_bsb_dat: out AXIS8_DAT_STRUCT := (TDATA => X"00", TVALID => '0', TLAST =>'0');

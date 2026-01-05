@@ -66,6 +66,7 @@ entity shuffle_crossbar is
 		align_pulse: out std_logic;
 
 		-- Control interface (command and reply stream buses)
+		
 		ctrl_cmd_dat: in AXIS8_DAT_STRUCT;
 		ctrl_cmd_rdy: out AXIS8_RDY_STRUCT;
 		ctrl_rply_dat: out AXIS8_DAT_STRUCT;

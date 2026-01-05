@@ -178,6 +178,7 @@ entity system is
 		bp_gpio_int_oe: out std_logic;
 
 		-- Buck converters synchronization signal
+		
 		bp_buck_sync: inout std_logic;
 		buck_sync: out std_logic_vector(0 to NUMBER_OF_BUCK_SYNC_LINES - 1);
 
@@ -260,10 +261,12 @@ entity system is
 
 
 		-- I2C Interface
+		
 		i2c_sck: inout std_logic_vector(NUMBER_OF_I2C_PORTS - 1 downto 0);
 		i2c_sda: inout std_logic_vector(NUMBER_OF_I2C_PORTS - 1 downto 0);
 
 		--  SYSMON Current and voltage monitors
+		
 		vaux_curr_n: in  std_logic;
 		vaux_curr_p: in  std_logic; -- External current monitor on the 12V supply line
 		vaux_volt_n: in  std_logic;
@@ -273,6 +276,7 @@ entity system is
 
 
 		-- Clock monitoring signals
+		
 		adc_clk_div2: in std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1);
 		fmc_mgt_pll_refclk_div2: in std_logic_vector(0 to max(NUMBER_OF_ADC_BOARDS, 4) - 1);
 		gpu_refclk_div2: in std_logic_vector(0 to NUMBER_OF_GPU_REFCLKS - 1);

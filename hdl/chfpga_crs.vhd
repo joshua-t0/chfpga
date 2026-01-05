@@ -135,6 +135,7 @@ entity chfpga_crs is
 		pll_sync: out std_logic;
 
 		-- 375 MHz processing clock form programmable PLL
+		
 		plclk_n: in std_logic;
 		plclk_p: in std_logic;
 
@@ -184,18 +185,23 @@ entity chfpga_crs is
 		buck_sync_bp: out std_logic;
 
 		-- LEDs (PL's 7-segment display)
+		
 		led7b: out std_logic_vector(7 downto 0);
 
 		-- OLED display
+		
 		fpc_d: out std_logic_vector(1 downto 0); -- D0: CLK, D1: CLS (clock select, 0=external (i.e. CLK line on D0), 1=internal)
 
 		-- User connectors
+		
 		smp: out std_logic_vector(0 to 3);
 
 		-- AUX signals
+		
 		sma_aux_drv: out std_logic;
 
 		-- IRIG-B signals
+		
 		sma_irig_p: in std_logic;
 		sma_irig_n: in std_logic;
 
@@ -203,6 +209,7 @@ entity chfpga_crs is
 		bp_irig_n: in std_logic;
 
 		-- ADC sampling clocks
+		
 		adc0_clk_clk_n: in std_logic;
 		adc0_clk_clk_p: in std_logic;
 		adc1_clk_clk_n: in std_logic;
@@ -213,6 +220,7 @@ entity chfpga_crs is
 		adc3_clk_clk_p: in std_logic;
 
 		-- ADC analog inputs
+		
 		vin0_01_v_n: in std_logic;
 		vin0_01_v_p: in std_logic;
 		vin0_23_v_n: in std_logic;

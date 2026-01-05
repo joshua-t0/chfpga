@@ -52,6 +52,7 @@ entity freq_ctr is
 	);
 	port (
 		-- Control interface
+		
 		ctrl_cmd_in_dat: in axis8_dat_struct; -- Command stream input, signals from master (Data, Valid, Last)
 		ctrl_cmd_in_rdy: out axis8_rdy_struct; -- Command stream input, signals to master (Ready)
 		ctrl_rply_out_dat: out axis8_dat_struct; -- Reply stream output, signals to slave (Data, Valid, Last)
@@ -63,6 +64,7 @@ entity freq_ctr is
 		clk_in_div2: in std_logic_vector(0 to NUMBER_OF_CLK_IN_PORTS - 1);
 
 		-- System-level signals
+		
 		rst: in std_logic -- synchronous to CLK200
 	);
 end entity freq_ctr;

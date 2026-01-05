@@ -34,6 +34,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 entity CTRL_SLICE is
      PORT (
 		-- Command streams from single slave input to multiple master outputs
+		
 		s_axis_tdata: in std_logic_vector(DATA_WIDTH-1 downto 0);
 		s_axis_tuser: in std_logic_vector(USER_WIDTH-1 downto 0) := (others=>'0'); -- optional user fields
 		s_axis_tvalid: in std_logic;

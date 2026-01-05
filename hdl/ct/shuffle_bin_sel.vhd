@@ -119,6 +119,7 @@ entity shuffle_bin_sel is
 	);
 	port (
 		-- Input interface (non-blocking, i.e. always accept data)
+		
 		s_axis_tdata: in slv32_array(0 to NUMBER_OF_INPUTS - 1);
 		s_axis_tvalid: in std_logic_vector(0 to NUMBER_OF_INPUTS - 1);
 		s_axis_tlast: in std_logic_vector(0 to NUMBER_OF_INPUTS - 1);
@@ -127,6 +128,7 @@ entity shuffle_bin_sel is
 		s_axis_global_tlast: in std_logic; -- active when the longest packet is at its last word
 
 		-- Output interface (blocking, i.e. will send data only when the sink is ready)
+		
 		m_axis_tdata:  out slv32_array(0 to NUMBER_OF_OUTPUTS - 1);
 		m_axis_tvalid: out std_logic_vector(0 to NUMBER_OF_OUTPUTS - 1);
 		m_axis_tlast:  out std_logic_vector(0 to NUMBER_OF_OUTPUTS - 1);
@@ -139,6 +141,7 @@ entity shuffle_bin_sel is
 		shuffle_flags_mask: in slv32; -- Specify the mask to apply on the packet flags word to trigger the terror line.
 
 		-- Control interface (command and reply stream buses)
+		
 		ctrl_cmd_dat: in AXIS8_DAT_STRUCT;
 		ctrl_cmd_rdy: out AXIS8_RDY_STRUCT;
 		ctrl_rply_dat: out AXIS8_DAT_STRUCT;
@@ -399,6 +402,7 @@ begin
 	-- Memory-Mapped interface instantiation
 	-----------------------------------------------------------------------------------
 	-- Instantiates a memory-mapped interface to the control and status bytes
+	
 	bsb_regs0: entity work.bsb_regs
 		generic map (
 			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --

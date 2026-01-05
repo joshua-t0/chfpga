@@ -51,6 +51,7 @@ entity xglink_rx is
 
 
 		-- User-side streaming interface
+		
 		m_axis_rx_tdata: out slv32;
 		m_axis_rx_tvalid: out std_logic;
 		m_axis_rx_tlast: out std_logic;
@@ -59,6 +60,7 @@ entity xglink_rx is
 		m_axis_rx_clk: in std_logic; -- AXIS bus clock
 
 		-- Rx stats
+		
 		rx_fifo_overflow: out std_logic; -- non-sticky
 		reset_stats: in std_logic; -- for stats below
 		rx_frame_detect: out std_logic;

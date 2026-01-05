@@ -70,6 +70,7 @@ entity xge_array is
 
 
 		-- Control and reply streams
+		
 		cmd_dat: in AXIS8_DAT_STRUCT;
 		cmd_rdy: out AXIS8_RDY_STRUCT;
 		rply_dat: out AXIS8_DAT_STRUCT;

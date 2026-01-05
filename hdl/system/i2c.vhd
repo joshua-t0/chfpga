@@ -43,6 +43,7 @@ entity i2c is
 	);
 	port (
 		-- Control interface
+		
 		ctrl_cmd_in_dat: in AXIS8_DAT_STRUCT; -- Command stream input, signals from master (Data, Valid, Last)
 		ctrl_cmd_in_rdy: out AXIS8_RDY_STRUCT; -- Command stream input, signals to master (Ready)
 		ctrl_rply_out_dat: out AXIS8_DAT_STRUCT; -- Reply stream output, signals to slave (Data, Valid, Last)
@@ -52,11 +53,13 @@ entity i2c is
 
 
 		-- I2C signals
+		
 		i2c_sck: inout std_logic_vector(NUMBER_OF_PORTS - 1 downto 0);
 		i2c_sda: inout std_logic_vector(NUMBER_OF_PORTS - 1 downto 0);
 
 
 		-- System-level signals
+		
 		clk200: in std_logic;
 		rst: in std_logic -- synchronous to CLK200
 	);

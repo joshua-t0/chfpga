@@ -40,6 +40,7 @@ entity chan_fifo is
 		);
 	port (
 		-- User AXI-Streaming data input (nnon-blocking)
+		
 		s_axis_tdata: in std_logic_vector(DATA_WIDTH - 1 downto 0);
 		s_axis_tuser: in std_logic_vector(USER_WIDTH - 1 downto 0) := (others => '0');
 		s_axis_tlast: in std_logic;

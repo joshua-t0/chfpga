@@ -73,6 +73,7 @@ entity xglink_core is
 		status_bytes: in slv8_array(0 to NUMBER_OF_STATUS_BYTES-1):=(others=>(others=>'0'));
 
 		-- Control and reply streams
+		
 		CMD_DAT: in AXIS8_DAT_STRUCT;
 		CMD_RDY: out AXIS8_RDY_STRUCT;
 		RPLY_DAT: out AXIS8_DAT_STRUCT;

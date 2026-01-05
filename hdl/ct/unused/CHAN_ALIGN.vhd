@@ -42,6 +42,7 @@ entity CHAN_ALIGN is
 		s_axis_tuser: in slv4_array(0 to NUMBER_OF_LANES - 1) := (others => (others => '0'));
 
 		-- Output interface (non-blocking, i.e. always sends data)
+		
 		m_axis_tvalid: out slv(0 to NUMBER_OF_LANES - 1);
 		m_axis_tdata: out slv32_array(0 to NUMBER_OF_LANES - 1);
 		m_axis_tlast: out slv(0 to NUMBER_OF_LANES - 1);

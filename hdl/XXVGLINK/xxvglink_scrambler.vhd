@@ -75,11 +75,13 @@ entity xxvglink_scrambler is
     );
     port (
         -- User Interface
+        
         UNSCRAMBLED_DATA_IN      : in  std_logic_vector((TX_DATA_WIDTH-1) downto 0); -- LSB is the first bit to be transmitted
         SCRAMBLED_DATA_OUT       : out std_logic_vector((TX_DATA_WIDTH-1) downto 0);
         DATA_VALID_IN            : in  std_logic;
 
         -- System Interface
+        
         USER_CLK                 : in  std_logic;
         SYSTEM_RESET             : in  std_logic
     );

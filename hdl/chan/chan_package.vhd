@@ -59,6 +59,7 @@ package chan_package is
     
     
         -- Output interface
+        
         out_dat_tdata: out std_logic_vector(OUT_BITS_PER_WORD-1 downto 0);
         out_dat_tuser: out std_logic_vector(3 downto 0);
         out_dat_tvalid: out std_logic;
@@ -92,6 +93,7 @@ package chan_package is
         adc_rply_tready: out std_logic;
     
         -- packet capture interface
+        
         cap_source_req: in std_logic := '0';
         cap_source_ack: out std_logic := '0';
         m_axis_cap_tdata: out std_logic_vector(CAPTURE_BITS_PER_WORD - 1 downto 0);
@@ -100,6 +102,7 @@ package chan_package is
     
     
         -- Data Capture interface
+        
         prb_tdata: out std_logic_vector(7 downto 0);
         prb_tvalid: out std_logic;
         prb_tlast: out std_logic;

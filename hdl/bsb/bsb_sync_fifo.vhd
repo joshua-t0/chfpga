@@ -28,6 +28,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 entity bsb_sync_fifo is
      PORT (
 		-- Command streams from single slave input to multiple master outputs
+		
 		CMD_A_DAT: in AXIS8_DAT_STRUCT;
 		CMD_A_RDY: out AXIS8_RDY_STRUCT;
 		RPLY_A_DAT: out AXIS8_DAT_STRUCT;
@@ -39,6 +40,7 @@ entity bsb_sync_fifo is
 		RPLY_B_RDY: out AXIS8_RDY_STRUCT;
 
 		-- System interface
+		
 		CLK: in STD_LOGIC;
 		RST : in  STD_LOGIC
 		);
