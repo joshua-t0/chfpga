@@ -271,8 +271,7 @@ crc_out_reg <= not reverse_bytes(reverse_bits_same_dir(crc_out_reg_int)); -- Fir
 --   2) know in advance how many bytes are in the buffer so we can use that information to set the IP Length and UDP Length fields before we start reading the data
 --  Also inserts a dummy frame if an odd amount of 32-bit words is received to make sure that the data will appear on the 64-bit output of the FIFO
 s_axis_tx_tready <= '1';
-tx_front_end : process(s_axis_tx_clk)
-	begin
+tx_front_end : process(all) begin
 
 		if rising_edge(s_axis_tx_clk) then
 			header_fifo_wr_en<='0';
@@ -311,9 +310,8 @@ tx_front_end : process(s_axis_tx_clk)
 data_overflow <= data_fifo_overflow_sticky;
 frame_overflow <= header_fifo_overflow_sticky;
 
-fifo_readout : process(clk)
-	begin
-		if rising_edge(clk) then
+fifo_readout : process(all) begin
+	if rising_edge(clk) then
 			if RST='1' then -- synchronous reset
 				-- data_fifo_alignment<='0';
 				DATA_FIFO_OVERFLOW_STICKY <= '0';
@@ -335,7 +333,7 @@ fifo_readout : process(clk)
 -- The tx_back_end process reads the FIFO and generate the control and data words that wil form UDP packets Using the 10G protocol.
 -- The words sent are 32-bit wide, although the downstream transmitter  use a 64-bit word boundary to implement the 64-66 bit encoding.
 --
-tx_back_end : process(clk)
+tx_back_end : process(all)
 	-- variable XGMII_TXD_REVERSE_VAR: std_logic_vector(63 downto 0);
 	-- variable XGMII_TXC_REVERSE_VAR: std_logic_vector(7 downto 0);
 
@@ -542,9 +540,8 @@ begin
 
 -- Completes computation of the IP checksum
 ip_checksum_dout<=std_logic_vector(not(ip_checksum_sum(15 downto 0))); -- Checksum is 1's complement of sum
-ip_checksum_proc: process(clk)
-	begin
-		if rising_edge(clk) then
+ip_checksum_proc: process(all) begin
+	if rising_edge(clk) then
 			case ip_checksum_action is
 				when IP_CHECKSUM_ACTION_LOAD => -- Initialize with the precomputed checksum plus the provided word
 					ip_checksum_sum <= unsigned(ip_checksum_din);

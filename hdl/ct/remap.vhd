@@ -57,7 +57,7 @@ architecture impl of remap is
 
 begin
 
-	remap_proc: process(clk)
+	remap_proc: process(all)
 
 		variable source_lane: integer range 0 to NUMBER_OF_OUTPUT_LANES - 1;
 

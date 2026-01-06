@@ -105,8 +105,8 @@ begin
             clk => clk,
  
 			rst => rst,
-			ctrl_clk => ctrl_clk, -- used as init_clk
-			ctrl_rst => ctrl_rst
+			bsb_clk => ctrl_clk, -- used as init_clk
+			bsb_rst => ctrl_rst
 		 );
 
 

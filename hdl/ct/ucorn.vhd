@@ -91,13 +91,16 @@ entity ucorn is
 		-- init_clk: in std_logic; -- continuous clock
 
 		-- Control and reply streams
-		
-		cmd_dat: in axis8_dat_struct  := (TDATA=> (others => '0'), TVALID=> '0', TLAST=> '0');
-		cmd_rdy: out axis8_rdy_struct;
-		rply_dat: out axis8_dat_struct;
-		rply_rdy: in axis8_rdy_struct := (TREADY=> '0');
-		ctrl_clk: in std_logic        := '0'; -- control clock
-		ctrl_rst: in std_logic        := '0'
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0) := (others => '0');
+		s_axis_bsb_tvalid: in std_logic := '0';
+		s_axis_bsb_tlast: in std_logic := '0';
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic := '0';
+		bsb_clk: in std_logic := '0'; -- control clock
+		bsb_rst: in std_logic := '0'
 
 	-- areset: in std_logic -- asynchronous reset
 	);
@@ -108,10 +111,14 @@ architecture impl of ucorn is
 	signal control_bytes: slv8_array(0 to 7);
 	signal status_bytes: slv8_array(0 to 2);
 
-	signal cmd_dat_int: axis8_dat_struct;
-	signal cmd_rdy_int: axis8_rdy_struct;
-	signal rply_dat_int: axis8_dat_struct;
-	signal rply_rdy_int: axis8_rdy_struct;
+	signal cmd_dat_int_tdata: std_logic_vector(7 downto 0);
+	signal cmd_dat_int_tvalid: std_logic;
+	signal cmd_dat_int_tlast: std_logic;
+	signal cmd_rdy_int_tready: std_logic;
+	signal rply_dat_int_tdata: std_logic_vector(7 downto 0);
+	signal rply_dat_int_tvalid: std_logic;
+	signal rply_dat_int_tlast: std_logic;
+	signal rply_rdy_int_tready: std_logic;
 	signal ctrl_rst_int: std_logic;
 
 	signal ram_wr_addr, ram_rd_addr: std_logic_vector(13 downto 0);
@@ -145,8 +152,6 @@ architecture impl of ucorn is
 	signal mask_ram_sel: std_logic;
  	signal in_frame_ctr: unsigned(7 downto 0);
 	signal out_frame_ctr: unsigned(7 downto 0);
-	signal cmd_rdy_out: axis8_rdy_struct;
-	signal rply_dat_out: axis8_dat_struct;
 	signal tx_override_data: std_logic;
 	signal tx_toggle_bank: std_logic;
 	signal tx_insert_timestamp: std_logic;
@@ -154,27 +159,31 @@ architecture impl of ucorn is
 
 begin
 
-	cmd_rdy  <= cmd_rdy_out;
-	rply_dat <= rply_dat_out;
-
-
-	-- Implement an an asynchronous FIFO to bridge the BSB bus from the ctrl_clk
+	-- Implement an an asynchronous FIFO to bridge the BSB bus from the BSB
 	-- to the clk domains (RAM accesses must be made in the clk domain)
 	bsb_fifo0: entity work.bsb_async_fifo
 		port map (
-			cmd_a_dat  => cmd_dat,
-			cmd_a_rdy  => cmd_rdy_out,
-			rply_a_dat => rply_dat_out,
-			rply_a_rdy => rply_rdy,
-			a_clk      => ctrl_clk,
+			cmd_a_tdata => s_axis_bsb_tdata,
+			cmd_a_tvalid => s_axis_bsb_tvalid,
+			cmd_a_tlast => s_axis_bsb_tlast,
+			cmd_a_tready => s_axis_bsb_tready,
+			rply_a_tdata => m_axis_bsb_tdata,
+			rply_a_tvalid => m_axis_bsb_tvalid,
+			rply_a_tlast => m_axis_bsb_tlast,
+			rply_a_tready => m_axis_bsb_tready,
+			a_clk      => bsb_clk,
 
-			cmd_b_dat  => cmd_dat_int,
-			cmd_b_rdy  => cmd_rdy_int,
-			rply_b_dat => rply_dat_int,
-			rply_b_rdy => rply_rdy_int,
+			cmd_b_tdata => cmd_dat_int_tdata,
+			cmd_b_tvalid => cmd_dat_int_tvalid,
+			cmd_b_tlast => cmd_dat_int_tlast,
+			cmd_b_tready => cmd_rdy_int_tready,
+			rply_b_tdata => rply_dat_int_tdata,
+			rply_b_tvalid => rply_dat_int_tvalid,
+			rply_b_tlast => rply_dat_int_tlast,
+			rply_b_tready => rply_rdy_int_tready,
 			b_clk      => clk,
 
-			rst       => ctrl_rst, -- reset is asynchronous and will be extended until a few clocks have happened on both clocks
+			rst       => bsb_rst, -- reset is asynchronous and will be extended until a few clocks have happened on both clocks
 			b_rst_out => ctrl_rst_int  -- ctrl_reset, resynchronized to the B_CLK
 		);
 
@@ -212,12 +221,16 @@ begin
 			NUMBER_OF_STATUS_BYTES  => status_bytes'Length(1) -- Number of bits in the status word.
 		)
 		port map (
-			ctrl_cmd_in_dat   => cmd_dat_int,
-			ctrl_cmd_in_rdy   => cmd_rdy_int,
-			ctrl_rply_out_dat => rply_dat_int,
-			ctrl_rply_out_rdy => rply_rdy_int,
-			ctrl_clk          => clk,
-			ctrl_rst          => ctrl_rst_int,
+			s_axis_bsb_tdata => cmd_dat_int_tdata,
+			s_axis_bsb_tvalid => cmd_dat_int_tvalid,
+			s_axis_bsb_tlast => cmd_dat_int_tlast,
+			s_axis_bsb_tready => cmd_rdy_int_tready,
+			m_axis_bsb_tdata => rply_dat_int_tdata,
+			m_axis_bsb_tvalid => rply_dat_int_tvalid,
+			m_axis_bsb_tlast => rply_dat_int_tlast,
+			m_axis_bsb_tready => rply_rdy_int_tready,
+			bsb_clk          => clk,
+			bsb_rst          => ctrl_rst_int,
 
 			control_bytes => control_bytes,
 			status_bytes  => status_bytes,
@@ -576,7 +589,7 @@ begin
 		debug_out(31 downto 16) <= play_ram_dout;
 
 
-		ram_rd_proc: process(clk)
+		ram_rd_proc: process(all)
 
 			-- variable frame: std_logic_vector(1 downto 0);
 			variable bin: std_logic_vector(12 downto 0);
@@ -587,7 +600,7 @@ begin
 			variable end_of_packet: std_logic;
 			variable end_of_transmission: std_logic;
 
-		begin -- process
+		begin
 			if rising_edge(clk) then
 				-- Generate read address and enable signals
 				bin := play_ram_dout(12 downto 0);

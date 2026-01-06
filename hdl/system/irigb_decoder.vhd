@@ -94,8 +94,7 @@ architecture rtl of irigb_decoder is
 
 begin
 	-- Symbol detector
-	process(clk_200mhz)
-	begin
+	process(all) begin
 		if rising_edge(clk_200mhz) then
 
 			-- Multiplex and delay for pipelining and edge detection

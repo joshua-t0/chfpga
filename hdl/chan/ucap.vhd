@@ -76,13 +76,16 @@ entity ucap is
         m_axis_clk: in std_logic;
 
 		-- BSB Control interface
-
-		cmd_dat: in axis8_dat_struct := (TDATA=>(others=>'0'), TVALID=>'0', TLAST=>'0');
-		cmd_rdy: out axis8_rdy_struct;
-		rply_dat: out axis8_dat_struct;
-		rply_rdy: in axis8_rdy_struct := (TREADY=>'0');
-		ctrl_clk : in std_logic := '0'; -- control clock
-		ctrl_rst : in std_logic := '0'
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0) := (others => '0');
+		s_axis_bsb_tvalid: in std_logic := '0';
+		s_axis_bsb_tlast: in std_logic := '0';
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic := '0';
+		bsb_clk: in std_logic := '0'; -- control clock
+		bsb_rst: in std_logic := '0'
     );
 end ucap;
 
@@ -179,12 +182,16 @@ begin
 			control_bytes => control_bytes,
 			status_bytes => status_bytes,
 
-			ctrl_cmd_in_dat=>   cmd_dat,
-			ctrl_cmd_in_rdy=>   cmd_rdy,
-			ctrl_rply_out_dat=> rply_dat,
-			ctrl_rply_out_rdy=> rply_rdy,
-			ctrl_clk => ctrl_clk,
-			ctrl_rst => ctrl_rst
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
+			bsb_clk => bsb_clk,
+			bsb_rst => bsb_rst
 		);
 
 	-- CONTROL byte 0 -1 : mode and channel selection

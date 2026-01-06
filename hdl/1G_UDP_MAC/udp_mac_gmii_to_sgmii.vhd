@@ -296,8 +296,7 @@ port map (
 --    -----------------------------------------------------------------------------
 -- -- Hold the rest line for some delay after FPGA configuration and reset to make sure the link comes up.
 -- -- Otherwise we have 2-3% link up failure rate (known to happen on cores v14.3 rev1 and v15, maybe this is a SFP thing).
-process (reset, clk125)
-begin
+process(all) begin
 	if reset = '1' then
 		init_reset <= '1';
 		init_reset_ctr <= (others=>'0');
@@ -311,9 +310,8 @@ end process;
 
 
 	 -- Create a reset pulse of a decent length
-	 process(reset, clk125, user_reset)
-	 begin
-		 if reset = '1' or user_reset='1' then
+	 process(all) begin
+	 if reset = '1' or user_reset='1' then
 			 pma_reset_pipe <= "1111";
 		 elsif rising_edge(clk125) then
 			 pma_reset_pipe <= pma_reset_pipe(2 downto 0) & reset;
@@ -475,9 +473,8 @@ end process;
 	 -----------------------------------------------------------------------------
 
 	 -- Pipeline the TX interface to facilitate routing
-	 process (userclk2)
-	 begin
-			if rising_edge(userclk2) then
+	 process(all) begin
+		if rising_edge(userclk2) then
 				 gmii_txd_iff    <= gmii_txd;
 				 gmii_tx_en_iff  <= gmii_tx_en;
 				 gmii_tx_er_iff  <= gmii_tx_er;

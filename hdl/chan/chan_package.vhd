@@ -70,27 +70,29 @@ package chan_package is
         out_reset: in std_logic;
     
          -- Control interface (command and reply stream buses)
-        ctrl_cmd_tdata: in std_logic_vector(7 downto 0);
-        ctrl_cmd_tvalid: in std_logic;
-        ctrl_cmd_tlast: in std_logic;
-        ctrl_cmd_tready: out std_logic;
-        ctrl_rply_tdata: out std_logic_vector(7 downto 0);
-        ctrl_rply_tvalid: out std_logic;
-        ctrl_rply_tlast: out std_logic;
-        ctrl_rply_tready: in std_logic;
+         
+        s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+        s_axis_bsb_tvalid: in std_logic;
+        s_axis_bsb_tlast: in std_logic;
+        s_axis_bsb_tready: out std_logic;
+        m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+        m_axis_bsb_tvalid: out std_logic;
+        m_axis_bsb_tlast: out std_logic;
+        m_axis_bsb_tready: in std_logic;
     
-        ctrl_clk : in  STD_LOGIC;
-        ctrl_rst : in  STD_LOGIC; -- Global asynchronous RESET, activated at power-up.
+        bsb_clk : in  STD_LOGIC;
+        bsb_rst : in  STD_LOGIC; -- Global asynchronous RESET, activated at power-up.
     
         -- Control interface to be hooked-up  to the corresponding ADCDAQ module
-        adc_cmd_tdata: out std_logic_vector(7 downto 0);
-        adc_cmd_tvalid: out std_logic;
-        adc_cmd_tlast: out std_logic;
-        adc_cmd_tready: in std_logic;
-        adc_rply_tdata: in std_logic_vector(7 downto 0);
-        adc_rply_tvalid: in std_logic;
-        adc_rply_tlast: in std_logic;
-        adc_rply_tready: out std_logic;
+        
+        m_axis_adcdaq_bsb_tdata: out std_logic_vector(7 downto 0);
+        m_axis_adcdaq_bsb_tvalid: out std_logic;
+        m_axis_adcdaq_bsb_tlast: out std_logic;
+        m_axis_adcdaq_bsb_tready: in std_logic;
+        s_axis_adcdaq_bsb_tdata: in std_logic_vector(7 downto 0);
+        s_axis_adcdaq_bsb_tvalid: in std_logic;
+        s_axis_adcdaq_bsb_tlast: in std_logic;
+        s_axis_adcdaq_bsb_tready: out std_logic;
     
         -- packet capture interface
         

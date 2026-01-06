@@ -286,9 +286,8 @@ tx_frame_fifo_din(17 downto 16) <= tx_port_offset; -- If the END of frame is det
 --  Counts incoming bytes and stores the frame length in the frame FIFO once a frame is finished. This allows the TX state machine :
 --   1) to know that a full frame is available in the TX data FIFO, therefore ensuring uninterrupted transmission of the data on the GMII interface
 --   2) know how many bytes to read from the FIFO
-tx_front_end : process(tx_clk)
-	begin
-		if rising_edge(tx_clk) then
+tx_front_end : process(all) begin
+	if rising_edge(tx_clk) then
 			-- Determine if the transmit buffer has overflow. Now we are very conservative and assume there is an overflow if we ever have to throttle the data source.
 			-- which in practive should not be a problem
 			if (tx_fifo_wr_en='1' and tx_fifo_full='1') or
@@ -313,8 +312,7 @@ tx_front_end : process(tx_clk)
 -- GMII transmit process
 --
 -- Sends the Ethernet, IP and UDP header, payload and CRC32 to the GMII interface
-tx_back_end : process(gmii_txclk)
-begin
+tx_back_end : process(all) begin
 	if rising_edge(gmii_txclk) then
 
 		-- Output registering with CRC or CHECKSUM insertion
@@ -673,9 +671,8 @@ crc32_0: entity work.udp_mac_crc32 -- we explicitely specify the work library be
 --
 -- Computes the 16-bit IP header checksum while the Ethernet header bytes are being sent. This is because
 -- we need to send the checksum *before* the IP header is sent.
-ip_checksum : process(gmii_txclk)
-	begin
-		if (gmii_txclk'EVENT and gmii_txclk='1') then
+ip_checksum : process(all) begin
+	if (gmii_txclk'EVENT and gmii_txclk='1') then
 			if ip_checksum_init='1' then
 				ip_checksum_reg <= (others => '0');
 				ip_checksum_msb <= (others => '0'); -- not needed, just to make simulations look nicer

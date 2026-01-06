@@ -44,8 +44,7 @@ architecture behav of irigb_comparator is
 
 begin
 
-	timestamp_comparator_proc : process(clk_200mhz)
-	begin
+	timestamp_comparator_proc : process(all) begin
 		if rising_edge(clk_200mhz) then
 
 			-- Resynchronize the compare enable signal to the 200 MHz clock

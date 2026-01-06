@@ -134,13 +134,16 @@ entity chan_bin_sel is
 		rst: in std_logic; -- reset, synchronous to clk
 
 		-- Control interface (command and reply stream buses)
-		
-		ctrl_cmd_dat: in AXIS8_DAT_STRUCT;
-		ctrl_cmd_rdy: out AXIS8_RDY_STRUCT;
-		ctrl_rply_dat: out AXIS8_DAT_STRUCT;
-		ctrl_rply_rdy: in AXIS8_RDY_STRUCT;
-		ctrl_clk: in  std_logic;
-		ctrl_rst: in  std_logic
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid: in std_logic;
+		s_axis_bsb_tlast: in std_logic;
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic;
+		bsb_clk: in std_logic;
+		bsb_rst: in std_logic
 	);
 end entity chan_bin_sel;
 
@@ -397,12 +400,16 @@ begin
 
 		port map (
 			-- Control interface (command and reply stream buses)
-			ctrl_cmd_in_dat   => ctrl_cmd_dat,
-			ctrl_cmd_in_rdy   => ctrl_cmd_rdy,
-			ctrl_rply_out_dat => ctrl_rply_dat,
-			ctrl_rply_out_rdy => ctrl_rply_rdy,
-			ctrl_clk          => ctrl_clk,
-			ctrl_rst          => ctrl_rst,
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
+			bsb_clk          => bsb_clk,
+			bsb_rst          => bsb_rst,
 
 			control_bytes => control_bytes,
 			status_bytes  => status_bytes,
@@ -427,7 +434,7 @@ begin
 	-- We need to use a Block RAM (as opposed to distributed RAM) so we can have assymetric aspect ratio
 	mask_ram0: entity work.MASK_RAM
 		port map (
-			clka   => ctrl_clk,
+			clka   => bsb_clk,
 			wea(0) => mask_ram_ctrl_wr_en,
 			addra  => mask_ram_ctrl_addr,
 			dina   => mask_ram_ctrl_din,
@@ -624,7 +631,7 @@ begin
 	-- -------------------
 	-- Sequences the data writes to the FIFO
 
-	fifo_wr_proc: process(clk)
+	fifo_wr_proc: process(all)
 
 		variable data_in_even: slv64;
 		variable data_in_odd: slv64;
@@ -928,7 +935,7 @@ begin
 	m_axis_tlast  <= m_axis_tlast_int;
 
 	-- Readout process: reads the FIFOs and send the header, data, data flags, frame flags and packet flags
-	fifo_rd_proc: process(clk)
+	fifo_rd_proc: process(all)
 
 		-- variable ix: integer range 0 to NUMBER_OF_INPUTS/4-1;
 		variable header_word_array: slv32_array(0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH - 1);

@@ -35,13 +35,16 @@ entity sysmon is
 	);
 	port (
 		-- Control interface
-
-		ctrl_cmd_in_dat: in AXIS8_DAT_STRUCT; -- Command stream input, signals from master (Data, Valid, Last)
-		ctrl_cmd_in_rdy: out AXIS8_RDY_STRUCT; -- Command stream input, signals to master (Ready)
-		ctrl_rply_out_dat: out AXIS8_DAT_STRUCT; -- Reply stream output, signals to slave (Data, Valid, Last)
-		ctrl_rply_out_rdy: in AXIS8_RDY_STRUCT; -- Reply stream output,  signals from slave (Ready)
-		ctrl_clk: in  std_logic;
-		ctrl_rst: in std_logic;
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid: in std_logic;
+		s_axis_bsb_tlast: in std_logic;
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic;
+		bsb_clk: in std_logic;
+		bsb_rst: in std_logic;
 
 		--  Current and voltage monitors
 
@@ -55,7 +58,7 @@ entity sysmon is
 		-- Clocks & Resets
 
 		sysmon_clk: in  std_logic; -- System monitor clock. Clocks the SYSMON hardware block.
-		sysmon_rst: in std_logic -- synchronous to sysmon_clk
+		sysmon_rst: in std_logic -- Resets the SYSMON cores directly. synchronous to sysmon_clk
 	);
 end entity sysmon;
 
@@ -65,7 +68,7 @@ architecture impl of sysmon is
 	constant FPGA_SERIES: integer := PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES;
 
 	--- Define Control word and its signals
-	signal bsb_rst: std_logic;
+	signal sysmon_bsb_rst: std_logic; -- BSB reset resynchronized to the sysmon clock
 
 	signal control_bytes: slv8_array(0 to 0); --
 	signal status_bytes: slv8_array(0 to 1);
@@ -91,10 +94,14 @@ architecture impl of sysmon is
 	signal sysmon_addr: std_logic_vector(7 downto 0);
 
 
-	signal fifo_cmd_in_dat: AXIS8_DAT_STRUCT;
-	signal fifo_cmd_in_rdy: AXIS8_RDY_STRUCT;
-	signal fifo_rply_out_dat: AXIS8_DAT_STRUCT;
-	signal fifo_rply_out_rdy: AXIS8_RDY_STRUCT;
+	signal fifo_cmd_in_tdata: std_logic_vector(7 downto 0);
+	signal fifo_cmd_in_tvalid: std_logic;
+	signal fifo_cmd_in_tlast: std_logic;
+	signal fifo_cmd_in_tready: std_logic;
+	signal fifo_rply_out_tdata: std_logic_vector(7 downto 0);
+	signal fifo_rply_out_tvalid: std_logic;
+	signal fifo_rply_out_tlast: std_logic;
+	signal fifo_rply_out_tready: std_logic;
 
 
 begin
@@ -133,20 +140,28 @@ begin
 	-- that clock
 	fifo0: entity work.bsb_async_fifo
 		port map (
-			cmd_a_dat  => ctrl_cmd_in_dat,
-			cmd_a_rdy  => ctrl_cmd_in_rdy,
-			rply_a_dat => ctrl_rply_out_dat,
-			rply_a_rdy => ctrl_rply_out_rdy,
-			a_clk      => ctrl_clk,
+			cmd_a_tdata => s_axis_bsb_tdata,
+			cmd_a_tvalid => s_axis_bsb_tvalid,
+			cmd_a_tlast => s_axis_bsb_tlast,
+			cmd_a_tready => s_axis_bsb_tready,
+			rply_a_tdata => m_axis_bsb_tdata,
+			rply_a_tvalid => m_axis_bsb_tvalid,
+			rply_a_tlast => m_axis_bsb_tlast,
+			rply_a_tready => m_axis_bsb_tready,
+			a_clk      => bsb_clk,
 
-			cmd_b_dat  => fifo_cmd_in_dat,
-			cmd_b_rdy  => fifo_cmd_in_rdy,
-			rply_b_dat => fifo_rply_out_dat,
-			rply_b_rdy => fifo_rply_out_rdy,
+			cmd_b_tdata => fifo_cmd_in_tdata,
+			cmd_b_tvalid => fifo_cmd_in_tvalid,
+			cmd_b_tlast => fifo_cmd_in_tlast,
+			cmd_b_tready => fifo_cmd_in_tready,
+			rply_b_tdata => fifo_rply_out_tdata,
+			rply_b_tvalid => fifo_rply_out_tvalid,
+			rply_b_tlast => fifo_rply_out_tlast,
+			rply_b_tready => fifo_rply_out_tready,
 			b_clk      => sysmon_clk,
-			b_rst_out  => bsb_rst,
+			b_rst_out  => sysmon_bsb_rst,
 
-			rst => ctrl_rst -- Asynchronous. The module internally extends the pulse for a number of A_CLK and B_CLK when they come.
+			rst => bsb_rst -- Asynchronous. The module internally extends the pulse for a number of A_CLK and B_CLK when they come.
 		);
 
 	bsb_regs0: entity work.bsb_regs
@@ -160,12 +175,16 @@ begin
 
 		port map (
 			-- Control interface (command and reply stream buses)
-			ctrl_cmd_in_dat   => fifo_cmd_in_dat,
-			ctrl_cmd_in_rdy   => fifo_cmd_in_rdy,
-			ctrl_rply_out_dat => fifo_rply_out_dat,
-			ctrl_rply_out_rdy => fifo_rply_out_rdy,
-			ctrl_clk          => sysmon_clk,
-			ctrl_rst          => bsb_rst,
+			s_axis_bsb_tdata => fifo_cmd_in_tdata,
+			s_axis_bsb_tvalid => fifo_cmd_in_tvalid,
+			s_axis_bsb_tlast => fifo_cmd_in_tlast,
+			s_axis_bsb_tready => fifo_cmd_in_tready,
+			m_axis_bsb_tdata => fifo_rply_out_tdata,
+			m_axis_bsb_tvalid => fifo_rply_out_tvalid,
+			m_axis_bsb_tlast => fifo_rply_out_tlast,
+			m_axis_bsb_tready => fifo_rply_out_tready,
+			bsb_clk          => sysmon_clk,
+			bsb_rst          => sysmon_bsb_rst,
 
 			control_bytes => control_bytes,
 			status_bytes  => status_bytes,

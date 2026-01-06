@@ -118,13 +118,16 @@ entity xglink_array is
 
 
     -- Control and reply streams
-    
-    CMD_DAT: in AXIS8_DAT_STRUCT := (TDATA=> (others=>'0'), TVALID=>'0', TLAST=>'0');
-    CMD_RDY: out AXIS8_RDY_STRUCT;
-    RPLY_DAT: out AXIS8_DAT_STRUCT;
-    RPLY_RDY: in AXIS8_RDY_STRUCT := (TREADY => '1');
-    CTRL_CLK : IN std_logic := '0'; -- control clock
-    CTRL_RST : in std_logic := '0'
+    s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+    s_axis_bsb_tvalid: in std_logic;
+    s_axis_bsb_tlast: in std_logic;
+    s_axis_bsb_tready: out std_logic;
+    m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+    m_axis_bsb_tvalid: out std_logic;
+    m_axis_bsb_tlast: out std_logic;
+    m_axis_bsb_tready: in std_logic;
+    bsb_clk: in std_logic := '0'; -- control clock
+    bsb_rst: in std_logic := '0'
    );
 end;
 
@@ -261,8 +264,7 @@ status_bytes(5 to 6) <= to_slv8_array(rx_min_frame_length(to_integer(lane_sel)))
 
 
 -- reset
-rst_proc: process(tx_clk)
-begin
+rst_proc: process(all) begin
 	if rising_edge(tx_clk) then
 		reset_reg <= (others => areset);
 		reset_stats_reg <= (others => reset_stats);
@@ -337,9 +339,8 @@ m_axis_rx_tlast <= m_axis_rx_tlast_int2;
 m_axis_rx_terror <= m_axis_rx_terror_int2;
 
 bypass_gen: if IMPLEMENT_RX generate
-	bypass_proc: process(tx_clk)
-	begin
-		if rising_edge(tx_clk) then
+	bypass_proc: process(all) begin
+	if rising_edge(tx_clk) then
 			for i in 0 to NUMBER_OF_LANES-1 loop
 				if bypass(LANE_GROUP_MAP(i))='1' then
 					m_axis_rx_tdata_int2(i)  <= s_axis_tx_tdata(i);
@@ -514,12 +515,16 @@ core0: entity work.xglink_core
 		status_bytes => status_bytes,
 
 		-- Control and reply streams
-		CMD_DAT => CMD_DAT,
-		CMD_RDY => CMD_RDY,
-		RPLY_DAT => RPLY_DAT,
-		RPLY_RDY=> RPLY_RDY,
-		CTRL_CLK => CTRL_CLK,
-		CTRL_RST => CTRL_RST,
+		s_axis_bsb_tdata => s_axis_bsb_tdata,
+		s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+		s_axis_bsb_tlast => s_axis_bsb_tlast,
+		s_axis_bsb_tready => s_axis_bsb_tready,
+		m_axis_bsb_tdata => m_axis_bsb_tdata,
+		m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+		m_axis_bsb_tlast => m_axis_bsb_tlast,
+		m_axis_bsb_tready => m_axis_bsb_tready,
+		bsb_clk => bsb_clk,
+		bsb_rst => bsb_rst,
 
 		-- clk: in std_logic; -- AXI-S data clock. Not related to the 10G Ethernet clocks.
 		areset=> areset -- asynchronous reset
@@ -537,9 +542,8 @@ core0: entity work.xglink_core
 
 
  	-- Gather stats of the RX data stream
- 	fifo_overflow_proc: process(tx_clk)
- 	begin
- 		if rising_edge(tx_clk) then
+ 	fifo_overflow_proc: process(all) begin
+ 	if rising_edge(tx_clk) then
  			-- Detect TX FIFO overflows
  			for i in 0 to NUMBER_OF_LANES-1 loop
 	 			if tx_fifo_overflow(i)='1' then

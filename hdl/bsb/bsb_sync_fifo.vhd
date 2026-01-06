@@ -29,15 +29,23 @@ entity bsb_sync_fifo is
      PORT (
 		-- Command streams from single slave input to multiple master outputs
 		
-		CMD_A_DAT: in AXIS8_DAT_STRUCT;
-		CMD_A_RDY: out AXIS8_RDY_STRUCT;
-		RPLY_A_DAT: out AXIS8_DAT_STRUCT;
-		RPLY_A_RDY: in AXIS8_RDY_STRUCT;
+		cmd_a_tdata: in std_logic_vector(7 downto 0);
+		cmd_a_tvalid: in std_logic;
+		cmd_a_tlast: in std_logic;
+		cmd_a_tready: out std_logic;
+		rply_a_tdata: out std_logic_vector(7 downto 0);
+		rply_a_tvalid: out std_logic;
+		rply_a_tlast: out std_logic;
+		rply_a_tready: in std_logic;
 
-		CMD_B_DAT: out AXIS8_DAT_STRUCT;
-		CMD_B_RDY: in AXIS8_RDY_STRUCT;
-		RPLY_B_DAT: in AXIS8_DAT_STRUCT;
-		RPLY_B_RDY: out AXIS8_RDY_STRUCT;
+		cmd_b_tdata: out std_logic_vector(7 downto 0);
+		cmd_b_tvalid: out std_logic;
+		cmd_b_tlast: out std_logic;
+		cmd_b_tready: in std_logic;
+		rply_b_tdata: in std_logic_vector(7 downto 0);
+		rply_b_tvalid: in std_logic;
+		rply_b_tlast: in std_logic;
+		rply_b_tready: out std_logic;
 
 		-- System interface
 		
@@ -66,15 +74,15 @@ begin
 		 clk => clk,
 		 rst => rst,
 
-		 s_axis_tvalid => cmd_a_dat.tvalid,
-		 s_axis_tready => cmd_a_rdy.tready,
-		 s_axis_tdata => cmd_a_dat.tdata,
-		 s_axis_tlast => cmd_a_dat.tlast,
+		 s_axis_tvalid => cmd_a_tvalid,
+		 s_axis_tready => cmd_a_tready,
+		 s_axis_tdata => cmd_a_tdata,
+		 s_axis_tlast => cmd_a_tlast,
 
-		 m_axis_tvalid => cmd_b_dat.tvalid,
-		 m_axis_tready => cmd_b_rdy.tready,
-		 m_axis_tdata => cmd_b_dat.tdata,
-		 m_axis_tlast => cmd_b_dat.tlast
+		 m_axis_tvalid => cmd_b_tvalid,
+		 m_axis_tready => cmd_b_tready,
+		 m_axis_tdata => cmd_b_tdata,
+		 m_axis_tlast => cmd_b_tlast
 	  );
 
 	rply_fifo0 : entity work.axis_sync_fifo
@@ -82,15 +90,15 @@ begin
 		 clk => clk,
 		 rst => rst,
 
-		 s_axis_tvalid => rply_b_dat.tvalid,
-		 s_axis_tready => rply_b_rdy.tready,
-		 s_axis_tdata => rply_b_dat.tdata,
-		 s_axis_tlast => rply_b_dat.tlast,
+		 s_axis_tvalid => rply_b_tvalid,
+		 s_axis_tready => rply_b_tready,
+		 s_axis_tdata => rply_b_tdata,
+		 s_axis_tlast => rply_b_tlast,
 
-		 m_axis_tvalid => rply_a_dat.tvalid,
-		 m_axis_tready => rply_a_rdy.tready,
-		 m_axis_tdata => rply_a_dat.tdata,
-		 m_axis_tlast => rply_a_dat.tlast
+		 m_axis_tvalid => rply_a_tvalid,
+		 m_axis_tready => rply_a_tready,
+		 m_axis_tdata => rply_a_tdata,
+		 m_axis_tlast => rply_a_tlast
 	  );
 
 end impl;

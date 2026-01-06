@@ -866,9 +866,7 @@ re2 <= signed(dsp2_p(26 downto 9));
 rd_err <= acc_fifo_rd_error;
 wr_err <= acc_fifo_wr_error;
 
-main: process(CLK)
-
-	begin
+main: process(all) begin
 		if rising_edge(CLK) then
 			rst_reg <= rst;
 

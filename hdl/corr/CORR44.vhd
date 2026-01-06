@@ -80,31 +80,17 @@ entity CORR44 is
 
 		-- Control interface
 		
-		cmd_dat: in AXIS8_DAT_STRUCT;
-		cmd_rdy: out AXIS8_RDY_STRUCT;
-		rply_dat: out AXIS8_DAT_STRUCT;
-		rply_rdy: in AXIS8_RDY_STRUCT;
-		ctrl_clk : IN std_logic; -- control clock
-		ctrl_rst : in STD_LOGIC
-
-
-		-- -- Correlator clock
-		-- clk: in STD_LOGIC; -- Correlator clock, which operates independently from the antenna processors. Should be higher rate than the input clock to allow for the freame header overheads
-		-- CORR_RESET: in std_logic; -- Reset synchronous to the correlator clock
-
-		-- -- Data Probe output interface (blocking)
-		-- PRB_DAT : out  AXIS8_DAT_STRUCT; -- Output data stream containing the integrated values. Packaged in 8 bit stream for transmission over the Ethernet.
-		-- PRB_RDY : in  AXIS8_RDY_STRUCT; -- Handshaking for the output data stream to control the data flow
-		-- PRB_CLK : in STD_LOGIC; -- Output data stream clock
-
-
-		-- -- Control and reply streams
-		-- CMD_DAT: in AXIS8_DAT_STRUCT;
-		-- CMD_RDY: out AXIS8_RDY_STRUCT;
-		-- RPLY_DAT: out AXIS8_DAT_STRUCT;
-		-- RPLY_RDY: in AXIS8_RDY_STRUCT;
-		-- CTRL_CLK : IN std_logic; -- control clock
-		-- CTRL_RST : in STD_LOGIC
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid: in std_logic;
+		s_axis_bsb_tlast: in std_logic;
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic;
+		bsb_clk: in std_logic; -- control clock
+		bsb_rst: in STD_LOGIC
+	
 		);
 
 end CORR44;
@@ -342,12 +328,16 @@ bsb_regs0: entity work.bsb_regs
 
 	port map (
 		-- Control interface (command and reply stream buses)
-		CTRL_CMD_IN_DAT   => cmd_dat,
-		CTRL_CMD_IN_RDY   => cmd_rdy,
-		CTRL_RPLY_OUT_DAT => rply_dat,
-		CTRL_RPLY_OUT_RDY => rply_rdy,
-		CTRL_CLK          => ctrl_clk,
-		CTRL_RST          => ctrl_rst,
+		s_axis_bsb_tdata => s_axis_bsb_tdata,
+		s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+		s_axis_bsb_tlast => s_axis_bsb_tlast,
+		s_axis_bsb_tready => s_axis_bsb_tready,
+		m_axis_bsb_tdata => m_axis_bsb_tdata,
+		m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+		m_axis_bsb_tlast => m_axis_bsb_tlast,
+		m_axis_bsb_tready => m_axis_bsb_tready,
+		bsb_clk          => bsb_clk,
+		bsb_rst          => bsb_rst,
 
 		CONTROL_BYTES => control_bytes,
 		STATUS_BYTES => status_bytes
@@ -438,9 +428,8 @@ cmac_z_tvalid(NUMBER_OF_CMACS) <= '0';
 cmac_z_tlast(NUMBER_OF_CMACS) <= '0';
 
 
-main: process(in_clk)
-	begin
-		if rising_edge(in_clk) then
+main: process(all) begin
+	if rising_edge(in_clk) then
 			in_rst_all <= in_rst or user_reset;
 			autocorr_only_reg <= autocorr_only;
 			no_accum_reg <= no_accum;
@@ -624,7 +613,7 @@ data_fifo_dout_padded(35 downto 0) <=  data_fifo_dout(35 downto 0); -- pad to 40
 -- FIFO Read Process
 --
 -- We do not use a assymetric FIFO to convert the 36 bits of data into 5 bytes, as the aspect ratio is either 1:4 or 1:8, not 1:5.
-fifo_readout_proc: process(out_clk)
+fifo_readout_proc: process(all) begin
 	variable header_words: slv32_array(0 to 2);
 	variable header_bytes: slv8_array(0 to 11);
 

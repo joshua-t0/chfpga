@@ -142,9 +142,7 @@ crc32_0: entity work.xglink_crc32_32
 crc_out <= not reverse_bytes(reverse_bits_same_dir(crc_out_int)); -- First *byte* to transmit in the MSB, all bits inverted as per Ethernet standard
 
 
-rx_proc : process(rx_clk)
-
-begin
+rx_proc : process(all) begin
 	if rising_edge(rx_clk) then
 
 
@@ -286,9 +284,8 @@ rx_err_ctr <= std_logic_vector(err_ctr_int);
 rx_max_frame <= std_logic_vector(rx_max_frame_int);
 rx_min_frame <= std_logic_vector(rx_min_frame_int);
 -- Gather stats of the RX data stream
-rx_fifo_overflow_proc: process(m_axis_rx_clk)
-	begin
-		if rising_edge(m_axis_rx_clk) then
+rx_fifo_overflow_proc: process(all) begin
+	if rising_edge(m_axis_rx_clk) then
 
 			-- Count RX errors
 			if m_axis_rx_tvalid_int2='1' and m_axis_rx_tlast_int2='1' and m_axis_rx_terror_int2='1' and signed(err_ctr_int)/=-1 then

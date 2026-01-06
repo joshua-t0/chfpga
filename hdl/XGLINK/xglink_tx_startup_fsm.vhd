@@ -208,8 +208,7 @@ begin
   TX_FSM_RESET_DONE <= tx_fsm_reset_done_int;
   GTTXRESET <= gttxreset_i;
 
-  process(STABLE_CLOCK,SOFT_RESET)
-  begin
+  process(all) begin
     if (SOFT_RESET = '1') then
         init_wait_done <= '0';
         init_wait_count <= 0 ;
@@ -225,9 +224,8 @@ begin
     end if;
   end process;
 
- time_1us:process(STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
+ time_1us:process(all) begin
+  if rising_edge(STABLE_CLOCK) then
       if gttxreset_i = '1' then
         count_1us          <= 0;
         count_1us_done     <= '0';
@@ -240,9 +238,8 @@ begin
        end if;
       end if;
   end process;
-  timeouts:process(STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
+  timeouts:process(all) begin
+  if rising_edge(STABLE_CLOCK) then
       -- One common large counter for generating three time-out signals.
       -- Intermediate time-outs are derived from calculated values, based
       -- on the period of the provided clock.
@@ -269,9 +266,8 @@ begin
     end if;
   end process;
 
-  mmcm_lock_wait:process(STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
+  mmcm_lock_wait:process(all) begin
+  if rising_edge(STABLE_CLOCK) then
       if mmcm_lock_i = '0' then
         mmcm_lock_count <= 0;
         mmcm_lock_reclocked   <= '0';
@@ -305,9 +301,8 @@ begin
             data_out        =>  tx_fsm_reset_done_int_s2
          );
 
-  process(TXUSERCLK)
-  begin
-    if rising_edge(TXUSERCLK) then
+  process(all) begin
+  if rising_edge(TXUSERCLK) then
       run_phase_alignment_int_s3   <=  run_phase_alignment_int_s2;
 
       tx_fsm_reset_done_int_s3     <=  tx_fsm_reset_done_int_s2;
@@ -338,9 +333,8 @@ begin
             data_out        =>  mmcm_lock_i
          );
 
-  process(STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
+  process(all) begin
+  if rising_edge(STABLE_CLOCK) then
        txresetdone_s3     <= txresetdone_s2;
 
        time_out_wait_bypass_s3 <=  time_out_wait_bypass_s2;
@@ -367,9 +361,8 @@ begin
          );
 
 
-  process (STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
+  process(all) begin
+  if rising_edge(STABLE_CLOCK) then
      if(SOFT_RESET = '1' ) then
        cplllock_ris_edge <= '0';
      elsif((cplllock_prev = '0') and (cplllock_sync = '1')) then
@@ -382,9 +375,8 @@ begin
     end if;
   end process;
 
-  process (STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
+  process(all) begin
+  if rising_edge(STABLE_CLOCK) then
      if(SOFT_RESET = '1' ) then
        qplllock_ris_edge <= '0';
      elsif((qplllock_prev = '0') and (qplllock_sync = '1')) then
@@ -399,9 +391,8 @@ begin
 
 
 
-  timeout_buffer_bypass:process(TXUSERCLK)
-  begin
-    if rising_edge(TXUSERCLK) then
+  timeout_buffer_bypass:process(all) begin
+  if rising_edge(TXUSERCLK) then
       if run_phase_alignment_int_s3 = '0' then
         wait_bypass_count     <= 0;
         time_out_wait_bypass  <= '0';
@@ -418,9 +409,8 @@ begin
    refclk_lost <= '1' when ((TX_QPLL_USED and QPLLREFCLKLOST='1') or (not TX_QPLL_USED and CPLLREFCLKLOST='1')) else '0';
 
 
-  timeout_max:process(STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
+  timeout_max:process(all) begin
+  if rising_edge(STABLE_CLOCK) then
         if((tx_state = ASSERT_ALL_RESETS) or
           (tx_state = RELEASE_PLL_RESET) or
           (tx_state = RELEASE_MMCM_RESET)) then
@@ -450,9 +440,8 @@ begin
   -- 7) Reset-sequence has successfully run through. Signal this to the
   --    rest of the design by asserting TX_FSM_RESET_DONE.
 
-  reset_fsm:process(STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
+  reset_fsm:process(all) begin
+  if rising_edge(STABLE_CLOCK) then
       if(SOFT_RESET = '1') then
       --if(SOFT_RESET = '1' or (not(tx_state = INIT) and not(tx_state = ASSERT_ALL_RESETS) and refclk_lost = '1')) then
         tx_state                <= INIT;

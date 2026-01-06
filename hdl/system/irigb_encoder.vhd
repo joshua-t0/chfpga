@@ -49,8 +49,7 @@ architecture behav of irigb_encoder is
 begin
 
 	-- Count ticks
-	process(clk_200mhz)
-	begin
+	process(all) begin
 		if rising_edge(clk_200mhz) then
 			if ticks=199999 then
 				ticks <= 0;
@@ -64,8 +63,7 @@ begin
 	end process;
 
 	-- Keep track of time
-	process(clk_200mhz)
-	begin
+	process(all) begin
 		if rising_edge(clk_200mhz) then
 			if tick_strobe='1' then
 				if ms=9 then
@@ -157,8 +155,7 @@ begin
 	end process;
 
 	-- Convert time into an IRIG output signal
-	out_process : process(clk_200mhz)
-	begin
+	out_process : process(all) begin
 		if rising_edge(clk_200mhz) then
 
 			-- Pipeline output

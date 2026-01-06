@@ -36,9 +36,7 @@ end entity crc32_64;
 
 architecture Behavioral of crc32_64 is
 begin
-    crc_proc: process(clk)
-
-    begin
+    crc_proc: process(all) begin
         if rising_edge(clk) then
             if en then
                 crc_out(0) <= crc_out(1) xor crc_out(3) xor crc_out(4) xor crc_out(6) xor crc_out(9) xor crc_out(10) xor crc_out(11) xor crc_out(14) xor crc_out(16) xor crc_out(17) xor crc_out(19) xor crc_out(20) xor crc_out(27) xor crc_out(30) xor din(1) xor din(3) xor din(4) xor din(6) xor din(9) xor din(10) xor din(11) xor din(14) xor din(16) xor din(17) xor din(19) xor din(20) xor din(27) xor din(30) xor din(32) xor din(33) xor din(34) xor din(35) xor din(36) xor din(38) xor din(39) xor din(40) xor din(48) xor din(52) xor din(54) xor din(55) xor din(58);

@@ -133,8 +133,7 @@ begin
     ---________________________________ State machine __________________________
 
     --- State registers
-    process( USER_CLK )
-    begin
+    process(all) begin
         if(USER_CLK'event and USER_CLK = '1') then
             if(SYSTEM_RESET = '1') then
                 begin_r      <=  '1' after DLY;
@@ -177,8 +176,7 @@ begin
 
     ---________________ Counter keep track of sync headers counted _____________
 
-    process( USER_CLK )
-    begin
+    process(all) begin
         if(USER_CLK'event and USER_CLK = '1') then
             if(begin_r = '1') then
                 sync_header_count_i   <=    (others => '0') after DLY;
@@ -192,8 +190,7 @@ begin
 
     ---________________ Counter keep track of invalid sync headers  ____________
 
-    process( USER_CLK )
-    begin
+    process(all) begin
         if(USER_CLK'event and USER_CLK = '1') then
             if(begin_r = '1') then
                sync_header_invalid_count_i   <=  (others => '0') after DLY;
@@ -214,8 +211,7 @@ begin
 
     slip_pulse_i <= next_slip_c and not slip_r;
 
-    process( USER_CLK )
-    begin
+    process(all) begin
         if(USER_CLK'event and USER_CLK = '1') then
             rxgearboxslip_out_i   <=  slip_pulse_i after DLY;
         end if;
@@ -223,8 +219,7 @@ begin
 
     ---_____________ Ouput assignment to indicate block sync complete  _________
 
-    process( USER_CLK )
-    begin
+    process(all) begin
         if(USER_CLK'event and USER_CLK = '1') then
             if(slip_r = '0') then
                 slip_count_i   <=  (others => '0') after DLY;
@@ -239,8 +234,7 @@ begin
 
     ---_____________ Pulse GEARBOXSLIP port to slip the data by 1 bit  _________
 
-    process( USER_CLK )
-    begin
+    process(all) begin
         if(USER_CLK'event and USER_CLK = '1') then
             if((SYSTEM_RESET='1') or (slip_r= '1')) then
                 blocksync_out_i   <=  '0' after DLY;

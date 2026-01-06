@@ -107,7 +107,7 @@ architecture RTL of xxvglink_scrambler is
 begin
 
 
-    process(scrambler, UNSCRAMBLED_DATA_IN)
+    process(all)
         variable   poly_i       :  std_logic_vector(57 downto 0);
         variable   tempData_i   :  std_logic_vector((TX_DATA_WIDTH-1) downto 0);
         variable   xorBit     :  std_logic;
@@ -125,8 +125,7 @@ begin
 
     --________________ Scrambled Data assignment to output port _______________
 
-    process(USER_CLK)
-    begin
+    process(all) begin
         if(USER_CLK'event and USER_CLK = '1') then
             if (SYSTEM_RESET = '1') then
                 scrambler          <= "0101010101010101010101010101010101010101010101010101010101" after DLY;

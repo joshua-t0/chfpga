@@ -47,13 +47,16 @@ entity refclk is
 	);
 	port (
 		-- Control interface
-		
-		ctrl_cmd_in_dat: in AXIS8_DAT_STRUCT; -- Command stream input, signals from master (Data, Valid, Last)
-		ctrl_cmd_in_rdy: out AXIS8_RDY_STRUCT; -- Command stream input, signals to master (Ready)
-		ctrl_rply_out_dat: out AXIS8_DAT_STRUCT; -- Reply stream output, signals to slave (Data, Valid, Last)
-		ctrl_rply_out_rdy: in AXIS8_RDY_STRUCT; -- Reply stream output,  signals from slave (Ready)
-		ctrl_clk: in  std_logic;
-		ctrl_rst: in std_logic;
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid: in std_logic;
+		s_axis_bsb_tlast: in std_logic;
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic;
+		bsb_clk: in std_logic;
+		bsb_rst: in std_logic;
 
 		------------------------------------------------------------------------
 		-- SYNC sequencing signals
@@ -233,12 +236,16 @@ begin
 
 		port map (
 			-- Control interface (command and reply stream buses)
-			ctrl_cmd_in_dat   => ctrl_cmd_in_dat,
-			ctrl_cmd_in_rdy   => ctrl_cmd_in_rdy,
-			ctrl_rply_out_dat => ctrl_rply_out_dat,
-			ctrl_rply_out_rdy => ctrl_rply_out_rdy,
-			ctrl_clk          => ctrl_clk,
-			ctrl_rst          => ctrl_rst,
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
+			bsb_clk          => bsb_clk,
+			bsb_rst          => bsb_rst,
 
 			control_bytes => control_bytes,
 			status_bytes  => status_bytes
@@ -263,8 +270,7 @@ begin
 		-- 10 MHz reference clock generation with encoded SYNC
 		-------------------------------------------------------------------------
 
-		clk10gen_proc: process(clk200, rst)
-		begin
+		clk10gen_proc: process(all) begin
 			if rst = '1' then
 				clk200_counter <= (others => '0');
 				user_sync_dly <= '0';
@@ -313,8 +319,7 @@ begin
 		-- We enable the rcovered_sync signal when a high pulse of the 10 MHz clock is 8 samples or less (<=40% duty cycle).
 		-- Since we detect the high time, the position of the rising edge is not affected by the pulse width modulation.
 		-- Devices that are sensitive to the rising edge (such as PLLs) should therefore not be affected by the scheme.
-		sync_det_proc: process(clk200, rst)
-		begin
+		sync_det_proc: process(all) begin
 			if rst = '1' then
 				refclk_counter <= (others => '0');
 				recovered_sync <= '0';
@@ -383,9 +388,8 @@ begin
 	begin
 
 		-- Pipeline the IDELAY control lines because they may be at the other end of the chip.
-		idelay_pipe_proc: process(ctrl_clk)
-		begin
-			if rising_edge(ctrl_clk) then
+		idelay_pipe_proc: process(all) begin
+			if rising_edge(bsb_clk) then
 				refclk_delay_dly <= refclk_delay(i);
 				refclk_delay_rst_dly <= refclk_delay_rst;
 			end if;
@@ -441,7 +445,7 @@ begin
 				-- Delay control
 				cntvalueout => open, -- 5-bit Counter value going to fabric for monitoring purpose
 				cntvaluein  => refclk_delay_dly, -- 5-bit Counter value from fabric for loadable counter application
-				c           => ctrl_clk, -- 1-bit Clock input (Must be connected for variable mode)
+				c           => bsb_clk, -- 1-bit Clock input (Must be connected for variable mode)
 				inc         => '0', -- 1-bit Increment / Decrement tap delay
 				ce          => '0', -- 1-bit Active high enable increment/decrement function
 				rst         => refclk_delay_rst_dly -- 1-bit Active high, synchronous reset, resets delay chain to IDELAY_VALUE/
@@ -564,8 +568,7 @@ begin
 	                     7 => sync_in(5)
 	                    );
 
-	clksync: process(clk10, rst)
-	begin
+	clksync: process(all) begin
 		-- The reset is asynchonous to make sure it is executed even in the absence of the Reference Clock.
 		if rst = '1' then
 			sync_state <= SYNC_STATE_IDLE;

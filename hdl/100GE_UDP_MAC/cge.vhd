@@ -62,13 +62,16 @@ entity cge is
 		-- init_clk: in std_logic; -- continuous clock
 
 		-- Control and reply streams
-		
-		cmd_dat: in axis8_dat_struct := (TDATA => (others => '0'), TVALID => '0', TLAST => '0');
-		cmd_rdy: out axis8_rdy_struct;
-		rply_dat: out axis8_dat_struct;
-		rply_rdy: in axis8_rdy_struct := (TREADY => '0');
-		ctrl_clk: IN std_logic := '0'; -- control clock
-		ctrl_rst: in std_logic := '0'
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0) := (others => '0');
+		s_axis_bsb_tvalid: in std_logic := '0';
+		s_axis_bsb_tlast: in std_logic := '0';
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic := '0';
+		bsb_clk: in std_logic := '0'; -- control clock
+		bsb_rst: in std_logic := '0'
 
 		-- areset: in std_logic -- asynchronous reset
 	 );
@@ -279,12 +282,16 @@ begin
 			NUMBER_OF_STATUS_BYTES => status_bytes'Length(1) -- Number of bits in the status word.
 		)
 		port map (
-			CTRL_CMD_IN_DAT   => cmd_dat,
-			CTRL_CMD_IN_RDY   => cmd_rdy,
-			CTRL_RPLY_OUT_DAT => rply_dat,
-			CTRL_RPLY_OUT_RDY => rply_rdy,
-			CTRL_CLK          => ctrl_clk,
-			CTRL_RST          => ctrl_rst,
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
+			bsb_clk          => bsb_clk,
+			bsb_rst          => bsb_rst,
 
 			CONTROL_BYTES => control_bytes,
 			STATUS_BYTES => status_bytes,
@@ -427,7 +434,7 @@ begin
 			dest_out => usr_tx_reset_resync
 		);
 
-	fifo_wr_proc: process(clk)
+	fifo_wr_proc: process(all)
 		variable byte: integer;
 	begin
 		if rising_edge(clk) then
@@ -539,7 +546,7 @@ pkt_gen_gen: if IMPLEMENT_PACKET_GENERATOR generate
 	end function compute_ip_checksum;
 
 begin
-	pkt_gen_proc: process(clk)
+	pkt_gen_proc: process(all)
 		variable mac_header: std_logic_vector(14 * 8 - 1 downto 0); -- 14-bytes Ethernet header (excluding preamble)
 		variable ip_header: std_logic_vector(20 * 8 - 1 downto 0); -- 20-bytes IP header
 		variable udp_header: std_logic_vector(8 * 8 - 1 downto 0); -- 8-bytes UDP header
@@ -757,7 +764,7 @@ CMAC_INST: entity work.CMAC_USP
 		gt_ref_clk_n => refclk_n,
 
 		-- input clocks
-		init_clk => ctrl_clk, -- 100 MHz
+		init_clk => bsb_clk, -- 100 MHz
 
 		-- output clocks
 		gt_txusrclk2 => clk_out_int, -- 322 MHz clock output to clock user signals
@@ -823,8 +830,8 @@ CMAC_INST: entity work.CMAC_USP
 		-- stat_tx_vlan => stat_tx_vlan,
 
 		-- DRP interface
-		core_drp_reset => ctrl_rst,
-		drp_clk => ctrl_clk,
+		core_drp_reset => bsb_rst,
+		drp_clk => bsb_clk,
 		drp_addr => drp_addr,
 		drp_di => drp_in,
 		drp_en => drp_en,

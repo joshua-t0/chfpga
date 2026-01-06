@@ -167,8 +167,7 @@ s_axis_tx_tready_int <= to_std_logic(tready='1' or tvalid2='0' or tvalid1='0'); 
 -- We consume data if we are sending the second word, or we are sending the first word of the block and we are the last word of the frame or we expect a second word
 tready <= '1' when tx_ready='1' and (send_data="11" or (send_data="10" and tvalid2='1' and (tlast2='1' or tvalid1='1'))) else '0'; -- We will consume the data word only if it is the last word or if there are two words
 
-tx_proc : process(clk)
-begin
+tx_proc : process(all) begin
 	if rising_edge(clk) then
 
 		-- Mare sure no data is written to FIFO a few clocks after reset

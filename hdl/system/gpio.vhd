@@ -99,13 +99,16 @@ entity gpio is
 	);
 	port (
 		-- Control interface
-
-		ctrl_cmd_in_dat: in AXIS8_DAT_STRUCT; -- Command stream input, signals from master (Data, Valid, Last)
-		ctrl_cmd_in_rdy: out AXIS8_RDY_STRUCT; -- Command stream input, signals to master (Ready)
-		ctrl_rply_out_dat: out AXIS8_DAT_STRUCT; -- Reply stream output, signals to slave (Data, Valid, Last)
-		ctrl_rply_out_rdy: in AXIS8_RDY_STRUCT; -- Reply stream output,  signals from slave (Ready)
-		ctrl_clk: in  std_logic;
-		ctrl_rst: in std_logic;
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid: in std_logic;
+		s_axis_bsb_tlast: in std_logic;
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic;
+		bsb_clk: in std_logic;
+		bsb_rst: in std_logic;
 
 		-- IP Port setting
 
@@ -455,7 +458,7 @@ begin
 	-- |         |     |  1   | pll_sync_pre                | CRS: Pulses the External PLL SYNC line and causes its clocks to resynchronize |
 	-- |         |     |  0   | (unused)                    | |
 	-- |         |  4  | 7:5  | (unused)                    | |
-	-- |         |     | 4:0  | HOST_FRAME_READ_RATE        | Indicates how often the host reads its UDP buffers in order to throttle the Ethernet output data rate. The read period is 2*(2^HOST_FRAME_READ_RATE)*(1/ctrl_clk) where CTRL lk is 125 MHz|
+	-- |         |     | 4:0  | HOST_FRAME_READ_RATE        | Indicates how often the host reads its UDP buffers in order to throttle the Ethernet output data rate. The read period is 2*(2^HOST_FRAME_READ_RATE)*(1/bsb_clk) where CTRL lk is 125 MHz|
 	-- |         |5-12 | 63:0 | BUCK_PHASE                  | Phase of each of the 16 Buck sync lines. There are 16 possible phase values for each line. Bits 3:0 is for phase 0, bits 7:4 for phase 1 etc.|
 	-- |         |  13 | 7:0  | adc_cal_freeze              | RfSoC ADC calibration freeze control (bits 0-7 => ADC 0-7) |
 	-- |         |  14 | 7:0  | adc_clear_or                | RfSoC ADC overrange flag clear (bits 0-7 => ADC 0-7) |
@@ -790,12 +793,16 @@ begin
 		)
 		port map (
 			-- Control interface (command and reply stream buses)
-			ctrl_cmd_in_dat   => ctrl_cmd_in_dat,
-			ctrl_cmd_in_rdy   => ctrl_cmd_in_rdy,
-			ctrl_rply_out_dat => ctrl_rply_out_dat,
-			ctrl_rply_out_rdy => ctrl_rply_out_rdy,
-			ctrl_clk          => ctrl_clk,
-			ctrl_rst          => ctrl_rst,
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
+			bsb_clk          => bsb_clk,
+			bsb_rst          => bsb_rst,
 
 			control_bytes => control_bytes,
 			status_bytes  => status_bytes,
@@ -811,15 +818,14 @@ begin
 	-- ctrl_reset pulse generator
 	-----------------------------
 	-- Generates a long pulse on ctrl_reset_pulse when a low-to-high transition is seen on ctrl_reset_trig.
-	-- Operates on ctrl_clk.
+	-- Operates on bsb_clk.
 	ctrl_reset_blk: block
 		signal ctrl_reset_trig_reg: std_logic := '0';
 		signal ctrl_reset_ctr: unsigned(3 downto 0) := (others => '0');
 	begin
 
-		ctrl_reset_proc: process(ctrl_clk)
-		begin
-			if rising_edge(ctrl_clk) then
+		ctrl_reset_proc: process(all) begin
+			if rising_edge(bsb_clk) then
 				ctrl_reset_trig_reg <= ctrl_reset_trig;
 
 				if signed(ctrl_reset_ctr) = -1 then
@@ -857,7 +863,7 @@ begin
 				wreq => spi_wreq,
 				wack => spi_wack,
 
-				clk   => ctrl_clk,
+				clk   => bsb_clk,
 				reset => '0' -- redundant; cs_n does the same thing
 
 			);
@@ -1051,7 +1057,7 @@ begin
 			reg_wr_value => core_reg_wr_value,
 			reg_rd_value => core_reg_rd_value,
 
-			clk => ctrl_clk -- Clocks both control and register interface
+			clk => bsb_clk -- Clocks both control and register interface
 		);
 
 	-----------------------
@@ -1406,7 +1412,7 @@ begin
 	end process;
 
 	network_setup_proc: process(all) begin
-		if rising_edge(ctrl_clk) then
+		if rising_edge(bsb_clk) then
 			-- Set core_reg_wr_en to conditionally enable writing to the core registers.
 			-- When target_network_config_source="00", core register writes are always allowed.
 			-- When target_network_config_source/="00", core register writes are allowed only if the target FPGA serial number matches the actual FPGA serial number.
@@ -1479,8 +1485,7 @@ begin
 		-- This process implements some basic debouncing so we can read the rotation speed correctly using the general frequency counter
 		--
 		-- There is no RST clause since this is reset as soon as the first chang eof tachymeter value is encountered, which is needed anyways for an accurate frequency count.
-		fanproc: process(clk200)
-		begin
+		fanproc: process(all) begin
 			if rising_edge(clk200) then
 				if fan_tach /= fan_tach_target then
 					fan_tach_ctr <= (others => '0');

@@ -119,7 +119,7 @@ entity shuffle_bin_sel is
 	);
 	port (
 		-- Input interface (non-blocking, i.e. always accept data)
-		
+
 		s_axis_tdata: in slv32_array(0 to NUMBER_OF_INPUTS - 1);
 		s_axis_tvalid: in std_logic_vector(0 to NUMBER_OF_INPUTS - 1);
 		s_axis_tlast: in std_logic_vector(0 to NUMBER_OF_INPUTS - 1);
@@ -128,7 +128,7 @@ entity shuffle_bin_sel is
 		s_axis_global_tlast: in std_logic; -- active when the longest packet is at its last word
 
 		-- Output interface (blocking, i.e. will send data only when the sink is ready)
-		
+
 		m_axis_tdata:  out slv32_array(0 to NUMBER_OF_OUTPUTS - 1);
 		m_axis_tvalid: out std_logic_vector(0 to NUMBER_OF_OUTPUTS - 1);
 		m_axis_tlast:  out std_logic_vector(0 to NUMBER_OF_OUTPUTS - 1);
@@ -141,13 +141,16 @@ entity shuffle_bin_sel is
 		shuffle_flags_mask: in slv32; -- Specify the mask to apply on the packet flags word to trigger the terror line.
 
 		-- Control interface (command and reply stream buses)
-		
-		ctrl_cmd_dat: in AXIS8_DAT_STRUCT;
-		ctrl_cmd_rdy: out AXIS8_RDY_STRUCT;
-		ctrl_rply_dat: out AXIS8_DAT_STRUCT;
-		ctrl_rply_rdy: in AXIS8_RDY_STRUCT;
-		ctrl_clk: in  std_logic;
-		ctrl_rst: in  std_logic
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid: in std_logic;
+		s_axis_bsb_tlast: in std_logic;
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic;
+		bsb_clk: in std_logic;
+		bsb_rst: in std_logic
 	);
 end entity shuffle_bin_sel;
 
@@ -402,7 +405,7 @@ begin
 	-- Memory-Mapped interface instantiation
 	-----------------------------------------------------------------------------------
 	-- Instantiates a memory-mapped interface to the control and status bytes
-	
+
 	bsb_regs0: entity work.bsb_regs
 		generic map (
 			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --
@@ -415,12 +418,16 @@ begin
 
 		port map (
 			-- Control interface (command and reply stream buses)
-			ctrl_cmd_in_dat   => ctrl_cmd_dat,
-			ctrl_cmd_in_rdy   => ctrl_cmd_rdy,
-			ctrl_rply_out_dat => ctrl_rply_dat,
-			ctrl_rply_out_rdy => ctrl_rply_rdy,
-			ctrl_clk          => ctrl_clk,
-			ctrl_rst          => ctrl_rst,
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
+			bsb_clk          => bsb_clk,
+			bsb_rst          => bsb_rst,
 
 			control_bytes => control_bytes,
 			status_bytes  => status_bytes,
@@ -446,7 +453,7 @@ begin
 	-- We need to use a Block RAM (as opposed to distributed RAM) so we can have assymetric aspect ratio
 	mask_ram0: entity work.SHUFFLE_BIN_SEL_MASK_RAM
 		port map (
-			clka   => ctrl_clk,
+			clka   => bsb_clk,
 			wea(0) => mask_ram_ctrl_wr_en,
 			addra  => mask_ram_ctrl_addr,
 			dina   => mask_ram_ctrl_din,
@@ -610,9 +617,8 @@ begin
 					overflow => data_fifo_overflow(i)
 				);
 
-			process(clk)
-			begin
-				if rising_edge(clk) then
+			process(all) begin
+			if rising_edge(clk) then
 					if reset_all_reg = '1' then
 						data_fifo_valid(i) <= '0';
 					elsif data_fifo_rd_en_int(i) = '1' then
@@ -627,7 +633,7 @@ begin
 
 
 	-- Write data to the data and data flags FIFOs according to the bin selection map
-	fifo_wr_proc: process(clk)
+	fifo_wr_proc: process(all)
 
 		variable ix: integer range 0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH - 1;
 		-- variable header_word_array: slv32_array(0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH-1);
@@ -873,7 +879,7 @@ begin
 	flags_fifo_rd_en <= '1' when send_header = '0' and ((is_last_word = '1' and is_last_lane = '1') or end_of_packet = '1') else '0';         -- 15-input LUT, all local!
 
 
-	fifo_rd_proc: process(clk)
+	fifo_rd_proc: process(all)
 
 		variable header_word_array: slv32_array(0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH - 1);
 		variable frame_header: SHUFFLE_FRAME_HEADER_STRUCT;
@@ -881,17 +887,12 @@ begin
 		variable tdata: slv35_array(0 to NUMBER_OF_INPUT_LANES_PER_OUTPUT - 1);
 
 		function or_reduce(a : slv35_array) return slv35 is
-
 			variable ret: slv35 := (others => '0');
-
 		begin
-
 			for i in a'RANGE loop
 			        ret := ret or a(i);
 			end loop;
-
 			return ret;
-
 		end function or_reduce;
 
 	begin

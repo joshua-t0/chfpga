@@ -48,10 +48,6 @@ constant REFCLK_PERIOD : time := 6.4 ns; -- 156.25 MHz
 	signal rst: std_logic := '1';
 	signal tlast_in, tlast_out, tvalid_in, tvalid_out: std_logic;
 	signal tdata_in, tdata_out: std_logic_vector(255 downto 0);
-    signal cmd_dat: axis8_dat_struct := (TDATA=>(others=>'0'), TVALID=>'0', TLAST=>'0');
-    signal cmd_rdy: axis8_rdy_struct;
-    signal rply_dat: axis8_dat_struct;
-    signal rply_rdy: axis8_rdy_struct := (TREADY=>'0');
 
 	constant NUMBER_OF_PACKETS : integer :=500;
 

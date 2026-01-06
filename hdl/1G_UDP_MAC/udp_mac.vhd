@@ -301,9 +301,8 @@ begin
 					);
 
 			-- Clock the received data.
-			rx_data_clocking: process(gmii_rxclk)
-				begin
-					if rising_edge(gmii_rxclk) then
+			rx_data_clocking: process(all) begin
+			if rising_edge(gmii_rxclk) then
 						gmii_rxdv <= phy_rxctrl_rxdv;
 						gmii_rxd <= phy_rxd;
 					end if;

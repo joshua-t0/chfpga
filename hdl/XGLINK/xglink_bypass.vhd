@@ -151,8 +151,7 @@ rx_fifo_overflow <= rx_fifo_overflow_int or not s_axis_rx_tready;
 
 -- Throttle the RX FIFO by skipping 2 reads every 66 clocks  to simulate the
 -- behavior of the GTX transmission which uses a 64/66 bit gearbox.
-bypass_proc: process(clk)
-begin
+bypass_proc: process(all) begin
 	if rising_edge(clk) then
 
 		tx_ctr <= tx_ctr + 1;
@@ -172,9 +171,8 @@ rx_max_frame <= std_logic_vector(rx_max_frame_int);
 rx_min_frame <= std_logic_vector(rx_min_frame_int);
 
 
-rx_fifo_overflow_proc: process(clk)
-	begin
-		if rising_edge(clk) then
+rx_fifo_overflow_proc: process(all) begin
+	if rising_edge(clk) then
 
 			---- Detect FIFO overflows
 			--if rx_fifo_overflow_int='1' or s_axis_rx_tready='0' then

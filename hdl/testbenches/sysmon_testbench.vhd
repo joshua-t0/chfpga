@@ -74,10 +74,14 @@ begin
             )
         PORT MAP(
             -- Control interface
-            CTRL_CMD_IN_DAT => CMD_DAT,
-            CTRL_CMD_IN_RDY => CMD_RDY,
-            CTRL_RPLY_OUT_DAT => RPLY_DAT,
-            CTRL_RPLY_OUT_RDY => RPLY_RDY,
+            s_axis_bsb_tdata => cmd_dat.TDATA,
+            s_axis_bsb_tvalid => cmd_dat.TVALID,
+            s_axis_bsb_tlast => cmd_dat.TLAST,
+            s_axis_bsb_tready => cmd_rdy.TREADY,
+            m_axis_bsb_tdata => rply_dat.TDATA,
+            m_axis_bsb_tvalid => rply_dat.TVALID,
+            m_axis_bsb_tlast => rply_dat.TLAST,
+            m_axis_bsb_tready => rply_rdy.TREADY,
             CTRL_CLK => CTRL_CLK,
             CTRL_RST => ctrl_rst, -- pipelined synchronous reset
     

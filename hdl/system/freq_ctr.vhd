@@ -8,7 +8,7 @@
 -- Project Name:
 -- Target Devices:
 -- Tool versions:
--- Description: Multiport frequency counter. Measures the frequency of one of 'NUMBER_OF_PORTS' clock signal in addition to that of the CLK200 and CTRL_CLK clocks.
+-- Description: Multiport frequency counter. Measures the frequency of a signal.
 --
 -- Dependencies:
 --
@@ -52,19 +52,22 @@ entity freq_ctr is
 	);
 	port (
 		-- Control interface
-		
-		ctrl_cmd_in_dat: in axis8_dat_struct; -- Command stream input, signals from master (Data, Valid, Last)
-		ctrl_cmd_in_rdy: out axis8_rdy_struct; -- Command stream input, signals to master (Ready)
-		ctrl_rply_out_dat: out axis8_dat_struct; -- Reply stream output, signals to slave (Data, Valid, Last)
-		ctrl_rply_out_rdy: in axis8_rdy_struct; -- Reply stream output,  signals from slave (Ready)
-		ctrl_clk: in  std_logic;
-		ctrl_rst: in std_logic;
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid: in std_logic;
+		s_axis_bsb_tlast: in std_logic;
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic;
+		bsb_clk: in std_logic;
+		bsb_rst: in std_logic;
 
 		clk200: in std_logic; -- Reference clock
 		clk_in_div2: in std_logic_vector(0 to NUMBER_OF_CLK_IN_PORTS - 1);
 
 		-- System-level signals
-		
+
 		rst: in std_logic -- synchronous to CLK200
 	);
 end entity freq_ctr;
@@ -142,12 +145,16 @@ begin
 
 		port map (
 			-- Control interface (command and reply stream buses)
-			ctrl_cmd_in_dat   => ctrl_cmd_in_dat,
-			ctrl_cmd_in_rdy   => ctrl_cmd_in_rdy,
-			ctrl_rply_out_dat => ctrl_rply_out_dat,
-			ctrl_rply_out_rdy => ctrl_rply_out_rdy,
-			ctrl_clk          => ctrl_clk,
-			ctrl_rst          => ctrl_rst,
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
+			bsb_clk          => bsb_clk,
+			bsb_rst          => bsb_rst,
 
 			control_bytes => control_bytes,
 			status_bytes  => status_bytes
@@ -206,21 +213,21 @@ begin
 			dest_arst => freq_ctr_start_srcclk
 		);
 
-	-- Control signal from ctrl_clk to clk200
+	-- Control signal from bsb_clk to clk200
 	freq_start_cdc: xpm_cdc_single
 		port map (
-			src_clk  => ctrl_clk, -- optional; required when SRC_INPUT_REG = 1
+			src_clk  => bsb_clk, -- optional; required when SRC_INPUT_REG = 1
 			src_in   => freq_ctr_start,
 			dest_clk => clk200,
 			dest_out => freq_ctr_start_clk200
 		);
 
-	-- control signal from clk200 to ctrl_clk
+	-- control signal from clk200 to bsb_clk
 	freq_rdy_cdc: xpm_cdc_single
 		port map (
 			src_clk  => clk200, -- optional; required when SRC_INPUT_REG = 1
 			src_in   => freq_ctr_rdy,
-			dest_clk => ctrl_clk,
+			dest_clk => bsb_clk,
 			dest_out => freq_ctr_rdy_sync
 		);
 
@@ -231,8 +238,7 @@ begin
 	-- Since gate_en_sync is zero when  freq_cctr_start_sync goes up, we don't have to worry that any part of the counter will start counting anomalously.
 	-- Eventually, the gate_en signal will propagate to gate_en_sync (on the src_clk clk) and count will start.
 	-- If gate_en is held high for time T, gate_en_sync will also be held high for the same time, plus or minus a src_clk cycle, since the synchronizer latency is fixed.
-	src_ctr_proc: process(src_clk, freq_ctr_start_srcclk)
-	begin
+	src_ctr_proc: process(all) begin
 		if freq_ctr_start_srcclk = '0' then -- We need an asynchronous reset to clear the counter even in the absence of the source clock
 			freq_ctr <= (others => '0');
 		elsif rising_edge(src_clk) then
@@ -248,8 +254,7 @@ begin
 	-- gate_period=N will generate a gate_en of N clk200 cycles long.
 	-- freq_ctr_rdy is cleared when freq_ctr_start_clk200=0, and is set when the gate period is complete. freq_ctr will stabilize a few stc_slk later after gate_en has time to propagate through the synchronizer.
 	-- freq_ctr_start_clk200 is resynchronized to clk200 to make sure all the internal registers of the gate counter start at the same time.
-	ref_ctr_proc: process(clk200)
-	begin
+	ref_ctr_proc: process(all) begin
 		if rising_edge(clk200) then
 			-- gate_period_minus_1 <= gate_period - 1; -- register the gate period to isolate the timing from the SLAVE. We substract 2 to have an accurate count given the pipelinning delays.
 

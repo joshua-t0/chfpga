@@ -80,9 +80,8 @@ begin
 -------------------------------------------------------------
 -- Measure the propagation delay of a CASPER block
 -------------------------------------------------------------
-meas_dly: process(clk)
-	begin
-		if rising_edge(clk) then
+meas_dly: process(all) begin
+	if rising_edge(clk) then
 			if rst='1' then
 				measured_delay_ctr <= (others=>'0');
 				wait_for_sync <= '0';
@@ -111,9 +110,8 @@ meas_dly: process(clk)
 -- Implement a delay line with specified delay
 -------------------------------------------------------------
 
-dly_line: process(clk)
-	begin
-		if rising_edge(clk) then
+dly_line: process(all) begin
+	if rising_edge(clk) then
 			if ce='1' then
 				-- precompute the maximum counter value to avoid a "large" combinatorial adder in the counter enable logic.
 				-- We stop the counter in advance to take into account the logic latencies

@@ -213,7 +213,7 @@ begin
 --		               acc_bank1 & std_logic_vector(rd_word_ctr1);
 		ram_wr_addr <= acc_bank5 & std_logic_vector(wr_word_ctr5);
 
-		wr_proc: process(clk)
+		wr_proc: process(all)
 		    variable frame_header: FRAME_HEADER_STRUCT := (PROBE_ID => X"CF", others => (others =>'0'));
 		    --variable prod: integer range 0 to NCMAC; -- counts autocorr products (not NCMAC-1 because last increment?)
 		    variable prod_bytes: slv8_array(0 to BYTES_PER_PRODUCT-1);
@@ -802,9 +802,8 @@ begin
 				RSTP           => '0' -- 1-bit input: Reset input for PREG
 			);
 
-		dsp_proc: process(clk)
-		begin
-			if rising_edge(CLK) then
+		dsp_proc: process(all) begin
+		if rising_edge(CLK) then
 				-------------
 				-- CLOCK 1 - sign-corrected data is clocked into the DSP1 A & B registers, and we register sign and zero flags
 				-------------

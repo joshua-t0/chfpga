@@ -41,8 +41,7 @@ architecture behav of arm_spi is
 
 begin
 
-	shreg_proc : process(clk)
-	begin
+	shreg_proc : process(all) begin
 		if rising_edge(clk) then
 
 			sck_dly <= sck & sck_dly(1 to sck_dly'high-1);
@@ -82,8 +81,7 @@ begin
 		end if;
 	end process;
 
-	state_proc : process(clk)
-	begin
+	state_proc : process(all) begin
 		if rising_edge(clk) then
 
 			rreq <= '0';

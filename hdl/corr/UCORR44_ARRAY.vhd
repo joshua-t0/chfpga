@@ -73,12 +73,16 @@ entity UCORR44_ARRAY is
 
 		-- Control and reply streams
 		
-		s_axis_bsb_dat:  in AXIS8_DAT_STRUCT := (TDATA => X"00", TVALID => '0', TLAST =>'0');
-		s_axis_bsb_rdy:  out AXIS8_RDY_STRUCT := (TREADY => '1');
-		m_axis_bsb_dat: out AXIS8_DAT_STRUCT := (TDATA => X"00", TVALID => '0', TLAST =>'0');
-		m_axis_bsb_rdy: in AXIS8_RDY_STRUCT := (TREADY => '1');
-		ctrl_clk: in std_logic; -- control clock
-		ctrl_rst: in std_logic
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0) := X"00";
+		s_axis_bsb_tvalid: in std_logic := '0';
+		s_axis_bsb_tlast: in std_logic := '0';
+		s_axis_bsb_tready: out std_logic := '1';
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0) := X"00";
+		m_axis_bsb_tvalid: out std_logic := '0';
+		m_axis_bsb_tlast: out std_logic := '0';
+		m_axis_bsb_tready: in std_logic := '1';
+		bsb_clk: in std_logic; -- control clock
+		bsb_rst: in std_logic
 		);
 
 end UCORR44_ARRAY;
@@ -174,12 +178,16 @@ begin
 			control_bytes => control_bytes,
 			status_bytes => status_bytes,
 
-			ctrl_cmd_in_dat=>   s_axis_bsb_dat,
-			ctrl_cmd_in_rdy=>   s_axis_bsb_rdy,
-			ctrl_rply_out_dat=> m_axis_bsb_dat,
-			ctrl_rply_out_rdy=> m_axis_bsb_rdy,
-			ctrl_clk => ctrl_clk,
-			ctrl_rst => ctrl_rst
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
+			bsb_clk => bsb_clk,
+			bsb_rst => bsb_rst
 		);
 
 	-- CONTROL byte 0

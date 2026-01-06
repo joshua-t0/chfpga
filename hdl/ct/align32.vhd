@@ -257,7 +257,7 @@ begin
 	fifo_tfirst_mon  <= fifo_tfirst;
 	fifo_count_mon   <= data_fifo_count;
 
-	out_proc: process(clk)
+	out_proc: process(all)
 	-- variable start_send_var: std_logic;
 	-- variable valid_lane_var: slv(0 to NUMBER_OF_LANES-1);
 	begin
@@ -360,9 +360,8 @@ begin
 
 	mon_gen: if ENABLE_MONITORING_LOGIC generate
 
-		mon_proc: process(clk)
-		begin
-			if rising_edge(clk) then
+		mon_proc: process(all) begin
+		if rising_edge(clk) then
 
 				for i in 0 to NUMBER_OF_LANES - 1 loop
 					if s_axis_tvalid(0) = '1' and s_axis_tfirst(0) = '1' then

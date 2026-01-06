@@ -108,9 +108,6 @@ entity bsb_master is
 		s_axis_data_tlast: in slv(NUMBER_OF_PROBES-1 downto 0);
 		s_axis_data_tready: out slv(NUMBER_OF_PROBES-1 downto 0);
 
-		--prb_dat: in axis8_dat_struct_array(NUMBER_OF_PROBES-1 downto 0);
-		--prb_rdy: out axis8_rdy_struct_array(NUMBER_OF_PROBES-1 downto 0);
-
 		-- System
 		
 		cmd_packet_counter: out std_logic_vector(7 downto 0);
@@ -163,8 +160,7 @@ m_axis_cmd_tlast     <= s_axis_udp_rx_tlast;
 
 
 -- UDP Received packet counter and tfirst flag generator
-rx_proc: process(clk)
-begin
+rx_proc: process(all) begin
 	if rising_edge(clk) then
 		if s_axis_udp_rx_tvalid='1' then
 			s_axis_udp_rx_tfirst <= s_axis_udp_rx_tlast;

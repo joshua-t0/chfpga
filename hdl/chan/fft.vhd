@@ -135,12 +135,16 @@ entity fft is
 
 		-- Control bus (Byte-Serial-Bus protocol)
 
-		ctrl_cmd_in_dat     : in  AXIS8_DAT_STRUCT;
-		ctrl_cmd_in_rdy     : out AXIS8_RDY_STRUCT;
-		ctrl_rply_out_dat   : out AXIS8_DAT_STRUCT;
-		ctrl_rply_out_rdy   : in  AXIS8_RDY_STRUCT;
-		ctrl_clk            : in  std_logic;
-		ctrl_rst            : in  std_logic
+		s_axis_bsb_tdata  : in  std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid : in  std_logic;
+		s_axis_bsb_tlast  : in  std_logic;
+		s_axis_bsb_tready : out std_logic;
+		m_axis_bsb_tdata  : out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid : out std_logic;
+		m_axis_bsb_tlast  : out std_logic;
+		m_axis_bsb_tready : in  std_logic;
+		bsb_clk           : in  std_logic;
+		bsb_rst           : in  std_logic
 		);
 end fft;
 
@@ -308,12 +312,16 @@ bsb_regs0: entity work.bsb_regs
 
 	PORT MAP(
 		-- Control interface (command and reply stream buses)
-		ctrl_cmd_in_dat   => ctrl_cmd_in_dat,
-		ctrl_cmd_in_rdy   => ctrl_cmd_in_rdy,
-		ctrl_rply_out_dat => ctrl_rply_out_dat,
-		ctrl_rply_out_rdy => ctrl_rply_out_rdy,
-		ctrl_clk          => ctrl_clk,
-		ctrl_rst          => ctrl_rst,
+		s_axis_bsb_tdata => s_axis_bsb_tdata,
+		s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+		s_axis_bsb_tlast => s_axis_bsb_tlast,
+		s_axis_bsb_tready => s_axis_bsb_tready,
+		m_axis_bsb_tdata => m_axis_bsb_tdata,
+		m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+		m_axis_bsb_tlast => m_axis_bsb_tlast,
+		m_axis_bsb_tready => m_axis_bsb_tready,
+		bsb_clk => bsb_clk,
+		bsb_rst => bsb_rst,
 
 		control_bytes     => control_bytes,
 		status_bytes      => status_bytes

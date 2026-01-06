@@ -69,8 +69,7 @@ begin
 
 	nodummy: if DUMMY = FALSE generate
 
-		blinker: process(clk, kick) is
-		begin
+		blinker: process(all) begin
 			if kick = '1' then
 				kick_pulse <= '1';
 			elsif rising_edge(clk) then

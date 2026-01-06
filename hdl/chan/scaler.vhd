@@ -394,14 +394,16 @@ bsb_regs0: entity work.bsb_regs
         )
     PORT MAP(
         -- Control interface (command and reply stream buses)
-        ctrl_cmd_in_dat => (TDATA => s_axis_bsb_tdata, TVALID => s_axis_bsb_tvalid, TLAST => s_axis_bsb_tlast),
-        ctrl_cmd_in_rdy.TREADY => s_axis_bsb_tready,
-        ctrl_rply_out_dat.TDATA => m_axis_bsb_tdata,
-        ctrl_rply_out_dat.TVALID => m_axis_bsb_tvalid,
-        ctrl_rply_out_dat.TLAST => m_axis_bsb_tlast,
-        ctrl_rply_out_rdy => (TREADY => m_axis_bsb_tready),
-        ctrl_clk => bsb_clk,
-        ctrl_rst => bsb_rst,
+        s_axis_bsb_tdata => s_axis_bsb_tdata,
+        s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+        s_axis_bsb_tlast => s_axis_bsb_tlast,
+        s_axis_bsb_tready => s_axis_bsb_tready,
+        m_axis_bsb_tdata => m_axis_bsb_tdata,
+        m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+        m_axis_bsb_tlast => m_axis_bsb_tlast,
+        m_axis_bsb_tready => m_axis_bsb_tready,
+        bsb_clk => bsb_clk,
+        bsb_rst => bsb_rst,
 
         control_bytes => control_bytes,
         status_bytes => status_bytes,

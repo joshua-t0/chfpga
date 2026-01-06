@@ -56,18 +56,24 @@ entity prober is
 
         -- Output Interface
 
-        OUT_DAT     : out AXIS8_DAT_STRUCT;
-        OUT_RDY     : in  AXIS8_RDY_STRUCT;
+        out_tdata   : out std_logic_vector(7 downto 0);
+        out_tvalid  : out std_logic;
+        out_tlast   : out std_logic;
+        out_tready  : in  std_logic;
         OUT_CLK     : in  std_logic;
 
         -- Control Interface (command and reply stream buses)
 
-        ctrl_cmd_in_dat     : in  AXIS8_DAT_STRUCT;
-        ctrl_cmd_in_rdy     : out AXIS8_RDY_STRUCT;
-        ctrl_rply_out_dat   : out AXIS8_DAT_STRUCT;
-        ctrl_rply_out_rdy   : in  AXIS8_RDY_STRUCT;
-        ctrl_clk            : in  std_logic;
-        ctrl_rst            : in  std_logic
+        s_axis_bsb_tdata  : in  std_logic_vector(7 downto 0);
+        s_axis_bsb_tvalid : in  std_logic;
+        s_axis_bsb_tlast  : in  std_logic;
+        s_axis_bsb_tready : out std_logic;
+        m_axis_bsb_tdata  : out std_logic_vector(7 downto 0);
+        m_axis_bsb_tvalid : out std_logic;
+        m_axis_bsb_tlast  : out std_logic;
+        m_axis_bsb_tready : in  std_logic;
+        bsb_clk           : in  std_logic;
+        bsb_rst           : in  std_logic
     );
 
 end prober;
@@ -108,13 +114,6 @@ architecture impl of PROBER is
     signal data_fifo_overflow_sticky: std_logic;
     signal data_fifo_din        : std_logic_vector(35 downto 0) := (others => '0'); -- initialization for nice simulations
     signal data_fifo_dout       : std_logic_vector(35 downto 0);
-
-    -- global signals
-    --signal FIFO_RESET_ALL: std_logic;
-
-    --signal DATA_FIFO_OUT_DAT: AXIS8_DAT_STRUCT;
-    --signal DATA_FIFO_OUT_RDY: AXIS8_RDY_STRUCT;
-
 
     -- Control and status bytes
 
@@ -236,13 +235,16 @@ bsb_regs0: entity work.bsb_regs
         )
     PORT MAP(
         -- Control interface (command and reply stream buses)
-
-        ctrl_cmd_in_dat   => ctrl_cmd_in_dat,
-        ctrl_cmd_in_rdy   => ctrl_cmd_in_rdy,
-        ctrl_rply_out_dat => ctrl_rply_out_dat,
-        ctrl_rply_out_rdy => ctrl_rply_out_rdy,
-        ctrl_clk          => ctrl_clk,
-        ctrl_rst          => ctrl_rst,
+        s_axis_bsb_tdata => s_axis_bsb_tdata,
+        s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+        s_axis_bsb_tlast => s_axis_bsb_tlast,
+        s_axis_bsb_tready => s_axis_bsb_tready,
+        m_axis_bsb_tdata => m_axis_bsb_tdata,
+        m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+        m_axis_bsb_tlast => m_axis_bsb_tlast,
+        m_axis_bsb_tready => m_axis_bsb_tready,
+        bsb_clk => bsb_clk,
+        bsb_rst => bsb_rst,
 
         control_bytes => control_bytes,
         status_bytes  => status_bytes
@@ -517,7 +519,7 @@ begin
         port map (src_clk => '0', src_in => readout_req, dest_clk => out_clk, dest_out => readout_req_resync);
 
     -- Determine when we can write new data on the output bus
-    dest_ready <= OUT_RDY.TREADY or not out_dat.TVALID; -- the output is ready for a new byte if there is currently no valid byte or if the destination is accepting current one.
+    dest_ready <= out_tready or not out_tvalid; -- the output is ready for a new byte if there is currently no valid byte or if the destination is accepting current one.
 
     -- Fecth the next data word when when we are in the SEND_DATA phase, the destination can receive the data, and we just sent the last byte of the word.
     data_fifo_rd_en <= to_std_logic(send_state=SEND_DATA and dest_ready='1' and byte_ctr(1 downto 0) = "11");
@@ -539,9 +541,9 @@ begin
     -- Muxing the data words into bytes allows the use of embedded FIFO, which uses much less LUTs and REGs than a assymetric BRAM with external FIFO logic.
     --
     -- Implementation Note:
-    --    - The FIFO readout signals are generated combinatorially from the external OUT_RDY.TREADY signal and additional locally registered signals.
-    --    - There is a combinatorial propagation path from OUT_RDY.TREADY through the logic below and through the FIFO_RD_EN logic.
-    --    - This path is more prone to cause timing problems. registering  OUT_RDY.TREADY would have required to implement a 1-byte FIFO to deal with the latency.
+    --    - The FIFO readout signals are generated combinatorially from the external out_tready signal and additional locally registered signals.
+    --    - There is a combinatorial propagation path from out_tready through the logic below and through the FIFO_RD_EN logic.
+    --    - This path is more prone to cause timing problems. registering  out_tready would have required to implement a 1-byte FIFO to deal with the latency.
     --
     read_proc: process(all)
         variable byte: integer;
@@ -557,7 +559,7 @@ begin
             -- synchronous reset is at the bottom of this process
 
             -- Clear the TREADY if the data is read by the destination. This will be overriden below if a new byte is sent at the same time
-            out_dat.TVALID <= '0' when OUT_RDY.TREADY;
+            out_tvalid <= '0' when out_tready;
 
 
             -- Implementing the send delay is tricky, as we do not want to
@@ -607,9 +609,9 @@ begin
                     byte := to_integer(byte_ctr);
 
                     if dest_ready then -- if we can send a new byte
-                        out_dat.TDATA <= frame_header_bytes(byte);
-                        out_dat.TVALID <= '1';
-                        out_dat.TLAST <= '0';
+                        out_tdata <= frame_header_bytes(byte);
+                        out_tvalid <= '1';
+                        out_tlast <= '0';
                         byte_ctr <= byte_ctr + 1;
                         if byte_ctr = frame_header_bytes'LENGTH-1 then -- if this is the last header byte
                             send_state <= SEND_DATA; -- start sending the data
@@ -622,12 +624,12 @@ begin
                     if data_fifo_valid then -- if there is burst data
                         if dest_ready then
                             byte := 3 - to_integer(byte_ctr(1 downto 0)); -- Index bytes MSB first
-                            out_dat.TDATA <= data_fifo_dout(8*byte+7 downto 8*byte);
-                            out_dat.TVALID <= '1';
-                            out_dat.TLAST <= '0';
+                            out_tdata <= data_fifo_dout(8*byte+7 downto 8*byte);
+                            out_tvalid <= '1';
+                            out_tlast <= '0';
                             byte_ctr <= byte_ctr + 1;
                             if byte_ctr(1 downto 0) = "11" then -- last byte of word
-                                out_dat.TLAST <= data_fifo_dout(32);
+                                out_tlast <= data_fifo_dout(32);
                                 byte_ctr <= (others => '0');
                                 if data_fifo_dout(32) then -- if this is the last data byte, send next packet
                                     burst_ctr <= burst_ctr + 1;
@@ -642,7 +644,7 @@ begin
             end case;
 
             if rd_rst then
-                out_dat.TVALID <= '0'; -- needed
+                out_tvalid <= '0'; -- needed
                 send_state <= SEND_STDBY; -- needed to make sure we start with header transmission
                 readout_ack <= '0';
             end if; -- reset

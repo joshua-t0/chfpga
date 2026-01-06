@@ -106,13 +106,15 @@ funcgen0: entity work.funcgen
 		rst => rst,
 
 		-- CTRL_CMD_DAT => (TDATA=> cmd_tdata, TVALID => cmd_tvalid, TLAST => cmd_tlast),
-		CTRL_CMD_IN_DAT.TDATA => cmd_tdata,
-		CTRL_CMD_IN_DAT.TVALID => cmd_tvalid,
-		CTRL_CMD_IN_DAT.TLAST => cmd_tlast,
-		CTRL_CMD_IN_RDY.TREADY =>cmd_tready,
+		s_axis_bsb_tdata => cmd_tdata,
+		s_axis_bsb_tvalid => cmd_tvalid,
+		s_axis_bsb_tlast => cmd_tlast,
+		s_axis_bsb_tready => cmd_tready,
 
-		CTRL_RPLY_OUT_DAT => open,
-		CTRL_RPLY_OUT_RDY => (TREADY => '1'),
+		m_axis_bsb_tdata => open,
+		m_axis_bsb_tvalid => open,
+		m_axis_bsb_tlast => open,
+		m_axis_bsb_tready => '1',
 
 		CTRL_CLK => clk125,
 		CTRL_RST => ctrl_rst

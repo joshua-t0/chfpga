@@ -225,8 +225,7 @@ begin
   RX_FSM_RESET_DONE <= rx_fsm_reset_done_int;
   GTRXRESET <= gtrxreset_i;
   MMCM_RESET <= mmcm_reset_i;
-  process(STABLE_CLOCK,SOFT_RESET)
-  begin
+  process(all) begin
     if (SOFT_RESET = '1') then
         init_wait_done <= '0';
         init_wait_count <= 0 ;
@@ -248,9 +247,8 @@ begin
   end generate;
 
   adapt_wait_hw:if(EXAMPLE_SIMULATION = 0) generate
-  process(STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
+  process(all) begin
+  if rising_edge(STABLE_CLOCK) then
      if(adapt_count_reset = '1') then
         adapt_count    <= 0;
         time_out_adapt <= '0';
@@ -363,9 +361,8 @@ begin
             data_out        =>  rx_fsm_reset_done_int_s2
          );
 
-  process(RXUSERCLK)
-  begin
-    if rising_edge(RXUSERCLK) then
+  process(all) begin
+  if rising_edge(RXUSERCLK) then
       run_phase_alignment_int_s3   <=  run_phase_alignment_int_s2;
 
       rx_fsm_reset_done_int_s3     <=  rx_fsm_reset_done_int_s2;
@@ -404,9 +401,8 @@ begin
             data_out        =>  data_valid_sync
          );
 
-  process(STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
+  process(all) begin
+  if rising_edge(STABLE_CLOCK) then
        rxresetdone_s3     <= rxresetdone_s2;
 
        time_out_wait_bypass_s3 <=  time_out_wait_bypass_s2;
@@ -434,9 +430,8 @@ begin
 
 
 
-  process (STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
+  process(all) begin
+  if rising_edge(STABLE_CLOCK) then
      if(SOFT_RESET = '1' ) then
        cplllock_ris_edge <= '0';
      elsif((cplllock_prev = '0') and (cplllock_sync = '1')) then
@@ -449,9 +444,8 @@ begin
     end if;
   end process;
 
-  process (STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
+  process(all) begin
+  if rising_edge(STABLE_CLOCK) then
      if(SOFT_RESET = '1' ) then
        qplllock_ris_edge <= '0';
      elsif((qplllock_prev = '0') and (qplllock_sync = '1')) then
@@ -465,9 +459,8 @@ begin
   end process;
 
 
-  timeout_buffer_bypass:process(RXUSERCLK)
-  begin
-    if rising_edge(RXUSERCLK) then
+  timeout_buffer_bypass:process(all) begin
+  if rising_edge(RXUSERCLK) then
       if run_phase_alignment_int_s3 = '0' then
         wait_bypass_count     <= 0;
         time_out_wait_bypass  <= '0';
@@ -485,9 +478,8 @@ begin
 
 
 
-  timeout_max:process(STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
+  timeout_max:process(all) begin
+  if rising_edge(STABLE_CLOCK) then
         if((rx_state = ASSERT_ALL_RESETS) or
           (rx_state = RELEASE_MMCM_RESET)) then
             wait_time_cnt <= WAIT_TIME_MAX;
@@ -516,9 +508,8 @@ begin
   -- 7) Reset-sequence has successfully run through. Signal this to the
   --    rest of the design by asserting RX_FSM_RESET_DONE.
 
-  reset_fsm:process(STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
+  reset_fsm:process(all) begin
+  if rising_edge(STABLE_CLOCK) then
       if (SOFT_RESET = '1' ) then
       --if (SOFT_RESET = '1' or (not(rx_state = INIT) and not(rx_state = ASSERT_ALL_RESETS) and refclk_lost = '1')) then
         rx_state                <= INIT;

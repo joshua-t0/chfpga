@@ -441,7 +441,7 @@ rx_data_fifo_rd_en <= '1' when rd_rst = '0' and rx_frame_fifo_valid = '1' and (r
 -- Combine the last 5 bytes and the curent byte to generate a 48-bit number (enough to fit a MAC address)
 rx_data_wide <= (rx_data_dly4 & rx_data_dly3 & rx_data_dly2 & rx_data_dly1 & rx_data_dly & rx_data);
 
-rx_back_end: process (gmii_rxclk)
+rx_back_end: process(all)
 	variable is_broadcast_var: std_logic;
 begin
 	if rising_edge(gmii_rxclk) then

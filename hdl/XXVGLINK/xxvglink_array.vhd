@@ -120,13 +120,16 @@ entity xxvglink_array is
 		resetdone: out std_logic; -- synchronous to axis_clk
 
 		-- Control and reply streams
-		
-		CMD_DAT: in AXIS8_DAT_STRUCT := (TDATA=> (others=>'0'), TVALID=>'0', TLAST=>'0');
-		CMD_RDY: out AXIS8_RDY_STRUCT;
-		RPLY_DAT: out AXIS8_DAT_STRUCT;
-		RPLY_RDY: in AXIS8_RDY_STRUCT := (TREADY => '1');
-		CTRL_CLK : IN std_logic := '0'; -- control clock
-		CTRL_RST : in std_logic := '0'
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid: in std_logic;
+		s_axis_bsb_tlast: in std_logic;
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic;
+		bsb_clk: in std_logic := '0'; -- control clock
+		bsb_rst: in std_logic := '0'
 	);
 end;
 
@@ -471,18 +474,22 @@ begin
 			rx_clk          => xglink_rx_clk,
 			rx_resetdone    => xglink_rx_resetdone,
 
-			stable_clk => ctrl_clk,
+			stable_clk => bsb_clk,
 
 			control_bytes => control_bytes,
 			status_bytes => status_bytes,
 
 			-- Control and reply streams
-			CMD_DAT => CMD_DAT,
-			CMD_RDY => CMD_RDY,
-			RPLY_DAT => RPLY_DAT,
-			RPLY_RDY=> RPLY_RDY,
-			CTRL_CLK => CTRL_CLK,
-			CTRL_RST => CTRL_RST,
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
+			bsb_clk => bsb_clk,
+			bsb_rst => bsb_rst,
 
 			areset=> areset -- asynchronous reset
 		 );
@@ -522,7 +529,7 @@ begin
         cap_cdc0: xpm_cdc_single
             generic map (SRC_INPUT_REG => 0)
             port map (
-                src_clk => ctrl_clk,
+                src_clk => bsb_clk,
                 src_in => rx_capture_en,
                 dest_clk => rx_clk,
                 dest_out => rx_capture_en_reg
@@ -532,7 +539,7 @@ begin
         en_cdc0: xpm_cdc_single
             generic map (SRC_INPUT_REG => 0)
             port map (
-                src_clk => ctrl_clk,
+                src_clk => bsb_clk,
                 src_in => lane_mon_en,
                 dest_clk => rx_clk,
                 dest_out => lane_mon_en_resync
@@ -628,7 +635,7 @@ begin
 	        cap_cdc0: xpm_cdc_single
 	            generic map (SRC_INPUT_REG => 0)
 	            port map (
-	                src_clk => ctrl_clk,
+	                src_clk => bsb_clk,
 	                src_in => rx_capture_en,
 	                dest_clk => tx_clk,
 	                dest_out => capture_en_reg
@@ -649,7 +656,7 @@ begin
         en_cdc0: xpm_cdc_single
             generic map (SRC_INPUT_REG => 0)
             port map (
-                src_clk => ctrl_clk,
+                src_clk => bsb_clk,
                 src_in => lane_mon_en,
                 dest_clk => axis_clk,
                 dest_out => lane_mon_en_resync
