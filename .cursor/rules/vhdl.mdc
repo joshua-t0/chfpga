@@ -1,0 +1,17 @@
+---
+alwaysApply: true
+---
+
+- Output port maps cannot use aggregates in VHDL. Use dot notation instead.
+- Don't use record aggregates with single item. Use dot notation instead.
+- AXI-Streaming port names should be m_axis_*/s_axis_*, or m_axis_<function_*>_*/s_axis_<function_*> if there is ambiguity between ports.
+- AXI-Streaming signals in modules should be named <function>_*. If a bidirectional bus pair is used (like BSB interface), signals can be prefixed m2s_<function>_* or s2m_<function>_* to distinguish the signal direction.
+
+- Use VHDL2008 features:
+    - Use implicit std_logic to bool conversion: replace equality tests x='1' by x in "if" and "when"  statements in single term test. Multi-term tests could also be simplified if all the elements are equality tests with std_logic. Don't mix std_logic and booleans in an expression, e.g. "(a='1' and b='0') and c>1" cannot be replaced by "(a and b) and c>1" because "(a and b)" is std_logic and "c>1" is boolean.   
+    - All processes should now use process(all) (without sensitivity list)
+    - Eliminate _int_ variable that are directly assigned to ports combinatorially. VHDL 2008 allows reading output ports.
+    - Generics are allowed to refer to generics previously defined in the same entity.
+    - Sequential if statements with only one line should be  replaced with an equivalent  sequential "when" statement. Do not use an else statement if the value does not change.
+
+Have only one "if rising_edge(...)" per process. Vivado simulator crashes otherwise.
