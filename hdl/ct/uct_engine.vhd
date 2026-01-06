@@ -98,13 +98,16 @@ entity uct_engine is
 		--    align_pulse: out std_logic;
 
 		-- Control interface (command and reply stream buses)
-		
-		bsb_cmd_dat: in AXIS8_DAT_STRUCT  := (TDATA => X"00", TVALID => '0', TLAST => '0');
-		bsb_cmd_rdy: out AXIS8_RDY_STRUCT := (TREADY=> '1');
-		bsb_rply_dat: out AXIS8_DAT_STRUCT;
-		bsb_rply_rdy: in AXIS8_RDY_STRUCT := (TREADY => '1');
-		bsb_clk: in  std_logic;
-		bsb_rst: in  std_logic
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0) := X"00";
+		s_axis_bsb_tvalid: in std_logic := '0';
+		s_axis_bsb_tlast: in std_logic := '0';
+		s_axis_bsb_tready: out std_logic := '1';
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic := '1';
+		bsb_clk: in std_logic;
+		bsb_rst: in std_logic
 	);
 end entity uct_engine;
 
@@ -132,10 +135,14 @@ architecture impl of uct_engine is
 	--  signal rst_reg: std_logic;
 
 	-- Routed BSB buses for each device
-	signal router_cmd_dat: AXIS8_DAT_STRUCT_ARRAY(BSB_ROUTER_PORTS - 1 downto 0);
-	signal router_cmd_rdy: AXIS8_RDY_STRUCT_ARRAY(BSB_ROUTER_PORTS - 1 downto 0) := (others => (TREADY => '1'));
-	signal router_rply_dat: AXIS8_DAT_STRUCT_ARRAY(BSB_ROUTER_PORTS - 1 downto 0);
-	signal router_rply_rdy: AXIS8_RDY_STRUCT_ARRAY(BSB_ROUTER_PORTS - 1 downto 0);
+	signal uct_router_bsb_cmd_tdata: slv8_array(0 to BSB_ROUTER_PORTS - 1);
+	signal uct_router_bsb_cmd_tvalid: std_logic_vector(0 to BSB_ROUTER_PORTS - 1);
+	signal uct_router_bsb_cmd_tlast: std_logic_vector(0 to BSB_ROUTER_PORTS - 1);
+	signal uct_router_bsb_cmd_tready: std_logic_vector(0 to BSB_ROUTER_PORTS - 1) := (others => '1');
+	signal uct_router_bsb_rply_tdata: slv8_array(0 to BSB_ROUTER_PORTS - 1);
+	signal uct_router_bsb_rply_tvalid: std_logic_vector(0 to BSB_ROUTER_PORTS - 1);
+	signal uct_router_bsb_rply_tlast: std_logic_vector(0 to BSB_ROUTER_PORTS - 1);
+	signal uct_router_bsb_rply_tready: std_logic_vector(0 to BSB_ROUTER_PORTS - 1);
 
 	signal bsb_rst_reg: std_logic;
 	signal cb1_rst: std_logic;
@@ -159,17 +166,27 @@ begin
 			ADDRESS_MASK    => "---11--------------" -- 4 ports max (CT1, CT2, CT3, XXVGLINK),  14-bit internal address range per port
 		)
 		port map (
-			-- Master control interface
-			cmd_in_dat   => bsb_cmd_dat,
-			cmd_in_rdy   => bsb_cmd_rdy,
-			rply_out_dat => bsb_rply_dat,
-			rply_out_rdy => bsb_rply_rdy,
+			-- Upstream BSB interface
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
 
+			-- Downstream BSB interface
+			m_axis_routed_bsb_tdata => uct_router_bsb_cmd_tdata,
+			m_axis_routed_bsb_tvalid => uct_router_bsb_cmd_tvalid,
+			m_axis_routed_bsb_tlast => uct_router_bsb_cmd_tlast,
+			m_axis_routed_bsb_tready => uct_router_bsb_cmd_tready,
+			s_axis_routed_bsb_tdata => uct_router_bsb_rply_tdata,
+			s_axis_routed_bsb_tvalid => uct_router_bsb_rply_tvalid,
+			s_axis_routed_bsb_tlast => uct_router_bsb_rply_tlast,
+			s_axis_routed_bsb_tready => uct_router_bsb_rply_tready,
 
-			cmd_out_dat => router_cmd_dat,
-			cmd_out_rdy => router_cmd_rdy,
-			rply_in_dat => router_rply_dat,
-			rply_in_rdy => router_rply_rdy,
+			cmd_overflow => open,
 
 			clk => bsb_clk,
 			rst => bsb_rst_reg
@@ -234,13 +251,17 @@ begin
 			)
 
 			port map (
-				ctrl_cmd_in_dat   => router_cmd_dat(BSB_CT1_BASE_PORT),
-				ctrl_cmd_in_rdy   => router_cmd_rdy(BSB_CT1_BASE_PORT),
-				ctrl_rply_out_dat => router_rply_dat(BSB_CT1_BASE_PORT),
-				ctrl_rply_out_rdy => router_rply_rdy(BSB_CT1_BASE_PORT),
+				s_axis_bsb_tdata => uct_router_bsb_cmd_tdata(BSB_CT1_BASE_PORT),
+				s_axis_bsb_tvalid => uct_router_bsb_cmd_tvalid(BSB_CT1_BASE_PORT),
+				s_axis_bsb_tlast => uct_router_bsb_cmd_tlast(BSB_CT1_BASE_PORT),
+				s_axis_bsb_tready => uct_router_bsb_cmd_tready(BSB_CT1_BASE_PORT),
+				m_axis_bsb_tdata => uct_router_bsb_rply_tdata(BSB_CT1_BASE_PORT),
+				m_axis_bsb_tvalid => uct_router_bsb_rply_tvalid(BSB_CT1_BASE_PORT),
+				m_axis_bsb_tlast => uct_router_bsb_rply_tlast(BSB_CT1_BASE_PORT),
+				m_axis_bsb_tready => uct_router_bsb_rply_tready(BSB_CT1_BASE_PORT),
 
-				ctrl_clk => bsb_clk,
-				ctrl_rst => bsb_rst_reg,
+				bsb_clk => bsb_clk,
+				bsb_rst => bsb_rst_reg,
 
 				control_bytes => control_bytes,
 				status_bytes  => status_bytes
@@ -430,13 +451,17 @@ begin
 				)
 
 				port map (
-					ctrl_cmd_in_dat   => router_cmd_dat(BSB_CT2_BASE_PORT),
-					ctrl_cmd_in_rdy   => router_cmd_rdy(BSB_CT2_BASE_PORT),
-					ctrl_rply_out_dat => router_rply_dat(BSB_CT2_BASE_PORT),
-					ctrl_rply_out_rdy => router_rply_rdy(BSB_CT2_BASE_PORT),
+					s_axis_bsb_tdata => uct_router_bsb_cmd_tdata(BSB_CT2_BASE_PORT),
+					s_axis_bsb_tvalid => uct_router_bsb_cmd_tvalid(BSB_CT2_BASE_PORT),
+					s_axis_bsb_tlast => uct_router_bsb_cmd_tlast(BSB_CT2_BASE_PORT),
+					s_axis_bsb_tready => uct_router_bsb_cmd_tready(BSB_CT2_BASE_PORT),
+					m_axis_bsb_tdata => uct_router_bsb_rply_tdata(BSB_CT2_BASE_PORT),
+					m_axis_bsb_tvalid => uct_router_bsb_rply_tvalid(BSB_CT2_BASE_PORT),
+					m_axis_bsb_tlast => uct_router_bsb_rply_tlast(BSB_CT2_BASE_PORT),
+					m_axis_bsb_tready => uct_router_bsb_rply_tready(BSB_CT2_BASE_PORT),
 
-					ctrl_clk => bsb_clk,
-					ctrl_rst => bsb_rst_reg,
+					bsb_clk => bsb_clk,
+					bsb_rst => bsb_rst_reg,
 
 					control_bytes => ct2_control_bytes,
 					status_bytes  => ct2_status_bytes
@@ -558,12 +583,16 @@ begin
 					txclk_div2  => txclk_div2, -- divided-by-two version of the TX word clock, which is also clk_out
 
 					-- Control and reply streams
-					cmd_dat  => router_cmd_dat(BSB_BP_SHUFFLE_BASE_PORT),
-					cmd_rdy  => router_cmd_rdy(BSB_BP_SHUFFLE_BASE_PORT),
-					rply_dat => router_rply_dat(BSB_BP_SHUFFLE_BASE_PORT),
-					rply_rdy => router_rply_rdy(BSB_BP_SHUFFLE_BASE_PORT),
-					ctrl_clk => bsb_clk,
-					ctrl_rst => bsb_rst,
+					s_axis_bsb_tdata => uct_router_bsb_cmd_tdata(BSB_BP_SHUFFLE_BASE_PORT),
+					s_axis_bsb_tvalid => uct_router_bsb_cmd_tvalid(BSB_BP_SHUFFLE_BASE_PORT),
+					s_axis_bsb_tlast => uct_router_bsb_cmd_tlast(BSB_BP_SHUFFLE_BASE_PORT),
+					s_axis_bsb_tready => uct_router_bsb_cmd_tready(BSB_BP_SHUFFLE_BASE_PORT),
+					m_axis_bsb_tdata => uct_router_bsb_rply_tdata(BSB_BP_SHUFFLE_BASE_PORT),
+					m_axis_bsb_tvalid => uct_router_bsb_rply_tvalid(BSB_BP_SHUFFLE_BASE_PORT),
+					m_axis_bsb_tlast => uct_router_bsb_rply_tlast(BSB_BP_SHUFFLE_BASE_PORT),
+					m_axis_bsb_tready => uct_router_bsb_rply_tready(BSB_BP_SHUFFLE_BASE_PORT),
+					bsb_clk => bsb_clk,
+					bsb_rst => bsb_rst,
 					-- areset   => bp_shuffle_reset_reg
 					areset => arst -- stops clk_out: must not be sync'ed to clk_out.
 				);
@@ -722,13 +751,17 @@ begin
 					)
 
 					port map (
-						ctrl_cmd_in_dat   => router_cmd_dat(BSB_CT3_BASE_PORT),
-						ctrl_cmd_in_rdy   => router_cmd_rdy(BSB_CT3_BASE_PORT),
-						ctrl_rply_out_dat => router_rply_dat(BSB_CT3_BASE_PORT),
-						ctrl_rply_out_rdy => router_rply_rdy(BSB_CT3_BASE_PORT),
+						s_axis_bsb_tdata => uct_router_bsb_cmd_tdata(BSB_CT3_BASE_PORT),
+						s_axis_bsb_tvalid => uct_router_bsb_cmd_tvalid(BSB_CT3_BASE_PORT),
+						s_axis_bsb_tlast => uct_router_bsb_cmd_tlast(BSB_CT3_BASE_PORT),
+						s_axis_bsb_tready => uct_router_bsb_cmd_tready(BSB_CT3_BASE_PORT),
+						m_axis_bsb_tdata => uct_router_bsb_rply_tdata(BSB_CT3_BASE_PORT),
+						m_axis_bsb_tvalid => uct_router_bsb_rply_tvalid(BSB_CT3_BASE_PORT),
+						m_axis_bsb_tlast => uct_router_bsb_rply_tlast(BSB_CT3_BASE_PORT),
+						m_axis_bsb_tready => uct_router_bsb_rply_tready(BSB_CT3_BASE_PORT),
 
-						ctrl_clk => bsb_clk,
-						ctrl_rst => bsb_rst_reg,
+						bsb_clk => bsb_clk,
+						bsb_rst => bsb_rst_reg,
 
 						control_bytes => ct3_control_bytes,
 						status_bytes  => ct3_status_bytes

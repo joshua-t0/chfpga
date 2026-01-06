@@ -109,14 +109,14 @@ attribute DONT_TOUCH of out_rst_reg: signal is "true";
 
 -- Control signals
 
-signal corr_router_bsb_cmd_tdata: slv8_array(NUMBER_OF_CORRELATORS-1 downto 0);
-signal corr_router_bsb_cmd_tvalid: slv(NUMBER_OF_CORRELATORS-1 downto 0);
-signal corr_router_bsb_cmd_tlast: slv(NUMBER_OF_CORRELATORS-1 downto 0);
-signal corr_router_bsb_cmd_tready: slv(NUMBER_OF_CORRELATORS-1 downto 0);
-signal corr_router_bsb_rply_tdata: slv8_array(NUMBER_OF_CORRELATORS-1 downto 0);
-signal corr_router_bsb_rply_tvalid: slv(NUMBER_OF_CORRELATORS-1 downto 0);
-signal corr_router_bsb_rply_tlast: slv(NUMBER_OF_CORRELATORS-1 downto 0);
-signal corr_router_bsb_rply_tready: slv(NUMBER_OF_CORRELATORS-1 downto 0);
+signal corr_router_bsb_cmd_tdata: slv8_array(0 to NUMBER_OF_CORRELATORS-1);
+signal corr_router_bsb_cmd_tvalid: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1);
+signal corr_router_bsb_cmd_tlast: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1);
+signal corr_router_bsb_cmd_tready: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1);
+signal corr_router_bsb_rply_tdata: slv8_array(0 to NUMBER_OF_CORRELATORS-1);
+signal corr_router_bsb_rply_tvalid: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1);
+signal corr_router_bsb_rply_tlast: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1);
+signal corr_router_bsb_rply_tready: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1);
 
 ---- make sure that the router logic is not removed if nothing is connected downstream (when the correlators are not implemented)
 --attribute S: string;

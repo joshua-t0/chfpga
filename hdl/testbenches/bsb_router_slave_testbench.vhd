@@ -62,10 +62,14 @@ constant CTRL_CLK_PERIOD : time := 10 ns; --
 
     constant NUMBER_OF_PORTS: integer :=4;
 
-    signal top_cmd_dat: axis8_dat_struct_array(NUMBER_OF_PORTS-1 downto 0);
-    signal top_cmd_rdy: axis8_rdy_struct_array(NUMBER_OF_PORTS-1 downto 0):= (others=> (TREADY=> '1')) ;
-    signal top_rply_dat: axis8_dat_struct_array(NUMBER_OF_PORTS-1 downto 0):=(others=>(TVALID=>'0', TDATA=>X"00", TLAST=>'0'));
-    signal top_rply_rdy: axis8_rdy_struct_array(NUMBER_OF_PORTS-1 downto 0);
+    signal testbench_router_bsb_cmd_tdata: slv8_array(0 to NUMBER_OF_PORTS-1);
+    signal testbench_router_bsb_cmd_tvalid: std_logic_vector(0 to NUMBER_OF_PORTS-1);
+    signal testbench_router_bsb_cmd_tlast: std_logic_vector(0 to NUMBER_OF_PORTS-1);
+    signal testbench_router_bsb_cmd_tready: std_logic_vector(0 to NUMBER_OF_PORTS-1) := (others => '1');
+    signal testbench_router_bsb_rply_tdata: slv8_array(0 to NUMBER_OF_PORTS-1) := (others => (others => '0'));
+    signal testbench_router_bsb_rply_tvalid: std_logic_vector(0 to NUMBER_OF_PORTS-1) := (others => '0');
+    signal testbench_router_bsb_rply_tlast: std_logic_vector(0 to NUMBER_OF_PORTS-1) := (others => '0');
+    signal testbench_router_bsb_rply_tready: std_logic_vector(0 to NUMBER_OF_PORTS-1);
 
 	constant NUMBER_OF_PACKETS : integer :=500;
 
@@ -170,26 +174,30 @@ begin
 			ADDRESS_MASK => "111----------------" --'1': used to generate port index, '-' = don't care,
 		)
 		port map(
-			-- Root interface
+			-- Upstream BSB interface
+			s_axis_bsb_tdata => bsb_cmd_tdata,
+			s_axis_bsb_tvalid => bsb_cmd_tvalid,
+			s_axis_bsb_tlast => bsb_cmd_tlast,
+			s_axis_bsb_tready => bsb_cmd_tready,
+			m_axis_bsb_tdata => bsb_rply_tdata,
+			m_axis_bsb_tvalid => bsb_rply_tvalid,
+			m_axis_bsb_tlast => bsb_rply_tlast,
+			m_axis_bsb_tready => bsb_rply_tready,
 
-			CMD_IN_DAT =>  (TDATA=>bsb_cmd_tdata, TVALID=>bsb_cmd_tvalid, TLAST=>bsb_cmd_tlast),
-			CMD_IN_RDY.TREADY => bsb_cmd_tready,
-			RPLY_OUT_DAT.TDATA =>bsb_rply_tdata,
-			RPLY_OUT_DAT.TVALID=>bsb_rply_tvalid,
-			RPLY_OUT_DAT.TLAST=>bsb_rply_tlast,
-			RPLY_OUT_RDY => (TREADY=>bsb_rply_tready),
-
-			-- Downstream interface
-
-			CMD_OUT_DAT => top_cmd_dat,
-			CMD_OUT_RDY => top_cmd_rdy,
-			RPLY_IN_DAT => top_rply_dat,
-			RPLY_IN_RDY => top_rply_rdy,
+			-- Downstream BSB interface
+			m_axis_routed_bsb_tdata => testbench_router_bsb_cmd_tdata,
+			m_axis_routed_bsb_tvalid => testbench_router_bsb_cmd_tvalid,
+			m_axis_routed_bsb_tlast => testbench_router_bsb_cmd_tlast,
+			m_axis_routed_bsb_tready => testbench_router_bsb_cmd_tready,
+			s_axis_routed_bsb_tdata => testbench_router_bsb_rply_tdata,
+			s_axis_routed_bsb_tvalid => testbench_router_bsb_rply_tvalid,
+			s_axis_routed_bsb_tlast => testbench_router_bsb_rply_tlast,
+			s_axis_routed_bsb_tready => testbench_router_bsb_rply_tready,
 
 			cmd_overflow => cmd_overflow,
 
-			CLK => ctrl_clk,
-			RST => ctrl_rst
+			clk => ctrl_clk,
+			rst => ctrl_rst
 		);
 
 bsb_regs0: entity work.bsb_regs
@@ -204,10 +212,14 @@ bsb_regs0: entity work.bsb_regs
         )
     PORT MAP(
         -- Control interface (command and reply stream buses)
-        CTRL_CMD_IN_DAT   => top_cmd_dat(0),
-        CTRL_CMD_IN_RDY   => top_cmd_rdy(0),
-        CTRL_RPLY_OUT_DAT => top_rply_dat(0),
-        CTRL_RPLY_OUT_RDY => top_rply_rdy(0),
+        s_axis_bsb_tdata => testbench_router_bsb_cmd_tdata(0),
+        s_axis_bsb_tvalid => testbench_router_bsb_cmd_tvalid(0),
+        s_axis_bsb_tlast => testbench_router_bsb_cmd_tlast(0),
+        s_axis_bsb_tready => testbench_router_bsb_cmd_tready(0),
+        m_axis_bsb_tdata => testbench_router_bsb_rply_tdata(0),
+        m_axis_bsb_tvalid => testbench_router_bsb_rply_tvalid(0),
+        m_axis_bsb_tlast => testbench_router_bsb_rply_tlast(0),
+        m_axis_bsb_tready => testbench_router_bsb_rply_tready(0),
         CTRL_CLK          => ctrl_clk,
         CTRL_RST          => ctrl_rst,
 

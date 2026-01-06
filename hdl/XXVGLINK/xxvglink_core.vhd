@@ -77,13 +77,16 @@ entity xxvglink_core is
 		status_bytes: in slv8_array(0 to NUMBER_OF_STATUS_BYTES - 1) := (others => (others => '0')); -- additional status bytes appended to the common status registers
 
 		-- Control and reply streams
-		
-		cmd_dat: in AXIS8_DAT_STRUCT;
-		cmd_rdy: out AXIS8_RDY_STRUCT;
-		rply_dat: out AXIS8_DAT_STRUCT;
-		rply_rdy: in AXIS8_RDY_STRUCT;
-		ctrl_clk: in std_logic; -- control clock
-		ctrl_rst: in std_logic;
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid: in std_logic;
+		s_axis_bsb_tlast: in std_logic;
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic;
+		bsb_clk: in std_logic; -- control clock
+		bsb_rst: in std_logic;
 
 		areset: in std_logic -- asynchronous reset
 	);
@@ -126,10 +129,14 @@ architecture behavioral of xxvglink_core is
 	signal qplllock, qplllock_debug: std_logic_vector(0 to NUMBER_OF_QUADS - 1);
 	signal not_qplllock: std_logic;
 
-	signal module_cmd_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_MODULES - 1 downto 0);
-	signal module_cmd_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_MODULES - 1 downto 0);
-	signal module_rply_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_MODULES - 1 downto 0);
-	signal module_rply_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_MODULES - 1 downto 0);
+	signal xxvglink_router_bsb_cmd_tdata: slv8_array(0 to NUMBER_OF_MODULES - 1);
+	signal xxvglink_router_bsb_cmd_tvalid: std_logic_vector(0 to NUMBER_OF_MODULES - 1);
+	signal xxvglink_router_bsb_cmd_tlast: std_logic_vector(0 to NUMBER_OF_MODULES - 1);
+	signal xxvglink_router_bsb_cmd_tready: std_logic_vector(0 to NUMBER_OF_MODULES - 1);
+	signal xxvglink_router_bsb_rply_tdata: slv8_array(0 to NUMBER_OF_MODULES - 1);
+	signal xxvglink_router_bsb_rply_tvalid: std_logic_vector(0 to NUMBER_OF_MODULES - 1);
+	signal xxvglink_router_bsb_rply_tlast: std_logic_vector(0 to NUMBER_OF_MODULES - 1);
+	signal xxvglink_router_bsb_rply_tready: std_logic_vector(0 to NUMBER_OF_MODULES - 1);
 
 	signal ctrl_rst_reg: std_logic_vector(NUMBER_OF_MODULES - 1 downto 0);
 	attribute dont_touch of ctrl_rst_reg: signal is "true";
@@ -235,10 +242,10 @@ architecture behavioral of xxvglink_core is
 
 begin
 
-	ctrl_rst_proc: process(ctrl_clk)
+	ctrl_rst_proc: process(all)
 	begin
-		if rising_edge(ctrl_clk) then
-			ctrl_rst_reg <= (others => ctrl_rst);
+		if rising_edge(bsb_clk) then
+			ctrl_rst_reg <= (others => bsb_rst);
 		end if; -- clk
 	end process;
 
@@ -251,20 +258,30 @@ begin
 			ADDRESS_MASK    => "-----1111----------" -- 4-bit routing address (1 common, 4 PLL max, 11 GTY max),  10-bit internal address
 		)
 		port map (
-			-- Master control interface
-			cmd_in_dat   => cmd_dat,
-			cmd_in_rdy   => cmd_rdy,
-			rply_out_dat => rply_dat,
-			rply_out_rdy => rply_rdy,
+			-- Upstream BSB interface
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
 
+			-- Downstream BSB interface
+			m_axis_routed_bsb_tdata => xxvglink_router_bsb_cmd_tdata,
+			m_axis_routed_bsb_tvalid => xxvglink_router_bsb_cmd_tvalid,
+			m_axis_routed_bsb_tlast => xxvglink_router_bsb_cmd_tlast,
+			m_axis_routed_bsb_tready => xxvglink_router_bsb_cmd_tready,
+			s_axis_routed_bsb_tdata => xxvglink_router_bsb_rply_tdata,
+			s_axis_routed_bsb_tvalid => xxvglink_router_bsb_rply_tvalid,
+			s_axis_routed_bsb_tlast => xxvglink_router_bsb_rply_tlast,
+			s_axis_routed_bsb_tready => xxvglink_router_bsb_rply_tready,
 
-			cmd_out_dat => module_cmd_dat,
-			cmd_out_rdy => module_cmd_rdy,
-			rply_in_dat => module_rply_dat,
-			rply_in_rdy => module_rply_rdy,
+			cmd_overflow => open,
 
-			clk => ctrl_clk,
-			rst => ctrl_rst
+			clk => bsb_clk,
+			rst => bsb_rst
 		);
 
 	----------------------------------
@@ -507,12 +524,16 @@ begin
 			NUMBER_OF_STATUS_BYTES  => common_status_bytes'Length(1) -- Number of bits in the status word.
 		)
 		port map (
-			ctrl_cmd_in_dat   => module_cmd_dat(0),
-			ctrl_cmd_in_rdy   => module_cmd_rdy(0),
-			ctrl_rply_out_dat => module_rply_dat(0),
-			ctrl_rply_out_rdy => module_rply_rdy(0),
-			ctrl_clk          => ctrl_clk,
-			ctrl_rst          => ctrl_rst_reg(0),
+			s_axis_bsb_tdata => xxvglink_router_bsb_cmd_tdata(0),
+			s_axis_bsb_tvalid => xxvglink_router_bsb_cmd_tvalid(0),
+			s_axis_bsb_tlast => xxvglink_router_bsb_cmd_tlast(0),
+			s_axis_bsb_tready => xxvglink_router_bsb_cmd_tready(0),
+			m_axis_bsb_tdata => xxvglink_router_bsb_rply_tdata(0),
+			m_axis_bsb_tvalid => xxvglink_router_bsb_rply_tvalid(0),
+			m_axis_bsb_tlast => xxvglink_router_bsb_rply_tlast(0),
+			m_axis_bsb_tready => xxvglink_router_bsb_rply_tready(0),
+			bsb_clk          => bsb_clk,
+			bsb_rst          => ctrl_rst_reg(0),
 			control_bytes     => common_control_bytes,
 			status_bytes      => common_status_bytes
 		);
@@ -566,12 +587,16 @@ begin
 				control_bytes => quad_control_bytes(i),
 				status_bytes  => quad_status_bytes(i),
 
-				ctrl_cmd_in_dat   => module_cmd_dat(i + 1),
-				ctrl_cmd_in_rdy   => module_cmd_rdy(i + 1),
-				ctrl_rply_out_dat => module_rply_dat(i + 1),
-				ctrl_rply_out_rdy => module_rply_rdy(i + 1),
-				ctrl_clk          => ctrl_clk,
-				ctrl_rst          => ctrl_rst_reg(i + 1),
+				s_axis_bsb_tdata => xxvglink_router_bsb_cmd_tdata(i + 1),
+				s_axis_bsb_tvalid => xxvglink_router_bsb_cmd_tvalid(i + 1),
+				s_axis_bsb_tlast => xxvglink_router_bsb_cmd_tlast(i + 1),
+				s_axis_bsb_tready => xxvglink_router_bsb_cmd_tready(i + 1),
+				m_axis_bsb_tdata => xxvglink_router_bsb_rply_tdata(i + 1),
+				m_axis_bsb_tvalid => xxvglink_router_bsb_rply_tvalid(i + 1),
+				m_axis_bsb_tlast => xxvglink_router_bsb_rply_tlast(i + 1),
+				m_axis_bsb_tready => xxvglink_router_bsb_rply_tready(i + 1),
+				bsb_clk          => bsb_clk,
+				bsb_rst          => ctrl_rst_reg(i + 1),
 
 				-- DRP interface
 				ram_din      => quad_drp_din(i),
@@ -716,7 +741,7 @@ begin
 			drpwe_common_in(i)                                <= quad_drp_wr_en(i);
 			drpen_common_in(i)                                <= quad_drp_den(i);
 			drpaddr_common_in(16 * (i + 1) - 1 downto 16 * i) <= "000000" & quad_drp_addr(i); -- the core wants 16-bit addresses, but max GTYE4_COMMON address is 0x9F
-			drpclk_common_in(i)                               <= ctrl_clk;
+			drpclk_common_in(i)                               <= bsb_clk;
 		end generate quad_gen; -- for each quad
 
 
@@ -733,7 +758,7 @@ begin
 			-- DRP port
 			drpaddr_in(10 * (i + 1) - 1 downto 10 * i) <= common_drp_page & gt_drp_addr(i);
 			drpdi_in(16 * (i + 1) - 1 downto 16 * i)   <= gt_drp_din(i);
-			drpclk_in(i)                               <= ctrl_clk;
+			drpclk_in(i)                               <= bsb_clk;
 			gt_drp_dout(i)                             <= drpdo_out(16 * (i + 1) - 1 downto 16 * i);
 			drpen_in(i)                                <= gt_drp_en(i);
 			gt_drp_rdy(i)                              <= drprdy_out(i);
@@ -933,12 +958,16 @@ begin
 				NUMBER_OF_STATUS_BYTES  => gt_status_bytes(i)'LENGTH(1) -- Number of bits in the status word.
 			)
 			port map (
-				ctrl_cmd_in_dat   => module_cmd_dat(i + NUMBER_OF_QUADS + 1),
-				ctrl_cmd_in_rdy   => module_cmd_rdy(i + NUMBER_OF_QUADS + 1),
-				ctrl_rply_out_dat => module_rply_dat(i + NUMBER_OF_QUADS + 1),
-				ctrl_rply_out_rdy => module_rply_rdy(i + NUMBER_OF_QUADS + 1),
-				ctrl_clk          => ctrl_clk,
-				ctrl_rst          => ctrl_rst_reg(i + NUMBER_OF_QUADS + 1),
+				s_axis_bsb_tdata => xxvglink_router_bsb_cmd_tdata(i + NUMBER_OF_QUADS + 1),
+				s_axis_bsb_tvalid => xxvglink_router_bsb_cmd_tvalid(i + NUMBER_OF_QUADS + 1),
+				s_axis_bsb_tlast => xxvglink_router_bsb_cmd_tlast(i + NUMBER_OF_QUADS + 1),
+				s_axis_bsb_tready => xxvglink_router_bsb_cmd_tready(i + NUMBER_OF_QUADS + 1),
+				m_axis_bsb_tdata => xxvglink_router_bsb_rply_tdata(i + NUMBER_OF_QUADS + 1),
+				m_axis_bsb_tvalid => xxvglink_router_bsb_rply_tvalid(i + NUMBER_OF_QUADS + 1),
+				m_axis_bsb_tlast => xxvglink_router_bsb_rply_tlast(i + NUMBER_OF_QUADS + 1),
+				m_axis_bsb_tready => xxvglink_router_bsb_rply_tready(i + NUMBER_OF_QUADS + 1),
+				bsb_clk          => bsb_clk,
+				bsb_rst          => ctrl_rst_reg(i + NUMBER_OF_QUADS + 1),
 
 				control_bytes => gt_control_bytes(i),
 				status_bytes  => gt_status_bytes(i),
@@ -1047,9 +1076,8 @@ begin
 		------------------------------------------------
 		-- We need RX error counters for every GTX to perform link tests.
 
-		process(rxusrclk2(i))
-		begin
-			if rising_edge(rxusrclk2(i)) then
+		process(all) begin
+		if rising_edge(rxusrclk2(i)) then
 				if gt_rxprbscntreset_in(i) = '1' then
 					gt_err_ctr(i) <= (others => '0');
 				elsif gt_rxprbserr_out(i) = '1' and signed(gt_err_ctr(i)) /= -1 then
@@ -1223,7 +1251,7 @@ begin
 					SRC_INPUT_REG => 0
 				)
 				port map (
-					src_clk  => ctrl_clk,
+					src_clk  => bsb_clk,
 					src_in   => gt_capture_en(i),
 					dest_clk => rxusrclk2(i),
 					dest_out => rx_capture_en

@@ -61,13 +61,16 @@ entity chan_crossbar is
 		rst: in std_logic; -- reset, synchronous to clk
 
 		-- Control interface (command and reply stream buses)
-		
-		ctrl_cmd_dat: in AXIS8_DAT_STRUCT;
-		ctrl_cmd_rdy: out AXIS8_RDY_STRUCT;
-		ctrl_rply_dat: out AXIS8_DAT_STRUCT;
-		ctrl_rply_rdy: in AXIS8_RDY_STRUCT;
-		ctrl_clk: in  std_logic;
-		ctrl_rst: in  std_logic
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid: in std_logic;
+		s_axis_bsb_tlast: in std_logic;
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic;
+		bsb_clk: in std_logic;
+		bsb_rst: in std_logic
 	);
 end entity chan_crossbar;
 
@@ -91,10 +94,14 @@ architecture impl of chan_crossbar is
 
 	-- Internally routed BSB buses
 	-- We have one port for global register, and one port for each bin selector.
-	signal bsb_router_cmd_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_OUTPUT_LANES downto 0);
-	signal bsb_router_cmd_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_OUTPUT_LANES downto 0);
-	signal bsb_router_rply_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_OUTPUT_LANES downto 0);
-	signal bsb_router_rply_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_OUTPUT_LANES downto 0);
+	signal chan_xbar_router_bsb_cmd_tdata: slv8_array(0 to NUMBER_OF_OUTPUT_LANES);
+	signal chan_xbar_router_bsb_cmd_tvalid: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES);
+	signal chan_xbar_router_bsb_cmd_tlast: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES);
+	signal chan_xbar_router_bsb_cmd_tready: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES);
+	signal chan_xbar_router_bsb_rply_tdata: slv8_array(0 to NUMBER_OF_OUTPUT_LANES);
+	signal chan_xbar_router_bsb_rply_tvalid: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES);
+	signal chan_xbar_router_bsb_rply_tlast: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES);
+	signal chan_xbar_router_bsb_rply_tready: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES);
 
 
 	-- Internal AXI-Streaming buses
@@ -159,9 +166,9 @@ architecture impl of chan_crossbar is
 begin
 
 	process(all) begin
-		if rising_edge(ctrl_clk) then
+		if rising_edge(bsb_clk) then
 			-- Pipeline BSB resets
-			ctrl_rst_reg <= ctrl_rst;
+			ctrl_rst_reg <= bsb_rst;
 			ctrl_rst_reg2 <= (others => ctrl_rst_reg);
 		end if; -- RST/CLK
 	end process;
@@ -186,20 +193,29 @@ begin
 			ADDRESS_MASK    => "---11111-----------" -- '1': used to generate port index, '-' = don't care,
 		)
 		port map (
-			-- Master control interface
-			cmd_in_dat   => ctrl_cmd_dat,
-			cmd_in_rdy   => ctrl_cmd_rdy,
-			rply_out_dat => ctrl_rply_dat,
-			rply_out_rdy => ctrl_rply_rdy,
+			-- Upstream BSB interface
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
 
+			-- Downstream BSB interface
+			m_axis_routed_bsb_tdata => chan_xbar_router_bsb_cmd_tdata,
+			m_axis_routed_bsb_tvalid => chan_xbar_router_bsb_cmd_tvalid,
+			m_axis_routed_bsb_tlast => chan_xbar_router_bsb_cmd_tlast,
+			m_axis_routed_bsb_tready => chan_xbar_router_bsb_cmd_tready,
+			s_axis_routed_bsb_tdata => chan_xbar_router_bsb_rply_tdata,
+			s_axis_routed_bsb_tvalid => chan_xbar_router_bsb_rply_tvalid,
+			s_axis_routed_bsb_tlast => chan_xbar_router_bsb_rply_tlast,
+			s_axis_routed_bsb_tready => chan_xbar_router_bsb_rply_tready,
 
-			cmd_out_dat => bsb_router_cmd_dat,
-			cmd_out_rdy => bsb_router_cmd_rdy,
-			rply_in_dat => bsb_router_rply_dat,
-			rply_in_rdy => bsb_router_rply_rdy,
+			cmd_overflow => open,
 
-			-- Slave (module) control interface
-			clk => ctrl_clk,
+			clk => bsb_clk,
 			rst => ctrl_rst_reg
 		);
 
@@ -273,12 +289,16 @@ begin
 
 		port map (
 			-- Control interface (command and reply stream buses)
-			ctrl_cmd_in_dat   => bsb_router_cmd_dat(0),
-			ctrl_cmd_in_rdy   => bsb_router_cmd_rdy(0),
-			ctrl_rply_out_dat => bsb_router_rply_dat(0),
-			ctrl_rply_out_rdy => bsb_router_rply_rdy(0),
-			ctrl_clk          => ctrl_clk,
-			ctrl_rst          => ctrl_rst_reg,
+			s_axis_bsb_tdata => chan_xbar_router_bsb_cmd_tdata(0),
+			s_axis_bsb_tvalid => chan_xbar_router_bsb_cmd_tvalid(0),
+			s_axis_bsb_tlast => chan_xbar_router_bsb_cmd_tlast(0),
+			s_axis_bsb_tready => chan_xbar_router_bsb_cmd_tready(0),
+			m_axis_bsb_tdata => chan_xbar_router_bsb_rply_tdata(0),
+			m_axis_bsb_tvalid => chan_xbar_router_bsb_rply_tvalid(0),
+			m_axis_bsb_tlast => chan_xbar_router_bsb_rply_tlast(0),
+			m_axis_bsb_tready => chan_xbar_router_bsb_rply_tready(0),
+			bsb_clk          => bsb_clk,
+			bsb_rst          => ctrl_rst_reg,
 
 			control_bytes => control_bytes,
 			status_bytes  => status_bytes
@@ -376,12 +396,16 @@ begin
 
 				-- Control Interface
 
-				ctrl_cmd_dat  => bsb_router_cmd_dat(i + 1),
-				ctrl_cmd_rdy  => bsb_router_cmd_rdy(i + 1),
-				ctrl_rply_dat => bsb_router_rply_dat(i + 1),
-				ctrl_rply_rdy => bsb_router_rply_rdy(i + 1),
-				ctrl_clk      => ctrl_clk,
-				ctrl_rst      => ctrl_rst_reg2(BINSEL_PBLOCK_MAP(i))
+				s_axis_bsb_tdata => chan_xbar_router_bsb_cmd_tdata(i + 1),
+				s_axis_bsb_tvalid => chan_xbar_router_bsb_cmd_tvalid(i + 1),
+				s_axis_bsb_tlast => chan_xbar_router_bsb_cmd_tlast(i + 1),
+				s_axis_bsb_tready => chan_xbar_router_bsb_cmd_tready(i + 1),
+				m_axis_bsb_tdata => chan_xbar_router_bsb_rply_tdata(i + 1),
+				m_axis_bsb_tvalid => chan_xbar_router_bsb_rply_tvalid(i + 1),
+				m_axis_bsb_tlast => chan_xbar_router_bsb_rply_tlast(i + 1),
+				m_axis_bsb_tready => chan_xbar_router_bsb_rply_tready(i + 1),
+				bsb_clk      => bsb_clk,
+				bsb_rst      => ctrl_rst_reg2(BINSEL_PBLOCK_MAP(i))
 			);
 	end generate bin_sel_gen;
 
