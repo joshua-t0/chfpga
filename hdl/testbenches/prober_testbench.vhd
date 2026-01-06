@@ -111,7 +111,7 @@ signal prb_dat, cmd_dat, rply_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_PROBES-1 dow
 signal prb_rdy, cmd_rdy, rply_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_PROBES-1 downto 0);
 
 signal prb_tdata: slv8_array(NUMBER_OF_PROBES-1 downto 0);
-signal prb_tvalid, prb_tlast, prb_tready: slv(NUMBER_OF_PROBES-1 downto 0);
+signal prb_tvalid, prb_tlast, prb_tready: std_logic_vector(NUMBER_OF_PROBES-1 downto 0);
 
 begin
 

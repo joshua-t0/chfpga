@@ -489,15 +489,15 @@ begin
 
 		signal bp_shuffle_in_tdata: slv32_array(0 to NUMBER_OF_SHUFFLE_LANES - 1);
 		--    signal bp_shuffle_in_tdata64: slv64_array(0 to NUMBER_OF_SHUFFLE_LANES - 1);
-		signal bp_shuffle_in_tvalid: slv(0 to NUMBER_OF_SHUFFLE_LANES - 1);
-		signal bp_shuffle_in_tlast: slv(0 to NUMBER_OF_SHUFFLE_LANES - 1);
+		signal bp_shuffle_in_tvalid: std_logic_vector(0 to NUMBER_OF_SHUFFLE_LANES - 1);
+		signal bp_shuffle_in_tlast: std_logic_vector(0 to NUMBER_OF_SHUFFLE_LANES - 1);
 		signal bp_shuffle_in_rst: std_logic_vector(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES + NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
 		signal bp_shuffle_in_rst_reg: std_logic;
 		attribute shreg_extract of bp_shuffle_in_rst_reg: signal is "no";
 
 		signal bp_shuffle_out_tdata: slv32_array(0 to NUMBER_OF_SHUFFLE_LANES - 1);
-		signal bp_shuffle_out_tvalid: slv(0 to NUMBER_OF_SHUFFLE_LANES - 1);
-		signal bp_shuffle_out_tlast: slv(0 to NUMBER_OF_SHUFFLE_LANES - 1);
+		signal bp_shuffle_out_tvalid: std_logic_vector(0 to NUMBER_OF_SHUFFLE_LANES - 1);
+		signal bp_shuffle_out_tlast: std_logic_vector(0 to NUMBER_OF_SHUFFLE_LANES - 1);
 		signal bp_shuffle_out_rst: std_logic;
 
 		--------------------
@@ -516,18 +516,18 @@ begin
 		attribute shreg_extract of cb2_in_reset, cb2_in_reset_reg: signal is "no";
 
 		signal cb2_in_tdata_reg: slv32_array(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
-		signal cb2_in_tvalid_reg: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
-		signal cb2_in_tlast_reg: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
+		signal cb2_in_tvalid_reg: std_logic_vector(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
+		signal cb2_in_tlast_reg: std_logic_vector(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
 		attribute shreg_extract of cb2_in_tdata_reg, cb2_in_tvalid_reg, cb2_in_tlast_reg: signal is "no";
 
 		signal cb2_in_tdata: slv32_array(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
-		signal cb2_in_tvalid: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
-		signal cb2_in_tlast: slv(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
+		signal cb2_in_tvalid: std_logic_vector(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
+		signal cb2_in_tlast: std_logic_vector(0 to NUMBER_OF_BP_PCB_SHUFFLE_LANES - 1);
 		attribute shreg_extract of cb2_in_tdata, cb2_in_tvalid, cb2_in_tlast: signal is "no";
 
 		signal cb2_out_tdata: slv32_array(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
-		signal cb2_out_tvalid: slv(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
-		signal cb2_out_tlast: slv(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
+		signal cb2_out_tvalid: std_logic_vector(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
+		signal cb2_out_tlast: std_logic_vector(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
 		attribute shreg_extract of cb2_out_tdata, cb2_out_tvalid, cb2_out_tlast: signal is "no";
 
 		--------------------
@@ -542,14 +542,14 @@ begin
 		attribute shreg_extract of cb3_in_rst, cb3_out_rst: signal is "no";
 
 		signal cb3_in_tdata: slv32_array(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
-		signal cb3_in_tvalid: slv(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
-		signal cb3_in_tlast: slv(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
+		signal cb3_in_tvalid: std_logic_vector(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
+		signal cb3_in_tlast: std_logic_vector(0 to NUMBER_OF_BP_QSFP_SHUFFLE_LANES - 1);
 		attribute shreg_extract of cb3_in_tdata, cb3_in_tvalid, cb3_in_tlast: signal is "no";
 
 
 		signal cb3_out_tdata: slv32_array(0 to NUMBER_OF_GPU_LINKS - 1);
-		signal cb3_out_tvalid: slv(0 to NUMBER_OF_GPU_LINKS - 1);
-		signal cb3_out_tlast: slv(0 to NUMBER_OF_GPU_LINKS - 1);
+		signal cb3_out_tvalid: std_logic_vector(0 to NUMBER_OF_GPU_LINKS - 1);
+		signal cb3_out_tlast: std_logic_vector(0 to NUMBER_OF_GPU_LINKS - 1);
 		attribute shreg_extract of cb3_out_tdata, cb3_out_tvalid, cb3_out_tlast: signal is "no";
 
 	--        signal resetdone: std_logic;

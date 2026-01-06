@@ -312,7 +312,7 @@ begin
         signal rx_terror: std_logic;
 
         -- Output mux bus
-        signal rx_tdata_mux: slv(63 downto 0);
+        signal rx_tdata_mux: std_logic_vector(63 downto 0);
         signal rx_tvalid_mux: std_logic;
         signal rx_tlast_mux: std_logic;
         signal rx_tready_mux: std_logic;

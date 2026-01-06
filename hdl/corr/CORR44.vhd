@@ -143,18 +143,18 @@ signal y: slv8_array(0 to N-1);
 signal s: std_logic_vector(0 to N-1);
 signal cmac_x: slv8_array(0 to NUMBER_OF_CMACS-1);
 signal cmac_y: slv8_array(0 to NUMBER_OF_CMACS-1);
-signal cmac_x_conj: slv(0 to NUMBER_OF_CMACS-1);
-signal cmac_y_conj: slv(0 to NUMBER_OF_CMACS-1);
-signal cmac_rd_err: slv(0 to NUMBER_OF_CMACS-1);
-signal cmac_wr_err: slv(0 to NUMBER_OF_CMACS-1);
-signal cmac_readout_err: slv(0 to NUMBER_OF_CMACS-1);
+signal cmac_x_conj: std_logic_vector(0 to NUMBER_OF_CMACS-1);
+signal cmac_y_conj: std_logic_vector(0 to NUMBER_OF_CMACS-1);
+signal cmac_rd_err: std_logic_vector(0 to NUMBER_OF_CMACS-1);
+signal cmac_wr_err: std_logic_vector(0 to NUMBER_OF_CMACS-1);
+signal cmac_readout_err: std_logic_vector(0 to NUMBER_OF_CMACS-1);
 
 signal cmac_z_tdata: slv36_array(0 to NUMBER_OF_CMACS);
-signal cmac_z_tvalid: slv(0 to NUMBER_OF_CMACS);
-signal cmac_z_tlast: slv(0 to NUMBER_OF_CMACS);
-signal cmac_z_send: slv(0 to NUMBER_OF_CMACS);
-signal cmac_z_start: slv(0 to NUMBER_OF_CMACS);
-signal cmac_z_local_data: slv(0 to NUMBER_OF_CMACS-1);
+signal cmac_z_tvalid: std_logic_vector(0 to NUMBER_OF_CMACS);
+signal cmac_z_tlast: std_logic_vector(0 to NUMBER_OF_CMACS);
+signal cmac_z_send: std_logic_vector(0 to NUMBER_OF_CMACS);
+signal cmac_z_start: std_logic_vector(0 to NUMBER_OF_CMACS);
+signal cmac_z_local_data: std_logic_vector(0 to NUMBER_OF_CMACS-1);
 
 signal xy_tvalid: std_logic;
 signal xy_tlast: std_logic;
@@ -613,7 +613,7 @@ data_fifo_dout_padded(35 downto 0) <=  data_fifo_dout(35 downto 0); -- pad to 40
 -- FIFO Read Process
 --
 -- We do not use a assymetric FIFO to convert the 36 bits of data into 5 bytes, as the aspect ratio is either 1:4 or 1:8, not 1:5.
-fifo_readout_proc: process(all) begin
+fifo_readout_proc: process(all)
 	variable header_words: slv32_array(0 to 2);
 	variable header_bytes: slv8_array(0 to 11);
 

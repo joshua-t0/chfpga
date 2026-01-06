@@ -19,7 +19,7 @@ signal re,im,re2,im2,re2_inv: signed(17 downto 0);
 signal RST :  std_logic;
 type cplx_type is array (natural range <>) of integer_array(0 to 3);
 signal tvalid, tlast: std_logic:='0';
-signal tdata: slv(31 downto 0);
+signal tdata: std_logic_vector(31 downto 0);
 signal z_out_tvalid: std_logic;
 signal z_out_tlast: std_logic;
 signal z_out_tdata: std_logic_vector(7 downto 0);

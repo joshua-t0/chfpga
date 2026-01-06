@@ -99,7 +99,7 @@ architecture Behavioral of UCORR44_ARRAY is
     constant NCHAN_PER_CLK: integer  := INPUT_WIDTH/NCORR/N_BITS_PER_BIN; -- Number of channels
     constant NCLK_PER_BIN: integer := NCHAN / NCHAN_PER_CLK; -- Number of clock needed to send all channels for one bin
     constant URAM_MAX: integer := sel(PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES=FPGA_ULTRASCALEPLUS, 64 / NCORR, 0);
-    signal rst_reg: slv(0 to NCORR-1);
+    signal rst_reg: std_logic_vector(0 to NCORR-1);
     attribute DONT_TOUCH of rst_reg: signal is "true";
     -- Control signals
     signal control_bytes: slv8_array(0 to 3);

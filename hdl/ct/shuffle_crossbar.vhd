@@ -102,39 +102,39 @@ architecture impl of shuffle_crossbar is
 	signal xbar_router_bsb_rply_tlast: std_logic_vector(0 to NUMBER_OF_BIN_SEL);
 	signal xbar_router_bsb_rply_tready: std_logic_vector(0 to NUMBER_OF_BIN_SEL);
 
-	signal s_axis_tfirst: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal s_axis_tfirst: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 
-	signal m_axis_tvalid_int: slv(0 to NUMBER_OF_OUTPUT_LANES - 1);
+	signal m_axis_tvalid_int: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES - 1);
 	signal m_axis_tdata_int: slv32_array(0 to NUMBER_OF_OUTPUT_LANES - 1);
-	signal m_axis_tlast_int: slv(0 to NUMBER_OF_OUTPUT_LANES - 1);
-	signal m_axis_terror_int: slv(0 to NUMBER_OF_OUTPUT_LANES - 1);
+	signal m_axis_tlast_int: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES - 1);
+	signal m_axis_terror_int: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES - 1);
 
 	-- Internal AXI-Streaming buses
 
-	signal m_axis_fifo_tvalid: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal m_axis_fifo_tvalid: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal m_axis_fifo_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal m_axis_fifo_tlast: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal m_axis_fifo_tlast: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal m_axis_fifo_tuser: slv4_array(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal m_axis_fifo_tready: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal m_axis_fifo_tready: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	-- signal frame_clk:slv (0 to NUMBER_OF_INPUT_LANES-1);
 
-	signal m_axis_align_tvalid: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal m_axis_align_tvalid: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal m_axis_align_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal m_axis_align_tlast: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal m_axis_align_tlast: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal m_axis_align_tuser: slv4_array(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal m_axis_align_global_tvalid: std_logic;
 	signal m_axis_align_global_tlast: std_logic;
 
-	signal m_axis_remap_tvalid: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal m_axis_remap_tvalid: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal m_axis_remap_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal m_axis_remap_tlast: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal m_axis_remap_tlast: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	-- signal m_axis_remap_tuser: slv4_array(0 to NUMBER_OF_INPUT_LANES-1);
 	signal m_axis_remap_global_tvalid: std_logic;
 	signal m_axis_remap_global_tlast: std_logic;
 
-	signal m_axis_remap_tvalid_reg: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal m_axis_remap_tvalid_reg: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal m_axis_remap_tdata_reg: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal m_axis_remap_tlast_reg: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal m_axis_remap_tlast_reg: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	-- signal m_axis_remap_tuser_reg: slv4_array(0 to NUMBER_OF_INPUT_LANES-1);
 
 	attribute shreg_extract of m_axis_remap_tvalid_reg: signal is "no";
@@ -145,7 +145,7 @@ architecture impl of shuffle_crossbar is
 	signal bin_ctr: unsigned(9 downto 0); -- Up to 1024 bins per frame
 	signal lane_map: slv4_array(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal sof_window_stop: std_logic_vector(7 downto 0);
-	signal ignore_lane: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal ignore_lane: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 
 	signal input_frame_ctr: u8_array(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal align_frame_ctr: u8_array(0 to NUMBER_OF_INPUT_LANES - 1);
@@ -213,7 +213,7 @@ architecture impl of shuffle_crossbar is
 	signal stream_id_capture_reg: slv8_array(0 to NUMBER_OF_INPUT_LANES - 1);
 
 	signal align_lane_monitor_source: std_logic_vector(3 downto 0);
-	signal align_lane_monitor: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal align_lane_monitor: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 
 	signal lane0_tfirst_mon: std_logic;
 	signal fifo_tfirst_mon: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);

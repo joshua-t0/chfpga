@@ -122,8 +122,8 @@ architecture Behavioral of bsb_router is
 	constant CMD_BUF_LENGTH: integer:= CTRL_CMD_BYTE_LENGTH + 2; -- Number of command bytes in buffer. Must be more than the command header length, +1 to accomodate pipeline latency in TREADY.
 
 	signal cmd_buf_tdata: slv8_array(CMD_BUF_LENGTH-1 downto 0);
-	signal cmd_buf_tvalid: slv(CMD_BUF_LENGTH-1 downto 0);
-	signal cmd_buf_tlast: slv(CMD_BUF_LENGTH-1 downto 0);
+	signal cmd_buf_tvalid: std_logic_vector(CMD_BUF_LENGTH-1 downto 0);
+	signal cmd_buf_tlast: std_logic_vector(CMD_BUF_LENGTH-1 downto 0);
 
 	signal cmd_buf_len: integer range 0 to CMD_BUF_LENGTH; -- number of bytes in buffer
 

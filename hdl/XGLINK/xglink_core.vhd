@@ -147,12 +147,12 @@ signal clk156 : std_logic; -- buffered 156.25 MHz data clock derived from the re
 
 -- signal txclk322_nobuf : std_logic_vector(0 to NUMBER_OF_GTX-1); -- Unbuffered TXOUTCLK from each GTX
 signal txclk322 : std_logic; -- buffered TXOUTCLK used to clock all GTX TX subsystems
-signal rxclk322 : slv(0 to NUMBER_OF_GTX-1); --
+signal rxclk322 : std_logic_vector(0 to NUMBER_OF_GTX-1); --
 
 signal txusrclk : std_logic; -- txusrclk for all GTX
 signal txusrclk2 : std_logic; -- txusrclk2 for all GTX
-signal rxusrclk : slv(0 to NUMBER_OF_GTX-1); -- rxusrclk for all GTX
-signal rxusrclk2 : slv(0 to NUMBER_OF_GTX-1); -- rxusrclk2 for all GTX
+signal rxusrclk : std_logic_vector(0 to NUMBER_OF_GTX-1); -- rxusrclk for all GTX
+signal rxusrclk2 : std_logic_vector(0 to NUMBER_OF_GTX-1); -- rxusrclk2 for all GTX
 
 signal refclk_nobuf : std_logic_vector(0 to NUMBER_OF_REFCLK-1); -- unbuffered GTX reference clock
 signal refclk_buf : std_logic_vector(0 to NUMBER_OF_REFCLK-1); -- buffered GTX reference clock
@@ -252,9 +252,9 @@ attribute SHREG_EXTRACT of ctrl_rst_reg : signal is "false";
 signal quad_drp_dout: slv16_array(NUMBER_OF_QUADS-1 downto 0);
 signal quad_drp_din: slv16_array(NUMBER_OF_QUADS-1 downto 0);
 signal quad_drp_addr: slv8_array(NUMBER_OF_QUADS-1 downto 0);
-signal quad_drp_drdy: slv(NUMBER_OF_QUADS-1 downto 0);
-signal quad_drp_den: slv(NUMBER_OF_QUADS-1 downto 0);
-signal quad_drp_wr_en: slv(NUMBER_OF_QUADS-1 downto 0);
+signal quad_drp_drdy: std_logic_vector(NUMBER_OF_QUADS-1 downto 0);
+signal quad_drp_den: std_logic_vector(NUMBER_OF_QUADS-1 downto 0);
+signal quad_drp_wr_en: std_logic_vector(NUMBER_OF_QUADS-1 downto 0);
 
 --signal DRP_BANK: STD_LOGIC_VECTOR(1 downto 0);
 
@@ -289,9 +289,9 @@ signal common_user_tx_data: std_logic_vector(23 downto 0);
 signal gt_drp_dout: slv16_array(NUMBER_OF_GTX-1 downto 0);
 signal gt_drp_din: slv16_array(NUMBER_OF_GTX-1 downto 0);
 signal gt_drp_addr: slv9_array(NUMBER_OF_GTX-1 downto 0);
-signal gt_drp_rdy: slv(NUMBER_OF_GTX-1 downto 0);
-signal gt_drp_en: slv(NUMBER_OF_GTX-1 downto 0);
-signal gt_drp_wr_en: slv(NUMBER_OF_GTX-1 downto 0);
+signal gt_drp_rdy: std_logic_vector(NUMBER_OF_GTX-1 downto 0);
+signal gt_drp_en: std_logic_vector(NUMBER_OF_GTX-1 downto 0);
+signal gt_drp_wr_en: std_logic_vector(NUMBER_OF_GTX-1 downto 0);
 
 
 constant STABLE_CLOCK_PERIOD: integer := 6; -- in fact 1/156.25 = 6.4 ns
@@ -304,71 +304,71 @@ signal gt_rxmonitorout_out: slv7_array(0 to NUMBER_OF_GTX-1);
 signal gt_rxmonitorsel_in: slv2_array(0 to NUMBER_OF_GTX-1) := (others=>"00");
 
 signal gt_loopback_in: slv3_array(0 to NUMBER_OF_GTX-1);
-signal gt_rxcdrhold_in: slv(0 to NUMBER_OF_GTX-1);
+signal gt_rxcdrhold_in: std_logic_vector(0 to NUMBER_OF_GTX-1);
 signal gt_rxdata_out: slv32_array(0 to NUMBER_OF_GTX-1);
-signal gt_rxprbserr_out: slv(0 to NUMBER_OF_GTX-1);
+signal gt_rxprbserr_out: std_logic_vector(0 to NUMBER_OF_GTX-1);
 signal gt_rxprbssel_in: slv3_array(0 to NUMBER_OF_GTX-1) := (others=> "000");
 signal gt_txprbssel_in: slv3_array(0 to NUMBER_OF_GTX-1) := (others=> "000");
-signal gt_rxprbscntreset_in: slv(0 to NUMBER_OF_GTX-1) := (others=>'0');
+signal gt_rxprbscntreset_in: std_logic_vector(0 to NUMBER_OF_GTX-1) := (others=>'0');
 signal gt_rxbufstatus_out: slv3_array(0 to NUMBER_OF_GTX-1);
-signal gt_rxdfeagchold_in: slv(0 to NUMBER_OF_GTX-1);
-signal gt_rxdfelfhold_in: slv(0 to NUMBER_OF_GTX-1);
-signal gt_rxoutclk_out: slv(0 to NUMBER_OF_GTX-1);
-signal gt_rxdatavalid_out: slv(0 to NUMBER_OF_GTX-1);
+signal gt_rxdfeagchold_in: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal gt_rxdfelfhold_in: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal gt_rxoutclk_out: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal gt_rxdatavalid_out: std_logic_vector(0 to NUMBER_OF_GTX-1);
 signal gt_rxheader_out: slv2_array(0 to NUMBER_OF_GTX-1);
 signal gt_rxheader_capture: slv2_array(0 to NUMBER_OF_GTX-1);
-signal gt_rxheadervalid_out: slv(0 to NUMBER_OF_GTX-1);
-signal gt_rxstartofseq_out: slv(0 to NUMBER_OF_GTX-1);
-signal gt_rxgearboxslip_in: slv(0 to NUMBER_OF_GTX-1) := (others=>'0');
-signal gt_rxpolarity_in: slv(0 to NUMBER_OF_GTX-1);
-signal gt_txpolarity_in: slv(0 to NUMBER_OF_GTX-1);
+signal gt_rxheadervalid_out: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal gt_rxstartofseq_out: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal gt_rxgearboxslip_in: std_logic_vector(0 to NUMBER_OF_GTX-1) := (others=>'0');
+signal gt_rxpolarity_in: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal gt_txpolarity_in: std_logic_vector(0 to NUMBER_OF_GTX-1);
 signal gt_txpostcursor_in: slv5_array(0 to NUMBER_OF_GTX-1);
 signal gt_txprecursor_in: slv5_array(0 to NUMBER_OF_GTX-1);
-signal gt_gttxreset_in: slv(0 to NUMBER_OF_GTX-1);
-signal gt_gttxreset_all: slv(0 to NUMBER_OF_GTX-1);
-signal gt_txuserrdy_in: slv(0 to NUMBER_OF_GTX-1);
-signal gt_rxuserrdy_in: slv(0 to NUMBER_OF_GTX-1);
-signal gt_txprbsforceerr_in: slv(0 to NUMBER_OF_GTX-1) := (others=>'0');
+signal gt_gttxreset_in: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal gt_gttxreset_all: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal gt_txuserrdy_in: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal gt_rxuserrdy_in: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal gt_txprbsforceerr_in: std_logic_vector(0 to NUMBER_OF_GTX-1) := (others=>'0');
 signal gt_txbufstatus_out: slv2_array(0 to NUMBER_OF_GTX-1);
 signal gt_txdiffctrl_in: slv4_array(0 to NUMBER_OF_GTX-1);
-signal gt_txinhibit_in: slv(0 to NUMBER_OF_GTX-1);
+signal gt_txinhibit_in: std_logic_vector(0 to NUMBER_OF_GTX-1);
 signal gt_txdata_in: slv32_array(0 to NUMBER_OF_GTX-1);
 signal gt_txdata_i: slv32_array(0 to NUMBER_OF_GTX-1);
 signal gt_user_tx_data: slv32_array(0 to NUMBER_OF_GTX-1);
 signal gt_user_tx_data_int: slv32_array(0 to NUMBER_OF_GTX-1);
 signal gt_unscrambled_data: slv32_array(0 to NUMBER_OF_GTX-1);
-signal gt_unscrambled_data_valid: slv(0 to NUMBER_OF_GTX-1);
-signal gt_user_source_sel: slv(0 to NUMBER_OF_GTX-1);
-signal gt_txoutclk_out: slv(0 to NUMBER_OF_GTX-1);
+signal gt_unscrambled_data_valid: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal gt_user_source_sel: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal gt_txoutclk_out: std_logic_vector(0 to NUMBER_OF_GTX-1);
 signal gt_txheader_in: slv2_array(0 to NUMBER_OF_GTX-1);
 signal gt_user_tx_header: slv2_array(0 to NUMBER_OF_GTX-1);
-signal gt_gtrxreset_in : slv(0 to NUMBER_OF_GTX-1);
-signal gt_gtrxreset_all : slv(0 to NUMBER_OF_GTX-1);
+signal gt_gtrxreset_in : std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal gt_gtrxreset_all : std_logic_vector(0 to NUMBER_OF_GTX-1);
 signal gt_txsequence_in: slv7_array(0 to NUMBER_OF_GTX-1);
-signal gt_rxresetdone_out: slv(0 to NUMBER_OF_GTX-1);
-signal gt_txresetdone_out: slv(0 to NUMBER_OF_GTX-1);
-signal gt_block_lock: slv(0 to NUMBER_OF_GTX-1) := (others => '0'); -- default provided to attempt to squash undriven warnings when there is no RX
+signal gt_rxresetdone_out: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal gt_txresetdone_out: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal gt_block_lock: std_logic_vector(0 to NUMBER_OF_GTX-1) := (others => '0'); -- default provided to attempt to squash undriven warnings when there is no RX
 signal quad_sel: std_logic_vector(1 downto 0);
 signal gt_seq_counter: slv8_array(0 to NUMBER_OF_GTX-1); -- counts from 0 to 65
-signal gt_scramble_en: slv(0 to NUMBER_OF_GTX-1);
-signal gt_descramble_en: slv(0 to NUMBER_OF_GTX-1);
-signal gt_block_lock_reset: slv(0 to NUMBER_OF_GTX-1) := (others=>'0');
-signal gt_scrambler_reset: slv(0 to NUMBER_OF_GTX-1);
-signal gt_unscrambler_reset: slv(0 to NUMBER_OF_GTX-1);
+signal gt_scramble_en: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal gt_descramble_en: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal gt_block_lock_reset: std_logic_vector(0 to NUMBER_OF_GTX-1) := (others=>'0');
+signal gt_scrambler_reset: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal gt_unscrambler_reset: std_logic_vector(0 to NUMBER_OF_GTX-1);
 signal gt_err_ctr: slv32_array(0 to NUMBER_OF_GTX-1);
-signal gt_capture_en: slv(0 to NUMBER_OF_GTX-1) := (others=>'0');
+signal gt_capture_en: std_logic_vector(0 to NUMBER_OF_GTX-1) := (others=>'0');
 signal gt_capture_en_rxusrclk2: slv2_array(0 to NUMBER_OF_GTX-1);
-signal gt_user_gttxreset: slv(0 to NUMBER_OF_GTX-1);
-signal gt_user_gtrxreset: slv(0 to NUMBER_OF_GTX-1) := (others=>'0');
-signal gt_user_reset: slv(0 to NUMBER_OF_GTX-1);
+signal gt_user_gttxreset: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal gt_user_gtrxreset: std_logic_vector(0 to NUMBER_OF_GTX-1) := (others=>'0');
+signal gt_user_reset: std_logic_vector(0 to NUMBER_OF_GTX-1);
 
-signal gt_rxdfelpmreset_in: slv(0 to NUMBER_OF_GTX-1) := (others=>'0');
-signal gt_rxlpmen_in: slv(0 to NUMBER_OF_GTX-1) := (others => '0');
+signal gt_rxdfelpmreset_in: std_logic_vector(0 to NUMBER_OF_GTX-1) := (others=>'0');
+signal gt_rxlpmen_in: std_logic_vector(0 to NUMBER_OF_GTX-1) := (others => '0');
 signal gt_rxlpmhold_in: slv2_array(0 to NUMBER_OF_GTX-1);
 signal gt_rxlpmovrd_in: slv2_array(0 to NUMBER_OF_GTX-1);
 signal gt_rxdfehold_in: slv9_array(0 to NUMBER_OF_GTX-1);
 signal gt_rxdfeovrd_in: slv9_array(0 to NUMBER_OF_GTX-1);
-signal gt_stop_bitslip: slv(0 to NUMBER_OF_GTX-1);
+signal gt_stop_bitslip: std_logic_vector(0 to NUMBER_OF_GTX-1);
 
 	attribute SHREG_EXTRACT of gt_capture_en_rxusrclk2 : signal is "no";
 	attribute ASYNC_REG of gt_capture_en_rxusrclk2 : signal is "true";
@@ -377,15 +377,15 @@ signal gt_stop_bitslip: slv(0 to NUMBER_OF_GTX-1);
 signal tx_data_int: slv32_array(0 to NUMBER_OF_GTX-1) := (others=> (others=>'0')); -- init for sim
 signal tx_data_dly: slv32_array(0 to NUMBER_OF_GTX-1) := (others=> (others=>'0')); -- init for sim
 signal tx_header_int: slv2_array(0 to NUMBER_OF_GTX-1) := (others=> (others=>'0')); -- init for sim
-signal tx_ready_int: slv(0 to NUMBER_OF_GTX-1);
+signal tx_ready_int: std_logic_vector(0 to NUMBER_OF_GTX-1);
 
 signal rx_data_capture: slv32_array(0 to NUMBER_OF_GTX-1);
 
 signal tx_ctr: u16_array(0 to NUMBER_OF_GTX-1) := (others=> (others=>'0')); -- init for sim
 
-signal tx_fsm_soft_reset: slv(0 to NUMBER_OF_GTX-1);
-signal rx_fsm_soft_reset: slv(0 to NUMBER_OF_GTX-1);
-signal block_sync_reset: slv(0 to NUMBER_OF_GTX-1);
+signal tx_fsm_soft_reset: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal rx_fsm_soft_reset: std_logic_vector(0 to NUMBER_OF_GTX-1);
+signal block_sync_reset: std_logic_vector(0 to NUMBER_OF_GTX-1);
 
 begin
 -- assign internal signals to output ports

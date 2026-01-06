@@ -128,16 +128,16 @@ architecture impl of align32 is
 	--- Signal definitions ------------------------------------
 
 
-	signal s_axis_tfirst: slv(0 to NUMBER_OF_LANES - 1);
+	signal s_axis_tfirst: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 
-	signal is_sof: slv(0 to NUMBER_OF_LANES - 1);
-	signal is_eof: slv(0 to NUMBER_OF_LANES - 1);
+	signal is_sof: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal is_eof: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 
 
-	signal read_en: slv(0 to NUMBER_OF_LANES - 1);
+	signal read_en: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 
-	signal valid_lane: slv(0 to NUMBER_OF_LANES - 1);
-	signal ignore_lane_reg: slv(0 to NUMBER_OF_LANES - 1); -- registered verson of the lanes to be ignored
+	signal valid_lane: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal ignore_lane_reg: std_logic_vector(0 to NUMBER_OF_LANES - 1); -- registered verson of the lanes to be ignored
 
 	signal sof_window_ctr: unsigned(7 downto 0) := (others => '0'); -- init for sim
 	signal sof_window: std_logic;
@@ -147,28 +147,28 @@ architecture impl of align32 is
 
 	signal data_fifo_din: slv36_array(0 to NUMBER_OF_LANES - 1);
 	signal data_fifo_dout: slv36_array(0 to NUMBER_OF_LANES - 1);
-	signal data_fifo_wr_en: slv(0 to NUMBER_OF_LANES - 1);
+	signal data_fifo_wr_en: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	-- signal data_fifo_rd_en:    slv(0 to NUMBER_OF_LANES-1);
-	signal data_fifo_empty: slv(0 to NUMBER_OF_LANES - 1);
-	signal data_fifo_almost_full: slv(0 to NUMBER_OF_LANES - 1);
-	signal data_fifo_valid: slv(0 to NUMBER_OF_LANES - 1);
-	signal data_fifo_overflow: slv(0 to NUMBER_OF_LANES - 1);
+	signal data_fifo_empty: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal data_fifo_almost_full: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal data_fifo_valid: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal data_fifo_overflow: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	signal data_fifo_count: slv10_array(0 to NUMBER_OF_LANES - 1);
 
 	signal fifo_tdata: slv32_array(0 to NUMBER_OF_LANES - 1);
 	signal fifo_tuser: slv4_array(0 to NUMBER_OF_LANES - 1);
-	signal fifo_tvalid: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_tlast: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_tfirst: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_empty: slv(0 to NUMBER_OF_LANES - 1);
+	signal fifo_tvalid: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_tlast: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_tfirst: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_empty: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 
 	signal all_valid: std_logic;
 	signal any_valid: std_logic;
 
 	-- Monitoring signals
 
-	signal bad_frame_length_int: slv(0 to NUMBER_OF_LANES - 1);
-	signal align_pulse: slv(0 to NUMBER_OF_LANES - 1);
+	signal bad_frame_length_int: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal align_pulse: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 
 	signal m_axis_global_tvalid_int: std_logic; -- Active high when data is present on the longest frame. Check the individual lane's tvalid to see if a lane ended up prematurely.
 	signal m_axis_global_tlast_int: std_logic; -- Active high on the last word of the longest frame.
@@ -257,10 +257,7 @@ begin
 	fifo_tfirst_mon  <= fifo_tfirst;
 	fifo_count_mon   <= data_fifo_count;
 
-	out_proc: process(all)
-	-- variable start_send_var: std_logic;
-	-- variable valid_lane_var: slv(0 to NUMBER_OF_LANES-1);
-	begin
+	out_proc: process(all) begin
 		if rising_edge(clk) then
 			-- register the ignore_lane flags to facilitate timing closure.
 			ignore_lane_reg <= ignore_lane;

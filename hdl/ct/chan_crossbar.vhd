@@ -106,11 +106,11 @@ architecture impl of chan_crossbar is
 
 	-- Internal AXI-Streaming buses
 
-	signal frame_clk: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal frame_clk: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 
-	signal binsel_in_tvalid_reg: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal binsel_in_tvalid_reg: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal binsel_in_tdata_reg: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal binsel_in_tlast_reg: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal binsel_in_tlast_reg: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal binsel_in_tuser_reg: slv4_array(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal binsel_in_global_tvalid_reg: std_logic;
 	signal binsel_in_global_tlast_reg: std_logic;
@@ -140,7 +140,7 @@ architecture impl of chan_crossbar is
 
 	signal align_reset_all: std_logic;
 	signal reset_stats: std_logic;
-	signal align_lane_monitor: slv(0 to max(NUMBER_OF_INPUT_LANES, 16) - 1);
+	signal align_lane_monitor: std_logic_vector(0 to max(NUMBER_OF_INPUT_LANES, 16) - 1);
 
 	signal lane_monitor_reset: std_logic;
 	signal lane_monitor_sel: std_logic_vector(3 downto 0);

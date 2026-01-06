@@ -98,10 +98,10 @@ constant corr44_rpm: corr44_rloc_origins_struct_array := get_corr44_rloc_origins
 
 
 signal s_axis_tdata_reg: slv32_array(0 to NUMBER_OF_CORRELATORS-1); -- input data stream containing the channelized data from every antenna processor. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
-signal s_axis_tvalid_reg: slv(0 to NUMBER_OF_CORRELATORS-1); --
-signal s_axis_tlast_reg: slv(0 to NUMBER_OF_CORRELATORS-1); --
-signal in_rst_reg: slv(0 to NUMBER_OF_CORRELATORS-1);
-signal out_rst_reg: slv(0 to NUMBER_OF_CORRELATORS-1);
+signal s_axis_tvalid_reg: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1); --
+signal s_axis_tlast_reg: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1); --
+signal in_rst_reg: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1);
+signal out_rst_reg: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1);
 
 -- make sure the fanout pipeline register are not recombined into one
 attribute DONT_TOUCH of in_rst_reg: signal is "true";

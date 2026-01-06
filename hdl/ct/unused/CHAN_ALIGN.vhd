@@ -71,23 +71,23 @@ architecture impl of CHAN_ALIGN is
 
 	constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
 
-	signal s_axis_tfirst: slv(0 to NUMBER_OF_LANES - 1);
+	signal s_axis_tfirst: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	signal fifo_din: slv36_array(0 to NUMBER_OF_LANES - 1);
 	signal fifo_dout: slv36_array(0 to NUMBER_OF_LANES - 1);
-	signal fifo_wr_en: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_rd_en: slv(0 to NUMBER_OF_LANES - 1);
+	signal fifo_wr_en: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_rd_en: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	-- signal fifo_empty:    slv(0 to NUMBER_OF_LANES-1);
-	signal fifo_tvalid: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_overflow: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_empty: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_full: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_almost_full: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_almost_empty: slv(0 to NUMBER_OF_LANES - 1);
+	signal fifo_tvalid: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_overflow: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_empty: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_full: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_almost_full: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_almost_empty: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 
 	signal fifo_tdata: slv32_array(0 to NUMBER_OF_LANES - 1);
 	signal fifo_tuser: slv4_array(0 to NUMBER_OF_LANES - 1);
-	signal fifo_tlast: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_tfirst: slv(0 to NUMBER_OF_LANES - 1);
+	signal fifo_tlast: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_tfirst: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	signal fifo_data_count: slv10_array(0 to NUMBER_OF_LANES - 1);
 
 	signal fifo_rst_ctr: unsigned(3 downto 0); -- 16-clk FIFO reset cycle
@@ -96,13 +96,13 @@ architecture impl of CHAN_ALIGN is
 
 	signal all_valid: std_logic;
 
-	signal fifo_overflow_int: slv(0 to NUMBER_OF_LANES - 1);
+	signal fifo_overflow_int: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	signal in_frame_ctr_int: slv8_array(0 to NUMBER_OF_LANES - 1);
 	signal out_frame_ctr_int: slv8_array(0 to NUMBER_OF_LANES - 1);
 	signal reset_ctr: unsigned(NUMBER_OF_LANES - 1 downto 0);
 
 
-	signal tvalid_during_reset: slv(0 to NUMBER_OF_LANES - 1);
+	signal tvalid_during_reset: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	signal rst_detect: std_logic := '0';
 	signal rst_dly: std_logic;
 

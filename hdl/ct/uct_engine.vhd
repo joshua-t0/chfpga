@@ -382,18 +382,18 @@ begin
 			-- Data shuffle bus
 
 			signal shuffle_in_tdata: slv_array(0 to NUMBER_OF_BP_LANES - 1)(BITS_PER_BP_LANE_WORD - 1 downto 0);
-			signal shuffle_in_tvalid: slv(0 to NUMBER_OF_BP_LANES - 1);
-			signal shuffle_in_tlast: slv(0 to NUMBER_OF_BP_LANES - 1);
+			signal shuffle_in_tvalid: std_logic_vector(0 to NUMBER_OF_BP_LANES - 1);
+			signal shuffle_in_tlast: std_logic_vector(0 to NUMBER_OF_BP_LANES - 1);
 
 			signal shuffle_out_tdata: slv_array(0 to NUMBER_OF_BP_LANES - 1)(BITS_PER_BP_LANE_WORD - 1 downto 0);
-			signal shuffle_out_tvalid: slv(0 to NUMBER_OF_BP_LANES - 1);
-			signal shuffle_out_tlast: slv(0 to NUMBER_OF_BP_LANES - 1);
+			signal shuffle_out_tvalid: std_logic_vector(0 to NUMBER_OF_BP_LANES - 1);
+			signal shuffle_out_tlast: std_logic_vector(0 to NUMBER_OF_BP_LANES - 1);
 
 			-- Data shuffle bus
 
 			signal bp1_out_tdata: slv_array(0 to NUMBER_OF_CT2_OUTPUTS - 1)(BITS_PER_CT2_LANE_WORD - 1 downto 0);
-			signal bp1_out_tvalid: slv(0 to NUMBER_OF_CT2_OUTPUTS - 1);
-			signal bp1_out_tlast: slv(0 to NUMBER_OF_CT2_OUTPUTS - 1);
+			signal bp1_out_tvalid: std_logic_vector(0 to NUMBER_OF_CT2_OUTPUTS - 1);
+			signal bp1_out_tlast: std_logic_vector(0 to NUMBER_OF_CT2_OUTPUTS - 1);
 
 			-- Align buses
 
@@ -686,21 +686,21 @@ begin
 				-- Bin selector bus
 
 				signal binsel_tdata: slv_array(0 to NUMBER_OF_CT3_INPUTS - 1)(BITS_PER_CT3_LANE_WORD - 1 downto 0);
-				signal binsel_tvalid: slv(0 to NUMBER_OF_CT3_INPUTS - 1);
-				signal binsel_tlast: slv(0 to NUMBER_OF_CT3_INPUTS - 1);
+				signal binsel_tvalid: std_logic_vector(0 to NUMBER_OF_CT3_INPUTS - 1);
+				signal binsel_tlast: std_logic_vector(0 to NUMBER_OF_CT3_INPUTS - 1);
 
 				-- Registered bin selector words. We neen only to store NUMBER_OF_CT3_INPUTS/2 words.
 
 				signal binsel_reg_tdata: slv_array(0 to NUMBER_OF_CT3_INPUTS/2 - 1)(BITS_PER_CT3_LANE_WORD - 1 downto 0); -- stores 2nd word
-				signal binsel_reg_tvalid: slv(0 to NUMBER_OF_CT3_INPUTS/2 - 1);
-				signal binsel_reg_tlast: slv(0 to NUMBER_OF_CT3_INPUTS/2 - 1);
+				signal binsel_reg_tvalid: std_logic_vector(0 to NUMBER_OF_CT3_INPUTS/2 - 1);
+				signal binsel_reg_tlast: std_logic_vector(0 to NUMBER_OF_CT3_INPUTS/2 - 1);
 
 				-- Align buses
 
 				signal align2_in_tdata: slv_array(0 to NUMBER_OF_CT3_OUTPUTS - 1)(BITS_PER_CT3_LANE_WORD - 1 downto 0);
-				signal align2_in_tvalid: slv(0 to NUMBER_OF_CT3_OUTPUTS - 1);
-				signal align2_in_tlast: slv(0 to NUMBER_OF_CT3_OUTPUTS - 1);
-				signal align2_lane_error: slv(0 to NUMBER_OF_CT3_OUTPUTS - 1);
+				signal align2_in_tvalid: std_logic_vector(0 to NUMBER_OF_CT3_OUTPUTS - 1);
+				signal align2_in_tlast: std_logic_vector(0 to NUMBER_OF_CT3_OUTPUTS - 1);
+				signal align2_lane_error: std_logic_vector(0 to NUMBER_OF_CT3_OUTPUTS - 1);
 
 				-- Align monitoring signals
 

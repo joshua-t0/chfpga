@@ -122,18 +122,18 @@ architecture impl of align64 is
 	signal is_sof: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	signal is_eof: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 
-	signal fifo_wr_en: slv(0 to NUMBER_OF_LANES - 1);
+	signal fifo_wr_en: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	signal fifo_tdata: slv64_array(0 to NUMBER_OF_LANES - 1);
-	signal fifo_tvalid: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_tlast: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_tfirst: slv(0 to NUMBER_OF_LANES - 1);
+	signal fifo_tvalid: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_tlast: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_tfirst: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	signal fifo_rd_en: std_logic_vector(0 to NUMBER_OF_LANES - 1);
-	signal fifo_empty: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_almost_full: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_almost_empty: slv(0 to NUMBER_OF_LANES - 1);
+	signal fifo_empty: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_almost_full: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_almost_empty: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	signal fifo_wr_count: slv10_array(0 to NUMBER_OF_LANES - 1);
 
-	signal fifo_lane0_rd_en: slv(0 to NUMBER_OF_LANES - 1);
+	signal fifo_lane0_rd_en: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	attribute DONT_TOUCH of fifo_lane0_rd_en: signal is "yes"; -- Don't remove equivalent registers, we use those to ease distribution
 
 	type LANE_STATE_TYPE is (READ, FLUSH_UNTIL_EMPTY, FLUSH_UNTIL_EOF, HOLD);

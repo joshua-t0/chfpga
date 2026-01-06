@@ -194,8 +194,8 @@ signal m_axis_rx_tvalid: std_logic_vector(0 to NUMBER_OF_RX_LANES-1);
 signal m_axis_rx_tlast: std_logic_vector(0 to NUMBER_OF_RX_LANES-1);
 
 signal tdata: slv32_array(0 to data'length-1);
-signal tvalid: slv(0 to data'length-1);
-signal tlast: slv(0 to data'length-1);
+signal tvalid: std_logic_vector(0 to data'length-1);
+signal tlast: std_logic_vector(0 to data'length-1);
 
 signal tx_resetdone: std_logic_vector(0 to NUMBER_OF_TX_LANES-1); --
 signal rx_resetdone: std_logic_vector(0 to NUMBER_OF_RX_LANES-1); --

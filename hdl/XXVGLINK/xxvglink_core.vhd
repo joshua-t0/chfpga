@@ -107,7 +107,7 @@ architecture behavioral of xxvglink_core is
 
 	---- CLOCKS
 	signal txusrclk2: std_logic; -- txusrclk2 for all GTX
-	signal rxusrclk2: slv(0 to NUMBER_OF_LINKS - 1); -- rxusrclk2 for all GTX
+	signal rxusrclk2: std_logic_vector(0 to NUMBER_OF_LINKS - 1); -- rxusrclk2 for all GTX
 
 	signal refclk_nobuf: std_logic_vector(0 to NUMBER_OF_REFCLK - 1); -- unbuffered GTX reference clock
 	signal refclk_buf: std_logic_vector(0 to NUMBER_OF_REFCLK - 1); -- buffered GTX reference clock
@@ -145,9 +145,9 @@ architecture behavioral of xxvglink_core is
 	signal quad_drp_dout: slv16_array(NUMBER_OF_QUADS - 1 downto 0);
 	signal quad_drp_din: slv16_array(NUMBER_OF_QUADS - 1 downto 0);
 	signal quad_drp_addr: slv10_array(NUMBER_OF_QUADS - 1 downto 0);
-	signal quad_drp_drdy: slv(NUMBER_OF_QUADS - 1 downto 0);
-	signal quad_drp_den: slv(NUMBER_OF_QUADS - 1 downto 0);
-	signal quad_drp_wr_en: slv(NUMBER_OF_QUADS - 1 downto 0);
+	signal quad_drp_drdy: std_logic_vector(NUMBER_OF_QUADS - 1 downto 0);
+	signal quad_drp_den: std_logic_vector(NUMBER_OF_QUADS - 1 downto 0);
+	signal quad_drp_wr_en: std_logic_vector(NUMBER_OF_QUADS - 1 downto 0);
 
 	signal common_control_bytes: slv8_array(0 to 3 + NUMBER_OF_CONTROL_BYTES);
 	signal common_status_bytes: slv8_array(0 to 1 + NUMBER_OF_STATUS_BYTES);
@@ -181,9 +181,9 @@ architecture behavioral of xxvglink_core is
 	signal gt_drp_dout: slv16_array(NUMBER_OF_LINKS - 1 downto 0);
 	signal gt_drp_din: slv16_array(NUMBER_OF_LINKS - 1 downto 0);
 	signal gt_drp_addr: slv9_array(NUMBER_OF_LINKS - 1 downto 0); -- GTY needs 10 bits, 9 bits (word address) available in address space. Use page register for upper bit.
-	signal gt_drp_rdy: slv(NUMBER_OF_LINKS - 1 downto 0);
-	signal gt_drp_en: slv(NUMBER_OF_LINKS - 1 downto 0);
-	signal gt_drp_wr_en: slv(NUMBER_OF_LINKS - 1 downto 0);
+	signal gt_drp_rdy: std_logic_vector(NUMBER_OF_LINKS - 1 downto 0);
+	signal gt_drp_en: std_logic_vector(NUMBER_OF_LINKS - 1 downto 0);
+	signal gt_drp_wr_en: std_logic_vector(NUMBER_OF_LINKS - 1 downto 0);
 
 	--constant STABLE_CLOCK_PERIOD: integer := 6; -- in fact 1/156.25 = 6.4 ns
 	--constant WAIT_TIME_CDRLOCK: integer := sel(SIM, 1000,  50000 / integer(10.3125)) / STABLE_CLOCK_PERIOD;
@@ -194,49 +194,49 @@ architecture behavioral of xxvglink_core is
 
 	signal gt_loopback_in: slv3_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_rxdata_out: slv64_array(0 to NUMBER_OF_LINKS - 1);
-	signal gt_rxprbserr_out: slv(0 to NUMBER_OF_LINKS - 1);
-	signal gt_rxprbslocked_out: slv(0 to NUMBER_OF_LINKS - 1);
+	signal gt_rxprbserr_out: std_logic_vector(0 to NUMBER_OF_LINKS - 1);
+	signal gt_rxprbslocked_out: std_logic_vector(0 to NUMBER_OF_LINKS - 1);
 	signal gt_rxprbssel_in: slv3_array(0 to NUMBER_OF_LINKS - 1) := (others => "000");
 	signal gt_txprbssel_in: slv3_array(0 to NUMBER_OF_LINKS - 1) := (others => "000");
-	signal gt_rxprbscntreset_in: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0');
+	signal gt_rxprbscntreset_in: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0');
 	signal gt_rxbufstatus_out: slv3_array(0 to NUMBER_OF_LINKS - 1); -- unused
-	signal gt_rxdfeagchold_in: slv(0 to NUMBER_OF_LINKS - 1);
-	signal gt_rxdfelfhold_in: slv(0 to NUMBER_OF_LINKS - 1);
-	signal gt_rxdatavalid_out: slv(0 to NUMBER_OF_LINKS - 1);
+	signal gt_rxdfeagchold_in: std_logic_vector(0 to NUMBER_OF_LINKS - 1);
+	signal gt_rxdfelfhold_in: std_logic_vector(0 to NUMBER_OF_LINKS - 1);
+	signal gt_rxdatavalid_out: std_logic_vector(0 to NUMBER_OF_LINKS - 1);
 	signal gt_rxheader_out: slv2_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_rxheader_capture: slv2_array(0 to NUMBER_OF_LINKS - 1);
-	signal gt_rxheadervalid_out: slv(0 to NUMBER_OF_LINKS - 1);
-	signal gt_rxgearboxslip_in: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0');
-	signal gt_rxgearboxforceslip: slv(0 to NUMBER_OF_LINKS - 1);
+	signal gt_rxheadervalid_out: std_logic_vector(0 to NUMBER_OF_LINKS - 1);
+	signal gt_rxgearboxslip_in: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0');
+	signal gt_rxgearboxforceslip: std_logic_vector(0 to NUMBER_OF_LINKS - 1);
 	signal gt_txpostcursor_in: slv5_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_txprecursor_in: slv5_array(0 to NUMBER_OF_LINKS - 1);
-	signal gt_txprbsforceerr_in: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0');
+	signal gt_txprbsforceerr_in: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0');
 	signal gt_txbufstatus_out: slv2_array(0 to NUMBER_OF_LINKS - 1); -- unused
 	signal gt_txdiffctrl_in: slv4_array(0 to NUMBER_OF_LINKS - 1);
-	signal gt_txinhibit_in: slv(0 to NUMBER_OF_LINKS - 1);
+	signal gt_txinhibit_in: std_logic_vector(0 to NUMBER_OF_LINKS - 1);
 	signal gt_txdata_in: slv64_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_user_tx_data: slv64_array(0 to NUMBER_OF_LINKS - 1);
-	signal gt_user_source_sel: slv(0 to NUMBER_OF_LINKS - 1);
+	signal gt_user_source_sel: std_logic_vector(0 to NUMBER_OF_LINKS - 1);
 	signal gt_txheader_in: slv2_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_user_tx_header: slv2_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_txsequence_in: unsigned_array(0 to NUMBER_OF_LINKS - 1)(6 downto 0);
-	--signal gt_rxresetdone_out: slv(0 to NUMBER_OF_LINKS - 1); -- txresetdone from GTY
-	--signal gt_txresetdone_out: slv(0 to NUMBER_OF_LINKS - 1); -- rxresetdone form GTY
-	signal gt_block_lock: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0'); -- default provided to attempt to squash undriven warnings when there is no RX
-	signal gt_scramble_en: slv(0 to NUMBER_OF_LINKS - 1);
-	signal gt_descramble_en: slv(0 to NUMBER_OF_LINKS - 1);
-	signal gt_block_lock_reset: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0');
-	signal gt_scrambler_reset: slv(0 to NUMBER_OF_LINKS - 1);
-	signal gt_unscrambler_reset: slv(0 to NUMBER_OF_LINKS - 1);
+	--signal gt_rxresetdone_out: std_logic_vector(0 to NUMBER_OF_LINKS - 1); -- txresetdone from GTY
+	--signal gt_txresetdone_out: std_logic_vector(0 to NUMBER_OF_LINKS - 1); -- rxresetdone form GTY
+	signal gt_block_lock: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0'); -- default provided to attempt to squash undriven warnings when there is no RX
+	signal gt_scramble_en: std_logic_vector(0 to NUMBER_OF_LINKS - 1);
+	signal gt_descramble_en: std_logic_vector(0 to NUMBER_OF_LINKS - 1);
+	signal gt_block_lock_reset: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0');
+	signal gt_scrambler_reset: std_logic_vector(0 to NUMBER_OF_LINKS - 1);
+	signal gt_unscrambler_reset: std_logic_vector(0 to NUMBER_OF_LINKS - 1);
 	signal gt_err_ctr: slv32_array(0 to NUMBER_OF_LINKS - 1);
-	signal gt_capture_en: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0');
-	signal gt_user_gtrxreset: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0'); -- unused
+	signal gt_capture_en: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0');
+	signal gt_user_gtrxreset: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0'); -- unused
 
-	signal gt_rxdfelpmreset_in: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0');
-	signal gt_rxlpmen_in: slv(0 to NUMBER_OF_LINKS - 1) := (others => '0');
+	signal gt_rxdfelpmreset_in: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0');
+	signal gt_rxlpmen_in: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0');
 
 	-- User data interface
-	signal tx_ready_int: slv(0 to NUMBER_OF_LINKS - 1);
+	signal tx_ready_int: std_logic_vector(0 to NUMBER_OF_LINKS - 1);
 
 	signal rx_data_capture: slv64_array(0 to NUMBER_OF_LINKS - 1);
 
