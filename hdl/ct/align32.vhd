@@ -41,11 +41,11 @@ use work.chFPGA_Package.ALL; -- Get all component definitions
 entity align32 is
 	generic (
 		NUMBER_OF_LANES: integer         := 16; -- Number of buses to align
-		ENABLE_MONITORING_LOGIC: BOOLEAN := FALSE -- Enable additional monitoring logic for debugging
+		ENABLE_MONITORING_LOGIC: boolean := FALSE -- Enable additional monitoring logic for debugging
 	);
 	port (
 		-- Input interface (non-blocking, i.e. always accepts data)
-		
+
 		s_axis_tvalid: in slv(0 to NUMBER_OF_LANES - 1);
 		s_axis_tdata: in slv32_array(0 to NUMBER_OF_LANES - 1);
 		s_axis_tlast: in slv(0 to NUMBER_OF_LANES - 1);
@@ -53,7 +53,7 @@ entity align32 is
 		-- s_axis_tready: out std_logic_vector(0 to NUMBER_OF_LANES-1);
 
 		-- Output interface (non-blocking, i.e. always sends data)
-		
+
 		m_axis_tvalid: out slv(0 to NUMBER_OF_LANES - 1);
 		m_axis_tdata: out slv32_array(0 to NUMBER_OF_LANES - 1);
 		m_axis_tlast: out slv(0 to NUMBER_OF_LANES - 1);
@@ -63,7 +63,7 @@ entity align32 is
 		m_axis_global_tlast: out std_logic; -- Active high on the last word of the longest frame.
 
 		-- Operational parameters
-		
+
 		sof_window_stop: in std_logic_vector(7 downto 0); --
 		ignore_lane: in slv(0 to NUMBER_OF_LANES - 1);
 		-- Monitoring signals
@@ -76,7 +76,7 @@ entity align32 is
 		fifo_count_mon: out slv10_array(0 to NUMBER_OF_LANES - 1);
 
 		-- Additional monitoring port for debugging (if ENABLE_MONITORING_LOGIC=TRUE)
-		
+
 		lane_monitor_source: in std_logic_vector(3 downto 0);
 		lane_monitor: out slv(0 to NUMBER_OF_LANES - 1) := (others => '0');
 
@@ -358,7 +358,7 @@ begin
 	mon_gen: if ENABLE_MONITORING_LOGIC generate
 
 		mon_proc: process(all) begin
-		if rising_edge(clk) then
+			if rising_edge(clk) then
 
 				for i in 0 to NUMBER_OF_LANES - 1 loop
 					if s_axis_tvalid(0) = '1' and s_axis_tfirst(0) = '1' then
@@ -430,6 +430,7 @@ begin
 						lane_monitor <= (others => '0');
 
 				end case;
+
 			end if; -- clk
 		end process;
 
