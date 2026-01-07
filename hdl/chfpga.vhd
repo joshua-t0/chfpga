@@ -605,7 +605,7 @@ architecture impl of chFPGA is
 	signal CLK125: std_logic; -- 125 MHz clock for the command interface and the Ethernet communications
 	signal clk200: std_logic; -- 200 MHz system clock from the carrier board
 	signal corr_clk: std_logic; -- Correlator clock, derived from the carrier board.
-	signal CTRL_CLK: std_logic;
+	signal bsb_clk: std_logic; 
 	signal sysmon_clk: std_logic;
 
 
@@ -617,8 +617,8 @@ architecture impl of chFPGA is
 	signal clk200_reset: std_logic;
 	signal clk200_reset_reg: std_logic;
 	signal clk125_reset: std_logic;
-	signal ctrl_rst: std_logic;
-	signal ctrl_reset_pulse: std_logic := '0';
+	signal bsb_rst: std_logic;
+	signal bsb_reset_pulse: std_logic := '0';
 	signal sysmon_reset: std_logic; -- from system clock generator
 
 	signal sysmon_user_reset: std_logic; -- from GPIO to SYSMON
@@ -653,7 +653,7 @@ architecture impl of chFPGA is
 	signal udp_stack_reset: std_logic; -- GPIO -> UDP_MAC
 
 
-	signal ctrl_master_reset: std_logic; -- GPIO -> master, UDP_MAC
+	signal bsb_master_reset: std_logic; -- GPIO -> master, UDP_MAC
 
 	-- Ethernet/UDP output / MASTER input  interface buses
 	signal udp_tx_tdata: std_logic_vector(7 downto 0);
@@ -687,30 +687,42 @@ architecture impl of chFPGA is
 
 	-- First router output bus
 	-- Master to top-level modules control interface buses
-	signal top_cmd_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_PORTS - 1 downto 0);
-	signal top_cmd_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_PORTS - 1 downto 0) := (others => (TREADY => '1'));
-	signal top_rply_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_PORTS - 1 downto 0) := (others => (TDATA => X"00", TVALID => '0', TLAST => '0'));
-	signal top_rply_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_PORTS - 1 downto 0);
+	signal top_router_bsb_cmd_tdata: slv8_array(0 to NUMBER_OF_PORTS - 1);
+	signal top_router_bsb_cmd_tvalid: std_logic_vector(0 to NUMBER_OF_PORTS - 1);
+	signal top_router_bsb_cmd_tlast: std_logic_vector(0 to NUMBER_OF_PORTS - 1);
+	signal top_router_bsb_cmd_tready: std_logic_vector(0 to NUMBER_OF_PORTS - 1) := (others => '1');
+	signal top_router_bsb_rply_tdata: slv8_array(0 to NUMBER_OF_PORTS - 1) := (others => (others => '0'));
+	signal top_router_bsb_rply_tvalid: std_logic_vector(0 to NUMBER_OF_PORTS - 1) := (others => '0');
+	signal top_router_bsb_rply_tlast: std_logic_vector(0 to NUMBER_OF_PORTS - 1) := (others => '0');
+	signal top_router_bsb_rply_tready: std_logic_vector(0 to NUMBER_OF_PORTS - 1);
 
 	-- Intermediary buses used to split out the top router outputs and avoid a simulator bug when indexing record arrays as an actual parameter of an instance
 
-	-- Per-channel BSB buses
-	signal CHAN_CMD_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_CHANNELIZERS - 1 downto 0);
-	signal CHAN_CMD_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_CHANNELIZERS - 1 downto 0);
-	signal CHAN_RPLY_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_CHANNELIZERS - 1 downto 0);
-	signal CHAN_RPLY_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_CHANNELIZERS - 1 downto 0);
+	-- Individual signal arrays for chan_router
+	signal chan_router_bsb_cmd_tdata: slv8_array(0 to NUMBER_OF_CHANNELIZERS - 1);
+	signal chan_router_bsb_cmd_tvalid: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
+	signal chan_router_bsb_cmd_tlast: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
+	signal chan_router_bsb_cmd_tready: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
+	signal chan_router_bsb_rply_tdata: slv8_array(0 to NUMBER_OF_CHANNELIZERS - 1);
+	signal chan_router_bsb_rply_tvalid: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
+	signal chan_router_bsb_rply_tlast: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
+	signal chan_router_bsb_rply_tready: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
 
 	-- Command buses forwarded from the CHANNELIZER to the corresponding ADCDAQ
-	signal ADC_CMD_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_ADCS_OR_CHANNELIZERS - 1 downto 0); -- We need to use max because the channelizer and ADCDAQ comamnd buses are linked.
-	signal ADC_CMD_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_ADCS_OR_CHANNELIZERS - 1 downto 0);
-	signal ADC_RPLY_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_ADCS_OR_CHANNELIZERS - 1 downto 0);
-	signal ADC_RPLY_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_ADCS_OR_CHANNELIZERS - 1 downto 0);
+	signal adcdaq_bsb_cmd_tdata: slv8_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1);
+	signal adcdaq_bsb_cmd_tvalid: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1);
+	signal adcdaq_bsb_cmd_tlast: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1);
+	signal adcdaq_bsb_cmd_tready: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1);
+	signal adcdaq_bsb_rply_tdata: slv8_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1);
+	signal adcdaq_bsb_rply_tvalid: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1);
+	signal adcdaq_bsb_rply_tlast: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1);
+	signal adcdaq_bsb_rply_tready: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1);
 
 	-- Slow data capture bus (PROBER & CORR output)
 	signal cap_data: slv8_array(NUMBER_OF_PROBES - 1 downto 0);
-	signal cap_valid: slv(NUMBER_OF_PROBES - 1 downto 0);
-	signal cap_last: slv(NUMBER_OF_PROBES - 1 downto 0);
-	signal cap_ready: slv(NUMBER_OF_PROBES - 1 downto 0);
+	signal cap_valid: std_logic_vector(NUMBER_OF_PROBES - 1 downto 0);
+	signal cap_last: std_logic_vector(NUMBER_OF_PROBES - 1 downto 0);
+	signal cap_ready: std_logic_vector(NUMBER_OF_PROBES - 1 downto 0);
 
 	-- REFCLK signals
 
@@ -751,10 +763,10 @@ architecture impl of chFPGA is
 
 	signal chan_out_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(31 downto 0);
 	signal chan_out_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
-	signal chan_out_tvalid: slv(0 to NUMBER_OF_CHANNELIZERS - 1);
-	signal chan_out_tlast: slv(0 to NUMBER_OF_CHANNELIZERS - 1);
-	signal chan_out_almost_empty: slv(0 to NUMBER_OF_CHANNELIZERS - 1);
-	signal chan_out_send: slv(0 to NUMBER_OF_CHANNELIZERS - 1) := (others => '1'); -- have the channelizer send data by default unless this is overriden
+	signal chan_out_tvalid: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
+	signal chan_out_tlast: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
+	signal chan_out_almost_empty: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
+	signal chan_out_send: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1) := (others => '1'); -- have the channelizer send data by default unless this is overriden
 
 	attribute equivalent_register_removal of chan_out_tdata, chan_out_tuser, chan_out_tvalid, chan_out_tlast: signal is "no";
 	attribute shreg_extract of chan_out_tdata, chan_out_tuser, chan_out_tvalid, chan_out_tlast: signal is "no";
@@ -762,7 +774,7 @@ architecture impl of chFPGA is
 	signal ADC_DAQ_BUFR_SYNC: std_logic;
 	signal ADCDAQ_RESET: std_logic;
 
-	signal ct_out_tdata: slv(8 * 32 - 1 downto 0); -- TODO: parametrize this, even if this is mostly fixed for the platform
+	signal ct_out_tdata: std_logic_vector(8 * 32 - 1 downto 0); -- TODO: parametrize this, even if this is mostly fixed for the platform
 	signal ct_out_tvalid: std_logic;
 	signal ct_out_tlast: std_logic;
 	attribute shreg_extract of ct_out_tdata, ct_out_tvalid, ct_out_tlast: signal is "no";
@@ -775,8 +787,8 @@ architecture impl of chFPGA is
 
 	signal axis_crossbar1_in_tdata: slv32_array(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
 	signal axis_crossbar1_in_tuser: slv4_array(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
-	signal axis_crossbar1_in_tvalid: slv(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
-	signal axis_crossbar1_in_tlast: slv(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
+	signal axis_crossbar1_in_tvalid: std_logic_vector(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
+	signal axis_crossbar1_in_tlast: std_logic_vector(0 to NUMBER_OF_CROSSBAR_INPUTS - 1);
 
 
 	-----------------------
@@ -792,8 +804,8 @@ architecture impl of chFPGA is
 	-----------------------
 
 	signal axis_gpu_tdata: slv32_array(0 to NUMBER_OF_GPU_LINKS - 1);
-	signal axis_gpu_tvalid: slv(0 to NUMBER_OF_GPU_LINKS - 1);
-	signal axis_gpu_tlast: slv(0 to NUMBER_OF_GPU_LINKS - 1);
+	signal axis_gpu_tvalid: std_logic_vector(0 to NUMBER_OF_GPU_LINKS - 1);
+	signal axis_gpu_tlast: std_logic_vector(0 to NUMBER_OF_GPU_LINKS - 1);
 	-- signal axis_gpu_clk: slv(NUMBER_OF_GPU_LINKS - 1 downto 0);
 
 	-----------------------
@@ -807,9 +819,9 @@ architecture impl of chFPGA is
 	signal gpu_reset: std_logic;
 	signal gpu_reset_reg: std_logic;
 
-	signal bp_shuffle_ctrl_rst: std_logic;
-	signal bp_shuffle_ctrl_rst_reg: std_logic;
-	attribute DONT_TOUCH of bp_shuffle_ctrl_rst, bp_shuffle_ctrl_rst_reg: signal is "true";
+	signal bp_shuffle_bsb_rst: std_logic;
+	signal bp_shuffle_bsb_rst_reg: std_logic;
+	attribute DONT_TOUCH of bp_shuffle_bsb_rst, bp_shuffle_bsb_rst_reg: signal is "true";
 
 	-- -----------------------
 	-- -- CORRELATOR signals
@@ -957,12 +969,11 @@ begin
 	bsb_clk_sel: case PLATFORM_ID generate
 		-- On the Iceboard, the 125 MHz control clock is generated by the system MMSM (clk125).
 		when PLATFORM_ID_MGK7MB =>
-			ctrl_clk <= clk125; -- Control system master clock
+			bsb_clk <= clk125; -- Control system master clock
 
-			ctrl_rst_proc: process(ctrl_clk)
-			begin
-				if rising_edge(ctrl_clk) then
-					ctrl_rst <= clk125_reset or ctrl_reset_pulse;
+			bsb_rst_proc: process(all) begin
+				if rising_edge(bsb_clk) then
+					bsb_rst <= clk125_reset or bsb_reset_pulse;
 				end if;
 			end process;
 
@@ -972,12 +983,12 @@ begin
 			signal rst_ctr: unsigned(3 downto 0) := (others => '0'); -- init required
 		begin
 
-			ctrl_clk <= axis_bsb_clk; -- Control system master clock
-			ctrl_rst <= axis_bsb_rst or ctrl_reset_pulse or rst_pulse; -- see pulse generator below
+			bsb_clk <= axis_bsb_clk; -- Control system master clock
+			bsb_rst <= axis_bsb_rst or bsb_reset_pulse or rst_pulse; -- see pulse generator below
 
 			-- generate a BSB reset pulse upon FPGA startup
 			bsb_rst_proc: process(all) begin
-				if rising_edge(ctrl_clk) then
+				if rising_edge(bsb_clk) then
 					if signed(rst_ctr) = -1 then
 						rst_pulse <= '0';
 					else
@@ -996,9 +1007,9 @@ begin
 
 	-- Pipeline the BSB resets to help them propagate across the chip
 	bsb_rst_proc: process(all) begin
-		if rising_edge(ctrl_clk) then
-			bp_shuffle_ctrl_rst     <= ctrl_rst;
-			bp_shuffle_ctrl_rst_reg <= bp_shuffle_ctrl_rst;
+		if rising_edge(bsb_clk) then
+			bp_shuffle_bsb_rst     <= bsb_rst;
+			bp_shuffle_bsb_rst_reg <= bp_shuffle_bsb_rst;
 		end if; -- RST/CLK
 	end process;
 
@@ -1029,13 +1040,12 @@ begin
 			tx_ready <= udp_tx_tready;
 
 			sfp_status_vector <= sfp_status_vector_int;
-			sfp_signal_detect <= not ctrl_master_reset;
+			sfp_signal_detect <= not bsb_master_reset;
 
 			-- Pipeline udp reset
-			rst_proc: process(clk125)
-			begin
+			rst_proc: process(all) begin
 				if rising_edge(clk125) then
-					udp_stack_rst <= ctrl_rst or udp_stack_reset; -- reset using the bsb reset or the gpio's manual stack reset
+					udp_stack_rst <= bsb_rst or udp_stack_reset; -- reset using the bsb reset or the gpio's manual stack reset
 				end if; -- RST/CLK
 			end process;
 
@@ -1139,12 +1149,12 @@ begin
 	end generate gen_eth; -- case PHY_TYPE
 
 	bsb_master_blk: block
-		signal ctrl_master_rst: std_logic;
-		attribute DONT_TOUCH of ctrl_master_rst: signal is "true";
+		signal bsb_master_rst: std_logic;
+		attribute DONT_TOUCH of bsb_master_rst: signal is "true";
 	begin
 
 		process(all) begin
-			ctrl_master_rst <= ctrl_rst or ctrl_master_reset when rising_edge(ctrl_clk);
+			bsb_master_rst <= bsb_rst or bsb_master_reset when rising_edge(bsb_clk);
 		end process;
 
 		ctrl_master0: entity work.bsb_master
@@ -1186,8 +1196,8 @@ begin
 				cmd_packet_counter => cmd_packet_counter,
 				rply_packet_counter => rply_packet_counter,
 				host_frame_read_rate => host_frame_read_rate,
-				CLK => CTRL_CLK, -- Common clock for all bus accesses
-				RST => ctrl_master_rst
+				CLK => bsb_clk, -- Common clock for all bus accesses
+				RST => bsb_master_rst
 			);
 	end block bsb_master_blk;
 
@@ -1217,10 +1227,6 @@ begin
 	top_router_blk: block
 		attribute TARGET_PBLOCK of top_router0: label is "SYSTEM"; -- assign top router to SYSTEM Pblock
 
-		signal UDP_CMD_DAT: AXIS8_DAT_STRUCT;
-		signal UDP_CMD_RDY: AXIS8_RDY_STRUCT;
-		signal UDP_RPLY_DAT: AXIS8_DAT_STRUCT;
-		signal UDP_RPLY_RDY: AXIS8_RDY_STRUCT;
 		signal cmd_overflow: std_logic;
 
 		signal top_router_rst: std_logic;
@@ -1228,15 +1234,10 @@ begin
 	begin
 		-- debug_out(8) <= cmd_overflow;
 
-		UDP_CMD_DAT <= (TDATA => bsb_cmd_tdata, TVALID => bsb_cmd_tvalid, TLAST => bsb_cmd_tlast);
-		(TREADY => bsb_cmd_tready) <= UDP_CMD_RDY;
-		(TDATA=>bsb_rply_tdata, TVALID => bsb_rply_tvalid ,  TLAST => bsb_rply_tlast )<= UDP_RPLY_DAT;
-		UDP_RPLY_RDY <= (TREADY => bsb_rply_tready);
-
 		-- Pipeline the reset signal
 		bsb_rst_proc: process(all) begin
-			if rising_edge(ctrl_clk) then
-				top_router_rst <= ctrl_rst;
+			if rising_edge(bsb_clk) then
+				top_router_rst <= bsb_rst;
 			end if;
 		end process;
 
@@ -1249,22 +1250,30 @@ begin
 			port map (
 				-- Root interface
 
-				CMD_IN_DAT   => UDP_CMD_DAT,
-				CMD_IN_RDY => UDP_CMD_RDY,
-				RPLY_OUT_DAT => UDP_RPLY_DAT,
-				RPLY_OUT_RDY => UDP_RPLY_RDY,
+				s_axis_bsb_tdata => bsb_cmd_tdata,
+				s_axis_bsb_tvalid => bsb_cmd_tvalid,
+				s_axis_bsb_tlast => bsb_cmd_tlast,
+				s_axis_bsb_tready => bsb_cmd_tready,
+				m_axis_bsb_tdata => bsb_rply_tdata,
+				m_axis_bsb_tvalid => bsb_rply_tvalid,
+				m_axis_bsb_tlast => bsb_rply_tlast,
+				m_axis_bsb_tready => bsb_rply_tready,
 
 				-- Downstream interface
 
-				CMD_OUT_DAT => top_cmd_dat,
-				CMD_OUT_RDY => top_cmd_rdy,
-				RPLY_IN_DAT => top_rply_dat,
-				RPLY_IN_RDY => top_rply_rdy,
+				m_axis_routed_bsb_tdata => top_router_bsb_cmd_tdata,
+				m_axis_routed_bsb_tvalid => top_router_bsb_cmd_tvalid,
+				m_axis_routed_bsb_tlast => top_router_bsb_cmd_tlast,
+				m_axis_routed_bsb_tready => top_router_bsb_cmd_tready,
+				s_axis_routed_bsb_tdata => top_router_bsb_rply_tdata,
+				s_axis_routed_bsb_tvalid => top_router_bsb_rply_tvalid,
+				s_axis_routed_bsb_tlast => top_router_bsb_rply_tlast,
+				s_axis_routed_bsb_tready => top_router_bsb_rply_tready,
 
 				cmd_overflow => cmd_overflow,
 
-				CLK => ctrl_clk,
-				RST => top_router_rst
+				clk => bsb_clk,
+				rst => top_router_rst
 			);
 	end block top_router_blk;
 
@@ -1330,7 +1339,7 @@ begin
 			);
 
 		-- Divide clock by 2 for monitoring
-		process(fmc_mgt_pll_refclk) begin
+		process(all) begin
 			fmc_mgt_pll_refclk_div2(i) <= not fmc_mgt_pll_refclk_div2(i) when rising_edge(fmc_mgt_pll_refclk);
 		end process;
 
@@ -1360,7 +1369,7 @@ begin
 		signal sfp_refclk_div2: std_logic := '0'; -- init required for sims
 		signal clk10_div2: std_logic := '0'; -- init required for sims
 		signal clk200_div2: std_logic := '0'; -- Initialization required
-		signal ctrl_clk_div2: std_logic := '0'; -- Initialization required
+		signal bsb_clk_div2: std_logic := '0'; -- Initialization required
 		signal chan_clk_div2: std_logic := '0'; -- -- Initialization required
 
 		signal bp_time_in_reg1, bp_time_in_reg2, bp_time_in_reg3 : std_logic;
@@ -1429,7 +1438,7 @@ begin
 		end process;
 
 		process(all) begin
-			ctrl_clk_div2 <= not ctrl_clk_div2 when rising_edge(CTRL_CLK);
+			bsb_clk_div2 <= not bsb_clk_div2 when rising_edge(bsb_clk);
 		end process;
 
 		process(all) begin
@@ -1511,12 +1520,16 @@ begin
 
 
 					-- Control interface
-					cmd_dat  => top_cmd_dat(SYSTEM_BASE_PORT),
-					cmd_rdy  => top_CMD_RDY(SYSTEM_BASE_PORT),
-					rply_dat => top_RPLY_DAT(SYSTEM_BASE_PORT),
-					rply_rdy => top_RPLY_RDY(SYSTEM_BASE_PORT),
-					CTRL_CLK => CTRL_CLK,
-					CTRL_RST => ctrl_rst,
+					s_axis_bsb_tdata => top_router_bsb_cmd_tdata(SYSTEM_BASE_PORT),
+					s_axis_bsb_tvalid => top_router_bsb_cmd_tvalid(SYSTEM_BASE_PORT),
+					s_axis_bsb_tlast => top_router_bsb_cmd_tlast(SYSTEM_BASE_PORT),
+					s_axis_bsb_tready => top_router_bsb_cmd_tready(SYSTEM_BASE_PORT),
+					m_axis_bsb_tdata => top_router_bsb_rply_tdata(SYSTEM_BASE_PORT),
+					m_axis_bsb_tvalid => top_router_bsb_rply_tvalid(SYSTEM_BASE_PORT),
+					m_axis_bsb_tlast => top_router_bsb_rply_tlast(SYSTEM_BASE_PORT),
+					m_axis_bsb_tready => top_router_bsb_rply_tready(SYSTEM_BASE_PORT),
+					bsb_clk => bsb_clk,
+					bsb_rst => bsb_rst,
 
 					-- IP Port setting
 					host_frame_read_rate => host_frame_read_rate,
@@ -1539,7 +1552,7 @@ begin
 					cmd_packet_counter => cmd_packet_counter,
 					rply_packet_counter => rply_packet_counter,
 					udp_stack_reset   => udp_stack_reset,
-					ctrl_master_reset => ctrl_master_reset,
+					ctrl_master_reset => bsb_master_reset,
 
                     -- External ARM SPI interface
 					arm_spi_sck  => arm_spi_sck,
@@ -1685,7 +1698,7 @@ begin
 					raw_clk10_div2 => raw_clk10_div2,
 					clk10_div2 => clk10_div2,
 					clk200_div2 => clk200_div2,
-					ctrl_clk_div2 => ctrl_clk_div2,
+					ctrl_clk_div2 => bsb_clk_div2,
 					chan_clk_div2 => chan_clk_div2,
 					sysmon_clk_div2 => sysmon_clk_div2,
 					mgt_clk100_div2 => mgt_clk100_div2,
@@ -1720,7 +1733,7 @@ begin
 
 					corr_reset_async   => corr_reset_async,
 
-					ctrl_reset_pulse   => ctrl_reset_pulse,
+					ctrl_reset_pulse   => bsb_reset_pulse,
 
 					user_reset         => user_reset
 
@@ -1804,9 +1817,9 @@ begin
 				attribute keep of adc_data_ready_reg1: signal is "true"; -- prevent equivalent register merging
 				attribute keep of adc_send_data_reg: signal is "true"; -- prevent equivalent register merging
 
-				signal adcdaq_ctrl_rst: std_logic_vector(0 to NUMBER_OF_ADCS - 1);
-				signal adcdaq_ctrl_rst_reg: std_logic_vector(0 to NUMBER_OF_ADCS - 1);
-				attribute DONT_TOUCH of adcdaq_ctrl_rst, adcdaq_ctrl_rst_reg: signal is "true";
+				signal adcdaq_bsb_rst: std_logic_vector(0 to NUMBER_OF_ADCS - 1);
+				signal adcdaq_bsb_rst_reg: std_logic_vector(0 to NUMBER_OF_ADCS - 1);
+				attribute DONT_TOUCH of adcdaq_bsb_rst, adcdaq_bsb_rst_reg: signal is "true";
 
 			begin
 
@@ -1818,9 +1831,9 @@ begin
 
 				-- pipeline the bsb reset signals
 				rst_proc: process(all) begin
-					if rising_edge(ctrl_clk) then
-						adcdaq_ctrl_rst <= (others => ctrl_rst);
-						adcdaq_ctrl_rst_reg  <= adcdaq_ctrl_rst;
+					if rising_edge(bsb_clk) then
+						adcdaq_bsb_rst <= (others => bsb_rst);
+						adcdaq_bsb_rst_reg  <= adcdaq_bsb_rst;
 					end if;
 				end process;
 
@@ -1838,8 +1851,7 @@ begin
 
 				-- Generate the adc_send_data which will tells all the ADCs to start
 				-- sending data once all of them have their FIFO half-full
-				adc_send_proc: process(chan_clk(i))
-				begin
+				adc_send_proc: process(all) begin
 					if rising_edge(chan_clk(i)) then
 						adc_data_ready_reg1 <= adc_data_ready; -- pipeline all adc_data_ready signals so they can be combined (and_reduce) at a central point
 						adc_data_ready_all(i) <= adc_data_ready_reg1; -- pipeline
@@ -1899,13 +1911,17 @@ begin
 						-- Global synchronization
 						ADCDAQ_RESET => ADCDAQ_RESET,
 
-						-- Control lines
-						CTRL_CMD_IN_DAT   => ADC_CMD_DAT(i),
-						CTRL_CMD_IN_RDY   => ADC_CMD_RDY(i),
-						CTRL_RPLY_OUT_DAT => ADC_RPLY_DAT(i),
-						CTRL_RPLY_OUT_RDY => ADC_RPLY_RDY(i),
-						CTRL_CLK          => CTRL_CLK,
-						CTRL_RST          => adcdaq_ctrl_rst_reg(i),
+					-- Control lines
+					s_axis_bsb_tdata => adcdaq_bsb_cmd_tdata(i),
+					s_axis_bsb_tvalid => adcdaq_bsb_cmd_tvalid(i),
+					s_axis_bsb_tlast => adcdaq_bsb_cmd_tlast(i),
+					s_axis_bsb_tready => adcdaq_bsb_cmd_tready(i),
+					m_axis_bsb_tdata => adcdaq_bsb_rply_tdata(i),
+					m_axis_bsb_tvalid => adcdaq_bsb_rply_tvalid(i),
+					m_axis_bsb_tlast => adcdaq_bsb_rply_tlast(i),
+					m_axis_bsb_tready => adcdaq_bsb_rply_tready(i),
+						bsb_clk => bsb_clk,
+						bsb_rst => adcdaq_bsb_rst_reg(i),
 
 
 						REF_CLK => fmc_refclk(ADC_TO_ADC_BOARD_MAP(i)), -- Used to sample the ADC clock waveform
@@ -1929,7 +1945,7 @@ begin
 			constant WORDS_PER_FRAME: integer := ADC_SAMPLES_PER_FRAME / ADC_SAMPLES_PER_WORD;
 			constant LOG2_WORDS_PER_FRAME: integer := integer_log2(WORDS_PER_FRAME);
 
-			signal adc_send_data2: slv(0 to NUMBER_OF_ADCS - 1); -- indicates when TVALID can be passed on
+			signal adc_send_data2: std_logic_vector(0 to NUMBER_OF_ADCS - 1); -- indicates when TVALID can be passed on
 			signal adc_tdata_reg: slv128_array(0 to NUMBER_OF_ADCS - 1);
 			signal adc_tvalid_reg: std_logic_vector(0 to NUMBER_OF_ADCS - 1);
 
@@ -1943,8 +1959,7 @@ begin
 			adc_clk <= adc_axis_clk(ANT_CLK_SOURCE);
 
 			-- resynchronize ADCDAQ_RESET (clk10) to ADC_CLK
-			adcdaq_proc: process(adc_clk)
-			begin
+			adcdaq_proc: process(all) begin
 				if rising_edge(adc_clk) then
 					adcdaq_reset_pre <= ADCDAQ_RESET;
 					adcdaq_reset_reg <= adcdaq_reset_pre; -- add extra pipelining to facilitate routing
@@ -2049,13 +2064,13 @@ begin
 	-- | 15 | Base + 0x1E000  | CHAN 15      |             |
 
 	chan_router_blk: block
-		signal chan_router_ctrl_rst: std_logic;
-		attribute DONT_TOUCH of chan_router_ctrl_rst: signal is "true";
+		signal chan_router_bsb_rst: std_logic;
+		attribute DONT_TOUCH of chan_router_bsb_rst: signal is "true";
 	begin
 		-- Pipeline the BSB reset
 		bsb_rst_proc: process(all) begin
-			if rising_edge(ctrl_clk) then
-				chan_router_ctrl_rst <= ctrl_rst;
+			if rising_edge(bsb_clk) then
+				chan_router_bsb_rst <= bsb_rst;
 			end if;
 		end process;
 
@@ -2067,20 +2082,28 @@ begin
 			)
 			port map (
 				-- Master control interface
-				CMD_IN_DAT   => top_cmd_dat(CHAN_BASE_PORT),
-				CMD_IN_RDY   => top_cmd_rdy(CHAN_BASE_PORT),
-				RPLY_OUT_DAT => top_rply_dat(CHAN_BASE_PORT),
-				RPLY_OUT_RDY => top_rply_rdy(CHAN_BASE_PORT),
+				s_axis_bsb_tdata => top_router_bsb_cmd_tdata(CHAN_BASE_PORT),
+				s_axis_bsb_tvalid => top_router_bsb_cmd_tvalid(CHAN_BASE_PORT),
+				s_axis_bsb_tlast => top_router_bsb_cmd_tlast(CHAN_BASE_PORT),
+				s_axis_bsb_tready => top_router_bsb_cmd_tready(CHAN_BASE_PORT),
+				m_axis_bsb_tdata => top_router_bsb_rply_tdata(CHAN_BASE_PORT),
+				m_axis_bsb_tvalid => top_router_bsb_rply_tvalid(CHAN_BASE_PORT),
+				m_axis_bsb_tlast => top_router_bsb_rply_tlast(CHAN_BASE_PORT),
+				m_axis_bsb_tready => top_router_bsb_rply_tready(CHAN_BASE_PORT),
 
-				CMD_OUT_DAT => CHAN_CMD_DAT,
-				CMD_OUT_RDY => CHAN_CMD_RDY,
-				RPLY_IN_DAT => CHAN_RPLY_DAT,
-				RPLY_IN_RDY => CHAN_RPLY_RDY,
+				m_axis_routed_bsb_tdata => chan_router_bsb_cmd_tdata,
+				m_axis_routed_bsb_tvalid => chan_router_bsb_cmd_tvalid,
+				m_axis_routed_bsb_tlast => chan_router_bsb_cmd_tlast,
+				m_axis_routed_bsb_tready => chan_router_bsb_cmd_tready,
+				s_axis_routed_bsb_tdata => chan_router_bsb_rply_tdata,
+				s_axis_routed_bsb_tvalid => chan_router_bsb_rply_tvalid,
+				s_axis_routed_bsb_tlast => chan_router_bsb_rply_tlast,
+				s_axis_routed_bsb_tready => chan_router_bsb_rply_tready,
 
-				-- Slave (module) control interface
-				CLK => CTRL_CLK,
-				RST => chan_router_ctrl_rst
+				clk => bsb_clk,
+				rst => bsb_rst
 			);
+
 	end block chan_router_blk;
 
 	-- Generate channalizer clocks.
@@ -2132,9 +2155,9 @@ begin
 		attribute shreg_extract of chan_reset_reg: signal is "no";
 		attribute DONT_TOUCH of chan_reset_reg: signal is "true";
 
-		signal chan_ctrl_rst: std_logic;
-		signal chan_ctrl_rst_reg: std_logic;
-		attribute DONT_TOUCH of chan_ctrl_rst, chan_ctrl_rst_reg: signal is "true";
+		signal chan_bsb_rst: std_logic;
+		signal chan_bsb_rst_reg: std_logic;
+		attribute DONT_TOUCH of chan_bsb_rst, chan_bsb_rst_reg: signal is "true";
 
 		signal adc_tdata_reg: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(ADC_BITS_PER_WORD - 1 downto 0);
 		signal adc_tvalid_reg: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
@@ -2149,11 +2172,10 @@ begin
 	begin
 
 		-- Pipeline the BSB reset
-		bsb_rst_proc: process(ctrl_clk)
-		begin
-			if rising_edge(ctrl_clk) then
-				chan_ctrl_rst <= ctrl_rst;
-				chan_ctrl_rst_reg <= chan_ctrl_rst;
+		bsb_rst_proc: process(all) begin
+			if rising_edge(bsb_clk) then
+				chan_bsb_rst <= bsb_rst;
+				chan_bsb_rst_reg <= chan_bsb_rst;
 			end if;
 		end process;
 
@@ -2198,30 +2220,30 @@ begin
 
 				-- Control interface
 
-				ctrl_cmd_tdata  => CHAN_CMD_DAT(i).TDATA,
-				ctrl_cmd_tvalid => CHAN_CMD_DAT(i).TVALID,
-				ctrl_cmd_tlast  => CHAN_CMD_DAT(i).TLAST,
-				ctrl_cmd_tready => CHAN_CMD_RDY(i).TREADY,
+				s_axis_bsb_tdata  => chan_router_bsb_cmd_tdata(i),
+				s_axis_bsb_tvalid => chan_router_bsb_cmd_tvalid(i),
+				s_axis_bsb_tlast  => chan_router_bsb_cmd_tlast(i),
+				s_axis_bsb_tready => chan_router_bsb_cmd_tready(i),
 
-				ctrl_rply_tdata  => CHAN_RPLY_DAT(i).TDATA,
-				ctrl_rply_tvalid => CHAN_RPLY_DAT(i).TVALID,
-				ctrl_rply_tlast  => CHAN_RPLY_DAT(i).TLAST,
-				ctrl_rply_tready => CHAN_RPLY_RDY(i).TREADY,
+				m_axis_bsb_tdata  => chan_router_bsb_rply_tdata(i),
+				m_axis_bsb_tvalid => chan_router_bsb_rply_tvalid(i),
+				m_axis_bsb_tlast  => chan_router_bsb_rply_tlast(i),
+				m_axis_bsb_tready => chan_router_bsb_rply_tready(i),
 
-				CTRL_CLK => CTRL_CLK,
-				CTRL_RST => chan_ctrl_rst_reg,
+				bsb_clk => bsb_clk,
+				bsb_rst => chan_bsb_rst_reg,
 
-				-- ADCDAQ Control interface
+			-- ADCDAQ Control interface
 
-				adc_cmd_tdata   => ADC_CMD_DAT(i).TDATA,
-				adc_cmd_tvalid  => ADC_CMD_DAT(i).TVALID,
-				adc_cmd_tlast   => ADC_CMD_DAT(i).TLAST,
-				adc_cmd_tready  => ADC_CMD_RDY(i).TREADY,
+			m_axis_adcdaq_bsb_tdata   => adcdaq_bsb_cmd_tdata(i),
+			m_axis_adcdaq_bsb_tvalid  => adcdaq_bsb_cmd_tvalid(i),
+			m_axis_adcdaq_bsb_tlast   => adcdaq_bsb_cmd_tlast(i),
+			m_axis_adcdaq_bsb_tready  => adcdaq_bsb_cmd_tready(i),
 
-				adc_RPLY_tdata  => ADC_RPLY_DAT(i).TDATA,
-				adc_RPLY_tvalid => ADC_RPLY_DAT(i).TVALID,
-				adc_RPLY_tlast  => ADC_RPLY_DAT(i).TLAST,
-				adc_RPLY_tready => ADC_RPLY_RDY(i).TREADY,
+			s_axis_adcdaq_bsb_tdata  => adcdaq_bsb_rply_tdata(i),
+			s_axis_adcdaq_bsb_tvalid => adcdaq_bsb_rply_tvalid(i),
+			s_axis_adcdaq_bsb_tlast  => adcdaq_bsb_rply_tlast(i),
+			s_axis_adcdaq_bsb_tready => adcdaq_bsb_rply_tready(i),
 
 				-- Data monitoring port
 				m_axis_cap_tdata => chan_mon_tdata(i),
@@ -2236,13 +2258,13 @@ begin
 				PRB_tvalid => cap_valid(i),
 				PRB_tlast  => cap_last(i),
 				PRB_tready => cap_ready(i),
-				PRB_CLK    => CTRL_CLK
+				PRB_CLK    => bsb_clk
 			);
 	end generate CHANGEN;
 
 	chan_align_blk: block
-		signal almost_empty_reg1, almost_empty_reg2: slv(0 to NUMBER_OF_CHANNELIZERS - 1);
-		signal send_reg1, send_reg2: slv(0 to NUMBER_OF_CHANNELIZERS - 1);
+		signal almost_empty_reg1, almost_empty_reg2: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
+		signal send_reg1, send_reg2: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
 
 		signal send: std_logic;
 		attribute keep of send_reg1, send_reg2, send, almost_empty_reg1, almost_empty_reg2: signal is "true"; -- prevent the tool form inferring a shift register
@@ -2412,13 +2434,16 @@ begin
                         -- arst => corr_reset, -- asynchronous reset that is independent from ct_clk (because reset stops bp_shuffle_txclk and therefore ct_clk)
 
                         -- Control interface (command and reply stream buses)
-
-                        bsb_cmd_dat  => top_cmd_dat(CT_BASE_PORT),
-                        bsb_cmd_rdy  => top_cmd_rdy(CT_BASE_PORT),
-                        bsb_rply_dat => top_rply_dat(CT_BASE_PORT),
-                        bsb_rply_rdy => top_rply_rdy(CT_BASE_PORT),
-                        bsb_clk      => ctrl_clk,
-                        bsb_rst      => ctrl_rst
+                        s_axis_bsb_tdata => top_router_bsb_cmd_tdata(CT_BASE_PORT),
+                        s_axis_bsb_tvalid => top_router_bsb_cmd_tvalid(CT_BASE_PORT),
+                        s_axis_bsb_tlast => top_router_bsb_cmd_tlast(CT_BASE_PORT),
+                        s_axis_bsb_tready => top_router_bsb_cmd_tready(CT_BASE_PORT),
+                        m_axis_bsb_tdata => top_router_bsb_rply_tdata(CT_BASE_PORT),
+                        m_axis_bsb_tvalid => top_router_bsb_rply_tvalid(CT_BASE_PORT),
+                        m_axis_bsb_tlast => top_router_bsb_rply_tlast(CT_BASE_PORT),
+                        m_axis_bsb_tready => top_router_bsb_rply_tready(CT_BASE_PORT),
+                        bsb_clk      => bsb_clk,
+                        bsb_rst      => bsb_rst
                     );
 
             when uct_case: UCT =>
@@ -2472,18 +2497,16 @@ begin
                         arst => corr_reset, -- asynchronous reset that is independent from ct_clk (because reset stops bp_shuffle_txclk and therefore ct_clk)
 
                         -- Control interface (command and reply stream buses)
-
-                        bsb_cmd_dat  => top_cmd_dat(CT_BASE_PORT),
-                        bsb_cmd_rdy  => top_cmd_rdy(CT_BASE_PORT),
-                        bsb_rply_dat => top_rply_dat(CT_BASE_PORT),
-                        bsb_rply_rdy => top_rply_rdy(CT_BASE_PORT),
-
-                        -- bsb_cmd_dat  => open,
-                        -- bsb_cmd_rdy.TREADY  => '1',
-                        -- bsb_rply_dat => top_rply_dat(CT_BASE_PORT),
-                        -- bsb_rply_rdy => top_rply_rdy(CT_BASE_PORT),
-                        bsb_clk      => ctrl_clk,
-                        bsb_rst      => ctrl_rst
+                        s_axis_bsb_tdata => top_router_bsb_cmd_tdata(CT_BASE_PORT),
+                        s_axis_bsb_tvalid => top_router_bsb_cmd_tvalid(CT_BASE_PORT),
+                        s_axis_bsb_tlast => top_router_bsb_cmd_tlast(CT_BASE_PORT),
+                        s_axis_bsb_tready => top_router_bsb_cmd_tready(CT_BASE_PORT),
+                        m_axis_bsb_tdata => top_router_bsb_rply_tdata(CT_BASE_PORT),
+                        m_axis_bsb_tvalid => top_router_bsb_rply_tvalid(CT_BASE_PORT),
+                        m_axis_bsb_tlast => top_router_bsb_rply_tlast(CT_BASE_PORT),
+                        m_axis_bsb_tready => top_router_bsb_rply_tready(CT_BASE_PORT),
+                        bsb_clk      => bsb_clk,
+                        bsb_rst      => bsb_rst
                     );
 
             when others =>
@@ -2503,29 +2526,20 @@ begin
 
 	GPU_GEN: if GPU_LINK_TYPE /= NONE generate
 
-		signal gpu_cmd_dat: AXIS8_DAT_STRUCT;
-		signal gpu_cmd_rdy: AXIS8_RDY_STRUCT;
-		signal gpu_rply_dat: AXIS8_DAT_STRUCT;
-		signal gpu_rply_rdy: AXIS8_RDY_STRUCT;
 		signal axis_gpu_clk: std_logic_vector(axis_gpu_tdata'RANGE);
 		signal clk322: std_logic;
 
 		-- Pipelined bsb resets
-		signal gpu_ctrl_rst: std_logic;
-		signal gpu_ctrl_rst_reg: std_logic;
-		attribute DONT_TOUCH of gpu_ctrl_rst, gpu_ctrl_rst_reg: signal is "true";
+		signal gpu_bsb_rst: std_logic;
+		signal gpu_bsb_rst_reg: std_logic;
+		attribute DONT_TOUCH of gpu_bsb_rst, gpu_bsb_rst_reg: signal is "true";
 	begin
-		-- Index the system control buses as a separate signal here , because the simulator will make errors if we index it directly on the instantiation
-		gpu_cmd_dat <= top_cmd_dat(GPU_LINK_BASE_PORT);
-		top_cmd_rdy(GPU_LINK_BASE_PORT) <= gpu_cmd_rdy;
-		gpu_rply_rdy <= top_rply_rdy(GPU_LINK_BASE_PORT);
-		top_rply_dat(GPU_LINK_BASE_PORT) <= gpu_rply_dat;
 
 
 		rst_proc: process(all) begin
-			if rising_edge(ctrl_clk) then
-				gpu_ctrl_rst <= ctrl_rst;
-				gpu_ctrl_rst_reg <= gpu_ctrl_rst;
+			if rising_edge(bsb_clk) then
+				gpu_bsb_rst <= bsb_rst;
+				gpu_bsb_rst_reg <= gpu_bsb_rst;
 			end if;
 		end process;
 
@@ -2578,12 +2592,16 @@ begin
 						s_axis_tx_clk => (others => clk322), -- ** patch . was axis_gpu_clk,
 						areset => gpu_reset_reg, -- async input, so we can use the channel reset
 
-						CMD_DAT => gpu_cmd_dat,
-						CMD_RDY => gpu_cmd_rdy,
-						RPLY_DAT => gpu_rply_dat,
-						RPLY_RDY => gpu_rply_rdy,
-						CTRL_CLK => CTRL_CLK,
-						CTRL_RST => gpu_ctrl_rst_reg
+						s_axis_bsb_tdata => top_router_bsb_cmd_tdata(GPU_LINK_BASE_PORT),
+						s_axis_bsb_tvalid => top_router_bsb_cmd_tvalid(GPU_LINK_BASE_PORT),
+						s_axis_bsb_tlast => top_router_bsb_cmd_tlast(GPU_LINK_BASE_PORT),
+						s_axis_bsb_tready => top_router_bsb_cmd_tready(GPU_LINK_BASE_PORT),
+						m_axis_bsb_tdata => top_router_bsb_rply_tdata(GPU_LINK_BASE_PORT),
+						m_axis_bsb_tvalid => top_router_bsb_rply_tvalid(GPU_LINK_BASE_PORT),
+						m_axis_bsb_tlast => top_router_bsb_rply_tlast(GPU_LINK_BASE_PORT),
+						m_axis_bsb_tready => top_router_bsb_rply_tready(GPU_LINK_BASE_PORT),
+						bsb_clk => bsb_clk,
+						bsb_rst => gpu_bsb_rst_reg
 					);
 
 			when cge_case:CGE =>
@@ -2640,13 +2658,16 @@ begin
 						-- debug_out => debug_out,
 
 						-- BSB interface
-
-						cmd_dat  => top_cmd_dat(UCORN_BASE_PORT),
-						cmd_rdy  => top_cmd_rdy(UCORN_BASE_PORT),
-						rply_dat => top_rply_dat(UCORN_BASE_PORT),
-						rply_rdy => top_rply_rdy(UCORN_BASE_PORT),
-						ctrl_clk => ctrl_clk,
-						ctrl_rst => gpu_ctrl_rst_reg
+						s_axis_bsb_tdata => top_router_bsb_cmd_tdata(UCORN_BASE_PORT),
+						s_axis_bsb_tvalid => top_router_bsb_cmd_tvalid(UCORN_BASE_PORT),
+						s_axis_bsb_tlast => top_router_bsb_cmd_tlast(UCORN_BASE_PORT),
+						s_axis_bsb_tready => top_router_bsb_cmd_tready(UCORN_BASE_PORT),
+						m_axis_bsb_tdata => top_router_bsb_rply_tdata(UCORN_BASE_PORT),
+						m_axis_bsb_tvalid => top_router_bsb_rply_tvalid(UCORN_BASE_PORT),
+						m_axis_bsb_tlast => top_router_bsb_rply_tlast(UCORN_BASE_PORT),
+						m_axis_bsb_tready => top_router_bsb_rply_tready(UCORN_BASE_PORT),
+						bsb_clk => bsb_clk,
+						bsb_rst => gpu_bsb_rst_reg
 					);
 
 				-- Use COMPONENT instantiation if this is synthesized as an out-of-context module
@@ -2671,12 +2692,16 @@ begin
 						rst => cge_reset,
 
 						-- BSB interface
-						cmd_dat => gpu_cmd_dat,
-						cmd_rdy => gpu_cmd_rdy,
-						rply_dat => gpu_rply_dat,
-						rply_rdy => gpu_rply_rdy,
-						ctrl_clk => ctrl_clk,
-						ctrl_rst => gpu_ctrl_rst_reg
+						s_axis_bsb_tdata => top_router_bsb_cmd_tdata(GPU_LINK_BASE_PORT),
+						s_axis_bsb_tvalid => top_router_bsb_cmd_tvalid(GPU_LINK_BASE_PORT),
+						s_axis_bsb_tlast => top_router_bsb_cmd_tlast(GPU_LINK_BASE_PORT),
+						s_axis_bsb_tready => top_router_bsb_cmd_tready(GPU_LINK_BASE_PORT),
+						m_axis_bsb_tdata => top_router_bsb_rply_tdata(GPU_LINK_BASE_PORT),
+						m_axis_bsb_tvalid => top_router_bsb_rply_tvalid(GPU_LINK_BASE_PORT),
+						m_axis_bsb_tlast => top_router_bsb_rply_tlast(GPU_LINK_BASE_PORT),
+						m_axis_bsb_tready => top_router_bsb_rply_tready(GPU_LINK_BASE_PORT),
+						bsb_clk => bsb_clk,
+						bsb_rst => gpu_bsb_rst_reg
 					);
 			end cge_case;
 
@@ -2704,10 +2729,6 @@ begin
 			end generate CORR_PRB_GEN;
 
 		when uram_case: UCAP =>
-			signal ucap_cmd_dat: AXIS8_DAT_STRUCT;
-			signal ucap_cmd_rdy: AXIS8_RDY_STRUCT;
-			signal ucap_rply_dat: AXIS8_DAT_STRUCT;
-			signal ucap_rply_rdy: AXIS8_RDY_STRUCT;
 
 			signal chan_mon_reg1_tdata: slv_array(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1)(CAPTURE_BITS_PER_WORD - 1 downto 0);
 			signal chan_mon_reg1_tvalid: std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES - 1);
@@ -2729,7 +2750,7 @@ begin
 			signal ucap_corr_in_tvalid: std_logic;
 			signal ucap_corr_in_tlast: std_logic;
 
-			signal ucap_ctrl_rst, ucap_ctrl_rst_reg: std_logic;
+			signal ucap_bsb_rst, ucap_bsb_rst_reg: std_logic;
 			signal ucap_clk: std_logic;
 			signal ucap_rst, ucap_rst_reg: std_logic;
 			attribute DONT_TOUCH of ucap_rst, ucap_rst_reg: signal is "true";
@@ -2752,16 +2773,12 @@ begin
 				end if;
 			end process;
 
-			ucap_cmd_dat <= top_cmd_dat(UCAP_BASE_PORT);
-			top_cmd_rdy(UCAP_BASE_PORT) <= ucap_cmd_rdy;
-			ucap_rply_rdy <= top_rply_rdy(UCAP_BASE_PORT);
-			top_rply_dat(UCAP_BASE_PORT) <= ucap_rply_dat;
 
 			-- Pipeline the BSB reset
 			bsb_rst_proc: process(all) begin
-				if rising_edge(ctrl_clk) then
-					ucap_ctrl_rst            <= ctrl_rst;
-					ucap_ctrl_rst_reg        <= ucap_ctrl_rst;
+				if rising_edge(bsb_clk) then
+					ucap_bsb_rst            <= bsb_rst;
+					ucap_bsb_rst_reg        <= ucap_bsb_rst;
 				end if; -- RST/CLK
 			end process;
 
@@ -2822,12 +2839,16 @@ begin
 					m_axis_clk => axis_cap_clk,
 
 					-- BSB interface
-					cmd_dat  => ucap_cmd_dat,
-					cmd_rdy  => ucap_cmd_rdy,
-					rply_dat => ucap_rply_dat,
-					rply_rdy => ucap_rply_rdy,
-					ctrl_clk => ctrl_clk,
-					ctrl_rst => ucap_ctrl_rst_reg
+					s_axis_bsb_tdata => top_router_bsb_cmd_tdata(UCAP_BASE_PORT),
+					s_axis_bsb_tvalid => top_router_bsb_cmd_tvalid(UCAP_BASE_PORT),
+					s_axis_bsb_tlast => top_router_bsb_cmd_tlast(UCAP_BASE_PORT),
+					s_axis_bsb_tready => top_router_bsb_cmd_tready(UCAP_BASE_PORT),
+					m_axis_bsb_tdata => top_router_bsb_rply_tdata(UCAP_BASE_PORT),
+					m_axis_bsb_tvalid => top_router_bsb_rply_tvalid(UCAP_BASE_PORT),
+					m_axis_bsb_tlast => top_router_bsb_rply_tlast(UCAP_BASE_PORT),
+					m_axis_bsb_tready => top_router_bsb_rply_tready(UCAP_BASE_PORT),
+					bsb_clk => bsb_clk,
+					bsb_rst => ucap_bsb_rst_reg
 				);
 		end uram_case;
 
@@ -2849,21 +2870,9 @@ begin
 	--
 	CORRGEN: if CORR_TYPE /= NONE generate
 
-		signal corr_cmd_dat: AXIS8_DAT_STRUCT; -- shared with CROSSBAR3
-		signal corr_cmd_rdy: AXIS8_RDY_STRUCT;
-		signal corr_rply_dat: AXIS8_DAT_STRUCT;
-		signal corr_rply_rdy: AXIS8_RDY_STRUCT;
-
-
 		signal corr_reset_reg1: std_logic;
 		attribute DONT_TOUCH of corr_reset_reg1: signal is "true";
 	begin
-
-		-- Extract the control interface
-		corr_cmd_dat <= top_cmd_dat(CORR_BASE_PORT);
-		top_cmd_rdy(CORR_BASE_PORT) <= corr_cmd_rdy;
-		corr_rply_rdy <= top_rply_rdy(CORR_BASE_PORT);
-		top_rply_dat(CORR_BASE_PORT) <= corr_rply_dat;
 
 		corrrst_proc: process(all) begin
 			if rising_edge(ct_clk) then
@@ -2880,14 +2889,14 @@ begin
 
 
 				signal corr_in_tdata: slv32_array(0 to NUMBER_OF_CORRELATORS - 1);
-				signal corr_in_tvalid: slv(0 to NUMBER_OF_CORRELATORS - 1);
-				signal corr_in_tlast: slv(0 to NUMBER_OF_CORRELATORS - 1);
+				signal corr_in_tvalid: std_logic_vector(0 to NUMBER_OF_CORRELATORS - 1);
+				signal corr_in_tlast: std_logic_vector(0 to NUMBER_OF_CORRELATORS - 1);
 				attribute shreg_extract of corr_in_tdata, corr_in_tlast, corr_in_tvalid: signal is "no";
 
 				signal corr_out_tdata: slv8_array(0 to NUMBER_OF_CORRELATORS - 1);
-				signal corr_out_tvalid: slv(0 to NUMBER_OF_CORRELATORS - 1);
-				signal corr_out_tlast: slv(0 to NUMBER_OF_CORRELATORS - 1);
-				signal corr_out_tready: slv(0 to NUMBER_OF_CORRELATORS - 1);
+				signal corr_out_tvalid: std_logic_vector(0 to NUMBER_OF_CORRELATORS - 1);
+				signal corr_out_tlast: std_logic_vector(0 to NUMBER_OF_CORRELATORS - 1);
+				signal corr_out_tready: std_logic_vector(0 to NUMBER_OF_CORRELATORS - 1);
 			begin
 
 				-- Connect the corner-turn engine outputs to the correlator inputs
@@ -2941,17 +2950,20 @@ begin
 						m_axis_data_out_tlast   => corr_out_tlast,
 						m_axis_data_out_tready  => corr_out_tready,
 
-						out_clk                 => ctrl_clk,
-						out_rst                 => ctrl_rst,
+						out_clk                 => bsb_clk,
+						out_rst                 => bsb_rst,
 
 						-- Control interface
-
-						CMD_DAT  => corr_cmd_dat,
-						CMD_RDY  => corr_cmd_rdy,
-						RPLY_DAT => corr_rply_dat,
-						RPLY_RDY => corr_rply_rdy,
-						CTRL_CLK => ctrl_clk,
-						CTRL_RST => ctrl_rst
+						s_axis_bsb_tdata => top_router_bsb_cmd_tdata(CORR_BASE_PORT),
+						s_axis_bsb_tvalid => top_router_bsb_cmd_tvalid(CORR_BASE_PORT),
+						s_axis_bsb_tlast => top_router_bsb_cmd_tlast(CORR_BASE_PORT),
+						s_axis_bsb_tready => top_router_bsb_cmd_tready(CORR_BASE_PORT),
+						m_axis_bsb_tdata => top_router_bsb_rply_tdata(CORR_BASE_PORT),
+						m_axis_bsb_tvalid => top_router_bsb_rply_tvalid(CORR_BASE_PORT),
+						m_axis_bsb_tlast => top_router_bsb_rply_tlast(CORR_BASE_PORT),
+						m_axis_bsb_tready => top_router_bsb_rply_tready(CORR_BASE_PORT),
+						bsb_clk => bsb_clk,
+						bsb_rst => bsb_rst
 					);
 
 			when ucorr44_case: UCORR44 =>
@@ -2983,7 +2995,7 @@ begin
 
 				constant NBINS_PER_CORR: integer := FFT_INFO(FFT_TYPE).SAMPLES_PER_FRAME / 2 / NBOARDS / NCORR;
 
-				signal corr_in_tdata: slv(255 downto 0);
+				signal corr_in_tdata: std_logic_vector(255 downto 0);
 				signal corr_in_tvalid: std_logic;
 				signal corr_in_tlast: std_logic;
 				attribute shreg_extract of corr_in_tdata, corr_in_tvalid, corr_in_tlast: signal is "no";
@@ -3026,16 +3038,19 @@ begin
 						m_axis_data_tvalid  => corr_out_tvalid,
 						m_axis_data_tlast   => corr_out_tlast,
 						m_axis_data_tready  => corr_out_tready,
-						out_clk => ctrl_clk,
+						out_clk => bsb_clk,
 
 						-- Control interface
-
-						s_axis_bsb_DAT  => corr_cmd_dat,
-						s_axis_bsb_RDY  => corr_cmd_rdy,
-						m_axis_bsb_DAT  => corr_rply_dat,
-						m_axis_bsb_RDY  => corr_rply_rdy,
-						CTRL_CLK => ctrl_clk,
-						CTRL_RST => ctrl_rst
+						s_axis_bsb_tdata => top_router_bsb_cmd_tdata(CORR_BASE_PORT),
+						s_axis_bsb_tvalid => top_router_bsb_cmd_tvalid(CORR_BASE_PORT),
+						s_axis_bsb_tlast => top_router_bsb_cmd_tlast(CORR_BASE_PORT),
+						s_axis_bsb_tready => top_router_bsb_cmd_tready(CORR_BASE_PORT),
+						m_axis_bsb_tdata => top_router_bsb_rply_tdata(CORR_BASE_PORT),
+						m_axis_bsb_tvalid => top_router_bsb_rply_tvalid(CORR_BASE_PORT),
+						m_axis_bsb_tlast => top_router_bsb_rply_tlast(CORR_BASE_PORT),
+						m_axis_bsb_tready => top_router_bsb_rply_tready(CORR_BASE_PORT),
+						bsb_clk => bsb_clk,
+						bsb_rst => bsb_rst
 					);
 
 			-------------
