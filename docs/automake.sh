@@ -14,7 +14,7 @@ while true; do
     browser_windows="$(xdotool search --all --onlyvisible --name '.*chFPGA.*(Brave|Firefox)')"
     echo "Will now refresh browser windows ${browser_windows}"
     # Send keystroke
-    for bw in $browser_windows; do
-        xdotool key --window $bw F5
+    for bw in ${browser_windows}; do
+        xdotool key --window "${bw}" F5
     done
 done
