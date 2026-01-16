@@ -181,16 +181,22 @@ The read sequencer uses a delay pipeline (``read_proc_op`` and ``buf_ix``) to co
 Each captured frame is split into 4 packets to fit within Ethernet jumbo frame limits. Each packet contains:
 
 - **10-byte header**:
+
   - Byte 0: PROBE ID (``0xA0`` for source 0, ``0xA1`` for source 1)
+
   - Bytes 1-2: STREAM ID (16 bits, MSB first)
+
     - Bits 15:12: Frame number (0 to N-1, where N=2,4,8,16 depending on mode)
     - Bits 11:4: User stream ID (crate/slot identifier)
     - Bits 3: Unused (zero)
     - Bits 2:0: Channel number
+
   - Byte 3: Flags
+  
     - Bits 7:4: Serial flags (all zeros)
     - Bits 3:2: Mode (0=8-channel, 1=4-channel, 2=2-channel, 3=1-channel)
     - Bits 1:0: Packet number within frame (0-3)
+
   - Bytes 4-9: 48-bit timestamp (frame number, MSB first)
 
 - **8192 bytes of data**: 128-bit words are transmitted byte-by-byte, MSB first, in the natural order they were captured.

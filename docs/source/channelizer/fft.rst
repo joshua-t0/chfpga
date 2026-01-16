@@ -47,13 +47,15 @@ Interface signals
 -----------------
 
 Data is provided to the FFT over an AXI4-Streaming, non-blocking input interface. The data word structure contains:
+
  - ``ADC_SAMPLES_PER_WORD`` samples per clock (4 for CHIME, 8 for D3A/CHORD). 
  - Each sample is signed (2's complement format)
  - First sample is in the MSB of the word
  - TUSER contains the ADC frame-wide overflow flag, valid on TLAST
-- TVALID must be always '1' because the FFT processes data on every clock (see section below).  
+ - TVALID must be always '1' because the FFT processes data on every clock (see section below).  
 
 The output is also an AXI4-Streaming, non-blocking interface. Each output word contains:
+
  - ``FFT_BINS_PER_WORD`` complex frequency bins per clock (2 for CHIME, 4 for D3A/CHORD). 
  - Each bin is signed (2's complement format)
  - First bin is in the MSB of the word

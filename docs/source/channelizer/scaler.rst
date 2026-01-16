@@ -68,7 +68,7 @@ Generic parameters
 - ``COEFF_BITS_PER_BIN``: Bits per gain coefficient, typically 16 for real gains or 32 (16+16) for complex gains. Must be multiple of 8 bits.
 - ``OUT_BITS_PER_BIN``: Output bits per bin for the main output. Needs to be at least 8 for holding the (4+4 bits) outputs, or 16 (8+8) bits if 8-bit mode is to be supported (``EIGHT_BIT_SUPPORT`` is TRUE). In bypass modes, The input data will be truncated to this width
 - ``CAP_BITS_PER_WORD``: Total width of the capture output port. The capture output word holds various number of values depending on the software-selected capture output format. 
- Typically 32 bits for Iceboard (to feed `PROBER`), or 128 bits for CRS (to feed `UCAP`)
+  Typically 32 bits for Iceboard (to feed `PROBER`), or 128 bits for CRS (to feed `UCAP`)
 - ``EIGHT_BIT_SUPPORT``: TRUE when scaler supports 8+8 bit output in addition to 4+4 bit output
 
 Other generics are derived from the above parameters and are not generally user-configurable.
@@ -301,7 +301,7 @@ Zero on saturation
 When zero on saturation is enabled, if either the real or imaginary components of a frequency bin over- or underflow, then both components are zero'd so that they do not impact correlation.
 
 Offset encoding
-==============
+===============
 
 When offset encoding is enabled, the output data is represented via an offset encoding instead of the two's complement. Practically speaking, this amounts to inverting the sign bit.
 
