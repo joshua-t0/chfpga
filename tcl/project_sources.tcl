@@ -47,6 +47,7 @@ set hdl_base_files [list  \
  "system/clocks.vhd" \
  "chan/chan_package.vhd" \
  "chan/chan.vhd" \
+ "chan/chan_array.vhd" \
  "chan/lfsr.vhd" \
  "chan/funcgen.vhd" \
  "chan/fft_delay.vhd" \
