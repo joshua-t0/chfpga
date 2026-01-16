@@ -41,8 +41,9 @@ rule:
         severity: Warning
     process_010: # Allow "process (all) begin"
         disable: true
-    process_012: # Allow "process (all) begin"
-        disable: true
+    process_012: # is keyword"
+        disable: false
+        action: remove # we don't want "is" keyword in processes
 
     # block
     block_002: # we don't use 'is'
@@ -77,18 +78,24 @@ rule:
     # Spaces
 
     generic_014: # We dont put a space between generic label and ":"
-        number_of_spaces: 0
-    port_007 : # we don't necessarily put 4 spaces after 'in'
-        disable: true
+        number_of_spaces: ">=0"
+    port_007: # we don't necessarily put 4 spaces after 'in'
+        # Disable to allow flexible spacing, use alignment instead
+        spaces_before: 1
+        spaces_after: 1
     signal_006: # we don't put a space between the label and ":"
         number_of_spaces: 0
         severity: Error
     variable_006: # spaces between label and :
         number_of_spaces: 0
-    port_020: # we don't put a space between the label and ":"
-        number_of_spaces: 0
+    port_020: # we don't put a space between the port label and ":"
+        number_of_spaces: ">=0"
+    port_021: # port keyword on same line as opening parenthesis
+        disable: false
     port_008: # we may have any number of space after "out"
-        disable: true
+        # Disabled - allow flexible spacing, use alignment instead
+        spaces_before: 1
+        spaces_after: 1
     constant_006: # We use no space between constant label and ":"
         number_of_spaces: 0
         severity: Error
@@ -128,6 +135,8 @@ rule:
         # disable: true #
     instantiation_033: # require COMPONENT in component instantiation
         disable: true
+    instantiation_036: # Add architecture identifier
+        disable: true
 
     function_100: # space(s) between 'function', name and '(''
         number_of_spaces: <=1
@@ -153,9 +162,10 @@ rule:
     if_008: # end if: we may or may not have blank lines, depending on where it is
         disable: true
     entity_017: # align colon in ports and generic
-        disable: true
+        disable: false
+        compact_alignment: yes
 
-    entity_018: #
+    entity_018: # Alignment of := operator on generics and ports
         severity: Error
         compact_alignment: yes
     entity_020: # align comments in ports and generic
@@ -188,6 +198,8 @@ rule:
     # Alignments
     concurrent_006: # assignment alignment
         compact_alignment: no
+    concurrent_008: # Align comments in consecutive concurrent statements
+        disable: true
     process_400: # assignment alignment
         disable: true # not enforced
     process_035: # comment alignment
@@ -223,7 +235,7 @@ rule:
     entity_003: # blank line before entity
         style: allow_comment # could also require_comment
     type_010: # blank line before type
-        style: allow_comment
+        disable: true
     generate_004: # blank line before generate
         style: allow_comment
     instantiation_019: # blank line before instantiation
@@ -316,6 +328,9 @@ rule:
     if_009: # Alignment of multiline condition.
         align_left: yes
         align_paren: yes
+
+alignment:
+    comment: false
 
 indent:
     tokens:
