@@ -22,10 +22,13 @@ pipelines:
           - ls -al
           - ls -al build
           - cp -r build/html/* www/$DOC_PUBLISH_FOLDER/
+          - cd www/chfpga
+          - ln -sfn $BITBUCKET_BRANCH latest
+          - cd ../..
           - cd www
           - git config --global user.email "bb-pipelines@jfciche.com"
           - git config --global user.name "BitBucket Pipelines"
-          - git add -A $DOC_PUBLISH_FOLDER
+          - git add $DOC_PUBLISH_FOLDER chfpga/latest
           - git diff-index --quiet HEAD -- || git commit -m "Auto update of $DOC_PUBLISH_FOLDER documentation"
           - git push
 
