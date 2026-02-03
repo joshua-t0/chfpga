@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+
+# Git commit style
+
+- Use the existing style \<commit_type\>(\<module_or_subsystem_context\>):\<short_summary_of_changes\> for first line
+- Additional lines are used for more details on changes

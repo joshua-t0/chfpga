@@ -1,0 +1,60 @@
+---
+globs: "*.rst"
+alwaysApply: false
+---
+
+# RST and documentation rules (from ai_context)
+
+See .cursor/rules/svg_rules.mdc for SVG block diagram style.
+
+## Image Organization
+
+- Images organized in subdirectories by module/system: images/SYSTEM/, images/CHAN/, etc.
+- SVG format preferred for block diagrams
+- Use relative paths in RST: ../images/MODULE/file.svg
+
+## RST File Structure (entity documentation)
+
+Standard structure:
+
+1. Title with :entity:`NAME` (`filename.vhd`)
+2. .. parse:: hdl/PATH/file.vhd
+3. .. default-role:: vhdl:entity
+4. Optional figure for block diagram
+5. Sub-modules section with toctree
+6. Entity documentation section with .. autoentity:: NAME
+7. Memory map section with .. include-docs:: NAME :start-after: Memory Map
+
+## RST Formatting Rules
+
+- Title underlines must match title length exactly (dash/asterisk count = char count)
+  - Always count the exact character length of the title line (including backticks, asterisks, spaces)
+  - The underline should be the same length as the title (or 1-2 characters longer for safety)
+  - Verify underline length after making changes to avoid "Title underline too short" warnings
+- Definition lists and block quotes need blank line after them
+- Bullet lists need proper indentation (2 spaces for toctree items)
+- Inline interpreted text: single backticks for math (default role), double backticks for code
+- Grid tables require precise column widths; no trailing spaces in cells
+- No transitions (----) at document start
+
+## Common Issues and Fixes
+
+- "Unexpected indentation": Usually extra spaces in table separators or list items
+- "Title underline too short": Add dashes to match title length
+- "Transition at start": Remove leading separator lines after markers
+- "Unknown target": Check label references
+- Missing images: Create placeholder or comment out figure directive
+
+## File Locations
+
+- VHDL source: hdl/
+- Documentation source: docs/source/
+- Images: docs/source/images/
+- Build output: docs/build/
+
+## Module documentation patterns (reference)
+
+- SYSTEM module: Container for system-level infrastructure (GPIO, SPI, I2C, SYSMON, etc.)
+- CHAN module: Channelizer pipeline (FUNCGEN → FFT → SCALER → FIFO)
+- Corner-turn engines: BCT_ENGINE (Kintex-7) or UCT_ENGINE (Ultrascale+)
+- Each module with router shows memory map of sub-module addresses

@@ -1,3 +1,8 @@
 ---
 alwaysApply: true
 ---
+
+Git commit rules: See .cursor/rules/git_rules.mdc
+VHDL source code rules (.vhd files): .cursor/rules/vhdl_rules.mdc
+XDC constraints file rules (.xdc files): .cursor/rules/xdc_rules.mdc
+Documentation (.rst files): .cursor/rules/principles.mdc

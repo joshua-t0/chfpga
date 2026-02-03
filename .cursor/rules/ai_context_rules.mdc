@@ -1,0 +1,28 @@
+---
+alwaysApply: false
+---
+
+# AI context and style guide for chFPGA documentation
+
+Style preferences, conventions, and context for AI-assisted documentation work on the chFPGA project.
+
+Rules are split by topic:
+
+- **RST and documentation**: .cursor/rules/rst_rules.mdc (applies to *.rst)
+  - Image organization, RST file structure and formatting, common issues and fixes, file locations, module documentation patterns, memory map reference
+
+- **SVG block diagrams**: .cursor/rules/svg_rules.mdc (applies to *.svg)
+  - SVG block diagram style
+
+- **VHDL** (including comment extraction for Sphinx): .cursor/rules/vhdl_rules.mdc (always applied)
+  - VHDL coding style (port maps, VHDL2008, AXI naming, etc.)
+  - VHDL comment extraction (vhdl_sphinx_domain), memory map table format in VHDL comments
+
+- **XDC constraints**: .cursor/rules/xdc_rules.mdc (applies to *.xdc)
+  - Cell names, LVDS differential pairs
+
+- **General principles for .rst**: .cursor/rules/principles.mdc (applies to *.rst)
+
+- **Git commit style**: .cursor/rules/git_rules.mdc (always applied)
+
+See those files for the full rule text.

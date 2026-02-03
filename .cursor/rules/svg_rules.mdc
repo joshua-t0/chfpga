@@ -1,0 +1,17 @@
+---
+globs: "*.svg"
+alwaysApply: false
+---
+
+# SVG block diagram style
+
+- Simple black outlines on white boxes, no fills or gradients
+- Compact boxes with minimal internal padding, tight to text
+- Vertical stacking of modules off a common bus line
+- Sans-serif font, bold for module names, smaller gray text for addresses
+- I/O labels on the right side showing external connections
+- Dashed container for the parent module boundary
+- BSB arrows showing command/reply flow into the router
+- Modules without command interface shown outside the bus structure
+- Clean, technical appearance; no decorative elements
+- Reference example: images/SYSTEM/system.svg

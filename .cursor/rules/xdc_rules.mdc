@@ -1,0 +1,17 @@
+---
+globs: "*.xdc"
+alwaysApply: false
+---
+
+# XDC constraints rules
+
+## Cell names
+
+    - Cell names are case sensitive
+    - Make sure that the cell name in the constraints file matches the hierarchy in the VHDL source code. Changes in blocks, generate blocks, or labels (including case) need to match. Check this whenever changes in labels and the block/generate are modified in the VHDL source code.
+    - Hierarchy separator is "/". Dots are used to combine block/generate/instance labels into a single label
+    - Wildcards "*" can be used to shorten paths by representing non-essential parts of a label. However, wildcards  do not cross hierarchy levels. 
+
+## LVDS differential pairs
+
+**Rule:** For LVDS differential pairs, constrain only one pin of the pair (both PACKAGE_PIN and IOSTANDARD on that pin); do not add constraints for the other pin, it is inferred by the tool.
