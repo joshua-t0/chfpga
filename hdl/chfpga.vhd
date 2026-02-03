@@ -66,7 +66,6 @@ use xpm.vcomponents.all;
 
 -- Project libraries
 use work.chFPGA_Package.all; -- Get all component definitions
-use work.chan_package.all; -- Get chan component
 use work.chFPGA_config.all; -- Get implementation-specific definitions
 
 -- This is the generic **top-level** entity of the chFPGA data acquisition/channelizer/corner-turn/correlator firmware.

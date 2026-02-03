@@ -28,7 +28,6 @@ use xpm.vcomponents.ALL;
 
 library work;
 use work.chFPGA_Package.ALL; -- Get all component definitions
-use work.chan_package.ALL; -- Get chan component
 use work.chFPGA_config.ALL; -- Get implementation-specific definitions
 
 entity chan_array is
@@ -585,7 +584,7 @@ begin
 			end if; -- clk
 		end process;
 
-		chan0: component work.chan_package.chan
+		chan0: entity work.chan
 			port map (
 				-- Channelizer input (on ANT_CLK)
 				in_dat_tdata  => adc_tdata_reg(i),
