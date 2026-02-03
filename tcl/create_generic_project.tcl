@@ -45,11 +45,11 @@ if { ${bd_name} ne ""} {lappend bd_files "${bd_name}/${bd_name}.bd"}
 set ip_libraries [list "ip_library/" ]
 
 # Util files, from the repo root
-# set util_files [list \
-#  "tcl/rename_bitstream.tcl"\
-#  ]
+set util_files [list \
+ "tcl/rename_bitstream.tcl"\
+ ]
 
-set util_files {}
+# set util_files {}
 
 
 
@@ -236,8 +236,7 @@ foreach file_obj  [get_files $full_hdl_files] {
 
 # Set 'sources_1' fileset properties
 set_property -name "dataflow_viewer_settings" -value "min_width=16" -objects $fileset_obj
-set_property -name "top" -value "chfpga_crs" -objects $fileset_obj
-set_property -name "top_auto_set" -value "0" -objects $fileset_obj
+set_property -name "top_auto_set" -value "1" -objects $fileset_obj
 
 
 # Create constraints fileset
@@ -261,17 +260,16 @@ set_property -name "target_part" -value $target_part -objects $fileset_obj
 if {[string equal [get_filesets -quiet sim_1] ""]} {create_fileset -simset sim_1}
 set obj [get_filesets sim_1]
 
-set_property -name "top" -value "chfpga_crs" -objects $obj
-set_property -name "top_auto_set" -value "0" -objects $obj
+set_property -name "top_auto_set" -value "1" -objects $obj
 set_property -name "top_lib" -value "xil_defaultlib" -objects $obj
 
 
 # Create utils fileset
 # ----------------------------
 
-# set obj [get_filesets utils_1]
-# add_files -norecurse -fileset $obj $full_util_files
-# set_property -name "file_type" -value "TCL" -objects [get_files -of_objects $obj "*.tcl"]
+set obj [get_filesets utils_1]
+add_files -norecurse -fileset $obj $full_util_files
+set_property -name "file_type" -value "TCL" -objects [get_files -of_objects $obj "*.tcl"]
 # set idrFlowPropertiesConstraints ""
 # catch {
 #  set idrFlowPropertiesConstraints [get_param runs.disableIDRFlowPropertyConstraints]
@@ -352,12 +350,12 @@ puts ""
 
 set ip_list {}
 set ips [get_ips]
-puts "ips=  $ips"
+# puts "ips=  $ips"
 
 foreach ip_obj  [get_ips] {
   # Note: Vivado 2023+ uses FILE_NAME
   set ip_name [get_property NAME $ip_obj]
-  puts "Checking if $ip_name is in $ooc_ip_files"
+  # puts "Checking if $ip_name is in $ooc_ip_files"
   if {[lsearch $ooc_ip_files "*/$ip_name.*"] >=0} {
       puts "Adding $ip_name"
     lappend ip_list $ip_obj
