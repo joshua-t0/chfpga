@@ -45,7 +45,6 @@ set hdl_base_files [list  \
  "system/sysmon.vhd" \
  "system/blinker.vhd" \
  "system/clocks.vhd" \
- "chan/chan_package.vhd" \
  "chan/chan.vhd" \
  "chan/chan_array.vhd" \
  "chan/lfsr.vhd" \
