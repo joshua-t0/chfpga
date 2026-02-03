@@ -52,7 +52,7 @@ set_clock_groups -name ADCCLK14_GROUP -asynchronous -group [get_clocks -include_
 set_clock_groups -name ADCCLK15_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK15]
 
 # Remove timing constraints from the FIFO Reset signal
-#set_false_path -from [get_pins {chfpga0/ADCGEN[*].adcdaq0/IMPL.FIFO_RST_INT_reg/C}] -to [get_pins {chfpga0/ADCGEN[*].adcdaq0/IMPL.FIFO_RST_reg/D}]
+#set_false_path -from [get_pins {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[*].adcdaq0/IMPL.FIFO_RST_INT_reg/C}] -to [get_pins {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[*].adcdaq0/IMPL.FIFO_RST_reg/D}]
 
 #set_clock_groups -name ADCCLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK?]
 
@@ -235,7 +235,7 @@ set_false_path -to [get_cells -hierarchical -filter {NAME =~ "*/clk0/*" && ASYNC
 
 
 # adc-send_data_reg1 signals come from multiple clocks. Ignore the timing to that register. That register has a ASYNC_REG=True property.
-set_false_path -to [get_pins {chfpga0/ADCGEN[*].adc_send_data_reg1_reg[*]/D}]
+set_false_path -to [get_pins {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[*].adc_send_data_reg1_reg[*]/D}]
 
 
 # create_clock -period 1000.000 -name fmca_spi_sck -waveform {0.000 500.000} [get_ports fmca_spi_sck]
