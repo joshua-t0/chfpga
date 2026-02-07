@@ -207,10 +207,11 @@ set_property IOSTANDARD LVCMOS25 [get_ports fpga_led1_bp_sma]
 set_property SLEW FAST [get_ports fpga_led1_bp_sma]
 set_property DRIVE 16 [get_ports fpga_led1_bp_sma]
 
-# Backplane TIME
-# NOTE: It is OK to specify only one of the two LVDS pins in a pair. The other one is inferred.
+# Backplane TIME (one pin of LVDS pair; bp_time_n inferred)
 set_property PACKAGE_PIN AG30 [get_ports bp_time_p]
 set_property IOSTANDARD LVDS_25 [get_ports bp_time_p]
+# set_property IOSTANDARD LVCMOS25 [get_ports bp_time_p]
+# set_property IOSTANDARD LVCMOS25 [get_ports bp_time_n]
 
 # Backplane TRIG
 set_property PACKAGE_PIN AJ29 [get_ports bp_trig_p]
@@ -347,77 +348,6 @@ set_property PACKAGE_PIN F2 [get_ports sfp_tx_p]
 set_property PACKAGE_PIN F6 [get_ports {xge_refclk_p[0]}]
 
 
-# ### QSFP A
-
-set_property PACKAGE_PIN G4 [get_ports {xge_rx_p[0]}]
-set_property PACKAGE_PIN D2 [get_ports {xge_tx_p[0]}]
-set_property PACKAGE_PIN E4 [get_ports {xge_rx_p[1]}]
-set_property PACKAGE_PIN B2 [get_ports {xge_tx_p[1]}]
-set_property PACKAGE_PIN D6 [get_ports {xge_rx_p[2]}]
-set_property PACKAGE_PIN A4 [get_ports {xge_tx_p[2]}]
-set_property PACKAGE_PIN C4 [get_ports {xge_rx_p[3]}]
-set_property PACKAGE_PIN B6 [get_ports {xge_tx_p[3]}]
-
-# ### QSFP B
-
-set_property PACKAGE_PIN F10 [get_ports {xge_rx_p[4]}]
-set_property PACKAGE_PIN C8 [get_ports {xge_tx_p[4]}]
-set_property PACKAGE_PIN D10 [get_ports {xge_rx_p[5]}]
-set_property PACKAGE_PIN A8 [get_ports {xge_tx_p[5]}]
-set_property PACKAGE_PIN E12 [get_ports {xge_rx_p[6]}]
-set_property PACKAGE_PIN B10 [get_ports {xge_tx_p[6]}]
-set_property PACKAGE_PIN C12 [get_ports {xge_rx_p[7]}]
-set_property PACKAGE_PIN A12 [get_ports {xge_tx_p[7]}]
-
-
-
-#################################
-# Backplane shuffle
-#################################
-# Backplane PCB shuffle
-#  Index Lane #   GTX #      GTX #  FPGA Pin #   Ref clock       bp_shuffle_refclk[x]
-#   0     1      GTX114_3   X0Y15_TX  N4         MGTREFCLK114_0    1
-#   1     2      GTX114_2   X0Y14_TX  P2         MGTREFCLK114_0    1
-#   2     3      GTX114_1   X0Y13_TX  T2         MGTREFCLK114_0    1
-#   3     4      GTX114_0   X0Y12_TX  V2         MGTREFCLK114_0    1
-#   4     5      GTX111_3   X0Y3_TX   AG8        MGTREFCLK112_0    0
-#   5     6      GTX111_2   X0Y2_TX   AJ8        MGTREFCLK112_0    0
-#   6     7      GTX111_1   X0Y1_TX   AK10       MGTREFCLK112_0    0
-#   7     8      GTX111_0   X0Y0_TX   AJ12       MGTREFCLK112_0    0
-#   8     9      GTX112_3   X0Y7_TX   AH2        MGTREFCLK112_0    0
-#   9     10     GTX112_2   X0Y6_TX   AK2        MGTREFCLK112_0    0
-#   10    11     GTX112_1   X0Y5_TX   AJ4        MGTREFCLK112_0    0
-#   11    12     GTX112_0   X0Y4_TX   AK6        MGTREFCLK112_0    0
-#   12    13     GTX115_0   X0Y16_TX  M2         MGTREFCLK114_0    1
-#   13    14     GTX115_1   X0Y17_TX  K2         MGTREFCLK114_0    1
-#   14    15     GTX115_2   X0Y18_TX  H2         MGTREFCLK114_0    1
-# Backplane QSFP+ shuffle
-#   15    0      GTX113_3   X0Y11_TX  AF1        MGTREFCLK114_0    1
-#   16    1      GTX113_2   X0Y10_TX  AD1        MGTREFCLK114_0    1
-#   17    2      GTX113_1   X0Y9_TX   AB1        MGTREFCLK114_0    1
-#   18    3      GTX113_0   X0Y8_TX   Y1         MGTREFCLK114_0    1
-
-set_property PACKAGE_PIN N4 [get_ports {bp_shuffle_tx_p[0]}]
-set_property PACKAGE_PIN P2 [get_ports {bp_shuffle_tx_p[1]}]
-set_property PACKAGE_PIN T2 [get_ports {bp_shuffle_tx_p[2]}]
-set_property PACKAGE_PIN V2 [get_ports {bp_shuffle_tx_p[3]}]
-set_property PACKAGE_PIN AG8 [get_ports {bp_shuffle_tx_p[4]}]
-set_property PACKAGE_PIN AJ8 [get_ports {bp_shuffle_tx_p[5]}]
-set_property PACKAGE_PIN AK10 [get_ports {bp_shuffle_tx_p[6]}]
-set_property PACKAGE_PIN AJ12 [get_ports {bp_shuffle_tx_p[7]}]
-set_property PACKAGE_PIN AH2 [get_ports {bp_shuffle_tx_p[8]}]
-set_property PACKAGE_PIN AK2 [get_ports {bp_shuffle_tx_p[9]}]
-set_property PACKAGE_PIN AJ4 [get_ports {bp_shuffle_tx_p[10]}]
-set_property PACKAGE_PIN AK6 [get_ports {bp_shuffle_tx_p[11]}]
-set_property PACKAGE_PIN M2 [get_ports {bp_shuffle_tx_p[12]}]
-set_property PACKAGE_PIN K2 [get_ports {bp_shuffle_tx_p[13]}]
-set_property PACKAGE_PIN H2 [get_ports {bp_shuffle_tx_p[14]}]
-# set_property PACKAGE_PIN D2 [get_ports {bp_shuffle_tx_p[15]}]
-set_property PACKAGE_PIN AF2 [get_ports {bp_shuffle_tx_p[15]}]
-set_property PACKAGE_PIN AD2 [get_ports {bp_shuffle_tx_p[16]}]
-set_property PACKAGE_PIN AB2 [get_ports {bp_shuffle_tx_p[17]}]
-set_property PACKAGE_PIN Y2 [get_ports {bp_shuffle_tx_p[18]}]
-
 # 156.25 MHz Reference clocks
 # [0] on MGTREFCLK112_0 on (covers GTX111, GTX112)
 # [1] on MGTREFCLK114_0 (covers GTX114, GTX115)
@@ -425,9 +355,6 @@ set_property PACKAGE_PIN Y2 [get_ports {bp_shuffle_tx_p[18]}]
 set_property PACKAGE_PIN AD6 [get_ports {bp_shuffle_refclk_p[0]}]
 set_property PACKAGE_PIN R8 [get_ports {bp_shuffle_refclk_p[1]}]
 # set_property PACKAGE_PIN F6 [get_ports {bp_shuffle_refclk_p[2]}]
-
-
-
 
 
 #################################
@@ -451,8 +378,6 @@ set_property PACKAGE_PIN R8 [get_ports {bp_shuffle_refclk_p[1]}]
 #NET  XADC_VAUX0N_R             LOC = J24  | IOSTANDARD=LVCMOS25; # Bank  15 VCCO - VCC2V5_FPGA - IO_L1N_T0_AD0N_15
 #NET  XADC_VAUX8P_R             LOC = L22  | IOSTANDARD=LVCMOS25; # Bank  15 VCCO - VCC2V5_FPGA - IO_L2P_T0_AD8P_15
 #NET  XADC_VAUX8N_R             LOC = L23  | IOSTANDARD=LVCMOS25; # Bank  15 VCCO - VCC2V5_FPGA - IO_L2N_T0_AD8N_15
-
-
 #####################################################
 # FMC HPC Connections
 #####################################################
@@ -724,8 +649,10 @@ set_property PACKAGE_PIN G19 [get_ports {fmcb_adc1_dhdn[7]}]
 # set_property LOC MMCME2_ADV_X0Y3 [get_cells {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[0].adcdaq0/IMPL.USEPLL.PLL0/U0/mmcm_adv_inst}]
 # The system MMCM also drives the Channelizer MMCM, and also needs to be adjacent.
 # The Channelizer MMCM has 2 inputs:  adcdaq0 and System MMCM (CLK200). If Tey are there were driven directly (no BUFG) by both the ADCDAQ BUFR and Sysntem MMCM output, . The MMCM must be adjacent, but on a half that has enough BUFGs
-# We don't use the channelizer MMCM, so we disable the MMCM LOC constraints below 
+# set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/clk0/gen_chanpll_k7.chan_mmcm0]
 # set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/clk0/gen_chanpll_k7.mmcm_case.chan_mmcm0]
+set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/clk0/gen_chanpll_k7.mmcm_case.chan_mmcm0]
+# The system MMCM also drives the Channelizer MMCM, and also needs to be adjacent.
 
 
 # Make sure that the BUFG instantiated by the SGMII core is on the same half as the IBUFGDS that drives it. For some reason Vivado places it on the wrong half and fails.
@@ -813,4 +740,6 @@ set_property LOC BUFIO_X0Y25 [get_cells {chfpga0/chan_array0/adc_gen.ev8aq160_ca
 # resize_pblock [get_pblocks ADCDAQ7] -add {SLICE_X0Y325:SLICE_X7Y349}
 # resize_pblock [get_pblocks ADCDAQ7] -add {RAMB18_X0Y130:RAMB18_X0Y139}
 # resize_pblock [get_pblocks ADCDAQ7] -add {RAMB36_X0Y65:RAMB36_X0Y69}
+
+
 
