@@ -36,14 +36,12 @@ entity chan_array is
 		ADC_TYPE                        : adc_type_enum                                     := EV8AQ160;
 		NUMBER_OF_ADCS                  : integer                                           := NUMBER_OF_ADCS_MAX;
 		NUMBER_OF_CHANNELIZERS          : integer                                           := NUMBER_OF_CHANNELIZERS_MAX;
-		NUMBER_OF_CHANNELIZERS_WITH_FFT : integer                                           := CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT;
+		NUMBER_OF_CHANNELIZERS_WITH_FFT : integer                                           := NUMBER_OF_CHANNELIZERS;
 		FFT_TYPE                        : fft_type_enum;
 		CAPTURE_TYPE                    : chan_capture_type_enum                            := PROBER;
-		NUMBER_OF_CAPTURE_SOURCES       : integer                                           := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES;
+		NUMBER_OF_CAPTURE_SOURCES       : integer                                           := CHAN_CAPTURE_INFO(CAPTURE_TYPE).NUMBER_OF_SOURCES;
 		CAPTURE_BITS_PER_WORD           : integer                                           := CHAN_CAPTURE_INFO(CAPTURE_TYPE).INPUT_WIDTH;
-		ADC_SAMPLES_PER_FRAME           : integer;
-		ADC_SAMPLES_PER_WORD            : integer;
-		ADC_BITS_PER_SAMPLE             : integer;
+		ADC_SAMPLES_PER_FRAME           : integer := FFT_INFO(FFT_TYPE).SAMPLES_PER_FRAME;
 		ADC_IS_DIFFERENTIAL             : bufmrindexarrayarray(0 to NUMBER_OF_ADCS_MAX - 1) := (others => (others => 1));
 		ADC_PROVIDE_BUFFERED_DIVCLK     : boolarray(0 to NUMBER_OF_ADCS_MAX - 1)            := (1 => TRUE, others => FALSE);
 		ADC_INSTANTIATE_PLL             : boolarray(0 to NUMBER_OF_ADCS_MAX - 1)            := (others => FALSE);
@@ -55,6 +53,8 @@ entity chan_array is
 		CT_CLK_SOURCE                   : ct_clk_source_enum                                := CORR_CLK;
 		CHAN_CLK_SOURCE                 : chan_clk_source_enum                              := ADC;
 		CORR_TYPE                       : corr_type_enum                                    := NONE;
+		CT_TYPE                         : ct_type_enum                                      := BCT;
+		NUMBER_OF_PROBER_PORTS: integer := sel(CAPTURE_TYPE=PROBER, NUMBER_OF_CHANNELIZERS, NUMBER_OF_CHANNELIZERS+1);
 		SIM                             : boolean                                           := FALSE
 	);
 	port (
@@ -125,7 +125,6 @@ entity chan_array is
 		ct_reset              : in std_logic;
 
 		-- Capture Interface to bsb_master (on bsb_clk)
-
 		cap_data  : out slv8_array(NUMBER_OF_CHANNELIZERS - 1 downto 0);
 		cap_valid : out std_logic_vector(NUMBER_OF_CHANNELIZERS - 1 downto 0);
 		cap_last  : out std_logic_vector(NUMBER_OF_CHANNELIZERS - 1 downto 0);
@@ -181,6 +180,9 @@ architecture impl of chan_array is
 	attribute SHREG_EXTRACT: string;
 
 	-- Constants
+	constant ADC_SAMPLES_PER_WORD            : integer := FFT_INFO(FFT_TYPE).SAMPLES_PER_WORD;
+	constant ADC_BITS_PER_SAMPLE             : integer := FFT_INFO(FFT_TYPE).BITS_PER_SAMPLE;
+
 	constant NUMBER_OF_ADCS_OR_CHANNELIZERS: integer := max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS);
 	constant ADC_BITS_PER_WORD: integer := ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPLE;
 	constant ADC_INSTANTIATE_IDELAYCTRL: boolarray(0 to NUMBER_OF_ADCS - 1) := (0 => TRUE, others => FALSE);
@@ -585,6 +587,14 @@ begin
 		end process;
 
 		chan0: entity work.chan
+		    generic map(
+				PLATFORM_ID => PLATFORM_ID,
+				IMPLEMENT_FFT => i < NUMBER_OF_CHANNELIZERS_WITH_FFT,
+				FFT_TYPE => FFT_TYPE,
+				SCALER_USE_COMPLEX_GAINS => CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS, -- don't use config param here
+				CAPTURE_TYPE => CAPTURE_TYPE,
+				CT_TYPE => CT_TYPE
+					)
 			port map (
 				-- Channelizer input (on ANT_CLK)
 				in_dat_tdata  => adc_tdata_reg(i),
@@ -658,14 +668,6 @@ begin
 			-- Nothing to do: capture logic in self-contained in CHAN
 			chan_mon_source_req <= (others => '0'); -- make sure the net is driven
 
-			-- If we use the BRAM-based (channelizer-based) data capture, feed the correlator data to the BSB bus master directly.
-			-- Handle PROBER case correlator connection (when not using UCAP)
-			prober_corr_gen: if CORR_TYPE = UCORR44 generate
-				cap_data(CORR_PROBE_BASE_PORT)  <= corr_out_tdata;
-				cap_valid(CORR_PROBE_BASE_PORT) <= corr_out_tvalid;
-				cap_last(CORR_PROBE_BASE_PORT)  <= corr_out_tlast;
-				corr_out_tready                 <= cap_ready(CORR_PROBE_BASE_PORT);
-			end generate prober_corr_gen;
 
 		when uram_case: UCAP =>
 
