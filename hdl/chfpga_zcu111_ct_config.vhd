@@ -12,10 +12,10 @@ package chfpga_config is
 	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean := TRUE;
 	constant CONFIG_CHAN_FFT_TYPE: integer := FFT_TYPE_CHORD; -- 14 bit samples, 8 samples/word, 16384 samples/frame, 32+32 bit output
 	constant CONFIG_CHAN_CAPTURE_TYPE: string := "URAM";
-	constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer := 2;
+	--constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer := 2;
 	constant CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS: boolean:= FALSE;
 	constant CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := 8; -- only implement one channelizer with an FFT for now
-	constant CONFIG_CAPTURE_BITS_PER_WORD: integer := sel(CONFIG_CHAN_CAPTURE_TYPE="URAM", 128, 32);
+	--constant CONFIG_CAPTURE_BITS_PER_WORD: integer := sel(CONFIG_CHAN_CAPTURE_TYPE="URAM", 128, 32);
 
     -- Corner-turn engine configuration
     constant CONFIG_CROSSBAR1_TYPE: string                       := "URAM"; -- "BRAM" or "URAM"

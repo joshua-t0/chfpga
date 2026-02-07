@@ -131,9 +131,8 @@ entity chfpga is
 		-- F-Engine config
 		FFT_TYPE: fft_type_enum;
 		NUMBER_OF_CHANNELIZERS: INTEGER          := NUMBER_OF_CHANNELIZERS_MAX; -- Number of channelizers to be implemented
-		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT;
+		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := NUMBER_OF_CHANNELIZERS;
 		CAPTURE_TYPE: chan_capture_type_enum     := PROBER; -- "PROBER": BRAM-based in-channelizer capture engine; "UCAP": URAM-based centralized UCAP capture engine.
-		NUMBER_OF_CAPTURE_SOURCES: integer       := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES;
 		CAPTURE_BITS_PER_WORD: integer           := CHAN_CAPTURE_INFO(CAPTURE_TYPE).INPUT_WIDTH; -- number of bits in the words captured by capture engine
 
 		-- Corner-turn engine config
@@ -152,7 +151,7 @@ entity chfpga is
 		-- Correlator config
 		CORR_TYPE: corr_type_enum                    := CORR44; -- "CORR44" or "UCORR44"
 		NUMBER_OF_CORRELATORS: integer               := 8; -- Number of correlator blocks (XMUL+ACC) to be implemented
-
+		CORR_READOUT_BINS: integer_array(0 to CONFIG_NUMBER_OF_CORRELATORS-1) := ( others => 0);
 		-- Data offload configuration
 
 		GPU_LINK_TYPE: gpu_link_type_enum; -- "NONE", "10G", "100G"
@@ -1705,11 +1704,7 @@ begin
 			NUMBER_OF_CHANNELIZERS_WITH_FFT => NUMBER_OF_CHANNELIZERS_WITH_FFT,
 			FFT_TYPE => FFT_TYPE,
 			CAPTURE_TYPE => CAPTURE_TYPE,
-			NUMBER_OF_CAPTURE_SOURCES => NUMBER_OF_CAPTURE_SOURCES,
-			CAPTURE_BITS_PER_WORD => CAPTURE_BITS_PER_WORD,
-			ADC_SAMPLES_PER_FRAME => ADC_SAMPLES_PER_FRAME,
-			ADC_SAMPLES_PER_WORD => ADC_SAMPLES_PER_WORD,
-			ADC_BITS_PER_SAMPLE => ADC_BITS_PER_SAMPLE,
+            -- ADC config
 			ADC_IS_DIFFERENTIAL => ADC_IS_DIFFERENTIAL,
 			ADC_PROVIDE_BUFFERED_DIVCLK => ADC_PROVIDE_BUFFERED_DIVCLK,
 			ADC_INSTANTIATE_PLL => ADC_INSTANTIATE_PLL,
@@ -1721,6 +1716,7 @@ begin
 			CT_CLK_SOURCE => CT_CLK_SOURCE,
 			CHAN_CLK_SOURCE => CHAN_CLK_SOURCE,
 			CORR_TYPE => CORR_TYPE,
+			CT_TYPE => CT_TYPE,
 			SIM => SIM
 		)
 		port map (
@@ -2348,7 +2344,7 @@ begin
 
 		corr_sel_gen: case CORR_TYPE generate
 
-			when corr_case: CORR44 =>
+			when corr_case: CORR44 => -- to be deprecated
 				-- Implement a BRAM-based correlator
 				-- Data is taken at the output of crossbar1, and is fed to MASTER's prober inputs (one bus per correlator)
 				-- There is NUMBER_OF_CORRELATOR crossbar1 output lanes, and NUMBER_OF_CORRELEATOR streaming outputs
@@ -2359,7 +2355,7 @@ begin
 				signal corr_in_tlast: std_logic_vector(0 to NUMBER_OF_CORRELATORS - 1);
 				attribute shreg_extract of corr_in_tdata, corr_in_tlast, corr_in_tvalid: signal is "no";
 
-				signal corr_out_tdata: slv8_array(0 to NUMBER_OF_CORRELATORS - 1);
+				signal corr_out_tdata: slv8_array(0 to NUMBER_OF_CORRELATORS - 1); -- watch out: name devined in outer namespace
 				signal corr_out_tvalid: std_logic_vector(0 to NUMBER_OF_CORRELATORS - 1);
 				signal corr_out_tlast: std_logic_vector(0 to NUMBER_OF_CORRELATORS - 1);
 				signal corr_out_tready: std_logic_vector(0 to NUMBER_OF_CORRELATORS - 1);
@@ -2484,7 +2480,7 @@ begin
 						NCORR                 => NCORR, -- equals to the number of bins per input word
 						NBINS_PER_CORR        => NBINS_PER_CORR,
 						BIN_DECIMATION_FACTOR => BIN_DECIMATION_FACTOR,
-						READOUT_BINS          => CONFIG_CORR_READOUT_BINS,
+						READOUT_BINS          => CORR_READOUT_BINS,
 						USE_OUTPUT_FIFO       => CAPTURE_TYPE = PROBER
 					)
 					port map (
@@ -2518,6 +2514,13 @@ begin
 						bsb_clk => bsb_clk,
 						bsb_rst => bsb_rst
 					);
+			-- If we use PROBER data capture, send the correlator data to the BSB master probe input.
+			prober_corr_gen: if CAPTURE_TYPE = PROBER generate
+				cap_data(CORR_PROBE_BASE_PORT)  <= corr_out_tdata;
+				cap_valid(CORR_PROBE_BASE_PORT) <= corr_out_tvalid;
+				cap_last(CORR_PROBE_BASE_PORT)  <= corr_out_tlast;
+				corr_out_tready                 <= cap_ready(CORR_PROBE_BASE_PORT);
+			end generate prober_corr_gen;
 
 			-------------
 			when others =>

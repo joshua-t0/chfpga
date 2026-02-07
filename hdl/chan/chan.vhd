@@ -46,15 +46,15 @@ entity chan is
 		--
 		-- For non-OOC usage, this entity can be instantiated using the entity instantiation method with GENERICS
 
-		PLATFORM_ID: integer               := CONFIG_PLATFORM_ID; -- PLATFORM_ID_MGK7MB; -- This generics is locked to the MGK7MB when using CHAN as an OOC.
-		IMPLEMENT_CHAN: boolean            := TRUE;
-		IMPLEMENT_FFT: boolean             := CONFIG_CHAN_IMPLEMENT_FFT;
-		FFT_TYPE: fft_type_enum            := CONFIG_CHAN_FFT_TYPE;
-		SCALER_USE_COMPLEX_GAINS: boolean  := CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS;
-		NUMBER_OF_CAPTURE_SOURCES: integer := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES;
-		CAPTURE_TYPE: chan_capture_type_enum := CONFIG_CHAN_CAPTURE_TYPE; -- "URAM" or "BRAM"
-        CT_TYPE : ct_type_enum             := CONFIG_CT_TYPE; -- Used to determine the width of the output bus to the corner-turn engine
+		PLATFORM_ID: integer               ; -- PLATFORM_ID_MGK7MB; -- This generics is locked to the MGK7MB when using CHAN as an OOC.
+		IMPLEMENT_FFT: boolean             ;
+		FFT_TYPE: fft_type_enum            ;
+		SCALER_USE_COMPLEX_GAINS: boolean  ;
+		CAPTURE_TYPE: chan_capture_type_enum ; -- "URAM" or "BRAM"
+        CT_TYPE : ct_type_enum             ; -- Used to determine the width of the output bus to the corner-turn engine
         -- Derived parameters
+		IMPLEMENT_CHAN: boolean            := TRUE;
+		NUMBER_OF_CAPTURE_SOURCES: integer := CHAN_CAPTURE_INFO(CAPTURE_TYPE).NUMBER_OF_SOURCES;
 		FFT_BITS_PER_BIN: integer          := FFT_INFO(FFT_TYPE).BITS_PER_BIN; -- Re and Im parts combined
 		FFT_ROTATE_BINS: boolean           := FFT_INFO(FFT_TYPE).ROTATE; -- enables bin rotation when true
 		ADC_BITS_PER_SAMPLE: integer       := FFT_INFO(FFT_TYPE).BITS_PER_SAMPLE;

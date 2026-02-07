@@ -40,7 +40,7 @@ entity CORR44 is
 -- TODO: Check what's passed
 -- TODO: words per bin
 	generic (
-		PLATFORM_ID: integer := CONFIG_PLATFORM_ID; -- necessary to select the DSP RPM spacing and instantiate the proper DSP and FIFO primitives
+		PLATFORM_ID: integer; -- necessary to select the DSP RPM spacing and instantiate the proper DSP and FIFO primitives
 		RPM_LAYOUT: string; -- Name of the layout of the correlator DSP, BRAM and FIFO elements  (e.g. "BDDB" or "DBBD")
 		CORR_NUMBER: integer := 0; -- used for packet header and to determine the CORR44 RPM locations
 		NUMBER_OF_WORDS_PER_BIN: integer := 4; -- also corresponds to the number of clocks per bin. There are 4 samples per word.
@@ -79,7 +79,7 @@ entity CORR44 is
 		out_rst: in std_logic; -- Reset synchronous to the output clock
 
 		-- Control interface
-		
+
 		s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
 		s_axis_bsb_tvalid: in std_logic;
 		s_axis_bsb_tlast: in std_logic;
@@ -90,7 +90,7 @@ entity CORR44 is
 		m_axis_bsb_tready: in std_logic;
 		bsb_clk: in std_logic; -- control clock
 		bsb_rst: in STD_LOGIC
-	
+
 		);
 
 end CORR44;
