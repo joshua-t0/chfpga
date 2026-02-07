@@ -1,5 +1,6 @@
 ---
-alwaysApply: true
+globs: "*.vhd*"
+alwaysApply: false
 ---
 
 - Instantiation:
@@ -17,8 +18,13 @@ alwaysApply: true
     - Generics are allowed to refer to generics previously defined in the same entity.
     - Sequential if statements with only one line should be  replaced with an equivalent  sequential "when" statement. Do not use an else statement if the value does not change.
 
-Have only one "if rising_edge(...)" per process. Vivado simulator crashes otherwise.
+    - Have only one "if rising_edge(...)" per process. Vivado simulator crashes otherwise.
 
+
+- VHDL rules
+
+    - Each entity in a file *must* be preceded with the library it needs. This is because libraries are forgotten when the previous architecture definition ends.
+    
 ## VHDL comment extraction (vhdl_sphinx_domain)
 
 - Comments blocks that end before elements (without a blank line), such as entity, architecture, signals etc.,  are comments attached to this element
