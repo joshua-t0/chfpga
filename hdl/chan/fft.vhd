@@ -581,7 +581,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
             fft_tdata <= (fft_dout0_int & fft_dout1_int & fft_dout2_int & fft_dout3_int);
 
 		when HIRAX =>
-			-- Same as FFT_TYPE_CHIME, but allows bitgrowth
+			-- Same as FFT_TYPE_CHIME, but allows full bitgrowth
 			fft0: entity work.hirax_bit_growth_0
                 PORT MAP(
                     sync_in(0)  => fft_sync_in,
@@ -602,6 +602,27 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 
             fft_tdata <= (fft_dout0_int & fft_dout1_int);
 
+		when HIRAX_3DSP =>
+			-- Same as FFT_TYPE_CHIME, but allows bitgrowth limited to 25+25 bits, use 3-DSP complex multipliers, and
+			fft0: entity work.hirax_bit_growth_3dsp
+                PORT MAP(
+                    sync_in(0)  => fft_sync_in,
+                    pol_in1      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 0) - 1 downto ADC_BITS_PER_SAMPLE * 3),
+                    pol_in2      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 1) - 1 downto ADC_BITS_PER_SAMPLE * 2),
+                    pol_in3      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 2) - 1 downto ADC_BITS_PER_SAMPLE * 1),
+                    pol_in4      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 3) - 1 downto ADC_BITS_PER_SAMPLE * 0),
+
+                    sync_out(0) => fft_sync_out,
+                    out00    => fft_dout0_int,
+                    out01    => fft_dout1_int,
+
+                    shift    => to_slv(0, 11),
+                    overflow(0) => fft_overflow,
+                    -- ce_1     => fft_clk_en,
+                    clk    => clk
+                );
+
+            fft_tdata <= (fft_dout0_int & fft_dout1_int);
 		when others =>
 			assert FALSE report "Invalid FFT Type" severity FAILURE;
 	end generate fftype_gen;

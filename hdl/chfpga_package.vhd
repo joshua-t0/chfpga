@@ -291,14 +291,15 @@ type chan_capture_type_enum is (PROBER, UCAP);
 type chan_capture_info_struct is
     record
         INPUT_WIDTH: integer;
+        NUMBER_OF_SOURCES: integer;
     end record;
 type chan_capture_info_type is array (chan_capture_type_enum) of chan_capture_info_struct;
 constant CHAN_CAPTURE_INFO: chan_capture_info_type := (
-    PROBER => (INPUT_WIDTH => 32),
-    UCAP => (INPUT_WIDTH =>128)
+    PROBER => (INPUT_WIDTH => 32, NUMBER_OF_SOURCES=>2),
+    UCAP => (INPUT_WIDTH =>128, NUMBER_OF_SOURCES=>2)
     ); -- bit width of the capture engine input
 
-type fft_type_enum is (NONE, CHIME, D3A, CHORD, HIRAX); -- Position of enum can index the FFT_INFO array
+type fft_type_enum is (NONE, CHIME, D3A, CHORD, HIRAX, HIRAX_3DSP); -- Position of enum can index the FFT_INFO array
 
 -- Platform information structure
 type fft_info_struct is
@@ -367,6 +368,16 @@ constant FFT_INFO: FFT_INFO_ARRAY := (
 		BITS_PER_SAMPLE => 8,
 		SAMPLES_PER_WORD => 4,
 		BITS_PER_BIN => 29+29,
+		BINS_PER_WORD => 2,
+		ROTATE => FALSE
+		),
+
+	HIRAX_3DSP => (
+		SAMPLES_PER_FRAME => 2048,
+		LATENCY => 3230,
+		BITS_PER_SAMPLE => 8,
+		SAMPLES_PER_WORD => 4,
+		BITS_PER_BIN => 25+25,
 		BINS_PER_WORD => 2,
 		ROTATE => FALSE
 		)

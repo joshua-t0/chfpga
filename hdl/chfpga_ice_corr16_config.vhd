@@ -10,7 +10,7 @@ package chfpga_config is
 	-- Channelizer config
 
 	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean              := TRUE;
-	constant CONFIG_CHAN_FFT_TYPE: fft_type_enum             := CHIME;
+	constant CONFIG_CHAN_FFT_TYPE: fft_type_enum             := HIRAX_3DSP;
 	constant CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := 16; -- only implement one channelizer with an FFT for now
 	constant CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS: boolean   := FALSE;
 	--constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer  := 2;
