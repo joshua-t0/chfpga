@@ -1,8 +1,8 @@
 .. title:: align64_fifo
 
-********************************************************************
+******************************************************************
 :entity:`align64_fifo` (*align64_fifo.vhd*): 64-bit Alignment FIFO
-********************************************************************
+******************************************************************
 
 .. parse:: hdl/ct/align64_fifo.vhd
 
@@ -38,4 +38,3 @@ Usage in ALIGN64
 ----------------
 
 The `align64_fifo` is instantiated by the :entity:`align64` module to buffer incoming data streams from each lane. The FIFOs allow the alignment module to compensate for variable delays between lanes by buffering data until all lanes are ready for synchronized readout.
-

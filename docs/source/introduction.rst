@@ -96,7 +96,7 @@ Python control software
 
 
 Supported hardware platforms
-=============================
+============================
 
 ``chFPGA`` has been used on multiple hardware platforms FPGAs:
 

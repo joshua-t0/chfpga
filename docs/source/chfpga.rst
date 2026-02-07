@@ -27,9 +27,9 @@ chfpga is normally instantiated by a platform-specific top module that creates t
     - Heartbeat LED blinker (`blinker`)
 
 
-- ADC Data acquisition logic
+- ADC Data acquisition logic and Channelizer array (`chan_array`)
 
-- F-Engine/Channelizers
+- F-Engine/Channelizers (individual channelizer modules within `chan_array`)
 
 - Corner-turn Engine
 
@@ -88,7 +88,7 @@ Channelizers memory map
 -----------------------
 
 .. include-docs:: chfpga
-    :start-after: Channel Memory Map
+    :start-after: ADCDAQ & CHAN
 
 Submodules
 ==========

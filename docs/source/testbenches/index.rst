@@ -126,7 +126,7 @@ scaler_mul
 Tests the scaler multiplier core. Verifies signed/unsigned multiplication operations used in the scaling process.
 
 ucap
-~~~~~
+~~~~
 
 **File:** ``hdl/testbenches/ucap_testbench.vhd``
 
@@ -400,4 +400,3 @@ xxvglink_array
 **Xilinx Project:** ``xilinx_projects/testbenches/xxvglink_testbench/``
 
 Tests the 25G serial link array (XXVGLINK). Verifies 25Gbps packet transmission, link initialization, and array operation.
-

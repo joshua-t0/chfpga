@@ -1,8 +1,8 @@
 .. title:: arm_spi
 
-********************************************************************
+***********************************************************
 :entity:`arm_spi` (*arm_spi.vhd*): ARM SPI Interface Module
-********************************************************************
+***********************************************************
 
 .. parse:: hdl/system/arm_spi.vhd
 
@@ -32,4 +32,3 @@ Usage
 -----
 
 The `arm_spi` module is used in IceBoard platforms to provide a control interface between the ARM processor (typically on a Zynq device) and the FPGA fabric. It allows the ARM processor to read and write registers and memory within the FPGA using standard SPI communication.
-

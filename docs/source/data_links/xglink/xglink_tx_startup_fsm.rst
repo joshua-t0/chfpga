@@ -1,8 +1,8 @@
 .. title:: xglink_tx_startup_fsm
 
-*****************************************************************************************
+***************************************************************************************
 :entity:`xglink_tx_startup_fsm` (*xglink_tx_startup_fsm.vhd*): TX Startup State Machine
-*****************************************************************************************
+***************************************************************************************
 
 .. parse:: hdl/XGLINK/xglink_tx_startup_fsm.vhd
 
@@ -35,4 +35,3 @@ Usage in XGLINK
 ---------------
 
 The TX startup FSM is used in the :entity:`xglink_tx` module to properly initialize the GTX transmitter before data transmission begins.
-

@@ -1,7 +1,7 @@
 .. _chfpga_ice_ct_config:
 
 ``ct`` configuration (*chfpga_ice_ct_config.vhd*)
-*********************************************************
+*************************************************
 
 Description
 ===========
@@ -36,7 +36,6 @@ Package definition
 ==================
 
 .. parse:: hdl/chfpga_ice_ct_config.vhd
-
 
 
 

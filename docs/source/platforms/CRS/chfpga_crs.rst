@@ -1,7 +1,7 @@
 .. _chfpga_crs:
 
 :entity:`chfpga_crs` platform wrapper (*chfpga_crs.vhd*)
-*********************************************************
+********************************************************
 
 
 Description
@@ -35,4 +35,3 @@ Entity definition
 .. parse:: hdl/chfpga_crs.vhd
 
 .. autoentity:: chfpga_crs
-

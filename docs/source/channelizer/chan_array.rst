@@ -1,8 +1,8 @@
 .. title:: chan_array
 
-**********************************************************
+******************************************************************
 :entity:`chan_array` (*chan_array.vhd*): ADC and Channelizer Array
-**********************************************************
+******************************************************************
 
 .. default-role:: vhdl:entity
 
@@ -57,4 +57,3 @@ The module outputs:
 - Channelized data streams
 - Capture data interfaces
 - BSB reply interface
-
