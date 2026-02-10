@@ -647,11 +647,13 @@ set_property PACKAGE_PIN G19 [get_ports {fmcb_adc1_dhdn[7]}]
 ### MMCMs ###
 # We need to put the ADCDAQ PLL in the same bank as the BUFR that drives it (Bank 13)
 # set_property LOC MMCME2_ADV_X0Y3 [get_cells {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[0].adcdaq0/IMPL.USEPLL.PLL0/U0/mmcm_adv_inst}]
-# The system MMCM also drives the Channelizer MMCM, and also needs to be adjacent.
-# The Channelizer MMCM has 2 inputs:  adcdaq0 and System MMCM (CLK200). If Tey are there were driven directly (no BUFG) by both the ADCDAQ BUFR and Sysntem MMCM output, . The MMCM must be adjacent, but on a half that has enough BUFGs
+# The system MMCM can drive the Channelizer MMCM if we use one to implement multi-phase processing
+# If so, there are constraints on where its2 inputs (adcdaq0 and System MMCM (CLK200)) are. 
+# If they are there were driven directly (no BUFG) by both the ADCDAQ BUFR and Sysntem MMCM output,
+# The MMCM must be adjacent, but on a half that has enough BUFGs
 # set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/clk0/gen_chanpll_k7.chan_mmcm0]
 # set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/clk0/gen_chanpll_k7.mmcm_case.chan_mmcm0]
-set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/clk0/gen_chanpll_k7.mmcm_case.chan_mmcm0]
+# set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/clk0/gen_chanpll_k7.mmcm_case.chan_mmcm0]
 # The system MMCM also drives the Channelizer MMCM, and also needs to be adjacent.
 
 
