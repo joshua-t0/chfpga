@@ -261,6 +261,7 @@ architecture behavioral of shuffle_bin_sel is
 	signal use_offset_binary: std_logic;
 	signal send_flags: std_logic;
 	signal lane0_bypass: std_logic;
+	signal lane0_bypass_reg: std_logic;
 	signal overflow_reset: std_logic;
 	signal number_of_output_bins_per_frame: std_logic_vector(11 downto 0);
 	signal number_of_output_words_per_bin: std_logic_vector(7 downto 0);
@@ -888,7 +889,6 @@ begin
 	is_last_lane     <= to_std_logic((lane(3 downto 1) = last_lane_reg(3 downto 1)) and (combine_words = '1' or lane(0) = last_lane_reg(0))); -- 9 signals
 	flags_fifo_rd_en <= '1' when send_header = '0' and ((is_last_word = '1' and is_last_lane = '1') or end_of_packet = '1') else '0';         -- 15-input LUT, all local!
 
-
 	fifo_rd_proc: process(all)
 
 		variable header_word_array: slv32_array(0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH - 1);
@@ -912,9 +912,9 @@ begin
 
 	begin
 		if rising_edge(clk) then
-
+			lane0_bypass_reg <= lane0_bypass; -- register to prevent the synthesizer form integrating the bsb_regs login om the path. This crosses clock domains, but it is semi-static so it's ok.
 			for j in 0 to NUMBER_OF_OUTPUTS - 1 loop
-				if lane0_bypass = '1' then
+				if lane0_bypass_reg then
 					m_axis_tdata(j) <= s_axis_tdata(BIN_SEL_NUMBER * NUMBER_OF_OUTPUTS + j);
 					m_axis_tvalid(j) <= s_axis_tvalid(BIN_SEL_NUMBER * NUMBER_OF_OUTPUTS + j);
 					m_axis_tlast(j) <= s_axis_tlast(BIN_SEL_NUMBER * NUMBER_OF_OUTPUTS + j);
