@@ -21,7 +21,7 @@ package chfpga_config is
 
 	constant CONFIG_CT_TYPE: ct_type_enum             := BCT; -- "UCT" or "BCT"
 	constant CONFIG_CT_LEVEL: integer := 1;
-	constant CONFIG_CT_CLK_SOURCE: ct_clk_source_enum := CORR_CLK; -- Use the 250 MHz clock  from the main MMCM. This provides enough speed to handle packet overheads.
+	constant CONFIG_CT_CLK_SOURCE: ct_clk_source_enum := ADC_CLK; -- Use the ADC clock directly. at CT_LEVEL=1, we don't need packet overheads
 
 	constant CONFIG_NUMBER_OF_CROSSBAR_OUTPUTS: integer := 8 ; -- matches the number of correlators
 	constant CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer := 0;
@@ -31,7 +31,7 @@ package chfpga_config is
 	-- Correlator config
 
 	constant CONFIG_CORR_TYPE: corr_type_enum := UCORR44;
-	constant CONFIG_NUMBER_OF_CORRELATORS: integer := 2; -- each correlator handles 128 bins
+	constant CONFIG_NUMBER_OF_CORRELATORS: integer := FFT_INFO(CONFIG_CHAN_FFT_TYPE).BINS_PER_WORD; -- One correlator per bin in the FFT output word
 	constant CONFIG_CORR_READOUT_BINS: integer_array(0 to CONFIG_NUMBER_OF_CORRELATORS-1) := (0, 0);
 
 
