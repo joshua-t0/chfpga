@@ -389,3 +389,4 @@ set_switching_activity -default_toggle_rate 50.000
 #set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 
 #set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 
 #set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 
+

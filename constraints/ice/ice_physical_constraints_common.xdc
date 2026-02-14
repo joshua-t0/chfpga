@@ -692,56 +692,86 @@ set_property LOC BUFIO_X0Y25 [get_cells {chfpga0/chan_array0/adc_gen.ev8aq160_ca
 # ###################################
 # # AREA Contraints
 # ###################################
-# create_pblock PHY
-# add_cells_to_pblock [get_pblocks PHY] [get_cells -quiet [list chfpga0/UDP_PHY0]]
-# resize_pblock [get_pblocks PHY] -add {SLICE_X0Y150:SLICE_X11Y199}
-# resize_pblock [get_pblocks PHY] -add {RAMB18_X0Y60:RAMB18_X0Y79}
-# resize_pblock [get_pblocks PHY] -add {RAMB36_X0Y30:RAMB36_X0Y39}
-# create_pblock I2C
-# add_cells_to_pblock [get_pblocks I2C] [get_cells -quiet [list chfpga0/gen_i2c.I2C0]]
-# resize_pblock [get_pblocks I2C] -add {SLICE_X0Y50:SLICE_X11Y99}
-# create_pblock SPI
-# add_cells_to_pblock [get_pblocks SPI] [get_cells -quiet [list chfpga0/spi0]]
-# resize_pblock [get_pblocks SPI] -add {SLICE_X0Y100:SLICE_X7Y149}
-# create_pblock ADCDAQ0
-# add_cells_to_pblock [get_pblocks ADCDAQ0] [get_cells -quiet [list {chfpga0/chan_array0/chan_gen[0].chan0AQ0}]]
-# resize_pblock [get_pblocks ADCDAQ0] -add {SLICE_X0Y200:SLICE_X7Y224}
-# resize_pblock [get_pblocks ADCDAQ0] -add {RAMB18_X0Y80:RAMB18_X0Y89}
-# resize_pblock [get_pblocks ADCDAQ0] -add {RAMB36_X0Y40:RAMB36_X0Y44}
-# create_pblock ADCDAQ1
-# resize_pblock [get_pblocks ADCDAQ1] -add {SLICE_X0Y225:SLICE_X7Y249}
-# resize_pblock [get_pblocks ADCDAQ1] -add {RAMB18_X0Y90:RAMB18_X0Y99}
-# resize_pblock [get_pblocks ADCDAQ1] -add {RAMB36_X0Y45:RAMB36_X0Y49}
-# create_pblock ADCDAQ2
-# add_cells_to_pblock [get_pblocks ADCDAQ2] [get_cells -quiet [list {chfpga0/chan_array0/chan_gen[2].chan0AQ0}]]
-# resize_pblock [get_pblocks ADCDAQ2] -add {SLICE_X0Y250:SLICE_X7Y274}
-# resize_pblock [get_pblocks ADCDAQ2] -add {RAMB18_X0Y100:RAMB18_X0Y109}
-# resize_pblock [get_pblocks ADCDAQ2] -add {RAMB36_X0Y50:RAMB36_X0Y54}
-# create_pblock ADCDAQ3
-# add_cells_to_pblock [get_pblocks ADCDAQ3] [get_cells -quiet [list {chfpga0/chan_array0/chan_gen[3].chan0AQ0}]]
-# resize_pblock [get_pblocks ADCDAQ3] -add {SLICE_X0Y275:SLICE_X7Y298}
-# resize_pblock [get_pblocks ADCDAQ3] -add {RAMB18_X0Y110:RAMB18_X0Y117}
-# resize_pblock [get_pblocks ADCDAQ3] -add {RAMB36_X0Y55:RAMB36_X0Y58}
-# create_pblock ADCDAQ4
-# add_cells_to_pblock [get_pblocks ADCDAQ4] [get_cells -quiet [list {chfpga0/chan_array0/chan_gen[4].chan0AQ0}]]
-# resize_pblock [get_pblocks ADCDAQ4] -add {SLICE_X0Y0:SLICE_X7Y24}
-# resize_pblock [get_pblocks ADCDAQ4] -add {RAMB18_X0Y0:RAMB18_X0Y9}
-# resize_pblock [get_pblocks ADCDAQ4] -add {RAMB36_X0Y0:RAMB36_X0Y4}
-# create_pblock ADCDAQ5
-# add_cells_to_pblock [get_pblocks ADCDAQ5] [get_cells -quiet [list {chfpga0/chan_array0/chan_gen[5].chan0AQ0}]]
-# resize_pblock [get_pblocks ADCDAQ5] -add {SLICE_X0Y25:SLICE_X7Y49}
-# resize_pblock [get_pblocks ADCDAQ5] -add {RAMB18_X0Y10:RAMB18_X0Y19}
-# resize_pblock [get_pblocks ADCDAQ5] -add {RAMB36_X0Y5:RAMB36_X0Y9}
-# create_pblock ADCDAQ6
-# add_cells_to_pblock [get_pblocks ADCDAQ6] [get_cells -quiet [list {chfpga0/chan_array0/chan_gen[6].chan0AQ0}]]
-# resize_pblock [get_pblocks ADCDAQ6] -add {SLICE_X0Y300:SLICE_X7Y324}
-# resize_pblock [get_pblocks ADCDAQ6] -add {RAMB18_X0Y120:RAMB18_X0Y129}
-# resize_pblock [get_pblocks ADCDAQ6] -add {RAMB36_X0Y60:RAMB36_X0Y64}
-# create_pblock ADCDAQ7
-# add_cells_to_pblock [get_pblocks ADCDAQ7] [get_cells -quiet [list {chfpga0/chan_array0/chan_gen[7].chan0AQ0}]]
-# resize_pblock [get_pblocks ADCDAQ7] -add {SLICE_X0Y325:SLICE_X7Y349}
-# resize_pblock [get_pblocks ADCDAQ7] -add {RAMB18_X0Y130:RAMB18_X0Y139}
-# resize_pblock [get_pblocks ADCDAQ7] -add {RAMB36_X0Y65:RAMB36_X0Y69}
 
+create_pblock ADCDAQ0
+add_cells_to_pblock [get_pblocks ADCDAQ0] [get_cells -quiet [list {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[0].adcdaq0}]]
+resize_pblock [get_pblocks ADCDAQ0] -add {SLICE_X0Y169:SLICE_X7Y186}
+resize_pblock [get_pblocks ADCDAQ0] -add {RAMB18_X0Y70:RAMB18_X0Y71}
+resize_pblock [get_pblocks ADCDAQ0] -add {RAMB36_X0Y35:RAMB36_X0Y35}
+create_pblock ADCDAQ1
+add_cells_to_pblock [get_pblocks ADCDAQ1] [get_cells -quiet [list {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[1].adcdaq0}]]
+resize_pblock [get_pblocks ADCDAQ1] -add {SLICE_X0Y152:SLICE_X7Y168}
+resize_pblock [get_pblocks ADCDAQ1] -add {RAMB18_X0Y68:RAMB18_X0Y69}
+resize_pblock [get_pblocks ADCDAQ1] -add {RAMB36_X0Y34:RAMB36_X0Y34}
+create_pblock ADCDAQ2
+add_cells_to_pblock [get_pblocks ADCDAQ2] [get_cells -quiet [list {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[2].adcdaq0}]]
+resize_pblock [get_pblocks ADCDAQ2] -add {SLICE_X0Y125:SLICE_X7Y142 SLICE_X0Y96:SLICE_X7Y97}
+resize_pblock [get_pblocks ADCDAQ2] -add {RAMB18_X0Y50:RAMB18_X0Y51}
+resize_pblock [get_pblocks ADCDAQ2] -add {RAMB36_X0Y25:RAMB36_X0Y25}
+create_pblock ADCDAQ3
+add_cells_to_pblock [get_pblocks ADCDAQ3] [get_cells -quiet [list {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[3].adcdaq0}]]
+resize_pblock [get_pblocks ADCDAQ3] -add {SLICE_X0Y98:SLICE_X7Y116}
+resize_pblock [get_pblocks ADCDAQ3] -add {RAMB18_X0Y40:RAMB18_X0Y41}
+resize_pblock [get_pblocks ADCDAQ3] -add {RAMB36_X0Y20:RAMB36_X0Y20}
+create_pblock ADCDAQ4
+add_cells_to_pblock [get_pblocks ADCDAQ4] [get_cells -quiet [list {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[4].adcdaq0}]]
+resize_pblock [get_pblocks ADCDAQ4] -add {SLICE_X0Y7:SLICE_X7Y24}
+resize_pblock [get_pblocks ADCDAQ4] -add {RAMB18_X0Y8:RAMB18_X0Y9}
+resize_pblock [get_pblocks ADCDAQ4] -add {RAMB36_X0Y4:RAMB36_X0Y4}
+create_pblock ADCDAQ5
+add_cells_to_pblock [get_pblocks ADCDAQ5] [get_cells -quiet [list {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[5].adcdaq0}]]
+resize_pblock [get_pblocks ADCDAQ5] -add {SLICE_X0Y30:SLICE_X7Y49}
+resize_pblock [get_pblocks ADCDAQ5] -add {RAMB18_X0Y18:RAMB18_X0Y19}
+resize_pblock [get_pblocks ADCDAQ5] -add {RAMB36_X0Y9:RAMB36_X0Y9}
+create_pblock ADCDAQ6
+add_cells_to_pblock [get_pblocks ADCDAQ6] [get_cells -quiet [list {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[6].adcdaq0}]]
+resize_pblock [get_pblocks ADCDAQ6] -add {SLICE_X0Y57:SLICE_X7Y74}
+resize_pblock [get_pblocks ADCDAQ6] -add {RAMB18_X0Y28:RAMB18_X0Y29}
+resize_pblock [get_pblocks ADCDAQ6] -add {RAMB36_X0Y14:RAMB36_X0Y14}
+create_pblock ADCDAQ7
+add_cells_to_pblock [get_pblocks ADCDAQ7] [get_cells -quiet [list {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[7].adcdaq0}]]
+resize_pblock [get_pblocks ADCDAQ7] -add {SLICE_X0Y75:SLICE_X7Y92}
+resize_pblock [get_pblocks ADCDAQ7] -add {RAMB18_X0Y30:RAMB18_X0Y31}
+resize_pblock [get_pblocks ADCDAQ7] -add {RAMB36_X0Y15:RAMB36_X0Y15}
+create_pblock ADCDAQ8
+add_cells_to_pblock [get_pblocks ADCDAQ8] [get_cells -quiet [list {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[8].adcdaq0}]]
+resize_pblock [get_pblocks ADCDAQ8] -add {SLICE_X0Y281:SLICE_X7Y298}
+resize_pblock [get_pblocks ADCDAQ8] -add {RAMB18_X0Y118:RAMB18_X0Y119}
+resize_pblock [get_pblocks ADCDAQ8] -add {RAMB36_X0Y59:RAMB36_X0Y59}
+create_pblock ADCDAQ9
+add_cells_to_pblock [get_pblocks ADCDAQ9] [get_cells -quiet [list {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[9].adcdaq0}]]
+resize_pblock [get_pblocks ADCDAQ9] -add {SLICE_X0Y257:SLICE_X7Y274}
+resize_pblock [get_pblocks ADCDAQ9] -add {RAMB18_X0Y108:RAMB18_X0Y109}
+resize_pblock [get_pblocks ADCDAQ9] -add {RAMB36_X0Y54:RAMB36_X0Y54}
+create_pblock ADCDAQ10
+add_cells_to_pblock [get_pblocks ADCDAQ10] [get_cells -quiet [list {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[10].adcdaq0}]]
+resize_pblock [get_pblocks ADCDAQ10] -add {SLICE_X0Y352:SLICE_X7Y353 SLICE_X0Y299:SLICE_X7Y316}
+resize_pblock [get_pblocks ADCDAQ10] -add {RAMB18_X0Y120:RAMB18_X0Y121}
+resize_pblock [get_pblocks ADCDAQ10] -add {RAMB36_X0Y60:RAMB36_X0Y60}
+create_pblock ADCDAQ11
+add_cells_to_pblock [get_pblocks ADCDAQ11] [get_cells -quiet [list {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[11].adcdaq0}]]
+resize_pblock [get_pblocks ADCDAQ11] -add {SLICE_X0Y332:SLICE_X7Y351}
+resize_pblock [get_pblocks ADCDAQ11] -add {RAMB18_X0Y138:RAMB18_X0Y139}
+resize_pblock [get_pblocks ADCDAQ11] -add {RAMB36_X0Y69:RAMB36_X0Y69}
+create_pblock ADCDAQ12
+add_cells_to_pblock [get_pblocks ADCDAQ12] [get_cells -quiet [list {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[12].adcdaq0}]]
+resize_pblock [get_pblocks ADCDAQ12] -add {SLICE_X0Y207:SLICE_X7Y224}
+resize_pblock [get_pblocks ADCDAQ12] -add {RAMB18_X0Y88:RAMB18_X0Y89}
+resize_pblock [get_pblocks ADCDAQ12] -add {RAMB36_X0Y44:RAMB36_X0Y44}
+create_pblock ADCDAQ13
+add_cells_to_pblock [get_pblocks ADCDAQ13] [get_cells -quiet [list {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[13].adcdaq0}]]
+resize_pblock [get_pblocks ADCDAQ13] -add {SLICE_X0Y225:SLICE_X7Y245}
+resize_pblock [get_pblocks ADCDAQ13] -add {RAMB18_X0Y90:RAMB18_X0Y91}
+resize_pblock [get_pblocks ADCDAQ13] -add {RAMB36_X0Y45:RAMB36_X0Y45}
+create_pblock ADCDAQ14
+add_cells_to_pblock [get_pblocks ADCDAQ14] [get_cells -quiet [list {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[14].adcdaq0}]]
+resize_pblock [get_pblocks ADCDAQ14] -add {SLICE_X0Y377:SLICE_X7Y393 SLICE_X0Y330:SLICE_X7Y331}
+resize_pblock [get_pblocks ADCDAQ14] -add {RAMB18_X0Y150:RAMB18_X0Y151}
+resize_pblock [get_pblocks ADCDAQ14] -add {RAMB36_X0Y75:RAMB36_X0Y75}
+create_pblock ADCDAQ15
+add_cells_to_pblock [get_pblocks ADCDAQ15] [get_cells -quiet [list {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[15].adcdaq0}]]
+resize_pblock [get_pblocks ADCDAQ15] -add {SLICE_X0Y358:SLICE_X7Y376 SLICE_X0Y328:SLICE_X7Y329}
+resize_pblock [get_pblocks ADCDAQ15] -add {RAMB18_X0Y148:RAMB18_X0Y149}
+resize_pblock [get_pblocks ADCDAQ15] -add {RAMB36_X0Y74:RAMB36_X0Y74}
 
 
