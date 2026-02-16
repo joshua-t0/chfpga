@@ -29955,7 +29955,7 @@ architecture structural of hirax_bit_growth_mult1_x5 is begin
     mult_inst : entity xil_defaultlib.hirax_bit_growth_3dsp_mult
     generic map (
       A_WIDTH => 36,
-      B_WIDTH => 44
+      B_WIDTH => 44,
       AB_WIDTH => 36+44+2
     )
     port map (
@@ -80426,7 +80426,7 @@ library IEEE;
 use IEEE.std_logic_1164.all;
 library xil_defaultlib;
 use xil_defaultlib.conv_pkg.all;
-entity hirax_bit_growth is
+entity hirax_bit_growth_3dsp_top is
   port (
     pol_in1 : in std_logic_vector( 8-1 downto 0 );
     pol_in2 : in std_logic_vector( 8-1 downto 0 );
@@ -80450,8 +80450,8 @@ entity hirax_bit_growth is
     gateway_out1_x1 : out std_logic_vector( 8-1 downto 0 );
     gateway_out11_x0 : out std_logic_vector( 18-1 downto 0 )
   );
-end hirax_bit_growth;
-architecture structural of hirax_bit_growth is 
+end hirax_bit_growth_3dsp_top;
+architecture structural of hirax_bit_growth_3dsp_top is 
   attribute core_generation_info : string;
   attribute core_generation_info of structural : architecture is "hirax_bit_growth,sysgen_core_2021_1,{,compilation=HDL Netlist,block_icon_display=Default,family=kintex7,part=xc7k480ti,speed=-2L,package=ffv1156,synthesis_language=vhdl,hdl_library=xil_defaultlib,synthesis_strategy=Vivado Synthesis Defaults,implementation_strategy=Vivado Implementation Defaults,testbench=0,interface_doc=0,ce_clr=0,clock_period=10,system_simulink_period=1,waveform_viewer=0,axilite_interface=0,ip_catalog_plugin=0,hwcosim_burst_mode=0,simulation_time=6144,addsub=114,assert=7,concat=280,constant=201,convert=176,counter=68,delay=401,dpram=6,inv=112,logical=178,mult=72,mux=100,negate=19,register=9,reinterpret=1560,relational=69,scale=36,slice=1064,spram=26,sprom=26,}";
   signal clk_1_net : std_logic;

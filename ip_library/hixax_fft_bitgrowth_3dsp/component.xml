@@ -29,7 +29,7 @@
         <spirit:displayName>Synthesis</spirit:displayName>
         <spirit:envIdentifier>:vivado.xilinx.com:synthesis</spirit:envIdentifier>
         <spirit:language>VHDL</spirit:language>
-        <spirit:modelName>hirax_bit_growth</spirit:modelName>
+        <spirit:modelName>hirax_bit_growth_3dsp_top</spirit:modelName>
         <spirit:fileSetRef>
           <spirit:localName>xilinx_anylanguagesynthesis_xilinx_com_ip_c_counter_binary_12_0__ref_view_fileset</spirit:localName>
         </spirit:fileSetRef>
@@ -54,7 +54,7 @@
         <spirit:displayName>Simulation</spirit:displayName>
         <spirit:envIdentifier>:vivado.xilinx.com:simulation</spirit:envIdentifier>
         <spirit:language>VHDL</spirit:language>
-        <spirit:modelName>hirax_bit_growth</spirit:modelName>
+        <spirit:modelName>hirax_bit_growth_3dsp_top</spirit:modelName>
         <spirit:fileSetRef>
           <spirit:localName>xilinx_anylanguagebehavioralsimulation_xilinx_com_ip_c_counter_binary_12_0__ref_view_fileset</spirit:localName>
         </spirit:fileSetRef>
@@ -738,7 +738,7 @@
         <spirit:userFileType>mem</spirit:userFileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>sysgen/hirax_bit_growth_3dsp.vhd</spirit:name>
+        <spirit:name>sysgen/hirax_bit_growth_3dsp_top.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
         <spirit:userFileType>CHECKSUM_3b7be77b</spirit:userFileType>
       </spirit:file>
@@ -1065,7 +1065,7 @@
         <spirit:userFileType>mem</spirit:userFileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>sysgen/hirax_bit_growth_3dsp.vhd</spirit:name>
+        <spirit:name>sysgen/hirax_bit_growth_3dsp_top.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
       </spirit:file>
     </spirit:fileSet>
