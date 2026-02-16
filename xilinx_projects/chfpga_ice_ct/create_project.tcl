@@ -19,6 +19,7 @@ set const_files [list \
 	"ice/ice_timing_constraints_ct.xdc" \
 	"ice/ice_physical_constraints_common.xdc" \
 	"ice/ice_physical_constraints_ct.xdc" \
+	"ice/ice_physical_constraints_hirax_fft.xdc" \
 ]
 
 # Enable LUT combining, otherwise the design does not fit
