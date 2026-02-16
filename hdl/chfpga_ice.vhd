@@ -1056,8 +1056,6 @@ bufr_rawclk10 : BUFR
 
 
 			-- Clocks
-			SYSCLK_P     => '0', -- We don't have a 200 MHz system clock on this board. We use the 125 MHz SFP reference clock instead to generate our internal clocks.
-			SYSCLK_N     => '1',
 			clk10 => mgt_clk10, -- Buffered (BUFG) 10 MHz differential reference clock
 			mgt_clk100 => mgt_clk100, -- Buffered (BUFH) MGT 100 MHz reference clock
 			mgt_clk200 => mgt_clk200, -- Buffered (BUFH) MGT 200 MHz reference clock
