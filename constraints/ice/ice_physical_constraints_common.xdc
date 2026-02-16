@@ -15,28 +15,16 @@ set_property LOC XADC_X0Y0 [get_cells chfpga0/*.system0/*.sysmon0/sysmon7_gen.xa
 ##################################################################
 ##################################################################
 
-#set_property IOSTANDARD LVCMOS18 [get_ports SFPCLK_QO_P]
-
 
 
 #################################
 # LOC CONSTRAINTS
 #################################
 # Force the clk0 MMCM to be in the same half of the FPGA as the ADCDAQ PLL so their outputs can reach a single BUFGMUX that select which clock is to be used for data processing.
-#set_property LOC MMCME2_ADV_X0Y4 [get_cells clk0/CLK200/MMCM0]
-
 
 #################################
 # SYSTEM CLOCK and RESET PINS
 #################################
-# set_property IOSTANDARD LVDS [get_ports SYSCLK_P]
-# set_property DIFF_TERM FALSE [get_ports SYSCLK_P]
-# set_property DIFF_TERM FALSE [get_ports SYSCLK_N]
-# #set_property DIFF_TERM FALSE [get_ports SYSCLK_N]
-# set_property PACKAGE_PIN AD12 [get_ports SYSCLK_P]
-# set_property PACKAGE_PIN AD11 [get_ports SYSCLK_N]
-# set_property PACKAGE_PIN AB7 [get_ports cpu_reset_n]
-# set_property IOSTANDARD LVCMOS15 [get_ports CPU_RESET]
 
 # RESET is on ARM_RST_O
 # NOTE: *** THIS AN ACTIVE LOW RESET ****
@@ -153,7 +141,7 @@ set_property IOSTANDARD LVCMOS25 [get_ports raw_clk10]
 # set_property PACKAGE_PIN F22 [get_ports {fmcb_clk2_bidir_n}]; # IO_L11N_T1_SRCC_17, MGMEZZ04: ch3_4_adc_data_2b_n
 # set_property PACKAGE_PIN G22 [get_ports {fmcb_clk2_bidir_p}]; # IO_L11P_T1_SRCC_17, MGMEZZ04: ch3_4_adc_data_2b_p
 # --- Notes:
-#   - VREF_B_M2C is not connected tp anything on both FMCA and FMCB
+#   - VREF_B_M2C is not connected to anything on both FMCA and FMCB
 #   - VREF_A_M2C is not connected to anything on FMCB
 # -- -MGT Banks
 # Bank 115: MGTREF (N7)/ MGTAVTTRCAL(N8) connected to 100 ohms but not used by firmware
@@ -210,8 +198,6 @@ set_property DRIVE 16 [get_ports fpga_led1_bp_sma]
 # Backplane TIME (one pin of LVDS pair; bp_time_n inferred)
 set_property PACKAGE_PIN AG30 [get_ports bp_time_p]
 set_property IOSTANDARD LVDS_25 [get_ports bp_time_p]
-# set_property IOSTANDARD LVCMOS25 [get_ports bp_time_p]
-# set_property IOSTANDARD LVCMOS25 [get_ports bp_time_n]
 
 # Backplane TRIG
 set_property PACKAGE_PIN AJ29 [get_ports bp_trig_p]
@@ -247,14 +233,6 @@ set_property PACKAGE_PIN A22 [get_ports sync_1v8]
 set_property PACKAGE_PIN L17 [get_ports sync_1v2]
 
 
-#################################
-# SMA connectors
-#################################
-# set_property IOSTANDARD LVCMOS25 [get_ports USER_SMA_*]
-# set_property PACKAGE_PIN Y23 [get_ports USER_SMA_GPIO_P]
-# set_property PACKAGE_PIN Y24 [get_ports USER_SMA_GPIO_N]
-# set_property PACKAGE_PIN L25 [get_ports USER_SMA_CLOCK_P]
-# set_property PACKAGE_PIN K25 [get_ports USER_SMA_CLOCK_N]
 
 
 ####################################
@@ -309,19 +287,15 @@ set_property PACKAGE_PIN L17 [get_ports sync_1v2]
 
 # 125 MHz GTX reference clock on CLK_GTX115_A (MGTREFCLK0, Bank 115)
 set_property PACKAGE_PIN J8 [get_ports mgt_clk125_p]
-# set_property PACKAGE_PIN J7 [get_ports gtx115_clk125_n]
 
 # 10 MHz GTX reference clock on CLK_GTX115_B (MGTREFCLK1, Bank 115)
 set_property PACKAGE_PIN L8 [get_ports mgt_clk10_p]
-# set_property PACKAGE_PIN L7 [get_ports mgt_clk10_n]
 
 # 100 MHz GTX reference clock on CLK_100MHz (MGTREFCLK1, Bank 114)
 set_property PACKAGE_PIN T6 [get_ports mgt_clk100_p]
-# set_property PACKAGE_PIN T5 [get_ports mgt_clk100_n]
 
 # 200 MHz GTX reference clock on CLK_GTX112B (MGTREFCLK1, Bank 112)
 set_property PACKAGE_PIN AF6 [get_ports mgt_clk200_p]
-# set_property PACKAGE_PIN AF5 [get_ports mgt_clk200_n]
 
 
 #################################
@@ -330,14 +304,10 @@ set_property PACKAGE_PIN AF6 [get_ports mgt_clk200_p]
 
 
 # 125 MHz  reference clock on CLK_FPGA_B (MGTREFCLK1, Bank 116 from PLL1 Port 3)
-# Force ibufgs placement. Vivado provisionnally placed it at X0Y11 which cannot work.
-# set_property LOC IBUFDS_GTE2_X0Y11 [get_cells chfpga0/clk0/use_sfp_refclk.ibufds_gtrefclk]
+# Force ibufgs placement. 
 set_property PACKAGE_PIN H6 [get_ports sfp_clk_p]
 
 # SFP line son the PCI_SFP GTX transceiver( MGT3, Bank 115)
-# set_property LOC GTXE2_CHANNEL_X0Y19 [get_cells dfmux0/UDP_PHY0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/GTWIZARD_i/U0/gt0_GTWIZARD_i/gtxe2_i]
-# set_property LOC GTXE2_CHANNEL_X0Y19 [get_cells dfmux0/UDP_PHY0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/gtwizard_i/U0/gt0_GTWIZARD_i/gtxe2_i]
-# set_property LOC GTXE2_CHANNEL_X0Y19 [get_cells chfpga0/gen_eth.udp_mac0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/gtwizard_i/U0/gt0_GTWIZARD_i/gtxe2_i]
 set_property PACKAGE_PIN F2 [get_ports sfp_tx_p]
 
 #################################
@@ -354,7 +324,6 @@ set_property PACKAGE_PIN F6 [get_ports {xge_refclk_p[0]}]
 # [2] on MGTREFCLK116_0 (covers GTX116)
 set_property PACKAGE_PIN AD6 [get_ports {bp_shuffle_refclk_p[0]}]
 set_property PACKAGE_PIN R8 [get_ports {bp_shuffle_refclk_p[1]}]
-# set_property PACKAGE_PIN F6 [get_ports {bp_shuffle_refclk_p[2]}]
 
 
 #################################
@@ -367,12 +336,6 @@ set_property PACKAGE_PIN R8 [get_ports {bp_shuffle_refclk_p[1]}]
 #################################
 # XADC PINS
 #################################
-#set_property PACKAGE_PIN C39 [get_ports VAUX_CURR_N]
-#set_property PACKAGE_PIN C38 [get_ports VAUX_CURR_P]
-#set_property PACKAGE_PIN A34 [get_ports VAUX_VOLT_N]
-#set_property PACKAGE_PIN B34 [get_ports VAUX_VOLT_P]
-#set_property PACKAGE_PIN T14 [get_ports VN]
-#set_property PACKAGE_PIN R15 [get_ports VP]
 # [Netlist 29-55] Pins VAUXN[6], VAUXN[7], VAUXN[13], VAUXN[14], VAUXN[15], VAUXP[6], VAUXP[7], VAUXP[13], VAUXP[14] or VAUXP[15] are used on XADC instance 'sysmon0/SYSMON_TIMING_IGNORE'. Please ensure that all of these pins are unconnected in order to avoid an unroutable situation. This instance will be converted to a black box element.
 #NET  XADC_VAUX0P_R             LOC = J23  | IOSTANDARD=LVCMOS25; # Bank  15 VCCO - VCC2V5_FPGA - IO_L1P_T0_AD0P_15
 #NET  XADC_VAUX0N_R             LOC = J24  | IOSTANDARD=LVCMOS25; # Bank  15 VCCO - VCC2V5_FPGA - IO_L1N_T0_AD0N_15
@@ -385,8 +348,6 @@ set_property PACKAGE_PIN R8 [get_ports {bp_shuffle_refclk_p[1]}]
 # FMC Buck regulator sync
 #------------------
 set_property IOSTANDARD LVCMOS25 [get_ports fmc?_buck*_sync]
-## set_property PACKAGE_PIN AD28 [get_ports fmca_buck1v8_sync]
-## set_property PACKAGE_PIN AD27 [get_ports fmca_buck3v3_sync]
 set_property PACKAGE_PIN AD16 [get_ports fmca_buck1v8_sync]
 set_property PACKAGE_PIN AC16 [get_ports fmca_buck3v3_sync]
 #------------------
@@ -414,9 +375,6 @@ set_property PACKAGE_PIN AB22 [get_ports fmca_adc_pll_lock]
 # FMC Reference Clock
 #------------------
 set_property IOSTANDARD LVDS_25 [get_ports fmc?_refclk_m2c_p]
-#set_property LOC IDELAY_X0Y28 [get_cells chfpga0/refclk0/REFCLKDLY0]
-# set_property PACKAGE_PIN AE23 [get_ports fmca_refclk_m2c_p]
-# set_property PACKAGE_PIN AF23 [get_ports fmca_refclk_m2c_n]
 set_property PACKAGE_PIN AH17 [get_ports fmca_refclk_m2c_n]
 
 set_property PACKAGE_PIN AC8 [get_ports {fmca_mgt_pll_refclk_p[0]}]
@@ -429,14 +387,11 @@ set_property PACKAGE_PIN AE8 [get_ports {fmca_mgt_pll_refclk_p[1]}]
 # FMC ADC RESET
 #------------------
 set_property IOSTANDARD LVCMOS25 [get_ports fmc?_adc_rst_n]
-# set_property PACKAGE_PIN G18 [get_ports ADC_RST_N]
 set_property PACKAGE_PIN Y28 [get_ports fmca_adc_rst_n]
 #------------------
 # FMC ADC SYNC
 #------------------
 set_property IOSTANDARD LVDS_25 [get_ports fmc?_adc_sync_p]
-# set_property PACKAGE_PIN E29 [get_ports ADC_SYNC_P]
-# set_property PACKAGE_PIN E30 [get_ports ADC_SYNC_N]
 set_property PACKAGE_PIN T23 [get_ports fmca_adc_sync_n]
 
 #------------------
@@ -551,7 +506,6 @@ set_property PACKAGE_PIN F18 [get_ports fmcb_spi_sck]
 set_property PACKAGE_PIN A18 [get_ports fmcb_spi_miso]
 set_property PACKAGE_PIN G18 [get_ports fmcb_spi_mosi]
 set_property PACKAGE_PIN H15 [get_ports fmcb_spi_rst_n_alt]
-#set_property PACKAGE_PIN  [get_ports {fmcb_SPI_RST_N}]
 
 set_property PACKAGE_PIN J14 [get_ports fmcb_adc_pll_lock]
 
@@ -651,14 +605,11 @@ set_property PACKAGE_PIN G19 [get_ports {fmcb_adc1_dhdn[7]}]
 # If so, there are constraints on where its2 inputs (adcdaq0 and System MMCM (CLK200)) are. 
 # If they are there were driven directly (no BUFG) by both the ADCDAQ BUFR and Sysntem MMCM output,
 # The MMCM must be adjacent, but on a half that has enough BUFGs
-# set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/clk0/gen_chanpll_k7.chan_mmcm0]
-# set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/clk0/gen_chanpll_k7.mmcm_case.chan_mmcm0]
 # set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/clk0/gen_chanpll_k7.mmcm_case.chan_mmcm0]
 # The system MMCM also drives the Channelizer MMCM, and also needs to be adjacent.
 
 
 # Make sure that the BUFG instantiated by the SGMII core is on the same half as the IBUFGDS that drives it. For some reason Vivado places it on the wrong half and fails.
-# set_property LOC BUFGCTRL_X0Y16 [get_cells chfpga0/gen_eth.udp_mac0/sgmiigen.sgmii0/core_wrapper/U0/transceiver_inst/gtwizard_inst/U0/gtwizard_i/gt0_GTWIZARD_i/bufg_gtrefclk0_in]
 
 set_property LOC BUFGCTRL_X0Y17 [get_cells chfpga0/gen_eth.phy_case.udp_mac0/phy_gen.sgmii0/bufg_txoutclk]
 
@@ -668,9 +619,7 @@ set_property LOC BUFGCTRL_X0Y17 [get_cells chfpga0/gen_eth.phy_case.udp_mac0/phy
 # REFCLK is in bank 11, coming from a SRCC pins.
 # IBUFGDS and IDELAY are automatically placed on that pad
 # The BUFR must be in the same region
-# set_property LOC BUFR_X0Y3 [get_cells {chfpga0/refclk0/FMCBUFR0}]; # Place REFCLK BUFR in same region as the pad.
 # The BUFGMUX must be in the same half
-# set_property LOC BUFGCTRL_X0Y0 [get_cells chfpga0/refclk0/FMCBUFG0]
 
 # CH2
 # NOTE: It is assumed that the ADCDAQ logic is located in the same bank as the clock so it can be clocked out of the BUFR in that region
@@ -693,6 +642,9 @@ set_property LOC BUFIO_X0Y25 [get_cells {chfpga0/chan_array0/adc_gen.ev8aq160_ca
 # # AREA Contraints
 # ###################################
 
+
+# ADCDAQ Pblocks
+# We might want to LOC the BRAMS and not use the Pblocks, if there is a benefit and it does not cause some placement issue with other components that are not LOC'ed above.
 create_pblock ADCDAQ0
 add_cells_to_pblock [get_pblocks ADCDAQ0] [get_cells -quiet [list {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[0].adcdaq0}]]
 resize_pblock [get_pblocks ADCDAQ0] -add {SLICE_X0Y169:SLICE_X7Y186}
@@ -773,5 +725,4 @@ add_cells_to_pblock [get_pblocks ADCDAQ15] [get_cells -quiet [list {chfpga0/chan
 resize_pblock [get_pblocks ADCDAQ15] -add {SLICE_X0Y358:SLICE_X7Y376 SLICE_X0Y328:SLICE_X7Y329}
 resize_pblock [get_pblocks ADCDAQ15] -add {RAMB18_X0Y148:RAMB18_X0Y149}
 resize_pblock [get_pblocks ADCDAQ15] -add {RAMB36_X0Y74:RAMB36_X0Y74}
-
 

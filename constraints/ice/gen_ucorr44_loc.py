@@ -7,8 +7,8 @@ Each ram_gen[R] has 2 RAMB36 (mem_reg_0, mem_reg_1) associated with
 dsp_gen[2*R] and dsp_gen[2*R+1], each having dsp1 and dsp2.
 corr_gen[0] -> upper region; corr_gen[1] -> lower region.
 68 ram_gen per correlator, 4 columns x 17 rows.
-Placement order: left to right (X 8..11), then bottom to top (increasing Y),
-so logic that accesses close indices uses physically close DSP/RAM.
+Placement order: serpentine/zigzag per column - up on col 8, down on col 9,
+up on col 10, down on col 11. Adjacent indices follow a linear path.
 """
 
 import os
@@ -40,9 +40,11 @@ def main():
 
     for C, ramb_base, dsp_base in REGIONS:
         for R in range(NUM_RAM_GEN):
-            # Left to right (vary column), then bottom to top (vary row)
-            col = 8 + (R % NUM_COLS)
-            row = R // NUM_COLS
+            # Serpentine: col 8 up, col 9 down, col 10 up, col 11 down
+            col_idx = R // NUM_ROWS
+            col = 8 + col_idx
+            row_in_col = R % NUM_ROWS
+            row = row_in_col if col_idx % 2 == 0 else (NUM_ROWS - 1 - row_in_col)
             ry = ramb_base + 2 * row
             ry1 = ry + 1
             dy = dsp_base + 4 * row
