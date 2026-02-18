@@ -12,39 +12,60 @@ alwaysApply: false
     - AXI-Streaming signals in modules should be named <function>_*. If a bidirectional bus pair is used (like BSB interface), signals can be prefixed m2s_<function>_* or s2m_<function>_* to distinguish the signal direction.
 
 - Use VHDL2008 features:
-    - Use implicit std_logic to bool conversion: replace equality tests x='1' by x in "if" and "when"  statements in single term test. Multi-term tests could also be simplified if all the elements are equality tests with std_logic. Don't mix std_logic and booleans in an expression, e.g. "(a='1' and b='0') and c>1" cannot be replaced by "(a and b) and c>1" because "(a and b)" is std_logic and "c>1" is boolean.   
+    - All projects are in VHDL2008, so use VHDL2008 idioms whenever possible
+    - Use when stamenents instead of short if blocks
+    - Allow generics to depend on previous generics
+    - use "if/else generate" instead of multiple exclusive "if generate" statements
+    - use switch generates when appropriate
+    - Take advantage of auto casting of std_logic to bool in conditional "if" and "when" statements (replace if x='1' to if x)
+    
+        -  Multi-term tests could also be simplified if all the elements are equality tests with std_logic. Don't mix std_logic and booleans in an expression, e.g. "(a='1' and b='0') and c>1" cannot be replaced by "(a and b) and c>1" because "(a and b)" is std_logic and "c>1" is boolean.   
     - All processes should now use process(all) (without sensitivity list)
     - Eliminate _int_ variable that are directly assigned to ports combinatorially. VHDL 2008 allows reading output ports.
-    - Generics are allowed to refer to generics previously defined in the same entity.
-    - Sequential if statements with only one line should be  replaced with an equivalent  sequential "when" statement. Do not use an else statement if the value does not change.
+
+
+
+- Genneral VHDL rules
+
+    - Each entity in a file *must* be preceded with the library it needs. This is because libraries are forgotten when the previous architecture definition ends.
+    - Don't use metasignals such as Don't-care or Hizh-Z (``'-', 'Z'``): Those haveno meaning in synthesis.
+
+- Vivado specific rules
 
     - Have only one "if rising_edge(...)" per process. Vivado simulator crashes otherwise.
 
 
-- VHDL rules
 
-    - Each entity in a file *must* be preceded with the library it needs. This is because libraries are forgotten when the previous architecture definition ends.
-    
-## VHDL comment extraction (vhdl_sphinx_domain)
 
-- Comments blocks that end before elements (without a blank line), such as entity, architecture, signals etc.,  are comments attached to this element
-- Commment blocks are treated as RST format and can be imported automatically in the documentation 
-- Title underlines in comments must match title length exactly
 
-- The Sphinx directive .. autoentity:: imports the comment block before the directive, and creates a table of generics and ports.
-- Memory map tables:
-    - Are comment block with a table in markdown format 
-    - Tables are directly imported into the documentation. 
-    - The first line of the comment block is a marker is used to identify the comment block to import. 
-    - Table separators (dashed lines) before/after tables are OK; parser removes them
-    - Blank lines within tables break parsing; avoid them
-    - Memory map markers: "Memory Map" or "Memory map" (case sensitive in :start-after)
-    - Do not start block comments with dashed lines (----); 
-    - Add blank line after marker before table separator
-    - Memory map tables include address ranges, bit fields, and descriptions. Here is the format:
+- AXI-Streaming bus rules
+    - Do not add unnecessary conditional assignment of TDATA or TVALID to set those signals when TVALID is low anyway.   
 
-        -- Memory Map
-        --
-        -- | Page | Addr | Bit(s)|     Name                | Description                           |
-        -- |------|------|-------|-------------------------|---------------------------------------|
-        -- | CONTROL | 0:3 | 31:0 | field_name | Description text |
+
+- Resets
+    - Use synchronous resets
+    - Put reset handling in its own ``if rst`` block at the **bottom** of the process (after the main case/if logic). That way reset overrides normal assignments and every branch of the main logic can assign all registers; this avoids creating latches.
+
+- VHDL comment extraction (vhdl_sphinx_domain)
+
+    - Comments blocks that end before elements (without a blank line), such as entity, architecture, signals etc.,  are comments attached to this element
+    - Commment blocks are treated as RST format and can be imported automatically in the documentation 
+    - Title underlines in comments must match title length exactly
+
+    - The Sphinx directive .. autoentity:: imports the comment block before the directive, and creates a table of generics and ports.
+    - Memory map tables:
+        - Are comment block with a table in markdown format 
+        - Tables are directly imported into the documentation. 
+        - The first line of the comment block is a marker is used to identify the comment block to import. 
+        - Table separators (dashed lines) before/after tables are OK; parser removes them
+        - Blank lines within tables break parsing; avoid them
+        - Memory map markers: "Memory Map" or "Memory map" (case sensitive in :start-after)
+        - Do not start block comments with dashed lines (----); 
+        - Add blank line after marker before table separator
+        - Memory map tables include address ranges, bit fields, and descriptions. Here is the format:
+
+            -- Memory Map
+            --
+            -- | Page | Addr | Bit(s)|     Name                | Description                           |
+            -- |------|------|-------|-------------------------|---------------------------------------|
+            -- | CONTROL | 0:3 | 31:0 | field_name | Description text |

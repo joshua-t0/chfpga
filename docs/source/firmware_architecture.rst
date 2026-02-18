@@ -97,6 +97,73 @@ The core firmware for every configuration of the firmware for every platform is 
 Of course, this module takes a large number of generics that are passed by the hardware platform and configuration file to enable the various hardware- and application-specific modules with the desired geometry.
 
 
+Data buses
+==========
+
+AXI4-Streaming bus usage
+------------------------
+
+We use exclusively AXI4-Streaming to carry both the science data and the control/monitoring system.
+The protocol is well defined by standard, is lightweight, and is well supported by IP blocks.
+
+Blocking vs non-blocking buses
+------------------------------
+
+Science data buses are generally non-blocking (no TREADY line). There is generally no point in blocking the main pipeline: data rate is so high that we can't block for a significant amout of time and not run out of memory. 
+
+Control interfaces (e.g. BSB control bus) and slow capture buses (UCAP, PROBER and UCORR outputs)that send intermittent data over limited bandwidth pipes (e.g. feeding Ethernet interface) use blocking buses.
+
+Blocking buses harder on timing.  Tready cannot be registered unless we introduce a 1-deep FIFO at each stage. 
+
+Loose backpressure
+------------------
+
+We sometimes stray from the strict AXI-Stream handshaking and use a signal we call `send` instead of TREADY to implement a relaxed form of backpressure that makes the bus easy to pipeline. We don't use the TREADY signal to make it clear the backpresure works differently. 
+
+In this protocol, we expect that both the data and send signals will be pipelined, which means that data won't start flowing immediately when it is asserted. This also means that the data won't stop immediately when deasserted, not until the pipeline has finished flushing. The receiver must therefore accept *any* data that is TVALID, independent of the send signal. This is different from the standard AXI-tream where a trasaction occurs only when both TVALID and TREADY are high in the same clock cycle.
+
+This means that we place an elastic FIFO at the sink and drive ``send`` from its almost-full flag, so the source is told to stop before the FIFO runs out of space. The *almost_full* margin must be as large as the roundtrip latency of the pipeline (`send` pipeline from sink to source plus data pipelining from source to sink) so it can absorb the extra data caused by the pipeline. We often already have to use a FIFO for clock-domain crossing preposes, so that comes for free. 
+
+This approach is used at the output of the channelizer (to allow channel outputs to be aligned) and on the daisy-chained outputs of the correlator.
+
+
+AXI4-Streaming Protocol
+-----------------------
+
+The AXI4-Stream protocol is used for applications that typically focus on a data-centric and data-flow paradigm where the concept of an address is not present or not required. Each AXI4-Stream acts as a single unidirectional channel for a handshake data flow. At this lower level of operation (compared to the memory mapped AXI protocol types), the mechanism to move data between IP is defined and efficient, but there is no unifying address context between IP. The AXI4-Stream IP can be better optimized for performance in data flow applications, but also tends to be more specialized around a given application space.
+
+AXI-Stream Ports and Waveform
+
+.. table::
+
+    +------------------+--------------+-----------+----------------------------------------------------+
+    | Port Name        | Width (bits) | Direction | Description                                        |
+    +==================+==============+===========+====================================================+
+    | TREADY           | 1            | In        | Indicates destination is to accept data            |
+    +------------------+--------------+-----------+----------------------------------------------------+
+    | TVALID           | 1            | Out       | Indicates TDATA is valid                           |
+    +------------------+--------------+-----------+----------------------------------------------------+
+    | TLAST            | 1            | Out       | Indicates last word of a transfer                  |
+    +------------------+--------------+-----------+----------------------------------------------------+
+    | TDATA            | 8            | Out       | Data                                               |
+    +------------------+--------------+-----------+----------------------------------------------------+
+
+Handshake rules
+---------------
+
+- **Transfer**: A beat is transferred only when **both** TVALID and TREADY are high in the **same** clock cycle.
+- **TVALID**: Once the source asserts TVALID, it must keep it asserted until a transfer occurs (i.e. until TREADY is high in the same cycle). The source may deassert TVALID on the cycle after the handshake (or keep it high for the next beat). TVALID must not be deasserted before the handshake.
+- **TREADY**: The sink may assert or deassert TREADY on any cycle; it can change from cycle to cycle. In practice it is often registered to avoid combinatorial paths from TREADY back to TVALID.
+
+
+.. figure:: ../images/axi_stream_waveform.png
+    :scale: 22
+    :alt: AXI-Stream Interface Waveform
+
+
+`Xilinx AXI Reference Guide <https://www.xilinx.com/support/documentation/ip_documentation/ug761_axi_reference_guide.pdf>`_
+
+
 Command system
 ==============
 
@@ -184,15 +251,7 @@ Configuration management
 - We generally try to put as much capability information in capability registers as possible to minimize the need to keep the Python code up to date with firmware changes. However, Python-based look up tables might be necessary to provide detailed configuration based on some FPGA capability register in order to minimize the amount of logic resources allocated to these registers. This is the case of platform-specific constants which are looked up from the PLATFORM_ID parameter found in GPIO.
 -
 
-Data buses
-==========
 
-
-We use exclusively AXI4-Streaming to carry both the science data and the control/monitoring system.
-
-Generally non-blocking. There is generally no point in blocking the main pipeline: data rate is so high that we can't block for a significant amout of time and not run out of memory. Slow control interfaces are not in this case.
-Blocking brings issues with timing. Tready cannot be registered unless we introduce a 1-deep FIFO at each stage. Bad for timing.
-Sometimes implement loose backpressure: to avoid confusion, we use the ``send`` signal instead of TREADY since we break protocol. Send can be pipelined, but it is expected that data in the pipe will continue flowing until the send has made its way to the source. This is fixed by having an elastic FIFO at the end that requests stop sending before there is no more space left in the FIFO (i.e. use almost full to drive send). This greatly simplifies the logic by using a free feature of the FIFOs. This is used at the output of the channelizer (to allow their outputs to be aligned), and on the daisy-chained outputs of the correlator.
 
 Building Gotchas
 ================
