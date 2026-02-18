@@ -92,7 +92,7 @@ entity chfpga_crs is
 
 		CORR_TYPE: corr_type_enum      := CONFIG_CORR_TYPE; -- "CORR44" or "UCORR44"
 		NUMBER_OF_CORRELATORS: integer := CONFIG_NUMBER_OF_CORRELATORS; -- Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
-		CONFIG_CORR_READOUT_BINS: integer_array(0 to NUMBER_OF_CORRELATORS-1) := CONFIG_CORR_READOUT_BINS;
+		CORR_READOUT_BINS: integer_array(0 to NUMBER_OF_CORRELATORS-1) := CONFIG_CORR_READOUT_BINS;
 
 		-- Real-time data offload links configuration
 
