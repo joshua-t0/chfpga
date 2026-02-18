@@ -319,7 +319,7 @@ begin
 -- |         |     |   6  | mon_reset_stats              | Reset mon_packet_length and mon_packet_ctr |
 -- |         |     |   5  | mon_ctrl                     | Monitor control signal |
 -- |         |     |  4:3 | bypass_data_type             | When bypass_scaler is '1': "00": input, "01": 1+0j if any saturation, "10": 1+0j or 0+1j if positive or negative saturation respectively|
--- |         |     |  2:0 | cap_data_type                | "000": raw output, "001": scaled input, "010": 4-bit, "100": Even bins, "101": odd bins
+-- |         |     |  2:0 | cap_data_type                | "000": main scaler output, "001": raw FFT MSBs, "010": post-gain MSBs, "011": 4+4 scaled, "100": dual-resolution raw FFT, "101": full-resolution raw FFT, "110": saturation flags, "111": reserved |
 -- |         |11:12| 15:0 | stats_bin_number             | Bin number on which to measure overflow stats when stats_single_bin='1'. |
 -- | STATUS  |  0  |  7   | stats_ready                  | '1' when new stats data has been captured|
 -- |         |     |  6   | current_gain_bank            | Currently used gain bank. |
@@ -378,7 +378,7 @@ use_float_gains <= control_bytes(10)(7); -- if True, bin-specific log gain is en
 mon_reset_stats <= control_bytes(10)(6);
 mon_ctrl <= control_bytes(10)(5);
 bypass_data_type  <= control_bytes(10)(4 downto 3); -- if bypass=1: "00": input, "01": 1+0j if any saturation, "10": 1+0j or 0+1j if positive or negative saturation respectively
-cap_data_type  <= control_bytes(10)(2 downto 0); -- "000": raw output, "001": scaled input, "010": 4-bit, "100": Even bins, "101": odd bins, "110": scaled even bins, "111": scaled odd bins
+cap_data_type  <= control_bytes(10)(2 downto 0); -- "000": main scaler output, "001": raw FFT MSBs, "010": post-gain MSBs, "011": 4+4 scaled, "100": dual-resolution raw FFT, "101": full-resolution raw FFT, "110": saturation flags, "111": reserved
 
 -- CONTROL bytes 11-12
 stats_bin_number <= to_unsigned(control_bytes(11 to 12));
@@ -1393,4 +1393,3 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
     end block mon_blk;
 
 end Behavioral;
-

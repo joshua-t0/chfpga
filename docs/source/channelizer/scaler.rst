@@ -79,13 +79,19 @@ Capture data type
 The cap_data_type register determines what is output on the scaler's capture output.
 
 	- 0: Forward science output directly to capture output.
-	- 1: Output the input FFT data.
-	- 2: Output raw scaled FFT data, before rounding is applied. The data is saturated, but disregarding symmetric saturation.
-	- 3: Output 4+4 bit scaled FFT data (e.g. normal scaler output, even if the science output is set to another mode)
-	- 4: Output the input FFT data of the even bins only, at double the bitwidth.
-	- 5: Output the input FFT data of the odd bins only, at double the bitwidth.
-	- 6: Output the raw scaled FFT data (see above) of the even bins only, at double the bitwidth.
-	- 7: Output the raw scaled FFT data (see above) of the odd bins only, at double the bitwidth.
+	- 1: Output MSBs of pre-gain raw FFT input.
+	- 2: Output MSBs of post-gain FFT values (stage 1), with saturation substitution.
+	- 3: Output 4+4 bit scaled FFT values (independent from science output bypass mode).
+	- 4: Dual-resolution raw FFT mode: alternate even/odd bins on successive frames at 2x complex bit width.
+	- 5: Full-resolution raw FFT mode: emit Re/Im components in separate output words, interleaved across frames.
+	- 6: Output saturation flags for each Re/Im component (0: no saturation, +1: positive saturation, -1: negative saturation).
+	- 7: Reserved/unhandled in current RTL implementation.
+
+Throughput tradeoff for higher-resolution modes:
+
+	- Mode 4: halves bins per frame and requires 2 frames for full bin coverage.
+	- Mode 5: requires ``2*B`` frames for full complex-bin coverage, where ``B = FFT_BINS_PER_WORD``.
+	- In both cases, higher captured resolution is obtained by reducing bin coverage per frame while keeping capture word width fixed (``CAP_BITS_PER_WORD``).
 
 Other features
 ==============
@@ -138,4 +144,3 @@ Memory Map
 
 .. include-docs:: SCALER
     :start-after: SCALER Module Memory Map
-
