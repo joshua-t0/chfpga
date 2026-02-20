@@ -25,6 +25,9 @@ use IEEE.NUMERIC_STD.ALL;
 use IEEE.math_real.all; -- needed for ceil()
 use IEEE.math_complex.all;
 use IEEE.STD_LOGIC_MISC.ALL; -- for or_reduce()
+use std.textio.all;
+use IEEE.std_logic_textio.all;
+
 -------- chFPGA Package ------------
 
 -- Defines the system-level constants and data types, declares the components used in the system, and provide support functions and procedures
@@ -713,6 +716,10 @@ function to_unsigned(i:slv8_array) return unsigned; -- concatenate bytes in a sl
 function to_unsigned(i:std_logic) return unsigned; -- converts a std_logic into a one element unsigned
 function str(i:integer) return string; -- converts integer to a string. Allows expressions, contrary to to_string().
 function repeat( V: std_logic_vector; N: natural) return std_logic_vector; -- Concatenates a vector N times
+function xpm_fifo_features(
+    overflow, data_valid, prog_full, wr_data_count, almost_full, wr_ack,
+    underflow, prog_empty, rd_data_count, almost_empty : boolean := FALSE
+  ) return string; -- XPM xpm_fifo_async / xpm_fifo_sync USE_ADV_FEATURES hex string
 
 function log2(v: integer) return real; -- Returns the log2 of an integer as a real (overloads the library log2())
 function integer_log2(v: integer) return integer; -- Returns the log2 of an integer as an integer
@@ -1007,6 +1014,28 @@ begin
 		return '0';
 	end if;
 end to_std_logic;
+
+function xpm_fifo_features(
+    overflow, data_valid, prog_full, wr_data_count, almost_full, wr_ack,
+    underflow, prog_empty, rd_data_count, almost_empty : boolean := FALSE
+  ) return string is
+	variable l: line;
+	variable v: std_logic_vector(15 downto 0);
+begin
+	v := (0 => to_std_logic(overflow),
+	      1 => to_std_logic(prog_full),
+	      2 => to_std_logic(wr_data_count),
+	      3 => to_std_logic(almost_full),
+	      4 => to_std_logic(wr_ack),
+	      8 => to_std_logic(underflow),
+	      9 => to_std_logic(prog_empty),
+	      10 => to_std_logic(rd_data_count),
+	      11 => to_std_logic(almost_empty),
+	      12 => to_std_logic(data_valid),
+	      others => '0');
+	IEEE.std_logic_textio.hwrite(l, v);
+	return l.all;
+end xpm_fifo_features;
 
 FUNCTION to_slv(i:integer; n: integer) return std_logic_vector is -- converts integer to standard_logic_vector with specified number of bits
 begin
