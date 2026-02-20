@@ -25,8 +25,9 @@ alwaysApply: false
 
 
 
-- Genneral VHDL rules
+- General VHDL rules
 
+    - Prefer aggregate assignment for std_logic_vector when assigning multiple bits: ``v := (0 => x, 1 => y, others => '0')`` instead of individual ``v(i) := ...`` statements.
     - Each entity in a file *must* be preceded with the library it needs. This is because libraries are forgotten when the previous architecture definition ends.
     - Don't use metasignals such as Don't-care or Hizh-Z (``'-', 'Z'``): Those haveno meaning in synthesis.
 
@@ -69,3 +70,4 @@ alwaysApply: false
             -- | Page | Addr | Bit(s)|     Name                | Description                           |
             -- |------|------|-------|-------------------------|---------------------------------------|
             -- | CONTROL | 0:3 | 31:0 | field_name | Description text |
+

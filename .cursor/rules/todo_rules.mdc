@@ -1,0 +1,16 @@
+---
+alwaysApply: true
+---
+
+# Soft /todo command
+
+When the user's message **starts with** `/todo` (optionally followed by a space and more text), treat it as a TODO command:
+
+1. **Read** `.cursor/TODO.md` to get the current list and next available T### ID.
+2. **Then**:
+   - **Just `/todo`** — Reply with a short summary of open items by category and suggest what could be done next. Do not start implementing unless the user explicitly asks.
+   - **`/todo add`** + description — Add a new item: pick the best category (Features, Refactor, Bugs, Testbenches, Nice-to-have, Documentation, Maintenance), use the next T### ID, and today's date (YYYY-MM-DD). Update TODO.md.
+   - **`/todo T###`** (e.g. T001) — Focus on that item: show it, discuss it, or (only if the user clearly asks) start working on it.
+   - **Other text after `/todo`** — Use the rest of the message as context and interact with the TODO list (e.g. list, suggest, or add) without starting implementation unless requested.
+
+If the message does **not** start with `/todo`, ignore this rule.
