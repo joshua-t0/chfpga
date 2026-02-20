@@ -719,7 +719,11 @@ architecture impl of chFPGA is
 	signal corr_out_tlast: std_logic;
 	signal corr_out_tready: std_logic;
 
-	attribute KEEP of corr_out_tdata, corr_out_tvalid, corr_out_tlast, corr_out_tready: signal is "true"; -- temp fix: make sure the correlator is not remove duntil it is connected
+	-- UCAP capture output (on axis_cap_clk after CDC in UCAP FIFO)
+	signal ucap_out_tdata: std_logic_vector(7 downto 0);
+	signal ucap_out_tvalid: std_logic;
+	signal ucap_out_tlast: std_logic;
+	signal ucap_out_tready: std_logic;
 
 	-----------------------
 	-- Channelizer signals
@@ -1797,19 +1801,12 @@ begin
 			m_axis_prober_tlast  => cap_last(NUMBER_OF_CHANNELIZERS - 1 downto 0),
 			m_axis_prober_tready => cap_ready(NUMBER_OF_CHANNELIZERS - 1 downto 0),
 
-						-- UCAP 8-bit capture output  - for direct streaming to ARM
-			m_axis_cap_tdata => m_axis_cap_tdata,
-			m_axis_cap_tvalid => m_axis_cap_tvalid,
-			m_axis_cap_tlast => m_axis_cap_tlast,
-			m_axis_cap_tready => m_axis_cap_tready,
-			axis_cap_clk => axis_cap_clk,
-
-			-- UCAP Interface Auxiliary stream input merged by UCAP into the data capture stream
-			corr_out_tdata => corr_out_tdata,
-			corr_out_tvalid => corr_out_tvalid,
-			corr_out_tlast => corr_out_tlast,
-			corr_out_tready => corr_out_tready,
-
+			-- UCAP 8-bit capture output (on axis_cap_clk, fed into axis_merge or bsb_master)
+			m_axis_ucap_tdata  => ucap_out_tdata,
+			m_axis_ucap_tvalid => ucap_out_tvalid,
+			m_axis_ucap_tlast  => ucap_out_tlast,
+			m_axis_ucap_tready => ucap_out_tready,
+			axis_ucap_clk      => axis_cap_clk,
 
 			-- BSB Interface to UCAP
 			s_axis_ucap_bsb_tdata => top_router_bsb_cmd_tdata(UCAP_BASE_PORT),
@@ -2515,13 +2512,7 @@ begin
 						bsb_clk => bsb_clk,
 						bsb_rst => bsb_rst
 					);
-			-- If we use PROBER data capture, send the correlator data to the BSB master probe input.
-			prober_corr_gen: if CAPTURE_TYPE = PROBER generate
-				cap_data(CORR_PROBE_BASE_PORT)  <= corr_out_tdata;
-				cap_valid(CORR_PROBE_BASE_PORT) <= corr_out_tvalid;
-				cap_last(CORR_PROBE_BASE_PORT)  <= corr_out_tlast;
-				corr_out_tready                 <= cap_ready(CORR_PROBE_BASE_PORT);
-			end generate prober_corr_gen;
+
 
 			-------------
 			when others =>
