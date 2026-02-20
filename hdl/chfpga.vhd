@@ -2498,7 +2498,7 @@ begin
 						m_axis_data_tvalid  => corr_out_tvalid,
 						m_axis_data_tlast   => corr_out_tlast,
 						m_axis_data_tready  => corr_out_tready,
-						out_clk => bsb_clk,
+						out_clk => axis_cap_clk,
 
 						-- Control interface
 						s_axis_bsb_tdata => top_router_bsb_cmd_tdata(CORR_BASE_PORT),
