@@ -99,7 +99,10 @@ architecture impl of ucap is
 
 
 	signal control_bytes: slv8_array(0 to 10);
-	signal status_bytes: slv8_array(0 to 2);
+	signal status_bytes: slv8_array(0 to 3);
+
+	signal in_frame_ctr: unsigned(7 downto 0);
+	signal out_frame_ctr: unsigned(7 downto 0);
 
     -- control and status signals
     signal mode: std_logic_vector(1 downto 0) := "11"; -- "00": 8-channel, "01": 4-channel, "10": 2-channel, "11": 1-channel
@@ -125,15 +128,16 @@ architecture impl of ucap is
 	signal ram_wr_en: std_logic_vector(0 to NUMBER_OF_BUFFERS-1);  -- one for each row
 	signal ram_rd_en: std_logic_vector(0 to NUMBER_OF_BUFFERS-1);  -- one for each column
 
-    -- BSB FIFO signals
-	signal fifo_in_tdata: slv_array(0 to 1)(7 downto 0);
-	signal fifo_in_tvalid: std_logic_vector(0 to 1);
-	signal fifo_in_tlast: std_logic_vector(0 to 1);
-	signal fifo_in_tready: std_logic_vector(0 to 1);
+    -- FIFO signals
+	signal fifo_in_tdata: std_logic_vector(7 downto 0);
+	signal fifo_in_tvalid: std_logic;
+	signal fifo_in_tlast: std_logic;
 	signal fifo_full: std_logic;
 	signal fifo_overflow: std_logic;
 	signal fifo_overflow_sticky: std_logic;
-
+	signal fifo_wr_rst_busy: std_logic;
+	signal fifo_rd_rst_busy: std_logic;	
+	signal m_clk_ctr: unsigned(7 downto 0);
 begin
 
 
@@ -222,7 +226,13 @@ begin
 	status_bytes(0)(1) <= overrun;
 	status_bytes(0)(2) <= rst; --debug
 	status_bytes(0)(3) <= user_reset_reg; -- debug
-
+	status_bytes(0)(4) <= m_axis_tready;
+	status_bytes(0)(5) <= fifo_full;
+	status_bytes(0)(6) <= fifo_wr_rst_busy;
+	status_bytes(0)(7) <= fifo_rd_rst_busy;
+	status_bytes(1) <= std_logic_vector(in_frame_ctr);
+	status_bytes(2) <= std_logic_vector(out_frame_ctr);
+	status_bytes(3) <= std_logic_vector(m_clk_ctr);
 
     ------------------------------------------------------------
     -- UltraRAM data buffers
@@ -338,6 +348,7 @@ begin
 					if s_axis_tvalid(src) then
 						word_ctr(src) <= word_ctr(src) + 1;
 						if s_axis_tlast(src) then
+							in_frame_ctr <= in_frame_ctr + 1;
 							word_ctr(src) <= (others => '0');
 							frame(src) <= frame(src) + 1;
 							period_ctr(src) <= period_ctr(src) + 1;
@@ -370,8 +381,8 @@ begin
 					end if; --rst
 				end loop; -- source
 
-                status_bytes(1) <= std_logic_vector(period_ctr(0)(7 downto 0));
-                status_bytes(2) <= std_logic_vector(source_sel_in);
+                -- status_bytes(1) <= std_logic_vector(period_ctr(0)(7 downto 0));
+                -- status_bytes(2) <= std_logic_vector(source_sel_in);
 
 
                 -- Implement input muxing
@@ -885,4 +896,9 @@ begin
            );
     end block;
 
+	process(all) begin
+		if rising_edge(m_axis_clk) then
+			m_clk_ctr <= m_clk_ctr + 1;
+		end if;
+	end process;
 end impl;
