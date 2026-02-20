@@ -1387,6 +1387,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 if mon_reset_stats then
                     mon_packet_length <= (others =>'0');
                     mon_packet_ctr <= (others =>'0');
+                    mon_word_ctr <= (others =>'0');
                 end if;
             end if; -- clk
         end process;
