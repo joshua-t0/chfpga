@@ -58,13 +58,6 @@ entity ucap is
         source_sel_in: in std_logic_vector(0 to NUMBER_OF_CHANNELS - 1); -- curent data source on tdata for each channel
 
 
-        -- Auxiliary capture stream input, synchronous to s_axis_clk
-
-		s_axis_stream_in_data: in std_logic_vector(7 downto 0) := X"00";
-		s_axis_stream_in_tvalid: in std_logic := '0';
-		s_axis_stream_in_tlast: in std_logic := '0';
-		s_axis_stream_in_tready: out std_logic := '0';
-
         s_axis_clk: in std_logic;
         rst: in std_logic; -- synchronous to s_axis_clk
 
@@ -141,13 +134,6 @@ architecture impl of ucap is
 	signal m_clk_ctr: unsigned(7 downto 0);
 begin
 
-
-	-- temporary hack to send the aux input to the FIFO
-	fifo_in_tdata(1) <= s_axis_stream_in_data;
-	fifo_in_tvalid(1) <= s_axis_stream_in_tvalid;
-	fifo_in_tlast(1) <= s_axis_stream_in_tlast;
-	s_axis_stream_in_tready <= fifo_in_tready(1);
-	fifo_in_tready <= (others => not fifo_full);
 
 -- --------------------------------------------
 -- UCAP Memory Map

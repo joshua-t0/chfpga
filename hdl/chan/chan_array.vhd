@@ -681,19 +681,10 @@ begin
 			signal ucap_source_ack2: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1); -- curent data source on tdata for each channel
 			attribute shreg_extract of ucap_source_ack1, ucap_source_ack2: signal is "no";
 
-			signal ucap_corr_in_tdata: std_logic_vector(7 downto 0);
-			signal ucap_corr_in_tready: std_logic;
-			signal ucap_corr_in_tvalid: std_logic;
-			signal ucap_corr_in_tlast: std_logic;
-
 			signal ucap_bsb_rst, ucap_bsb_rst_reg: std_logic;
 			signal ucap_clk: std_logic;
 			signal ucap_rst, ucap_rst_reg: std_logic;
 		begin
-
-			-- Make sure the correlator clock (ct_clk) is the same as the channelizer clock (chan_clk).
-			-- UCAP assumes the aux data sources use the same clock as the main monitored source, but maybe that can change in the future.
-			assert CT_CLK_SOURCE = work.chfpga_package.ADC_CLK and CHAN_CLK_SOURCE = ADC report "Correlator must run on ADC_CLK in order for its output to be used by UCAP" severity FAILURE;
 
 			ucap_clk <= chan_clk(0);
 			-- Pipeline the reset signal. ADC logic and UCAP (which uses Ultraram) are at opposite sides of the FPGA on the Ultrascale+.
@@ -727,13 +718,6 @@ begin
 					chan_mon_reg2_tlast <= chan_mon_reg1_tlast;
 					ucap_source_ack2 <= ucap_source_ack1;
 
-					-- pipeline correlator output stream to UCAP auxiliary stream input
-					-- Correlator must run on adc_clk
-					corr_out_tready <= ucap_corr_in_tready;
-					ucap_corr_in_tdata   <= corr_out_tdata;
-					ucap_corr_in_tvalid  <= corr_out_tvalid;
-					ucap_corr_in_tlast   <= corr_out_tlast;
-
 				end if;
 			end process;
 
@@ -741,9 +725,6 @@ begin
 				generic map (
 					FPGA_SERIES => FPGA_SERIES,
 					CAPTURE_BITS_PER_WORD => CAPTURE_BITS_PER_WORD
-				-- ADC_BITS_PER_SAMPLE => ADC_BITS_PER_SAMPLE,
-				-- ADC_SAMPLES_PER_WORD => ADC_SAMPLES_PER_WORD,
-				-- ADC_SAMPLES_PER_FRAME => ADC_SAMPLES_PER_FRAME
 				)
 				port map (
 					-- Data monitoring port, synchronous to s_axis_clk
@@ -752,12 +733,6 @@ begin
 					s_axis_tlast   => chan_mon_reg2_tlast,
 					source_sel_out => chan_mon_source_req_pre,
 					source_sel_in  => ucap_source_ack2,
-
-					-- Auxiliary input stream, synchronous to s_axis_clk
-					s_axis_stream_in_data   => ucap_corr_in_tdata,
-					s_axis_stream_in_tvalid => ucap_corr_in_tvalid,
-					s_axis_stream_in_tlast  => ucap_corr_in_tlast,
-					s_axis_stream_in_tready => ucap_corr_in_tready,
 
 					s_axis_clk => ucap_clk,
 					rst        => ucap_rst_reg,
