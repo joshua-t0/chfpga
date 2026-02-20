@@ -131,20 +131,13 @@ entity chan_array is
 		m_axis_prober_tlast  : out std_logic_vector(NUMBER_OF_CHANNELIZERS - 1 downto 0);
 		m_axis_prober_tready : in std_logic_vector(NUMBER_OF_CHANNELIZERS - 1 downto 0);
 
-		-- Data capture stream from UCAP Interface (when CAPTURE_TYPE = UCAP)
+		-- 8-bit Data capture stream from UCAP Interface (when CAPTURE_TYPE = UCAP)
 
-		m_axis_cap_tdata  : out std_logic_vector(7 downto 0) := (others => '0');
-		m_axis_cap_tvalid : out std_logic                    := '0';
-		m_axis_cap_tlast  : out std_logic                    := '0';
-		m_axis_cap_tready : in std_logic                     := '0';
-		axis_cap_clk      : in std_logic                     := '0';
-
-		-- Auxilliary data stream (merged by UCAP into the data capture stream above)
-
-		corr_out_tdata  : in std_logic_vector(7 downto 0) := (others => '0');
-		corr_out_tvalid : in std_logic                    := '0';
-		corr_out_tlast  : in std_logic                    := '0';
-		corr_out_tready : out std_logic                   := '0';
+		m_axis_ucap_tdata  : out std_logic_vector(7 downto 0) := (others => '0');
+		m_axis_ucap_tvalid : out std_logic                    := '0';
+		m_axis_ucap_tlast  : out std_logic                    := '0';
+		m_axis_ucap_tready : in std_logic                     := '0';
+		axis_ucap_clk      : in std_logic                     := '0';
 
 		-- Channelizer BSB Control Interface (on bsb_clk)
 
@@ -181,6 +174,7 @@ architecture impl of chan_array is
 	attribute SHREG_EXTRACT: string;
 
 	-- Constants
+	constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
 	constant ADC_SAMPLES_PER_WORD            : integer := FFT_INFO(FFT_TYPE).SAMPLES_PER_WORD;
 	constant ADC_BITS_PER_SAMPLE             : integer := FFT_INFO(FFT_TYPE).BITS_PER_SAMPLE;
 
@@ -745,6 +739,7 @@ begin
 
 			ucap0: entity work.ucap
 				generic map (
+					FPGA_SERIES => FPGA_SERIES,
 					CAPTURE_BITS_PER_WORD => CAPTURE_BITS_PER_WORD
 				-- ADC_BITS_PER_SAMPLE => ADC_BITS_PER_SAMPLE,
 				-- ADC_SAMPLES_PER_WORD => ADC_SAMPLES_PER_WORD,
@@ -768,12 +763,12 @@ begin
 					rst        => ucap_rst_reg,
 
 					-- Output stream, synchronous to m_axis_clk
-					m_axis_tdata  => m_axis_cap_tdata,
-					m_axis_tvalid => m_axis_cap_tvalid,
-					m_axis_tlast  => m_axis_cap_tlast,
-					m_axis_tready => m_axis_cap_tready,
+					m_axis_tdata  => m_axis_ucap_tdata,
+					m_axis_tvalid => m_axis_ucap_tvalid,
+					m_axis_tlast  => m_axis_ucap_tlast,
+					m_axis_tready => m_axis_ucap_tready,
 
-					m_axis_clk => axis_cap_clk,
+					m_axis_clk => axis_ucap_clk,
 
 					-- BSB interface
 					s_axis_bsb_tdata  => s_axis_ucap_bsb_tdata,
