@@ -458,7 +458,7 @@ entity chfpga is
 		debug_out: out std_logic_vector(31 downto 0);
 		sma_out: out std_logic_vector(0 to 3);
 
-		--==== Direct BSB control interface
+		--==== BSB control interface
 		-- Command input stream
 
 		s_axis_bsb_tdata: in std_logic_vector(7 downto 0) := (others => '0');
@@ -477,6 +477,7 @@ entity chfpga is
 		axis_bsb_rst: in std_logic  := '0'; -- synchronous to axis_bsb_clk
 
 		--==== Data capture streaming interface (for slow raw data capture and correlator outputs)
+
 		m_axis_cap_tdata: out std_logic_vector(7 downto 0);
 		m_axis_cap_tvalid: out std_logic;
 		m_axis_cap_tlast: out std_logic;
@@ -712,7 +713,7 @@ architecture impl of chFPGA is
 	signal adc_tvalid: std_logic_vector(0 to NUMBER_OF_ADCS - 1);
 	signal adc_tlast: std_logic_vector(0 to NUMBER_OF_ADCS - 1);
 
-	-- Correlator output
+	-- Correlator output (on axis_cap_clk after CDC in UCORR44 FIFO)
 	signal corr_out_tdata: std_logic_vector(7 downto 0);
 	signal corr_out_tvalid: std_logic;
 	signal corr_out_tlast: std_logic;
@@ -1130,7 +1131,7 @@ begin
 				s_axis_rply_tlast => bsb_rply_tlast,
 				s_axis_rply_tready => bsb_rply_tready,
 
-				-- Data stream buses
+				-- Data stream input buses
 				s_axis_data_tdata => cap_data,
 				s_axis_data_tvalid => cap_valid,
 				s_axis_data_tlast => cap_last,
@@ -2344,89 +2345,89 @@ begin
 
 		corr_sel_gen: case CORR_TYPE generate
 
-			when corr_case: CORR44 => -- to be deprecated
-				-- Implement a BRAM-based correlator
-				-- Data is taken at the output of crossbar1, and is fed to MASTER's prober inputs (one bus per correlator)
-				-- There is NUMBER_OF_CORRELATOR crossbar1 output lanes, and NUMBER_OF_CORRELEATOR streaming outputs
+			-- when corr_case: CORR44 => -- to be deprecated
+			-- 	-- Implement a BRAM-based correlator
+			-- 	-- Data is taken at the output of crossbar1, and is fed to MASTER's prober inputs (one bus per correlator)
+			-- 	-- There is NUMBER_OF_CORRELATOR crossbar1 output lanes, and NUMBER_OF_CORRELEATOR streaming outputs
 
 
-				signal corr_in_tdata: slv32_array(0 to NUMBER_OF_CORRELATORS - 1);
-				signal corr_in_tvalid: std_logic_vector(0 to NUMBER_OF_CORRELATORS - 1);
-				signal corr_in_tlast: std_logic_vector(0 to NUMBER_OF_CORRELATORS - 1);
-				attribute shreg_extract of corr_in_tdata, corr_in_tlast, corr_in_tvalid: signal is "no";
+			-- 	signal corr_in_tdata: slv32_array(0 to NUMBER_OF_CORRELATORS - 1);
+			-- 	signal corr_in_tvalid: std_logic_vector(0 to NUMBER_OF_CORRELATORS - 1);
+			-- 	signal corr_in_tlast: std_logic_vector(0 to NUMBER_OF_CORRELATORS - 1);
+			-- 	attribute shreg_extract of corr_in_tdata, corr_in_tlast, corr_in_tvalid: signal is "no";
 
-				signal corr_out_tdata: slv8_array(0 to NUMBER_OF_CORRELATORS - 1); -- watch out: name devined in outer namespace
-				signal corr_out_tvalid: std_logic_vector(0 to NUMBER_OF_CORRELATORS - 1);
-				signal corr_out_tlast: std_logic_vector(0 to NUMBER_OF_CORRELATORS - 1);
-				signal corr_out_tready: std_logic_vector(0 to NUMBER_OF_CORRELATORS - 1);
-			begin
+			-- 	signal corr_out_tdata: slv8_array(0 to NUMBER_OF_CORRELATORS - 1); -- watch out: name devined in outer namespace
+			-- 	signal corr_out_tvalid: std_logic_vector(0 to NUMBER_OF_CORRELATORS - 1);
+			-- 	signal corr_out_tlast: std_logic_vector(0 to NUMBER_OF_CORRELATORS - 1);
+			-- 	signal corr_out_tready: std_logic_vector(0 to NUMBER_OF_CORRELATORS - 1);
+			-- begin
 
-				-- Connect the corner-turn engine outputs to the correlator inputs
-				CORR_PRB_GEN: for i in 0 to NUMBER_OF_CORRELATORS - 1 generate
-					-- input bus. 1:1 connection between each correlator and crossbar output. Pipeling in the module.
-					corr_in_tvalid(i)                 <= ct_out_tvalid;
-					corr_in_tlast(i)                  <= ct_out_tlast;
-					corr_in_tdata(i)                  <= ct_out_tdata(32 * i + 31 downto 32 * i); -- Should we invert the direction of i?
+			-- 	-- Connect the corner-turn engine outputs to the correlator inputs
+			-- 	CORR_PRB_GEN: for i in 0 to NUMBER_OF_CORRELATORS - 1 generate
+			-- 		-- input bus. 1:1 connection between each correlator and crossbar output. Pipeling in the module.
+			-- 		corr_in_tvalid(i)                 <= ct_out_tvalid;
+			-- 		corr_in_tlast(i)                  <= ct_out_tlast;
+			-- 		corr_in_tdata(i)                  <= ct_out_tdata(32 * i + 31 downto 32 * i); -- Should we invert the direction of i?
 
-					-- output bus. Connects to the probe port
-					cap_data(CORR_PROBE_BASE_PORT + i)  <= corr_out_tdata(i);
-					cap_valid(CORR_PROBE_BASE_PORT + i) <= corr_out_tvalid(i);
-					cap_last(CORR_PROBE_BASE_PORT + i)  <= corr_out_tlast(i);
-					corr_out_tready(i)                  <= cap_ready(CORR_PROBE_BASE_PORT + i);
-				end generate CORR_PRB_GEN;
+			-- 		-- output bus. Connects to the probe port
+			-- 		cap_data(CORR_PROBE_BASE_PORT + i)  <= corr_out_tdata(i);
+			-- 		cap_valid(CORR_PROBE_BASE_PORT + i) <= corr_out_tvalid(i);
+			-- 		cap_last(CORR_PROBE_BASE_PORT + i)  <= corr_out_tlast(i);
+			-- 		corr_out_tready(i)                  <= cap_ready(CORR_PROBE_BASE_PORT + i);
+			-- 	end generate CORR_PRB_GEN;
 
-				corr_array0: entity work.corr44_array
-					generic map (
-						PLATFORM_ID             => PLATFORM_ID, -- needed to determine the RPM spacing of the DSP and BRAM elements and choose the right primitives
-						NUMBER_OF_CORRELATORS   => NUMBER_OF_CORRELATORS,
-						NUMBER_OF_WORDS_PER_BIN => NUMBER_OF_CROSSBAR_INPUTS / 4 -- Is hardwired as a generics to simplify logic. Also corresponds to the number of clocks per bin.
-					-- Position of each correlator (using the RPM grid)
-					-- LEFT_DSP_RPM_X          => (361, 425, 361, 425, 361, 425, 361, 425 ),
-					-- LEFT_BRAM_RPM_X         => (350, 438, 350, 438, 350, 438, 350, 438 ),
-					-- RIGHT_DSP_RPM_X         => (381, 473, 381, 473, 381, 473, 381, 473 ),
-					-- RIGHT_BRAM_RPM_X        => (394, 462, 394, 462, 394, 462, 394, 462 ),
-					-- BOTTOM_DSP_RPM_Y        => (0, 0 , 170, 170, 450, 450, 620, 620),
-					-- BOTTOM_BRAM_RPM_Y       => (0, 0 , 170, 170, 450, 450, 620, 620)
+			-- 	corr_array0: entity work.corr44_array
+			-- 		generic map (
+			-- 			PLATFORM_ID             => PLATFORM_ID, -- needed to determine the RPM spacing of the DSP and BRAM elements and choose the right primitives
+			-- 			NUMBER_OF_CORRELATORS   => NUMBER_OF_CORRELATORS,
+			-- 			NUMBER_OF_WORDS_PER_BIN => NUMBER_OF_CROSSBAR_INPUTS / 4 -- Is hardwired as a generics to simplify logic. Also corresponds to the number of clocks per bin.
+			-- 		-- Position of each correlator (using the RPM grid)
+			-- 		-- LEFT_DSP_RPM_X          => (361, 425, 361, 425, 361, 425, 361, 425 ),
+			-- 		-- LEFT_BRAM_RPM_X         => (350, 438, 350, 438, 350, 438, 350, 438 ),
+			-- 		-- RIGHT_DSP_RPM_X         => (381, 473, 381, 473, 381, 473, 381, 473 ),
+			-- 		-- RIGHT_BRAM_RPM_X        => (394, 462, 394, 462, 394, 462, 394, 462 ),
+			-- 		-- BOTTOM_DSP_RPM_Y        => (0, 0 , 170, 170, 450, 450, 620, 620),
+			-- 		-- BOTTOM_BRAM_RPM_Y       => (0, 0 , 170, 170, 450, 450, 620, 620)
 
-					-- LEFT_DSP_RPM_X          => corr_rpm.LEFT_DSP_X,
-					-- LEFT_BRAM_RPM_X         => corr_rpm.LEFT_BRAM_X,
-					-- RIGHT_DSP_RPM_X         => corr_rpm.RIGHT_DSP_X,
-					-- RIGHT_BRAM_RPM_X        => corr_rpm.RIGHT_BRAM_X,
-					-- BOTTOM_DSP_RPM_Y        => corr_rpm.DSP_BOTTOM_Y,
-					-- BOTTOM_BRAM_RPM_Y       => corr_rpm.BRAM_BOTTOM_Y
-					)
-					port map (
-						-- Input data interface (AXI4-Streaning, 16-bit wide, non-blocking)
+			-- 		-- LEFT_DSP_RPM_X          => corr_rpm.LEFT_DSP_X,
+			-- 		-- LEFT_BRAM_RPM_X         => corr_rpm.LEFT_BRAM_X,
+			-- 		-- RIGHT_DSP_RPM_X         => corr_rpm.RIGHT_DSP_X,
+			-- 		-- RIGHT_BRAM_RPM_X        => corr_rpm.RIGHT_BRAM_X,
+			-- 		-- BOTTOM_DSP_RPM_Y        => corr_rpm.DSP_BOTTOM_Y,
+			-- 		-- BOTTOM_BRAM_RPM_Y       => corr_rpm.BRAM_BOTTOM_Y
+			-- 		)
+			-- 		port map (
+			-- 			-- Input data interface (AXI4-Streaning, 16-bit wide, non-blocking)
 
-						s_axis_tvalid           => corr_in_tvalid,
-						s_axis_tlast            => corr_in_tlast,
-						s_axis_tdata            => corr_in_tdata,
+			-- 			s_axis_tvalid           => corr_in_tvalid,
+			-- 			s_axis_tlast            => corr_in_tlast,
+			-- 			s_axis_tdata            => corr_in_tdata,
 
-						in_clk                  => ct_clk,
-						in_rst                  => corr_reset_reg1,
+			-- 			in_clk                  => ct_clk,
+			-- 			in_rst                  => corr_reset_reg1,
 
-						-- Correlated data output interface (AXI4-Streaning, 8-bit wide, blocking)
+			-- 			-- Correlated data output interface (AXI4-Streaning, 8-bit wide, blocking)
 
-						m_axis_data_out_tdata   => corr_out_tdata,
-						m_axis_data_out_tvalid  => corr_out_tvalid,
-						m_axis_data_out_tlast   => corr_out_tlast,
-						m_axis_data_out_tready  => corr_out_tready,
+			-- 			m_axis_data_out_tdata   => corr_out_tdata,
+			-- 			m_axis_data_out_tvalid  => corr_out_tvalid,
+			-- 			m_axis_data_out_tlast   => corr_out_tlast,
+			-- 			m_axis_data_out_tready  => corr_out_tready,
 
-						out_clk                 => bsb_clk,
-						out_rst                 => bsb_rst,
+			-- 			out_clk                 => bsb_clk,
+			-- 			out_rst                 => bsb_rst,
 
-						-- Control interface
-						s_axis_bsb_tdata => top_router_bsb_cmd_tdata(CORR_BASE_PORT),
-						s_axis_bsb_tvalid => top_router_bsb_cmd_tvalid(CORR_BASE_PORT),
-						s_axis_bsb_tlast => top_router_bsb_cmd_tlast(CORR_BASE_PORT),
-						s_axis_bsb_tready => top_router_bsb_cmd_tready(CORR_BASE_PORT),
-						m_axis_bsb_tdata => top_router_bsb_rply_tdata(CORR_BASE_PORT),
-						m_axis_bsb_tvalid => top_router_bsb_rply_tvalid(CORR_BASE_PORT),
-						m_axis_bsb_tlast => top_router_bsb_rply_tlast(CORR_BASE_PORT),
-						m_axis_bsb_tready => top_router_bsb_rply_tready(CORR_BASE_PORT),
-						bsb_clk => bsb_clk,
-						bsb_rst => bsb_rst
-					);
+			-- 			-- Control interface
+			-- 			s_axis_bsb_tdata => top_router_bsb_cmd_tdata(CORR_BASE_PORT),
+			-- 			s_axis_bsb_tvalid => top_router_bsb_cmd_tvalid(CORR_BASE_PORT),
+			-- 			s_axis_bsb_tlast => top_router_bsb_cmd_tlast(CORR_BASE_PORT),
+			-- 			s_axis_bsb_tready => top_router_bsb_cmd_tready(CORR_BASE_PORT),
+			-- 			m_axis_bsb_tdata => top_router_bsb_rply_tdata(CORR_BASE_PORT),
+			-- 			m_axis_bsb_tvalid => top_router_bsb_rply_tvalid(CORR_BASE_PORT),
+			-- 			m_axis_bsb_tlast => top_router_bsb_rply_tlast(CORR_BASE_PORT),
+			-- 			m_axis_bsb_tready => top_router_bsb_rply_tready(CORR_BASE_PORT),
+			-- 			bsb_clk => bsb_clk,
+			-- 			bsb_rst => bsb_rst
+			-- 		);
 
 			when ucorr44_case: UCORR44 =>
 				-- UCORR44 takes its data from the corner-turn engine output
