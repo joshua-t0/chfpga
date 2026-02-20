@@ -2482,8 +2482,7 @@ begin
 						NCORR                 => NCORR, -- equals to the number of bins per input word
 						NBINS_PER_CORR        => NBINS_PER_CORR,
 						BIN_DECIMATION_FACTOR => BIN_DECIMATION_FACTOR,
-						READOUT_BINS          => CORR_READOUT_BINS,
-						USE_OUTPUT_FIFO       => CAPTURE_TYPE = PROBER
+						READOUT_BINS          => CORR_READOUT_BINS
 					)
 					port map (
 						-- Input data interface (AXI4-Streaning, non-blocking)

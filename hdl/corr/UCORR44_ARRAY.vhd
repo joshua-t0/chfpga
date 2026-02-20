@@ -44,8 +44,7 @@ entity UCORR44_ARRAY is
 		SOFT_NINTEG: integer := 8192; -- default integration period (number of frames)
 		SOFT_AUTOCORR_ONLY: boolean := FALSE;
 		READOUT_BINS: integer_array(0 to NCORR-1) := (others => 0); -- array of integers indicating which bin is sacrificed to the readout cycle for each correlator
-        INPUT_WIDTH: integer := 256; -- Number of bits of the input bus. Is divided in NCORR sections (CORR 0 in MSB),
-        USE_OUTPUT_FIFO: boolean := FALSE
+        INPUT_WIDTH: integer := 256 -- Number of bits of the input bus. Is divided in NCORR sections (CORR 0 in MSB),
 	);
 
 	PORT (
@@ -69,7 +68,7 @@ entity UCORR44_ARRAY is
 		m_axis_data_tvalid: out std_logic;
 		m_axis_data_tlast: out std_logic;
 		m_axis_data_tready: in std_logic;
-		out_clk: in std_logic := '0'; -- ouput clock if USE_OUTPUT_FIFO=TRUE
+		out_clk: in std_logic; -- ouput clock
 
 		-- Control and reply streams
 		
@@ -261,22 +260,6 @@ begin
 				corr_in_tlast(corr) <= s_axis_data_tlast;
 			end loop;
 
-
---			-- Generate auto bin set
---			if corr_in_tvalid(0) and corr_in_tlast(0) then
---				frame_ctr <= frame_ctr + 1;
---				if frame_ctr = unsigned(integ_period) then
---					frame_ctr <= (others => '0');
---					bin_set <= manual_bin_set when not auto_bin_set else
---					               (others => '0') when bin_set = BIN_DECIMATION_FACTOR -1 else
---					               bin_set + 1;
---		        end if;
---			end if;
---            frame_ctr <= (others => '0') when rst_reg(0);
---            bin_set <= (others => '0') when rst_reg(0);
-
---            bin_set_dly <= bin_set;
-
 			-- Count the input and output frames for debugging
 			in_frame_ctr <= in_frame_ctr + 1 when s_axis_data_tvalid and s_axis_data_tlast;
 			out_frame_ctr <= out_frame_ctr + 1 when m_axis_data_tvalid and m_axis_data_tlast;
@@ -284,69 +267,40 @@ begin
 		end if; -- clk
 	end process;
 
-	FIFO_GEN: if USE_OUTPUT_FIFO generate
-		signal rx_data_fifo_dout64: std_logic_vector(63 downto 0);
-		signal rx_data_fifo_dout8: std_logic_vector(7 downto 0);
-		signal rx_data_fifo_empty: std_logic;
+	fifo_gen: block
+		signal fifo_dout: std_logic_vector(8 downto 0);
+		signal fifo_valid: std_logic;
 		signal almost_full: std_logic;
 	begin
-		m_axis_data_tdata <= rx_data_fifo_dout64(7 downto 0);
-		m_axis_data_tvalid <= not rx_data_fifo_empty;
-	    m_axis_data_tlast <= rx_data_fifo_dout8(0);
-	    z_send(0) <= not almost_full;
+		m_axis_data_tdata  <= fifo_dout(7 downto 0);
+		m_axis_data_tlast  <= fifo_dout(8);
+		m_axis_data_tvalid <= fifo_valid;
+		z_send(0) <= not almost_full;
 
-		data_fifo0 : FIFO36E1  -- 7-series
+		data_fifo0: entity work.generic_fifo
 			generic map (
-				ALMOST_FULL_OFFSET => 13D"32",    -- Sets almost full flag 32 bytes before full to accomodate for the z_send response time
-				DATA_WIDTH => 9,                  -- Data width is 9 bits, meaning that depth = 36K/9 = 4K bytes
-				DO_REG => 1,                      -- Enable output register (1-0) Must be 1 if EN_SYN = FALSE
-				EN_SYN => FALSE,                  -- Asynchronous FIFO
-				FIFO_MODE => "FIFO36",            -- "FIFO36" or "FIFO36_72"
-				FIRST_WORD_FALL_THROUGH => TRUE   -- We want FWFT
+				FPGA_SERIES      => PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES,
+				MEMORY_TYPE      => "embedded",
+				IS_ASYNC         => TRUE,
+				DATA_WIDTH       => 9,       -- 8 data + 1 tlast
+				IS_FWFT          => TRUE,
+				PROG_FULL_THRESH_OFFSET => 32 -- almost_full asserts 32 words before full
 			)
 			port map (
+				wr_clk      => clk,
+				wr_en       => z_tvalid(0),
+				din         => z_tlast(0) & z_tdata(0),
+				prog_full   => almost_full,
 
-				-- Write interfce
+				rd_clk      => out_clk,
+				rd_en       => m_axis_data_tready,
+				dout        => fifo_dout,
+				valid       => fifo_valid,
 
-				wrclk => clk,              -- 1-bit input: Rising edge write clock.
-				wren  => z_tvalid(0),     -- 1-bit input: Write enable
+				rst         => rst
+			);
 
-				di(63 downto 8) => (others => '0'), -- data bus is 64 bit, only 8 LSBs are used
-				di(7 downto 0)  => z_tdata(0),
-				dip(7 downto 1) => (others => '0'), -- Parity bus is 8 bits, only LSB is used
-				dip(0)          => z_tlast(0),
-				almostfull => almost_full, -- 1-bit output: Almost full flag
-
-				-- Read interface
-
-				rdclk => out_clk, -- Read clock
-				rden  => m_axis_data_tready, -- Read enable
-				regce => '1', -- 1-bit input: Clock enable
-
-				do  => rx_data_fifo_dout64, -- 64-bit data output. Valid data is in 8 LSBs
-				dop => rx_data_fifo_dout8, -- 8 bit parity output. Valid data is on LSB
-				empty => rx_data_fifo_empty,            -- 1-bit output: Empty flag
-
-
-				-- ECC Signals (unused)
-				injectdbiterr => '0',
-				injectsbiterr => '0',
-
-				-- Resets
-
-				rst    => rst, -- Async -- write domain reset reset, must be high at least 5 cycles of the slowest clock
-				rstreg => '0'  -- Output register reset
-		   );
-
-	else generate
-
-		-- Connect CORR[0] output stream to the ouput port
-		z_send(0) <= m_axis_data_tready; -- first corr sends data only if destination is ready
-		m_axis_data_tdata <= z_tdata(0);
-		m_axis_data_tvalid <= z_tvalid(0);
-		m_axis_data_tlast <= z_tlast(0);
-
-	end generate FIFO_GEN;
+		end block fifo_gen;
 
 	-- Connect null stream to the cascade input of CORR[NCORR]
 	z_tvalid(NCORR) <= '0'; -- no data coming into the last corr
