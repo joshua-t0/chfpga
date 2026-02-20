@@ -106,7 +106,6 @@ architecture impl of ucap is
     signal sub_period: unsigned(4 downto 0);
 	signal user_reset, user_reset_reg: std_logic;
 	signal overrun: std_logic;
-    signal output_source_sel: std_logic;
     signal user_stream_id: std_logic_vector(7 downto 0);
     -- Signals used for both write and read processes
     signal chan_pair_sel: u3_array(0 to NUMBER_OF_CHANNEL_PAIRS-1);
@@ -146,7 +145,7 @@ begin
 -- |         |     | 5:3  | chan_sel(1)          | Physical Channel connected to logical channel 1 (used only in 4-, 2-channel mode) |
 -- |         |     | 2:0  | chan_sel(0)          | Physical Channel connected to logical channel 0 (used only in 4-, 2-, 1-channel mode) |
 -- |         |  1  | 7   | user_reset           | When '1', resets the module |
--- |         |     |  6  | output_source_sel     | Selects which data stream is sent out. 0=UCAP data, 1=auxiliary data|
+-- |         |     |  6  | (unused)              | (was output_source_sel, now removed; merging handled by axis_merge) |
 -- |         |     | 5:3  | chan_sel(3)          | Physical Channel connected to logical channel 3 (used only in 4-channel mode) |
 -- |         |     | 2:0  | chan_sel(2)          | Physical Channel connected to logical channel 0 (used only in 4- and 2-channel mode) |
 -- |         | 2-4 | 23:0 | base_period(0)       | Capture period for source 0 |
@@ -191,7 +190,6 @@ begin
 	chan_sel_map(0) <= unsigned(control_bytes(0)(2 downto 0));
 
 	user_reset      <= control_bytes(1)(7);
-    output_source_sel   <= control_bytes(1)(6);
 	chan_sel_map(3) <= unsigned(control_bytes(1)(5 downto 3));
 	chan_sel_map(2) <= unsigned(control_bytes(1)(2 downto 0));
 
@@ -435,7 +433,7 @@ begin
                     when "01" => N :=  4; K := 2; K_WIDTH := 1; -- capturing 4 channels
                     when "10" => N :=  2; K := 4; K_WIDTH := 2; -- capturing 2 channels
                     when "11" => N :=  1; K := 8; K_WIDTH := 3; -- capturing 1 channel
-                    when others => 
+                    when others =>
 --                    assert FALSE report "Unhandled mode" severity FAILURE;
                 end case;
 
@@ -729,12 +727,11 @@ begin
                 --
                 -- This logic processes words coming out of RAM after the read latency period.
                 -- The processing is based on the opcode sent by the read sequencer, which is delayed to arrive at the same time as the data.
-                -- The process sets the write control signals of the FIFO data source 0: tdata (8 bits), tvalid & tlast.
-                -- FIFO Data source 1 is provided externally and is not handled here.
+                -- The process sets the write control signals of the FIFO: tdata (8 bits), tvalid & tlast.
 
                 -- Default values for the FIFO signals
-                fifo_in_tvalid(0) <= '0';
-                fifo_in_tlast(0) <= '0';
+                fifo_in_tvalid <= '0';
+                fifo_in_tlast <= '0';
 
 
                 case read_proc_op(0) is
@@ -742,8 +739,8 @@ begin
                     when READ_PROC_SEND_HEADER | READ_PROC_SEND_LAST_HEADER =>
                         -- Send the data as per the instructions from the control signals
                         byte_int := to_integer(read_proc_byte_ctr); -- Read in natural array order
-                        fifo_in_tdata(0) <= frame_header_bytes(byte_int);
-                        fifo_in_tvalid(0) <= '1';
+                        fifo_in_tdata <= frame_header_bytes(byte_int);
+                        fifo_in_tvalid <= '1';
                         read_proc_byte_ctr <= read_proc_byte_ctr + 1;
                         if read_proc_op(0) = READ_PROC_SEND_LAST_HEADER then
                             read_proc_byte_ctr <= (others => '0');
@@ -753,11 +750,11 @@ begin
                         -- get the right byte from the right data buffer
                         -- The logic implies a combinatorial 16x 8:1 mux followed by  8x 16:1 mux. Might limit logic speed.
                         byte_int := to_integer(not read_proc_byte_ctr); -- invert bits to read from MSB to LSB
-                        fifo_in_tdata(0) <= ram_dout(to_integer(buf))(8*byte_int+7 downto 8*byte_int);
-                        fifo_in_tvalid(0) <= '1';
+                        fifo_in_tdata <= ram_dout(to_integer(buf))(8*byte_int+7 downto 8*byte_int);
+                        fifo_in_tvalid <= '1';
                         read_proc_byte_ctr <= read_proc_byte_ctr + 1;
                         if read_proc_op(0) = READ_PROC_SEND_LAST_PACKET_DATA or read_proc_op(0) = READ_PROC_SEND_LAST_DATA then
-                            fifo_in_tlast(0) <= '1';
+                            fifo_in_tlast <= '1';
                             read_proc_byte_ctr <= (others => '0');
                             read_proc_pkt_ctr <= read_proc_pkt_ctr + 1;
                             if read_proc_op(0) = READ_PROC_SEND_LAST_DATA then
@@ -777,7 +774,7 @@ begin
                 -- synchronous reset
 	            if rst = '1' or user_reset_reg = '1'  then
                     fifo_overflow_sticky <= '0';
-	                fifo_in_tvalid(0) <= '0'; -- needed
+	                fifo_in_tvalid <= '0'; -- needed
 	                read_seq_byte_ctr <= (others => '0');
 	                read_seq_state <= READ_SEQ_WAIT; -- needed to make sure we start with header transmission
                     read_proc_byte_ctr <= (others=> '0'); -- needed for the first frame header transmission
@@ -788,99 +785,64 @@ begin
 	    end process;
     end block rd_blk;
 
-    -- Implement the readout FIFO which takes the 8-bit data from the read sequencer, stores it, and
-    -- trickles it out on the BSB bus clock.
+    -- Readout FIFO: takes the 8-bit data from the read sequencer, stores it, and
+    -- trickles it out on the output clock domain.
+    --
+    -- Asynchronous FIFO, 9-bit wide (8 data + 1 tlast) x 512 deep, FWFT, with prog_full.
+    --
+    -- FIFO depth requirements: There is a considerable delay between the time the read side sees there is data on the write side (4-5 slow clocks, which is equivalent to 16-20 fast clocks).
+    -- If the FIFO is not deep enough, the readout stops needlessly. Data is good, but bandwidth is reduced needlessly.
+    --
+    -- prog_full requirements: We have to set the full threshold to 16-6 = 12 to make sure that flushing the writes in the pipeline won't overflow the FIFO.
+    -- This means the depth of the FIFO should be ~6 + 20 = 26. The FIFO does not work properly in simulation with values not multiples of 16.
     fifo_blk: block
         signal fifo_din: std_logic_vector(8 downto 0);
         signal fifo_dout: std_logic_vector(8 downto 0);
         signal fifo_data_valid: std_logic;
-        signal fifo_wr_en: std_logic;
         signal fifo_rd_en: std_logic;
-        signal fifo_rd_rst_busy: std_logic;
-        signal fifo_wr_rst_busy: std_logic;
         signal fifo_rst: std_logic;
-        signal output_source: integer range 0 to 1;
-        use std.textio.all;
-        use ieee.std_logic_textio;
-
-        function xpm_async_fifo_features(overflow, data_valid, prog_full:boolean := FALSE) return  string is
-            variable l: line;
-            variable v: std_logic_vector(15 downto 0):= (others => '0');
-        begin
-            v := (
-                0  => to_std_logic(overflow),
-                1  => to_std_logic(prog_full),
-                12 => to_std_logic(data_valid),
-                others => '0');
-            std_logic_textio.hwrite(l, v);
-            return l.all;
-        end function;
-
     begin
 
-    	-- Select data source
-    	-- TODO: Have the source switch automatically based on available data.
-        output_source <= to_integer(to_unsigned(output_source_sel));
-
-        -- Connect FIFO input to one of the two data source.
-    	fifo_rst <= rst  or user_reset_reg;
-        fifo_din <= fifo_in_tlast(output_source) & fifo_in_tdata(output_source);
-        fifo_wr_en <= fifo_in_tvalid(output_source) and not (rst or fifo_wr_rst_busy);
+        fifo_rst <= rst or user_reset_reg;
+        fifo_din <= fifo_in_tlast & fifo_in_tdata;
 
         -- Connect FIFO output to output port of this entity
-        m_axis_tdata <= fifo_dout(7 downto 0);
-        m_axis_tlast <= fifo_dout(8);
+        m_axis_tdata  <= fifo_dout(7 downto 0);
+        m_axis_tlast  <= fifo_dout(8);
         m_axis_tvalid <= fifo_data_valid;
-        fifo_rd_en <= m_axis_tready and not fifo_rd_rst_busy and fifo_data_valid; -- valid in included to prevent reads during resets
+        fifo_rd_en    <= m_axis_tready and fifo_data_valid;
 
-
-       -- BSB FIFO
-       --
-       -- Asynchronous FIFO, symmetric, 8+1 bit wide (data+tlast) x 512 deep, FWFT, with prog_full
-       --
-       -- FIFO depth requirements: There is a considerable delay between the time the read side sees there is data on the write side (4-5 slow clocks, which is equivalent to 16-20 fast clocks).
-       -- If the FIFO is not deep enough, the readout stops needlessly. Data is good, but bandwidth is reduced needlessly.
-       --
-       -- prog_full requirements: We have to set the full threshold to 16-6 = 12 to make sure that flushing the writes in the pipeline won't overflow the FIFO.
-       -- This means the depth of the FIFO should be ~6 + 20 = 26. The FIFO does not work properly in simulation with values not multiples of 16.
-       --
-       -- xpm_fifo_async: Asynchronous FIFO
-       -- Xilinx Parameterized Macro, version 2022.2
-       fifo0 : xpm_fifo_async
-           generic map (
-              FIFO_MEMORY_TYPE => "bram",
-              FIFO_WRITE_DEPTH => 512,   -- 16 is the minimum
-              FULL_RESET_VALUE => 1,
-              PROG_FULL_THRESH => 256,     -- Must be big enough to handle the throttling signal latency. 11 has overflows
-              READ_DATA_WIDTH => 9,      -- 8 data + 1 tlast
-              READ_MODE => "fwft",
-              SIM_ASSERT_CHK => 1,        --  0=disable simulation messages, 1=enable simulation messages
-              USE_ADV_FEATURES => "1407", -- bit 0:overflow, 1:prog_full, 12:data_valid
-              WRITE_DATA_WIDTH => 9,     -- same as READ_DATA_WIDTH
-              WR_DATA_COUNT_WIDTH => 5, -- for debugging only
-              RD_DATA_COUNT_WIDTH => 5
-           )
-           port map (
-              din =>        fifo_din,
-              wr_en =>      fifo_wr_en,  --  Must be low when rst=1 or wr_rst_busy=1
-              prog_full =>  fifo_full,
-              overflow =>   fifo_overflow,
-              wr_clk =>     s_axis_clk,
-              rst =>        fifo_rst,         -- synchronous to wr_clk.
-
-              dout =>       fifo_dout,
-              data_valid => fifo_data_valid,
-              rd_en =>      fifo_rd_en, -- Must be low when rst=1 or rd_rst_busy=1
-              rd_clk =>     m_axis_clk,
-
-              rd_rst_busy => fifo_rd_rst_busy,
-              wr_rst_busy => fifo_wr_rst_busy,
-
-              sleep => '0',
-              injectsbiterr => '0',
-              injectdbiterr => '0'
-
-           );
+		process(all) begin
+			if rising_edge(m_axis_clk) then
+				if m_axis_tvalid and m_axis_tlast then
+					out_frame_ctr <= out_frame_ctr + 1;
+				end if;
+			end if;
+		end process;
+		
+        fifo0: entity work.generic_fifo
+            generic map (
+                FPGA_SERIES      => FPGA_SERIES,
+                MEMORY_TYPE      => "bram",
+                IS_ASYNC         => TRUE,
+                IS_FWFT          => TRUE,
+                DATA_WIDTH       => 9,       -- 8 data + 1 tlast. Default depth is 512 words so a FIFO18 will be used.
+                PROG_FULL_THRESH => 256      -- Must be big enough to handle the throttling signal latency
+            )
+            port map (
+                wr_clk      => s_axis_clk,
+                wr_en       => fifo_in_tvalid,
+                din         => fifo_din,
+                prog_full   => fifo_full,
+                overflow    => fifo_overflow,
+				wr_rst_busy => fifo_wr_rst_busy,
+                rd_clk      => m_axis_clk,
+                rd_en       => fifo_rd_en,
+                dout        => fifo_dout,
+                valid       => fifo_data_valid,
+				rd_rst_busy => fifo_rd_rst_busy,
+                rst         => fifo_rst
+            );
     end block;
 
 	process(all) begin
