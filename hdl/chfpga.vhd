@@ -1150,6 +1150,48 @@ begin
 			);
 	end block bsb_master_blk;
 
+	--------------------------------------------------
+	-- Capture data interface
+	--------------------------------------------------
+	cap_gen: if TRUE or (CAPTURE_TYPE = UCAP and CORR_TYPE = NONE)  generate
+		-- if CORR_TYPE = NONE, just pass UCAP data to the capture output
+		m_axis_cap_tdata <= ucap_out_tdata;
+		m_axis_cap_tvalid <= ucap_out_tvalid;
+		m_axis_cap_tlast <= ucap_out_tlast;
+		ucap_out_tready <= m_axis_cap_tready;
+	elsif CAPTURE_TYPE = UCAP and CORR_TYPE /= NONE generate
+		-- If we have a correlator and UCAP, merge the correlator data with the UCAP data.
+
+			axis_merge0: entity work.axis_merge
+				generic map (
+					DATA_WIDTH => 8
+				)
+				port map (
+					s0_axis_tdata  => ucap_out_tdata,
+					s0_axis_tvalid => ucap_out_tvalid,
+					s0_axis_tlast  => ucap_out_tlast,
+					s0_axis_tready => ucap_out_tready,
+
+					s1_axis_tdata  => corr_out_tdata,
+					s1_axis_tvalid => corr_out_tvalid,
+					s1_axis_tlast  => corr_out_tlast,
+					s1_axis_tready => corr_out_tready,
+
+					m_axis_tdata   => m_axis_cap_tdata,
+					m_axis_tvalid  => m_axis_cap_tvalid,
+					m_axis_tlast   => m_axis_cap_tlast,
+					m_axis_tready  => m_axis_cap_tready,
+
+					clk => axis_cap_clk
+				);
+
+	elsif CAPTURE_TYPE = PROBER and CORR_TYPE /= NONE generate
+		-- If we use PROBER data capture, send the correlator data to the BSB master probe input.
+		cap_data(CORR_PROBE_BASE_PORT)  <= corr_out_tdata;
+		cap_valid(CORR_PROBE_BASE_PORT) <= corr_out_tvalid;
+		cap_last(CORR_PROBE_BASE_PORT)  <= corr_out_tlast;
+		corr_out_tready                 <= cap_ready(CORR_PROBE_BASE_PORT);
+	end generate cap_gen;
 	------------------------------------------
 	-- Top level command interface router
 	------------------------------------------
