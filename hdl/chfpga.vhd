@@ -1790,11 +1790,12 @@ begin
 			ct_clk => ct_clk,
 			ct_reset => ct_reset,
 
-			-- 8-bit Data Capture streaming interface to bsb_master (on bsb_clk)
-			cap_data => cap_data(CHAN_PROBE_BASE_PORT + NUMBER_OF_CHANNELIZERS - 1 downto CHAN_PROBE_BASE_PORT),
-			cap_valid => cap_valid(CHAN_PROBE_BASE_PORT + NUMBER_OF_CHANNELIZERS - 1 downto CHAN_PROBE_BASE_PORT),
-			cap_last => cap_last(CHAN_PROBE_BASE_PORT + NUMBER_OF_CHANNELIZERS - 1 downto CHAN_PROBE_BASE_PORT),
-			cap_ready => cap_ready(CHAN_PROBE_BASE_PORT + NUMBER_OF_CHANNELIZERS - 1 downto CHAN_PROBE_BASE_PORT),
+			-- 8-bit Data Capture streaming interface from PROBER to bsb_master (on bsb_clk)
+			-- We assume the PROBER buses are in the ports.0 to NUMBER_OF_CHANNELIZERS - 1 range.
+			m_axis_prober_tdata  => cap_data(NUMBER_OF_CHANNELIZERS - 1 downto 0),
+			m_axis_prober_tvalid => cap_valid(NUMBER_OF_CHANNELIZERS - 1 downto 0),
+			m_axis_prober_tlast  => cap_last(NUMBER_OF_CHANNELIZERS - 1 downto 0),
+			m_axis_prober_tready => cap_ready(NUMBER_OF_CHANNELIZERS - 1 downto 0),
 
 						-- UCAP 8-bit capture output  - for direct streaming to ARM
 			m_axis_cap_tdata => m_axis_cap_tdata,

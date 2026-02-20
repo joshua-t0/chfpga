@@ -126,20 +126,21 @@ entity chan is
 		s_axis_adcdaq_bsb_tlast: in  std_logic;
 		s_axis_adcdaq_bsb_tready: out std_logic;
 
-		-- Data capture interface
+		-- Wide data capture interface from FUNCGEN or SCALER
 		
 		cap_source_req: in std_logic := '0'; -- requested data capture source (0 or 1). The actual source switch will happen on a frame boundary and will be reflected by `cap_source_ack`. Default provided in case we don't use an external capture module.
-		cap_source_ack: out std_logic := '0'; -- Current source (0 or 1) for the captured data. This is synchronous to the m_axis_cap tdata/tvalud/tlast. Default value needed to avoir 'undriven net' warning when we don't use the external capture module is used.
+		cap_source_ack: out std_logic := '0'; -- Current source (0 or 1) for the captured data. This is synchronous to the m_axis_cap tdata/tvalud/tlast. Default value needed to avoid 'undriven net' warning when we don't use the external capture module is used.
 		m_axis_cap_tdata: out std_logic_vector(CAPTURE_BITS_PER_WORD - 1 downto 0);
 		m_axis_cap_tvalid: out std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES - 1);
 		m_axis_cap_tlast: out std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES - 1);
 
+		-- 8-bit data capture stream from PROBER Interface (when CAPTURE_TYPE = PROBER)
 
-		prb_tdata: out std_logic_vector(7 downto 0);
-		prb_tvalid: out std_logic;
-		prb_tlast: out std_logic;
-		prb_tready: in  std_logic;
-		PRB_CLK: in  std_logic -- Data capture clock
+		m_axis_prober_tdata:  out std_logic_vector(7 downto 0);
+		m_axis_prober_tvalid: out std_logic;
+		m_axis_prober_tlast:  out std_logic;
+		m_axis_prober_tready: in  std_logic;
+		axis_prober_clk:      in  std_logic -- Data capture clock
 	);
 end entity chan;
 
@@ -770,10 +771,10 @@ begin
                 signal prb_tready_int: std_logic;
             begin
                 -- Connect capture streams to top level port
-                prb_tdata <= prb_tdata_int;
-                prb_tvalid <= prb_tvalid_int;
-                prb_tlast <= prb_tlast_int;
-                prb_tready_int <= prb_tready;
+                m_axis_prober_tdata  <= prb_tdata_int;
+                m_axis_prober_tvalid <= prb_tvalid_int;
+                m_axis_prober_tlast  <= prb_tlast_int;
+                prb_tready_int       <= m_axis_prober_tready;
     
                 -- Instantiate the local capture module
                 prober0: entity work.prober
@@ -800,7 +801,7 @@ begin
                         out_tvalid => prb_tvalid_int,
                         out_tlast => prb_tlast_int,
                         out_tready => prb_tready_int,
-                        OUT_CLK => PRB_CLK,
+                        OUT_CLK => axis_prober_clk,
     
                         -- Control interface
                         s_axis_bsb_tdata  => router_bsb_cmd_tdata(MODULE_PROBER_ADDR),

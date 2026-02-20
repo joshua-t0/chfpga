@@ -124,11 +124,12 @@ entity chan_array is
 		ct_clk                : in std_logic;
 		ct_reset              : in std_logic;
 
-		-- Capture Interface to bsb_master (on bsb_clk)
-		cap_data  : out slv8_array(NUMBER_OF_CHANNELIZERS - 1 downto 0);
-		cap_valid : out std_logic_vector(NUMBER_OF_CHANNELIZERS - 1 downto 0);
-		cap_last  : out std_logic_vector(NUMBER_OF_CHANNELIZERS - 1 downto 0);
-		cap_ready : in std_logic_vector(NUMBER_OF_CHANNELIZERS - 1 downto 0);
+		-- 8-bit data capture stream from PROBER Interface (when CAPTURE_TYPE = PROBER)
+		
+		m_axis_prober_tdata  : out slv8_array(NUMBER_OF_CHANNELIZERS - 1 downto 0);
+		m_axis_prober_tvalid : out std_logic_vector(NUMBER_OF_CHANNELIZERS - 1 downto 0);
+		m_axis_prober_tlast  : out std_logic_vector(NUMBER_OF_CHANNELIZERS - 1 downto 0);
+		m_axis_prober_tready : in std_logic_vector(NUMBER_OF_CHANNELIZERS - 1 downto 0);
 
 		-- Data capture stream from UCAP Interface (when CAPTURE_TYPE = UCAP)
 
@@ -647,11 +648,11 @@ begin
 				cap_source_ack    => chan_mon_source_ack(i),
 
 				-- Streaming data capture interface
-				prb_tdata  => cap_data(i),
-				prb_tvalid => cap_valid(i),
-				prb_tlast  => cap_last(i),
-				prb_tready => cap_ready(i),
-				prb_clk    => bsb_clk
+				m_axis_prober_tdata  => m_axis_prober_tdata(i),
+				m_axis_prober_tvalid => m_axis_prober_tvalid(i),
+				m_axis_prober_tlast  => m_axis_prober_tlast(i),
+				m_axis_prober_tready => m_axis_prober_tready(i),
+				axis_prober_clk      => bsb_clk
 			);
 	end generate chan_gen;
 
