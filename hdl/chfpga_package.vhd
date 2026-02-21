@@ -605,7 +605,7 @@ type SHUFFLE_FRAME_HEADER_STRUCT is
 		ENCODING: std_logic_vector(3 downto 0); -- bit 0: '0' = 8 bit mode, '1' = 4 bit mode; bit 1: '0'= 2's complement, '1'=offset binary, bits 2-3: reserved
 		NUMBER_OF_FRAMES: std_logic_vector(3 downto 0); -- number of frames per packet (1-255)
 		NUMBER_OF_BINS: std_logic_vector(11 downto 0); -- Number of frequency bins included in each frame (1-4095) (there are up to 1024 bins in full CHIME)
-		NUMBER_OF_ANTENNAS: std_logic_vector(11 downto 0); -- Number of antennas included for each frequency bin (1-4095) (there are up to 2560 antennas in full CHIME)
+		NUMBER_OF_CHANNELS: std_logic_vector(11 downto 0); -- Number of channels included for each frequency bin (1-4095) (there are up to 2560 channels in full CHIME)
 
 		-- Word 2
 		ANCILLARY_DATA: std_logic_vector(31 downto 0); -- Ancillary data channel to trickle a statistical (or other low rate) data stream
@@ -1213,7 +1213,7 @@ FUNCTION struct_to_word(s:SHUFFLE_FRAME_HEADER_STRUCT) return slv32_array is
 	variable w : slv32_array(0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH-1);
 begin
 	w(0):= (s.STREAM_ID & s.PROTOCOL_VERSION & s.HEADER_LENGTH_IN_WORDS & s.COOKIE );
-	w(1):= (s.ENCODING & s.NUMBER_OF_FRAMES & s.NUMBER_OF_BINS & s.NUMBER_OF_ANTENNAS);
+	w(1):= (s.ENCODING & s.NUMBER_OF_FRAMES & s.NUMBER_OF_BINS & s.NUMBER_OF_CHANNELS);
 	w(2):= s.ANCILLARY_DATA;
 	w(3):= s.TIMESTAMP;
 	return w;
@@ -1232,7 +1232,7 @@ begin
 	s.ENCODING           := w(1)(31 downto 28);
 	s.NUMBER_OF_FRAMES   := w(1)(27 downto 24);
 	s.NUMBER_OF_BINS     := w(1)(23 downto 12);
-	s.NUMBER_OF_ANTENNAS := w(1)(11 downto 0);
+	s.NUMBER_OF_CHANNELS := w(1)(11 downto 0);
 	-- Word 2
 	s.ANCILLARY_DATA := w(2);
 	-- Word 3
