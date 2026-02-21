@@ -593,9 +593,16 @@ architecture impl of chFPGA is
 	-- Capture
 
 	-- constant NUMBER_OF_PROBES: INTEGER := NUMBER_OF_CHANNELIZERS+NUMBER_OF_CORRELATORS; -- Number of data probes (data transsmission channels) that need to be send back to the host computer through the Ethernet
-	constant NUMBER_OF_PROBES: integer := NUMBER_OF_CHANNELIZERS + 1; -- Number of data capture streams to forward to the host computer. The UCORR correlator internally combines all its packets into one stream, so we need only one additional port for it.
-	constant CHAN_PROBE_BASE_PORT: integer := 0;
-	constant CORR_PROBE_BASE_PORT: integer := NUMBER_OF_CHANNELIZERS; -- Top level address for the first correlator block
+
+	-- Number of data capture streams to forward to the host computer. Those can come from PROBER, UCAP or CORR.
+	-- PROBER/UCAP are in the low indices, CORR follows 
+	constant NUMBER_OF_CHAN_PROBES: integer := sel(CAPTURE_TYPE = PROBER, NUMBER_OF_CHANNELIZERS, 0) + 
+	                                      sel(CAPTURE_TYPE = UCAP, 1, 0);
+	constant NUMBER_OF_CORR_PROBES: integer := sel(CORR_TYPE /= NONE, 1, 0);
+	constant NUMBER_OF_PROBES: integer := NUMBER_OF_CHAN_PROBES + NUMBER_OF_CORR_PROBES;
+
+	-- Index of the correlator capture probe
+	constant CORR_PROBE_BASE_PORT: integer := NUMBER_OF_CHAN_PROBES; 
 
 	constant ADC_INSTANTIATE_IDELAYCTRL: BoolArray(0 to NUMBER_OF_ADCS - 1) := (0 => TRUE, others => FALSE); -- Determines which ADCDAQ instantiates a DELAY controller (calibrator). We need to instantiate only one in the whole design, and the tools will add all the others where needed.
 
@@ -701,10 +708,10 @@ architecture impl of chFPGA is
 	-- Intermediary buses used to split out the top router outputs and avoid a simulator bug when indexing record arrays as an actual parameter of an instance
 
 	-- Slow data capture bus (PROBER & CORR output)
-	signal cap_data: slv8_array(NUMBER_OF_PROBES - 1 downto 0);
-	signal cap_valid: std_logic_vector(NUMBER_OF_PROBES - 1 downto 0);
-	signal cap_last: std_logic_vector(NUMBER_OF_PROBES - 1 downto 0);
-	signal cap_ready: std_logic_vector(NUMBER_OF_PROBES - 1 downto 0);
+	signal cap_data: slv_array(0 to NUMBER_OF_PROBES - 1)(7 downto 0);
+	signal cap_valid: std_logic_vector(0 to NUMBER_OF_PROBES - 1);
+	signal cap_last: std_logic_vector(0 to NUMBER_OF_PROBES - 1);
+	signal cap_ready: std_logic_vector(0 to NUMBER_OF_PROBES - 1);
 
 	-- REFCLK signals
 	signal fmc_refclk: std_logic_vector(0 to NUMBER_OF_ADC_BOARDS - 1); -- REFCLK -> ADCDAQ, FREQCTR
@@ -713,17 +720,12 @@ architecture impl of chFPGA is
 	signal adc_tvalid: std_logic_vector(0 to NUMBER_OF_ADCS - 1);
 	signal adc_tlast: std_logic_vector(0 to NUMBER_OF_ADCS - 1);
 
-	-- Correlator output (on axis_cap_clk after CDC in UCORR44 FIFO)
-	signal corr_out_tdata: std_logic_vector(7 downto 0);
-	signal corr_out_tvalid: std_logic;
-	signal corr_out_tlast: std_logic;
-	signal corr_out_tready: std_logic;
 
 	-- UCAP capture output (on axis_cap_clk after CDC in UCAP FIFO)
-	signal ucap_out_tdata: std_logic_vector(7 downto 0);
-	signal ucap_out_tvalid: std_logic;
-	signal ucap_out_tlast: std_logic;
-	signal ucap_out_tready: std_logic;
+	-- signal ucap_out_tdata: std_logic_vector(7 downto 0);
+	-- signal ucap_out_tvalid: std_logic;
+	-- signal ucap_out_tlast: std_logic;
+	-- signal ucap_out_tready: std_logic;
 
 	-----------------------
 	-- Channelizer signals
@@ -1100,6 +1102,10 @@ begin
 	bsb_master_blk: block
 		signal bsb_master_rst: std_logic;
 		attribute DONT_TOUCH of bsb_master_rst: signal is "true";
+
+		-- Number of data streams to forward to the BSB master. If we are not using the Ethernet interface, dont have any streams but we create one dummy stream because Vivado 2022.2 synthesis crashes if we set NUMBER_OF_PROBES=0.
+		constant N_PROBES: integer := sel(PHY_TYPE = NONE, 1, NUMBER_OF_PROBES);
+
 	begin
 
 		process(all) begin
@@ -1108,7 +1114,7 @@ begin
 
 		ctrl_master0: entity work.bsb_master
 			generic map (
-				NUMBER_OF_PROBES => NUMBER_OF_PROBES  -- number of data stream buses
+				NUMBER_OF_PROBES => N_PROBES  -- number of data stream buses
 			)
 			port map (
 				-- RX UDP stream
@@ -1136,10 +1142,10 @@ begin
 				s_axis_rply_tready => bsb_rply_tready,
 
 				-- Data stream input buses
-				s_axis_data_tdata => cap_data,
-				s_axis_data_tvalid => cap_valid,
-				s_axis_data_tlast => cap_last,
-				s_axis_data_tready => cap_ready,
+				s_axis_data_tdata => sel(PHY_TYPE = NONE, (0 =>  X"00"), cap_data(0 to N_PROBES - 1)),
+				s_axis_data_tvalid => sel(PHY_TYPE = NONE, "0", cap_valid(0 to N_PROBES - 1)),
+				s_axis_data_tlast => sel(PHY_TYPE = NONE, "0", cap_last(0 to N_PROBES - 1)),
+				s_axis_data_tready => cap_ready(0 to N_PROBES - 1),
 
 				-- System
 				cmd_packet_counter => cmd_packet_counter,
@@ -1153,29 +1159,18 @@ begin
 	--------------------------------------------------
 	-- Capture data interface
 	--------------------------------------------------
-	cap_gen: if TRUE or (CAPTURE_TYPE = UCAP and CORR_TYPE = NONE)  generate
-		-- if CORR_TYPE = NONE, just pass UCAP data to the capture output
-		m_axis_cap_tdata <= ucap_out_tdata;
-		m_axis_cap_tvalid <= ucap_out_tvalid;
-		m_axis_cap_tlast <= ucap_out_tlast;
-		ucap_out_tready <= m_axis_cap_tready;
-	elsif CAPTURE_TYPE = UCAP and CORR_TYPE /= NONE generate
-		-- If we have a correlator and UCAP, merge the correlator data with the UCAP data.
-
-			axis_merge0: entity work.axis_merge
+	-- This direct capture interface is only used when we are not using the Ethernet interface.
+	cap_gen: if PHY_TYPE = NONE generate
+			axis_merge0: entity work.axis_merge2
 				generic map (
+    				N_PORTS    => NUMBER_OF_PROBES,
 					DATA_WIDTH => 8
 				)
 				port map (
-					s0_axis_tdata  => ucap_out_tdata,
-					s0_axis_tvalid => ucap_out_tvalid,
-					s0_axis_tlast  => ucap_out_tlast,
-					s0_axis_tready => ucap_out_tready,
-
-					s1_axis_tdata  => corr_out_tdata,
-					s1_axis_tvalid => corr_out_tvalid,
-					s1_axis_tlast  => corr_out_tlast,
-					s1_axis_tready => corr_out_tready,
+					s_axis_tdata  => cap_data,
+					s_axis_tvalid => cap_valid,
+					s_axis_tlast => cap_last,
+					s_axis_tready => cap_ready, 
 
 					m_axis_tdata   => m_axis_cap_tdata,
 					m_axis_tvalid  => m_axis_cap_tvalid,
@@ -1185,12 +1180,6 @@ begin
 					clk => axis_cap_clk
 				);
 
-	elsif CAPTURE_TYPE = PROBER and CORR_TYPE /= NONE generate
-		-- If we use PROBER data capture, send the correlator data to the BSB master probe input.
-		cap_data(CORR_PROBE_BASE_PORT)  <= corr_out_tdata;
-		cap_valid(CORR_PROBE_BASE_PORT) <= corr_out_tvalid;
-		cap_last(CORR_PROBE_BASE_PORT)  <= corr_out_tlast;
-		corr_out_tready                 <= cap_ready(CORR_PROBE_BASE_PORT);
 	end generate cap_gen;
 	------------------------------------------
 	-- Top level command interface router
@@ -1825,18 +1814,18 @@ begin
 			ct_clk => ct_clk,
 			ct_reset => ct_reset,
 
-			-- 8-bit Data Capture streaming interface from PROBER to bsb_master (on bsb_clk)
-			-- We assume the PROBER buses are in the ports.0 to NUMBER_OF_CHANNELIZERS - 1 range.
-			m_axis_prober_tdata  => cap_data(NUMBER_OF_CHANNELIZERS - 1 downto 0),
-			m_axis_prober_tvalid => cap_valid(NUMBER_OF_CHANNELIZERS - 1 downto 0),
-			m_axis_prober_tlast  => cap_last(NUMBER_OF_CHANNELIZERS - 1 downto 0),
-			m_axis_prober_tready => cap_ready(NUMBER_OF_CHANNELIZERS - 1 downto 0),
+			-- 8-bit Data Capture streaming interface from PROBER Oor UCAP (on axis_ucap_clk)
+			
+			m_axis_prober_tdata  => cap_data(0 to NUMBER_OF_CHAN_PROBES - 1),
+			m_axis_prober_tvalid => cap_valid(0 to NUMBER_OF_CHAN_PROBES - 1),
+			m_axis_prober_tlast  => cap_last(0 to NUMBER_OF_CHAN_PROBES - 1),
+			m_axis_prober_tready => cap_ready(0 to NUMBER_OF_CHAN_PROBES - 1),
 
 			-- UCAP 8-bit capture output (on axis_cap_clk, fed into axis_merge or bsb_master)
-			m_axis_ucap_tdata  => ucap_out_tdata,
-			m_axis_ucap_tvalid => ucap_out_tvalid,
-			m_axis_ucap_tlast  => ucap_out_tlast,
-			m_axis_ucap_tready => ucap_out_tready,
+			-- m_axis_ucap_tdata  => ucap_out_tdata,
+			-- m_axis_ucap_tvalid => ucap_out_tvalid,
+			-- m_axis_ucap_tlast  => ucap_out_tlast,
+			-- m_axis_ucap_tready => ucap_out_tready,
 			axis_ucap_clk      => axis_cap_clk,
 
 			-- BSB Interface to UCAP
@@ -2525,10 +2514,10 @@ begin
 
 						-- Correlated data output interface (AXI4-Streaning, 8-bit wide, blocking)
 
-						m_axis_data_tdata   => corr_out_tdata,
-						m_axis_data_tvalid  => corr_out_tvalid,
-						m_axis_data_tlast   => corr_out_tlast,
-						m_axis_data_tready  => corr_out_tready,
+						m_axis_data_tdata   => cap_data(CORR_PROBE_BASE_PORT),
+						m_axis_data_tvalid  => cap_valid(CORR_PROBE_BASE_PORT),
+						m_axis_data_tlast   => cap_last(CORR_PROBE_BASE_PORT),
+						m_axis_data_tready  => cap_ready(CORR_PROBE_BASE_PORT),
 						out_clk => axis_cap_clk,
 
 						-- Control interface
@@ -2543,7 +2532,6 @@ begin
 						bsb_clk => bsb_clk,
 						bsb_rst => bsb_rst
 					);
-
 
 			-------------
 			when others =>
