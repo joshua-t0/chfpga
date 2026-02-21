@@ -118,7 +118,8 @@ set_multicycle_path -setup -from [get_clocks SYS_CLK] -to [get_clocks PL_CLK] 0
 # set_property IOSTANDARD  LVDS     [get_ports {pl_recclk_p}];
 
 # 100 MHz clock provided by the PS to the PL is not in phase with any other clock
-set_clock_groups -name BSB_CLK_GROUP -asynchronous -group [get_clocks clk_pl_0]
+# set_clock_groups -name BSB_CLK_GROUP -asynchronous -group [get_clocks clk_pl_0]
+set_clock_groups -name BSB_CLK_GROUP -asynchronous -group [get_clocks -of_objects [get_nets aclk]]
 
 # Programmable PLL SYNC input
 
