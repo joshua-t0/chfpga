@@ -183,7 +183,7 @@ use UNISIM.VComponents.all;
 --
 -- - a bit clock (typ. 400 MHz). This is buffered by a BUFG, and is used to clock the input of the SERDES in this or other ADCDAQ modules.
 -- - a data acquisition word clock (200 MHz). This is buffered by a BUFG, and is used to clock the output of the SERDES in this or other ADCDAQ modules.
--- - an antenna processor word clock (200 MHz). This is buffered by a BUFG, and is used to clock the antenna processors. This is not used internally by this module.
+-- - a channelizer word clock (200 MHz). This is buffered by a BUFG, and is used to clock the channelizers. This is not used internally by this module.
 --
 -- The PLL input is fed by the 200 MHz word clock coming from divclk_local_vect(0) instead of using the 400 MHz clock from the ADC as would normally be done.
 -- The reason for this is to ensure that the output clocks are not a divided version of the input clock, which can cause phase ambiguities. This does not happen if the output clock is at the same frequency or twice the frequency of the input clock.
@@ -210,7 +210,7 @@ use UNISIM.VComponents.all;
 -- This ADCDAQ module does not generate the ADC SYNC itself, but provides a adcdaq_reset input line and logic that ensures that the data coming out of the ADC is always timed consistently when the ADC SYNC sequence is performed.
 --
 -- The operation of the adcdaq_reset in the context of an ADC SYNC event is as follows:
---    1. The ADC SYNC line is asserted. This stops the ADC clocks. The ADCDAQ PLL is unlocked, and there is no clock to the antenna processor.
+--    1. The ADC SYNC line is asserted. This stops the ADC clocks. The ADCDAQ PLL is unlocked, and there is no clock to the channelizer.
 --    2. The adcdaq_reset line is asserted. This does the following asynchronously (since there is no clocks anymore):
 --
 --       - The ADCDAQ PLL is reset (if there is one in this instance). divclk stops on all instances using this PLL as an external clock.

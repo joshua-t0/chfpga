@@ -308,7 +308,7 @@ rply_proc: process(all) begin
 			rply_tvalid <= '0' when rply_tready; -- if the bus has read the byte on the bus, clear TVALID. This may be overriden below if a new byte is placed on the bus
 
 			CASE rply_state IS
-				WHEN RPLY_STATE_SCAN => -- If current antenna finished processing, set next state to SEND_CMD and increment antenna number in preparation for the next round
+				WHEN RPLY_STATE_SCAN => -- If current port finished processing, set next state to SEND_CMD and increment port number in preparation for the next round
 
 					s_axis_routed_bsb_tready <= (others => '0'); -- disable TREADY flag after previous state
 

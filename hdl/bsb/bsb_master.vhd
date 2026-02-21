@@ -289,13 +289,13 @@ tx_proc: process(all)
 						tx_state <= TX_STATE_SEND_CMD;
 					-- If we have noreply and are not throttling, check the probe input
 					elsif host_buffer_count(host_buffer_count'HIGH) = '0' then-- If the count is less than half the max buffer size, then continue scanning the probe inputs and send the frames
-						if s_axis_data_tvalid(probe_number)='1' then -- antenna data is ready
+						if s_axis_data_tvalid(probe_number)='1' then -- probe data is ready
 								-- start reading data.
-								-- the probe number will be incremented in the SEND_ANT state.
+								-- the probe number will be incremented in the TX_STATE_SEND_DATA state.
 								s_axis_data_tready(probe_number) <= '1';
 								timeout_ctr <= (others => '0');
 								tx_state <= TX_STATE_SEND_DATA;
-						-- if no data is awaiting, increment antenna number to proceed with scanning
+						-- if no data is awaiting, increment probe number to proceed with scanning
 						elsif (probe_number = NUMBER_OF_PROBES-1) then
 							probe_number <= 0;
 						else

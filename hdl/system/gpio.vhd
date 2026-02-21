@@ -39,14 +39,25 @@ use xpm.vcomponents.ALL;
 --
 -- Includes
 --
+-- - Core registers accessible via BSB and external SPI link
+-- - IRIG-B decoder/generator and comparator
+-- - Frame/time capture
 -- - Global data capture/injection trigger
--- - Global antenna reset
--- - Global correlator reset
+-- - Global channelizer and correlator resets
 -- - LCD Interface bits
 -- - Buck switching supply SYNC signal generation
 -- - FMC ADC Reset line
+-- - ADC status and control (calibration freeze, overrange/overvoltage, PLL lock)
 -- - Fan speed readout
+-- - Network configuration (MAC, IP, port, subarray) and UDP link monitoring
 -- - IP Port offsets for the data capture and correlator outputs
+-- - Event-synchronized PWM generation
+-- - User output mux (selectable signals to SMA)
+-- - 10 MHz reference clock source selection and external PLL sync
+-- - Backplane buck sync and GPIO interrupt
+-- - IceBoard I/O (UART, GPIO, flash, ARM IRQ)
+-- - Channelizer clock source selection
+-- - FPGA DNA/serial number and firmware timestamp
 --
 entity gpio is
 	generic (
@@ -66,7 +77,7 @@ entity gpio is
 		-- Channelizer info
 
 		NUMBER_OF_CHANNELIZERS: integer; -- Number of channelizers that are implemented
-		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer; -- Number of antenna processing blocks with an FFT module
+		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer; 
 		FFT_TYPE: fft_type_enum;
 
 		-- Corner-turn Engine info
@@ -496,9 +507,9 @@ begin
 	-- |         |     | 6:0  | COOKIE                      | Defined as a GENERIC (default = 0x42)|
 	-- |         |  1  | 7:5  | LOG2_SAMPLES_PER_WORD       | Base-2 log of the number of samples per word |
 	-- |         |     | 4:0  | LOG2_SAMPLES_PER_FRAME      | Base-2 log of the number of samples per frame |
-	-- |         |  2  | 7:0  | NUMBER_OF_CHANNELIZERS      | Number of antennas processing pipelines implemented in the firmware |
+	-- |         |  2  | 7:0  | NUMBER_OF_CHANNELIZERS      | Number of channelizers implemented in the firmware |
 	-- |         |  3  | 7:0  | NUMBER_OF_CORRELATORS       | Number of correlators implemented in the firmware |
-	-- |         |  4  | 7:0  | NUMBER_OF_CHANNELIZERS_TO_CORRELATE | Number of channelizers connected to the correlators. Only antennas 0 to N-1 will be connected. This sets the numbe rof parallel multipliers and accumulators in the correlator. |
+	-- |         |  4  | 7:0  | NUMBER_OF_CHANNELIZERS_TO_CORRELATE | Number of channelizers connected to the correlators. Only channelizers 0 to N-1 will be connected. This sets the numbe rof parallel multipliers and accumulators in the correlator. |
 	-- |         |  5  | 7:0  | NUMBER_OF_CHANNELIZERS_WITH_FFT   | Indicates how many channelizers have a FFT module. Those will be channeizers 0 to N-1|
 	-- |         |  6  | 7:0  | NUMBER_OF_GPU_LINKS         | Indicates how GPU Links are implemented. If zero, the GPU module is not present at all (not even the common registers)|
 	-- |         | 7-10| 31:0 | firmware_timestamp          | 32-bit word containing the timestamp of the firmware inserted during the bitgen process |

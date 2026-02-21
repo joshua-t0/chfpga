@@ -51,7 +51,7 @@ use work.chfpga_package.ALL; -- Get all component definitions
 --
 -- The frequency channels are selected by writing a bit pattern into a RAM block, where each bit identifies
 -- whether the corresponding word (containing a pair of frequency samples) is to passed on to the output.
--- The streams coming from all antennas are filtered using the same pattern.
+-- The streams coming from all channelizers are filtered using the same pattern.
 --
 -- No frame is transmitted (not even a header with empty payload) of no data was selected by the filtering process.
 --
@@ -86,7 +86,7 @@ use work.chfpga_package.ALL; -- Get all component definitions
 -- Word selection map format
 -- -------------------------
 --
--- Each bit in the RAM block identifies whether a 32-bit word received from the antenna processor module is to be kept or not.
+-- Each bit in the RAM block identifies whether a 32-bit word received from the channelizers is to be kept or not.
 -- The mapping is as follows:
 --
 -- #Byte | bit | Flag for Word # | Time sample # | Frequency sample #
@@ -148,7 +148,7 @@ end entity chan_bin_sel;
 --- ARCHITECTURE DECLARATION and DEFINITION ---------------------
 -- Describes the logic that implement the entity's functionnalities. See this architecture for the implementation details.
 --
--- The writing process waits for all channels to have valid data, and if the filter bit is '1', the data from each antenna is written in their respective FIFO.
+-- The writing process waits for all channels to have valid data, and if the filter bit is '1', the data from each channelizer is written in their respective FIFO.
 -- Then the filter RAM 'bit' pointer is incremented.
 -- When the last word of a frame is detected, the pointer is reset, the header is constructed and is written in the HEADER FIFO.
 -- This assumes that all the input data streams are aligned.
@@ -315,7 +315,7 @@ begin
 	-- |         |     |   4  | combine_data_flags       | Combine data flags |
 	-- |         |     | 3:2  | first_fifo_number       | First FIFO number |
 	-- |         |     | 1:0  | last_fifo_number         | Last FIFO number |
-	-- | STATUS  |  0  |   7  | data_fifo_empty          | EMPTY status flag of the DATA FIFO for antenna processor 0. Active HIGH. |
+	-- | STATUS  |  0  |   7  | data_fifo_empty          | EMPTY status flag of the DATA FIFO for channelizer processor 0. Active HIGH. |
 	-- |         |     |   6  | data_fifo_overflow_sticky| Sticky flag indicating that one of the DATA FIFO has overflown. Cleared only by a reset of the module.|
 	-- |         |     |   5  | reset_all                | Reset all status |
 	-- |         |     |   4  | 8-bit support (always 0)                 |                               |
@@ -901,7 +901,7 @@ begin
 	frame_header.ENCODING           <= (0=> four_bits, 1=> use_offset_binary, 2=> send_flags and not bypass_reg, 3=> bypass_reg);
 	frame_header.NUMBER_OF_FRAMES   <= to_slv(frames_per_packet, frame_header.NUMBER_OF_FRAMES'LENGTH);
 	frame_header.NUMBER_OF_BINS     <= to_slv(number_of_selected_bins, frame_header.NUMBER_OF_BINS'LENGTH);   -- ** to be fixed : will change for 2nd, 3rd etc  shuffle
-	frame_header.NUMBER_OF_ANTENNAS <= to_slv(number_of_input_lanes, frame_header.NUMBER_OF_ANTENNAS'LENGTH); -- ** to be fixed : will change for 2nd, 3rd etc  shuffle
+	frame_header.NUMBER_OF_CHANNELS <= to_slv(number_of_input_lanes, frame_header.NUMBER_OF_CHANNELS'LENGTH); -- ** to be fixed : will change for 2nd, 3rd etc  shuffle
 	-- Word 2
 	frame_header.ANCILLARY_DATA <= (X"0000" & std_logic_vector(timestamp_ctr(47 downto 32)));
 	-- Word 3

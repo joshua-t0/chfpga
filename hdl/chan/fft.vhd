@@ -130,7 +130,7 @@ entity fft is
 		-- Clock and Reset
 
 		clk     : in  std_logic; -- Processing clock, common to the input and output bus
-		reset   : in  std_logic; -- clk-synchronous Antenna processor reset.
+		reset   : in  std_logic; -- clk-synchronous channelizer reset.
 		                         -- In this module, resets the SYNC generator and send SYNC signals to the FFT
 
 		-- Control bus (Byte-Serial-Bus protocol)

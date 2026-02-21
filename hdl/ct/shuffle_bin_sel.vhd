@@ -91,8 +91,8 @@ use work.chfpga_package.ALL; -- Get all component definitions
 -- at the output. The data words, data flags and frame flags are sent out in the order of the input
 -- lanes: data from  lane 0 first, then data from lane 1 etc.
 --
--- The bin selector operates on a single clock to simplify the logic and resource usage. All inputs and outputs buses operate on that clock. is clocked on a separate clock than the antenna processor outputs.
--- This means that the correlator can be clocked faster than the antenna processor clock to allow more time for transmission of the the header overhead or simply to allow the correlator to process more channels.
+-- The bin selector operates on a single clock to simplify the logic and resource usage. All inputs and outputs buses operate on that clock. is clocked on a separate clock than the channelizer processor outputs.
+-- This means that the correlator can be clocked faster than the channelizer processor clock to allow more time for transmission of the the header overhead or simply to allow the correlator to process more channels.
 -- It is important that in all cases the output data rate of the FIFO is higher than the rate required to transmit the selected data plus the header bytes.
 --
 -- Each bit in the RAM block identifies whether a bin received in the incoming stream is to be
@@ -138,7 +138,7 @@ entity shuffle_bin_sel is
 		m_axis_terror : out std_logic_vector(0 to NUMBER_OF_OUTPUTS - 1);
 
 		-- lane_map: in slv4_array(0 to NUMBER_OF_INPUTS-1);
-		clk : in std_logic; -- Input clock, common to all antenna processor buses
+		clk : in std_logic; -- Input clock, common to all channelizers
 		rst : in std_logic; -- reset, synchronous to clk
 
 		shuffle_flags_mask : in slv32; -- Specify the mask to apply on the packet flags word to trigger the terror line.
@@ -160,7 +160,7 @@ end entity shuffle_bin_sel;
 --- ARCHITECTURE DECLARATION and DEFINITION ---------------------
 -- Describes the logic that implement the entity's functionnalities. See this architecture for the implementation details.
 --
--- The writing process waits for all channelizers to have valid data, and if the filter bit is '1', the data from each antenna is written in their respective FIFO.
+-- The writing process waits for all channelizers to have valid data, and if the filter bit is '1', the data from each channelizer is written in their respective FIFO.
 -- Then the filter RAM 'bit' pointer is incremented.
 -- When the last word of a frame is detected, the pointer is reset, the header is constructed and is written in the HEADER FIFO.
 -- This assumes that all the input data streams are aligned.
@@ -508,7 +508,7 @@ begin
 	end generate flags_fifo6_gen;
 
 	-- DOUT_FLAGS<=(others=>'0'); -- clear flags until we decide what we will send to the correlator
-	-- Generates a DATA FIFO for each of the antenna processor outputs
+	-- Generates a DATA FIFO for each of the channelizer outputs
 
 	data_fifo_gen: for i in 0 to NUMBER_OF_INPUTS - 1 generate
 		---------------------------------------------------
@@ -524,7 +524,7 @@ begin
 		--      B= number of contiguous bins,
 		--      F=Frames per packet,
 		--      Fout/Fin: input/output word clock frequencies (after and before the CROSSBAR FIFO).
-		-- For the CHIME Pathfinder second cross bar, N=16 input lanes, W=4 (16 antennas, 4-bit mode), B=1024/16/8=8 bins, F=4, Fout/Fin=322/244 MHz: D= (1-322/244/16)*4*8*4 = 118 words deep
+		-- For the CHIME Pathfinder second cross bar, N=16 input lanes, W=4 (16 channels, 4-bit mode), B=1024/16/8=8 bins, F=4, Fout/Fin=322/244 MHz: D= (1-322/244/16)*4*8*4 = 118 words deep
 		-- In practice there are always dead cycles in the incoming data (due to 200/244 MHz crossing, backplane link data framing, gearbox etc). This gives more time for the read side to  catch up, so the effectively used depth is less than this.
 		-- A single RAMB18 provides a 514 deep FWFT FIFO.
 		-- We elimine this FIFO by requiring every selected bin to be followed by at least N non-selected bins. To be considered if BRAM resource availability is an issue.
@@ -957,7 +957,7 @@ begin
 					 ENCODING               => (0=> four_bits, 1=> use_offset_binary, 2=> send_flags, others => '0'),
 					 NUMBER_OF_FRAMES       => to_slv(frames_per_packet, frame_header.NUMBER_OF_FRAMES'LENGTH),
 					 NUMBER_OF_BINS         => number_of_output_bins_per_frame, -- ** to be fixed : will change for 2nd, 3rd etc  shuffle
-					 NUMBER_OF_ANTENNAS     => std_logic_vector(resize(number_of_output_words_per_bin, frame_header.NUMBER_OF_ANTENNAS'LENGTH)),
+					 NUMBER_OF_CHANNELS     => std_logic_vector(resize(number_of_output_words_per_bin, frame_header.NUMBER_OF_CHANNELS'LENGTH)),
 
 
 					 ANCILLARY_DATA         => (X"0000" & std_logic_vector(timestamp_ctr(47 downto 32))),
