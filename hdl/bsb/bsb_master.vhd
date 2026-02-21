@@ -103,10 +103,10 @@ entity bsb_master is
 
 		-- Raw Data stream buses
 
-		s_axis_data_tdata: in slv8_array(NUMBER_OF_PROBES-1 downto 0);
-		s_axis_data_tvalid: in slv(NUMBER_OF_PROBES-1 downto 0);
-		s_axis_data_tlast: in slv(NUMBER_OF_PROBES-1 downto 0);
-		s_axis_data_tready: out slv(NUMBER_OF_PROBES-1 downto 0);
+		s_axis_data_tdata: in slv_array(0 to NUMBER_OF_PROBES-1)(7 downto 0);
+		s_axis_data_tvalid: in std_logic_vector(0 to NUMBER_OF_PROBES-1);
+		s_axis_data_tlast: in std_logic_vector(0 to NUMBER_OF_PROBES-1);
+		s_axis_data_tready: out std_logic_vector(0 to NUMBER_OF_PROBES-1);
 
 		-- System
 		
@@ -126,7 +126,7 @@ signal s_axis_udp_rx_tready_int: std_logic;
 
 -- TX Process
 
-TYPE TX_STATE_TYPE IS (TX_STATE_SCAN, TX_STATE_SEND_CMD,TX_STATE_SEND_ANT, TX_STATE_WAIT); -- States of the TX state machine
+TYPE TX_STATE_TYPE IS (TX_STATE_SCAN, TX_STATE_SEND_CMD,TX_STATE_SEND_DATA, TX_STATE_WAIT); -- States of the TX state machine
 signal tx_state: TX_STATE_TYPE := TX_STATE_SCAN; -- Initialization needed
 signal probe_number : integer range 0 to (NUMBER_OF_PROBES-1):=0;
 signal timeout_ctr: unsigned(7 downto 0); --
@@ -290,11 +290,11 @@ tx_proc: process(all)
 					-- If we have noreply and are not throttling, check the probe input
 					elsif host_buffer_count(host_buffer_count'HIGH) = '0' then-- If the count is less than half the max buffer size, then continue scanning the probe inputs and send the frames
 						if s_axis_data_tvalid(probe_number)='1' then -- antenna data is ready
-								-- start reading antenna data.
+								-- start reading data.
 								-- the probe number will be incremented in the SEND_ANT state.
 								s_axis_data_tready(probe_number) <= '1';
 								timeout_ctr <= (others => '0');
-								tx_state <= TX_STATE_SEND_ANT;
+								tx_state <= TX_STATE_SEND_DATA;
 						-- if no data is awaiting, increment antenna number to proceed with scanning
 						elsif (probe_number = NUMBER_OF_PROBES-1) then
 							probe_number <= 0;
@@ -341,9 +341,9 @@ tx_proc: process(all)
 					end if; -- if tvalid
 
 				-- Transmit probe data in the currently selected probe
-				when TX_STATE_SEND_ANT =>
+				when TX_STATE_SEND_DATA =>
 					m_axis_udp_tx_tvalid_int <= '0'; -- don't send anything if none of the conditions below are met
-					if s_axis_data_tvalid(probe_number)='1' then
+					if s_axis_data_tvalid(probe_number) then
 
 						timeout_ctr <= (others => '0'); -- reset timout counter as long as we receive bytes
 
