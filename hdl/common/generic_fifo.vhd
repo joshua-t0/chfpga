@@ -87,6 +87,7 @@ architecture impl of generic_fifo is
 
 begin
 
+	-- Select the appropriate clock for the FIFO
 	wr_clk_i <= clk when not IS_ASYNC else wr_clk;
 	rd_clk_i <= clk when not IS_ASYNC else rd_clk;
 
@@ -134,7 +135,7 @@ begin
 					FIFO_READ_LATENCY => sel(IS_FWFT, 0, 1), -- 0 latency in FWFT mode, 1 in standard mode
 					PROG_FULL_THRESH  => PROG_FULL_THRESH,
 					PROG_EMPTY_THRESH => PROG_EMPTY_THRESH,
-					USE_ADV_FEATURES  => "1203", -- overflow + prog_full + prog_empty + data_valid
+					USE_ADV_FEATURES  => xpm_fifo_features(overflow=> TRUE, data_valid=> TRUE, prog_full=> TRUE, prog_empty => TRUE), 
 					CDC_SYNC_STAGES   => 3,
 					FULL_RESET_VALUE  => 1
 				)
@@ -172,7 +173,7 @@ begin
 					FIFO_READ_LATENCY => sel(IS_FWFT, 0, 1), -- 0 latency in FWFT mode, 1 in standard mode	
 					PROG_FULL_THRESH  => PROG_FULL_THRESH,
 					PROG_EMPTY_THRESH => PROG_EMPTY_THRESH,
-					USE_ADV_FEATURES  => "1203", -- overflow + prog_full + prog_empty + data_valid
+					USE_ADV_FEATURES  => xpm_fifo_features(overflow=> TRUE, data_valid=> TRUE, prog_full=> TRUE, prog_empty => TRUE),
 					FULL_RESET_VALUE  => 1
 				)
 				port map (
