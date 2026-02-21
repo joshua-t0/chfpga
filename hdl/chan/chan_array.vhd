@@ -54,7 +54,7 @@ entity chan_array is
 		CHAN_CLK_SOURCE                 : chan_clk_source_enum                              := ADC;
 		CORR_TYPE                       : corr_type_enum                                    := NONE;
 		CT_TYPE                         : ct_type_enum                                      := BCT;
-		NUMBER_OF_PROBER_PORTS: integer := sel(CAPTURE_TYPE=PROBER, NUMBER_OF_CHANNELIZERS, NUMBER_OF_CHANNELIZERS+1);
+		NUMBER_OF_PROBER_PORTS: integer := sel(CAPTURE_TYPE=PROBER, NUMBER_OF_CHANNELIZERS, 1);
 		SIM                             : boolean                                           := FALSE
 	);
 	port (
@@ -112,19 +112,12 @@ entity chan_array is
 		ct_clk                : in std_logic;
 		ct_reset              : in std_logic;
 
-		-- 8-bit data capture stream from PROBER Interface (when CAPTURE_TYPE = PROBER)
-		
-		m_axis_prober_tdata  : out slv8_array(NUMBER_OF_CHANNELIZERS - 1 downto 0);
-		m_axis_prober_tvalid : out std_logic_vector(NUMBER_OF_CHANNELIZERS - 1 downto 0);
-		m_axis_prober_tlast  : out std_logic_vector(NUMBER_OF_CHANNELIZERS - 1 downto 0);
-		m_axis_prober_tready : in std_logic_vector(NUMBER_OF_CHANNELIZERS - 1 downto 0);
+		-- 8-bit data capture stream from PROBER or UCAP
 
-		-- 8-bit Data capture stream from UCAP Interface (when CAPTURE_TYPE = UCAP)
-
-		m_axis_ucap_tdata  : out std_logic_vector(7 downto 0) := (others => '0');
-		m_axis_ucap_tvalid : out std_logic                    := '0';
-		m_axis_ucap_tlast  : out std_logic                    := '0';
-		m_axis_ucap_tready : in std_logic                     := '0';
+		m_axis_prober_tdata  : out slv_array(0 to NUMBER_OF_PROBER_PORTS - 1)(7 downto 0);
+		m_axis_prober_tvalid : out std_logic_vector(0 to NUMBER_OF_PROBER_PORTS - 1);
+		m_axis_prober_tlast  : out std_logic_vector(0 to NUMBER_OF_PROBER_PORTS - 1);
+		m_axis_prober_tready : in std_logic_vector(0 to NUMBER_OF_PROBER_PORTS - 1);
 		axis_ucap_clk      : in std_logic                     := '0';
 
 		-- Channelizer BSB Control Interface (on bsb_clk)
@@ -206,6 +199,11 @@ architecture impl of chan_array is
 	signal chan_mon_source_req: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1);
 	signal chan_mon_source_ack: std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1);
 
+	-- Data capture/monitoring outputs from Channelizers' PROBERs
+	signal chan_prober_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(7 downto 0);
+	signal chan_prober_tvalid: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
+	signal chan_prober_tlast: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
+	signal chan_prober_tready: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
 begin
 
 	-- ADCDAQ_RESET <= adcdaq_reset_async or refclk_adcdaq_reset;
@@ -544,6 +542,7 @@ begin
 
 		attribute dont_touch of chan0: label is "true"; -- don't optimize through cell boundaries
 
+
 	begin
 
 		-- Pipeline the BSB reset
@@ -622,19 +621,19 @@ begin
 				s_axis_adcdaq_bsb_tlast  => adcdaq_bsb_rply_tlast(i),
 				s_axis_adcdaq_bsb_tready => adcdaq_bsb_rply_tready(i),
 
-				-- Data monitoring port
+				-- Full width data monitoring port
 				m_axis_cap_tdata  => chan_mon_tdata(i),
 				m_axis_cap_tvalid => chan_mon_tvalid(i),
 				m_axis_cap_tlast  => chan_mon_tlast(i),
 				cap_source_req    => chan_mon_source_req(i),
 				cap_source_ack    => chan_mon_source_ack(i),
 
-				-- Streaming data capture interface
-				m_axis_prober_tdata  => m_axis_prober_tdata(i),
-				m_axis_prober_tvalid => m_axis_prober_tvalid(i),
-				m_axis_prober_tlast  => m_axis_prober_tlast(i),
-				m_axis_prober_tready => m_axis_prober_tready(i),
-				axis_prober_clk      => bsb_clk
+				-- 8-bit data capture streaming interface
+				m_axis_prober_tdata  => chan_prober_tdata(i),
+				m_axis_prober_tvalid => chan_prober_tvalid(i),
+				m_axis_prober_tlast  => chan_prober_tlast(i),
+				m_axis_prober_tready => chan_prober_tready(i),
+				axis_prober_clk      => axis_ucap_clk
 			);
 	end generate chan_gen;
 
@@ -644,13 +643,17 @@ begin
 	adc_tlast  <= adc_tlast_int(0 to NUMBER_OF_ADCS - 1);
 
 	-----------------------------
-	-- UCAP - Global raw data capture
+	--  Raw data capture
 	-----------------------------
 	cap_gen: case CAPTURE_TYPE generate
 		when PROBER =>
 			-- Nothing to do: capture logic in self-contained in CHAN
 			chan_mon_source_req <= (others => '0'); -- make sure the net is driven
 
+			m_axis_prober_tdata <= chan_prober_tdata;
+			m_axis_prober_tvalid <= chan_prober_tvalid;
+			m_axis_prober_tlast <= chan_prober_tlast;
+			chan_prober_tready <= m_axis_prober_tready;
 
 		when uram_case: UCAP =>
 
@@ -726,10 +729,10 @@ begin
 					rst        => ucap_rst_reg,
 
 					-- Output stream, synchronous to m_axis_clk
-					m_axis_tdata  => m_axis_ucap_tdata,
-					m_axis_tvalid => m_axis_ucap_tvalid,
-					m_axis_tlast  => m_axis_ucap_tlast,
-					m_axis_tready => m_axis_ucap_tready,
+					m_axis_tdata  => m_axis_prober_tdata(0),
+					m_axis_tvalid => m_axis_prober_tvalid(0),
+					m_axis_tlast  => m_axis_prober_tlast(0),
+					m_axis_tready => m_axis_prober_tready(0),
 
 					m_axis_clk => axis_ucap_clk,
 
