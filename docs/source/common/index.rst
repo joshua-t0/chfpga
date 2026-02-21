@@ -9,5 +9,5 @@ Shared VHDL building blocks used across the firmware.
 .. toctree::
    :maxdepth: 1
 
-   axis_merge2
+   axis_merge
    generic_fifo

@@ -1,6 +1,6 @@
 ----------------------------------------------------------------------------------
 -- Company: McGill Univ.
--- Testbench for axis_merge2: N-port round-robin AXIS merge with one pipeline stage.
+-- Testbench for axis_merge: N-port round-robin AXIS merge with one pipeline stage.
 -- Variable N_PORTS; each source sends packets with port-specific marker.
 -- Checker reports port, packet length, and content validity.
 ----------------------------------------------------------------------------------
@@ -15,7 +15,7 @@ library work;
 use work.chFPGA_Package.all;
 use work.tb_package.all;
 
-entity axis_merge2_testbench is
+entity axis_merge_testbench is
     generic (
         N_PORTS     : positive := 1;
         DATA_WIDTH  : positive := 8;
@@ -25,9 +25,9 @@ entity axis_merge2_testbench is
         PERIOD_INC  : positive := 3;
         NUM_PACKETS : positive := 600
     );
-end entity axis_merge2_testbench;
+end entity axis_merge_testbench;
 
-architecture sim of axis_merge2_testbench is
+architecture sim of axis_merge_testbench is
 
     constant CLK_PERIOD   : time := 4 ns;
     constant PORT_MARKER  : natural := 16#10#;
@@ -50,7 +50,7 @@ begin
 
     clk <= not clk after CLK_PERIOD / 2;
 
-    dut : entity work.axis_merge2
+    dut : entity work.axis_merge
         generic map (
             N_PORTS    => N_PORTS,
             DATA_WIDTH => DATA_WIDTH,
@@ -96,7 +96,6 @@ begin
             end loop;
             if p = N_PORTS-1 then
                 sleep(clk,10);
---                assert FALSE report "Test is finished" severity error;
                 finish;
             end if;
             wait;

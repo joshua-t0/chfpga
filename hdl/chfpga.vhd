@@ -1160,7 +1160,7 @@ begin
 
 	-- Merge capture buses and send to the AXIS bus if there is no PHY. .
 	cap_gen: if PHY_TYPE = NONE generate
-			axis_merge0: entity work.axis_merge2
+			axis_merge0: entity work.axis_merge
 				generic map (
     				N_PORTS    => NUMBER_OF_PROBES,
 					DATA_WIDTH => 8

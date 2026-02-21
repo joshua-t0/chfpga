@@ -29,7 +29,6 @@ set hdl_base_files [list  \
  "chfpga.vhd" \
  "common/generic_fifo.vhd" \
  "common/axis_merge.vhd" \
- "common/axis_merge2.vhd" \
  "bsb/axis_sync_fifo.vhd" \
  "bsb/bsb_sync_fifo.vhd" \
  "bsb/bsb_router.vhd" \

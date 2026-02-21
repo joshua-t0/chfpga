@@ -27,8 +27,8 @@
 
 <!-- New functionality or enhancements. Format: - [ ] **T### Brief title** — Description (added YYYY-MM-DD) -->
 
-- [ ] **T001 Merge PROBER outputs in chan_array** — Use best axis_merge version to merge PROBER outputs in chan_array so we can have a single stream output from either UCAP or the PROBERS (added 2025-02-19)
-  - Context: `chan_array.vhd`, `axis_merge` / `axis_merge2` in `hdl/common/`
+- [ ] **T001 Merge PROBER outputs in chan_array** — Use axis_merge to merge PROBER outputs in chan_array so we can have a single stream output from either UCAP or the PROBERS (added 2025-02-19)
+  - Context: `chan_array.vhd`, `axis_merge` in `hdl/common/`
 
 ---
 
