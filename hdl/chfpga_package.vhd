@@ -671,6 +671,7 @@ function sel(b: BOOLEAN; if_true: integer; if_false: integer) return integer;
 function sel(b: BOOLEAN; if_true: time; if_false: time) return time;
 function sel(b: BOOLEAN; if_true: std_logic; if_false: std_logic) return std_logic;
 function sel(b: BOOLEAN; if_true: std_logic_vector; if_false: std_logic_vector) return std_logic_vector;
+function sel(b: BOOLEAN; if_true: slv_array; if_false: slv_array) return slv_array;
 function sel(b: BOOLEAN; if_true: slv32_array; if_false: slv32_array) return slv32_array;
 function sel(b: std_logic; if_true: std_logic_vector; if_false: std_logic_vector) return std_logic_vector;
 function sel(key:string; imap: si_map) return integer;
@@ -1258,6 +1259,15 @@ begin
 end sel;
 
 FUNCTION sel(b: BOOLEAN; if_true: slv32_array; if_false: slv32_array) return slv32_array is
+begin
+	if b then
+		return if_true;
+	else
+		return if_false;
+	end if;
+end sel;
+
+FUNCTION sel(b: BOOLEAN; if_true: slv_array; if_false: slv_array) return slv_array is
 begin
 	if b then
 		return if_true;
