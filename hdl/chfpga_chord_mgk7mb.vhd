@@ -114,7 +114,7 @@ entity chfpga_chord_mgk7mb is
 				-- CH5: Data and clock all in same bank 12. We use one BUFMR to equalize delays only.
 				-- CH6: Data and clock not in same bank. We use one BUFMR,  and BUFR and BUFIOs in banks 12 and 13 each.
 				-- CH7: Data and clock all in same bank 18. Clock is on a SRCC pin, so we cannot use BUFMR to equalize delays.
-			ANT_CLK_SOURCE: integer :=0; -- Indicate which ADC is the source of the antenna processing clock. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
+			CHAN_CLK_SOURCE_LANE: integer :=0; -- Indicate which ADC is the source of the antenna processing clock. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
 
 			GPU_CHANNEL_QUAD: IntegerArray := GLOBAL_GPU_CHANNEL_QUAD; -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1
 			GPU_QUAD_REFCLK: IntegerArray := GLOBAL_GPU_QUAD_REFCLK; -- Both QUAD0 and QUAD1 use refclk(0)
@@ -944,7 +944,7 @@ bufr_rawclk10 : BUFR
 			ADC_INSTANTIATE_PLL             => ADC_INSTANTIATE_PLL,
 			ADC_USE_EXT_DATA_CLK            => ADC_USE_EXT_DATA_CLK,
 			ADC_INSTANTIATE_BUFMR           => ADC_INSTANTIATE_BUFMR,
-			ANT_CLK_SOURCE                  => ANT_CLK_SOURCE,
+			CHAN_CLK_SOURCE_LANE                  => CHAN_CLK_SOURCE_LANE,
 			GPU_CHANNEL_QUAD                => GPU_CHANNEL_QUAD,
 			GPU_QUAD_REFCLK                 => GPU_QUAD_REFCLK,
 			SIM                             => SIM

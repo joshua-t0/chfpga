@@ -124,7 +124,7 @@ entity chfpga is
 
 		ADC_INSTANTIATE_BUFMR: BUFMRIndexArrayArray(0 to NUMBER_OF_ADCS_MAX - 1) := (others => (others => 0)); -- Determines which BUFR is used for each data and clock line
 
-		ANT_CLK_SOURCE: integer := 1; -- Indicate which ADC is the source of the channelizer clocks. Must be one that has PROVIDE_BUFFERED_DIVCLK=TRUE so we have a BUFG that can clock the logic across the chip
+		CHAN_CLK_SOURCE_LANE: integer := 1; -- Indicate which ADC is the source of the channelizer clocks. Must be one that has PROVIDE_BUFFERED_DIVCLK=TRUE so we have a BUFG that can clock the logic across the chip
 
 		ADC_TO_ADC_BOARD_MAP: IntegerArray(0 to NUMBER_OF_ADCS_MAX - 1) := (0 to 7 => 0, 8 to 15 => 1);
 
@@ -546,7 +546,7 @@ end entity chfpga;
 --  Two boolean arrays define how the ADC DAQ clocking is implemented:
 --   - ADC_INSTANTIATE_PLL is a boolean array that indicates if an ADCDAQ module shall instantiate a PLL to generate a bit and word clock
 --   - ADC_USE_EXT_DATA_CLK is a boolean array that indicates if am ADCDAQ module shall use its local ADC bit and word clocks or the PLL clock to capture the ADC data. This is set to TRUE for each module that cannot access all its data bits using he local routing ressources.
---   - ANT_CLK_SOURCE indicates from which ADCDAQ the external PLL signal to be is coming.
+--   - CHAN_CLK_SOURCE_LANE indicates from which ADCDAQ the external PLL signal to be is coming.
 --
 --   Note for the Virtex 6 240:
 --     - the PLL should be instantiated only for IOs located in the middle columns.
@@ -795,7 +795,6 @@ architecture impl of chFPGA is
 	signal ADC_RST: std_logic_vector(0 to NUMBER_OF_ADC_BOARDS - 1) := (others => '0'); -- non-inverted ADC Reset line (the external ADC reset is active LOW)
 
 
-	-- signal corr_reset_async_delay : std_logic; -- Reset for all correlator processors, synchronized to ANT_CLK
 	signal sfp_refclk_nobuf: std_logic;
 	signal sfp_refclk_buf: std_logic;
 
@@ -1153,7 +1152,7 @@ begin
 	--------------------------------------------------
 	-- Data capture (prober buses)
 	--------------------------------------------------
-	-- If there is no PHY, data capture muses are merged into one and sent to the AXIS bus. In that case all capture outputs shall be on axis_cap_clk. If there is a PHY, all capture buses are sent to bsb_master, which will merge them with the command reply stream and send them to the PHY. In that case all capture is on the bsb_clk. 
+	-- If there is no PHY, data capture buses are merged into one and sent to the AXIS bus. In that case all capture outputs shall be on axis_cap_clk. If there is a PHY, all capture buses are sent to bsb_master, which will merge them with the command reply stream and send them to the PHY. In that case all capture is on the bsb_clk. 
 	-- We essentally use PHY_TYPE as a "USE_AXIS_CAPTURE" flag.
 
 	-- Select capture clock
@@ -1184,7 +1183,7 @@ begin
 	------------------------------------------
 	-- Top level command interface router
 	------------------------------------------
-	-- Routes the commands and replies to/from the top-level modules (ANTs, CORRs,  and system modules)
+	-- Routes the commands and replies to/from the top-level modules
 
 
 	--------------------------------------------------
@@ -1467,7 +1466,7 @@ begin
 					NUMBER_OF_ADC_BOARDS  => NUMBER_OF_ADC_BOARDS,
 
 					-- F-Engine/Channelizer info
-					CHAN_CLK_SOURCE       => ANT_CLK_SOURCE,
+					CHAN_CLK_SOURCE_LANE  => CHAN_CLK_SOURCE_LANE,
 					NUMBER_OF_CHANNELIZERS          => NUMBER_OF_CHANNELIZERS,
 					NUMBER_OF_CHANNELIZERS_WITH_FFT => NUMBER_OF_CHANNELIZERS_WITH_FFT,
 					FFT_TYPE                        => FFT_TYPE,
@@ -1746,7 +1745,7 @@ begin
 			ADC_INSTANTIATE_PLL => ADC_INSTANTIATE_PLL,
 			ADC_USE_EXT_DATA_CLK => ADC_USE_EXT_DATA_CLK,
 			ADC_INSTANTIATE_BUFMR => ADC_INSTANTIATE_BUFMR,
-			ANT_CLK_SOURCE => ANT_CLK_SOURCE,
+			CHAN_CLK_SOURCE_LANE => CHAN_CLK_SOURCE_LANE,
 			ADC_TO_ADC_BOARD_MAP => ADC_TO_ADC_BOARD_MAP,
 			NUMBER_OF_ADC_BOARDS => NUMBER_OF_ADC_BOARDS,
 			CT_CLK_SOURCE => CT_CLK_SOURCE,
@@ -1794,8 +1793,8 @@ begin
 
 			-- ADC Clock Output (for clocks module)
 			-- Connect adc_clk from chan_array to clocks module
-			-- For EV8AQ160: adc_clk comes from adc_divclk_out_bufg(ANT_CLK_SOURCE) inside chan_array
-			-- For AXIS: adc_clk comes from adc_axis_clk(ANT_CLK_SOURCE) inside chan_array
+			-- For EV8AQ160: adc_clk comes from adc_divclk_out_bufg(CHAN_CLK_SOURCE_LANE) inside chan_array
+			-- For AXIS: adc_clk comes from adc_axis_clk(CHAN_CLK_SOURCE_LANE) inside chan_array
 			adc_clk => adc_clk,
 			adc_clk_div2 => adc_clk_div2(0 to NUMBER_OF_ADCS - 1),
 

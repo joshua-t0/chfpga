@@ -47,7 +47,7 @@ entity chan_array is
 		ADC_INSTANTIATE_PLL             : boolarray(0 to NUMBER_OF_ADCS_MAX - 1)            := (others => FALSE);
 		ADC_USE_EXT_DATA_CLK            : boolarray(0 to NUMBER_OF_ADCS_MAX - 1)            := (0 to 3 => TRUE, others => FALSE);
 		ADC_INSTANTIATE_BUFMR           : bufmrindexarrayarray(0 to NUMBER_OF_ADCS_MAX - 1) := (others => (others => 0));
-		ANT_CLK_SOURCE                  : integer                                           := 1;
+		CHAN_CLK_SOURCE_LANE                  : integer                                           := 1;
 		ADC_TO_ADC_BOARD_MAP            : integerarray(0 to NUMBER_OF_ADCS_MAX - 1)         := (0 to 7 => 0, 8 to 15 => 1);
 		NUMBER_OF_ADC_BOARDS            : integer                                           := 2;
 		CT_CLK_SOURCE                   : ct_clk_source_enum                                := CORR_CLK;
@@ -227,7 +227,7 @@ begin
 			signal adc_divclk_out_pll: std_logic_vector(0 to NUMBER_OF_ADCS - 1);
 		begin
 			-- Selects which ADCDAQ will provides the master clock for the clock generator module to provide channelizer clocks.
-			adc_clk <= adc_divclk_out_bufg(ANT_CLK_SOURCE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
+			adc_clk <= adc_divclk_out_bufg(CHAN_CLK_SOURCE_LANE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
 
 			-- Generate a global ``send_data`` signal that is '1' when all ADCs have data to send.
 			-- The inputs are all from different clocks
@@ -240,8 +240,8 @@ begin
 			adc_send_data_async <= and(adc_data_ready_all); --
 
 			-- Select which ADCDAQ provides an external clock to other ADCDAQs (used only if USE_EXT_DATA_CLK=TRUE)
-			adc_ioclk  <= adc_ioclk_out_pll(ANT_CLK_SOURCE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
-			adc_divclk <= adc_divclk_out_pll(ANT_CLK_SOURCE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
+			adc_ioclk  <= adc_ioclk_out_pll(CHAN_CLK_SOURCE_LANE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
+			adc_divclk <= adc_divclk_out_pll(CHAN_CLK_SOURCE_LANE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
 
 			adcgen: for i in 0 to NUMBER_OF_ADCS - 1 generate
 				signal adc_data_ready: std_logic;
@@ -290,8 +290,6 @@ begin
 
 				adc_tdata(i) <= adc_tdata8(i);
 
-				-- ADCDAQ is still implemented if IMPLEMENT_ANT=FALSE, but its IMPLEMENT_ADCDAQ generics is forced  to FALSE to the appropriate differential buffers are instantiated and prevent UCF errors.
-				-- ADC_CLK_OUT_PLL<=ADC_CLK_OUT_PLL_INT;
 				adcdaq0: entity work.adcdaq
 					generic map (
 						IMPLEMENT_ADCDAQ        => TRUE, --
@@ -384,7 +382,7 @@ begin
 			-- Select clock to be used as a source to generate channelizer clocks
 			-- We don't use the clocks directly, but we use the reset sequencer which use these clocks.
 			-- We should separate the reset sequencer from the clock generator.
-			adc_clk <= adc_axis_clk(ANT_CLK_SOURCE);
+			adc_clk <= adc_axis_clk(CHAN_CLK_SOURCE_LANE);
 
 			-- resynchronize ADCDAQ_RESET (clk10) to ADC_CLK
 			adcdaq_proc: process(all) begin
@@ -578,7 +576,8 @@ begin
 				CT_TYPE => CT_TYPE
 					)
 			port map (
-				-- Channelizer input (on ANT_CLK)
+				-- Channelizer input (synchronous to in_clk)
+				
 				in_dat_tdata  => adc_tdata_reg(i),
 				in_dat_tvalid => adc_tvalid_reg(i),
 				in_dat_tlast  => adc_tlast_reg(i),

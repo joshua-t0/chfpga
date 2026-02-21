@@ -70,7 +70,7 @@ ENTITY chFPGA_testbench IS
 		ADC_USE_EXT_DATA_CLK: BoolArray(0 to NUMBER_OF_ADCS_MAX-1):=(others=>FALSE);
 		ADC_INSTANTIATE_BUFMR: BUFMRIndexArrayArray(0 to NUMBER_OF_ADCS_MAX-1) := (others=> (others=>-1));
 		ADC_PROVIDE_BUFFERED_DIVCLK: BoolArray(0 to NUMBER_OF_ADCS_MAX-1) := (0=>TRUE, others=>FALSE);
-		ANT_CLK_SOURCE: integer :=0; -- Indicate which ADC is the source of the antenna processing clock. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
+		CHAN_CLK_SOURCE_LANE: integer :=0; -- Indicate which ADC is the source of the antenna processing clock. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
 
 		-- Simulation parameters
 		ADC_SAMPLING_FREQUENCY: REAL:= 800.0E6; -- MHz. Must be a multiple of 10 MHz. Must be exactly 800 MHz if CLK200 is used for the antenna processor clock.
@@ -358,7 +358,7 @@ CHFPGA0: entity work.chFPGA
 		ADC_USE_EXT_DATA_CLK          => ADC_USE_EXT_DATA_CLK,
 		ADC_INSTANTIATE_BUFMR         => ADC_INSTANTIATE_BUFMR,
 		ADC_PROVIDE_BUFFERED_DIVCLK   => ADC_PROVIDE_BUFFERED_DIVCLK,
-		ANT_CLK_SOURCE                => ANT_CLK_SOURCE,
+		CHAN_CLK_SOURCE_LANE                => CHAN_CLK_SOURCE_LANE,
 		SIM                           => SIM
 		)
 	PORT MAP(

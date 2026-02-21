@@ -48,7 +48,7 @@ entity system is
 		-- ADC info
 
 		NUMBER_OF_ADCS: integer; -- Number of adcs that are implemented
-		CHAN_CLK_SOURCE: integer; -- ADC channel from which the channelizers clocks are derived
+		CHAN_CLK_SOURCE_LANE: integer; -- ADC channel from which the channelizers clocks are derived
 		ADC_SAMPLES_PER_FRAME: integer;
 		ADC_SAMPLES_PER_WORD: integer;
 		ADC_BITS_PER_SAMPLE: integer;
@@ -571,7 +571,7 @@ begin
 				NUMBER_OF_ADC_BOARDS  => NUMBER_OF_ADC_BOARDS,
 
 				-- F-Engine/Channelizer info
-				CHANNELIZERS_CLOCK_SOURCE       => CHAN_CLK_SOURCE,
+				CHANNELIZERS_CLOCK_SOURCE       => CHAN_CLK_SOURCE_LANE,
 				NUMBER_OF_CHANNELIZERS          => NUMBER_OF_CHANNELIZERS,
 				NUMBER_OF_CHANNELIZERS_WITH_FFT => NUMBER_OF_CHANNELIZERS_WITH_FFT,
 				FFT_TYPE                        => FFT_TYPE,

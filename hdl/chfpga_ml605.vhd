@@ -55,7 +55,7 @@ entity chFPGA_ML605 is
         -- NOTE: using a single PLL output for multiple ADC data buses is allowed, but that assumes that all data buses are relatively well in phase to be realigned with the IDELAY. This is reasonable assumption if all data buses come from the same ADC chip. It is not clear if this work well across multiple ADC chips.
         ADC_USE_EXT_DATA_CLK: BoolArray(0 to NUMBER_OF_ANTENNAS_MAX-1):=(TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE);
         ADC_INSTANTIATE_BUFMR: BUFMRIndexArrayArray(0 to NUMBER_OF_ANTENNAS_MAX-1):=(others => (others=>-1)); -- For 7-Series only. Determines which BUFMR to use for each ADC bit (indices 0-7) and clock (index 8) , to allow access to BUFIOs and BUFRs in adjacent clocking regions. No BUFMR is instantiated if all values are -1.
-        ANT_CLK_SOURCE: integer :=1; -- Indicate which ADC is the source of the antenna processing clock. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
+        CHAN_CLK_SOURCE_LANE: integer :=1; -- Indicate which ADC is the source of the antenna processing clock. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
 
         SIM: BOOLEAN := FALSE -- Indicates this is running as a simulation. Used to accelerate simulations
 
@@ -263,7 +263,7 @@ CHFPGA0: chFPGA
 		ADC_INSTANTIATE_PLL=>ADC_INSTANTIATE_PLL,
 		ADC_USE_EXT_DATA_CLK=>ADC_USE_EXT_DATA_CLK,
 		ADC_INSTANTIATE_BUFMR=>ADC_INSTANTIATE_BUFMR,
-		ANT_CLK_SOURCE=>ANT_CLK_SOURCE,
+		CHAN_CLK_SOURCE_LANE=>CHAN_CLK_SOURCE_LANE,
 		SIM=>SIM
 		)
 	PORT MAP(
