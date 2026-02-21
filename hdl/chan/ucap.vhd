@@ -129,7 +129,7 @@ architecture impl of ucap is
 	signal fifo_overflow: std_logic;
 	signal fifo_overflow_sticky: std_logic;
 	signal fifo_wr_rst_busy: std_logic;
-	signal fifo_rd_rst_busy: std_logic;	
+	signal fifo_rd_rst_busy: std_logic;
 	signal m_clk_ctr: unsigned(7 downto 0);
 begin
 
@@ -803,6 +803,13 @@ begin
         signal fifo_rst: std_logic;
     begin
 
+		process(all) begin
+			if rising_edge(m_axis_clk) then
+				m_clk_ctr <= m_clk_ctr + 1;
+				out_frame_ctr <= out_frame_ctr + 1 when m_axis_tvalid and m_axis_tlast;
+			end if;
+		end process;
+
         fifo_rst <= rst or user_reset_reg;
         fifo_din <= fifo_in_tlast & fifo_in_tdata;
 
@@ -812,18 +819,11 @@ begin
         m_axis_tvalid <= fifo_data_valid;
         fifo_rd_en    <= m_axis_tready and fifo_data_valid;
 
-		process(all) begin
-			if rising_edge(m_axis_clk) then
-				if m_axis_tvalid and m_axis_tlast then
-					out_frame_ctr <= out_frame_ctr + 1;
-				end if;
-			end if;
-		end process;
-		
+
         fifo0: entity work.generic_fifo
             generic map (
                 FPGA_SERIES      => FPGA_SERIES,
-                MEMORY_TYPE      => "bram",
+                MEMORY_TYPE      => "embedded",
                 IS_ASYNC         => TRUE,
                 IS_FWFT          => TRUE,
                 DATA_WIDTH       => 9,       -- 8 data + 1 tlast. Default depth is 512 words so a FIFO18 will be used.
@@ -845,9 +845,4 @@ begin
             );
     end block;
 
-	process(all) begin
-		if rising_edge(m_axis_clk) then
-			m_clk_ctr <= m_clk_ctr + 1;
-		end if;
-	end process;
 end impl;
