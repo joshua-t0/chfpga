@@ -70,25 +70,13 @@ entity chan_array is
 		adc_axis_tdata  : in slv128_array(0 to NUMBER_OF_ADCS - 1)     := (others => (others => '0'));
 		adc_axis_tvalid : in std_logic_vector(0 to NUMBER_OF_ADCS - 1) := (others => '0');
 		adc_axis_clk    : in std_logic_vector(0 to NUMBER_OF_ADCS - 1) := (others => '0');
+		adc_or                : in std_logic_vector(0 to NUMBER_OF_ADCS - 1)  := (others => '0'); -- ADC overrange
+		adc_ov                : in std_logic_vector(0 to NUMBER_OF_ADCS - 1)  := (others => '0'); -- ADC overvoltage
 
 		-- AXIS ADC clocks
 
 		adc_clkout : in std_logic_vector(0 to NUMBER_OF_ADCS - 1) := (others => '0'); -- Divided ADC sampling clock from tile, used for monitoring only (create divide-by-two signal)
 		adc_sysref : in std_logic                                 := '0'; -- PL_SYSREF, reclocked through adc_axis_clk (plclk)
-
-		-- ADC control and status signals
-
-		adc_clear_or          : out std_logic_vector(0 to NUMBER_OF_ADCS - 1) := (others => '0');
-		adc_clear_ov          : out std_logic_vector(0 to NUMBER_OF_ADCS - 1) := (others => '0');
-		adc_cm_ov             : in std_logic_vector(0 to NUMBER_OF_ADCS - 1)  := (others => '0');
-		adc_cm_uv             : in std_logic_vector(0 to NUMBER_OF_ADCS - 1)  := (others => '0');
-		adc_or                : in std_logic_vector(0 to NUMBER_OF_ADCS - 1)  := (others => '0');
-		adc_ot1               : in std_logic_vector(0 to NUMBER_OF_ADCS - 1)  := (others => '0');
-		adc_ot2               : in std_logic_vector(0 to NUMBER_OF_ADCS - 1)  := (others => '0');
-		adc_ov                : in std_logic_vector(0 to NUMBER_OF_ADCS - 1)  := (others => '0');
-		adc_cal_frozen        : in std_logic_vector(0 to NUMBER_OF_ADCS - 1)  := (others => '0');
-		adc_cal_freeze        : out std_logic_vector(0 to NUMBER_OF_ADCS - 1) := (others => '0');
-		adc_cal_signal_detect : in std_logic_vector(0 to NUMBER_OF_ADCS - 1)  := (others => '0');
 
 		-- ADCDAQ signals
 

@@ -1779,20 +1779,9 @@ begin
 			adc_axis_tdata => adc_axis_tdata,
 			adc_axis_tvalid => adc_axis_tvalid,
 			adc_axis_clk => adc_axis_clk,
-
-			adc_clkout => adc_clkout,
-			adc_sysref => adc_sysref,
-			adc_clear_or => adc_clear_or,
-			adc_clear_ov => adc_clear_ov,
-			adc_cm_ov => adc_cm_ov,
-			adc_cm_uv => adc_cm_uv,
-			adc_or => adc_or,
-			adc_ot1 => adc_ot1,
-			adc_ot2 => adc_ot2,
-			adc_ov => adc_ov,
-			adc_cal_frozen => adc_cal_frozen,
-			adc_cal_freeze => adc_cal_freeze,
-			adc_cal_signal_detect => adc_cal_signal_detect,
+			adc_or => adc_or, -- overrange
+			adc_ov => adc_ov, -- overvoltage
+			adc_clkout => adc_clkout, -- ADC clock monitor
 
 			-- BSB Control Interface to channelizers and ADCDAQs (on bsb_clk)
 			s_axis_bsb_tdata => top_router_bsb_cmd_tdata(CHAN_BASE_PORT),
