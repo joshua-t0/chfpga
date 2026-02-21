@@ -614,6 +614,7 @@ architecture impl of chFPGA is
 	signal clk200: std_logic; -- 200 MHz system clock from the carrier board
 	signal corr_clk: std_logic; -- Correlator clock, derived from the carrier board.
 	signal bsb_clk: std_logic;
+	signal cap_clk: std_logic; -- Data capture clock, either bsb_clk or axis_cap_clk
 	signal sysmon_clk: std_logic;
 
 
@@ -719,13 +720,6 @@ architecture impl of chFPGA is
 	-- ADC data bus, shared between the channelizers and the corner turn engine or the correlator
 	signal adc_tvalid: std_logic_vector(0 to NUMBER_OF_ADCS - 1);
 	signal adc_tlast: std_logic_vector(0 to NUMBER_OF_ADCS - 1);
-
-
-	-- UCAP capture output (on axis_cap_clk after CDC in UCAP FIFO)
-	-- signal ucap_out_tdata: std_logic_vector(7 downto 0);
-	-- signal ucap_out_tvalid: std_logic;
-	-- signal ucap_out_tlast: std_logic;
-	-- signal ucap_out_tready: std_logic;
 
 	-----------------------
 	-- Channelizer signals
@@ -1157,9 +1151,15 @@ begin
 	end block bsb_master_blk;
 
 	--------------------------------------------------
-	-- Capture data interface
+	-- Data capture (prober buses)
 	--------------------------------------------------
-	-- This direct capture interface is only used when we are not using the Ethernet interface.
+	-- If there is no PHY, data capture muses are merged into one and sent to the AXIS bus. In that case all capture outputs shall be on axis_cap_clk. If there is a PHY, all capture buses are sent to bsb_master, which will merge them with the command reply stream and send them to the PHY. In that case all capture is on the bsb_clk. 
+	-- We essentally use PHY_TYPE as a "USE_AXIS_CAPTURE" flag.
+
+	-- Select capture clock
+	cap_clk <= axis_cap_clk when PHY_TYPE = NONE else bsb_clk; -- data capture clock
+
+	-- Merge capture buses and send to the AXIS bus if there is no PHY. .
 	cap_gen: if PHY_TYPE = NONE generate
 			axis_merge0: entity work.axis_merge2
 				generic map (
@@ -1177,7 +1177,7 @@ begin
 					m_axis_tlast   => m_axis_cap_tlast,
 					m_axis_tready  => m_axis_cap_tready,
 
-					clk => axis_cap_clk
+					clk => cap_clk
 				);
 
 	end generate cap_gen;
@@ -1814,19 +1814,13 @@ begin
 			ct_clk => ct_clk,
 			ct_reset => ct_reset,
 
-			-- 8-bit Data Capture streaming interface from PROBER Oor UCAP (on axis_ucap_clk)
+			-- 8-bit Data Capture streaming interface from PROBER Oor UCAP (on axis_cap_clk)
 			
 			m_axis_prober_tdata  => cap_data(0 to NUMBER_OF_CHAN_PROBES - 1),
 			m_axis_prober_tvalid => cap_valid(0 to NUMBER_OF_CHAN_PROBES - 1),
 			m_axis_prober_tlast  => cap_last(0 to NUMBER_OF_CHAN_PROBES - 1),
 			m_axis_prober_tready => cap_ready(0 to NUMBER_OF_CHAN_PROBES - 1),
-
-			-- UCAP 8-bit capture output (on axis_cap_clk, fed into axis_merge or bsb_master)
-			-- m_axis_ucap_tdata  => ucap_out_tdata,
-			-- m_axis_ucap_tvalid => ucap_out_tvalid,
-			-- m_axis_ucap_tlast  => ucap_out_tlast,
-			-- m_axis_ucap_tready => ucap_out_tready,
-			axis_ucap_clk      => axis_cap_clk,
+			axis_cap_clk      => cap_clk,
 
 			-- BSB Interface to UCAP
 			s_axis_ucap_bsb_tdata => top_router_bsb_cmd_tdata(UCAP_BASE_PORT),
@@ -2518,7 +2512,7 @@ begin
 						m_axis_data_tvalid  => cap_valid(CORR_PROBE_BASE_PORT),
 						m_axis_data_tlast   => cap_last(CORR_PROBE_BASE_PORT),
 						m_axis_data_tready  => cap_ready(CORR_PROBE_BASE_PORT),
-						out_clk => axis_cap_clk,
+						out_clk => cap_clk,
 
 						-- Control interface
 						s_axis_bsb_tdata => top_router_bsb_cmd_tdata(CORR_BASE_PORT),

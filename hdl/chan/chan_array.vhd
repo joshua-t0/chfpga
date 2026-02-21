@@ -118,7 +118,7 @@ entity chan_array is
 		m_axis_prober_tvalid : out std_logic_vector(0 to NUMBER_OF_PROBER_PORTS - 1);
 		m_axis_prober_tlast  : out std_logic_vector(0 to NUMBER_OF_PROBER_PORTS - 1);
 		m_axis_prober_tready : in std_logic_vector(0 to NUMBER_OF_PROBER_PORTS - 1);
-		axis_ucap_clk      : in std_logic                     := '0';
+		axis_cap_clk      : in std_logic                     := '0';
 
 		-- Channelizer BSB Control Interface (on bsb_clk)
 
@@ -633,7 +633,7 @@ begin
 				m_axis_prober_tvalid => chan_prober_tvalid(i),
 				m_axis_prober_tlast  => chan_prober_tlast(i),
 				m_axis_prober_tready => chan_prober_tready(i),
-				axis_prober_clk      => axis_ucap_clk
+				axis_prober_clk      => axis_cap_clk
 			);
 	end generate chan_gen;
 
@@ -734,7 +734,7 @@ begin
 					m_axis_tlast  => m_axis_prober_tlast(0),
 					m_axis_tready => m_axis_prober_tready(0),
 
-					m_axis_clk => axis_ucap_clk,
+					m_axis_clk => axis_cap_clk,
 
 					-- BSB interface
 					s_axis_bsb_tdata  => s_axis_ucap_bsb_tdata,
