@@ -1099,8 +1099,10 @@ begin
 		-- Number of data streams to forward to the BSB master. If we are not using the Ethernet interface, dont have any streams but we create one dummy stream because Vivado 2022.2 synthesis crashes if we set NUMBER_OF_PROBES=0.
 		constant N_PROBES: integer := sel(PHY_TYPE = NONE, 1, NUMBER_OF_PROBES);
 
-	begin
+		signal cap_ready_int: std_logic_vector(0 to N_PROBES - 1);
 
+	begin
+		cap_ready <= cap_ready_int when PHY_TYPE /= NONE; -- we drive te backpressure lines only if we are using the probe data. If not, leave floating so the AXIS probe output merger can manage the buses.  
 		process(all) begin
 			bsb_master_rst <= bsb_rst or bsb_master_reset when rising_edge(bsb_clk);
 		end process;
@@ -1135,10 +1137,10 @@ begin
 				s_axis_rply_tready => bsb_rply_tready,
 
 				-- Data stream input buses
-				s_axis_data_tdata => sel(PHY_TYPE = NONE, (0 =>  X"00"), cap_data(0 to N_PROBES - 1)),
-				s_axis_data_tvalid => sel(PHY_TYPE = NONE, "0", cap_valid(0 to N_PROBES - 1)),
-				s_axis_data_tlast => sel(PHY_TYPE = NONE, "0", cap_last(0 to N_PROBES - 1)),
-				s_axis_data_tready => cap_ready(0 to N_PROBES - 1),
+				s_axis_data_tdata => sel(PHY_TYPE /= NONE, cap_data(0 to N_PROBES - 1), (0 =>  X"00")),
+				s_axis_data_tvalid => sel(PHY_TYPE /= NONE, cap_valid(0 to N_PROBES - 1), "0"),
+				s_axis_data_tlast => sel(PHY_TYPE /= NONE, cap_last(0 to N_PROBES - 1), "0"),
+				s_axis_data_tready => cap_ready_int,
 
 				-- System
 				cmd_packet_counter => cmd_packet_counter,
