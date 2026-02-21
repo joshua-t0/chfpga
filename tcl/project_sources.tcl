@@ -176,6 +176,9 @@ set crs_bd_name "zynq_tcpipe_crs"
 
 set crs_ooc_ip_files $fft_type_chord
 
+set crs_corr8_ip_files []
+
+# For corr32, 64, which need the GTYs for corner turning
 set crs_corr_ip_files [list \
  "CRS/GTY/gtwizard_ultrascale_0.xci" \
  ]
