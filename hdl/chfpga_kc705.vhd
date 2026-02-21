@@ -28,26 +28,37 @@ library UNISIM;
 use UNISIM.VComponents.all;
 
 -- Project libraries
-use work.chFPGA_Package.all; -- Get all component definitions
+use work.chFPGA_Package.all;
+use work.chfpga_config.all;
 
--- This is the _top level_ entity of the CHIME Proof of Concept (PoC) of the theKC705-based data acquisition/channelizer/correlator.
+-- This is the _top level_ entity of the CHIME Proof of Concept (PoC) of the KC705-based data acquisition/channelizer/correlator.
 --
 -- The ports of this top-level entity correspond to physical pins on the Kintex 7 FPGA on that board. The location of these pins are defined in the constraint file.
 entity chFPGA_KC705 is
-	 GENERIC (
-        PLATFORM_ID: INTEGER:= 1; -- identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705
-       UDP_MAC_PRESENT: BOOLEAN :=TRUE; -- Indicates if the Ethernet interface is to be implemented (sets the DYMMY flag on the MAC). Used for debugging only.
-        FMC_IF_PRESENT: BOOLEAN :=TRUE; -- Indicates if the SYSTEM submodule is to be implemented (sets its flag on the MAC). Used for debugging only, as the system would not work without it.
-        BLINKER_PRESENT: BOOLEAN :=TRUE; -- Indicates if the LED flasher is to be implemented by setting the DUMMY flag of the BLINKER module
-        NUMBER_OF_ANTENNAS: INTEGER :=NUMBER_OF_ANTENNAS_MAX; -- Number of antenna processing blocks to be implemented
-        NUMBER_OF_CORRELATORS: INTEGER :=8; -- Number of correlator blocks (CH_DIST+CORR+ACC) to be implemented if IMPLEMENT_CORR=TRUE
-        NUMBER_OF_ANTENNAS_TO_CORRELATE: INTEGER :=8; -- Number of antennas to be correlated for each frequency channel. This is hard coded for now. Determines how many antenna streams are fed to the CORR_BLOCK modules, and how many multipliers to implement in parallel in the CORR module.
+	 generic (
+			PLATFORM_ID: INTEGER                         := PLATFORM_ID_KC705;
 
-        IMPLEMENT_ANT: BoolArray(0 to NUMBER_OF_ANTENNAS_MAX-1):=(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE); -- Selects for which antenna a processing pipeline is implemented
-        IMPLEMENT_FFT: BoolArray(0 to NUMBER_OF_ANTENNAS_MAX-1):=(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE); -- Selects if the FFT block is implemented for each antenna (otherwise the timestream go through directly)
-        IMPLEMENT_CORR: BoolArray(0 to NUMBER_OF_CORRELATORS_MAX-1):=(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE); -- Indicates if the correlator blocks are to be implemented
+			-- Clocking
 
-        -- ADC_INSTANTIATE_PLL determines which ADCDAQ need to instantiate a PLL to provide IOCLK and DIVCLK to ISERDES that are in non-adjacent banks, and to provide a BUFG-buffered global word clock.
+			SYSTEM_CLOCK_SOURCE: clk_source_enum  := SYSCLK;
+			SYSTEM_CLOCK_FREQ: real               := 200.0;
+
+			CHAN_CLK_SOURCE: chan_clk_source_enum := ADC;
+			CHAN_CLK_SOURCE_LANE: integer         := 1;
+			CHAN_CLK_FREQ: real                   := 200.0;
+			CT_CLK_SOURCE: ct_clk_source_enum     := CONFIG_CT_CLK_SOURCE;
+
+			-- BSB interface
+
+			PHY_TYPE: phy_type_enum := GMII;
+
+			-- ADC configuration
+
+			ADC_TYPE: adc_type_enum           := EV8AQ160;
+			NUMBER_OF_ADC_BOARDS: integer     := 1;
+			NUMBER_OF_ADCS: INTEGER           := 8;
+
+       -- ADC_INSTANTIATE_PLL determines which ADCDAQ need to instantiate a PLL to provide IOCLK and DIVCLK to ISERDES that are in non-adjacent banks, and to provide a BUFG-buffered global word clock.
         -- NOTE: A PLL (MMCM) could be used in theory for all data buses, but in practice we would run out of PLLs (there are only 2 per clock region).
         -- NOTE: On the Virtex 6, there is no fast clock routing for the outer IO pads to the PLL. So the use of a PLL is preferably limited to the center IO pads
         ADC_INSTANTIATE_PLL: BoolArray(0 to NUMBER_OF_ANTENNAS_MAX-1):=(FALSE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE);
@@ -65,12 +76,32 @@ entity chFPGA_KC705 is
 			-- CH5: Data and clock all in same bank 12. We use one BUFMR to equalize delays only.
 			-- CH6: Data and clock not in same bank. We use one BUFMR,  and BUFR and BUFIOs in banks 12 and 13 each.
 			-- CH7: Data and clock all in same bank 18. Clock is on a SRCC pin, so we cannot use BUFMR to equalize delays.
-        ANT_CLK_SOURCE: integer :=1; -- Indicate which ADC is the source of the antenna processing clock. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
 
-        SIM: BOOLEAN := FALSE -- Indicates this is running as a simulation. Used to accelerate simulations
+			-- Channelizers
 
-);
-    PORT (
+			NUMBER_OF_CHANNELIZERS: INTEGER     := 8;
+			FFT_TYPE: fft_type_enum             := CONFIG_CHAN_FFT_TYPE;
+
+			-- Corner-turn engine
+
+			CT_TYPE: ct_type_enum               := CONFIG_CT_TYPE;
+			CT_LEVEL: integer                   := CONFIG_CT_LEVEL;
+			NUMBER_OF_CROSSBAR_INPUTS: integer  := NUMBER_OF_CHANNELIZERS;
+			NUMBER_OF_CROSSBAR_OUTPUTS: integer := 8;
+
+			-- Correlator
+
+			NUMBER_OF_CORRELATORS: INTEGER      := CONFIG_NUMBER_OF_CORRELATORS;
+
+			-- Peripherals
+
+			NUMBER_OF_I2C_PORTS: integer := 1;
+			NUMBER_OF_SPI_PORTS: integer := 1;
+			BLINKER_PRESENT: BOOLEAN    := TRUE;
+
+			SIM: BOOLEAN := FALSE
+	 );
+	 PORT (
 			------------------------------------
 			-- SYSTEM
 			------------------------------------
@@ -287,180 +318,147 @@ end chFPGA_KC705;
 
 architecture Behavioral of chFPGA_KC705 is
 
+	signal clk10: std_logic;
+	signal refclk_10mhz: std_logic;
 
--- Attributes used in this module
-
--- ==================================================
--- ========== SIGNALS ==============================
--- ==================================================
+	signal buck_sync_int: std_logic_vector(0 to 15);
 
 
 begin
 
-CHFPGA0: chFPGA
-	GENERIC MAP(
-        PLATFORM_ID => PLATFORM_ID,
-        UDP_MAC_PRESENT=>UDP_MAC_PRESENT,
-        FMC_IF_PRESENT=>FMC_IF_PRESENT,
-        BLINKER_PRESENT=>BLINKER_PRESENT,
 
-        NUMBER_OF_ANTENNAS=>NUMBER_OF_ANTENNAS,
-        NUMBER_OF_CORRELATORS=>NUMBER_OF_CORRELATORS,
-        NUMBER_OF_ANTENNAS_TO_CORRELATE=>NUMBER_OF_ANTENNAS_TO_CORRELATE,
+	-- 10 MHz reference from FMC
+	refclk_ibuf: IBUFGDS
+		generic map (DIFF_TERM => TRUE, IBUF_LOW_PWR => FALSE)
+		port map (I => REFCLK_M2C_P, IB => REFCLK_M2C_N, O => refclk_10mhz);
+	clk10_bufg: BUFG port map (I => refclk_10mhz, O => clk10);
 
-		IMPLEMENT_ANT=>IMPLEMENT_ANT, -- Selects for which antenna a processing pipeline is implemented
-		IMPLEMENT_FFT=>IMPLEMENT_FFT, -- Selects if the FFT block is implemented for each antenna (otherwise the timestream go through directly)
-		IMPLEMENT_CORR=>IMPLEMENT_CORR,
-		ADC_INSTANTIATE_PLL=>ADC_INSTANTIATE_PLL,
-		ADC_USE_EXT_DATA_CLK=>ADC_USE_EXT_DATA_CLK,
-		ADC_INSTANTIATE_BUFMR=>ADC_INSTANTIATE_BUFMR,
-		ANT_CLK_SOURCE=>ANT_CLK_SOURCE,
-		SIM=>SIM
+	-- Vector conversions for single-FMC
+
+	BUCK3V3_SYNC <= buck_sync_int(0);
+	BUCK1V8_SYNC <= buck_sync_int(1);
+
+	chfpga0: entity work.chfpga
+		GENERIC MAP(
+			PLATFORM_ID              => PLATFORM_ID,
+			SYSTEM_CLOCK_SOURCE      => SYSTEM_CLOCK_SOURCE,
+			SYSTEM_CLOCK_FREQ        => SYSTEM_CLOCK_FREQ,
+			CHAN_CLK_SOURCE          => CHAN_CLK_SOURCE,
+			CHAN_CLK_FREQ            => CHAN_CLK_FREQ,
+			CT_CLK_SOURCE            => CT_CLK_SOURCE,
+			BLINKER_PRESENT          => BLINKER_PRESENT,
+			PHY_TYPE                 => PHY_TYPE,
+			ADC_TYPE                 => ADC_TYPE,
+			NUMBER_OF_ADCS           => NUMBER_OF_ADCS,
+			NUMBER_OF_ADC_BOARDS     => NUMBER_OF_ADC_BOARDS,
+			ADC_IS_DIFFERENTIAL      => ADC_IS_DIFFERENTIAL,
+			ADC_PROVIDE_BUFFERED_DIVCLK => ADC_PROVIDE_BUFFERED_DIVCLK,
+			ADC_INSTANTIATE_PLL      => ADC_INSTANTIATE_PLL,
+			ADC_USE_EXT_DATA_CLK     => ADC_USE_EXT_DATA_CLK,
+			ADC_INSTANTIATE_BUFMR    => ADC_INSTANTIATE_BUFMR,
+			CHAN_CLK_SOURCE_LANE     => CHAN_CLK_SOURCE_LANE,
+			NUMBER_OF_CHANNELIZERS   => NUMBER_OF_CHANNELIZERS,
+			FFT_TYPE                 => FFT_TYPE,
+			CT_TYPE                  => CT_TYPE,
+			CT_LEVEL                 => CT_LEVEL,
+			NUMBER_OF_CROSSBAR_INPUTS  => NUMBER_OF_CROSSBAR_INPUTS,
+			NUMBER_OF_CROSSBAR1_OUTPUTS => NUMBER_OF_CROSSBAR_OUTPUTS,
+			CORR_TYPE                => CONFIG_CORR_TYPE,
+			NUMBER_OF_CORRELATORS    => NUMBER_OF_CORRELATORS,
+			CT_LANE_TO_LINK_MAP      => (0 => -1),
+			CT_LINK_TO_QUAD_MAP      => (0 => 0),
+			CT_QUAD_TO_REFCLK_MAP    => (0 => 0),
+			CORR_READOUT_BINS        => CONFIG_CORR_READOUT_BINS,
+			GPU_LINK_TYPE            => CONFIG_GPU_LINK_TYPE,
+			GPU_CHANNEL_QUAD         => (0 => 0),
+			GPU_QUAD_REFCLK          => (0 => 0),
+			NUMBER_OF_I2C_PORTS      => NUMBER_OF_I2C_PORTS,
+			NUMBER_OF_SPI_PORTS      => NUMBER_OF_SPI_PORTS,
+			SIM                     => SIM
 		)
-	PORT MAP(
-		-- System
-		 CPU_RESET => CPU_RESET,
-		 GPIO_BUTTON0 => GPIO_BUTTON0,
-		 GPIO_LED => GPIO_LED,
-		 SYSCLK_P => SYSCLK_P,
-		 SYSCLK_N => SYSCLK_N,
+		PORT MAP(
+			cpu_reset        => cpu_reset,
+			GPIO_BUTTON0     => GPIO_BUTTON0,
+			gpio_led         => gpio_led,
+			GPIO_DIP_SW      => GPIO_DIP_SW,
 
-		 GPIO_DIP_SW => GPIO_DIP_SW,
+			clk10            => clk10,
+			clk10_sel        => open,
+			sysclk_p         => SYSCLK_P,
+			sysclk_n         => SYSCLK_N,
+			sfp_clk_p        => SFPCLK_QO_P,
+			sfp_clk_n        => SFPCLK_QO_N,
+			pll_sync         => open,
 
-		-- LCD
+			LCD_DB           => LCD_DB,
+			LCD_E            => LCD_E,
+			LCD_RS           => LCD_RS,
+			LCD_RW           => LCD_RW,
 
-		LCD_DB => LCD_DB,
-		LCD_E  => LCD_E,
-		LCD_RS => LCD_RS,
-		LCD_RW => LCD_RW,
+			FAN_PWM          => FAN_PWM,
+			FAN_TACH         => FAN_TACH,
 
-		-- PHY
-		 PHY_RXCLK => PHY_RXCLK,
-		 PHY_TXER => PHY_TXER,
-		 PHY_RESET_L => PHY_RESET_L,
-		 PHY_RXCTRL_RXDV => PHY_RXCTRL_RXDV,
-		 PHY_RXD => PHY_RXD,
-		 PHY_TXC_GTXCLK => PHY_TXC_GTXCLK,
-		 PHY_TXCTL_TXEN => PHY_TXCTL_TXEN,
-		 PHY_TXD => PHY_TXD,
-		 PHY_TXCLK => PHY_TXCLK,
+			clk10_out        => USER_SMA_CLOCK_P,
+			user_mux_out     => open,
+			user_mux_in      => (others => '0'),
+			user_mux_oe      => open,
 
-		-- SFP
-		 SFP_LOS => SFP_LOS,
-		 SFPCLK_QO_P => SFPCLK_QO_P,
-		 SFPCLK_QO_N => SFPCLK_QO_N,
-		 SFP_TX_P => SFP_TX_P,
-		 SFP_TX_N => SFP_TX_N,
-		 SFP_RX_P => SFP_RX_P,
-		 SFP_RX_N => SFP_RX_N,
+			phy_rxclk        => PHY_RXCLK,
+			phy_txer         => PHY_TXER,
+			phy_reset_l      => PHY_RESET_L,
+			phy_rxctrl_rxdv  => PHY_RXCTRL_RXDV,
+			phy_rxd          => PHY_RXD,
+			phy_txc_gtxclk   => PHY_TXC_GTXCLK,
+			phy_txctl_txen   => PHY_TXCTL_TXEN,
+			phy_txd          => PHY_TXD,
+			phy_txclk        => PHY_TXCLK,
 
-        -- PMBus (I2C) interface
-		 PMBUS_SCK=>PMBUS_SCK,
-         PMBUS_SDA => PMBUS_SDA,
-
-		-- FMC
-
-		BUCK3V3_SYNC => BUCK3V3_SYNC,
-		BUCK1V8_SYNC => BUCK1V8_SYNC,
-
-		ADC0_AHDP => ADC0_AHDP,
-		ADC0_AHDN => ADC0_AHDN,
-		ADC0_ADRP => ADC0_ADRP,
-		ADC0_ADRN => ADC0_ADRN,
-		ADC0_BHDP => ADC0_BHDP,
-		ADC0_BHDN => ADC0_BHDN,
-		ADC0_BDRP => ADC0_BDRP,
-		ADC0_BDRN => ADC0_BDRN,
-		ADC0_CHDP => ADC0_CHDP,
-		ADC0_CHDN => ADC0_CHDN,
-		ADC0_CDRP => ADC0_CDRP,
-		ADC0_CDRN => ADC0_CDRN,
-		ADC0_DHDP => ADC0_DHDP,
-		ADC0_DHDN => ADC0_DHDN,
-		ADC0_DDRP => ADC0_DDRP,
-		ADC0_DDRN => ADC0_DDRN,
-		ADC1_AHDP => ADC1_AHDP,
-		ADC1_AHDN => ADC1_AHDN,
-		ADC1_ADRP => ADC1_ADRP,
-		ADC1_ADRN => ADC1_ADRN,
-		ADC1_BHDP => ADC1_BHDP,
-		ADC1_BHDN => ADC1_BHDN,
-		ADC1_BDRP => ADC1_BDRP,
-		ADC1_BDRN => ADC1_BDRN,
-		ADC1_CHDP => ADC1_CHDP,
-		ADC1_CHDN => ADC1_CHDN,
-		ADC1_CDRP => ADC1_CDRP,
-		ADC1_CDRN => ADC1_CDRN,
-		ADC1_DHDP => ADC1_DHDP,
-		ADC1_DHDN => ADC1_DHDN,
-		ADC1_DDRP => ADC1_DDRP,
-		ADC1_DDRN => ADC1_DDRN,
-
-		ADC_SYNC_P =>ADC_SYNC_P,
-		ADC_SYNC_N=> ADC_SYNC_N,
-		ADC_RST_N=>ADC_RST_N,
-
-		USER_SMA_GPIO_P=>USER_SMA_GPIO_P, -- 10 MHz reference clock generated by FPGA
-		USER_SMA_GPIO_N=>USER_SMA_GPIO_N,
-		USER_SMA_CLOCK_P=>USER_SMA_CLOCK_P,
-		USER_SMA_CLOCK_N=>USER_SMA_CLOCK_N,
-
-		-- Fan
-		FAN_PWM=> FAN_PWM,
-		FAN_TACH=> FAN_TACH,
-
-		-- SPI
-		SPI_MISO => SPI_MISO,
-		SPI_MOSI => SPI_MOSI,
-		SPI_ADDR => SPI_ADDR,
-		SPI_SCK => SPI_SCK,
-		PLL_LE => PLL_LE,
-		SPI_RST_N=>SPI_RST_N,
-		SPI_RST_N_ALT=>SPI_RST_N_ALT,
-
-		-- FMC I2C signals
-		FMC_I2C_SCK=>I2C_SCK,
-		FMC_I2C_SDA=>I2C_SDA,
-
-		-- System Monitor
+			sfp_tx_p         => SFP_TX_P,
+			sfp_tx_n         => SFP_TX_N,
+			sfp_rx_p         => SFP_RX_P,
+			sfp_rx_n         => SFP_RX_N,
+			sfp_status_vector => open,
+			sfp_mmcm_locked  => open,
+			sfp_reset_done   => open,
+			tx_ready         => open,
 
 
-		-- FMC Reference clock
-		REFCLK_M2C_P => REFCLK_M2C_P,
-		REFCLK_M2C_N => REFCLK_M2C_N
+			adc_data_p       => (ADC0_AHDP, ADC0_BHDP, ADC0_CHDP, ADC0_DHDP, ADC1_AHDP, ADC1_BHDP, ADC1_CHDP, ADC1_DHDP),
+			adc_data_n       => (ADC0_AHDN, ADC0_BHDN, ADC0_CHDN, ADC0_DHDN, ADC1_AHDN, ADC1_BHDN, ADC1_CHDN, ADC1_DHDN),
+			adc_clk_p        => (ADC0_ADRP, ADC0_BDRP, ADC0_CDRP, ADC0_DDRP, ADC1_ADRP, ADC1_BDRP, ADC1_CDRP, ADC1_DDRP),
+			adc_clk_n        => (ADC0_ADRN, ADC0_BDRN, ADC0_CDRN, ADC0_DDRN, ADC1_ADRN, ADC1_BDRN, ADC1_CDRN, ADC1_DDRN),
 
+			ADC_SYNC_P       => (0 => adc_sync_p),
+			ADC_SYNC_N       => (0 => adc_sync_n),
+			ADC_RST_N        => (0 => adc_rst_n),
 
---			------------------------------------
---			-- MGT interface
---			------------------------------------
---			-- MGT Reference Clock 0_112
---		MGT4_CLK_M2C_P=>MGT_REFCLK_P,
---		MGT4_CLK_M2C_N=>MGT_REFCLK_N,
---
---		-- MGT Transceiver 3_112 (SATA4 - Master)
---		MGT4_D_C2M_P=>MGT4_D_C2M_P,
---		MGT4_D_C2M_N=>MGT4_D_C2M_N,
---		MGT4_D_M2C_P=>MGT4_D_M2C_P,
---		MGT4_D_M2C_N=>MGT4_D_M2C_N,
---
---		-- MGT Transceiver 0_112 (SATA7 - Slave)
---		MGT7_D_C2M_P=>MGT7_D_C2M_P,
---		MGT7_D_C2M_N=>MGT7_D_C2M_N,
---		MGT7_D_M2C_P=>MGT7_D_M2C_P,
---		MGT7_D_M2C_N=>MGT7_D_M2C_N,
---
---		MGT6_D_C2M_P=>MGT6_D_C2M_P,
---		MGT6_D_C2M_N=>MGT6_D_C2M_N,
---		MGT6_D_M2C_P=>MGT6_D_M2C_P,
---		MGT6_D_M2C_N=>MGT6_D_M2C_N,
---
---		MGT5_D_C2M_P=>MGT5_D_C2M_P,
---		MGT5_D_C2M_N=>MGT5_D_C2M_N,
---		MGT5_D_M2C_P=>MGT5_D_M2C_P,
---		MGT5_D_M2C_N=>MGT5_D_M2C_N
+			spi_sck          => SPI_SCK,
+			spi_miso         => (0 => SPI_MISO),
+			spi_mosi         => SPI_MOSI,
+			spi_addr         => SPI_ADDR,
+			spi_cs_n         => (0 => PLL_LE),
+			spi_rst_n        => SPI_RST_N,
+			spi_rst_n_alt    => SPI_RST_N_ALT,
+			adc_pll_lock     => (others => '1'), -- No PLL lock input on KC705 FMC
+
+			i2c_scl          => (0 => I2C_SCK),
+			i2c_sda          => (0 => I2C_SDA),
+
+			REFCLK_M2C_P     => (0 => REFCLK_M2C_P),
+			REFCLK_M2C_N     => (0 => REFCLK_M2C_N),
+			mgt_pll_refclk_p => (others => '0'),
+			mgt_pll_refclk_n => (others => '1'),
+
+			buck_sync        => buck_sync_int,
+
+			debug_out        => open,
+			sma_out          => open
 
 
 		);
 
-end Behavioral;
+	USER_SMA_CLOCK_N <= '0'; -- Unused
+	USER_SMA_GPIO_P  <= clk10; -- 10 MHz reference output
+	SFP_LOS          <= '0'; -- Not used
 
+end Behavioral;

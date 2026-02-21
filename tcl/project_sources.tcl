@@ -168,6 +168,41 @@ set ice_corr16_hdl_files [concat $ice_hdl_base_files [list \
 
 
 #*****************************************************************************************
+# KC705 Platform
+#*****************************************************************************************
+
+set kc705_target_part "xc7k325tffg900-2"
+
+set kc705_corr8_ooc_ip_files $fft_type_hirax_3dsp
+set kc705_corr8_ip_files $ice_base_ip_files
+
+set kc705_hdl_base_files [concat $hdl_base_files [list \
+  "chfpga_kc705.vhd" \
+  \
+  "system/spi.vhd" \
+  "system/i2c.vhd" \
+  "system/arm_spi.vhd" \
+  \
+  "chan/prober.vhd" \
+  "chan/adcdaq.vhd" \
+  \
+  "ct/bct_engine.vhd"\
+  \
+  "1G_UDP_MAC/udp_mac_crc32.vhd" \
+  "1G_UDP_MAC/udp_mac_tx.vhd" \
+  "1G_UDP_MAC/udp_mac_rx.vhd" \
+  "1G_UDP_MAC/udp_mac_gmii_to_sgmii.vhd" \
+  "1G_UDP_MAC/udp_mac.vhd" \
+  ]]
+
+set kc705_corr8_hdl_files [concat $kc705_hdl_base_files [list \
+  "corr/UCMAC44_ARRAY.vhd"\
+  "corr/UCORR44.vhd"\
+  "corr/UCORR44_ARRAY.vhd"\
+  ]]
+
+
+#*****************************************************************************************
 # CRS Platform
 #*****************************************************************************************
 
