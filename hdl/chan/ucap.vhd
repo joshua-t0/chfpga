@@ -796,11 +796,7 @@ begin
     -- prog_full requirements: We have to set the full threshold to 16-6 = 12 to make sure that flushing the writes in the pipeline won't overflow the FIFO.
     -- This means the depth of the FIFO should be ~6 + 20 = 26. The FIFO does not work properly in simulation with values not multiples of 16.
     fifo_blk: block
-        signal fifo_din: std_logic_vector(8 downto 0);
         signal fifo_dout: std_logic_vector(8 downto 0);
-        signal fifo_data_valid: std_logic;
-        signal fifo_rd_en: std_logic;
-        signal fifo_rst: std_logic;
     begin
 
 		process(all) begin
@@ -810,15 +806,8 @@ begin
 			end if;
 		end process;
 
-        fifo_rst <= rst or user_reset_reg;
-        fifo_din <= fifo_in_tlast & fifo_in_tdata;
-
         -- Connect FIFO output to output port of this entity
-        m_axis_tdata  <= fifo_dout(7 downto 0);
-        m_axis_tlast  <= fifo_dout(8);
-        m_axis_tvalid <= fifo_data_valid;
-        fifo_rd_en    <= m_axis_tready and fifo_data_valid;
-
+        (m_axis_tlast, m_axis_tdata) <= fifo_dout;
 
         fifo0: entity work.generic_fifo
             generic map (
@@ -832,16 +821,16 @@ begin
             port map (
                 wr_clk      => s_axis_clk,
                 wr_en       => fifo_in_tvalid,
-                din         => fifo_din,
+                din         => (8 => fifo_in_tlast, 7 downto 0 => fifo_in_tdata),
                 prog_full   => fifo_full,
                 overflow    => fifo_overflow,
 				wr_rst_busy => fifo_wr_rst_busy,
                 rd_clk      => m_axis_clk,
-                rd_en       => fifo_rd_en,
+                rd_en       => m_axis_tready and m_axis_tvalid,
                 dout        => fifo_dout,
-                valid       => fifo_data_valid,
+                valid       => m_axis_tvalid,
 				rd_rst_busy => fifo_rd_rst_busy,
-                rst         => fifo_rst
+                rst         => rst or user_reset_reg
             );
     end block;
 
