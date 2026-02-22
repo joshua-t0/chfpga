@@ -31,7 +31,7 @@ use UNISIM.VComponents.all;
 use work.chFPGA_Package.all;
 use work.chfpga_config.all;
 
--- This is the _top level_ entity of the CHIME Proof of Concept (PoC) of the KC705-based data acquisition/channelizer/correlator.
+-- This is the *top level* entity of the CHIME Proof of Concept (PoC) of the KC705-based data acquisition/channelizer/correlator.
 --
 -- The ports of this top-level entity correspond to physical pins on the Kintex 7 FPGA on that board. The location of these pins are defined in the constraint file.
 entity chFPGA_KC705 is

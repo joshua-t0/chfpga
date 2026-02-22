@@ -118,11 +118,11 @@ Blocking buses harder on timing.  Tready cannot be registered unless we introduc
 Loose backpressure
 ------------------
 
-We sometimes stray from the strict AXI-Stream handshaking and use a signal we call `send` instead of TREADY to implement a relaxed form of backpressure that makes the bus easy to pipeline. We don't use the TREADY signal to make it clear the backpresure works differently. 
+We sometimes stray from the strict AXI-Stream handshaking and use a signal we call ``send`` instead of ``TREADY`` to implement a relaxed form of backpressure that makes the bus easy to pipeline. We don't use the ``TREADY`` signal to make it clear the backpresure works differently. 
 
 In this protocol, we expect that both the data and send signals will be pipelined, which means that data won't start flowing immediately when it is asserted. This also means that the data won't stop immediately when deasserted, not until the pipeline has finished flushing. The receiver must therefore accept *any* data that is TVALID, independent of the send signal. This is different from the standard AXI-tream where a trasaction occurs only when both TVALID and TREADY are high in the same clock cycle.
 
-This means that we place an elastic FIFO at the sink and drive ``send`` from its almost-full flag, so the source is told to stop before the FIFO runs out of space. The *almost_full* margin must be as large as the roundtrip latency of the pipeline (`send` pipeline from sink to source plus data pipelining from source to sink) so it can absorb the extra data caused by the pipeline. We often already have to use a FIFO for clock-domain crossing preposes, so that comes for free. 
+This means that we place an elastic FIFO at the sink and drive ``send`` from its almost-full flag, so the source is told to stop before the FIFO runs out of space. The *almost_full* margin must be as large as the roundtrip latency of the pipeline (``send`` pipeline from sink to source plus data pipelining from source to sink) so it can absorb the extra data caused by the pipeline. We often already have to use a FIFO for clock-domain crossing preposes, so that comes for free. 
 
 This approach is used at the output of the channelizer (to allow channel outputs to be aligned) and on the daisy-chained outputs of the correlator.
 
@@ -156,7 +156,7 @@ Handshake rules
 - **TREADY**: The sink may assert or deassert TREADY on any cycle; it can change from cycle to cycle. In practice it is often registered to avoid combinatorial paths from TREADY back to TVALID.
 
 
-.. figure:: ../images/axi_stream_waveform.png
+.. figure:: ./images/axi_stream_waveform.png
     :scale: 22
     :alt: AXI-Stream Interface Waveform
 

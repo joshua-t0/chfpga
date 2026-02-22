@@ -26,7 +26,7 @@ Principle of operations
 Generic parameters
 ------------------
 
-Many, if not most, of the parameters that define the FFT geometry are already defined in the ``FFT_INFO`` structure that is defined in the ``chfpga_package.vhd`` (file: :doc:`../../hdl/chfpga_package.vhd`). The ``FFT_TYPE`` parameter is passed from the configuration file all the way to this FFT entity and is used to select the proper ``FFT_INFO`` entry. From the selected ``FFT_INFO`` entry, the module extracts parameters such as:
+Many, if not most, of the parameters that define the FFT geometry are already defined in the ``FFT_INFO`` structure that is defined in ``chfpga_package.vhd``. The ``FFT_TYPE`` parameter is passed from the configuration file all the way to this FFT entity and is used to select the proper ``FFT_INFO`` entry. From the selected ``FFT_INFO`` entry, the module extracts parameters such as:
 
 - Number of bits per sample (``BITS_PER_SAMPLE``)
 - Samples per word (``SAMPLES_PER_WORD``)

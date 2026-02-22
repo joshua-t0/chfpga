@@ -29,7 +29,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 use work.chfpga_config.all; -- get all configuratoin parameters
 
 ----ENTITY DECLARATION ------------------------------------------------------------------------------
--- This is the _top level_ entity of the CHIME ICEboard-based data acquisition/channelizer/correlator.
+-- This is the *top level* entity of the CHIME ICEboard-based data acquisition/channelizer/correlator.
 -- The ports of this top-level entity correspond to physical pins on the Kintex 7 FPGA on that board. The location of these pins are defined in the constraint file.
 entity chfpga_ice is
 	 generic (

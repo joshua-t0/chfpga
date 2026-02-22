@@ -14,6 +14,7 @@
 .. default-role:: vhdl:entity
 .. parse:: hdl/chan/scaler.vhd
 
+=========
 Schematic
 =========
 

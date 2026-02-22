@@ -9,7 +9,7 @@
 .. default-role:: vhdl:entity
 
 Entity documentation
---------------------
+====================
 
 .. autoentity:: axis_merge
 
@@ -17,13 +17,13 @@ Overview
 ========
 
 :entity:`axis_merge` merges N AXI4-Stream sources into a single output with **one pipeline stage**
-(:entity:`axis_sync_fifo` when :vhdl:gen:`USE_FIFO` is true). Arbitration is **round-robin at packet boundaries** (:vhdl:port:`tlast`).
-Port index range is 0 to :vhdl:gen:`N_PORTS` − 1 (cyclic: port 0 follows port N_PORTS−1).
+(:entity:`axis_sync_fifo` when ``USE_FIFO`` is true). Arbitration is **round-robin at packet boundaries** (``tlast``).
+Port index range is 0 to ``N_PORTS`` − 1 (cyclic: port 0 follows port ``N_PORTS`` − 1).
 
-- **Generics**: :vhdl:gen:`N_PORTS`, :vhdl:gen:`DATA_WIDTH` (default 8), :vhdl:gen:`USE_FIFO` (default true). Same entity works for any port count and bus width.
-- **USE_FIFO=true**: No combinatorial path from :vhdl:port:`m_axis_tready` to any :vhdl:port:`s_axis_tready`; backpressure is broken by the FIFO so timing is easier.
-- **USE_FIFO=false**: Direct connection; combinatorial m_axis_tready→s_axis_tready; 1-cycle latency, 2 dead cycles; for moderate clock rates only.
-- Round-robin is implemented with a double-length vector: concatenate :vhdl:port:`s_axis_tvalid` twice and linear search from :vhdl:signal:`current_port`+1 to pick the first valid port (Case 2 in design notes).
+- **Generics**: ``N_PORTS``, ``DATA_WIDTH`` (default 8), ``USE_FIFO`` (default true). Same entity works for any port count and bus width.
+- **USE_FIFO=true**: No combinatorial path from ``m_axis_tready`` to any ``s_axis_tready``; backpressure is broken by the FIFO so timing is easier.
+- **USE_FIFO=false**: Direct connection; combinatorial ``m_axis_tready``→ ``s_axis_tready``; 1-cycle latency, 2 dead cycles; for moderate clock rates only.
+- Round-robin is implemented with a double-length vector: concatenate ``s_axis_tvalid`` twice and linear search from ``current_port`` + 1 to pick the first valid port (Case 2 in design notes).
 
 Detailed description
 ====================
@@ -32,28 +32,28 @@ Design concerns addressed
 -------------------------
 
 - **Single pipeline stage only**  
-  One :entity:`axis_sync_fifo` sits between the merge mux and :vhdl:port:`m_axis_*` when :vhdl:gen:`USE_FIFO` is true. No extra register stages; the FIFO provides the only buffering and breaks the TREADY comb path.
+  One :entity:`axis_sync_fifo` sits between the merge mux and ``m_axis_*`` when ``USE_FIFO`` is true. No extra register stages; the FIFO provides the only buffering and breaks the TREADY comb path.
 
 - **Purely synchronous arbitration**  
-  Arbitration uses :vhdl:signal:`current_port` and :vhdl:signal:`current_port_active`. Port selection uses a double-length :vhdl:port:`s_axis_tvalid` vector and a linear search. When the last word of a frame is accepted, :vhdl:signal:`current_port_active` is cleared; the next cycle selects the first valid port after the current one (round-robin).
+  Arbitration uses ``current_port`` and ``current_port_active``. Port selection uses a double-length ``s_axis_tvalid`` vector and a linear search. When the last word of a frame is accepted, ``current_port_active`` is cleared; the next cycle selects the first valid port after the current one (round-robin).
 
 Data path and backpressure
 --------------------------
 
-- **Data path**: Selected port (by :vhdl:signal:`current_port`) → N:1 mux → :vhdl:signal:`fifo_tdata` / :vhdl:signal:`fifo_tvalid` / :vhdl:signal:`fifo_tlast` → :entity:`axis_sync_fifo` (or direct to :vhdl:port:`m_axis_*` when USE_FIFO=false) → :vhdl:port:`m_axis_*`.
+- **Data path**: Selected port (by ``current_port``) → N:1 mux → ``fifo_tdata`` / ``fifo_tvalid`` / ``fifo_tlast`` → :entity:`axis_sync_fifo` (or direct to ``m_axis_*`` when ``USE_FIFO=false``) → ``m_axis_*``.
 
-- **TREADY to sources**: :vhdl:port:`s_axis_tready`(i) is driven only when i = :vhdl:signal:`current_port` and :vhdl:signal:`current_port_active`; it forwards the FIFO (or m_axis) ready signal.
+- **TREADY to sources**: ``s_axis_tready``(i) is driven only when i = ``current_port`` and ``current_port_active``; it forwards the FIFO (or m_axis) ready signal.
 
 Resource utilization
 --------------------
 
-A 2-to-1 merge of two 8-bit buses (:vhdl:gen:`N_PORTS` = 2, :vhdl:gen:`DATA_WIDTH` = 8) uses approximately **18 LUTs** and **24 registers** (merge logic plus the internal :entity:`axis_sync_fifo` when USE_FIFO=true). Scale with port count and data width for other configurations.
+A 2-to-1 merge of two 8-bit buses (``N_PORTS`` = 2, ``DATA_WIDTH`` = 8) uses approximately **18 LUTs** and **24 registers** (merge logic plus the internal :entity:`axis_sync_fifo` when ``USE_FIFO=true``). Scale with port count and data width for other configurations.
 
 Dependencies
 ------------
 
-- **chFPGA_Package**: :vhdl:type:`slv_array` for :vhdl:port:`s_axis_tdata` array.
-- **axis_sync_fifo**: Single instantiation when :vhdl:gen:`USE_FIFO` is true; :vhdl:gen:`DATA_WIDTH` is passed through. Project must include both :file:`common/axis_merge.vhd` and :file:`bsb/axis_sync_fifo.vhd` in the same library (e.g. ``work``).
+- **chFPGA_Package**: ``slv_array`` for ``s_axis_tdata`` array.
+- **axis_sync_fifo**: Single instantiation when ``USE_FIFO`` is true; ``DATA_WIDTH`` is passed through. Project must include both :file:`common/axis_merge.vhd` and :file:`bsb/axis_sync_fifo.vhd` in the same library (e.g. ``work``).
 
 Design notes (architecture, decoding variants, trade-offs)
 ----------------------------------------------------------
@@ -86,7 +86,7 @@ We reuse the existing axis_sync_fifo as the skid buffer/register slice when USE_
 implements arbitration logic.
 
 Arbitration logic (decoding variants)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Several options for round-robin port selection:
 

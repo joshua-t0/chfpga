@@ -30,7 +30,7 @@ use UNISIM.VComponents.all;
 use work.chFPGA_Package.all; -- Get all component definitions
 
 
--- This is the _top level_ entity of the CHIME Proof of Concept (PoC) of the the ML605-based data acquisition/channelizer/correlator.
+-- This is the *top level* entity of the CHIME Proof of Concept (PoC) of the the ML605-based data acquisition/channelizer/correlator.
 -- The ports of this top-level entity correspond to physical pins on the Virtex 6 FPGA on that board. The location of these pins are defined in the constraint file.
 entity chFPGA_ML605 is
 	 GENERIC (

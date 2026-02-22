@@ -17,8 +17,8 @@ The `chan_array` entity contains the ADC data acquisition blocks and channelizer
 
 **Note**: The following remain in `chfpga`:
 
-- Channelizer clock generation (`chan_clk_gen`) - stays in chfpga for top-level clock coordination
-- Channel output alignment logic (`chan_align_blk`) - stays in chfpga as it coordinates with corner-turn engine
+- Channelizer clock generation (``chan_clk_gen``) - stays in chfpga for top-level clock coordination
+- Channel output alignment logic (``chan_align_blk``) - stays in chfpga as it coordinates with corner-turn engine
 
 Entity documentation
 ====================
