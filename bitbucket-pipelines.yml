@@ -6,12 +6,19 @@
 image: python:3.8
 clone:
   lfs: true
+definitions:
+  caches:
+    - pip: ~/.cache/pip
+    - venv: .venv
 pipelines:
   default:
     - step:
         caches:
           - pip
+          - venv
         script: # Modify the commands below to build your repository.
+          - python -m venv .venv
+          - source .venv/bin/activate
           - DOC_PUBLISH_FOLDER='chfpga/'$BITBUCKET_BRANCH
           - cd docs
           - pip install -e .
