@@ -30,7 +30,7 @@ pipelines:
           - ls -al build
           - cp -r build/html/* www/$DOC_PUBLISH_FOLDER/
           - cd www/chfpga
-          - rm -f latest
+          - rm -rf latest
           - mkdir -p latest
           - |
             cat > latest/index.html <<REDIRECT_EOF
@@ -57,7 +57,7 @@ pipelines:
               git reset HEAD .
               git pull origin master
               git checkout -- chfpga/latest/ || true
-              rm -f chfpga/latest
+              rm -rf chfpga/latest
               mkdir -p chfpga/latest
               cat > chfpga/latest/index.html <<REDIRECT_EOF
             <!DOCTYPE html>
