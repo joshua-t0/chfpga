@@ -23,14 +23,29 @@ pipelines:
           - ls -al build
           - cp -r build/html/* www/$DOC_PUBLISH_FOLDER/
           - cd www/chfpga
-          - ln -sfn $BITBUCKET_BRANCH latest
+          - mkdir -p latest
+          - |
+            cat > latest/index.html <<REDIRECT_EOF
+            <!DOCTYPE html>
+            <html> <head>
+              <meta http-equiv="refresh" content="0; url=../$BITBUCKET_BRANCH/">
+              <link rel="canonical" href="../$BITBUCKET_BRANCH/">
+            </head> <body>
+              <p>Redirecting to <a href="../$BITBUCKET_BRANCH/">latest documentation</a>...</p>
+            </body> </html>
+            REDIRECT_EOF
           - cd ../..
           - cd www
           - git config --global user.email "bb-pipelines@jfciche.com"
           - git config --global user.name "BitBucket Pipelines"
-          - git add $DOC_PUBLISH_FOLDER chfpga/latest
+          - git add $DOC_PUBLISH_FOLDER chfpga/latest/
           - git diff-index --quiet HEAD -- || git commit -m "Auto update of $DOC_PUBLISH_FOLDER documentation"
-          - git push
+          - |
+            for i in 1 2 3 4 5; do
+              git pull --rebase origin master && git push && break
+              echo "Push failed, retrying in ${i}0 seconds..."
+              sleep ${i}0
+            done
 
         concurrency: # Make sure multiple pipelines are not run at the same time (repo lock collision)
           group: docs-deploy
