@@ -23,6 +23,7 @@ pipelines:
           - ls -al build
           - cp -r build/html/* www/$DOC_PUBLISH_FOLDER/
           - cd www/chfpga
+          - rm -f latest
           - mkdir -p latest
           - |
             cat > latest/index.html <<REDIRECT_EOF
@@ -36,7 +37,7 @@ pipelines:
             REDIRECT_EOF
           - cd ../..
           - cd www
-          - git config --global user.email "bb-pipelines@jfciche.com"
+          - git config --global user.email "bb-pipelines@jfcliche.com"
           - git config --global user.name "BitBucket Pipelines"
           - git add $DOC_PUBLISH_FOLDER chfpga/latest/
           - git diff-index --quiet HEAD -- || git commit -m "Auto update of $DOC_PUBLISH_FOLDER documentation"
