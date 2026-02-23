@@ -24,9 +24,9 @@ package chfpga_config is
 	constant CONFIG_CT_CLK_SOURCE: ct_clk_source_enum := BP_SHUFFLE_TXCLK; -- "CORR_CLK" for corr config
 
 	constant CONFIG_NUMBER_OF_CROSSBAR_OUTPUTS: integer := 16 ; -- 8 on corr config
-	constant CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer := 16; -- 0 for corr config
-	constant CONFIG_NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer := 8; -- o for corr config
-	constant CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS: integer := 19; -- 0 for corr config
+	-- constant CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer := 16; -- 0 for corr config
+	-- constant CONFIG_NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer := 8; -- o for corr config
+	-- constant CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS: integer := 19; -- 0 for corr config
 	--constant CONFIG_NUMBER_OF_GPU_LINKS: integer := 8; -- 0 for corr config
 
 	-- Correlator config

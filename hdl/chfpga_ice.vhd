@@ -115,8 +115,6 @@ entity chfpga_ice is
 			NUMBER_OF_CROSSBAR_OUTPUTS: integer          := 8; -- (Typ. =16): Number of repacked data streams to feed to the corrleator or GPU links
 			NUMBER_OF_CORRELATORS: INTEGER               := CONFIG_NUMBER_OF_CORRELATORS; -- (0-NUMBER_OF_REORDER_OUTPUTS) Number of correlator blocks (CH_DIST+CORR+ACC) to be implemented if IMPLEMENT_CORR=TRUE
 			--NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER := GLOBAL_NUMBER_OF_CHANNELIZERS_TO_CORRELATE; -- (3 - NUMBER_OF_CHANNELIZERS) Number of channelizers outputs to be correlated for each frequency channel. This is hard coded for now. Determines how many channelizer streams are fed to the CORR_BLOCK modules, and how many multipliers to implement in parallel in the CORR module.
-			NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := 0;
-			NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := 0;
 			BP_SHUFFLE_LANE_MAP: integer_array            := ( -- Associate the concatenated BP PCB and QUAD lanes to GTX links. -1 means a bypass lane.
 			                                                -- Backplane PCB Lanes
 			                                                 0=>-1, -- Bypass lane
