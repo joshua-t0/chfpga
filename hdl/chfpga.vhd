@@ -176,7 +176,7 @@ entity chfpga is
 
 		-- Computed CT Engine parameters
 		NUMBER_OF_CT_LINKS: integer      := CT_LINK_TO_QUAD_MAP'LENGTH; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
-		NUMBER_OF_CT_REFCLKS: integer    := max(CT_QUAD_TO_REFCLK_MAP) + 1;
+		NUMBER_OF_CT_REFCLKS: integer    := sel(CT_QUAD_TO_REFCLK_MAP'LENGTH > 0, max(CT_QUAD_TO_REFCLK_MAP) + 1, 0);
 
 		SIM: boolean := FALSE -- Indicates this is running as a simulation. Used to accelerate simulations
 	);

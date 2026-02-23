@@ -69,8 +69,8 @@ entity bct_engine is
 		--    OUTPUT_LANE_WIDTH: integer           := OUTPUT_WORD_WIDTH/;
 		--    NUMBER_OF_OUTPUT_LANES: integer      := 8; -- Number of output streams
 		OUTPUT_WORD_WIDTH: integer           := INPUT_WORD_WIDTH * BITS_PER_OUTPUT_BIN / BITS_PER_INPUT_BIN;  -- The CT preserves the data rate unless bits/bin is modified
-		NUMBER_OF_LINKS: integer             := max(LANE_TO_LINK_MAP) + 1; --  Number of physical data links (GTYs) - Do not override
-		NUMBER_OF_REFCLK: integer            := max(QUAD_TO_REFCLK_MAP) + 1; -- Number of reference clocks - Do not override
+		NUMBER_OF_LINKS: integer             := LINK_TO_QUAD_MAP'LENGTH; --  Number of physical data links (GTYs) - Do not override
+		NUMBER_OF_REFCLK: integer            := sel(QUAD_TO_REFCLK_MAP'LENGTH > 0, max(QUAD_TO_REFCLK_MAP) + 1, 0); -- Number of reference clocks - Do not override
 		NUMBER_OF_CROSSBAR1_OUTPUTS: integer := 16;
 		BP_LINK_SPEED: integer               := 0 -- 0: 7.5 Gb/s (txclk_out=244 MHz), 1: 10 Gb/s (txclk_out=322 MHz)
 	-- WORDS_PER_BIN_MAX: integer :=4; -- Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 16 words.
