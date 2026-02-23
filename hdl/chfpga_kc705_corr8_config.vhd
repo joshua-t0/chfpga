@@ -19,9 +19,9 @@ package chfpga_config is
 	constant CONFIG_CT_CLK_SOURCE: ct_clk_source_enum := ADC_CLK; -- Use the ADC clock directly. At CT_LEVEL=1, we don't need packet overheads
 
 	constant CONFIG_NUMBER_OF_CROSSBAR_OUTPUTS: integer := 8; -- matches the number of correlators
-	constant CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer := 0;
-	constant CONFIG_NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer := 0;
-	constant CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS: integer := 0;
+	-- constant CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer := 0;
+	-- constant CONFIG_NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer := 0;
+	-- constant CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS: integer := 0;
 
 	-- Correlator config
 
