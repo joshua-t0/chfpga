@@ -41,7 +41,7 @@ entity bct_engine is
 		PLATFORM_ID: integer; -- necessary to select the proper FIFOs
 		NUMBER_OF_INPUT_LANES: integer := 16; -- Number of channelizer inputs
 		BINS_PER_INPUT_WORD: integer   := 2;
-		BITS_PER_INPUT_BIN: integer    := 8 + 8;
+		BITS_PER_INPUT_BIN: integer    := 8 + 8; -- BCT has double the resolution, but 8+8 bits are used for bypass mode only. Non-bypass uses 4+4 bits. 
 
 		INPUT_LANE_WIDTH: integer := BINS_PER_INPUT_WORD * BITS_PER_INPUT_BIN; -- width of the scaler output word
 

@@ -742,8 +742,11 @@ architecture impl of chFPGA is
 
 	attribute equivalent_register_removal of chan_out_tdata, chan_out_tuser, chan_out_tvalid, chan_out_tlast: signal is "no";
 	attribute shreg_extract of chan_out_tdata, chan_out_tuser, chan_out_tvalid, chan_out_tlast: signal is "no";
+	
+	constant CT_OUT_BITS_PER_BIN: integer := 4 + 4;
+	constant CT_OUT_WIDTH: integer := FFT_INFO(FFT_TYPE).BINS_PER_WORD * CT_OUT_BITS_PER_BIN * NUMBER_OF_CHANNELIZERS; -- 
 
-	signal ct_out_tdata: std_logic_vector(8 * 32 - 1 downto 0); -- TODO: parametrize this, even if this is mostly fixed for the platform
+	signal ct_out_tdata: std_logic_vector(CT_OUT_WIDTH - 1 downto 0); -- TODO: parametrize this, even if this is mostly fixed for the platform
 	signal ct_out_tvalid: std_logic;
 	signal ct_out_tlast: std_logic;
 	attribute shreg_extract of ct_out_tdata, ct_out_tvalid, ct_out_tlast: signal is "no";
@@ -2013,6 +2016,7 @@ begin
                 ct0: entity work.bct_engine
                     generic map (
                         PLATFORM_ID => PLATFORM_ID,
+						-- BCT Assumes 8+8 bits per input bins 4+4 bits per output bins
                         NUMBER_OF_INPUT_LANES => NUMBER_OF_CHANNELIZERS, -- Number of channelizer inputs
                         CT_LEVEL => CT_LEVEL, -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
                         LANE_TO_LINK_MAP => integer_array(CT_LANE_TO_LINK_MAP), -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
@@ -2067,22 +2071,14 @@ begin
                     generic map (
                         PLATFORM_ID => PLATFORM_ID,
                         NUMBER_OF_INPUT_LANES => NUMBER_OF_CHANNELIZERS, -- Number of channelizer inputs
-                        CT_LEVEL => CT_LEVEL, -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
+
+						-- Corner-turning level: 1: single-board (local) only (no backplane), 2: Level 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Level 2 + additional 2x2 corner-turn between 2 sub-backplanes (8 boards)
+						CT_LEVEL => CT_LEVEL, 
 
 						LANE_TO_LINK_MAP => CT_LANE_TO_LINK_MAP,
 						LINK_TO_QUAD_MAP => CT_LINK_TO_QUAD_MAP,
 						QUAD_TO_REFCLK_MAP => CT_QUAD_TO_REFCLK_MAP
-
-                    -- Parameters to be re-introduced from the top level
-                    -- LANE_TO_LINK_MAP: integer_array  := (-1,0,1,2); -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
-                    -- LINK_TO_QUAD_MAP: integer_array  := (0,1,1); -- Indicates which quad is associated to each GTY link.
-                    -- QUAD_TO_REFCLK_MAP: integer_array:= (0,0); -- Indicates which refclk is associated with each QUAD
-                    -- NUMBER_OF_OUTPUT_LANES: integer := 8; -- Number of output streams
-                    -- WORDS_PER_BIN_MAX: integer :=4; -- Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 16 words.
-                    -- BINS_PER_FRAME_MAX: integer :=64; -- Maximum number of bins per frame
-                    -- BIN_SEL_FIFO_TYPE_MAP: integer_16xN_array := (0 to 15 => (0 to 3=> 0, others => 0)); -- 0= Block RAM., 1=Dist RAM. By default, for every BIN_SEL, 10 FIFOS are made of BRAM and the rest is made of distributed RAM to maximize area utilization efficiency
-                    -- SHUFFLE_FLAGS_MASK: slv32 -- Mask to apply to the shuffle flags to count packet errors
-                    )
+                )
                     port map (
                         -- Non-blocking input stream from the channelizer, synchronous to `clk`
                         s_axis_tdata => ct_in2_tdata,
@@ -2471,7 +2467,7 @@ begin
 
 				constant NBINS_PER_CORR: integer := FFT_INFO(FFT_TYPE).SAMPLES_PER_FRAME / 2 / NBOARDS / NCORR;
 
-				signal corr_in_tdata: std_logic_vector(255 downto 0);
+				signal corr_in_tdata: std_logic_vector(CT_OUT_WIDTH-1 downto 0);
 				signal corr_in_tvalid: std_logic;
 				signal corr_in_tlast: std_logic;
 				attribute shreg_extract of corr_in_tdata, corr_in_tvalid, corr_in_tlast: signal is "no";
@@ -2490,6 +2486,7 @@ begin
 				ucorr44_array0: entity work.ucorr44_array
 					generic map (
 						PLATFORM_ID           => PLATFORM_ID, -- needed to determine the RPM spacing of the DSP and BRAM elements and choose the right primitives
+                        INPUT_WIDTH => CT_OUT_WIDTH,
 						NCHAN                 => NCHAN,
 						NCORR                 => NCORR, -- equals to the number of bins per input word
 						NBINS_PER_CORR        => NBINS_PER_CORR,
