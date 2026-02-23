@@ -1145,7 +1145,7 @@ begin
 				SRC_INPUT_REG => 0
 			)
 			port map (
-				src_clk  => '0',
+				src_clk  => clk10, -- source clock provided (even with SRC_INPUT_REG=0) so XPM can generate proper max-delay timing constraints
 				src_in   => ts_sample_refclk_trig_in,
 				dest_clk => clk200,
 				dest_out => ts_sample_refclk_trig_in_resync
@@ -1158,7 +1158,7 @@ begin
 				SRC_INPUT_REG => 0
 			)
 			port map (
-				src_clk  => '0',
+				src_clk  => event_ctr_clk, -- source clock provided so XPM can generate proper max-delay timing constraints
 				src_in   => ts_sample_event_trig_in,
 				dest_clk => clk200,
 				dest_out => ts_sample_event_trig_in_resync
@@ -1215,7 +1215,7 @@ begin
 				SRC_INPUT_REG => 0
 			)
 			port map (
-				src_clk  => '0',
+				src_clk  => clk200, -- source clock provided so XPM can generate proper max-delay timing constraints
 				src_in   => ts_sample_event_trig_out,
 				dest_clk => event_ctr_clk,
 				dest_out => ts_sample_event_trig_out_resync
@@ -1306,7 +1306,7 @@ begin
 				SRC_INPUT_REG => 0
 			)
 			port map (
-				src_clk  => '0',
+				src_clk  => bsb_clk, -- source clock provided (even with SRC_INPUT_REG=0) so XPM can generate proper max-delay timing constraints
 				src_in   => manual_refclk_sample_trig,
 				dest_clk => clk10,
 				dest_out => manual_refclk_sample_trig_resync
@@ -1317,7 +1317,7 @@ begin
 				SRC_INPUT_REG => 0
 			)
 			port map (
-				src_clk  => '0',
+				src_clk  => clk200, -- source clock provided so XPM can generate proper max-delay timing constraints
 				src_in   => ts_sample_refclk_trig_out,
 				dest_clk => clk10,
 				dest_out => ts_sample_refclk_trig_out_resync
