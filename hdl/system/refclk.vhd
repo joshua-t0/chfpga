@@ -94,7 +94,7 @@ entity refclk is
 		------------------------------------------------------------------------
 		-- Clock-encoded sync signal (if IMPLEMENT_CLOCK_ENCODED_SYNC is TRUE)
 		------------------------------------------------------------------------
-		clk10_out: out std_logic; -- Generated clock that is pulse-width modulated to encode a sync on a 0-to-1 transition of the user_sync user-controlled signal
+		clk10_out: out std_logic; -- If IMPLEMENT_CLOCK_ENCODED_SYNC is TRUE, Generated clock that is pulse-width modulated to encode a sync on a 0-to-1 transition of the user_sync user-controlled signal. If FALSE, the IDELAYed BUFG-buffered FMC reference clock from FMC 0 is outputted.
 		sync_out: out std_logic; -- registered version of the user_sync user-controlled signal that is used to generate cock-encoded sync signals
 
 
@@ -349,7 +349,7 @@ begin
 
     else generate
         recovered_sync <= '0';  -- make sure the net is driven to prevent warnings
-        clk10_out <= '0';
+        clk10_out <= fmc_refclk(0); -- IDELAYed BUFG-buffered FMC reference clock from FMC 0
 	end generate encodedsync_gen; -- if IMPLEMENT_CLOCK_ENCODED_SYNC
 
 	-- Pass the user-controlled sync signal to the output after resynchronizing it to clk10
@@ -454,43 +454,39 @@ begin
 
 		refclk_bufg_gen: case FPGA_SERIES generate
 
-			when v6_case: FPGA_VIRTEX6 =>
-				signal fmc_refclk_bufr: std_logic;
-			begin
-				-- ML605/ Virtex 6 notes:
-				-- Instantiate a BUFR to help route the Reference Clock to the BUFG
-				-- We cannot use a BUFR in the same bank to distribute REFCLK since all the BUFR are used by the ADC channels.
-				-- Consequently, we route to a BUFR 2 banks above, then to the BUFG.
-				-- We could route directly to a BUFG but the path is less clean.
+		when bufr_case: FPGA_VIRTEX6 | FPGA_KINTEX7 =>
+			signal fmc_refclk_bufr: std_logic;
+		begin
+			-- Virtex-6 and Kintex-7:
+			-- The REFCLK pin is not necessarily a CCIO pin (e.g. AE23 on KC705 is SRCC),
+			-- so there is no dedicated silicon route from the IDELAYE2 output directly to
+			-- a BUFG input. A BUFR in bypass mode provides the required regional-clock hop
+			-- that allows the BUFG to accept the signal without CLOCK_DEDICATED_ROUTE FALSE.
+			fmcbufr0: BUFR
+				generic map (
+					BUFR_DIVIDE => "BYPASS",
+					SIM_DEVICE  => "7SERIES"
+				)
+				port map (
+					i   => fmc_refclk_dly,
+					o   => fmc_refclk_bufr,
+					ce  => '1',
+					clr => '0'
+				);
+			fmcbufg0: BUFG
+				port map (
+					i => fmc_refclk_bufr,
+					o => fmc_refclk(i)
+				);
+		end bufr_case;
 
-				fmcbufr0: BUFR
-					generic map (
-						BUFR_DIVIDE => "BYPASS", --  ("BYPASS", "1", "2", "3", "4", "5", "6", "7", "8")
-						SIM_DEVICE  => "7SERIES"
-					) -- Specify target device, "VIRTEX4", "VIRTEX5", "VIRTEX6"
-					port map (
-						i   => fmc_refclk_dly, -- Clock buffer input
-						o   => fmc_refclk_bufr, -- Clock buffer output
-						ce  => '1', -- Clock enable input
-						clr => '0' -- Clock buffer reset input
-					);
-				-- Instantiate the BUFG that distribute the Refrence Clock through the design
-				-- Among other things, that clock is used by the ADCDAQ module to sample the ADC clock using a IDDR
-
-				fmcbufg0: BUFG
-					port map (
-						i => fmc_refclk_bufr,
-						o => fmc_refclk(i) -- 1-bit Clock Output pin
-					);
-			end v6_case;
-
-			when others=>
-				-- Kintex 7 and Ultrascale(+) do not need a BUFR
-				fmcbufg0: BUFG
-					port map (
-						i => fmc_refclk_dly,
-						o => fmc_refclk(i) -- 1-bit Clock Output pin
-					);
+		when others=>
+			-- Ultrascale(+): no BUFR needed; direct BUFG from IDELAY
+			fmcbufg0: BUFG
+				port map (
+					i => fmc_refclk_dly,
+					o => fmc_refclk(i)
+				);
 
 		--   -- We might have used the BUFH in the past
 		--   FMCBUFH0 : BUFH
