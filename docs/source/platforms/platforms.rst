@@ -8,6 +8,7 @@ Platform wrappers
    :maxdepth: 2
 
    iceboard/iceboard
+   kc705/KC705
    CRS/CRS
    ZCU111/ZCU111
    bit_widths
