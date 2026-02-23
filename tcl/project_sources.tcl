@@ -174,7 +174,11 @@ set ice_corr16_hdl_files [concat $ice_hdl_base_files [list \
 set kc705_target_part "xc7k325tffg900-2"
 
 set kc705_corr8_ooc_ip_files $fft_type_hirax_3dsp
-set kc705_corr8_ip_files $ice_base_ip_files
+set kc705_corr8_ip_files [list \
+  "KC705/ADCDAQ_FIFO/ADCDAQ_FIFO.xci" \
+  "KC705/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci" \
+  "KC705/UDP_MAC_TX_DATA_FIFO/udp_mac_tx_data_fifo.xci" \
+]
 
 set kc705_hdl_base_files [concat $hdl_base_files [list \
   "chfpga_kc705.vhd" \
@@ -191,7 +195,6 @@ set kc705_hdl_base_files [concat $hdl_base_files [list \
   "1G_UDP_MAC/udp_mac_crc32.vhd" \
   "1G_UDP_MAC/udp_mac_tx.vhd" \
   "1G_UDP_MAC/udp_mac_rx.vhd" \
-  "1G_UDP_MAC/udp_mac_gmii_to_sgmii.vhd" \
   "1G_UDP_MAC/udp_mac.vhd" \
   ]]
 
