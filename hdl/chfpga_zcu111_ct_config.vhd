@@ -5,36 +5,35 @@ library work;
 use work.chFPGA_package.all;
 
 package chfpga_config is
-	constant CONFIG_PLATFORM_ID: integer := PLATFORM_ID_ZCU111;
+	-- constant CONFIG_PLATFORM_ID: integer := PLATFORM_ID_ZCU111;
 
 	constant CONFIG_NUMBER_OF_ADCS: integer := 8; -- Number of ADC inputs that are connected
 
-	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean := TRUE;
-	constant CONFIG_CHAN_FFT_TYPE: integer := FFT_TYPE_CHORD; -- 14 bit samples, 8 samples/word, 16384 samples/frame, 32+32 bit output
-	constant CONFIG_CHAN_CAPTURE_TYPE: string := "URAM";
-	--constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer := 2;
-	constant CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS: boolean:= FALSE;
-	constant CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := 8; -- only implement one channelizer with an FFT for now
-	--constant CONFIG_CAPTURE_BITS_PER_WORD: integer := sel(CONFIG_CHAN_CAPTURE_TYPE="URAM", 128, 32);
+	-- F-Engine/channelizer configuration
 
-    -- Corner-turn engine configuration
-    constant CONFIG_CROSSBAR1_TYPE: string                       := "URAM"; -- "BRAM" or "URAM"
-	constant CONFIG_NUMBER_OF_CROSSBAR_INPUTS: integer           := CONFIG_NUMBER_OF_ADCS; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
-	constant CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS: integer         := 8; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
-	constant CONFIG_NUMBER_OF_CORRELATORS: integer               := 0; -- Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
-	constant CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := 0;
-	constant CONFIG_NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := 0;
-	constant CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS: integer          := 0; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
-	constant CONFIG_NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := 0;
+	constant CONFIG_CHAN_IMPLEMENT_FFT: boolean               := TRUE;
+	constant CONFIG_CHAN_FFT_TYPE: fft_type_enum              := CHORD; -- 14 bit samples, 8 samples/word, 16384 samples/frame, 32+32 bit output
+	constant CONFIG_CHAN_CAPTURE_TYPE: chan_capture_type_enum := UCAP;
+	constant CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS: boolean   := FALSE;
+	constant CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := 8;
 
-    constant CONFIG_CORR_TYPE: string                            := "NONE";
---	constant CONFIG_NUMBER_OF_CORRELATORS: integer               := 4; -- Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
+	-- Corner-turn engine configuration (single board, no backplane shuffle)
 
-    -- 10/100G Ethernet Real-time data offload links configuration
-    constant CONFIG_GPU_LINK_TYPE: string:= "100GE";
-	constant CONFIG_NUMBER_OF_GPU_LINKS: integer                 := 4; -- (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
-	constant CONFIG_NUMBER_OF_GPU_REFCLKS: integer               := 1; -- Number of Reference clocks provided for the 10GE links to the GPU
+	constant CONFIG_CT_TYPE: ct_type_enum             := UCT;
+	constant CONFIG_CT_LEVEL: integer                  := 1;
+	constant CONFIG_CT_CLK_SOURCE: ct_clk_source_enum  := ADC_CLK;
+	constant CONFIG_CT_LANE_TO_LINK_MAP: integer_array := (0 => -1); -- single bypass lane
 
+	-- Correlator config (none in this config)
 
+	constant CONFIG_NUMBER_OF_CORRELATORS: integer     := 0;
+	constant CONFIG_CORR_TYPE: corr_type_enum          := NONE;
+	constant CONFIG_CORR_READOUT_BINS: integer_array(0 to 0) := (0 => 0);
+
+	-- 10/100G Ethernet Real-time data offload links configuration
+
+	constant CONFIG_GPU_LINK_TYPE: gpu_link_type_enum := CGE;
+	constant CONFIG_GPU_CHANNEL_QUAD: integer_array   := (0 to 3 => 0); -- single quad for 100G
+	constant CONFIG_GPU_QUAD_REFCLK: integer_array    := (0 => 0);
 
 end chfpga_config;
