@@ -50,7 +50,8 @@ entity chFPGA_KC705 is
 
 			-- BSB interface
 
-			BSB_TYPE: bsb_type_enum := UDP_GMII;
+			BSB_INTERFACE: bsb_interface_enum := UDP_GMII;
+		CAP_INTERFACE: cap_interface_enum := BSB;
 
 			-- ADC configuration
 
@@ -178,7 +179,7 @@ entity chFPGA_KC705 is
 			------------------------------------
 			-- KC705 SFP (Gbit Ethernet)
 			------------------------------------
-            -- Use Only if BSB_TYPE = UDP_SGMII is enabled, otherwise comment out
+            -- Use Only if BSB_INTERFACE = UDP_SGMII is enabled, otherwise comment out
 			-- SFP signals to be conencted to pins according to the UCF
 
 			sfp_los: out std_logic; -- SFP Loss of Signal flag
@@ -365,7 +366,8 @@ begin
 			CHAN_CLK_FREQ            => CHAN_CLK_FREQ,
 			CT_CLK_SOURCE            => CT_CLK_SOURCE,
 			BLINKER_PRESENT          => BLINKER_PRESENT,
-			BSB_TYPE                 => BSB_TYPE,
+			BSB_INTERFACE            => BSB_INTERFACE,
+		CAP_INTERFACE            => CAP_INTERFACE,
 			ADC_TYPE                 => ADC_TYPE,
 			NUMBER_OF_ADCS           => NUMBER_OF_ADCS,
 			NUMBER_OF_ADC_BOARDS     => NUMBER_OF_ADC_BOARDS,

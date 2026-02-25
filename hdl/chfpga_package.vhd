@@ -151,7 +151,8 @@ type ii_map_item is record -- integer-integer map element
 end record;
 type ii_map is array (NATURAL RANGE <>) of ii_map_item; -- string-integer map as a list of string-integer tuples
 
---type ADCOut is array (0 to 7) of STD_LOGIC_VECTOR(31 downto 0); -- 8 64-bit words provided by the two ADCs ;
+
+constant NULL_INTEGER_ARRAY: integer_array(1 to 0) := (others => 0);
 
 
 -- Platform IDs
@@ -279,11 +280,14 @@ type clk_source_enum is (
 	);
 
 -- BSB Monitor & control interface type
-type bsb_type_enum is (UDP_GMII, UDP_SGMII, AXIS);
+type bsb_interface_enum is (UDP_GMII, UDP_SGMII, AXIS);
+
+-- Capture bus interface type
+type cap_interface_enum is (BSB, AXIS);
 
 -- PHY type (1G Ethernet interface)
 type phy_type_enum is (GMII, SGMII); 
-type bsb_to_phy_map_type is array (bsb_type_enum) of phy_type_enum; -- convverts bsb_type_enum to phy_type_enum
+type bsb_to_phy_map_type is array (bsb_interface_enum range <>) of phy_type_enum; -- converts bsb_interface_enum to phy_type_enum
 type phy_clk_source_enum is (REFCLK);
 type adc_type_enum IS (EV8AQ160, AXIS);
 
@@ -675,7 +679,7 @@ function sel(b: BOOLEAN; if_true: std_logic_vector; if_false: std_logic_vector) 
 function sel(b: BOOLEAN; if_true: slv_array; if_false: slv_array) return slv_array;
 function sel(b: BOOLEAN; if_true: slv32_array; if_false: slv32_array) return slv32_array;
 function sel(b: std_logic; if_true: std_logic_vector; if_false: std_logic_vector) return std_logic_vector;
-function sel(key: bsb_type_enum; dict: bsb_to_phy_map_type) return phy_type_enum;
+function sel(key: bsb_interface_enum; dict: bsb_to_phy_map_type) return phy_type_enum;
 function sel(key:string; imap: si_map) return integer;
 function sel(key:integer; imap: ii_map) return integer;
 
@@ -1314,7 +1318,7 @@ begin
 	end if;
 end sel;
 
-function sel(key: bsb_type_enum; dict: bsb_to_phy_map_type) return phy_type_enum is
+function sel(key: bsb_interface_enum; dict: bsb_to_phy_map_type) return phy_type_enum is
 begin
 	return dict(key);
 end;

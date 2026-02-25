@@ -41,7 +41,8 @@ entity chfpga_zcu111 is
 		BUCK_CLK_DIVIDE_FACTOR: integer           := 12;
 
 
-		BSB_TYPE: bsb_type_enum                   := AXIS;     -- Ethernet provided by the PS
+		BSB_INTERFACE: bsb_interface_enum         := AXIS;     -- Ethernet provided by the PS
+		CAP_INTERFACE: cap_interface_enum         := AXIS;
 		SGMII_CLOCK_SOURCE: phy_clk_source_enum   := REFCLK;
 
 		-- ADC config
@@ -327,14 +328,15 @@ begin
 			CHAN_CLK_SOURCE     => CHAN_CLK_SOURCE,
 			CT_CLK_SOURCE       => CT_CLK_SOURCE,
 
-			BSB_TYPE       => BSB_TYPE,
-			ADC_TYPE       => ADC_TYPE,
-			NUMBER_OF_ADCS => NUMBER_OF_ADCS,
+		BSB_INTERFACE  => BSB_INTERFACE,
+		CAP_INTERFACE  => CAP_INTERFACE,
+		ADC_TYPE       => ADC_TYPE,
+		NUMBER_OF_ADCS => NUMBER_OF_ADCS,
 
-			-- F-Engine / Channelizers
-			FFT_TYPE               => FFT_TYPE,
-			NUMBER_OF_CHANNELIZERS => NUMBER_OF_CHANNELIZERS,
-			CAPTURE_TYPE           => CAPTURE_TYPE,
+		-- F-Engine / Channelizers
+		FFT_TYPE               => FFT_TYPE,
+		NUMBER_OF_CHANNELIZERS => NUMBER_OF_CHANNELIZERS,
+		CAPTURE_TYPE           => CAPTURE_TYPE,
 
 			-- Corner-turn engine
 			CT_TYPE                 => CT_TYPE,

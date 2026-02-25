@@ -38,7 +38,8 @@ entity chfpga_chord_mgk7mb is
 			BLINKER_PRESENT: BOOLEAN                     := TRUE; -- Indicates if the LED flasher is to be implemented by setting the DUMMY flag of the BLINKER module
 			SYSTEM_CLOCK_SOURCE: string                  := "SFP_REFCLK"; --"SYSCLK": the 200 MHz clock will be taken from sysclk_p/n (CC pins) or "SFP_REFCLK": the system clock is 125 MHz from the GTX reference clock
 			CHAN_CLK_SPEED: string                       := "300MHZ"; -- "200MHZ" or "300MHZ"
-			BSB_TYPE: bsb_type_enum                       := UDP_SGMII; -- UDP_GMII or UDP_SGMII
+			BSB_INTERFACE: bsb_interface_enum             := UDP_SGMII; -- UDP_GMII or UDP_SGMII
+		CAP_INTERFACE: cap_interface_enum             := BSB;
 			SGMII_CLOCK_SOURCE: string                   := "REFCLK"; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 			NUMBER_OF_ADCS: INTEGER                      := 16; -- Number of ADC Data acquisition blocks to implement
 			NUMBER_OF_CHANNELIZERS:INTEGER               := 16;  --(Typ. =16)  (0-NUMBER_OF_ADCS) Number of antenna processing blocks to be implemented
@@ -915,7 +916,8 @@ bufr_rawclk10 : BUFR
 			BLINKER_PRESENT                 => BLINKER_PRESENT,
 			SYSTEM_CLOCK_SOURCE             => SYSTEM_CLOCK_SOURCE,
 			CHAN_CLK_SPEED                  => CHAN_CLK_SPEED,
-			BSB_TYPE                        => BSB_TYPE,
+			BSB_INTERFACE                   => BSB_INTERFACE,
+		CAP_INTERFACE                   => CAP_INTERFACE,
 			SGMII_CLOCK_SOURCE              => SGMII_CLOCK_SOURCE,
 			NUMBER_OF_ADCS                  => NUMBER_OF_ADCS,
 			NUMBER_OF_CHANNELIZERS          => NUMBER_OF_CHANNELIZERS,

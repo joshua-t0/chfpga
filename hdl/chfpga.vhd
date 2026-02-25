@@ -92,7 +92,9 @@ entity chfpga is
 
 		-- BSB Monitor and control interface
 
-		BSB_TYPE: bsb_type_enum; -- UDP_GMII, UDP_SGMII or AXIS. Determines which ethernet interface to instantiate and connect to the BSB. If AXIS, the BSB control interface is connected directly to the top level ports *_axis_bsb_*.
+		BSB_INTERFACE: bsb_interface_enum; -- UDP_GMII, UDP_SGMII or AXIS. Determines which ethernet interface to instantiate and connect to the BSB. If AXIS, the BSB control interface is connected directly to the top level ports *_axis_bsb_*.
+
+		CAP_INTERFACE: cap_interface_enum := BSB; -- BSB or AXIS. Determines the destination of the capture bus. If BSB, capture is routed to bsb_master. If AXIS, capture buses are merged and sent to the external AXIS bus.
 
 		-- ADC configuration
 
@@ -711,6 +713,15 @@ architecture impl of chFPGA is
 	signal cap_last: std_logic_vector(0 to NUMBER_OF_PROBES - 1);
 	signal cap_ready: std_logic_vector(0 to NUMBER_OF_PROBES - 1);
 
+	-- Capture streams forwarded to bsb_master.
+	-- When CAP_INTERFACE=BSB, these carry the full capture buses (NUMBER_OF_BSB_MASTER_PROBES=NUMBER_OF_PROBES).
+	-- When CAP_INTERFACE=AXIS, a single dummy stream is used (NUMBER_OF_BSB_MASTER_PROBES=1) to avoid Vivado synthesis crash on empty arrays.
+	constant NUMBER_OF_BSB_MASTER_PROBES: integer := sel(CAP_INTERFACE = AXIS, 1, NUMBER_OF_PROBES);
+	signal bsb_master_cap_tdata:  slv_array(0 to NUMBER_OF_BSB_MASTER_PROBES - 1)(7 downto 0) := (others => (others => '0')); -- Default values are used when bus is not driven (CAP_INTERFACE=AXIS)
+	signal bsb_master_cap_tvalid: std_logic_vector(0 to NUMBER_OF_BSB_MASTER_PROBES - 1) := (others => '0');
+	signal bsb_master_cap_tlast:  std_logic_vector(0 to NUMBER_OF_BSB_MASTER_PROBES - 1) := (others => '0');
+	signal bsb_master_cap_tready: std_logic_vector(0 to NUMBER_OF_BSB_MASTER_PROBES - 1);
+
 	-- REFCLK signals
 	signal fmc_refclk: std_logic_vector(0 to NUMBER_OF_ADC_BOARDS - 1); -- REFCLK -> ADCDAQ, FREQCTR
 
@@ -971,7 +982,7 @@ begin
 	------------------------------------------------------------------------------
 	----------------------------------------------------------------------------
 
-	gen_eth: case BSB_TYPE generate
+	gen_eth: case BSB_INTERFACE generate
 		when phy_case: UDP_GMII | UDP_SGMII =>
 			signal sfp_signal_detect: std_logic;
 			signal udp_stack_rst: std_logic;
@@ -995,7 +1006,7 @@ begin
 
 			udp_mac0: entity work.udp_mac
 				generic map (
-					PHY_TYPE => sel(BSB_TYPE, (UDP_GMII => GMII, UDP_SGMII => SGMII)),  -- map BSB_TYPE to udp_mac PHY_TYPE: UDP_GMII->GMII, UDP_SGMII->SGMII
+					PHY_TYPE => sel(BSB_INTERFACE, (UDP_GMII => GMII, UDP_SGMII => SGMII)),  -- map BSB_INTERFACE to udp_mac PHY_TYPE: UDP_GMII->GMII, UDP_SGMII->SGMII
 					BROADCAST_IP_PORT => 41000, -- port on which broadcast requests and replies are made. This is fixed as it is used to discover the boards on the network and configure them.
 					SIM => SIM
 				)
@@ -1088,28 +1099,21 @@ begin
 			m_axis_bsb_tlast <= udp_tx_tlast;
 
 		when others =>
-			assert FALSE report "Invalid BSB_TYPE" severity FAILURE;
+			assert FALSE report "Invalid BSB_INTERFACE" severity FAILURE;
 
-	end generate gen_eth; -- case BSB_TYPE
+	end generate gen_eth; -- case BSB_INTERFACE
 
 	bsb_master_blk: block
 		signal bsb_master_rst: std_logic;
 		attribute DONT_TOUCH of bsb_master_rst: signal is "true";
-
-		-- Number of data streams to forward to the BSB master. If we are not using the Ethernet interface, dont have any streams but we create one dummy stream because Vivado 2022.2 synthesis crashes if we set NUMBER_OF_PROBES=0.
-		constant N_PROBES: integer := sel(BSB_TYPE = AXIS, 1, NUMBER_OF_PROBES);
-
-		signal cap_ready_int: std_logic_vector(0 to N_PROBES - 1);
-
 	begin
-		cap_ready <= cap_ready_int when BSB_TYPE /= AXIS; -- we drive te backpressure lines only if we are using the probe data. If not, leave floating so the AXIS probe output merger can manage the buses.  
 		process(all) begin
 			bsb_master_rst <= bsb_rst or bsb_master_reset when rising_edge(bsb_clk);
 		end process;
 
 		ctrl_master0: entity work.bsb_master
 			generic map (
-				NUMBER_OF_PROBES => N_PROBES  -- number of data stream buses
+				NUMBER_OF_PROBES => NUMBER_OF_BSB_MASTER_PROBES
 			)
 			port map (
 				-- RX UDP stream
@@ -1137,10 +1141,10 @@ begin
 				s_axis_rply_tready => bsb_rply_tready,
 
 				-- Data stream input buses
-				s_axis_data_tdata => sel(BSB_TYPE /= AXIS, cap_data(0 to N_PROBES - 1), (0 =>  X"00")),
-				s_axis_data_tvalid => sel(BSB_TYPE /= AXIS, cap_valid(0 to N_PROBES - 1), "0"),
-				s_axis_data_tlast => sel(BSB_TYPE /= AXIS, cap_last(0 to N_PROBES - 1), "0"),
-				s_axis_data_tready => cap_ready_int,
+				s_axis_data_tdata  => bsb_master_cap_tdata,
+				s_axis_data_tvalid => bsb_master_cap_tvalid,
+				s_axis_data_tlast  => bsb_master_cap_tlast,
+				s_axis_data_tready => bsb_master_cap_tready,
 
 				-- System
 				cmd_packet_counter => cmd_packet_counter,
@@ -1152,34 +1156,42 @@ begin
 	end block bsb_master_blk;
 
 	--------------------------------------------------
-	-- Data capture (prober buses)
+	-- Data capture bus routing
 	--------------------------------------------------
-	-- If there is no PHY, data capture buses are merged into one and sent to the AXIS bus. In that case all capture outputs shall be on axis_cap_clk. If there is a PHY, all capture buses are sent to bsb_master, which will merge them with the command reply stream and send them to the PHY. In that case all capture is on the bsb_clk. 
-	-- We essentially use BSB_TYPE as a "USE_AXIS_CAPTURE" flag (AXIS = no PHY, use AXIS capture).
-
-	-- Select capture clock
-	cap_clk <= axis_cap_clk when BSB_TYPE = AXIS else bsb_clk; -- data capture clock
-
-	-- Merge capture buses and send to the AXIS bus if there is no PHY. .
-	cap_gen: if BSB_TYPE = AXIS generate
+	-- Capture bus is sent either to the BSB master or to the external AXIS bus.
+	-- When CAP_INTERFACE=BSB, capture buses are sent to bsb_master, which merges them with the command/reply stream and forwards to the PHY. Capture clock is bsb_clk.
+	-- When CAP_INTERFACE=AXIS, capture buses are merged into one and sent to the external AXIS bus. Capture clock is axis_cap_clk.
+	cap_gen: case CAP_INTERFACE generate
+		when AXIS =>
+			cap_clk <= axis_cap_clk; -- capture bus runs on the axis_cap_clk clock
 			axis_merge0: entity work.axis_merge
 				generic map (
-    				N_PORTS    => NUMBER_OF_PROBES,
+					N_PORTS    => NUMBER_OF_PROBES,
 					DATA_WIDTH => 8
 				)
 				port map (
 					s_axis_tdata  => cap_data,
 					s_axis_tvalid => cap_valid,
-					s_axis_tlast => cap_last,
-					s_axis_tready => cap_ready, 
+					s_axis_tlast  => cap_last,
+					s_axis_tready => cap_ready,
 
-					m_axis_tdata   => m_axis_cap_tdata,
-					m_axis_tvalid  => m_axis_cap_tvalid,
-					m_axis_tlast   => m_axis_cap_tlast,
-					m_axis_tready  => m_axis_cap_tready,
+					m_axis_tdata  => m_axis_cap_tdata,
+					m_axis_tvalid => m_axis_cap_tvalid,
+					m_axis_tlast  => m_axis_cap_tlast,
+					m_axis_tready => m_axis_cap_tready,
 
 					clk => cap_clk
 				);
+
+		when BSB =>
+			cap_clk <= bsb_clk; -- capture bus runs on the bsb_clk clock (the same as the BSB bus and bsb_master)
+			bsb_master_cap_tdata  <= cap_data;
+			bsb_master_cap_tvalid <= cap_valid;
+			bsb_master_cap_tlast  <= cap_last;
+			cap_ready             <= bsb_master_cap_tready;
+
+		when others =>
+			assert FALSE report "Invalid CAP_INTERFACE" severity FAILURE;
 
 	end generate cap_gen;
 	------------------------------------------

@@ -32,7 +32,8 @@ entity chfpga_crssim is
 		BUCK_SYNC_ENABLE: boolean       := TRUE; -- default state of the buck sync enable at startup
 		BUCK_CLK_DIVIDE_FACTOR: integer := 12; -- Buck frequency is 200MHz/16/BUCK_CLK_DIVIDE_FACTOR, 12=> 1.0416 MHz, 17 => 0.73529 MHz, 24=>0.5208333 MHz
 
-		BSB_TYPE: bsb_type_enum := AXIS;
+		BSB_INTERFACE: bsb_interface_enum := AXIS;
+		CAP_INTERFACE: cap_interface_enum := AXIS;
 		SGMII_CLOCK_SOURCE: string := "REFCLK"; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 
 		-- ADC config
@@ -624,14 +625,15 @@ begin
 			CHAN_CLK_SOURCE     => CHAN_CLK_SOURCE,
 			CT_CLK_SOURCE       => CT_CLK_SOURCE,
 
-			BSB_TYPE       => BSB_TYPE,
-			ADC_TYPE       => ADC_TYPE,
-			NUMBER_OF_ADCS => NUMBER_OF_ADCS,
+		BSB_INTERFACE  => BSB_INTERFACE,
+		CAP_INTERFACE  => CAP_INTERFACE,
+		ADC_TYPE       => ADC_TYPE,
+		NUMBER_OF_ADCS => NUMBER_OF_ADCS,
 
-			-- F-Engine / Channelizers
-			FFT_TYPE               => FFT_TYPE,
-			NUMBER_OF_CHANNELIZERS => NUMBER_OF_CHANNELIZERS,
-			CAPTURE_TYPE           => CAPTURE_TYPE,
+		-- F-Engine / Channelizers
+		FFT_TYPE               => FFT_TYPE,
+		NUMBER_OF_CHANNELIZERS => NUMBER_OF_CHANNELIZERS,
+		CAPTURE_TYPE           => CAPTURE_TYPE,
 
 			-- Corner Turn Engine
 			CT_TYPE                     => CT_TYPE,
