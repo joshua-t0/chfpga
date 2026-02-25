@@ -92,7 +92,7 @@ entity chfpga is
 
 		-- BSB Monitor and control interface
 
-		PHY_TYPE: PHY_TYPE_ENUM; -- "GMII", "SGMII" or "NONE". Determines which ethernet interface to instantiate and connect to the BSB. If NONE, the BSB control interface is connected directly to the top level ports *_axis_bsb_*.
+		BSB_TYPE: bsb_type_enum; -- UDP_GMII, UDP_SGMII or AXIS. Determines which ethernet interface to instantiate and connect to the BSB. If AXIS, the BSB control interface is connected directly to the top level ports *_axis_bsb_*.
 
 		-- ADC configuration
 
@@ -148,8 +148,7 @@ entity chfpga is
 
 		-- Correlator config
 		CORR_TYPE: corr_type_enum                    := CORR44; -- "CORR44" or "UCORR44"
-		NUMBER_OF_CORRELATORS: integer               := 8; -- Number of correlator blocks (XMUL+ACC) to be implemented
-		CORR_READOUT_BINS: integer_array(0 to CONFIG_NUMBER_OF_CORRELATORS-1) := ( others => 0);
+		CORR_READOUT_BINS: integer_array := (0=> 0);
 		-- Data offload configuration
 
 		GPU_LINK_TYPE: gpu_link_type_enum; -- "NONE", "10G", "100G"
@@ -972,8 +971,8 @@ begin
 	------------------------------------------------------------------------------
 	----------------------------------------------------------------------------
 
-	gen_eth: case PHY_TYPE generate
-		when phy_case: GMII | SGMII =>
+	gen_eth: case BSB_TYPE generate
+		when phy_case: UDP_GMII | UDP_SGMII =>
 			signal sfp_signal_detect: std_logic;
 			signal udp_stack_rst: std_logic;
 			attribute DONT_TOUCH of udp_stack_rst: signal is "true";
@@ -996,7 +995,7 @@ begin
 
 			udp_mac0: entity work.udp_mac
 				generic map (
-					PHY_TYPE => PHY_TYPE,  -- "GMII": Alaska 881111 PHY,  or "SGMII": SFP module
+					PHY_TYPE => sel(BSB_TYPE, (UDP_GMII => GMII, UDP_SGMII => SGMII)),  -- map BSB_TYPE to udp_mac PHY_TYPE: UDP_GMII->GMII, UDP_SGMII->SGMII
 					BROADCAST_IP_PORT => 41000, -- port on which broadcast requests and replies are made. This is fixed as it is used to discover the boards on the network and configure them.
 					SIM => SIM
 				)
@@ -1071,7 +1070,7 @@ begin
 				);
 		end phy_case;
 
-		when NONE =>
+		when AXIS =>
 			-- Command bus comes from the external bus
 			udp_rx_tdata <= s_axis_bsb_tdata;
 			udp_rx_tvalid <= s_axis_bsb_tvalid;
@@ -1089,21 +1088,21 @@ begin
 			m_axis_bsb_tlast <= udp_tx_tlast;
 
 		when others =>
-			assert FALSE report "Invalid PHY_TYPE" severity FAILURE;
+			assert FALSE report "Invalid BSB_TYPE" severity FAILURE;
 
-	end generate gen_eth; -- case PHY_TYPE
+	end generate gen_eth; -- case BSB_TYPE
 
 	bsb_master_blk: block
 		signal bsb_master_rst: std_logic;
 		attribute DONT_TOUCH of bsb_master_rst: signal is "true";
 
 		-- Number of data streams to forward to the BSB master. If we are not using the Ethernet interface, dont have any streams but we create one dummy stream because Vivado 2022.2 synthesis crashes if we set NUMBER_OF_PROBES=0.
-		constant N_PROBES: integer := sel(PHY_TYPE = NONE, 1, NUMBER_OF_PROBES);
+		constant N_PROBES: integer := sel(BSB_TYPE = AXIS, 1, NUMBER_OF_PROBES);
 
 		signal cap_ready_int: std_logic_vector(0 to N_PROBES - 1);
 
 	begin
-		cap_ready <= cap_ready_int when PHY_TYPE /= NONE; -- we drive te backpressure lines only if we are using the probe data. If not, leave floating so the AXIS probe output merger can manage the buses.  
+		cap_ready <= cap_ready_int when BSB_TYPE /= AXIS; -- we drive te backpressure lines only if we are using the probe data. If not, leave floating so the AXIS probe output merger can manage the buses.  
 		process(all) begin
 			bsb_master_rst <= bsb_rst or bsb_master_reset when rising_edge(bsb_clk);
 		end process;
@@ -1138,9 +1137,9 @@ begin
 				s_axis_rply_tready => bsb_rply_tready,
 
 				-- Data stream input buses
-				s_axis_data_tdata => sel(PHY_TYPE /= NONE, cap_data(0 to N_PROBES - 1), (0 =>  X"00")),
-				s_axis_data_tvalid => sel(PHY_TYPE /= NONE, cap_valid(0 to N_PROBES - 1), "0"),
-				s_axis_data_tlast => sel(PHY_TYPE /= NONE, cap_last(0 to N_PROBES - 1), "0"),
+				s_axis_data_tdata => sel(BSB_TYPE /= AXIS, cap_data(0 to N_PROBES - 1), (0 =>  X"00")),
+				s_axis_data_tvalid => sel(BSB_TYPE /= AXIS, cap_valid(0 to N_PROBES - 1), "0"),
+				s_axis_data_tlast => sel(BSB_TYPE /= AXIS, cap_last(0 to N_PROBES - 1), "0"),
 				s_axis_data_tready => cap_ready_int,
 
 				-- System
@@ -1156,13 +1155,13 @@ begin
 	-- Data capture (prober buses)
 	--------------------------------------------------
 	-- If there is no PHY, data capture buses are merged into one and sent to the AXIS bus. In that case all capture outputs shall be on axis_cap_clk. If there is a PHY, all capture buses are sent to bsb_master, which will merge them with the command reply stream and send them to the PHY. In that case all capture is on the bsb_clk. 
-	-- We essentally use PHY_TYPE as a "USE_AXIS_CAPTURE" flag.
+	-- We essentially use BSB_TYPE as a "USE_AXIS_CAPTURE" flag (AXIS = no PHY, use AXIS capture).
 
 	-- Select capture clock
-	cap_clk <= axis_cap_clk when PHY_TYPE = NONE else bsb_clk; -- data capture clock
+	cap_clk <= axis_cap_clk when BSB_TYPE = AXIS else bsb_clk; -- data capture clock
 
 	-- Merge capture buses and send to the AXIS bus if there is no PHY. .
-	cap_gen: if PHY_TYPE = NONE generate
+	cap_gen: if BSB_TYPE = AXIS generate
 			axis_merge0: entity work.axis_merge
 				generic map (
     				N_PORTS    => NUMBER_OF_PROBES,

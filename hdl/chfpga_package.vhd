@@ -279,10 +279,11 @@ type clk_source_enum is (
 	);
 
 -- BSB Monitor & control interface type
-type bsb_type_enum is (PHY, AXIS);
+type bsb_type_enum is (UDP_GMII, UDP_SGMII, AXIS);
 
 -- PHY type (1G Ethernet interface)
-type phy_type_enum is (GMII, SGMII, NONE); -- NONE = AXI4-Streaming interface
+type phy_type_enum is (GMII, SGMII); 
+type bsb_to_phy_map_type is array (bsb_type_enum) of phy_type_enum; -- convverts bsb_type_enum to phy_type_enum
 type phy_clk_source_enum is (REFCLK);
 type adc_type_enum IS (EV8AQ160, AXIS);
 
@@ -674,6 +675,7 @@ function sel(b: BOOLEAN; if_true: std_logic_vector; if_false: std_logic_vector) 
 function sel(b: BOOLEAN; if_true: slv_array; if_false: slv_array) return slv_array;
 function sel(b: BOOLEAN; if_true: slv32_array; if_false: slv32_array) return slv32_array;
 function sel(b: std_logic; if_true: std_logic_vector; if_false: std_logic_vector) return std_logic_vector;
+function sel(key: bsb_type_enum; dict: bsb_to_phy_map_type) return phy_type_enum;
 function sel(key:string; imap: si_map) return integer;
 function sel(key:integer; imap: ii_map) return integer;
 
@@ -1311,6 +1313,11 @@ begin
 		return if_false;
 	end if;
 end sel;
+
+function sel(key: bsb_type_enum; dict: bsb_to_phy_map_type) return phy_type_enum is
+begin
+	return dict(key);
+end;
 
 FUNCTION sel(b: std_logic; if_true: std_logic_vector; if_false: std_logic_vector) return std_logic_vector is
 begin

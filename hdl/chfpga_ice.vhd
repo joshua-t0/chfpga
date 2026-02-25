@@ -47,7 +47,7 @@ entity chfpga_ice is
 
 			-- BSB interface
 
-			PHY_TYPE: phy_type_enum                      := SGMII; -- "GMII" or "SGMII"
+			BSB_TYPE: bsb_type_enum                      := UDP_SGMII; -- UDP_GMII or UDP_SGMII
 			SGMII_CLOCK_SOURCE: phy_clk_source_enum      := REFCLK; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 
 			-- ADC configuration
@@ -992,7 +992,7 @@ bufr_rawclk10 : BUFR
 			CT_CLK_SOURCE                   => CT_CLK_SOURCE,
 
 			BLINKER_PRESENT                 => BLINKER_PRESENT,
-			PHY_TYPE                        => PHY_TYPE,
+			BSB_TYPE                        => BSB_TYPE,
 --			SGMII_CLOCK_SOURCE              => SGMII_CLOCK_SOURCE,
 
 			-- ADCs
@@ -1035,9 +1035,6 @@ bufr_rawclk10 : BUFR
 			NUMBER_OF_I2C_PORTS             => NUMBER_OF_I2C_PORTS,
 			NUMBER_OF_SPI_PORTS             => NUMBER_OF_SPI_PORTS,
 
-			GPU_LINK_TYPE => GPU_LINK_TYPE,
-			GPU_CHANNEL_QUAD                => integerarray(GPU_CHANNEL_QUAD),
-			GPU_QUAD_REFCLK                 => integerarray(GPU_QUAD_REFCLK),
 			SIM                             => SIM
 			)
 		PORT MAP(

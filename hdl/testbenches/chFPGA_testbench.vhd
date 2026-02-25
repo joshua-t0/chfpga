@@ -55,8 +55,8 @@ ENTITY chFPGA_testbench IS
 		ADC_TO_ADC_BOARD_MAP: IntegerArray(0 to NUMBER_OF_ADCS_MAX-1):=(0 to 15 => 0);
 		SYSTEM_CLOCK_SOURCE: string := "SFP_REFCLK"; --"SYSCLK": the 200 MHz clock will be taken from sysclk_p/n (CC pins) or "SFP_REFCLK": the system clock is 125 MHz from the GTX reference clock
 
-		-- Ethernet MAC Configuration
-		PHY_TYPE: string := "GMII"; -- "GMII" or "SGMII"
+		-- Ethernet MAC Configuration (BSB interface type)
+		BSB_TYPE: bsb_type_enum := UDP_GMII; -- UDP_GMII or UDP_SGMII
 		SGMII_CLOCK_SOURCE: string :="REFCLK"; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 
 		-- IMPLEMENT_ANT: BoolArray(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(0 to 7 => TRUE, others=>FALSE); -- Selects for which antenna a processing pipeline is implemented
@@ -333,7 +333,7 @@ CHFPGA0: entity work.chFPGA
 		PLATFORM_ID                   => PLATFORM_ID,
 		BLINKER_PRESENT               => BLINKER_PRESENT,
 		SYSTEM_CLOCK_SOURCE           => SYSTEM_CLOCK_SOURCE,
-		PHY_TYPE                      => PHY_TYPE,
+		BSB_TYPE                      => BSB_TYPE,
 		SGMII_CLOCK_SOURCE            => SGMII_CLOCK_SOURCE,
 		NUMBER_OF_ADCS                => NUMBER_OF_ADCS,
 		NUMBER_OF_CHANNELIZERS        => NUMBER_OF_CHANNELIZERS,
@@ -664,7 +664,7 @@ i2c_process :process(SCK, SDA)
 
 	SIM_UDP0: entity work.udp_mac
 			generic map (
-				PHY_TYPE => PHY_TYPE,
+				PHY_TYPE => sel(BSB_TYPE = UDP_GMII, GMII, SGMII),
 				SGMII_CLOCK_SOURCE => SGMII_CLOCK_SOURCE,
 				BROADCAST_IP_PORT => 41000,
 				SIM => SIM
@@ -852,7 +852,7 @@ phy_process: process
 --	fpga_write(clk125, tx_data, tx_valid, tx_last, tx_ready, 8, 0, 8, 2); -- Enable ADCDAQ-level ramp generator
 
 
-	if PHY_TYPE="SGMII" then
+	if BSB_TYPE = UDP_SGMII then
 		wait for 20 us;
 	else
 		wait for 0.5 us;

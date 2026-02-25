@@ -38,13 +38,12 @@ entity chfpga_chord_mgk7mb is
 			BLINKER_PRESENT: BOOLEAN                     := TRUE; -- Indicates if the LED flasher is to be implemented by setting the DUMMY flag of the BLINKER module
 			SYSTEM_CLOCK_SOURCE: string                  := "SFP_REFCLK"; --"SYSCLK": the 200 MHz clock will be taken from sysclk_p/n (CC pins) or "SFP_REFCLK": the system clock is 125 MHz from the GTX reference clock
 			CHAN_CLK_SPEED: string                       := "300MHZ"; -- "200MHZ" or "300MHZ"
-			PHY_TYPE: string                             := "SGMII"; -- "GMII" or "SGMII"
+			BSB_TYPE: bsb_type_enum                       := UDP_SGMII; -- UDP_GMII or UDP_SGMII
 			SGMII_CLOCK_SOURCE: string                   := "REFCLK"; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 			NUMBER_OF_ADCS: INTEGER                      := 16; -- Number of ADC Data acquisition blocks to implement
 			NUMBER_OF_CHANNELIZERS:INTEGER               := 16;  --(Typ. =16)  (0-NUMBER_OF_ADCS) Number of antenna processing blocks to be implemented
 			NUMBER_OF_CROSSBAR_INPUTS: integer           := 16; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
 			NUMBER_OF_CROSSBAR_OUTPUTS: integer          := 16; -- (Typ. =16): Number of repacked data streams to feed to the corrleator or GPU links
-			NUMBER_OF_CORRELATORS: INTEGER               := 0; -- (0-NUMBER_OF_REORDER_OUTPUTS) Number of correlator blocks (CH_DIST+CORR+ACC) to be implemented if IMPLEMENT_CORR=TRUE
 			NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := 16;
 			NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := 8;
 			NUMBER_OF_BP_SHUFFLE_LINKS: integer          := 19; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
@@ -916,13 +915,10 @@ bufr_rawclk10 : BUFR
 			BLINKER_PRESENT                 => BLINKER_PRESENT,
 			SYSTEM_CLOCK_SOURCE             => SYSTEM_CLOCK_SOURCE,
 			CHAN_CLK_SPEED                  => CHAN_CLK_SPEED,
-			PHY_TYPE                        => PHY_TYPE,
+			BSB_TYPE                        => BSB_TYPE,
 			SGMII_CLOCK_SOURCE              => SGMII_CLOCK_SOURCE,
 			NUMBER_OF_ADCS                  => NUMBER_OF_ADCS,
 			NUMBER_OF_CHANNELIZERS          => NUMBER_OF_CHANNELIZERS,
-			NUMBER_OF_CORRELATORS           => NUMBER_OF_CORRELATORS,
-			NUMBER_OF_CROSSBAR_INPUTS       => NUMBER_OF_CROSSBAR_INPUTS,
-			NUMBER_OF_CROSSBAR_OUTPUTS      => NUMBER_OF_CROSSBAR_OUTPUTS,
 			NUMBER_OF_GPU_LINKS             => NUMBER_OF_GPU_LINKS,
 			NUMBER_OF_GPU_REFCLKS           => NUMBER_OF_GPU_REFCLKS,
 			NUMBER_OF_BP_PCB_SHUFFLE_LANES  => NUMBER_OF_BP_PCB_SHUFFLE_LANES,

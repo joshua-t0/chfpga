@@ -73,7 +73,7 @@ use ieee.std_logic_1164.all;
 use work.chfpga_package.all;
 entity udp_mac is
   generic (
-    PHY_TYPE         : PHY_TYPE_ENUM := GMII;
+    PHY_TYPE         : phy_type_enum := GMII;
     BROADCAST_IP_PORT: integer := 41000;
     SIM              : boolean
   );

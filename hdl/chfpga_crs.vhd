@@ -49,9 +49,8 @@ entity chfpga_crs is
 		BUCK_SYNC_ENABLE: boolean       := TRUE; -- default state of the buck sync enable at startup
 		BUCK_CLK_DIVIDE_FACTOR: integer := 12; -- Buck frequency is 200MHz/16/BUCK_CLK_DIVIDE_FACTOR, 12=> 1.0416 MHz, 17 => 0.73529 MHz, 24=>0.5208333 MHz
 
-		BAB_TYPE: bsb_type_enum       := AXIS;
+		BSB_TYPE: bsb_type_enum       := AXIS;
 
-		PHY_TYPE: phy_type_enum       := NONE;
 		SGMII_CLOCK_SOURCE: phy_clk_source_enum := REFCLK; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 
 		-- ADC config
@@ -859,7 +858,7 @@ begin
 			CHAN_CLK_SOURCE     => CHAN_CLK_SOURCE,
 			CT_CLK_SOURCE       => CT_CLK_SOURCE,
 
-			PHY_TYPE       => PHY_TYPE,
+			BSB_TYPE       => BSB_TYPE,
 			ADC_TYPE       => ADC_TYPE,
 			NUMBER_OF_ADCS => NUMBER_OF_ADCS,
 
