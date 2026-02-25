@@ -57,7 +57,7 @@ In `corr*` (correlator) mode(s), a simple internal corner-turning is used (``CT_
 BSB interface
 -------------
 
-BSB bus is connected to the 1 Gb Ethernet UDP/MAC that interfaces the SFP port using a SGMII interface (serial interface implemented using the gigabit transceiver) (``PHY_TYPE = SGMII``). UDP packets received by the board over the SFP interface will be sent directly on the BSB bus, and replies will be sent back to the source as UDP packets as well. The communication is done directly with the FPGA (i.e. the ARM processor not involved).
+BSB bus is connected to the 1 Gb Ethernet UDP/MAC that interfaces the SFP port using a SGMII interface (serial interface implemented using the gigabit transceiver) (``BSB_TYPE = UDP_SGMII``). UDP packets received by the board over the SFP interface will be sent directly on the BSB bus, and replies will be sent back to the source as UDP packets as well. The communication is done directly with the FPGA (i.e. the ARM processor not involved).
 
 
 
