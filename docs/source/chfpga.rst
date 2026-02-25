@@ -126,15 +126,29 @@ Default state of the DC-DC converter (buck regulator) synchronization at startup
 Sets the buck sync frequency as ``200 MHz / BUCK_CLK_DIVIDE_FACTOR / 16``. For example, 12 → ~1.04 MHz; 24 → ~0.52 MHz.
 
 
+BSB and data capture interface
+-------------------------------
+
+**BSB_INTERFACE** *(bsb_interface_enum — UDP_GMII | UDP_SGMII | AXIS)*
+
+Selects the monitor and control (BSB) Ethernet interface:
+
+- ``UDP_GMII``: A 1G Ethernet UDP interface is instantiated with a GMII physical layer (e.g. on the KC705 evaluation board).
+- ``UDP_SGMII``: A 1G Ethernet UDP interface is instantiated with an SGMII physical layer over a GTX/GTY serial transceiver (e.g. on the ICEBoard and CHORD boards).
+- ``AXIS``: No Ethernet MAC is instantiated. The BSB control interface is connected directly to the top-level ``*_axis_bsb_*`` AXI4-Streaming ports, for use with an external soft or hard MAC (e.g. the ARM PS on the CRS/ZCU111 platforms).
+
+**CAP_INTERFACE** *(cap_interface_enum — BSB | AXIS)*  *(default: BSB)*
+
+Selects the destination of the raw data capture buses produced by the probers and correlator readout engines:
+
+- ``BSB``: Capture streams are forwarded to ``bsb_master``, which arbitrates them with command/reply traffic and transmits them over the 1G Ethernet link. Capture logic runs on ``bsb_clk``. Requires ``BSB_INTERFACE = UDP_GMII`` or ``UDP_SGMII``.
+- ``AXIS``: Capture streams are merged by ``axis_merge`` and sent to the external ``m_axis_cap_*`` AXI4-Streaming port. Capture logic runs on ``axis_cap_clk``. Used on platforms where Ethernet is handled externally (e.g. CRS, ZCU111).
+
+The two generics are independent: ``BSB_INTERFACE`` controls the command/control Ethernet path, while ``CAP_INTERFACE`` controls where probe data is sent.
+
+
 ADCs and Mezzanines
 --------------------
-
-**BSB_TYPE** *(bsb_type_enum — PHY | AXIS)*
-
-Selects the monitor and control (BSB) interface:
-
-- ``PHY``: A 1G Ethernet UDP interface is instantiated (GMII or SGMII physical layer selected by the platform wrapper).
-- ``AXIS``: The BSB is connected directly to the top-level ``*_axis_bsb_*`` AXI4-Streaming ports, for use with an external soft or hard Ethernet MAC (e.g. the PS on the CRS platform).
 
 **ADC_TYPE** *(adc_type_enum — EV8AQ160 | AXIS)*
 
