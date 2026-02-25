@@ -62,8 +62,8 @@ entity system is
 		-- Corner-turn Engine info
 		CT_TYPE: ct_type_enum;
 		CT_LEVEL: integer;
-		NUMBER_OF_CROSSBAR_INPUTS: integer;
-		NUMBER_OF_CROSSBAR1_OUTPUTS: integer;
+		NUMBER_OF_CT_INPUTS: integer;
+		NUMBER_OF_CT_CB1_OUTPUTS: integer;
         NUMBER_OF_CT_REFCLKS: integer;
         -- Real-time data link info
 
@@ -579,13 +579,13 @@ begin
 				-- Corner-turn Engine Info
 				CT_TYPE                     => CT_TYPE,
 				CT_LEVEL                    => CT_LEVEL,
-				NUMBER_OF_CROSSBAR_INPUTS   => NUMBER_OF_CROSSBAR_INPUTS,
-				NUMBER_OF_CROSSBAR1_OUTPUTS => NUMBER_OF_CROSSBAR1_OUTPUTS,
+				NUMBER_OF_CT_INPUTS   => NUMBER_OF_CT_INPUTS,
+				NUMBER_OF_CT_CB1_OUTPUTS => NUMBER_OF_CT_CB1_OUTPUTS,
 				NUMBER_OF_GPU_LINKS         => NUMBER_OF_GPU_LINKS,
 
 				-- X-Engine/Correlator info
 				NUMBER_OF_CORRELATORS               => NUMBER_OF_CORRELATORS,
-				NUMBER_OF_CHANNELIZERS_TO_CORRELATE => NUMBER_OF_CROSSBAR_INPUTS,
+				NUMBER_OF_CHANNELIZERS_TO_CORRELATE => NUMBER_OF_CT_INPUTS,
 
 				-- Peripherals
 				NUMBER_OF_USER_SMA_SIGNALS => NUMBER_OF_USER_SMA_SIGNALS,

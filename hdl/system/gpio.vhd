@@ -83,8 +83,8 @@ entity gpio is
 		-- Corner-turn Engine info
 		CT_TYPE: ct_type_enum;
 		CT_LEVEL: integer;
-		NUMBER_OF_CROSSBAR_INPUTS: integer;
-		NUMBER_OF_CROSSBAR1_OUTPUTS: integer;
+		NUMBER_OF_CT_INPUTS: integer;
+		NUMBER_OF_CT_CB1_OUTPUTS: integer;
 		NUMBER_OF_GPU_LINKS: integer;
 
 		-- Correlator info
@@ -516,7 +516,7 @@ begin
 	-- |         |  11 | 7:0  | PLATFORM_ID                 | Type of platform on which the firmware is running. 0=ML605, 1=KC705, 3=MGK7MB, 4=ZCU111 |
 	-- |         |12-19| 63:57| (unused)                    | (unused) |
 	-- |         |     | 56:0 | FPGA_DNA                    | FPGA unique serial number|
-	-- |         |  20 | 7:0  | NUMBER_OF_CROSSBAR_INPUTS   | Indicates how many channelizers are connected to the crossbar inputs. Those will be channeizers 0 to N-1|
+	-- |         |  20 | 7:0  | NUMBER_OF_CT_INPUTS   | Indicates how many channelizers are connected to the crossbar inputs. Those will be channeizers 0 to N-1|
 	-- |         |  21 | 7:0  | NUMBER_OF_CROSSBAR1_OUTPUTS | Indicates the number of crossbar1 outputs. Those outputs feed the GPU links and the FPGA correlators (if implemented).
 	-- |         |22-23| 15:0 | PROTOCOL_VERSION            | 16-bit value indicating the protocol version. A change in the version means that some change is needed on host control software. |
 	-- |         |  24 | 7:0  | CHANNELIZERS_CLOCK_SOURCE   | ADC channel from which the channelizer clocks are derived. Useful to know if we should expect the clock to be missing and use alternate internal clock.
@@ -700,8 +700,8 @@ begin
 
 	-- STATUS Bytes 20-21: Corner-turn engine configuration Part 1
 
-	status_bytes(20) <= to_slv(NUMBER_OF_CROSSBAR_INPUTS, 8);
-	status_bytes(21) <= to_slv(NUMBER_OF_CROSSBAR1_OUTPUTS, 8);
+	status_bytes(20) <= to_slv(NUMBER_OF_CT_INPUTS, 8);
+	status_bytes(21) <= to_slv(NUMBER_OF_CT_CB1_OUTPUTS, 8);
 
 	-- STATUS Bytes 22-23: Protocol version
 

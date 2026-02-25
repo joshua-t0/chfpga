@@ -24,12 +24,9 @@ package chfpga_config is
 	constant CONFIG_CT_LEVEL: integer                        := 2; -- 2 for CORR32, 3 for CORR64
 	constant CONFIG_CT_CLK_SOURCE: ct_clk_source_enum        := ADC_CLK; -- Run the corner-turn & correlator on the 400 MHz ADC clock
 	constant CONFIG_CT_LANE_TO_LINK_MAP: integer_array       := (-1, 6, 8, 10); -- (bypass, 3x PCB links)
-	constant CONFIG_NUMBER_OF_CROSSBAR_INPUTS: integer       := CONFIG_NUMBER_OF_ADCS; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
-	constant CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS: integer     := 8; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
 
 
 	constant CONFIG_CORR_TYPE: CORR_TYPE_ENUM                := UCORR44;
-	constant CONFIG_NUMBER_OF_CORRELATORS: integer           := 1; -- One correlator only since we have corner-turned the data sufficiently (CT_LEVEL=2) to end up with only one bin stream
 	constant CONFIG_CORR_READOUT_BINS: integer_array(0 to 0) := (0 => 0); -- With CONFIG_FFT_ROTATE_BINS=True, true bins 0, 1, 2 & 3 will be used for readout
 
     -- 10/100G Ethernet Real-time data offload links configuration

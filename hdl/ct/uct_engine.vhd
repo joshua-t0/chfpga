@@ -54,6 +54,7 @@ entity uct_engine is
 				4 to 7 => 1,
 				8 to 11 => 2); -- Indicates which quad is associated to each GTY link.
 		QUAD_TO_REFCLK_MAP: integer_array := (1, 0, 0); -- Indicates which refclk is associated with each QUAD
+		LANE_TO_GROUP_MAP: integer_array := (0 to 3 => 0); -- Indicates to which lane group each lane is associated with. Not used in UCT as things are hard-coded, but we probably should at least check.
 
 		-- Dervived parameters
 		OUTPUT_WIDTH: integer     := NUMBER_OF_INPUT_LANES * INPUT_WORD_WIDTH;  -- assumes inputs are 32 bits wide, and CT preserves data rate

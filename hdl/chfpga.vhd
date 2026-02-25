@@ -139,12 +139,10 @@ entity chfpga is
 		CT_TYPE: ct_type_enum;
 		CT_LEVEL: integer := 1;
 
-		NUMBER_OF_CROSSBAR_INPUTS: integer          := NUMBER_OF_CHANNELIZERS;
-		NUMBER_OF_CROSSBAR1_OUTPUTS: integer; -- number of CROSSBAR1 output lanes. Should be 8 for URAM-based CROSSBAR1.
 		CT_LANE_TO_LINK_MAP: integer_array   := (0 => -1, 1 => 0, 2 => 1, 3 => 2, 4 to 7 => -1); -- List indicating the GTX/GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
 		CT_LINK_TO_QUAD_MAP: integer_array   := (0 => 0); -- Indicates which quad is associated to each GTY link.
 		CT_QUAD_TO_REFCLK_MAP: integer_array := (0 => 0); -- Indicates which refclk is associated with each QUAD
-
+		CT_LANE_TO_GROUP_MAP: integer_array  := (0  => 0); -- Indicates to which lane group each logical lane is associated with
 
 		BP_LINK_SPEED: integer                      := 0; -- 0=7.5 Gbps, 1-10Gbps.
 
@@ -1480,16 +1478,16 @@ begin
 					CT_TYPE                     => CT_TYPE,
 					CT_LEVEL                    => CT_LEVEL,
 					NUMBER_OF_CT_REFCLKS => NUMBER_OF_CT_REFCLKS,
-					NUMBER_OF_CROSSBAR_INPUTS   => NUMBER_OF_CROSSBAR_INPUTS,
-					NUMBER_OF_CROSSBAR1_OUTPUTS => NUMBER_OF_CROSSBAR1_OUTPUTS,
+					NUMBER_OF_CT_INPUTS   => NUMBER_OF_CHANNELIZERS,
+					NUMBER_OF_CT_CB1_OUTPUTS => sel(CT_LEVEL = 1, 0, count(CT_LANE_TO_GROUP_MAP, 0)), -- 0 means no level-2 corner-turn, otherwise assume number of CT1 outputs = number of CT2 inputs = number of CT2 lanes (lane group 0). This info is used by the software to figure out the number of BCT chan_crossbar bin_sels and should normally be queried from the BCT engine but it's not there for historical reasons. It could be derived from other parameters.
 
-                    -- Realtime data offload links
+					-- Realtime data offload links
 					NUMBER_OF_GPU_LINKS         => NUMBER_OF_GPU_LINKS,
                     NUMBER_OF_GPU_REFCLKS => NUMBER_OF_GPU_REFCLKS,
 
 					-- X-Engine/Correlator info
-					NUMBER_OF_CORRELATORS               => NUMBER_OF_CORRELATORS,
-					NUMBER_OF_CHANNELIZERS_TO_CORRELATE => NUMBER_OF_CROSSBAR_INPUTS,
+					NUMBER_OF_CORRELATORS               => sel(CORR_TYPE /= NONE, sel(CT_LEVEL=1, FFT_INFO(FFT_TYPE).BINS_PER_WORD, 1), 0), -- 0 means no correlators, otherwise assume number of correlators = number of bins per word for CT1, 1 for CT2-CT3
+					NUMBER_OF_CHANNELIZERS_TO_CORRELATE => NUMBER_OF_CHANNELIZERS,
 
 					-- Peripherals
 					NUMBER_OF_USER_SMA_SIGNALS => user_mux_out'LENGTH,
@@ -2021,7 +2019,8 @@ begin
                         CT_LEVEL => CT_LEVEL, -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
                         LANE_TO_LINK_MAP => integer_array(CT_LANE_TO_LINK_MAP), -- List indictiong the GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
                         LINK_TO_QUAD_MAP => integer_array(CT_LINK_TO_QUAD_MAP), -- integer_array  := (0,1,1); -- Indicates which quad is associated to each GTY link.
-                        QUAD_TO_REFCLK_MAP => integer_array(CT_QUAD_TO_REFCLK_MAP) -- integer_array:= (0,0); -- Indicates which refclk is associated with each QUAD
+                        QUAD_TO_REFCLK_MAP => integer_array(CT_QUAD_TO_REFCLK_MAP), -- integer_array:= (0,0); -- Indicates which refclk is associated with each QUAD
+                        LANE_TO_GROUP_MAP => integer_array(CT_LANE_TO_GROUP_MAP) -- integer_array:= (0,1); -- Indicates to which lane group each lane is associated with
                     )
                     port map (
                         -- Non-blocking input stream from the channelizer, synchronous to `clk`
@@ -2077,7 +2076,8 @@ begin
 
 						LANE_TO_LINK_MAP => CT_LANE_TO_LINK_MAP,
 						LINK_TO_QUAD_MAP => CT_LINK_TO_QUAD_MAP,
-						QUAD_TO_REFCLK_MAP => CT_QUAD_TO_REFCLK_MAP
+						QUAD_TO_REFCLK_MAP => CT_QUAD_TO_REFCLK_MAP,
+						LANE_TO_GROUP_MAP => CT_LANE_TO_GROUP_MAP
                 )
                     port map (
                         -- Non-blocking input stream from the channelizer, synchronous to `clk`

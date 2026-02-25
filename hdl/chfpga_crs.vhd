@@ -73,26 +73,42 @@ entity chfpga_crs is
 
 		CT_TYPE: ct_type_enum                    := CONFIG_CT_TYPE; -- "BCT" (CHIME-like) or "UCT" (CHORD-like)
 		CT_LEVEL: integer                        := CONFIG_CT_LEVEL;
-		NUMBER_OF_CROSSBAR_INPUTS: integer       := CONFIG_NUMBER_OF_CROSSBAR_INPUTS; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
-		NUMBER_OF_CROSSBAR1_OUTPUTS: integer     := CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
+		
 		-- List indicating the GTY link number associated to each lane. -1 means a bypass  lane (no
 		-- GTY, stays internal to the board). Links that are listed in the LINK_TO_QUAD map but are
 		-- not in this list will have minimal low-level logic (i.e. enough for BER tests).
 		CT_LANE_TO_LINK_MAP: integer_array   := CONFIG_CT_LANE_TO_LINK_MAP;
-		-- List Indicating which quad is associated to each GTY link. ``len(list)`` GTY links and ``max(list)+1`` QPLLs will be implemented.
+		-- List Indicating which GTY link is instatiated , and to which quad it is associated. Links not associated with lanes will have minimal logic (i.e. enough for BER tests).``len(list)`` GTY links and ``max(list)+1`` QPLLs will be implemented.
+		-- The links are instantiated by the GTY IP core, and connectivity must match this list:
+		-- Links:
+		--   0: SFP28-1 (GTY_X0Y8), used for CT3 lane 2
+		--   1: SFP28-2 (GTY_X0Y9), used for CT3 lane 3
+		--   2: SFP28-3 (GTY_X0Y10), 
+		--   3: SFP28-4 (GTY_X0Y11), 
+		--   4: SFP28-5 (GTY_X0Y12),  
+		--   5: SFP28-6 (GTY_X0Y13), 
+		--   6: BP PCB0 (GTY_X0Y14), used for CT2 Lane 1
+		--   7: BP QSFP0 (GTY_X0Y15), 
+		--   8: BP PCB1 (GTY_X0Y16), used for CT2 Lane 2
+		--   9: BP QSFP1 (GTY_X0Y17), 
+		--  10: BP PCB2 (GTY_X0Y18), used for CT2 Lane 3
+		--  11: BP QSFP2 (GTY_X0Y19), 
 		CT_LINK_TO_QUAD_MAP: integer_array   := (
 				0 to 3 => 0,
 				4 to 7 => 1,
 				8 to 11 => 2);
 		-- Indicates which refclk is associated with each QUAD. max(list)+1 REFCLKs will be implemented.
 		CT_QUAD_TO_REFCLK_MAP: integer_array := (1, 0, 0);
-
+		-- Indicates to which lane group each logical lane is associated with
+		--  Group 0: CT2 lanes
+		--  Group 1: CT3 lanes
+		CT_LANE_TO_GROUP_MAP: integer_array  := (0 to 3 => 0, 4 to 7 => 1); 
+	
 
 		-- Correlator config
 
 		CORR_TYPE: corr_type_enum      := CONFIG_CORR_TYPE; -- "CORR44" or "UCORR44"
-		NUMBER_OF_CORRELATORS: integer := CONFIG_NUMBER_OF_CORRELATORS; -- Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
-		CORR_READOUT_BINS: integer_array(0 to NUMBER_OF_CORRELATORS-1) := CONFIG_CORR_READOUT_BINS;
+		CORR_READOUT_BINS: integer_array := CONFIG_CORR_READOUT_BINS;
 
 		-- Real-time data offload links configuration
 
@@ -857,11 +873,10 @@ begin
 
 			CT_TYPE                     => CT_TYPE,
 			CT_LEVEL                    => CT_LEVEL,
-			NUMBER_OF_CROSSBAR_INPUTS   => NUMBER_OF_CROSSBAR_INPUTS,
-			NUMBER_OF_CROSSBAR1_OUTPUTS => NUMBER_OF_CROSSBAR1_OUTPUTS,
 			CT_LANE_TO_LINK_MAP => CT_LANE_TO_LINK_MAP,
 			CT_LINK_TO_QUAD_MAP => CT_LINK_TO_QUAD_MAP,
 			CT_QUAD_TO_REFCLK_MAP => CT_QUAD_TO_REFCLK_MAP,
+			CT_LANE_TO_GROUP_MAP => CT_LANE_TO_GROUP_MAP,
 			-- Real time Ethernet data streaming interface
 
 			GPU_LINK_TYPE         => GPU_LINK_TYPE,
@@ -871,7 +886,6 @@ begin
 			-- Correlator
 
 			CORR_TYPE             => CORR_TYPE,
-			NUMBER_OF_CORRELATORS => NUMBER_OF_CORRELATORS,
 			CORR_READOUT_BINS => CORR_READOUT_BINS,
 
 			-- Peripherals

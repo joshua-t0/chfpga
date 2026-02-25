@@ -24,12 +24,8 @@ package chfpga_config is
 	constant CONFIG_CT_LEVEL: integer                        := 1;
 	constant CONFIG_CT_CLK_SOURCE: ct_clk_source_enum        := ADC_CLK; -- Run the corner-turn & correlator on the 400 MHz ADC clock
 	constant CONFIG_CT_LANE_TO_LINK_MAP: integer_array       := (0 => -1); -- (null lists not allowed, ignored anyway with CT_LEVEL=1)
-	constant CONFIG_NUMBER_OF_CROSSBAR_INPUTS: integer       := CONFIG_NUMBER_OF_ADCS; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
-	constant CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS: integer     := 8; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
 
 	-- Correlator configuration
-
-	constant CONFIG_NUMBER_OF_CORRELATORS: integer           := 0; -- Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
 
 	-- X-Engine (correlator) configuration
 	constant CONFIG_CORR_TYPE: CORR_TYPE_ENUM                := NONE;

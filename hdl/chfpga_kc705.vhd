@@ -88,18 +88,15 @@ entity chFPGA_KC705 is
 
 			CT_TYPE: ct_type_enum               := CONFIG_CT_TYPE;
 			CT_LEVEL: integer                   := CONFIG_CT_LEVEL;
-			NUMBER_OF_CROSSBAR_INPUTS: integer  := NUMBER_OF_CHANNELIZERS;
-			NUMBER_OF_CROSSBAR_OUTPUTS: integer := 8;
 
---			BP_SHUFFLE_LANE_MAP: integer_array            := (0 => -1); 
---			BP_SHUFFLE_LANE_TO_QUAD_MAP : integer_array   := (0 => 0); --  Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
---			BP_SHUFFLE_QUAD_TO_REFCLK_MAP : integer_array := (0 => 0); -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
-
-
+			CT_LANE_TO_LINK_MAP: integer_array := (1 to 0 => 0);
+			CT_LINK_TO_QUAD_MAP: integer_array := (1 to 0 => 0);
+			CT_QUAD_TO_REFCLK_MAP: integer_array := (1 to 0 => 0);
+			CT_LANE_TO_GROUP_MAP: integer_array := (1 to 0 => 0);
 
 			-- Correlator
 
-			NUMBER_OF_CORRELATORS: INTEGER      := CONFIG_NUMBER_OF_CORRELATORS;
+			CORR_TYPE: corr_type_enum := CONFIG_CORR_TYPE;
 
 			-- Peripherals
 
@@ -383,16 +380,14 @@ begin
 
 			CT_TYPE                  => CT_TYPE,
 			CT_LEVEL                 => CT_LEVEL,
-			NUMBER_OF_CROSSBAR_INPUTS  => NUMBER_OF_CROSSBAR_INPUTS,
-			NUMBER_OF_CROSSBAR1_OUTPUTS => NUMBER_OF_CROSSBAR_OUTPUTS,
+			CT_LANE_TO_LINK_MAP      => CT_LANE_TO_LINK_MAP,
+			CT_LINK_TO_QUAD_MAP      => CT_LINK_TO_QUAD_MAP,
+			CT_QUAD_TO_REFCLK_MAP    => CT_QUAD_TO_REFCLK_MAP,
+			CT_LANE_TO_GROUP_MAP     => CT_LANE_TO_GROUP_MAP,
 
-
-			CORR_TYPE                => CONFIG_CORR_TYPE,
-			NUMBER_OF_CORRELATORS    => NUMBER_OF_CORRELATORS,
-			CT_LANE_TO_LINK_MAP      => EMPTY_INTEGER_ARRAY, -- Empty list
-			CT_LINK_TO_QUAD_MAP      => EMPTY_INTEGER_ARRAY,
-			CT_QUAD_TO_REFCLK_MAP    => EMPTY_INTEGER_ARRAY,
+			CORR_TYPE                => CORR_TYPE,
 			CORR_READOUT_BINS        => CONFIG_CORR_READOUT_BINS,
+
 			GPU_LINK_TYPE            => CONFIG_GPU_LINK_TYPE,
 			GPU_CHANNEL_QUAD         => (0 => 0),
 			GPU_QUAD_REFCLK          => (0 => 0),

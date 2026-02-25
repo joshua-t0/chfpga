@@ -111,11 +111,10 @@ entity chfpga_ice is
 	        CT_TYPE: ct_type_enum                             := CONFIG_CT_TYPE;
 			CT_LEVEL: integer                            := CONFIG_CT_LEVEL;
 
-			NUMBER_OF_CROSSBAR_INPUTS: integer           := NUMBER_OF_CHANNELIZERS; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
 			NUMBER_OF_CROSSBAR_OUTPUTS: integer          := 8; -- (Typ. =16): Number of repacked data streams to feed to the corrleator or GPU links
 			NUMBER_OF_CORRELATORS: INTEGER               := CONFIG_NUMBER_OF_CORRELATORS; -- (0-NUMBER_OF_REORDER_OUTPUTS) Number of correlator blocks (CH_DIST+CORR+ACC) to be implemented if IMPLEMENT_CORR=TRUE
 			--NUMBER_OF_CHANNELIZERS_TO_CORRELATE: INTEGER := GLOBAL_NUMBER_OF_CHANNELIZERS_TO_CORRELATE; -- (3 - NUMBER_OF_CHANNELIZERS) Number of channelizers outputs to be correlated for each frequency channel. This is hard coded for now. Determines how many channelizer streams are fed to the CORR_BLOCK modules, and how many multipliers to implement in parallel in the CORR module.
-			BP_SHUFFLE_LANE_MAP: integer_array            := ( -- Associate the concatenated BP PCB and QUAD lanes to GTX links. -1 means a bypass lane.
+			CT_LANE_TO_LINK_MAP: integer_array            := ( -- Associate the concatenated BP PCB and QUAD lanes to GTX links. -1 means a bypass lane.
 			                                                -- Backplane PCB Lanes
 			                                                 0=>-1, -- Bypass lane
 			                                                 1=>0, 2=> 1, 3 => 2, 4 =>3,  5 =>4,  6 =>5,  7 =>6, 8=>7,
@@ -124,11 +123,12 @@ entity chfpga_ice is
 			                                                 16 to 19=>-1, -- Bypass lane
 			                                                 20=>15, 21=>16, 22=>17, 23=>18
 			                                                );
-			BP_SHUFFLE_LANE_TO_QUAD_MAP : integer_array   := (0 to 3=>0, 4 to 7=>1, 8 to 11=> 2, 12 to 14 => 3, 15 to 18=> 4); --  Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-			BP_SHUFFLE_QUAD_TO_REFCLK_MAP : integer_array := (0 => 1, 1 => 0, 2 => 0, 3=> 1, 4 => 1); -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+			CT_LANE_TO_QUAD_MAP : integer_array   := (0 to 3=>0, 4 to 7=>1, 8 to 11=> 2, 12 to 14 => 3, 15 to 18=> 4); --  Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
+			CT_QUAD_TO_REFCLK_MAP : integer_array := (0 => 1, 1 => 0, 2 => 0, 3=> 1, 4 => 1); -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+			CT_LANE_TO_GROUP_MAP: integer_array  := (0 to 15 => 0, 16 to 23 => 1); -- Indicates to which lane group each lane is associated with
 
-			NUMBER_OF_BP_SHUFFLE_LINKS: integer          := max(BP_SHUFFLE_LANE_MAP)+1; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
-			NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := max(BP_SHUFFLE_QUAD_TO_REFCLK_MAP)+1;
+			NUMBER_OF_CT_LINKS: integer          := max(CT_LANE_TO_LINK_MAP)+1; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
+			NUMBER_OF_CT_REFCLKS: integer        := max(CT_QUAD_TO_REFCLK_MAP)+1;
 
 			-- Correlator
 
@@ -247,12 +247,12 @@ entity chfpga_ice is
 
 			-- Corner-turn engine
 
-			bp_shuffle_tx_p: out std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS-1);
-			bp_shuffle_tx_n: out std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS-1);
-			bp_shuffle_rx_p: in std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS-1);
-			bp_shuffle_rx_n: in std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS-1);
-			bp_shuffle_refclk_p: in std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_REFCLKS-1);
-			bp_shuffle_refclk_n: in std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_REFCLKS-1);
+			bp_shuffle_tx_p: out std_logic_vector(0 to NUMBER_OF_CT_LINKS-1);
+			bp_shuffle_tx_n: out std_logic_vector(0 to NUMBER_OF_CT_LINKS-1);
+			bp_shuffle_rx_p: in std_logic_vector(0 to NUMBER_OF_CT_LINKS-1);
+			bp_shuffle_rx_n: in std_logic_vector(0 to NUMBER_OF_CT_LINKS-1);
+			bp_shuffle_refclk_p: in std_logic_vector(0 to NUMBER_OF_CT_REFCLKS-1);
+			bp_shuffle_refclk_n: in std_logic_vector(0 to NUMBER_OF_CT_REFCLKS-1);
 
 
 			-- Buck sync
@@ -501,7 +501,7 @@ architecture Behavioral of chfpga_ice is
 	signal fmc_refclk_m2c_n: std_logic_vector(0 to NUMBER_OF_ADC_BOARDS-1);
 
 
-    signal bp_shuffle_tx_p_int, bp_shuffle_tx_n_int: std_logic_vector(0 to NUMBER_OF_BP_SHUFFLE_LINKS - 1);
+    signal bp_shuffle_tx_p_int, bp_shuffle_tx_n_int: std_logic_vector(0 to NUMBER_OF_CT_LINKS - 1);
     -- Tell the tools not to infer buffers and autoplace IO ports for the following if the ports are not connected
     -- If 100GE is not implemented, the placer assigns random IOs to these ports, and since those have no specifiec IO standard, the bitstream
     -- fails its DRC.
@@ -1017,25 +1017,21 @@ bufr_rawclk10 : BUFR
             CT_TYPE                         => CT_TYPE,
             CT_LEVEL                        => CT_LEVEL,
 
-			NUMBER_OF_CROSSBAR_INPUTS       => NUMBER_OF_CROSSBAR_INPUTS,
-			NUMBER_OF_CROSSBAR1_OUTPUTS     => NUMBER_OF_CROSSBAR_OUTPUTS,
-
-			--NUMBER_OF_GPU_LINKS             => NUMBER_OF_GPU_LINKS,
-			--NUMBER_OF_GPU_REFCLKS           => NUMBER_OF_GPU_REFCLKS,
---			NUMBER_OF_BP_PCB_SHUFFLE_LANES  => NUMBER_OF_BP_PCB_SHUFFLE_LANES,
---			NUMBER_OF_BP_QSFP_SHUFFLE_LANES => NUMBER_OF_BP_QSFP_SHUFFLE_LANES,
---			NUMBER_OF_BP_SHUFFLE_LINKS      => NUMBER_OF_BP_SHUFFLE_LINKS,
---			NUMBER_OF_BP_SHUFFLE_REFCLKS    => NUMBER_OF_BP_SHUFFLE_REFCLKS,
+			CT_LANE_TO_LINK_MAP             => CT_LANE_TO_LINK_MAP,
+			CT_LINK_TO_QUAD_MAP     => CT_LANE_TO_QUAD_MAP,
+			CT_QUAD_TO_REFCLK_MAP   => CT_QUAD_TO_REFCLK_MAP,
+			CT_LANE_TO_GROUP_MAP => CT_LANE_TO_GROUP_MAP,
 
 			-- Correlator
 
 			CORR_TYPE => CORR_TYPE,
-			NUMBER_OF_CORRELATORS           => NUMBER_OF_CORRELATORS,
 
+			GPU_LINK_TYPE => GPU_LINK_TYPE,
+			GPU_CHANNEL_QUAD                => integerarray(GPU_CHANNEL_QUAD),
+			GPU_QUAD_REFCLK                 => integerarray(GPU_QUAD_REFCLK),
 
-			CT_LANE_TO_LINK_MAP             => BP_SHUFFLE_LANE_MAP,
-			CT_LINK_TO_QUAD_MAP     => BP_SHUFFLE_LANE_TO_QUAD_MAP,
-			CT_QUAD_TO_REFCLK_MAP   => BP_SHUFFLE_QUAD_TO_REFCLK_MAP,
+			-- Peripherals
+
 			NUMBER_OF_I2C_PORTS             => NUMBER_OF_I2C_PORTS,
 			NUMBER_OF_SPI_PORTS             => NUMBER_OF_SPI_PORTS,
 
