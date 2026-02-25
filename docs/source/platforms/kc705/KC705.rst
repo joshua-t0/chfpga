@@ -10,6 +10,12 @@ KC705 (Kintex-7 Evaluation Kit)
    chfpga_kc705
    ../../navbar_separator
 
+.. figure:: ../../images/PLATFORMS/KC705/kc705-XC7K325T-2FFG900C.avif
+   :width: 60%
+   :align: center
+
+   KC705 motherboard (Kintex-7 XC7K325T).
+
 
 Requirements
 ============
@@ -20,7 +26,22 @@ Before using the KC705 with the chFPGA design:
    - The ADC mezzanine board (e.g. via its SMA reference input), and
    - The **USER_SMA_CLOCK_P** (single-ended) input on the KC705, so the FPGA receives the same reference.
 
-2. **FMC700 adapter board** — An FMC700 adapter is required so the FPGA can receive a copy of the 10 MHz clock from the ADC mezzanine (REFCLK_M2C). Without it, the LPC FMC connector does not bring REFCLK_M2C to the FPGA.
+2. **FMC700 adapter board** — An FMC700 adapter combines the two FMC connectors on the KC705 in otder to produce a singne FMC connector that has better connectivity to the FPGA. This is required so the FPGA can receive a copy of the 10 MHz clock from the ADC mezzanine (REFCLK_M2C). Without it, the LPC FMC connector does not bring REFCLK_M2C to the FPGA.
+
+.. figure:: ../../images/PLATFORMS/KC705/fmc700_top-11-1280x1280.jpg
+   :width: 50%
+   :align: center
+
+   FMC700 adapter board (top view).
+
+.. figure:: ../../images/PLATFORMS/KC705/fmc700_block_diagram.jpg
+   :width: 70%
+   :align: center
+
+   FMC700 block diagram.
+
+Clock connection
+----------------
 
 The delayed 10 MHz reference clock (after the IDELAY/BUFR/BUFG path in the design) can be monitored on **USER_SMA_CLOCK_P** (single-ended output). **USER_SMA_GPIO_P** and **USER_SMA_GPIO_N** are not used.
 
