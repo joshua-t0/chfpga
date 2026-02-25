@@ -55,9 +55,9 @@ pipelines:
               sleep ${i}0
               git reset --soft HEAD~1
               git reset HEAD .
-              git pull origin master
               git checkout -- chfpga/latest/ || true
               rm -rf chfpga/latest
+              git pull origin master
               mkdir -p chfpga/latest
               cat > chfpga/latest/index.html <<REDIRECT_EOF
             <!DOCTYPE html>
