@@ -89,10 +89,10 @@ entity chFPGA_KC705 is
 			CT_TYPE: ct_type_enum               := CONFIG_CT_TYPE;
 			CT_LEVEL: integer                   := CONFIG_CT_LEVEL;
 
-			CT_LANE_TO_LINK_MAP: integer_array := (1 to 0 => 0);
-			CT_LINK_TO_QUAD_MAP: integer_array := (1 to 0 => 0);
-			CT_QUAD_TO_REFCLK_MAP: integer_array := (1 to 0 => 0);
-			CT_LANE_TO_GROUP_MAP: integer_array := (1 to 0 => 0);
+			CT_LANE_TO_LINK_MAP: integer_array := NULL_INTEGER_ARRAY;
+			CT_LINK_TO_QUAD_MAP: integer_array := NULL_INTEGER_ARRAY;
+			CT_QUAD_TO_REFCLK_MAP: integer_array := NULL_INTEGER_ARRAY;
+			CT_LANE_TO_GROUP_MAP: integer_array := NULL_INTEGER_ARRAY;
 
 			-- Correlator
 
