@@ -745,8 +745,6 @@ architecture impl of chFPGA is
 	signal chan_out_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
 	signal chan_out_tvalid: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
 	signal chan_out_tlast: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
-	signal chan_out_almost_empty: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
-	signal chan_out_send: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1) := (others => '1'); -- have the channelizer send data by default unless this is overriden
 
 	attribute equivalent_register_removal of chan_out_tdata, chan_out_tuser, chan_out_tvalid, chan_out_tlast: signal is "no";
 	attribute shreg_extract of chan_out_tdata, chan_out_tuser, chan_out_tvalid, chan_out_tlast: signal is "no";
@@ -1129,7 +1127,7 @@ begin
 				m_axis_udp_tx_tready => udp_tx_tready,
 				m_axis_udp_tx_channel => udp0_tx_port,
 
-				-- Command and reply stream buse
+				-- Command and reply stream bus
 				m_axis_cmd_tdata => bsb_cmd_tdata,
 				m_axis_cmd_tvalid => bsb_cmd_tvalid,
 				m_axis_cmd_tlast => bsb_cmd_tlast,
@@ -1822,9 +1820,7 @@ begin
 			chan_out_tuser => chan_out_tuser,
 			chan_out_tvalid => chan_out_tvalid,
 			chan_out_tlast => chan_out_tlast,
-			chan_out_almost_empty => chan_out_almost_empty,
-			chan_out_send => chan_out_send,
-			ct_clk => ct_clk,
+		ct_clk => ct_clk,
 			ct_reset => ct_reset,
 
 			-- 8-bit Data Capture streaming interface from PROBER Oor UCAP (on axis_cap_clk)
@@ -1890,41 +1886,6 @@ begin
 
 	end generate chan_clk_gen;
 
-	chan_align_blk: block
-		signal almost_empty_reg1, almost_empty_reg2: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
-		signal send_reg1, send_reg2: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
-
-		signal send: std_logic;
-		attribute keep of send_reg1, send_reg2, send, almost_empty_reg1, almost_empty_reg2: signal is "true"; -- prevent the tool form inferring a shift register
-	begin
-
-		chan_align_proc: process(all) begin
-			if rising_edge(ct_clk) then
-				-- Channelizer output data alignment
-				--
-				-- Assert the the channelizer `send` signals except when any of the channelizer output FIFO is almost empty
-				-- in order to ensure that the channelizers will always output words at the same time.
-				--
-				-- We pipeline the `almost_empty` signals from the channelizers to a central point, ``or`` them to generate a `send` signal,
-				-- and then pipeline the `send` signal back. The latency of this roundtrip is absorbed by the channelizer's FIFO almost empty threshold.
-				--
-				-- Align data output from channelizers.
-				-- We send data unless one lane is almost empty.
-				-- The latency to propagate the empty and send signals will cause a few extra reads to occur after the almost_empty signal is asserted,
-				-- but there should be enough words left in the FIFO to ensure we don't underrun it.
-				almost_empty_reg1 <= chan_out_almost_empty;
-				almost_empty_reg2 <= almost_empty_reg1;
-				-- Don't send if any lane is empty
-				send <= '0' when ct_reset else not(or almost_empty_reg2);
-				-- Propagate the send signal back to the channelizers
-				send_reg1 <= (others => send);
-				send_reg2 <= send_reg1;
-				chan_out_send <= send_reg2;
-
-			end if; -- clk
-		end process;
-
-	end block chan_align_blk;
 
 	---------------------------------------------------------------------
 	---------------------------------------------------------------------

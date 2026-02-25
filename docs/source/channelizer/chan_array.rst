@@ -15,10 +15,11 @@ The `chan_array` entity contains the ADC data acquisition blocks and channelizer
 - Channel router for BSB command routing
 - Channelizer array instantiation
 
-**Note**: The following remain in `chfpga`:
+**Note**: The following remain in `chfpga` for top-level coordination reasons:
 
-- Channelizer clock generation (``chan_clk_gen``) - stays in chfpga for top-level clock coordination
-- Channel output alignment logic (``chan_align_blk``) - stays in chfpga as it coordinates with corner-turn engine
+- Channelizer clock generation (``chan_clk_gen``) — stays in `chfpga` for top-level clock coordination.
+
+The channel output alignment logic (``chan_align_blk``) is implemented inside `chan_array`. See `Channelizer output alignment`_ below.
 
 Entity documentation
 ====================
@@ -57,3 +58,31 @@ The module outputs:
 - Channelized data streams
 - Capture data interfaces
 - BSB reply interface
+
+
+Channelizer output alignment
+----------------------------
+
+.. note::
+   ``chan_align_blk`` runs on the corner-turn clock (``ct_clk``), which is also a port of ``chan_array``. The block is implemented inside ``chan_array``; ``chan_out_almost_empty`` and ``chan_out_send`` are internal signals and no longer appear on the entity interface.
+
+All channelizer output FIFOs must be read simultaneously so that the corner-turn engine always receives one word from every antenna at the same time. The ``chan_align_blk`` enforces this by gating the global ``send`` signal: data is only forwarded when every channelizer output FIFO has at least one word available.
+
+The mechanism uses a two-stage pipeline to absorb the round-trip propagation delay between the FIFOs and the central arbiter:
+
+1. The ``almost_empty`` flags from each channelizer output FIFO are registered twice (``almost_empty_reg1``, ``almost_empty_reg2``) to allow the signals to propagate from their source flops to a central point.
+2. The registered flags are OR-reduced: ``send = NOT OR(almost_empty_reg2)``. The ``send`` signal is ``'0'`` (pause) if any lane is almost empty, ``'1'`` (transmit) otherwise.
+3. ``send`` is registered twice again (``send_reg1``, ``send_reg2``) before being broadcast back to ``chan_out_send`` on each channelizer.
+
+The two-stage pipeline on each direction means the FIFO almost-empty threshold must be set at least four words above zero (two cycles of propagation each way) so that the FIFOs cannot underrun during the time it takes the ``send`` signal to propagate back after ``almost_empty`` is asserted.
+
+The ``send_reg1/2`` and ``almost_empty_reg1/2`` signals are tagged ``keep`` to prevent the synthesis tool from collapsing them into a shift register, preserving the intended pipelining and placement flexibility.
+
+
+Memory map
+==========
+
+.. include-docs:: chan_array
+    :start-after: Memory Map
+
+NOTE: `UCAP` module is instantiated in `chan_array` but is connected to the top router. Assigning an extra address bit to include `UCAP` in the `chan_array` would have wasted a lot of precious address space.

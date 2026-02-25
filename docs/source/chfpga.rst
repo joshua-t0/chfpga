@@ -418,11 +418,6 @@ Top level memory map
 
 
 
-Channelizers memory map
------------------------
-
-.. include-docs:: chfpga
-    :start-after: ADCDAQ & CHAN
 
 Submodules
 ==========

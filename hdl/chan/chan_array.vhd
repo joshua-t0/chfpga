@@ -107,8 +107,6 @@ entity chan_array is
 		chan_out_tuser        : out slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
 		chan_out_tvalid       : out std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
 		chan_out_tlast        : out std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
-		chan_out_almost_empty : out std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
-		chan_out_send         : in std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1) := (others => '1');
 		ct_clk                : in std_logic;
 		ct_reset              : in std_logic;
 
@@ -204,6 +202,10 @@ architecture impl of chan_array is
 	signal chan_prober_tvalid: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
 	signal chan_prober_tlast: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
 	signal chan_prober_tready: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
+
+	-- Channelizer output alignment (chan_align_blk)
+	signal chan_out_almost_empty: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
+	signal chan_out_send: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1) := (others => '1');
 begin
 
 	-- ADCDAQ_RESET <= adcdaq_reset_async or refclk_adcdaq_reset;
@@ -464,26 +466,26 @@ begin
 			end if;
 		end process;
 
-		-- Channel Memory Map
+		-- Memory Map
 		--
-		-- |#   | Base Addr       | Subaddresses | Description |
+		-- |Port #   | Base Addr       | Sub-module |  |
 		-- |----|-----------------|------------- |-------------|
-		-- | 0  | Base + 0x00000  | CHAN 0       |             |
-		-- | 1  | Base + 0x02000  | CHAN 1       |             |
-		-- | 2  | Base + 0x04000  | CHAN 2       |             |
-		-- | 3  | Base + 0x06000  | CHAN 3       |             |
-		-- | 4  | Base + 0x08000  | CHAN 4       |             |
-		-- | 5  | Base + 0x0A000  | CHAN 5       |             |
-		-- | 6  | Base + 0x0C000  | CHAN 6       |             |
-		-- | 7  | Base + 0x0E000  | CHAN 7       |             |
-		-- | 8  | Base + 0x10000  | CHAN 8       |             |
-		-- | 9  | Base + 0x12000  | CHAN 9       |             |
-		-- | 10 | Base + 0x14000  | CHAN 10      |             |
-		-- | 11 | Base + 0x16000  | CHAN 11      |             |
-		-- | 12 | Base + 0x18000  | CHAN 12      |             |
-		-- | 13 | Base + 0x1A000  | CHAN 13      |             |
-		-- | 14 | Base + 0x1C000  | CHAN 14      |             |
-		-- | 15 | Base + 0x1E000  | CHAN 15      |             |
+		-- | 0  | Base + 0x00000  | CHAN[0] & ADCDAQ[0]       |             |
+		-- | 1  | Base + 0x02000  | CHAN[1] & ADCDAQ[1]       |             |
+		-- | 2  | Base + 0x04000  | CHAN[2] & ADCDAQ[2]       |             |
+		-- | 3  | Base + 0x06000  | CHAN[3] & ADCDAQ[3]       |             |
+		-- | 4  | Base + 0x08000  | CHAN[4] & ADCDAQ[4]       |             |
+		-- | 5  | Base + 0x0A000  | CHAN[5] & ADCDAQ[5]       |             |
+		-- | 6  | Base + 0x0C000  | CHAN[6] & ADCDAQ[6]       |             |
+		-- | 7  | Base + 0x0E000  | CHAN[7] & ADCDAQ[7]       |             |
+		-- | 8  | Base + 0x10000  | CHAN[8] & ADCDAQ[8]       |             |
+		-- | 9  | Base + 0x12000  | CHAN[9] & ADCDAQ[9]       |             |
+		-- | 10 | Base + 0x14000  | CHAN[10] & ADCDAQ[10]       |             |
+		-- | 11 | Base + 0x16000  | CHAN[11] & ADCDAQ[11]       |             |
+		-- | 12 | Base + 0x18000  | CHAN[12] & ADCDAQ[12]       |             |
+		-- | 13 | Base + 0x1A000  | CHAN[13] & ADCDAQ[13]       |             |
+		-- | 14 | Base + 0x1C000  | CHAN[14] & ADCDAQ[14]       |             |
+		-- | 15 | Base + 0x1E000  | CHAN[15] & ADCDAQ[15]       |             |
 
 		chan_router0: entity work.bsb_router
 			generic map (
@@ -753,6 +755,32 @@ begin
 			assert FALSE report "Unsupported CAPTURE_TYPE" severity FAILURE;
 
 	end generate cap_gen;
+
+	---------------------------------------------------------------------
+	-- Channelizer output alignment
+	---------------------------------------------------------------------
+	-- Assert chan_out_send to all channelizers except when any output FIFO is almost empty,
+	-- ensuring all channelizers always produce words simultaneously.
+	-- The almost_empty flags are pipelined two stages to a central point, OR-reduced to derive
+	-- send, then pipelined two stages back. The channelizer FIFO almost-empty threshold must
+	-- absorb this four-cycle round-trip latency.
+	chan_align_blk: block
+		signal almost_empty_reg1, almost_empty_reg2: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
+		signal send_reg1, send_reg2: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
+		signal send: std_logic;
+		attribute keep of send_reg1, send_reg2, send, almost_empty_reg1, almost_empty_reg2: signal is "true"; -- prevent the tool from inferring a shift register
+	begin
+		chan_align_proc: process(all) begin
+			if rising_edge(ct_clk) then
+				almost_empty_reg1 <= chan_out_almost_empty;
+				almost_empty_reg2 <= almost_empty_reg1;
+				send <= '0' when ct_reset else not(or almost_empty_reg2);
+				send_reg1 <= (others => send);
+				send_reg2 <= send_reg1;
+				chan_out_send <= send_reg2;
+			end if;
+		end process;
+	end block chan_align_blk;
 
 end architecture impl;
 
