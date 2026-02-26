@@ -52,7 +52,7 @@ ENTITY chFPGA_testbench IS
 		NUMBER_OF_I2C_PORTS: integer := 1;
 		NUMBER_OF_SPI_PORTS: integer :=1;
 		NUMBER_OF_ADC_BOARDS: integer := 1;
-		ADC_TO_ADC_BOARD_MAP: IntegerArray(0 to NUMBER_OF_ADCS_MAX-1):=(0 to 15 => 0);
+		ADC_TO_ADC_BOARD_MAP: integer_array(0 to NUMBER_OF_ADCS_MAX-1):=(0 to 15 => 0);
 		SYSTEM_CLOCK_SOURCE: string := "SFP_REFCLK"; --"SYSCLK": the 200 MHz clock will be taken from sysclk_p/n (CC pins) or "SFP_REFCLK": the system clock is 125 MHz from the GTX reference clock
 
 		-- Ethernet MAC Configuration (BSB interface type)
@@ -60,17 +60,17 @@ ENTITY chFPGA_testbench IS
 		CAP_INTERFACE: cap_interface_enum := BSB;
 		SGMII_CLOCK_SOURCE: string :="REFCLK"; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 
-		-- IMPLEMENT_ANT: BoolArray(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(0 to 7 => TRUE, others=>FALSE); -- Selects for which antenna a processing pipeline is implemented
-		-- IMPLEMENT_FFT: BoolArray(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(others=>FALSE); -- Selects if the FFT block is implemented for each antenna (otherwise the timestream go through directly)
-		-- IMPLEMENT_CORR: BoolArray(0 to NUMBER_OF_CORRELATORS_MAX-1):=(others=> TRUE);
+		-- IMPLEMENT_ANT: bool_array(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(0 to 7 => TRUE, others=>FALSE); -- Selects for which antenna a processing pipeline is implemented
+		-- IMPLEMENT_FFT: bool_array(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(others=>FALSE); -- Selects if the FFT block is implemented for each antenna (otherwise the timestream go through directly)
+		-- IMPLEMENT_CORR: bool_array(0 to NUMBER_OF_CORRELATORS_MAX-1):=(others=> TRUE);
 
 
 		-- ADCDAQ Configuration
-		ADC_IS_DIFFERENTIAL: BUFMRIndexArrayArray(0 to NUMBER_OF_ADCS_MAX-1) := (others => (others => 1)); -- All inputs are differential by default unless specified otherwise by the top level
-		ADC_INSTANTIATE_PLL: BoolArray(0 to NUMBER_OF_ADCS_MAX-1):=( others=>FALSE);
-		ADC_USE_EXT_DATA_CLK: BoolArray(0 to NUMBER_OF_ADCS_MAX-1):=(others=>FALSE);
-		ADC_INSTANTIATE_BUFMR: BUFMRIndexArrayArray(0 to NUMBER_OF_ADCS_MAX-1) := (others=> (others=>-1));
-		ADC_PROVIDE_BUFFERED_DIVCLK: BoolArray(0 to NUMBER_OF_ADCS_MAX-1) := (0=>TRUE, others=>FALSE);
+		ADC_IS_DIFFERENTIAL: bufmr_map_array := (0 to NUMBER_OF_ADCS_MAX-1 => (0 to 8 => 1)); -- All inputs are differential by default unless specified otherwise by the top level
+		ADC_INSTANTIATE_PLL: bool_array(0 to NUMBER_OF_ADCS_MAX-1):=( others=>FALSE);
+		ADC_USE_EXT_DATA_CLK: bool_array(0 to NUMBER_OF_ADCS_MAX-1):=(others=>FALSE);
+		ADC_INSTANTIATE_BUFMR: bufmr_map_array(0 to NUMBER_OF_ADCS_MAX-1) := (0 to NUMBER_OF_ADCS_MAX-1 => (0 to 8 => -1));
+		ADC_PROVIDE_BUFFERED_DIVCLK: bool_array(0 to NUMBER_OF_ADCS_MAX-1) := (0=>TRUE, others=>FALSE);
 		CHAN_CLK_SOURCE_LANE: integer :=0; -- Indicate which ADC is the source of the antenna processing clock. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
 
 		-- Simulation parameters

@@ -243,8 +243,8 @@ entity adcdaq is
 		IMPLEMENT_ADCDAQ 		: BOOLEAN:= TRUE; -- Indicates if the block is to be implemented. If False, a dummy module will be generated but the I/Os will be preserved.
 		INSTANTIATE_IDELAYCTRL 	: BOOLEAN:= TRUE;  -- Indicates if this module implements a IDELAYCTRL. Only one of the DAQ modules needs to implemt it. The tools will generate and place the other ones automatically.
 		INSTANTIATE_PLL 		: BOOLEAN:= FALSE; -- Indicates if this module instantiate a PLL to generate a I/O and a word clock.
-		BUFMR_MAP 				: BUFMRIndexArray := (others=>0); -- For K7 designs, indicates to which BUFR/BUFIO each data line (array element 0 to 7) and the clock line (array element 8) are connected. BUFR/BUFIO number start at 0. Implies that one BUFMR will be generated, UNLESS all entries are -1 indicating that the BUFMR is non needed and that all lines connect to a single BUFR/BUFIO.
-		IS_DIFFERENTIAL 		: BUFMRIndexArray := (others=>1); -- Indicates whether each data line (array element 0 to 7) and the clock line (array element 8) uses a differential receiver. An IBUFGS in instantiated if the element value is non-zero. In this case, only the P input is used.
+		BUFMR_MAP 				: integer_array := (0 to 8 => 0); -- For K7 designs, indicates to which BUFR/BUFIO each data line (array element 0 to 7) and the clock line (array element 8) are connected. BUFR/BUFIO number start at 0. Implies that one BUFMR will be generated, UNLESS all entries are -1 indicating that the BUFMR is non needed and that all lines connect to a single BUFR/BUFIO.
+		IS_DIFFERENTIAL 		: integer_array := (0 to 8 =>1); -- Indicates whether each data line (array element 0 to 7) and the clock line (array element 8) uses a differential receiver. An IBUFGS in instantiated if the element value is non-zero. In this case, only the P input is used.
 		PROVIDE_BUFFERED_DIVCLK : BOOLEAN:= FALSE; -- Indicates if this modules provides a buffered (BUFG) 200 MHz ADC clock (to be used to generate the processing clocks). Needs to be set only on those channels that will actually use it because we'll quickly run ot or BUFGs otherwise.
 		USE_EXT_DATA_CLK 		: BOOLEAN:= TRUE;  -- Indicates if this modules uses the IO and WORD clocks coming from ioclk_in and divclk_in (TRUE) or of these cloks are generated directly from the ADC (FALSE)
 		CLK_VALID_OFFSET 		: INTEGER:= -3;   -- Number of clocks to wait after a full frame before data is declared valid. The software-configurable sample_delay also offsets this delay.
@@ -346,15 +346,15 @@ attribute S: string;
 -- BUFR+MAP indices. We need a BUFMR in every region where data lines come in,
 -- but we also need one in the clock region where the clock enters the chip to
 -- clock the clock IODELAY and clock-related logic. Hence we look into BUFMR_MAP(0 to 8).
-constant BUFR_INDEX_MIN: integer := MIN(IntegerArray(BUFMR_MAP));
-constant BUFR_INDEX_MAX: integer := MAX(IntegerArray(BUFMR_MAP));
+constant BUFR_INDEX_MIN: integer := MIN(BUFMR_MAP);
+constant BUFR_INDEX_MAX: integer := MAX(BUFMR_MAP);
 constant NUMBER_OF_BUFR: integer := BUFR_INDEX_MAX-BUFR_INDEX_MIN+1;
 
 -- Determines how many BUFIO we need.
 -- We need BUFIOs only in the clock regions where there is data (only the SERDES needs them)
 -- Hence we check only BUFMR_MAP(0 to 7)
-constant BUFIO_INDEX_MIN: integer := MIN(IntegerArray(BUFMR_MAP(0 to 7)));
-constant BUFIO_INDEX_MAX: integer := MAX(IntegerArray(BUFMR_MAP(0 to 7)));
+constant BUFIO_INDEX_MIN: integer := MIN(BUFMR_MAP(0 to 7));
+constant BUFIO_INDEX_MAX: integer := MAX(BUFMR_MAP(0 to 7));
 constant NUMBER_OF_BUFIO: integer := BUFIO_INDEX_MAX-BUFIO_INDEX_MIN+1;
 
 -- Determines whether we need to instantiate a BUFMR at all.

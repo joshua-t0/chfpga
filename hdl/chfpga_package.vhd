@@ -33,6 +33,13 @@ use IEEE.std_logic_textio.all;
 -- Defines the system-level constants and data types, declares the components used in the system, and provide support functions and procedures
 package chFPGA_Package is
 
+type slv_array is array (NATURAL RANGE <>) of std_logic_vector; -- VHDL2008 only
+type signed_array is array (NATURAL RANGE <>) of signed; -- VHDL2008 only
+type unsigned_array is array (NATURAL RANGE <>) of unsigned; -- VHDL2008 only
+type integer_array is array (natural range <>) of integer;
+type integer_2d_array is array (natural range <>, natural range <>) of integer;
+type bool_array is array (natural range <>) of boolean;
+
 -- generic types and subtypes
 subtype Byte is std_logic_vector(7 downto 0);
 subtype slv is std_logic_vector;
@@ -68,9 +75,7 @@ subtype slv144 is std_logic_vector(143 downto 0);
 type ByteArray8 is array (0 to 7) of std_logic_vector(7 downto 0);
 type ByteArray is array (NATURAL RANGE <>) of std_logic_vector(7 downto 0);
 
-type slv_array is array (NATURAL RANGE <>) of std_logic_vector; -- VHDL2008 only
-type signed_array is array (NATURAL RANGE <>) of signed; -- VHDL2008 only
-type unsigned_array is array (NATURAL RANGE <>) of unsigned; -- VHDL2008 only
+
 
 type slv2_array is array (NATURAL RANGE <>) of std_logic_vector(1 downto 0);
 type slv3_array is array (NATURAL RANGE <>) of std_logic_vector(2 downto 0);
@@ -109,7 +114,6 @@ type slv256_array is array (NATURAL RANGE <>) of std_logic_vector(255 downto 0);
 type Word3Array is array (NATURAL RANGE <>) of std_logic_vector(2 downto 0);
 type Word32Array is array (NATURAL RANGE <>) of std_logic_vector(31 downto 0);
 type Word33Array is array (NATURAL RANGE <>) of std_logic_vector(32 downto 0);
-type BoolArray is array (natural range <>) of BOOLEAN;
 type u2_array is array (NATURAL RANGE <>) of unsigned(1 downto 0);
 type u3_array is array (NATURAL RANGE <>) of unsigned(2 downto 0);
 type u4_array is array (NATURAL RANGE <>) of unsigned(3 downto 0);
@@ -125,18 +129,16 @@ type u48_array is array (NATURAL RANGE <>) of unsigned(47 downto 0);
 type int8_array is array (NATURAL RANGE <>) of signed(7 downto 0);
 type int35_array is array (NATURAL RANGE <>) of signed(34 downto 0);
 
---type StringArray is array (natural range <>) of STRING;
-type IntegerArray is array (natural range <>) of INTEGER;
-type integer_array is array (natural range <>) of INTEGER;
-type bool_array is array (natural range <>) of boolean;
-type integer_16xN_array is array (natural range <>) of integer_array(0 to 15);
 
-type FanoutArray is array (NATURAL RANGE <>) of std_logic_vector(0 downto 0); -- used to create a vector of independent signals used to fan out signal without having the map tool pack them into a single slice because of "register ordering"
-type BUFMRIndexArray is array (0 to 8) of INTEGER range -1 to 2; -- used to indicate which BUFMR to use for each bit and the clock of the ADC output
-type BUFMRIndexArrayArray is  array (NATURAL RANGE <>) of BUFMRIndexArray;
+--type BUFMRIndexArray is array (0 to 8) of INTEGER range -1 to 2; -- used to indicate which BUFMR to use for each bit and the clock of the ADC output
+
 -- Application specific types and subtypes
+type bufmr_map_array is array (natural range <>) of integer_array(0 to 8);
 subtype PortOffset is std_logic_vector(1 downto 0);
 type PortOffsetArray is array (natural range <>) of PortOffset;
+type FanoutArray is array (NATURAL RANGE <>) of std_logic_vector(0 downto 0); -- used to create a vector of independent signals used to fan out signal without having the map tool pack them into a single slice because of "register ordering"
+type integer_16xN_array is array (natural range <>) of integer_array(0 to 15);
+
 
 -- Implement static maps (dictionaries) for lookups. See sel() to lookup.
 type si_map_item is record -- string-integer map element
@@ -255,7 +257,7 @@ constant PLATFORM_INFO: PLATFORM_INFO_ARRAY := (
 
 
 
-constant FPGA_SERIES_LIST: IntegerArray:=(
+constant FPGA_SERIES_LIST: integer_array:=(
 	PLATFORM_ID_ML605 => FPGA_VIRTEX6,
 	PLATFORM_ID_KC705 => FPGA_KINTEX7,
 	PLATFORM_ID_UNUSED => FPGA_KINTEX7,
@@ -431,8 +433,6 @@ constant NUMBER_OF_CMACS_MAX : integer := (NUMBER_OF_CHANNELIZERS_MAX + 1) * 2;
 constant GLOBAL_SIM: boolean := FALSE;
 constant GLOBAL_NUMBER_OF_GPU_LINKS: integer := 8; -- (0- NUMBER_OF_CHANNELIZERS) Number of 10Gb Ethernet links to connecto to the GPUs
 constant GLOBAL_NUMBER_OF_GPU_REFCLKS: integer := 1; -- Number of Reference clocks provided for the 10GE links to the GPU
-constant GLOBAL_GPU_CHANNEL_QUAD: IntegerArray := (0 to 3=> 0, 4 to 7=> 1); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1
-constant GLOBAL_GPU_QUAD_REFCLK: IntegerArray := (0 to 1=>0); -- Both QUAD0 and QUAD1 use refclk(0)
 
 
 
@@ -690,12 +690,12 @@ FUNCTION max_value_vect(v:signed) return signed;
 FUNCTION min_value_vect(v:signed) return signed;
 
 function max(LEFT, RIGHT: INTEGER) return INTEGER;
-function max(vin: IntegerArray) return INTEGER;
 function max(vin: integer_array) return integer;
+
 function min(LEFT, RIGHT: INTEGER) return INTEGER;
-function min(vin: IntegerArray) return INTEGER;
 function min(vin: integer_array) return integer;
 function min(LEFT, RIGHT: unsigned) return unsigned;
+
 function count(vin: integer_array; target:integer) return integer;
 function to_std_logic(i:boolean) return std_logic; -- converts bool to std_logic
 function to_slv(i:integer; n: integer) return std_logic_vector; -- converts integer to standard_logic_vector with specified number of bits
@@ -935,18 +935,6 @@ begin
 	end if;
 end MAX;
 
-function MAX(vin: IntegerArray) return INTEGER is
-	variable vout: integer;
-begin
-	vout := INTEGER'LOW;
-	for j in 0 to vin'Length-1 loop
-		if 	vin(j) > vout then
-			vout := vin(j);
-		end if;
-	end loop;
-	return vout;
-end MAX;
-
 function max(vin: integer_array) return integer is
 	variable vout: integer;
 begin
@@ -959,18 +947,6 @@ begin
 	return vout;
 end max;
 
-function MIN(vin: IntegerArray) return INTEGER is
-	variable vout: integer;
-begin
-	vout := INTEGER'HIGH;
-	for j in 0 to vin'Length-1 loop
-		if 	vin(j) < vout then
-			vout := vin(j);
-		end if;
-	end loop;
-	return vout;
-end MIN;
-
 function min(vin: integer_array) return integer is
 	variable vout: integer;
 begin
@@ -982,6 +958,7 @@ begin
 	end loop;
 	return vout;
 end min;
+
 
 -- stolen from std_numeric
 function MIN(LEFT, RIGHT: INTEGER) return INTEGER is

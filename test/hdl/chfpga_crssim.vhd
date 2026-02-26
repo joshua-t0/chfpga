@@ -14,7 +14,7 @@ use xpm.vcomponents.ALL;
 entity chfpga_crssim is
 	generic (
 
-		PLATFORM_ID: integer := CONFIG_PLATFORM_ID; --  Identifies the type of platform on which the firmware is running.
+		PLATFORM_ID: integer := CONFIG_PLATFORM_CRS; --  Identifies the type of platform on which the firmware is running.
 
 		-- Clocking config
 
@@ -64,8 +64,8 @@ entity chfpga_crssim is
 
 		-- Real-time data offload links configuration
 		DATA_LINK_TYPE: data_link_type_enum := CONFIG_DATA_LINK_TYPE; --
-		GPU_CHANNEL_QUAD: integer_array := (0 to 3 => 0); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if DATA_LINK_TYPE is NONE
-		GPU_QUAD_REFCLK: integer_array := (0 to 0 =>0 ); -- Both QUAD0 and QUAD1 use refclk(0)
+		DATA_LINK_LINK_TO_QUAD_MAP: integer_array := (0 to 3 => 0); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if DATA_LINK_TYPE is NONE
+		DATA_LINK_QUAD_TO_REFCLK_MAP: integer_array := (0 to 0 =>0 ); -- Both QUAD0 and QUAD1 use refclk(0)
 
 
 		-- Peripheral config
@@ -78,8 +78,8 @@ entity chfpga_crssim is
 
 		-- Derived parameters
 
-		NUMBER_OF_GPU_LINKS: integer := sel(DATA_LINK_TYPE /= NONE, GPU_CHANNEL_QUAD'LENGTH, 0); -- Number of 100Gb Ethernet links. 0 if DATA_LINK_TYPE is NONE
-		NUMBER_OF_GPU_REFCLKS: integer               := max(GPU_QUAD_REFCLK)+1 -- Number of Reference clocks provided for the 100GE links.
+		NUMBER_OF_GPU_LINKS: integer := sel(DATA_LINK_TYPE /= NONE, DATA_LINK_LINK_TO_QUAD_MAP'LENGTH, 0); -- Number of 100Gb Ethernet links. 0 if DATA_LINK_TYPE is NONE
+		NUMBER_OF_GPU_REFCLKS: integer               := max(DATA_LINK_QUAD_TO_REFCLK_MAP)+1 -- Number of Reference clocks provided for the 100GE links.
 
 
 	);
@@ -648,8 +648,8 @@ begin
 
 			-- Real time Ethernet data streaming interface
 			DATA_LINK_TYPE        => DATA_LINK_TYPE,
-			GPU_CHANNEL_QUAD                => integerarray(GPU_CHANNEL_QUAD),
-			GPU_QUAD_REFCLK                 => integerarray(GPU_QUAD_REFCLK),
+			DATA_LINK_LINK_TO_QUAD_MAP                => DATA_LINK_LINK_TO_QUAD_MAP,
+			DATA_LINK_QUAD_TO_REFCLK_MAP                 => DATA_LINK_QUAD_TO_REFCLK_MAP,
 
 			-- Correlator
 			CORR_TYPE             => CORR_TYPE,

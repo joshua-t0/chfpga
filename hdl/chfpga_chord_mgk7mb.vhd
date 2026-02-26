@@ -51,7 +51,7 @@ entity chfpga_chord_mgk7mb is
 			NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := 2;
 			BP_LINK_SPEED: integer                       := 1; -- 0=7.5 Gbps, 1=10Gbps.
 
-			BP_SHUFFLE_LANE_MAP: integerArray            := ( -- Associate the concatenated BP PCB and QUAD lanes to GTX links. -1 means a bypass lane.
+			BP_SHUFFLE_LANE_MAP: integer_array            := ( -- Associate the concatenated BP PCB and QUAD lanes to GTX links. -1 means a bypass lane.
 			                                                -- Backplane PCB Lanes
 			                                                 0=>-1, -- Bypass lane
 			                                                 1=>0, 2=> 1, 3 => 2, 4 =>3,  5 =>4,  6 =>5,  7 =>6, 8=>7,
@@ -60,47 +60,47 @@ entity chfpga_chord_mgk7mb is
 			                                                 16 to 19=>-1, -- Bypass lane
 			                                                 20=>15, 21=>16, 22=>17, 23=>18
 			                                                );
-			BP_SHUFFLE_LANE_TO_QUAD_MAP : integerArray   := (0 to 3=>0, 4 to 7=>1, 8 to 11=> 2, 12 to 14 => 3, 15 to 18=> 4); --  Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-			BP_SHUFFLE_QUAD_TO_REFCLK_MAP : integerArray := (0 => 1, 1 => 0, 2 => 0, 3=> 1, 4 => 1); -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_BP_SHUFFLE_REFCLK-1).
+			BP_SHUFFLE_LANE_TO_QUAD_MAP : integer_array   := (0 to 3=>0, 4 to 7=>1, 8 to 11=> 2, 12 to 14 => 3, 15 to 18=> 4); --  Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
+			BP_SHUFFLE_QUAD_TO_REFCLK_MAP : integer_array := (0 => 1, 1 => 0, 2 => 0, 3=> 1, 4 => 1); -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_BP_SHUFFLE_REFCLK-1).
 
 			NUMBER_OF_GPU_LINKS: integer                 := GLOBAL_NUMBER_OF_GPU_LINKS; -- (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
 			NUMBER_OF_GPU_REFCLKS: integer               := GLOBAL_NUMBER_OF_GPU_REFCLKS; -- Number of Reference clocks provided for the 10GE links to the GPU
 			NUMBER_OF_I2C_PORTS: integer                 := 1;
 			NUMBER_OF_SPI_PORTS: integer                 := 2; -- One port for each FMC
 			NUMBER_OF_ADC_BOARDS: integer                := 2; -- One SYNC for each FMC
-			-- IMPLEMENT_ANT: BoolArray(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(others=>TRUE); -- Selects for which antenna a processing pipeline is implemented
-			-- IMPLEMENT_FFT: BoolArray(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(others=>TRUE); -- Selects if the FFT block is implemented for each antenna (otherwise the timestream go through directly)
-			-- IMPLEMENT_CORR: BoolArray(0 to NUMBER_OF_CORRELATORS_MAX-1):=(0 to 7=>TRUE, others=>FALSE); -- Indicates if the correlator blocks are to be implemented
+			-- IMPLEMENT_ANT: bool_array(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(others=>TRUE); -- Selects for which antenna a processing pipeline is implemented
+			-- IMPLEMENT_FFT: bool_array(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(others=>TRUE); -- Selects if the FFT block is implemented for each antenna (otherwise the timestream go through directly)
+			-- IMPLEMENT_CORR: bool_array(0 to NUMBER_OF_CORRELATORS_MAX-1):=(0 to 7=>TRUE, others=>FALSE); -- Indicates if the correlator blocks are to be implemented
 
 			-- ADC_IS_DIFFERNTIAL indicates whether each ADC data and clock inputs are single-ended (zero value) or differential (non-zero value).
 			-- For Rev2 board
-			ADC_IS_DIFFERENTIAL: BUFMRIndexArrayArray := ( 0 to 15 => (1,1,1,1,1,1,1,1,  1));
+			ADC_IS_DIFFERENTIAL: bufmr_map_array := ( 0 to 15 => (1,1,1,1,1,1,1,1,  1));
 			-- ADC_INSTANTIATE_PLL determines which ADCDAQ need to instantiate a PLL to provide IOCLK and DIVCLK to ISERDES that are in non-adjacent banks, and to provide a BUFG-buffered global word clock.
 			-- NOTE: A PLL (MMCM) could be used in theory for all data buses, but in practice we would run out of PLLs (there are only 2 per clock region).
 			-- NOTE: On the Virtex 6, there is no fast clock routing for the outer IO pads to the PLL. So the use of a PLL is preferably limited to the center IO pads
-			ADC_PROVIDE_BUFFERED_DIVCLK: BoolArray( 0 to NUMBER_OF_ADCS_MAX-1):=( 0 => TRUE, others=>FALSE); -- ADC 0 will be used to provide the clock to generate the signal processing clocks for all antennas
-			ADC_INSTANTIATE_PLL: BoolArray(0 to NUMBER_OF_ADCS_MAX-1):=(others=>FALSE); -- Need no PLL on this board. All deserialisers are acessible directly by the BUFRs and BUFIOs when using BUFMRs if necessary
+			ADC_PROVIDE_BUFFERED_DIVCLK: bool_array( 0 to NUMBER_OF_ADCS_MAX-1):=( 0 => TRUE, others=>FALSE); -- ADC 0 will be used to provide the clock to generate the signal processing clocks for all antennas
+			ADC_INSTANTIATE_PLL: bool_array(0 to NUMBER_OF_ADCS_MAX-1):=(others=>FALSE); -- Need no PLL on this board. All deserialisers are acessible directly by the BUFRs and BUFIOs when using BUFMRs if necessary
 			-- ADC_USE_EXT_DATA_CLK determines which ADC use the external (PLL-generated) IOCLK and DIVCLK. This is needed if the data bus lines end up in non-adjacent banks reachable by the IOBUF or BUFR.
 			-- If FALSE, the clocks generated by IOCLK and BUFR will be used.
 			-- NOTE: using a single PLL output for multiple ADC data buses is allowed, but that assumes that all data buses are relatively well in phase to be realigned with the IDELAY. This is reasonable assumption if all data buses come from the same ADC chip. It is not clear if this work well across multiple ADC chips.
-			ADC_USE_EXT_DATA_CLK: BoolArray(0 to NUMBER_OF_ADCS_MAX-1):=(others=>FALSE); -- On Rev0 board, the clock buffer fot CHAN1 is bad
-			ADC_INSTANTIATE_BUFMR: BUFMRIndexArrayArray(0 to NUMBER_OF_ADCS_MAX-1):=(
+			ADC_USE_EXT_DATA_CLK: bool_array(0 to NUMBER_OF_ADCS_MAX-1):=(others=>FALSE); -- On Rev0 board, the clock buffer fot CHAN1 is bad
+			ADC_INSTANTIATE_BUFMR: bufmr_map_array(0 to NUMBER_OF_ADCS_MAX-1):=(
 				-- FMC A
-				(others => 0), -- CH0: Data and clock in bank 14. We use a BUFMR to equalize delays with other channels. We have only one BUFR/BUFIO.
-				(others => -1), -- CH1: Data and clock in bank 14. Clock is on SRCC. Cannot use BUFMR to equalize delays with other channels. We have only one BUFR/BUFIO.
+				(0 to 8 => 0), -- CH0: Data and clock in bank 14. We use a BUFMR to equalize delays with other channels. We have only one BUFR/BUFIO.
+				(0 to 8 => -1), -- CH1: Data and clock in bank 14. Clock is on SRCC. Cannot use BUFMR to equalize delays with other channels. We have only one BUFR/BUFIO.
 				(1,1,0,0,0,0,0,0, 0), -- CH2: Clock in bank 13, Data in banks 12 and 13. We have a BUFR/BUFIO in each bank.
 				(1,1,1,0,0,0,0,0, 0), -- CH3: Clock in bank 13, Data in banks 12 and 13. We have a BUFR/BUFIO in each bank.
-				(others => 0), -- CH4: Data and clock in bank 11. We use a BUFMR to equalize delays with other channels. We have only one BUFR/BUFIO.
-				(others => 0), -- CH5: Data and clock in bank 11. We use a BUFMR to equalize delays with other channels. We have only one BUFR/BUFIO.
-				(others => 0), -- CH6: Data and clock in bank 12. We use a BUFMR to equalize delays with other channels. We have only one BUFR/BUFIO.
-				(others => -1), -- CH7: Data and clock in bank 12. Clock is on SRCC. Cannot use BUFMR to equalize delays with other channels. We have only one BUFR/BUFIO.
+				(0 to 8 => 0), -- CH4: Data and clock in bank 11. We use a BUFMR to equalize delays with other channels. We have only one BUFR/BUFIO.
+				(0 to 8 => 0), -- CH5: Data and clock in bank 11. We use a BUFMR to equalize delays with other channels. We have only one BUFR/BUFIO.
+				(0 to 8 => 0), -- CH6: Data and clock in bank 12. We use a BUFMR to equalize delays with other channels. We have only one BUFR/BUFIO.
+				(0 to 8 => -1), -- CH7: Data and clock in bank 12. Clock is on SRCC. Cannot use BUFMR to equalize delays with other channels. We have only one BUFR/BUFIO.
 				-- FMC B
-				(others => 0), -- CH8: Clock in bank 16 (MRCC), data  in bank 16
-				(others => -1), -- CH9: Clock in bank 16 (SRCC), data in bank 16. Cannot use BUFMR to equalize delays.
+				(0 to 8 => 0), -- CH8: Clock in bank 16 (MRCC), data  in bank 16
+				(0 to 8 => -1), -- CH9: Clock in bank 16 (SRCC), data in bank 16. Cannot use BUFMR to equalize delays.
 				(1,1,2,2,2,0,2,0, 0), -- CH10: Clock in bank 17 (MRCC), Data in banks 16,17 and 18.
 				(1,1,1,0,0,0,0,0, 0), -- CH11: Clock in Bank 17 (MRCC), Dana in banks 17 and 18.
-				(others => 0), -- CH12: Clock in Bank 15 (MRCC), data in bank 15
-				(others => 0), -- CH13: Clock in Bank 15 (MRCC), data in bank 15
+				(0 to 8 => 0), -- CH12: Clock in Bank 15 (MRCC), data in bank 15
+				(0 to 8 => 0), -- CH13: Clock in Bank 15 (MRCC), data in bank 15
 				(0,0,0,1,0,0,0,0, 0), -- CH14: Clock in bank 18 (MRCC), data in banks 17 and 18
 				(1,1,1,1,1,1,1,1, 0) -- CH15: Clock in bank 18 (MRCC), Data in Bank 17
 
@@ -116,8 +116,8 @@ entity chfpga_chord_mgk7mb is
 				-- CH7: Data and clock all in same bank 18. Clock is on a SRCC pin, so we cannot use BUFMR to equalize delays.
 			CHAN_CLK_SOURCE_LANE: integer :=0; -- Indicate which ADC is the source of the antenna processing clock. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
 
-			GPU_CHANNEL_QUAD: IntegerArray := GLOBAL_GPU_CHANNEL_QUAD; -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1
-			GPU_QUAD_REFCLK: IntegerArray := GLOBAL_GPU_QUAD_REFCLK; -- Both QUAD0 and QUAD1 use refclk(0)
+			DATA_LINK_LINK_TO_QUAD_MAP: integer_array := GLOBAL_DATA_LINK_LINK_TO_QUAD_MAP; -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1
+			DATA_LINK_QUAD_TO_REFCLK_MAP: integer_array := GLOBAL_DATA_LINK_QUAD_TO_REFCLK_MAP; -- Both QUAD0 and QUAD1 use refclk(0)
 			SIM: BOOLEAN := GLOBAL_SIM-- Indicates this is running as a simulation. Used to accelerate simulations
 
 	);
@@ -943,8 +943,8 @@ bufr_rawclk10 : BUFR
 			ADC_USE_EXT_DATA_CLK            => ADC_USE_EXT_DATA_CLK,
 			ADC_INSTANTIATE_BUFMR           => ADC_INSTANTIATE_BUFMR,
 			CHAN_CLK_SOURCE_LANE                  => CHAN_CLK_SOURCE_LANE,
-			GPU_CHANNEL_QUAD                => GPU_CHANNEL_QUAD,
-			GPU_QUAD_REFCLK                 => GPU_QUAD_REFCLK,
+			DATA_LINK_LINK_TO_QUAD_MAP                => DATA_LINK_LINK_TO_QUAD_MAP,
+			DATA_LINK_QUAD_TO_REFCLK_MAP                 => DATA_LINK_QUAD_TO_REFCLK_MAP,
 			SIM                             => SIM
 			)
 		PORT MAP(

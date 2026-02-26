@@ -36,8 +36,8 @@ entity xglink_core is
 		NUMBER_OF_TX_LANES          : integer := 2;
 		NUMBER_OF_RX_LANES          : integer := 2;
 		NUMBER_OF_REFCLK            : integer := 2;
-		LANE_TO_QUAD_MAP            : integerArray := (0 to 3=>0, 4 to 7=>1, 8 to 11=> 2, 12 to 14 => 3); -- LANE_TO_QUAD_MAP Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-		QUAD_TO_REFCLK_MAP          : integerArray := (1,0,0,1); -- QUAD_TO_REFCLK_MAP Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+		LANE_TO_QUAD_MAP            : integer_array := (0 to 3=>0, 4 to 7=>1, 8 to 11=> 2, 12 to 14 => 3); -- LANE_TO_QUAD_MAP Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
+		QUAD_TO_REFCLK_MAP          : integer_array := (1,0,0,1); -- QUAD_TO_REFCLK_MAP Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
 		EXAMPLE_SIMULATION          : integer :=1;
 		EXAMPLE_SIM_GTRESET_SPEEDUP : string := "TRUE";    -- simulation setting for GT SecureIP model
 		DONT_RESET_ON_DATA_ERROR_IN : std_logic := '0';

@@ -47,12 +47,12 @@ entity chfpga_zcu111 is
 
 		-- ADC config
 		ADC_TYPE: adc_type_enum                   := AXIS;     -- ADC data is provided through the axis_adc port
-		NUMBER_OF_ADCS: integer                   := CONFIG_NUMBER_OF_ADCS;
+		NUMBER_OF_ADCS: integer                   := 8;
 		NUMBER_OF_ADC_BOARDS: integer             := 0;
 
 		-- Channelizer config
 		FFT_TYPE: fft_type_enum                   := CONFIG_CHAN_FFT_TYPE;
-		NUMBER_OF_CHANNELIZERS: integer           := CONFIG_NUMBER_OF_ADCS;
+		NUMBER_OF_CHANNELIZERS: integer           := NUMBER_OF_ADCS;
 		CAPTURE_TYPE: chan_capture_type_enum     := CONFIG_CHAN_CAPTURE_TYPE;
 
 		-- Corner-turn engine config (single board, no backplane)
@@ -69,8 +69,6 @@ entity chfpga_zcu111 is
 
 		-- Real-time data offload links configuration (100G QSFP)
 		DATA_LINK_TYPE: data_link_type_enum         := CONFIG_DATA_LINK_TYPE;
-		GPU_CHANNEL_QUAD: integer_array           := CONFIG_GPU_CHANNEL_QUAD;
-		GPU_QUAD_REFCLK: integer_array            := CONFIG_GPU_QUAD_REFCLK;
 
 		-- Peripheral config
 		BLINKER_PRESENT: boolean                  := TRUE;
@@ -84,8 +82,8 @@ entity chfpga_zcu111 is
 		-- Derived parameters
 		NUMBER_OF_CT_LINKS: integer                := CT_LINK_TO_QUAD_MAP'LENGTH;
 		NUMBER_OF_CT_REFCLKS: integer              := sel(CT_QUAD_TO_REFCLK_MAP'LENGTH > 0, max(CT_QUAD_TO_REFCLK_MAP) + 1, 0);
-		NUMBER_OF_GPU_LINKS: integer              := sel(DATA_LINK_TYPE /= NONE, GPU_CHANNEL_QUAD'LENGTH, 0);
-		NUMBER_OF_GPU_REFCLKS: integer             := sel(DATA_LINK_TYPE /= NONE, max(GPU_QUAD_REFCLK) + 1, 0)
+		NUMBER_OF_GPU_LINKS: integer              := sel(DATA_LINK_TYPE /= NONE, DATA_LINK_LINK_TO_QUAD_MAP'LENGTH, 0);
+		NUMBER_OF_GPU_REFCLKS: integer             := sel(DATA_LINK_TYPE /= NONE, max(DATA_LINK_QUAD_TO_REFCLK_MAP) + 1, 0)
 	);
 
   port (
@@ -352,8 +350,8 @@ begin
 
 			-- Real-time Ethernet data streaming interface
 			DATA_LINK_TYPE        => DATA_LINK_TYPE,
-			GPU_CHANNEL_QUAD      => integerarray(GPU_CHANNEL_QUAD),
-			GPU_QUAD_REFCLK       => integerarray(GPU_QUAD_REFCLK),
+			DATA_LINK_LINK_TO_QUAD_MAP      => DATA_LINK_LINK_TO_QUAD_MAP,
+			DATA_LINK_QUAD_TO_REFCLK_MAP       => DATA_LINK_QUAD_TO_REFCLK_MAP,
 
 			-- Peripherals
 			BLINKER_PRESENT     => BLINKER_PRESENT,

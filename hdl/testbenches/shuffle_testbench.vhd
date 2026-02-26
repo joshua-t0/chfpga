@@ -23,8 +23,8 @@ ENTITY shuffle_testbench IS
 	 GENERIC (
 		NUMBER_OF_LANES             : integer := 2;
 		NUMBER_OF_REFCLK            : integer := 2;
-		CHANNEL_QUAD                : integerArray := (0=>0, 1=>1); -- Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-		QUAD_REFCLK                 : integerArray := (0=>0, 1=>1) -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+		CHANNEL_QUAD                : integer_array := (0=>0, 1=>1); -- Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
+		QUAD_REFCLK                 : integer_array := (0=>0, 1=>1) -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
 		);
 END shuffle_testbench;
 

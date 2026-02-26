@@ -42,13 +42,13 @@ entity chan_array is
 		NUMBER_OF_CAPTURE_SOURCES       : integer                                           := CHAN_CAPTURE_INFO(CAPTURE_TYPE).NUMBER_OF_SOURCES;
 		CAPTURE_BITS_PER_WORD           : integer                                           := CHAN_CAPTURE_INFO(CAPTURE_TYPE).INPUT_WIDTH;
 		ADC_SAMPLES_PER_FRAME           : integer := FFT_INFO(FFT_TYPE).SAMPLES_PER_FRAME;
-		ADC_IS_DIFFERENTIAL             : bufmrindexarrayarray(0 to NUMBER_OF_ADCS_MAX - 1) := (others => (others => 1));
-		ADC_PROVIDE_BUFFERED_DIVCLK     : boolarray(0 to NUMBER_OF_ADCS_MAX - 1)            := (1 => TRUE, others => FALSE);
-		ADC_INSTANTIATE_PLL             : boolarray(0 to NUMBER_OF_ADCS_MAX - 1)            := (others => FALSE);
-		ADC_USE_EXT_DATA_CLK            : boolarray(0 to NUMBER_OF_ADCS_MAX - 1)            := (0 to 3 => TRUE, others => FALSE);
-		ADC_INSTANTIATE_BUFMR           : bufmrindexarrayarray(0 to NUMBER_OF_ADCS_MAX - 1) := (others => (others => 0));
+		ADC_IS_DIFFERENTIAL             : bufmr_map_array := (0 to NUMBER_OF_ADCS - 1 => (0 to 8 => 1));
+		ADC_PROVIDE_BUFFERED_DIVCLK     : bool_array(0 to NUMBER_OF_ADCS_MAX - 1)            := (1 => TRUE, others => FALSE);
+		ADC_INSTANTIATE_PLL             : bool_array(0 to NUMBER_OF_ADCS_MAX - 1)            := (others => FALSE);
+		ADC_USE_EXT_DATA_CLK            : bool_array(0 to NUMBER_OF_ADCS_MAX - 1)            := (0 to 3 => TRUE, others => FALSE);
+		ADC_INSTANTIATE_BUFMR           : bufmr_map_array := (0 to NUMBER_OF_ADCS_MAX - 1 => (0 to 8 => 0));
 		CHAN_CLK_SOURCE_LANE                  : integer                                           := 1;
-		ADC_TO_ADC_BOARD_MAP            : integerarray(0 to NUMBER_OF_ADCS_MAX - 1)         := (0 to 7 => 0, 8 to 15 => 1);
+		ADC_TO_ADC_BOARD_MAP            : integer_array(0 to NUMBER_OF_ADCS_MAX - 1)         := (0 to 7 => 0, 8 to 15 => 1);
 		NUMBER_OF_ADC_BOARDS            : integer                                           := 2;
 		CT_CLK_SOURCE                   : ct_clk_source_enum                                := CORR_CLK;
 		CHAN_CLK_SOURCE                 : chan_clk_source_enum                              := ADC;
@@ -159,7 +159,7 @@ architecture impl of chan_array is
 
 	constant NUMBER_OF_ADCS_OR_CHANNELIZERS: integer := max(NUMBER_OF_ADCS, NUMBER_OF_CHANNELIZERS);
 	constant ADC_BITS_PER_WORD: integer := ADC_SAMPLES_PER_WORD * ADC_BITS_PER_SAMPLE;
-	constant ADC_INSTANTIATE_IDELAYCTRL: boolarray(0 to NUMBER_OF_ADCS - 1) := (0 => TRUE, others => FALSE);
+	constant ADC_INSTANTIATE_IDELAYCTRL: bool_array(0 to NUMBER_OF_ADCS - 1) := (0 => TRUE, others => FALSE);
 	constant CORR_PROBE_BASE_PORT: integer := NUMBER_OF_CHANNELIZERS; -- Top level address for the first correlator block
 
 	-- Signals

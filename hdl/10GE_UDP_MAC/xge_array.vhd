@@ -263,8 +263,8 @@ begin
 			NUMBER_OF_TX_LANES          => NUMBER_OF_TX_LANES,
 			NUMBER_OF_RX_LANES          => 0, -- We don't implement 10G Ethernet receivers for now.
 			NUMBER_OF_REFCLK            => NUMBER_OF_REFCLK,
-			LANE_TO_QUAD_MAP            => integerArray(LANE_TO_QUAD_MAP),
-			QUAD_TO_REFCLK_MAP          => integerArray(QUAD_TO_REFCLK_MAP),
+			LANE_TO_QUAD_MAP            => integer_array(LANE_TO_QUAD_MAP),
+			QUAD_TO_REFCLK_MAP          => integer_array(QUAD_TO_REFCLK_MAP),
 			EXAMPLE_SIMULATION          => 1,
 			EXAMPLE_SIM_GTRESET_SPEEDUP => "TRUE",    -- simulation setting for GT SecureIP model
 			DONT_RESET_ON_DATA_ERROR_IN => '0',

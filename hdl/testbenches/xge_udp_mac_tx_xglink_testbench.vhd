@@ -37,8 +37,8 @@ ENTITY xge_array_testbench IS
 	 GENERIC (
 		NUMBER_OF_LANES             : integer := 1;
 		NUMBER_OF_REFCLK            : integer := 1;
-		LANE_TO_QUAD_MAP            : integerArray := (0=>0, 1=>1); -- Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-		QUAD_TO_REFCLK_MAP          : integerArray := (0=>0, 1=>1) -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+		LANE_TO_QUAD_MAP            : integer_array := (0=>0, 1=>1); -- Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
+		QUAD_TO_REFCLK_MAP          : integer_array := (0=>0, 1=>1) -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
 		);
 END xge_array_testbench;
 

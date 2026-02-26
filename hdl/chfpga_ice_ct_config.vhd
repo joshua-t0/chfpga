@@ -5,7 +5,6 @@ library work;
 use work.chFPGA_package.all;
 
 package chfpga_config is
-	constant CONFIG_PLATFORM_ID: integer := PLATFORM_ID_MGK7MB;
 
 	-- Channelizer config
 
@@ -26,8 +25,7 @@ package chfpga_config is
 	-- Correlator config
 
 	constant CONFIG_CORR_TYPE: corr_type_enum := NONE;
-	constant CONFIG_NUMBER_OF_CHANNELIZERS_TO_CORRELATE: integer := 0; -- ignored when there are no correlators
-	constant CONFIG_CORR_READOUT_BINS: integer_array(0 to CONFIG_NUMBER_OF_CORRELATORS-1) := (0, 0);
+	constant CONFIG_CORR_READOUT_BINS: integer_array := (0, 0);
 
 
 	-- Real-time data offload

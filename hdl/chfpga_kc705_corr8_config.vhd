@@ -2,7 +2,6 @@ library work;
 use work.chFPGA_package.all;
 
 package chfpga_config is
-	constant CONFIG_PLATFORM_ID: integer := PLATFORM_ID_KC705;
 
 	-- Channelizer config
 

@@ -5,9 +5,6 @@ library work;
 use work.chFPGA_package.all;
 
 package chfpga_config is
-	-- constant CONFIG_PLATFORM_ID: integer := PLATFORM_ID_ZCU111;
-
-	constant CONFIG_NUMBER_OF_ADCS: integer := 8; -- Number of ADC inputs that are connected
 
 	-- F-Engine/channelizer configuration
 
@@ -33,7 +30,7 @@ package chfpga_config is
 	-- 10/100G Ethernet Real-time data offload links configuration
 
 	constant CONFIG_DATA_LINK_TYPE: data_link_type_enum := UPACK_CGE;
-	constant CONFIG_GPU_CHANNEL_QUAD: integer_array   := (0 to 3 => 0); -- single quad for 100G
-	constant CONFIG_GPU_QUAD_REFCLK: integer_array    := (0 => 0);
+	constant CONFIG_DATA_LINK_LINK_TO_QUAD_MAP: integer_array   := (0 to 3 => 0); -- single quad for 100G
+	constant CONFIG_DATA_LINK_QUAD_TO_REFCLK_MAP: integer_array    := (0 => 0);
 
 end chfpga_config;
