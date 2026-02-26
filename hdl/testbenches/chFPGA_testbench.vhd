@@ -66,10 +66,10 @@ ENTITY chFPGA_testbench IS
 
 
 		-- ADCDAQ Configuration
-		ADC_IS_DIFFERENTIAL: bufmr_map_array := (0 to NUMBER_OF_ADCS_MAX-1 => (0 to 8 => 1)); -- All inputs are differential by default unless specified otherwise by the top level
+		ADC_IS_DIFFERENTIAL: integer_array_array := (0 to NUMBER_OF_ADCS_MAX-1 => (0 to 8 => 1)); -- All inputs are differential by default unless specified otherwise by the top level
 		ADC_INSTANTIATE_PLL: bool_array(0 to NUMBER_OF_ADCS_MAX-1):=( others=>FALSE);
 		ADC_USE_EXT_DATA_CLK: bool_array(0 to NUMBER_OF_ADCS_MAX-1):=(others=>FALSE);
-		ADC_INSTANTIATE_BUFMR: bufmr_map_array(0 to NUMBER_OF_ADCS_MAX-1) := (0 to NUMBER_OF_ADCS_MAX-1 => (0 to 8 => -1));
+		ADC_INSTANTIATE_BUFMR: integer_array_array(0 to NUMBER_OF_ADCS_MAX-1) := (0 to NUMBER_OF_ADCS_MAX-1 => (0 to 8 => -1));
 		ADC_PROVIDE_BUFFERED_DIVCLK: bool_array(0 to NUMBER_OF_ADCS_MAX-1) := (0=>TRUE, others=>FALSE);
 		CHAN_CLK_SOURCE_LANE: integer :=0; -- Indicate which ADC is the source of the antenna processing clock. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
 

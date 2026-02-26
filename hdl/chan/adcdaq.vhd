@@ -502,6 +502,15 @@ signal force_data_ready: std_logic;
 
 begin
 
+	-- Check slice dimension and value range for BUFMR/IS_DIFFERENTIAL generics
+	assert BUFMR_MAP'length = 9
+		report "adcdaq: BUFMR_MAP must have length 9 (indices 0 to 8)" severity failure;
+	assert IS_DIFFERENTIAL'length = 9
+		report "adcdaq: IS_DIFFERENTIAL must have length 9 (indices 0 to 8)" severity failure;
+	assert min(BUFMR_MAP) >= -1 and max(BUFMR_MAP) <= 2
+		report "adcdaq: BUFMR_MAP values must be between -1 and 2" severity failure;
+	assert min(IS_DIFFERENTIAL) >= 0 and max(IS_DIFFERENTIAL) <= 1
+		report "adcdaq: IS_DIFFERENTIAL values must be between -1 and 2" severity failure;
 
 -- Memory Map
 --

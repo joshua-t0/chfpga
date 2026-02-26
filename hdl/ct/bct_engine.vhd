@@ -72,10 +72,6 @@ entity bct_engine is
 		NUMBER_OF_LINKS: integer             := LINK_TO_QUAD_MAP'LENGTH; --  Number of physical data links (GTYs) - Do not override
 		NUMBER_OF_REFCLK: integer            := sel(QUAD_TO_REFCLK_MAP'LENGTH > 0, max(QUAD_TO_REFCLK_MAP) + 1, 0); -- Number of reference clocks - Do not override
 		BP_LINK_SPEED: integer               := 0 -- 0: 7.5 Gb/s (txclk_out=244 MHz), 1: 10 Gb/s (txclk_out=322 MHz)
-	-- WORDS_PER_BIN_MAX: integer :=4; -- Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 16 words.
-	-- BINS_PER_FRAME_MAX: integer :=64; -- Maximum number of bins per frame
-	-- BIN_SEL_FIFO_TYPE_MAP: integer_16xN_array := (0 to 15 => (0 to 3=>0, others=>0)); -- 0= Block RAM., 1=Dist RAM. By default, for every BIN_SEL, 10 FIFOS are made of BRAM and the rest is made of distributed RAM to maximize area utilization efficiency
-	-- SHUFFLE_FLAGS_MASK: slv32 -- Mask to apply to the shuffle flags to count packet errors
 	);
 	port (
 		-- Non-blocking input stream from the channelizer, synchronous to `clk`
@@ -845,7 +841,6 @@ begin
 				COMBINE_DATA_FLAGS                 => FALSE,
 				WORDS_PER_BIN_MAX                  => 16,
 				BINS_PER_FRAME_MAX                 => 64,
-				BIN_SEL_FIFO_TYPE_MAP              => integer_16xN_array'(0 to 15 => (0 to 1=>0, others=>0)),
 				SHUFFLE_FLAGS_MASK                 => slv32'(X"70000700") -- Count errors from both crossbars. Use a qualified axpression to ensure type is known.
 
 			)

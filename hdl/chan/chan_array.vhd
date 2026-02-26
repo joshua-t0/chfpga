@@ -42,11 +42,11 @@ entity chan_array is
 		NUMBER_OF_CAPTURE_SOURCES       : integer                                           := CHAN_CAPTURE_INFO(CAPTURE_TYPE).NUMBER_OF_SOURCES;
 		CAPTURE_BITS_PER_WORD           : integer                                           := CHAN_CAPTURE_INFO(CAPTURE_TYPE).INPUT_WIDTH;
 		ADC_SAMPLES_PER_FRAME           : integer := FFT_INFO(FFT_TYPE).SAMPLES_PER_FRAME;
-		ADC_IS_DIFFERENTIAL             : bufmr_map_array := (0 to NUMBER_OF_ADCS - 1 => (0 to 8 => 1));
+		ADC_IS_DIFFERENTIAL             : integer_array_array := (0 to NUMBER_OF_ADCS - 1 => (0 to 8 => 1));
 		ADC_PROVIDE_BUFFERED_DIVCLK     : bool_array(0 to NUMBER_OF_ADCS_MAX - 1)            := (1 => TRUE, others => FALSE);
 		ADC_INSTANTIATE_PLL             : bool_array(0 to NUMBER_OF_ADCS_MAX - 1)            := (others => FALSE);
 		ADC_USE_EXT_DATA_CLK            : bool_array(0 to NUMBER_OF_ADCS_MAX - 1)            := (0 to 3 => TRUE, others => FALSE);
-		ADC_INSTANTIATE_BUFMR           : bufmr_map_array := (0 to NUMBER_OF_ADCS_MAX - 1 => (0 to 8 => 0));
+		ADC_INSTANTIATE_BUFMR           : integer_array_array := (0 to NUMBER_OF_ADCS_MAX - 1 => (0 to 8 => 0));
 		CHAN_CLK_SOURCE_LANE                  : integer                                           := 1;
 		ADC_TO_ADC_BOARD_MAP            : integer_array(0 to NUMBER_OF_ADCS_MAX - 1)         := (0 to 7 => 0, 8 to 15 => 1);
 		NUMBER_OF_ADC_BOARDS            : integer                                           := 2;

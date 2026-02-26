@@ -57,7 +57,7 @@ entity chfpga_ice is
 			NUMBER_OF_ADC_BOARDS: integer                := 2; -- Sets the number of SPI and SYNC lines (one for each FMC)
 			NUMBER_OF_ADCS: INTEGER                      := 16; -- Number of ADC Data acquisition blocks to implement
 
-			ADC_IS_DIFFERENTIAL: bufmr_map_array := ( 0 to 15 => (1,1,1,1,1,1,1,1,  1));
+			ADC_IS_DIFFERENTIAL: integer_array_array := ( 0 to 15 => (1,1,1,1,1,1,1,1,  1));
 			-- ADC_INSTANTIATE_PLL determines which ADCDAQ need to instantiate a PLL to provide IOCLK and DIVCLK to ISERDES that are in non-adjacent banks, and to provide a BUFG-buffered global word clock.
 			-- NOTE: A PLL (MMCM) could be used in theory for all data buses, but in practice we would run out of PLLs (there are only 2 per clock region).
 			-- NOTE: On the Virtex 6, there is no fast clock routing for the outer IO pads to the PLL. So the use of a PLL is preferably limited to the center IO pads
@@ -79,7 +79,7 @@ entity chfpga_ice is
 			--   CH5: Data and clock all in same bank 12. We use one BUFMR to equalize delays only.
 			--   CH6: Data and clock not in same bank. We use one BUFMR,  and BUFR and BUFIOs in banks 12 and 13 each.
 			--   CH7: Data and clock all in same bank 18. Clock is on a SRCC pin, so we cannot use BUFMR to equalize delays.
-			ADC_INSTANTIATE_BUFMR: bufmr_map_array := (
+			ADC_INSTANTIATE_BUFMR: integer_array_array := (
 				-- FMC A
 				(0 to 8 => 0), -- CH0: Data and clock in bank 14. We use a BUFMR to equalize delays with other channels. We have only one BUFR/BUFIO.
 				(0 to 8 => -1), -- CH1: Data and clock in bank 14. Clock is on SRCC. Cannot use BUFMR to equalize delays with other channels. We have only one BUFR/BUFIO.

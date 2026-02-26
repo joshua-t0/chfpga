@@ -110,7 +110,7 @@ entity chfpga is
 
 		-- ADC_IS_DIFFERENTIAL indicates whether each ADC data and clock inputs are single-ended (zero value) or differential (non-zero value).
 
-		ADC_IS_DIFFERENTIAL: bufmr_map_array := (0 to NUMBER_OF_ADCS_MAX - 1 => (0 to 8 => 1)); -- All inputs are differential by default unless specified otherwise by the top level
+		ADC_IS_DIFFERENTIAL: integer_array_array := (0 to NUMBER_OF_ADCS_MAX - 1 => (0 to 8 => 1)); -- All inputs are differential by default unless specified otherwise by the top level
 
 		-- ADC_INSTANTIATE_PLL determines which ADCDAQ need to instantiate a PLL to provide IOCLK and DIVCLK to ISERDES that are in non-adjacent banks, and to provide a BUFG-buffered global word clock.
 		-- NOTE: A PLL (MMCM) could be used in theory for all data buses, but in practice we would run out of PLLs (there are only 2 per clock region).
@@ -124,7 +124,7 @@ entity chfpga is
 		-- NOTE: using a single PLL output for multiple ADC data buses is allowed, but that assumes that all data buses are relatively well in phase to be realigned with the IDELAY. This is reasonable assumption if all data buses come from the same ADC chip. It is not clear if this work well across multiple ADC chips.
 		ADC_USE_EXT_DATA_CLK: bool_array(0 to NUMBER_OF_ADCS_MAX - 1) := (0 to 3 => TRUE, others => FALSE);
 
-		ADC_INSTANTIATE_BUFMR: bufmr_map_array := (0 to NUMBER_OF_ADCS_MAX - 1 => (0 to 8 => 0)); -- Determines which BUFR is used for each data and clock line
+		ADC_INSTANTIATE_BUFMR: integer_array_array := (0 to NUMBER_OF_ADCS_MAX - 1 => (0 to 8 => 0)); -- Determines which BUFR is used for each data and clock line
 
 		CHAN_CLK_SOURCE_LANE: integer := 1; -- Indicate which ADC is the source of the channelizer clocks. Must be one that has PROVIDE_BUFFERED_DIVCLK=TRUE so we have a BUFG that can clock the logic across the chip
 

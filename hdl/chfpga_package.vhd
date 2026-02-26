@@ -37,7 +37,8 @@ type slv_array is array (NATURAL RANGE <>) of std_logic_vector; -- VHDL2008 only
 type signed_array is array (NATURAL RANGE <>) of signed; -- VHDL2008 only
 type unsigned_array is array (NATURAL RANGE <>) of unsigned; -- VHDL2008 only
 type integer_array is array (natural range <>) of integer;
-type integer_2d_array is array (natural range <>, natural range <>) of integer;
+type integer_array_array is array (natural range <>) of integer_array; -- Can be sliced
+type integer_2d_array is array (natural range <>, natural range <>) of integer; -- Can't be sliced
 type bool_array is array (natural range <>) of boolean;
 
 -- generic types and subtypes
@@ -128,16 +129,6 @@ type u24_array is array (NATURAL RANGE <>) of unsigned(23 downto 0);
 type u48_array is array (NATURAL RANGE <>) of unsigned(47 downto 0);
 type int8_array is array (NATURAL RANGE <>) of signed(7 downto 0);
 type int35_array is array (NATURAL RANGE <>) of signed(34 downto 0);
-
-
---type BUFMRIndexArray is array (0 to 8) of INTEGER range -1 to 2; -- used to indicate which BUFMR to use for each bit and the clock of the ADC output
-
--- Application specific types and subtypes
-type bufmr_map_array is array (natural range <>) of integer_array(0 to 8);
-subtype PortOffset is std_logic_vector(1 downto 0);
-type PortOffsetArray is array (natural range <>) of PortOffset;
-type FanoutArray is array (NATURAL RANGE <>) of std_logic_vector(0 downto 0); -- used to create a vector of independent signals used to fan out signal without having the map tool pack them into a single slice because of "register ordering"
-type integer_16xN_array is array (natural range <>) of integer_array(0 to 15);
 
 
 -- Implement static maps (dictionaries) for lookups. See sel() to lookup.
