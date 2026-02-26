@@ -167,23 +167,23 @@ Number of ADC mezzanine boards (e.g. FMC connectors). Determines the number of S
 
 The following parameters apply only when ``ADC_TYPE = EV8AQ160``:
 
-**ADC_IS_DIFFERENTIAL** *(BUFMRIndexArrayArray)*
+**ADC_IS_DIFFERENTIAL** *(bufmr_map_array)*
 
 Per-ADC, per-line indicator of whether each data and clock input is differential (non-zero) or single-ended (zero). Defaults to all differential.
 
-**ADC_PROVIDE_BUFFERED_DIVCLK** *(BoolArray)*
+**ADC_PROVIDE_BUFFERED_DIVCLK** *(bool_array)*
 
 Per-ADC flag enabling the generation of a BUFG-buffered ADC word clock used as the global channelizer processing clock. Only one ADC (typically one on an MRCC pin pair) should set this to ``TRUE`` to avoid exhausting global clock buffers.
 
-**ADC_INSTANTIATE_PLL** *(BoolArray)*
+**ADC_INSTANTIATE_PLL** *(bool_array)*
 
 Per-ADC flag to instantiate an MMCM/PLL providing IOCLK and DIVCLK to ISERDES blocks in non-adjacent IO banks. Only required when data lines cross 7-Series clock regions.
 
-**ADC_USE_EXT_DATA_CLK** *(BoolArray)*
+**ADC_USE_EXT_DATA_CLK** *(bool_array)*
 
 Per-ADC flag selecting the PLL-generated IOCLK/DIVCLK instead of the local IOCLK/BUFR clocks. Required when data lines span non-adjacent IO banks.
 
-**ADC_INSTANTIATE_BUFMR** *(BUFMRIndexArrayArray)*
+**ADC_INSTANTIATE_BUFMR** *(bufmr_map_array)*
 
 For 7-Series only. Per-ADC, per-line BUFMR index, enabling multi-region clock buffer routing when data or clock lines span adjacent clock regions. Negative values disable BUFMR for that line.
 
@@ -191,7 +191,7 @@ For 7-Series only. Per-ADC, per-line BUFMR index, enabling multi-region clock bu
 
 Index of the ADC whose BUFG-buffered word clock is used as the global channelizer processing clock. Must be an ADC with ``ADC_PROVIDE_BUFFERED_DIVCLK = TRUE``.
 
-**ADC_TO_ADC_BOARD_MAP** *(IntegerArray)*
+**ADC_TO_ADC_BOARD_MAP** *(integer_array)*
 
 Maps each ADC index to its physical mezzanine board number (e.g. FMC A or FMC B). Used to route SPI and SYNC signals to the correct connector.
 
@@ -340,11 +340,11 @@ Selects the high-speed Ethernet interface for real-time streaming to a GPU or co
 - ``XGE``: 10 Gigabit Ethernet over SFP+ transceivers.
 - ``UPACK_CGE``: 100 Gigabit Ethernet over QSFP28 transceivers, using the UPACK packetizer engine.
 
-**GPU_CHANNEL_QUAD** *(IntegerArray)*
+**DATA_LINK_LINK_TO_QUAD_MAP** *(integer_array)*
 
 Maps each offload channel to the GTY transceiver quad it uses. The array length determines ``NUMBER_OF_GPU_LINKS``. Ignored when ``DATA_LINK_TYPE = NONE``.
 
-**GPU_QUAD_REFCLK** *(IntegerArray)*
+**DATA_LINK_QUAD_TO_REFCLK_MAP** *(integer_array)*
 
 Maps each GTY quad used for offload links to its reference clock index. ``max(list)+1`` sets ``NUMBER_OF_GPU_REFCLKS``.
 
@@ -398,11 +398,11 @@ Number of GTY links for the corner-turn backplane shuffle. Sets the width of ``b
 
 Number of GTY reference clock pairs for the corner-turn engine. Sets the width of ``bp_shuffle_refclk_p/n``.
 
-**NUMBER_OF_GPU_LINKS** = ``GPU_CHANNEL_QUAD'LENGTH`` *(0 if* ``DATA_LINK_TYPE = NONE`` *)*
+**NUMBER_OF_GPU_LINKS** = ``DATA_LINK_LINK_TO_QUAD_MAP'LENGTH`` *(0 if* ``DATA_LINK_TYPE = NONE`` *)*
 
 Number of high-speed offload links instantiated.
 
-**NUMBER_OF_GPU_REFCLKS** = ``max(GPU_QUAD_REFCLK) + 1``
+**NUMBER_OF_GPU_REFCLKS** = ``max(DATA_LINK_QUAD_TO_REFCLK_MAP) + 1``
 
 Number of GTY reference clock pairs for the offload links.
 
