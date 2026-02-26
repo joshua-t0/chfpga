@@ -15,11 +15,11 @@ The corner turn engine takes the packets coming out of N F-Engine channelizers a
 
 - :doc:`UCT Engine <uct_engine/uct_engine>`: Implements the corner-turn operation for the Ultrascale+ FPGA platform with up to 8x ADCs operating at 3200 MSPS each. Takes the F-Engine outputs within a board (8 analog channels), within a 4-board sub-backlane (32 analog channels), within two sub-backplanes (64 analog channels) or a full crate (4 sub-backplanes or 128 analog channels). Offloads data using a 100G Ethernet data link.
 
-- `ucorn`: UltraRAM-based corner-turn engine for Ultrascale+ FPGAs. Uses UltraRAM for high-density storage.
+- `upack`: UltraRAM-based packetizer and corner-turn engine for Ultrascale+ FPGAs. Uses UltraRAM for high-density storage.
 
 .. toctree::
    :hidden:
 
    bct_engine/bct_engine
    uct_engine/uct_engine
-   ucorn
+   upack

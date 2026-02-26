@@ -18,7 +18,7 @@ buck sync
 
 ct
 
-ucorn + 100G
+upack + 100G
 
 co
 

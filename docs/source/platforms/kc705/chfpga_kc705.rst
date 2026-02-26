@@ -39,7 +39,7 @@ The file :file:`chfpga_kc705_corr8_config.vhd` defines the package `chfpga_confi
 - 8 channelizers with FFT (HIRAX 3-DSP style)
 - 8-input :math:`N^2` correlator (UCORR44)
 - Corner-turn: ``CT_LEVEL=1``, ``CONFIG_CT_CLK_SOURCE=ADC_CLK``
-- ``CONFIG_GPU_LINK_TYPE = NONE``
+- ``CONFIG_DATA_LINK_TYPE = NONE``
 
 Package definition
 ==================

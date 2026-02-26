@@ -1,17 +1,17 @@
-.. title:: UCORN
+.. title:: UPACK
 
-****************************************************************
-:entity:`UCORN` (*ucorn.vhd*): UltraRAM-based Corner-Turn Engine
-****************************************************************
+*************************************************************
+:entity:`UPACK` (*upack.vhd*): UltraRAM-based Packetizer and Corner-Turn Engine
+*************************************************************
 
-.. parse:: hdl/ct/ucorn.vhd
+.. parse:: hdl/ct/upack.vhd
 
 .. default-role:: vhdl:entity
 
 Entity documentation
 --------------------
 
-.. autoentity:: ucorn
+.. autoentity:: upack
 
 Principle of operation
 ----------------------
@@ -32,6 +32,6 @@ Data is read column-wise, all 4 blocks in a column in parallel, providing a 256 
 Memory Map
 ----------
 
-.. include-docs:: ucorn
+.. include-docs:: upack
     :start-after: Memory Map
 

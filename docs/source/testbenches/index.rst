@@ -200,14 +200,14 @@ two_crossbars
 
 Tests the integration of two crossbar stages (channelizer crossbar and shuffle crossbar). Verifies end-to-end data flow through multiple corner-turn stages.
 
-ucorn
+upack
 ~~~~~
 
-**File:** ``hdl/testbenches/ucorn_testbench.vhd``
+**File:** ``hdl/testbenches/upack_testbench.vhd``
 
-**Xilinx Project:** ``xilinx_projects/testbenches/ucorn_testbench/``
+**Xilinx Project:** ``xilinx_projects/testbenches/upack_testbench/``
 
-Tests the UltraRAM-based corner-turn engine (UCORN). Verifies corner-turn operations using UltraRAM for data buffering.
+Tests the UltraRAM-based packetizer and corner-turn engine (UPACK). Verifies corner-turn operations using UltraRAM for data buffering.
 
 u_ct
 ~~~~

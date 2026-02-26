@@ -252,7 +252,7 @@ Clock source for the corner-turn and correlator data path:
 
 - ``BP_SHUFFLE_TXCLK``: Backplane GTY transmit word clock (~244 MHz at 7.5 Gb/s; ~322 MHz at 10 Gb/s). Locks the data path to the backplane serial link clock. Suitable for multi-board configurations.
 - ``ADC_CLK``: ADC word clock (~200–400 MHz depending on platform). Suitable for single-board configurations.
-- ``CGE_CLK322``: 322 MHz clock derived from the 100G Ethernet (CGE) reference.
+- ``CGE_CLK322``: 322 MHz clock derived from the 100G Ethernet (UPACK_CGE) reference.
 - ``CORR_CLK``: Correlator clock from the system MMCM. Used when the correlator and corner-turn must share a clock domain.
 
 **BP_LINK_SPEED** *(integer — 0 | 1)*
@@ -332,17 +332,17 @@ Array of length equal to the number of correlators, specifying which frequency-b
 Real-time data offload
 -----------------------
 
-**GPU_LINK_TYPE** *(gpu_link_type_enum — NONE | XGE | CGE)*
+**DATA_LINK_TYPE** *(data_link_type_enum — NONE | XGE | UPACK_CGE)*
 
 Selects the high-speed Ethernet interface for real-time streaming to a GPU or computing node:
 
 - ``NONE``: No offload link is instantiated.
 - ``XGE``: 10 Gigabit Ethernet over SFP+ transceivers.
-- ``CGE``: 100 Gigabit Ethernet over QSFP28 transceivers.
+- ``UPACK_CGE``: 100 Gigabit Ethernet over QSFP28 transceivers, using the UPACK packetizer engine.
 
 **GPU_CHANNEL_QUAD** *(IntegerArray)*
 
-Maps each offload channel to the GTY transceiver quad it uses. The array length determines ``NUMBER_OF_GPU_LINKS``. Ignored when ``GPU_LINK_TYPE = NONE``.
+Maps each offload channel to the GTY transceiver quad it uses. The array length determines ``NUMBER_OF_GPU_LINKS``. Ignored when ``DATA_LINK_TYPE = NONE``.
 
 **GPU_QUAD_REFCLK** *(IntegerArray)*
 
@@ -398,7 +398,7 @@ Number of GTY links for the corner-turn backplane shuffle. Sets the width of ``b
 
 Number of GTY reference clock pairs for the corner-turn engine. Sets the width of ``bp_shuffle_refclk_p/n``.
 
-**NUMBER_OF_GPU_LINKS** = ``GPU_CHANNEL_QUAD'LENGTH`` *(0 if* ``GPU_LINK_TYPE = NONE`` *)*
+**NUMBER_OF_GPU_LINKS** = ``GPU_CHANNEL_QUAD'LENGTH`` *(0 if* ``DATA_LINK_TYPE = NONE`` *)*
 
 Number of high-speed offload links instantiated.
 
