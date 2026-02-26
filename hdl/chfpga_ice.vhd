@@ -137,8 +137,8 @@ entity chfpga_ice is
 
 			-- Real-time data offload links
 
-			GPU_LINK_TYPE : gpu_link_type_enum := CONFIG_GPU_LINK_TYPE;
-			GPU_CHANNEL_QUAD: integer_array := (0 to 3=> 0, 4 to 7=> 1); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if GPU_LINK_TYPE is NONE
+			DATA_LINK_TYPE: data_link_type_enum := CONFIG_DATA_LINK_TYPE;
+			GPU_CHANNEL_QUAD: integer_array := (0 to 3=> 0, 4 to 7=> 1); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if DATA_LINK_TYPE is NONE
 			GPU_QUAD_REFCLK: integer_array := (0 to 1=>0); -- Both QUAD0 and QUAD1 use refclk(0)
 
 			-- Peripherals
@@ -152,7 +152,7 @@ entity chfpga_ice is
 
 			-- Derived parameters
 
-			NUMBER_OF_GPU_LINKS: integer                 := sel(GPU_LINK_TYPE /= NONE, GPU_CHANNEL_QUAD'LENGTH, 0); -- Number of 10Gb Ethernet links. 0 if if GPU_LINK_TYPE is "NONE"
+			NUMBER_OF_GPU_LINKS: integer                 := sel(DATA_LINK_TYPE /= NONE, GPU_CHANNEL_QUAD'LENGTH, 0); -- Number of 10Gb Ethernet links. 0 if DATA_LINK_TYPE is NONE
 			NUMBER_OF_GPU_REFCLKS: integer               := max(GPU_QUAD_REFCLK)+1 -- Number of Reference clocks provided for the 10GE links to the GPU.
 
 	);
@@ -508,8 +508,8 @@ architecture Behavioral of chfpga_ice is
     -- fails its DRC.
     -- "None" tells the tools not to implement an IO port. "OBUF" implements the IO port.
     --  In the case of "OBUF", it looks like the output buffer is adapted to the type of output such as a transceiver output etc.
-    --attribute io_buffer_type of qsfp_txp, qsfp_txn: signal is sel(GPU_LINK_TYPE = "10GE", "OBUF", "NONE");
-    --attribute io_buffer_type of clk156_p, clk156_n: signal is sel(GPU_LINK_TYPE = "10GE", "IBUF", "NONE");
+    --attribute io_buffer_type of qsfp_txp, qsfp_txn: signal is sel(DATA_LINK_TYPE = XGE, "OBUF", "NONE");
+    --attribute io_buffer_type of clk156_p, clk156_n: signal is sel(DATA_LINK_TYPE = XGE, "IBUF", "NONE");
     attribute io_buffer_type of bp_shuffle_tx_p, bp_shuffle_tx_n: signal is sel(CT_LEVEL > 1, "OBUF", "NONE");
 
 
@@ -1028,7 +1028,7 @@ bufr_rawclk10 : BUFR
 
 			CORR_TYPE => CORR_TYPE,
 
-			GPU_LINK_TYPE => GPU_LINK_TYPE,
+			DATA_LINK_TYPE => DATA_LINK_TYPE,
 			GPU_CHANNEL_QUAD                => integerarray(GPU_CHANNEL_QUAD),
 			GPU_QUAD_REFCLK                 => integerarray(GPU_QUAD_REFCLK),
 

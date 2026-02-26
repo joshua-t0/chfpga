@@ -29,9 +29,10 @@ package chfpga_config is
 
 	-- X-Engine (correlator) configuration
 	constant CONFIG_CORR_TYPE: CORR_TYPE_ENUM                := NONE;
+	constant CONFIG_CORR_READOUT_BINS: integer_array(1 to 0) := (others => 0); -- null list
 
     -- 10/100G Ethernet Real-time data offload links configuration
-    constant CONFIG_GPU_LINK_TYPE: gpu_link_type_enum        := CGE;
+    constant CONFIG_DATA_LINK_TYPE: data_link_type_enum       := UPACK_CGE;
 
 
 end chfpga_config;

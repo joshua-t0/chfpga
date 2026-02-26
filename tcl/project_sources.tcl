@@ -253,7 +253,7 @@ set crs_corr_hdl_files [concat $crs_hdl_base_files [list \
  ]]
 
 set crs_ct_hdl_files [concat $crs_hdl_base_files [list \
-  "ct/ucorn.vhd" \
+  "ct/upack.vhd" \
   "100GE_UDP_MAC/cge.vhd"\
   ]]
 

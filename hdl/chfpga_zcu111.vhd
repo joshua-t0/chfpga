@@ -68,7 +68,7 @@ entity chfpga_zcu111 is
 		CORR_READOUT_BINS: integer_array          := CONFIG_CORR_READOUT_BINS;
 
 		-- Real-time data offload links configuration (100G QSFP)
-		GPU_LINK_TYPE: gpu_link_type_enum          := CONFIG_GPU_LINK_TYPE;
+		DATA_LINK_TYPE: data_link_type_enum         := CONFIG_DATA_LINK_TYPE;
 		GPU_CHANNEL_QUAD: integer_array           := CONFIG_GPU_CHANNEL_QUAD;
 		GPU_QUAD_REFCLK: integer_array            := CONFIG_GPU_QUAD_REFCLK;
 
@@ -84,8 +84,8 @@ entity chfpga_zcu111 is
 		-- Derived parameters
 		NUMBER_OF_CT_LINKS: integer                := CT_LINK_TO_QUAD_MAP'LENGTH;
 		NUMBER_OF_CT_REFCLKS: integer              := sel(CT_QUAD_TO_REFCLK_MAP'LENGTH > 0, max(CT_QUAD_TO_REFCLK_MAP) + 1, 0);
-		NUMBER_OF_GPU_LINKS: integer              := sel(GPU_LINK_TYPE /= NONE, GPU_CHANNEL_QUAD'LENGTH, 0);
-		NUMBER_OF_GPU_REFCLKS: integer             := sel(GPU_LINK_TYPE /= NONE, max(GPU_QUAD_REFCLK) + 1, 0)
+		NUMBER_OF_GPU_LINKS: integer              := sel(DATA_LINK_TYPE /= NONE, GPU_CHANNEL_QUAD'LENGTH, 0);
+		NUMBER_OF_GPU_REFCLKS: integer             := sel(DATA_LINK_TYPE /= NONE, max(GPU_QUAD_REFCLK) + 1, 0)
 	);
 
   port (
@@ -351,7 +351,7 @@ begin
 			CORR_READOUT_BINS => CORR_READOUT_BINS,
 
 			-- Real-time Ethernet data streaming interface
-			GPU_LINK_TYPE         => GPU_LINK_TYPE,
+			DATA_LINK_TYPE        => DATA_LINK_TYPE,
 			GPU_CHANNEL_QUAD      => integerarray(GPU_CHANNEL_QUAD),
 			GPU_QUAD_REFCLK       => integerarray(GPU_QUAD_REFCLK),
 

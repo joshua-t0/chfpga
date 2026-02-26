@@ -32,7 +32,7 @@ package chfpga_config is
 
 	-- 10/100G Ethernet Real-time data offload links configuration
 
-	constant CONFIG_GPU_LINK_TYPE: gpu_link_type_enum := CGE;
+	constant CONFIG_DATA_LINK_TYPE: data_link_type_enum := UPACK_CGE;
 	constant CONFIG_GPU_CHANNEL_QUAD: integer_array   := (0 to 3 => 0); -- single quad for 100G
 	constant CONFIG_GPU_QUAD_REFCLK: integer_array    := (0 => 0);
 

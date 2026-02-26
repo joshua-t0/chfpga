@@ -390,7 +390,7 @@ begin
 			CORR_TYPE                => CORR_TYPE,
 			CORR_READOUT_BINS        => CONFIG_CORR_READOUT_BINS,
 
-			GPU_LINK_TYPE            => CONFIG_GPU_LINK_TYPE,
+			DATA_LINK_TYPE           => CONFIG_DATA_LINK_TYPE,
 			GPU_CHANNEL_QUAD         => (0 => 0),
 			GPU_QUAD_REFCLK          => (0 => 0),
 			NUMBER_OF_I2C_PORTS      => NUMBER_OF_I2C_PORTS,

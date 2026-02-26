@@ -30,6 +30,6 @@ package chfpga_config is
 	constant CONFIG_CORR_READOUT_BINS: integer_array(0 to 0) := (0 => 0); -- With CONFIG_FFT_ROTATE_BINS=True, true bins 0, 1, 2 & 3 will be used for readout
 
     -- 10/100G Ethernet Real-time data offload links configuration
-    constant CONFIG_GPU_LINK_TYPE: gpu_link_type_enum        := NONE;
+    constant CONFIG_DATA_LINK_TYPE: data_link_type_enum       := NONE;
 
 end chfpga_config;

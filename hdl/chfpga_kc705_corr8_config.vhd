@@ -25,6 +25,6 @@ package chfpga_config is
 
 	-- Real-time data offload
 
-	constant CONFIG_GPU_LINK_TYPE: gpu_link_type_enum := NONE;
+	constant CONFIG_DATA_LINK_TYPE: data_link_type_enum := NONE;
 
 end chfpga_config;

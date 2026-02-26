@@ -329,7 +329,7 @@ set_property PACKAGE_PIN D9 [get_ports {fpc_d[1]}]
 
 
 
-#add_cells_to_pblock [get_pblocks UCORN] [get_cells -quiet [list chfpga0/crossbar0_gen.cb1_gen.uram_case.uram0]]
+#add_cells_to_pblock [get_pblocks UPACK] [get_cells -quiet [list chfpga0/crossbar0_gen.cb1_gen.uram_case.uram0]]
 
 # create_pblock CORR
 # add_cells_to_pblock [get_pblocks CORR] [get_cells -quiet [list chfpga0/CORRGEN.corr_sel_gen.ucorr44_case.ucorr44_array0]]

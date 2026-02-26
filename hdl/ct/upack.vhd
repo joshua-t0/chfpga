@@ -1,6 +1,6 @@
 ----------------------------------------------------------------------------------
 -- Company:  McGill University
--- Engineer: JF CLiche
+-- Engineer: JF Cliche
 --
 -- Create Date: 2023-02-20
 -- Design Name: chfpga
@@ -8,7 +8,7 @@
 -- Project Name: CHORD
 -- Target Devices: Zynq Ultrascale+ RfSoC
 -- Tool Versions: Vivado 2022.1 +
--- Description: UltraRAM-based corner-turn engine
+-- Description: UltraRAM-based data packetizer
 --
 --
 ----------------------------------------------------------------------------------
@@ -17,7 +17,6 @@
 library IEEE;
 use IEEE.std_logic_1164.ALL;
 use IEEE.numeric_std.ALL;
--- use IEEE.std_logic_misc.ALL; -- for reduce functions
 
 library UNISIM;
 use UNISIM.VComponents.ALL;
@@ -28,10 +27,12 @@ use xpm.vcomponents.ALL;
 
 library work;
 use work.chFPGA_Package.ALL;
--- use work.ip_package.all; -- Import definition of components used in this module
 
+-- Implements an UltraRAM-based data packetizer that stores multiple frames of incoming data in an UltraRAM matrix and reads them out in a specified order, including software-programmable header packets that can contain MAC/IP/UDP headers if needed. The module is meant to feed a 100G MAC, and packs the data in a way tat allows the efficient implementation of corner-turn operations using network switches. 
 --
--- Implements a 4x4 UltraRAM matrix that is filled with channelizer data on one axis and is read out on the other axis.
+-- The input data shall be 4x 64-bit words, with 8192 words per frame. 16 such frames are stored before being read out. Readout reads selected 64-bit words 4 frames at a time. Two or Four such sets of frames can be read.  
+--
+-- Data storage is organized as a 4x4 UltraRAM matrix that is filled with channelizer data on one axis and is read out on the other axis.
 --
 -- Each frame contains 8k bins (16k samples / 2), spread into 4 columns. Each column has to store 8k/4 = 2k bins/frame/bank.
 -- We have to store 16 frames (to fill a 128-byte GPU cache line with same-bin data, i.e. 8 samples * 16 frames= 128 bytes) & 2 banks (one is read while the other is written).
@@ -69,7 +70,7 @@ use work.chFPGA_Package.ALL;
 -- The remaining address bins (frame and bank) are taken from paging registers. There are 32 pages of 64Kbytes.
 -- Writing one 64K  page might require multiple transactions as to not overflow the command buffers and the Ethernet MTU.
 
-entity ucorn is
+entity upack is
 	generic (
 		SIM : boolean := false
 	);
@@ -104,9 +105,9 @@ entity ucorn is
 
 	-- areset: in std_logic -- asynchronous reset
 	);
-end entity ucorn;
+end entity upack;
 
-architecture impl of ucorn is
+architecture impl of upack is
 
 	signal control_bytes: slv8_array(0 to 7);
 	signal status_bytes: slv8_array(0 to 2);

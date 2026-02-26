@@ -18,14 +18,14 @@ library work;
 USE work.chFPGA_Package.all;
 use work.tb_package.all;
 
-ENTITY ucorn_testbench IS
+ENTITY upack_testbench IS
 	generic (
 		USE_CHAN_DATA: boolean := TRUE --
 		);
-END ucorn_testbench;
+END upack_testbench;
 
 
-ARCHITECTURE behavior OF ucorn_testbench IS
+ARCHITECTURE behavior OF upack_testbench IS
 
    -- Clock period definitions
    -- constant CLK_PERIOD : time := 3.2 ns;
@@ -91,7 +91,7 @@ begin
 	   end process;
 
 
-	ucorn0: entity work.ucorn
+	upack0: entity work.upack
 		--generic map (
 		--	IMPLEMENT_PACKET_GENERATOR => TRUE
 		-- 	)

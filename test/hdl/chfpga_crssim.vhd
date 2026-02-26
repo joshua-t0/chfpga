@@ -63,8 +63,8 @@ entity chfpga_crssim is
 		NUMBER_OF_CORRELATORS: integer := CONFIG_NUMBER_OF_CORRELATORS; -- Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
 
 		-- Real-time data offload links configuration
-		GPU_LINK_TYPE: gpu_link_type_enum := CONFIG_GPU_LINK_TYPE; --
-		GPU_CHANNEL_QUAD: integer_array := (0 to 3 => 0); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if GPU_LINK_TYPE is NONE
+		DATA_LINK_TYPE: data_link_type_enum := CONFIG_DATA_LINK_TYPE; --
+		GPU_CHANNEL_QUAD: integer_array := (0 to 3 => 0); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if DATA_LINK_TYPE is NONE
 		GPU_QUAD_REFCLK: integer_array := (0 to 0 =>0 ); -- Both QUAD0 and QUAD1 use refclk(0)
 
 
@@ -78,7 +78,7 @@ entity chfpga_crssim is
 
 		-- Derived parameters
 
-		NUMBER_OF_GPU_LINKS: integer := sel(GPU_LINK_TYPE /= NONE, GPU_CHANNEL_QUAD'LENGTH, 0); -- Number of 100Gb Ethernet links. 0 if if GPU_LINK_TYPE is "NONE"
+		NUMBER_OF_GPU_LINKS: integer := sel(DATA_LINK_TYPE /= NONE, GPU_CHANNEL_QUAD'LENGTH, 0); -- Number of 100Gb Ethernet links. 0 if DATA_LINK_TYPE is NONE
 		NUMBER_OF_GPU_REFCLKS: integer               := max(GPU_QUAD_REFCLK)+1 -- Number of Reference clocks provided for the 100GE links.
 
 
@@ -647,7 +647,7 @@ begin
 			NUMBER_OF_BP_SHUFFLE_REFCLKS    => NUMBER_OF_BP_SHUFFLE_REFCLKS,
 
 			-- Real time Ethernet data streaming interface
-			GPU_LINK_TYPE         => GPU_LINK_TYPE,
+			DATA_LINK_TYPE        => DATA_LINK_TYPE,
 			GPU_CHANNEL_QUAD                => integerarray(GPU_CHANNEL_QUAD),
 			GPU_QUAD_REFCLK                 => integerarray(GPU_QUAD_REFCLK),
 

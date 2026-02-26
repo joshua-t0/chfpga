@@ -153,13 +153,13 @@ entity chfpga is
 		CORR_READOUT_BINS: integer_array := (0=> 0);
 		-- Data offload configuration
 
-		GPU_LINK_TYPE: gpu_link_type_enum; -- "NONE", "10G", "100G"
+		DATA_LINK_TYPE: data_link_type_enum; -- NONE, XGE (10G), or UPACK_CGE (100G)
 
 
 		GPU_CHANNEL_QUAD: IntegerArray := (0 => 0);
 		GPU_QUAD_REFCLK: IntegerArray  := (0 => 0);
 
-		NUMBER_OF_GPU_LINKS: integer   := sel(GPU_LINK_TYPE /= NONE, GPU_CHANNEL_QUAD'LENGTH, 0); -- sel needed to prevent synth
+		NUMBER_OF_GPU_LINKS: integer   := sel(DATA_LINK_TYPE /= NONE, GPU_CHANNEL_QUAD'LENGTH, 0); -- sel needed to prevent synth
 		NUMBER_OF_GPU_REFCLKS: integer := max(GPU_QUAD_REFCLK)+1;
 
 		-- Peripheral configuration
@@ -584,7 +584,7 @@ architecture impl of chFPGA is
 	constant CT_BASE_PORT: integer          := 2; -- Top-level address of the CT-Engine.
 	constant GPU_LINK_BASE_PORT: integer    := 3; -- Top level address for the GPU link subsystem
 	constant CORR_BASE_PORT: integer        := 4; -- Top level address for the correlator subsystem (exclusive with the 2nd and 3rd crossbar)
-	constant UCORN_BASE_PORT: integer       := 5; -- Top level address of the CT-Engine backplane shuffle subsystem.
+	constant UPACK_BASE_PORT: integer       := 5; -- Top level address of the CT-Engine backplane shuffle subsystem.
 	constant UCAP_BASE_PORT: integer        := 7; -- Top-level address for the UltraRAM-based data capture engine.
 	constant NUMBER_OF_PORTS: integer       := 8; -- Total number of top-level subsystems to be addressed.
 
@@ -1209,9 +1209,9 @@ begin
 	-- |  0 | 0x00000  | SYSTEM                             | System modules (GPIO, clocks, SPI, I2C, etc.) |
 	-- |  1 | 0x10000  | ADCDAQ & CHAN                      | F-Engines (channelizers) and ADC data acquisition |
 	-- |  2 | 0x20000  | BCT_ENGINE or UCT_ENGINE           | Corner-turn engine |
-	-- |  3 | 0x30000  | XGE or CGE                         | Real-time data offload Links, 10G or 100G Ethernet |
+	-- |  3 | 0x30000  | XGE or UPACK_CGE                   | Real-time data offload Links, 10G or 100G Ethernet |
 	-- |  4 | 0x40000  | CORR44 or UCORR44                  | X-Engine/Correlator subsystem |
-	-- |  5 | 0x50000  | UCORN                              | Frame aggregator and packetizer (Ultrascale+ only) |
+	-- |  5 | 0x50000  | UPACK                              | Frame aggregator and packetizer (Ultrascale+ only) |
 	-- |  6 | 0x60000  | (unused)                           |             |
 	-- |  7 | 0x70000  | UCAP                               | UltraRAM-based data capture engine (Ultrascale+ only) |
 
@@ -1742,6 +1742,51 @@ begin
 	-- ADC and Channelizer Array
 	--------------------------------------------------------------------
 	--------------------------------------------------------------------
+
+
+	-- Select channelizer clock source (chan_clk(i)) and reset source (chan_reset(i)).
+	chan_clk_gen: case CHAN_CLK_SOURCE generate
+		when MMCM  =>
+
+			-- The clocks are taken  8-phase clock derived the MMCM/PLL in clock module
+			-- We resuse the same clocks as needed to cover all the channelizers.
+			chclkgen: for i in 0 to NUMBER_OF_CHANNELIZERS - 1 generate
+				chan_clk(i) <= chan_clk_pll(i mod 8);
+				chan_reset(i) <= chan_reset_pll(i mod 8);
+			end generate chclkgen;
+
+		when adc_case: ADC =>
+			-- Generate channalizer clocks.
+			-- The channelizer clocks are taken directly from the ADC AXIS bus clock.
+			-- The reset is taken from the clock module reset becaused it is properly sequenced with the other resets, but we resync it to the adc clk.
+			signal chan_reset_resync: std_logic;
+		begin
+
+			adcrst_cdc0: xpm_cdc_single
+				generic map (
+					SRC_INPUT_REG => 0
+				)
+				port map (
+					src_clk => '0',
+					src_in => chan_reset_pll(0),
+					dest_clk => adc_clk,
+					dest_out => chan_reset_resync
+				);
+
+			chclkgen: for i in 0 to NUMBER_OF_CHANNELIZERS - 1 generate
+				chan_clk(i) <= adc_clk;
+				chan_reset(i) <= chan_reset_resync;
+			end generate chclkgen;
+
+		end adc_case;
+
+		when others =>
+			assert FALSE report "Invalid CHAN_CLK_SOURCE" severity FAILURE;
+
+	end generate chan_clk_gen;
+
+
+	-- Instantiate the array of channelizers, ADCDAQs, and UCAP is applicable.
 	chan_array0: entity work.chan_array
 		generic map (
 			PLATFORM_ID => PLATFORM_ID,
@@ -1820,7 +1865,7 @@ begin
 			chan_out_tuser => chan_out_tuser,
 			chan_out_tvalid => chan_out_tvalid,
 			chan_out_tlast => chan_out_tlast,
-		ct_clk => ct_clk,
+			ct_clk => ct_clk,
 			ct_reset => ct_reset,
 
 			-- 8-bit Data Capture streaming interface from PROBER Oor UCAP (on axis_cap_clk)
@@ -1841,50 +1886,6 @@ begin
 			m_axis_ucap_bsb_tlast => top_router_bsb_rply_tlast(UCAP_BASE_PORT),
 			m_axis_ucap_bsb_tready => top_router_bsb_rply_tready(UCAP_BASE_PORT)
 		);
-
-
-
-
-	-- Generate channalizer clocks.
-	chan_clk_gen: case CHAN_CLK_SOURCE generate
-		when MMCM  =>
-
-			-- The clocks are taken  8-phase clock derived the MMCM/PLL in clock module
-			-- We resuse the same clocks as needed to cover all the channelizers.
-			chclkgen: for i in 0 to NUMBER_OF_CHANNELIZERS - 1 generate
-				chan_clk(i) <= chan_clk_pll(i mod 8);
-				chan_reset(i) <= chan_reset_pll(i mod 8);
-			end generate chclkgen;
-
-		when adc_case: ADC =>
-			-- Generate channalizer clocks.
-			-- The channelizer clocks are taken directly from the ADC AXIS bus clock.
-			-- The reset is taken from the clock module reset becaused it is properly sequenced with the other resets, but we resync it to the adc clk.
-			signal chan_reset_resync: std_logic;
-		begin
-
-			adcrst_cdc0: xpm_cdc_single
-				generic map (
-					SRC_INPUT_REG => 0
-				)
-				port map (
-					src_clk => '0',
-					src_in => chan_reset_pll(0),
-					dest_clk => adc_clk,
-					dest_out => chan_reset_resync
-				);
-
-			chclkgen: for i in 0 to NUMBER_OF_CHANNELIZERS - 1 generate
-				chan_clk(i) <= adc_clk;
-				chan_reset(i) <= chan_reset_resync;
-			end generate chclkgen;
-
-		end adc_case;
-
-		when others =>
-			assert FALSE report "Invalid CHAN_CLK_SOURCE" severity FAILURE;
-
-	end generate chan_clk_gen;
 
 
 	---------------------------------------------------------------------
@@ -2108,7 +2109,7 @@ begin
 	-- Implements an array of 10G Ethernet transmitters to send data off to the GPUs.
 	-- We have 8x 10G Links connected on the two QSFP+ connectors on the motherboard.
 
-	GPU_GEN: if GPU_LINK_TYPE /= NONE generate
+	DATA_LINK_GEN: if DATA_LINK_TYPE /= NONE generate
 
 		signal axis_gpu_clk: std_logic_vector(axis_gpu_tdata'RANGE);
 		signal clk322: std_logic;
@@ -2142,7 +2143,7 @@ begin
 
 		axis_gpu_clk <= std_logic_vector'(axis_gpu_tdata'RANGE=> ct_clk);
 
-		gpu_sel_gen: case GPU_LINK_TYPE generate
+		data_link_sel_gen: case DATA_LINK_TYPE generate
 			when XGE =>
 
 				gpulink0: entity work.xge_array
@@ -2192,7 +2193,7 @@ begin
 						bsb_rst => gpu_bsb_rst_reg
 					);
 
-			when cge_case:CGE =>
+			when upack_cge_case:UPACK_CGE =>
 				---------------------------------------------------------
 				-- 100G Ethernet Interface
 				---------------------------------------------------------
@@ -2227,11 +2228,11 @@ begin
 					end if; -- clk
 				end process;
 
-				-- For now, always instantiate UCORN when we have the 100G link. We might want to decouple the two when we want to stream CT data without it.
-				uram0: entity work.ucorn
-					port map (
-						-- input data bus
-						s_axis_in_tdata => ct_out_tdata,
+			-- For now, always instantiate UPACK when we have the 100G link. We might want to decouple the two when we want to stream CT data without it.
+			upack0: entity work.upack
+				port map (
+					-- input data bus
+					s_axis_in_tdata => ct_out_tdata,
 						s_axis_in_tvalid => ct_out_tvalid,
 						s_axis_in_tlast => ct_out_tlast,
 
@@ -2246,14 +2247,14 @@ begin
 						-- debug_out => debug_out,
 
 						-- BSB interface
-						s_axis_bsb_tdata => top_router_bsb_cmd_tdata(UCORN_BASE_PORT),
-						s_axis_bsb_tvalid => top_router_bsb_cmd_tvalid(UCORN_BASE_PORT),
-						s_axis_bsb_tlast => top_router_bsb_cmd_tlast(UCORN_BASE_PORT),
-						s_axis_bsb_tready => top_router_bsb_cmd_tready(UCORN_BASE_PORT),
-						m_axis_bsb_tdata => top_router_bsb_rply_tdata(UCORN_BASE_PORT),
-						m_axis_bsb_tvalid => top_router_bsb_rply_tvalid(UCORN_BASE_PORT),
-						m_axis_bsb_tlast => top_router_bsb_rply_tlast(UCORN_BASE_PORT),
-						m_axis_bsb_tready => top_router_bsb_rply_tready(UCORN_BASE_PORT),
+					s_axis_bsb_tdata => top_router_bsb_cmd_tdata(UPACK_BASE_PORT),
+					s_axis_bsb_tvalid => top_router_bsb_cmd_tvalid(UPACK_BASE_PORT),
+					s_axis_bsb_tlast => top_router_bsb_cmd_tlast(UPACK_BASE_PORT),
+					s_axis_bsb_tready => top_router_bsb_cmd_tready(UPACK_BASE_PORT),
+					m_axis_bsb_tdata => top_router_bsb_rply_tdata(UPACK_BASE_PORT),
+					m_axis_bsb_tvalid => top_router_bsb_rply_tvalid(UPACK_BASE_PORT),
+					m_axis_bsb_tlast => top_router_bsb_rply_tlast(UPACK_BASE_PORT),
+					m_axis_bsb_tready => top_router_bsb_rply_tready(UPACK_BASE_PORT),
 						bsb_clk => bsb_clk,
 						bsb_rst => gpu_bsb_rst_reg
 					);
@@ -2291,14 +2292,14 @@ begin
 						bsb_clk => bsb_clk,
 						bsb_rst => gpu_bsb_rst_reg
 					);
-			end cge_case;
+			end upack_cge_case;
 
 			when others =>
-				assert FALSE report "Invalid GPU_LINK_TYPE" severity FAILURE;
+				assert FALSE report "Invalid DATA_LINK_TYPE" severity FAILURE;
 
-		end generate gpu_sel_gen;
+		end generate data_link_sel_gen;
 
-	end generate GPU_GEN;
+	end generate DATA_LINK_GEN;
 
 
 	---------------------------------------------------------------------

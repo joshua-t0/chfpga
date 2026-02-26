@@ -31,7 +31,7 @@ package chfpga_config is
 
 	-- Real-time data offload
 
-    constant CONFIG_GPU_LINK_TYPE: gpu_link_type_enum := NONE;
+    constant CONFIG_DATA_LINK_TYPE: data_link_type_enum := NONE;
 	--constant CONFIG_GPU_LINK_TO_QUAD_MAP: integer_array := (0 to 3=> 0, 4 to 7=> 1); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1
 	--constant CONFIG_GPU_LINK_TO_QUAD_MAP: integer_array(0 to -1); -- **this crashes the synth* NULL range, no GTX connections.
 	--constant CONFIG_GPU_QUAD_TO_REFCLK_MAP: integer_array := (0 to 1=>0); -- Both QUAD0 and QUAD1 use refclk(0)
