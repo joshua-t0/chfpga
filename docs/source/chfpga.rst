@@ -167,7 +167,7 @@ Number of ADC mezzanine boards (e.g. FMC connectors). Determines the number of S
 
 The following parameters apply only when ``ADC_TYPE = EV8AQ160``:
 
-**ADC_IS_DIFFERENTIAL** *(bufmr_map_array)*
+**ADC_IS_DIFFERENTIAL** *(integer_array_array)*
 
 Per-ADC, per-line indicator of whether each data and clock input is differential (non-zero) or single-ended (zero). Defaults to all differential.
 
@@ -183,7 +183,7 @@ Per-ADC flag to instantiate an MMCM/PLL providing IOCLK and DIVCLK to ISERDES bl
 
 Per-ADC flag selecting the PLL-generated IOCLK/DIVCLK instead of the local IOCLK/BUFR clocks. Required when data lines span non-adjacent IO banks.
 
-**ADC_INSTANTIATE_BUFMR** *(bufmr_map_array)*
+**ADC_INSTANTIATE_BUFMR** *(integer_array_array)*
 
 For 7-Series only. Per-ADC, per-line BUFMR index, enabling multi-region clock buffer routing when data or clock lines span adjacent clock regions. Negative values disable BUFMR for that line.
 
