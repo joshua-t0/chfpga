@@ -13,8 +13,8 @@
 #set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/clk0/gen_chanpll_k7.mmcm_case.chan_mmcm0]
 # The system MMCM also drives the Channelizer MMCM, and also needs to be adjacent.
 
-set_property LOC BUFGCTRL_X0Y18 [get_cells chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/txoutclk_bufg0]
-set_property LOC BUFGCTRL_X0Y19 [get_cells chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/xglink0/refclk_bufg0]
+set_property LOC BUFGCTRL_X0Y18 [get_cells chfpga0/DATA_LINK_GEN.data_link_sel_gen.gpulink0/xglink0/txoutclk_bufg0]
+set_property LOC BUFGCTRL_X0Y19 [get_cells chfpga0/DATA_LINK_GEN.data_link_sel_gen.gpulink0/xglink0/refclk_bufg0]
 
 
 #################################
@@ -102,7 +102,7 @@ set_property PACKAGE_PIN Y2 [get_ports {bp_shuffle_tx_p[18]}]
 
 
 # create_pblock GPU0
-# add_cells_to_pblock [get_pblocks GPU0] [get_cells -quiet [list {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[0].udp0} {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[1].udp0}]]
+# add_cells_to_pblock [get_pblocks GPU0] [get_cells -quiet [list {chfpga0/DATA_LINK_GEN.data_link_sel_gen.gpulink0/udp_gen[0].udp0} {chfpga0/DATA_LINK_GEN.data_link_sel_gen.gpulink0/udp_gen[1].udp0}]]
 # resize_pblock [get_pblocks GPU0] -add {SLICE_X166Y250:SLICE_X189Y269}
 # resize_pblock [get_pblocks GPU0] -add {DSP48_X11Y100:DSP48_X11Y107}
 # resize_pblock [get_pblocks GPU0] -add {RAMB18_X11Y100:RAMB18_X11Y107}
@@ -111,7 +111,7 @@ set_property PACKAGE_PIN Y2 [get_ports {bp_shuffle_tx_p[18]}]
 
 
 # create_pblock GPU1
-# add_cells_to_pblock [get_pblocks GPU1] [get_cells -quiet [list {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[2].udp0} {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[3].udp0}]]
+# add_cells_to_pblock [get_pblocks GPU1] [get_cells -quiet [list {chfpga0/DATA_LINK_GEN.data_link_sel_gen.gpulink0/udp_gen[2].udp0} {chfpga0/DATA_LINK_GEN.data_link_sel_gen.gpulink0/udp_gen[3].udp0}]]
 # resize_pblock [get_pblocks GPU1] -add {SLICE_X166Y270:SLICE_X189Y289}
 # resize_pblock [get_pblocks GPU1] -add {DSP48_X11Y108:DSP48_X11Y115}
 # resize_pblock [get_pblocks GPU1] -add {RAMB18_X11Y108:RAMB18_X11Y115}
@@ -120,7 +120,7 @@ set_property PACKAGE_PIN Y2 [get_ports {bp_shuffle_tx_p[18]}]
 
 
 # create_pblock GPU2
-# add_cells_to_pblock [get_pblocks GPU2] [get_cells -quiet [list {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[4].udp0} {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[5].udp0}]]
+# add_cells_to_pblock [get_pblocks GPU2] [get_cells -quiet [list {chfpga0/DATA_LINK_GEN.data_link_sel_gen.gpulink0/udp_gen[4].udp0} {chfpga0/DATA_LINK_GEN.data_link_sel_gen.gpulink0/udp_gen[5].udp0}]]
 # resize_pblock [get_pblocks GPU2] -add {SLICE_X166Y310:SLICE_X189Y329}
 # resize_pblock [get_pblocks GPU2] -add {DSP48_X11Y124:DSP48_X11Y131}
 # resize_pblock [get_pblocks GPU2] -add {RAMB18_X11Y124:RAMB18_X11Y131}
@@ -129,7 +129,7 @@ set_property PACKAGE_PIN Y2 [get_ports {bp_shuffle_tx_p[18]}]
 
 
 # create_pblock GPU3
-# add_cells_to_pblock [get_pblocks GPU3] [get_cells -quiet [list {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[6].udp0} {chfpga0/GPU_GEN.gpu_sel_gen.gpulink0/udp_gen[7].udp0}]]
+# add_cells_to_pblock [get_pblocks GPU3] [get_cells -quiet [list {chfpga0/DATA_LINK_GEN.data_link_sel_gen.gpulink0/udp_gen[6].udp0} {chfpga0/DATA_LINK_GEN.data_link_sel_gen.gpulink0/udp_gen[7].udp0}]]
 # resize_pblock [get_pblocks GPU3] -add {SLICE_X166Y330:SLICE_X189Y349}
 # resize_pblock [get_pblocks GPU3] -add {DSP48_X11Y132:DSP48_X11Y139}
 # resize_pblock [get_pblocks GPU3] -add {RAMB18_X11Y132:RAMB18_X11Y139}
