@@ -1,0 +1,358 @@
+# CRS CHAN LOC constraints (UCAP URAM, SCALER BRAMs/DSPs, FUNCGEN BRAMs for CHAN[0]-CHAN[7])
+# Refer to commented pblock definitions in crs_physical_constraints_common.xdc for region bounds.
+#
+
+# Pin the UCAP UltraRAM sites to facilitate P&R
+
+set_property LOC URAM288_X0Y64 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[0]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y65 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[0]*/*/*_uram_1}]
+set_property LOC URAM288_X0Y66 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[1]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y67 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[1]*/*/*_uram_1}]
+set_property LOC URAM288_X0Y68 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[2]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y69 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[2]*/*/*_uram_1}]
+set_property LOC URAM288_X0Y70 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[3]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y71 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[3]*/*/*_uram_1}]
+set_property LOC URAM288_X0Y72 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[4]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y73 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[4]*/*/*_uram_1}]
+set_property LOC URAM288_X0Y74 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[5]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y75 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[5]*/*/*_uram_1}]
+set_property LOC URAM288_X0Y76 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[6]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y77 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[6]*/*/*_uram_1}]
+set_property LOC URAM288_X0Y78 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[7]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y79 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[7]*/*/*_uram_1}]
+
+
+# Python generated below - CHAN pblocks commented out
+#create_pblock CHAN0
+#add_cells_to_pblock [get_pblocks CHAN0] [get_cells -quiet [list {chfpga0/chan_array0/chan_gen[0].chan0}]]
+#resize_pblock [get_pblocks CHAN0] -add {SLICE_X26Y0:SLICE_X112Y59}
+#resize_pblock [get_pblocks CHAN0] -add {DSP48E2_X3Y0:DSP48E2_X22Y23}
+#resize_pblock [get_pblocks CHAN0] -add {RAMB18_X2Y0:RAMB18_X11Y23}
+#resize_pblock [get_pblocks CHAN0] -add {RAMB36_X2Y0:RAMB36_X11Y11}
+#set_property IS_SOFT FALSE [get_pblocks CHAN0]
+#
+#
+#
+#create_pblock CHAN1
+#add_cells_to_pblock [get_pblocks CHAN1] [get_cells -quiet [list {chfpga0/chan_array0/chan_gen[1].chan0}]]
+#resize_pblock [get_pblocks CHAN1] -add {SLICE_X26Y60:SLICE_X112Y119}
+#resize_pblock [get_pblocks CHAN1] -add {DSP48E2_X3Y24:DSP48E2_X22Y47}
+#resize_pblock [get_pblocks CHAN1] -add {RAMB18_X2Y24:RAMB18_X11Y47}
+#resize_pblock [get_pblocks CHAN1] -add {RAMB36_X2Y12:RAMB36_X11Y23}
+#set_property IS_SOFT FALSE [get_pblocks CHAN1]
+#
+#
+#create_pblock CHAN2
+#add_cells_to_pblock [get_pblocks CHAN2] [get_cells -quiet [list {chfpga0/chan_array0/chan_gen[2].chan0}]]
+#resize_pblock [get_pblocks CHAN2] -add {SLICE_X26Y120:SLICE_X112Y179}
+#resize_pblock [get_pblocks CHAN2] -add {DSP48E2_X3Y48:DSP48E2_X22Y71}
+#resize_pblock [get_pblocks CHAN2] -add {RAMB18_X2Y48:RAMB18_X11Y71}
+#resize_pblock [get_pblocks CHAN2] -add {RAMB36_X2Y24:RAMB36_X11Y35}
+#set_property IS_SOFT FALSE [get_pblocks CHAN2]
+#
+#
+#create_pblock CHAN3
+#add_cells_to_pblock [get_pblocks CHAN3] [get_cells -quiet [list {chfpga0/chan_array0/chan_gen[3].chan0}]]
+#resize_pblock [get_pblocks CHAN3] -add {SLICE_X26Y180:SLICE_X112Y239}
+#resize_pblock [get_pblocks CHAN3] -add {DSP48E2_X3Y72:DSP48E2_X22Y95}
+#resize_pblock [get_pblocks CHAN3] -add {RAMB18_X2Y72:RAMB18_X11Y95}
+#resize_pblock [get_pblocks CHAN3] -add {RAMB36_X2Y36:RAMB36_X11Y47}
+#set_property IS_SOFT FALSE [get_pblocks CHAN3]
+#
+#
+#create_pblock CHAN4
+#add_cells_to_pblock [get_pblocks CHAN4] [get_cells -quiet [list {chfpga0/chan_array0/chan_gen[4].chan0}]]
+#resize_pblock [get_pblocks CHAN4] -add {SLICE_X26Y240:SLICE_X112Y299}
+#resize_pblock [get_pblocks CHAN4] -add {DSP48E2_X3Y96:DSP48E2_X22Y119}
+#resize_pblock [get_pblocks CHAN4] -add {RAMB18_X2Y96:RAMB18_X11Y119}
+#resize_pblock [get_pblocks CHAN4] -add {RAMB36_X2Y48:RAMB36_X11Y59}
+#set_property IS_SOFT FALSE [get_pblocks CHAN4]
+#
+#create_pblock CHAN5
+#add_cells_to_pblock [get_pblocks CHAN5] [get_cells -quiet [list {chfpga0/chan_array0/chan_gen[5].chan0}]]
+#resize_pblock [get_pblocks CHAN5] -add {SLICE_X26Y300:SLICE_X112Y359}
+#resize_pblock [get_pblocks CHAN5] -add {DSP48E2_X3Y120:DSP48E2_X22Y143}
+#resize_pblock [get_pblocks CHAN5] -add {RAMB18_X2Y120:RAMB18_X11Y143}
+#resize_pblock [get_pblocks CHAN5] -add {RAMB36_X2Y60:RAMB36_X11Y71}
+#set_property IS_SOFT FALSE [get_pblocks CHAN5]
+#
+#
+#create_pblock CHAN6
+#add_cells_to_pblock [get_pblocks CHAN6] [get_cells -quiet [list {chfpga0/chan_array0/chan_gen[6].chan0}]]
+#resize_pblock [get_pblocks CHAN6] -add {SLICE_X26Y360:SLICE_X112Y419}
+#resize_pblock [get_pblocks CHAN6] -add {DSP48E2_X3Y144:DSP48E2_X22Y167}
+#resize_pblock [get_pblocks CHAN6] -add {RAMB18_X2Y144:RAMB18_X11Y167}
+#resize_pblock [get_pblocks CHAN6] -add {RAMB36_X2Y72:RAMB36_X11Y83}
+#set_property IS_SOFT FALSE [get_pblocks CHAN6]
+#
+#create_pblock CHAN7
+#add_cells_to_pblock [get_pblocks CHAN7] [get_cells -quiet [list {chfpga0/chan_array0/chan_gen[7].chan0}]]
+#resize_pblock [get_pblocks CHAN7] -add {SLICE_X26Y420:SLICE_X112Y479}
+#resize_pblock [get_pblocks CHAN7] -add {DSP48E2_X3Y168:DSP48E2_X22Y191}
+#resize_pblock [get_pblocks CHAN7] -add {RAMB18_X2Y168:RAMB18_X11Y191}
+#resize_pblock [get_pblocks CHAN7] -add {RAMB36_X2Y84:RAMB36_X11Y95}
+#set_property IS_SOFT FALSE [get_pblocks CHAN7]
+
+
+
+
+# SCALER BRAMs & DSPs
+set_property LOC RAMB36_X2Y0 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_0}]
+set_property LOC RAMB36_X2Y1 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_1}]
+set_property LOC RAMB36_X2Y2 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_2}]
+set_property LOC RAMB36_X2Y3 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_3}]
+set_property LOC RAMB36_X2Y4 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_4}]
+set_property LOC RAMB36_X2Y5 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_5}]
+set_property LOC RAMB36_X2Y6 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_6}]
+set_property LOC RAMB36_X2Y7 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_7}]
+set_property LOC DSP48E2_X3Y0 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[0].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y1 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[0].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y2 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[1].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y3 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[1].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y4 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[2].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y5 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[2].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y6 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[3].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y7 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[3].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y8 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[4].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y9 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[4].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y10 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[5].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y11 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[5].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y12 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[6].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y13 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[6].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y14 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[7].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y15 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[7].rmul0/dsp2*}]
+set_property LOC RAMB36_X2Y12 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_0}]
+set_property LOC RAMB36_X2Y13 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_1}]
+set_property LOC RAMB36_X2Y14 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_2}]
+set_property LOC RAMB36_X2Y15 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_3}]
+set_property LOC RAMB36_X2Y16 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_4}]
+set_property LOC RAMB36_X2Y17 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_5}]
+set_property LOC RAMB36_X2Y18 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_6}]
+set_property LOC RAMB36_X2Y19 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_7}]
+set_property LOC DSP48E2_X3Y24 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[0].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y25 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[0].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y26 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[1].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y27 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[1].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y28 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[2].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y29 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[2].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y30 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[3].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y31 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[3].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y32 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[4].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y33 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[4].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y34 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[5].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y35 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[5].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y36 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[6].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y37 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[6].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y38 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[7].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y39 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[7].rmul0/dsp2*}]
+set_property LOC RAMB36_X2Y24 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_0}]
+set_property LOC RAMB36_X2Y25 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_1}]
+set_property LOC RAMB36_X2Y26 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_2}]
+set_property LOC RAMB36_X2Y27 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_3}]
+set_property LOC RAMB36_X2Y28 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_4}]
+set_property LOC RAMB36_X2Y29 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_5}]
+set_property LOC RAMB36_X2Y30 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_6}]
+set_property LOC RAMB36_X2Y31 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_7}]
+set_property LOC DSP48E2_X3Y48 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[0].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y49 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[0].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y50 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[1].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y51 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[1].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y52 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[2].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y53 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[2].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y54 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[3].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y55 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[3].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y56 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[4].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y57 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[4].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y58 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[5].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y59 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[5].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y60 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[6].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y61 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[6].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y62 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[7].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y63 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[7].rmul0/dsp2*}]
+set_property LOC RAMB36_X2Y36 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_0}]
+set_property LOC RAMB36_X2Y37 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_1}]
+set_property LOC RAMB36_X2Y38 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_2}]
+set_property LOC RAMB36_X2Y39 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_3}]
+set_property LOC RAMB36_X2Y40 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_4}]
+set_property LOC RAMB36_X2Y41 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_5}]
+set_property LOC RAMB36_X2Y42 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_6}]
+set_property LOC RAMB36_X2Y43 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_7}]
+set_property LOC DSP48E2_X3Y72 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[0].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y73 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[0].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y74 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[1].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y75 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[1].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y76 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[2].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y77 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[2].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y78 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[3].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y79 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[3].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y80 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[4].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y81 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[4].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y82 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[5].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y83 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[5].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y84 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[6].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y85 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[6].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y86 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[7].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y87 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[7].rmul0/dsp2*}]
+set_property LOC RAMB36_X2Y48 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_0}]
+set_property LOC RAMB36_X2Y49 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_1}]
+set_property LOC RAMB36_X2Y50 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_2}]
+set_property LOC RAMB36_X2Y51 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_3}]
+set_property LOC RAMB36_X2Y52 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_4}]
+set_property LOC RAMB36_X2Y53 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_5}]
+set_property LOC RAMB36_X2Y54 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_6}]
+set_property LOC RAMB36_X2Y55 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_7}]
+set_property LOC DSP48E2_X3Y96 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[0].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y97 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[0].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y98 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[1].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y99 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[1].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y100 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[2].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y101 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[2].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y102 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[3].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y103 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[3].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y104 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[4].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y105 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[4].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y106 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[5].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y107 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[5].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y108 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[6].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y109 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[6].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y110 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[7].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y111 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[7].rmul0/dsp2*}]
+set_property LOC RAMB36_X2Y60 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_0}]
+set_property LOC RAMB36_X2Y61 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_1}]
+set_property LOC RAMB36_X2Y62 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_2}]
+set_property LOC RAMB36_X2Y63 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_3}]
+set_property LOC RAMB36_X2Y64 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_4}]
+set_property LOC RAMB36_X2Y65 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_5}]
+set_property LOC RAMB36_X2Y66 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_6}]
+set_property LOC RAMB36_X2Y67 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_7}]
+set_property LOC DSP48E2_X3Y120 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[0].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y121 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[0].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y122 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[1].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y123 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[1].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y124 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[2].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y125 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[2].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y126 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[3].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y127 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[3].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y128 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[4].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y129 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[4].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y130 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[5].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y131 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[5].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y132 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[6].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y133 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[6].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y134 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[7].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y135 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[7].rmul0/dsp2*}]
+set_property LOC RAMB36_X2Y72 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_0}]
+set_property LOC RAMB36_X2Y73 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_1}]
+set_property LOC RAMB36_X2Y74 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_2}]
+set_property LOC RAMB36_X2Y75 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_3}]
+set_property LOC RAMB36_X2Y76 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_4}]
+set_property LOC RAMB36_X2Y77 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_5}]
+set_property LOC RAMB36_X2Y78 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_6}]
+set_property LOC RAMB36_X2Y79 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_7}]
+set_property LOC DSP48E2_X3Y144 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[0].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y145 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[0].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y146 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[1].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y147 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[1].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y148 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[2].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y149 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[2].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y150 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[3].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y151 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[3].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y152 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[4].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y153 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[4].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y154 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[5].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y155 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[5].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y156 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[6].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y157 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[6].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y158 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[7].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y159 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[7].rmul0/dsp2*}]
+set_property LOC RAMB36_X2Y84 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_0}]
+set_property LOC RAMB36_X2Y85 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_1}]
+set_property LOC RAMB36_X2Y86 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_2}]
+set_property LOC RAMB36_X2Y87 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_3}]
+set_property LOC RAMB36_X2Y88 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_4}]
+set_property LOC RAMB36_X2Y89 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_5}]
+set_property LOC RAMB36_X2Y90 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_6}]
+set_property LOC RAMB36_X2Y91 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/coeff_ram0/xpm_memory*/*bram_7}]
+set_property LOC DSP48E2_X3Y168 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[0].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y169 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[0].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y170 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[1].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y171 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[1].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y172 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[2].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y173 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[2].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y174 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[3].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y175 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[3].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y176 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[4].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y177 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[4].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y178 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[5].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y179 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[5].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y180 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[6].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y181 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[6].rmul0/dsp2*}]
+set_property LOC DSP48E2_X3Y182 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[7].rmul0/dsp1*}]
+set_property LOC DSP48E2_X3Y183 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/IMPL_GEN.scaler_blk.scaler0/mul_gen.gen_rmul[7].rmul0/dsp2*}]
+
+# FUNCGEN BRAMs
+set_property LOC RAMB36_X11Y0 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/*funcgen0/*ram0/*/*bram_0}]
+set_property LOC RAMB36_X11Y1 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/*funcgen0/*ram0/*/*bram_1}]
+set_property LOC RAMB36_X11Y2 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/*funcgen0/*ram0/*/*bram_2}]
+set_property LOC RAMB36_X11Y3 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/*funcgen0/*ram0/*/*bram_3}]
+set_property LOC RAMB36_X11Y4 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/*funcgen0/*ram0/*/*bram_4}]
+set_property LOC RAMB36_X11Y5 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/*funcgen0/*ram0/*/*bram_5}]
+set_property LOC RAMB36_X11Y6 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/*funcgen0/*ram0/*/*bram_6}]
+set_property LOC RAMB36_X11Y7 [get_cells {chfpga0/chan_array0/chan_gen[0].chan0/*funcgen0/*ram0/*/*bram_7}]
+set_property LOC RAMB36_X11Y12 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/*funcgen0/*ram0/*/*bram_0}]
+set_property LOC RAMB36_X11Y13 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/*funcgen0/*ram0/*/*bram_1}]
+set_property LOC RAMB36_X11Y14 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/*funcgen0/*ram0/*/*bram_2}]
+set_property LOC RAMB36_X11Y15 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/*funcgen0/*ram0/*/*bram_3}]
+set_property LOC RAMB36_X11Y16 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/*funcgen0/*ram0/*/*bram_4}]
+set_property LOC RAMB36_X11Y17 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/*funcgen0/*ram0/*/*bram_5}]
+set_property LOC RAMB36_X11Y18 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/*funcgen0/*ram0/*/*bram_6}]
+set_property LOC RAMB36_X11Y19 [get_cells {chfpga0/chan_array0/chan_gen[1].chan0/*funcgen0/*ram0/*/*bram_7}]
+set_property LOC RAMB36_X11Y24 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/*funcgen0/*ram0/*/*bram_0}]
+set_property LOC RAMB36_X11Y25 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/*funcgen0/*ram0/*/*bram_1}]
+set_property LOC RAMB36_X11Y26 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/*funcgen0/*ram0/*/*bram_2}]
+set_property LOC RAMB36_X11Y27 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/*funcgen0/*ram0/*/*bram_3}]
+set_property LOC RAMB36_X11Y28 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/*funcgen0/*ram0/*/*bram_4}]
+set_property LOC RAMB36_X11Y29 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/*funcgen0/*ram0/*/*bram_5}]
+set_property LOC RAMB36_X11Y30 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/*funcgen0/*ram0/*/*bram_6}]
+set_property LOC RAMB36_X11Y31 [get_cells {chfpga0/chan_array0/chan_gen[2].chan0/*funcgen0/*ram0/*/*bram_7}]
+set_property LOC RAMB36_X11Y36 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/*funcgen0/*ram0/*/*bram_0}]
+set_property LOC RAMB36_X11Y37 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/*funcgen0/*ram0/*/*bram_1}]
+set_property LOC RAMB36_X11Y38 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/*funcgen0/*ram0/*/*bram_2}]
+set_property LOC RAMB36_X11Y39 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/*funcgen0/*ram0/*/*bram_3}]
+set_property LOC RAMB36_X11Y40 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/*funcgen0/*ram0/*/*bram_4}]
+set_property LOC RAMB36_X11Y41 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/*funcgen0/*ram0/*/*bram_5}]
+set_property LOC RAMB36_X11Y42 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/*funcgen0/*ram0/*/*bram_6}]
+set_property LOC RAMB36_X11Y43 [get_cells {chfpga0/chan_array0/chan_gen[3].chan0/*funcgen0/*ram0/*/*bram_7}]
+set_property LOC RAMB36_X11Y48 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/*funcgen0/*ram0/*/*bram_0}]
+set_property LOC RAMB36_X11Y49 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/*funcgen0/*ram0/*/*bram_1}]
+set_property LOC RAMB36_X11Y50 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/*funcgen0/*ram0/*/*bram_2}]
+set_property LOC RAMB36_X11Y51 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/*funcgen0/*ram0/*/*bram_3}]
+set_property LOC RAMB36_X11Y52 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/*funcgen0/*ram0/*/*bram_4}]
+set_property LOC RAMB36_X11Y53 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/*funcgen0/*ram0/*/*bram_5}]
+set_property LOC RAMB36_X11Y54 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/*funcgen0/*ram0/*/*bram_6}]
+set_property LOC RAMB36_X11Y55 [get_cells {chfpga0/chan_array0/chan_gen[4].chan0/*funcgen0/*ram0/*/*bram_7}]
+set_property LOC RAMB36_X11Y60 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/*funcgen0/*ram0/*/*bram_0}]
+set_property LOC RAMB36_X11Y61 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/*funcgen0/*ram0/*/*bram_1}]
+set_property LOC RAMB36_X11Y62 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/*funcgen0/*ram0/*/*bram_2}]
+set_property LOC RAMB36_X11Y63 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/*funcgen0/*ram0/*/*bram_3}]
+set_property LOC RAMB36_X11Y64 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/*funcgen0/*ram0/*/*bram_4}]
+set_property LOC RAMB36_X11Y65 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/*funcgen0/*ram0/*/*bram_5}]
+set_property LOC RAMB36_X11Y66 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/*funcgen0/*ram0/*/*bram_6}]
+set_property LOC RAMB36_X11Y67 [get_cells {chfpga0/chan_array0/chan_gen[5].chan0/*funcgen0/*ram0/*/*bram_7}]
+set_property LOC RAMB36_X11Y72 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/*funcgen0/*ram0/*/*bram_0}]
+set_property LOC RAMB36_X11Y73 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/*funcgen0/*ram0/*/*bram_1}]
+set_property LOC RAMB36_X11Y74 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/*funcgen0/*ram0/*/*bram_2}]
+set_property LOC RAMB36_X11Y75 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/*funcgen0/*ram0/*/*bram_3}]
+set_property LOC RAMB36_X11Y76 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/*funcgen0/*ram0/*/*bram_4}]
+set_property LOC RAMB36_X11Y77 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/*funcgen0/*ram0/*/*bram_5}]
+set_property LOC RAMB36_X11Y78 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/*funcgen0/*ram0/*/*bram_6}]
+set_property LOC RAMB36_X11Y79 [get_cells {chfpga0/chan_array0/chan_gen[6].chan0/*funcgen0/*ram0/*/*bram_7}]
+set_property LOC RAMB36_X11Y84 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/*funcgen0/*ram0/*/*bram_0}]
+set_property LOC RAMB36_X11Y85 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/*funcgen0/*ram0/*/*bram_1}]
+set_property LOC RAMB36_X11Y86 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/*funcgen0/*ram0/*/*bram_2}]
+set_property LOC RAMB36_X11Y87 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/*funcgen0/*ram0/*/*bram_3}]
+set_property LOC RAMB36_X11Y88 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/*funcgen0/*ram0/*/*bram_4}]
+set_property LOC RAMB36_X11Y89 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/*funcgen0/*ram0/*/*bram_5}]
+set_property LOC RAMB36_X11Y90 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/*funcgen0/*ram0/*/*bram_6}]
+set_property LOC RAMB36_X11Y91 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/*funcgen0/*ram0/*/*bram_7}]
+
