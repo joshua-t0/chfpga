@@ -492,7 +492,7 @@ funcgen_proc: process(all)
                 when FN_RAM_NIBBLE4 =>
                     out_dat_tdata <= (others => '0');
                     for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
-                        if frame_ctr(0)='0' then
+                        if not frame_ctr(0) then
                             out_dat_tdata(ADC_BITS_PER_SAMPLE*(i+1)-1 downto ADC_BITS_PER_SAMPLE*(i+1)-4) <= ram_dout(ADC_BITS_PER_SAMPLE*i+3 downto ADC_BITS_PER_SAMPLE*i);
                         else
                             out_dat_tdata(ADC_BITS_PER_SAMPLE*(i+1)-1 downto ADC_BITS_PER_SAMPLE*(i+1)-4) <= ram_dout(ADC_BITS_PER_SAMPLE*i+7 downto ADC_BITS_PER_SAMPLE*i+4);
@@ -620,7 +620,7 @@ funcgen_proc: process(all)
                 overflow_ctr_reg <= (others => '0');
              end if; -- reset_all
 
-            if reset_all_reg='1' then
+            if reset_all_reg then
                 m_axis_adc_tvalid <= '0'; -- needed
             end if; -- reset_all_reg
 
@@ -633,10 +633,10 @@ delaycap_gen: if IMPLEMENT_DELAY_CAPTURE generate
 begin
     -- STATUS Byte 3-4
     delaycap_proc: process(all) begin
-        if reset_all ='1' then
+        if reset_all then
             delay_capture_ctr <= (others=> '0');
             delay_capture_ctr_en <= '1';
-        elsif delay_capture_ctr_en = '1'  then
+        elsif delay_capture_ctr_en then
             delay_capture_ctr <= delay_capture_ctr + 1;
             if signed(delay_capture_ctr)=-2 or (s_axis_adc_tvalid='1' and (byte_a(0)='0' or s_axis_adc_tlast='1')) then
                 delay_capture_ctr_en <= '0';

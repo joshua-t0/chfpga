@@ -712,9 +712,9 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             rst_reg <= soft_reset or reset;
 
             -- Count the bin numbers to address the coefficient RAM
-            if s_axis_in_tvalid='1' then
+            if s_axis_in_tvalid then
                 word_ctr <= word_ctr + 1;
-                if s_axis_in_tlast='1' then
+                if s_axis_in_tlast then
                     word_ctr <= (others=> '0');
                     frame_ctr <= frame_ctr + 1;
                     if synchronize_gain_bank_switch='0' or std_logic_vector(frame_ctr) = gain_bank_switch_frame_number then
@@ -786,7 +786,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         stage2_word(i)(7 downto 4) <= msb(msb(stage1_word(i), 4 + 1) + 1, 4);
                         stage2_word(i)(3 downto 0) <= "0000";
                         round_down_var := to_std_logic(rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND and stage1_word(i)(INTEGER_WIDTH-1-4)='1' and stage1_word(i)(INTEGER_WIDTH-1-4-1 downto 0)=0);
-                        if round_down_var = '1' then
+                        if round_down_var then
                             stage2_word(i)(4) <= '0';
                         end if;
                         -- Detect post-rounding saturations to be applied on next pipeline stage
@@ -813,7 +813,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                     if rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND or rounding_mode = ROUNDING_MODE_ROUND then -- if rounding
                         stage2_word(i) <= msb(msb(stage1_word(i), 8 + 1) + 1, 8);
                         round_down_var := to_std_logic(rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND and stage1_word(i)(INTEGER_WIDTH-1-8)='1' and stage1_word(i)(INTEGER_WIDTH-1-8-1 downto 0)=0);
-                        if round_down_var = '1' then
+                        if round_down_var then
                             stage2_word(i)(0) <= '0';
                         end if;
                         -- Detect saturations to be applied on next pipeline stage
@@ -837,9 +837,9 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             for i in 0 to INTEGERS_PER_WORD-1 loop
                 OUT_WORD_VAR(i) := stage2_word(i);
                 if stage2_overflow(i) then
-                    if stage2_sign(i)='0' then
+                    if not stage2_sign(i) then
                         OUT_WORD_VAR(i) := X"7F"; -- if a positive value overflowed in 4-bit or 8-bit mode
-                    elsif symmetric_saturation ='0' then
+                    elsif not symmetric_saturation then
                         OUT_WORD_VAR(i) :=X"80"; -- if a negative value overflow in 4-bit or 8-bit mode, and we do NOT saturate at -7
                     elsif four_bits='0' and EIGHT_BIT_SUPPORT=TRUE then
                         OUT_WORD_VAR(i) :=X"81"; -- if a negative value overflow in 8 bit mode, and we saturate at -7
@@ -860,7 +860,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             end if;
 
             -- Stage 3c: apply offset encoding if requested
-            if use_offset_binary='1' then
+            if use_offset_binary then
                 for i in 0 to INTEGERS_PER_WORD-1 loop
                     OUT_WORD_VAR(i)(7) := not OUT_WORD_VAR(i)(7); -- Implement offset binary by inverting the sign bit.
                 end loop;
@@ -938,8 +938,8 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         end loop;
                     when "110" => -- Send (1+0j) if Re has a positive saturation and (0+1j) if it has a negative saturation. Autocorr is 0 of positive and negative Re  saturations are balanced
                         for i in 0 to FFT_BINS_PER_WORD-1 loop
-                            if  stage3_overflow(2*i+1)='1' then -- Re overflow
-                                if stage3_sign(2*i+1)='0' then -- if positive Re overflow set output to 1+0j
+                            if stage3_overflow(2*i+1) then -- Re overflow
+                                if not stage3_sign(2*i+1) then -- if positive Re overflow set output to 1+0j
                                     m_axis_out_tdata((2*i+2)*OB/2-4) <= '1'; -- set LSB of upper 4 bits of Re part
                                 else -- if negative Re overflow, set output to 0+1j
                                     m_axis_out_tdata((2*i+1)*OB/2-4) <= '1'; -- set LSB of upper 4 bits of Im part
@@ -948,8 +948,8 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         end loop;
                     when "111" => -- Send (1+0j) if Im has a positive saturation and (0+1j) if it has a negative saturation. Autocorr is 0 of positive and negative Im saturations are balanced
                         for i in 0 to FFT_BINS_PER_WORD-1 loop
-                            if  stage3_overflow(2*i)='1' then -- Im overflow
-                                if stage3_sign(2*i)='0' then -- if positive Im overflow set output to 1+0j
+                            if stage3_overflow(2*i) then -- Im overflow
+                                if not stage3_sign(2*i) then -- if positive Im overflow set output to 1+0j
                                     m_axis_out_tdata((2*i+2)*OB/2-4) <= '1'; -- set LSB of upper 4 bits of Re part
                                 else -- if negative Im overflow, set output to 0+1j
                                     m_axis_out_tdata((2*i+1)*OB/2-4) <= '1'; -- set LSB of upper 4 bits of Im part
@@ -1092,7 +1092,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         fres_tdata_var := (fres_tdata(0), fres_tdata(1), (others => '0'));
 
                         -- Append new Re/Im pair to the list when on the right word and frame
-                        if in_dat_dly1_tvalid='1' and in_dat_dly1_frame_ctr(0) = in_dat_dly1_word_ctr(0)  then -- Put odd or even word at end of fifo
+                        if in_dat_dly1_tvalid='1' and in_dat_dly1_frame_ctr(0) = in_dat_dly1_word_ctr(0) then -- Put odd or even word at end of fifo
                             pos := 0 when fres_flags_var(0) = "00" else 1 when fres_flags_var(1)="00" else 2; -- first free slot
                             assert pos <=1 report "fres: full res overflow" severity ERROR;
                             fres_tdata_var(pos) := fres_re_var;  fres_flags_var(pos) := "10"; -- Store Re. It is valid  and not tlast,
@@ -1150,7 +1150,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 if rst_reg then
                     delay_capture_ctr <= (others=> '0');
                     delay_capture_ctr_en <= '1';
-                elsif delay_capture_ctr_en  then
+                elsif delay_capture_ctr_en then
                     delay_capture_ctr <= delay_capture_ctr + 1;
                     if signed(delay_capture_ctr)=-2 or in_dat_dly2_tvalid='1' then
                         delay_capture_ctr_en <= '0';
@@ -1256,7 +1256,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 -- Phase 3
                 -- Capture stats when requested
 
-                if stats_capture_resync = '0' then -- Clear the ready flags whenever trig is low
+                if not stats_capture_resync then -- Clear the ready flags whenever trig is low
                     stats_ready <= '0';
                 elsif last_bin2 then -- Capture stats of the last frame block when the new block begins
                     stats_scaler_overflows <= scaler_overflow_ctr(stats_scaler_overflows'RANGE) when msb(scaler_overflow_ctr)='0' else (others => '1'); -- saturate if carry is set (overflow)
@@ -1264,7 +1264,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                     stats_ready <='1';
                 end if;
 
-                if rst_reg='1' then
+                if rst_reg then
                     stats_ready <= '0';
                     stats_frame_ctr <= (0=>'1', others=>'0');
                     last_frame <= '0';
@@ -1286,7 +1286,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 mon_clk_ctr <= mon_clk_ctr + 1;
                 mon_bit_ctr <= mon_bit_ctr + 1 when mon_word(mon_word'HIGH) = mon_ctrl;
                 -- Count words
-                if mon_tvalid  then
+                if mon_tvalid then
                     mon_word_ctr <= mon_word_ctr + 1;
                     if mon_tlast then
                         mon_word_ctr <= (others => '0');

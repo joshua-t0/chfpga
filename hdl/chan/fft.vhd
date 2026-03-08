@@ -350,7 +350,7 @@ bsb_regs0: entity work.bsb_regs
 
 			-- Counts the FFT overflows and stop at maximum value, and reset when overflow_reset=1
 			-- Parameterization of fft_overflow: check that fft_overflow is not '0' (CHIME) or '00' (D3A/CHORD)
-			if overflow_reset='1' then
+			if overflow_reset then
 				overflow_count <= (others=>'0');
 			elsif fft_tvalid='1' and fft_clk_en='1' and (fft_overflow='1' or overflow_force='1') and signed(overflow_count)/=-1 then
 			-- elsif fft_tvalid='1' and fft_clk_en='1' and (fft_overflow/=(fft_overflow'range => '0') or overflow_force='1') and signed(overflow_count)/=-1 then
@@ -363,10 +363,10 @@ bsb_regs0: entity work.bsb_regs
 			-- frames after, and maybe the frame before). Also note that thet
 			-- TLAST occurs, we have not yet included the last `fft_overflow` in
 			-- `fft_overflow_sticky`; we ned to do that separately.
-			if fft_tvalid='1' and fft_clk_en='1' and fft_tlast='1' then
+			if fft_tvalid and fft_clk_en and fft_tlast then
 				fft_overflow_sticky <= '0';
 				--fft_overflow_sticky_dly <= fft_overflow_sticky_int or fft_overflow;
-			elsif fft_tvalid='1' and fft_clk_en='1' and (fft_overflow='1' or overflow_force='1') then
+			elsif fft_tvalid and fft_clk_en and (fft_overflow or overflow_force) then
 			-- elsif fft_tvalid='1' and fft_clk_en='1' and (fft_overflow/=(fft_overflow'range => '0') or overflow_force='1') then
 				fft_overflow_sticky <= '1';
 			end if;
@@ -378,12 +378,12 @@ bsb_regs0: entity work.bsb_regs
 			fft_in_tlast  <= s_axis_in_dat_tlast;
 			fft_in_tuser  <= s_axis_in_dat_tuser;
 
-			if s_axis_in_dat_tvalid='1' then
+			if s_axis_in_dat_tvalid then
 				-- Generate a SYNC pulse every sync_period frames on the last word of the previous frame
 				fft_sync_in <= '0'; -- SYNC returns to zero on every valid word so it lasts only one sample. Will be overriden below.
 				-- if in_dat.TLAST='1' and sync_period_is_zero='0' then -- if this is the last word of the frame, check if it is time to generate a SYNC pulse
-				if s_axis_in_dat_tlast='1' and sync_period_is_zero='0' then
-					if  is_last_frame_of_sync_period='1' then -- if maximum count reach, send a sync pulse, otherwise blank it
+				if s_axis_in_dat_tlast and not sync_period_is_zero then
+					if is_last_frame_of_sync_period then -- if maximum count reach, send a sync pulse, otherwise blank it
 						sync_frame_ctr <= (others=>'0');
 						fft_sync_in <= '1';
 					else
@@ -443,7 +443,7 @@ bsb_regs0: entity work.bsb_regs
 				out_dat_pre_tuser  <= fft_rot_tuser;
 				out_dat_pre_tdata  <= fft_rot_tdata;
 				out_dat_pre_overflow_sticky <= fft_rot_overflow_sticky;
-				if out_dat_pre_tlast='1' and out_dat_pre_tvalid='1' then -- if out_data_pre_tvalid then fft_clk_en must also be true
+				if out_dat_pre_tlast and out_dat_pre_tvalid then -- if out_data_pre_tvalid then fft_clk_en must also be true
 					m_axis_out_dat_tuser(FUNCGEN_TUSER_BITS_PER_WORD) <= out_dat_pre_overflow_sticky; -- set FFT overflow flag
 				end if;
 			else

@@ -353,7 +353,7 @@ begin
 					end if;
 
 
-					if rst = '1' or user_reset_reg = '1' then
+					if rst or user_reset_reg then
                         -- block-local signals
 						word_ctr(src) <= (others => '0');
 						capture_en(src) <= '1'; -- capture the first frame coming out of reset
@@ -516,7 +516,7 @@ begin
 	            for i in 0 to NUMBER_OF_CHANNEL_PAIRS-1 loop
 		           chan_int := to_integer(unsigned(chan_pair_sel(i)));
 
-	               if mux_mode = '0' then -- Assign input channel x to buffer x
+	               if not mux_mode then -- Assign input channel x to buffer x
 	                   ram_din(2*i)(CAPTURE_BITS_PER_WORD-1 downto 0) <= s_axis_tdata(chan_int); -- When mux_mode=0, chan_pair_sel(i) is forced to 2*i. We don't assign the input directly becasue the synthesizer would infer an additional mux, which is redundant.
 	                   ram_din(2*i+1)(CAPTURE_BITS_PER_WORD-1 downto 0) <= s_axis_tdata(2*i+1);
 	               else -- Select the same even and odd input channel for each buffer pair
@@ -767,12 +767,12 @@ begin
                     end case;
 
                 -- keep track of fifo overflows
-                if fifo_overflow = '1' then
+                if fifo_overflow then
                     fifo_overflow_sticky <= '1';
                 end if;
 
                 -- synchronous reset
-	            if rst = '1' or user_reset_reg = '1'  then
+	            if rst or user_reset_reg then
                     fifo_overflow_sticky <= '0';
 	                fifo_in_tvalid <= '0'; -- needed
 	                read_seq_byte_ctr <= (others => '0');

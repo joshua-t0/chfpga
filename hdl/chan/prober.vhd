@@ -419,7 +419,7 @@ begin
 					if in_dat(i).TVALID and in_dat(i).TLAST then
 						frame_ctr(i) <= frame_ctr(i) + 1;  -- always count the 48-bit frame number. We will put this in the header.
 						primary_period_ctr(i) <= primary_period_ctr(i) + 1; -- cound frames within a period on a 24-bit counter (~43s period max)
-						if offset_done(i) = '0' then
+						if not offset_done(i) then
 							if primary_period_ctr(i) = capture_offset then
 								offset_done(i) <= '1';
 								primary_period_ctr(i) <= (others => '0');

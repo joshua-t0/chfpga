@@ -355,7 +355,7 @@ begin
 				axis_adc_reg1_tvalid <= in_dat_tvalid;
 				axis_adc_reg1_tlast <= in_dat_tlast;
 
-				if in_reset_adc_reg1 = '1' then
+				if in_reset_adc_reg1 then
 					axis_adc_reg1_tvalid <= '0';
 				end if;
 
@@ -367,7 +367,7 @@ begin
 				axis_adc_reg2_tvalid <= axis_adc_reg1_tvalid;
 				axis_adc_reg2_tlast <= axis_adc_reg1_tlast;
 
-				if in_reset_adc_reg2 = '1' then
+				if in_reset_adc_reg2 then
 					axis_adc_reg2_tvalid <= '0';
 				end if;
 

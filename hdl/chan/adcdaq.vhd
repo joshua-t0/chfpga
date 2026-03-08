@@ -1210,7 +1210,7 @@ adc_clk_out_div2 <= adc_clk_out_div2_int;
 -- Every ADCs will discard the same number of samples on their local clock, allowing synchronization to be maintained independent of the MMCM lock delay.
 -- NOTE: The adc_clk_valid is set ont the divclk_local_vect(0) clock, but it is used by processes clocked on divclk (which is either from divclk_local or from the PLL). We assume the tools are smart enough to know the delays between the two and ensure proper timing.
 clkvalid_proc: process(all) begin
-		if adcdaq_reset_all='1' then
+		if adcdaq_reset_all then
 				word_ctr <= (others=>'0');
 				adc_clk_valid <= '0';
 			elsif rising_edge(divclk_local_vect(0)) then
@@ -1229,12 +1229,12 @@ clkvalid_proc: process(all) begin
 	-- When we are ready to acquire data, Release the ISERDES reset. Data will come out in a few cycles after the SERDES pipeline delay.
 	-- Note that adc_clk_valid is clocked by divclk_local_vect(0), while this process is clocked on divclk, which may come from the PLL if we use an external clock.
 SERDES_RESET_GEN: for i in 0 to 7 generate
-	serdes_rst_proc: process(serdes_clkdiv(i), adcdaq_reset_all)
+	serdes_rst_proc: process(all)
 			begin
-				if adcdaq_reset_all='1' then
+				if adcdaq_reset_all then
 					serdes_auto_reset(i) <= '1'; -- Needed
-				elsif rising_edge(serdes_clkdiv(i))  then
-					if adc_clk_valid='1' then
+				elsif rising_edge(serdes_clkdiv(i)) then
+					if adc_clk_valid then
 						serdes_auto_reset(i) <= '0';
 					end if;
 				end if; -- RST/CLK
@@ -1279,7 +1279,7 @@ end generate;
 fifo_rst_proc: process(all)
 	begin
 		-- generate the fifo_rst, which is a delayed version of the adcdaq_reset_all.
-			if adcdaq_reset_all = '1' then -- Resets only on global reset
+			if adcdaq_reset_all then -- Resets only on global reset
 				fifo_rst_ctr <= (others=>'0');
 				fifo_rst <= '1';
 			elsif rising_edge(divclk_vect(0)) then
@@ -1314,14 +1314,14 @@ fifo_rst_proc: process(all)
 -- When we reach a certain count we start storing the data into the FIFO.
 -- In order to delay the data with a byte granularity, we delay and realign the SERDES output word based on the last 2 bits of the delay.
 fifo_wr_proc: process(all) begin
-		if adcdaq_reset_all='1' then
+		if adcdaq_reset_all then
 			fifo_wr_en <= '0';
 			word_delay_ctr <= (others=>'0');
 			fifo_overflow_sticky <= '0';
 			serdes_out_dly <= (others=>'0'); -- prevent inferring logic to hold value during reset (using CE pins or otherwise)
 			fifo_din <= (others=>'0'); -- prevent inferring logic to hold value during reset (using CE pins or otherwise)
 
-		elsif rising_edge(divclk_vect(0))  then
+		elsif rising_edge(divclk_vect(0)) then
 			word_delay <= unsigned(sample_delay(sample_delay'HIGH downto 2)) + 5;
 			-- get a delayed version of SERDES output to implement byte-level delay
 
@@ -1343,7 +1343,7 @@ fifo_wr_proc: process(all) begin
 			end case;
 
 			-- Start writing to the FIFO when valid data is getting out of the SERDES and the 1-word delay above, which is a few clock cycles after the SERDES_RESET is released.
-			if serdes_auto_reset(0)='0' then -- we use serdes_auto_reset from bit 0 , which is normally clocked on divclk_vect(0)
+			if not serdes_auto_reset(0) then -- we use serdes_auto_reset from bit 0 , which is normally clocked on divclk_vect(0)
 				-- Skip additional words to account for ISERDES and this process delays
 				if word_delay_ctr = word_delay then -- need to concatenate "00" to extend the variable by 2 bits - otherwise +5 overflows silently
 					fifo_wr_en <= '1';
@@ -1363,11 +1363,11 @@ fifo_wr_proc: process(all) begin
 -- FIFO readout process
 -- Sets ADC_READY when there is something in the FIFO
 -- Readout is performed when ADC_RD_EN is active. This should be done not too late after ADC_READY so the FIFO does not overflow
-fifo_rd_proc: process(adc_clk, adcdaq_reset_all)
+fifo_rd_proc: process(all)
 	variable i,k: INTEGER;
 	variable ramp_word : std_logic_vector(31 downto 0);
 	begin
-		if adcdaq_reset_all='1' then
+		if adcdaq_reset_all then
 			m_axis_adc_tvalid <= '0';
 			m_axis_adc_tlast <= '0'; -- not really needed. Added during reset glitch debugging.
 
@@ -1403,7 +1403,7 @@ fifo_rd_proc: process(adc_clk, adcdaq_reset_all)
 			ramp_err_clear_pulse <= ramp_err_clear_reg and not ramp_err_clear_dly; -- high when a 0-to-1 transition is seen on the ramp_err_clear signal
 
 			ramp_err <= '0'; -- Active for one clock only. May be overriden below
-			if ramp_err_clear_pulse = '1' then -- the ramp zeroing/incrementing is controlled by a single signal. We used to have the output of async logic involving 2 clock domains, so some bits of the counter were not cleared properly
+			if ramp_err_clear_pulse then -- the ramp zeroing/incrementing is controlled by a single signal. We used to have the output of async logic involving 2 clock domains, so some bits of the counter were not cleared properly
 				ramp_err_ctr <= (others=>'0');
 			elsif ramp_err='1' and signed(ramp_err_ctr) /= -1 then -- stop counting when max is reached
 				ramp_err_ctr <= ramp_err_ctr + 1;
@@ -1411,7 +1411,7 @@ fifo_rd_proc: process(adc_clk, adcdaq_reset_all)
 
 			-- Bit error counters and edge-sensitive clearing mechanism
 			ramp_bit_err <= (others=>'0');
-			if ramp_err_clear_pulse = '1' then
+			if ramp_err_clear_pulse then
 				ramp_bit_err_ctr <= (others=>'0'); -- CLear all 4-bit bit error counters at once
 			else
 				for i in 0 to 7 loop
@@ -1427,10 +1427,10 @@ fifo_rd_proc: process(adc_clk, adcdaq_reset_all)
 			-- Set default data vaklid flag
 			m_axis_adc_tvalid<='0'; -- by default there is no data unless overriden below
 
-			if enable_ramp='1' then
+			if enable_ramp then
 				data_ready_int <= '1'; -- Data is always ready
 				fifo_rd_en <= '0'; -- We do not read the FIFO
-				if send_data_reg='1' then -- if we are instructed to send data
+				if send_data_reg then -- if we are instructed to send data
 					m_axis_adc_tvalid <= '1';
 					m_axis_adc_tdata <= ramp_word;
 					m_axis_adc_tuser <= (others=>'0');
@@ -1445,7 +1445,7 @@ fifo_rd_proc: process(adc_clk, adcdaq_reset_all)
 			else -- if enable_ramp='0'
 				-- Indicate to the user that we are ready to read data when there is enough words in the buffer to prevent an underflow
 				-- The user shall soon set the send_data input to allow the module to send the data that is accumulating in the FIFO
-				if fifo_prog_full='1' then -- if there are enough samples (8 or more) in the FIFO
+				if fifo_prog_full then -- if there are enough samples (8 or more) in the FIFO
 					data_ready_int <= '1';
 				end if;
 
@@ -1453,7 +1453,7 @@ fifo_rd_proc: process(adc_clk, adcdaq_reset_all)
 				fifo_rd_en <= send_data_reg and data_ready_int; -- allow reads only when FIFO has a minimum number of words stored.
 				-- Send the FIFO data out when it is ready
 				-- Note that the FIFO will start reading only when send_data_reg is set.
-				if fifo_rd_en='1' and fifo_data_valid='1' then -- If there is a word ready that is about to be overwritten
+				if fifo_rd_en and fifo_data_valid then -- If there is a word ready that is about to be overwritten
 					-- Flag word errors
 					if fifo_dout /= ramp_word then
 						ramp_err <= '1'; -- Pulse ramp_err for one clock on each error
@@ -1531,7 +1531,7 @@ fifo0 : entity work.ADCDAQ_FIFO
 -- It clocks on the same clock that the ISERDES works, i.e. either the internal or external divclk
 capture2_proc: process(all)
 	begin
-		if (bsb_rst='1' or fifo_wr_en='0') then
+		if (bsb_rst or not fifo_wr_en) then
 --					capture2_done<='1'; -- Needed
 					capture2_word_ctr <= (others=>'0'); -- Not really necessary
 					capture2_pattern <= (others=>'0'); -- Not really necessary
