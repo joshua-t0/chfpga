@@ -316,9 +316,9 @@ begin
 			port map (src_arst => rst, dest_clk => wr_clk_i, dest_arst => wr_rst_cdc);
 
 		-- Extend wr_rst_cdc to 64 wr_clk cycles (conservative for both K7 and USP)
-		process(wr_clk_i) begin
+		process(all) begin
 			if rising_edge(wr_clk_i) then
-				if wr_rst_cdc = '1' then
+				if wr_rst_cdc then
 					wr_rst_hold <= '1';
 					wr_rst_ctr  <= (others => '0');
 				elsif all_ones(wr_rst_ctr) then

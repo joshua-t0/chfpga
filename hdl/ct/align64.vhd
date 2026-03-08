@@ -222,7 +222,7 @@ begin
 			m_axis_tlast <= fifo_tlast(0); -- Set the last flag from the FIFO if the lane is still being sent. If it was interrupted early and data is being discarded, EOF will not appear with global_tlast.
 
 			-- Synchronous resets
-			if rst  then
+			if rst then
 				fifo_tfirst <= (others => '1');
 				lane_error <= (others => '0');
                 lane_state <= (others => READ);

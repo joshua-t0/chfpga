@@ -639,18 +639,18 @@ begin
 			reset_all <= rst or user_reset;
 
 
-			if reset_all = '1' or overflow_reset = '1' then
+			if reset_all or overflow_reset then
 				data_fifo_overflow_sticky <= '0';
 				data_flags_fifo_overflow_sticky <= '0';
 				frame_flags_fifo_overflow_sticky <= '0';
 			else
-				if data_fifo_overflow = '1' then
+				if data_fifo_overflow then
 					data_fifo_overflow_sticky <= '1';
 				end if;
-				if data_flags_fifo_overflow = '1' then
+				if data_flags_fifo_overflow then
 					data_flags_fifo_overflow_sticky <= '1';
 				end if;
-				if frame_flags_fifo_overflow = '1' then
+				if frame_flags_fifo_overflow then
 					frame_flags_fifo_overflow_sticky <= '1';
 				end if;
 			end if;
@@ -659,7 +659,7 @@ begin
 			-- FIFO write
 			-- Take all 4 words and writes them one after the other into the FIFO
 
-			if bypass_reg = '0' then
+			if not bypass_reg then
 				-- last_fifo_number <= min(lsb(number_of_input_lanes(4 downto 2)-1, 2), to_unsigned(NUMBER_OF_INPUTS/4-1,2));
 				last_fifo_number_int <= last_fifo_number;
 			else -- in bypass mode, we send every word from the input, so we read only one lane.
@@ -667,20 +667,20 @@ begin
 			end if;
 
 
-			if bin_ctr_en = '1' then  -- if any lane has valid data
+			if bin_ctr_en then  -- if any lane has valid data
 				bin_number <= bin_number + 2; -- we send two bins per clock
-				if bin_ctr_clr = '1' then -- if there is any valid EOF
+				if bin_ctr_clr then -- if there is any valid EOF
 					bin_number <= (others => '0');
 				end if;
 			end if;
 
-			if reset_all = '1' then
+			if reset_all then
 				bin_number <= (others => '0');
 			end if;
 
 
 			-- Count the words written and stop writing after 4 words
-			if data_fifo_wr_en = '1' then
+			if data_fifo_wr_en then
 				data_fifo_wr_ctr <= data_fifo_wr_ctr + 1;
 				if data_fifo_wr_ctr = last_fifo_number_int then
 					data_fifo_wr_en <= '0';
@@ -699,9 +699,9 @@ begin
 			data_flags_fifo_wr_en <= '0';
 			frame_flags_fifo_wr_en <= '0';
 
-			if s_axis_global_tvalid = '1' then
+			if s_axis_global_tvalid then
 				-- Counts the incoming frames for debugging
-				if s_axis_global_tlast = '1' then
+				if s_axis_global_tlast then
 					in_frame_ctr <= in_frame_ctr + 1;
 				end if;
 
@@ -710,7 +710,7 @@ begin
 				-- Normally the counter will reach the last word of a frame  with a non-zero selection, so the LAST flag will be written.
 				-- If we are still expected to write data (store_data=1) but we reach the last word of the packet, we force a write to make sure we capture the LAST flag.
 				-- If we select more words than the specified count, the extra words will be ignored.
-				if store_data = '1' then
+				if store_data then
 					if mask_ram_dout /= "00" or bypass_reg = '1' then
 						data_fifo_wr_en <= '1';
 						data_fifo_wr_ctr <= first_fifo_number;
@@ -744,18 +744,18 @@ begin
 				end if;
 
 				-- Capture the ADC and FFT flags at the end of each frame
-				if s_axis_global_tlast = '1' then
+				if s_axis_global_tlast then
 					frame_flags_fifo_din(32) <= is_last_frame_of_packet;
 					frame_flags_fifo_wr_en <= send_flags;
 				end if;
 
 				-- Count the frames, and reset the word counter at the end of each frame
-				if s_axis_global_tlast = '1' then
+				if s_axis_global_tlast then
 					word_ctr <= (others => '0');
 					store_data <= '1';
 
 					frame_ctr <= frame_ctr + 1;
-					if is_last_frame_of_packet = '1' then
+					if is_last_frame_of_packet then
 						frame_ctr <= (others => '0');
 					end if;
 				end if;
@@ -795,7 +795,7 @@ begin
 				end loop;
 
 				-- Select odd/even bin based on bit 0 of selection mask
-				if mask_ram_dout(0) = '1' then -- if selection bits are "01" or "11"
+				if mask_ram_dout(0) then -- if selection bits are "01" or "11"
 					data_in_mux1 := data_in_even; -- grab the even bin
 					scaler_flags_mux1 := scaler_flags_even;
 				else
@@ -821,7 +821,7 @@ begin
 				-- So we write only data_fifo_in(0) to save logic. Only that FIFO will be read out anyways.
 				-- We also don't care about flags (they ar enot sent in bypass mode) so we do nothing with them to save logic
 				if bypass_reg = '1' and i = 0 then
-					if four_bits = '0' then
+					if not four_bits then
 						data_in_mux2(31 downto 0) := s_axis_tdata(LANE_NUMBER);
 					else
 						data_in_mux2(31 downto 28) := s_axis_tdata((LANE_NUMBER * 2) MOD NUMBER_OF_INPUTS)(31 downto 28); -- get high nibble, Real part
@@ -842,7 +842,7 @@ begin
 					data_fifo_din(i)(63 downto 0) <= data_in_mux2;
 				end if;
 				-- scaler flags are one word long and are always registered in data_flags_fifo_din to avoid clock-enable logic.
-				if combine_data_flags = '0' or word_ctr(0) = '0' then
+				if not combine_data_flags or not word_ctr(0) then
 					data_flags_fifo_din(4 * i + 3 + 16 downto 4 * i + 16) <= (others => '0');
 					data_flags_fifo_din(4 * i + 3 downto 4 * i) <= scaler_flags_mux2;
 				else
@@ -857,7 +857,7 @@ begin
 			end loop; -- for i in 0 to NUMBER_OF_INPUTS/4-1
 
 
-			if reset_all = '1' then
+			if reset_all then
 				word_ctr <= (others => '0');
 				store_data <= '1';
 				frame_ctr <= (others => '0');
@@ -935,7 +935,7 @@ begin
 			-------------------------------------
 
 			-- Detect arrival of first word of every incoming frame
-			if s_axis_global_tvalid = '1' then
+			if s_axis_global_tvalid then
 				s_axis_global_tfirst <= s_axis_global_tlast;
 			end if;
 
@@ -966,7 +966,7 @@ begin
 			-- SEND HEADER
 			-----------
 			header_word_array := struct_to_word(frame_header);
-			if send_header = '1' and send_strobe = '1' then
+			if send_header and send_strobe then
 				m_axis_tdata_int <= header_word_array(to_integer(header_word_ctr)); --
 				m_axis_tvalid_int <= '1';
 				m_axis_tlast_int <= '0';
@@ -984,7 +984,7 @@ begin
 			-- SEND DATA
 			-----------
 			-- ix := to_integer(fifo_ctr); -- shortcut to the output lane number
-			if send_data = '1' and data_fifo_valid = '1' then -- we could possibly always use ix=0
+			if send_data and data_fifo_valid then -- we could possibly always use ix=0
 				data_fifo_dout_mux2 := data_fifo_dout(31 downto 0); -- 4-bit mode assumed. Data is already packed. There is only one half to send.
 
 				-- --8-bit mode: repack the data into (8+8) bit complex values
@@ -1012,10 +1012,10 @@ begin
 				-- half <= '1'; -- 8-bit support
 				-- if EIGHT_BIT_SUPPORT=FALSE or four_bits='0' or half='1' then -- We are finished sending halves if there is no half (4 bit mode) or we are on the last half.
 				--   half <= '0';
-				if data_fifo_dout(64) = '1' then -- if last data word of the packet, start sending scaler flags
+				if data_fifo_dout(64) then -- if last data word of the packet, start sending scaler flags
 					send_data <= '0';
 					-- send_odd_data_flags <= '0';
-					if send_flags = '1' and bypass_reg = '0' then
+					if send_flags and not bypass_reg then
 						send_data_flags <= '1';
 					else
 						send_packet_flags <= '1';
@@ -1028,13 +1028,13 @@ begin
 			-- SEND DATA FLAGS
 			-----------
 			-- Send the content of the scaler flags fifo
-			if send_data_flags = '1' and data_flags_fifo_valid = '1' then
+			if send_data_flags and data_flags_fifo_valid then
 				m_axis_tdata_int(31 downto 0) <= data_flags_fifo_dout(31 downto 0);
 				m_axis_tvalid_int <= '1';
 				-- lane_errors <= lane_errors or data_flags_fifo_dout(31 downto 16); -- cumulate lane errors (missing data, etc.) to send later in the packet flags
 				m_axis_tlast_int <= '0';  -- This is never the last word we send: there are still the frame flags coming
 
-				if data_flags_fifo_dout(32) = '1' then -- if last word of the packet, start sending frame flags
+				if data_flags_fifo_dout(32) then -- if last word of the packet, start sending frame flags
 					send_data_flags <= '0';
 					send_frame_flags <= '1';
 				end if;
@@ -1044,11 +1044,11 @@ begin
 			-- SEND FRAME FLAGS
 			-----------
 			-- Send the contents of the ADC flags FIFO
-			if send_frame_flags = '1' and frame_flags_fifo_valid = '1' then
+			if send_frame_flags and frame_flags_fifo_valid then
 				m_axis_tdata_int <= frame_flags_fifo_dout(31 downto 0);
 				m_axis_tvalid_int <= '1';
 				m_axis_tlast_int <= '0';
-				if frame_flags_fifo_dout(32) = '1' then --
+				if frame_flags_fifo_dout(32) then --
 					send_frame_flags <= '0';
 					send_packet_flags <= '1';
 				end if;
@@ -1057,7 +1057,7 @@ begin
 			-----------
 			-- SEND PACKET FLAGS (all zeros)
 			-----------
-			if send_packet_flags = '1' then
+			if send_packet_flags then
 				m_axis_tdata_int(31 downto 0) <= (others => '0');
 				-- m_axis_tdata_int(15 downto 0) <= lane_errors;
 				m_axis_tvalid_int <= '1';
@@ -1075,7 +1075,7 @@ begin
 			-- (...main code...) end if". because all signals not processed in the reset code would
 			-- end up with a clock enable depending on the reset line in the main code. That is
 			-- quite a heavy load.
-			if reset_all = '1' then
+			if reset_all then
 				m_axis_tvalid_int <= '0'; -- needed
 				header_word_ctr <= (others => '0');
 				timestamp_ctr <= (others => '0');

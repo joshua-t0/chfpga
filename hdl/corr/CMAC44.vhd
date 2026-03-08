@@ -871,25 +871,25 @@ main: process(all) begin
 			rst_reg <= rst;
 
 			-- FIFO sticky error flags
-			if acc_fifo_rderr='1' then
+			if acc_fifo_rderr then
 				acc_fifo_rd_error <= '1';
 			end if;
 
-			if acc_fifo_wrerr='1' then
+			if acc_fifo_wrerr then
 				acc_fifo_wr_error <= '1';
 			end if;
 
-			if rst_reg='1' then
+			if rst_reg then
 				acc_fifo_rd_error <= '0';
 				acc_fifo_wr_error <= '0';
 			end if;
 
-			if s_axis_xy_tvalid='1' and s_axis_xy_tlast='1' then
+			if s_axis_xy_tvalid and s_axis_xy_tlast then
 				first_frame_completed0 <= '1';
 			end if;
 
 			-- Reset overrides
-			if rst_reg = '1' then
+			if rst_reg then
 				first_frame_completed0 <= '0';
 			end if;
 
@@ -933,12 +933,12 @@ main: process(all) begin
 			-- We need to present the FIFO output to the DSP2 C input on stage 2,
 			-- but the FIFO read out has a latency of 1 clock, so we set this signal one stage
 			-- earlier. We do not want the FIFO to be FWFT because the
-			if tvalid1='1' and tlast1='1' then
+			if tvalid1 and tlast1 then
 				first_frame_completed1 <= '1';
 			end if;
 
 			-- Reset overrides
-			if rst_reg = '1' then
+			if rst_reg then
 				tvalid1 <= '0';
 				first_frame_completed1 <= '0';
 			end if;
@@ -952,14 +952,14 @@ main: process(all) begin
 			last_frame2 <= last_frame1;
 
 
-			if tvalid2='1' and tlast2='1' then
+			if tvalid2 and tlast2 then
 				first_frame2 <= last_frame2; -- used to tell when DSP2 needs to start a new accumulation (C=0)
 				first_frame_completed2 <= '1'; -- used to when to start reading out data from the FWFT FIFO
 			end if;
 
 
 			-- Reset overrides
-			if rst_reg = '1' then
+			if rst_reg then
 				tvalid2 <= '0';
 				first_frame2 <= '1';
 				first_frame_completed2 <= '0';
@@ -975,7 +975,7 @@ main: process(all) begin
 			tlast3 <= tlast2;
 			last_frame3 <= last_frame2;
 
-			if tvalid3='1' then -- We create a tfirst flag, which will be used to detect the first
+			if tvalid3 then -- We create a tfirst flag, which will be used to detect the first
 				                -- word of the last frame in the next state
 				tfirst3 <= tlast3;
 			end if;
@@ -993,7 +993,7 @@ main: process(all) begin
 
 
 			-- Reset overrides
-			if rst_reg = '1' then
+			if rst_reg then
 				tvalid3 <= '0';
 				tfirst3 <= '1';
 			end if;
@@ -1031,27 +1031,27 @@ main: process(all) begin
 			capture_wr_en4 <= '0'; -- overriden below when there is data to be written to BRAM
 			capture_rd_en4 <= '0'; -- overriden below when we can read data from BRAM
 			-- CAPTURE STATE
-			if tvalid3='1' and  last_frame3='1' then -- if we have valid data from the last frame of the integration period
-				if readout_enable4='1' then  -- If we start storing a new frame while we are still rading out the previous frame, flag an error
+			if tvalid3 and last_frame3 then -- if we have valid data from the last frame of the integration period
+				if readout_enable4 then  -- If we start storing a new frame while we are still rading out the previous frame, flag an error
 					readout_err <= '1';
 				end if;
 				readout_enable4 <= '0'; -- stop readout of the BRAM if it is still in progress
 				capture_wr_en4 <= '1'; -- write the word to the capture BRAM
-				if tfirst3='1' then -- if the first word of the last frame of the integration period
+				if tfirst3 then -- if the first word of the last frame of the integration period
 					capture_addr4 <= (others=>'0'); -- start writing data at address 0 on the next clock
 				else
 					capture_addr4 <= capture_addr4 + 1;-- otherwise increment the address
 				end if;
-				if tlast3='1' then -- if we are writing the last word of the last frame
+				if tlast3 then -- if we are writing the last word of the last frame
 					readout_enable4 <= '1';  -- go into readout state
 					capture_rd_en4 <= send; -- immediately start a read if the destination is ready.
 														 -- We don't have to, but since we can read the first readout word at the same time
 														 -- we write the last capture word, why not save a cycle?
 				end if;
 			-- READOUT STATE
-			elsif  readout_enable4='1' then -- if we are in the capture state
+			elsif readout_enable4 then -- if we are in the capture state
 				capture_rd_en4 <= send; -- read the data at the current address if the sink is ready to accept it
-				if capture_rd_en4='1' then -- if we previously read a word, decrement the address counter
+				if capture_rd_en4 then -- if we previously read a word, decrement the address counter
 					capture_addr4 <= capture_addr4 - 1;
 					if capture_addr4 = 0 then -- but if we just read the word at address zero, stop the readout
 						readout_enable4 <= '0'; -- The end of the readout state also indicates that the last word was sent down the pipeline in the previous clock.
@@ -1061,7 +1061,7 @@ main: process(all) begin
 			end if;
 
 			-- Reset overrides
-			if rst_reg = '1' then
+			if rst_reg then
 				tvalid4 <= '0';
 				readout_enable4 <= '0';
 				readout_err <= '0';
@@ -1074,7 +1074,7 @@ main: process(all) begin
 			readout_enable5 <= readout_enable4;
 
 			-- Reset overrides
-			if rst_reg = '1' then
+			if rst_reg then
 				capture_rd_en5 <= '0';
 				readout_enable5 <= '0';
 			end if;
@@ -1086,7 +1086,7 @@ main: process(all) begin
 			readout_enable6 <= readout_enable5;
 
 			-- Reset overrides
-			if rst_reg = '1' then
+			if rst_reg then
 				capture_rd_en6 <= '0';
 				readout_enable6 <= '0';
 			end if;
@@ -1103,16 +1103,16 @@ main: process(all) begin
 
 			m_axis_z_out_start_dly <= m_axis_z_out_start;
 			--if m_axis_z_out_send='0' then
-			if readout_enable6 = '1' and readout_enable5='0' then
+			if readout_enable6 and not readout_enable5 then
 				started <= '0';
-			elsif m_axis_z_out_start='1' and m_axis_z_out_start_dly='0' then
+			elsif m_axis_z_out_start and not m_axis_z_out_start_dly then
 				started <= '1';
 			end if;
 
 			send <= started and m_axis_z_out_send;
 
 			s_axis_z_in_start <= '0';
-			if readout_enable6 = '1' then
+			if readout_enable6 then
 				m_axis_z_out_local_data <= '1'; -- data is coming from this CMAC
 				m_axis_z_out_tdata <= capture_dout6;
 				m_axis_z_out_tvalid <= capture_rd_en6;
@@ -1127,7 +1127,7 @@ main: process(all) begin
 				-- hell out of the downstream logic. This way the data transmit logic has a chance
 				-- of recovering naturally if a bad config was used and then corrected.
 				m_axis_z_out_tlast <= '0'; -- overriden below
-				if readout_enable5 = '0' then
+				if not readout_enable5 then
 					m_axis_z_out_tvalid <= '1';
 					m_axis_z_out_tlast <= '1';
 					s_axis_z_in_start <= '1';
@@ -1141,7 +1141,7 @@ main: process(all) begin
 				s_axis_z_in_send <= m_axis_z_out_send;
 			end if;
 
-			if rst_reg = '1' then
+			if rst_reg then
 				started <= '0';
 				send <= '0';
 				m_axis_z_out_tvalid <='0';

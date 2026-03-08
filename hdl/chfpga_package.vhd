@@ -931,7 +931,7 @@ function max(vin: integer_array) return integer is
 begin
 	vout := integer'LOW;
 	for j in 0 to vin'Length-1 loop
-		if 	vin(j) > vout then
+		if vin(j) > vout then
 			vout := vin(j);
 		end if;
 	end loop;
@@ -943,7 +943,7 @@ function min(vin: integer_array) return integer is
 begin
 	vout := integer'HIGH;
 	for j in 0 to vin'LENGTH-1 loop
-		if 	vin(j) < vout then
+		if vin(j) < vout then
 			vout := vin(j);
 		end if;
 	end loop;
@@ -974,7 +974,7 @@ function count(vin: integer_array; target: integer) return integer is
 	variable vout: integer := 0;
 begin
 	for j in vin'RANGE loop
-		if 	vin(j) = target then
+		if vin(j) = target then
 			vout := vout + 1;
 		end if;
 	end loop;
@@ -1293,9 +1293,9 @@ end;
 
 FUNCTION sel(b: std_logic; if_true: std_logic_vector; if_false: std_logic_vector) return std_logic_vector is
 begin
-	if b='1' then
+	if b then
 		return if_true;
-	elsif b='0' then
+	elsif not b then
 		return if_false;
 	else
 		report "Test value in sel(test_value, if_true, if_false) is neither '0' or '1'" severity failure;
@@ -1551,7 +1551,7 @@ function clip(v:signed; width_minus_one:integer)  return signed is
 	variable v_slv: std_logic_vector(v'RANGE) := std_logic_vector(v);
 begin
 	-- If the sign bit of the word is 0 but all the clipped bits are not 0, saturate to max positive value
-	if  v_slv(v_slv'HIGH) = '0' and not all_zeros(v_slv, v_slv'HIGH, width_minus_one) then
+	if v_slv(v_slv'HIGH) = '0' and not all_zeros(v_slv, v_slv'HIGH, width_minus_one) then
 		r := (others => '0');
 		r(width_minus_one-1 downto 0) := (others => '1');
 	-- If the sign bit of the word is 1 but all the bits down and including the MSB of our byte are not 1, saturate to most negative value

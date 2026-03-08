@@ -449,16 +449,16 @@ begin
 
 		in_frame_det_proc: process(all) begin
 		if rising_edge(clk) then
-				if rst_reg = '1' then
+				if rst_reg then
 					s_axis_tfirst(i) <= '1';
-				elsif s_axis_tvalid(i) = '1' then
+				elsif s_axis_tvalid(i) then
 					s_axis_tfirst(i) <= s_axis_tlast(i);
 				end if;
 
-				if lane_monitor_reset = '1' or rst_reg = '1' then
+				if lane_monitor_reset or rst_reg then
 					input_frame_detection(i) <= '0';
 					input_frame_ctr(i) <= (others => '0');
-				elsif s_axis_tvalid(i) = '1' and s_axis_tlast(i) = '1' then  -- if end of frame
+				elsif s_axis_tvalid(i) and s_axis_tlast(i) then  -- if end of frame
 					input_frame_detection(i) <= '1';
 					input_frame_ctr(i) <= input_frame_ctr(i) + 1;
 				end if;
@@ -489,10 +489,10 @@ begin
 			header_capture_enable_reg <= header_capture_enable;
 
 			-- Capture header information
-			if rst_reg = '1' then
+			if rst_reg then
 				header_capture_word_ctr <= (others => '0');
-			elsif m_axis_align_global_tvalid = '1' then
-				if m_axis_align_global_tlast = '1' then
+			elsif m_axis_align_global_tvalid then
+				if m_axis_align_global_tlast then
 					header_capture_word_ctr <= (others => '0');
 				elsif signed(header_capture_word_ctr) /= -1 then
 					header_capture_word_ctr <= header_capture_word_ctr + 1;
@@ -531,13 +531,13 @@ begin
 			-- end if;
 
 			-- counter: -2: saturate, -1: no start of frame, 0: start and end on same clock, >0, delay between start and end
-			if lane_monitor_reset = '1' or rst_reg = '1' then
+			if lane_monitor_reset or rst_reg then
 				delay_capture_word_ctr <= (others => '1');
 				delay_capture_word_ctr_en <= '0';
 				delay_capture_word_ctr_arm <= '1';
 			else
 				-- start counting on ref start of frame
-				if delay_capture_word_ctr_arm = '1' and s_axis_tvalid(0) = '1' and s_axis_tfirst(0) = '1' then
+				if delay_capture_word_ctr_arm and s_axis_tvalid(0) and s_axis_tfirst(0) then
 					delay_capture_word_ctr <= (0=> '1', others => '0');
 					delay_capture_word_ctr_en <= '1';
 					delay_capture_word_ctr_arm <= '0';
@@ -546,7 +546,7 @@ begin
 				if signed(delay_capture_word_ctr) = -3 or (s_axis_tvalid(to_integer(lane_monitor_sel)) = '1' and s_axis_tfirst(to_integer(lane_monitor_sel)) = '1') then
 					delay_capture_word_ctr_en <= '0';
 				end if;
-				if delay_capture_word_ctr_en = '1'  then
+				if delay_capture_word_ctr_en then
 					delay_capture_word_ctr <= delay_capture_word_ctr + 1;
 				end if;
 			end if;
@@ -554,11 +554,11 @@ begin
 			align_pulse <= align_lane_monitor(to_integer(lane_monitor_sel));
 
 
-			if rst_reg = '1' then
+			if rst_reg then
 				delay_capture_ref_word_ctr <= (others => '0');
 				delay_capture_ref_word_ctr_en <= '1';
 			else
-				if delay_capture_ref_word_ctr_en = '1'  then
+				if delay_capture_ref_word_ctr_en then
 					delay_capture_ref_word_ctr <= delay_capture_ref_word_ctr + 1;
 					if signed(delay_capture_ref_word_ctr) = -2 or s_axis_tvalid(0) = '1' then
 						delay_capture_ref_word_ctr_en <= '0';
@@ -669,7 +669,7 @@ begin
 			m_axis_remap_tdata_reg <= m_axis_remap_tdata;
 			m_axis_remap_tlast_reg <= m_axis_remap_tlast;
 			m_axis_remap_tvalid_reg <= m_axis_remap_tvalid;
-			if rst_reg = '1' then -- reset the pipeline
+			if rst_reg then -- reset the pipeline
 				m_axis_remap_tvalid_reg <= (others => '0');
 			end if;
 
@@ -686,7 +686,7 @@ begin
 			-- end if;
 
 
-			if rst_reg = '1' or lane_monitor_reset = '1' then
+			if rst_reg or lane_monitor_reset then
 				align_fifo_overflow_sticky <= (others => '0');
 				missing_frame_sticky <= (others => '0');
 				discarded_data_sticky <= (others => '0');
@@ -697,25 +697,25 @@ begin
 			end if;
 
 			for i in 0 to NUMBER_OF_INPUT_LANES - 1 loop
-				if lane_monitor_reset = '1' or rst_reg = '1' then
+				if lane_monitor_reset or rst_reg then
 					align_frame_detection(i) <= '0';
 					align_frame_ctr(i) <= (others => '0');
-				elsif m_axis_align_tvalid(i) = '1' and m_axis_align_tlast(i) = '1'  then  -- if end of frame
+				elsif m_axis_align_tvalid(i) and m_axis_align_tlast(i) then  -- if end of frame
 					align_frame_detection(i) <= '1';
 					align_frame_ctr(i) <= align_frame_ctr(i) + 1;
 				end if;
 
-				if lane_monitor_reset = '1' or rst_reg = '1' then
+				if lane_monitor_reset or rst_reg then
 					remap_frame_detection(i) <= '0';
-				elsif m_axis_remap_tvalid(i) = '1' and m_axis_remap_tlast(i) = '1'  then  -- if end of frame
+				elsif m_axis_remap_tvalid(i) and m_axis_remap_tlast(i) then  -- if end of frame
 					remap_frame_detection(i) <= '1';
 				end if;
 
-				if lane_monitor_reset = '1' or rst_reg = '1' then
+				if lane_monitor_reset or rst_reg then
 					bad_lane_sticky(i) <= '0';
 					bad_eof_sticky(i) <= '0';
 				else
-					if m_axis_align_global_tvalid = '1' and m_axis_align_tvalid(i) = '0' then
+					if m_axis_align_global_tvalid and not m_axis_align_tvalid(i) then
 						bad_lane_sticky(i) <= '1';
 					end if;
 					if m_axis_align_global_tvalid = '1' and m_axis_align_tvalid(i) = '1' and (m_axis_align_global_tlast /= m_axis_align_tlast(i)) then
@@ -726,11 +726,11 @@ begin
 			end loop;
 
 			for i in 0 to NUMBER_OF_OUTPUT_LANES - 1 loop
-				if lane_monitor_reset = '1' or rst_reg = '1' then
+				if lane_monitor_reset or rst_reg then
 					output_frame_detection(i) <= '0';
 					output_frame_ctr(i) <= (others => '0');
 					packet_error_ctr(i) <= (others => '0');
-				elsif m_axis_tvalid_int(i) = '1' and m_axis_tlast_int(i) = '1'  then  -- if end of frame
+				elsif m_axis_tvalid_int(i) and m_axis_tlast_int(i) then  -- if end of frame
 					output_frame_detection(i) <= '1';
 					output_frame_ctr(i) <= output_frame_ctr(i) + 1;
 					if m_axis_terror_int(i) = '1' and signed(packet_error_ctr(i)) /= -1 then

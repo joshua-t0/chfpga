@@ -266,12 +266,12 @@ begin
 			-- tfirst is set whenever the _last word of a frame is read out (tvalid=1 and tready=1) and stays there until the first word is read out itself.
 			for i in 0 to NUMBER_OF_LANES - 1 loop
 				-- Generate a tfirst signal for the incoming data
-				if s_axis_tvalid(i) = '1' then
+				if s_axis_tvalid(i) then
 					s_axis_tfirst(i) <= s_axis_tlast(i);
 				end if;
 
 				-- Generate a tfirst signal for the data coming out of the FIFO
-				if fifo_tvalid(i) = '1' and read_en(i) = '1' then
+				if fifo_tvalid(i) and read_en(i) then
 					fifo_tfirst(i) <= fifo_tlast(i);
 				end if;
 			end loop;
@@ -280,16 +280,16 @@ begin
 			-- Detect SOF on the incoming (unbufferred) lane 0 to derive a frame clock used as a timing reference.
 			-- Pulse ``is_last_in_sof_window`` for one clock ``is_last_in_sof_window`` after the beginning of a frame on lane 0.
 			is_last_in_sof_window <= '0'; -- flag lasts only one clock
-			if s_axis_tfirst(0) = '1' and s_axis_tvalid(0) = '1' then
+			if s_axis_tfirst(0) and s_axis_tvalid(0) then
 				sof_window_ctr <= (others => '0');
 				sof_window <= '1';
-			elsif sof_window = '1' then
+			elsif sof_window then
 				sof_window_ctr <= sof_window_ctr + 1; -- overriden below
 				if sof_window_ctr = unsigned(sof_window_stop) then
 					is_last_in_sof_window <= '1'; -- indicate that a SOF timeout condition has occured
 				end if;
 			end if;
-			if is_last_in_sof_window = '1' then
+			if is_last_in_sof_window then
 				sof_window <= '0';
 			end if;
 
@@ -308,7 +308,7 @@ begin
 				-- want the data to fill up the FIFO, so we discarding its
 				-- data.
 				bad_frame_length_int(i) <= '0';
-				if (is_eof(i) = '1' and read_en(i) = '1') or (is_eof(0) = '1' and read_en(0) = '1') then --
+				if (is_eof(i) and read_en(i)) or (is_eof(0) and read_en(0)) then --
 					valid_lane(i) <= '0';
 					bad_frame_length_int(i) <= not is_eof(i) or not is_eof(0); -- monitoring flag only: Misaligned EOF / bad frame length
 				end if;
@@ -316,14 +316,14 @@ begin
 				-- Start sending all lanes by enabling valid_lane on all lanes that have a SOF flag at the end of
 				-- the SOF window.
 				missing_frame(i) <= '0';
-				if is_last_in_sof_window = '1' then
+				if is_last_in_sof_window then
 					valid_lane(i) <= is_sof(i);
 					missing_frame(i) <= not is_sof(i);  -- monitoring flag only
 				end if;
 
 				-- Always invalidate lanes that are to be ignored so the aligner won't wait for those.
 				-- Overrides whatever was assigned to it above
-				if ignore_lane(i) = '1' then
+				if ignore_lane(i) then
 					valid_lane(i) <= '0';
 				end if;
 
@@ -340,7 +340,7 @@ begin
 
 			-- Synchronous reset
 			-- The reset code is placed at the end to avoid the non-resetted signals to hold their value during reset (which requires additional logic).
-			if rst = '1' then
+			if rst then
 				sof_window <= '0';
 				is_last_in_sof_window <= '0';
 				fifo_tfirst <= (others => '1');
@@ -361,9 +361,9 @@ begin
 			if rising_edge(clk) then
 
 				for i in 0 to NUMBER_OF_LANES - 1 loop
-					if s_axis_tvalid(0) = '1' and s_axis_tfirst(0) = '1' then
+					if s_axis_tvalid(0) and s_axis_tfirst(0) then
 						align_pulse(i) <= '1';
-					elsif s_axis_tvalid(i) = '1' and s_axis_tfirst(i) = '1' then
+					elsif s_axis_tvalid(i) and s_axis_tfirst(i) then
 						align_pulse(i) <= '0';
 					end if;
 				end loop;

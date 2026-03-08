@@ -301,7 +301,7 @@ begin
 						m_axis_z_tdata <= bytes(0);
 						m_axis_z_tlast <= '0';
 						m_axis_z_tvalid <= '0';
-						if m_axis_z_send = '1' then -- we have a byte to shift out and we are allowed to send it
+						if m_axis_z_send then -- we have a byte to shift out and we are allowed to send it
 							m_axis_z_tvalid <= '1';
 							if byte_ctr = 1 then -- tlast when last byte.
 								m_axis_z_tlast <= '1';
@@ -375,7 +375,7 @@ begin
 					m_axis_z_tvalid <= s_axis_z_tvalid;
 					m_axis_z_tdata <= s_axis_z_tdata;
 					m_axis_z_tlast <= s_axis_z_tlast;
-					if s_axis_z_tvalid = '1' then
+					if s_axis_z_tvalid then
 						dc_busy <= '1';
 						if s_axis_z_tlast then
 							dc_busy <= '0';
@@ -416,7 +416,7 @@ begin
 				end if;
 
 				-- Synchronous resets (overrides signals above)
-				if rst_reg = '1' then
+				if rst_reg then
 					rd_word_ctr1 <= (others => '0');
 					ro_word_ctr1 <= (others => '0'); -- prepare readout word counter for first readout.
 					ram_rd_addr <= (others => '0'); -- always zero since acc_bank=0 and rd/ro_word_ctr=0 as well

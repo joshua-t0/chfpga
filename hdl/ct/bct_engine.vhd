@@ -136,7 +136,7 @@ architecture impl of bct_engine is
 
             n := 0;
 		for j in vin'RANGE loop
-			if   vin(j) = target then
+			if vin(j) = target then
                     vout(n) := j;
                     n       := n + 1;
 			end if;

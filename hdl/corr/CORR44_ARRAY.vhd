@@ -182,7 +182,7 @@ inpipe_proc: process(all) begin
 			in_rst_reg <= (others=> in_rst);
 			s_axis_tdata_reg <= s_axis_tdata;
 			s_axis_tvalid_reg <= s_axis_tvalid;
-			if in_rst='1' then
+			if in_rst then
 				s_axis_tvalid_reg <= (others=>'0');
 			end if;
 			s_axis_tlast_reg <= s_axis_tlast;

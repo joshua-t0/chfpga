@@ -437,7 +437,7 @@ begin
 					-- if not(rx_mask_low_bins = '1' and word_ctr(10 downto 5) = 0) then  -- 128 bins / (4 bins/count) = 32 counts = last 5 bits
 					wr_en := rx_write_enable;
 					--          end if;
-					if s_axis_in_tlast = '1' then
+					if s_axis_in_tlast then
 						in_frame_ctr <= in_frame_ctr + 1; -- counts frames for debugging only
 						word_ctr <= (others => '0');
 						frame_ctr <= frame_ctr + 1;
@@ -486,7 +486,7 @@ begin
 					ram_wr_byte_en <= ram_wr_bsb_byte_en_pre;
 				end if; -- use_mask_byte_en
 
-				if rst = '1' then
+				if rst then
 					-- bin_frame_ctr <= (others => '0');
 					frame_ctr <= (others => '0');
 					word_ctr <= (others => '0');
@@ -642,7 +642,7 @@ begin
 					-- We have to do this because the output of the RAM is feeds back into the RAM address (via last_framegroup)
 					if framegroup_ctr = last_framegroup - 1 then
 						play_ram_rd_addr <= play_ram_rd_addr + 1;
-						if end_of_transmission = '1' then
+						if end_of_transmission then
 							busy <= '0'; -- we're done
 						end if;
 					end if;
@@ -676,7 +676,7 @@ begin
 					tdata_reg(8 * 6 + 63 downto 8 * 6) <= reverse_bytes(std_logic_vector(timestamp));
 				end if;
 				-- override output in test mode
-				if tx_override_data = '1' then
+				if tx_override_data then
 					tdata_reg <= X"000102030405060708090A0B0C0D0E0F_101112131415161718191A1B1C1D1E1F";
 				end if;
 
@@ -699,7 +699,7 @@ begin
 				-- start a new readout and set the busy flag when the bank changes (tx_trig_sel=0) or when the specified period has elapsed (tx_trig_sel=1)
 				wr_bank_reg <= wr_bank;
 				if (tx_trig_sel = '0' and wr_bank /= wr_bank_reg) or (tx_trig_sel = '1' and word_ctr = tx_period) then
-					if busy = '1' then
+					if busy then
 						overrun <= '1';
 					end if;
 					busy <= '1';
@@ -709,7 +709,7 @@ begin
 					play_ram_rd_addr <= (others => '0');
 				end if;
 
-				if rst = '1' or tx_reset = '1' then
+				if rst or tx_reset then
 					framegroup_ctr <= (others => '0');
 					-- bin_ctr <= (others => '0');
 					busy <= '0';
