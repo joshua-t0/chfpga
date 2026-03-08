@@ -243,7 +243,7 @@ cmd_proc: process(all)
 					s_axis_bsb_tready <= '1'; -- We will always be ready to capture the next byte when it comes
 
 					if s_axis_bsb_tvalid and first then
-						if s_axis_bsb_tlast = '0' then
+						if not s_axis_bsb_tlast then
 							rx_state <= COMMAND_BYTE2;
 						end if;
 					end if;
@@ -252,7 +252,7 @@ cmd_proc: process(all)
 				when COMMAND_BYTE2 =>
 				---------------------
 					addr(15 downto 8) <= unsigned(s_axis_bsb_tdata);
-					if s_axis_bsb_tvalid = '1' then
+					if s_axis_bsb_tvalid then
 						s_axis_bsb_tready <= '1'; -- We will always capture the next byte when it comes
 						if s_axis_bsb_tlast then
 							rx_state <= COMMAND_BYTE1;
@@ -265,7 +265,7 @@ cmd_proc: process(all)
 				when COMMAND_BYTE3 =>
 				---------------------
 
-					if  s_axis_bsb_tvalid and s_axis_bsb_tready then -- we use TREADY to determine if we have already obtained a byte.
+					if s_axis_bsb_tvalid and s_axis_bsb_tready then -- we use TREADY to determine if we have already obtained a byte.
 						--timeout_reset <= '1';
 						addr(7 downto 0) <= unsigned(s_axis_bsb_tdata); -- grab the final byte of the address
 						if ADDR_WIDTH <= INT_ADDR_WIDTH-1 then -- avoid null assignment warnings
@@ -295,7 +295,7 @@ cmd_proc: process(all)
 						-- Send a dummy reply byte header. The value is not important: it will be replaced by MASTER with a sequence number.
 						m_axis_bsb_tvalid <= '1';
 
-						if opcode = OPCODE_READ_CONTROL or opcode = OPCODE_READ_STATUS or opcode = OPCODE_READ_RAM  then -- if is_write='0'
+						if opcode = OPCODE_READ_CONTROL or opcode = OPCODE_READ_STATUS or opcode = OPCODE_READ_RAM then -- if is_write='0'
     						m_axis_bsb_tlast <= '0'; -- the first reply byte was not the last one - there are more to come
 							s_axis_bsb_tready <= '0'; -- do not accept more bytes
 							if opcode = OPCODE_READ_RAM then
@@ -342,7 +342,7 @@ cmd_proc: process(all)
 						when OPCODE_READ_CONTROL =>
 						-- wait for the reply bus to be ready and send a control byte value. Repeat 'count' times.
 						---------------------
-							if m_axis_bsb_tvalid = '0' or m_axis_bsb_tready = '1' then -- if reply channel ready
+							if not m_axis_bsb_tvalid or m_axis_bsb_tready then -- if reply channel ready
 								m_axis_bsb_tdata <= control_bytes(byte_index_var);
 								m_axis_bsb_tvalid <= '1';
 								m_axis_bsb_tlast <= '0';
@@ -359,7 +359,7 @@ cmd_proc: process(all)
 						when OPCODE_READ_STATUS =>
 						-- wait for the reply bus to be ready and send a status byte value. Repeat 'count' times.
 						---------------------
-							if m_axis_bsb_tvalid = '0' or m_axis_bsb_tready = '1' then -- if reply channel ready
+							if not m_axis_bsb_tvalid or m_axis_bsb_tready then -- if reply channel ready
 								m_axis_bsb_tdata <= status_bytes(byte_index_var);
 								m_axis_bsb_tvalid <= '1';
 								m_axis_bsb_tlast <= '0';
@@ -378,7 +378,7 @@ cmd_proc: process(all)
 						---------------------
 							if RAM_ADDR_WIDTH /= 0 then --Make sure this block of code is not synthesized if no RAM/DRP access is needed
 
-								if wait_state = '0' and s_axis_bsb_tvalid = '1' then
+								if not wait_state and s_axis_bsb_tvalid then
 									if RAM_DATA_WIDTH = 16 and is_msb = '1' then -- if we are in 16-bit mode and this is the second byte (MSB)
 										ram_din_int(15 downto 8) <= s_axis_bsb_tdata;
 										ram_din_int(7 downto 0) <= previous_byte;
@@ -425,7 +425,7 @@ cmd_proc: process(all)
 						when OPCODE_READ_RAM =>
 						---------------------
 							if RAM_ADDR_WIDTH /=0 then
-								if m_axis_bsb_tvalid = '0' or m_axis_bsb_tready = '1' then -- if reply channel ready
+								if not m_axis_bsb_tvalid or m_axis_bsb_tready then -- if reply channel ready
 									if RAM_DATA_WIDTH = 16 then
 										if send_msb then -- if send msb
 											m_axis_bsb_tvalid <= '1';

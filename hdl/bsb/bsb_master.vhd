@@ -162,14 +162,14 @@ m_axis_cmd_tlast     <= s_axis_udp_rx_tlast;
 -- UDP Received packet counter and tfirst flag generator
 rx_proc: process(all) begin
 	if rising_edge(clk) then
-		if s_axis_udp_rx_tvalid='1' then
+		if s_axis_udp_rx_tvalid then
 			s_axis_udp_rx_tfirst <= s_axis_udp_rx_tlast;
-			if s_axis_udp_rx_tfirst='1' then
+			if s_axis_udp_rx_tfirst then
 				cmd_packet_counter_int <= cmd_packet_counter_int + 1;
 			end if;
 		end if;
 
-		if rst='1' then -- Synchronous reset
+		if rst then -- Synchronous reset
 			s_axis_udp_rx_tfirst <= '1';
 			cmd_packet_counter_int <= (others=>'0');
 		end if; --rst
@@ -232,7 +232,7 @@ tx_proc: process(all)
 					host_buffer_readout_timer <= host_buffer_readout_timer + 1;
 				end if;
 
-				if m_axis_udp_tx_tvalid_int ='1' then
+				if m_axis_udp_tx_tvalid_int then
 					host_buffer_count <= host_buffer_count + 1;
 				end if;
 			end if;
@@ -282,14 +282,14 @@ tx_proc: process(all)
 					-- We removed waiting for probe_number=0, because this
 					-- prevents fast replies if we are waiting for throttling
 					-- before getting to probe 0.
-					if s_axis_rply_tvalid = '1' then
+					if s_axis_rply_tvalid then
 						s_axis_rply_tready <= '1'; -- start accepting reply bytes
 						timeout_ctr <= (others=>'0');
 						is_reply_header <= '1'; -- prepare to override first reply byte with reply counter
 						tx_state <= TX_STATE_SEND_CMD;
 					-- If we have noreply and are not throttling, check the probe input
 					elsif host_buffer_count(host_buffer_count'HIGH) = '0' then-- If the count is less than half the max buffer size, then continue scanning the probe inputs and send the frames
-						if s_axis_data_tvalid(probe_number)='1' then -- probe data is ready
+						if s_axis_data_tvalid(probe_number) then -- probe data is ready
 								-- start reading data.
 								-- the probe number will be incremented in the TX_STATE_SEND_DATA state.
 								s_axis_data_tready(probe_number) <= '1';
@@ -306,7 +306,7 @@ tx_proc: process(all)
 				-- Send command reply packet
 				when TX_STATE_SEND_CMD => --
 					m_axis_udp_tx_tvalid_int <= '0'; -- don't send anything if none of the conditions below are met
-					if s_axis_rply_tvalid = '1' then
+					if s_axis_rply_tvalid then
 
 						timeout_ctr <= (others=>'0');  -- reset timout counter as long as we receive bytes
 
@@ -317,12 +317,12 @@ tx_proc: process(all)
 
 						-- replace only first byte of the reply with command counter
 						is_reply_header <= '0';
-						if is_reply_header = '1' then
+						if is_reply_header then
 							m_axis_udp_tx_tdata <= std_logic_vector(cmd_packet_counter_int);
 						end if;
 
 						-- Go back to SCAN state if this was the last byte of the reply packet
-						if s_axis_rply_tlast='1' then
+						if s_axis_rply_tlast then
 							s_axis_rply_tready <= '0'; -- we go back in scan mode, so we won't be accepting reply bytes anymore
 							rply_packet_counter_int <= rply_packet_counter_int + 1;
 							tx_state <= TX_STATE_SCAN;
@@ -352,7 +352,7 @@ tx_proc: process(all)
 						m_axis_udp_tx_channel <= "01";
 						m_axis_udp_tx_tlast <= s_axis_data_tlast(probe_number);
 
-						if s_axis_data_tlast(probe_number)='1' then
+						if s_axis_data_tlast(probe_number) then
 							s_axis_data_tready(probe_number)<='0'; -- we don't accept reply bytes anymore
 							timeout_ctr <= (others=>'0'); -- prepare counter for the wait state
 							tx_state <= TX_STATE_WAIT; -- wait some time before returning to scan to make sure we don't fill the Ethernet interface FIFO
@@ -389,7 +389,7 @@ tx_proc: process(all)
 			-------------------------------
 			-- Synchronous reset
 			-------------------------------
-			if rst = '1' then
+			if rst then
 				tx_state <= TX_STATE_SCAN;
 
 				m_axis_udp_tx_tvalid_int <= '0';

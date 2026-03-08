@@ -87,7 +87,7 @@ architecture Behavioral of bsb_router is
 	function highest_mask_bit(mask:std_logic_vector) return integer is -- returns the position of the highest nonzero bit
 		begin
 			for i in mask'high downto mask'low loop
-				if mask(i)='1' then
+				if mask(i) then
 					return i;
 				end if;
 			end loop;
@@ -97,7 +97,7 @@ architecture Behavioral of bsb_router is
 	function lowest_mask_bit(mask:std_logic_vector) return integer is -- returns the position of the lowest nonzero bit
 		begin
 			for i in mask'low to mask'high loop
-				if mask(i)='1' then
+				if mask(i) then
 					return i;
 				end if;
 			end loop;

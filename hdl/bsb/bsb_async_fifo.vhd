@@ -141,7 +141,7 @@ rply_fifo0: xpm_fifo_async
            );
 
 -- we have to make sure that the RST signal stays active until there has been a few clocks on both a_clk and B_CLK to make sure the FIFO is reset properly.
-arst_proc: process(a_clk, rst)
+arst_proc: process(all)
 begin
 	if rst then
 		a_rst_ctr <= (others => '0');
