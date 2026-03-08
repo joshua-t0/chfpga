@@ -104,8 +104,9 @@ entity chfpga_ice is
 			-- Channelizers
 
 			NUMBER_OF_CHANNELIZERS:INTEGER               := NUMBER_OF_ADCS;  -- Number of channelizersto be implemented
+			NUMBER_OF_CHANNELIZERS_WITH_FFT: integer     := CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT;
             FFT_TYPE : fft_type_enum     := CONFIG_CHAN_FFT_TYPE;
-
+			CAPTURE_TYPE: chan_capture_type_enum        := CONFIG_CHAN_CAPTURE_TYPE;
 
 			-- Corner-turn engine
 
@@ -121,7 +122,7 @@ entity chfpga_ice is
 			                                                 16 to 19=>-1, -- Bypass lane
 			                                                 20=>15, 21=>16, 22=>17, 23=>18
 			                                                );
-			CT_LANE_TO_QUAD_MAP : integer_array   := (0 to 3=>0, 4 to 7=>1, 8 to 11=> 2, 12 to 14 => 3, 15 to 18=> 4); --  Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
+			CT_LINK_TO_QUAD_MAP : integer_array   := (0 to 3=>0, 4 to 7=>1, 8 to 11=> 2, 12 to 14 => 3, 15 to 18=> 4); --  Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
 			CT_QUAD_TO_REFCLK_MAP : integer_array := (0 => 1, 1 => 0, 2 => 0, 3=> 1, 4 => 1); -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
 			CT_LANE_TO_GROUP_MAP: integer_array  := (0 to 15 => 0, 16 to 23 => 1); -- Indicates to which lane group each lane is associated with
 
@@ -131,6 +132,7 @@ entity chfpga_ice is
 			-- Correlator
 
 			CORR_TYPE: corr_type_enum := CONFIG_CORR_TYPE;
+			CORR_READOUT_BINS: integer_array := CONFIG_CORR_READOUT_BINS;
 
 			-- Real-time data offload links
 
@@ -143,7 +145,8 @@ entity chfpga_ice is
 			NUMBER_OF_I2C_PORTS: integer                 := 1;
 			NUMBER_OF_SPI_PORTS: integer                 := NUMBER_OF_ADC_BOARDS; -- One port for each FMC
 			BLINKER_PRESENT: BOOLEAN                     := TRUE; -- Indicates if the LED flasher is to  be implemented by setting the DUMMY flag of the BLINKER module
-
+			IMPLEMENT_LCD: boolean                       := FALSE; -- Iceboard (Kintex 7) has no OLED
+			IMPLEMENT_ARM_SPI: boolean                   := FALSE; -- Iceboard is Kintex 7, no Zynq/ARM
 
 			SIM: BOOLEAN := GLOBAL_SIM; -- Indicates this is running as a simulation. Used to accelerate simulations
 
@@ -1009,7 +1012,9 @@ bufr_rawclk10 : BUFR
 			-- Channelizers
 
 			NUMBER_OF_CHANNELIZERS          => NUMBER_OF_CHANNELIZERS,
+			NUMBER_OF_CHANNELIZERS_WITH_FFT => NUMBER_OF_CHANNELIZERS_WITH_FFT,
             FFT_TYPE => FFT_TYPE,
+			CAPTURE_TYPE                   => CAPTURE_TYPE,
 
 			-- Corner-turn engine
 
@@ -1017,13 +1022,14 @@ bufr_rawclk10 : BUFR
             CT_LEVEL                        => CT_LEVEL,
 
 			CT_LANE_TO_LINK_MAP             => CT_LANE_TO_LINK_MAP,
-			CT_LINK_TO_QUAD_MAP     => CT_LANE_TO_QUAD_MAP,
+			CT_LINK_TO_QUAD_MAP     => CT_LINK_TO_QUAD_MAP,
 			CT_QUAD_TO_REFCLK_MAP   => CT_QUAD_TO_REFCLK_MAP,
 			CT_LANE_TO_GROUP_MAP => CT_LANE_TO_GROUP_MAP,
 
 			-- Correlator
 
 			CORR_TYPE => CORR_TYPE,
+			CORR_READOUT_BINS => CORR_READOUT_BINS,
 
 			DATA_LINK_TYPE => DATA_LINK_TYPE,
 			DATA_LINK_LINK_TO_QUAD_MAP                => DATA_LINK_LINK_TO_QUAD_MAP,
@@ -1033,6 +1039,8 @@ bufr_rawclk10 : BUFR
 
 			NUMBER_OF_I2C_PORTS             => NUMBER_OF_I2C_PORTS,
 			NUMBER_OF_SPI_PORTS             => NUMBER_OF_SPI_PORTS,
+			IMPLEMENT_LCD                   => IMPLEMENT_LCD,
+			IMPLEMENT_ARM_SPI               => IMPLEMENT_ARM_SPI,
 
 			SIM                             => SIM
 			)
