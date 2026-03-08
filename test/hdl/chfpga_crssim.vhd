@@ -378,7 +378,7 @@ begin
 		lcdclk_proc: process(all) begin
 			if rising_edge(pll_oscout) then
 				ctr <= ctr + 1;
-				if ctr = unsigned(lcd_db) + 50 - 1  then
+				if ctr = unsigned(lcd_db) + 50 - 1 then
 					ctr <= (others => '0');
 					clk <= not clk;
 				end if;

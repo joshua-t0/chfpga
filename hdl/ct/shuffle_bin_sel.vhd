@@ -599,7 +599,7 @@ begin
 
 		end generate embed_fifo_gen;
 
-		-- If desired, use a Shift register FIFO. Those use only 1 LUT per 2 bits of width.
+		-- If desired, use a Shift register FIFO (35 bits x 64 words). Those use only 1 LUT per 2 bits of width.
 		-- Since those are not FWFT, we use a standard FIFO and turn it into a FWFT with some extra logic.
 		-- The Distributed FIFO has a latenct of 1: data is placed on the bus on the next rising edge when RD_EN is high.
 		-- With the surrounding logic, this FIFO has a latency of 0: if VALID is High, the data is immediately available on the bus.
