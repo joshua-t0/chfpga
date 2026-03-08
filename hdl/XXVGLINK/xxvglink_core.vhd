@@ -201,7 +201,7 @@ architecture behavioral of xxvglink_core is
 	signal gt_rxprbscntreset_in: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0');
 	signal gt_rxbufstatus_out: slv3_array(0 to NUMBER_OF_LINKS - 1); -- unused
 	signal gt_rxdfeagchold_in: std_logic_vector(0 to NUMBER_OF_LINKS - 1);
-	signal gt_rxdfelfhold_in: std_logic_vector(0 to NUMBER_OF_LINKS - 1);
+	signal gt_rxdfelfhold_in: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0'); -- init to avoid undriven nets warnings
 	signal gt_rxdatavalid_out: std_logic_vector(0 to NUMBER_OF_LINKS - 1);
 	signal gt_rxheader_out: slv2_array(0 to NUMBER_OF_LINKS - 1);
 	signal gt_rxheader_capture: slv2_array(0 to NUMBER_OF_LINKS - 1);
@@ -1188,7 +1188,11 @@ begin
 					user_clk     => txusrclk2,
 					system_reset => scrambler_reset
 				);
-		end generate tx_impl;
+		else generate -- Make sure we drive the GTY inputs even if we don't use the link to avoid critical warnings for undriven signals.
+			gt_txdata_in(i) <= (others => '0');
+			gt_txheader_in(i) <= (others => '0');
+			gt_txsequence_in(i) <= (others => '0');
+		end generate tx_impl; -- if i is in USED_LINKS
 	end generate tx_gen; -- for NUMBER_OF_TX_LINKS
 
 	----------------------------------------------
