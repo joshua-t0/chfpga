@@ -110,7 +110,7 @@ begin
 		 );
 
 
-		ctrlrst_proc: process(ctrl_clk)
+		ctrlrst_proc: process(all)
 		begin
 			if rising_edge(ctrl_clk) then
 				ctrl_rst <= '0';
@@ -118,7 +118,7 @@ begin
 		end process;
 
 
-		rst_proc: process(clk)
+		rst_proc: process(all)
 		begin
 			if rising_edge(clk) then
 				rst <= '0';

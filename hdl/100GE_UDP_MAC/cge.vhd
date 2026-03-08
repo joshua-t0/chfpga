@@ -448,7 +448,7 @@ begin
 			fifo_almost_full_reg <= fifo_almost_full;
 
 			fifo_srst <= '0';
-			if usr_tx_reset_resync = '1' or rst = '1' then -- need to resync to clk
+			if usr_tx_reset_resync or rst then -- need to resync to clk
 				fifo_srst <= '1';
 				tx_reset_done <= '0'; -- this stops writing to both FIFOs
 			end if;
@@ -456,7 +456,7 @@ begin
 			-- Implement a tx_reset_done signal that is '1' when we are ready to write to the FIFO.
 			-- We wait for BOTH the data FIFO to be ready. The data FIFO has ot sone rst_done signal.
 			-- The only way to tell when the flag fifo is ready is to look at the full signal going low after a reset.
-			if tx_reset_done = '0' and flag_fifo_full = '0' and fifo_wr_rst_busy = '0' then
+			if not tx_reset_done and not flag_fifo_full and not fifo_wr_rst_busy then
 				tx_reset_done <= '1';
 			end if;
 
@@ -478,7 +478,7 @@ begin
 				axis_tx_tlast <= s_axis_tx_tlast;
 			end if; -- source select
 
-			if axis_tx_tvalid = '1' then
+			if axis_tx_tvalid then
 				was_tlast <= axis_tx_tlast;
 				word_ctr <= word_ctr + 1;
 				if word_ctr = capture_byte_number(15 downto 5) then
@@ -486,19 +486,19 @@ begin
 					capture_byte <= axis_tx_tdata(8 * byte + 7 downto 8 * byte);
 					capture_tlast <= axis_tx_tlast;
 				end if;
-				if axis_tx_tlast = '1' then
+				if axis_tx_tlast then
 					in_frame_ctr <= in_frame_ctr + 1;
 					packet_length <= word_ctr;
 					word_ctr <= (others => '0');
 				end if;
 			end if;
 
-			if fifo_wr_en = '1' and fifo_full = '0' then -- don't toggle is_high_word if the write did not take place
+			if fifo_wr_en and not fifo_full then -- don't toggle is_high_word if the write did not take place
 				is_high_word <= not is_high_word;
 			end if;
 
 			-- Reset
-			if tx_reset_done = '0' then -- if reset in in progress
+			if not tx_reset_done then -- if reset in in progress
 				is_high_word <= '0';
 				in_frame_ctr <= (others => '0');
 				fifo_overflow_sticky <= '0';
@@ -618,7 +618,7 @@ begin
 				end case;
 
 			-- Stay in reset and don't send anything until we the transmitter is fully out of reset.
-			if tx_reset_done = '0' then
+			if not tx_reset_done then
 				tx_state <= INIT;
 			end if;
 
@@ -686,16 +686,15 @@ begin
 	tx_axis_tkeep(63 downto 32) <= (others => '1') when tvalid1 = '1' and (send_half_words = '0' or is_high_word = '1') else
 	                               (others => '0');
 
-	fifo_rd_proc: process(clk_out_int)
-	begin
+	fifo_rd_proc: process(all) begin
 		if rising_edge(clk_out_int) then
 			usr_tx_reset <= usr_tx_reset_pre; -- register the reset signal to help deal with the large fanout
 			-- ``is_high_word`` is used to tell if we are to send the low or high 32 bytes coming out of the FIFO.
 			-- This is used in case there is a TLAST on the low word and the  low and high words needs to be sent separately.
 			-- The variable is set to '0' whenever we read the FIFO, and is increased to 1 whenever a transfer to the CMAC occur.
-			if fifo_rd_en = '1' or usr_tx_reset = '1' then
+			if fifo_rd_en or usr_tx_reset then
 				is_high_word <= '0';
-			elsif tx_axis_tready = '1' and tx_axis_tvalid = '1' then
+			elsif tx_axis_tready and tx_axis_tvalid then
 				is_high_word <= '1';
 			end if;
 
@@ -712,7 +711,7 @@ begin
 					tx_gt_locked_led <= '0';
 					-- tx_core_busy_led <= '0';
 
-					-- if reset_done = '1' then
+					-- if reset_done  then
 						tx_state <= CMAC_LOCKED;
 					-- end if;
 
@@ -723,7 +722,7 @@ begin
 
 				when CMAC_ALIGNED => -- wait for reset to complete
 					ctl_tx_send_rfi      <= '0';
-					if fifo_rd_rst_busy = '0' then
+					if not fifo_rd_rst_busy then
 						tx_state <= FIFO_READY;
 					end if;
 
@@ -732,16 +731,16 @@ begin
 					-- send_data <= '1';
 			end case;
 
-			if tx_ovfout = '1' then
+			if tx_ovfout then
 				tx_ovfout_sticky <= '1';
 			end if;
-			if tx_unfout = '1' then
+			if tx_unfout then
 				tx_unfout_sticky <= '1';
 			end if;
-			if tx_axis_tvalid = '1' and tx_axis_tvalid = '1' then
+			if tx_axis_tvalid and tx_axis_tvalid then
 				out_frame_ctr <= out_frame_ctr + 1;
 			end if;
-			if usr_tx_reset = '1' then
+			if usr_tx_reset then
 				tx_state <= INIT_CMAC;
 				tx_ovfout_sticky <= '0';
 				tx_unfout_sticky <= '0';

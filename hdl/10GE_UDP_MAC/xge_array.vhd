@@ -171,7 +171,7 @@ begin
 			test_tlast <= '0';
 
 			-- Generate test pattern
-			if link_enable = '0' or xglink_tx_resetdone(0) = '0' then
+			if not link_enable or not xglink_tx_resetdone(0) then
 				test_packet_ctr <= (others => '0');
 				test_frame_ctr <= (others => '0');
 				test_tvalid <= '0';
@@ -188,7 +188,7 @@ begin
 				end if;
 				if test_packet_ctr = 0 then
 					test_tvalid <= '1';
-				elsif test_tlast = '1' then
+				elsif test_tlast then
 					test_tvalid <= '0';
 				end if;
 

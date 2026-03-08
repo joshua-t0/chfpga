@@ -297,7 +297,7 @@ port map (
 -- -- Hold the rest line for some delay after FPGA configuration and reset to make sure the link comes up.
 -- -- Otherwise we have 2-3% link up failure rate (known to happen on cores v14.3 rev1 and v15, maybe this is a SFP thing).
 process(all) begin
-	if reset = '1' then
+	if reset then
 		init_reset <= '1';
 		init_reset_ctr <= (others=>'0');
 	elsif rising_edge(clk125) then
@@ -311,7 +311,7 @@ end process;
 
 	 -- Create a reset pulse of a decent length
 	 process(all) begin
-	 if reset = '1' or user_reset='1' then
+	 if reset or user_reset then
 			 pma_reset_pipe <= "1111";
 		 elsif rising_edge(clk125) then
 			 pma_reset_pipe <= pma_reset_pipe(2 downto 0) & reset;
