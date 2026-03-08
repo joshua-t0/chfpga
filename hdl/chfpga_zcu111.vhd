@@ -52,6 +52,7 @@ entity chfpga_zcu111 is
 
 		-- Channelizer config
 		FFT_TYPE: fft_type_enum                   := CONFIG_CHAN_FFT_TYPE;
+		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT;
 		NUMBER_OF_CHANNELIZERS: integer           := NUMBER_OF_ADCS;
 		CAPTURE_TYPE: chan_capture_type_enum     := CONFIG_CHAN_CAPTURE_TYPE;
 
@@ -75,7 +76,7 @@ entity chfpga_zcu111 is
 		NUMBER_OF_I2C_PORTS: integer              := 0;
 		NUMBER_OF_SPI_PORTS: integer              := 0;
 		IMPLEMENT_ARM_SPI: boolean                := FALSE;
-		IMPLEMENT_LCD: boolean                     := FALSE;    -- no OLED on ZCU111
+		IMPLEMENT_LCD: boolean                     := FALSE;    -- no LCD display on ZCU111
 
 		SIM: boolean                               := FALSE;
 
@@ -333,6 +334,7 @@ begin
 
 		-- F-Engine / Channelizers
 		FFT_TYPE               => FFT_TYPE,
+		NUMBER_OF_CHANNELIZERS_WITH_FFT => NUMBER_OF_CHANNELIZERS_WITH_FFT,
 		NUMBER_OF_CHANNELIZERS => NUMBER_OF_CHANNELIZERS,
 		CAPTURE_TYPE           => CAPTURE_TYPE,
 

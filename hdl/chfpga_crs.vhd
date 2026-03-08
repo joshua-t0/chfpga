@@ -31,7 +31,7 @@ use xpm.vcomponents.ALL;
 entity chfpga_crs is
 	generic (
 
-		PLATFORM_ID: integer := CONFIG_PLATFORM_CRS; --  Identifies the type of platform on which the firmware is running.
+		PLATFORM_ID: integer := PLATFORM_ID_CRS; --  Identifies the type of platform on which the firmware is running.
 
 		-- Clocking config
 
@@ -66,6 +66,7 @@ entity chfpga_crs is
 		-- Channelizer configuration
 
 		FFT_TYPE: fft_type_enum              := CONFIG_CHAN_FFT_TYPE;
+		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT;
 		NUMBER_OF_CHANNELIZERS: integer      := NUMBER_OF_ADCS;  -- (Typ. =16)  (0-NUMBER_OF_ADCS) Number of channelizer blocks to be implemented
 		CAPTURE_TYPE: chan_capture_type_enum := CONFIG_CHAN_CAPTURE_TYPE;
 
@@ -575,7 +576,7 @@ begin
 		lcdclk_proc: process(all) begin
 			if rising_edge(pll_oscout_bufg) then
 				ctr <= ctr + 1;
-				if ctr = unsigned(lcd_db) + 50 - 1  then
+				if ctr = unsigned(lcd_db) + 50 - 1 then
 					ctr <= (others => '0');
 					clk <= not clk;
 				end if;
@@ -867,6 +868,7 @@ begin
 
 		-- F-Engine / Channelizers
 		FFT_TYPE               => FFT_TYPE,
+		NUMBER_OF_CHANNELIZERS_WITH_FFT => NUMBER_OF_CHANNELIZERS_WITH_FFT,
 		NUMBER_OF_CHANNELIZERS => NUMBER_OF_CHANNELIZERS,
 		CAPTURE_TYPE           => CAPTURE_TYPE,
 
