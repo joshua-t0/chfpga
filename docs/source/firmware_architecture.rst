@@ -49,6 +49,85 @@ The labels of all constants in the package shall have the format::
     CONFIG_<subsystem name>_<parameter name>
 
 
+.. _config_param_reference:
+
+Configuration parameter reference
+=================================
+
+This section defines each ``CONFIG_*`` constant used in firmware configuration files. Platform-specific config sections list which parameters they use and link here for full descriptions.
+
+Channelizer parameters
+----------------------
+
+.. _config_chan_implement_fft:
+
+- **CONFIG_CHAN_IMPLEMENT_FFT** (boolean): Enables the FFT block in channelizers. When TRUE, channelizers perform polyphase filtering and FFT; when FALSE, timestreams pass through without frequency-domain processing. Set TRUE for all current configs that include an F-Engine.
+
+.. _config_chan_fft_type:
+
+- **CONFIG_CHAN_FFT_TYPE** (fft_type_enum): Selects the FFT variant. Values: ``NONE``, ``CHIME``, ``D3A``, ``CHORD``, ``HIRAX``, ``HIRAX_3DSP``. CHORD uses 14-bit samples, 16384 samples/frame, 32+32 bit output (CRS/ZCU111). HIRAX and HIRAX_3DSP use 8-bit samples, 2048 samples/frame (IceBoard, KC705). HIRAX_3DSP uses 25+25 bit output for reduced resource usage.
+
+.. _config_number_of_channelizers_with_fft:
+
+- **CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT** (integer): Number of channelizers that include an FFT. Typically equals the number of ADC channels. Configs with fewer channelizers than ADCs (e.g. CRS with 8) use this to match the ADC count.
+
+.. _config_chan_scaler_use_complex_gains:
+
+- **CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS** (boolean): When TRUE, scaler uses complex gains; when FALSE, real gains. Set FALSE in all current configs for simpler logic and lower resource use.
+
+.. _config_chan_capture_type:
+
+- **CONFIG_CHAN_CAPTURE_TYPE** (chan_capture_type_enum): Selects the data capture engine. ``PROBER``: BRAM-based, per-channelizer capture (IceBoard, KC705). ``UCAP``: URAM-based centralized capture (CRS, ZCU111). UCAP requires Ultrascale+ URAM.
+
+.. _config_chan_number_of_capture_sources:
+
+- **CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES** (integer): Number of capture sources (e.g. timestream vs FFT output). Typically 2. Used when CONFIG_CHAN_CAPTURE_TYPE is PROBER or UCAP.
+
+Corner-turn parameters
+----------------------
+
+.. _config_ct_type:
+
+- **CONFIG_CT_TYPE** (ct_type_enum): Corner-turn engine type. ``BCT``: CHIME-like, 32-bit input with packet headers, used for multi-board backplane shuffle. ``UCT``: CHORD-like, 32-bit input with 4x (4+4)-bit bins, simpler format. BCT used on IceBoard for crate-level shuffle; UCT used on CRS/ZCU111/KC705 for single-board or simpler topologies.
+
+.. _config_ct_level:
+
+- **CONFIG_CT_LEVEL** (integer): Corner-turn depth. 1 = single-board only, no backplane. 2 = crate-level shuffle (e.g. 3× PCB links). 3 = multi-crate shuffle (e.g. 3× PCB + 2× SFP). Higher levels require CONFIG_CT_LANE_TO_LINK_MAP to define lane-to-link mapping.
+
+.. _config_ct_clk_source:
+
+- **CONFIG_CT_CLK_SOURCE** (ct_clk_source_enum): Clock source for the corner-turn engine. ``BP_SHUFFLE_TXCLK``: backplane transmitter clock (~244 MHz), used when CT_LEVEL=3 and packet overhead is needed. ``ADC_CLK``: ADC clock (e.g. 400 MHz on CRS), used when CT_LEVEL=1 and no packet overhead. ``CORR_CLK``: 250 MHz clock from MMCM. ``CGE_CLK322``: 100G Ethernet clock.
+
+.. _config_ct_lane_to_link_map:
+
+- **CONFIG_CT_LANE_TO_LINK_MAP** (integer_array): Maps each CT lane to a backplane link index. -1 = bypass lane. Used when CT_LEVEL ≥ 2. Example: ``(-1, 6, 8, 10)`` = bypass + 3 PCB links for CORR32. ``(-1, 6, 8, 10, -1, -1, 0, 1)`` = CORR64 with CT3 SFP links.
+
+Correlator parameters
+---------------------
+
+.. _config_corr_type:
+
+- **CONFIG_CORR_TYPE** (corr_type_enum): Correlator type. ``NONE``: no correlator. ``UCORR44``: :math:`N^2` correlator with reduced precision. ``CORR44``: legacy correlator. ct configs use NONE; corr configs use UCORR44.
+
+.. _config_corr_readout_bins:
+
+- **CONFIG_CORR_READOUT_BINS** (integer_array): Which frequency bins to read out from the correlator. With CONFIG_CHAN_FFT_TYPE CHORD (ROTATE=TRUE), true bins 0, 1, 2, 3 map to indices 0, 1, 2, 3. Some configs use (0, 0) as placeholder; others specify bins for readout.
+
+Data offload parameters
+------------------------
+
+.. _config_data_link_type:
+
+- **CONFIG_DATA_LINK_TYPE** (data_link_type_enum): Real-time data offload type. ``NONE``: no offload. ``XGE``: 8×10G Ethernet. ``UPACK_CGE``: 100G Ethernet via UPACK + CGE. ct configs use XGE (IceBoard) or UPACK_CGE (CRS, ZCU111); corr configs typically use NONE.
+
+.. _config_data_link_link_to_quad_map:
+
+- **CONFIG_DATA_LINK_LINK_TO_QUAD_MAP** (integer_array): Maps each data link to a GTY quad index. Used when CONFIG_DATA_LINK_TYPE is UPACK_CGE. Example: ``(0 to 3 => 0)`` = single quad for 100G.
+
+.. _config_data_link_quad_to_refclk_map:
+
+- **CONFIG_DATA_LINK_QUAD_TO_REFCLK_MAP** (integer_array): Maps each GTY quad to a reference clock index. Used when CONFIG_DATA_LINK_TYPE is UPACK_CGE. Example: ``(0 => 0)`` = single refclk.
+
 I/O buffers
 ===========
 
@@ -95,6 +174,19 @@ There is one exception to this: out-of-context (OOC) module (i.e. modules that a
 
 The core firmware for every configuration of the firmware for every platform is implemented using the same :entity:`chfpga` module.
 Of course, this module takes a large number of generics that are passed by the hardware platform and configuration file to enable the various hardware- and application-specific modules with the desired geometry.
+
+
+time_trig port semantics
+------------------------
+
+The :entity:`chfpga` module exposes a two-bit vector port ``time_trig(0 to 1)`` that carries external time and trigger information into the core firmware:
+
+* ``time_trig(0)`` — backplane time / IRIG-B–derived time signal.
+* ``time_trig(1)`` — backplane trigger signal (e.g. frame or event trigger).
+
+Platform wrappers are responsible for receiving the board-specific time and trigger signals (typically IRIG-B and/or backplane timing lines), resampling them in the appropriate 10 MHz reference-clock domain, and combining them into ``time_trig`` before instantiating :entity:`chfpga`.
+
+Inside :entity:`chfpga` and :entity:`system`, ``time_trig`` is pipelined on the rising edge of the internal 200 MHz ``clk200`` clock before being consumed by the IRIG-B decoder, reference-clock synchronization logic and time-tagging blocks. For this to yield deterministic timing, ``clk200`` **must** be generated from a clock source that is synchronous to the external clock domain used to generate ``time_trig`` (for example, a PLL output derived from the same 10 MHz reference and VCXO that drive the IRIG-B and backplane timing hardware). In other words, the time/trigger signals and ``clk200`` are expected to have a fixed, well-characterised phase relationship.
 
 
 Data buses
@@ -363,5 +455,4 @@ Resources
 
 - Kintex 7 datasheet - AC/DC characteristics (DS182)
 - Play with parameters in the FIFO generator (13.2)
-
 

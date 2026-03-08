@@ -1,7 +1,7 @@
 .. _kc705_platform:
 
 KC705 (Kintex-7 Evaluation Kit)
-********************************
+*******************************
 
 .. toctree::
    :maxdepth: 1
@@ -59,14 +59,17 @@ The KC705 is Xilinx's Kintex-7 FPGA Evaluation Kit. It provides:
 - REFCLK_M2C from FMC (10 MHz reference) — available with FMC700 adapter
 
 
-Platform wrapper and configurations
-===================================
+Platform wrapper
+================
 
-`chFPGA` is implemented on the KC705 using the :ref:`chfpga_kc705<chfpga_kc705>` platform wrapper, which instantiates the `chFPGA` module. Supported firmware configurations include:
+`chFPGA` is implemented on the KC705 using the :ref:`chfpga_kc705<chfpga_kc705>` platform wrapper, which instantiates the `chFPGA` module. See :ref:`platform_wrappers` for more details.
 
-- :ref:`chfpga_kc705_corr8<chfpga_kc705_corr8_config>`: 8-channel F-Engine and :math:`N^2` correlator (single ADC board)
+Configurations
+==============
 
-See :ref:`platform_wrappers` for more details on how platform wrappers and configurations are used.
+Supported firmware configuration:
+
+- :ref:`corr8 <chfpga_kc705_corr8_config>` — ``chfpga_kc705_corr8_config``: 8-channel F-Engine and :math:`N^2` correlator (single ADC board)
 
 
 Key hardware-specific parameters

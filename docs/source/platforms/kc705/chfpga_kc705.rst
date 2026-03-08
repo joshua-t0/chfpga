@@ -33,13 +33,24 @@ Entity definition
 Description
 ===========
 
-The file :file:`chfpga_kc705_corr8_config.vhd` defines the package `chfpga_config` used to configure `chFPGA` for the 8-channel correlator configuration on the KC705. This configuration includes:
+The file :file:`chfpga_kc705_corr8_config.vhd` defines the package `chfpga_config` used to configure `chFPGA` for the 8-channel correlator configuration on the KC705. This configuration includes data acquisition from one FMC ADC mezzanine (8 channels), 8 channelizers with FFT (HIRAX 3-DSP style), an 8-input :math:`N^2` correlator (UCORR44), and no real-time data offload.
 
-- Data acquisition from one FMC ADC mezzanine (8 channels)
-- 8 channelizers with FFT (HIRAX 3-DSP style)
-- 8-input :math:`N^2` correlator (UCORR44)
-- Corner-turn: ``CT_LEVEL=1``, ``CONFIG_CT_CLK_SOURCE=ADC_CLK``
-- ``CONFIG_DATA_LINK_TYPE = NONE``
+Configuration parameters
+========================
+
+This config uses the following parameters (see :ref:`config_param_reference` for full descriptions):
+
+- :ref:`CONFIG_CHAN_IMPLEMENT_FFT <config_chan_implement_fft>` — TRUE; F-Engine with FFT
+- :ref:`CONFIG_CHAN_FFT_TYPE <config_chan_fft_type>` — HIRAX_3DSP; 8-bit, 2048 samples, 25+25 output
+- :ref:`CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT <config_number_of_channelizers_with_fft>` — 8
+- :ref:`CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS <config_chan_scaler_use_complex_gains>` — FALSE
+- :ref:`CONFIG_CHAN_CAPTURE_TYPE <config_chan_capture_type>` — PROBER; per-channelizer BRAM capture
+- :ref:`CONFIG_CT_TYPE <config_ct_type>` — BCT; simple internal corner-turn
+- :ref:`CONFIG_CT_LEVEL <config_ct_level>` — 1; single-board, no backplane
+- :ref:`CONFIG_CT_CLK_SOURCE <config_ct_clk_source>` — ADC_CLK; sufficient at CT_LEVEL=1
+- :ref:`CONFIG_CORR_TYPE <config_corr_type>` — UCORR44; 8-input correlator
+- :ref:`CONFIG_CORR_READOUT_BINS <config_corr_readout_bins>` — (0, 0)
+- :ref:`CONFIG_DATA_LINK_TYPE <config_data_link_type>` — NONE; no real-time offload
 
 Package definition
 ==================
