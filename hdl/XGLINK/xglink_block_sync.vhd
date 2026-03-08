@@ -134,8 +134,8 @@ begin
 
     --- State registers
     process(all) begin
-        if(USER_CLK'event and USER_CLK = '1') then
-            if(SYSTEM_RESET = '1') then
+        if rising_edge(USER_CLK) then
+            if system_reset then
                 begin_r      <=  '1' after DLY;
                 test_sh_r    <=  '0' after DLY;
                 sh_valid_r   <=  '0' after DLY;
@@ -177,10 +177,10 @@ begin
     ---________________ Counter keep track of sync headers counted _____________
 
     process(all) begin
-        if(USER_CLK'event and USER_CLK = '1') then
-            if(begin_r = '1') then
+        if rising_edge(USER_CLK) then
+            if begin_r then
                 sync_header_count_i   <=    (others => '0') after DLY;
-            elsif ((sh_valid_r= '1') or (sh_invalid_r = '1')) then
+            elsif sh_valid_r or sh_invalid_r  then
                 sync_header_count_i  <=   sync_header_count_i + 1 after DLY;
             end if;
         end if;
@@ -191,10 +191,10 @@ begin
     ---________________ Counter keep track of invalid sync headers  ____________
 
     process(all) begin
-        if(USER_CLK'event and USER_CLK = '1') then
-            if(begin_r = '1') then
+        if rising_edge(USER_CLK) then
+            if begin_r then
                sync_header_invalid_count_i   <=  (others => '0') after DLY;
-            elsif (sh_invalid_r = '1') then
+            elsif sh_invalid_r then
                 sync_header_invalid_count_i  <=   sync_header_invalid_count_i + 1 after DLY;
             end if;
         end if;
@@ -212,7 +212,7 @@ begin
     slip_pulse_i <= next_slip_c and not slip_r;
 
     process(all) begin
-        if(USER_CLK'event and USER_CLK = '1') then
+        if rising_edge(USER_CLK) then
             rxgearboxslip_out_i   <=  slip_pulse_i after DLY;
         end if;
     end process;
@@ -220,7 +220,7 @@ begin
     ---_____________ Ouput assignment to indicate block sync complete  _________
 
     process(all) begin
-        if(USER_CLK'event and USER_CLK = '1') then
+        if rising_edge(USER_CLK) then
             if(slip_r = '0') then
                 slip_count_i   <=  (others => '0') after DLY;
             else
@@ -235,10 +235,10 @@ begin
     ---_____________ Pulse GEARBOXSLIP port to slip the data by 1 bit  _________
 
     process(all) begin
-        if(USER_CLK'event and USER_CLK = '1') then
-            if((SYSTEM_RESET='1') or (slip_r= '1')) then
+        if rising_edge(USER_CLK) then
+            if system_reset or slip_r then
                 blocksync_out_i   <=  '0' after DLY;
-            elsif (sync_done_r = '1') then
+            elsif (sync_done_r ) then
                 blocksync_out_i   <=  '1' after DLY;
             end if;
         end if;

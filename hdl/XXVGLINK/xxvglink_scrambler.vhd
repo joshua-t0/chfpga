@@ -126,11 +126,11 @@ begin
     --________________ Scrambled Data assignment to output port _______________
 
     process(all) begin
-        if(USER_CLK'event and USER_CLK = '1') then
-            if (SYSTEM_RESET = '1') then
+        if rising_edge(USER_CLK) then
+            if system_reset then
                 scrambler          <= "0101010101010101010101010101010101010101010101010101010101" after DLY;
                 SCRAMBLED_DATA_OUT <= (others => '0') after DLY;
-            elsif (DATA_VALID_IN = '1') then
+            elsif data_valid_in then
                 scrambler          <=   poly after DLY;
                 SCRAMBLED_DATA_OUT <=   tempdata after DLY;
             end if;

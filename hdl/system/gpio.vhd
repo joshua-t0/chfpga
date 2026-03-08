@@ -1225,14 +1225,14 @@ begin
 		event_proc: process(all) begin
 			if rising_edge(event_ctr_clk) then
 				-- Capture the event info
-				if event_ctr_en = '1' then -- when tvalid=1
+				if event_ctr_en then -- when tvalid=1
 					-- Count events
-					if event_ctr_inc = '1' then
+					if event_ctr_inc then
 						event_ctr <= event_ctr + 1;
 					end if;
 					-- Sample event
 					event_sample_en <= '0'; -- Single clock pulse. Overriden below.
-					if event_sample_en = '1' then
+					if event_sample_en then
 						event_sample <= event_ctr;
 						event_sample_done_int <= '1';
 						ts_sample_event_trig_in <= not ts_sample_event_trig_in; -- cause a transition to indicate that the timestamp should be sampled now
@@ -1240,7 +1240,7 @@ begin
 				end if;
 
 
-				if manual_event_sample_trig = '0' then
+				if not manual_event_sample_trig then
 					event_sample_done_int <= '0';
 				end if;
 
@@ -1456,7 +1456,7 @@ begin
 		-- Generates the buck switching regulator synchronization signal
 		buckproc: process(all) begin
 			if rising_edge(clk200) then
-				if ctrl_flag_buck_sync_enable = '0' then
+				if not ctrl_flag_buck_sync_enable then
 					clk_ctr <= (0=> '1', others => '0');
 					buck_phase_ctr <= (others => '0');
 					buck_sync <= (others => '0'); -- Make sure both phases are not driving the Bucks after reset and until we enable the buck sync
@@ -1498,7 +1498,7 @@ begin
 				elsif signed(fan_tach_ctr) = -1 then -- if we reach the end of the counter without encountering a change in the signal state
 					fan_tach_target <= not fan_tach_target; -- toggle the target bit. The loop will now look for that target to be stable
 					fan_tach_ctr <= (others => '0');
-					if fan_tach_target = '1' then -- generate a divide by 2 frequency signal to be used by the frequency counter
+					if fan_tach_target then -- generate a divide by 2 frequency signal to be used by the frequency counter
 						fan_tach_div2_int <= not fan_tach_div2_int;
 					end if;
 				else
@@ -1517,7 +1517,7 @@ begin
 		if rising_edge(pwm_clk) then
 			if pwm_ctr_en then
 				pwm_ctr <= pwm_ctr + 1;
-				if pwm_active = '0' then
+				if not pwm_active then
 					if pwm_ctr = pwm_offset then
 						pwm_active <= '1';
 						pwm_ctr <= (others => '0');

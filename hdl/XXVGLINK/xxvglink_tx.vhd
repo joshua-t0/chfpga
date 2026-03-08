@@ -164,7 +164,7 @@ begin
                 case tx_state is
                     when TX_STATE_STANDBY_IDLE => -- STANDBY State
                         crc_init <= '1';
-                        if fifo_tvalid='1' then -- if there is any data coming our way, start a new frame
+                        if fifo_tvalid then -- if there is any data coming our way, start a new frame
                             tx_state <= TX_STATE_SOF;
                         end if;
 
@@ -174,10 +174,10 @@ begin
                         tx_state <= TX_STATE_DATA;
 
                     when TX_STATE_DATA => --Data block
-                        if fifo_tvalid = '1' then
+                        if fifo_tvalid then
                             tx_data <= fifo_tdata;
                             tx_header <= "01";
-                            if fifo_tlast='1' then -- if this is the last word of the frame
+                            if fifo_tlast then -- if this is the last word of the frame
                                 tx_state <= TX_STATE_CRC_EOF; -- ...send the CRC on the second half of the block, then EOF in a new block
                             end if;
                         end if;
@@ -191,7 +191,7 @@ begin
 
             end if; -- if tx_ready=1
 
-            if tx_rst = '1' then
+            if tx_rst then
                 tx_state <= TX_STATE_STANDBY_IDLE;
                 tx_data <= X"1E000000_00000000";
                 tx_header <= "10";

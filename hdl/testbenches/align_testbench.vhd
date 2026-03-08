@@ -225,9 +225,7 @@ lane_gen: for i in 0 to NUMBER_OF_LANES-1 generate
 -- According to the user manual, for Async FIFOs, reset
 -- must be held for 31 clocks of the slowest clk (in_clk) when there is no safety circuit, and there must be no
 -- read or write during that period. There does not seem to be a safety circuit from the core generator GUI.
-fifo_rst_proc: process(in_clk)
-
-   begin
+fifo_rst_proc: process(all) begin
         if rising_edge(in_clk) then
             if reset ='1' then
                 fifo_inhibit <='1';
@@ -263,7 +261,7 @@ fifo_rst_proc: process(in_clk)
 
 end generate;
 
-process(out_clk) begin
+process(all) begin
 	if rising_edge(out_clk) then
 		if s_axis_tvalid(0)='1' then
 			first <= s_axis_tlast(0);

@@ -325,7 +325,7 @@ begin
 
 	-- Implement I2C process
 	i2c: process(all) begin
-		if all_reset = '1' then
+		if all_reset then
 			-- Reset I2C lines to idle (Hi-z)
 			sda_out <= '1';
 			sck_out <= '1';
@@ -490,7 +490,7 @@ begin
 			end if;
 
 			-- Timing counter. Counts up by default, unless resetted by the code below
-			if clk_ctr_clear = '1' then
+			if clk_ctr_clear then
 				clk_ctr <= 0;
 			elsif clk_ctr /= CLK_CTR_MAX then -- don't roll over
 				clk_ctr <= clk_ctr + 1; -- invrement unless overriden below
@@ -531,14 +531,14 @@ begin
 					-- BUS_READY <= '1';
 
 					-- If start was detected and the bus is ready, generate the start condition on the bus
-					if start = '1' and bus_idle = '1' then
+					if start and bus_idle then
 						start <= '0'; -- clear the start flag so we don't start a new transaction when we return here
 						sda_out <= '0'; -- create a 1-to-0 transition while SCK=1 to signal a start condition
 						clk_ctr_clear <= '1';
 						master_state <= MASTER_STATE_START;
 						start_ctr <= start_ctr + 1; -- keep track of how many transactions we started for checking and debugging
-					elsif clk_at_tHIGH = '1' then
-						if ctrl_always_clk = '1' then
+					elsif clk_at_tHIGH then
+						if ctrl_always_clk then
 							sck_out <= '0';
 						end if;
 						clk_ctr_clear <= '1';
@@ -588,7 +588,7 @@ begin
 				when MASTER_STATE_DATA_WAIT_HIGH => -- SCK was released. Wait for the clock line to go high (in case another device is holding it down) then sample the data line
 					-- STATE_MON <= X"A";
 
-					if sck_in = '1' then -- wait until all devices have released the clock before counting the high time
+					if sck_in then -- wait until all devices have released the clock before counting the high time
 						-- sample data bit
 						-- if dir=ctrl_dir_write then -- if we are writing
 						--   if sda_in/=sda_out then -- if there is a collision we lose the arbitration war - release the bus and go to IDLE
@@ -653,7 +653,7 @@ begin
 
 				when MASTER_STATE_ACK_WAIT_HIGH => -- We stopped pulling SCK low, we wait for it to come up so we can sample the ACK state.
 					-- STATE_MON <= X"5";
-					if sck_in = '1' then -- wait until all devices have released the clock before sampling the bit
+					if sck_in then -- wait until all devices have released the clock before sampling the bit
 						-- sample ACK bit
 						master_ack_status <= master_ack_status sll 1; -- shift left, we'll fill in bit 0 below
 						if dir = ctrl_dir_write then -- if we write
@@ -712,7 +712,7 @@ begin
 					end if;
 
 				when MASTER_STATE_STOP_WAIT_HIGH => -- wait for the clock line to go high (in case another device is holding it down) then sample the data line
-					if sck_in = '1' then -- wait until all devices have released the clock before counting the high time
+					if sck_in then -- wait until all devices have released the clock before counting the high time
 						clk_ctr_clear <= '1';
 						master_state <= MASTER_STATE_STOP_HIGH;
 					elsif clk_at_tTIMEOUT_MIN = '1' and clk_ctr_clear = '0' then
@@ -747,7 +747,7 @@ begin
 					end if;
 
 				when MASTER_STATE_RESTART_WAIT_HIGH => -- wait for the clock line to go high (in case another device is holding it down) then sample the data line
-					if sck_in = '1' then -- wait until all devices have released the clock before counting the high time
+					if sck_in then -- wait until all devices have released the clock before counting the high time
 						clk_ctr_clear <= '1';
 						master_state <= MASTER_STATE_RESTART_HIGH;
 					elsif clk_at_tTIMEOUT_MIN = '1' and clk_ctr_clear = '0' then

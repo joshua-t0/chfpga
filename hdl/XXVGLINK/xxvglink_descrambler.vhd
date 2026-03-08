@@ -161,11 +161,11 @@ begin
     end process;
 
     process(all) begin
-        if(USER_CLK'event and USER_CLK = '1') then
-            if (SYSTEM_RESET = '1') then
+        if rising_edge(USER_CLK) then
+            if system_reset then
                 unscrambled_data_i <= (others => '0') after DLY;
                 descrambler        <= "0101010101010101010101010101010101010101010101010101010101" after DLY;
-            elsif (DATA_VALID_IN = '1') then
+            elsif data_valid_in then
                 descrambler        <=   poly after DLY;
                 unscrambled_data_i <=   tempdata after DLY;
             end if;

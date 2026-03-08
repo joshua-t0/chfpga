@@ -639,7 +639,7 @@ begin
 	-- Reset Sequencer: Activates channelizer and correlator resets and releases them in the proper sequence with the proper delay to ensure that no partial frames are processed
 	sequencer_proc: process(all) begin
 		if (rising_edge(clk200_int)) then
-			if (seq_reset_in_clk200 = '1') then
+			if (seq_reset_in_clk200) then
 				clk_ctr <= (others => '0');
 				chan_sequence_reset <= '1';
 				corr_sequence_reset <= '1';

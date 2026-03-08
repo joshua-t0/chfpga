@@ -48,7 +48,7 @@ begin
 			mosi_dly <= mosi;
 			word_strobe <= '0';
 
-			if reset='1' or cs_n='1' then
+			if reset or cs_n then
 				-- Idle state; everything held in
 				-- reset.
 				mosi_shreg <= (others => '0');
@@ -56,7 +56,7 @@ begin
 				bit_count <= (others => '0');
 				miso <= '0';
 			else
-				if miso_shreg_ld='1' then
+				if miso_shreg_ld then
 					-- Load when commanded.
 					miso_shreg <= miso_shreg_in(miso_shreg'range);
 					miso <= miso_shreg_in(31);
@@ -90,7 +90,7 @@ begin
 
 			miso_shreg_ld <= '0';
 
-			if reset='1' or cs_n='1' then
+			if reset or cs_n then
 				spi_state <= SPI_IDLE;
 				addr <= (others => '0');
 				dout <= (others => '0');
@@ -101,7 +101,7 @@ begin
 						-- Here, we've latched the entire address. We
 						-- diverge depending on the operation: for reads,
 						-- we need to dispatch them immediately.
-						if word_strobe='1' then
+						if word_strobe then
 							addr <= mosi_shreg(31 downto 2) & "00";
 							case mosi_shreg(1 downto 0) is
 								when "00" =>
@@ -130,7 +130,7 @@ begin
 						-- a result.
 						spi_read_counter <= spi_read_counter + 1;
 
-						if rack='1' then
+						if rack then
 							miso_shreg_in <= din;
 							miso_shreg_ld <= '1';
 							spi_state <= SPI_R2;
@@ -141,7 +141,7 @@ begin
 						end if;
 
 					when SPI_R2 =>
-						if word_strobe='1' then
+						if word_strobe then
 							spi_state <= SPI_IDLE;
 						end if;
 
@@ -151,7 +151,7 @@ begin
 					when SPI_W =>
 						-- Dispatch the write. TODO: timeouts and
 						-- listen for wack?
-						if word_strobe='1' then
+						if word_strobe then
 							dout <= mosi_shreg;
 							wreq <= '1';
 							spi_state <= SPI_IDLE;
@@ -163,18 +163,18 @@ begin
 
 					when SPI_MW1 =>
 						-- receive data word from SPI, complete internal read
-						if rack='1' then
+						if rack then
 							read_latched <= din;
 						end if;
 
-						if word_strobe='1' then
+						if word_strobe then
 							write_latched <= mosi_shreg;
 							spi_state <= SPI_MW2;
 						end if;
 
 					when SPI_MW2 =>
 						-- receive mask word from SPI
-						if word_strobe='1' then
+						if word_strobe then
 							dout <= (write_latched and mosi_shreg) or
 									(read_latched and not mosi_shreg);
 							wreq <= '1';

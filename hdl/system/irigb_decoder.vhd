@@ -130,7 +130,7 @@ begin
 			-- We could have measured the low time in 200 MHz clock counts, but that makes checking
 			-- the duration more complex (i.e. involving less-than comparisons on 17-bit values). So
 			-- instead we quantify the low time in milliseconds increments
-			if irig_dly2='1' then -- IRIG-B is high, reset the counter
+			if irig_dly2 then -- IRIG-B is high, reset the counter
 				ms_lo <= (others => '0');
 			elsif ms_strobe='1' and ms_lo /= (ms_lo'range => '1') then -- increment ms counter unless it has reached its limit
 				ms_lo <= ms_lo + 1;
@@ -147,7 +147,7 @@ begin
 			strobe_0 <= '0';
 			strobe_1 <= '0';
 			strobe_p <= '0';
-			if irig_dly2='1' then
+			if irig_dly2 then
 				case to_integer(ms_lo) is
 					when 1|2 => strobe_p <= '1';
 					when 4|5 => strobe_1 <= '1';
@@ -157,10 +157,10 @@ begin
 			end if;
 
 			-- Set `last_p` when we detect consecutive markers (that are not separated by 0 ou 1 bits).
-			if strobe_p='1' then
+			if strobe_p then
 				last_p <= '1';
 			end if;
-			if strobe_0='1' or strobe_1='1' then
+			if strobe_0 or strobe_1 then
 				last_p <= '0';
 			end if;
 
@@ -174,7 +174,7 @@ begin
 			-- Note that getting a double P does not mean we successfully decoded the frame. It
 			-- might have been interrupted mid-frame. We have a valid frame only if we made it all the
 			-- way to P0 and then we receive a marker. This is handled further below.
-			if strobe_p='1' and last_p='1' then
+			if strobe_p and last_p then
 				state <= S1;
 				s <= (others => '0');
 				m <= (others => '0');
@@ -204,7 +204,7 @@ begin
 			end if;
 
 			-- When a '1' is decoded, we need to set some bits somewhere
-			if strobe_1='1' then
+			if strobe_1 then
 				case state is
 					-- seconds
 					when S1    => s <= s + 1;

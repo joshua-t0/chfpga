@@ -504,7 +504,7 @@ end generate;
 -- common signals
 cdrlock_timeout:process(all) begin
   if rising_edge(clk156) then
-        if(gt_gtrxreset_in(0) = '1') then
+        if (gt_gtrxreset_in(0)) then
           rx_cdrlocked       <= '0';
           rx_cdrlock_counter <=  0;
         elsif (rx_cdrlock_counter = WAIT_TIME_CDRLOCK) then
@@ -528,9 +528,9 @@ cdrlock_timeout:process(all) begin
 -- Clear counter on areset, and increment until bit 7 = '1' otherwise
 reset_ctr_proc: process(all) begin
 	if rising_edge(clk156) then
-			if common_user_reset='1' then
+			if common_user_reset then
 				reset_counter <= (others=>'0');
-			elsif(reset_counter(7) = '0')  then
+			elsif (not reset_counter(7)) then
 			   reset_counter <= reset_counter + 1;
 			else
 			   reset_counter <= reset_counter;
@@ -542,7 +542,7 @@ reset_ctr_proc: process(all) begin
 -- on gttxreset, gtrxreset and qpllreset
 reset_pulse_proc: process(all) begin
  if rising_edge(clk156) then
-	   if(reset_counter(7) = '0' or common_user_reset='1')  then
+	   if (not reset_counter(7) or common_user_reset) then
 	      reset_pulse <=  "1110";
 	   else
 	      reset_pulse(3)            <=  '0';
@@ -1158,7 +1158,7 @@ rx_fsm_soft_reset(i) <= common_user_reset or gt_user_reset(i);
 
 	process(all) begin
 	if rising_edge(rxusrclk2(i)) then
-			if gt_rxprbscntreset_in(i)='1' then
+			if gt_rxprbscntreset_in(i) then
 			     gt_err_ctr(i) <= (others => '0');
 			elsif gt_rxprbserr_out(i)='1' and signed(gt_err_ctr(i)) /= -1 then
 			     gt_err_ctr(i) <= std_logic_vector(unsigned(gt_err_ctr(i)) + 1);
@@ -1271,12 +1271,12 @@ tx_gen: for i in  0 to NUMBER_OF_TX_LANES-1 generate
 	txproc: process(all) begin
 	if rising_edge(txusrclk2) then
 
-			if tx_ready_int(i) = '1' then
+			if tx_ready_int(i) then
 
 				tx_data_dly(i) <= tx_data(i);
 				gt_txheader_in(i) <= tx_header_int(i);
 
-				if gt_user_source_sel(i)='1' then
+				if gt_user_source_sel(i) then
 					tx_data_int(i) <= gt_user_tx_data_int(i);
 					tx_header_int(i) <= gt_user_tx_header(i);
 				else
@@ -1363,21 +1363,21 @@ rx_gen: for i in  0 to NUMBER_OF_RX_LANES-1 generate
 			-- gt_rxheader_valid_dly(i) <= gt_rxheadervalid_out(i);
 
 			rx_header_valid(i) <= gt_rxheadervalid_out(i) after DLY;
-			if gt_rxheadervalid_out(i)='1' then
+			if gt_rxheadervalid_out(i) then
 				rx_header(i) <= gt_rxheader_out(i) after DLY;
 			end if;
-			if gt_capture_en_rxusrclk2(i)(0)='1' then
-				if gt_descramble_en(i)='0' and gt_rxdatavalid_out(i)='1' then
+			if gt_capture_en_rxusrclk2(i)(0) then
+				if not gt_descramble_en(i) and gt_rxdatavalid_out(i) then
 					rx_data_capture(i) <= reverse_bits_same_dir(gt_rxdata_out(i));
-				elsif gt_descramble_en(i)='1' and gt_unscrambled_data_valid(i)='1' then
+				elsif gt_descramble_en(i) and gt_unscrambled_data_valid(i) then
 					rx_data_capture(i) <= gt_unscrambled_data(i);
 				end if;
-				if gt_rxheadervalid_out(i)='1' then
+				if gt_rxheadervalid_out(i) then
 					gt_rxheader_capture(i) <= gt_rxheader_out(i);
 				end if;
 			end if;
 
-			if rx_resetdone_int(i)='0' then -- Added reset to try to prevent spurious sends after reset
+			if not rx_resetdone_int(i) then -- Added reset to try to prevent spurious sends after reset
 				rx_header(i) <="00";
 			end if;
 

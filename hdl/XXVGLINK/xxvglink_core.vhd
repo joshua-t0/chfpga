@@ -1078,7 +1078,7 @@ begin
 
 		process(all) begin
 		if rising_edge(rxusrclk2(i)) then
-				if gt_rxprbscntreset_in(i) = '1' then
+				if gt_rxprbscntreset_in(i) then
 					gt_err_ctr(i) <= (others => '0');
 				elsif gt_rxprbserr_out(i) = '1' and signed(gt_err_ctr(i)) /= -1 then
 					gt_err_ctr(i) <= std_logic_vector(unsigned(gt_err_ctr(i)) + 1);
@@ -1154,7 +1154,7 @@ begin
 						tx_header_reg <= tx_header(i);
 
 						-- Override with user-specified register values if source_sel=1
-						if gt_user_source_sel(i) = '1' then -- select values from registers
+						if gt_user_source_sel(i) then -- select values from registers
 							tx_data_reg <= reverse_bytes(user_tx_data_reg);
 							tx_header_reg <= user_tx_header_reg;
 						end if;

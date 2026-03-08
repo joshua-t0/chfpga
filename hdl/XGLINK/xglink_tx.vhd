@@ -180,18 +180,18 @@ tx_proc : process(all) begin
 
 		-- Store up to two words in an elastic queue so we know if we have two words to send.
 		-- This is essentially a two word deep FIFO, but with the ability to look at the status of the two words at the same time
-		if tready='1' then
+		if tready then
 			tvalid2 <='0';
 		end if;
 
-		if tvalid1='1' and (tvalid2='0' or tready='1') then
+		if tvalid1 and (not tvalid2 or tready) then
 			tvalid2 <= '1';
 			tdata2 <= tdata1;
 			tlast2 <= tlast1;
 			tvalid1 <= '0';
 		end if;
 
-		if s_axis_tx_tvalid_int='1' and s_axis_tx_tready_int='1' then
+		if s_axis_tx_tvalid_int and s_axis_tx_tready_int then
 			tvalid1 <= '1';
 			tdata1 <= s_axis_tx_tdata_int;
 			tlast1 <= s_axis_tx_tlast_int;
@@ -210,7 +210,7 @@ tx_proc : process(all) begin
 		tx_ready_dly <= tx_ready;
 
 		-- Output data state machine
-		if tx_ready='1' then
+		if tx_ready then
 
 			-- tready <='0'; -- By default do not pull a word from the tiny FIFO
 
@@ -230,7 +230,7 @@ tx_proc : process(all) begin
 					tx_data <= X"00000000";
 					tx_header <= "10";
 					send_data <= "00";
-					if tvalid2='1' or tvalid1='1' or s_axis_tx_tvalid_int='1' then -- if there is any data coming our way, start a new frame
+					if tvalid2 or tvalid1 or s_axis_tx_tvalid_int then -- if there is any data coming our way, start a new frame
 						tx_state <= TX_STATE_SOF0;
 					else
 						tx_state <= TX_STATE_STANDBY_IDLE0;
@@ -250,12 +250,12 @@ tx_proc : process(all) begin
 					tx_state <= TX_STATE_DATA0;
 
 				when TX_STATE_DATA0 => --Data block, first half
-					if tvalid2='1' and tlast2='1' then -- if this is the last word of the frame
+					if tvalid2 and tlast2 then -- if this is the last word of the frame
 						tx_data <= tdata2;
 						tx_header <= "01";
 						send_data <= "00";
 						tx_state<=TX_STATE_DATA1_CRC; -- ...send the CRC on the second half of the block, then EOF in a new block
-					elsif tvalid2='1' and tvalid1='1' then -- If there are two words in the FIFO (we can't interrupt mid-block)...
+					elsif tvalid2 and tvalid1 then -- If there are two words in the FIFO (we can't interrupt mid-block)...
 						tx_data <= tdata2;
 						tx_header <= "01";
 						-- tready <= '1';
@@ -271,7 +271,7 @@ tx_proc : process(all) begin
 				when TX_STATE_DATA1 => -- Data block, second half
 					tx_data <= tdata2;
 					tx_header <= "01";
-					if tlast2='1' then
+					if tlast2 then
 						send_data <= "00";
 						tx_state<=TX_STATE_CRC_EOF0; -- send the CRC with the EOF on the next block
 					else
@@ -323,7 +323,7 @@ tx_proc : process(all) begin
 
 		end if; -- if tx_ready=1
 
-		if rst = '1' then
+		if rst then
 			tx_state <= TX_STATE_STANDBY_IDLE0;
 			send_data <= "00";
 			tvalid1 <= '0';

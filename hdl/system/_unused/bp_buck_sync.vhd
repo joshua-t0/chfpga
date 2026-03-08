@@ -132,7 +132,7 @@ begin
 					if bit_ctr = 31 then
 						send_data <= '0';
 						rd_dat_valid <= send_data;
-						if send_data = '1' then
+						if send_data then
 							rd_dat <= rd_dat_shreg (30 downto 0) & (not is_zero);
 						end if;
 					else
@@ -150,7 +150,7 @@ begin
 			end if;
 
 			-- Synchronous reset - overrides signals above
-			if rst = '1' then
+			if rst then
 				send_data <= '0';
 				-- release_ctr <= to_unsigned(tRELEASE, release_ctr'LENGTH);
 				sync_ctr <= (others => '0');

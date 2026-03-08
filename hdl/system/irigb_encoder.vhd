@@ -65,7 +65,7 @@ begin
 	-- Keep track of time
 	process(all) begin
 		if rising_edge(clk_200mhz) then
-			if tick_strobe='1' then
+			if tick_strobe then
 				if ms=9 then
 					ms <= 0;
 				else

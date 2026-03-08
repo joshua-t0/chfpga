@@ -353,7 +353,7 @@ bypass_gen: if IMPLEMENT_RX generate
 					m_axis_rx_tlast_int2(i)  <= m_axis_rx_tlast_int(i);
 					m_axis_rx_terror_int2(i) <= m_axis_rx_terror_int(i);
 				end if;
-				if reset_reg(i)='1' then -- Add reset to prevent spurious receives after reset
+				if reset_reg(i) then -- Add reset to prevent spurious receives after reset
 					m_axis_rx_tvalid_int2(i) <= '0';
 				end if;
 			end loop;
@@ -546,11 +546,11 @@ core0: entity work.xglink_core
  	if rising_edge(tx_clk) then
  			-- Detect TX FIFO overflows
  			for i in 0 to NUMBER_OF_LANES-1 loop
-	 			if tx_fifo_overflow(i)='1' then
+	 			if tx_fifo_overflow(i) then
 	 				tx_fifo_overflow_sticky(i) <= '1';
 	 			end if;
 
-	 			if rx_fifo_overflow(i)='1' then
+	 			if rx_fifo_overflow(i) then
 	 				rx_fifo_overflow_sticky(i) <= '1';
 	 			end if;
 

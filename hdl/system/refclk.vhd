@@ -271,7 +271,7 @@ begin
 		-------------------------------------------------------------------------
 
 		clk10gen_proc: process(all) begin
-			if rst = '1' then
+			if rst then
 				clk200_counter <= (others => '0');
 				user_sync_dly <= '0';
 				user_sync_oneshot <= '0';
@@ -320,7 +320,7 @@ begin
 		-- Since we detect the high time, the position of the rising edge is not affected by the pulse width modulation.
 		-- Devices that are sensitive to the rising edge (such as PLLs) should therefore not be affected by the scheme.
 		sync_det_proc: process(all) begin
-			if rst = '1' then
+			if rst then
 				refclk_counter <= (others => '0');
 				recovered_sync <= '0';
 				fmc_refclk_previous <= '0';
@@ -566,7 +566,7 @@ begin
 
 	clksync: process(all) begin
 		-- The reset is asynchonous to make sure it is executed even in the absence of the Reference Clock.
-		if rst = '1' then
+		if rst then
 			sync_state <= SYNC_STATE_IDLE;
 			adc_sync_pre <= '0';
 			adcdaq_reset <= '0';
@@ -591,7 +591,7 @@ begin
 			adc_sync_pre <= '0'; -- overriden below if needed.
 			adcdaq_reset <= '0'; -- overriden below if needed.
 
-			if adc_sync_user = '1' then
+			if adc_sync_user then
 				adc_sync_pre <= '1';
 			else
 				if (sync = '1' and sync_dly = '0') or (local_sync_reg = '1' and local_sync_dly = '0') then -- reset the ADCDAQ SERDES and enable the SYNC line to stop the ADC clock

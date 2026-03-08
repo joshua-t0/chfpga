@@ -242,7 +242,7 @@ begin
 		if freq_ctr_start_srcclk = '0' then -- We need an asynchronous reset to clear the counter even in the absence of the source clock
 			freq_ctr <= (others => '0');
 		elsif rising_edge(src_clk) then
-			if gate_en_sync = '1' then
+			if gate_en_sync then
 				freq_ctr <= freq_ctr + 1;
 			end if;
 		end if; -- CLK

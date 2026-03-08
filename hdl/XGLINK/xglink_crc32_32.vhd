@@ -71,9 +71,9 @@ begin
 
 crcproc:  process(all) begin
       if rising_edge(clk) then
-		if (rst = '1') then
+		if (rst) then
 			lfsr_q <= (others=>'1');
-		elsif (crc_en = '1') then
+		elsif (crc_en) then
           lfsr_q <= lfsr_c;
         end if;
       end if; --clk
