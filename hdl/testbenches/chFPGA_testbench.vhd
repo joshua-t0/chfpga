@@ -634,9 +634,9 @@ SDA<=to_UX01(FMC_I2C_SDA);
 SCK<=to_UX01(FMC_I2C_SCK);
 --SLAVE_SDA<='0' when bit_ctr=9 and SCK='1' else 'H';
 
-i2c_process :process(SCK, SDA)
+i2c_process :process(all)
    begin
-		if falling_edge(SDA) and SCK='1' then
+		if falling_edge(SDA) and SCK then
 			bit_ctr<=(others=>'0');
 		elsif rising_edge(SCK) then
 			if bit_ctr/=15 then

@@ -59,7 +59,7 @@ begin
 CS<='1' when UNSIGNED(SPI_ADDR)=ADDRESS else '0';
 SPI_MISO<='Z' when CS='0' else REG(REG'Length-1);
 
-spi: process(SPI_SCK,RST, CS)
+spi: process(all)
 	begin
 		if (RST='1' or CS='0') then
 			REG<=READ_VALUE;

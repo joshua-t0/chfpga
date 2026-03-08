@@ -280,9 +280,9 @@ lane_gen: for i in 0 to NUMBER_OF_LANES-1 generate
 
 end generate;
 
-process(in_clk) begin
+process(all) begin
 	if rising_edge(in_clk) then
-		if s_axis_tvalid(0)='1' then
+		if s_axis_tvalid(0) then
 			first <= s_axis_tlast(0);
 		end if;
 	frame_clk <= s_axis_tvalid(0) and first;

@@ -103,7 +103,7 @@ begin
     end generate g_stim;
 
     -- Checker: report port, packet length, content_ok for each completed packet
-    check_proc : process (clk)
+    check_proc : process (all)
         variable packet_buf : slv_array(0 to MAX_PKT_LEN - 1)(7 downto 0);
         variable packet_idx : natural range 0 to MAX_PKT_LEN := 0;
         variable port_id    : integer;
@@ -112,7 +112,7 @@ begin
         variable buf        : line;
     begin
         if rising_edge(clk) then
-            if rst = '0' then
+            if not rst then
                 if m_axis_tvalid and m_axis_tready then
                     packet_buf(packet_idx) := m_axis_tdata;
                     hdr <= packet_buf(0);

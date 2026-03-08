@@ -267,13 +267,13 @@ dut0: entity work.xglink_array
 
 -- tx_ready <= not to_std_logic(tx_ctr(7 downto 1)=32);
 
-txproc: process(clk)
+txproc: process(all)
 begin
     if rising_edge(clk) then
 		s_axis_tx_tdata  <= (others=>X"00000000");
 		s_axis_tx_tvalid <= (others=>'0');
 		s_axis_tx_tlast  <= (others=>'0');
-   	if send_data='1' then
+   	if send_data then
    		if ctr < data'LENGTH then
 				s_axis_tx_tdata  <= (others=>tdata(to_integer(ctr)));
 				s_axis_tx_tvalid <= (others=>tvalid(to_integer(ctr)));

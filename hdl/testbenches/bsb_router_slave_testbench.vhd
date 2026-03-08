@@ -109,7 +109,7 @@ begin
 	refclk_process: process
 	   begin
 	       wait for 1 us;
-           while  True loop
+           while True loop
 			clk <= '0';
 			wait for CLK_PERIOD/2;
 			clk <= '1';

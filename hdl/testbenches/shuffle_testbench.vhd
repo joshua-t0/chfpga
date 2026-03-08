@@ -165,7 +165,7 @@ shuffle0: entity work.bp_shuffle
 
 
 
-  txproc: process(clk156)
+  txproc: process(all)
   begin
     if rising_edge(clk156) then
       -- if GPIO_BUTTON1='1' then

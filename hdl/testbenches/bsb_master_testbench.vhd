@@ -152,18 +152,18 @@ begin
     end generate g_probe;
 
     -- Checker: capture and report TX packets (channel 00=reply, 01=probe)
-    check_proc : process (clk)
+    check_proc : process (all)
         variable pkt_buf   : slv_array(0 to 255)(7 downto 0);
         variable pkt_idx   : natural range 0 to 255 := 0;
         variable ch        : std_logic_vector(1 downto 0);
         variable buf       : line;
     begin
         if rising_edge(clk) then
-            if rst = '0' then
-                if m_axis_udp_tx_tvalid = '1' and m_axis_udp_tx_tready = '1' then
+            if not rst then
+                if m_axis_udp_tx_tvalid and m_axis_udp_tx_tready then
                     ch := m_axis_udp_tx_channel;
                     pkt_buf(pkt_idx) := m_axis_udp_tx_tdata;
-                    if m_axis_udp_tx_tlast = '1' then
+                    if m_axis_udp_tx_tlast then
                         write(buf, string'("TX ch=") & to_hstring(ch) &
                               string'(" len=") & integer'image(pkt_idx + 1) &
                               string'(" hdr=0x") & to_hstring(pkt_buf(0)));

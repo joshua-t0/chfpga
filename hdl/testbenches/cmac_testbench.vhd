@@ -149,11 +149,11 @@ begin
 	wait until clk='1';
 end process;
 
-readout_data: process(clk)
+readout_data: process(all)
 variable x,y, xy, z_var, zz_var: complex;
 begin
 	if rising_edge(clk) then
-		if z_out_tvalid='1' then
+		if z_out_tvalid then
 			z_var := CMPLX(signed(z_out_tdata(35 downto 18)), signed(z_out_tdata(17 downto 0)));
 			zz_var := CMPLX(0, 0);
 			for frame in 0 to INTEGRATION_PERIOD-1 loop
@@ -175,12 +175,12 @@ begin
 				--	bin <= 0;
 				--end if;
 			end if;
-			if z_out_tlast='1' then
+			if z_out_tlast then
 				chan <= 0;
 				bin <= 0;
 			end if;
 		end if;
-		if rst='1' then
+		if rst then
 			bin <= 0;
 			chan <= 0;
 		end if;

@@ -164,7 +164,7 @@ dut32: entity work.xge_udp_mac_tx
 tx_ready <= not to_std_logic(tx_ctr(7 downto 1)=32);
 --ctr64 <= ctr(ctr'HIGH downto 1);
 
-txproc: process(clk)
+txproc: process(all)
 begin
     if rising_edge(clk) then
       -- if GPIO_BUTTON1='1' then
@@ -174,7 +174,7 @@ begin
 			tx_ctr <= tx_ctr+1;
 		end if;
 
-      	if s_tx_tready='1' then
+      	if s_tx_tready then
       		if ctr < data'LENGTH then
 				s_tx_tdata  <= data(to_integer(ctr))(31 downto 0);
 				s_tx_tvalid <= data(to_integer(ctr))(32);

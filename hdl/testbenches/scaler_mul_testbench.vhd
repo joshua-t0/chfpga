@@ -118,7 +118,7 @@ stim_proc : process begin
     finish;
 end process ; -- lane0_proc
 
-check_proc: process(clk)
+check_proc: process(all)
     variable a_var: signed(A_WIDTH-1 downto 0);
     variable b_var: unsigned(B_WIDTH-1 downto 0);
     variable prod, p_var : signed(P_WIDTH downto 0); -- add one bit to
@@ -130,7 +130,7 @@ begin
         a1 <= a; a2 <= a1; a3 <= a2;
         b1 <= b; b2 <= b1; b3 <= b2;
 
-        if v3='1' then
+        if v3 then
             a_var := a3;
             b_var := b3;
             prod := a3 * signed(resize(b3,b3'LENGTH+1));

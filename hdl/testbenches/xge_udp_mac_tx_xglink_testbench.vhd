@@ -233,11 +233,11 @@ pcs0: entity work.ten_gig_eth_pcs_pma_0_example_design
 
 
 
-txproc: process(clk200)
+txproc: process(all)
 begin
     if rising_edge(clk200) then
 
-      	if s_axis_tx_tready(0)='1' then
+      	if s_axis_tx_tready(0) then
       		if ctr < data'LENGTH then
 				s_axis_tx_tdata(0)  <= data(to_integer(ctr))(31 downto 0);
 				s_axis_tx_tvalid(0) <= data(to_integer(ctr))(32);

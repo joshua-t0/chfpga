@@ -306,14 +306,16 @@ number_of_bins_per_frame <= "000" & to_slv(control_bytes(5 to 6))(8 downto 0);
 --status_bytes(0)(7 downto 4) <= (others=>'0');
 --status_bytes(0)(3)          <= ACCUM_UNDERFLOW;
 --status_bytes(0)(2)          <= ACCUM_OVERFLOW;
-status_bytes(0)(0) <= rst_all;
-status_bytes(0)(1) <= data_fifo_prog_full;
-status_bytes(0)(2) <= data_fifo_overflow_sticky;
-status_bytes(0)(3) <= cmac_z_local_data(0);
-status_bytes(0)(4) <= m_axis_data_out_tready;
-status_bytes(0)(5) <= cmac_readout_err(0);
-status_bytes(0)(6) <= cmac_wr_err(0);
-status_bytes(0)(7) <= cmac_rd_err(0);
+status_bytes(0) <= (
+	0 => rst_all, 
+	1 => data_fifo_prog_full, 
+	2 => data_fifo_overflow_sticky, 
+	3 => cmac_z_local_data(0), 
+	4 => m_axis_data_out_tready, 
+	5 => cmac_readout_err(0), 
+	6 => cmac_wr_err(0), 
+	7 => cmac_rd_err(0)
+	);
 
 status_bytes(1) <= to_slv(in_frame_ctr_reg);
 status_bytes(2) <= to_slv(out_frame_ctr_reg);
@@ -462,7 +464,7 @@ main: process(all) begin
 						end if;
 					end if;
 				end if;
-				if is_data = '1' then -- Header='0'
+				if is_data  then -- Header='0'
 					--if autocorr_only_reg='1' then
 					--	buf(to_integer(word_ctr)) <= X"10101010";
 					--else
@@ -504,7 +506,7 @@ main: process(all) begin
 			s(0 to 1) <= "11";
 
 			-- tvalid is set when  we load new data until we have shifted N/4 times
-			if load = '1' then
+			if load  then
 				xy_tvalid <= '1';
 			elsif N=4 or s(N/2-4)='1' then -- s is initialized
 				xy_tvalid <= '0';
@@ -656,7 +658,7 @@ fifo_readout_proc: process(all)
 						-- Note that we set the ID while we are already started sending the first
 						-- header byte, but this first byte is the cookie so this is ok
 						cmac_id <= cmac_id + 1;
-						if data_fifo_dout(37) = '1' then -- if this is a new readout
+						if data_fifo_dout(37)  then -- if this is a new readout
 							cmac_id <= (others=>'0');
 							integration_number <= integration_number + 1;
 						end if;
@@ -673,7 +675,7 @@ fifo_readout_proc: process(all)
 					if byte_ctr = 4 then
 						byte_ctr <= 0;
 
-						if data_fifo_dout(36) = '1' then -- if that was the last word of a frame
+						if data_fifo_dout(36)  then -- if that was the last word of a frame
 							m_axis_data_out_tlast <= '1';
 							send_header <= '1';
 							out_frame_ctr <= out_frame_ctr + 1;
