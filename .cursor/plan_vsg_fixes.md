@@ -79,7 +79,7 @@ entity_name0: entity work.entity_name(architecture_name)
 
 ---
 
-### 4. `hdl/ct/ucorn.vhd` (2 errors)
+### 4. `hdl/ct/upack.vhd` (2 errors)
 
 **Rule: `instantiation_036` - Add architecture identifier**
 
@@ -158,7 +158,7 @@ entity_name0: entity work.entity_name(architecture_name)
    - Pattern: `label :` → `label:`
    - Be careful to only affect declarations, not other uses of colons
 
-2. **For architecture identifier fixes (`chan_bin_sel.vhd`, `shuffle_bin_sel.vhd`, `ucorn.vhd`):**
+2. **For architecture identifier fixes (`chan_bin_sel.vhd`, `shuffle_bin_sel.vhd`, `upack.vhd`):**
    - Read each entity instantiation
    - Find the corresponding entity file to determine the architecture name
    - Add `(architecture_name)` after the entity name
@@ -168,7 +168,7 @@ entity_name0: entity work.entity_name(architecture_name)
 
 After making changes, run VSG again to verify all violations are fixed:
 ```bash
-vsg --file hdl/ct/chan_bin_sel.vhd hdl/ct/shuffle_bin_sel.vhd hdl/ct/remap.vhd hdl/ct/ucorn.vhd hdl/corr/UCMAC44_ARRAY.vhd --configuration hdl/vsg_rules.yaml
+vsg --file hdl/ct/chan_bin_sel.vhd hdl/ct/shuffle_bin_sel.vhd hdl/ct/remap.vhd hdl/ct/upack.vhd hdl/corr/UCMAC44_ARRAY.vhd --configuration hdl/vsg_rules.yaml
 ```
 
 
