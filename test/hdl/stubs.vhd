@@ -225,8 +225,8 @@ entity ADCDAQ is
 		IMPLEMENT_ADCDAQ 		: BOOLEAN:= TRUE;
 		INSTANTIATE_IDELAYCTRL 	: BOOLEAN:= TRUE;
 		INSTANTIATE_PLL 		: BOOLEAN:= FALSE;
-		BUFMR_MAP 				: integer_array := (0 to 8 => 0);
-		IS_DIFFERENTIAL 		: integer_array := (0 to 8 => 1);
+		CLOCKING_REGION_MAP 	: integer_array := (0 to 8 => 0);
+		IS_DIFFERENTIAL 		: bool_array := (0 to 8 => TRUE);
 		PROVIDE_BUFFERED_DIVCLK : BOOLEAN:= FALSE;
 		USE_EXT_DATA_CLK 		: BOOLEAN:= TRUE;
 		CLK_VALID_OFFSET 		: INTEGER:= -3;
