@@ -260,10 +260,13 @@ if { $fileset_obj != {} } {
 }
 
 
-add_files -norecurse -fileset $fileset_obj [concat $full_bd_files $full_hdl_files $full_ip_files $full_ooc_ip_files]
+add_files -norecurse -fileset $fileset_obj [concat $full_bd_files $full_hdl_files]
 
-# puts "Importing IPs"
-# import_ip $full_ip_files
+# Import IP definitions into the project so regenerated products live under the
+# current project instead of following metadata from another project's .gen dir.
+if {[llength [concat $full_ip_files $full_ooc_ip_files]] > 0} {
+  import_files -force -norecurse -fileset $fileset_obj [concat $full_ip_files $full_ooc_ip_files]
+}
 
 # Set 'sources_1' fileset file properties for remote files
 foreach file_obj  [get_files -of_objects $fileset_obj [list "*.xci"]] {
@@ -431,22 +434,34 @@ puts "OOC ip files are $ip_list"
 # set_property generate_synth_checkpoint true [get_files  /home/jfcliche/chfpga/_Cores/KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci]
 # generate_target all [get_files  /home/jfcliche/chfpga/_Cores/KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci]
 
-
-export_ip_user_files -of_objects $ip_list -no_script -sync -force -quiet
-set_property generate_synth_checkpoint true [get_files $full_ooc_ip_files]
-generate_target all $ip_list
-catch { config_ip_cache -export $ip_list }
-foreach ip $ip_list {
-  # removed the -force option to avoid regeneration
-  set ip_run_name [create_ip_run -force $ip]
-  if {$ip_run_name ne ""} {
-    set ip_run [get_runs $ip_run_name]
-    puts "Configuring IP run properties for $ip_run_name"
-    set_property strategy "Flow_PerfOptimized_high" -objects $ip_run
-    set_property -name "steps.synth_design.args.no_lc" -value $no_lc -obj $ip_run
-    } else {
-      puts "IP $ip is already cached"
+if {[llength $ip_list] > 0} {
+  # Re-target imported OOC IPs to the current part before configuring their runs.
+  upgrade_ip $ip_list -quiet
+  export_ip_user_files -of_objects $ip_list -no_script -sync -force -quiet
+  reset_target all $ip_list
+  foreach ip $ip_list {
+    set ip_name [get_property NAME $ip]
+    set ip_xci [get_files -quiet -of_objects $ip [list "*.xci"]]
+    if {$ip_xci ne ""} {
+      if {[catch {set_property generate_synth_checkpoint true $ip_xci} err]} {
+        puts "Skipping generate_synth_checkpoint for ${ip_name}: $err"
+      }
     }
+  }
+  generate_target all $ip_list
+  catch { config_ip_cache -export $ip_list }
+  foreach ip $ip_list {
+    # removed the -force option to avoid regeneration
+    set ip_run_name [create_ip_run -force $ip]
+    if {$ip_run_name ne ""} {
+      set ip_run [get_runs $ip_run_name]
+      puts "Configuring IP run properties for $ip_run_name"
+      set_property strategy "Flow_PerfOptimized_high" -objects $ip_run
+      set_property -name "steps.synth_design.args.no_lc" -value $no_lc -obj $ip_run
+      } else {
+        puts "IP $ip is already cached"
+      }
+  }
 }
 
 # }
