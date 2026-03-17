@@ -25,7 +25,7 @@
 #   Requires tcl/create_generic_project.tcl to support --list_files_only.
 
 VIVADO  := vivado -mode batch -notrace
-ACTIONS := project bitstream clean
+ACTIONS := project bitstream clean status
 SHELL   := /bin/bash
 MAKEFLAGS += --no-print-directory
 
@@ -35,16 +35,27 @@ _G2 := $(word 2,$(MAKECMDGOALS))
 # Configs = directories xilinx_projects/chfpga_* that have create_project.tcl
 VALID_CONFIGS := $(sort $(foreach d,$(wildcard xilinx_projects/chfpga_*),$(if $(wildcard $(d)/create_project.tcl),$(patsubst chfpga_%,%,$(notdir $(d))),)))
 
+# Wrapper mode: config goals (exact names or globs like crs_*) + at most one action. Require at least one config after expansion.
+_WRAP_ACT_CNT       := $(words $(filter $(ACTIONS),$(MAKECMDGOALS)))
+_WRAP_CFG_GOALS     := $(filter-out $(ACTIONS),$(MAKECMDGOALS))
+# Expand config goals: exact names match themselves; goals with * match VALID_CONFIGS (subst * -> % for filter).
+WRAPPER_CONFIGS     := $(sort $(foreach g,$(_WRAP_CFG_GOALS),$(filter $(subst *,%,$g),$(VALID_CONFIGS))))
+_WRAP_EXPANDED_CNT  := $(words $(WRAPPER_CONFIGS))
+_WRAP_HAVE_EXPANDED := $(filter-out 0,$(_WRAP_EXPANDED_CNT))
+
 .DEFAULT_GOAL := help
 
 .PHONY: help
 help:
 	@echo "Usage:"
 	@echo "  "
-	@echo "    make <config> project      # Create Vivado project for <config>"
-	@echo "    make <config> bitstream    # Build bitstream for config <config>"
-	@echo "    make <config> clean         # Clean <config> project and bitstream"
+	@echo "    make [<config> ... | <glob>] [<action>]  # e.g. crs_*; action = project|bitstream|clean|status"
+	@echo "    make [<config> ...] project     # Create project for specified config(s)"
+	@echo "    make [<config> ...] [bitstream]# Build bitstream for specified config(s)"
+	@echo "    make [<config> ...] clean       # Clean project and bitstream (incl. .bit) for specified config(s)"
+	@echo "    make [<config> ...] status      # Print build status for specified config(s)"
 	@echo "    make all                    # build bitstream for every <config>"
+	@echo "    make status                 # Print build status for all configs"
 	@echo "    make docs [clean][html]     # Build the documentation"
 	@echo "  "
 	@echo " Note 1: <config> can be omitted if the make command is invoked from a project directory"
@@ -108,12 +119,63 @@ all:
 	  echo "========== $$c (last 10 lines of $$log) =========="; \
 	  tail -n 10 "$$log" 2>/dev/null || echo "(no log or empty)"; \
 	  echo ""; \
+	done; \
+	echo "=== Error lines from build.log ==="; \
+	for c in $(VALID_CONFIGS); do \
+	  log="xilinx_projects/chfpga_$$c/build.log"; \
+	  if [ -f "$$log" ] && grep -qE '[1-9][0-9]* [Ee]rror|ERROR\]:|ERROR:|failed' "$$log" 2>/dev/null; then \
+	    echo "--- $$c ---"; \
+	    grep -E '[1-9][0-9]* [Ee]rror|ERROR\]:|ERROR:|failed' "$$log" 2>/dev/null | tail -20 | sed 's/^/  /'; \
+	    echo ""; \
+	  fi; \
 	done
 
 # =============================================================================
-# HELP or NO GOALS:  make help  or  make  (default goal is help)
-#   help target already defined at top; skip direct mode so we don't require CONFIG
+# STATUS:  make status  or  make <config> status  ->  print build status per config
 # =============================================================================
+else ifeq ($(_G1),status)
+
+.PHONY: status
+status:
+	@for c in $(if $(CONFIG),$(CONFIG),$(VALID_CONFIGS)); do \
+	  dir="xilinx_projects/chfpga_$$c"; name="chfpga_$$c"; \
+	  bit="$$dir/$$name.bit"; xpr="$$dir/$$name.xpr"; log="$$dir/build.log"; \
+	  echo ""; echo "=== $$c ==="; \
+	  uptodate="(n/a)"; \
+	  if lsof "$$log" >/dev/null 2>&1 || fuser -s "$$log" 2>/dev/null; then st="RUNNING"; \
+	  elif [ -f "$$log" ] && grep -qE '[1-9][0-9]* [Ee]rror|ERROR\]:|ERROR:|failed' "$$log" 2>/dev/null; then st="ERROR"; \
+	  elif [ ! -f "$$bit" ]; then st="MISSING"; \
+	  elif [ -f "$$bit" ] && [ -f "$$xpr" ]; then \
+	    uptodate="yes"; [ "$$bit" -ot "$$xpr" ] && uptodate="no"; \
+	    if [ -n "$$XILINX_VIVADO" ]; then \
+	      deps=$$(cd "$$dir" && $(VIVADO) -source create_project.tcl -tclargs --list_files_only 2>/dev/null | sed -n 's/^FILE://p'); \
+	      for f in $$deps; do [ -f "$$f" ] && [ "$$bit" -ot "$$f" ] && uptodate="no" && break; done; \
+	    else \
+	      uptodate="(unknown - load Vivado to check deps)"; \
+	    fi; \
+	    if [ "$$uptodate" = "yes" ]; then st="UP TO DATE"; \
+	    elif [ "$$uptodate" = "no" ]; then st="OUT OF DATE"; \
+	    else st="UP TO DATE (deps not checked)"; fi; \
+	  else st="MISSING"; fi; \
+	  echo "  status: $$st"; \
+	  if [ -f "$$bit" ]; then echo "  bitstream: $$bit"; echo "    date: $$(stat -c '%y' "$$bit" 2>/dev/null | cut -d. -f1)"; \
+	  else echo "  bitstream: MISSING"; fi; \
+	  [ "$$st" != "RUNNING" ] && echo "  up to date (vs project + deps): $$uptodate"; \
+	  if [ "$$st" = "ERROR" ] && [ -f "$$log" ]; then \
+	    echo "  error lines from build.log:"; grep -E '[1-9][0-9]* [Ee]rror|ERROR\]:|ERROR:|failed' "$$log" 2>/dev/null | tail -10 | sed 's/^/    /'; \
+	  fi; \
+	  if [ -f "$$log" ]; then \
+	    echo "  build.log: $$log"; echo "    build finished: $$(stat -c '%y' "$$log" 2>/dev/null | cut -d. -f1)"; \
+	    dur=$$(grep -oE 'elapsed = [0-9:]+' "$$log" 2>/dev/null | tail -1); [ -n "$$dur" ] && echo "    last step elapsed: $$dur"; \
+	    timing=$$(grep -E 'WNS=.*TNS=' "$$log" 2>/dev/null | tail -1); \
+	    if [ -n "$$timing" ]; then \
+	      wns=$$(echo "$$timing" | grep -oE 'WNS=[^ |]+' || true); tns=$$(echo "$$timing" | grep -oE 'TNS=[^ |]+' || true); \
+	      whs=$$(echo "$$timing" | grep -oE 'WHS=[^ |]+' || true); ths=$$(echo "$$timing" | grep -oE 'THS=[^ |]+' || true); \
+	      echo "    $$wns $$tns $$whs $$ths"; \
+	    fi; \
+	  else echo "  build.log: (none)"; fi; \
+	done; echo ""
+
 else ifeq ($(_G1),help)
 # no-op: help target and recipe are defined unconditionally at top
 else ifeq ($(strip $(_G1)),)
@@ -121,28 +183,21 @@ else ifeq ($(strip $(_G1)),)
 # no-op
 
 # =============================================================================
-# WRAPPER MODE:  make <config> <action>
-#   First goal is not an action; second goal is an action.
-#   Re-invoke make with CONFIG= so the real targets run in a single clean pass.
+# WRAPPER MODE:  make [<config> ... | <glob>] [<action>]
+#   Config goals: exact names or globs (e.g. crs_*). At most one action. Default action = bitstream.
+#   Order of configs and action does not matter (e.g. make clean kc705_corr8 = make kc705_corr8 clean).
+#   Re-invoke make CONFIG=<c> <action> for each expanded config. (No config goals -> direct mode.)
 # =============================================================================
-else ifneq ($(filter $(_G2),$(ACTIONS)),)
+else ifeq ($(filter $(_WRAP_ACT_CNT),0 1)_$(_WRAP_HAVE_EXPANDED),$(_WRAP_ACT_CNT)_$(_WRAP_EXPANDED_CNT))
 
-.PHONY: $(_G1) $(_G2)
+WRAPPER_ACTION  := $(or $(word 1,$(filter $(ACTIONS),$(MAKECMDGOALS))),bitstream)
 
-$(_G1):
-	@+$(MAKE) CONFIG=$(_G1) $(_G2)
-
-$(_G2): $(_G1)
+.PHONY: $(MAKECMDGOALS)
+$(foreach c,$(WRAPPER_CONFIGS),$(eval $c: ; @+$(MAKE) CONFIG=$c $(WRAPPER_ACTION)))
+# Glob goals (e.g. crs_*): build expanded configs so "make crs_*" works. Escape * in target name.
+$(foreach g,$(filter-out $(VALID_CONFIGS),$(_WRAP_CFG_GOALS)),$(eval $g: $(filter $(subst *,%,$g),$(VALID_CONFIGS)); @:))
+$(WRAPPER_ACTION): $(WRAPPER_CONFIGS)
 	@:
-
-# =============================================================================
-# SINGLE GOAL = CONFIG:  make <config>  (re-invoke only; avoid computing DEPS twice)
-# =============================================================================
-else ifeq ($(words $(MAKECMDGOALS))_$(filter $(_G1),$(VALID_CONFIGS)),1_$(_G1))
-
-.PHONY: $(_G1)
-$(_G1):
-	@+$(MAKE) CONFIG=$(_G1) bitstream
 
 # =============================================================================
 # DIRECT MODE:  make CONFIG=<config> <action>
@@ -185,7 +240,7 @@ endif
 # Each repo-relative path is prefixed with FILE: in the Tcl output so we can
 # reliably extract just the paths from Vivado's mixed stdout (which also
 # contains startup banners and INFO messages).
-DEPS := $(shell cd $(PROJECT_DIR) && $(VIVADO) -source create_project.tcl -tclargs --list_files_only 2>/dev/null | sed -n 's/^FILE://p')
+DEPS := $(shell cd '$(PROJECT_DIR)' && $(VIVADO) -source create_project.tcl -tclargs --list_files_only 2>/dev/null | sed -n 's/^FILE://p')
 
 # --- Real build targets ---
 .PHONY: all project bitstream clean
@@ -197,7 +252,7 @@ all: bitstream
 project: $(PROJ_XPR)
 
 $(PROJ_XPR): $(DEPS)
-	cd $(PROJECT_DIR) && $(VIVADO) -source create_project.tcl
+	cd '$(PROJECT_DIR)' && $(VIVADO) -source create_project.tcl
 
 # Full build: synth + impl + bitstream.
 # Rebuild only when .bit is missing or older than project or any source. Log to build.log and stdout.
@@ -205,17 +260,17 @@ $(PROJ_XPR): $(DEPS)
 bitstream: $(PROJ_BIT)
 
 $(PROJ_BIT): $(PROJ_XPR) $(DEPS)
-	@cd $(PROJECT_DIR) && rm -f $(PROJ_NAME).bit && \
+	@cd '$(PROJECT_DIR)' && rm -f $(PROJ_NAME).bit && \
 	( $(VIVADO) -source ../../tcl/build_project.tcl 2>&1 | tee build.log ); \
 	r=$${PIPESTATUS[0]}; exit $$r
 
-# Delete Vivado-generated artefacts (sources untouched)
+# Delete Vivado-generated artefacts (sources untouched). Includes bitstream (.bit) and project (.xpr).
 clean:
-	rm -rf $(PROJECT_DIR)/*.cache \
-	       $(PROJECT_DIR)/*.hw    \
-	       $(PROJECT_DIR)/*.runs  \
-	       $(PROJECT_DIR)/*.ip_user_files \
-	       $(PROJECT_DIR)/*.ip_files \
+	rm -rf '$(PROJECT_DIR)'/*.cache \
+	       '$(PROJECT_DIR)'/*.hw    \
+	       '$(PROJECT_DIR)'/*.runs  \
+	       '$(PROJECT_DIR)'/*.ip_user_files \
+	       '$(PROJECT_DIR)'/*.ip_files \
 	       $(PROJ_XPR) \
 	       $(PROJ_BIT)
 
