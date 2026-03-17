@@ -81,7 +81,7 @@ The wrapper :file:`hdl/chfpga_kc705.vhd` hard-codes the following parameters:
 - **SYSTEM_CLOCK_SOURCE** = ``SYSCLK``, **SYSTEM_CLOCK_FREQ** = 200.0
 - **BSB_TYPE** = ``UDP_GMII`` (Marvell PHY, not SGMII transceiver)
 - **NUMBER_OF_ADC_BOARDS** = 1, **NUMBER_OF_ADCS** = 8
-- **ADC_TYPE** = EV8AQ160; BUFMR/BUFIO mapping for banks 12–18 (see inline comments in the wrapper).
+- **ADC_TYPE** = EV8AQ160; ``ADC_CLOCKING_REGION_MAP`` defines the BUFR/BUFIO mapping for banks 12-18 (see inline comments in the wrapper).
 
 
 Clocking

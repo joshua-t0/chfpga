@@ -17,7 +17,7 @@ The wrapper passes ``PLATFORM_ID_MGK7MB`` to the `chfpga` core (shared Kintex-7 
 Key hardware-specific parameters
 ================================
 
-As in the main :ref:`KC705 platform document <kc705_platform>`: SYSCLK 200 MHz, GMII PHY, one ADC board, 8 ADCs, EV8AQ160 with BUFMR/BUFIO mapping for the KC705 pinout.
+As in the main :ref:`KC705 platform document <kc705_platform>`: SYSCLK 200 MHz, GMII PHY, one ADC board, 8 ADCs, EV8AQ160 with ``ADC_CLOCKING_REGION_MAP`` defining the BUFMR/BUFIO mapping for the KC705 pinout.
 
 Entity definition
 =================
