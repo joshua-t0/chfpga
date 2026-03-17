@@ -225,9 +225,8 @@ begin
   RX_FSM_RESET_DONE <= rx_fsm_reset_done_int;
   GTRXRESET <= gtrxreset_i;
   MMCM_RESET <= mmcm_reset_i;
-  process(STABLE_CLOCK,SOFT_RESET)
-  begin
-    if (SOFT_RESET = '1') then
+  process(all) begin
+    if SOFT_RESET then
         init_wait_done <= '0';
         init_wait_count <= 0 ;
     elsif rising_edge(STABLE_CLOCK) then
@@ -248,13 +247,12 @@ begin
   end generate;
 
   adapt_wait_hw:if(EXAMPLE_SIMULATION = 0) generate
-  process(STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
-     if(adapt_count_reset = '1') then
+  process(all) begin
+  if rising_edge(STABLE_CLOCK) then
+     if adapt_count_reset then
         adapt_count    <= 0;
         time_out_adapt <= '0';
-     elsif(adapt_count = WAIT_TIME_ADAPT -1) then
+     elsif adapt_count = WAIT_TIME_ADAPT -1 then
         time_out_adapt <= '1';
      else
         adapt_count    <= adapt_count + 1;
@@ -263,15 +261,14 @@ begin
   end process;
   end generate;
 
-  retries_recclk_monitor:process(STABLE_CLOCK)
-  begin
+  retries_recclk_monitor:process(all) begin
     --This counter monitors, how many retries the RECCLK monitor
     --runs. If during startup too many retries are necessary, the whole
     --initialisation-process of the transceivers gets restarted.
     if rising_edge(STABLE_CLOCK) then
-      if recclk_mon_count_reset = '1' then
+      if recclk_mon_count_reset then
         recclk_mon_restart_count <= 0;
-      elsif RECCLK_MONITOR_RESTART = '1' then
+      elsif RECCLK_MONITOR_RESTART then
         if recclk_mon_restart_count = 3 then
           recclk_mon_restart_count <= 0;
         else
@@ -281,13 +278,12 @@ begin
     end if;
   end process;
 
-  timeouts:process(STABLE_CLOCK)
-  begin
+  timeouts:process(all) begin
     if rising_edge(STABLE_CLOCK) then
       -- One common large counter for generating three time-out signals.
       -- Intermediate time-outs are derived from calculated values, based
       -- on the period of the provided clock.
-      if reset_time_out = '1' then
+      if reset_time_out then
         time_out_counter  <= 0;
         time_out_2ms      <= '0';
         time_tlock_max    <= '0';
@@ -323,15 +319,14 @@ begin
 
 
 
-  mmcm_lock_wait:process(STABLE_CLOCK)
-  begin
+  mmcm_lock_wait:process(all) begin
     --The lock-signal from the MMCM is not immediately used but
     --enabling a counter. Only when the counter hits its maximum,
     --the MMCM is considered as "really" locked.
     --The counter avoids that the FSM already starts on only a
     --coarse lock of the MMCM (=toggling of the LOCK-signal).
     if rising_edge(STABLE_CLOCK) then
-      if mmcm_lock_i = '0' then
+      if not mmcm_lock_i then
         mmcm_lock_count <= 0;
         mmcm_lock_reclocked   <= '0';
       else
@@ -363,9 +358,8 @@ begin
             data_out        =>  rx_fsm_reset_done_int_s2
          );
 
-  process(RXUSERCLK)
-  begin
-    if rising_edge(RXUSERCLK) then
+  process(all) begin
+  if rising_edge(RXUSERCLK) then
       run_phase_alignment_int_s3   <=  run_phase_alignment_int_s2;
 
       rx_fsm_reset_done_int_s3     <=  rx_fsm_reset_done_int_s2;
@@ -404,9 +398,8 @@ begin
             data_out        =>  data_valid_sync
          );
 
-  process(STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
+  process(all) begin
+  if rising_edge(STABLE_CLOCK) then
        rxresetdone_s3     <= rxresetdone_s2;
 
        time_out_wait_bypass_s3 <=  time_out_wait_bypass_s2;
@@ -434,14 +427,13 @@ begin
 
 
 
-  process (STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
-     if(SOFT_RESET = '1' ) then
+  process(all) begin
+  if rising_edge(STABLE_CLOCK) then
+     if SOFT_RESET then
        cplllock_ris_edge <= '0';
-     elsif((cplllock_prev = '0') and (cplllock_sync = '1')) then
+     elsif cplllock_prev = '0' and cplllock_sync = '1' then
        cplllock_ris_edge <= '1';
-     elsif(rx_state = ASSERT_ALL_RESETS or rx_state = RELEASE_PLL_RESET) then
+     elsif rx_state = ASSERT_ALL_RESETS or rx_state = RELEASE_PLL_RESET then
        cplllock_ris_edge <= cplllock_ris_edge;
      else
        cplllock_ris_edge <= '0';
@@ -449,14 +441,13 @@ begin
     end if;
   end process;
 
-  process (STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
-     if(SOFT_RESET = '1' ) then
+  process(all) begin
+  if rising_edge(STABLE_CLOCK) then
+     if SOFT_RESET then
        qplllock_ris_edge <= '0';
-     elsif((qplllock_prev = '0') and (qplllock_sync = '1')) then
+     elsif qplllock_prev = '0' and qplllock_sync = '1' then
        qplllock_ris_edge <= '1';
-     elsif(rx_state = ASSERT_ALL_RESETS or rx_state = RELEASE_PLL_RESET) then
+     elsif rx_state = ASSERT_ALL_RESETS or rx_state = RELEASE_PLL_RESET then
        qplllock_ris_edge <= qplllock_ris_edge;
      else
        qplllock_ris_edge <= '0';
@@ -465,10 +456,9 @@ begin
   end process;
 
 
-  timeout_buffer_bypass:process(RXUSERCLK)
-  begin
-    if rising_edge(RXUSERCLK) then
-      if run_phase_alignment_int_s3 = '0' then
+  timeout_buffer_bypass:process(all) begin
+  if rising_edge(RXUSERCLK) then
+      if not run_phase_alignment_int_s3 then
         wait_bypass_count     <= 0;
         time_out_wait_bypass  <= '0';
       elsif (run_phase_alignment_int_s3 = '1') and (rx_fsm_reset_done_int_s3 = '0') then
@@ -485,9 +475,8 @@ begin
 
 
 
-  timeout_max:process(STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
+  timeout_max:process(all) begin
+  if rising_edge(STABLE_CLOCK) then
         if((rx_state = ASSERT_ALL_RESETS) or
           (rx_state = RELEASE_MMCM_RESET)) then
             wait_time_cnt <= WAIT_TIME_MAX;
@@ -516,10 +505,9 @@ begin
   -- 7) Reset-sequence has successfully run through. Signal this to the
   --    rest of the design by asserting RX_FSM_RESET_DONE.
 
-  reset_fsm:process(STABLE_CLOCK)
-  begin
-    if rising_edge(STABLE_CLOCK) then
-      if (SOFT_RESET = '1' ) then
+  reset_fsm:process(all) begin
+  if rising_edge(STABLE_CLOCK) then
+      if SOFT_RESET then
       --if (SOFT_RESET = '1' or (not(rx_state = INIT) and not(rx_state = ASSERT_ALL_RESETS) and refclk_lost = '1')) then
         rx_state                <= INIT;
         RXUSERRDY               <= '0';
@@ -547,7 +535,7 @@ begin
           when INIT =>
             --Initial state after configuration. This state will be left after
             --approx. 500 ns and not be re-entered.
-            if init_wait_done = '1' then
+            if init_wait_done then
               rx_state  <= ASSERT_ALL_RESETS;
             end if;
 
@@ -559,14 +547,14 @@ begin
             --will still continue its best and rerun until the FPGA is turned off
             --or the transceivers come up correctly.
              if RX_QPLL_USED and not TX_QPLL_USED then
-              if pll_reset_asserted = '0' then
+              if not pll_reset_asserted then
                 QPLL_RESET          <= '1';
                 pll_reset_asserted  <= '1';
               else
                 QPLL_RESET          <= '0';
               end if;
             elsif not RX_QPLL_USED and TX_QPLL_USED then
-              if pll_reset_asserted = '0' then
+              if not pll_reset_asserted then
                 CPLL_RESET <= '1';
                 pll_reset_asserted  <= '1';
               else
@@ -593,7 +581,7 @@ begin
             end if;
 
           when  WAIT_FOR_PLL_LOCK =>
-              if(wait_time_done = '1') then
+              if wait_time_done then
                  rx_state        <=  RELEASE_PLL_RESET;
             end if;
 
@@ -609,15 +597,15 @@ begin
               reset_time_out          <= '1';
               recclk_mon_count_reset  <= '0';
               adapt_count_reset       <= '0';
-            elsif (RX_QPLL_USED and (qplllock_sync = '1')) or
-                  (not RX_QPLL_USED and (cplllock_sync = '1')) then
+            elsif (RX_QPLL_USED and qplllock_sync = '1') or
+                  (not RX_QPLL_USED and cplllock_sync = '1') then
               rx_state                <= VERIFY_RECCLK_STABLE;
               reset_time_out          <= '1';
               recclk_mon_count_reset  <= '0';
               adapt_count_reset       <= '0';
             end if;
 
-            if time_out_2ms = '1' then
+            if time_out_2ms then
               if retry_counter_int = MAX_RETRIES then
                 -- If too many retries are performed compared to what is specified in
                 -- the generic, the counter simply wraps around.
@@ -634,7 +622,7 @@ begin
             --does not wait for a certain period of time but checks on the number
             --of retries in the RECCLK monitor
             gtrxreset_i <= '0';
-            if RECCLK_STABLE = '1' then
+            if RECCLK_STABLE then
               rx_state        <= RELEASE_MMCM_RESET;
               reset_time_out  <= '1';
 
@@ -660,12 +648,12 @@ begin
             mmcm_reset_i <= '0';
             reset_time_out  <= '0';
 
-            if mmcm_lock_reclocked = '1' then
+            if mmcm_lock_reclocked then
               rx_state <= WAIT_FOR_RXUSRCLK;
               reset_time_out  <= '1';
             end if;
 
-            if (time_tlock_max = '1' and reset_time_out = '0' )then
+            if time_tlock_max = '1' and reset_time_out = '0' then
               if retry_counter_int = MAX_RETRIES then
                 -- If too many retries are performed compared to what is specified in
                 -- the generic, the counter simply wraps around.
@@ -677,18 +665,18 @@ begin
             end if;
 
            when WAIT_FOR_RXUSRCLK =>
-              if wait_time_done = '1' then
+              if wait_time_done then
                rx_state <=  WAIT_RESET_DONE;
             end if;
 
           when WAIT_RESET_DONE =>
             --When TXOUTCLK is the source for RXUSRCLK, RXUSERRDY depends on TXUSERRDY
             --If RXOUTCLK is the source for RXUSRCLK, TXUSERRDY can be tied to '1'
-            if TXUSERRDY = '1' then
+            if TXUSERRDY then
                RXUSERRDY <= '1';
             end if;
             reset_time_out  <= '0';
-            if rxresetdone_s3 = '1' then
+            if rxresetdone_s3 then
               rx_state        <= DO_PHASE_ALIGNMENT;
               reset_time_out  <= '1';
             end if;
@@ -711,12 +699,12 @@ begin
             run_phase_alignment_int <= '1';
             reset_time_out          <= '0';
 
-            if PHALIGNMENT_DONE = '1' then
+            if PHALIGNMENT_DONE then
               rx_state        <= MONITOR_DATA_VALID;
               reset_time_out  <= '1';
             end if;
 
-            if time_out_wait_bypass_s3 = '1' then
+            if time_out_wait_bypass_s3 then
               if retry_counter_int = MAX_RETRIES then
                 -- If too many retries are performed compared to what is specified in
                 -- the generic, the counter simply wraps around.
@@ -730,10 +718,10 @@ begin
           when MONITOR_DATA_VALID =>
               reset_time_out  <= '0';
 
-              if(time_out_100us = '1' and data_valid_sync ='0' and DONT_RESET_ON_DATA_ERROR = '0' and reset_time_out = '0')  then
+              if time_out_100us='1' and data_valid_sync ='0' and DONT_RESET_ON_DATA_ERROR = '1' and reset_time_out = '0'  then
                  rx_state              <= ASSERT_ALL_RESETS;
                  rx_fsm_reset_done_int <= '0';
-              elsif (data_valid_sync = '1') then
+              elsif data_valid_sync then
                  rx_state              <= FSM_DONE;
                  rx_fsm_reset_done_int <= '0';
                  reset_time_out        <= '1';
@@ -741,7 +729,7 @@ begin
 
          when FSM_DONE =>
             reset_time_out  <= '0';
-            if data_valid_sync = '0' then
+            if not data_valid_sync then
                rx_fsm_reset_done_int <= '0';
                reset_time_out        <= '1';
                rx_state              <= MONITOR_DATA_VALID;
@@ -749,8 +737,8 @@ begin
                rx_fsm_reset_done_int <= '1';
             end if;
 
-            if(time_out_adapt = '1') then
-               if((GT_TYPE = "GTX" ) and EQ_MODE = "DFE") then
+            if time_out_adapt then
+               if GT_TYPE = "GTX" and EQ_MODE = "DFE" then
                   RXDFEAGCHOLD  <=  '1';
                   RXDFELFHOLD   <=  '1';
                else

@@ -7,7 +7,7 @@ MASK RAM
 	:width: 25%
 
 Basic
-======
+=====
 
 .. image:: ../../../images/xilinx_modules/mask_ram1.png
 	:width: 100%

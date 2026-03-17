@@ -110,31 +110,6 @@ Core registers
 
 Both links access different address spaces, e.g. one  link cannot access registers associated with the other link.
 
-AXI4-Streaming Protocol
------------------------
-
-The AXI4-Stream protocol is used for applications that typically focus on a data-centric and data-flow paradigm where the concept of an address is not present or not required. Each AXI4-Stream acts as a single unidirectional channel for a handshake data flow. At this lower level of operation (compared to the memory mapped AXI protocol types), the mechanism to move data between IP is defined and efficient, but there is no unifying address context between IP. The AXI4-Stream IP can be better optimized for performance in data flow applications, but also tends to be more specialized around a given application space.
-
-AXI-Stream Ports and Waveform
-
-.. table::
-
-    +------------------+--------------+-----------+----------------------------------------------------+
-    | Port Name        | Width (bits) | Direction | Description                                        |
-    +==================+==============+===========+====================================================+
-    | TREADY           | 1            | In        | Indicates destination is to accept data            |
-    +------------------+--------------+-----------+----------------------------------------------------+
-    | TVALID           | 1            | Out       | Indicates TDATA is valid                           |
-    +------------------+--------------+-----------+----------------------------------------------------+
-    | TLAST            | 1            | Out       | Indicates last word of a transfer                  |
-    +------------------+--------------+-----------+----------------------------------------------------+
-    | TDATA            | 8            | Out       | Data                                               |
-    +------------------+--------------+-----------+----------------------------------------------------+
-
-
-.. figure:: ../images/axi_stream_waveform.png
-    :scale: 22
-    :alt: AXI-Stream Interface Waveform
 
 
 UDP Command Protocol Memory Map
@@ -227,11 +202,6 @@ General approach
 ----------------
 
 
-
-
-Sources
-=======
-`Xilinx AXI Reference Guide <https://www.xilinx.com/support/documentation/ip_documentation/ug761_axi_reference_guide.pdf>`_
 
 
 

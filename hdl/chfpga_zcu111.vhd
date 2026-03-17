@@ -16,68 +16,76 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
 library UNISIM;
 use UNISIM.VCOMPONENTS.ALL;
 
-
-use work.chfpga_package.all; -- Get all component definitions
-use work.chfpga_config.all; --Get platform-specific configuration definitions
+use work.chfpga_package.ALL; -- Get all component definitions
+use work.chfpga_config.ALL;  -- Get platform-specific configuration definitions
 
 entity chfpga_zcu111 is
-    generic (
+	generic (
 
-        -- NOTE: All generics values must be literals if the module is to be imported in a block diagram
-        PLATFORM_ID: integer                         := CONFIG_PLATFORM_ID; -- Identifies the type of platform on which the firmware is running.
-                                                                            -- Has to be an integer (not a constant name) for the IP integrator
-        -- Clocking config
-        SYSTEM_CLOCK_SOURCE: string                  := "CLK10_BUFG"; -- System reference clock surce: "SYSCLK": 200 MHz unbuffered differential clock from sysclk_p/n, "SYSCLK_BUFG": 200 MHz BUFG-Buffered clock from sysclk_bufg, "SFP_REFCLK": 125 MHz clock from the GTX reference clock
-        SYSTEM_CLOCK_FREQ: real                      := 10.0; -- System reference clock frequency, in MHz. Must be real (i.e. float).
-        CHAN_CLK_SOURCE: string                      := "ADC"; -- Channelizer clock comes directly from the ADC
-        CT_CLK_SOURCE: string                        := "ADC_CLK"; -- corner-turn clock source
+		-- NOTE: All generics values must be literals if the module is to be imported in a block diagram
+		PLATFORM_ID: integer := PLATFORM_ID_ZCU111; -- Identifies the type of platform on which the firmware is running.
 
-        -- Buck synchronization
-        BUCK_SYNC_ENABLE: boolean                    := FALSE; -- no buck syn con ZCU111
+		-- Clocking config
+		SYSTEM_CLOCK_SOURCE: clk_source_enum     := CLK10_BUFG; -- 10 MHz BUFG-buffered reference (from FPGA_REFCLK_OUT_C)
+		SYSTEM_CLOCK_FREQ: real                  := 10.0;      -- System reference clock frequency, in MHz
+		CHAN_CLK_SOURCE: chan_clk_source_enum    := ADC;       -- Channelizer clock comes directly from the ADC
+		CT_CLK_SOURCE: ct_clk_source_enum        := CONFIG_CT_CLK_SOURCE; -- corner-turn clock source
 
-        PHY_TYPE: string                             := "NONE"; -- "GMII" or "SGMII". Ethernet provided by the PS.
-        SGMII_CLOCK_SOURCE: string                   := "REFCLK"; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
+		-- Buck synchronization (not used on ZCU111)
+		BUCK_SYNC_ENABLE: boolean                := FALSE;
+		BUCK_CLK_DIVIDE_FACTOR: integer           := 12;
 
-        -- ADC config
-        --IMPLEMENT_ADCDAQ: boolean                    := FALSE; -- use ADC data directly from adc_axis_* ports.
-        ADC_TYPE: string                             := "AXIS"; -- ADC data is provided through the axis_adc port
-        NUMBER_OF_ADCS: integer                      := CONFIG_NUMBER_OF_ADCS; -- Number of ADC inputs
 
-        NUMBER_OF_ADC_BOARDS: integer                := 0; -- No REFCLK module
+		BSB_INTERFACE: bsb_interface_enum         := AXIS;     -- Ethernet provided by the PS
+		CAP_INTERFACE: cap_interface_enum         := AXIS;
+		SGMII_CLOCK_SOURCE: phy_clk_source_enum   := REFCLK;
 
-        -- Channelizer config
-        NUMBER_OF_CHANNELIZERS:integer               := CONFIG_NUMBER_OF_ADCS;  --(Typ. =16)  (0-NUMBER_OF_ADCS) Number of channelizer blocks to be implemented
-        CAPTURE_TYPE: string                         := CONFIG_CHAN_CAPTURE_TYPE;
-        -- Corner-turn engine config
-        CROSSBAR1_TYPE: string                       := CONFIG_CROSSBAR1_TYPE; -- "BRAM" or "URAM"
-        NUMBER_OF_CROSSBAR_INPUTS: integer           := CONFIG_NUMBER_OF_CROSSBAR_INPUTS; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
-        NUMBER_OF_CROSSBAR1_OUTPUTS: integer         := CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
-        NUMBER_OF_BP_PCB_SHUFFLE_LANES: integer      := CONFIG_NUMBER_OF_BP_PCB_SHUFFLE_LANES;
-        NUMBER_OF_BP_QSFP_SHUFFLE_LANES: integer     := CONFIG_NUMBER_OF_BP_QSFP_SHUFFLE_LANES;
-        NUMBER_OF_BP_SHUFFLE_LINKS: integer          := CONFIG_NUMBER_OF_BP_SHUFFLE_LINKS; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
-        NUMBER_OF_BP_SHUFFLE_REFCLKS: integer        := CONFIG_NUMBER_OF_BP_SHUFFLE_REFCLKS;
+		-- ADC config
+		ADC_TYPE: adc_type_enum                   := AXIS;     -- ADC data is provided through the axis_adc port
+		NUMBER_OF_ADCS: integer                   := 8;
+		NUMBER_OF_ADC_BOARDS: integer             := 0;
 
-        -- Correlator config
-        CORR_TYPE: string                            := CONFIG_CORR_TYPE; -- "CORR44" or "UCORR44"
-        NUMBER_OF_CORRELATORS: integer               := CONFIG_NUMBER_OF_CORRELATORS; -- Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
+		-- Channelizer config
+		FFT_TYPE: fft_type_enum                   := CONFIG_CHAN_FFT_TYPE;
+		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT;
+		NUMBER_OF_CHANNELIZERS: integer           := NUMBER_OF_ADCS;
+		CAPTURE_TYPE: chan_capture_type_enum     := CONFIG_CHAN_CAPTURE_TYPE;
 
-        -- Real-time data offload links configuration
-        GPU_LINK_TYPE: string                        := CONFIG_GPU_LINK_TYPE;
-        --NUMBER_OF_GPU_LINKS: integer                 := CONFIG_NUMBER_OF_GPU_LINKS; -- (0- NUMBER_OF_REORDER_OUTPUTS) Number of 10Gb Ethernet links to connecto to the GPUs
-        --NUMBER_OF_GPU_REFCLKS: integer               := CONFIG_NUMBER_OF_GPU_REFCLKS; -- Number of Reference clocks provided for the 10GE links to the GPU
+		-- Corner-turn engine config (single board, no backplane)
+		CT_TYPE: ct_type_enum                     := CONFIG_CT_TYPE;
+		CT_LEVEL: integer                         := CONFIG_CT_LEVEL;
+		CT_LANE_TO_LINK_MAP: integer_array        := CONFIG_CT_LANE_TO_LINK_MAP;
+		CT_LINK_TO_QUAD_MAP: integer_array       := (1 to 0 => 0); -- no GTY links
+		CT_QUAD_TO_REFCLK_MAP: integer_array     := (1 to 0 => 0);
+		CT_LANE_TO_GROUP_MAP: integer_array      := (0 => 0);
 
-        -- Peripheral config
-        BLINKER_PRESENT: boolean                     := TRUE; -- Indicates if the LED flasher is to be implemented by setting the DUMMY flag of the BLINKER module
-        NUMBER_OF_I2C_PORTS: integer                 := 0;
-        NUMBER_OF_SPI_PORTS: integer                 := 0; -- One port for each FMC
-        IMPLEMENT_ARM_SPI: boolean                   := FALSE;
+		-- Correlator config
+		CORR_TYPE: corr_type_enum                 := CONFIG_CORR_TYPE;
+		CORR_READOUT_BINS: integer_array          := CONFIG_CORR_READOUT_BINS;
 
-        SIM: boolean := FALSE-- Indicates this is running as a simulation. Used to accelerate simulations
+		-- Real-time data offload links configuration (100G QSFP)
+		DATA_LINK_TYPE: data_link_type_enum         := CONFIG_DATA_LINK_TYPE;
 
-    );
+		-- Peripheral config
+		BLINKER_PRESENT: boolean                  := TRUE;
+		NUMBER_OF_I2C_PORTS: integer              := 0;
+		NUMBER_OF_SPI_PORTS: integer              := 0;
+		IMPLEMENT_ARM_SPI: boolean                := FALSE;
+		IMPLEMENT_LCD: boolean                     := FALSE;    -- no LCD display on ZCU111
+
+		SIM: boolean                               := FALSE;
+
+		-- Derived parameters
+		NUMBER_OF_CT_LINKS: integer                := CT_LINK_TO_QUAD_MAP'LENGTH;
+		NUMBER_OF_CT_REFCLKS: integer              := sel(CT_QUAD_TO_REFCLK_MAP'LENGTH > 0, max(CT_QUAD_TO_REFCLK_MAP) + 1, 0);
+		NUMBER_OF_GPU_LINKS: integer              := sel(DATA_LINK_TYPE /= NONE, DATA_LINK_LINK_TO_QUAD_MAP'LENGTH, 0);
+		NUMBER_OF_GPU_REFCLKS: integer             := sel(DATA_LINK_TYPE /= NONE, max(DATA_LINK_QUAD_TO_REFCLK_MAP) + 1, 0)
+	);
 
   port (
 
@@ -309,62 +317,59 @@ begin
 
 
 --------*/
-    chfpga0: entity work.chfpga
-        GENERIC MAP(
-            PLATFORM_ID                     => PLATFORM_ID,
+	chfpga0: entity work.chfpga
+		generic map (
+			PLATFORM_ID => PLATFORM_ID,
 
-            -- Clocking config
-            SYSTEM_CLOCK_SOURCE             => SYSTEM_CLOCK_SOURCE,
-            SYSTEM_CLOCK_FREQ               => SYSTEM_CLOCK_FREQ,
-            CHAN_CLK_SOURCE                 => CHAN_CLK_SOURCE,
-            CT_CLK_SOURCE                   => CT_CLK_SOURCE,
+			-- Clocking config
+			SYSTEM_CLOCK_SOURCE => SYSTEM_CLOCK_SOURCE,
+			SYSTEM_CLOCK_FREQ   => SYSTEM_CLOCK_FREQ,
+			CHAN_CLK_SOURCE     => CHAN_CLK_SOURCE,
+			CT_CLK_SOURCE       => CT_CLK_SOURCE,
 
-            PHY_TYPE                        => PHY_TYPE,
-            ADC_TYPE                        => ADC_TYPE,
-            NUMBER_OF_ADCS                  => NUMBER_OF_ADCS,
+		BSB_INTERFACE  => BSB_INTERFACE,
+		CAP_INTERFACE  => CAP_INTERFACE,
+		ADC_TYPE       => ADC_TYPE,
+		NUMBER_OF_ADCS => NUMBER_OF_ADCS,
 
+		-- F-Engine / Channelizers
+		FFT_TYPE               => FFT_TYPE,
+		NUMBER_OF_CHANNELIZERS_WITH_FFT => NUMBER_OF_CHANNELIZERS_WITH_FFT,
+		NUMBER_OF_CHANNELIZERS => NUMBER_OF_CHANNELIZERS,
+		CAPTURE_TYPE           => CAPTURE_TYPE,
 
-            -- F-Engine / Channelizers
+			-- Corner-turn engine
+			CT_TYPE                 => CT_TYPE,
+			CT_LEVEL                => CT_LEVEL,
+			CT_LANE_TO_LINK_MAP     => CT_LANE_TO_LINK_MAP,
+			CT_LINK_TO_QUAD_MAP     => CT_LINK_TO_QUAD_MAP,
+			CT_QUAD_TO_REFCLK_MAP   => CT_QUAD_TO_REFCLK_MAP,
+			CT_LANE_TO_GROUP_MAP    => CT_LANE_TO_GROUP_MAP,
 
-            NUMBER_OF_CHANNELIZERS          => NUMBER_OF_CHANNELIZERS,
-            CAPTURE_TYPE                    => CAPTURE_TYPE,
+			-- Correlator
+			CORR_TYPE         => CORR_TYPE,
+			CORR_READOUT_BINS => CORR_READOUT_BINS,
 
-            -- Corner Turn Engine
+			-- Real-time Ethernet data streaming interface
+			DATA_LINK_TYPE        => DATA_LINK_TYPE,
+			DATA_LINK_LINK_TO_QUAD_MAP      => DATA_LINK_LINK_TO_QUAD_MAP,
+			DATA_LINK_QUAD_TO_REFCLK_MAP       => DATA_LINK_QUAD_TO_REFCLK_MAP,
 
-            NUMBER_OF_CROSSBAR_INPUTS       => NUMBER_OF_CROSSBAR_INPUTS,
-            NUMBER_OF_CROSSBAR1_OUTPUTS      => NUMBER_OF_CROSSBAR1_OUTPUTS,
-            CROSSBAR1_TYPE                  => CROSSBAR1_TYPE,
+			-- Peripherals
+			BLINKER_PRESENT     => BLINKER_PRESENT,
+			NUMBER_OF_I2C_PORTS => NUMBER_OF_I2C_PORTS,
+			NUMBER_OF_SPI_PORTS => NUMBER_OF_SPI_PORTS,
+			NUMBER_OF_ADC_BOARDS => NUMBER_OF_ADC_BOARDS,
+			IMPLEMENT_ARM_SPI   => IMPLEMENT_ARM_SPI,
+			IMPLEMENT_LCD       => IMPLEMENT_LCD,
+			SIM                 => SIM
+		)
+		port map (
+			-- System reset
+			cpu_reset => not cpu_reset_n,
 
-            NUMBER_OF_BP_PCB_SHUFFLE_LANES  => NUMBER_OF_BP_PCB_SHUFFLE_LANES,
-            NUMBER_OF_BP_QSFP_SHUFFLE_LANES => NUMBER_OF_BP_QSFP_SHUFFLE_LANES,
-            NUMBER_OF_BP_SHUFFLE_LINKS      => NUMBER_OF_BP_SHUFFLE_LINKS,
-            NUMBER_OF_BP_SHUFFLE_REFCLKS    => NUMBER_OF_BP_SHUFFLE_REFCLKS,
-
-            -- Correlator config
-            CORR_TYPE                       => CORR_TYPE, -- must be specified, otherwise defaults to CORR44
-
-            -- Real-time Ethernet data streaming interface
-
-            GPU_LINK_TYPE                   => GPU_LINK_TYPE,
-            NUMBER_OF_GPU_LINKS             => NUMBER_OF_GPU_LINKS,
-            NUMBER_OF_GPU_REFCLKS           => NUMBER_OF_GPU_REFCLKS,
-
-
-            -- Peripherals
-
-            BLINKER_PRESENT                 => BLINKER_PRESENT,
-            NUMBER_OF_I2C_PORTS             => NUMBER_OF_I2C_PORTS,
-            NUMBER_OF_SPI_PORTS             => NUMBER_OF_SPI_PORTS,
-            NUMBER_OF_ADC_BOARDS            => NUMBER_OF_ADC_BOARDS,
-            IMPLEMENT_ARM_SPI               => IMPLEMENT_ARM_SPI, -- is implemented if not specified
-            SIM                             => SIM
-            )
-        PORT MAP(
-            -- System reset
-            cpu_reset    => not cpu_reset_n,
-
-            -- System clock
-            clk10 => sysref_bufg, -- Buffered (BUFG) 10 MHz differential reference clock
+			-- System clock
+			clk10 => sysref_bufg, -- Buffered (BUFG) 10 MHz differential reference clock
 
             -- ADC inputs
             adc_axis_tdata => adc_axis_tdata(0 to NUMBER_OF_ADCS-1),
@@ -382,32 +387,27 @@ begin
             cge_refclk_p => clk156_p,
             cge_refclk_n => clk156_n,
 
-            -- debug bus
---            debug_out => debug_out,
---            sma_out => smp_out,
+			-- Command input stream
+			s_axis_bsb_tdata  => axis_bsb_cmd_tdata,
+			s_axis_bsb_tvalid => axis_bsb_cmd_tvalid,
+			s_axis_bsb_tlast  => axis_bsb_cmd_tlast,
+			s_axis_bsb_tready => axis_bsb_cmd_tready,
 
-            -- Command input stream
-            s_axis_bsb_tdata => axis_bsb_cmd_tdata,
-            s_axis_bsb_tvalid => axis_bsb_cmd_tvalid,
-            s_axis_bsb_tlast => axis_bsb_cmd_tlast,
-            s_axis_bsb_tready => axis_bsb_cmd_tready,
+			-- Reply output stream
+			m_axis_bsb_tdata  => axis_bsb_rply_tdata,
+			m_axis_bsb_tvalid => axis_bsb_rply_tvalid,
+			m_axis_bsb_tlast  => axis_bsb_rply_tlast,
+			m_axis_bsb_tready => axis_bsb_rply_tready,
 
-            -- Reply output stream
-            m_axis_bsb_tdata => axis_bsb_rply_tdata,
-            m_axis_bsb_tvalid => axis_bsb_rply_tvalid,
-            m_axis_bsb_tlast => axis_bsb_rply_tlast,
-            m_axis_bsb_tready => axis_bsb_rply_tready,
+			axis_bsb_clk => aclk,
+			axis_bsb_rst => not bsb_reset_n,
 
-            axis_bsb_clk => aclk,
-            axis_bsb_rst => not bsb_reset_n,
+			-- Data capture stream
+			m_axis_cap_tdata  => axis_cap_tdata,
+			m_axis_cap_tvalid => axis_cap_tvalid,
+			m_axis_cap_tlast  => axis_cap_tlast,
+			m_axis_cap_tready => axis_cap_tready,
 
-            -- Data capture stream
-            m_axis_cap_tdata => axis_cap_tdata,
-            m_axis_cap_tvalid => axis_cap_tvalid,
-            m_axis_cap_tlast => axis_cap_tlast,
-            m_axis_cap_tready => axis_cap_tready,
-
-            axis_cap_clk => aclk
-
-            );
+			axis_cap_clk => aclk
+		);
 end architecture impl;

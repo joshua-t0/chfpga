@@ -47,53 +47,71 @@ UDP Control Memory Map
 .. include-docs:: funcgen
     :start-after: Function Generator Memory Map
 
-Design notes
-============
+Principle of operations
+=======================
 
-Interface
----------
+Interface signals
+-----------------
 
+The ADC data is provided to FUNCGEN through a non-blocking AXI4-Streaming interface (``s_axis_adc_*``). The data word structure contains:
+ - ``ADC_SAMPLES_PER_WORD`` samples per clock (8 for D3A/CHORD, typically 4 for other configurations).
+ - Each sample is signed (2's complement format), ``ADC_BITS_PER_SAMPLE`` bits wide (typically 14 bits).
+ - First sample is in the MSB of the word (CASPER library convention, facilitates signal inspection in simulation).
+ - TUSER contains one overflow flag per sample, with the first sample's overflow flag in the MSB of the TUSER vector.
+ - TVALID and TLAST indicate the validity and framing of the data. FUNCGEN can handle data where TVALID is not always '1', although some downstream components (e.g., the FFT) may require continuous data.
+
+The output is also a non-blocking AXI4-Streaming interface (``m_axis_adc_*``) with the same TDATA structure as the input. However, the TUSER signal contains only a single bit frame-wide overflow flag that indicates if **any** sample has an overflow in the frame. This bit is valid only on the last word of a frame (i.e., when TLAST='1').
+
+A BSB interface is also available to read and write the memory map registers used to configure and monitor the function generator.
 
 Clocking
-........
+--------
 
 The module data pipeline operates on a single clock ``clk``. Both input and output AXI-Streaming buses are synchronous to this clock.
 
-The BSB control bus operates on its own separate clock (``ctrl_clk``).
+The BSB control bus operates on its own separate clock (``ctrl_clk``), which allows configuration changes without affecting the data path timing.
 
+Clock domain crossing (CDC)
+----------------------------
 
-CDC
-...
-
-
-There is no CDC logic for quasi-static signals coming from the BSB registers, such as stats frame count, Bytes A and B, seeds etc. These signals are meant to be set and then left unchanged after the module is reset and data starts flowing. The exceptin to these are:
+There is no CDC logic for quasi-static signals coming from the BSB registers, such as stats frame count, Bytes A and B, seeds etc. These signals are meant to be set and then left unchanged after the module is reset and data starts flowing. The exception to these are:
 
 - ``enable``: Can be changed at any time, but is registered only on frame boundaries. Uses a CDC to prevent corruption of the frame counter.
-- ``stats_enable``: Can be set at any time to stop ADC overflow statistics updates. Uses  a CDC to protect the integrity of the registering of the counts.
-- ``fn-sel``: Switching function during operation can be done safely only if we are not switching between ADC and non-ADC modes. All non-ADC modes generate words using the same framing signals. Switching between non-ADC modes might cause part of the frame to have one type of data, and another part have another type of data, but the packet length and timing will not be affected. The ADC data has an independent framing, and switching between ADC and non-ADC modes will cause over/undersized packets that might corrups the pipeline downstream.
+- ``stats_enable``: Can be set at any time to stop ADC overflow statistics updates. Uses a CDC to protect the integrity of the registering of the counts.
+- ``fn_sel``: Switching function during operation can be done safely only if we are not switching between ADC and non-ADC modes. All non-ADC modes generate words using the same framing signals. Switching between non-ADC modes might cause part of the frame to have one type of data, and another part have another type of data, but the packet length and timing will not be affected. The ADC data has an independent framing, and switching between ADC and non-ADC modes will cause over/undersized packets that might corrupt the pipeline downstream.
 
 .. todo:: Investigate the effect of ``fn_sel`` CDC glitching on ``out_dat_tvalid/out_dat_tlast`` even when switching between non-ADC modes; a glitch could make ADC bus briefly appear on the ``out_dat`` bus. How to CDC this 3-bit signal? Have a decoder that provides a separate bit for the ADC/non-ADC mode?
 
 
-ADC interface
-.............
+Operation modes
+---------------
+
+The output of FUNCGEN is selected by the 3-bit ``fn_sel`` memory-mapped field. The supported modes are:
+
+- **0 - FN_ADC**: Passes on the ADC input. The overflow flags are taken from the ADC.
+
+- **1 - FN_RAM**: Outputs the RAM contents (2048 bytes, 512 words). The overflow flags are always zero.
+
+- **2 - FN_NOISE**: Outputs pseudo-random noise. The overflow flags are always zero. The noise generator is seeded by the 8-bit A and B fields to allow each channelizer to have up to 65536 different (presumably uncorrelated) patterns.
+
+- **3 - FN_FRAME_WORD_CTR_RAM_FLAGS**: Counts frames and words, with programmable ADC overflow bit patterns. This mode is mostly used for testing. The output data is grouped in 32-bit words, containing a 21-bit frame count in the MSB followed by an 11-bit word count. This pattern does not generate nice data when split into bytes (and even less when going through the FFT), but it ensures that consecutive frames will contain unique data when looked at word-wise.
+
+- **4 - FN_FRAME8**: Each sample is the last 6 bits (for IceBoard) or 12 bits (for CRS) of the current frame number. The overflow flag is taken from the buffer.
+
+- **5 - FN_FRAME4**: The most significant 4 bits of each sample is the last 4 bits of the current frame number. The lower 4 bits are zero. The overflow flag is taken from the buffer.
+
+- **6 - FN_RAM_NIBBLE4**: Sends bits 3:0 of RAM samples on even frames and bits 7:4 of RAM samples on odd frames. Data is aligned with the 4 MSBs of each sample, and the rest of the bits in the sample are zero. In this mode, the overflow flags are always zero.
+
+Overflow handling
+-----------------
+
+The overflow flag is set if the data source indicates an overflow or if the left shift operation caused the value to exceed a valid range. These overflow flags are aggregated throughout the frame and the resulting bit is provided on TUSER on the last word of the frame and can be read through the register ``frame_overflow_flag`` for debugging.
 
 
-The ADC data is provided through a non-blocking AXI-Streaming interface.
+Overflow statistics
+-------------------
 
-ADC samples are packed into a single word in TDATA, with the first sample being placed in the MSBs of the word. This is in line with the CASPER library convention, and makes signal inspection more intuitive in simulations. Samples are signed values.
-TVALID and TDATA indicate the validity and framing of the data. `FUNCGEN` will adequately handle data if TVALID that is not always '1', although  some other components downstream of the `FUNCGEN` might not (e.g. the FFT).
+The overflow counter counts over ``stats_period`` (user-defined) frames the number of sample overflows from the ADC or the number of overflows injected through the buffer (from modes FN_FRAME_WORD_CTR_RAM_FLAGS, FN_FRAME8, or FN_FRAME4). The overflow count for other modes (FN_RAM, FN_NOISE, FN_RAM_NIBBLE4) is 0. The maximum number of frames over which to count the number of overflows is 65535. When counting overflows from the buffer, each sample's LSB indicates if there is an overflow or not, so to simulate an overflow in a sample, set the sample value to 1. Overflow counting is enabled with ``stats_enable`` and the result can be read from ``overflow_ctr``.
 
-The TUSER bus is used to convey the ADC overflow information for each sample in the word. There is one bit per sample, with the overflow flag of first sample placed in the MSB.
-
-Output interface
-................
-
-Output is a non-blocking AXI-Streaming bus. TDATA format is the same as the ADC interface. TUSER, however, contains a single bit indicating per presence of one or more overflows during the frame. This bit is set only on the last word of the frame.
-
-
-TUSER overflow
-..............
-
-TUSER This is a very crude overflow indicator; one might expect to have a ADC few overflows in each frame as a compromise to having too much quantization noise. One overflow in a 16384 sample frame is just 0.01% saturation occurence. For this reason, we added a high-resolution overflow statistics module.
+The TUSER overflow flag is a crude overflow indicator; one might expect to have a few ADC overflows in each frame as a compromise to having too much quantization noise. One overflow in a 16384 sample frame is just 0.01% saturation occurrence. For this reason, a high-resolution overflow statistics module is included.
 

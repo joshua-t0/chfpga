@@ -194,8 +194,8 @@ signal m_axis_rx_tvalid: std_logic_vector(0 to NUMBER_OF_RX_LANES-1);
 signal m_axis_rx_tlast: std_logic_vector(0 to NUMBER_OF_RX_LANES-1);
 
 signal tdata: slv32_array(0 to data'length-1);
-signal tvalid: slv(0 to data'length-1);
-signal tlast: slv(0 to data'length-1);
+signal tvalid: std_logic_vector(0 to data'length-1);
+signal tlast: std_logic_vector(0 to data'length-1);
 
 signal tx_resetdone: std_logic_vector(0 to NUMBER_OF_TX_LANES-1); --
 signal rx_resetdone: std_logic_vector(0 to NUMBER_OF_RX_LANES-1); --
@@ -267,13 +267,13 @@ dut0: entity work.xglink_array
 
 -- tx_ready <= not to_std_logic(tx_ctr(7 downto 1)=32);
 
-txproc: process(clk)
+txproc: process(all)
 begin
     if rising_edge(clk) then
 		s_axis_tx_tdata  <= (others=>X"00000000");
 		s_axis_tx_tvalid <= (others=>'0');
 		s_axis_tx_tlast  <= (others=>'0');
-   	if send_data='1' then
+   	if send_data then
    		if ctr < data'LENGTH then
 				s_axis_tx_tdata  <= (others=>tdata(to_integer(ctr)));
 				s_axis_tx_tvalid <= (others=>tvalid(to_integer(ctr)));

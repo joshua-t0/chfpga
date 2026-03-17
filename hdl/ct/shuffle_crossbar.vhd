@@ -44,7 +44,7 @@ entity shuffle_crossbar is
 		COMBINE_DATA_FLAGS: boolean                 := TRUE;
 		WORDS_PER_BIN_MAX: integer                  := 4; -- Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 16 words.
 		BINS_PER_FRAME_MAX: integer                 := 64; -- Maximum number of bins per frame
-		BIN_SEL_FIFO_TYPE_MAP: integer_16xN_array   := (0 to 15 => (0 to 3=> 0, others => 0)); -- 0= Block RAM., 1=Dist RAM. By default, for every BIN_SEL, 10 FIFOS are made of BRAM and the rest is made of distributed RAM to maximize area utilization efficiency
+		BIN_SEL_FIFO_TYPE_MAP: integer_array_array   := (0 to NUMBER_OF_OUTPUT_LANES-1 => (0 to NUMBER_OF_INPUT_LANES-1 => 0)); -- Type of DATA FIFO for each input lane of each bin_sel: 0= pairs of BRAM/Embedded FIFOs, 1=Dist RAM FIFO. 
 		SHUFFLE_FLAGS_MASK: slv32 -- Mask to apply to the shuffle flags to count packet errors
 	);
 	port (
@@ -66,12 +66,16 @@ entity shuffle_crossbar is
 		align_pulse: out std_logic;
 
 		-- Control interface (command and reply stream buses)
-		ctrl_cmd_dat: in AXIS8_DAT_STRUCT;
-		ctrl_cmd_rdy: out AXIS8_RDY_STRUCT;
-		ctrl_rply_dat: out AXIS8_DAT_STRUCT;
-		ctrl_rply_rdy: in AXIS8_RDY_STRUCT;
-		ctrl_clk: in  std_logic;
-		ctrl_rst: in  std_logic
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid: in std_logic;
+		s_axis_bsb_tlast: in std_logic;
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic;
+		bsb_clk: in std_logic;
+		bsb_rst: in std_logic
 	);
 end entity shuffle_crossbar;
 
@@ -89,44 +93,48 @@ architecture impl of shuffle_crossbar is
 
 	-- Internally routed command buses
 	-- We have one bus for global control, and one bus for each bin selector.
-	signal xbar_cmd_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_BIN_SEL downto 0);
-	signal xbar_cmd_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_BIN_SEL downto 0);
-	signal xbar_rply_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_BIN_SEL downto 0);
-	signal xbar_rply_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_BIN_SEL downto 0);
+	signal xbar_router_bsb_cmd_tdata: slv8_array(0 to NUMBER_OF_BIN_SEL);
+	signal xbar_router_bsb_cmd_tvalid: std_logic_vector(0 to NUMBER_OF_BIN_SEL);
+	signal xbar_router_bsb_cmd_tlast: std_logic_vector(0 to NUMBER_OF_BIN_SEL);
+	signal xbar_router_bsb_cmd_tready: std_logic_vector(0 to NUMBER_OF_BIN_SEL);
+	signal xbar_router_bsb_rply_tdata: slv8_array(0 to NUMBER_OF_BIN_SEL);
+	signal xbar_router_bsb_rply_tvalid: std_logic_vector(0 to NUMBER_OF_BIN_SEL);
+	signal xbar_router_bsb_rply_tlast: std_logic_vector(0 to NUMBER_OF_BIN_SEL);
+	signal xbar_router_bsb_rply_tready: std_logic_vector(0 to NUMBER_OF_BIN_SEL);
 
-	signal s_axis_tfirst: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal s_axis_tfirst: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 
-	signal m_axis_tvalid_int: slv(0 to NUMBER_OF_OUTPUT_LANES - 1);
+	signal m_axis_tvalid_int: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES - 1);
 	signal m_axis_tdata_int: slv32_array(0 to NUMBER_OF_OUTPUT_LANES - 1);
-	signal m_axis_tlast_int: slv(0 to NUMBER_OF_OUTPUT_LANES - 1);
-	signal m_axis_terror_int: slv(0 to NUMBER_OF_OUTPUT_LANES - 1);
+	signal m_axis_tlast_int: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES - 1);
+	signal m_axis_terror_int: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES - 1);
 
 	-- Internal AXI-Streaming buses
 
-	signal m_axis_fifo_tvalid: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal m_axis_fifo_tvalid: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal m_axis_fifo_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal m_axis_fifo_tlast: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal m_axis_fifo_tlast: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal m_axis_fifo_tuser: slv4_array(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal m_axis_fifo_tready: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal m_axis_fifo_tready: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	-- signal frame_clk:slv (0 to NUMBER_OF_INPUT_LANES-1);
 
-	signal m_axis_align_tvalid: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal m_axis_align_tvalid: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal m_axis_align_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal m_axis_align_tlast: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal m_axis_align_tlast: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal m_axis_align_tuser: slv4_array(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal m_axis_align_global_tvalid: std_logic;
 	signal m_axis_align_global_tlast: std_logic;
 
-	signal m_axis_remap_tvalid: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal m_axis_remap_tvalid: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal m_axis_remap_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal m_axis_remap_tlast: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal m_axis_remap_tlast: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	-- signal m_axis_remap_tuser: slv4_array(0 to NUMBER_OF_INPUT_LANES-1);
 	signal m_axis_remap_global_tvalid: std_logic;
 	signal m_axis_remap_global_tlast: std_logic;
 
-	signal m_axis_remap_tvalid_reg: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal m_axis_remap_tvalid_reg: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal m_axis_remap_tdata_reg: slv32_array(0 to NUMBER_OF_INPUT_LANES - 1);
-	signal m_axis_remap_tlast_reg: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal m_axis_remap_tlast_reg: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 	-- signal m_axis_remap_tuser_reg: slv4_array(0 to NUMBER_OF_INPUT_LANES-1);
 
 	attribute shreg_extract of m_axis_remap_tvalid_reg: signal is "no";
@@ -137,7 +145,7 @@ architecture impl of shuffle_crossbar is
 	signal bin_ctr: unsigned(9 downto 0); -- Up to 1024 bins per frame
 	signal lane_map: slv4_array(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal sof_window_stop: std_logic_vector(7 downto 0);
-	signal ignore_lane: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal ignore_lane: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 
 	signal input_frame_ctr: u8_array(0 to NUMBER_OF_INPUT_LANES - 1);
 	signal align_frame_ctr: u8_array(0 to NUMBER_OF_INPUT_LANES - 1);
@@ -205,7 +213,7 @@ architecture impl of shuffle_crossbar is
 	signal stream_id_capture_reg: slv8_array(0 to NUMBER_OF_INPUT_LANES - 1);
 
 	signal align_lane_monitor_source: std_logic_vector(3 downto 0);
-	signal align_lane_monitor: slv(0 to NUMBER_OF_INPUT_LANES - 1);
+	signal align_lane_monitor: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
 
 	signal lane0_tfirst_mon: std_logic;
 	signal fifo_tfirst_mon: std_logic_vector(0 to NUMBER_OF_INPUT_LANES - 1);
@@ -215,15 +223,14 @@ architecture impl of shuffle_crossbar is
 
 begin
 
-	ctrl_rst_proc: process(ctrl_clk)
+	ctrl_rst_proc: process(all)
 	begin
-		if rising_edge(ctrl_clk) then
-			ctrl_rst_reg <= ctrl_rst;
+		if rising_edge(bsb_clk) then
+			ctrl_rst_reg <= bsb_rst;
 		end if; -- RST/CLK
 	end process;
 
-	rst_proc: process(clk)
-	begin
+	rst_proc: process(all) begin
 		if rising_edge(clk) then
 			rst_reg <= rst;
 		end if; -- RST/CLK
@@ -240,20 +247,29 @@ begin
 			ADDRESS_MASK    => "---11111-----------" -- '1': used to generate port index, '-' = don't care,
 		)
 		port map (
-			-- Master control interface
-			cmd_in_dat   => ctrl_cmd_dat,
-			cmd_in_rdy   => ctrl_cmd_rdy,
-			rply_out_dat => ctrl_rply_dat,
-			rply_out_rdy => ctrl_rply_rdy,
+			-- Upstream BSB interface
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
 
+			-- Downstream BSB interface
+			m_axis_routed_bsb_tdata => xbar_router_bsb_cmd_tdata,
+			m_axis_routed_bsb_tvalid => xbar_router_bsb_cmd_tvalid,
+			m_axis_routed_bsb_tlast => xbar_router_bsb_cmd_tlast,
+			m_axis_routed_bsb_tready => xbar_router_bsb_cmd_tready,
+			s_axis_routed_bsb_tdata => xbar_router_bsb_rply_tdata,
+			s_axis_routed_bsb_tvalid => xbar_router_bsb_rply_tvalid,
+			s_axis_routed_bsb_tlast => xbar_router_bsb_rply_tlast,
+			s_axis_routed_bsb_tready => xbar_router_bsb_rply_tready,
 
-			cmd_out_dat => xbar_cmd_dat,
-			cmd_out_rdy => xbar_cmd_rdy,
-			rply_in_dat => xbar_rply_dat,
-			rply_in_rdy => xbar_rply_rdy,
+			cmd_overflow => open,
 
-			-- Slave (module) control interface
-			clk => ctrl_clk,
+			clk => bsb_clk,
 			rst => ctrl_rst_reg
 		);
 
@@ -389,14 +405,16 @@ begin
 
 		port map (
 			-- Control interface (command and reply stream buses)
-			-- CTRL_CMD_IN_DAT => (TDATA=>xbar_cmd_dat(0).TDATA, TVALID=>xbar_cmd_dat(0).TVALID, TLAST=>xbar_cmd_dat(0).TLAST),
-			ctrl_cmd_in_dat => xbar_cmd_dat(0),
-			-- CTRL_CMD_IN_RDY => xbar_cmd_rdy(0), -- does not work in sim
-			ctrl_cmd_in_rdy.tready   => xbar_cmd_rdy(0).TREADY, -- works in sim
-			ctrl_rply_out_dat        => xbar_rply_dat(0),
-			ctrl_rply_out_rdy.tready => xbar_rply_rdy(0).TREADY,
-			ctrl_clk                 => ctrl_clk,
-			ctrl_rst                 => ctrl_rst_reg,
+			s_axis_bsb_tdata => xbar_router_bsb_cmd_tdata(0),
+			s_axis_bsb_tvalid => xbar_router_bsb_cmd_tvalid(0),
+			s_axis_bsb_tlast => xbar_router_bsb_cmd_tlast(0),
+			s_axis_bsb_tready => xbar_router_bsb_cmd_tready(0),
+			m_axis_bsb_tdata => xbar_router_bsb_rply_tdata(0),
+			m_axis_bsb_tvalid => xbar_router_bsb_rply_tvalid(0),
+			m_axis_bsb_tlast => xbar_router_bsb_rply_tlast(0),
+			m_axis_bsb_tready => xbar_router_bsb_rply_tready(0),
+			bsb_clk                 => bsb_clk,
+			bsb_rst                 => ctrl_rst_reg,
 
 			control_bytes => control_bytes,
 			status_bytes  => status_bytes
@@ -429,19 +447,18 @@ begin
 
 	indet_gen: for i in 0 to NUMBER_OF_INPUT_LANES - 1 generate
 
-		in_frame_det_proc: process(clk)
-		begin
-			if rising_edge(clk) then
-				if rst_reg = '1' then
+		in_frame_det_proc: process(all) begin
+		if rising_edge(clk) then
+				if rst_reg then
 					s_axis_tfirst(i) <= '1';
-				elsif s_axis_tvalid(i) = '1' then
+				elsif s_axis_tvalid(i) then
 					s_axis_tfirst(i) <= s_axis_tlast(i);
 				end if;
 
-				if lane_monitor_reset = '1' or rst_reg = '1' then
+				if lane_monitor_reset or rst_reg then
 					input_frame_detection(i) <= '0';
 					input_frame_ctr(i) <= (others => '0');
-				elsif s_axis_tvalid(i) = '1' and s_axis_tlast(i) = '1' then  -- if end of frame
+				elsif s_axis_tvalid(i) and s_axis_tlast(i) then  -- if end of frame
 					input_frame_detection(i) <= '1';
 					input_frame_ctr(i) <= input_frame_ctr(i) + 1;
 				end if;
@@ -451,9 +468,8 @@ begin
 	end generate indet_gen;
 
 	-- Capture various stats on the internal signals
-	capture_proc: process(clk)
-	begin
-		if rising_edge(clk) then
+	capture_proc: process(all) begin
+	if rising_edge(clk) then
 			-- if rst_reg='1' then
 			--   capture_word_ctr <= (others=> '0');
 			--   capture_word_ctr_en <= '0';
@@ -473,10 +489,10 @@ begin
 			header_capture_enable_reg <= header_capture_enable;
 
 			-- Capture header information
-			if rst_reg = '1' then
+			if rst_reg then
 				header_capture_word_ctr <= (others => '0');
-			elsif m_axis_align_global_tvalid = '1' then
-				if m_axis_align_global_tlast = '1' then
+			elsif m_axis_align_global_tvalid then
+				if m_axis_align_global_tlast then
 					header_capture_word_ctr <= (others => '0');
 				elsif signed(header_capture_word_ctr) /= -1 then
 					header_capture_word_ctr <= header_capture_word_ctr + 1;
@@ -515,13 +531,13 @@ begin
 			-- end if;
 
 			-- counter: -2: saturate, -1: no start of frame, 0: start and end on same clock, >0, delay between start and end
-			if lane_monitor_reset = '1' or rst_reg = '1' then
+			if lane_monitor_reset or rst_reg then
 				delay_capture_word_ctr <= (others => '1');
 				delay_capture_word_ctr_en <= '0';
 				delay_capture_word_ctr_arm <= '1';
 			else
 				-- start counting on ref start of frame
-				if delay_capture_word_ctr_arm = '1' and s_axis_tvalid(0) = '1' and s_axis_tfirst(0) = '1' then
+				if delay_capture_word_ctr_arm and s_axis_tvalid(0) and s_axis_tfirst(0) then
 					delay_capture_word_ctr <= (0=> '1', others => '0');
 					delay_capture_word_ctr_en <= '1';
 					delay_capture_word_ctr_arm <= '0';
@@ -530,7 +546,7 @@ begin
 				if signed(delay_capture_word_ctr) = -3 or (s_axis_tvalid(to_integer(lane_monitor_sel)) = '1' and s_axis_tfirst(to_integer(lane_monitor_sel)) = '1') then
 					delay_capture_word_ctr_en <= '0';
 				end if;
-				if delay_capture_word_ctr_en = '1'  then
+				if delay_capture_word_ctr_en then
 					delay_capture_word_ctr <= delay_capture_word_ctr + 1;
 				end if;
 			end if;
@@ -538,11 +554,11 @@ begin
 			align_pulse <= align_lane_monitor(to_integer(lane_monitor_sel));
 
 
-			if rst_reg = '1' then
+			if rst_reg then
 				delay_capture_ref_word_ctr <= (others => '0');
 				delay_capture_ref_word_ctr_en <= '1';
 			else
-				if delay_capture_ref_word_ctr_en = '1'  then
+				if delay_capture_ref_word_ctr_en then
 					delay_capture_ref_word_ctr <= delay_capture_ref_word_ctr + 1;
 					if signed(delay_capture_ref_word_ctr) = -2 or s_axis_tvalid(0) = '1' then
 						delay_capture_ref_word_ctr_en <= '0';
@@ -563,9 +579,8 @@ begin
 	-- The align module also handles missing and malformed frames, but this is not an issue here since
 	-- data is coming straight from the channelizer through the internal FPGA routing, which will not cause packet loss.
 	-- The only exception to this are for channels that do not send data due to missing ADC cards, inwhich case the ALIGN will handle those automatically.
-	align_rst_prog: process(clk)
-	begin
-		if rising_edge(clk) then
+	align_rst_prog: process(all) begin
+	if rising_edge(clk) then
 			align_reset_all <= rst_reg or align_reset;
 		end if;
 	end process;
@@ -648,14 +663,13 @@ begin
 		);
 
 
-	bin_ctr_proc: process(clk)
-	begin
-		if rising_edge(clk) then
+	bin_ctr_proc: process(all) begin
+	if rising_edge(clk) then
 			-- Add a pipelining level to facilitate routing. This signal goes to many places across the chip.
 			m_axis_remap_tdata_reg <= m_axis_remap_tdata;
 			m_axis_remap_tlast_reg <= m_axis_remap_tlast;
 			m_axis_remap_tvalid_reg <= m_axis_remap_tvalid;
-			if rst_reg = '1' then -- reset the pipeline
+			if rst_reg then -- reset the pipeline
 				m_axis_remap_tvalid_reg <= (others => '0');
 			end if;
 
@@ -672,7 +686,7 @@ begin
 			-- end if;
 
 
-			if rst_reg = '1' or lane_monitor_reset = '1' then
+			if rst_reg or lane_monitor_reset then
 				align_fifo_overflow_sticky <= (others => '0');
 				missing_frame_sticky <= (others => '0');
 				discarded_data_sticky <= (others => '0');
@@ -683,25 +697,25 @@ begin
 			end if;
 
 			for i in 0 to NUMBER_OF_INPUT_LANES - 1 loop
-				if lane_monitor_reset = '1' or rst_reg = '1' then
+				if lane_monitor_reset or rst_reg then
 					align_frame_detection(i) <= '0';
 					align_frame_ctr(i) <= (others => '0');
-				elsif m_axis_align_tvalid(i) = '1' and m_axis_align_tlast(i) = '1'  then  -- if end of frame
+				elsif m_axis_align_tvalid(i) and m_axis_align_tlast(i) then  -- if end of frame
 					align_frame_detection(i) <= '1';
 					align_frame_ctr(i) <= align_frame_ctr(i) + 1;
 				end if;
 
-				if lane_monitor_reset = '1' or rst_reg = '1' then
+				if lane_monitor_reset or rst_reg then
 					remap_frame_detection(i) <= '0';
-				elsif m_axis_remap_tvalid(i) = '1' and m_axis_remap_tlast(i) = '1'  then  -- if end of frame
+				elsif m_axis_remap_tvalid(i) and m_axis_remap_tlast(i) then  -- if end of frame
 					remap_frame_detection(i) <= '1';
 				end if;
 
-				if lane_monitor_reset = '1' or rst_reg = '1' then
+				if lane_monitor_reset or rst_reg then
 					bad_lane_sticky(i) <= '0';
 					bad_eof_sticky(i) <= '0';
 				else
-					if m_axis_align_global_tvalid = '1' and m_axis_align_tvalid(i) = '0' then
+					if m_axis_align_global_tvalid and not m_axis_align_tvalid(i) then
 						bad_lane_sticky(i) <= '1';
 					end if;
 					if m_axis_align_global_tvalid = '1' and m_axis_align_tvalid(i) = '1' and (m_axis_align_global_tlast /= m_axis_align_tlast(i)) then
@@ -712,11 +726,11 @@ begin
 			end loop;
 
 			for i in 0 to NUMBER_OF_OUTPUT_LANES - 1 loop
-				if lane_monitor_reset = '1' or rst_reg = '1' then
+				if lane_monitor_reset or rst_reg then
 					output_frame_detection(i) <= '0';
 					output_frame_ctr(i) <= (others => '0');
 					packet_error_ctr(i) <= (others => '0');
-				elsif m_axis_tvalid_int(i) = '1' and m_axis_tlast_int(i) = '1'  then  -- if end of frame
+				elsif m_axis_tvalid_int(i) and m_axis_tlast_int(i) then  -- if end of frame
 					output_frame_detection(i) <= '1';
 					output_frame_ctr(i) <= output_frame_ctr(i) + 1;
 					if m_axis_terror_int(i) = '1' and signed(packet_error_ctr(i)) /= -1 then
@@ -772,13 +786,16 @@ begin
 				shuffle_flags_mask => SHUFFLE_FLAGS_MASK,
 
 				-- Control Interface
-				-- ctrl_cmd_dat=> (TVALID=>xbar_cmd_dat(i+1).TVALID, TDATA=>xbar_cmd_dat(i+1).TDATA, TLAST=>xbar_cmd_dat(i+1).TLAST),
-				ctrl_cmd_dat  => xbar_cmd_dat(i + 1),
-				ctrl_cmd_rdy  => xbar_cmd_rdy(i + 1),
-				ctrl_rply_dat => xbar_rply_dat(i + 1),
-				ctrl_rply_rdy => xbar_rply_rdy(i + 1),
-				ctrl_clk      => ctrl_clk,
-				ctrl_rst      => ctrl_rst_reg
+				s_axis_bsb_tdata => xbar_router_bsb_cmd_tdata(i + 1),
+				s_axis_bsb_tvalid => xbar_router_bsb_cmd_tvalid(i + 1),
+				s_axis_bsb_tlast => xbar_router_bsb_cmd_tlast(i + 1),
+				s_axis_bsb_tready => xbar_router_bsb_cmd_tready(i + 1),
+				m_axis_bsb_tdata => xbar_router_bsb_rply_tdata(i + 1),
+				m_axis_bsb_tvalid => xbar_router_bsb_rply_tvalid(i + 1),
+				m_axis_bsb_tlast => xbar_router_bsb_rply_tlast(i + 1),
+				m_axis_bsb_tready => xbar_router_bsb_rply_tready(i + 1),
+				bsb_clk      => bsb_clk,
+				bsb_rst      => ctrl_rst_reg
 			);
 	end generate bin_sel_gen;
 

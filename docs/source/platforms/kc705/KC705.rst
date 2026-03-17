@@ -1,0 +1,154 @@
+.. _kc705_platform:
+
+KC705 (Kintex-7 Evaluation Kit)
+*******************************
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   chfpga_kc705
+   ../../navbar_separator
+
+.. figure:: ../../images/PLATFORMS/KC705/kc705-XC7K325T-2FFG900C.avif
+   :width: 60%
+   :align: center
+
+   KC705 motherboard (Kintex-7 XC7K325T).
+
+
+Requirements
+============
+
+Before using the KC705 with the chFPGA design:
+
+1. **External 10 MHz reference clock** — The KC705 board cannot supply a 10 MHz reference clock to the FMC. The user must provide a 10 MHz clock to **both**:
+   - The ADC mezzanine board (e.g. via its SMA reference input), and
+   - The **USER_SMA_CLOCK_P** (single-ended) input on the KC705, so the FPGA receives the same reference.
+
+2. **FMC700 adapter board** — An FMC700 adapter combines the two FMC connectors on the KC705 in otder to produce a singne FMC connector that has better connectivity to the FPGA. This is required so the FPGA can receive a copy of the 10 MHz clock from the ADC mezzanine (REFCLK_M2C). Without it, the LPC FMC connector does not bring REFCLK_M2C to the FPGA.
+
+.. figure:: ../../images/PLATFORMS/KC705/fmc700_top-11-1280x1280.jpg
+   :width: 50%
+   :align: center
+
+   FMC700 adapter board (top view).
+
+.. figure:: ../../images/PLATFORMS/KC705/fmc700_block_diagram.jpg
+   :width: 70%
+   :align: center
+
+   FMC700 block diagram.
+
+Clock connection
+----------------
+
+The delayed 10 MHz reference clock (after the IDELAY/BUFR/BUFG path in the design) can be monitored on **USER_SMA_CLOCK_P** (single-ended output). **USER_SMA_GPIO_P** and **USER_SMA_GPIO_N** are not used.
+
+
+Hardware description
+====================
+
+The KC705 is Xilinx's Kintex-7 FPGA Evaluation Kit. It provides:
+
+- Xilinx XC7K325T-2FFG900C FPGA (Kintex-7)
+- **1× LPC FMC connector** (vs. IceBoard's 2× HPC) — limits to one ADC mezzanine by default; with an FMC700 adapter both ADC0 and ADC1 can be used
+- On-board 200 MHz LVDS crystal oscillator (SYSCLK)
+- Marvell Alaska 88E1111 PHY for 1 Gb Ethernet (GMII, not SGMII)
+- LCD, LEDs, DIP switches, fan, PMBus/I2C, SFP socket (reference clock)
+- REFCLK_M2C from FMC (10 MHz reference) — available with FMC700 adapter
+
+
+Platform wrapper
+================
+
+`chFPGA` is implemented on the KC705 using the :ref:`chfpga_kc705<chfpga_kc705>` platform wrapper, which instantiates the `chFPGA` module. See :ref:`platform_wrappers` for more details.
+
+Configurations
+==============
+
+Supported firmware configuration:
+
+- :ref:`corr8 <chfpga_kc705_corr8_config>` — ``chfpga_kc705_corr8_config``: 8-channel F-Engine and :math:`N^2` correlator (single ADC board)
+
+
+Key hardware-specific parameters
+================================
+
+The wrapper :file:`hdl/chfpga_kc705.vhd` hard-codes the following parameters:
+
+- **PLATFORM_ID**: Passed as ``PLATFORM_ID_MGK7MB`` to `chfpga` (shared Kintex-7 BSB clock logic; `chfpga.vhd` ``bsb_clk_sel`` supports both ``PLATFORM_ID_KC705`` and ``PLATFORM_ID_MGK7MB``).
+- **SYSTEM_CLOCK_SOURCE** = ``SYSCLK``, **SYSTEM_CLOCK_FREQ** = 200.0
+- **BSB_TYPE** = ``UDP_GMII`` (Marvell PHY, not SGMII transceiver)
+- **NUMBER_OF_ADC_BOARDS** = 1, **NUMBER_OF_ADCS** = 8
+- **ADC_TYPE** = EV8AQ160; ``ADC_CLOCKING_REGION_MAP`` defines the BUFR/BUFIO mapping for banks 12-18 (see inline comments in the wrapper).
+
+
+Clocking
+========
+
+Summary
+-------
+
++------------------+-----------------------------------+------------------------------------------------------------------+
+| Clock            | Source                            | Notes                                                            |
++==================+===================================+==================================================================+
+| SYSCLK           | 200 MHz on-board crystal          | Primary system clock (``sysclk_p`` / ``sysclk_n``)               |
++------------------+-----------------------------------+------------------------------------------------------------------+
+| 10 MHz REFCLK    | REFCLK_M2C_P (pin AE23)           | From FMC; requires FMC700 adapter on KC705                       |
++------------------+-----------------------------------+------------------------------------------------------------------+
+| ADC clocks       | adc0/adc1_adrp, bdrp, cdrp, ddrp  | 8 independent primary clks (~426 MHz DDR); each ``create_clock`` |
++------------------+-----------------------------------+------------------------------------------------------------------+
+| PHY_RXCLK        | Recovered by PHY                  | 125 MHz                                                          |
++------------------+-----------------------------------+------------------------------------------------------------------+
+| MGT refclk       | mgt_pll_m2c_p (pin C8)            | Single pair on LPC                                               |
++------------------+-----------------------------------+------------------------------------------------------------------+
+
+System and BSB clocks are derived from SYSCLK via the `clocks` MMCM (125 MHz, 200 MHz, etc.). BSB clock is 125 MHz (same as IceBoard/MGK7MB).
+
+REFCLK_M2C routing quirk
+------------------------
+
+Pin AE23 is **SRCC** (Single-ended Regional Clock Capable), not CCIO. There is no dedicated silicon route from ``IDELAYE2.DATAOUT`` to a BUFG input. The design uses **IDELAY → BUFR → BUFG** in :file:`hdl/system/refclk.vhd` (Virtex-6 and Kintex-7 path) to avoid ``[Place 30-719]`` and the need for ``CLOCK_DEDICATED_ROUTE FALSE``.
+
+MGT reference clock quirk
+-------------------------
+
+KC705 LPC has **one** MGT refclk pair. The `chfpga` ``buf_gen`` instantiates ``NUMBER_OF_ADC_BOARDS × 2`` IBUFDS_GTE2 cells. With one board this creates two buffers both driven by the same pin; the second has no valid LOC and may trigger DRC AVAL-326.
+
+ADC clock timing
+----------------
+
+Each ADC Data Ready pin is a separate ``create_clock`` in the timing constraints; there is no generated-clock relationship (no MMCM between them).
+
+
+BSB interface
+=============
+
+- BSB clock from 125 MHz (clk125) generated by MMCM from 200 MHz SYSCLK — same as IceBoard.
+- GMII to Marvell Alaska PHY (not SGMII transceiver).
+- UDP/MAC over GMII.
+
+
+Constraint files
+================
+
+- :file:`constraints/kc705/chFPGA_KC705_timing_constraints.xdc`
+- :file:`constraints/kc705/chFPGA_KC705_physical_constraints.xdc`
+
+Port names in the constraint files are **lowercase** to match the wrapper entity. Physical constraints include pblocks for ANT0–7, CORR0–7, ADCDAQ, PHY, I2C, SPI (ICE-style floorplanning).
+
+
+FMC and ADC access
+==================
+
+- **Standard KC705 LPC**: ADC0 (8 channels) only.
+- **With FMC700 adapter**: ADC0 + ADC1 (16 channels), REFCLK_M2C, buck sync, etc.
+
+
+Build
+=====
+
+- Vivado project: :file:`xilinx_projects/chfpga_kc705_corr8/`
+- Target part: ``xc7k325tffg900-2``
+- IP cores in :file:`_Cores/KC705/` must be generated for this part (see :file:`tcl/project_sources.tcl` for ``kc705_corr8`` IP and HDL lists).

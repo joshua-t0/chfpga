@@ -51,6 +51,7 @@ entity xglink_rx is
 
 
 		-- User-side streaming interface
+		
 		m_axis_rx_tdata: out slv32;
 		m_axis_rx_tvalid: out std_logic;
 		m_axis_rx_tlast: out std_logic;
@@ -59,6 +60,7 @@ entity xglink_rx is
 		m_axis_rx_clk: in std_logic; -- AXIS bus clock
 
 		-- Rx stats
+		
 		rx_fifo_overflow: out std_logic; -- non-sticky
 		reset_stats: in std_logic; -- for stats below
 		rx_frame_detect: out std_logic;
@@ -140,9 +142,7 @@ crc32_0: entity work.xglink_crc32_32
 crc_out <= not reverse_bytes(reverse_bits_same_dir(crc_out_int)); -- First *byte* to transmit in the MSB, all bits inverted as per Ethernet standard
 
 
-rx_proc : process(rx_clk)
-
-begin
+rx_proc : process(all) begin
 	if rising_edge(rx_clk) then
 
 
@@ -153,7 +153,7 @@ begin
 		-- tvalid1 <= '0';
 		crc_init<='0'; -- Compute CRC by default unless INIT=1
 
-		if rx_data_valid='1' then
+		if rx_data_valid then
 
 			-- tready <='0'; -- By default do not pull a word from the tiny FIFO
 
@@ -229,7 +229,7 @@ begin
 		end if; -- if rx_valid=1
 
 
-		if RST='1' then
+		if RST then
 			rx_state <= RX_STATE_SOF0;
 			tvalid1<='0';
 			m_axis_rx_tvalid_int <= '0';
@@ -284,21 +284,20 @@ rx_err_ctr <= std_logic_vector(err_ctr_int);
 rx_max_frame <= std_logic_vector(rx_max_frame_int);
 rx_min_frame <= std_logic_vector(rx_min_frame_int);
 -- Gather stats of the RX data stream
-rx_fifo_overflow_proc: process(m_axis_rx_clk)
-	begin
-		if rising_edge(m_axis_rx_clk) then
+rx_fifo_overflow_proc: process(all) begin
+	if rising_edge(m_axis_rx_clk) then
 
 			-- Count RX errors
 			if m_axis_rx_tvalid_int2='1' and m_axis_rx_tlast_int2='1' and m_axis_rx_terror_int2='1' and signed(err_ctr_int)/=-1 then
 				err_ctr_int <= err_ctr_int + 1;
-			elsif rst='1' or reset_stats='1' then
+			elsif rst or reset_stats then
 				err_ctr_int <= (others=>'0');
 			end if;
 
 			-- Detect maximum and minimum frame length
-			if m_axis_rx_tvalid_int2 = '1' then
+			if m_axis_rx_tvalid_int2 then
 				rx_word_ctr <= rx_word_ctr + 1;
-				if m_axis_rx_tlast_int2 = '1' then
+				if m_axis_rx_tlast_int2 then
 					rx_frame_detect <= '1';
 					rx_word_ctr <= (others => '0');
 					if rx_word_ctr > rx_max_frame_int then
@@ -311,11 +310,11 @@ rx_fifo_overflow_proc: process(m_axis_rx_clk)
 			end if;
 
 			--resets
-			if rst='1' then
+			if rst then
 				rx_word_ctr <= (others => '0'); -- don't reset the word counter with reset_stats so we don't capture partial frames which affects the minimum packet size.
 			end if;
 
-			if reset_stats='1' or rst='1' then
+			if reset_stats or rst then
 				rx_max_frame_int <= (others=>'0');
 				rx_min_frame_int <= (others=>'1');
 				rx_frame_detect <= '0';

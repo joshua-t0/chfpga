@@ -34,6 +34,7 @@ entity SPI_SLAVE is
 		);
     port ( 
 		--SPI signals
+		
 		SPI_SCK: in STD_LOGIC;
 		SPI_MISO: out STD_LOGIC;
 		SPI_MOSI: in STD_LOGIC;
@@ -41,6 +42,7 @@ entity SPI_SLAVE is
 		SPI_RST_N: in STD_LOGIC;
 		
 		-- System-level signals
+		
 		RST: in STD_LOGIC
 	);
 
@@ -57,7 +59,7 @@ begin
 CS<='1' when UNSIGNED(SPI_ADDR)=ADDRESS else '0';
 SPI_MISO<='Z' when CS='0' else REG(REG'Length-1);
 
-spi: process(SPI_SCK,RST, CS)
+spi: process(all)
 	begin
 		if (RST='1' or CS='0') then
 			REG<=READ_VALUE;

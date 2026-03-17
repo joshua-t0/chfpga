@@ -81,7 +81,7 @@ package body tb_package is
 	begin
 		i := 0;
 		while i < data'length loop
-			if tready='1' then
+			if tready then
 				tdata <= data(i) after dly;
 				tvalid <= '1' after dly;
 				tlast <= to_std_logic(i = data'length-1) after dly;
@@ -353,7 +353,7 @@ package body tb_package is
 			end if;
 			wait until clk='1';
 			clk_ctr := clk_ctr + 1;
-			if m_axis_tready='1' then
+			if m_axis_tready then
 				if i = data'length-1 then
 					exit;
 				else
@@ -399,7 +399,7 @@ package body tb_package is
 			end if;
 			wait until clk='1';
 			clk_ctr := clk_ctr + 1;
-			if m_axis_tready='1' then
+			if m_axis_tready then
 				if i = data'length-1 then
 					exit;
 				else

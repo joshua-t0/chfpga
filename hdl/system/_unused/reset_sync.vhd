@@ -38,9 +38,9 @@ architecture impl of sync_reset is
 	attribute ASYNC_REG of sync_regs : signal is "true";
 	
 begin
-	sync_proc : process(clk, async_reset)
+	sync_proc : process(all)
 	begin
-		if(async_reset = '1') then
+		if (async_reset) then
 			sync_regs <= (others => RESET_VALUE);
 		elsif rising_edge(clk) then
 			sync_regs <= sync_regs(NUMBER_OF_STAGES-2 downto 0) & sync_reset; -- shift left

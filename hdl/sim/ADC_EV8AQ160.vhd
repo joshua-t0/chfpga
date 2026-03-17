@@ -163,28 +163,28 @@ SYNC<=SYNCP;
 -- sample_clk(2):   0110011001
 -- sample_clk(3):    011001100
 
-sample_clk_proc: process(CLK,SYNC)
+sample_clk_proc: process(all)
 		begin
-			if SYNC='1' then
+			if SYNC then
 				sample_clk<=(others=>'0');
 			else
-				IF rising_edge(CLK) THEN
+				IF rising_edge(CLK) then
 					sample_clk(0) <= not sample_clk(0);
 					sample_clk(2) <= sample_clk(0);
 				END IF;
-				IF falling_edge(CLK) THEN
+				IF falling_edge(CLK) then
 					sample_clk(1) <= not sample_clk(1);
 					sample_clk(3) <= sample_clk(1);
 				END IF;
 			end if;
 		end process sample_clk_proc;
 
-sample_clk_div2_proc: process(sample_clk,SYNC)
+sample_clk_div2_proc: process(all)
 		begin
-			if SYNC='1' then
+			if SYNC then
 				sample_clk_div2<='0';
 				
-			ELSIF rising_edge(sample_clk(0)) THEN
+			ELSIF rising_edge(sample_clk(0)) then
 				sample_clk_div2<=not sample_clk_div2;
 			END IF;					
 		end process sample_clk_div2_proc;
@@ -194,25 +194,25 @@ data_clk<= sample_clk_div2 when DMUX else sample_clk(0);
 
 
 -- Data ready clock
-dr_clk_proc: process(data_clk,SYNC)
+dr_clk_proc: process(all)
 		begin
-			if SYNC='1' then
+			if SYNC then
 				dr_clk<='0';
 				dr_clk_dly<='0';
 			else
-				if falling_edge(data_clk) THEN -- Make DDR transitions on the falling edge of the data clock (i.e.in middle of data window)
+				if falling_edge(data_clk) then -- Make DDR transitions on the falling edge of the data clock (i.e.in middle of data window)
 					dr_clk <=not dr_clk;
 					dr_clk_dly<=dr_clk;
 				END IF;
 
-				IF rising_edge(data_clk)  THEN
+				IF rising_edge(data_clk) then
 					
 	--				IF(data_clk='0') THEN -- Register the data out when both samle_clk(0) and data_clk go up at the same time
 					AH<=sample(0,0); -- N (N+2 in DMUX mode)
 					BH<=sample(2,0); -- N+1 (N+3 in DMUX mode)
 					CH<=sample(1,0); -- M (M+2 in DMUX mode)
 					DH<=sample(3,0); -- M (M+3 in DMUX mode)
-					IF (DMUX=TRUE) THEN
+					IF (DMUX=TRUE) then
 						-- 4 Channels, DMUX=TRUE
 							AL<=sample(0,1); -- N 
 							BL<=sample(2,1); -- N+1
@@ -227,10 +227,10 @@ dr_clk_proc: process(data_clk,SYNC)
 		end process dr_clk_proc;
 
 -- Sample the data on their respective clocks
-sample_proc: process(sample_clk,SYNC)
+sample_proc: process(all)
 	variable ch1_data,ch2_data,ch3_data,ch4_data : STD_LOGIC_VECTOR(7 downto 0) := (others=>'0');
 	begin
-		if SYNC='1' then
+		if SYNC then
 			ch1_data:=X"FD"; -- Not zero, to simulate the effect
 			ch2_data:=X"FD";
 			ch3_data:=X"FD";
@@ -242,34 +242,34 @@ sample_proc: process(sample_clk,SYNC)
 			-- Clock data out when it is time
 			
 
-			IF(CHANNELS=1) THEN
-				IF rising_edge(sample_clk(0))  THEN
+			IF (CHANNELS=1) then
+				IF rising_edge(sample_clk(0)) then
 					sample(0,1)<=sample(0,0);
 					sample(0,0)<=ch1_data;
 					ch1_data:=ch1_data+1;
 				END IF;
 
-				IF rising_edge(sample_clk(1))  THEN
+				IF rising_edge(sample_clk(1)) then
 					sample(1,1)<=sample(1,0);
 					sample(1,0)<=ch1_data;
 					ch1_data:=ch1_data+1;
 				END IF;
 
-				IF rising_edge(sample_clk(2))  THEN
+				IF rising_edge(sample_clk(2)) then
 					sample(2,1)<=sample(2,0);
 					sample(2,0)<=ch1_data;
 					ch1_data:=ch1_data+1;
 				END IF;
 
-				IF rising_edge(sample_clk(3))  THEN
+				IF rising_edge(sample_clk(3)) then
 					sample(3,1)<=sample(3,0);
 					sample(3,0)<=ch1_data;
 					ch1_data:=ch1_data+1;
 				END IF;
 
 
-			ELSIF (CHANNELS=2) THEN
-				IF rising_edge(sample_clk(0))  THEN
+			ELSIF (CHANNELS=2) then
+				IF rising_edge(sample_clk(0)) then
 					sample(0,1)<=sample(0,0);
 					sample(0,0)<=ch1_data;
 					ch1_data:=ch1_data+1;
@@ -279,7 +279,7 @@ sample_proc: process(sample_clk,SYNC)
 					ch2_data:=ch2_data+1;
 				END IF;
 
-				IF rising_edge(sample_clk(2))  THEN
+				IF rising_edge(sample_clk(2)) then
 					sample(2,1)<=sample(2,0);
 					sample(2,0)<=ch1_data;
 					ch1_data:=ch1_data+1;

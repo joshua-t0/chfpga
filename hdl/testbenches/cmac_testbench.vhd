@@ -19,7 +19,7 @@ signal re,im,re2,im2,re2_inv: signed(17 downto 0);
 signal RST :  std_logic;
 type cplx_type is array (natural range <>) of integer_array(0 to 3);
 signal tvalid, tlast, last_frame: std_logic:='0';
-signal tdata: slv(15 downto 0);
+signal tdata: std_logic_vector(15 downto 0);
 signal z_out_tvalid: std_logic;
 signal z_out_tlast: std_logic;
 signal z_out_tdata: std_logic_vector(35 downto 0);
@@ -149,11 +149,11 @@ begin
 	wait until clk='1';
 end process;
 
-readout_data: process(clk)
+readout_data: process(all)
 variable x,y, xy, z_var, zz_var: complex;
 begin
 	if rising_edge(clk) then
-		if z_out_tvalid='1' then
+		if z_out_tvalid then
 			z_var := CMPLX(signed(z_out_tdata(35 downto 18)), signed(z_out_tdata(17 downto 0)));
 			zz_var := CMPLX(0, 0);
 			for frame in 0 to INTEGRATION_PERIOD-1 loop
@@ -175,12 +175,12 @@ begin
 				--	bin <= 0;
 				--end if;
 			end if;
-			if z_out_tlast='1' then
+			if z_out_tlast then
 				chan <= 0;
 				bin <= 0;
 			end if;
 		end if;
-		if rst='1' then
+		if rst then
 			bin <= 0;
 			chan <= 0;
 		end if;

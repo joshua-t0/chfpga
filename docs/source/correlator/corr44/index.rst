@@ -1,7 +1,7 @@
 .. title:: CORR44
 
 CORR44: BRAM-based (4+4) bit Correlator Modules
-************************************************
+***********************************************
 
 .. default-role:: vhdl:entity
 
@@ -20,4 +20,3 @@ The CORR44 system consists of:
    corr44_array
    corr44
    cmac44
-

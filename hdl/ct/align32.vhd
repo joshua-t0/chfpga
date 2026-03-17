@@ -41,10 +41,11 @@ use work.chFPGA_Package.ALL; -- Get all component definitions
 entity align32 is
 	generic (
 		NUMBER_OF_LANES: integer         := 16; -- Number of buses to align
-		ENABLE_MONITORING_LOGIC: BOOLEAN := FALSE -- Enable additional monitoring logic for debugging
+		ENABLE_MONITORING_LOGIC: boolean := FALSE -- Enable additional monitoring logic for debugging
 	);
 	port (
 		-- Input interface (non-blocking, i.e. always accepts data)
+
 		s_axis_tvalid: in slv(0 to NUMBER_OF_LANES - 1);
 		s_axis_tdata: in slv32_array(0 to NUMBER_OF_LANES - 1);
 		s_axis_tlast: in slv(0 to NUMBER_OF_LANES - 1);
@@ -52,6 +53,7 @@ entity align32 is
 		-- s_axis_tready: out std_logic_vector(0 to NUMBER_OF_LANES-1);
 
 		-- Output interface (non-blocking, i.e. always sends data)
+
 		m_axis_tvalid: out slv(0 to NUMBER_OF_LANES - 1);
 		m_axis_tdata: out slv32_array(0 to NUMBER_OF_LANES - 1);
 		m_axis_tlast: out slv(0 to NUMBER_OF_LANES - 1);
@@ -61,6 +63,7 @@ entity align32 is
 		m_axis_global_tlast: out std_logic; -- Active high on the last word of the longest frame.
 
 		-- Operational parameters
+
 		sof_window_stop: in std_logic_vector(7 downto 0); --
 		ignore_lane: in slv(0 to NUMBER_OF_LANES - 1);
 		-- Monitoring signals
@@ -73,6 +76,7 @@ entity align32 is
 		fifo_count_mon: out slv10_array(0 to NUMBER_OF_LANES - 1);
 
 		-- Additional monitoring port for debugging (if ENABLE_MONITORING_LOGIC=TRUE)
+
 		lane_monitor_source: in std_logic_vector(3 downto 0);
 		lane_monitor: out slv(0 to NUMBER_OF_LANES - 1) := (others => '0');
 
@@ -124,16 +128,16 @@ architecture impl of align32 is
 	--- Signal definitions ------------------------------------
 
 
-	signal s_axis_tfirst: slv(0 to NUMBER_OF_LANES - 1);
+	signal s_axis_tfirst: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 
-	signal is_sof: slv(0 to NUMBER_OF_LANES - 1);
-	signal is_eof: slv(0 to NUMBER_OF_LANES - 1);
+	signal is_sof: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal is_eof: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 
 
-	signal read_en: slv(0 to NUMBER_OF_LANES - 1);
+	signal read_en: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 
-	signal valid_lane: slv(0 to NUMBER_OF_LANES - 1);
-	signal ignore_lane_reg: slv(0 to NUMBER_OF_LANES - 1); -- registered verson of the lanes to be ignored
+	signal valid_lane: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal ignore_lane_reg: std_logic_vector(0 to NUMBER_OF_LANES - 1); -- registered verson of the lanes to be ignored
 
 	signal sof_window_ctr: unsigned(7 downto 0) := (others => '0'); -- init for sim
 	signal sof_window: std_logic;
@@ -143,28 +147,28 @@ architecture impl of align32 is
 
 	signal data_fifo_din: slv36_array(0 to NUMBER_OF_LANES - 1);
 	signal data_fifo_dout: slv36_array(0 to NUMBER_OF_LANES - 1);
-	signal data_fifo_wr_en: slv(0 to NUMBER_OF_LANES - 1);
+	signal data_fifo_wr_en: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	-- signal data_fifo_rd_en:    slv(0 to NUMBER_OF_LANES-1);
-	signal data_fifo_empty: slv(0 to NUMBER_OF_LANES - 1);
-	signal data_fifo_almost_full: slv(0 to NUMBER_OF_LANES - 1);
-	signal data_fifo_valid: slv(0 to NUMBER_OF_LANES - 1);
-	signal data_fifo_overflow: slv(0 to NUMBER_OF_LANES - 1);
+	signal data_fifo_empty: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal data_fifo_almost_full: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal data_fifo_valid: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal data_fifo_overflow: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	signal data_fifo_count: slv10_array(0 to NUMBER_OF_LANES - 1);
 
 	signal fifo_tdata: slv32_array(0 to NUMBER_OF_LANES - 1);
 	signal fifo_tuser: slv4_array(0 to NUMBER_OF_LANES - 1);
-	signal fifo_tvalid: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_tlast: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_tfirst: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_empty: slv(0 to NUMBER_OF_LANES - 1);
+	signal fifo_tvalid: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_tlast: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_tfirst: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_empty: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 
 	signal all_valid: std_logic;
 	signal any_valid: std_logic;
 
 	-- Monitoring signals
 
-	signal bad_frame_length_int: slv(0 to NUMBER_OF_LANES - 1);
-	signal align_pulse: slv(0 to NUMBER_OF_LANES - 1);
+	signal bad_frame_length_int: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal align_pulse: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 
 	signal m_axis_global_tvalid_int: std_logic; -- Active high when data is present on the longest frame. Check the individual lane's tvalid to see if a lane ended up prematurely.
 	signal m_axis_global_tlast_int: std_logic; -- Active high on the last word of the longest frame.
@@ -253,10 +257,7 @@ begin
 	fifo_tfirst_mon  <= fifo_tfirst;
 	fifo_count_mon   <= data_fifo_count;
 
-	out_proc: process(clk)
-	-- variable start_send_var: std_logic;
-	-- variable valid_lane_var: slv(0 to NUMBER_OF_LANES-1);
-	begin
+	out_proc: process(all) begin
 		if rising_edge(clk) then
 			-- register the ignore_lane flags to facilitate timing closure.
 			ignore_lane_reg <= ignore_lane;
@@ -265,12 +266,12 @@ begin
 			-- tfirst is set whenever the _last word of a frame is read out (tvalid=1 and tready=1) and stays there until the first word is read out itself.
 			for i in 0 to NUMBER_OF_LANES - 1 loop
 				-- Generate a tfirst signal for the incoming data
-				if s_axis_tvalid(i) = '1' then
+				if s_axis_tvalid(i) then
 					s_axis_tfirst(i) <= s_axis_tlast(i);
 				end if;
 
 				-- Generate a tfirst signal for the data coming out of the FIFO
-				if fifo_tvalid(i) = '1' and read_en(i) = '1' then
+				if fifo_tvalid(i) and read_en(i) then
 					fifo_tfirst(i) <= fifo_tlast(i);
 				end if;
 			end loop;
@@ -279,16 +280,16 @@ begin
 			-- Detect SOF on the incoming (unbufferred) lane 0 to derive a frame clock used as a timing reference.
 			-- Pulse ``is_last_in_sof_window`` for one clock ``is_last_in_sof_window`` after the beginning of a frame on lane 0.
 			is_last_in_sof_window <= '0'; -- flag lasts only one clock
-			if s_axis_tfirst(0) = '1' and s_axis_tvalid(0) = '1' then
+			if s_axis_tfirst(0) and s_axis_tvalid(0) then
 				sof_window_ctr <= (others => '0');
 				sof_window <= '1';
-			elsif sof_window = '1' then
+			elsif sof_window then
 				sof_window_ctr <= sof_window_ctr + 1; -- overriden below
 				if sof_window_ctr = unsigned(sof_window_stop) then
 					is_last_in_sof_window <= '1'; -- indicate that a SOF timeout condition has occured
 				end if;
 			end if;
-			if is_last_in_sof_window = '1' then
+			if is_last_in_sof_window then
 				sof_window <= '0';
 			end if;
 
@@ -307,7 +308,7 @@ begin
 				-- want the data to fill up the FIFO, so we discarding its
 				-- data.
 				bad_frame_length_int(i) <= '0';
-				if (is_eof(i) = '1' and read_en(i) = '1') or (is_eof(0) = '1' and read_en(0) = '1') then --
+				if (is_eof(i) and read_en(i)) or (is_eof(0) and read_en(0)) then --
 					valid_lane(i) <= '0';
 					bad_frame_length_int(i) <= not is_eof(i) or not is_eof(0); -- monitoring flag only: Misaligned EOF / bad frame length
 				end if;
@@ -315,14 +316,14 @@ begin
 				-- Start sending all lanes by enabling valid_lane on all lanes that have a SOF flag at the end of
 				-- the SOF window.
 				missing_frame(i) <= '0';
-				if is_last_in_sof_window = '1' then
+				if is_last_in_sof_window then
 					valid_lane(i) <= is_sof(i);
 					missing_frame(i) <= not is_sof(i);  -- monitoring flag only
 				end if;
 
 				-- Always invalidate lanes that are to be ignored so the aligner won't wait for those.
 				-- Overrides whatever was assigned to it above
-				if ignore_lane(i) = '1' then
+				if ignore_lane(i) then
 					valid_lane(i) <= '0';
 				end if;
 
@@ -339,7 +340,7 @@ begin
 
 			-- Synchronous reset
 			-- The reset code is placed at the end to avoid the non-resetted signals to hold their value during reset (which requires additional logic).
-			if rst = '1' then
+			if rst then
 				sof_window <= '0';
 				is_last_in_sof_window <= '0';
 				fifo_tfirst <= (others => '1');
@@ -356,14 +357,13 @@ begin
 
 	mon_gen: if ENABLE_MONITORING_LOGIC generate
 
-		mon_proc: process(clk)
-		begin
+		mon_proc: process(all) begin
 			if rising_edge(clk) then
 
 				for i in 0 to NUMBER_OF_LANES - 1 loop
-					if s_axis_tvalid(0) = '1' and s_axis_tfirst(0) = '1' then
+					if s_axis_tvalid(0) and s_axis_tfirst(0) then
 						align_pulse(i) <= '1';
-					elsif s_axis_tvalid(i) = '1' and s_axis_tfirst(i) = '1' then
+					elsif s_axis_tvalid(i) and s_axis_tfirst(i) then
 						align_pulse(i) <= '0';
 					end if;
 				end loop;
@@ -430,6 +430,7 @@ begin
 						lane_monitor <= (others => '0');
 
 				end case;
+
 			end if; -- clk
 		end process;
 

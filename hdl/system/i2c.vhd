@@ -43,20 +43,26 @@ entity i2c is
 	);
 	port (
 		-- Control interface
-		ctrl_cmd_in_dat: in AXIS8_DAT_STRUCT; -- Command stream input, signals from master (Data, Valid, Last)
-		ctrl_cmd_in_rdy: out AXIS8_RDY_STRUCT; -- Command stream input, signals to master (Ready)
-		ctrl_rply_out_dat: out AXIS8_DAT_STRUCT; -- Reply stream output, signals to slave (Data, Valid, Last)
-		ctrl_rply_out_rdy: in AXIS8_RDY_STRUCT; -- Reply stream output,  signals from slave (Ready)
-		ctrl_clk: in  std_logic;
-		ctrl_rst: in std_logic;
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid: in std_logic;
+		s_axis_bsb_tlast: in std_logic;
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic;
+		bsb_clk: in std_logic;
+		bsb_rst: in std_logic;
 
 
 		-- I2C signals
+		
 		i2c_sck: inout std_logic_vector(NUMBER_OF_PORTS - 1 downto 0);
 		i2c_sda: inout std_logic_vector(NUMBER_OF_PORTS - 1 downto 0);
 
 
 		-- System-level signals
+		
 		clk200: in std_logic;
 		rst: in std_logic -- synchronous to CLK200
 	);
@@ -264,12 +270,16 @@ begin
 		)
 		port map (
 			-- Control interface (command and reply stream buses)
-			ctrl_cmd_in_dat   => ctrl_cmd_in_dat,
-			ctrl_cmd_in_rdy   => ctrl_cmd_in_rdy,
-			ctrl_rply_out_dat => ctrl_rply_out_dat,
-			ctrl_rply_out_rdy => ctrl_rply_out_rdy,
-			ctrl_clk          => ctrl_clk,
-			ctrl_rst          => ctrl_rst,
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
+			bsb_clk          => bsb_clk,
+			bsb_rst          => bsb_rst,
 
 			control_bytes => control_bytes,
 			status_bytes  => status_bytes
@@ -314,9 +324,8 @@ begin
 	all_reset <= rst or ctrl_reset;
 
 	-- Implement I2C process
-	i2c: process(clk200, all_reset) is
-	begin
-		if all_reset = '1' then
+	i2c: process(all) begin
+		if all_reset then
 			-- Reset I2C lines to idle (Hi-z)
 			sda_out <= '1';
 			sck_out <= '1';
@@ -481,7 +490,7 @@ begin
 			end if;
 
 			-- Timing counter. Counts up by default, unless resetted by the code below
-			if clk_ctr_clear = '1' then
+			if clk_ctr_clear then
 				clk_ctr <= 0;
 			elsif clk_ctr /= CLK_CTR_MAX then -- don't roll over
 				clk_ctr <= clk_ctr + 1; -- invrement unless overriden below
@@ -522,14 +531,14 @@ begin
 					-- BUS_READY <= '1';
 
 					-- If start was detected and the bus is ready, generate the start condition on the bus
-					if start = '1' and bus_idle = '1' then
+					if start and bus_idle then
 						start <= '0'; -- clear the start flag so we don't start a new transaction when we return here
 						sda_out <= '0'; -- create a 1-to-0 transition while SCK=1 to signal a start condition
 						clk_ctr_clear <= '1';
 						master_state <= MASTER_STATE_START;
 						start_ctr <= start_ctr + 1; -- keep track of how many transactions we started for checking and debugging
-					elsif clk_at_tHIGH = '1' then
-						if ctrl_always_clk = '1' then
+					elsif clk_at_tHIGH then
+						if ctrl_always_clk then
 							sck_out <= '0';
 						end if;
 						clk_ctr_clear <= '1';
@@ -579,7 +588,7 @@ begin
 				when MASTER_STATE_DATA_WAIT_HIGH => -- SCK was released. Wait for the clock line to go high (in case another device is holding it down) then sample the data line
 					-- STATE_MON <= X"A";
 
-					if sck_in = '1' then -- wait until all devices have released the clock before counting the high time
+					if sck_in then -- wait until all devices have released the clock before counting the high time
 						-- sample data bit
 						-- if dir=ctrl_dir_write then -- if we are writing
 						--   if sda_in/=sda_out then -- if there is a collision we lose the arbitration war - release the bus and go to IDLE
@@ -644,7 +653,7 @@ begin
 
 				when MASTER_STATE_ACK_WAIT_HIGH => -- We stopped pulling SCK low, we wait for it to come up so we can sample the ACK state.
 					-- STATE_MON <= X"5";
-					if sck_in = '1' then -- wait until all devices have released the clock before sampling the bit
+					if sck_in then -- wait until all devices have released the clock before sampling the bit
 						-- sample ACK bit
 						master_ack_status <= master_ack_status sll 1; -- shift left, we'll fill in bit 0 below
 						if dir = ctrl_dir_write then -- if we write
@@ -703,7 +712,7 @@ begin
 					end if;
 
 				when MASTER_STATE_STOP_WAIT_HIGH => -- wait for the clock line to go high (in case another device is holding it down) then sample the data line
-					if sck_in = '1' then -- wait until all devices have released the clock before counting the high time
+					if sck_in then -- wait until all devices have released the clock before counting the high time
 						clk_ctr_clear <= '1';
 						master_state <= MASTER_STATE_STOP_HIGH;
 					elsif clk_at_tTIMEOUT_MIN = '1' and clk_ctr_clear = '0' then
@@ -738,7 +747,7 @@ begin
 					end if;
 
 				when MASTER_STATE_RESTART_WAIT_HIGH => -- wait for the clock line to go high (in case another device is holding it down) then sample the data line
-					if sck_in = '1' then -- wait until all devices have released the clock before counting the high time
+					if sck_in then -- wait until all devices have released the clock before counting the high time
 						clk_ctr_clear <= '1';
 						master_state <= MASTER_STATE_RESTART_HIGH;
 					elsif clk_at_tTIMEOUT_MIN = '1' and clk_ctr_clear = '0' then

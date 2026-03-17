@@ -83,6 +83,7 @@ entity udp_mac_rx is
 		);
 	port (
 		-- User-side streaming interface
+		
 		local_mac_addr         : in std_logic_vector(47 downto 0);
 		local_ip_addr          : in std_logic_vector(31 downto 0);
 		local_ip_port          : in std_logic_vector(15 downto 0);
@@ -104,11 +105,13 @@ entity udp_mac_rx is
 
 
 		-- gmii interface
+		
 		gmii_rxclk             : in  std_logic; -- receive clock from phy
 		gmii_rxctrl_rxdv       : in  std_logic; -- receive data valid
 		gmii_rxd               : in  std_logic_vector(7 downto 0); -- receive data
 
 		-- system
+		
 		rx_overflow            : out std_logic;
 		rst                    : in std_logic
 		);
@@ -438,17 +441,17 @@ rx_data_fifo_rd_en <= '1' when rd_rst = '0' and rx_frame_fifo_valid = '1' and (r
 -- Combine the last 5 bytes and the curent byte to generate a 48-bit number (enough to fit a MAC address)
 rx_data_wide <= (rx_data_dly4 & rx_data_dly3 & rx_data_dly2 & rx_data_dly1 & rx_data_dly & rx_data);
 
-rx_back_end: process (gmii_rxclk)
+rx_back_end: process(all)
 	variable is_broadcast_var: std_logic;
 begin
 	if rising_edge(gmii_rxclk) then
 
 		-- Frame detect : monitors the GMII interface, and set rx_start_of_frame and the SOF byte is detected and rx_frame for any subsequent byres. Both are cleared whenever gmii_rx_en =0, signifying the end of frame.
-		if(gmii_rx_en = '0') then -- no data received, clear frame flag
+		if not gmii_rx_en then -- no data received, clear frame flag
 			rx_frame <= '0';
 			rx_start_of_frame <= '0';
 			rx_data <= X"00"; -- not needed, just to facilitate simulation
-		elsif(gmii_rx_en = '1' and gmii_rx_d = X"D5") then -- Found first SOF, set PRE_FRAME so that FRAME will be set for the next byte
+	elsif gmii_rx_en = '1' and gmii_rx_d = X"D5" then -- Found first SOF, set PRE_FRAME so that FRAME will be set for the next byte
 			rx_start_of_frame <= '1';
 			rx_data <= gmii_rx_d; -- not needed, just to facilitate simulation
 		else -- valid data coming, set FRAME and clock data byte
@@ -491,8 +494,8 @@ begin
 			-- STANDBY State
 			when RX_STATE_STDBY =>
 --					rx_store_frame <= '0'; -- write frame data in the FRAME FIFO.
-				if rx_start_of_frame = '1' then
-					if rx_frame_fifo_full = '1' or unsigned(local_ip_port) = 0 then -- skip the frame if the frame FIFO is full since we won't have room to store it anyway, or if we haven't defined a valid port yet.
+				if rx_start_of_frame  then
+					if rx_frame_fifo_full = '1'  or unsigned(local_ip_port) = 0 then -- skip the frame if the frame FIFO is full since we won't have room to store it anyway, or if we haven't defined a valid port yet.
 						rx_state <= RX_STATE_SKIP;
 					else
 						--mac_addr_match <= '0';
@@ -803,7 +806,7 @@ begin
 				end if;
 
 			when RX_STATE_ARP_TARGET_IP =>
-				if rx_frame = '0' then
+				if not rx_frame then
 					rx_state <= RX_STATE_STDBY; -- fall back to standby state if frame is interrupted during the header
 				elsif rx_state_ctr = 4-1 then
 					if rx_data_wide(31 downto 0)=local_IP_ADDR then
@@ -816,7 +819,7 @@ begin
 		end case;
 
 		-- sync reset
-		if wr_rst = '1' then
+		if wr_rst  then
 			arp_request <= '0';
 			rx_overflow_int <= '0';
 			rx_data_fifo_wr_en <= '0';

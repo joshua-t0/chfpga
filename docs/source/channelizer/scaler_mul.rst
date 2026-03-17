@@ -1,8 +1,8 @@
 .. title:: scaler_mul
 
-******************************************************************
+**********************************************************
 :entity:`scaler_mul` (*scaler_mul.vhd*): Scaler Multiplier
-******************************************************************
+**********************************************************
 
 .. parse:: hdl/chan/scaler_mul.vhd
 
@@ -13,10 +13,10 @@ Entity documentation
 
 .. autoentity:: scaler_mul
 
-Implementation
-==============
+Principle of operations
+=======================
 
-The `SCALER_MUL` module implements a signed multiplier using Xilinx DSP48E1 primitives. It computes the product P = A × B where:
+The `SCALER_MUL` module implements a signed multiplier using Xilinx DSP48E1 primitives (there are no special optimizations for the DSP48E2; the tools just remap the DSP48E1 to a DSP48E2). It computes the product P = A × B where:
 
 - **A**: Signed operand up to 42 bits wide
 - **B**: Unsigned operand up to 17 bits wide  

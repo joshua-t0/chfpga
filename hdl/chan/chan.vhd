@@ -46,15 +46,15 @@ entity chan is
 		--
 		-- For non-OOC usage, this entity can be instantiated using the entity instantiation method with GENERICS
 
-		PLATFORM_ID: integer               := CONFIG_PLATFORM_ID; -- PLATFORM_ID_MGK7MB; -- This generics is locked to the MGK7MB when using CHAN as an OOC.
-		IMPLEMENT_CHAN: boolean            := TRUE;
-		IMPLEMENT_FFT: boolean             := CONFIG_CHAN_IMPLEMENT_FFT;
-		FFT_TYPE: fft_type_enum            := CONFIG_CHAN_FFT_TYPE;
-		SCALER_USE_COMPLEX_GAINS: boolean  := CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS;
-		NUMBER_OF_CAPTURE_SOURCES: integer := CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES;
-		CAPTURE_TYPE: chan_capture_type_enum := CONFIG_CHAN_CAPTURE_TYPE; -- "URAM" or "BRAM"
-        CT_TYPE : ct_type_enum             := CONFIG_CT_TYPE; -- Used to determine the width of the output bus to the corner-turn engine
+		PLATFORM_ID: integer               ; -- PLATFORM_ID_MGK7MB; -- This generics is locked to the MGK7MB when using CHAN as an OOC.
+		IMPLEMENT_FFT: boolean             ;
+		FFT_TYPE: fft_type_enum            ;
+		SCALER_USE_COMPLEX_GAINS: boolean  ;
+		CAPTURE_TYPE: chan_capture_type_enum ; -- "URAM" or "BRAM"
+        CT_TYPE : ct_type_enum             ; -- Used to determine the width of the output bus to the corner-turn engine
         -- Derived parameters
+		IMPLEMENT_CHAN: boolean            := TRUE;
+		NUMBER_OF_CAPTURE_SOURCES: integer := CHAN_CAPTURE_INFO(CAPTURE_TYPE).NUMBER_OF_SOURCES;
 		FFT_BITS_PER_BIN: integer          := FFT_INFO(FFT_TYPE).BITS_PER_BIN; -- Re and Im parts combined
 		FFT_ROTATE_BINS: boolean           := FFT_INFO(FFT_TYPE).ROTATE; -- enables bin rotation when true
 		ADC_BITS_PER_SAMPLE: integer       := FFT_INFO(FFT_TYPE).BITS_PER_SAMPLE;
@@ -102,43 +102,45 @@ entity chan is
 
 		-- Byte-Serial-Bus (BSB) interface for control and monitoring of sub-modules
 
-		ctrl_cmd_tdata: in  std_logic_vector(7 downto 0);
-		ctrl_cmd_tvalid: in  std_logic;
-		ctrl_cmd_tlast: in  std_logic;
-		ctrl_cmd_tready: out std_logic;
+		s_axis_bsb_tdata: in  std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid: in  std_logic;
+		s_axis_bsb_tlast: in  std_logic;
+		s_axis_bsb_tready: out std_logic;
 
-		ctrl_rply_tdata: out std_logic_vector(7 downto 0);
-		ctrl_rply_tvalid: out std_logic;
-		ctrl_rply_tlast: out std_logic;
-		ctrl_rply_tready: in  std_logic;
-		ctrl_clk: in  std_logic;
-		ctrl_rst: in  std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in  std_logic;
+		bsb_clk: in  std_logic;
+		bsb_rst: in  std_logic;
 
 		-- BSB bus interface to be hooked-up  to the corresponding ADCDAQ module
 
-		adc_cmd_tdata: out std_logic_vector(7 downto 0);
-		adc_cmd_tvalid: out std_logic;
-		adc_cmd_tlast: out std_logic;
-		adc_cmd_tready: in  std_logic;
+		m_axis_adcdaq_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_adcdaq_bsb_tvalid: out std_logic;
+		m_axis_adcdaq_bsb_tlast: out std_logic;
+		m_axis_adcdaq_bsb_tready: in  std_logic;
 
-		adc_rply_tdata: in  std_logic_vector(7 downto 0);
-		adc_rply_tvalid: in  std_logic;
-		adc_rply_tlast: in  std_logic;
-		adc_rply_tready: out std_logic;
+		s_axis_adcdaq_bsb_tdata: in  std_logic_vector(7 downto 0);
+		s_axis_adcdaq_bsb_tvalid: in  std_logic;
+		s_axis_adcdaq_bsb_tlast: in  std_logic;
+		s_axis_adcdaq_bsb_tready: out std_logic;
 
-		-- Data capture interface
+		-- Wide data capture interface from FUNCGEN or SCALER
+		
 		cap_source_req: in std_logic := '0'; -- requested data capture source (0 or 1). The actual source switch will happen on a frame boundary and will be reflected by `cap_source_ack`. Default provided in case we don't use an external capture module.
-		cap_source_ack: out std_logic := '0'; -- Current source (0 or 1) for the captured data. This is synchronous to the m_axis_cap tdata/tvalud/tlast. Default value needed to avoir 'undriven net' warning when we don't use the external capture module is used.
+		cap_source_ack: out std_logic := '0'; -- Current source (0 or 1) for the captured data. This is synchronous to the m_axis_cap tdata/tvalud/tlast. Default value needed to avoid 'undriven net' warning when we don't use the external capture module is used.
 		m_axis_cap_tdata: out std_logic_vector(CAPTURE_BITS_PER_WORD - 1 downto 0);
 		m_axis_cap_tvalid: out std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES - 1);
 		m_axis_cap_tlast: out std_logic_vector(0 to NUMBER_OF_CAPTURE_SOURCES - 1);
 
+		-- 8-bit data capture stream from PROBER Interface (when CAPTURE_TYPE = PROBER)
 
-		prb_tdata: out std_logic_vector(7 downto 0);
-		prb_tvalid: out std_logic;
-		prb_tlast: out std_logic;
-		prb_tready: in  std_logic;
-		PRB_CLK: in  std_logic -- Data capture clock
+		m_axis_prober_tdata:  out std_logic_vector(7 downto 0);
+		m_axis_prober_tvalid: out std_logic;
+		m_axis_prober_tlast:  out std_logic;
+		m_axis_prober_tready: in  std_logic;
+		axis_prober_clk:      in  std_logic -- Data capture clock
 	);
 end entity chan;
 
@@ -210,53 +212,18 @@ architecture impl of CHAN is
 	constant NUMBER_OF_MODULES: integer := 7; -- Total number of modules to be implemented. Is used to set the number of ports of the control interface router.
 
 	-- UDP Control Command from chfpga
-	signal CMD_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_MODULES - 1 downto 0);
-	signal CMD_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_MODULES - 1 downto 0);
-	signal RPLY_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_MODULES - 1 downto 0);
-	signal RPLY_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_MODULES - 1 downto 0);
-
-	-- Control Command Signals
-	signal CTRL_CMD_IN_DAT: AXIS8_DAT_STRUCT;
-	signal CTRL_CMD_IN_RDY: AXIS8_RDY_STRUCT;
-	signal CTRL_RPLY_OUT_DAT: AXIS8_DAT_STRUCT;
-	signal CTRL_RPLY_OUT_RDY: AXIS8_RDY_STRUCT;
-
-	-- ADC Command Signals
-	signal ADC_CMD_DAT: AXIS8_DAT_STRUCT;
-	signal ADC_CMD_RDY: AXIS8_RDY_STRUCT;
-	signal ADC_RPLY_DAT: AXIS8_DAT_STRUCT;
-	signal ADC_RPLY_RDY: AXIS8_RDY_STRUCT;
-
-	-- Funcgen Command Signals
-	signal srcsel_cmd_dat: AXIS8_DAT_STRUCT;
-	signal srcsel_cmd_rdy: AXIS8_RDY_STRUCT;
-	signal srcsel_rply_dat: AXIS8_DAT_STRUCT;
-	signal srcsel_rply_rdy: AXIS8_RDY_STRUCT;
-
+	signal router_bsb_cmd_tdata: slv8_array(0 to NUMBER_OF_MODULES - 1);
+	signal router_bsb_cmd_tvalid: std_logic_vector(0 to NUMBER_OF_MODULES - 1);
+	signal router_bsb_cmd_tlast: std_logic_vector(0 to NUMBER_OF_MODULES - 1);
+	signal router_bsb_cmd_tready: std_logic_vector(0 to NUMBER_OF_MODULES - 1);
+	signal router_bsb_rply_tdata: slv8_array(0 to NUMBER_OF_MODULES - 1);
+	signal router_bsb_rply_tvalid: std_logic_vector(0 to NUMBER_OF_MODULES - 1);
+	signal router_bsb_rply_tlast: std_logic_vector(0 to NUMBER_OF_MODULES - 1);
+	signal router_bsb_rply_tready: std_logic_vector(0 to NUMBER_OF_MODULES - 1);
 
 begin
 
 
-	CTRL_CMD_IN_DAT.TDATA <= ctrl_cmd_tdata;
-	CTRL_CMD_IN_DAT.TVALID <= ctrl_cmd_tvalid;
-	CTRL_CMD_IN_DAT.TLAST <= ctrl_cmd_tlast;
-	ctrl_cmd_tready <= CTRL_CMD_IN_RDY.TREADY;
-
-	ctrl_rply_tdata <= CTRL_RPLY_OUT_DAT.TDATA;
-	ctrl_rply_tvalid <= CTRL_RPLY_OUT_DAT.TVALID;
-	ctrl_rply_tlast <= CTRL_RPLY_OUT_DAT.TLAST;
-	CTRL_RPLY_OUT_RDY.TREADY <= ctrl_rply_tready;
-
-
-	adc_cmd_tdata <= adc_cmd_dat.tdata;
-	adc_cmd_tvalid <= adc_cmd_dat.tvalid;
-	adc_cmd_tlast <= adc_cmd_dat.tlast;
-	ADC_CMD_RDY.tready <= adc_cmd_tready;
-
-	adc_rply_dat.tdata <= adc_rply_tdata;
-	adc_rply_dat.tvalid <= adc_rply_tvalid;
-	adc_rply_dat.tlast <= adc_rply_tlast;
-	adc_rply_tready <= ADC_RPLY_RDY.tready;
 
 
 	-- Memory Map
@@ -284,25 +251,37 @@ begin
 		)
 		port map (
 			-- Master control interface
-			CMD_IN_DAT   => CTRL_CMD_IN_DAT,
-			CMD_IN_RDY   => CTRL_CMD_IN_RDY,
-			RPLY_OUT_DAT => CTRL_RPLY_OUT_DAT,
-			RPLY_OUT_RDY => CTRL_RPLY_OUT_RDY,
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
 
-			CMD_OUT_DAT => CMD_DAT,
-			CMD_OUT_RDY => CMD_RDY,
-			RPLY_IN_DAT => RPLY_DAT,
-			RPLY_IN_RDY => RPLY_RDY,
+			m_axis_routed_bsb_tdata => router_bsb_cmd_tdata,
+			m_axis_routed_bsb_tvalid => router_bsb_cmd_tvalid,
+			m_axis_routed_bsb_tlast => router_bsb_cmd_tlast,
+			m_axis_routed_bsb_tready => router_bsb_cmd_tready,
+			s_axis_routed_bsb_tdata => router_bsb_rply_tdata,
+			s_axis_routed_bsb_tvalid => router_bsb_rply_tvalid,
+			s_axis_routed_bsb_tlast => router_bsb_rply_tlast,
+			s_axis_routed_bsb_tready => router_bsb_rply_tready,
 
-			CLK => CTRL_CLK,
-			RST => CTRL_RST
+			clk => bsb_clk,
+			rst => bsb_rst
 		);
 
 	-- Pass the ADC bus to the upper level to connect to the ADCDAQ module
-	ADC_CMD_DAT                  <= CMD_DAT(MODULE_ADCDAQ_ADDR);
-	CMD_RDY(MODULE_ADCDAQ_ADDR)  <= ADC_CMD_RDY;
-	RPLY_DAT(MODULE_ADCDAQ_ADDR) <= ADC_RPLY_DAT;
-	ADC_RPLY_RDY                 <= RPLY_RDY(MODULE_ADCDAQ_ADDR);
+	m_axis_adcdaq_bsb_tdata  <= router_bsb_cmd_tdata(MODULE_ADCDAQ_ADDR);
+	m_axis_adcdaq_bsb_tvalid <= router_bsb_cmd_tvalid(MODULE_ADCDAQ_ADDR);
+	m_axis_adcdaq_bsb_tlast  <= router_bsb_cmd_tlast(MODULE_ADCDAQ_ADDR);
+	router_bsb_cmd_tready(MODULE_ADCDAQ_ADDR) <= m_axis_adcdaq_bsb_tready;
+	router_bsb_rply_tdata(MODULE_ADCDAQ_ADDR) <= s_axis_adcdaq_bsb_tdata;
+	router_bsb_rply_tvalid(MODULE_ADCDAQ_ADDR) <= s_axis_adcdaq_bsb_tvalid;
+	router_bsb_rply_tlast(MODULE_ADCDAQ_ADDR) <= s_axis_adcdaq_bsb_tlast;
+	s_axis_adcdaq_bsb_tready <= router_bsb_rply_tready(MODULE_ADCDAQ_ADDR);
 
 
 	IMPL_GEN: if IMPLEMENT_CHAN generate
@@ -366,8 +345,7 @@ begin
 		--   there will be assignment conflicts to OUT_DAT with the block that handle
 		--   IMPLEMENT_CHAN=FALSE, and that makes the Vivado simulator hang up.
 		---------------------------------------------------------------------
-		adc_pipe_proc: process(in_clk)
-		begin
+		adc_pipe_proc: process(all) begin
 			if rising_edge(in_clk) then
 				-- Pipeline input data and reset
 				in_reset_adc_reg1 <= in_reset;
@@ -377,7 +355,7 @@ begin
 				axis_adc_reg1_tvalid <= in_dat_tvalid;
 				axis_adc_reg1_tlast <= in_dat_tlast;
 
-				if in_reset_adc_reg1 = '1' then
+				if in_reset_adc_reg1 then
 					axis_adc_reg1_tvalid <= '0';
 				end if;
 
@@ -389,7 +367,7 @@ begin
 				axis_adc_reg2_tvalid <= axis_adc_reg1_tvalid;
 				axis_adc_reg2_tlast <= axis_adc_reg1_tlast;
 
-				if in_reset_adc_reg2 = '1' then
+				if in_reset_adc_reg2 then
 					axis_adc_reg2_tvalid <= '0';
 				end if;
 
@@ -409,11 +387,7 @@ begin
 		end process;
 
 		-- Pipeline the reset signal to the funcgen
-		funcgen_pipe_proc: process(in_clk)
-			begin
-				if rising_edge(in_clk) then
-				end if;
-			end process;
+
 
 
 	   ---------------------------------------------------------------------
@@ -443,12 +417,16 @@ begin
 				rst => funcgen_reset_in,
 
 				-- Control interface
-				ctrl_cmd_in_dat   => CMD_DAT(MODULE_FUNCGEN_ADDR),
-				ctrl_cmd_in_rdy   => CMD_RDY(MODULE_FUNCGEN_ADDR),
-				ctrl_rply_out_dat => RPLY_DAT(MODULE_FUNCGEN_ADDR),
-				ctrl_rply_out_rdy => RPLY_RDY(MODULE_FUNCGEN_ADDR),
-				ctrl_clk          => CTRL_CLK,
-				ctrl_rst          => CTRL_RST
+				s_axis_bsb_tdata  => router_bsb_cmd_tdata(MODULE_FUNCGEN_ADDR),
+				s_axis_bsb_tvalid => router_bsb_cmd_tvalid(MODULE_FUNCGEN_ADDR),
+				s_axis_bsb_tlast  => router_bsb_cmd_tlast(MODULE_FUNCGEN_ADDR),
+				s_axis_bsb_tready => router_bsb_cmd_tready(MODULE_FUNCGEN_ADDR),
+				m_axis_bsb_tdata  => router_bsb_rply_tdata(MODULE_FUNCGEN_ADDR),
+				m_axis_bsb_tvalid => router_bsb_rply_tvalid(MODULE_FUNCGEN_ADDR),
+				m_axis_bsb_tlast  => router_bsb_rply_tlast(MODULE_FUNCGEN_ADDR),
+				m_axis_bsb_tready => router_bsb_rply_tready(MODULE_FUNCGEN_ADDR),
+				bsb_clk           => bsb_clk,
+				bsb_rst           => bsb_rst
 			);
 	end block funcgen_blk;
 
@@ -474,9 +452,8 @@ begin
 		attribute keep of fft_reset_in2: signal is "true";
 	begin
 		-- Pipeline the FFT reset (skip over the funcgen logic)
-		fft_pipe_proc: process(in_clk)
-			begin
-				if rising_edge(in_clk) then
+		fft_pipe_proc: process(all) begin
+			if rising_edge(in_clk) then
 					fft_reset_in <= funcgen_reset_out;
 
 					fft_in_tdata <= funcgen_out_tdata;
@@ -525,12 +502,16 @@ begin
 				reset   => fft_reset_in2,
 
 				-- Control interface
-				CTRL_CMD_IN_DAT   => CMD_DAT(MODULE_FFT_ADDR),
-				CTRL_CMD_IN_RDY   => CMD_RDY(MODULE_FFT_ADDR),
-				CTRL_RPLY_OUT_DAT => RPLY_DAT(MODULE_FFT_ADDR),
-				CTRL_RPLY_OUT_RDY => RPLY_RDY(MODULE_FFT_ADDR),
-				CTRL_CLK          => CTRL_CLK,
-				CTRL_RST          => CTRL_RST
+				s_axis_bsb_tdata  => router_bsb_cmd_tdata(MODULE_FFT_ADDR),
+				s_axis_bsb_tvalid => router_bsb_cmd_tvalid(MODULE_FFT_ADDR),
+				s_axis_bsb_tlast  => router_bsb_cmd_tlast(MODULE_FFT_ADDR),
+				s_axis_bsb_tready => router_bsb_cmd_tready(MODULE_FFT_ADDR),
+				m_axis_bsb_tdata  => router_bsb_rply_tdata(MODULE_FFT_ADDR),
+				m_axis_bsb_tvalid => router_bsb_rply_tvalid(MODULE_FFT_ADDR),
+				m_axis_bsb_tlast  => router_bsb_rply_tlast(MODULE_FFT_ADDR),
+				m_axis_bsb_tready => router_bsb_rply_tready(MODULE_FFT_ADDR),
+				bsb_clk           => bsb_clk,
+				bsb_rst           => bsb_rst
 			);
 	end block fft_blk;
 
@@ -548,8 +529,7 @@ begin
 		attribute keep of scaler_reset_in: signal is "true";
 	begin
 		-- Pipeline the SCALER reset (skip over the fft logic)
-		scaler_pipe_proc: process(in_clk)
-		begin
+		scaler_pipe_proc: process(all) begin
 			if rising_edge(in_clk) then
 			   scaler_reset_in <= fft_reset_out;
 
@@ -607,12 +587,16 @@ begin
                 mon_ctrl => fifo_wr_disable,
                 
 				-- Control interface
-				CTRL_CMD_IN_DAT   => CMD_DAT(MODULE_SCALER_ADDR),
-				CTRL_CMD_IN_RDY   => CMD_RDY(MODULE_SCALER_ADDR),
-				CTRL_RPLY_OUT_DAT => RPLY_DAT(MODULE_SCALER_ADDR),
-				CTRL_RPLY_OUT_RDY => RPLY_RDY(MODULE_SCALER_ADDR),
-				CTRL_CLK          => CTRL_CLK,
-				CTRL_RST          => CTRL_RST
+				s_axis_bsb_tdata  => router_bsb_cmd_tdata(MODULE_SCALER_ADDR),
+				s_axis_bsb_tvalid => router_bsb_cmd_tvalid(MODULE_SCALER_ADDR),
+				s_axis_bsb_tlast  => router_bsb_cmd_tlast(MODULE_SCALER_ADDR),
+				s_axis_bsb_tready => router_bsb_cmd_tready(MODULE_SCALER_ADDR),
+				m_axis_bsb_tdata  => router_bsb_rply_tdata(MODULE_SCALER_ADDR),
+				m_axis_bsb_tvalid => router_bsb_rply_tvalid(MODULE_SCALER_ADDR),
+				m_axis_bsb_tlast  => router_bsb_rply_tlast(MODULE_SCALER_ADDR),
+				m_axis_bsb_tready => router_bsb_rply_tready(MODULE_SCALER_ADDR),
+				bsb_clk           => bsb_clk,
+				bsb_rst           => bsb_rst
 			);
 	end block scaler_blk;
 
@@ -744,9 +728,8 @@ begin
 	begin
 
 		-- Pipeline the funcgen and scaler signals that are tapped of the main pipeline
-		cap_pipe_proc: process(in_clk)
-			begin
-				if rising_edge(in_clk) then
+		cap_pipe_proc: process(all) begin
+			if rising_edge(in_clk) then
 					-- pipeline reset
 					prober_reset_in <= funcgen_reset_out or scaler_reset_out;
 
@@ -782,14 +765,16 @@ begin
 
             when prober_case:PROBER =>
                  -- Slow output data stream
-                signal PRB_DAT: AXIS8_DAT_STRUCT;
-                signal PRB_RDY: AXIS8_RDY_STRUCT;
+                signal prb_tdata_int: std_logic_vector(7 downto 0);
+                signal prb_tvalid_int: std_logic;
+                signal prb_tlast_int: std_logic;
+                signal prb_tready_int: std_logic;
             begin
                 -- Connect capture streams to top level port
-                prb_tdata <= prb_DAT.tdata;
-                prb_tvalid <= prb_DAT.tvalid;
-                prb_tlast <= prb_DAT.tlast;
-                prb_RDY.tready <= prb_tready;
+                m_axis_prober_tdata  <= prb_tdata_int;
+                m_axis_prober_tvalid <= prb_tvalid_int;
+                m_axis_prober_tlast  <= prb_tlast_int;
+                prb_tready_int       <= m_axis_prober_tready;
     
                 -- Instantiate the local capture module
                 prober0: entity work.prober
@@ -812,17 +797,23 @@ begin
                         in_reset  => prober_reset_in, -- both inputs must run on the same reset
     
                         -- Output data streams
-                        OUT_DAT => PRB_DAT,
-                        OUT_RDY => PRB_RDY,
-                        OUT_CLK => PRB_CLK,
+                        out_tdata => prb_tdata_int,
+                        out_tvalid => prb_tvalid_int,
+                        out_tlast => prb_tlast_int,
+                        out_tready => prb_tready_int,
+                        OUT_CLK => axis_prober_clk,
     
                         -- Control interface
-                        CTRL_CMD_IN_DAT   => CMD_DAT(MODULE_PROBER_ADDR),
-                        CTRL_CMD_IN_RDY   => CMD_RDY(MODULE_PROBER_ADDR),
-                        CTRL_RPLY_OUT_DAT => RPLY_DAT(MODULE_PROBER_ADDR),
-                        CTRL_RPLY_OUT_RDY => RPLY_RDY(MODULE_PROBER_ADDR),
-                        CTRL_CLK          => CTRL_CLK,
-                        CTRL_RST          => CTRL_RST
+                        s_axis_bsb_tdata  => router_bsb_cmd_tdata(MODULE_PROBER_ADDR),
+                        s_axis_bsb_tvalid => router_bsb_cmd_tvalid(MODULE_PROBER_ADDR),
+                        s_axis_bsb_tlast  => router_bsb_cmd_tlast(MODULE_PROBER_ADDR),
+                        s_axis_bsb_tready => router_bsb_cmd_tready(MODULE_PROBER_ADDR),
+                        m_axis_bsb_tdata  => router_bsb_rply_tdata(MODULE_PROBER_ADDR),
+                        m_axis_bsb_tvalid => router_bsb_rply_tvalid(MODULE_PROBER_ADDR),
+                        m_axis_bsb_tlast  => router_bsb_rply_tlast(MODULE_PROBER_ADDR),
+                        m_axis_bsb_tready => router_bsb_rply_tready(MODULE_PROBER_ADDR),
+                        bsb_clk           => bsb_clk,
+                        bsb_rst           => bsb_rst
                     );
              end prober_case;
 
@@ -857,10 +848,10 @@ begin
 		-- Force the command interface to accept and ignore any command and to reply nothing.
 		-- Skip the ADCDAQ module because it is always implemented.
 		MODn: for i in MODULE_ADCDAQ_ADDR + 1 to NUMBER_OF_MODULES - 1 generate
-					CMD_RDY(i).TREADY <= '1'; -- Always accept commands. Those will be ignored.
-					RPLY_DAT(i).TVALID <= '0'; -- Do not send any reply
-					RPLY_DAT(i).TLAST <= '0'; -- for nice simulations only
-					RPLY_DAT(i).TDATA <= (others => '0'); -- for nice simulations only
+					router_bsb_cmd_tready(i) <= '1'; -- Always accept commands. Those will be ignored.
+					router_bsb_rply_tvalid(i) <= '0'; -- Do not send any reply
+					router_bsb_rply_tlast(i) <= '0'; -- for nice simulations only
+					router_bsb_rply_tdata(i) <= (others => '0'); -- for nice simulations only
 		end generate MODn;
 
 	end generate NOIMPL_GEN; -- IMPLEMENT_CHAN=FALSE

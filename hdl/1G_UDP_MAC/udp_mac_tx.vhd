@@ -60,15 +60,18 @@ entity udp_mac_tx is
 
 	PORT (
 			-- User-side streaming interface
+			
 		local_mac_addr: in std_logic_vector(47 downto 0);
 		local_ip_addr: in std_logic_vector(31 downto 0);
 
 		-- Primary destination (tx_port_offset = 0)
+		
 		remote_mac_addr0: in std_logic_vector(47 downto 0);
 		remote_ip_addr0: in std_logic_vector(31 downto 0);
 		remote_ip_port0: in std_logic_vector(15 downto 0);
 
 		-- Secondary destination (tx_port_offset = 1)
+		
 		remote_mac_addr1: in std_logic_vector(47 downto 0);
 		remote_ip_addr1: in std_logic_vector(31 downto 0);
 		remote_ip_port1: in std_logic_vector(15 downto 0);
@@ -283,9 +286,8 @@ tx_frame_fifo_din(17 downto 16) <= tx_port_offset; -- If the END of frame is det
 --  Counts incoming bytes and stores the frame length in the frame FIFO once a frame is finished. This allows the TX state machine :
 --   1) to know that a full frame is available in the TX data FIFO, therefore ensuring uninterrupted transmission of the data on the GMII interface
 --   2) know how many bytes to read from the FIFO
-tx_front_end : process(tx_clk)
-	begin
-		if rising_edge(tx_clk) then
+tx_front_end : process(all) begin
+	if rising_edge(tx_clk) then
 			-- Determine if the transmit buffer has overflow. Now we are very conservative and assume there is an overflow if we ever have to throttle the data source.
 			-- which in practive should not be a problem
 			if (tx_fifo_wr_en='1' and tx_fifo_full='1') or
@@ -293,13 +295,13 @@ tx_front_end : process(tx_clk)
 				tx_overflow <= '1';
 			end if;
 
-			if s_axis_udp_tx_tvalid='1' and s_axis_udp_tx_tlast ='1' then -- but if this is the last byte of the packet
+			if s_axis_udp_tx_tvalid and s_axis_udp_tx_tlast then -- but if this is the last byte of the packet
 				tx_frame_length <= to_unsigned(1, tx_frame_length'length); -- ... reset the counter to 1
-			elsif tx_fifo_wr_en='1' and tx_fifo_full='0' then -- if we are actually writing a byte in the fifo...
+			elsif tx_fifo_wr_en and not tx_fifo_full then -- if we are actually writing a byte in the fifo...
 				tx_frame_length <= tx_frame_length + 1; --... increase the byte counter
 			end if;
 
-			if rst='1' then -- synchronous reset
+			if rst then -- synchronous reset
 				tx_frame_length <= to_unsigned(1, tx_frame_length'length);
 				tx_overflow <= '0';
 			end if; --rst
@@ -310,12 +312,11 @@ tx_front_end : process(tx_clk)
 -- GMII transmit process
 --
 -- Sends the Ethernet, IP and UDP header, payload and CRC32 to the GMII interface
-tx_back_end : process(gmii_txclk)
-begin
+tx_back_end : process(all) begin
 	if rising_edge(gmii_txclk) then
 
 		-- Output registering with CRC or CHECKSUM insertion
-		if crc_insert='1' THEN
+		if crc_insert then
 			gmii_txd <= crc_out;
 		else
 			gmii_txd <= gmii_txd_out2;
@@ -417,12 +418,12 @@ begin
 
 				crc_action <= CRC_ACTION_INIT; -- not really needed - will be initialized later
 
-				if tx_frame_fifo_empty = '0' then -- If frame data is available
+				if not tx_frame_fifo_empty then -- If frame data is available
 					tx_state <= TX_STATE_TX_PREAMBLE;
 					tx_ctr <= (others => '0'); -- Initialize the counter. We're going to count 8 bytes
 					tx_frame_fifo_rd_en <='1'; -- Read Frame length from frame FIFO
 					ip_checksum_action <= IP_CHECKSUM_ACTION_INIT; -- needed to prepare for IP header checksum precomputation
-				elsif send_arp='1' then
+				elsif send_arp then
 					tx_state <= TX_STATE_TX_PREAMBLE;
 					tx_ctr <= (others => '0'); -- Initialize the counter. We're going to count 8 bytes
 					ip_checksum_action <= IP_CHECKSUM_ACTION_INIT; -- needed to prepare for IP header checksum precomputation
@@ -466,7 +467,7 @@ begin
 						crc_action <= CRC_ACTION_INIT; -- initialize CRC. COmputation will start at the next state.
 						tx_ctr <= (others => '0'); -- Initialize the header byte address for header transmission
 
-						if send_arp='1' then
+						if send_arp then
 							tx_state <= TX_STATE_TX_ARP;
 						else
 							tx_state <= TX_STATE_TX_HEADER;
@@ -587,7 +588,7 @@ begin
 						-- ensure a 64 byte overall ethernet frame length (including
 						-- CRC). This is lots of combinatorial
 						-- logic, but it works at 125 MHz
-						if(tx_ctr >= 17) then
+						if (tx_ctr >= 17) then
 							tx_state <= TX_STATE_TX_ETH_CHECKSUM;
 							tx_ctr <= (others => '0');
 						else -- send padding
@@ -602,7 +603,7 @@ begin
 					tx_sreg(47 downto 40) <= X"00"; -- send zeros for padding
 					crc_action <= CRC_ACTION_CALC; -- redundant
 
-					if (tx_ctr=17) THEN
+					if (tx_ctr=17) then
 							tx_state <= TX_STATE_TX_ETH_CHECKSUM;
 							tx_ctr <= (others => '0');
 					else
@@ -626,8 +627,8 @@ begin
 				crc_action <= CRC_ACTION_INIT; -- needed to stop the CRC engine to override output words
 				tx_src_sel <= TX_SRC_SEL_IDLE; -- don't send anything
 
-				if(tx_ctr=15) then
-						if tx_frame_fifo_empty = '1' then -- if there is no new full frame available then jump to standby
+				if (tx_ctr=15) then
+						if tx_frame_fifo_empty then -- if there is no new full frame available then jump to standby
 							tx_state <= TX_STATE_STDBY;
 							tx_ctr <= (others=>'0');
 						else -- else start transmission of a new frame immediately
@@ -642,7 +643,7 @@ begin
 		end CASE; -- TX_STATE
 
 		-- Synchronous reset
-		if rst='1' then
+		if rst then
 			arp_request_previous <= '0';
 			send_arp <= '0';
 			--SEND_GRATUITOUS_ARP<='1';
@@ -670,22 +671,21 @@ crc32_0: entity work.udp_mac_crc32 -- we explicitely specify the work library be
 --
 -- Computes the 16-bit IP header checksum while the Ethernet header bytes are being sent. This is because
 -- we need to send the checksum *before* the IP header is sent.
-ip_checksum : process(gmii_txclk)
-	begin
-		if (gmii_txclk'EVENT and gmii_txclk='1') then
-			if ip_checksum_init='1' then
+ip_checksum : process(all) begin
+	if (gmii_txclk'EVENT and gmii_txclk='1') then
+			if ip_checksum_init then
 				ip_checksum_reg <= (others => '0');
 				ip_checksum_msb <= (others => '0'); -- not needed, just to make simulations look nicer
 				ip_checksum_is_msb <= '1';
 			else
-				if ip_checksum_calc='1' then
-					if ip_checksum_is_msb='1' then
+				if ip_checksum_calc then
+					if ip_checksum_is_msb then
 						ip_checksum_msb <= ip_checksum_in;
 					else
 						ip_checksum_reg <= ip_checksum_reg + ("00000" & unsigned(ip_checksum_msb) & unsigned(ip_checksum_in));
 					end if;
 				end if;
-				if ip_checksum_calc='1' or ip_checksum_insert='1' then
+				if ip_checksum_calc or ip_checksum_insert then
 					ip_checksum_is_msb <= not ip_checksum_is_msb;
 				end if;
 			end if;

@@ -45,6 +45,7 @@ entity xxvglink_rx is
 		rx_clk: in std_logic;
 
 		-- User-side streaming interface
+		
 		m_axis_rx_tdata: out slv64;
 		m_axis_rx_tvalid: out std_logic;
 		m_axis_rx_tlast: out std_logic;
@@ -53,6 +54,7 @@ entity xxvglink_rx is
 		m_axis_rx_clk: in std_logic; -- AXIS bus clock
 
 		-- Rx stats
+		
 		fifo_overflow: out std_logic; -- non-sticky, on m_axis_rx_clk
 		fifo_in_tvalid: out std_logic; -- on rx_clk
 		fifo_in_tlast: out std_logic; -- on rx_clk

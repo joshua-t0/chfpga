@@ -34,7 +34,7 @@ set_property PACKAGE_PIN W33 [get_ports clk156_p]
 
 
 create_pblock CGE
-add_cells_to_pblock [get_pblocks CGE] [get_cells -quiet [list chfpga0/GPU_GEN.gpu_sel_gen.cge_case.cge0]]
+add_cells_to_pblock [get_pblocks CGE] [get_cells -quiet [list chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.cge0]]
 resize_pblock [get_pblocks CGE] -add {SLICE_X13Y180:SLICE_X14Y219 SLICE_X10Y180:SLICE_X12Y239}
 resize_pblock [get_pblocks CGE] -add {RAMB18_X1Y72:RAMB18_X1Y87}
 resize_pblock [get_pblocks CGE] -add {RAMB36_X1Y36:RAMB36_X1Y43}
@@ -42,13 +42,13 @@ set_property EXCLUDE_PLACEMENT 1 [get_pblocks CGE]
 set_property IS_SOFT FALSE [get_pblocks CGE]
 
 
-create_pblock UCORN
-add_cells_to_pblock [get_pblocks UCORN] [get_cells -quiet [list chfpga0/GPU_GEN.gpu_sel_gen.cge_case.uram0]]
-resize_pblock [get_pblocks UCORN] -add {SLICE_X15Y180:SLICE_X19Y419 SLICE_X13Y220:SLICE_X14Y249}
-resize_pblock [get_pblocks UCORN] -add {RAMB18_X1Y88:RAMB18_X1Y99}
-resize_pblock [get_pblocks UCORN] -add {RAMB36_X1Y44:RAMB36_X1Y49}
-set_property EXCLUDE_PLACEMENT 1 [get_pblocks UCORN]
-set_property IS_SOFT FALSE [get_pblocks UCORN]
+create_pblock UPACK
+add_cells_to_pblock [get_pblocks UPACK] [get_cells -quiet [list chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0]]
+resize_pblock [get_pblocks UPACK] -add {SLICE_X15Y180:SLICE_X19Y419 SLICE_X13Y220:SLICE_X14Y249}
+resize_pblock [get_pblocks UPACK] -add {RAMB18_X1Y88:RAMB18_X1Y99}
+resize_pblock [get_pblocks UPACK] -add {RAMB36_X1Y44:RAMB36_X1Y49}
+set_property EXCLUDE_PLACEMENT 1 [get_pblocks UPACK]
+set_property IS_SOFT FALSE [get_pblocks UPACK]
 
 
 
@@ -60,12 +60,8 @@ resize_pblock [get_pblocks CORN] -add {DSP48E2_X0Y144:DSP48E2_X0Y167}
 resize_pblock [get_pblocks CORN] -add {RAMB18_X0Y144:RAMB18_X0Y167}
 resize_pblock [get_pblocks CORN] -add {RAMB36_X0Y72:RAMB36_X0Y83}
 set_property IS_SOFT FALSE [get_pblocks CORN]
-add_cells_to_pblock [get_pblocks CORN] [get_cells -quiet [list chfpga0/ct_gen.uct_case.ct0]]
+add_cells_to_pblock [get_pblocks CORN] [get_cells -quiet [list chfpga0/*.ct0]]
 
 
 
 
-set_property C_CLK_INPUT_FREQ_HZ 300000000 [get_debug_cores dbg_hub]
-set_property C_ENABLE_CLK_DIVIDER false [get_debug_cores dbg_hub]
-set_property C_USER_SCAN_CHAIN 1 [get_debug_cores dbg_hub]
-connect_debug_port dbg_hub/clk [get_nets smp_OBUF[3]]

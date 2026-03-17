@@ -141,9 +141,8 @@ begin
   TX_FSM_RESET_DONE <= tx_fsm_reset_done_int;
   GTTXRESET <= gttxreset_i;
 
-  process(STABLE_CLOCK,SOFT_RESET)
-  begin
-	if (SOFT_RESET = '1') then
+  process(all) begin
+	if SOFT_RESET then
 		init_wait_done <= '0';
 		init_wait_count <= 0 ;
 	elsif rising_edge(STABLE_CLOCK) then
@@ -158,10 +157,9 @@ begin
 	end if;
   end process;
 
- time_1us:process(STABLE_CLOCK)
-  begin
+ time_1us:process(all) begin
 	if rising_edge(STABLE_CLOCK) then
-	  if gttxreset_i = '1' then
+	  if gttxreset_i  then
 		count_1us          <= 0;
 		count_1us_done     <= '0';
 	  else
@@ -174,13 +172,12 @@ begin
 	  end if;
   end process;
 
-  timeouts:process(STABLE_CLOCK)
-  begin
+  timeouts:process(all) begin
 	if rising_edge(STABLE_CLOCK) then
 	  -- One common large counter for generating three time-out signals.
 	  -- Intermediate time-outs are derived from calculated values, based
 	  -- on the period of the provided clock.
-	  if reset_time_out = '1' then
+	  if reset_time_out  then
 		time_out_counter  <= 0;
 		time_out_2ms      <= '0';
 		time_tlock_max    <= '0';
@@ -203,10 +200,9 @@ begin
 	end if;
   end process;
 
-  mmcm_lock_wait:process(STABLE_CLOCK)
-  begin
+  mmcm_lock_wait:process(all) begin
 	if rising_edge(STABLE_CLOCK) then
-	  if mmcm_lock_i = '0' then
+	  if not mmcm_lock_i then
 		mmcm_lock_count <= 0;
 		mmcm_lock_reclocked   <= '0';
 	  else
@@ -237,8 +233,7 @@ begin
 			data_out        =>  tx_fsm_reset_done_int_s2
 		 );
 
-  process(TXUSERCLK)
-  begin
+  process(all) begin
 	if rising_edge(TXUSERCLK) then
 	  run_phase_alignment_int_s3   <=  run_phase_alignment_int_s2;
 
@@ -270,8 +265,7 @@ begin
 			data_out        =>  mmcm_lock_i
 		 );
 
-  process(STABLE_CLOCK)
-  begin
+  process(all) begin
 	if rising_edge(STABLE_CLOCK) then
 	   txresetdone_s3     <= txresetdone_s2;
 
@@ -298,10 +292,9 @@ begin
 			data_out        =>  qplllock_sync
 		 );
 
-  process (STABLE_CLOCK)
-  begin
+  process(all) begin
 	if rising_edge(STABLE_CLOCK) then
-	 if(SOFT_RESET = '1' ) then
+	 if SOFT_RESET  then
 	   cplllock_ris_edge <= '0';
 	 elsif((cplllock_prev = '0') and (cplllock_sync = '1')) then
 	   cplllock_ris_edge <= '1';
@@ -313,10 +306,9 @@ begin
 	end if;
   end process;
 
-  process (STABLE_CLOCK)
-  begin
+  process(all) begin
 	if rising_edge(STABLE_CLOCK) then
-	 if(SOFT_RESET = '1' ) then
+	 if SOFT_RESET  then
 	   qplllock_ris_edge <= '0';
 	 elsif((qplllock_prev = '0') and (qplllock_sync = '1')) then
 	   qplllock_ris_edge <= '1';
@@ -328,8 +320,7 @@ begin
 	end if;
   end process;
 
-  timeout_buffer_bypass:process(TXUSERCLK)
-  begin
+  timeout_buffer_bypass:process(all) begin
 	if rising_edge(TXUSERCLK) then
 	  if run_phase_alignment_int_s3 = '0' then
 		wait_bypass_count     <= 0;
@@ -346,8 +337,7 @@ begin
 
   refclk_lost <= '1' when ((TX_QPLL_USED and QPLLREFCLKLOST='1') or (not TX_QPLL_USED and CPLLREFCLKLOST='1')) else '0';
 
-  timeout_max:process(STABLE_CLOCK)
-  begin
+  timeout_max:process(all) begin
 	if rising_edge(STABLE_CLOCK) then
 		if((tx_state = ASSERT_ALL_RESETS) or
 		  (tx_state = RELEASE_PLL_RESET) or
@@ -378,10 +368,9 @@ begin
   -- 7) Reset-sequence has successfully run through. Signal this to the
   --    rest of the design by asserting TX_FSM_RESET_DONE.
 
-  reset_fsm:process(STABLE_CLOCK)
-  begin
+  reset_fsm:process(all) begin
 	if rising_edge(STABLE_CLOCK) then
-	  if(SOFT_RESET = '1') then
+	  if SOFT_RESET  then
 		tx_state                <= INIT;
 		TXUSERRDY               <= '0';
 		gttxreset_i               <= '0';
@@ -400,7 +389,7 @@ begin
 		  when INIT =>
 			--Initial state after configuration. This state will be left after
 			--approx. 500 ns and not be re-entered.
-			if init_wait_done = '1' then
+			if init_wait_done  then
 			  tx_state        <= ASSERT_ALL_RESETS;
 			  reset_time_out  <= '1';
 			end if;
@@ -413,14 +402,14 @@ begin
 			--will still continue its best and rerun until the FPGA is turned off
 			--or the transceivers come up correctly.
 			if TX_QPLL_USED then
-			  if pll_reset_asserted = '0' then
+			  if not pll_reset_asserted then
 				QPLL_RESET          <= '1';
 				pll_reset_asserted  <= '1';
 			  else
 				QPLL_RESET          <= '0';
 			  end if;
 			else
-			  if pll_reset_asserted = '0' then
+			  if not pll_reset_asserted then
 				CPLL_RESET <= '1';
 				pll_reset_asserted  <= '1';
 			  else
@@ -440,7 +429,7 @@ begin
 		   end if;
 
 		   when WAIT_FOR_PLL_LOCK =>
-			  if(wait_time_done = '1') then
+			  if wait_time_done  then
 				 tx_state        <=  RELEASE_PLL_RESET;
 		   end if;
 
@@ -455,7 +444,7 @@ begin
 			  reset_time_out  <= '1';
 			end if;
 
-			if time_out_2ms = '1' then
+			if time_out_2ms  then
 			  if retry_counter_int = MAX_RETRIES then
 				-- If too many retries are performed compared to what is specified in
 				-- the generic, the counter simply wraps around.
@@ -468,7 +457,7 @@ begin
 
 		   when WAIT_FOR_TXOUTCLK =>
 			gttxreset_i <= '0';
-			  if(wait_time_done = '1') then
+			  if wait_time_done  then
 			   tx_state <=  RELEASE_MMCM_RESET;
 		   end if;
 
@@ -476,7 +465,7 @@ begin
 			--Release of the MMCM-reset. Waiting for the MMCM to lock.
 			MMCM_RESET <= '0';
 			reset_time_out  <= '0';
-			if mmcm_lock_reclocked = '1' then
+			if mmcm_lock_reclocked  then
 			  tx_state <= WAIT_FOR_TXUSRCLK;
 			  reset_time_out  <= '1';
 			end if;
@@ -493,14 +482,14 @@ begin
 			end if;
 
 		   when WAIT_FOR_TXUSRCLK =>
-			  if(wait_time_done = '1') then
+			  if wait_time_done  then
 			   tx_state <=  WAIT_RESET_DONE;
 		   end if;
 
 		  when WAIT_RESET_DONE =>
 			TXUSERRDY <= '1';
 			reset_time_out  <= '0';
-			if txresetdone_s3 = '1' then
+			if txresetdone_s3  then
 			  tx_state      <= DO_PHASE_ALIGNMENT;
 			  reset_time_out  <= '1';
 			end if;
@@ -523,11 +512,11 @@ begin
 			run_phase_alignment_int <= '1';
 			reset_time_out          <= '0';
 
-			if PHALIGNMENT_DONE = '1' then
+			if PHALIGNMENT_DONE  then
 			  tx_state        <= RESET_FSM_DONE;
 			end if;
 
-			if time_out_wait_bypass_s3 = '1' then
+			if time_out_wait_bypass_s3  then
 			  if retry_counter_int = MAX_RETRIES then
 				-- If too many retries are performed compared to what is specified in
 				-- the generic, the counter simply wraps around.

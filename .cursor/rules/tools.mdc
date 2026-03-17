@@ -1,0 +1,27 @@
+---
+alwaysApply: true
+---
+
+# Vivado
+
+- When adding or creating a script meant to be run directly (e.g. `.tcl`, `.sh`, `create_project.tcl`), make it executable: `chmod +x <path>`.
+
+- For testbench projects:
+
+    - create_project.tcl scripts: 
+        - make synthesis out-of-context so the DUT can be implemented: set the **source fileset** top to the DUT, then set the synth run MORE OPTIONS to `-mode out_of_context`. Do **not** use `get_runs synth_1` for top (it does not work).
+            - **How top is set in Vivado:** synthesis uses the top of the *fileset* that the synth run uses (default: `sources_1`). Simulation uses the top of the sim fileset (`sim_1`). So: design/synthesis top = `set_property top <name> [get_filesets sources_1]`; simulation top = `set_property top <name> [get_filesets sim_1]`.
+            ```tcl
+            set_property top <dut_entity> [get_filesets sources_1]
+            set_property -name {STEPS.SYNTH_DESIGN.ARGS.MORE OPTIONS} -value {-mode out_of_context} -objects [get_runs synth_1]
+            ```
+        - Flag testbench VHDL sources for simulation only, not synthesis: `set_property used_in_synthesis false [get_files <path/to/tb_package.vhd>]` and the same for the testbench entity file (e.g. `<name>_testbench.vhd`).
+
+- General
+
+  - Make sure you update scripts in /tcl and applicable xilinx_project/<proj_name>/create_project.tcl when source file name and location changes are made
+
+
+- Simulation
+
+    - Looks like simulations can't be run from the sandbox

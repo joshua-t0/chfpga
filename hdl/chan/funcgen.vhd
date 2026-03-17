@@ -146,12 +146,16 @@ entity funcgen is
 
         -- BSB Control Interface (command and reply stream buses)
 
-        ctrl_cmd_in_dat     : in  AXIS8_DAT_STRUCT;
-        ctrl_cmd_in_rdy     : out AXIS8_RDY_STRUCT;
-        ctrl_rply_out_dat   : out AXIS8_DAT_STRUCT;
-        ctrl_rply_out_rdy   : in  AXIS8_RDY_STRUCT;
-        ctrl_clk            : in  std_logic;
-        ctrl_rst            : in  std_logic
+        s_axis_bsb_tdata  : in  std_logic_vector(7 downto 0);
+        s_axis_bsb_tvalid : in  std_logic;
+        s_axis_bsb_tlast  : in  std_logic;
+        s_axis_bsb_tready : out std_logic;
+        m_axis_bsb_tdata  : out std_logic_vector(7 downto 0);
+        m_axis_bsb_tvalid : out std_logic;
+        m_axis_bsb_tlast  : out std_logic;
+        m_axis_bsb_tready : in  std_logic;
+        bsb_clk           : in  std_logic;
+        bsb_rst           : in  std_logic
     );
 end funcgen;
 
@@ -353,12 +357,16 @@ bsb_regs0: entity work.bsb_regs
         )
     PORT MAP(
         -- Control interface (command and reply stream buses)
-        CTRL_CMD_IN_DAT   => ctrl_cmd_in_dat,
-        CTRL_CMD_IN_RDY   => ctrl_cmd_in_rdy,
-        CTRL_RPLY_OUT_DAT => ctrl_rply_out_dat,
-        CTRL_RPLY_OUT_RDY => ctrl_rply_out_rdy,
-        CTRL_CLK          => ctrl_clk,
-        CTRL_RST          => ctrl_rst,
+        s_axis_bsb_tdata => s_axis_bsb_tdata,
+        s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+        s_axis_bsb_tlast => s_axis_bsb_tlast,
+        s_axis_bsb_tready => s_axis_bsb_tready,
+        m_axis_bsb_tdata => m_axis_bsb_tdata,
+        m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+        m_axis_bsb_tlast => m_axis_bsb_tlast,
+        m_axis_bsb_tready => m_axis_bsb_tready,
+        bsb_clk => bsb_clk,
+        bsb_rst => bsb_rst,
 
         control_bytes     => control_bytes,
         status_bytes      => status_bytes,
@@ -401,7 +409,7 @@ enable_cdc0: xpm_cdc_single
         generic map (SRC_INPUT_REG => 0)
         port map (src_clk => '0', src_in => enable, dest_clk => clk, dest_out => enable_resync);
 
-funcgen_proc: process (clk)
+funcgen_proc: process(all)
     variable int_shift: integer;
     variable int_clip_width: integer range 0 to 15;
     variable new_overflow_ctr: unsigned(overflow_ctr'RANGE);
@@ -484,7 +492,7 @@ funcgen_proc: process (clk)
                 when FN_RAM_NIBBLE4 =>
                     out_dat_tdata <= (others => '0');
                     for i in 0 to ADC_SAMPLES_PER_WORD-1 loop
-                        if frame_ctr(0)='0' then
+                        if not frame_ctr(0) then
                             out_dat_tdata(ADC_BITS_PER_SAMPLE*(i+1)-1 downto ADC_BITS_PER_SAMPLE*(i+1)-4) <= ram_dout(ADC_BITS_PER_SAMPLE*i+3 downto ADC_BITS_PER_SAMPLE*i);
                         else
                             out_dat_tdata(ADC_BITS_PER_SAMPLE*(i+1)-1 downto ADC_BITS_PER_SAMPLE*(i+1)-4) <= ram_dout(ADC_BITS_PER_SAMPLE*i+7 downto ADC_BITS_PER_SAMPLE*i+4);
@@ -612,7 +620,7 @@ funcgen_proc: process (clk)
                 overflow_ctr_reg <= (others => '0');
              end if; -- reset_all
 
-            if reset_all_reg='1' then
+            if reset_all_reg then
                 m_axis_adc_tvalid <= '0'; -- needed
             end if; -- reset_all_reg
 
@@ -624,12 +632,11 @@ delaycap_gen: if IMPLEMENT_DELAY_CAPTURE generate
     signal delay_capture_ctr_en: std_logic :='0';
 begin
     -- STATUS Byte 3-4
-    delaycap_proc: process (clk)
-    begin
-        if reset_all ='1' then
+    delaycap_proc: process(all) begin
+        if reset_all then
             delay_capture_ctr <= (others=> '0');
             delay_capture_ctr_en <= '1';
-        elsif delay_capture_ctr_en = '1'  then
+        elsif delay_capture_ctr_en then
             delay_capture_ctr <= delay_capture_ctr + 1;
             if signed(delay_capture_ctr)=-2 or (s_axis_adc_tvalid='1' and (byte_a(0)='0' or s_axis_adc_tlast='1')) then
                 delay_capture_ctr_en <= '0';
@@ -712,8 +719,8 @@ begin
             douta => ram_ctrl_dout,                   -- READ_DATA_WIDTH_A-bit output: Data output for port A read operations.
             ena => '1',                       -- 1-bit input: Memory enable signal for port A. Must be high on clock
             wea(0) => ram_ctrl_wr_en,
-            clka => ctrl_clk,                     -- 1-bit input: Clock signal for port A. Also clocks port B when
-            rsta => ctrl_rst,                     -- 1-bit input: Reset signal for the final port A output register
+            clka => bsb_clk,                     -- 1-bit input: Clock signal for port A. Also clocks port B when
+            rsta => bsb_rst,                     -- 1-bit input: Reset signal for the final port A output register
 
             addrb => ram_addr,                   -- ADDR_WIDTH_B-bit input: Address for port B write and read operations.
             dinb => (others=>'0'),                     -- WRITE_DATA_WIDTH_B-bit input: Data input for port B write operations.

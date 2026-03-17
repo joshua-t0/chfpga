@@ -85,9 +85,9 @@ constant clk156_PERIOD : time := 6.4 ns; --156.25 MHz
 	signal s_axis_tlast_int: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
 	signal s_axis_clk_int: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
 
-	signal m_axis_fifo_tvalid: slv(0 to NUMBER_OF_INPUT_LANES-1);
+	signal m_axis_fifo_tvalid: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
 	signal m_axis_fifo_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES-1);
-	signal m_axis_fifo_tlast: slv(0 to NUMBER_OF_INPUT_LANES-1);
+	signal m_axis_fifo_tlast: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1);
 	signal m_axis_fifo_tuser: slv4_array(0 to NUMBER_OF_INPUT_LANES-1);
 
 	signal axis_shuffle_tdata: slv32_array(0 to NUMBER_OF_SHUFFLE_LANES-1);

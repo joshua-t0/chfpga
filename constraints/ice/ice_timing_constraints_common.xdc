@@ -1,0 +1,392 @@
+######################################
+# TIMING CONSTRAINTS - COMMON
+######################################
+# Common timing constraints shared between corr and ct configurations
+
+
+# Tell the tool to analyze only the timing when the ADCCLK is selected by the chan_mmcm (as opposed to the internal 200 MHz clock)
+# The following line does this by forcing the CLKINSEL input to '1'
+# Comment out if we use a single clock for all channelizers
+# ct: commented out; corr: active
+# set_case_analysis 1 [get_pins -hierarchical gen_chanpll_k7.mmcm_case.chan_mmcm0/CLKINSEL]
+
+
+################################
+# Frequency counter
+################################
+# Constrain the frequency counter clock. The clock frequency on this net is 1/2 if the measured clock source
+# no constraint: Causes  critical warning: no clock reaching counter registers clock inputs
+# Reaassigning a clock causes methodology critical warnings
+# The following creates Methogology critical warning - primary clock placed on output or net of clock modifying block
+# Clock appears but Timing is failed because async group is missing (tries to time with clk200).
+create_clock -period 3.200 -name FREQ_CTR [get_pins */*.system0/freq_ctr_blk.freq_ctr0/k7.srcclk0/I]
+set_clock_groups -name FREQ_CTR_GROUP -asynchronous -group [get_clocks FREQ_CTR]
+
+# create_clock -period 3.200 -name FREQ_CTR [get_pins */freq_ctr_blk.freq_ctr0/K7.SRCCLK0/O] # same critical warning
+# create_clock -period 3.200 -name FREQ_CTR [get_nets */freq_ctr_blk.freq_ctr0/src_clk_fabric]
+# The following block does not work: critical warning: no clock reaching counter registers clock inputs
+# create_clock -period 2.500 -name FREQ_CTR
+# create_generated_clock -name FREQ_CTR -divide_by 2 -source [get_clocks FREQ_CTR] [get_pins */freq_ctr_blk.freq_ctr0/K7.SRCCLK0/O]
+# set_clock_groups -name FREQ_CTR_GROUP -asynchronous -group [get_clocks FREQ_CTR]
+
+################################
+# ADC clocks
+################################
+create_clock -period 2.350 -name ADCCLK0 -waveform {0.000 1.175} [get_ports fmca_adc0_adrp]
+create_clock -period 2.350 -name ADCCLK1 -waveform {0.000 1.175} [get_ports fmca_adc0_bdrp]
+create_clock -period 2.350 -name ADCCLK2 -waveform {0.000 1.175} [get_ports fmca_adc0_cdrp]
+create_clock -period 2.350 -name ADCCLK3 -waveform {0.000 1.175} [get_ports fmca_adc0_ddrp]
+#create_generated_clock -name ADC_CLK_SLAVE -source [get_ports fmca_adc0_bdrp] -multiply_by 1 [get_ports {fmca_adc0_adrp fmca_adc0_cdrp fmca_adc0_ddrp}]
+create_clock -period 2.350 -name ADCCLK4 -waveform {0.000 1.175} [get_ports fmca_adc1_adrp]
+create_clock -period 2.350 -name ADCCLK5 -waveform {0.000 1.175} [get_ports fmca_adc1_bdrp]
+create_clock -period 2.350 -name ADCCLK6 -waveform {0.000 1.175} [get_ports fmca_adc1_cdrp]
+create_clock -period 2.350 -name ADCCLK7 -waveform {0.000 1.175} [get_ports fmca_adc1_ddrp]
+
+create_clock -period 2.350 -name ADCCLK8 -waveform {0.000 1.175} [get_ports fmcb_adc0_adrp]
+create_clock -period 2.350 -name ADCCLK9 -waveform {0.000 1.175} [get_ports fmcb_adc0_bdrp]
+create_clock -period 2.350 -name ADCCLK10 -waveform {0.000 1.175} [get_ports fmcb_adc0_cdrp]
+create_clock -period 2.350 -name ADCCLK11 -waveform {0.000 1.175} [get_ports fmcb_adc0_ddrp]
+create_clock -period 2.350 -name ADCCLK12 -waveform {0.000 1.175} [get_ports fmcb_adc1_adrp]
+create_clock -period 2.350 -name ADCCLK13 -waveform {0.000 1.175} [get_ports fmcb_adc1_bdrp]
+create_clock -period 2.350 -name ADCCLK14 -waveform {0.000 1.175} [get_ports fmcb_adc1_cdrp]
+create_clock -period 2.350 -name ADCCLK15 -waveform {0.000 1.175} [get_ports fmcb_adc1_ddrp]
+
+
+# Make all ADC clocks asynchronous to any other clocks
+set_clock_groups -name ADCCLK0_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK0]
+set_clock_groups -name ADCCLK1_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK1]
+set_clock_groups -name ADCCLK2_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK2]
+set_clock_groups -name ADCCLK3_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK3]
+set_clock_groups -name ADCCLK4_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK4]
+set_clock_groups -name ADCCLK5_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK5]
+set_clock_groups -name ADCCLK6_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK6]
+set_clock_groups -name ADCCLK7_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK7]
+
+set_clock_groups -name ADCCLK8_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK8]
+set_clock_groups -name ADCCLK9_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK9]
+set_clock_groups -name ADCCLK10_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK10]
+set_clock_groups -name ADCCLK11_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK11]
+set_clock_groups -name ADCCLK12_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK12]
+set_clock_groups -name ADCCLK13_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK13]
+set_clock_groups -name ADCCLK14_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK14]
+set_clock_groups -name ADCCLK15_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK15]
+
+############################
+# ADC Input delays
+############################
+
+# ADC input delays
+# Vivado does not take into account the fact that we use a delay line and that we don't care if we capture one or more samples after the clock.
+# If we just put the ADC output delays, we end up with setup and hold violations.
+# We fix this by offseting the input delays with the propagation time of the data and the clock in the FPGA.
+# (we tried the option -network_latency_included or -source_latency_included but they don't seem to do anything).
+
+# ADC spec: setup: 0.4 - 0.6 ns, hold: 0.2-0.4 ns
+# In the FPGA, data arrives earlier than the clock due to the multiple clock buffers (BUFMR, BUFIO)
+# For the hold time, analysis is done rising edge to rising edge. The clock to data skew is
+#   - 2.16 ns without BUFMR => min_delay = hold_min + 2.16 ns = 2.36 ns
+#   - 3.6 ns with BUFMR . => min_delay = hold_min + 3.6 ns = 3.8 ns
+#
+# For the setup time, new data is placed on the bus by the ADC on the rising edge and is to be be sampled on the falling edge of the clock.
+# The clock to data skew is (excluding the 1.175 ns offset added because we sample on the following edge)
+#   - 0.530 ns without BUFMR => max_delay = (1.175-setup_min) + 1.081 = 1.305 ns (ADCCLK1,7,9)
+#   - 1.081 ns with BUFMR  => max_delay = (1.175-setup_min) + 1.081 = 1.856 ns
+#
+
+set_input_delay -clock [get_clocks ADCCLK0] -min 3.800 [get_ports {fmca_adc0_ahd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK0] -max 1.856 [get_ports {fmca_adc0_ahd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK0] -clock_fall -min -add_delay 3.800 [get_ports {fmca_adc0_ahd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK0] -clock_fall -max -add_delay 1.856 [get_ports {fmca_adc0_ahd*[*]}]
+
+set_input_delay -clock [get_clocks ADCCLK1] -min 2.360 [get_ports {fmca_adc0_bhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK1] -max 1.305 [get_ports {fmca_adc0_bhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK1] -clock_fall -min -add_delay 2.360 [get_ports {fmca_adc0_bhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK1] -clock_fall -max -add_delay 1.305 [get_ports {fmca_adc0_bhd*[*]}]
+
+set_input_delay -clock [get_clocks ADCCLK2] -min 3.800 [get_ports {fmca_adc0_chd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK2] -max 1.856 [get_ports {fmca_adc0_chd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK2] -clock_fall -min -add_delay 3.800 [get_ports {fmca_adc0_chd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK2] -clock_fall -max -add_delay 1.856 [get_ports {fmca_adc0_chd*[*]}]
+
+set_input_delay -clock [get_clocks ADCCLK3] -min 3.800 [get_ports {fmca_adc0_dhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK3] -max 1.856 [get_ports {fmca_adc0_dhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK3] -clock_fall -min -add_delay 3.800 [get_ports {fmca_adc0_dhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK3] -clock_fall -max -add_delay 1.856 [get_ports {fmca_adc0_dhd*[*]}]
+
+set_input_delay -clock [get_clocks ADCCLK4] -min 3.800 [get_ports {fmca_adc1_ahd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK4] -max 1.856 [get_ports {fmca_adc1_ahd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK4] -clock_fall -min -add_delay 3.800 [get_ports {fmca_adc1_ahd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK4] -clock_fall -max -add_delay 1.856 [get_ports {fmca_adc1_ahd*[*]}]
+
+set_input_delay -clock [get_clocks ADCCLK5] -min 3.800 [get_ports {fmca_adc1_bhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK5] -max 1.856 [get_ports {fmca_adc1_bhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK5] -clock_fall -min -add_delay 3.800 [get_ports {fmca_adc1_bhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK5] -clock_fall -max -add_delay 1.856 [get_ports {fmca_adc1_bhd*[*]}]
+
+set_input_delay -clock [get_clocks ADCCLK6] -min 3.800 [get_ports {fmca_adc1_chd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK6] -max 1.856 [get_ports {fmca_adc1_chd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK6] -clock_fall -min -add_delay 3.800 [get_ports {fmca_adc1_chd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK6] -clock_fall -max -add_delay 1.856 [get_ports {fmca_adc1_chd*[*]}]
+
+set_input_delay -clock [get_clocks ADCCLK7] -min 2.360 [get_ports {fmca_adc1_dhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK7] -max 1.305 [get_ports {fmca_adc1_dhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK7] -clock_fall -min -add_delay 2.360 [get_ports {fmca_adc1_dhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK7] -clock_fall -max -add_delay 1.305 [get_ports {fmca_adc1_dhd*[*]}]
+
+set_input_delay -clock [get_clocks ADCCLK8] -min 3.800 [get_ports {fmcb_adc0_ahd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK8] -max 1.856 [get_ports {fmcb_adc0_ahd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK8] -clock_fall -min -add_delay 3.800 [get_ports {fmcb_adc0_ahd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK8] -clock_fall -max -add_delay 1.856 [get_ports {fmcb_adc0_ahd*[*]}]
+
+set_input_delay -clock [get_clocks ADCCLK9] -min 2.360 [get_ports {fmcb_adc0_bhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK9] -max 1.305 [get_ports {fmcb_adc0_bhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK9] -clock_fall -min -add_delay 2.360 [get_ports {fmcb_adc0_bhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK9] -clock_fall -max -add_delay 1.305 [get_ports {fmcb_adc0_bhd*[*]}]
+
+set_input_delay -clock [get_clocks ADCCLK10] -min 3.800 [get_ports {fmcb_adc0_chd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK10] -max 1.856 [get_ports {fmcb_adc0_chd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK10] -clock_fall -min -add_delay 3.800 [get_ports {fmcb_adc0_chd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK10] -clock_fall -max -add_delay 1.856 [get_ports {fmcb_adc0_chd*[*]}]
+
+set_input_delay -clock [get_clocks ADCCLK11] -min 3.800 [get_ports {fmcb_adc0_dhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK11] -max 1.856 [get_ports {fmcb_adc0_dhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK11] -clock_fall -min -add_delay 3.800 [get_ports {fmcb_adc0_dhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK11] -clock_fall -max -add_delay 1.856 [get_ports {fmcb_adc0_dhd*[*]}]
+
+set_input_delay -clock [get_clocks ADCCLK12] -min 3.800 [get_ports {fmcb_adc1_ahd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK12] -max 1.856 [get_ports {fmcb_adc1_ahd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK12] -clock_fall -min -add_delay 3.800 [get_ports {fmcb_adc1_ahd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK12] -clock_fall -max -add_delay 1.856 [get_ports {fmcb_adc1_ahd*[*]}]
+
+set_input_delay -clock [get_clocks ADCCLK13] -min 3.800 [get_ports {fmcb_adc1_bhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK13] -max 1.856 [get_ports {fmcb_adc1_bhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK13] -clock_fall -min -add_delay 3.800 [get_ports {fmcb_adc1_bhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK13] -clock_fall -max -add_delay 1.856 [get_ports {fmcb_adc1_bhd*[*]}]
+
+set_input_delay -clock [get_clocks ADCCLK14] -min 3.800 [get_ports {fmcb_adc1_chd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK14] -max 1.856 [get_ports {fmcb_adc1_chd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK14] -clock_fall -min -add_delay 3.800 [get_ports {fmcb_adc1_chd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK14] -clock_fall -max -add_delay 1.856 [get_ports {fmcb_adc1_chd*[*]}]
+
+set_input_delay -clock [get_clocks ADCCLK15] -min 3.800 [get_ports {fmcb_adc1_dhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK15] -max 1.856 [get_ports {fmcb_adc1_dhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK15] -clock_fall -min -add_delay 3.800 [get_ports {fmcb_adc1_dhd*[*]}]
+set_input_delay -clock [get_clocks ADCCLK15] -clock_fall -max -add_delay 1.856 [get_ports {fmcb_adc1_dhd*[*]}]
+
+
+################################
+# 10 MHz Reference clocks from the Mezzanines.
+################################
+# These are used to generate accurate ADC SYNC signals relative to the ADC 1600 MHZ clock.
+# Those are also measured by the Frequency counter
+create_clock -period 100.000 -name FMCA_REFCLK_M2C -waveform {0.000 50.000} [get_ports fmca_refclk_m2c_p]
+create_clock -period 100.000 -name FMCB_REFCLK_M2C -waveform {0.000 50.000} [get_ports fmcb_refclk_m2c_p]
+
+# Timing with any other clocks is to be ignored
+set_clock_groups -name FMCA_REFCLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks FMCA_REFCLK_M2C]
+set_clock_groups -name FMCB_REFCLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks FMCB_REFCLK_M2C]
+
+################################
+# 10 MHz Reference clocks from the FPGA
+################################
+# Used to sequence the SYNC state machine. The ADCDAQ reset is registered on this clock.
+# Is also used to trigger IRIG-B time capture in order to measure the drift betreen the He maser and the GPS.
+# Is monitored by the frequency counter.
+
+create_clock -period 100.000 -name mgt_clk10_p -waveform {0.000 50.000} [get_ports mgt_clk10_p]
+
+# This clock generates the sync and async signals that reset the ADCDAQ logic. CDC is handled there.
+# The IRIG-B capture CBC is also handled in the HDL
+# We don't want the timing between this clock and other clock to be considered
+set_clock_groups -name REFCLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks mgt_clk10_p]
+
+################################
+# Motherboard raw (single-ended) 10 MHz Reference clock
+################################
+# This clock is on a single-ended, not-clock-capable pin, so it is not good enough and routable-enough to be used as an reference.
+# Is only monitored by the Frequency counter for QC purposes.
+create_clock -period 100.000 -name raw_clk10 -waveform {0.000 50.000} [get_ports raw_clk10]
+
+################################
+# SGMII interface constraints
+################################
+# 125 MHz reference
+# Used to clock the 1G Ethernet subsystem (SGMII).
+# Also feeds a MMCM to generate the internal 200 MHz, control systel clock (CLK125), SYSMON clock and CORR clock
+create_clock -period 8.000 -name SFP_CLK [get_ports sfp_clk_p]
+create_clock -period 8.000 -name arm_spi_virt_clk
+# Make unrelated MMCM-generated system clocks independent from the other clocks
+set_clock_groups -name ARM_SPI_CLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks arm_spi_virt_clk]
+set_clock_groups -name CLK125_GROUP -asynchronous -group [get_clocks -include_generated_clocks clk125_nobuf]
+set_clock_groups -name SYSMON_CLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks sysmon_clk_nobuf]
+set_clock_groups -name CORR_CLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks corr_clk_nobuf]
+
+
+# Clock period for the SGMII TX clock and recovered Rx clock are automatically derived
+# set_clock_groups -name sgmii_txclk_group -asynchronous -group [get_clocks -include_generated_clocks sgmii_txclk]
+set_clock_groups -name sgmii_txclk_group -asynchronous -group [get_clocks -include_generated_clocks -of_objects [get_nets chfpga0/gen_eth.phy_case.udp_mac0/phy_gen.sgmii0/txoutclk_nobuf]]
+
+################################
+# Mezzanine MGT Pll clock (for QC only)
+################################
+create_clock -period 6.400 -name {fmca_mgt_pll_refclk_p[0]} -waveform {0.000 3.200} [get_ports {fmca_mgt_pll_refclk_p[0]}]
+create_clock -period 6.400 -name {fmca_mgt_pll_refclk_p[1]} -waveform {0.000 3.200} [get_ports {fmca_mgt_pll_refclk_p[1]}]
+create_clock -period 6.400 -name {fmcb_mgt_pll_refclk_p[0]} -waveform {0.000 3.200} [get_ports {fmcb_mgt_pll_refclk_p[0]}]
+create_clock -period 6.400 -name {fmcb_mgt_pll_refclk_p[1]} -waveform {0.000 3.200} [get_ports {fmcb_mgt_pll_refclk_p[1]}]
+create_clock -period 10.000 -name mgt_clk100_p -waveform {0.000 5.000} [get_ports mgt_clk100_p]
+create_clock -period 8.000 -name mgt_clk125_p -waveform {0.000 4.000} [get_ports mgt_clk125_p]
+create_clock -period 5.000 -name mgt_clk200_p -waveform {0.000 2.500} [get_ports mgt_clk200_p]
+
+
+#############################
+# BP SHUFFLE Reference clocks
+################################
+# create_clock -period 6.400 -name bp_shuffle_refclk0 [get_pins -hier -filter {name=~*bp_shuffle*quad_gen[0]*gtxe2_common_0_i*GTREFCLK0}]
+# create_clock -name GT0_GTREFCLK0_COMMON_IN -period 6.4 [get_pins -hier -filter {name=~*common0_i*gtxe2_common_i*GTREFCLK0}]
+# create_clock -name GT1_GTREFCLK0_COMMON_IN -period 6.4 [get_pins -hier -filter {name=~*common1_i*gtxe2_common_i*GTREFCLK0}]
+# create_clock -name drpclk_in_i -period 8.0 [get_pins -hier -filter {name=~*shuffle_gtx_support_i*gt_usrclk_source*DRP_CLK_BUFG*I}]
+
+# We define both ref clocks independently to suppress "multiple clocks" warning
+create_clock -period 6.400 -name bp_shuffle_refclk0 -waveform {0.000 3.200} [get_ports {bp_shuffle_refclk_p[0]}]
+create_clock -period 6.400 -name bp_shuffle_refclk1 -waveform {0.000 3.200} [get_ports {bp_shuffle_refclk_p[1]}]
+set_clock_groups -name bp_shuffle_refclk_group -asynchronous -group [get_clocks -include_generated_clocks bp_shuffle_refclk*]
+
+# User Clock Constraints
+
+# create_clock -period 6.400 -name bp_shuffle_refclk [get_ports {bp_shuffle_refclk_p[*]}]
+
+############################
+# I2C clock
+############################
+create_clock -period 1000.000 -name i2c_clk [get_ports i2c_scl]
+set_clock_groups -name i2c_clk_group -asynchronous -group [get_clocks -include_generated_clocks i2c_clk]
+
+set_input_delay -clock [get_clocks i2c_clk] 0.000 [get_ports i2c_sda]
+
+############################
+# ARM SPI clock
+############################
+# The ARM SPI signals are sampled on the 125 MHz clock (the SPI clock is not used directly to capture and set data).
+# We refer the timing of these signals to a virtual clock (arm_spi_virt_clk) which acts as a fixed external reference.
+# We set the input delay relative to this clock, so if anything changes in the FPGA timing we are more likely to know about it.
+# It may make the timing of the routing more predictable.
+#
+# The delay is set to roughly take into account the min (fast) and max (slow) delay caused between the external virtual clock and the CLK125 clock.
+# Really, it would be better to sample the SPI signal on their SPI clocks. Some problems have been reported with the current set-up by others.
+# was 5 ns for corr, 4 ns for ct
+set_input_delay -clock [get_clocks arm_spi_virt_clk] 5.000 [get_ports {arm_spi_sck arm_spi_cs_n arm_spi_mosi}]
+
+############################
+# FMC SPI clock
+############################
+# was 4 ns for ct, 5 ns for corr
+set_input_delay -clock [get_clocks arm_spi_virt_clk] 4.000 [get_ports fmc?_spi_miso]
+
+
+############################
+# Clocking exceptions
+############################
+
+# Ignore path from the internal 200 MHz to the channel clock 0
+# There is one path between the IRIG-B output and the event capture register used to capture the frame number (on chan clock)  and IRIG-B time (on clk200)
+# Not needed since proper CDC was added.
+# set_false_path -from [get_clocks CLK200_MMCM_NOBUF] -to [get_clocks {chan_clk_nobuf[0]}]
+
+
+# Eliminate paths ending to synchronizing registers in the clock module (CLK0)
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ "*/clk0/*" && ASYNC_REG == TRUE}]
+
+#set_false_path -through [get_ports rst] -to [get_pins inst_fifo_gen/gconvfifo.rf/grf.rf/rstblk/*/CLR]
+
+# set_false_path -from [get_clocks divclk_local_d_3] -to [get_clocks {chan_clk_nobuf[0]}]
+
+# adc-send_data_reg1 signals come from multiple clocks. Ignore the timing to that register. That register has a ASYNC_REG=True property.
+#set_false_path -to [get_pins {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[*].adc_send_data_reg1_reg[*]/D}]
+
+
+# create_clock -period 1000.000 -name fmca_spi_sck -waveform {0.000 500.000} [get_ports fmca_spi_sck]
+# set_output_delay -clock [get_clocks fmca_spi_sck] 0.000 [get_ports fmca_spi_mosi]
+
+# Remove timing constraints from the FIFO Reset signal
+#set_false_path -from [get_pins {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[*].adcdaq0/IMPL.FIFO_RST_INT_reg/C}] -to [get_pins {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[*].adcdaq0/IMPL.FIFO_RST_reg/D}]
+
+#set_clock_groups -name ADCCLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK?]
+
+################################
+# Ignore input delays and timing on asynchronously-sampled inputs
+################################
+set async_input_ports [get_ports { \
+        cpu_reset_n \
+        fmc?_adc_pll_lock \
+        bp_buck_sync \
+		arm_irq_n  flash_spi_cs_n gpio_irq_n gpio_rst_n \
+		uart_rx uart_tx bp_gpio_int fpga_led1_bp_sma sma_b_fpga_led2\
+		}]
+
+set async_output_ports [get_ports { \
+        bp_buck_sync \
+		arm_irq_n   flash_spi_cs_n gpio_irq_n gpio_rst_n \
+		uart_rx uart_tx bp_gpio_int fpga_led1_bp_sma sma_b_fpga_led2\
+		}]
+
+set_input_delay -clock [get_clocks SFP_CLK] 0.000 $async_input_ports
+set_output_delay -clock [get_clocks SFP_CLK]  0.000 $async_output_ports
+set_false_path -through $async_input_ports
+set_false_path -through $async_output_ports
+
+# set_output_delay -clock [get_clocks SFP_CLK] -max -add_delay 0.000 [get_ports gpio_irq_n]
+#set_false_path -from [get_ports {bp_gpio_int fmc?_adc_pll_lock fpga_led1_bp_sma sma_b_fpga_led2}]
+#set_input_delay -clock [get_clocks arm_spi_virt_clk] 0.000 [get_ports {arm_irq_n bp_buck_sync cpu_reset_n flash_spi_cs_n gpio_irq_n gpio_rst_n uart_rx uart_tx}]
+#set_false_path -through [get_ports {arm_irq_n bp_buck_sync cpu_reset_n flash_spi_cs_n gpio_irq_n gpio_rst_n uart_rx uart_tx}]
+
+
+############################
+# Clocking exceptions
+############################
+
+# Ignore path from the internal 200 MHz to the channel clock 0
+# There is one path between the IRIG-B output and the event capture register used to capture the frame number (on chan clock)  and IRIG-B time (on clk200)
+# Not needed since proper CDC was added.
+# set_false_path -from [get_clocks CLK200_MMCM_NOBUF] -to [get_clocks {chan_clk_nobuf[0]}]
+
+
+# Eliminate paths ending to synchronizing registers in the clock module (CLK0)
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ "*/clk0/*" && ASYNC_REG == TRUE}]
+
+#set_false_path -through [get_ports rst] -to [get_pins inst_fifo_gen/gconvfifo.rf/grf.rf/rstblk/*/CLR]
+
+# set_false_path -from [get_clocks divclk_local_vect_d_3] -to [get_clocks {chan_clk_nobuf[0]}]  # commented out:  resulting cross-domain timing seems easy to meet.
+
+# create_clock -period 1000.000 -name fmca_spi_sck -waveform {0.000 500.000} [get_ports fmca_spi_sck]
+# set_output_delay -clock [get_clocks fmca_spi_sck] 0.000 [get_ports fmca_spi_mosi]
+
+
+
+
+
+###################################
+# Switching activity
+# ###################################
+
+set_switching_activity -default_toggle_rate 50.000
+#set_switching_activity -default_toggle_rate 12.500
+#set nets [get_nets -hierarchical -filter {NAME !~ *GND* && NAME !~ *VCC*}]
+#set_switching_activity -toggle_rate 100.000 -static_probability 0.500 $nets
+#set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 
+#set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 
+#set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 
+#set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 
+#set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 
+#set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 
+#set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 
+#set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 
+#set_switching_activity -toggle_rate 100.000 -type {lut} -static_probability 0.500 
+#set_switching_activity -toggle_rate 100.000 -type {register} -static_probability 0.500 
+#set_switching_activity -toggle_rate 100.000 -type {shift_register} -static_probability 0.500 
+#set_switching_activity -toggle_rate 100.000 -type {lut_ram} -static_probability 0.500 
+#set_switching_activity -toggle_rate 100.000 -type {bram} -static_probability 0.500 
+#set_switching_activity -toggle_rate 100.000 -type {dsp} -static_probability 0.500 
+#set_switching_activity -toggle_rate 100.000 -type {gt_rxdata} -static_probability 0.500 
+#set_switching_activity -toggle_rate 100.000 -type {gt_txdata} -static_probability 0.500 
+#set_switching_activity -toggle_rate 100.000 -type {bram_wr_enable} -static_probability 0.500 
+

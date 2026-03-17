@@ -130,17 +130,21 @@ entity fft is
 		-- Clock and Reset
 
 		clk     : in  std_logic; -- Processing clock, common to the input and output bus
-		reset   : in  std_logic; -- clk-synchronous Antenna processor reset.
+		reset   : in  std_logic; -- clk-synchronous channelizer reset.
 		                         -- In this module, resets the SYNC generator and send SYNC signals to the FFT
 
 		-- Control bus (Byte-Serial-Bus protocol)
 
-		ctrl_cmd_in_dat     : in  AXIS8_DAT_STRUCT;
-		ctrl_cmd_in_rdy     : out AXIS8_RDY_STRUCT;
-		ctrl_rply_out_dat   : out AXIS8_DAT_STRUCT;
-		ctrl_rply_out_rdy   : in  AXIS8_RDY_STRUCT;
-		ctrl_clk            : in  std_logic;
-		ctrl_rst            : in  std_logic
+		s_axis_bsb_tdata  : in  std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid : in  std_logic;
+		s_axis_bsb_tlast  : in  std_logic;
+		s_axis_bsb_tready : out std_logic;
+		m_axis_bsb_tdata  : out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid : out std_logic;
+		m_axis_bsb_tlast  : out std_logic;
+		m_axis_bsb_tready : in  std_logic;
+		bsb_clk           : in  std_logic;
+		bsb_rst           : in  std_logic
 		);
 end fft;
 
@@ -308,12 +312,16 @@ bsb_regs0: entity work.bsb_regs
 
 	PORT MAP(
 		-- Control interface (command and reply stream buses)
-		ctrl_cmd_in_dat   => ctrl_cmd_in_dat,
-		ctrl_cmd_in_rdy   => ctrl_cmd_in_rdy,
-		ctrl_rply_out_dat => ctrl_rply_out_dat,
-		ctrl_rply_out_rdy => ctrl_rply_out_rdy,
-		ctrl_clk          => ctrl_clk,
-		ctrl_rst          => ctrl_rst,
+		s_axis_bsb_tdata => s_axis_bsb_tdata,
+		s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+		s_axis_bsb_tlast => s_axis_bsb_tlast,
+		s_axis_bsb_tready => s_axis_bsb_tready,
+		m_axis_bsb_tdata => m_axis_bsb_tdata,
+		m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+		m_axis_bsb_tlast => m_axis_bsb_tlast,
+		m_axis_bsb_tready => m_axis_bsb_tready,
+		bsb_clk => bsb_clk,
+		bsb_rst => bsb_rst,
 
 		control_bytes     => control_bytes,
 		status_bytes      => status_bytes
@@ -342,7 +350,7 @@ bsb_regs0: entity work.bsb_regs
 
 			-- Counts the FFT overflows and stop at maximum value, and reset when overflow_reset=1
 			-- Parameterization of fft_overflow: check that fft_overflow is not '0' (CHIME) or '00' (D3A/CHORD)
-			if overflow_reset='1' then
+			if overflow_reset then
 				overflow_count <= (others=>'0');
 			elsif fft_tvalid='1' and fft_clk_en='1' and (fft_overflow='1' or overflow_force='1') and signed(overflow_count)/=-1 then
 			-- elsif fft_tvalid='1' and fft_clk_en='1' and (fft_overflow/=(fft_overflow'range => '0') or overflow_force='1') and signed(overflow_count)/=-1 then
@@ -355,10 +363,10 @@ bsb_regs0: entity work.bsb_regs
 			-- frames after, and maybe the frame before). Also note that thet
 			-- TLAST occurs, we have not yet included the last `fft_overflow` in
 			-- `fft_overflow_sticky`; we ned to do that separately.
-			if fft_tvalid='1' and fft_clk_en='1' and fft_tlast='1' then
+			if fft_tvalid and fft_clk_en and fft_tlast then
 				fft_overflow_sticky <= '0';
 				--fft_overflow_sticky_dly <= fft_overflow_sticky_int or fft_overflow;
-			elsif fft_tvalid='1' and fft_clk_en='1' and (fft_overflow='1' or overflow_force='1') then
+			elsif fft_tvalid and fft_clk_en and (fft_overflow or overflow_force) then
 			-- elsif fft_tvalid='1' and fft_clk_en='1' and (fft_overflow/=(fft_overflow'range => '0') or overflow_force='1') then
 				fft_overflow_sticky <= '1';
 			end if;
@@ -370,12 +378,12 @@ bsb_regs0: entity work.bsb_regs
 			fft_in_tlast  <= s_axis_in_dat_tlast;
 			fft_in_tuser  <= s_axis_in_dat_tuser;
 
-			if s_axis_in_dat_tvalid='1' then
+			if s_axis_in_dat_tvalid then
 				-- Generate a SYNC pulse every sync_period frames on the last word of the previous frame
 				fft_sync_in <= '0'; -- SYNC returns to zero on every valid word so it lasts only one sample. Will be overriden below.
 				-- if in_dat.TLAST='1' and sync_period_is_zero='0' then -- if this is the last word of the frame, check if it is time to generate a SYNC pulse
-				if s_axis_in_dat_tlast='1' and sync_period_is_zero='0' then
-					if  is_last_frame_of_sync_period='1' then -- if maximum count reach, send a sync pulse, otherwise blank it
+				if s_axis_in_dat_tlast and not sync_period_is_zero then
+					if is_last_frame_of_sync_period then -- if maximum count reach, send a sync pulse, otherwise blank it
 						sync_frame_ctr <= (others=>'0');
 						fft_sync_in <= '1';
 					else
@@ -435,7 +443,7 @@ bsb_regs0: entity work.bsb_regs
 				out_dat_pre_tuser  <= fft_rot_tuser;
 				out_dat_pre_tdata  <= fft_rot_tdata;
 				out_dat_pre_overflow_sticky <= fft_rot_overflow_sticky;
-				if out_dat_pre_tlast='1' and out_dat_pre_tvalid='1' then -- if out_data_pre_tvalid then fft_clk_en must also be true
+				if out_dat_pre_tlast and out_dat_pre_tvalid then -- if out_data_pre_tvalid then fft_clk_en must also be true
 					m_axis_out_dat_tuser(FUNCGEN_TUSER_BITS_PER_WORD) <= out_dat_pre_overflow_sticky; -- set FFT overflow flag
 				end if;
 			else
@@ -573,7 +581,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
             fft_tdata <= (fft_dout0_int & fft_dout1_int & fft_dout2_int & fft_dout3_int);
 
 		when HIRAX =>
-			-- Same as FFT_TYPE_CHIME, but allows bitgrowth
+			-- Same as FFT_TYPE_CHIME, but allows full bitgrowth
 			fft0: entity work.hirax_bit_growth_0
                 PORT MAP(
                     sync_in(0)  => fft_sync_in,
@@ -594,6 +602,27 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
 
             fft_tdata <= (fft_dout0_int & fft_dout1_int);
 
+		when HIRAX_3DSP =>
+			-- Same as FFT_TYPE_CHIME, but allows bitgrowth limited to 25+25 bits, use 3-DSP complex multipliers, and
+			fft0: entity work.hirax_bit_growth_3dsp
+                PORT MAP(
+                    sync_in(0)  => fft_sync_in,
+                    pol_in1      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 0) - 1 downto ADC_BITS_PER_SAMPLE * 3),
+                    pol_in2      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 1) - 1 downto ADC_BITS_PER_SAMPLE * 2),
+                    pol_in3      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 2) - 1 downto ADC_BITS_PER_SAMPLE * 1),
+                    pol_in4      => fft_in_tdata(ADC_BITS_PER_WORD - (ADC_BITS_PER_SAMPLE * 3) - 1 downto ADC_BITS_PER_SAMPLE * 0),
+
+                    sync_out(0) => fft_sync_out,
+                    out00    => fft_dout0_int,
+                    out01    => fft_dout1_int,
+
+                    shift    => to_slv(0, 11),
+                    overflow(0) => fft_overflow,
+                    -- ce_1     => fft_clk_en,
+                    clk    => clk
+                );
+
+            fft_tdata <= (fft_dout0_int & fft_dout1_int);
 		when others =>
 			assert FALSE report "Invalid FFT Type" severity FAILURE;
 	end generate fftype_gen;

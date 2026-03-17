@@ -47,12 +47,16 @@ entity refclk is
 	);
 	port (
 		-- Control interface
-		ctrl_cmd_in_dat: in AXIS8_DAT_STRUCT; -- Command stream input, signals from master (Data, Valid, Last)
-		ctrl_cmd_in_rdy: out AXIS8_RDY_STRUCT; -- Command stream input, signals to master (Ready)
-		ctrl_rply_out_dat: out AXIS8_DAT_STRUCT; -- Reply stream output, signals to slave (Data, Valid, Last)
-		ctrl_rply_out_rdy: in AXIS8_RDY_STRUCT; -- Reply stream output,  signals from slave (Ready)
-		ctrl_clk: in  std_logic;
-		ctrl_rst: in std_logic;
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid: in std_logic;
+		s_axis_bsb_tlast: in std_logic;
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic;
+		bsb_clk: in std_logic;
+		bsb_rst: in std_logic;
 
 		------------------------------------------------------------------------
 		-- SYNC sequencing signals
@@ -69,16 +73,20 @@ entity refclk is
 		--------------------------------------------------------------------------
 
 		-- Reference clocks from mezzanines (LVDS)
+		
 		fmc_refclk_p: in std_logic_vector(0 to NUMBER_OF_MEZZANINES - 1); -- Reference Clock LVDS input from the FMC. The Input pad is instantiated in this module.
 		fmc_refclk_n: in std_logic_vector(0 to NUMBER_OF_MEZZANINES - 1);
 
 		-- Buffered reference clocks from mezzanines
+		
 		fmc_refclk: out std_logic_vector(0 to NUMBER_OF_MEZZANINES - 1); -- BUFG-buffered, delayed FMC Mezzanine reference clock, used to scan the ADC clock waveform
 
 		-- Divide-by-2 version of the mezzanine clocks for monitoring
+		
 		fmc_refclk_div2: out std_logic_vector(0 to NUMBER_OF_MEZZANINES - 1); -- Logic signal pulsing at half the REFCLK frequency to be used by the Frequency Counter.
 
 		-- LVDS SYNC signal outputs to the mezzanines
+		
 		adc_sync_p: out std_logic_vector(0 to NUMBER_OF_MEZZANINES - 1); -- LVDS ADC SYNC output. The LVDS output pad is instantiated in this module.
 		adc_sync_n: out std_logic_vector(0 to NUMBER_OF_MEZZANINES - 1);
 
@@ -86,12 +94,13 @@ entity refclk is
 		------------------------------------------------------------------------
 		-- Clock-encoded sync signal (if IMPLEMENT_CLOCK_ENCODED_SYNC is TRUE)
 		------------------------------------------------------------------------
-		clk10_out: out std_logic; -- Generated clock that is pulse-width modulated to encode a sync on a 0-to-1 transition of the user_sync user-controlled signal
+		clk10_out: out std_logic; -- If IMPLEMENT_CLOCK_ENCODED_SYNC is TRUE, Generated clock that is pulse-width modulated to encode a sync on a 0-to-1 transition of the user_sync user-controlled signal. If FALSE, the IDELAYed BUFG-buffered FMC reference clock from FMC 0 is outputted.
 		sync_out: out std_logic; -- registered version of the user_sync user-controlled signal that is used to generate cock-encoded sync signals
 
 
 		clk200: in std_logic;
 		-- System-level signals
+		
 		rst: in std_logic -- synchronous to clk200
 	);
 end entity refclk;
@@ -227,12 +236,16 @@ begin
 
 		port map (
 			-- Control interface (command and reply stream buses)
-			ctrl_cmd_in_dat   => ctrl_cmd_in_dat,
-			ctrl_cmd_in_rdy   => ctrl_cmd_in_rdy,
-			ctrl_rply_out_dat => ctrl_rply_out_dat,
-			ctrl_rply_out_rdy => ctrl_rply_out_rdy,
-			ctrl_clk          => ctrl_clk,
-			ctrl_rst          => ctrl_rst,
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
+			bsb_clk          => bsb_clk,
+			bsb_rst          => bsb_rst,
 
 			control_bytes => control_bytes,
 			status_bytes  => status_bytes
@@ -257,9 +270,8 @@ begin
 		-- 10 MHz reference clock generation with encoded SYNC
 		-------------------------------------------------------------------------
 
-		clk10gen_proc: process(clk200, rst)
-		begin
-			if rst = '1' then
+		clk10gen_proc: process(all) begin
+			if rst then
 				clk200_counter <= (others => '0');
 				user_sync_dly <= '0';
 				user_sync_oneshot <= '0';
@@ -307,9 +319,8 @@ begin
 		-- We enable the rcovered_sync signal when a high pulse of the 10 MHz clock is 8 samples or less (<=40% duty cycle).
 		-- Since we detect the high time, the position of the rising edge is not affected by the pulse width modulation.
 		-- Devices that are sensitive to the rising edge (such as PLLs) should therefore not be affected by the scheme.
-		sync_det_proc: process(clk200, rst)
-		begin
-			if rst = '1' then
+		sync_det_proc: process(all) begin
+			if rst then
 				refclk_counter <= (others => '0');
 				recovered_sync <= '0';
 				fmc_refclk_previous <= '0';
@@ -338,7 +349,7 @@ begin
 
     else generate
         recovered_sync <= '0';  -- make sure the net is driven to prevent warnings
-        clk10_out <= '0';
+        clk10_out <= fmc_refclk(0); -- IDELAYed BUFG-buffered FMC reference clock from FMC 0
 	end generate encodedsync_gen; -- if IMPLEMENT_CLOCK_ENCODED_SYNC
 
 	-- Pass the user-controlled sync signal to the output after resynchronizing it to clk10
@@ -377,9 +388,8 @@ begin
 	begin
 
 		-- Pipeline the IDELAY control lines because they may be at the other end of the chip.
-		idelay_pipe_proc: process(ctrl_clk)
-		begin
-			if rising_edge(ctrl_clk) then
+		idelay_pipe_proc: process(all) begin
+			if rising_edge(bsb_clk) then
 				refclk_delay_dly <= refclk_delay(i);
 				refclk_delay_rst_dly <= refclk_delay_rst;
 			end if;
@@ -435,7 +445,7 @@ begin
 				-- Delay control
 				cntvalueout => open, -- 5-bit Counter value going to fabric for monitoring purpose
 				cntvaluein  => refclk_delay_dly, -- 5-bit Counter value from fabric for loadable counter application
-				c           => ctrl_clk, -- 1-bit Clock input (Must be connected for variable mode)
+				c           => bsb_clk, -- 1-bit Clock input (Must be connected for variable mode)
 				inc         => '0', -- 1-bit Increment / Decrement tap delay
 				ce          => '0', -- 1-bit Active high enable increment/decrement function
 				rst         => refclk_delay_rst_dly -- 1-bit Active high, synchronous reset, resets delay chain to IDELAY_VALUE/
@@ -444,43 +454,39 @@ begin
 
 		refclk_bufg_gen: case FPGA_SERIES generate
 
-			when v6_case: FPGA_VIRTEX6 =>
-				signal fmc_refclk_bufr: std_logic;
-			begin
-				-- ML605/ Virtex 6 notes:
-				-- Instantiate a BUFR to help route the Reference Clock to the BUFG
-				-- We cannot use a BUFR in the same bank to distribute REFCLK since all the BUFR are used by the ADC channels.
-				-- Consequently, we route to a BUFR 2 banks above, then to the BUFG.
-				-- We could route directly to a BUFG but the path is less clean.
+		when bufr_case: FPGA_VIRTEX6 | FPGA_KINTEX7 =>
+			signal fmc_refclk_bufr: std_logic;
+		begin
+			-- Virtex-6 and Kintex-7:
+			-- The REFCLK pin is not necessarily a CCIO pin (e.g. AE23 on KC705 is SRCC),
+			-- so there is no dedicated silicon route from the IDELAYE2 output directly to
+			-- a BUFG input. A BUFR in bypass mode provides the required regional-clock hop
+			-- that allows the BUFG to accept the signal without CLOCK_DEDICATED_ROUTE FALSE.
+			fmcbufr0: BUFR
+				generic map (
+					BUFR_DIVIDE => "BYPASS",
+					SIM_DEVICE  => "7SERIES"
+				)
+				port map (
+					i   => fmc_refclk_dly,
+					o   => fmc_refclk_bufr,
+					ce  => '1',
+					clr => '0'
+				);
+			fmcbufg0: BUFG
+				port map (
+					i => fmc_refclk_bufr,
+					o => fmc_refclk(i)
+				);
+		end bufr_case;
 
-				fmcbufr0: BUFR
-					generic map (
-						BUFR_DIVIDE => "BYPASS", --  ("BYPASS", "1", "2", "3", "4", "5", "6", "7", "8")
-						SIM_DEVICE  => "7SERIES"
-					) -- Specify target device, "VIRTEX4", "VIRTEX5", "VIRTEX6"
-					port map (
-						i   => fmc_refclk_dly, -- Clock buffer input
-						o   => fmc_refclk_bufr, -- Clock buffer output
-						ce  => '1', -- Clock enable input
-						clr => '0' -- Clock buffer reset input
-					);
-				-- Instantiate the BUFG that distribute the Refrence Clock through the design
-				-- Among other things, that clock is used by the ADCDAQ module to sample the ADC clock using a IDDR
-
-				fmcbufg0: BUFG
-					port map (
-						i => fmc_refclk_bufr,
-						o => fmc_refclk(i) -- 1-bit Clock Output pin
-					);
-			end v6_case;
-
-			when others=>
-				-- Kintex 7 and Ultrascale(+) do not need a BUFR
-				fmcbufg0: BUFG
-					port map (
-						i => fmc_refclk_dly,
-						o => fmc_refclk(i) -- 1-bit Clock Output pin
-					);
+		when others=>
+			-- Ultrascale(+): no BUFR needed; direct BUFG from IDELAY
+			fmcbufg0: BUFG
+				port map (
+					i => fmc_refclk_dly,
+					o => fmc_refclk(i)
+				);
 
 		--   -- We might have used the BUFH in the past
 		--   FMCBUFH0 : BUFH
@@ -558,10 +564,9 @@ begin
 	                     7 => sync_in(5)
 	                    );
 
-	clksync: process(clk10, rst)
-	begin
+	clksync: process(all) begin
 		-- The reset is asynchonous to make sure it is executed even in the absence of the Reference Clock.
-		if rst = '1' then
+		if rst then
 			sync_state <= SYNC_STATE_IDLE;
 			adc_sync_pre <= '0';
 			adcdaq_reset <= '0';
@@ -586,7 +591,7 @@ begin
 			adc_sync_pre <= '0'; -- overriden below if needed.
 			adcdaq_reset <= '0'; -- overriden below if needed.
 
-			if adc_sync_user = '1' then
+			if adc_sync_user then
 				adc_sync_pre <= '1';
 			else
 				if (sync = '1' and sync_dly = '0') or (local_sync_reg = '1' and local_sync_dly = '0') then -- reset the ADCDAQ SERDES and enable the SYNC line to stop the ADC clock

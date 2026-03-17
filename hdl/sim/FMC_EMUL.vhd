@@ -244,7 +244,7 @@ SPI_SLAVE0: entity work.SPI_SLAVE
    -- No clocks detected in port list. Replace <clock> below with 
    -- appropriate port name 
  
-    adc_clk_process: process (REFCLK_C2M_P, ADC_CLK)
+    adc_clk_process: process (all)
 		begin
 			if rising_edge(REFCLK_C2M_P) then
 				ADC_CLK <= '1';

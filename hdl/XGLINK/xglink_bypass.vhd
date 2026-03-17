@@ -35,6 +35,7 @@ use work.chFPGA_Package.all;
 entity xglink_bypass is
 	port (
 		-- User AXI-Streaming data input (nnon-blocking)
+		
 		s_axis_tx_tdata: in slv32; -- Fisrt *byte* transmitted is in the MSB (i.e. first bit transmitted is bit 24)
 		s_axis_tx_tvalid: in std_logic;
 		s_axis_tx_tlast: in std_logic;
@@ -48,6 +49,7 @@ entity xglink_bypass is
 		rx_min_frame: out std_logic_vector(12 downto 0);
 
 		-- User AXI-Streaming data output (non-blocking)
+		
 		m_axis_rx_tdata: out slv32;
 		m_axis_rx_tvalid: out std_logic;
 		m_axis_rx_tlast: out std_logic;
@@ -149,8 +151,7 @@ rx_fifo_overflow <= rx_fifo_overflow_int or not s_axis_rx_tready;
 
 -- Throttle the RX FIFO by skipping 2 reads every 66 clocks  to simulate the
 -- behavior of the GTX transmission which uses a 64/66 bit gearbox.
-bypass_proc: process(clk)
-begin
+bypass_proc: process(all) begin
 	if rising_edge(clk) then
 
 		tx_ctr <= tx_ctr + 1;
@@ -170,9 +171,8 @@ rx_max_frame <= std_logic_vector(rx_max_frame_int);
 rx_min_frame <= std_logic_vector(rx_min_frame_int);
 
 
-rx_fifo_overflow_proc: process(clk)
-	begin
-		if rising_edge(clk) then
+rx_fifo_overflow_proc: process(all) begin
+	if rising_edge(clk) then
 
 			---- Detect FIFO overflows
 			--if rx_fifo_overflow_int='1' or s_axis_rx_tready='0' then
@@ -188,9 +188,9 @@ rx_fifo_overflow_proc: process(clk)
 			--end if;
 
 			-- Detect maximum and minimum frame length
-			if m_axis_rx_tvalid_int = '1' then
+			if m_axis_rx_tvalid_int then
 				rx_word_ctr <= rx_word_ctr + 1;
-				if m_axis_rx_tlast_int = '1' then
+				if m_axis_rx_tlast_int then
 					-- rx_frame_ctr <= rx_frame_ctr + 1;
 					rx_frame_detect <= '1';
 					rx_word_ctr <= (others => '0');
@@ -204,11 +204,11 @@ rx_fifo_overflow_proc: process(clk)
 			end if;
 
 			--resets
-			if rst='1' then
+			if rst then
 				rx_word_ctr <= (others => '0'); -- don't reset the word counter with reset_stats so we don't capture partial frames which affects the minimum packet size.
 			end if;
 
-			if reset_stats='1' or rst='1' then
+			if reset_stats or rst then
 				rx_max_frame_int <= (others=>'0');
 				rx_min_frame_int <= (others=>'1');
 				rx_frame_detect <= '0';

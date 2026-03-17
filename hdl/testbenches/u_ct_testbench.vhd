@@ -205,8 +205,8 @@ signal m_axis_rx_tlast: std_logic;
 alias data is data5; -- select test patern source
 
 signal tdata: slv64_array(0 to data'length-1);
-signal tvalid: slv(0 to data'length-1);
-signal tlast: slv(0 to data'length-1);
+signal tvalid: std_logic_vector(0 to data'length-1);
+signal tlast: std_logic_vector(0 to data'length-1);
 
 --signal tx_resetdone: std_logic_vector(0 to NUMBER_OF_LANES-1); --
 --signal rx_resetdone: std_logic_vector(0 to NUMBER_OF_LANES-1); --
@@ -324,13 +324,13 @@ chan_proc: process(all) begin
 		s_axis_tx_tdata  <= (others=> (others => '0'));
 		s_axis_tx_tvalid <= '0';
 		s_axis_tx_tlast  <= '0';
-       	if send_data='1' then
+       	if send_data then
 
             word_ctr <= word_ctr + 1;
             if all_ones(word_ctr) then
                 frame_ctr <= frame_ctr + 1;
             end if;
-            if cpu_reset='1' or send_data='0' then
+            if cpu_reset or not send_data then
                 word_ctr <=  (others => '0');
                 frame_ctr <=  (others => '0');
             end if; 

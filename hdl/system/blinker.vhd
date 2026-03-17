@@ -31,9 +31,11 @@ entity blinker is
 	);
 	port (
 		-- Reset line
+		
 		rst: in  std_logic;
 
 		-- Clock
+		
 		clk: in  std_logic;
 		kick: in std_logic := '0'; -- increases the blink speed when '1'
 		leds: out std_logic_vector(7 downto 0); -- Ramp up and down pattern Intensity = (0,1,2,3,2,1,0,0,0...)
@@ -67,12 +69,11 @@ begin
 
 	nodummy: if DUMMY = FALSE generate
 
-		blinker: process(clk, kick) is
-		begin
-			if kick = '1' then
+		blinker: process(all) begin
+			if kick then
 				kick_pulse <= '1';
 			elsif rising_edge(clk) then
-				if kick_pulse = '1' then
+				if kick_pulse then
 					kick_pulse <= '0';
 				end if;
 			end if;
@@ -92,9 +93,9 @@ begin
 				pwm_high_to_low(2) <= pwm_low_to_high(0);
 
 				if PING_PONG then
-					if lead(0) = '1' then
+					if lead(0) then
 						dir <= '1';
-					elsif lead(7) = '1' then
+					elsif lead(7) then
 						dir <= '0';
 					end if;
 				end if;
@@ -102,8 +103,8 @@ begin
 				-- trig <= ctr(22 downto 0)=0 or (ctr(20 downto 0)=0 and kick='1');
 				trig <= ctr(22 downto 0) = 0 or kick_pulse = '1';
 
-				if trig  then
-					if dir = '1' then
+				if trig then
+					if dir then
 						lead <= rotate_right(lead, 1);
 					else
 						lead <= rotate_left(lead, 1);
@@ -122,7 +123,7 @@ begin
 				end loop;
 
 				-- synchronous resets. Overrides variables above.
-				if rst = '1' then
+				if rst then
 					leds_d_int <= (others => '0');
 					leds_u_int <= (others => '0');
 					lead <= (0 => '1', others => '0');

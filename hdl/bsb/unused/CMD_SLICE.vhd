@@ -34,6 +34,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 entity CTRL_SLICE is
      PORT (
 		-- Command streams from single slave input to multiple master outputs
+		
 		s_axis_tdata: in std_logic_vector(DATA_WIDTH-1 downto 0);
 		s_axis_tuser: in std_logic_vector(USER_WIDTH-1 downto 0) := (others=>'0'); -- optional user fields
 		s_axis_tvalid: in std_logic;
@@ -73,7 +74,7 @@ m_axis_tuser <= m_axis_tuser_int;
 m_axis_tvalid <= m_axis_tvalid_int;
 m_axis_tlast <= m_axis_tlast_int;
 
-fifo_proc: process(clk)
+fifo_proc: process(all)
 	variable dest_ready: std_logic;
 begin
 	if rising_edge(clk) then
@@ -83,8 +84,8 @@ begin
 		s_axis_tready <= dest_ready;
 
 		-- Read from input or from overflow
-		if dest_ready='1' then
-			if overflow_tvalid='1' then
+		if dest_ready then
+			if overflow_tvalid then
 				m_axis_tdata_int<=overflow_tdata;
 				m_axis_tuser_int<=overflow_tuser;
 				m_axis_tlast_int<=overflow_tlast;
@@ -99,8 +100,8 @@ begin
 		end if;
 
 		--Write to overflow. This block has to come after the read block because we override the overflow register.
-		if s_axis_tvalid='1' and s_axis_tready_int='1' then -- if we accept a word
-			if dest_ready='0' or overflow_tvalid='1' then -- if destination not ready to accept a word, or if there is a valid overflow word
+		if s_axis_tvalid and s_axis_tready_int then -- if we accept a word
+			if not dest_ready or overflow_tvalid then -- if destination not ready to accept a word, or if there is a valid overflow word
 				overflow_tdata <= s_axis_tdata;
 				overflow_tuser <= s_axis_tuser;
 				overflow_tlast <= s_axis_tlast;
@@ -108,7 +109,7 @@ begin
 			end if;
 		end if;
 
-		if rst='1' then
+		if rst then
 			overflow_tvalid<='0';
 			m_axis_tvalid_int<='0';
 			s_axis_tready_int <= '0';

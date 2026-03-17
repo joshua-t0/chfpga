@@ -144,7 +144,7 @@ begin
     system_reset <= rst;
     user_clk <= clk;
     
-    process( descrambler,SCRAMBLED_DATA_IN )
+    process(all)
     variable   poly_i     :  std_logic_vector(57 downto 0);
     variable   tempData_i :  std_logic_vector((RX_DATA_WIDTH-1) downto 0);
     variable   xorBit     :  std_logic;
@@ -160,13 +160,12 @@ begin
         tempdata      <=   tempdata_i;
     end process;
 
-    process( USER_CLK )
-    begin
-        if(USER_CLK'event and USER_CLK = '1') then
-            if (SYSTEM_RESET = '1') then
+    process(all) begin
+        if rising_edge(USER_CLK) then
+            if system_reset then
                 unscrambled_data_i <= (others => '0') after DLY;
                 descrambler        <= "0101010101010101010101010101010101010101010101010101010101" after DLY;
-            elsif (DATA_VALID_IN = '1') then
+            elsif data_valid_in then
                 descrambler        <=   poly after DLY;
                 unscrambled_data_i <=   tempdata after DLY;
             end if;

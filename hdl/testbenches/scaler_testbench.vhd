@@ -48,15 +48,12 @@ ARCHITECTURE behavior OF scaler_testbench IS
 
    -- Clock period definitions
 
-constant IN_CLK_PERIOD : time := 5 ns; -- 200 MHz
-constant OUT_CLK_PERIOD : time := 4.096 ns; -- 244 MHz
-constant CLK125_period : time := 8 ns;
+	constant IN_CLK_PERIOD : time := 5 ns; -- 200 MHz
+	constant OUT_CLK_PERIOD : time := 4.096 ns; -- 244 MHz
+	constant CLK125_period : time := 8 ns;
 
 	constant FFT_BITS_PER_WORD: integer := FFT_BITS_PER_BIN * FFT_BINS_PER_WORD; -- # CROSSBAR top address
 	constant OUT_BITS_PER_WORD: integer := OUT_BITS_PER_BIN * FFT_BINS_PER_WORD; -- # CROSSBAR top address
---	constant CROSSBAR_ADDR_INCREMENT : integer := 16#00800#; --
---	constant CROSSBAR_BIN_SEL0_ADDR: integer :=CROSSBAR_BASE_ADDR + 1*CROSSBAR_ADDR_INCREMENT;
---	constant CROSSBAR_BIN_SEL1_ADDR: integer :=CROSSBAR_BASE_ADDR + 2*CROSSBAR_ADDR_INCREMENT;
 
 	--Inputs
 	signal reset : std_logic := '0';
@@ -89,9 +86,6 @@ constant CLK125_period : time := 8 ns;
 
 begin
 
-
-
-
 dut0: entity work.scaler
     generic map (
         FFT_BITS_PER_BIN => FFT_BITS_PER_BIN, -- Real + Imaginary part
@@ -122,17 +116,18 @@ dut0: entity work.scaler
 		clk => out_clk,
 		reset => reset,
 
-		-- CTRL_CMD_DAT => (TDATA=> cmd_tdata, TVALID => cmd_tvalid, TLAST => cmd_tlast),
-		CTRL_CMD_IN_DAT.TDATA => cmd_tdata,
-		CTRL_CMD_IN_DAT.TVALID => cmd_tvalid,
-		CTRL_CMD_IN_DAT.TLAST => cmd_tlast,
-		CTRL_CMD_IN_RDY.TREADY =>cmd_tready,
+		s_axis_bsb_tdata  => cmd_tdata,
+		s_axis_bsb_tvalid => cmd_tvalid,
+		s_axis_bsb_tlast  => cmd_tlast,
+		s_axis_bsb_tready => cmd_tready,
 
-		CTRL_RPLY_OUT_DAT => open,
-		CTRL_RPLY_OUT_RDY => (TREADY => '1'),
+		m_axis_bsb_tdata  => open,
+		m_axis_bsb_tvalid => open,
+		m_axis_bsb_tlast  => open,
+		m_axis_bsb_tready => '1',
 
-		CTRL_CLK => clk125,
-		CTRL_RST => reset
+		bsb_clk => clk125,
+		bsb_rst => reset
 	);
 
 --in_clk_process :process

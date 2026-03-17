@@ -145,7 +145,7 @@ cap_blk: block
     
 begin
 
-	capture_proc: process(clk)
+	capture_proc: process(all)
         variable is_header: boolean := true;
         variable header_bytes: slv8_array(0 to 9);
         variable prod_word: std_logic_vector(39 downto 0); 

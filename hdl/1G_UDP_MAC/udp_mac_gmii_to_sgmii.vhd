@@ -39,6 +39,7 @@ entity udp_mac_gmii_to_sgmii is
 	port (
 
 		-- Tranceiver Interface
+		
 		gtrefclk_nobuf       : in std_logic;                     --  unbuffered GTX reference clock for tranceiver: 125MHz, very high quality
 		gtrefclk_buf         : in std_logic;                     --  BUFG-buffered GTX reference clock for tranceiver: 125MHz, very high quality
 		txp                  : out std_logic;                    -- Differential +ve of serial transmission from PMA to PMD.
@@ -59,6 +60,7 @@ entity udp_mac_gmii_to_sgmii is
 		gmii_rx_er           : out std_logic;                    -- Received control signal to client MAC.
 
 		-- General IO's
+		
 		status_vector : out std_logic_vector(15 downto 0); -- Core status.
 		config_vector : in std_logic_vector(31 downto 0); -- Core config.
 		signal_detect : in std_logic;                      -- Input from PMD to indicate presence of optical input.
@@ -294,9 +296,8 @@ port map (
 --    -----------------------------------------------------------------------------
 -- -- Hold the rest line for some delay after FPGA configuration and reset to make sure the link comes up.
 -- -- Otherwise we have 2-3% link up failure rate (known to happen on cores v14.3 rev1 and v15, maybe this is a SFP thing).
-process (reset, clk125)
-begin
-	if reset = '1' then
+process(all) begin
+	if reset then
 		init_reset <= '1';
 		init_reset_ctr <= (others=>'0');
 	elsif rising_edge(clk125) then
@@ -309,9 +310,8 @@ end process;
 
 
 	 -- Create a reset pulse of a decent length
-	 process(reset, clk125, user_reset)
-	 begin
-		 if reset = '1' or user_reset='1' then
+	 process(all) begin
+	 if reset or user_reset then
 			 pma_reset_pipe <= "1111";
 		 elsif rising_edge(clk125) then
 			 pma_reset_pipe <= pma_reset_pipe(2 downto 0) & reset;
@@ -473,9 +473,8 @@ end process;
 	 -----------------------------------------------------------------------------
 
 	 -- Pipeline the TX interface to facilitate routing
-	 process (userclk2)
-	 begin
-			if rising_edge(userclk2) then
+	 process(all) begin
+		if rising_edge(userclk2) then
 				 gmii_txd_iff    <= gmii_txd;
 				 gmii_tx_en_iff  <= gmii_tx_en;
 				 gmii_tx_er_iff  <= gmii_tx_er;

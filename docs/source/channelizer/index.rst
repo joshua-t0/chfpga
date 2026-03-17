@@ -9,6 +9,7 @@ F-Engine
    :maxdepth: 5
    :hidden:
 
+   chan_array
    chan
    adcdaq
    funcgen

@@ -52,8 +52,8 @@ ARCHITECTURE behavior OF packetizer_testbench IS
 	signal out_dat_send:  std_logic_vector(0 to NUMBER_OF_LANES-1) := (others => '1'); -- Set to '1' by the sink to indicate that output data can be sent. Has a one clock latency.
 	signal out_reset:  std_logic;
 
-	signal almost_empty_reg1, almost_empty_reg2: slv(0 to NUMBER_OF_CHANNELIZERS - 1);
-	signal send_reg1, send_reg2: slv(0 to NUMBER_OF_CHANNELIZERS - 1);
+	signal almost_empty_reg1, almost_empty_reg2: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
+	signal send_reg1, send_reg2: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
 
 	signal send: std_logic;
 

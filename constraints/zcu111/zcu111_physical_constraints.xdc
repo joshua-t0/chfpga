@@ -1218,7 +1218,7 @@ set_property PACKAGE_PIN R33 [get_ports {qsfp_txp[3]}]
 
 
 create_pblock CGE
-add_cells_to_pblock [get_pblocks CGE] [get_cells -quiet [list chfpga0/GPU_GEN.gpu_sel_gen.cge_case.cge0]]
+add_cells_to_pblock [get_pblocks CGE] [get_cells -quiet [list chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.cge0]]
 resize_pblock [get_pblocks CGE] -add {SLICE_X0Y181:SLICE_X11Y283}
 resize_pblock [get_pblocks CGE] -add {DSP48E2_X0Y74:DSP48E2_X0Y111}
 resize_pblock [get_pblocks CGE] -add {RAMB18_X0Y74:RAMB18_X0Y111}

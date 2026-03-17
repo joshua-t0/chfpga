@@ -63,12 +63,14 @@ entity udp_mac is
 
 	PORT (
 		-- Local addresses
+		
 		local_mac_addr: in std_logic_vector(47 downto 0);
 		local_ip_addr: in std_logic_vector(31 downto 0);
 		local_ip_port: in std_logic_vector(15 downto 0);
 		local_subarray: in std_logic_vector(1 downto 0); -- Defines on which of the 4 broadcast ports this fpga will respond.
 
 		-- Remote addresses
+		
 		remote_mac_addr0: in std_logic_vector(47 downto 0) := X"000000000000";
 		remote_ip_addr0: in std_logic_vector(31 downto 0) := X"00000000";
 		remote_ip_port0: in std_logic_vector(15 downto 0) := X"0000";
@@ -299,9 +301,8 @@ begin
 					);
 
 			-- Clock the received data.
-			rx_data_clocking: process(gmii_rxclk)
-				begin
-					if rising_edge(gmii_rxclk) then
+			rx_data_clocking: process(all) begin
+			if rising_edge(gmii_rxclk) then
 						gmii_rxdv <= phy_rxctrl_rxdv;
 						gmii_rxd <= phy_rxd;
 					end if;

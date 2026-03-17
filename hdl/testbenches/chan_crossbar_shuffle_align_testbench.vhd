@@ -69,7 +69,7 @@ type DELAY_ARRAY is array (natural range <>) of time;
 -- constant CLK_DLY: DELAY_ARRAY(0 to 7) := (0 ns, 625 ps, 2*625 ps, 3*625 ps, 4*625 ps, 5*625 ps, 6*625 ps, 7*625 ps);
 constant CLK_DLY: DELAY_ARRAY(0 to 15) := (0 ns, 150 ns, 149 ns, 155 ns, 145 ns, 150 ns, 150 ns, 148 ns, 150 ns, 150 ns, 149 ns, 155 ns, 145 ns, 150 ns, 150 ns, 148 ns);
 
-signal lane_active: slv(0 to NUMBER_OF_OUTPUT_LANES-1) := (2=>'0', others => '1');
+signal lane_active: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES-1) := (2=>'0', others => '1');
 
 signal s_axis_tdata: slv32_array(0 to NUMBER_OF_INPUT_LANES-1) := (others=> (others=>'0'));
 signal s_axis_tvalid: std_logic_vector(0 to NUMBER_OF_INPUT_LANES-1) := (others=>'0'); -- needed for sim. If, U, data will not start
@@ -91,8 +91,8 @@ signal axis_rx_fifo_in_tdata: slv32_array(0 to NUMBER_OF_OUTPUT_LANES-1);
 signal axis_rx_fifo_in_tvalid: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES-1);
 signal axis_rx_fifo_in_tlast: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES-1);
 signal axis_rx_fifo_in_tuser: slv4_array(0 to NUMBER_OF_OUTPUT_LANES-1);
-signal axis_rx_fifo_in_clk: slv(0 to NUMBER_OF_OUTPUT_LANES-1);
-signal axis_rx_fifo_overflow: slv(0 to NUMBER_OF_OUTPUT_LANES-1);
+signal axis_rx_fifo_in_clk: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES-1);
+signal axis_rx_fifo_overflow: std_logic_vector(0 to NUMBER_OF_OUTPUT_LANES-1);
 
 
 signal axis_rx_fifo_out_tdata: slv32_array(0 to NUMBER_OF_OUTPUT_LANES-1);

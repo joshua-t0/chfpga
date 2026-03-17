@@ -6,7 +6,11 @@
 <Project Version="7" Minor="61" Path="/home/vbidula/chfpgalite/xilinx_projects/chfpga_ice_corr16/chfpga_ice_corr16.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
+<<<<<<< HEAD
     <Option Name="Id" Val="692317c384514fe2b169b87bbf1ecdb8"/>
+=======
+    <Option Name="Id" Val="0e1ef1aa88fa4604a6724e02707d7f74"/>
+>>>>>>> jfc/dev
     <Option Name="Part" Val="xc7k420tffg901-2"/>
     <Option Name="CompiledLibDir" Val="$PCACHEDIR/compile_simlib"/>
     <Option Name="CompiledLibDirXSim" Val=""/>
@@ -93,29 +97,56 @@
   <FileSets Version="1" Minor="31">
     <FileSet Name="sources_1" Type="DesignSrcs" RelSrcDir="$PSRCDIR/sources_1" RelGenDir="$PGENDIR/sources_1">
       <Filter Type="Srcs"/>
+<<<<<<< HEAD
       <File Path="$PPRDIR/../../_Cores/KC705/ADCDAQ_FIFO/ADCDAQ_FIFO.xci">
         <FileInfo>
+=======
+      <File Path="$PSRCDIR/sources_1/ip/ADCDAQ_FIFO/ADCDAQ_FIFO.xci">
+        <FileInfo>
+          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/KC705/ADCDAQ_FIFO/ADCDAQ_FIFO.xci"/>
+          <Attr Name="ImportTime" Val="1771836839"/>
+>>>>>>> jfc/dev
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+<<<<<<< HEAD
       <File Path="$PPRDIR/../../_Cores/KC705/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci">
         <FileInfo>
+=======
+      <File Path="$PSRCDIR/sources_1/ip/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci">
+        <FileInfo>
+          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/KC705/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci"/>
+          <Attr Name="ImportTime" Val="1771836839"/>
+>>>>>>> jfc/dev
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+<<<<<<< HEAD
       <File Path="$PPRDIR/../../_Cores/KC705/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci">
         <FileInfo>
+=======
+      <File Path="$PSRCDIR/sources_1/ip/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci">
+        <FileInfo>
+          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/KC705/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci"/>
+          <Attr Name="ImportTime" Val="1771836839"/>
+>>>>>>> jfc/dev
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+<<<<<<< HEAD
       <File Path="$PPRDIR/../../_Cores/KC705/UDP_MAC_TX_DATA_FIFO/udp_mac_tx_data_fifo.xci">
+=======
+      <File Path="$PSRCDIR/sources_1/ip/udp_mac_tx_data_fifo/udp_mac_tx_data_fifo.xci">
+>>>>>>> jfc/dev
         <FileInfo>
+          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/KC705/UDP_MAC_TX_DATA_FIFO/udp_mac_tx_data_fifo.xci"/>
+          <Attr Name="ImportTime" Val="1771836839"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -145,6 +176,15 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+<<<<<<< HEAD
+=======
+      <File Path="$PPRDIR/../../hdl/common/generic_fifo.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+>>>>>>> jfc/dev
       <File Path="$PPRDIR/../../hdl/corr/UCORR44_ARRAY.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -169,6 +209,15 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+<<<<<<< HEAD
+=======
+      <File Path="$PPRDIR/../../hdl/common/axis_merge.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+>>>>>>> jfc/dev
       <File Path="$PPRDIR/../../hdl/bsb/bsb_sync_fifo.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -265,7 +314,11 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+<<<<<<< HEAD
       <File Path="$PPRDIR/../../hdl/chan/chan_package.vhd">
+=======
+      <File Path="$PPRDIR/../../hdl/chan/chan_array.vhd">
+>>>>>>> jfc/dev
         <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -394,18 +447,40 @@
       <Config>
         <Option Name="DesignMode" Val="RTL"/>
         <Option Name="TopModule" Val="chfpga_ice"/>
+<<<<<<< HEAD
+=======
+        <Option Name="TopAutoSet" Val="TRUE"/>
+>>>>>>> jfc/dev
         <Option Name="dataflowViewerSettings" Val="min_width=16"/>
       </Config>
     </FileSet>
     <FileSet Name="constrs_1" Type="Constrs" RelSrcDir="$PSRCDIR/constrs_1" RelGenDir="$PGENDIR/constrs_1">
       <Filter Type="Constrs"/>
-      <File Path="$PPRDIR/../../constraints/mgk7mb/SIFPGA_mgk7mb_timing_constraints.xdc">
+      <File Path="$PPRDIR/../../constraints/ice/ice_timing_constraints_common.xdc">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../constraints/mgk7mb/SIFPGA_mgk7mb_physical_constraints.xdc">
+      <File Path="$PPRDIR/../../constraints/ice/ice_physical_constraints_common.xdc">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../constraints/ice/ice_physical_constraints_corr.xdc">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../constraints/ice/ice_physical_constraints_ucorr44.xdc">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../constraints/ice/ice_physical_constraints_hirax_fft.xdc">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -418,7 +493,10 @@
     <FileSet Name="sim_1" Type="SimulationSrcs" RelSrcDir="$PSRCDIR/sim_1" RelGenDir="$PGENDIR/sim_1">
       <Config>
         <Option Name="DesignMode" Val="RTL"/>
+<<<<<<< HEAD
         <Option Name="TopModule" Val="chfpga_ice"/>
+=======
+>>>>>>> jfc/dev
         <Option Name="TopLib" Val="xil_defaultlib"/>
         <Option Name="TransportPathDelay" Val="0"/>
         <Option Name="TransportIntDelay" Val="0"/>
@@ -432,12 +510,16 @@
     </FileSet>
     <FileSet Name="utils_1" Type="Utils" RelSrcDir="$PSRCDIR/utils_1" RelGenDir="$PGENDIR/utils_1">
       <Filter Type="Utils"/>
+<<<<<<< HEAD
       <Config>
         <Option Name="TopAutoSet" Val="TRUE"/>
       </Config>
     </FileSet>
     <FileSet Name="FFT2" Type="BlockSrcs" RelSrcDir="$PSRCDIR/FFT2" RelGenDir="$PGENDIR/FFT2">
       <File Path="$PPRDIR/../../_Cores/KC705/FFT2/FFT2.xci">
+=======
+      <File Path="$PPRDIR/../../tcl/rename_bitstream.tcl">
+>>>>>>> jfc/dev
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -446,6 +528,22 @@
       </File>
       <Config>
         <Option Name="TopModule" Val="FFT2"/>
+        <Option Name="dataflowViewerSettings" Val="min_width=16"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="hirax_bit_growth_3dsp" Type="BlockSrcs" RelSrcDir="$PSRCDIR/hirax_bit_growth_3dsp" RelGenDir="$PGENDIR/hirax_bit_growth_3dsp">
+      <File Path="$PSRCDIR/sources_1/ip/hirax_bit_growth_3dsp/hirax_bit_growth_3dsp.xci">
+        <FileInfo>
+          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/KC705/hirax_bit_growth_3dsp/hirax_bit_growth_3dsp.xci"/>
+          <Attr Name="ImportTime" Val="1772133334"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <Config>
+        <Option Name="TopModule" Val="hirax_bit_growth_3dsp"/>
         <Option Name="dataflowViewerSettings" Val="min_width=16"/>
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
@@ -482,9 +580,15 @@
           <Option Id="Assert">1</Option>
           <Option Id="KeepEquivalentRegisters">1</Option>
           <Option Id="Directive">7</Option>
+<<<<<<< HEAD
           <Option Id="ShregMinSize">5</Option>
           <Option Id="FsmExtraction">1</Option>
           <Option Id="ResourceSharing">2</Option>
+=======
+          <Option Id="ResourceSharing">2</Option>
+          <Option Id="ShregMinSize">5</Option>
+          <Option Id="FsmExtraction">1</Option>
+>>>>>>> jfc/dev
         </Step>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -492,7 +596,11 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
+<<<<<<< HEAD
     <Run Id="FFT2_synth_1" Type="Ft3:Synth" SrcSet="FFT2" Part="xc7k420tffg901-2" ConstrsSet="FFT2" Description="Higher performance designs, resource sharing is turned off, the global fanout guide is set to a lower number, FSM extraction forced to one-hot, LUT combining is disabled, equivalent registers are preserved, SRL are inferred  with a larger threshold" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/FFT2_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/FFT2_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/FFT2_synth_1">
+=======
+    <Run Id="hirax_bit_growth_3dsp_synth_1" Type="Ft3:Synth" SrcSet="hirax_bit_growth_3dsp" Part="xc7k420tffg901-2" ConstrsSet="hirax_bit_growth_3dsp" Description="Higher performance designs, resource sharing is turned off, the global fanout guide is set to a lower number, FSM extraction forced to one-hot, LUT combining is disabled, equivalent registers are preserved, SRL are inferred  with a larger threshold" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/hirax_bit_growth_3dsp_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/hirax_bit_growth_3dsp_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/hirax_bit_growth_3dsp_synth_1">
+>>>>>>> jfc/dev
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Flow_PerfOptimized_high" Flow="Vivado Synthesis 2022">
           <Desc>Higher performance designs, resource sharing is turned off, the global fanout guide is set to a lower number, FSM extraction forced to one-hot, LUT combining is disabled, equivalent registers are preserved, SRL are inferred  with a larger threshold</Desc>
@@ -500,9 +608,15 @@
         <Step Id="synth_design">
           <Option Id="KeepEquivalentRegisters">1</Option>
           <Option Id="Directive">7</Option>
+<<<<<<< HEAD
           <Option Id="ShregMinSize">5</Option>
           <Option Id="FsmExtraction">1</Option>
           <Option Id="ResourceSharing">2</Option>
+=======
+          <Option Id="ResourceSharing">2</Option>
+          <Option Id="ShregMinSize">5</Option>
+          <Option Id="FsmExtraction">1</Option>
+>>>>>>> jfc/dev
         </Step>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -541,7 +655,11 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
+<<<<<<< HEAD
     <Run Id="FFT2_impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="FFT2" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="FFT2_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/FFT2_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/FFT2_impl_1">
+=======
+    <Run Id="hirax_bit_growth_3dsp_impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="hirax_bit_growth_3dsp" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="hirax_bit_growth_3dsp_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/hirax_bit_growth_3dsp_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/hirax_bit_growth_3dsp_impl_1">
+>>>>>>> jfc/dev
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
           <Desc>Default settings for Implementation.</Desc>

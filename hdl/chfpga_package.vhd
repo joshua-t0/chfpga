@@ -25,10 +25,21 @@ use IEEE.NUMERIC_STD.ALL;
 use IEEE.math_real.all; -- needed for ceil()
 use IEEE.math_complex.all;
 use IEEE.STD_LOGIC_MISC.ALL; -- for or_reduce()
+use std.textio.all;
+use IEEE.std_logic_textio.all;
+
 -------- chFPGA Package ------------
 
 -- Defines the system-level constants and data types, declares the components used in the system, and provide support functions and procedures
 package chFPGA_Package is
+
+type slv_array is array (NATURAL RANGE <>) of std_logic_vector; -- VHDL2008 only
+type signed_array is array (NATURAL RANGE <>) of signed; -- VHDL2008 only
+type unsigned_array is array (NATURAL RANGE <>) of unsigned; -- VHDL2008 only
+type integer_array is array (natural range <>) of integer;
+type integer_array_array is array (natural range <>) of integer_array; -- Can be sliced
+type integer_2d_array is array (natural range <>, natural range <>) of integer; -- Can't be sliced
+type bool_array is array (natural range <>) of boolean;
 
 -- generic types and subtypes
 subtype Byte is std_logic_vector(7 downto 0);
@@ -65,9 +76,7 @@ subtype slv144 is std_logic_vector(143 downto 0);
 type ByteArray8 is array (0 to 7) of std_logic_vector(7 downto 0);
 type ByteArray is array (NATURAL RANGE <>) of std_logic_vector(7 downto 0);
 
-type slv_array is array (NATURAL RANGE <>) of std_logic_vector; -- VHDL2008 only
-type signed_array is array (NATURAL RANGE <>) of signed; -- VHDL2008 only
-type unsigned_array is array (NATURAL RANGE <>) of unsigned; -- VHDL2008 only
+
 
 type slv2_array is array (NATURAL RANGE <>) of std_logic_vector(1 downto 0);
 type slv3_array is array (NATURAL RANGE <>) of std_logic_vector(2 downto 0);
@@ -106,7 +115,6 @@ type slv256_array is array (NATURAL RANGE <>) of std_logic_vector(255 downto 0);
 type Word3Array is array (NATURAL RANGE <>) of std_logic_vector(2 downto 0);
 type Word32Array is array (NATURAL RANGE <>) of std_logic_vector(31 downto 0);
 type Word33Array is array (NATURAL RANGE <>) of std_logic_vector(32 downto 0);
-type BoolArray is array (natural range <>) of BOOLEAN;
 type u2_array is array (NATURAL RANGE <>) of unsigned(1 downto 0);
 type u3_array is array (NATURAL RANGE <>) of unsigned(2 downto 0);
 type u4_array is array (NATURAL RANGE <>) of unsigned(3 downto 0);
@@ -122,18 +130,6 @@ type u48_array is array (NATURAL RANGE <>) of unsigned(47 downto 0);
 type int8_array is array (NATURAL RANGE <>) of signed(7 downto 0);
 type int35_array is array (NATURAL RANGE <>) of signed(34 downto 0);
 
---type StringArray is array (natural range <>) of STRING;
-type IntegerArray is array (natural range <>) of INTEGER;
-type integer_array is array (natural range <>) of INTEGER;
-type bool_array is array (natural range <>) of boolean;
-type integer_16xN_array is array (natural range <>) of integer_array(0 to 15);
-
-type FanoutArray is array (NATURAL RANGE <>) of std_logic_vector(0 downto 0); -- used to create a vector of independent signals used to fan out signal without having the map tool pack them into a single slice because of "register ordering"
-type BUFMRIndexArray is array (0 to 8) of INTEGER range -1 to 2; -- used to indicate which BUFMR to use for each bit and the clock of the ADC output
-type BUFMRIndexArrayArray is  array (NATURAL RANGE <>) of BUFMRIndexArray;
--- Application specific types and subtypes
-subtype PortOffset is std_logic_vector(1 downto 0);
-type PortOffsetArray is array (natural range <>) of PortOffset;
 
 -- Implement static maps (dictionaries) for lookups. See sel() to lookup.
 type si_map_item is record -- string-integer map element
@@ -148,7 +144,8 @@ type ii_map_item is record -- integer-integer map element
 end record;
 type ii_map is array (NATURAL RANGE <>) of ii_map_item; -- string-integer map as a list of string-integer tuples
 
---type ADCOut is array (0 to 7) of STD_LOGIC_VECTOR(31 downto 0); -- 8 64-bit words provided by the two ADCs ;
+
+constant NULL_INTEGER_ARRAY: integer_array(1 to 0) := (others => 0);
 
 
 -- Platform IDs
@@ -251,7 +248,7 @@ constant PLATFORM_INFO: PLATFORM_INFO_ARRAY := (
 
 
 
-constant FPGA_SERIES_LIST: IntegerArray:=(
+constant FPGA_SERIES_LIST: integer_array:=(
 	PLATFORM_ID_ML605 => FPGA_VIRTEX6,
 	PLATFORM_ID_KC705 => FPGA_KINTEX7,
 	PLATFORM_ID_UNUSED => FPGA_KINTEX7,
@@ -276,10 +273,14 @@ type clk_source_enum is (
 	);
 
 -- BSB Monitor & control interface type
-type bsb_type_enum is (PHY, AXIS);
+type bsb_interface_enum is (UDP_GMII, UDP_SGMII, AXIS);
+
+-- Capture bus interface type
+type cap_interface_enum is (BSB, AXIS);
 
 -- PHY type (1G Ethernet interface)
-type phy_type_enum is (GMII, SGMII, NONE); -- NONE = AXI4-Streaming interface
+type phy_type_enum is (GMII, SGMII); 
+type bsb_to_phy_map_type is array (bsb_interface_enum range <>) of phy_type_enum; -- converts bsb_interface_enum to phy_type_enum
 type phy_clk_source_enum is (REFCLK);
 type adc_type_enum IS (EV8AQ160, AXIS);
 
@@ -291,14 +292,15 @@ type chan_capture_type_enum is (PROBER, UCAP);
 type chan_capture_info_struct is
     record
         INPUT_WIDTH: integer;
+        NUMBER_OF_SOURCES: integer;
     end record;
 type chan_capture_info_type is array (chan_capture_type_enum) of chan_capture_info_struct;
 constant CHAN_CAPTURE_INFO: chan_capture_info_type := (
-    PROBER => (INPUT_WIDTH => 32),
-    UCAP => (INPUT_WIDTH =>128)
+    PROBER => (INPUT_WIDTH => 32, NUMBER_OF_SOURCES=>2),
+    UCAP => (INPUT_WIDTH =>128, NUMBER_OF_SOURCES=>2)
     ); -- bit width of the capture engine input
 
-type fft_type_enum is (NONE, CHIME, D3A, CHORD, HIRAX); -- Position of enum can index the FFT_INFO array
+type fft_type_enum is (NONE, CHIME, D3A, CHORD, HIRAX, HIRAX_3DSP); -- Position of enum can index the FFT_INFO array
 
 -- Platform information structure
 type fft_info_struct is
@@ -369,6 +371,16 @@ constant FFT_INFO: FFT_INFO_ARRAY := (
 		BITS_PER_BIN => 29+29,
 		BINS_PER_WORD => 2,
 		ROTATE => FALSE
+		),
+
+	HIRAX_3DSP => (
+		SAMPLES_PER_FRAME => 2048,
+		LATENCY => 3230,
+		BITS_PER_SAMPLE => 8,
+		SAMPLES_PER_WORD => 4,
+		BITS_PER_BIN => 25+25,
+		BINS_PER_WORD => 2,
+		ROTATE => FALSE
 		)
 	);
 
@@ -398,7 +410,7 @@ type corr_type_enum IS (CORR44, UCORR44, NONE);
 -- real-time offload link types
 
 
-type gpu_link_type_enum is (NONE, XGE, CGE);
+type data_link_type_enum is (NONE, XGE, UPACK_CGE);
 
 
 constant NUMBER_OF_CORRELATORS_MAX: INTEGER :=8; -- Maximum number of correlators supported by the system
@@ -412,8 +424,6 @@ constant NUMBER_OF_CMACS_MAX : integer := (NUMBER_OF_CHANNELIZERS_MAX + 1) * 2;
 constant GLOBAL_SIM: boolean := FALSE;
 constant GLOBAL_NUMBER_OF_GPU_LINKS: integer := 8; -- (0- NUMBER_OF_CHANNELIZERS) Number of 10Gb Ethernet links to connecto to the GPUs
 constant GLOBAL_NUMBER_OF_GPU_REFCLKS: integer := 1; -- Number of Reference clocks provided for the 10GE links to the GPU
-constant GLOBAL_GPU_CHANNEL_QUAD: IntegerArray := (0 to 3=> 0, 4 to 7=> 1); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1
-constant GLOBAL_GPU_QUAD_REFCLK: IntegerArray := (0 to 1=>0); -- Both QUAD0 and QUAD1 use refclk(0)
 
 
 
@@ -591,7 +601,7 @@ type SHUFFLE_FRAME_HEADER_STRUCT is
 		ENCODING: std_logic_vector(3 downto 0); -- bit 0: '0' = 8 bit mode, '1' = 4 bit mode; bit 1: '0'= 2's complement, '1'=offset binary, bits 2-3: reserved
 		NUMBER_OF_FRAMES: std_logic_vector(3 downto 0); -- number of frames per packet (1-255)
 		NUMBER_OF_BINS: std_logic_vector(11 downto 0); -- Number of frequency bins included in each frame (1-4095) (there are up to 1024 bins in full CHIME)
-		NUMBER_OF_ANTENNAS: std_logic_vector(11 downto 0); -- Number of antennas included for each frequency bin (1-4095) (there are up to 2560 antennas in full CHIME)
+		NUMBER_OF_CHANNELS: std_logic_vector(11 downto 0); -- Number of channels included for each frequency bin (1-4095) (there are up to 2560 channels in full CHIME)
 
 		-- Word 2
 		ANCILLARY_DATA: std_logic_vector(31 downto 0); -- Ancillary data channel to trickle a statistical (or other low rate) data stream
@@ -657,8 +667,10 @@ function sel(b: BOOLEAN; if_true: integer; if_false: integer) return integer;
 function sel(b: BOOLEAN; if_true: time; if_false: time) return time;
 function sel(b: BOOLEAN; if_true: std_logic; if_false: std_logic) return std_logic;
 function sel(b: BOOLEAN; if_true: std_logic_vector; if_false: std_logic_vector) return std_logic_vector;
+function sel(b: BOOLEAN; if_true: slv_array; if_false: slv_array) return slv_array;
 function sel(b: BOOLEAN; if_true: slv32_array; if_false: slv32_array) return slv32_array;
 function sel(b: std_logic; if_true: std_logic_vector; if_false: std_logic_vector) return std_logic_vector;
+function sel(key: bsb_interface_enum; dict: bsb_to_phy_map_type) return phy_type_enum;
 function sel(key:string; imap: si_map) return integer;
 function sel(key:integer; imap: ii_map) return integer;
 
@@ -669,12 +681,12 @@ FUNCTION max_value_vect(v:signed) return signed;
 FUNCTION min_value_vect(v:signed) return signed;
 
 function max(LEFT, RIGHT: INTEGER) return INTEGER;
-function max(vin: IntegerArray) return INTEGER;
 function max(vin: integer_array) return integer;
+
 function min(LEFT, RIGHT: INTEGER) return INTEGER;
-function min(vin: IntegerArray) return INTEGER;
 function min(vin: integer_array) return integer;
 function min(LEFT, RIGHT: unsigned) return unsigned;
+
 function count(vin: integer_array; target:integer) return integer;
 function to_std_logic(i:boolean) return std_logic; -- converts bool to std_logic
 function to_slv(i:integer; n: integer) return std_logic_vector; -- converts integer to standard_logic_vector with specified number of bits
@@ -702,6 +714,10 @@ function to_unsigned(i:slv8_array) return unsigned; -- concatenate bytes in a sl
 function to_unsigned(i:std_logic) return unsigned; -- converts a std_logic into a one element unsigned
 function str(i:integer) return string; -- converts integer to a string. Allows expressions, contrary to to_string().
 function repeat( V: std_logic_vector; N: natural) return std_logic_vector; -- Concatenates a vector N times
+function xpm_fifo_features(
+    overflow, data_valid, prog_full, wr_data_count, almost_full, wr_ack,
+    underflow, prog_empty, rd_data_count, almost_empty : boolean := FALSE
+  ) return string; -- XPM xpm_fifo_async / xpm_fifo_sync USE_ADV_FEATURES hex string
 
 function log2(v: integer) return real; -- Returns the log2 of an integer as a real (overloads the library log2())
 function integer_log2(v: integer) return integer; -- Returns the log2 of an integer as an integer
@@ -910,53 +926,30 @@ begin
 	end if;
 end MAX;
 
-function MAX(vin: IntegerArray) return INTEGER is
-	variable vout: integer;
-begin
-	vout := INTEGER'LOW;
-	for j in 0 to vin'Length-1 loop
-		if 	vin(j) > vout then
-			vout := vin(j);
-		end if;
-	end loop;
-	return vout;
-end MAX;
-
 function max(vin: integer_array) return integer is
 	variable vout: integer;
 begin
 	vout := integer'LOW;
 	for j in 0 to vin'Length-1 loop
-		if 	vin(j) > vout then
+		if vin(j) > vout then
 			vout := vin(j);
 		end if;
 	end loop;
 	return vout;
 end max;
 
-function MIN(vin: IntegerArray) return INTEGER is
-	variable vout: integer;
-begin
-	vout := INTEGER'HIGH;
-	for j in 0 to vin'Length-1 loop
-		if 	vin(j) < vout then
-			vout := vin(j);
-		end if;
-	end loop;
-	return vout;
-end MIN;
-
 function min(vin: integer_array) return integer is
 	variable vout: integer;
 begin
 	vout := integer'HIGH;
 	for j in 0 to vin'LENGTH-1 loop
-		if 	vin(j) < vout then
+		if vin(j) < vout then
 			vout := vin(j);
 		end if;
 	end loop;
 	return vout;
 end min;
+
 
 -- stolen from std_numeric
 function MIN(LEFT, RIGHT: INTEGER) return INTEGER is
@@ -981,7 +974,7 @@ function count(vin: integer_array; target: integer) return integer is
 	variable vout: integer := 0;
 begin
 	for j in vin'RANGE loop
-		if 	vin(j) = target then
+		if vin(j) = target then
 			vout := vout + 1;
 		end if;
 	end loop;
@@ -996,6 +989,28 @@ begin
 		return '0';
 	end if;
 end to_std_logic;
+
+function xpm_fifo_features(
+    overflow, data_valid, prog_full, wr_data_count, almost_full, wr_ack,
+    underflow, prog_empty, rd_data_count, almost_empty : boolean := FALSE
+  ) return string is
+	variable l: line;
+	variable v: std_logic_vector(15 downto 0);
+begin
+	v := (0 => to_std_logic(overflow),
+	      1 => to_std_logic(prog_full),
+	      2 => to_std_logic(wr_data_count),
+	      3 => to_std_logic(almost_full),
+	      4 => to_std_logic(wr_ack),
+	      8 => to_std_logic(underflow),
+	      9 => to_std_logic(prog_empty),
+	      10 => to_std_logic(rd_data_count),
+	      11 => to_std_logic(almost_empty),
+	      12 => to_std_logic(data_valid),
+	      others => '0');
+	IEEE.std_logic_textio.hwrite(l, v);
+	return l.all;
+end xpm_fifo_features;
 
 FUNCTION to_slv(i:integer; n: integer) return std_logic_vector is -- converts integer to standard_logic_vector with specified number of bits
 begin
@@ -1172,7 +1187,7 @@ FUNCTION struct_to_word(s:SHUFFLE_FRAME_HEADER_STRUCT) return slv32_array is
 	variable w : slv32_array(0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH-1);
 begin
 	w(0):= (s.STREAM_ID & s.PROTOCOL_VERSION & s.HEADER_LENGTH_IN_WORDS & s.COOKIE );
-	w(1):= (s.ENCODING & s.NUMBER_OF_FRAMES & s.NUMBER_OF_BINS & s.NUMBER_OF_ANTENNAS);
+	w(1):= (s.ENCODING & s.NUMBER_OF_FRAMES & s.NUMBER_OF_BINS & s.NUMBER_OF_CHANNELS);
 	w(2):= s.ANCILLARY_DATA;
 	w(3):= s.TIMESTAMP;
 	return w;
@@ -1191,7 +1206,7 @@ begin
 	s.ENCODING           := w(1)(31 downto 28);
 	s.NUMBER_OF_FRAMES   := w(1)(27 downto 24);
 	s.NUMBER_OF_BINS     := w(1)(23 downto 12);
-	s.NUMBER_OF_ANTENNAS := w(1)(11 downto 0);
+	s.NUMBER_OF_CHANNELS := w(1)(11 downto 0);
 	-- Word 2
 	s.ANCILLARY_DATA := w(2);
 	-- Word 3
@@ -1218,6 +1233,15 @@ begin
 end sel;
 
 FUNCTION sel(b: BOOLEAN; if_true: slv32_array; if_false: slv32_array) return slv32_array is
+begin
+	if b then
+		return if_true;
+	else
+		return if_false;
+	end if;
+end sel;
+
+FUNCTION sel(b: BOOLEAN; if_true: slv_array; if_false: slv_array) return slv_array is
 begin
 	if b then
 		return if_true;
@@ -1262,11 +1286,16 @@ begin
 	end if;
 end sel;
 
+function sel(key: bsb_interface_enum; dict: bsb_to_phy_map_type) return phy_type_enum is
+begin
+	return dict(key);
+end;
+
 FUNCTION sel(b: std_logic; if_true: std_logic_vector; if_false: std_logic_vector) return std_logic_vector is
 begin
-	if b='1' then
+	if b then
 		return if_true;
-	elsif b='0' then
+	elsif not b then
 		return if_false;
 	else
 		report "Test value in sel(test_value, if_true, if_false) is neither '0' or '1'" severity failure;
@@ -1522,7 +1551,7 @@ function clip(v:signed; width_minus_one:integer)  return signed is
 	variable v_slv: std_logic_vector(v'RANGE) := std_logic_vector(v);
 begin
 	-- If the sign bit of the word is 0 but all the clipped bits are not 0, saturate to max positive value
-	if  v_slv(v_slv'HIGH) = '0' and not all_zeros(v_slv, v_slv'HIGH, width_minus_one) then
+	if v_slv(v_slv'HIGH) = '0' and not all_zeros(v_slv, v_slv'HIGH, width_minus_one) then
 		r := (others => '0');
 		r(width_minus_one-1 downto 0) := (others => '1');
 	-- If the sign bit of the word is 1 but all the bits down and including the MSB of our byte are not 1, saturate to most negative value

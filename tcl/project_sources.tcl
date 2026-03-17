@@ -27,6 +27,8 @@ set bd_name ""
 set hdl_base_files [list  \
  "chfpga_package.vhd" \
  "chfpga.vhd" \
+ "common/generic_fifo.vhd" \
+ "common/axis_merge.vhd" \
  "bsb/axis_sync_fifo.vhd" \
  "bsb/bsb_sync_fifo.vhd" \
  "bsb/bsb_router.vhd" \
@@ -45,8 +47,8 @@ set hdl_base_files [list  \
  "system/sysmon.vhd" \
  "system/blinker.vhd" \
  "system/clocks.vhd" \
- "chan/chan_package.vhd" \
  "chan/chan.vhd" \
+ "chan/chan_array.vhd" \
  "chan/lfsr.vhd" \
  "chan/funcgen.vhd" \
  "chan/fft_delay.vhd" \
@@ -60,6 +62,7 @@ set hdl_base_files [list  \
 
 set fft_type_chime "KC705/FFT2/FFT2.xci"
 set fft_type_hirax "KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci"
+set fft_type_hirax_3dsp "KC705/hirax_bit_growth_3dsp/hirax_bit_growth_3dsp.xci"
 set fft_type_chord "CRS/pfb_fft_bitgrowth_0/pfb_fft_bitgrowth_0.xci"
 
 #*****************************************************************************************
@@ -72,7 +75,7 @@ set ice_bd_name ""
 set ice_top_module "chfpga_ice"
 
 set ice_ct_ooc_ip_files $fft_type_hirax
-set ice_corr16_ooc_ip_files $fft_type_chime
+set ice_corr16_ooc_ip_files $fft_type_hirax_3dsp
 
 # KC705/SCALER_CMUL/SCALER_CMUL.xci to be added if using complex gains
 
@@ -171,6 +174,44 @@ set ice_ct_hdl_files [concat $ice_hdl_base_files [list \
 
 
 #*****************************************************************************************
+# KC705 Platform
+#*****************************************************************************************
+
+set kc705_target_part "xc7k325tffg900-2"
+
+set kc705_corr8_ooc_ip_files $fft_type_hirax_3dsp
+set kc705_corr8_ip_files [list \
+  "KC705/ADCDAQ_FIFO/ADCDAQ_FIFO.xci" \
+  "KC705/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci" \
+  "KC705/UDP_MAC_TX_DATA_FIFO/udp_mac_tx_data_fifo.xci" \
+]
+
+set kc705_hdl_base_files [concat $hdl_base_files [list \
+  "chfpga_kc705.vhd" \
+  \
+  "system/spi.vhd" \
+  "system/i2c.vhd" \
+  "system/arm_spi.vhd" \
+  \
+  "chan/prober.vhd" \
+  "chan/adcdaq.vhd" \
+  \
+  "ct/bct_engine.vhd"\
+  \
+  "1G_UDP_MAC/udp_mac_crc32.vhd" \
+  "1G_UDP_MAC/udp_mac_tx.vhd" \
+  "1G_UDP_MAC/udp_mac_rx.vhd" \
+  "1G_UDP_MAC/udp_mac.vhd" \
+  ]]
+
+set kc705_corr8_hdl_files [concat $kc705_hdl_base_files [list \
+  "corr/UCMAC44_ARRAY.vhd"\
+  "corr/UCORR44.vhd"\
+  "corr/UCORR44_ARRAY.vhd"\
+  ]]
+
+
+#*****************************************************************************************
 # CRS Platform
 #*****************************************************************************************
 
@@ -180,6 +221,9 @@ set crs_top_module "chfpga_crs"
 
 set crs_ooc_ip_files $fft_type_chord
 
+set crs_corr8_ip_files []
+
+# For corr32, 64, which need the GTYs for corner turning
 set crs_corr_ip_files [list \
  "CRS/GTY/gtwizard_ultrascale_0.xci" \
  ]
@@ -216,7 +260,7 @@ set crs_corr_hdl_files [concat $crs_hdl_base_files [list \
  ]]
 
 set crs_ct_hdl_files [concat $crs_hdl_base_files [list \
-  "ct/ucorn.vhd" \
+  "ct/upack.vhd" \
   "100GE_UDP_MAC/cge.vhd"\
   ]]
 

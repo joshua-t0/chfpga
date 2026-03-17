@@ -44,6 +44,7 @@ entity cge is
 		);
 	port (
 		-- 100G Serial interface
+		
 		tx_p: out std_logic_vector(0 to 3);
 		tx_n: out std_logic_vector(0 to 3);
 		refclk_p: in std_logic; -- 156.250 reference clock input
@@ -61,12 +62,16 @@ entity cge is
 		-- init_clk: in std_logic; -- continuous clock
 
 		-- Control and reply streams
-		cmd_dat: in axis8_dat_struct := (TDATA => (others => '0'), TVALID => '0', TLAST => '0');
-		cmd_rdy: out axis8_rdy_struct;
-		rply_dat: out axis8_dat_struct;
-		rply_rdy: in axis8_rdy_struct := (TREADY => '0');
-		ctrl_clk: IN std_logic := '0'; -- control clock
-		ctrl_rst: in std_logic := '0'
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0) := (others => '0');
+		s_axis_bsb_tvalid: in std_logic := '0';
+		s_axis_bsb_tlast: in std_logic := '0';
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic := '0';
+		bsb_clk: in std_logic := '0'; -- control clock
+		bsb_rst: in std_logic := '0'
 
 		-- areset: in std_logic -- asynchronous reset
 	 );
@@ -277,12 +282,16 @@ begin
 			NUMBER_OF_STATUS_BYTES => status_bytes'Length(1) -- Number of bits in the status word.
 		)
 		port map (
-			CTRL_CMD_IN_DAT   => cmd_dat,
-			CTRL_CMD_IN_RDY   => cmd_rdy,
-			CTRL_RPLY_OUT_DAT => rply_dat,
-			CTRL_RPLY_OUT_RDY => rply_rdy,
-			CTRL_CLK          => ctrl_clk,
-			CTRL_RST          => ctrl_rst,
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
+			bsb_clk          => bsb_clk,
+			bsb_rst          => bsb_rst,
 
 			CONTROL_BYTES => control_bytes,
 			STATUS_BYTES => status_bytes,
@@ -425,7 +434,7 @@ begin
 			dest_out => usr_tx_reset_resync
 		);
 
-	fifo_wr_proc: process(clk)
+	fifo_wr_proc: process(all)
 		variable byte: integer;
 	begin
 		if rising_edge(clk) then
@@ -439,7 +448,7 @@ begin
 			fifo_almost_full_reg <= fifo_almost_full;
 
 			fifo_srst <= '0';
-			if usr_tx_reset_resync = '1' or rst = '1' then -- need to resync to clk
+			if usr_tx_reset_resync or rst then -- need to resync to clk
 				fifo_srst <= '1';
 				tx_reset_done <= '0'; -- this stops writing to both FIFOs
 			end if;
@@ -447,7 +456,7 @@ begin
 			-- Implement a tx_reset_done signal that is '1' when we are ready to write to the FIFO.
 			-- We wait for BOTH the data FIFO to be ready. The data FIFO has ot sone rst_done signal.
 			-- The only way to tell when the flag fifo is ready is to look at the full signal going low after a reset.
-			if tx_reset_done = '0' and flag_fifo_full = '0' and fifo_wr_rst_busy = '0' then
+			if not tx_reset_done and not flag_fifo_full and not fifo_wr_rst_busy then
 				tx_reset_done <= '1';
 			end if;
 
@@ -469,7 +478,7 @@ begin
 				axis_tx_tlast <= s_axis_tx_tlast;
 			end if; -- source select
 
-			if axis_tx_tvalid = '1' then
+			if axis_tx_tvalid then
 				was_tlast <= axis_tx_tlast;
 				word_ctr <= word_ctr + 1;
 				if word_ctr = capture_byte_number(15 downto 5) then
@@ -477,19 +486,19 @@ begin
 					capture_byte <= axis_tx_tdata(8 * byte + 7 downto 8 * byte);
 					capture_tlast <= axis_tx_tlast;
 				end if;
-				if axis_tx_tlast = '1' then
+				if axis_tx_tlast then
 					in_frame_ctr <= in_frame_ctr + 1;
 					packet_length <= word_ctr;
 					word_ctr <= (others => '0');
 				end if;
 			end if;
 
-			if fifo_wr_en = '1' and fifo_full = '0' then -- don't toggle is_high_word if the write did not take place
+			if fifo_wr_en and not fifo_full then -- don't toggle is_high_word if the write did not take place
 				is_high_word <= not is_high_word;
 			end if;
 
 			-- Reset
-			if tx_reset_done = '0' then -- if reset in in progress
+			if not tx_reset_done then -- if reset in in progress
 				is_high_word <= '0';
 				in_frame_ctr <= (others => '0');
 				fifo_overflow_sticky <= '0';
@@ -537,7 +546,7 @@ pkt_gen_gen: if IMPLEMENT_PACKET_GENERATOR generate
 	end function compute_ip_checksum;
 
 begin
-	pkt_gen_proc: process(clk)
+	pkt_gen_proc: process(all)
 		variable mac_header: std_logic_vector(14 * 8 - 1 downto 0); -- 14-bytes Ethernet header (excluding preamble)
 		variable ip_header: std_logic_vector(20 * 8 - 1 downto 0); -- 20-bytes IP header
 		variable udp_header: std_logic_vector(8 * 8 - 1 downto 0); -- 8-bytes UDP header
@@ -609,7 +618,7 @@ begin
 				end case;
 
 			-- Stay in reset and don't send anything until we the transmitter is fully out of reset.
-			if tx_reset_done = '0' then
+			if not tx_reset_done then
 				tx_state <= INIT;
 			end if;
 
@@ -677,16 +686,15 @@ begin
 	tx_axis_tkeep(63 downto 32) <= (others => '1') when tvalid1 = '1' and (send_half_words = '0' or is_high_word = '1') else
 	                               (others => '0');
 
-	fifo_rd_proc: process(clk_out_int)
-	begin
+	fifo_rd_proc: process(all) begin
 		if rising_edge(clk_out_int) then
 			usr_tx_reset <= usr_tx_reset_pre; -- register the reset signal to help deal with the large fanout
 			-- ``is_high_word`` is used to tell if we are to send the low or high 32 bytes coming out of the FIFO.
 			-- This is used in case there is a TLAST on the low word and the  low and high words needs to be sent separately.
 			-- The variable is set to '0' whenever we read the FIFO, and is increased to 1 whenever a transfer to the CMAC occur.
-			if fifo_rd_en = '1' or usr_tx_reset = '1' then
+			if fifo_rd_en or usr_tx_reset then
 				is_high_word <= '0';
-			elsif tx_axis_tready = '1' and tx_axis_tvalid = '1' then
+			elsif tx_axis_tready and tx_axis_tvalid then
 				is_high_word <= '1';
 			end if;
 
@@ -703,7 +711,7 @@ begin
 					tx_gt_locked_led <= '0';
 					-- tx_core_busy_led <= '0';
 
-					-- if reset_done = '1' then
+					-- if reset_done  then
 						tx_state <= CMAC_LOCKED;
 					-- end if;
 
@@ -714,7 +722,7 @@ begin
 
 				when CMAC_ALIGNED => -- wait for reset to complete
 					ctl_tx_send_rfi      <= '0';
-					if fifo_rd_rst_busy = '0' then
+					if not fifo_rd_rst_busy then
 						tx_state <= FIFO_READY;
 					end if;
 
@@ -723,16 +731,16 @@ begin
 					-- send_data <= '1';
 			end case;
 
-			if tx_ovfout = '1' then
+			if tx_ovfout then
 				tx_ovfout_sticky <= '1';
 			end if;
-			if tx_unfout = '1' then
+			if tx_unfout then
 				tx_unfout_sticky <= '1';
 			end if;
-			if tx_axis_tvalid = '1' and tx_axis_tvalid = '1' then
+			if tx_axis_tvalid and tx_axis_tvalid then
 				out_frame_ctr <= out_frame_ctr + 1;
 			end if;
-			if usr_tx_reset = '1' then
+			if usr_tx_reset then
 				tx_state <= INIT_CMAC;
 				tx_ovfout_sticky <= '0';
 				tx_unfout_sticky <= '0';
@@ -755,7 +763,7 @@ CMAC_INST: entity work.CMAC_USP
 		gt_ref_clk_n => refclk_n,
 
 		-- input clocks
-		init_clk => ctrl_clk, -- 100 MHz
+		init_clk => bsb_clk, -- 100 MHz
 
 		-- output clocks
 		gt_txusrclk2 => clk_out_int, -- 322 MHz clock output to clock user signals
@@ -821,8 +829,8 @@ CMAC_INST: entity work.CMAC_USP
 		-- stat_tx_vlan => stat_tx_vlan,
 
 		-- DRP interface
-		core_drp_reset => ctrl_rst,
-		drp_clk => ctrl_clk,
+		core_drp_reset => bsb_rst,
+		drp_clk => bsb_clk,
 		drp_addr => drp_addr,
 		drp_di => drp_in,
 		drp_en => drp_en,

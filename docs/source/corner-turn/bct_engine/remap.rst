@@ -1,8 +1,8 @@
 .. title:: REMAP
 
-********************************************************************
+****************************************************
 :entity:`remap` (*remap.vhd*): Lane Remapping Module
-********************************************************************
+****************************************************
 
 .. parse:: hdl/ct/remap.vhd
 
@@ -40,4 +40,3 @@ The `remap` module is instantiated in the :entity:`shuffle_crossbar` after the a
 3. **Pipeline delay**: The remapper also provides a pipeline delay stage that gives the bin selector module time to look up its bin selection map from RAM.
 
 The remapping configuration is controlled through memory-mapped registers in the shuffle crossbar's control interface.
-

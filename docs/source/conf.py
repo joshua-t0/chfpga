@@ -81,8 +81,7 @@ release = version
 
 
 # General information about the project.
-project = 'chFPGA ' + version
-copyright = '2016-2025, Jean-Francois Cliche'
+copyright = '2016-2026, Jean-Francois Cliche'
 author = 'Jean-Francois Cliche'
 
 build_info = dict(
@@ -90,11 +89,20 @@ build_info = dict(
     author_name="Unknown", author_email="Unknown", author_date="Unknown",
     committer_name="Unknown", committer_email="Unknown", commit_date="Unknown")
 
-# Update build info if possible
+# Update build info and project name with branch/commit from git
+branch_name = os.environ.get('BITBUCKET_BRANCH', '')
+short_hash = ''
 try:
     from git import Repo
-    repo = Repo('../')
-    head_commit = repo.head.commit  # Get the latest commit on the current branch
+    repo = Repo(os.path.abspath('../..'))  # Go up two levels from docs/source/ to repo root
+    head_commit = repo.head.commit
+    short_hash = str(head_commit)[:8]
+
+    if not branch_name:
+        try:
+            branch_name = repo.active_branch.name
+        except TypeError:
+            branch_name = ''
 
     build_info['author_name'] = head_commit.author.name
     build_info['author_email'] = head_commit.author.email
@@ -108,9 +116,17 @@ try:
 except Exception as e:
     print(f"{e!r}. Not populating build info except version")
 
+if branch_name and short_hash:
+    project = f'chFPGA ({branch_name} @ {short_hash})'
+elif branch_name:
+    project = f'chFPGA ({branch_name})'
+else:
+    project = 'chFPGA ' + version
+
 import json
 import os
-builddir = os.path.join('..', os.environ.get('BUILDDIR','build'), 'html')
+# Make the build directory path absolute to avoid issues with working directory
+builddir = os.path.abspath(os.path.join('..', os.environ.get('BUILDDIR','build'), 'html'))
 os.makedirs(builddir, exist_ok=True)
 with open(os.path.join(builddir, "build_info.json"), "w") as f:
     json.dump(build_info, f, indent=4)

@@ -12,6 +12,18 @@
 #   hdl_files
 #   const_files
 #
+# Usage examples:
+#   # Normal project creation from a project directory
+#   #   vivado -mode batch -notrace -source create_project.tcl
+#   #
+#   # List-only mode for Makefile dependency generation:
+#   #   vivado -mode batch -notrace -source create_project.tcl -tclargs --list_files_only
+#   #
+#   # In list-only mode, this script:
+#   #   - Verifies that all referenced files and IP library folders exist.
+#   #   - Prints one repository-relative file path per line (HDL, XDC, BD, IP, util files).
+#   #   - Exits before creating a Vivado project or runs.
+#
 #*****************************************************************************************
 
 
@@ -21,19 +33,29 @@ set proj_dir [pwd]
 # Set the project name based on the folder name
 set proj_name [file tail $proj_dir]
 
+# Check for list-files-only flag in argv (if present)
+set list_files_only 0
+if {[info exists argv]} {
+  foreach arg $argv {
+    if { $arg eq "--list_files_only" || $arg eq "-list_files_only" } {
+      set list_files_only 1
+    }
+  }
+}
 
+if {!$list_files_only} {
+  puts ""
+  puts "------------------------------------------------------------------------------------------------------------"
+  puts "Creating project ${proj_name} in folder ${proj_dir}"
+  puts "------------------------------------------------------------------------------------------------------------"
+  puts ""
 
-puts ""
-puts "------------------------------------------------------------------------------------------------------------"
-puts "Creating project ${proj_name} in folder ${proj_dir}"
-puts "------------------------------------------------------------------------------------------------------------"
-puts ""
-
-puts ""
-puts "    -----------------------------------------------"
-puts "    Gathering project files"
-puts "    -----------------------------------------------"
-puts ""
+  puts ""
+  puts "    -----------------------------------------------"
+  puts "    Gathering project files"
+  puts "    -----------------------------------------------"
+  puts ""
+}
 
 
 # # BD files, path relative to the bd_dir
@@ -45,11 +67,11 @@ if { ${bd_name} ne ""} {lappend bd_files "${bd_name}/${bd_name}.bd"}
 set ip_libraries [list "ip_library/" ]
 
 # Util files, from the repo root
-# set util_files [list \
-#  "tcl/rename_bitstream.tcl"\
-#  ]
+set util_files [list \
+ "tcl/rename_bitstream.tcl"\
+ ]
 
-set util_files {}
+# set util_files {}
 
 
 
@@ -82,11 +104,13 @@ foreach f $util_files {lappend full_util_files [file normalize "$repo_dir/$f"]}
 # Regenerate block design to make sure the .bd file is there
 if { ${bd_name} ne ""} {
   if { ![file exists "${bd_dir}/${bd_name}/${bd_name}.bd"]} {
-    puts ""
-    puts "    -----------------------------------------------"
-    puts "    Creating block diagram ${bd_name}.bd in folder ${bd_dir}/${bd_name}"
-    puts "    -----------------------------------------------"
-    puts ""
+    if {!$list_files_only} {
+      puts ""
+      puts "    -----------------------------------------------"
+      puts "    Creating block diagram ${bd_name}.bd in folder ${bd_dir}/${bd_name}"
+      puts "    -----------------------------------------------"
+      puts ""
+    }
 
     # The tcl script that builds the block diagram will put it in the folder specified in the global
     # variable ::origin_dir_loc. Since a project is not currently open, it will create a project
@@ -104,11 +128,13 @@ if { ${bd_name} ne ""} {
 # Check if all files required for this script exist
 # --------------------------------------------------
 
-puts ""
-puts "    -----------------------------------------------"
-puts "    Checking project files"
-puts "    -----------------------------------------------"
-puts ""
+if {!$list_files_only} {
+  puts ""
+  puts "    -----------------------------------------------"
+  puts "    Checking project files"
+  puts "    -----------------------------------------------"
+  puts ""
+}
 
 set missing_file false
 
@@ -130,10 +156,44 @@ foreach ipath $full_ip_libraries {
 # Bail out if we have a missing file
 if { $missing_file } {
   puts "ERROR: Not all files required for project creation are accessible. "
+  # In list-files-only mode, ensure the calling process sees a failure.
+  if {$list_files_only} {
+    exit 1
+  }
   return
 }
 
+if {$list_files_only} {
+  # Emit a de-duplicated list of all relevant project input files,
+  # with paths relative to the repository root when possible.
+  set all_files [concat $full_bd_files $full_ip_files $full_ooc_ip_files $full_hdl_files $full_const_files $full_util_files]
 
+  # De-duplicate while preserving order
+  array unset seen
+  set unique_files {}
+  foreach f $all_files {
+    if {![info exists seen($f)]} {
+      set seen($f) 1
+      lappend unique_files $f
+    }
+  }
+
+  foreach f $unique_files {
+    set norm [file normalize $f]
+    # Strip the repo_dir prefix when present to get repo-relative paths
+    set rel $norm
+    if {[info exists repo_dir]} {
+      set repo_norm [file normalize $repo_dir]
+      set prefix "${repo_norm}/"
+      if {[string first $prefix $norm] == 0} {
+        set rel [string range $norm [string length $prefix] end]
+      }
+    }
+    puts "FILE:$rel"
+  }
+
+  return
+}
 
 
 puts ""
@@ -236,8 +296,7 @@ foreach file_obj  [get_files $full_hdl_files] {
 
 # Set 'sources_1' fileset properties
 set_property -name "dataflow_viewer_settings" -value "min_width=16" -objects $fileset_obj
-set_property -name "top" -value $top_module -objects $fileset_obj
-set_property -name "top_auto_set" -value "0" -objects $fileset_obj
+set_property -name "top_auto_set" -value "1" -objects $fileset_obj
 
 
 # Create constraints fileset
@@ -261,17 +320,16 @@ set_property -name "target_part" -value $target_part -objects $fileset_obj
 if {[string equal [get_filesets -quiet sim_1] ""]} {create_fileset -simset sim_1}
 set obj [get_filesets sim_1]
 
-set_property -name "top" -value $top_module -objects $obj
-set_property -name "top_auto_set" -value "0" -objects $obj
+set_property -name "top_auto_set" -value "1" -objects $obj
 set_property -name "top_lib" -value "xil_defaultlib" -objects $obj
 
 
 # Create utils fileset
 # ----------------------------
 
-# set obj [get_filesets utils_1]
-# add_files -norecurse -fileset $obj $full_util_files
-# set_property -name "file_type" -value "TCL" -objects [get_files -of_objects $obj "*.tcl"]
+set obj [get_filesets utils_1]
+add_files -norecurse -fileset $obj $full_util_files
+set_property -name "file_type" -value "TCL" -objects [get_files -of_objects $obj "*.tcl"]
 # set idrFlowPropertiesConstraints ""
 # catch {
 #  set idrFlowPropertiesConstraints [get_param runs.disableIDRFlowPropertyConstraints]
@@ -352,12 +410,12 @@ puts ""
 
 set ip_list {}
 set ips [get_ips]
-puts "ips=  $ips"
+# puts "ips=  $ips"
 
 foreach ip_obj  [get_ips] {
   # Note: Vivado 2023+ uses FILE_NAME
   set ip_name [get_property NAME $ip_obj]
-  puts "Checking if $ip_name is in OOC list: $ooc_ip_files"
+  # puts "Checking if $ip_name is in $ooc_ip_files"
   if {[lsearch $ooc_ip_files "*/$ip_name.*"] >=0} {
       puts "Adding $ip_name, specifically adding $ip_obj to IP list"
     lappend ip_list $ip_obj

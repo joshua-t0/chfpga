@@ -14,7 +14,7 @@ use xpm.vcomponents.ALL;
 entity chfpga_crssim is
 	generic (
 
-		PLATFORM_ID: integer := CONFIG_PLATFORM_ID; --  Identifies the type of platform on which the firmware is running.
+		PLATFORM_ID: integer := CONFIG_PLATFORM_CRS; --  Identifies the type of platform on which the firmware is running.
 
 		-- Clocking config
 
@@ -32,7 +32,8 @@ entity chfpga_crssim is
 		BUCK_SYNC_ENABLE: boolean       := TRUE; -- default state of the buck sync enable at startup
 		BUCK_CLK_DIVIDE_FACTOR: integer := 12; -- Buck frequency is 200MHz/16/BUCK_CLK_DIVIDE_FACTOR, 12=> 1.0416 MHz, 17 => 0.73529 MHz, 24=>0.5208333 MHz
 
-		PHY_TYPE: PHY_TYPE_ENUM := NONE;
+		BSB_INTERFACE: bsb_interface_enum := AXIS;
+		CAP_INTERFACE: cap_interface_enum := AXIS;
 		SGMII_CLOCK_SOURCE: string := "REFCLK"; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 
 		-- ADC config
@@ -62,9 +63,9 @@ entity chfpga_crssim is
 		NUMBER_OF_CORRELATORS: integer := CONFIG_NUMBER_OF_CORRELATORS; -- Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
 
 		-- Real-time data offload links configuration
-		GPU_LINK_TYPE: gpu_link_type_enum := CONFIG_GPU_LINK_TYPE; --
-		GPU_CHANNEL_QUAD: integer_array := (0 to 3 => 0); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if GPU_LINK_TYPE is NONE
-		GPU_QUAD_REFCLK: integer_array := (0 to 0 =>0 ); -- Both QUAD0 and QUAD1 use refclk(0)
+		DATA_LINK_TYPE: data_link_type_enum := CONFIG_DATA_LINK_TYPE; --
+		DATA_LINK_LINK_TO_QUAD_MAP: integer_array := (0 to 3 => 0); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if DATA_LINK_TYPE is NONE
+		DATA_LINK_QUAD_TO_REFCLK_MAP: integer_array := (0 to 0 =>0 ); -- Both QUAD0 and QUAD1 use refclk(0)
 
 
 		-- Peripheral config
@@ -77,8 +78,8 @@ entity chfpga_crssim is
 
 		-- Derived parameters
 
-		NUMBER_OF_GPU_LINKS: integer := sel(GPU_LINK_TYPE /= NONE, GPU_CHANNEL_QUAD'LENGTH, 0); -- Number of 100Gb Ethernet links. 0 if if GPU_LINK_TYPE is "NONE"
-		NUMBER_OF_GPU_REFCLKS: integer               := max(GPU_QUAD_REFCLK)+1 -- Number of Reference clocks provided for the 100GE links.
+		NUMBER_OF_GPU_LINKS: integer := sel(DATA_LINK_TYPE /= NONE, DATA_LINK_LINK_TO_QUAD_MAP'LENGTH, 0); -- Number of 100Gb Ethernet links. 0 if DATA_LINK_TYPE is NONE
+		NUMBER_OF_GPU_REFCLKS: integer               := max(DATA_LINK_QUAD_TO_REFCLK_MAP)+1 -- Number of Reference clocks provided for the 100GE links.
 
 
 	);
@@ -377,7 +378,7 @@ begin
 		lcdclk_proc: process(all) begin
 			if rising_edge(pll_oscout) then
 				ctr <= ctr + 1;
-				if ctr = unsigned(lcd_db) + 50 - 1  then
+				if ctr = unsigned(lcd_db) + 50 - 1 then
 					ctr <= (others => '0');
 					clk <= not clk;
 				end if;
@@ -624,14 +625,15 @@ begin
 			CHAN_CLK_SOURCE     => CHAN_CLK_SOURCE,
 			CT_CLK_SOURCE       => CT_CLK_SOURCE,
 
-			PHY_TYPE       => PHY_TYPE,
-			ADC_TYPE       => ADC_TYPE,
-			NUMBER_OF_ADCS => NUMBER_OF_ADCS,
+		BSB_INTERFACE  => BSB_INTERFACE,
+		CAP_INTERFACE  => CAP_INTERFACE,
+		ADC_TYPE       => ADC_TYPE,
+		NUMBER_OF_ADCS => NUMBER_OF_ADCS,
 
-			-- F-Engine / Channelizers
-			FFT_TYPE               => FFT_TYPE,
-			NUMBER_OF_CHANNELIZERS => NUMBER_OF_CHANNELIZERS,
-			CAPTURE_TYPE           => CAPTURE_TYPE,
+		-- F-Engine / Channelizers
+		FFT_TYPE               => FFT_TYPE,
+		NUMBER_OF_CHANNELIZERS => NUMBER_OF_CHANNELIZERS,
+		CAPTURE_TYPE           => CAPTURE_TYPE,
 
 			-- Corner Turn Engine
 			CT_TYPE                     => CT_TYPE,
@@ -645,9 +647,9 @@ begin
 			NUMBER_OF_BP_SHUFFLE_REFCLKS    => NUMBER_OF_BP_SHUFFLE_REFCLKS,
 
 			-- Real time Ethernet data streaming interface
-			GPU_LINK_TYPE         => GPU_LINK_TYPE,
-			GPU_CHANNEL_QUAD                => integerarray(GPU_CHANNEL_QUAD),
-			GPU_QUAD_REFCLK                 => integerarray(GPU_QUAD_REFCLK),
+			DATA_LINK_TYPE        => DATA_LINK_TYPE,
+			DATA_LINK_LINK_TO_QUAD_MAP                => DATA_LINK_LINK_TO_QUAD_MAP,
+			DATA_LINK_QUAD_TO_REFCLK_MAP                 => DATA_LINK_QUAD_TO_REFCLK_MAP,
 
 			-- Correlator
 			CORR_TYPE             => CORR_TYPE,

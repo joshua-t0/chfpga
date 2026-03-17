@@ -69,11 +69,11 @@ begin
     lfsr_c(31) <= lfsr_q(5) xor lfsr_q(8) xor lfsr_q(9) xor lfsr_q(11) xor lfsr_q(15) xor lfsr_q(23) xor lfsr_q(24) xor lfsr_q(25) xor lfsr_q(27) xor lfsr_q(28) xor lfsr_q(29) xor lfsr_q(30) xor lfsr_q(31) xor data_in(5) xor data_in(8) xor data_in(9) xor data_in(11) xor data_in(15) xor data_in(23) xor data_in(24) xor data_in(25) xor data_in(27) xor data_in(28) xor data_in(29) xor data_in(30) xor data_in(31);
 
 
-crcproc:  process (clk) begin
+crcproc:  process(all) begin
       if rising_edge(clk) then
-		if (rst = '1') then
+		if (rst) then
 			lfsr_q <= (others=>'1');
-		elsif (crc_en = '1') then
+		elsif (crc_en) then
           lfsr_q <= lfsr_c;
         end if;
       end if; --clk

@@ -140,7 +140,7 @@ GMII_RXCLK<=CLK125;
       wait;
    end process;
 
-generate_data: process(CLK125)
+generate_data: process(all)
    begin		
 		if (CLK125'event and CLK125='1' and START_SIM='1') then
 --			if(CTR=20) then
@@ -156,9 +156,9 @@ generate_data: process(CLK125)
 
 			TX_EN<='1';
 			TXD<=STD_LOGIC_VECTOR(CTR(7 downto 0));
-			if(CTR=19) then
+			if (CTR=19) then
 				TX_FRAME<='0';
-			elsif(CTR=25) then	
+			elsif (CTR=25) then	
 				CTR<=(others=>'0');
 				TX_FRAME<='1';
 			else

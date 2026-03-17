@@ -13,7 +13,9 @@
 --    2011-07-18 JFC: Modified output interface to 32 bits, with header inserted in the stream
 --                    Major cleanup of the FIFO writer code to make it more readable (?). Removed all (?) combinatorial signals.
 --    2012-05-31 JFC: Modified for AXI4 Streaming interface. Removed the VALID handling. All frames are processed, but the TUSER flags are passed on to the header and output.
---    2012-10-20 JFC: Made the RESET synchronous to allow more flexibility to the Synthesizer and help meet timing constraints. Resized the word counter to LOG2_MAX_NUMBER_OF_WORDS to reduce the load on the RAM output (the mask bit a) determines when to incement the counter and b)is used to mux whether we store length or length+1 in header)
+--    2012-10-20 JFC: Made the RESET synchronous to allow more flexibility to the Synthesizer and help meet timing constraints.
+--                    Resized the word counter to LOG2_MAX_NUMBER_OF_WORDS to reduce the load on the RAM output (the mask bit a) determines when to
+--                    increment the counter and b)is used to mux whether we store length or length+1 in header)
 --    2013-12-05 JFC: Added 4-bit mode and multi-frame packing support. Output reset is now same as input reset to avoid saturating the FIFOs unless the right sequence of reset is used.
 --    2014-01-14 JFC: Modified into CHAN_SEL with new architecture: Now has a front-end FIFO for alignment/half-word selection/buffer consecutively selected channels. There is no more output fifos.
 --                    Also added handling of headers and flagging info.
@@ -21,15 +23,15 @@
 --    See GIT repository for more history
 ----------------------------------------------------------------------------------
 
-library IEEE;
-use IEEE.std_logic_1164.ALL;
-use IEEE.NUMERIC_STD.ALL;
-use IEEE.std_logic_misc.ALL; -- for and_reduce
-use IEEE.math_real.ALL; -- for ceil()
+library ieee;
+use ieee.std_logic_1164.ALL;
+use ieee.numeric_std.ALL;
+use ieee.std_logic_misc.ALL; -- for and_reduce
+use ieee.math_real.ALL; -- for ceil()
 
-library UNISIM;
-use UNISIM.VComponents.ALL;
-use work.chFPGA_Package.ALL; -- Get all component definitions
+library unisim;
+use unisim.vcomponents.ALL;
+use work.chfpga_package.ALL; -- Get all component definitions
 
 ------- shuffle_bin_sel ENTITY DECLARATION ----------------------
 
@@ -89,8 +91,8 @@ use work.chFPGA_Package.ALL; -- Get all component definitions
 -- at the output. The data words, data flags and frame flags are sent out in the order of the input
 -- lanes: data from  lane 0 first, then data from lane 1 etc.
 --
--- The bin selector operates on a single clock to simplify the logic and resource usage. All inputs and outputs buses operate on that clock. is clocked on a separate clock than the antenna processor outputs.
--- This means that the correlator can be clocked faster than the antenna processor clock to allow more time for transmission of the the header overhead or simply to allow the correlator to process more channels.
+-- The bin selector operates on a single clock to simplify the logic and resource usage. All inputs and outputs buses operate on that clock. is clocked on a separate clock than the channelizer processor outputs.
+-- This means that the correlator can be clocked faster than the channelizer processor clock to allow more time for transmission of the the header overhead or simply to allow the correlator to process more channels.
 -- It is important that in all cases the output data rate of the FIFO is higher than the rate required to transmit the selected data plus the header bytes.
 --
 -- Each bit in the RAM block identifies whether a bin received in the incoming stream is to be
@@ -106,66 +108,72 @@ use work.chFPGA_Package.ALL; -- Get all component definitions
 -- occupied. Combining the flags on the 2nd crossbar saves bandwidth, but is not needed on the
 -- subsequent crossbars since all 32-bits are packed with flags.
 --
+
 entity shuffle_bin_sel is
 	generic (
-		PLATFORM_ID: integer; -- necessary to select the proper FIFOs
-		BIN_SEL_NUMBER: integer; -- Bin selector index number. Output lanes will be numbered in the packet header as lane_number=  BIN_SEL_NUMBER*NUMBER_OF_OUTPUTS + bin_sel_output_lane_index
-		NUMBER_OF_INPUTS: integer; -- Number of input streams. Must be a multiple of NUMBER_OF_OUTPUTS.
-		NUMBER_OF_OUTPUTS: integer  := 1; -- Number of output streams. Must be a multiple of 2 if COMBINE_DATA_FLAGS=TRUE
-		COMBINE_DATA_FLAGS: boolean := TRUE;
-		WORDS_PER_BIN_MAX: integer  := 4; -- Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 4*16=64 words.
-		BINS_PER_FRAME_MAX: integer := 64; -- Maximum number of bins per frame
-		FIFO_TYPE_MAP: integer_array -- Specifies the type of data FIFO to use for each input lane in order to balance resource type and acheive the highest logic density. 0= use pairs of BRAM/Embedded FIFOs, 1=Use shift-register (LUT-based) FIFO.
+		PLATFORM_ID        : integer;       -- necessary to select the proper FIFOs
+		BIN_SEL_NUMBER     : integer;       -- Bin selector index number. Output lanes will be numbered in the packet header as lane_number=  BIN_SEL_NUMBER*NUMBER_OF_OUTPUTS + bin_sel_output_lane_index
+		NUMBER_OF_INPUTS   : integer;       -- Number of input streams. Must be a multiple of NUMBER_OF_OUTPUTS.
+		NUMBER_OF_OUTPUTS  : integer := 1;  -- Number of output streams. Must be a multiple of 2 if COMBINE_DATA_FLAGS=TRUE
+		COMBINE_DATA_FLAGS : boolean := TRUE;
+		WORDS_PER_BIN_MAX  : integer := 4;  -- Maximum number of words that can be present in a bin on one input lane. The 2nd crossbar receives up to 4 words. The 3rd crossbar will can have up to 4*16=64 words.
+		BINS_PER_FRAME_MAX : integer := 64; -- Maximum number of bins per frame
+		FIFO_TYPE_MAP      : integer_array  -- Specifies the type of data FIFO to use for each input lane in order to balance resource type and acheive the highest logic density. 0= use pairs of BRAM/Embedded FIFOs, 1=Use shift-register (LUT-based) FIFO.
 	);
 	port (
 		-- Input interface (non-blocking, i.e. always accept data)
-		s_axis_tdata: in slv32_array(0 to NUMBER_OF_INPUTS - 1);
-		s_axis_tvalid: in std_logic_vector(0 to NUMBER_OF_INPUTS - 1);
-		s_axis_tlast: in std_logic_vector(0 to NUMBER_OF_INPUTS - 1);
 
-		s_axis_global_tvalid: in std_logic; -- active while the longest packet is active
-		s_axis_global_tlast: in std_logic; -- active when the longest packet is at its last word
+		s_axis_tdata  : in slv32_array(0 to NUMBER_OF_INPUTS - 1);
+		s_axis_tvalid : in std_logic_vector(0 to NUMBER_OF_INPUTS - 1);
+		s_axis_tlast  : in std_logic_vector(0 to NUMBER_OF_INPUTS - 1);
+
+		s_axis_global_tvalid : in std_logic; -- active while the longest packet is active
+		s_axis_global_tlast  : in std_logic; -- active when the longest packet is at its last word
 
 		-- Output interface (blocking, i.e. will send data only when the sink is ready)
-		m_axis_tdata:  out slv32_array(0 to NUMBER_OF_OUTPUTS - 1);
-		m_axis_tvalid: out std_logic_vector(0 to NUMBER_OF_OUTPUTS - 1);
-		m_axis_tlast:  out std_logic_vector(0 to NUMBER_OF_OUTPUTS - 1);
-		m_axis_terror: out std_logic_vector(0 to NUMBER_OF_OUTPUTS - 1);
+
+		m_axis_tdata  : out slv32_array(0 to NUMBER_OF_OUTPUTS - 1);
+		m_axis_tvalid : out std_logic_vector(0 to NUMBER_OF_OUTPUTS - 1);
+		m_axis_tlast  : out std_logic_vector(0 to NUMBER_OF_OUTPUTS - 1);
+		m_axis_terror : out std_logic_vector(0 to NUMBER_OF_OUTPUTS - 1);
 
 		-- lane_map: in slv4_array(0 to NUMBER_OF_INPUTS-1);
-		clk: in  std_logic; -- Input clock, common to all antenna processor buses
-		rst: in std_logic; -- reset, synchronous to clk
+		clk : in std_logic; -- Input clock, common to all channelizers
+		rst : in std_logic; -- reset, synchronous to clk
 
-		shuffle_flags_mask: in slv32; -- Specify the mask to apply on the packet flags word to trigger the terror line.
+		shuffle_flags_mask : in slv32; -- Specify the mask to apply on the packet flags word to trigger the terror line.
 
 		-- Control interface (command and reply stream buses)
-		ctrl_cmd_dat: in AXIS8_DAT_STRUCT;
-		ctrl_cmd_rdy: out AXIS8_RDY_STRUCT;
-		ctrl_rply_dat: out AXIS8_DAT_STRUCT;
-		ctrl_rply_rdy: in AXIS8_RDY_STRUCT;
-		ctrl_clk: in  std_logic;
-		ctrl_rst: in  std_logic
+		s_axis_bsb_tdata  : in std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid : in std_logic;
+		s_axis_bsb_tlast  : in std_logic;
+		s_axis_bsb_tready : out std_logic;
+		m_axis_bsb_tdata  : out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid : out std_logic;
+		m_axis_bsb_tlast  : out std_logic;
+		m_axis_bsb_tready : in std_logic;
+		bsb_clk           : in std_logic;
+		bsb_rst           : in std_logic
 	);
 end entity shuffle_bin_sel;
 
 --- ARCHITECTURE DECLARATION and DEFINITION ---------------------
 -- Describes the logic that implement the entity's functionnalities. See this architecture for the implementation details.
 --
--- The writing process waits for all channelizers to have valid data, and if the filter bit is '1', the data from each antenna is written in their respective FIFO.
+-- The writing process waits for all channelizers to have valid data, and if the filter bit is '1', the data from each channelizer is written in their respective FIFO.
 -- Then the filter RAM 'bit' pointer is incremented.
 -- When the last word of a frame is detected, the pointer is reset, the header is constructed and is written in the HEADER FIFO.
 -- This assumes that all the input data streams are aligned.
 --
 -- When the readout process detects
-architecture Behavioral of shuffle_bin_sel is
 
+architecture behavioral of shuffle_bin_sel is
 
 	attribute KEEP: string;
 	attribute EQUIVALENT_REGISTER_REMOVAL: string;
 
 	constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
 	constant NUMBER_OF_INPUT_LANES_PER_OUTPUT: integer := NUMBER_OF_INPUTS / NUMBER_OF_OUTPUTS;
-
 
 	--- Signal definitions ------------------------------------
 
@@ -215,13 +223,12 @@ architecture Behavioral of shuffle_bin_sel is
 	signal data_fifo_dout: slv35_array(0 to NUMBER_OF_INPUTS - 1); -- (Only 32 bits are used)
 
 
-	signal flags_fifo_din: slv(WORD_CTR_WIDTH - 1 + 2 downto 0);
+	signal flags_fifo_din: std_logic_vector(WORD_CTR_WIDTH - 1 + 2 downto 0);
 	signal flags_fifo_wr_en: std_logic;
 	signal flags_fifo_rd_en: std_logic;
-	signal flags_fifo_dout: slv(WORD_CTR_WIDTH - 1 + 2 downto 0);
+	signal flags_fifo_dout: std_logic_vector(WORD_CTR_WIDTH - 1 + 2 downto 0);
 	signal flags_fifo_overflow: std_logic;
 	signal flags_fifo_valid: std_logic;
-
 
 	signal frame_number_capture_trig: std_logic := '0';
 	signal stream_id_capture_trig: std_logic := '0';
@@ -254,6 +261,7 @@ architecture Behavioral of shuffle_bin_sel is
 	signal use_offset_binary: std_logic;
 	signal send_flags: std_logic;
 	signal lane0_bypass: std_logic;
+	signal lane0_bypass_reg: std_logic;
 	signal overflow_reset: std_logic;
 	signal number_of_output_bins_per_frame: std_logic_vector(11 downto 0);
 	signal number_of_output_words_per_bin: std_logic_vector(7 downto 0);
@@ -308,34 +316,34 @@ begin
 	-----------------------------------------------------------------------------------
 	-- CONTROL and STATUS Bytes
 	-----------------------------------------------------------------------------------
--- shuffle_bin_sel Memory Map
--- ------------------------------------------------------------------------------
--- |  Page   | Addr|Bit(s)|     Name             | Description                   |
--- |---------|-----|------|----------------------|-------------------------------|
--- | CONTROL |  0  |   7  | user_reset           | Reset the module and clears the FIFOs.|
--- |         |     |   6  | lane0_bypass         | Bypass lane 0 |
--- |         |     | 5:4  | number_of_input_data_flags_words_per_bin | Number of input data flags words per bin |
--- |         |     | 3:0  | first_lane           | First input lane number |
--- |         |  1  | 7:0  | STREAM_ID(11:4)      | Upper 8 bits of Stream ID to be used for tagging the output frames |
--- |         |  2  | 7:4  | STREAM_ID(3:0)       | Lower 4 bits of Stream ID |
--- |         |     |   3  | zero_packet_flags    | Zero packet flags |
--- |         |     | 2:0  | number_of_input_frame_flags_words_per_frame | Number of input frame flags words per frame |
--- |         |  3  | 7:0  | number_of_input_bins_per_frame | Number of input bins per frame |
--- |         |  4  |   7  | overflow_reset        | Reset overflow counters |
--- |         |     | 6:0  | number_of_input_words_per_bin | Number of input words per bin |
--- |         |  5  | 7:5  | frames_per_packet    | Number of frames per packet |
--- |         |     | 3:0  | last_lane            | Last input lane number |
--- |         |  6  | 7:0  | number_of_output_words_per_bin | Number of output words per bin (for header) |
--- |         |  7  |   7  | four_bits            | Four bits mode (for header) |
--- |         |     |   6  | use_offset_binary    | Use offset binary encoding (for header) |
--- |         |     |   5  | send_flags           | Send flags in packets |
--- |         |     | 4:0  | number_of_output_bins_per_frame | Number of output bins per frame |
--- | STATUS  |  0  |   7  | data_fifo_empty      | EMPTY status flag of the DATA FIFO for lane 0. Active HIGH. |
--- |         |     |   6  | flags_fifo_overflow_sticky | Sticky flag indicating that flags FIFO has overflown. |
--- |         |     |   5  | reset_all_reg        | Reset all register status |
--- |         |     |   4  | COMBINE_DATA_FLAGS   | Combine data flags status |
--- |         |     | 3:0  | NUMBER_OF_OUTPUTS    | Number of outputs |
--- |         | 1:2 |15:0  | data_fifo_overflow_sticky | Data FIFO overflow sticky flags (one per output) |
+	-- shuffle_bin_sel Memory Map
+	-- ------------------------------------------------------------------------------
+	-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
+	-- |---------|-----|------|----------------------|-------------------------------|
+	-- | CONTROL |  0  |   7  | user_reset           | Reset the module and clears the FIFOs.|
+	-- |         |     |   6  | lane0_bypass         | Bypass lane 0 |
+	-- |         |     | 5:4  | number_of_input_data_flags_words_per_bin | Number of input data flags words per bin |
+	-- |         |     | 3:0  | first_lane           | First input lane number |
+	-- |         |  1  | 7:0  | STREAM_ID(11:4)      | Upper 8 bits of Stream ID to be used for tagging the output frames |
+	-- |         |  2  | 7:4  | STREAM_ID(3:0)       | Lower 4 bits of Stream ID |
+	-- |         |     |   3  | zero_packet_flags    | Zero packet flags |
+	-- |         |     | 2:0  | number_of_input_frame_flags_words_per_frame | Number of input frame flags words per frame |
+	-- |         |  3  | 7:0  | number_of_input_bins_per_frame | Number of input bins per frame |
+	-- |         |  4  |   7  | overflow_reset        | Reset overflow counters |
+	-- |         |     | 6:0  | number_of_input_words_per_bin | Number of input words per bin |
+	-- |         |  5  | 7:5  | frames_per_packet    | Number of frames per packet |
+	-- |         |     | 3:0  | last_lane            | Last input lane number |
+	-- |         |  6  | 7:0  | number_of_output_words_per_bin | Number of output words per bin (for header) |
+	-- |         |  7  |   7  | four_bits            | Four bits mode (for header) |
+	-- |         |     |   6  | use_offset_binary    | Use offset binary encoding (for header) |
+	-- |         |     |   5  | send_flags           | Send flags in packets |
+	-- |         |     | 4:0  | number_of_output_bins_per_frame | Number of output bins per frame |
+	-- | STATUS  |  0  |   7  | data_fifo_empty      | EMPTY status flag of the DATA FIFO for lane 0. Active HIGH. |
+	-- |         |     |   6  | flags_fifo_overflow_sticky | Sticky flag indicating that flags FIFO has overflown. |
+	-- |         |     |   5  | reset_all_reg        | Reset all register status |
+	-- |         |     |   4  | COMBINE_DATA_FLAGS   | Combine data flags status |
+	-- |         |     | 3:0  | NUMBER_OF_OUTPUTS    | Number of outputs |
+	-- |         | 1:2 |15:0  | data_fifo_overflow_sticky | Data FIFO overflow sticky flags (one per output) |
 	-- | RAM     | 0-63 | -   | MASK_RAM                 | Word selection map. Each of the 512 bit indicates whether the corresponding word (frequency bin pair) is retained by this correlator. |
 	-- ------------------------------------------------------------------------------
 	--
@@ -358,8 +366,8 @@ begin
 	number_of_input_words_per_bin <= unsigned(control_bytes(4)(6 downto 0)); --
 
 	-- CONTROL Byte 5
-	frames_per_packet     <= unsigned(control_bytes(5)(7 downto 5)); --
-	last_lane             <= unsigned(control_bytes(5)(3 downto 0)); --
+	frames_per_packet <= unsigned(control_bytes(5)(7 downto 5)); --
+	last_lane         <= unsigned(control_bytes(5)(3 downto 0)); --
 
 	-- CONTROL Byte 6
 	number_of_output_words_per_bin <= control_bytes(6); -- for the header only
@@ -370,7 +378,6 @@ begin
 	send_flags                      <= control_bytes(7)(5);
 	number_of_output_bins_per_frame <= resize(control_bytes(7)(4 downto 0), number_of_output_bins_per_frame'LENGTH);
 
-
 	-- STATUS Byte 0
 	status_bytes(0)(7) <= data_fifo_empty(0);
 	status_bytes(0)(6) <= flags_fifo_overflow_sticky;
@@ -378,7 +385,6 @@ begin
 	status_bytes(0)(4) <= to_std_logic(COMBINE_DATA_FLAGS);
 	-- status_bytes(0)(2)<= to_std_logic(IMPLEMENT_HEADER_CAPTURE);
 	status_bytes(0)(3 downto 0) <= to_slv(NUMBER_OF_OUTPUTS, 4);
-
 
 	-- STATUS Byte 1-2
 	-- status_bytes(2)<=to_slv8_array(timestamp_capture(to_integer(unsigned(header_capture_lane_sel))));
@@ -399,6 +405,7 @@ begin
 	-- Memory-Mapped interface instantiation
 	-----------------------------------------------------------------------------------
 	-- Instantiates a memory-mapped interface to the control and status bytes
+
 	bsb_regs0: entity work.bsb_regs
 		generic map (
 			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), --
@@ -411,12 +418,16 @@ begin
 
 		port map (
 			-- Control interface (command and reply stream buses)
-			ctrl_cmd_in_dat   => ctrl_cmd_dat,
-			ctrl_cmd_in_rdy   => ctrl_cmd_rdy,
-			ctrl_rply_out_dat => ctrl_rply_dat,
-			ctrl_rply_out_rdy => ctrl_rply_rdy,
-			ctrl_clk          => ctrl_clk,
-			ctrl_rst          => ctrl_rst,
+			s_axis_bsb_tdata  => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast  => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata  => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast  => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
+			bsb_clk           => bsb_clk,
+			bsb_rst           => bsb_rst,
 
 			control_bytes => control_bytes,
 			status_bytes  => status_bytes,
@@ -427,7 +438,6 @@ begin
 			ram_wr_en => mask_ram_ctrl_wr_en,
 			ram_rd_en => open -- the ram is always reading
 		);
-
 
 	------------------------------------------------
 	-- Bin selection map RAM
@@ -440,25 +450,25 @@ begin
 	-- Port A is an 8-bit wide interface allowing the control system to program the RAM
 	-- Port B is a 2-bit interface that the processing process reads to identify if a word is to be kept.
 	-- We need to use a Block RAM (as opposed to distributed RAM) so we can have assymetric aspect ratio
-	mask_ram0: entity work.SHUFFLE_BIN_SEL_MASK_RAM
+	mask_ram0: entity work.shuffle_bin_sel_mask_ram
 		port map (
-			clka   => ctrl_clk,
+			clka   => bsb_clk,
 			wea(0) => mask_ram_ctrl_wr_en,
 			addra  => mask_ram_ctrl_addr,
 			dina   => mask_ram_ctrl_din,
 			douta  => mask_ram_ctrl_dout,
 
 			clkb     => clk,
-			web      => (others=>'0'), -- we never write from this side
-			dinb     => (others=>'0'), -- we never write from this side
+			web      => (others => '0'), -- we never write from this side
+			dinb     => (others => '0'), -- we never write from this side
 			addrb    => std_logic_vector(resize(bin_ctr,10)), -- we strip one bit because we read flags in pairs
 			doutb(0) => mask_ram_dout -- two flags for each bin number
 		);
 
-
 	-- The flags FIFO describe provide instructions to the readout logic on how to read each block of data from the data FIFO.
 	-- It indicate the size of each block of data, whether words should be combined, and when this is the last block of he packet.
 	-- Implement the  4-bit wide FIFO (CB2, nominally 4x128, two per FPGA) or the 6-bit wide (CB3, 6x32, 8 per FPGA) depending on the need to save space.
+
 	flags_fifo4_gen: if WORD_CTR_WIDTH = 2 generate -- WORDS_PER_BIN = 4
 
 		flags_fifo0: entity work.SHUFFLE_BIN_SEL_FLAGS_FIFO4 -- 2 bit counter + 2 extra flags
@@ -475,6 +485,7 @@ begin
 				data_count => open,
 				overflow   => flags_fifo_overflow
 			);
+
 	end generate flags_fifo4_gen;
 
 	flags_fifo6_gen: if WORD_CTR_WIDTH /= 2 generate -- WORDS_PER_BIN = 16 or other. make sure we always instantiate a FIFO, so there will be an error if  flags_fifo_din/dout with don't match with the FIFO
@@ -493,10 +504,12 @@ begin
 				data_count => open,
 				overflow   => flags_fifo_overflow
 			);
+
 	end generate flags_fifo6_gen;
 
 	-- DOUT_FLAGS<=(others=>'0'); -- clear flags until we decide what we will send to the correlator
-	-- Generates a DATA FIFO for each of the antenna processor outputs
+	-- Generates a DATA FIFO for each of the channelizer outputs
+
 	data_fifo_gen: for i in 0 to NUMBER_OF_INPUTS - 1 generate
 		---------------------------------------------------
 		-- Data FIFOs
@@ -511,14 +524,14 @@ begin
 		--      B= number of contiguous bins,
 		--      F=Frames per packet,
 		--      Fout/Fin: input/output word clock frequencies (after and before the CROSSBAR FIFO).
-		-- For the CHIME Pathfinder second cross bar, N=16 input lanes, W=4 (16 antennas, 4-bit mode), B=1024/16/8=8 bins, F=4, Fout/Fin=322/244 MHz: D= (1-322/244/16)*4*8*4 = 118 words deep
+		-- For the CHIME Pathfinder second cross bar, N=16 input lanes, W=4 (16 channels, 4-bit mode), B=1024/16/8=8 bins, F=4, Fout/Fin=322/244 MHz: D= (1-322/244/16)*4*8*4 = 118 words deep
 		-- In practice there are always dead cycles in the incoming data (due to 200/244 MHz crossing, backplane link data framing, gearbox etc). This gives more time for the read side to  catch up, so the effectively used depth is less than this.
 		-- A single RAMB18 provides a 514 deep FWFT FIFO.
 		-- We elimine this FIFO by requiring every selected bin to be followed by at least N non-selected bins. To be considered if BRAM resource availability is an issue.
 
 		bram_fifo_gen: if FIFO_TYPE_MAP(i) = 0 and i MOD 2 = 0 generate
 
-			data_fifo0: entity work.SHUFFLE_BIN_SEL_DATA_FIFO_BRAM
+			data_fifo0: entity work.shuffle_bin_sel_data_fifo_bram
 				port map (
 					srst => reset_all_reg,
 					clk  => clk,
@@ -534,15 +547,17 @@ begin
 
 					overflow => data_fifo_overflow(i)
 				);
+
 		end generate bram_fifo_gen;
 
 		-- Every other FIFO is implemented as an embedded FIFO to eliminate the use of external logic.
 		-- WARNING: The FIFO must have the same latency as the other FIFOs! Disable Embedded register to get a latency of zero.
+
 		embed_fifo_gen: if FIFO_TYPE_MAP(i) = 0 and i MOD 2 = 1 generate
 
 			data_fifo_k7: if FPGA_SERIES = FPGA_KINTEX7 generate
 
-				data_fifo0: entity work.SHUFFLE_BIN_SEL_DATA_FIFO_EMBED
+				data_fifo0: entity work.shuffle_bin_sel_data_fifo_embed
 					port map (
 						rst => reset_all_reg, -- async reset on K7 embed FIFOs
 						clk => clk,
@@ -558,11 +573,12 @@ begin
 
 						overflow => data_fifo_overflow(i)
 					);
+
 			end generate data_fifo_k7;
 
 			data_fifo_up: if FPGA_SERIES = FPGA_ULTRASCALEPLUS generate
 
-				data_fifo0: entity work.SHUFFLE_BIN_SEL_DATA_FIFO_EMBED_UP
+				data_fifo0: entity work.shuffle_bin_sel_data_fifo_embed_up
 					port map (
 						srst => reset_all_reg, -- sync reset on U+ embed FIFOs
 						clk  => clk,
@@ -578,19 +594,21 @@ begin
 
 						overflow => data_fifo_overflow(i)
 					);
+
 			end generate data_fifo_up;
 
 		end generate embed_fifo_gen;
 
-		-- If desired, use a Shift register FIFO. Those use only 1 LUT per 2 bits of width.
+		-- If desired, use a Shift register FIFO (35 bits x 64 words). Those use only 1 LUT per 2 bits of width.
 		-- Since those are not FWFT, we use a standard FIFO and turn it into a FWFT with some extra logic.
 		-- The Distributed FIFO has a latenct of 1: data is placed on the bus on the next rising edge when RD_EN is high.
 		-- With the surrounding logic, this FIFO has a latency of 0: if VALID is High, the data is immediately available on the bus.
 		-- When RD_EN is High and the clock rises, the current value is captured by the user, and a new value is placed on the bus
+
 		dram_fifo_gen: if FIFO_TYPE_MAP(i) = 1 generate
 			data_fifo_rd_en_int(i) <= data_fifo_rd_en(i) or not data_fifo_valid(i);
 
-			data_fifo0: entity work.SHUFFLE_BIN_SEL_DATA_FIFO_DRAM
+			data_fifo0: entity work.shuffle_bin_sel_data_fifo_dram
 				port map (
 					srst => reset_all_reg,
 					clk  => clk,
@@ -606,8 +624,7 @@ begin
 					overflow => data_fifo_overflow(i)
 				);
 
-			process(clk)
-			begin
+			process(all) begin
 				if rising_edge(clk) then
 					if reset_all_reg = '1' then
 						data_fifo_valid(i) <= '0';
@@ -621,9 +638,8 @@ begin
 
 	end generate data_fifo_gen; -- for i in NUMBER_OF_INPUTS
 
-
 	-- Write data to the data and data flags FIFOs according to the bin selection map
-	fifo_wr_proc: process(clk)
+	fifo_wr_proc: process(all)
 
 		variable ix: integer range 0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH - 1;
 		-- variable header_word_array: slv32_array(0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH-1);
@@ -659,15 +675,19 @@ begin
 			-- 1) they are bin-related (data, data flags) and the bin is selected;
 			-- 2) they are not bin-related (frame_flags, packet_flags) and should unconditionally be written
 
-				data_fifo_wr_en_var := data_fifo_wr_en_packet_flags_dly or data_fifo_wr_en_always_dly  or (data_fifo_wr_en_if_selected_dly and mask_ram_dout);
+      data_fifo_wr_en_var := data_fifo_wr_en_packet_flags_dly or data_fifo_wr_en_always_dly  or (data_fifo_wr_en_if_selected_dly and mask_ram_dout);
 
 			flags_fifo_din(data_fifo_number_of_words_dly'length - 1 downto 0) <= to_slv(data_fifo_number_of_words_dly);
 			flags_fifo_din(COMBINE_WORDS_BIT) <= data_fifo_combine_flag_dly;
 			flags_fifo_din(END_OF_PACKET_BIT) <= data_fifo_wr_en_packet_flags_dly;
 			-- We write to the flags FIFO when
 			--  1) we are writing data and this is the last word of the bin to be written
-			--  2) we are writing the packets flags, and must write the entry whether or we have reached the end of the data group (in case of malformed packets)
-			flags_fifo_wr_en <= data_fifo_wr_en_packet_flags_dly or (data_fifo_last_word_of_group_dly and data_fifo_wr_en_var); -- we write only when the last word is there, so it is guaranteed that we will have WORDS_PER_BIN words in the data FIFO. This way we don't have to check the valid flags (very stretched out 16:1 mux, very bad for timing).
+			--  2) we are writing the packets flags, and must write the entry whether or we have
+			--     reached the end of the data group (in case of malformed packets)
+			-- We write only when the last word is there, so it is guaranteed that we will have
+			-- WORDS_PER_BIN words in the data FIFO. This way we don't have to check the valid flags
+			-- (very stretched out 16:1 mux, very bad for timing).
+			flags_fifo_wr_en <= data_fifo_wr_en_packet_flags_dly or (data_fifo_last_word_of_group_dly and data_fifo_wr_en_var);
 
 			for i in 0 to NUMBER_OF_INPUTS - 1 loop
 				-- data_fifo_din(i)(NEXT_INPUT_BIT) <= data_fifo_last_word_of_group_dly; -- (not used) Tell the FIFO reader to increment the lane counteer because this is the last word of the bin
@@ -712,6 +732,7 @@ begin
 					data_fifo_din(i)(31 downto 0) <= s_axis_tdata(i);
 				end if;
 				data_fifo_wr_en(i) <= data_fifo_wr_en_var;
+
 			end loop;
 
 
@@ -864,15 +885,14 @@ begin
 
 	combine_words    <= flags_fifo_dout(COMBINE_WORDS_BIT) and to_std_logic(COMBINE_DATA_FLAGS);                                              -- And with COMBINE_DATA_FLAGS to reduce logic utilization if combining is never needed
 	end_of_packet    <= flags_fifo_dout(END_OF_PACKET_BIT);
-	is_last_word     <= to_std_logic(send_word_ctr = unsigned(flags_fifo_dout(send_word_ctr'LENGTH-1 downto 0)));                             -- 4-input LUT
+	is_last_word     <= to_std_logic(send_word_ctr = unsigned(flags_fifo_dout(send_word_ctr'LENGTH - 1 downto 0)));                           -- 4-input LUT
 	is_last_lane     <= to_std_logic((lane(3 downto 1) = last_lane_reg(3 downto 1)) and (combine_words = '1' or lane(0) = last_lane_reg(0))); -- 9 signals
 	flags_fifo_rd_en <= '1' when send_header = '0' and ((is_last_word = '1' and is_last_lane = '1') or end_of_packet = '1') else '0';         -- 15-input LUT, all local!
 
-
-	fifo_rd_proc: process(clk)
+	fifo_rd_proc: process(all)
 
 		variable header_word_array: slv32_array(0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH - 1);
-		variable frame_header: SHUFFLE_FRAME_HEADER_STRUCT;
+		variable frame_header: shuffle_frame_header_struct;
 		variable ix0, ix1: integer range 0 to NUMBER_OF_INPUT_LANES_PER_OUTPUT - 1;
 		variable tdata: slv35_array(0 to NUMBER_OF_INPUT_LANES_PER_OUTPUT - 1);
 
@@ -892,9 +912,9 @@ begin
 
 	begin
 		if rising_edge(clk) then
-
+			lane0_bypass_reg <= lane0_bypass; -- register to prevent the synthesizer form integrating the bsb_regs login om the path. This crosses clock domains, but it is semi-static so it's ok.
 			for j in 0 to NUMBER_OF_OUTPUTS - 1 loop
-				if lane0_bypass = '1' then
+				if lane0_bypass_reg then
 					m_axis_tdata(j) <= s_axis_tdata(BIN_SEL_NUMBER * NUMBER_OF_OUTPUTS + j);
 					m_axis_tvalid(j) <= s_axis_tvalid(BIN_SEL_NUMBER * NUMBER_OF_OUTPUTS + j);
 					m_axis_tlast(j) <= s_axis_tlast(BIN_SEL_NUMBER * NUMBER_OF_OUTPUTS + j);
@@ -927,25 +947,21 @@ begin
 					-- Build the packet header to be sent for this lane
 					frame_header :=
 					(
-					 -- Word 0
 
 					 COOKIE                 => SHUFFLE_FRAME_HEADER_COOKIE,
 					 PROTOCOL_VERSION       => SHUFFLE_FRAME_HEADER_PROTOCOL_VERSION,
 					 HEADER_LENGTH_IN_WORDS => to_slv(SHUFFLE_FRAME_HEADER_WORD_LENGTH, frame_header.HEADER_LENGTH_IN_WORDS'LENGTH),
 					 stream_id              => stream_id & to_slv(BIN_SEL_NUMBER * NUMBER_OF_OUTPUTS + j, 4),
 
-					 -- Word 1
 
 					 ENCODING               => (0=> four_bits, 1=> use_offset_binary, 2=> send_flags, others => '0'),
 					 NUMBER_OF_FRAMES       => to_slv(frames_per_packet, frame_header.NUMBER_OF_FRAMES'LENGTH),
 					 NUMBER_OF_BINS         => number_of_output_bins_per_frame, -- ** to be fixed : will change for 2nd, 3rd etc  shuffle
-					 NUMBER_OF_ANTENNAS     => std_logic_vector(resize(number_of_output_words_per_bin, frame_header.NUMBER_OF_ANTENNAS'LENGTH)),
+					 NUMBER_OF_CHANNELS     => std_logic_vector(resize(number_of_output_words_per_bin, frame_header.NUMBER_OF_CHANNELS'LENGTH)),
 
-					 -- Word 2
 
 					 ANCILLARY_DATA         => (X"0000" & std_logic_vector(timestamp_ctr(47 downto 32))),
 
-					 -- Word 3
 
 					 TIMESTAMP              => std_logic_vector(timestamp_ctr(31 downto 0))
 					);
@@ -1042,5 +1058,5 @@ begin
 		end if; -- clk
 	end process;
 
-end architecture Behavioral;
+end architecture behavioral;
 

@@ -1,7 +1,7 @@
 .. title:: 100G Ethernet UDP/MAC
 
 100G Ethernet UDP/MAC
-**********************
+*********************
 
 .. default-role:: vhdl:entity
 
@@ -16,4 +16,3 @@ The 100G Ethernet system consists of:
    :hidden:
 
    cge
-

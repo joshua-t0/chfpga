@@ -37,6 +37,7 @@ entity CTRL_FIFO is
 		);
      PORT (
 		-- Command streams from single slave input to multiple master outputs
+		
 		CMD_A_DAT: in AXIS8_DAT_STRUCT;
 		CMD_A_RDY: out AXIS8_RDY_STRUCT;
 		RPLY_A_DAT: out AXIS8_DAT_STRUCT;
@@ -50,6 +51,7 @@ entity CTRL_FIFO is
 		B_CLK: in STD_LOGIC;
 
 		-- System interface
+		
 		RST : in  STD_LOGIC
 		);
 end CTRL_FIFO;

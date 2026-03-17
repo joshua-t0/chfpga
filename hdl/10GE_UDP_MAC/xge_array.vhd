@@ -70,13 +70,17 @@ entity xge_array is
 
 
 		-- Control and reply streams
-		cmd_dat: in AXIS8_DAT_STRUCT;
-		cmd_rdy: out AXIS8_RDY_STRUCT;
-		rply_dat: out AXIS8_DAT_STRUCT;
-		rply_rdy: in AXIS8_RDY_STRUCT;
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid: in std_logic;
+		s_axis_bsb_tlast: in std_logic;
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic;
 
-		ctrl_clk: in std_logic; -- control clock
-		ctrl_rst: in std_logic;
+		bsb_clk: in std_logic; -- control clock
+		bsb_rst: in std_logic;
 
 		areset: in std_logic -- asynchronous reset
 	);
@@ -153,8 +157,7 @@ begin
 	status_bytes(3) <= resize(reverse_bits_and_dir(frame_overflow_sticky), 8);
 
 	-- Test pattern generator
-	test_pat_proc: process(s_axis_tx_clk(0))
-	begin
+	test_pat_proc: process(all) begin
 		if rising_edge(s_axis_tx_clk(0)) then
 			reset_reg <= areset or user_reset;
 			-- Count input frames for debugging
@@ -168,7 +171,7 @@ begin
 			test_tlast <= '0';
 
 			-- Generate test pattern
-			if link_enable = '0' or xglink_tx_resetdone(0) = '0' then
+			if not link_enable or not xglink_tx_resetdone(0) then
 				test_packet_ctr <= (others => '0');
 				test_frame_ctr <= (others => '0');
 				test_tvalid <= '0';
@@ -185,7 +188,7 @@ begin
 				end if;
 				if test_packet_ctr = 0 then
 					test_tvalid <= '1';
-				elsif test_tlast = '1' then
+				elsif test_tlast then
 					test_tvalid <= '0';
 				end if;
 
@@ -239,9 +242,8 @@ begin
 				rst => reset_reg
 			);
 
-		overflow_proc: process(s_axis_tx_clk(i))
-		begin
-			if rising_edge(s_axis_tx_clk(i)) then
+		overflow_proc: process(all) begin
+		if rising_edge(s_axis_tx_clk(i)) then
 				if reset_reg or overflow_reset then
 					data_overflow_sticky(i) <= '0';
 					frame_overflow_sticky(i) <= '0';
@@ -261,8 +263,8 @@ begin
 			NUMBER_OF_TX_LANES          => NUMBER_OF_TX_LANES,
 			NUMBER_OF_RX_LANES          => 0, -- We don't implement 10G Ethernet receivers for now.
 			NUMBER_OF_REFCLK            => NUMBER_OF_REFCLK,
-			LANE_TO_QUAD_MAP            => integerArray(LANE_TO_QUAD_MAP),
-			QUAD_TO_REFCLK_MAP          => integerArray(QUAD_TO_REFCLK_MAP),
+			LANE_TO_QUAD_MAP            => integer_array(LANE_TO_QUAD_MAP),
+			QUAD_TO_REFCLK_MAP          => integer_array(QUAD_TO_REFCLK_MAP),
 			EXAMPLE_SIMULATION          => 1,
 			EXAMPLE_SIM_GTRESET_SPEEDUP => "TRUE",    -- simulation setting for GT SecureIP model
 			DONT_RESET_ON_DATA_ERROR_IN => '0',
@@ -291,12 +293,16 @@ begin
 			status_bytes  => status_bytes,
 
 			-- Control and reply streams
-			cmd_dat  => cmd_dat,
-			cmd_rdy  => cmd_rdy,
-			rply_dat => rply_dat,
-			rply_rdy => rply_rdy,
-			ctrl_clk => ctrl_clk,
-			ctrl_rst => ctrl_rst,
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
+			bsb_clk => bsb_clk,
+			bsb_rst => bsb_rst,
 
 			-- clk: in std_logic; -- AXI-S data clock. Not related to the 10G Ethernet clocks.
 			areset => reset_reg -- asynchronous reset

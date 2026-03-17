@@ -7,23 +7,23 @@
 Overview
 --------
 
-UCAP periodically captures raw data frames coming from eight 128-bit AXI-Stream channels and streams  out the totality of the captured data  through a single 8-bit AXI stream bus. This module is typically used to capture raw ADC of FFT data from the 'CHAN' module and stream it through UDP packets over a Gigabit Ethernet interface.
+UCAP periodically captures raw data frames coming from eight 128-bit AXI Stream buses and streams  out the the captured data  through a single 8-bit AXI stream bus. This module is typically used to capture raw ADC of FFT data from the 'CHAN' module and stream it through UDP packets over a Gigabit Ethernet interface.
 
 
 Features
 --------
 
-- `UCAP` is a centralized capture engine , as opposed to a channelizer-based capture engine.
-- It makes use of the Ultrascale UltraRAM blocks to allow capture of long frames of high bit-width data samples.
-- Operation of `UCAP` is configured over a memory-mapped interface through a Byte-serial bus (BSB)
-- `UCAP` nominally can capture data from 8 channels simulatenously. It can however be configured by software to capture a larger number of contiguous frames from a smaller number of user-selectable channels
+- `UCAP` is a centralized capture engine, as opposed to a channelizer-based (distributed) capture engine.
+- It makes use of the Ultrascale UltraRAM blocks to store large amounts of data (512 kBytes total).
+- Operation of `UCAP` is configured over a memory-mapped register interface through a Byte-serial bus (BSB)
+- `UCAP` allows the user to  can capture data from up to 8 channels simulatenously, but the user can dynamically choose a compromise between the number of channels captured and the number of contiguous frames stored for each channel. Options are:
 
     - 2 contiguous frames from all 8 channels (where one frame = 16384 samples @ 16-bit/sample)
     - 4 contiguous frames from 4 user-selectable channels
     - 8 contiguous frames from 2 user-selectable channels
     - 16 contiguous frames from one user-selectable channel
 
-- Each channel can represent one of 2 data sources. The data source is selected at the source through a source selection bit provided by `UCAP` to each source. Each channel can have a different source from the others. In order to reduce the routing burden, the source selection bit is provided to a remote multiplexer which performs the source selection.
+- Each capture channel can be independently selected from one of 2 data sources.  The muxing is done in near the data source,
 - `UCAP` continuously keeps track of the frame number of each souce, independent of which source is selected. The capture triggers are also independently generated for each source. This allow switching back and forth between sources while maintaining the timing of the capture of each source.
 - `UCAP` ensures that the current frame is completed and that data capture starts on the first frame of the new source when the source is changed by the user.
 - Data is captured at a base period that can be set to any number of frames. `UCAP` must be reset if that base rate is changed.
@@ -56,78 +56,186 @@ Entity documentation
  .. autoentity:: ucap
 
 
-Principle of operation
-----------------------
+Principle of operations
+=======================
 
-Number of input channels
-........................
+Generic parameters
+------------------
 
-Although we use the generics NUMBER_OF_CHANNELS to represent the number of input channels, this is done mostly for clarity of the code. In practice, the current structure of the code makes UCAP capable of operating only on 8 data inputs, mainly for simplicity. Some of the sources for this limitation are:
+- **``NUMBER_OF_CHANNELS``** (default: 8): Number on input channels. It is hard coded to 8 in practice and cannot be changed without changing the code. This generics is only for code clarity. The current implementation is limited to 8 channels due to:
 
-- The mode number is fixed to 2 bits.
-- The channel multiplexer that maps the input channels to the memory bank is optimized to operate efficiently on 8 input channels.
-- In the CHORD configuration of ``chfpga``, there are only 16 URAM blocks available to `UCAP`, meaning we can only handle up to 8 channels.
+  - The mode selection is fixed to 2 bits (supporting 4 modes: 8, 4, 2, or 1 channel)
+  - The channel multiplexer logic is optimized specifically for 8 input channels
+  - In the CHORD configuration, only 16 UltraRAM blocks are available to UCAP, and each 128-bit memory buffer requires 2 URAM blocks (8 buffers × 2 URAM = 16 URAM total)
 
-Number of input sources
-.......................
+- **``NUMBER_OF_SOURCES``** (default: 2): Hard-coded to 2. The logic assumes a single-bit representation for source selection throughout the code, including the source selection register and the source selection signal sent to the remote multiplexer.
 
-The number of input sources for each input channel is hard coded to be 2. The logic assumes at various  places in the code that the source is represented by a single bit, such as:
-
-- the source selection register
-- source selection signal sent to the remote mux
-
-Streaming input sources
-.......................
-
-Each channel provides data using a 128-bit (16-byte-wide) AXI-streaming bus. The meaning of the data within the 128-bit word depends on assignments made by the remote multiplexer. The bus width was chosen to be  wide enough to capture 12-, 14- or 16-bit ADC samples presented 8 samples at a time.
-
-Streaming output width
-......................
-
-The streaming output is coded for a 8-bit-wide AXI-Streaming bus only, as the intended target is a 1G Ethernet link that is saturated by a byte-wide bus operating at a very modest 125 MHz output clock . This is currently fixed by the logic that reads the 128-byte outputs byte-by-byte, although the code could be modified to read 2, 4 or even 8 bytes at a time for transmission through a faster link.
-
-Output packet format
-....................
-
-The data from each data frame is split in 4 packets in order to keep the packet size within the limit of typical Ethernet 9k  jumbo frames. Each packet contains a 10-byte header followed by 8192 bytes of data (4096 16-bit samples).
-
-Each output packet contains:
-
-- Byte 0: 8-bit PROBE ID, which is ``0xA0`` for source 0 and ``0xA1`` for source 1
-- Bytes 1-2: 16-bit STREAM ID. Identifies the source of the data. MSB is sent first.
-    * Bit 15:12: Frame number (0 - N-1, where n=2,4,8,16  in 8, 4, 2 or 1 channel mode respectively)
-    * Bits 11:3: zeros
-    * Bits 2:0: Channel number
-- Byte 3: Flags
-    * Bits 7:4: Serial flags (all zeros)
-    * Bits 3:2: Current mode (0=8 channel mode, 1=4 channel mode, 2=2 channel mode, 3=1 channel mode)
-    * Bits 1:0: Packet number for the captured frame (0-3)
-- Bytes 4-9: 48-bit Frame number, (a.k.a timestamp), MSB transmitted first
-
-The data follows the header. 128-bit data words are sent in the natural order they are produced by the source. The 128-bits of captured data is sent byte-by-byte, MSB being transmitted first.
-
-The meaning of the data depend on the data sourceand alignment of the data is left to the remote multiplexer .
-
-Memory blocks
-.............
+- **``CAPTURE_BITS_PER_WORD``** (default: 128): Must be a multiple of 8 bits and is typically set to 128 bits to accommodate the FUNCGEN output stream (8 samples per word at 16 bits per sample), but `UCAP` is word-content agnostic.
 
 
-there are only 16 URAM blocks available. We need 2 URAM to implement a 128-bit wide memory block, meaning we can only handle up to 8 channels.
+Interface signals
+-----------------
 
+- **Input data streams** (``s_axis_*``): ``NUMBER_OF_CHANNELS``  AXI4-Streaming interfaces, each with a ``TDATA`` width of ``CAPTURE_BITS_PER_WORD`` bits. ``s_axis_tvalid`` and  ``s_axis_tlast`` are common to all channels, so all channels from the same source must have synchronized packet boundaries (i.e. packets from all channels of a source  must start and end on the same clock cycle).
 
-Operating frequency
-...................
+- **Source selection signals** Remote source mux control. ``source_sel_out`` signals (one per channel) requests which source should be active, and ``source_sel_in`` signals are returned indicating which source is currently active on each channel's data bus.
 
-UCAP is meant to operate at 400 MHz, which allows capturing ADC samples captured at 3.2 Gsamples/s and carried in a bus 8 samples at a time.
+- **Auxiliary input data stream** (``s_axis_stream_in_*``): An 8-bit AXI4-Streaming input available for capturing additional data streams, such as correlator output.
 
+- **Output data stream** (``m_axis_*``):  AXI4-Streaming bus for byte-serialized data either from the capture engine or the auxliary source.  The output can be switched between UCAP captured data and the auxiliary input stream via the ``output_source_sel`` control bit.
 
-Read / Write Process
---------------------
+- **BSB control interface**. Provides access to `UCAP`'s internal memory-mapped control and status registers.
 
-Incoming 32-bit AXIS Data is captured and written into the DATA FIFO over a 36-bit AXIS bus and read out over a 8-bit wide AXIS Bus. Each byte in the incoming data is extended with a bit which set to '0' except for the LSB , where is set to the TLAST flag from the 32-bit AXIS Bus. The sign extenstion is show below. The HEADER FIFO is 9-bit wide write process which consitutues of all the header information for the data frame written one bit at a time accompanied with a LAST bit at bit(8). When the destination is ready, PROBER sends the header FIFO  bytes until we encounter bit(8)=1, then sends the DATA FIFO bytes until we encounter bit(8)=1 and go back to send header bytes.
+Clocking and resets
+-------------------
 
-.. .. figure:: ../images/prober_write_data.svg
-..     :width: 25%
+UCAP operates on three clock domains:
+
+- ``s_axis_clk``: The main capture clock (typically 400 MHz), used for all input data interfaces, memory write/read operations, and internal processing
+
+- ``m_axis_clk``: Clock for the output stream.
+- ``ctrl_clk``: Clock for the  BSB control interface
+
+The module uses synchronous resets. A user reset (``user_reset``) can be triggered via the BSB control interface and is synchronized to the ``s_axis_clk`` domain. During reset, all counters are cleared and capture is enabled for the first frame after reset.
+
+Capture modes
+-------------
+
+UCAP supports four capture modes, selected by the 2-bit ``mode`` register:
+
+- **Mode 0 (8-channel mode)**: Captures 2 contiguous frames from all 8 channels simultaneously. Each channel uses one memory buffer (2 frames per buffer).
+- **Mode 1 (4-channel mode)**: Captures 4 contiguous frames from 4 user-selectable channels. Each selected channel uses 2 memory buffers (4 frames total per channel).
+- **Mode 2 (2-channel mode)**: Captures 8 contiguous frames from 2 user-selectable channels. Each selected channel uses 4 memory buffers (8 frames total per channel).
+- **Mode 3 (1-channel mode)**: Captures 16 contiguous frames from one user-selectable channel. The selected channel uses all 8 memory buffers (16 frames total).
+
+The mode determines how input channels are mapped to memory buffers. In mode 0, channels 0-7 map directly to buffers 0-7. In other modes, user-selected channels (via ``chan_sel_map``) are routed to groups of buffers to store multiple frames per channel.
+
+Source selection and frame tracking
+------------------------------------
+
+Each physical channel can select between two data sources via a remote multiplexer. The source selection is controlled per-channel through the ``source_sel_out`` signals, which are sent to the remote mux, and the active source is reported back via ``source_sel_in``.
+
+UCAP maintains independent frame counters, period counters, and timestamps for each source, regardless of which source is currently selected. This allows switching between sources while maintaining proper timing for each source independently. The capture triggers are generated continuously in parallel for both sources, so frame numbers remain synchronized even when a source is not actively being captured.
+
+When the source selection changes, UCAP ensures that the current frame completes before starting capture on the new source. Capture always begins on the first frame of the newly selected source.
+
+Capture period and sub-period
+------------------------------
+
+Data capture is triggered at a configurable base period, specified in frames via the ``base_period`` register (24 bits, one per source). The base period can be set to any number of frames, but UCAP must be reset if the base period is changed.
+
+To allow dynamic capture rate changes (e.g., during instrument calibration), a power-of-two sub-capture period can be enabled via the ``sub_period`` register (5 bits). The sub-period corresponds to ``2^(N+1)`` frames, where N is the value in ``sub_period``. The sub-period can be changed at any time without resetting UCAP, and ensures there is always a capture every ``frame_number = k * base_period`` frame.
+
+The capture trigger logic checks both conditions: ``period_ctr = base_period`` OR the sub-period condition (using ``all_ones(period_ctr, sub_period, 0)``). When either condition is met, ``capture_en`` is set to '1' and capture begins on the next frame boundary.
+
+Memory organization
+-------------------
+
+UCAP uses UltraRAM (URAM) blocks to store captured data. Each memory buffer is 128 bits wide × 4096 words deep, requiring 2 URAM primitives (each URAM is 4K × 72 bits). With 16 URAM blocks available, UCAP can implement 8 memory buffers.
+
+Each buffer can store 2 frames (16384 samples / 8 samples per word = 2048 words per frame, so 2 frames = 4096 words). The total storage capacity is:
+
+- Mode 0: 2 frames × 8 channels = 16 frames total
+- Mode 1: 4 frames × 4 channels = 16 frames total
+- Mode 2: 8 frames × 2 channels = 16 frames total
+- Mode 3: 16 frames × 1 channel = 16 frames total
+
+The memory write address is constructed from the frame number LSB (selecting which of the 2 frames in the buffer) and the word counter (11 bits for 2048 words per frame). The memory read address uses the same structure but is driven by the read sequencer.
+
+Write process
+-------------
+
+The write process (``wr_blk``) handles data capture and storage. It operates independently for each source, maintaining separate counters and state.
+
+For each source, the process:
+
+1. Tracks word and frame counters, incrementing on ``s_axis_tvalid`` and ``s_axis_tlast``
+2. Maintains a period counter that increments on each frame boundary
+3. Generates capture triggers when the period counter matches ``base_period`` or the sub-period condition
+4. Writes data to the appropriate memory buffer based on the current mode, selected channel, and frame number
+
+The input channel multiplexing logic routes selected channels to memory buffers according to the mode:
+
+- **Mode 0**: Uses four 8:1 muxes for even buffers (0,2,4,6) and four 2:1 muxes for odd buffers (1,3,5,7). Even buffers select channels 0,2,4,6; odd buffers select channels 1,3,5,7 directly.
+- **Modes 1-3**: Uses four 8:1 muxes that feed both even and odd buffers in each pair with the same data. The mux selection is driven by ``chan_pair_sel``, which is derived from ``chan_sel_map`` based on the mode.
+
+The memory write enable is set for only one buffer per channel at a time, based on the current frame number and the mode-dependent buffer assignment. When a capture completes (all frames stored), a ``src_readout_trig`` pulse is generated to initiate readout.
+
+Read process and packet formatting
+------------------------------------
+
+The read process (``rd_blk``) handles data readout and packet formatting. It consists of two main components:
+
+1. **Read sequencer**: A state machine that generates RAM read addresses and opcodes for the data processor. It operates in three states:
+   - ``READ_SEQ_WAIT``: Waits for buffers to be ready for readout
+   - ``READ_SEQ_SEND_HEADER``: Sends the 10-byte packet header
+   - ``READ_SEQ_SEND_DATA``: Sends the packet data (8192 bytes per packet)
+
+2. **Read processor**: Processes data coming out of RAM (after the RAM read latency) based on opcodes from the sequencer. It handles:
+   - Header byte transmission
+   - Data byte extraction from 128-bit words (MSB first)
+   - Packet boundary management (4 packets per frame)
+
+The read sequencer uses a delay pipeline (``read_proc_op`` and ``buf_ix``) to compensate for the RAM read latency (4 clocks). The opcode and buffer index are pipelined so they arrive at the same time as the data.
+
+Each captured frame is split into 4 packets to fit within Ethernet jumbo frame limits. Each packet contains:
+
+- **10-byte header**:
+
+  - Byte 0: PROBE ID (``0xA0`` for source 0, ``0xA1`` for source 1)
+
+  - Bytes 1-2: STREAM ID (16 bits, MSB first)
+
+    - Bits 15:12: Frame number (0 to N-1, where N=2,4,8,16 depending on mode)
+    - Bits 11:4: User stream ID (crate/slot identifier)
+    - Bits 3: Unused (zero)
+    - Bits 2:0: Channel number
+
+  - Byte 3: Flags
+  
+    - Bits 7:4: Serial flags (all zeros)
+    - Bits 3:2: Mode (0=8-channel, 1=4-channel, 2=2-channel, 3=1-channel)
+    - Bits 1:0: Packet number within frame (0-3)
+
+  - Bytes 4-9: 48-bit timestamp (frame number, MSB first)
+
+- **8192 bytes of data**: 128-bit words are transmitted byte-by-byte, MSB first, in the natural order they were captured.
+
+The read sequencer throttles based on the ``fifo_full`` signal. Since there is data in the pipeline when ``fifo_full`` is asserted, the FIFO's ``prog_full`` threshold must be set low enough to accommodate pipeline writes after the throttle signal is raised.
+
+Output FIFO
+-----------
+
+An asynchronous FIFO bridges the ``s_axis_clk`` domain (write side) and ``m_axis_clk`` domain (read side). The FIFO is 9 bits wide (8 data + 1 TLAST) and 512 words deep, using BRAM with First-Word-Fall-Through (FWFT) mode.
+
+The FIFO depth and ``prog_full`` threshold are carefully sized to handle the clock domain crossing latency. The ``prog_full`` threshold is set to 256 to account for:
+- Clock domain crossing delay (4-5 slow clocks = 16-20 fast clocks)
+- Pipeline writes after the throttle signal is raised
+
+The FIFO can accept data from either the UCAP captured data stream or the auxiliary input stream, selected via ``output_source_sel``.
+
+BSB registers
+-------------
+
+UCAP is configured and monitored through BSB (Byte-Serial Bus) control registers:
+
+- **Control registers**:
+  - ``mode``: 2-bit capture mode selection
+  - ``chan_sel_map``: Channel selection for modes 1-3 (4 × 3-bit values)
+  - ``base_period``: Capture period in frames (24 bits per source)
+  - ``sub_period``: Sub-capture period (5 bits)
+  - ``source_sel_out``: Source selection request for each channel (8 bits)
+  - ``user_stream_id``: User-defined stream identifier (8 bits)
+  - ``output_source_sel``: Output stream selection (0=UCAP data, 1=auxiliary)
+  - ``user_reset``: User reset trigger
+
+- **Status registers**:
+  - ``fifo_overflow_sticky``: FIFO overflow indicator (sticky)
+  - ``overrun``: Buffer overrun indicator
+  - ``period_ctr``: Current period counter value (8 LSBs of source 0)
+  - ``source_sel_in``: Current source selection input (8 bits)
+
+See the Memory Map section below for detailed register descriptions.
 
 
 

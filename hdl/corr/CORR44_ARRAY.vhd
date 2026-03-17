@@ -69,12 +69,16 @@ entity CORR44_ARRAY is
 		out_rst: in std_logic; -- Reset synchronous to the output clock
 
 		-- Control and reply streams
-		cmd_dat:  in AXIS8_DAT_STRUCT;
-		cmd_rdy:  out AXIS8_RDY_STRUCT;
-		rply_dat: out AXIS8_DAT_STRUCT;
-		rply_rdy: in AXIS8_RDY_STRUCT;
-		ctrl_clk: in std_logic; -- control clock
-		ctrl_rst: in STD_LOGIC
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid: in std_logic;
+		s_axis_bsb_tlast: in std_logic;
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic;
+		bsb_clk: in std_logic; -- control clock
+		bsb_rst: in STD_LOGIC
 		);
 
 end CORR44_ARRAY;
@@ -94,10 +98,10 @@ constant corr44_rpm: corr44_rloc_origins_struct_array := get_corr44_rloc_origins
 
 
 signal s_axis_tdata_reg: slv32_array(0 to NUMBER_OF_CORRELATORS-1); -- input data stream containing the channelized data from every antenna processor. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
-signal s_axis_tvalid_reg: slv(0 to NUMBER_OF_CORRELATORS-1); --
-signal s_axis_tlast_reg: slv(0 to NUMBER_OF_CORRELATORS-1); --
-signal in_rst_reg: slv(0 to NUMBER_OF_CORRELATORS-1);
-signal out_rst_reg: slv(0 to NUMBER_OF_CORRELATORS-1);
+signal s_axis_tvalid_reg: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1); --
+signal s_axis_tlast_reg: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1); --
+signal in_rst_reg: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1);
+signal out_rst_reg: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1);
 
 -- make sure the fanout pipeline register are not recombined into one
 attribute DONT_TOUCH of in_rst_reg: signal is "true";
@@ -105,10 +109,14 @@ attribute DONT_TOUCH of out_rst_reg: signal is "true";
 
 -- Control signals
 
-signal corr_cmd_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_CORRELATORS-1 downto 0);
-signal corr_cmd_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_CORRELATORS-1 downto 0);
-signal corr_rply_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_CORRELATORS-1 downto 0);
-signal corr_rply_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_CORRELATORS-1 downto 0);
+signal corr_router_bsb_cmd_tdata: slv8_array(0 to NUMBER_OF_CORRELATORS-1);
+signal corr_router_bsb_cmd_tvalid: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1);
+signal corr_router_bsb_cmd_tlast: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1);
+signal corr_router_bsb_cmd_tready: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1);
+signal corr_router_bsb_rply_tdata: slv8_array(0 to NUMBER_OF_CORRELATORS-1);
+signal corr_router_bsb_rply_tvalid: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1);
+signal corr_router_bsb_rply_tlast: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1);
+signal corr_router_bsb_rply_tready: std_logic_vector(0 to NUMBER_OF_CORRELATORS-1);
 
 ---- make sure that the router logic is not removed if nothing is connected downstream (when the correlators are not implemented)
 --attribute S: string;
@@ -139,43 +147,50 @@ bsb_router0: entity work.bsb_router
 		ADDRESS_MASK => "---1111------------" --'1': used to generate port index, '-' = don't care,
 	)
 	PORT MAP(
-		-- Master control interface
-		CMD_IN_DAT   => cmd_dat,
-		CMD_IN_RDY   => cmd_rdy,
-		RPLY_OUT_DAT => rply_dat,
-		RPLY_OUT_RDY => rply_rdy,
+		-- Upstream BSB interface
+		s_axis_bsb_tdata => s_axis_bsb_tdata,
+		s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+		s_axis_bsb_tlast => s_axis_bsb_tlast,
+		s_axis_bsb_tready => s_axis_bsb_tready,
+		m_axis_bsb_tdata => m_axis_bsb_tdata,
+		m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+		m_axis_bsb_tlast => m_axis_bsb_tlast,
+		m_axis_bsb_tready => m_axis_bsb_tready,
 
+		-- Downstream BSB interface
+		m_axis_routed_bsb_tdata => corr_router_bsb_cmd_tdata,
+		m_axis_routed_bsb_tvalid => corr_router_bsb_cmd_tvalid,
+		m_axis_routed_bsb_tlast => corr_router_bsb_cmd_tlast,
+		m_axis_routed_bsb_tready => corr_router_bsb_cmd_tready,
+		s_axis_routed_bsb_tdata => corr_router_bsb_rply_tdata,
+		s_axis_routed_bsb_tvalid => corr_router_bsb_rply_tvalid,
+		s_axis_routed_bsb_tlast => corr_router_bsb_rply_tlast,
+		s_axis_routed_bsb_tready => corr_router_bsb_rply_tready,
 
-		CMD_OUT_DAT  => corr_cmd_dat,
-		CMD_OUT_RDY  => corr_cmd_rdy,
-		RPLY_IN_DAT  => corr_rply_dat,
-		RPLY_IN_RDY  => corr_rply_rdy,
+		cmd_overflow => open,
 
-		-- Slave (module) control interface
-		CLK          => ctrl_clk,
-		RST          => ctrl_rst
+		clk => bsb_clk,
+		rst => bsb_rst
 	);
 
 ---------------------------------------------------------------------
 -- Correlator input pipelining process
 ---------------------------------------------------------------------
 -- Pipeline the reset and data buses inputs to facilitate routing and timing closure.
-inpipe_proc: process(in_clk)
-	begin
-		if rising_edge(in_clk) then
+inpipe_proc: process(all) begin
+	if rising_edge(in_clk) then
 			in_rst_reg <= (others=> in_rst);
 			s_axis_tdata_reg <= s_axis_tdata;
 			s_axis_tvalid_reg <= s_axis_tvalid;
-			if in_rst='1' then
+			if in_rst then
 				s_axis_tvalid_reg <= (others=>'0');
 			end if;
 			s_axis_tlast_reg <= s_axis_tlast;
 		end if;
 	end process;
 
-outpipe_proc: process(out_clk)
-	begin
-		if rising_edge(out_clk) then
+outpipe_proc: process(all) begin
+	if rising_edge(out_clk) then
 			out_rst_reg <= (others=> out_rst);
 		end if;
 	end process;
@@ -209,12 +224,16 @@ begin
 			out_rst                  => out_rst_reg(i),
 
 				-- Control Interface
-			CMD_DAT  => corr_cmd_dat(i),
-			CMD_RDY  => corr_cmd_rdy(i),
-			RPLY_DAT => corr_rply_dat(i),
-			RPLY_RDY => corr_rply_rdy(i),
-			CTRL_CLK => ctrl_clk,
-			CTRL_RST => ctrl_rst
+			s_axis_bsb_tdata => corr_router_bsb_cmd_tdata(i),
+			s_axis_bsb_tvalid => corr_router_bsb_cmd_tvalid(i),
+			s_axis_bsb_tlast => corr_router_bsb_cmd_tlast(i),
+			s_axis_bsb_tready => corr_router_bsb_cmd_tready(i),
+			m_axis_bsb_tdata => corr_router_bsb_rply_tdata(i),
+			m_axis_bsb_tvalid => corr_router_bsb_rply_tvalid(i),
+			m_axis_bsb_tlast => corr_router_bsb_rply_tlast(i),
+			m_axis_bsb_tready => corr_router_bsb_rply_tready(i),
+			bsb_clk => bsb_clk,
+			bsb_rst => bsb_rst
 
 			);
 

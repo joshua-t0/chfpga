@@ -57,15 +57,15 @@ begin
 CRC_REG <= CRC_REG_INT;
 
 main: process(all) begin
-		if(clk'EVENT and clk='1') then
+		if (clk'EVENT and clk='1') then
 
-			if (RESET='1' or INIT='1') then
+			if (RESET or INIT) then
 					CRC_REG_INT <= X"FFFFFFFF";
 					CRC<= X"FF";
-			elsif (CALC='1' and D_VALID='1') then
+			elsif (CALC and D_VALID) then
 				CRC_REG_INT <= NEXT_CRC;
 				CRC     <= not (next_crc(24) & next_crc(25) & next_crc(26) & next_crc(27) & next_crc(28) & next_crc(29) & next_crc(30) & next_crc(31));
-			elsif (CALC='0' and D_VALID='1') then
+			elsif (not CALC and D_VALID) then
 				  CRC_REG_INT <=  (CRC_REG_INT(23 downto 0) & X"FF");
 				  CRC     <= not (CRC_REG_INT(16) & CRC_REG_INT(17) & CRC_REG_INT(18) & CRC_REG_INT(19) & CRC_REG_INT(20) & CRC_REG_INT (21) &  CRC_REG_INT(22) & CRC_REG_INT(23));
 			end if;

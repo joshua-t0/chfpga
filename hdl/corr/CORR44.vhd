@@ -40,7 +40,7 @@ entity CORR44 is
 -- TODO: Check what's passed
 -- TODO: words per bin
 	generic (
-		PLATFORM_ID: integer := CONFIG_PLATFORM_ID; -- necessary to select the DSP RPM spacing and instantiate the proper DSP and FIFO primitives
+		PLATFORM_ID: integer; -- necessary to select the DSP RPM spacing and instantiate the proper DSP and FIFO primitives
 		RPM_LAYOUT: string; -- Name of the layout of the correlator DSP, BRAM and FIFO elements  (e.g. "BDDB" or "DBBD")
 		CORR_NUMBER: integer := 0; -- used for packet header and to determine the CORR44 RPM locations
 		NUMBER_OF_WORDS_PER_BIN: integer := 4; -- also corresponds to the number of clocks per bin. There are 4 samples per word.
@@ -79,31 +79,18 @@ entity CORR44 is
 		out_rst: in std_logic; -- Reset synchronous to the output clock
 
 		-- Control interface
-		cmd_dat: in AXIS8_DAT_STRUCT;
-		cmd_rdy: out AXIS8_RDY_STRUCT;
-		rply_dat: out AXIS8_DAT_STRUCT;
-		rply_rdy: in AXIS8_RDY_STRUCT;
-		ctrl_clk : IN std_logic; -- control clock
-		ctrl_rst : in STD_LOGIC
 
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid: in std_logic;
+		s_axis_bsb_tlast: in std_logic;
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic;
+		bsb_clk: in std_logic; -- control clock
+		bsb_rst: in STD_LOGIC
 
-		-- -- Correlator clock
-		-- clk: in STD_LOGIC; -- Correlator clock, which operates independently from the antenna processors. Should be higher rate than the input clock to allow for the freame header overheads
-		-- CORR_RESET: in std_logic; -- Reset synchronous to the correlator clock
-
-		-- -- Data Probe output interface (blocking)
-		-- PRB_DAT : out  AXIS8_DAT_STRUCT; -- Output data stream containing the integrated values. Packaged in 8 bit stream for transmission over the Ethernet.
-		-- PRB_RDY : in  AXIS8_RDY_STRUCT; -- Handshaking for the output data stream to control the data flow
-		-- PRB_CLK : in STD_LOGIC; -- Output data stream clock
-
-
-		-- -- Control and reply streams
-		-- CMD_DAT: in AXIS8_DAT_STRUCT;
-		-- CMD_RDY: out AXIS8_RDY_STRUCT;
-		-- RPLY_DAT: out AXIS8_DAT_STRUCT;
-		-- RPLY_RDY: in AXIS8_RDY_STRUCT;
-		-- CTRL_CLK : IN std_logic; -- control clock
-		-- CTRL_RST : in STD_LOGIC
 		);
 
 end CORR44;
@@ -156,18 +143,18 @@ signal y: slv8_array(0 to N-1);
 signal s: std_logic_vector(0 to N-1);
 signal cmac_x: slv8_array(0 to NUMBER_OF_CMACS-1);
 signal cmac_y: slv8_array(0 to NUMBER_OF_CMACS-1);
-signal cmac_x_conj: slv(0 to NUMBER_OF_CMACS-1);
-signal cmac_y_conj: slv(0 to NUMBER_OF_CMACS-1);
-signal cmac_rd_err: slv(0 to NUMBER_OF_CMACS-1);
-signal cmac_wr_err: slv(0 to NUMBER_OF_CMACS-1);
-signal cmac_readout_err: slv(0 to NUMBER_OF_CMACS-1);
+signal cmac_x_conj: std_logic_vector(0 to NUMBER_OF_CMACS-1);
+signal cmac_y_conj: std_logic_vector(0 to NUMBER_OF_CMACS-1);
+signal cmac_rd_err: std_logic_vector(0 to NUMBER_OF_CMACS-1);
+signal cmac_wr_err: std_logic_vector(0 to NUMBER_OF_CMACS-1);
+signal cmac_readout_err: std_logic_vector(0 to NUMBER_OF_CMACS-1);
 
 signal cmac_z_tdata: slv36_array(0 to NUMBER_OF_CMACS);
-signal cmac_z_tvalid: slv(0 to NUMBER_OF_CMACS);
-signal cmac_z_tlast: slv(0 to NUMBER_OF_CMACS);
-signal cmac_z_send: slv(0 to NUMBER_OF_CMACS);
-signal cmac_z_start: slv(0 to NUMBER_OF_CMACS);
-signal cmac_z_local_data: slv(0 to NUMBER_OF_CMACS-1);
+signal cmac_z_tvalid: std_logic_vector(0 to NUMBER_OF_CMACS);
+signal cmac_z_tlast: std_logic_vector(0 to NUMBER_OF_CMACS);
+signal cmac_z_send: std_logic_vector(0 to NUMBER_OF_CMACS);
+signal cmac_z_start: std_logic_vector(0 to NUMBER_OF_CMACS);
+signal cmac_z_local_data: std_logic_vector(0 to NUMBER_OF_CMACS-1);
 
 signal xy_tvalid: std_logic;
 signal xy_tlast: std_logic;
@@ -319,14 +306,16 @@ number_of_bins_per_frame <= "000" & to_slv(control_bytes(5 to 6))(8 downto 0);
 --status_bytes(0)(7 downto 4) <= (others=>'0');
 --status_bytes(0)(3)          <= ACCUM_UNDERFLOW;
 --status_bytes(0)(2)          <= ACCUM_OVERFLOW;
-status_bytes(0)(0) <= rst_all;
-status_bytes(0)(1) <= data_fifo_prog_full;
-status_bytes(0)(2) <= data_fifo_overflow_sticky;
-status_bytes(0)(3) <= cmac_z_local_data(0);
-status_bytes(0)(4) <= m_axis_data_out_tready;
-status_bytes(0)(5) <= cmac_readout_err(0);
-status_bytes(0)(6) <= cmac_wr_err(0);
-status_bytes(0)(7) <= cmac_rd_err(0);
+status_bytes(0) <= (
+	0 => rst_all, 
+	1 => data_fifo_prog_full, 
+	2 => data_fifo_overflow_sticky, 
+	3 => cmac_z_local_data(0), 
+	4 => m_axis_data_out_tready, 
+	5 => cmac_readout_err(0), 
+	6 => cmac_wr_err(0), 
+	7 => cmac_rd_err(0)
+	);
 
 status_bytes(1) <= to_slv(in_frame_ctr_reg);
 status_bytes(2) <= to_slv(out_frame_ctr_reg);
@@ -341,12 +330,16 @@ bsb_regs0: entity work.bsb_regs
 
 	port map (
 		-- Control interface (command and reply stream buses)
-		CTRL_CMD_IN_DAT   => cmd_dat,
-		CTRL_CMD_IN_RDY   => cmd_rdy,
-		CTRL_RPLY_OUT_DAT => rply_dat,
-		CTRL_RPLY_OUT_RDY => rply_rdy,
-		CTRL_CLK          => ctrl_clk,
-		CTRL_RST          => ctrl_rst,
+		s_axis_bsb_tdata => s_axis_bsb_tdata,
+		s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+		s_axis_bsb_tlast => s_axis_bsb_tlast,
+		s_axis_bsb_tready => s_axis_bsb_tready,
+		m_axis_bsb_tdata => m_axis_bsb_tdata,
+		m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+		m_axis_bsb_tlast => m_axis_bsb_tlast,
+		m_axis_bsb_tready => m_axis_bsb_tready,
+		bsb_clk          => bsb_clk,
+		bsb_rst          => bsb_rst,
 
 		CONTROL_BYTES => control_bytes,
 		STATUS_BYTES => status_bytes
@@ -437,9 +430,8 @@ cmac_z_tvalid(NUMBER_OF_CMACS) <= '0';
 cmac_z_tlast(NUMBER_OF_CMACS) <= '0';
 
 
-main: process(in_clk)
-	begin
-		if rising_edge(in_clk) then
+main: process(all) begin
+	if rising_edge(in_clk) then
 			in_rst_all <= in_rst or user_reset;
 			autocorr_only_reg <= autocorr_only;
 			no_accum_reg <= no_accum;
@@ -472,7 +464,7 @@ main: process(in_clk)
 						end if;
 					end if;
 				end if;
-				if is_data = '1' then -- Header='0'
+				if is_data  then -- Header='0'
 					--if autocorr_only_reg='1' then
 					--	buf(to_integer(word_ctr)) <= X"10101010";
 					--else
@@ -514,7 +506,7 @@ main: process(in_clk)
 			s(0 to 1) <= "11";
 
 			-- tvalid is set when  we load new data until we have shifted N/4 times
-			if load = '1' then
+			if load  then
 				xy_tvalid <= '1';
 			elsif N=4 or s(N/2-4)='1' then -- s is initialized
 				xy_tvalid <= '0';
@@ -623,7 +615,7 @@ data_fifo_dout_padded(35 downto 0) <=  data_fifo_dout(35 downto 0); -- pad to 40
 -- FIFO Read Process
 --
 -- We do not use a assymetric FIFO to convert the 36 bits of data into 5 bytes, as the aspect ratio is either 1:4 or 1:8, not 1:5.
-fifo_readout_proc: process(out_clk)
+fifo_readout_proc: process(all)
 	variable header_words: slv32_array(0 to 2);
 	variable header_bytes: slv8_array(0 to 11);
 
@@ -666,7 +658,7 @@ fifo_readout_proc: process(out_clk)
 						-- Note that we set the ID while we are already started sending the first
 						-- header byte, but this first byte is the cookie so this is ok
 						cmac_id <= cmac_id + 1;
-						if data_fifo_dout(37) = '1' then -- if this is a new readout
+						if data_fifo_dout(37)  then -- if this is a new readout
 							cmac_id <= (others=>'0');
 							integration_number <= integration_number + 1;
 						end if;
@@ -683,7 +675,7 @@ fifo_readout_proc: process(out_clk)
 					if byte_ctr = 4 then
 						byte_ctr <= 0;
 
-						if data_fifo_dout(36) = '1' then -- if that was the last word of a frame
+						if data_fifo_dout(36)  then -- if that was the last word of a frame
 							m_axis_data_out_tlast <= '1';
 							send_header <= '1';
 							out_frame_ctr <= out_frame_ctr + 1;

@@ -100,12 +100,16 @@ entity bsb_regs is
 
 		-- Command stream bus (slave)
 
-		ctrl_cmd_in_dat: in AXIS8_DAT_STRUCT; -- Command stream input, signals from master (Data, Valid, Last)
-		ctrl_cmd_in_rdy: out AXIS8_RDY_STRUCT; -- Command stream input, signals to master (Ready)
-		ctrl_rply_out_dat: out AXIS8_DAT_STRUCT; -- Reply stream output, signals to slave (Data, Valid, Last)
-		ctrl_rply_out_rdy: in AXIS8_RDY_STRUCT; -- Reply stream output,  signals from slave (Ready)
-		ctrl_clk: in STD_LOGIC;
-		ctrl_rst: in std_logic; -- Reset, synchronous to CTRL_CLK
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0); -- Command stream input data
+		s_axis_bsb_tvalid: in std_logic; -- Command stream input valid
+		s_axis_bsb_tlast: in std_logic; -- Command stream input last
+		s_axis_bsb_tready: out std_logic; -- Command stream input ready
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0); -- Reply stream output data
+		m_axis_bsb_tvalid: out std_logic; -- Reply stream output valid
+		m_axis_bsb_tlast: out std_logic; -- Reply stream output last
+		m_axis_bsb_tready: in std_logic; -- Reply stream output ready
+		bsb_clk: in STD_LOGIC;
+		bsb_rst: in std_logic; -- Reset, synchronous to BSB_CLK
 
 		-- Control/status words
 
@@ -199,23 +203,23 @@ else generate --  avoid null assignment warning if we don't use RAM
 end generate gen_ram_addr;
 
 -- Command processor process
-cmd_proc: process(ctrl_clk)
+cmd_proc: process(all)
 	variable byte_index_var: integer range 0 to max(NUMBER_OF_STATUS_BYTES, NUMBER_OF_CONTROL_BYTES)-1;
 	constant CONTROL_STATUS_ADDR_WIDTH: integer := width(max(NUMBER_OF_CONTROL_BYTES, NUMBER_OF_STATUS_BYTES));
 
 	begin
-		if rising_edge(ctrl_clk) then
+		if rising_edge(bsb_clk) then
 
 			-- if the byte at the reply is read, clear the valid flag. This is overriden below when we send a new byte.
-			if ctrl_rply_out_rdy.TREADY then
-				ctrl_rply_out_dat.TVALID <= '0';
+			if m_axis_bsb_tready then
+				m_axis_bsb_tvalid <= '0';
 			end if;
 
 
-			if ctrl_cmd_in_dat.TVALID and ctrl_cmd_in_rdy.TREADY then
-				first <= ctrl_cmd_in_dat.TLAST;
+			if s_axis_bsb_tvalid and s_axis_bsb_tready then
+				first <= s_axis_bsb_tlast;
 				is_msb <= not is_msb; -- toggles for each incoming byte. If overriden below to align msb/lsb.
-				previous_byte <= ctrl_cmd_in_dat.TDATA;
+				previous_byte <= s_axis_bsb_tdata;
 			end if;
 
 			-- `byte_index_var` is the address of the byte to be accessed within the CONTROL or STATUS pages, as an integer.
@@ -233,13 +237,13 @@ cmd_proc: process(ctrl_clk)
 				---------------------
 				when COMMAND_BYTE1 =>
 				---------------------
-					opcode <= ctrl_cmd_in_dat.TDATA(7 downto 5);
-					count <= shift_left(to_unsigned(1, count'length), to_integer(unsigned(ctrl_cmd_in_dat.TDATA(4 downto 3)))); -- initialize byte counter as 2^COMMAND_COUNT
-					addr(18 downto 16) <= unsigned(ctrl_cmd_in_dat.TDATA(2 downto 0));
-					ctrl_cmd_in_rdy.TREADY <= '1'; -- We will always be ready to capture the next byte when it comes
+					opcode <= s_axis_bsb_tdata(7 downto 5);
+					count <= shift_left(to_unsigned(1, count'length), to_integer(unsigned(s_axis_bsb_tdata(4 downto 3)))); -- initialize byte counter as 2^COMMAND_COUNT
+					addr(18 downto 16) <= unsigned(s_axis_bsb_tdata(2 downto 0));
+					s_axis_bsb_tready <= '1'; -- We will always be ready to capture the next byte when it comes
 
-					if ctrl_cmd_in_dat.TVALID and first then
-						if ctrl_cmd_in_dat.TLAST = '0' then
+					if s_axis_bsb_tvalid and first then
+						if not s_axis_bsb_tlast then
 							rx_state <= COMMAND_BYTE2;
 						end if;
 					end if;
@@ -247,10 +251,10 @@ cmd_proc: process(ctrl_clk)
 				---------------------
 				when COMMAND_BYTE2 =>
 				---------------------
-					addr(15 downto 8) <= unsigned(ctrl_cmd_in_dat.TDATA);
-					if ctrl_cmd_in_dat.TVALID = '1' then
-						ctrl_cmd_in_rdy.TREADY <= '1'; -- We will always capture the next byte when it comes
-						if ctrl_cmd_in_dat.TLAST then
+					addr(15 downto 8) <= unsigned(s_axis_bsb_tdata);
+					if s_axis_bsb_tvalid then
+						s_axis_bsb_tready <= '1'; -- We will always capture the next byte when it comes
+						if s_axis_bsb_tlast then
 							rx_state <= COMMAND_BYTE1;
 						else
 							rx_state <= COMMAND_BYTE3;
@@ -261,13 +265,13 @@ cmd_proc: process(ctrl_clk)
 				when COMMAND_BYTE3 =>
 				---------------------
 
-					if  ctrl_cmd_in_dat.TVALID and ctrl_cmd_in_rdy.TREADY then -- we use TREADY to determine if we have already obtained a byte.
+					if s_axis_bsb_tvalid and s_axis_bsb_tready then -- we use TREADY to determine if we have already obtained a byte.
 						--timeout_reset <= '1';
-						addr(7 downto 0) <= unsigned(ctrl_cmd_in_dat.TDATA); -- grab the final byte of the address
+						addr(7 downto 0) <= unsigned(s_axis_bsb_tdata); -- grab the final byte of the address
 						if ADDR_WIDTH <= INT_ADDR_WIDTH-1 then -- avoid null assignment warnings
 							addr(INT_ADDR_WIDTH-1 downto ADDR_WIDTH) <= (others=>'0'); -- zero all the address bits we dont need
 						end if;
-						ctrl_cmd_in_rdy.TREADY <= '0'; -- Don't read any incoming byte by default. Will be overriden below as needed.
+						s_axis_bsb_tready <= '0'; -- Don't read any incoming byte by default. Will be overriden below as needed.
 					end if;
 
 					-- Prepare reply byte in case it is needed
@@ -287,22 +291,22 @@ cmd_proc: process(ctrl_clk)
 					-- We'll stay in this state until we can put the reply byte on the bus.
                     -- We have received the last command byte either when it arrived on this clock (TVALID=1) or it was received earlier and TREADY was set to 0.
                     -- We can put a byte on the reply bus either if there is no byte on the bus (TREADY=0) or if there is a byte but is being consumed on this clock (TREADY=1)
-					if (ctrl_cmd_in_dat.TVALID='1' or ctrl_cmd_in_rdy.TREADY='0') and (ctrl_rply_out_dat.TVALID='0' or  ctrl_rply_out_rdy.TREADY='1') then -- if the last command byte is available and the reply channel is ready
+					if (s_axis_bsb_tvalid='1' or s_axis_bsb_tready='0') and (m_axis_bsb_tvalid='0' or  m_axis_bsb_tready='1') then -- if the last command byte is available and the reply channel is ready
 						-- Send a dummy reply byte header. The value is not important: it will be replaced by MASTER with a sequence number.
-						ctrl_rply_out_dat.TVALID <= '1';
+						m_axis_bsb_tvalid <= '1';
 
-						if opcode = OPCODE_READ_CONTROL or opcode = OPCODE_READ_STATUS or opcode = OPCODE_READ_RAM  then -- if is_write='0'
-    						ctrl_rply_out_dat.TLAST <= '0'; -- the first reply byte was not the last one - there are more to come
-							ctrl_cmd_in_rdy.TREADY <= '0'; -- do not accept more bytes
+						if opcode = OPCODE_READ_CONTROL or opcode = OPCODE_READ_STATUS or opcode = OPCODE_READ_RAM then -- if is_write='0'
+    						m_axis_bsb_tlast <= '0'; -- the first reply byte was not the last one - there are more to come
+							s_axis_bsb_tready <= '0'; -- do not accept more bytes
 							if opcode = OPCODE_READ_RAM then
 								ram_rd_en_int <= '1';
 							end if;
 							rx_state <= EXECUTE_COMMAND;
 
 						else -- if we have a write command and the last command byte has arrived
-							ctrl_rply_out_dat.TLAST <= '1'; -- the first reply byte is our last one
-							ctrl_cmd_in_rdy.TREADY <= '1'; -- the next data or command byte will be consumed
-							if ctrl_cmd_in_dat.TLAST then -- if this is the last byte of the packet, abort. This being a write command, we need more data coming!
+							m_axis_bsb_tlast <= '1'; -- the first reply byte is our last one
+							s_axis_bsb_tready <= '1'; -- the next data or command byte will be consumed
+							if s_axis_bsb_tlast then -- if this is the last byte of the packet, abort. This being a write command, we need more data coming!
 								rx_state <= COMMAND_BYTE1;
 							else
 								rx_state <= EXECUTE_COMMAND;
@@ -318,18 +322,18 @@ cmd_proc: process(ctrl_clk)
 						---------------------
 						when OPCODE_WRITE_CONTROL | OPCODE_WRITE_CONTROL_MASK=> -- wait for an incoming byte, and write it to the appropriate control byte
 						---------------------
-							if ctrl_cmd_in_dat.TVALID then
+							if s_axis_bsb_tvalid then
 								if opcode = OPCODE_WRITE_CONTROL_MASK then -- if in mask mode, write only when you get 2 bytes
 									if is_msb then
-										control_bytes(byte_index_var) <= (control_bytes(byte_index_var) and not ctrl_cmd_in_dat.TDATA) or (previous_byte and ctrl_cmd_in_dat.TDATA); -- Store byte in control word
+										control_bytes(byte_index_var) <= (control_bytes(byte_index_var) and not s_axis_bsb_tdata) or (previous_byte and s_axis_bsb_tdata); -- Store byte in control word
 										addr <= addr + 1;
 									end if; -- otherwise do nothing but wait for the next byte
 								else
-									control_bytes(byte_index_var) <= ctrl_cmd_in_dat.TDATA; -- Store byte in control word
+									control_bytes(byte_index_var) <= s_axis_bsb_tdata; -- Store byte in control word
 									addr <= addr + 1;
 								end if;
-								ctrl_cmd_in_rdy.TREADY <= '1'; -- the next byte will be processed
-								if ctrl_cmd_in_dat.TLAST then
+								s_axis_bsb_tready <= '1'; -- the next byte will be processed
+								if s_axis_bsb_tlast then
 									rx_state <= COMMAND_BYTE1;
 								end if;
 							end if;
@@ -338,15 +342,15 @@ cmd_proc: process(ctrl_clk)
 						when OPCODE_READ_CONTROL =>
 						-- wait for the reply bus to be ready and send a control byte value. Repeat 'count' times.
 						---------------------
-							if ctrl_rply_out_dat.TVALID = '0' or ctrl_rply_out_rdy.TREADY = '1' then -- if reply channel ready
-								ctrl_rply_out_dat.TDATA <= control_bytes(byte_index_var);
-								ctrl_rply_out_dat.TVALID <= '1';
-								ctrl_rply_out_dat.TLAST <= '0';
+							if not m_axis_bsb_tvalid or m_axis_bsb_tready then -- if reply channel ready
+								m_axis_bsb_tdata <= control_bytes(byte_index_var);
+								m_axis_bsb_tvalid <= '1';
+								m_axis_bsb_tlast <= '0';
 								addr <= addr + 1;
 								count <= count - 1;
 								if count=1 then
-									ctrl_rply_out_dat.TLAST <= '1';
-									ctrl_cmd_in_rdy.TREADY <= '1'; -- the next byte will be processed
+									m_axis_bsb_tlast <= '1';
+									s_axis_bsb_tready <= '1'; -- the next byte will be processed
 									rx_state <= COMMAND_BYTE1;
 								end if;
 							end if;
@@ -355,15 +359,15 @@ cmd_proc: process(ctrl_clk)
 						when OPCODE_READ_STATUS =>
 						-- wait for the reply bus to be ready and send a status byte value. Repeat 'count' times.
 						---------------------
-							if ctrl_rply_out_dat.TVALID = '0' or ctrl_rply_out_rdy.TREADY = '1' then -- if reply channel ready
-								ctrl_rply_out_dat.TDATA <= status_bytes(byte_index_var);
-								ctrl_rply_out_dat.TVALID <= '1';
-								ctrl_rply_out_dat.TLAST <= '0';
+							if not m_axis_bsb_tvalid or m_axis_bsb_tready then -- if reply channel ready
+								m_axis_bsb_tdata <= status_bytes(byte_index_var);
+								m_axis_bsb_tvalid <= '1';
+								m_axis_bsb_tlast <= '0';
 								addr <= addr + 1;
 								count <= count - 1;
 								if count = 1 then
-									ctrl_rply_out_dat.TLAST <= '1';
-									ctrl_cmd_in_rdy.TREADY <= '1'; -- the next byte will be processed
+									m_axis_bsb_tlast <= '1';
+									s_axis_bsb_tready <= '1'; -- the next byte will be processed
 									rx_state <= COMMAND_BYTE1;
 								end if;
 							end if;
@@ -374,15 +378,15 @@ cmd_proc: process(ctrl_clk)
 						---------------------
 							if RAM_ADDR_WIDTH /= 0 then --Make sure this block of code is not synthesized if no RAM/DRP access is needed
 
-								if wait_state = '0' and ctrl_cmd_in_dat.TVALID = '1' then
+								if not wait_state and s_axis_bsb_tvalid then
 									if RAM_DATA_WIDTH = 16 and is_msb = '1' then -- if we are in 16-bit mode and this is the second byte (MSB)
-										ram_din_int(15 downto 8) <= ctrl_cmd_in_dat.TDATA;
+										ram_din_int(15 downto 8) <= s_axis_bsb_tdata;
 										ram_din_int(7 downto 0) <= previous_byte;
 										ram_wr_en_int <= '1';
 										addr <= addr + 1;
 									else -- if 8 bit mode, store and write always
 										ram_din_int(15 downto 8) <= (others => '0'); -- make sure the net is always driven even in 8-bit mode to suppress warnings
-										ram_din_int(7 downto 0) <= ctrl_cmd_in_dat.TDATA;
+										ram_din_int(7 downto 0) <= s_axis_bsb_tdata;
 										ram_wr_en_int <= '1';
 										-- Set the write address along with WR_EN=1 and the data.
 										-- We don't increment the address on the first write of the block, as addr already contains our first target address.
@@ -394,26 +398,26 @@ cmd_proc: process(ctrl_clk)
 									end if;
 
 									if USE_PIPELINED_RAM_WRITE = FALSE and (RAM_DATA_WIDTH /= 16 or is_msb = '1') then -- if we need to wait for a ready signal and we actually wrote a byte/word (i.e. not interrupted half-word), then process a wait state. The end of frame will be handled there.
-										ctrl_cmd_in_rdy.TREADY <= '0'; -- we won't grab new data until the RAM is ready
-										was_last <= ctrl_cmd_in_dat.TLAST; -- store the end of frame flag so we process it once the write is acknowledged.
+										s_axis_bsb_tready <= '0'; -- we won't grab new data until the RAM is ready
+										was_last <= s_axis_bsb_tlast; -- store the end of frame flag so we process it once the write is acknowledged.
 										wait_state <= '1';
-									elsif ctrl_cmd_in_dat.TLAST then -- this is the last byte and we don't have to wait for the write to complete, process the next command
-										ctrl_cmd_in_rdy.TREADY <= '1'; -- the next byte will be processed
+									elsif s_axis_bsb_tlast then -- this is the last byte and we don't have to wait for the write to complete, process the next command
+										s_axis_bsb_tready <= '1'; -- the next byte will be processed
 										rx_state <= COMMAND_BYTE1;
 									else -- if we don't have to wait for the write and this is not the last byte, we stay in this state
-										ctrl_cmd_in_rdy.TREADY <= '1'; -- the next byte will be processed
+										s_axis_bsb_tready <= '1'; -- the next byte will be processed
 									end if;
 								elsif wait_state = '1' and USE_PIPELINED_RAM_WRITE = FALSE then -- wait for the RDY signal to be asserted before reading another byte
 									if RAM_RDY then
 										wait_state <= '0';
-										ctrl_cmd_in_rdy.TREADY <= '1'; -- the next byte will be processed
+										s_axis_bsb_tready <= '1'; -- the next byte will be processed
 										if was_last then -- was the byte written the last one?
 											rx_state <= COMMAND_BYTE1;
 										end if;
 									end if;
 								end if; -- if new data available
 							else -- no RAM/DRP support, just return to next command. We should never get here.
-								ctrl_cmd_in_rdy.TREADY <= '1'; -- the next byte will be processed
+								s_axis_bsb_tready <= '1'; -- the next byte will be processed
 								rx_state <= COMMAND_BYTE1;
 							end if; -- if RAM/DRP present
 
@@ -421,53 +425,53 @@ cmd_proc: process(ctrl_clk)
 						when OPCODE_READ_RAM =>
 						---------------------
 							if RAM_ADDR_WIDTH /=0 then
-								if ctrl_rply_out_dat.TVALID = '0' or ctrl_rply_out_rdy.TREADY = '1' then -- if reply channel ready
+								if not m_axis_bsb_tvalid or m_axis_bsb_tready then -- if reply channel ready
 									if RAM_DATA_WIDTH = 16 then
 										if send_msb then -- if send msb
-											ctrl_rply_out_dat.TVALID <= '1';
-											ctrl_rply_out_dat.TDATA <= ram_dout_msb;
+											m_axis_bsb_tvalid <= '1';
+											m_axis_bsb_tdata <= ram_dout_msb;
 											send_msb <= '0';
 											ram_rd_en_int <= '1'; -- fetch next word
 										elsif RAM_RDY then
-											ctrl_rply_out_dat.TVALID <= '1';
-											ctrl_rply_out_dat.TDATA <= RAM_DOUT(7 downto 0);
+											m_axis_bsb_tvalid <= '1';
+											m_axis_bsb_tdata <= RAM_DOUT(7 downto 0);
 											ram_dout_msb <= RAM_DOUT(15 downto 8); -- store the MSB for later transmission
 											send_msb <= '1'; -- next cycle will send the stored MSB
 										end if;
 									elsif RAM_RDY then
-										ctrl_rply_out_dat.TVALID <= '1';
-										ctrl_rply_out_dat.TDATA <= RAM_DOUT(7 downto 0);
+										m_axis_bsb_tvalid <= '1';
+										m_axis_bsb_tdata <= RAM_DOUT(7 downto 0);
 										ram_rd_en_int <= '1'; -- fetch next byte
 									end if;
 
 									if (RAM_DATA_WIDTH = 16 and send_msb = '1') or RAM_RDY = '1' then
 										addr <= addr + 1;
 										count <= count - 1;
-											ctrl_rply_out_dat.TLAST <= '0';
+											m_axis_bsb_tlast <= '0';
 										if count = 1 then -- if this is the last byte/word
 											ram_rd_en_int <='0'; -- cancel any data fetch
-											ctrl_rply_out_dat.TLAST <= '1';
-											ctrl_cmd_in_rdy.TREADY <= '1'; -- the next byte will be processed
+											m_axis_bsb_tlast <= '1';
+											s_axis_bsb_tready <= '1'; -- the next byte will be processed
 											rx_state <= COMMAND_BYTE1;
 										end if;
 									end if;
 								end if; -- if reply channel ready
 							else -- no RAM/DRP support, just return to next command. We should never get here.
-								ctrl_cmd_in_rdy.TREADY <= '1'; -- the next byte will be processed
+								s_axis_bsb_tready <= '1'; -- the next byte will be processed
 								rx_state <= COMMAND_BYTE1;
 							end if;
 
 						when others => -- any other opcode is NOP
-							ctrl_rply_out_dat.TVALID <= '0'; -- do not send reply header
-							ctrl_cmd_in_rdy.TREADY <= '1'; -- next state will consume a byte when available
+							m_axis_bsb_tvalid <= '0'; -- do not send reply header
+							s_axis_bsb_tready <= '1'; -- next state will consume a byte when available
 							rx_state <= COMMAND_BYTE1;
 					end case;
 			end case;
 
-			if ctrl_rst then
+			if bsb_rst then
 				-- Reset buses
-				ctrl_rply_out_dat.TVALID <= '0';
-				ctrl_cmd_in_rdy.TREADY <= '1'; -- we are ready to accept the next byte
+				m_axis_bsb_tvalid <= '0';
+				s_axis_bsb_tready <= '1'; -- we are ready to accept the next byte
 				first <= '1'; -- make sure we accept the first command after reset
 				rx_state <= COMMAND_BYTE1;
 				for i in 0 to NUMBER_OF_CONTROL_BYTES-1 loop

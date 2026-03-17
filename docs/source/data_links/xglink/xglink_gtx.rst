@@ -1,8 +1,8 @@
 .. title:: xglink_gtx
 
-********************************************************************
+****************************************************************
 :entity:`xglink_gtx` (*xglink_gtx.vhd*): GTX Transceiver Wrapper
-********************************************************************
+****************************************************************
 
 .. parse:: hdl/XGLINK/xglink_gtx.vhd
 
@@ -35,4 +35,3 @@ Usage in XGLINK
 ---------------
 
 The GTX wrapper is instantiated by the :entity:`xglink_core` module to provide the physical layer interface for 10 Gbps serial data transmission and reception.
-

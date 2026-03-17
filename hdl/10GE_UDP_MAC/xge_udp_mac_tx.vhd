@@ -50,6 +50,7 @@ entity xge_udp_mac_tx is
 
 
 		-- User-side streaming interface
+		
 		s_axis_tx_tdata: in std_logic_vector(31 downto 0); -- See USE_LITTLE_ENDIAN for transmission order
 		s_axis_tx_tvalid: in std_logic;
 		s_axis_tx_tlast: in std_logic;
@@ -61,6 +62,7 @@ entity xge_udp_mac_tx is
 		frame_overflow: out std_logic;
 
 		-- xgblip interface
+		
 		tx_data: out  std_logic_vector(31 downto 0); -- Transmit data word. MSB is transmitted first
 		tx_header: out  std_logic_vector(1 downto 0); -- 2-bit header of the 66 bit block
 		tx_ready: in std_logic;
@@ -269,14 +271,13 @@ crc_out_reg <= not reverse_bytes(reverse_bits_same_dir(crc_out_reg_int)); -- Fir
 --   2) know in advance how many bytes are in the buffer so we can use that information to set the IP Length and UDP Length fields before we start reading the data
 --  Also inserts a dummy frame if an odd amount of 32-bit words is received to make sure that the data will appear on the 64-bit output of the FIFO
 s_axis_tx_tready <= '1';
-tx_front_end : process(s_axis_tx_clk)
-	begin
+tx_front_end : process(all) begin
 
 		if rising_edge(s_axis_tx_clk) then
 			header_fifo_wr_en<='0';
 			DATA_FIFO_WR_EN<='0';
 
-			if s_axis_tx_tvalid='1' then
+			if s_axis_tx_tvalid then
 				if USE_LITTLE_ENDIAN then
 					DATA_FIFO_DIN(31 downto 0) <= reverse_bytes(s_axis_tx_tdata); -- by default the internal order is to transmit byte in MSB first
 				else
@@ -286,7 +287,7 @@ tx_front_end : process(s_axis_tx_clk)
 				DATA_FIFO_WR_EN <= '1';
 
 				-- increment the word counter
-				if(s_axis_tx_tlast='1') then
+				if (s_axis_tx_tlast) then
 					header_fifo_din(15 downto 0)<= (std_logic_vector(DIN_CTR) & "00");
 					header_fifo_din(17 downto 16)<="00";
 					header_fifo_wr_en<='1';
@@ -299,7 +300,7 @@ tx_front_end : process(s_axis_tx_clk)
 			end if;
 
 			-- SYnchronous reset
-			if RST='1' then
+			if RST then
 				DIN_CTR<=to_unsigned(1,DIN_CTR'LENGTH);
 			end if;
 
@@ -309,10 +310,9 @@ tx_front_end : process(s_axis_tx_clk)
 data_overflow <= data_fifo_overflow_sticky;
 frame_overflow <= header_fifo_overflow_sticky;
 
-fifo_readout : process(clk)
-	begin
-		if rising_edge(clk) then
-			if RST='1' then -- synchronous reset
+fifo_readout : process(all) begin
+	if rising_edge(clk) then
+			if RST then -- synchronous reset
 				-- data_fifo_alignment<='0';
 				DATA_FIFO_OVERFLOW_STICKY <= '0';
 				header_fifo_overflow_sticky <= '0';
@@ -333,7 +333,7 @@ fifo_readout : process(clk)
 -- The tx_back_end process reads the FIFO and generate the control and data words that wil form UDP packets Using the 10G protocol.
 -- The words sent are 32-bit wide, although the downstream transmitter  use a 64-bit word boundary to implement the 64-66 bit encoding.
 --
-tx_back_end : process(clk)
+tx_back_end : process(all)
 	-- variable XGMII_TXD_REVERSE_VAR: std_logic_vector(63 downto 0);
 	-- variable XGMII_TXC_REVERSE_VAR: std_logic_vector(7 downto 0);
 
@@ -344,7 +344,7 @@ begin
 		-- Determine if the word on the output data has to be the first or second hald of the data block based on tready transitioning from low to high.
 		-- The word present on the output when tx_ready is high after being low is always the first half of the block (tx_half=0).
 		-- tx_half=0 means that the word appearing on the next clock is the first of the group.
-		if tx_ready='1' and tx_ready_dly='0' then
+		if tx_ready and not tx_ready_dly then
 			tx_half<='0';
 		else
 			tx_half <= not tx_half;
@@ -359,7 +359,7 @@ begin
 
 		crc_init <='0';
 
-		if tx_ready='1' then -- If the destination is ready to receive a word
+		if tx_ready then -- If the destination is ready to receive a word
 
 			txd_dly <= data_fifo_dout(15 downto 0); -- preserve the last 16 bits to send on the next cycle
 			data_fifo_rd_en<='0';
@@ -369,7 +369,7 @@ begin
 				when TX_STATE_STANDBY_IDLE0 =>
 					tx_data_int <= X"1E000000";
 					tx_header_int <= "10";
-					if tx_half='0' then -- Make sure we are aligned with the first half of the block
+					if not tx_half then -- Make sure we are aligned with the first half of the block
 						tx_state <= TX_STATE_STANDBY_IDLE1;
 					else
 						tx_state <= TX_STATE_STANDBY_IDLE0;
@@ -378,7 +378,7 @@ begin
 				when TX_STATE_STANDBY_IDLE1 =>
 					tx_data_int <= X"00000000";
 					tx_header_int <= "10";
-					if header_fifo_valid='1' then -- If frame data is available and pre-computation of the IP checksum is complete
+					if header_fifo_valid then -- If frame data is available and pre-computation of the IP checksum is complete
 						PAYLOAD_LENGTH<=unsigned(header_fifo_dout(15 downto 0));
 						header_fifo_rd_en<='1'; -- Fetch next header for next time. Will be cleared on next clock
 						ip_checksum_action <= IP_CHECKSUM_ACTION_LOAD;
@@ -475,7 +475,7 @@ begin
 					tx_data_int(31 downto 16) <= X"0000"; -- UDP checksum - Not implemented
 					tx_data_int(15 downto 0) <= data_fifo_dout(31 downto 16);
 					tx_header_int <= "01";
-					if data_fifo_dout_last='1' then -- We just read the last word of the frame (but still have to send the final 16 bits in TXD_DLY)
+					if data_fifo_dout_last then -- We just read the last word of the frame (but still have to send the final 16 bits in TXD_DLY)
 						tx_state<=TX_STATE_DATA_LAST; -- Send last half of data and first haldf of CRC in a data block, which will be followed by a control block with the rest of the CRC and EOF.
 					else
 						data_fifo_rd_en<='1'; -- Have the RD_EN flag set when we read the word on the bus so we get the next word immediatly on the next clock
@@ -486,7 +486,7 @@ begin
 					tx_data_int(31 downto 16) <= TXD_DLY;
 					tx_data_int(15 downto 0) <= data_fifo_dout(31 downto 16);
 					tx_header_int <= "01";
-					if data_fifo_dout_last='1' then -- We just read the last word of the frame (but still have to send the final 16 bits in TXD_DLY)
+					if data_fifo_dout_last then -- We just read the last word of the frame (but still have to send the final 16 bits in TXD_DLY)
 						tx_state<=TX_STATE_DATA_LAST; -- Send last half of data and first haldf of CRC in a data block, which will be followed by a control block with the rest of the CRC and EOF.
 					else
 						data_fifo_rd_en<='1'; -- Have the RD_EN flag set when we read the word on the bus so we get the next word immediatly on the next clock
@@ -496,7 +496,7 @@ begin
 					tx_data_int(31 downto 16) <= TXD_DLY;
 					tx_data_int(15 downto 0) <= X"0000"; -- Insert first half of CRC
 					tx_header_int <= "01";
-					if tx_half='0' then -- if this is the firt word of the block
+					if not tx_half then -- if this is the firt word of the block
 						tx_state<=TX_STATE_DATA_PAD1; -- Send last half of data and first haldf of CRC in a data block, which will be followed by a control block with the rest of the CRC and EOF.
 					else
 						tx_state<=TX_STATE_CRC_EOF0; -- Send last half of data, the CRC and the EOF in the next block
@@ -528,7 +528,7 @@ begin
 		-- Synchronous reset
 		-- We reset here to override any signals that need to be reset
 		-- If the reset was at the top, with the cod ein the 'else' clause, we risk inferring a lot of unnecessary data enables for signals that are not resetted.
-		if RST='1' then
+		if RST then
 			TX_STATE<=TX_STATE_STANDBY_IDLE0;
 		end if;
 
@@ -540,9 +540,8 @@ begin
 
 -- Completes computation of the IP checksum
 ip_checksum_dout<=std_logic_vector(not(ip_checksum_sum(15 downto 0))); -- Checksum is 1's complement of sum
-ip_checksum_proc: process(clk)
-	begin
-		if rising_edge(clk) then
+ip_checksum_proc: process(all) begin
+	if rising_edge(clk) then
 			case ip_checksum_action is
 				when IP_CHECKSUM_ACTION_LOAD => -- Initialize with the precomputed checksum plus the provided word
 					ip_checksum_sum <= unsigned(ip_checksum_din);

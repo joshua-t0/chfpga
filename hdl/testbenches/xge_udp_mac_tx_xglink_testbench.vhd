@@ -37,8 +37,8 @@ ENTITY xge_array_testbench IS
 	 GENERIC (
 		NUMBER_OF_LANES             : integer := 1;
 		NUMBER_OF_REFCLK            : integer := 1;
-		LANE_TO_QUAD_MAP            : integerArray := (0=>0, 1=>1); -- Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
-		QUAD_TO_REFCLK_MAP          : integerArray := (0=>0, 1=>1) -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
+		LANE_TO_QUAD_MAP            : integer_array := (0=>0, 1=>1); -- Indicates which quad is associated each channel. The QUAD number is an integer between 0 and N-1, where N is the total number of quads used.
+		QUAD_TO_REFCLK_MAP          : integer_array := (0=>0, 1=>1) -- Indicates which refclk is associated with each QUAD (N integers from 0 to NUMBER_OF_REFCLK-1).
 		);
 END xge_array_testbench;
 
@@ -233,11 +233,11 @@ pcs0: entity work.ten_gig_eth_pcs_pma_0_example_design
 
 
 
-txproc: process(clk200)
+txproc: process(all)
 begin
     if rising_edge(clk200) then
 
-      	if s_axis_tx_tready(0)='1' then
+      	if s_axis_tx_tready(0) then
       		if ctr < data'LENGTH then
 				s_axis_tx_tdata(0)  <= data(to_integer(ctr))(31 downto 0);
 				s_axis_tx_tvalid(0) <= data(to_integer(ctr))(32);

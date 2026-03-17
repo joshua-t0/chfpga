@@ -1,8 +1,8 @@
 .. title:: xge_udp_mac_tx
 
-*************************************************************************************
+************************************************************************************
 :entity:`xge_udp_mac_tx` (*xge_udp_mac_tx.vhd*): 10G Ethernet UDP/IP/MAC Transmitter
-*************************************************************************************
+************************************************************************************
 
 
 .. toctree::
@@ -30,4 +30,3 @@ The `xge_udp_mac_tx` module uses the following FIFOs:
 
 - :doc:`xgmii_udp_mac_tx_data_fifo`: Asynchronous FIFO for clock domain crossing between user data clock and XGMII transmit clock
 - :doc:`xgmii_udp_mac_tx_header_fifo`: Asynchronous FIFO for storing packet header information
-

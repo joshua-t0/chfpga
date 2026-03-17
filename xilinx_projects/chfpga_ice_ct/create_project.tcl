@@ -23,9 +23,12 @@ set ooc_ip_files $ice_ct_ooc_ip_files
 set ip_files $ice_ct_ip_files
 set hdl_files [concat $ice_ct_hdl_files "chfpga_ice_ct_config.vhd" ]
 set const_files [list \
-	"mgk7mb/chfpga_mgk7mb_timing_constraints.xdc" \
-	"mgk7mb/chFPGA_mgk7mb_Rev2_physical_constraints.xdc" \
- ]
+	"ice/ice_timing_constraints_common.xdc" \
+	"ice/ice_timing_constraints_ct.xdc" \
+	"ice/ice_physical_constraints_common.xdc" \
+	"ice/ice_physical_constraints_ct.xdc" \
+	"ice/ice_physical_constraints_hirax_fft.xdc" \
+]
 
 # Enable LUT combining, otherwise the design does not fit
 set no_lc "0"

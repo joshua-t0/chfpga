@@ -31,7 +31,7 @@ use xpm.vcomponents.ALL;
 entity chfpga_crs is
 	generic (
 
-		PLATFORM_ID: integer := CONFIG_PLATFORM_ID; --  Identifies the type of platform on which the firmware is running.
+		PLATFORM_ID: integer := PLATFORM_ID_CRS; --  Identifies the type of platform on which the firmware is running.
 
 		-- Clocking config
 
@@ -49,15 +49,15 @@ entity chfpga_crs is
 		BUCK_SYNC_ENABLE: boolean       := TRUE; -- default state of the buck sync enable at startup
 		BUCK_CLK_DIVIDE_FACTOR: integer := 12; -- Buck frequency is 200MHz/16/BUCK_CLK_DIVIDE_FACTOR, 12=> 1.0416 MHz, 17 => 0.73529 MHz, 24=>0.5208333 MHz
 
-		BAB_TYPE: bsb_type_enum       := AXIS;
+		BSB_INTERFACE: bsb_interface_enum := AXIS;
+		CAP_INTERFACE: cap_interface_enum := AXIS;
 
-		PHY_TYPE: phy_type_enum       := NONE;
 		SGMII_CLOCK_SOURCE: phy_clk_source_enum := REFCLK; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 
 		-- ADC config
 
 		ADC_TYPE: adc_type_enum        := AXIS; -- ADC data is provided through the axis_adc port
-		NUMBER_OF_ADCS: integer := CONFIG_NUMBER_OF_ADCS; -- Number of ADC inputs
+		NUMBER_OF_ADCS: integer := 8; -- Number of ADC inputs
 
 		-- Mezzanines
 
@@ -66,38 +66,56 @@ entity chfpga_crs is
 		-- Channelizer configuration
 
 		FFT_TYPE: fft_type_enum              := CONFIG_CHAN_FFT_TYPE;
-		NUMBER_OF_CHANNELIZERS: integer      := CONFIG_NUMBER_OF_ADCS;  -- (Typ. =16)  (0-NUMBER_OF_ADCS) Number of channelizer blocks to be implemented
+		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer := CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT;
+		NUMBER_OF_CHANNELIZERS: integer      := NUMBER_OF_ADCS;  -- (Typ. =16)  (0-NUMBER_OF_ADCS) Number of channelizer blocks to be implemented
 		CAPTURE_TYPE: chan_capture_type_enum := CONFIG_CHAN_CAPTURE_TYPE;
 
 		-- Corner-turn engine configuration
 
 		CT_TYPE: ct_type_enum                    := CONFIG_CT_TYPE; -- "BCT" (CHIME-like) or "UCT" (CHORD-like)
 		CT_LEVEL: integer                        := CONFIG_CT_LEVEL;
-		NUMBER_OF_CROSSBAR_INPUTS: integer       := CONFIG_NUMBER_OF_CROSSBAR_INPUTS; -- (Typ. =16)(0-NUMBER_OF_CHANNELIZERS): Number of channelizers output that are being aligned, filtered and repacked for the corrleator or GPU links
-		NUMBER_OF_CROSSBAR1_OUTPUTS: integer     := CONFIG_NUMBER_OF_CROSSBAR1_OUTPUTS; -- (Typ. =16): Number of output lanes of CROSSBAR1. Should be 8 for URAM-based crossbar1.
+		
 		-- List indicating the GTY link number associated to each lane. -1 means a bypass  lane (no
 		-- GTY, stays internal to the board). Links that are listed in the LINK_TO_QUAD map but are
 		-- not in this list will have minimal low-level logic (i.e. enough for BER tests).
 		CT_LANE_TO_LINK_MAP: integer_array   := CONFIG_CT_LANE_TO_LINK_MAP;
-		-- List Indicating which quad is associated to each GTY link. ``len(list)`` GTY links and ``max(list)+1`` QPLLs will be implemented.
+		-- List Indicating which GTY link is instatiated , and to which quad it is associated. Links not associated with lanes will have minimal logic (i.e. enough for BER tests).``len(list)`` GTY links and ``max(list)+1`` QPLLs will be implemented.
+		-- The links are instantiated by the GTY IP core, and connectivity must match this list:
+		-- Links:
+		--   0: SFP28-1 (GTY_X0Y8), used for CT3 lane 2
+		--   1: SFP28-2 (GTY_X0Y9), used for CT3 lane 3
+		--   2: SFP28-3 (GTY_X0Y10), 
+		--   3: SFP28-4 (GTY_X0Y11), 
+		--   4: SFP28-5 (GTY_X0Y12),  
+		--   5: SFP28-6 (GTY_X0Y13), 
+		--   6: BP PCB0 (GTY_X0Y14), used for CT2 Lane 1
+		--   7: BP QSFP0 (GTY_X0Y15), 
+		--   8: BP PCB1 (GTY_X0Y16), used for CT2 Lane 2
+		--   9: BP QSFP1 (GTY_X0Y17), 
+		--  10: BP PCB2 (GTY_X0Y18), used for CT2 Lane 3
+		--  11: BP QSFP2 (GTY_X0Y19), 
 		CT_LINK_TO_QUAD_MAP: integer_array   := (
 				0 to 3 => 0,
 				4 to 7 => 1,
 				8 to 11 => 2);
 		-- Indicates which refclk is associated with each QUAD. max(list)+1 REFCLKs will be implemented.
 		CT_QUAD_TO_REFCLK_MAP: integer_array := (1, 0, 0);
-
+		-- Indicates to which lane group each logical lane is associated with
+		--  Group 0: CT2 lanes
+		--  Group 1: CT3 lanes
+		CT_LANE_TO_GROUP_MAP: integer_array  := (0 to 3 => 0, 4 to 7 => 1); 
+	
 
 		-- Correlator config
 
 		CORR_TYPE: corr_type_enum      := CONFIG_CORR_TYPE; -- "CORR44" or "UCORR44"
-		NUMBER_OF_CORRELATORS: integer := CONFIG_NUMBER_OF_CORRELATORS; -- Number of correlators. Normally NUMBER_OF_CROSSBAR_OUTPUTS. Correlator not implemented if zero.
+		CORR_READOUT_BINS: integer_array := CONFIG_CORR_READOUT_BINS;
 
 		-- Real-time data offload links configuration
 
-		GPU_LINK_TYPE: gpu_link_type_enum := CONFIG_GPU_LINK_TYPE; --
-		GPU_CHANNEL_QUAD: integer_array   := (0 to 3=> 0); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if GPU_LINK_TYPE is NONE
-		GPU_QUAD_REFCLK: integer_array    := (0 to 0=>0); -- Both QUAD0 and QUAD1 use refclk(0)
+		DATA_LINK_TYPE: data_link_type_enum := CONFIG_DATA_LINK_TYPE; --
+		DATA_LINK_LINK_TO_QUAD_MAP: integer_array   := (0 to 3=> 0); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if DATA_LINK_TYPE is NONE
+		DATA_LINK_QUAD_TO_REFCLK_MAP: integer_array    := (0 to 0=>0); -- Both QUAD0 and QUAD1 use refclk(0)
 
 
 		-- Peripheral config
@@ -113,8 +131,8 @@ entity chfpga_crs is
 
 		NUMBER_OF_CT_LINKS: integer    := CT_LINK_TO_QUAD_MAP'LENGTH; -- Number of GTXes for both the backplane PCB and QSFP shuffle links. Usually matches the number of 1st crossbar output lanes.
 		NUMBER_OF_CT_REFCLKS: integer  := max(CT_QUAD_TO_REFCLK_MAP) + 1;
-		NUMBER_OF_GPU_LINKS: integer   := sel(GPU_LINK_TYPE /= NONE, GPU_CHANNEL_QUAD'LENGTH, 0); -- Number of 100Gb Ethernet links. 0 if if GPU_LINK_TYPE is "NONE"
-		NUMBER_OF_GPU_REFCLKS: integer := max(GPU_QUAD_REFCLK)+1 -- Number of Reference clocks provided for the 100GE links.
+		NUMBER_OF_GPU_LINKS: integer   := sel(DATA_LINK_TYPE /= NONE, DATA_LINK_LINK_TO_QUAD_MAP'LENGTH, 0); -- Number of 100Gb Ethernet links. 0 if DATA_LINK_TYPE is NONE
+		NUMBER_OF_GPU_REFCLKS: integer := max(DATA_LINK_QUAD_TO_REFCLK_MAP)+1 -- Number of Reference clocks provided for the 100GE links.
 
 
 	);
@@ -135,6 +153,7 @@ entity chfpga_crs is
 		pll_sync: out std_logic;
 
 		-- 375 MHz processing clock form programmable PLL
+
 		plclk_n: in std_logic;
 		plclk_p: in std_logic;
 
@@ -184,18 +203,23 @@ entity chfpga_crs is
 		buck_sync_bp: out std_logic;
 
 		-- LEDs (PL's 7-segment display)
+
 		led7b: out std_logic_vector(7 downto 0);
 
 		-- OLED display
+
 		fpc_d: out std_logic_vector(1 downto 0); -- D0: CLK, D1: CLS (clock select, 0=external (i.e. CLK line on D0), 1=internal)
 
 		-- User connectors
+
 		smp: out std_logic_vector(0 to 3);
 
 		-- AUX signals
+
 		sma_aux_drv: out std_logic;
 
 		-- IRIG-B signals
+
 		sma_irig_p: in std_logic;
 		sma_irig_n: in std_logic;
 
@@ -203,6 +227,7 @@ entity chfpga_crs is
 		bp_irig_n: in std_logic;
 
 		-- ADC sampling clocks
+
 		adc0_clk_clk_n: in std_logic;
 		adc0_clk_clk_p: in std_logic;
 		adc1_clk_clk_n: in std_logic;
@@ -213,6 +238,7 @@ entity chfpga_crs is
 		adc3_clk_clk_p: in std_logic;
 
 		-- ADC analog inputs
+
 		vin0_01_v_n: in std_logic;
 		vin0_01_v_p: in std_logic;
 		vin0_23_v_n: in std_logic;
@@ -246,8 +272,8 @@ architecture impl of chfpga_crs is
 	-- fails its DRC.
 	-- "None" tells the tools not to implement an IO port. "OBUF" implements the IO port.
 	--  In the case of "OBUF", it looks like the output buffer is adapted to the type of output such as a transceiver output etc.
-	attribute io_buffer_type of qsfp_txp, qsfp_txn: signal is sel(GPU_LINK_TYPE = CGE, "OBUF", "NONE");
-	attribute io_buffer_type of clk156_p, clk156_n: signal is sel(GPU_LINK_TYPE = CGE, "IBUF", "NONE");
+	attribute io_buffer_type of qsfp_txp, qsfp_txn: signal is sel(DATA_LINK_TYPE = UPACK_CGE, "OBUF", "NONE");
+	attribute io_buffer_type of clk156_p, clk156_n: signal is sel(DATA_LINK_TYPE = UPACK_CGE, "IBUF", "NONE");
 	attribute io_buffer_type of bp_shuffle_tx_p, bp_shuffle_tx_n: signal is sel(CT_LEVEL > 1, "OBUF", "NONE");
 
 	-- BSB & CAP AXIS clock (100 MHz)
@@ -550,7 +576,7 @@ begin
 		lcdclk_proc: process(all) begin
 			if rising_edge(pll_oscout_bufg) then
 				ctr <= ctr + 1;
-				if ctr = unsigned(lcd_db) + 50 - 1  then
+				if ctr = unsigned(lcd_db) + 50 - 1 then
 					ctr <= (others => '0');
 					clk <= not clk;
 				end if;
@@ -834,35 +860,36 @@ begin
 			CHAN_CLK_SOURCE     => CHAN_CLK_SOURCE,
 			CT_CLK_SOURCE       => CT_CLK_SOURCE,
 
-			PHY_TYPE       => PHY_TYPE,
-			ADC_TYPE       => ADC_TYPE,
-			NUMBER_OF_ADCS => NUMBER_OF_ADCS,
+		BSB_INTERFACE  => BSB_INTERFACE,
+		CAP_INTERFACE  => CAP_INTERFACE,
+		ADC_TYPE       => ADC_TYPE,
+		NUMBER_OF_ADCS => NUMBER_OF_ADCS,
 
 
-			-- F-Engine / Channelizers
-			FFT_TYPE               => FFT_TYPE,
-			NUMBER_OF_CHANNELIZERS => NUMBER_OF_CHANNELIZERS,
-			CAPTURE_TYPE           => CAPTURE_TYPE,
+		-- F-Engine / Channelizers
+		FFT_TYPE               => FFT_TYPE,
+		NUMBER_OF_CHANNELIZERS_WITH_FFT => NUMBER_OF_CHANNELIZERS_WITH_FFT,
+		NUMBER_OF_CHANNELIZERS => NUMBER_OF_CHANNELIZERS,
+		CAPTURE_TYPE           => CAPTURE_TYPE,
 
 			-- Corner Turn Engine
 
 			CT_TYPE                     => CT_TYPE,
 			CT_LEVEL                    => CT_LEVEL,
-			NUMBER_OF_CROSSBAR_INPUTS   => NUMBER_OF_CROSSBAR_INPUTS,
-			NUMBER_OF_CROSSBAR1_OUTPUTS => NUMBER_OF_CROSSBAR1_OUTPUTS,
 			CT_LANE_TO_LINK_MAP => CT_LANE_TO_LINK_MAP,
 			CT_LINK_TO_QUAD_MAP => CT_LINK_TO_QUAD_MAP,
 			CT_QUAD_TO_REFCLK_MAP => CT_QUAD_TO_REFCLK_MAP,
+			CT_LANE_TO_GROUP_MAP => CT_LANE_TO_GROUP_MAP,
 			-- Real time Ethernet data streaming interface
 
-			GPU_LINK_TYPE         => GPU_LINK_TYPE,
-			GPU_CHANNEL_QUAD                => integerarray(GPU_CHANNEL_QUAD),
-			GPU_QUAD_REFCLK                 => integerarray(GPU_QUAD_REFCLK),
+			DATA_LINK_TYPE        => DATA_LINK_TYPE,
+			DATA_LINK_LINK_TO_QUAD_MAP                => DATA_LINK_LINK_TO_QUAD_MAP,
+			DATA_LINK_QUAD_TO_REFCLK_MAP                 => DATA_LINK_QUAD_TO_REFCLK_MAP,
 
 			-- Correlator
-			CORR_TYPE             => CORR_TYPE,
-			NUMBER_OF_CORRELATORS => NUMBER_OF_CORRELATORS,
 
+			CORR_TYPE             => CORR_TYPE,
+			CORR_READOUT_BINS => CORR_READOUT_BINS,
 
 			-- Peripherals
 

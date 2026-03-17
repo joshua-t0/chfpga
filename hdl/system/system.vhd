@@ -48,7 +48,7 @@ entity system is
 		-- ADC info
 
 		NUMBER_OF_ADCS: integer; -- Number of adcs that are implemented
-		CHAN_CLK_SOURCE: integer; -- ADC channel from which the channelizers clocks are derived
+		CHAN_CLK_SOURCE_LANE: integer; -- ADC channel from which the channelizers clocks are derived
 		ADC_SAMPLES_PER_FRAME: integer;
 		ADC_SAMPLES_PER_WORD: integer;
 		ADC_BITS_PER_SAMPLE: integer;
@@ -56,14 +56,14 @@ entity system is
 		-- Channelizer info
 
 		NUMBER_OF_CHANNELIZERS: integer; -- Number of channelizers that are implemented
-		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer; -- Number of antenna processing blocks with an FFT module
+		NUMBER_OF_CHANNELIZERS_WITH_FFT: integer; 
 		FFT_TYPE: fft_type_enum;
 
 		-- Corner-turn Engine info
 		CT_TYPE: ct_type_enum;
 		CT_LEVEL: integer;
-		NUMBER_OF_CROSSBAR_INPUTS: integer;
-		NUMBER_OF_CROSSBAR1_OUTPUTS: integer;
+		NUMBER_OF_CT_INPUTS: integer;
+		NUMBER_OF_CT_CB1_OUTPUTS: integer;
         NUMBER_OF_CT_REFCLKS: integer;
         -- Real-time data link info
 
@@ -104,13 +104,16 @@ entity system is
 	);
 	port (
 		-- Control interface
-
-		cmd_dat: in AXIS8_DAT_STRUCT; -- Command stream input, signals from master (Data, Valid, Last)
-		cmd_rdy: out AXIS8_RDY_STRUCT; -- Command stream input, signals to master (Ready)
-		rply_dat: out AXIS8_DAT_STRUCT; -- Reply stream output, signals to slave (Data, Valid, Last)
-		rply_rdy: in AXIS8_RDY_STRUCT; -- Reply stream output,  signals from slave (Ready)
-		ctrl_clk: in  std_logic;
-		ctrl_rst: in std_logic;
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid: in std_logic;
+		s_axis_bsb_tlast: in std_logic;
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic;
+		bsb_clk: in std_logic;
+		bsb_rst: in std_logic;
 
 		-- IP Port setting
 
@@ -178,6 +181,7 @@ entity system is
 		bp_gpio_int_oe: out std_logic;
 
 		-- Buck converters synchronization signal
+		
 		bp_buck_sync: inout std_logic;
 		buck_sync: out std_logic_vector(0 to NUMBER_OF_BUCK_SYNC_LINES - 1);
 
@@ -260,10 +264,12 @@ entity system is
 
 
 		-- I2C Interface
+		
 		i2c_sck: inout std_logic_vector(NUMBER_OF_I2C_PORTS - 1 downto 0);
 		i2c_sda: inout std_logic_vector(NUMBER_OF_I2C_PORTS - 1 downto 0);
 
 		--  SYSMON Current and voltage monitors
+		
 		vaux_curr_n: in  std_logic;
 		vaux_curr_p: in  std_logic; -- External current monitor on the 12V supply line
 		vaux_volt_n: in  std_logic;
@@ -273,6 +279,7 @@ entity system is
 
 
 		-- Clock monitoring signals
+		
 		adc_clk_div2: in std_logic_vector(0 to NUMBER_OF_ADCS_OR_CHANNELIZERS - 1);
 		fmc_mgt_pll_refclk_div2: in std_logic_vector(0 to max(NUMBER_OF_ADC_BOARDS, 4) - 1);
 		gpu_refclk_div2: in std_logic_vector(0 to NUMBER_OF_GPU_REFCLKS - 1);
@@ -348,10 +355,14 @@ architecture impl of system is
 
 
 	-- System ROUTER output interface buses
-	signal SYS_CMD_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_SYS_MODULES - 1 downto 0);
-	signal SYS_CMD_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_SYS_MODULES - 1 downto 0);
-	signal SYS_RPLY_DAT: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_SYS_MODULES - 1 downto 0);
-	signal SYS_RPLY_RDY: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_SYS_MODULES - 1 downto 0);
+	signal sys_router_bsb_cmd_tdata: slv8_array(0 to NUMBER_OF_SYS_MODULES - 1);
+	signal sys_router_bsb_cmd_tvalid: std_logic_vector(0 to NUMBER_OF_SYS_MODULES - 1);
+	signal sys_router_bsb_cmd_tlast: std_logic_vector(0 to NUMBER_OF_SYS_MODULES - 1);
+	signal sys_router_bsb_cmd_tready: std_logic_vector(0 to NUMBER_OF_SYS_MODULES - 1);
+	signal sys_router_bsb_rply_tdata: slv8_array(0 to NUMBER_OF_SYS_MODULES - 1);
+	signal sys_router_bsb_rply_tvalid: std_logic_vector(0 to NUMBER_OF_SYS_MODULES - 1);
+	signal sys_router_bsb_rply_tlast: std_logic_vector(0 to NUMBER_OF_SYS_MODULES - 1);
+	signal sys_router_bsb_rply_tready: std_logic_vector(0 to NUMBER_OF_SYS_MODULES - 1);
 
 	-- GLobal REFCLK - GPIO signals
 	signal irigb_before_target: std_logic;
@@ -391,8 +402,8 @@ begin
 
 		-- Pipeline reset signal
 		bsb_rst_proc: process(all) begin
-			if rising_edge(ctrl_clk) then
-				bsb_rst_reg1 <= ctrl_rst;
+			if rising_edge(bsb_clk) then
+				bsb_rst_reg1 <= bsb_rst;
 				bsb_rst_reg2 <= bsb_rst_reg1;
 			end if;
 		end process;
@@ -407,21 +418,30 @@ begin
 				ADDRESS_MASK => "---1111------------" -- '1': used to generate port index, '-' = don't care,
 			)
 			port map (
-				-- Master control interface
-				CMD_IN_DAT   => cmd_dat,
-				CMD_IN_RDY   => cmd_rdy,
-				RPLY_OUT_DAT => rply_dat,
-				RPLY_OUT_RDY => rply_rdy,
+				-- Upstream BSB interface
+				s_axis_bsb_tdata => s_axis_bsb_tdata,
+				s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+				s_axis_bsb_tlast => s_axis_bsb_tlast,
+				s_axis_bsb_tready => s_axis_bsb_tready,
+				m_axis_bsb_tdata => m_axis_bsb_tdata,
+				m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+				m_axis_bsb_tlast => m_axis_bsb_tlast,
+				m_axis_bsb_tready => m_axis_bsb_tready,
 
+				-- Downstream BSB interface
+				m_axis_routed_bsb_tdata => sys_router_bsb_cmd_tdata,
+				m_axis_routed_bsb_tvalid => sys_router_bsb_cmd_tvalid,
+				m_axis_routed_bsb_tlast => sys_router_bsb_cmd_tlast,
+				m_axis_routed_bsb_tready => sys_router_bsb_cmd_tready,
+				s_axis_routed_bsb_tdata => sys_router_bsb_rply_tdata,
+				s_axis_routed_bsb_tvalid => sys_router_bsb_rply_tvalid,
+				s_axis_routed_bsb_tlast => sys_router_bsb_rply_tlast,
+				s_axis_routed_bsb_tready => sys_router_bsb_rply_tready,
 
-				CMD_OUT_DAT => SYS_CMD_DAT,
-				CMD_OUT_RDY => SYS_CMD_RDY,
-				RPLY_IN_DAT => SYS_RPLY_DAT,
-				RPLY_IN_RDY => SYS_RPLY_RDY,
+				cmd_overflow => open,
 
-				-- Slave (module) control interface
-				CLK => CTRL_CLK,
-				RST => bsb_rst_reg2
+				clk => bsb_clk,
+				rst => bsb_rst_reg2
 			);
 	end block sysrtr_blk;
 
@@ -440,11 +460,6 @@ begin
 		signal gpio_event_ctr_reset_reg: std_logic;
 		attribute DONT_TOUCH of gpio_event_ctr_reset_reg: signal is "true";
 
-		-- Intermediary buses used to split out the SYSTEM router outputs and avoid a simulator bug when indexing record arrays as an actual parameter of an instance
-		signal SYS_GPIO_CMD_DAT: AXIS8_DAT_STRUCT;
-		signal SYS_GPIO_CMD_RDY: AXIS8_RDY_STRUCT;
-		signal SYS_GPIO_RPLY_DAT: AXIS8_DAT_STRUCT;
-		signal SYS_GPIO_RPLY_RDY: AXIS8_RDY_STRUCT;
 
 		signal bp_time_reg: std_logic;
 		signal bp_trig_reg: std_logic;
@@ -467,16 +482,11 @@ begin
 		signal bsb_rst_reg1, bsb_rst_reg2: std_logic;
 		attribute DONT_TOUCH of bsb_rst_reg1, bsb_rst_reg2: signal is "true";
 	begin
-		-- Index the system control buses as a separate signal here , because the simulator will make errors if we index it directly on the instantiation
-		SYS_GPIO_CMD_DAT <= SYS_CMD_DAT(MODULE_GPIO_ADDR);
-		SYS_CMD_RDY(MODULE_GPIO_ADDR) <= SYS_GPIO_CMD_RDY;
-		SYS_GPIO_RPLY_RDY <= SYS_RPLY_RDY(MODULE_GPIO_ADDR);
-		SYS_RPLY_DAT(MODULE_GPIO_ADDR) <= SYS_GPIO_RPLY_DAT;
 
 		-- Pipeline reset signal
 		process(all) begin
-			if rising_edge(ctrl_clk) then
-				bsb_rst_reg1 <= ctrl_rst;
+			if rising_edge(bsb_clk) then
+				bsb_rst_reg1 <= bsb_rst;
 				bsb_rst_reg2 <= bsb_rst_reg1;
 			end if; -- clk
 		end process;
@@ -489,7 +499,7 @@ begin
 		end process;
 
 		-- Pipeline backplane time (IRIG-B) and trig signals
-		process(clk200) begin
+		process(all) begin
 			if rising_edge(clk200) then
 				bp_time_reg <= bp_time_in;
 				bp_trig_reg <= bp_trig_in;
@@ -561,7 +571,7 @@ begin
 				NUMBER_OF_ADC_BOARDS  => NUMBER_OF_ADC_BOARDS,
 
 				-- F-Engine/Channelizer info
-				CHANNELIZERS_CLOCK_SOURCE       => CHAN_CLK_SOURCE,
+				CHANNELIZERS_CLOCK_SOURCE       => CHAN_CLK_SOURCE_LANE,
 				NUMBER_OF_CHANNELIZERS          => NUMBER_OF_CHANNELIZERS,
 				NUMBER_OF_CHANNELIZERS_WITH_FFT => NUMBER_OF_CHANNELIZERS_WITH_FFT,
 				FFT_TYPE                        => FFT_TYPE,
@@ -569,13 +579,13 @@ begin
 				-- Corner-turn Engine Info
 				CT_TYPE                     => CT_TYPE,
 				CT_LEVEL                    => CT_LEVEL,
-				NUMBER_OF_CROSSBAR_INPUTS   => NUMBER_OF_CROSSBAR_INPUTS,
-				NUMBER_OF_CROSSBAR1_OUTPUTS => NUMBER_OF_CROSSBAR1_OUTPUTS,
+				NUMBER_OF_CT_INPUTS   => NUMBER_OF_CT_INPUTS,
+				NUMBER_OF_CT_CB1_OUTPUTS => NUMBER_OF_CT_CB1_OUTPUTS,
 				NUMBER_OF_GPU_LINKS         => NUMBER_OF_GPU_LINKS,
 
 				-- X-Engine/Correlator info
 				NUMBER_OF_CORRELATORS               => NUMBER_OF_CORRELATORS,
-				NUMBER_OF_CHANNELIZERS_TO_CORRELATE => NUMBER_OF_CROSSBAR_INPUTS,
+				NUMBER_OF_CHANNELIZERS_TO_CORRELATE => NUMBER_OF_CT_INPUTS,
 
 				-- Peripherals
 				NUMBER_OF_USER_SMA_SIGNALS => NUMBER_OF_USER_SMA_SIGNALS,
@@ -589,12 +599,16 @@ begin
 			)
 			port map (
 				-- Control interface
-				CTRL_CMD_IN_DAT   => SYS_GPIO_CMD_DAT,
-				CTRL_CMD_IN_RDY   => SYS_GPIO_CMD_RDY,
-				CTRL_RPLY_OUT_DAT => SYS_GPIO_RPLY_DAT,
-				CTRL_RPLY_OUT_RDY => SYS_GPIO_RPLY_RDY,
-				CTRL_CLK          => CTRL_CLK,
-				CTRL_RST          => bsb_rst_reg2,
+				s_axis_bsb_tdata => sys_router_bsb_cmd_tdata(MODULE_GPIO_ADDR),
+				s_axis_bsb_tvalid => sys_router_bsb_cmd_tvalid(MODULE_GPIO_ADDR),
+				s_axis_bsb_tlast => sys_router_bsb_cmd_tlast(MODULE_GPIO_ADDR),
+				s_axis_bsb_tready => sys_router_bsb_cmd_tready(MODULE_GPIO_ADDR),
+				m_axis_bsb_tdata => sys_router_bsb_rply_tdata(MODULE_GPIO_ADDR),
+				m_axis_bsb_tvalid => sys_router_bsb_rply_tvalid(MODULE_GPIO_ADDR),
+				m_axis_bsb_tlast => sys_router_bsb_rply_tlast(MODULE_GPIO_ADDR),
+				m_axis_bsb_tready => sys_router_bsb_rply_tready(MODULE_GPIO_ADDR),
+				bsb_clk          => bsb_clk,
+				bsb_rst          => bsb_rst_reg2,
 
 				-- IP Port setting
 				host_frame_read_rate => host_frame_read_rate,
@@ -759,8 +773,8 @@ begin
 		-- Pipeline reset signal
 
 		bsb_rst_proc: process(all) begin
-			if rising_edge(ctrl_clk) then
-				bsb_rst_reg1 <= ctrl_rst;
+			if rising_edge(bsb_clk) then
+				bsb_rst_reg1 <= bsb_rst;
 				bsb_rst_reg2 <= bsb_rst_reg1;
 			end if;
 		end process;
@@ -778,12 +792,16 @@ begin
 			)
 			port map (
 				-- Control interface
-				CTRL_CMD_IN_DAT   => SYS_CMD_DAT(MODULE_SPI_ADDR),
-				CTRL_CMD_IN_RDY   => SYS_CMD_RDY(MODULE_SPI_ADDR),
-				CTRL_RPLY_OUT_DAT => SYS_RPLY_DAT(MODULE_SPI_ADDR),
-				CTRL_RPLY_OUT_RDY => SYS_RPLY_RDY(MODULE_SPI_ADDR),
-				CTRL_CLK          => CTRL_CLK,
-				CTRL_RST          => bsb_rst_reg2,
+				s_axis_bsb_tdata => sys_router_bsb_cmd_tdata(MODULE_SPI_ADDR),
+				s_axis_bsb_tvalid => sys_router_bsb_cmd_tvalid(MODULE_SPI_ADDR),
+				s_axis_bsb_tlast => sys_router_bsb_cmd_tlast(MODULE_SPI_ADDR),
+				s_axis_bsb_tready => sys_router_bsb_cmd_tready(MODULE_SPI_ADDR),
+				m_axis_bsb_tdata => sys_router_bsb_rply_tdata(MODULE_SPI_ADDR),
+				m_axis_bsb_tvalid => sys_router_bsb_rply_tvalid(MODULE_SPI_ADDR),
+				m_axis_bsb_tlast => sys_router_bsb_rply_tlast(MODULE_SPI_ADDR),
+				m_axis_bsb_tready => sys_router_bsb_rply_tready(MODULE_SPI_ADDR),
+				bsb_clk          => bsb_clk,
+				bsb_rst          => bsb_rst_reg2,
 
 				-- SPI Interface
 				spi_rst_n => spi_rst_n,
@@ -810,8 +828,8 @@ begin
 	begin
 		-- Pipeline the BSB reset
 		bsb_rst_proc: process(all) begin
-			if rising_edge(ctrl_clk) then
-				bsb_rst_reg1 <= ctrl_rst;
+			if rising_edge(bsb_clk) then
+				bsb_rst_reg1 <= bsb_rst;
 				bsb_rst_reg2 <= bsb_rst_reg1;
 			end if;
 		end process;
@@ -829,12 +847,16 @@ begin
 			)
 			port map (
 				-- BSB Control interface
-				CTRL_CMD_IN_DAT   => SYS_CMD_DAT(MODULE_I2C_ADDR),
-				CTRL_CMD_IN_RDY   => SYS_CMD_RDY(MODULE_I2C_ADDR),
-				CTRL_RPLY_OUT_DAT => SYS_RPLY_DAT(MODULE_I2C_ADDR),
-				CTRL_RPLY_OUT_RDY => SYS_RPLY_RDY(MODULE_I2C_ADDR),
-				CTRL_CLK          => CTRL_CLK,
-				CTRL_RST          => bsb_rst_reg2,
+				s_axis_bsb_tdata => sys_router_bsb_cmd_tdata(MODULE_I2C_ADDR),
+				s_axis_bsb_tvalid => sys_router_bsb_cmd_tvalid(MODULE_I2C_ADDR),
+				s_axis_bsb_tlast => sys_router_bsb_cmd_tlast(MODULE_I2C_ADDR),
+				s_axis_bsb_tready => sys_router_bsb_cmd_tready(MODULE_I2C_ADDR),
+				m_axis_bsb_tdata => sys_router_bsb_rply_tdata(MODULE_I2C_ADDR),
+				m_axis_bsb_tvalid => sys_router_bsb_rply_tvalid(MODULE_I2C_ADDR),
+				m_axis_bsb_tlast => sys_router_bsb_rply_tlast(MODULE_I2C_ADDR),
+				m_axis_bsb_tready => sys_router_bsb_rply_tready(MODULE_I2C_ADDR),
+				bsb_clk          => bsb_clk,
+				bsb_rst          => bsb_rst_reg2,
 
 				-- I2C Interface
 				i2c_sck => i2c_sck,
@@ -863,8 +885,8 @@ begin
 		-- Pipeline the BSB resets to help them propagate across the chip
 
 		bsb_rst_proc: process(all) begin
-			if rising_edge(ctrl_clk) then
-				bsb_rst <= ctrl_rst;
+			if rising_edge(bsb_clk) then
+				bsb_rst <= bsb_rst;
 			end if;
 		end process;
 
@@ -876,12 +898,16 @@ begin
 			)
 			port map (
 				-- Control interface
-				CTRL_CMD_IN_DAT => SYS_CMD_DAT(MODULE_SYSMON_ADDR),
-				CTRL_CMD_IN_RDY => SYS_CMD_RDY(MODULE_SYSMON_ADDR),
-				CTRL_RPLY_OUT_DAT => SYS_RPLY_DAT(MODULE_SYSMON_ADDR),
-				CTRL_RPLY_OUT_RDY => SYS_RPLY_RDY(MODULE_SYSMON_ADDR),
-				CTRL_CLK => CTRL_CLK,
-				CTRL_RST => bsb_rst, -- pipelined synchronous reset
+				s_axis_bsb_tdata => sys_router_bsb_cmd_tdata(MODULE_SYSMON_ADDR),
+				s_axis_bsb_tvalid => sys_router_bsb_cmd_tvalid(MODULE_SYSMON_ADDR),
+				s_axis_bsb_tlast => sys_router_bsb_cmd_tlast(MODULE_SYSMON_ADDR),
+				s_axis_bsb_tready => sys_router_bsb_cmd_tready(MODULE_SYSMON_ADDR),
+				m_axis_bsb_tdata => sys_router_bsb_rply_tdata(MODULE_SYSMON_ADDR),
+				m_axis_bsb_tvalid => sys_router_bsb_rply_tvalid(MODULE_SYSMON_ADDR),
+				m_axis_bsb_tlast => sys_router_bsb_rply_tlast(MODULE_SYSMON_ADDR),
+				m_axis_bsb_tready => sys_router_bsb_rply_tready(MODULE_SYSMON_ADDR),
+				bsb_clk => bsb_clk,
+				bsb_rst => bsb_rst, -- pipelined synchronous reset
 
 				-- Analog inputs
 				VAUX_CURR_N => VAUX_CURR_N,
@@ -911,8 +937,8 @@ begin
 	begin
 		-- Pipeline the BSB reset signal
 		process(all) begin
-			if rising_edge(ctrl_clk) then
-				bsb_rst_reg1 <= ctrl_rst;
+			if rising_edge(bsb_clk) then
+				bsb_rst_reg1 <= bsb_rst;
 				bsb_rst_reg2 <= bsb_rst_reg1;
 			end if;
 		end process;
@@ -964,12 +990,16 @@ begin
 				NUMBER_OF_CLK_IN_PORTS => NUMBER_OF_FREQ_CTR_PORTS
 			)
 			port map (
-				CTRL_CMD_IN_DAT   => SYS_CMD_DAT(MODULE_FREQ_CTR_ADDR),
-				CTRL_CMD_IN_RDY   => SYS_CMD_RDY(MODULE_FREQ_CTR_ADDR),
-				CTRL_RPLY_OUT_DAT => SYS_RPLY_DAT(MODULE_FREQ_CTR_ADDR),
-				CTRL_RPLY_OUT_RDY => SYS_RPLY_RDY(MODULE_FREQ_CTR_ADDR),
-				CTRL_CLK          => CTRL_CLK,
-				CTRL_RST          => bsb_rst_reg2,
+				s_axis_bsb_tdata => sys_router_bsb_cmd_tdata(MODULE_FREQ_CTR_ADDR),
+				s_axis_bsb_tvalid => sys_router_bsb_cmd_tvalid(MODULE_FREQ_CTR_ADDR),
+				s_axis_bsb_tlast => sys_router_bsb_cmd_tlast(MODULE_FREQ_CTR_ADDR),
+				s_axis_bsb_tready => sys_router_bsb_cmd_tready(MODULE_FREQ_CTR_ADDR),
+				m_axis_bsb_tdata => sys_router_bsb_rply_tdata(MODULE_FREQ_CTR_ADDR),
+				m_axis_bsb_tvalid => sys_router_bsb_rply_tvalid(MODULE_FREQ_CTR_ADDR),
+				m_axis_bsb_tlast => sys_router_bsb_rply_tlast(MODULE_FREQ_CTR_ADDR),
+				m_axis_bsb_tready => sys_router_bsb_rply_tready(MODULE_FREQ_CTR_ADDR),
+				bsb_clk          => bsb_clk,
+				bsb_rst          => bsb_rst_reg2,
 
 				clk200 => clk200,
 				CLK_IN_DIV2 => freq_ctr_in_vect, -- vector of 'NUMBER_OF_FREQ_CTR_PORTS' signals for which we want to measure the frequencies
@@ -985,16 +1015,16 @@ begin
 	-- Implements the LVDS ADC SYNC output to the FMC board
 
 	refclk_blk: block
-		signal refclk_ctrl_rst: std_logic;
-		attribute DONT_TOUCH of refclk_ctrl_rst: signal is "true";
+		signal refclk_bsb_rst: std_logic;
+		attribute DONT_TOUCH of refclk_bsb_rst: signal is "true";
 
 		signal refclk_rst: std_logic;
 		attribute DONT_TOUCH of refclk_rst: signal is "true";
 	begin
 		-- Pipeline the BSB resets to help them propagate across the chip
 		bsb_rst_proc: process(all) begin
-			if rising_edge(ctrl_clk) then
-				refclk_ctrl_rst <= ctrl_rst;
+			if rising_edge(bsb_clk) then
+				refclk_bsb_rst <= bsb_rst;
 			end if; -- RST/CLK
 		end process;
 
@@ -1012,12 +1042,16 @@ begin
 				SIM => SIM
 			)
 			port map (
-				CTRL_CMD_IN_DAT   => SYS_CMD_DAT(MODULE_REFCLK_ADDR),
-				CTRL_CMD_IN_RDY   => SYS_CMD_RDY(MODULE_REFCLK_ADDR),
-				CTRL_RPLY_OUT_DAT => SYS_RPLY_DAT(MODULE_REFCLK_ADDR),
-				CTRL_RPLY_OUT_RDY => SYS_RPLY_RDY(MODULE_REFCLK_ADDR),
-				CTRL_CLK          => CTRL_CLK,
-				CTRL_RST          => refclk_ctrl_rst,
+				s_axis_bsb_tdata => sys_router_bsb_cmd_tdata(MODULE_REFCLK_ADDR),
+				s_axis_bsb_tvalid => sys_router_bsb_cmd_tvalid(MODULE_REFCLK_ADDR),
+				s_axis_bsb_tlast => sys_router_bsb_cmd_tlast(MODULE_REFCLK_ADDR),
+				s_axis_bsb_tready => sys_router_bsb_cmd_tready(MODULE_REFCLK_ADDR),
+				m_axis_bsb_tdata => sys_router_bsb_rply_tdata(MODULE_REFCLK_ADDR),
+				m_axis_bsb_tvalid => sys_router_bsb_rply_tvalid(MODULE_REFCLK_ADDR),
+				m_axis_bsb_tlast => sys_router_bsb_rply_tlast(MODULE_REFCLK_ADDR),
+				m_axis_bsb_tready => sys_router_bsb_rply_tready(MODULE_REFCLK_ADDR),
+				bsb_clk          => bsb_clk,
+				bsb_rst          => refclk_bsb_rst,
 
 				FMC_REFCLK_P => refclk_m2c_p, -- IBUFDS instantiated by the module
 				FMC_REFCLK_N => refclk_m2c_n,
@@ -1064,8 +1098,8 @@ begin
 
 		-- Pipeline reset signal
 		bsb_rst_proc: process(all) begin
-			if rising_edge(ctrl_clk) then
-				bsb_rst_reg1 <= ctrl_rst;
+			if rising_edge(bsb_clk) then
+				bsb_rst_reg1 <= bsb_rst;
 				bsb_rst_reg2 <= bsb_rst_reg1;
 			end if;
 		end process;
@@ -1082,7 +1116,7 @@ begin
 			)
 			port map (
 				rst  => blinker_rst, -- do not blink if Link Status = 0
-				clk  => ctrl_clk,
+				clk  => bsb_clk,
 				leds => gpio_led,
 				kick => blinker_kick -- blink faster when packets are received
 			);

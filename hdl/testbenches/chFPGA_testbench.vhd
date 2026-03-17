@@ -52,25 +52,26 @@ ENTITY chFPGA_testbench IS
 		NUMBER_OF_I2C_PORTS: integer := 1;
 		NUMBER_OF_SPI_PORTS: integer :=1;
 		NUMBER_OF_ADC_BOARDS: integer := 1;
-		ADC_TO_ADC_BOARD_MAP: IntegerArray(0 to NUMBER_OF_ADCS_MAX-1):=(0 to 15 => 0);
+		ADC_TO_ADC_BOARD_MAP: integer_array(0 to NUMBER_OF_ADCS_MAX-1):=(0 to 15 => 0);
 		SYSTEM_CLOCK_SOURCE: string := "SFP_REFCLK"; --"SYSCLK": the 200 MHz clock will be taken from sysclk_p/n (CC pins) or "SFP_REFCLK": the system clock is 125 MHz from the GTX reference clock
 
-		-- Ethernet MAC Configuration
-		PHY_TYPE: string := "GMII"; -- "GMII" or "SGMII"
+		-- Ethernet MAC Configuration (BSB interface type)
+		BSB_INTERFACE: bsb_interface_enum := UDP_GMII; -- UDP_GMII or UDP_SGMII
+		CAP_INTERFACE: cap_interface_enum := BSB;
 		SGMII_CLOCK_SOURCE: string :="REFCLK"; -- Selects the 125MHz clock source for the SGMII interface; "CLK125": uses the 125 MHz clock (clk125) from the main MMCM, "REFCLK": uses the GTX Reference clock (gtrefclk)
 
-		-- IMPLEMENT_ANT: BoolArray(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(0 to 7 => TRUE, others=>FALSE); -- Selects for which antenna a processing pipeline is implemented
-		-- IMPLEMENT_FFT: BoolArray(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(others=>FALSE); -- Selects if the FFT block is implemented for each antenna (otherwise the timestream go through directly)
-		-- IMPLEMENT_CORR: BoolArray(0 to NUMBER_OF_CORRELATORS_MAX-1):=(others=> TRUE);
+		-- IMPLEMENT_ANT: bool_array(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(0 to 7 => TRUE, others=>FALSE); -- Selects for which antenna a processing pipeline is implemented
+		-- IMPLEMENT_FFT: bool_array(0 to NUMBER_OF_CHANNELIZERS_MAX-1):=(others=>FALSE); -- Selects if the FFT block is implemented for each antenna (otherwise the timestream go through directly)
+		-- IMPLEMENT_CORR: bool_array(0 to NUMBER_OF_CORRELATORS_MAX-1):=(others=> TRUE);
 
 
 		-- ADCDAQ Configuration
-		ADC_IS_DIFFERENTIAL: BUFMRIndexArrayArray(0 to NUMBER_OF_ADCS_MAX-1) := (others => (others => 1)); -- All inputs are differential by default unless specified otherwise by the top level
-		ADC_INSTANTIATE_PLL: BoolArray(0 to NUMBER_OF_ADCS_MAX-1):=( others=>FALSE);
-		ADC_USE_EXT_DATA_CLK: BoolArray(0 to NUMBER_OF_ADCS_MAX-1):=(others=>FALSE);
-		ADC_INSTANTIATE_BUFMR: BUFMRIndexArrayArray(0 to NUMBER_OF_ADCS_MAX-1) := (others=> (others=>-1));
-		ADC_PROVIDE_BUFFERED_DIVCLK: BoolArray(0 to NUMBER_OF_ADCS_MAX-1) := (0=>TRUE, others=>FALSE);
-		ANT_CLK_SOURCE: integer :=0; -- Indicate which ADC is the source of the antenna processing clock. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
+		ADC_IS_DIFFERENTIAL: integer_array_array := (0 to NUMBER_OF_ADCS_MAX-1 => (0 to 8 => 1)); -- All inputs are differential by default unless specified otherwise by the top level
+		ADC_INSTANTIATE_PLL: bool_array(0 to NUMBER_OF_ADCS_MAX-1):=( others=>FALSE);
+		ADC_USE_EXT_DATA_CLK: bool_array(0 to NUMBER_OF_ADCS_MAX-1):=(others=>FALSE);
+		ADC_INSTANTIATE_BUFMR: integer_array_array(0 to NUMBER_OF_ADCS_MAX-1) := (0 to NUMBER_OF_ADCS_MAX-1 => (0 to 8 => -1));
+		ADC_PROVIDE_BUFFERED_DIVCLK: bool_array(0 to NUMBER_OF_ADCS_MAX-1) := (0=>TRUE, others=>FALSE);
+		CHAN_CLK_SOURCE_LANE: integer :=0; -- Indicate which ADC is the source of the antenna processing clock. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
 
 		-- Simulation parameters
 		ADC_SAMPLING_FREQUENCY: REAL:= 800.0E6; -- MHz. Must be a multiple of 10 MHz. Must be exactly 800 MHz if CLK200 is used for the antenna processor clock.
@@ -333,7 +334,8 @@ CHFPGA0: entity work.chFPGA
 		PLATFORM_ID                   => PLATFORM_ID,
 		BLINKER_PRESENT               => BLINKER_PRESENT,
 		SYSTEM_CLOCK_SOURCE           => SYSTEM_CLOCK_SOURCE,
-		PHY_TYPE                      => PHY_TYPE,
+		BSB_INTERFACE                 => BSB_INTERFACE,
+	CAP_INTERFACE                 => CAP_INTERFACE,
 		SGMII_CLOCK_SOURCE            => SGMII_CLOCK_SOURCE,
 		NUMBER_OF_ADCS                => NUMBER_OF_ADCS,
 		NUMBER_OF_CHANNELIZERS        => NUMBER_OF_CHANNELIZERS,
@@ -358,7 +360,7 @@ CHFPGA0: entity work.chFPGA
 		ADC_USE_EXT_DATA_CLK          => ADC_USE_EXT_DATA_CLK,
 		ADC_INSTANTIATE_BUFMR         => ADC_INSTANTIATE_BUFMR,
 		ADC_PROVIDE_BUFFERED_DIVCLK   => ADC_PROVIDE_BUFFERED_DIVCLK,
-		ANT_CLK_SOURCE                => ANT_CLK_SOURCE,
+		CHAN_CLK_SOURCE_LANE                => CHAN_CLK_SOURCE_LANE,
 		SIM                           => SIM
 		)
 	PORT MAP(
@@ -632,9 +634,9 @@ SDA<=to_UX01(FMC_I2C_SDA);
 SCK<=to_UX01(FMC_I2C_SCK);
 --SLAVE_SDA<='0' when bit_ctr=9 and SCK='1' else 'H';
 
-i2c_process :process(SCK, SDA)
+i2c_process :process(all)
    begin
-		if falling_edge(SDA) and SCK='1' then
+		if falling_edge(SDA) and SCK then
 			bit_ctr<=(others=>'0');
 		elsif rising_edge(SCK) then
 			if bit_ctr/=15 then
@@ -664,7 +666,7 @@ i2c_process :process(SCK, SDA)
 
 	SIM_UDP0: entity work.udp_mac
 			generic map (
-				PHY_TYPE => PHY_TYPE,
+				PHY_TYPE => sel(BSB_INTERFACE = UDP_GMII, GMII, SGMII),
 				SGMII_CLOCK_SOURCE => SGMII_CLOCK_SOURCE,
 				BROADCAST_IP_PORT => 41000,
 				SIM => SIM
@@ -852,7 +854,7 @@ phy_process: process
 --	fpga_write(clk125, tx_data, tx_valid, tx_last, tx_ready, 8, 0, 8, 2); -- Enable ADCDAQ-level ramp generator
 
 
-	if PHY_TYPE="SGMII" then
+	if BSB_INTERFACE = UDP_SGMII then
 		wait for 20 us;
 	else
 		wait for 0.5 us;

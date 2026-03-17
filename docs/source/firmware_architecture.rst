@@ -49,6 +49,85 @@ The labels of all constants in the package shall have the format::
     CONFIG_<subsystem name>_<parameter name>
 
 
+.. _config_param_reference:
+
+Configuration parameter reference
+=================================
+
+This section defines each ``CONFIG_*`` constant used in firmware configuration files. Platform-specific config sections list which parameters they use and link here for full descriptions.
+
+Channelizer parameters
+----------------------
+
+.. _config_chan_implement_fft:
+
+- **CONFIG_CHAN_IMPLEMENT_FFT** (boolean): Enables the FFT block in channelizers. When TRUE, channelizers perform polyphase filtering and FFT; when FALSE, timestreams pass through without frequency-domain processing. Set TRUE for all current configs that include an F-Engine.
+
+.. _config_chan_fft_type:
+
+- **CONFIG_CHAN_FFT_TYPE** (fft_type_enum): Selects the FFT variant. Values: ``NONE``, ``CHIME``, ``D3A``, ``CHORD``, ``HIRAX``, ``HIRAX_3DSP``. CHORD uses 14-bit samples, 16384 samples/frame, 32+32 bit output (CRS/ZCU111). HIRAX and HIRAX_3DSP use 8-bit samples, 2048 samples/frame (IceBoard, KC705). HIRAX_3DSP uses 25+25 bit output for reduced resource usage.
+
+.. _config_number_of_channelizers_with_fft:
+
+- **CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT** (integer): Number of channelizers that include an FFT. Typically equals the number of ADC channels. Configs with fewer channelizers than ADCs (e.g. CRS with 8) use this to match the ADC count.
+
+.. _config_chan_scaler_use_complex_gains:
+
+- **CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS** (boolean): When TRUE, scaler uses complex gains; when FALSE, real gains. Set FALSE in all current configs for simpler logic and lower resource use.
+
+.. _config_chan_capture_type:
+
+- **CONFIG_CHAN_CAPTURE_TYPE** (chan_capture_type_enum): Selects the data capture engine. ``PROBER``: BRAM-based, per-channelizer capture (IceBoard, KC705). ``UCAP``: URAM-based centralized capture (CRS, ZCU111). UCAP requires Ultrascale+ URAM.
+
+.. _config_chan_number_of_capture_sources:
+
+- **CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES** (integer): Number of capture sources (e.g. timestream vs FFT output). Typically 2. Used when CONFIG_CHAN_CAPTURE_TYPE is PROBER or UCAP.
+
+Corner-turn parameters
+----------------------
+
+.. _config_ct_type:
+
+- **CONFIG_CT_TYPE** (ct_type_enum): Corner-turn engine type. ``BCT``: CHIME-like, 32-bit input with packet headers, used for multi-board backplane shuffle. ``UCT``: CHORD-like, 32-bit input with 4x (4+4)-bit bins, simpler format. BCT used on IceBoard for crate-level shuffle; UCT used on CRS/ZCU111/KC705 for single-board or simpler topologies.
+
+.. _config_ct_level:
+
+- **CONFIG_CT_LEVEL** (integer): Corner-turn depth. 1 = single-board only, no backplane. 2 = crate-level shuffle (e.g. 3× PCB links). 3 = multi-crate shuffle (e.g. 3× PCB + 2× SFP). Higher levels require CONFIG_CT_LANE_TO_LINK_MAP to define lane-to-link mapping.
+
+.. _config_ct_clk_source:
+
+- **CONFIG_CT_CLK_SOURCE** (ct_clk_source_enum): Clock source for the corner-turn engine. ``BP_SHUFFLE_TXCLK``: backplane transmitter clock (~244 MHz), used when CT_LEVEL=3 and packet overhead is needed. ``ADC_CLK``: ADC clock (e.g. 400 MHz on CRS), used when CT_LEVEL=1 and no packet overhead. ``CORR_CLK``: 250 MHz clock from MMCM. ``CGE_CLK322``: 100G Ethernet clock.
+
+.. _config_ct_lane_to_link_map:
+
+- **CONFIG_CT_LANE_TO_LINK_MAP** (integer_array): Maps each CT lane to a backplane link index. -1 = bypass lane. Used when CT_LEVEL ≥ 2. Example: ``(-1, 6, 8, 10)`` = bypass + 3 PCB links for CORR32. ``(-1, 6, 8, 10, -1, -1, 0, 1)`` = CORR64 with CT3 SFP links.
+
+Correlator parameters
+---------------------
+
+.. _config_corr_type:
+
+- **CONFIG_CORR_TYPE** (corr_type_enum): Correlator type. ``NONE``: no correlator. ``UCORR44``: :math:`N^2` correlator with reduced precision. ``CORR44``: legacy correlator. ct configs use NONE; corr configs use UCORR44.
+
+.. _config_corr_readout_bins:
+
+- **CONFIG_CORR_READOUT_BINS** (integer_array): Which frequency bins to read out from the correlator. With CONFIG_CHAN_FFT_TYPE CHORD (ROTATE=TRUE), true bins 0, 1, 2, 3 map to indices 0, 1, 2, 3. Some configs use (0, 0) as placeholder; others specify bins for readout.
+
+Data offload parameters
+------------------------
+
+.. _config_data_link_type:
+
+- **CONFIG_DATA_LINK_TYPE** (data_link_type_enum): Real-time data offload type. ``NONE``: no offload. ``XGE``: 8×10G Ethernet. ``UPACK_CGE``: 100G Ethernet via UPACK + CGE. ct configs use XGE (IceBoard) or UPACK_CGE (CRS, ZCU111); corr configs typically use NONE.
+
+.. _config_data_link_link_to_quad_map:
+
+- **CONFIG_DATA_LINK_LINK_TO_QUAD_MAP** (integer_array): Maps each data link to a GTY quad index. Used when CONFIG_DATA_LINK_TYPE is UPACK_CGE. Example: ``(0 to 3 => 0)`` = single quad for 100G.
+
+.. _config_data_link_quad_to_refclk_map:
+
+- **CONFIG_DATA_LINK_QUAD_TO_REFCLK_MAP** (integer_array): Maps each GTY quad to a reference clock index. Used when CONFIG_DATA_LINK_TYPE is UPACK_CGE. Example: ``(0 => 0)`` = single refclk.
+
 I/O buffers
 ===========
 
@@ -95,6 +174,86 @@ There is one exception to this: out-of-context (OOC) module (i.e. modules that a
 
 The core firmware for every configuration of the firmware for every platform is implemented using the same :entity:`chfpga` module.
 Of course, this module takes a large number of generics that are passed by the hardware platform and configuration file to enable the various hardware- and application-specific modules with the desired geometry.
+
+
+time_trig port semantics
+------------------------
+
+The :entity:`chfpga` module exposes a two-bit vector port ``time_trig(0 to 1)`` that carries external time and trigger information into the core firmware:
+
+* ``time_trig(0)`` — backplane time / IRIG-B–derived time signal.
+* ``time_trig(1)`` — backplane trigger signal (e.g. frame or event trigger).
+
+Platform wrappers are responsible for receiving the board-specific time and trigger signals (typically IRIG-B and/or backplane timing lines), resampling them in the appropriate 10 MHz reference-clock domain, and combining them into ``time_trig`` before instantiating :entity:`chfpga`.
+
+Inside :entity:`chfpga` and :entity:`system`, ``time_trig`` is pipelined on the rising edge of the internal 200 MHz ``clk200`` clock before being consumed by the IRIG-B decoder, reference-clock synchronization logic and time-tagging blocks. For this to yield deterministic timing, ``clk200`` **must** be generated from a clock source that is synchronous to the external clock domain used to generate ``time_trig`` (for example, a PLL output derived from the same 10 MHz reference and VCXO that drive the IRIG-B and backplane timing hardware). In other words, the time/trigger signals and ``clk200`` are expected to have a fixed, well-characterised phase relationship.
+
+
+Data buses
+==========
+
+AXI4-Streaming bus usage
+------------------------
+
+We use exclusively AXI4-Streaming to carry both the science data and the control/monitoring system.
+The protocol is well defined by standard, is lightweight, and is well supported by IP blocks.
+
+Blocking vs non-blocking buses
+------------------------------
+
+Science data buses are generally non-blocking (no TREADY line). There is generally no point in blocking the main pipeline: data rate is so high that we can't block for a significant amout of time and not run out of memory. 
+
+Control interfaces (e.g. BSB control bus) and slow capture buses (UCAP, PROBER and UCORR outputs)that send intermittent data over limited bandwidth pipes (e.g. feeding Ethernet interface) use blocking buses.
+
+Blocking buses harder on timing.  Tready cannot be registered unless we introduce a 1-deep FIFO at each stage. 
+
+Loose backpressure
+------------------
+
+We sometimes stray from the strict AXI-Stream handshaking and use a signal we call ``send`` instead of ``TREADY`` to implement a relaxed form of backpressure that makes the bus easy to pipeline. We don't use the ``TREADY`` signal to make it clear the backpresure works differently. 
+
+In this protocol, we expect that both the data and send signals will be pipelined, which means that data won't start flowing immediately when it is asserted. This also means that the data won't stop immediately when deasserted, not until the pipeline has finished flushing. The receiver must therefore accept *any* data that is TVALID, independent of the send signal. This is different from the standard AXI-tream where a trasaction occurs only when both TVALID and TREADY are high in the same clock cycle.
+
+This means that we place an elastic FIFO at the sink and drive ``send`` from its almost-full flag, so the source is told to stop before the FIFO runs out of space. The *almost_full* margin must be as large as the roundtrip latency of the pipeline (``send`` pipeline from sink to source plus data pipelining from source to sink) so it can absorb the extra data caused by the pipeline. We often already have to use a FIFO for clock-domain crossing preposes, so that comes for free. 
+
+This approach is used at the output of the channelizer (to allow channel outputs to be aligned) and on the daisy-chained outputs of the correlator.
+
+
+AXI4-Streaming Protocol
+-----------------------
+
+The AXI4-Stream protocol is used for applications that typically focus on a data-centric and data-flow paradigm where the concept of an address is not present or not required. Each AXI4-Stream acts as a single unidirectional channel for a handshake data flow. At this lower level of operation (compared to the memory mapped AXI protocol types), the mechanism to move data between IP is defined and efficient, but there is no unifying address context between IP. The AXI4-Stream IP can be better optimized for performance in data flow applications, but also tends to be more specialized around a given application space.
+
+AXI-Stream Ports and Waveform
+
+.. table::
+
+    +------------------+--------------+-----------+----------------------------------------------------+
+    | Port Name        | Width (bits) | Direction | Description                                        |
+    +==================+==============+===========+====================================================+
+    | TREADY           | 1            | In        | Indicates destination is to accept data            |
+    +------------------+--------------+-----------+----------------------------------------------------+
+    | TVALID           | 1            | Out       | Indicates TDATA is valid                           |
+    +------------------+--------------+-----------+----------------------------------------------------+
+    | TLAST            | 1            | Out       | Indicates last word of a transfer                  |
+    +------------------+--------------+-----------+----------------------------------------------------+
+    | TDATA            | 8            | Out       | Data                                               |
+    +------------------+--------------+-----------+----------------------------------------------------+
+
+Handshake rules
+---------------
+
+- **Transfer**: A beat is transferred only when **both** TVALID and TREADY are high in the **same** clock cycle.
+- **TVALID**: Once the source asserts TVALID, it must keep it asserted until a transfer occurs (i.e. until TREADY is high in the same cycle). The source may deassert TVALID on the cycle after the handshake (or keep it high for the next beat). TVALID must not be deasserted before the handshake.
+- **TREADY**: The sink may assert or deassert TREADY on any cycle; it can change from cycle to cycle. In practice it is often registered to avoid combinatorial paths from TREADY back to TVALID.
+
+
+.. figure:: ./images/axi_stream_waveform.png
+    :scale: 22
+    :alt: AXI-Stream Interface Waveform
+
+
+`Xilinx AXI Reference Guide <https://www.xilinx.com/support/documentation/ip_documentation/ug761_axi_reference_guide.pdf>`_
 
 
 Command system
@@ -184,15 +343,7 @@ Configuration management
 - We generally try to put as much capability information in capability registers as possible to minimize the need to keep the Python code up to date with firmware changes. However, Python-based look up tables might be necessary to provide detailed configuration based on some FPGA capability register in order to minimize the amount of logic resources allocated to these registers. This is the case of platform-specific constants which are looked up from the PLATFORM_ID parameter found in GPIO.
 -
 
-Data buses
-==========
 
-
-We use exclusively AXI4-Streaming to carry both the science data and the control/monitoring system.
-
-Generally non-blocking. There is generally no point in blocking the main pipeline: data rate is so high that we can't block for a significant amout of time and not run out of memory. Slow control interfaces are not in this case.
-Blocking brings issues with timing. Tready cannot be registered unless we introduce a 1-deep FIFO at each stage. Bad for timing.
-Sometimes implement loose backpressure: to avoid confusion, we use the ``send`` signal instead of TREADY since we break protocol. Send can be pipelined, but it is expected that data in the pipe will continue flowing until the send has made its way to the source. This is fixed by having an elastic FIFO at the end that requests stop sending before there is no more space left in the FIFO (i.e. use almost full to drive send). This greatly simplifies the logic by using a free feature of the FIFOs. This is used at the output of the channelizer (to allow their outputs to be aligned), and on the daisy-chained outputs of the correlator.
 
 Building Gotchas
 ================
@@ -304,5 +455,4 @@ Resources
 
 - Kintex 7 datasheet - AC/DC characteristics (DS182)
 - Play with parameters in the FIFO generator (13.2)
-
 

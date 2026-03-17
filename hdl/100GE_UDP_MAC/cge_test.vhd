@@ -105,12 +105,12 @@ begin
             clk => clk,
  
 			rst => rst,
-			ctrl_clk => ctrl_clk, -- used as init_clk
-			ctrl_rst => ctrl_rst
+			bsb_clk => ctrl_clk, -- used as init_clk
+			bsb_rst => ctrl_rst
 		 );
 
 
-		ctrlrst_proc: process(ctrl_clk)
+		ctrlrst_proc: process(all)
 		begin
 			if rising_edge(ctrl_clk) then
 				ctrl_rst <= '0';
@@ -118,7 +118,7 @@ begin
 		end process;
 
 
-		rst_proc: process(clk)
+		rst_proc: process(all)
 		begin
 			if rising_edge(clk) then
 				rst <= '0';

@@ -32,13 +32,16 @@ entity spi is
 	);
 	port (
 		-- BSB Control interface
-
-		ctrl_cmd_in_dat: in    AXIS8_DAT_STRUCT; -- Command stream input, signals from master (Data, Valid, Last)
-		ctrl_cmd_in_rdy: out   AXIS8_RDY_STRUCT; -- Command stream input, signals to master (Ready)
-		ctrl_rply_out_dat: out AXIS8_DAT_STRUCT; -- Reply stream output, signals to slave (Data, Valid, Last)
-		ctrl_rply_out_rdy: in  AXIS8_RDY_STRUCT; -- Reply stream output,  signals from slave (Ready)
-		ctrl_clk: in  std_logic;
-		ctrl_rst: in std_logic;
+		s_axis_bsb_tdata: in std_logic_vector(7 downto 0);
+		s_axis_bsb_tvalid: in std_logic;
+		s_axis_bsb_tlast: in std_logic;
+		s_axis_bsb_tready: out std_logic;
+		m_axis_bsb_tdata: out std_logic_vector(7 downto 0);
+		m_axis_bsb_tvalid: out std_logic;
+		m_axis_bsb_tlast: out std_logic;
+		m_axis_bsb_tready: in std_logic;
+		bsb_clk: in std_logic;
+		bsb_rst: in std_logic;
 
 		-- SPI signals
 
@@ -144,21 +147,24 @@ begin
 
 		port map (
 			-- Control interface (command and reply stream buses)
-			ctrl_cmd_in_dat   => ctrl_cmd_in_dat,
-			ctrl_cmd_in_rdy   => ctrl_cmd_in_rdy,
-			ctrl_rply_out_dat => ctrl_rply_out_dat,
-			ctrl_rply_out_rdy => ctrl_rply_out_rdy,
-			ctrl_clk          => ctrl_clk,
-			ctrl_rst          => ctrl_rst,
+			s_axis_bsb_tdata => s_axis_bsb_tdata,
+			s_axis_bsb_tvalid => s_axis_bsb_tvalid,
+			s_axis_bsb_tlast => s_axis_bsb_tlast,
+			s_axis_bsb_tready => s_axis_bsb_tready,
+			m_axis_bsb_tdata => m_axis_bsb_tdata,
+			m_axis_bsb_tvalid => m_axis_bsb_tvalid,
+			m_axis_bsb_tlast => m_axis_bsb_tlast,
+			m_axis_bsb_tready => m_axis_bsb_tready,
+			bsb_clk          => bsb_clk,
+			bsb_rst          => bsb_rst,
 			control_bytes     => control_bytes,
 			status_bytes      => status_bytes
 		);
 
-	spiproc: process(clk200) is
-	begin
+	spiproc: process(all) begin
 		if rising_edge(clk200) then
 			-- synchrounous reset
-			if rst = '1' then
+			if rst then
 				clk_ctr <= (others => '0');
 				ce <= '0';
 				bit_ctr <= (others => '0');
@@ -187,7 +193,7 @@ begin
 
 
 				-- Actions taken on the divided clock
-				if ce = '1' then
+				if ce then
 					-- Increment phase counter. This divides every SPI clock cycles into 4 phases
 					phase <= phase + 1;
 
@@ -212,7 +218,7 @@ begin
 
 					else -- We are transmitting and receiving
 						if phase = 0 then -- SCK goes down on this clock
-							if first_bit = '1' then
+							if first_bit then
 								tx_register <= unsigned(tx_data);
 							else
 								tx_register <= shift_left(tx_register, 1); -- left shift TX register (send MSB first). shift in a '0' to facilitate debugging at the cost of a few extra gates
@@ -220,12 +226,12 @@ begin
 							--  Set the address early so it is stable when SPI_CS is enabled. This is to prevent glitches on the device CS.
 							spi_addr <= addr(2 downto 0);
 						elsif phase = 1 then
-							if first_bit = '1' then
+							if first_bit then
 								spi_cs_n(to_integer(spi_port)) <= '0'; -- activate SPI_CS to enable the device CS
 							end if;
 
 						elsif phase = 2 then -- SCK goes up on this clock
-							if first_bit = '1' then
+							if first_bit then
 								rx_register <= (others => '0');
 							else
 								rx_register <= rx_register sll 1; -- left shift RX register while shifting in received SPI data. The last bit (LSB) will be in bit 0.
@@ -237,7 +243,7 @@ begin
 							first_bit <= '0';
 							bit_ctr <= bit_ctr - 1;
 
-							if bit_ctr = 1  then -- if we transmitted the last bit
+							if bit_ctr = 1 then -- if we transmitted the last bit
 								ready <= '1';
 								spi_cs_n <= (others => '1'); -- disable SPI_CS, which disables all CS
 							end if;

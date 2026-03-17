@@ -80,25 +80,24 @@ begin
 -------------------------------------------------------------
 -- Measure the propagation delay of a CASPER block
 -------------------------------------------------------------
-meas_dly: process(clk)
-	begin
-		if rising_edge(clk) then
-			if rst='1' then
+meas_dly: process(all) begin
+	if rising_edge(clk) then
+			if rst then
 				measured_delay_ctr <= (others=>'0');
 				wait_for_sync <= '0';
 				counting_delay <= '1';
-			elsif ce='1' then
+			elsif ce then
 				-- Measure pipelining delay between input and output SYNC
-				if sync_in='1' and wait_for_sync='1' then
+				if sync_in and wait_for_sync then
 					wait_for_sync <= '0';
 					counting_delay <= '1';
 				end if;
 
-				if counting_delay='1' then
+				if counting_delay then
 					measured_delay_ctr <= measured_delay_ctr + 1;
 				end if;
 
-				if sync_out='1' and counting_delay='1' then
+				if sync_out and counting_delay then
 					measured_delay <= std_logic_vector(measured_delay_ctr + 1); -- the +1 might generate unnecessary logic. Refactor to optimize (i.e reuse counter adder or delay sync_out).
 					counting_delay <= '0';
 				end if;
@@ -111,10 +110,9 @@ meas_dly: process(clk)
 -- Implement a delay line with specified delay
 -------------------------------------------------------------
 
-dly_line: process(clk)
-	begin
-		if rising_edge(clk) then
-			if ce='1' then
+dly_line: process(all) begin
+	if rising_edge(clk) then
+			if ce then
 				-- precompute the maximum counter value to avoid a "large" combinatorial adder in the counter enable logic.
 				-- We stop the counter in advance to take into account the logic latencies
 				--    -1 because we count delays from zero, not one
@@ -144,7 +142,7 @@ dly_line: process(clk)
 				ram(to_integer(delay_ctr)) <= data_in;
 			end if; --ce
 			-- Synchronous resets - overides signals above
-			if rst='1' then
+			if rst then
 				delay_ctr <= (others=>'0');
 				valid <= '0';
 				valid_pre2 <= '0';

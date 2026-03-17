@@ -305,7 +305,7 @@ begin
 
 end block;
 
-decode_proc: process(clk)
+decode_proc: process(all)
         constant NPROD: integer := NCHAN*(NCHAN+1)/2;
         variable bytes: slv8_array(0 to (10 + 5 *NPROD)-1);
         variable data: unsigned(8*(10+5*NPROD)-1 downto 0);
@@ -325,7 +325,7 @@ decode_proc: process(clk)
             axis_corr_out_tready <= to_std_logic(clk_ctr(2) = '1');
 --            axis_corr_out_tready <= '1';
 
-            if  axis_corr_out_tvalid then
+            if axis_corr_out_tvalid then
                 bytes(byte_ctr) := axis_corr_out_tdata;
                 byte_ctr := byte_ctr +1;
                 if axis_corr_out_tlast then

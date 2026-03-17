@@ -111,7 +111,7 @@ signal prb_dat, cmd_dat, rply_dat: AXIS8_DAT_STRUCT_ARRAY(NUMBER_OF_PROBES-1 dow
 signal prb_rdy, cmd_rdy, rply_rdy: AXIS8_RDY_STRUCT_ARRAY(NUMBER_OF_PROBES-1 downto 0);
 
 signal prb_tdata: slv8_array(NUMBER_OF_PROBES-1 downto 0);
-signal prb_tvalid, prb_tlast, prb_tready: slv(NUMBER_OF_PROBES-1 downto 0);
+signal prb_tvalid, prb_tlast, prb_tready: std_logic_vector(NUMBER_OF_PROBES-1 downto 0);
 
 begin
 
@@ -149,13 +149,15 @@ prober0: entity work.prober
         OUT_CLK => clk125,
 
 		-- CTRL_CMD_DAT => (TDATA=> cmd_tdata, TVALID => cmd_tvalid, TLAST => cmd_tlast),
-		CTRL_CMD_IN_DAT.TDATA  => cmd_dat(0).tdata,
-		CTRL_CMD_IN_DAT.TVALID => cmd_dat(0).tvalid,
-		CTRL_CMD_IN_DAT.TLAST  => cmd_dat(0).tlast,
-		CTRL_CMD_IN_RDY.TREADY => cmd_rdy(0).tready,
+		s_axis_bsb_tdata => cmd_dat(0).tdata,
+		s_axis_bsb_tvalid => cmd_dat(0).tvalid,
+		s_axis_bsb_tlast => cmd_dat(0).tlast,
+		s_axis_bsb_tready => cmd_rdy(0).tready,
 
-		CTRL_RPLY_OUT_DAT => rply_dat(0),
-		CTRL_RPLY_OUT_RDY => rply_rdy(0),
+		m_axis_bsb_tdata => rply_dat(0).tdata,
+		m_axis_bsb_tvalid => rply_dat(0).tvalid,
+		m_axis_bsb_tlast => rply_dat(0).tlast,
+		m_axis_bsb_tready => rply_rdy(0).tready,
 
 		CTRL_CLK => clk125,
 		CTRL_RST => reset

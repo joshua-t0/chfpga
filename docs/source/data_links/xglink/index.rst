@@ -1,7 +1,7 @@
 .. title:: XGLINK
 
 XGLINK (10Gbps Links): 10G Serial Link Modules
-***********************************************
+**********************************************
 
 .. default-role:: vhdl:entity
 
@@ -41,4 +41,3 @@ The XGLINK system consists of:
    xglink_tx_startup_fsm
    xglink_sync_block
    xglink_crc32_32
-

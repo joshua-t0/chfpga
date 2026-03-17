@@ -42,6 +42,7 @@ entity CHAN_ALIGN is
 		s_axis_tuser: in slv4_array(0 to NUMBER_OF_LANES - 1) := (others => (others => '0'));
 
 		-- Output interface (non-blocking, i.e. always sends data)
+		
 		m_axis_tvalid: out slv(0 to NUMBER_OF_LANES - 1);
 		m_axis_tdata: out slv32_array(0 to NUMBER_OF_LANES - 1);
 		m_axis_tlast: out slv(0 to NUMBER_OF_LANES - 1);
@@ -70,23 +71,23 @@ architecture impl of CHAN_ALIGN is
 
 	constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
 
-	signal s_axis_tfirst: slv(0 to NUMBER_OF_LANES - 1);
+	signal s_axis_tfirst: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	signal fifo_din: slv36_array(0 to NUMBER_OF_LANES - 1);
 	signal fifo_dout: slv36_array(0 to NUMBER_OF_LANES - 1);
-	signal fifo_wr_en: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_rd_en: slv(0 to NUMBER_OF_LANES - 1);
+	signal fifo_wr_en: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_rd_en: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	-- signal fifo_empty:    slv(0 to NUMBER_OF_LANES-1);
-	signal fifo_tvalid: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_overflow: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_empty: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_full: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_almost_full: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_almost_empty: slv(0 to NUMBER_OF_LANES - 1);
+	signal fifo_tvalid: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_overflow: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_empty: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_full: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_almost_full: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_almost_empty: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 
 	signal fifo_tdata: slv32_array(0 to NUMBER_OF_LANES - 1);
 	signal fifo_tuser: slv4_array(0 to NUMBER_OF_LANES - 1);
-	signal fifo_tlast: slv(0 to NUMBER_OF_LANES - 1);
-	signal fifo_tfirst: slv(0 to NUMBER_OF_LANES - 1);
+	signal fifo_tlast: std_logic_vector(0 to NUMBER_OF_LANES - 1);
+	signal fifo_tfirst: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	signal fifo_data_count: slv10_array(0 to NUMBER_OF_LANES - 1);
 
 	signal fifo_rst_ctr: unsigned(3 downto 0); -- 16-clk FIFO reset cycle
@@ -95,13 +96,13 @@ architecture impl of CHAN_ALIGN is
 
 	signal all_valid: std_logic;
 
-	signal fifo_overflow_int: slv(0 to NUMBER_OF_LANES - 1);
+	signal fifo_overflow_int: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	signal in_frame_ctr_int: slv8_array(0 to NUMBER_OF_LANES - 1);
 	signal out_frame_ctr_int: slv8_array(0 to NUMBER_OF_LANES - 1);
 	signal reset_ctr: unsigned(NUMBER_OF_LANES - 1 downto 0);
 
 
-	signal tvalid_during_reset: slv(0 to NUMBER_OF_LANES - 1);
+	signal tvalid_during_reset: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	signal rst_detect: std_logic := '0';
 	signal rst_dly: std_logic;
 
@@ -177,10 +178,10 @@ begin
 	-- According to the user manual, for Async FIFOs, reset
 	-- must be held for 31 clocks of the slowest clk (in_clk) when there is no safety circuit, and there must be no
 	-- read or write during that period. There does not seem to be a safety circuit from the core generator GUI.
-	fifo_rst_proc: process(clk)
+	fifo_rst_proc: process(all)
 	begin
 		if rising_edge(clk) then
-			if rst = '1' then
+			if rst then
 				fifo_inhibit <= '1';
 				fifo_rst_ctr <= (others => '0'); -- this is a 5-bit counter
 			elsif signed(fifo_rst_ctr) = -1 then
@@ -195,7 +196,7 @@ begin
 			end if; -- reset
 			rst_dly <= rst;
 
-			if rst = '1' and rst_dly = '0' then
+			if rst and not rst_dly then
 				reset_ctr <= reset_ctr + 1;
 			end if;
 		end if; -- clk
@@ -207,7 +208,7 @@ begin
 	in_frame_ctr  <= in_frame_ctr_int;
 	overflow      <= fifo_overflow_int;
 
-	outpipe_proc: process(clk)
+	outpipe_proc: process(all)
 	begin
 		-- Pipeline the output
 		if rising_edge(clk) then
@@ -219,23 +220,23 @@ begin
 			m_axis_global_tlast <= fifo_tlast(0);
 
 			for i in 0 to NUMBER_OF_LANES - 1 loop
-				if rst = '1' then
+				if rst then
 					s_axis_tfirst(i) <= '1';
-				elsif s_axis_tvalid(i) = '1' then
+				elsif s_axis_tvalid(i) then
 					s_axis_tfirst(i) <= s_axis_tlast(i);
 				end if;
 
 				-- detect if a reset has occured at all
-				if rst = '1' then
+				if rst then
 					rst_detect <= '1';
 				end if;
-				if rst = '1' then
+				if rst then
 					fifo_tfirst(i) <= '1';
-				elsif fifo_tvalid(i) = '1' and fifo_rd_en(i) = '1' then
+				elsif fifo_tvalid(i) and fifo_rd_en(i) then
 					fifo_tfirst(i) <= fifo_tlast(i);
 				end if;
 
-				if s_axis_tvalid(i) = '1' and rst = '1' then
+				if s_axis_tvalid(i) and rst then
 					tvalid_during_reset(i) <= '1';
 				end if;
 			-- if s_axis_tvalid(0)='1' and s_axis_tfirst(0)='1' then
@@ -318,22 +319,22 @@ begin
 
 			for i in 0 to NUMBER_OF_LANES - 1 loop
 				-- Gather statistics
-				if reset_stats = '1' then
+				if reset_stats then
 					fifo_overflow_int(i) <= '0';
 				else
 					fifo_overflow_int(i) <= fifo_overflow_int(i) or fifo_overflow(i);
 				end if;
 
-				if reset_stats = '1' then
+				if reset_stats then
 					out_frame_ctr_int(i) <= (others => '0');
-				elsif fifo_tvalid(i) = '1'  then  -- if end of frame
+				elsif fifo_tvalid(i) then  -- if end of frame
 					-- elsif all_valid='1' and fifo_tlast(i)='1'  then  -- if end of frame
 					out_frame_ctr_int(i) <= to_slv(unsigned(out_frame_ctr_int(i)) + 1);
 				end if;
 
-				if reset_stats = '1' then
+				if reset_stats then
 					in_frame_ctr_int(i) <= (others => '0');
-				elsif s_axis_tvalid(i) = '1' and s_axis_tlast(i) = '1'  then  -- if end of frame
+				elsif s_axis_tvalid(i) and s_axis_tlast(i) then  -- if end of frame
 					in_frame_ctr_int(i) <= to_slv(unsigned(in_frame_ctr_int(i)) + 1);
 				end if;
 				in_frame_ctr_int(i) <= fifo_data_count(i)(7 downto 0);

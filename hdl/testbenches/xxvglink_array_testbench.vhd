@@ -215,13 +215,13 @@ begin
 
 
 	-- Stimulus: generate data packets for FIFO
-	chan_proc: process(chan_clk)
+	chan_proc: process(all)
 	begin
 		if rising_edge(chan_clk) then
 			s_axis_tx_tdata  <= (others => (others => '0'));
 			s_axis_tx_tvalid <= (others => '0');
 			s_axis_tx_tlast  <= (others => '0');
-			if send_data = '1' then
+			if send_data then
 				for i in 0 to NUMBER_OF_LANES - 1 loop
 					s_axis_tx_tdata(i)(word_ctr'RANGE)  <= std_logic_vector(word_ctr);
 					s_axis_tx_tdata(i)(31 downto 16)  <= std_logic_vector(frame_ctr);
@@ -233,7 +233,7 @@ begin
 						frame_ctr <= frame_ctr + 1;
 					end if;
 					ctr <= ctr + 1;
-					if cpu_reset = '1' or send_data = '0' then
+					if cpu_reset or not send_data then
 						word_ctr <= (others => '0');
 						frame_ctr <= (others => '0');
 					end if;
@@ -243,7 +243,7 @@ begin
 	end process;
 
 	-- Stimulus: transfer data packets from FIFO to GTYs
-	stim_proc: process(clk)
+	stim_proc: process(all)
 	begin
 		if rising_edge(clk) then
 			if send_data then

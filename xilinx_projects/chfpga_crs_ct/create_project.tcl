@@ -23,8 +23,11 @@ set ooc_ip_files $crs_ooc_ip_files
 set ip_files $crs_ct_ip_files
 set hdl_files [concat $crs_ct_hdl_files "chfpga_crs_ct_config.vhd" ]
 set const_files [list \
+	 "crs/crs_timing_constraints_common.xdc"\
 	 "crs/crs_physical_constraints_ct.xdc"\
 	 "crs/crs_physical_constraints_common.xdc"\
+	 "crs/crs_physical_constraints_chord_fft_LOCs.xdc"\
+	 "crs/crs_physical_constraints_chan_LOCs.xdc"\
 ]
 # Create project
 source ../../tcl/create_generic_project.tcl

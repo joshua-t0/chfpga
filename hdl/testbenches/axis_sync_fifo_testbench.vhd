@@ -76,7 +76,7 @@ begin
         if not reset then
             if s_axis_tready then
                 s_axis_tvalid <= '0';
-                if wr_ctr MOD 23 < 5  then
+                if wr_ctr MOD 23 < 5 then
                     s_axis_tdata <= to_slv(unsigned(s_axis_tdata)+1);
                     s_axis_tvalid <= '1';
                     s_axis_tlast <= '1' when wr_ctr mod 17 = 0 else '0';

@@ -1,8 +1,8 @@
 .. title:: FFT_DELAY
 
-********************************************************************
+************************************************************
 :entity:`fft_delay` (*fft_delay.vhd*): FFT Delay Line Module
-********************************************************************
+************************************************************
 
 .. parse:: hdl/chan/fft_delay.vhd
 
@@ -35,4 +35,3 @@ Usage in Channelizer
 --------------------
 
 The `FFT_DELAY` module is used in the :entity:`chan` (channelizer) to delay flag signals (ADC overflow, FFT overflow, etc.) to align them with the corresponding FFT output data. This ensures that flags are properly associated with the data they describe.
-
