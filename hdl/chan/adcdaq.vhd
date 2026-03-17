@@ -814,7 +814,7 @@ begin
 			src_clk  => bsb_clk,
 			src_in   => bsb_rst, -- Resets the IODELAY for the ADC clock line
 			dest_clk => serdes_clkdiv_bit,
-			dest_out => data_iodelay_reset_bit_sync
+			dest_out => data_iodelay_reset_bit
 		);
 
 	data_iodelay_load_cdc0: xpm_cdc_single
