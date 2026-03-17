@@ -379,7 +379,7 @@ begin
   if rising_edge(STABLE_CLOCK) then
      if SOFT_RESET then
        qplllock_ris_edge <= '0';
-     elsif qplllock_prev = '0' and qplllock_sync = '1' then
+      elsif qplllock_prev = '0' and qplllock_sync = '1' then
        qplllock_ris_edge <= '1';
      elsif tx_state = ASSERT_ALL_RESETS or tx_state = RELEASE_PLL_RESET then
        qplllock_ris_edge <= qplllock_ris_edge;
