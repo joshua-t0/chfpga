@@ -56,8 +56,9 @@ entity chfpga_ice is
 			ADC_TYPE: adc_type_enum := EV8AQ160; -- Type of ADC to use.
 			NUMBER_OF_ADC_BOARDS: integer                := 2; -- Sets the number of SPI and SYNC lines (one for each FMC)
 			NUMBER_OF_ADCS: INTEGER                      := 16; -- Number of ADC Data acquisition blocks to implement
+			ADC_TO_ADC_BOARD_MAP: integer_array(0 to NUMBER_OF_ADCS - 1) := (0 to 7 => 0, 8 to 15 => 1);
 
-			ADC_IS_DIFFERENTIAL: integer_array_array := ( 0 to 15 => (1,1,1,1,1,1,1,1,  1));
+			ADC_IS_DIFFERENTIAL: bool_array_array := (0 to NUMBER_OF_ADCS - 1 => (0 to 8 => TRUE));
 			-- ADC_INSTANTIATE_PLL determines which ADCDAQ need to instantiate a PLL to provide IOCLK and DIVCLK to ISERDES that are in non-adjacent banks, and to provide a BUFG-buffered global word clock.
 			-- NOTE: A PLL (MMCM) could be used in theory for all data buses, but in practice we would run out of PLLs (there are only 2 per clock region).
 			-- NOTE: On the Virtex 6, there is no fast clock routing for the outer IO pads to the PLL. So the use of a PLL is preferably limited to the center IO pads
@@ -79,7 +80,7 @@ entity chfpga_ice is
 			--   CH5: Data and clock all in same bank 12. We use one BUFMR to equalize delays only.
 			--   CH6: Data and clock not in same bank. We use one BUFMR,  and BUFR and BUFIOs in banks 12 and 13 each.
 			--   CH7: Data and clock all in same bank 18. Clock is on a SRCC pin, so we cannot use BUFMR to equalize delays.
-			ADC_INSTANTIATE_BUFMR: integer_array_array := (
+			ADC_CLOCKING_REGION_MAP: integer_array_array := (
 				-- FMC A
 				(0 to 8 => 0), -- CH0: Data and clock in bank 14. We use a BUFMR to equalize delays with other channels. We have only one BUFR/BUFIO.
 				(0 to 8 => -1), -- CH1: Data and clock in bank 14. Clock is on SRCC. Cannot use BUFMR to equalize delays with other channels. We have only one BUFR/BUFIO.
@@ -144,11 +145,11 @@ entity chfpga_ice is
 
 			NUMBER_OF_I2C_PORTS: integer                 := 1;
 			NUMBER_OF_SPI_PORTS: integer                 := NUMBER_OF_ADC_BOARDS; -- One port for each FMC
-			BLINKER_PRESENT: BOOLEAN                     := TRUE; -- Indicates if the LED flasher is to  be implemented by setting the DUMMY flag of the BLINKER module
+			BLINKER_PRESENT: boolean                     := TRUE; -- Indicates if the LED flasher is to  be implemented by setting the DUMMY flag of the BLINKER module
 			IMPLEMENT_LCD: boolean                       := FALSE; -- Iceboard (Kintex 7) has no OLED
-			IMPLEMENT_ARM_SPI: boolean                   := FALSE; -- Iceboard is Kintex 7, no Zynq/ARM
+			IMPLEMENT_ARM_SPI: boolean                   := TRUE; -- Iceboard has external ARM processor
 
-			SIM: BOOLEAN := GLOBAL_SIM; -- Indicates this is running as a simulation. Used to accelerate simulations
+			SIM: boolean := GLOBAL_SIM; -- Indicates this is running as a simulation. Used to accelerate simulations
 
 			-- Derived parameters
 
@@ -525,13 +526,6 @@ architecture Behavioral of chfpga_ice is
 
 	signal gpio_led: std_logic_vector(7 downto 0);
 
-	-- attribute DONT_TOUCH of fmcb_refclk_m2c : signal is "true";
-	-- attribute DONT_TOUCH of IBUFGDS1 : label is "true"; -- make sure the dummy IBUFDS is not optimized out in Vivado 2014.1.
-	signal slot_probe: std_logic_vector(1 downto 0);
-	signal slot_sense: std_logic_vector(1 downto 0);
-	-- signal FPGA_LED1_int:std_logic;
-	-- signal fpga_led2: std_logic;
-	-- signal clk10_out;
 	signal trig_in: std_logic;
 	signal time_in: std_logic;
 	-- signal sma_out: std_logic;
@@ -592,14 +586,6 @@ begin
 	-- bp_buck_sync <= sfp_reset_done; -- RXNOTINTABLE, BP_IO2_N/SW6 0
 	-- fpga_led1_bp_sma <= FPGA_LED1_int; -- BP_IO3/BP_SMA/SW7 1/FPGA_LED1, Backplane SMA
 
-
--- Use the PWM of the pulsing LED to probe the capacitance of the slot number lines
--- slot_probe(0) <= gpio_led(4);
--- slot_probe(1) <= gpio_led(7);
-slot_probe(0) <= user_mux_out(1);
-slot_probe(1) <= user_mux_out(2);
-slot_sense(0) <= user_mux_in(1);
-slot_sense(1) <= user_mux_in(2);
 
 -------------------
 -- fpga_led1_bp_sma
@@ -1002,11 +988,12 @@ bufr_rawclk10 : BUFR
 			ADC_TYPE                        => ADC_TYPE,
 			NUMBER_OF_ADCS                  => NUMBER_OF_ADCS,
 			NUMBER_OF_ADC_BOARDS            => NUMBER_OF_ADC_BOARDS,
+			ADC_TO_ADC_BOARD_MAP            => ADC_TO_ADC_BOARD_MAP,
 			ADC_IS_DIFFERENTIAL             => ADC_IS_DIFFERENTIAL,
 			ADC_PROVIDE_BUFFERED_DIVCLK     => ADC_PROVIDE_BUFFERED_DIVCLK,
 			ADC_INSTANTIATE_PLL             => ADC_INSTANTIATE_PLL,
 			ADC_USE_EXT_DATA_CLK            => ADC_USE_EXT_DATA_CLK,
-			ADC_INSTANTIATE_BUFMR           => ADC_INSTANTIATE_BUFMR,
+			ADC_CLOCKING_REGION_MAP         => ADC_CLOCKING_REGION_MAP,
 			CHAN_CLK_SOURCE_LANE                  => CHAN_CLK_SOURCE_LANE,
 
 			-- Channelizers
@@ -1031,6 +1018,8 @@ bufr_rawclk10 : BUFR
 			CORR_TYPE => CORR_TYPE,
 			CORR_READOUT_BINS => CORR_READOUT_BINS,
 
+			-- Real-time Ethernet data streaming interface
+			
 			DATA_LINK_TYPE => DATA_LINK_TYPE,
 			DATA_LINK_LINK_TO_QUAD_MAP                => DATA_LINK_LINK_TO_QUAD_MAP,
 			DATA_LINK_QUAD_TO_REFCLK_MAP                 => DATA_LINK_QUAD_TO_REFCLK_MAP,
@@ -1134,16 +1123,12 @@ bufr_rawclk10 : BUFR
 			-- pmbus_sda => fmcb_i2c_sda,
 
 			-- Backplane signals
-			bp_time_in => time_in,
-			bp_trig_in => trig_in,
+			time_trig => (time_in, trig_in),
 			bp_buck_sync => bp_buck_sync,
 
 			bp_gpio_int_in => bp_gpio_int_in,
 			bp_gpio_int_out => bp_gpio_int_out,
 			bp_gpio_int_oe => bp_gpio_int_oe,
-
-			bp_slot_probe   => slot_probe,
-			bp_slot_sense   => slot_sense,
 
 			clk10_out  => open, -- 10 MHz reference clock generated by FPGA.
 
@@ -1175,6 +1160,7 @@ bufr_rawclk10 : BUFR
 
 
 			-- FMC SPI
+
 			spi_miso      => spi_miso,
 			spi_mosi      => spi_mosi,
 			spi_addr      => spi_addr,
@@ -1184,7 +1170,9 @@ bufr_rawclk10 : BUFR
 --			spi_rst_n_alt => fmca_spi_rst_n_alt,
 
 			adc_pll_lock => (fmca_adc_pll_lock & fmcb_adc_pll_lock),
+	
 			-- I2C signals
+	
 			i2c_scl(0) => i2c_scl,
 			i2c_sda(0) => i2c_sda
 			);

@@ -57,8 +57,8 @@ entity i2c is
 
 		-- I2C signals
 		
-		i2c_sck: inout std_logic_vector(NUMBER_OF_PORTS - 1 downto 0);
-		i2c_sda: inout std_logic_vector(NUMBER_OF_PORTS - 1 downto 0);
+		i2c_sck: inout std_logic_vector(0 to NUMBER_OF_PORTS - 1);
+		i2c_sda: inout std_logic_vector(0 to NUMBER_OF_PORTS - 1);
 
 
 		-- System-level signals

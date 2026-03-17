@@ -19,7 +19,7 @@ package chfpga_config is
 
 	-- Correlator config
 
-	constant CONFIG_CORR_TYPE: corr_type_enum := UCORR44;
+	constant CONFIG_CORR_TYPE: corr_type_enum := NONE;
 	constant CONFIG_CORR_READOUT_BINS: integer_array:= (0, 0);
 
 	-- Real-time data offload

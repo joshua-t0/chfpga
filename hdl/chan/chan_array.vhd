@@ -32,23 +32,23 @@ use work.chFPGA_config.ALL; -- Get implementation-specific definitions
 
 entity chan_array is
 	generic (
-		PLATFORM_ID                     : integer                                           := 0;
-		ADC_TYPE                        : adc_type_enum                                     := EV8AQ160;
-		NUMBER_OF_ADCS                  : integer                                           := NUMBER_OF_ADCS_MAX;
-		NUMBER_OF_CHANNELIZERS          : integer                                           := NUMBER_OF_CHANNELIZERS_MAX;
+		PLATFORM_ID                     : integer;
+		ADC_TYPE                        : adc_type_enum;
+		NUMBER_OF_ADCS                  : integer;
+		NUMBER_OF_CHANNELIZERS          : integer                                           := NUMBER_OF_ADCS;
 		NUMBER_OF_CHANNELIZERS_WITH_FFT : integer                                           := NUMBER_OF_CHANNELIZERS;
 		FFT_TYPE                        : fft_type_enum;
-		CAPTURE_TYPE                    : chan_capture_type_enum                            := PROBER;
+		CAPTURE_TYPE                    : chan_capture_type_enum;
 		NUMBER_OF_CAPTURE_SOURCES       : integer                                           := CHAN_CAPTURE_INFO(CAPTURE_TYPE).NUMBER_OF_SOURCES;
 		CAPTURE_BITS_PER_WORD           : integer                                           := CHAN_CAPTURE_INFO(CAPTURE_TYPE).INPUT_WIDTH;
 		ADC_SAMPLES_PER_FRAME           : integer := FFT_INFO(FFT_TYPE).SAMPLES_PER_FRAME;
-		ADC_IS_DIFFERENTIAL             : integer_array_array := (0 to NUMBER_OF_ADCS - 1 => (0 to 8 => 1));
-		ADC_PROVIDE_BUFFERED_DIVCLK     : bool_array(0 to NUMBER_OF_ADCS_MAX - 1)            := (1 => TRUE, others => FALSE);
-		ADC_INSTANTIATE_PLL             : bool_array(0 to NUMBER_OF_ADCS_MAX - 1)            := (others => FALSE);
-		ADC_USE_EXT_DATA_CLK            : bool_array(0 to NUMBER_OF_ADCS_MAX - 1)            := (0 to 3 => TRUE, others => FALSE);
-		ADC_INSTANTIATE_BUFMR           : integer_array_array := (0 to NUMBER_OF_ADCS_MAX - 1 => (0 to 8 => 0));
+		ADC_IS_DIFFERENTIAL             : bool_array_array(0 to NUMBER_OF_ADCS - 1)(0 to 8) := (others => (others => TRUE));
+		ADC_PROVIDE_BUFFERED_DIVCLK     : bool_array(0 to NUMBER_OF_ADCS - 1)            := (1 => TRUE, others => FALSE);
+		ADC_INSTANTIATE_PLL             : bool_array(0 to NUMBER_OF_ADCS - 1)            := (others => FALSE);
+		ADC_USE_EXT_DATA_CLK            : bool_array(0 to NUMBER_OF_ADCS - 1)            := (0 to 3 => TRUE, others => FALSE);
+		ADC_CLOCKING_REGION_MAP         : integer_array_array(0 to NUMBER_OF_ADCS - 1)(0 to 8) := (others => (others => 0));
 		CHAN_CLK_SOURCE_LANE                  : integer                                           := 1;
-		ADC_TO_ADC_BOARD_MAP            : integer_array(0 to NUMBER_OF_ADCS_MAX - 1)         := (0 to 7 => 0, 8 to 15 => 1);
+		ADC_TO_ADC_BOARD_MAP            : integer_array(0 to NUMBER_OF_ADCS - 1)         := (others => -1);
 		NUMBER_OF_ADC_BOARDS            : integer                                           := 2;
 		CT_CLK_SOURCE                   : ct_clk_source_enum                                := CORR_CLK;
 		CHAN_CLK_SOURCE                 : chan_clk_source_enum                              := ADC;
@@ -228,6 +228,12 @@ begin
 			signal adc_ioclk_out_pll: std_logic_vector(0 to NUMBER_OF_ADCS - 1);
 			signal adc_divclk_out_pll: std_logic_vector(0 to NUMBER_OF_ADCS - 1);
 		begin
+
+			-- Check that we have a valid board map
+			check_map_gen: for i in 0 to NUMBER_OF_ADC_BOARDS - 1 generate
+				assert is_in(i, ADC_TO_ADC_BOARD_MAP) report "ADC_TO_ADC_BOARD_MAP must be defined and must cover all ADC boards" severity failure;
+			end generate;
+
 			-- Selects which ADCDAQ will provides the master clock for the clock generator module to provide channelizer clocks.
 			adc_clk <= adc_divclk_out_bufg(CHAN_CLK_SOURCE_LANE); -- Must use output with ADC_INSTANTIATE_PLL=TRUE , preferably an output without PLL
 
@@ -299,7 +305,7 @@ begin
 						USE_EXT_DATA_CLK        => ADC_USE_EXT_DATA_CLK(i), -- Use array to select whether a PLL should be used for this instance.
 						IS_DIFFERENTIAL         => ADC_IS_DIFFERENTIAL(i),
 						INSTANTIATE_PLL         => ADC_INSTANTIATE_PLL(i), --
-						BUFMR_MAP               => ADC_INSTANTIATE_BUFMR(i),
+						CLOCKING_REGION_MAP     => ADC_CLOCKING_REGION_MAP(i),
 						INSTANTIATE_IDELAYCTRL  => ADC_INSTANTIATE_IDELAYCTRL(i),
 						SIM                     => SIM
 					)

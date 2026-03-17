@@ -188,8 +188,7 @@ entity system is
 
 		-- TIME & TRIG signals
 
-		bp_time_in: in std_logic;
-		bp_trig_in: in std_logic;
+		time_trig: in std_logic_vector(0 to 1);
 
 
 		-- Event (Frame) counter
@@ -265,8 +264,8 @@ entity system is
 
 		-- I2C Interface
 		
-		i2c_sck: inout std_logic_vector(NUMBER_OF_I2C_PORTS - 1 downto 0);
-		i2c_sda: inout std_logic_vector(NUMBER_OF_I2C_PORTS - 1 downto 0);
+		i2c_sck: inout std_logic_vector(0 to NUMBER_OF_I2C_PORTS - 1);
+		i2c_sda: inout std_logic_vector(0 to NUMBER_OF_I2C_PORTS - 1);
 
 		--  SYSMON Current and voltage monitors
 		
@@ -461,8 +460,7 @@ begin
 		attribute DONT_TOUCH of gpio_event_ctr_reset_reg: signal is "true";
 
 
-		signal bp_time_reg: std_logic;
-		signal bp_trig_reg: std_logic;
+		signal time_trig_reg: std_logic_vector(0 to 1);
 
 		signal irib_mux_in: std_logic_vector(0 to 7);
 		signal pwm_ctr_en_reg1: std_logic;
@@ -501,8 +499,7 @@ begin
 		-- Pipeline backplane time (IRIG-B) and trig signals
 		process(all) begin
 			if rising_edge(clk200) then
-				bp_time_reg <= bp_time_in;
-				bp_trig_reg <= bp_trig_in;
+				time_trig_reg <= time_trig;
 			end if; -- RST/CLK
 		end process;
 
@@ -510,8 +507,8 @@ begin
 
 		 -- Sources for the IRIG-B signals
 		 irib_mux_in <= (
-		 	0 => bp_trig_reg, -- backplane trig signal
-		 	1 => bp_time_reg, -- backplane time signal
+		 	0 => time_trig_reg(1), -- backplane trig signal
+		 	1 => time_trig_reg(0), -- backplane time signal
     	 	2 => irigb_gen_out, -- internal IRIG-B generator
 		 	3 => bp_gpio_int_in, -- backplane interrupt line (connects to every board in a crate)
 		 	4 => user_mux_in(0), -- sma_a
@@ -525,8 +522,8 @@ begin
 			1 => pps_out, -- Pulse-Per_second signal derived from the IRIG-B input
 			2 => pwm_out, -- Frame-aligned programmable pulse generator
 			3 => not irigb_before_target,
-			4 => bp_trig_reg,
-			5 => bp_time_reg,
+			4 => time_trig_reg(1),
+			5 => time_trig_reg(0),
 			6 => clk10,
 			7 => irigb_gen_out,
 			8 => gpio_led(4), -- heartbeat LED
@@ -1064,9 +1061,9 @@ begin
 
 				clk10 => clk10, -- Backplane reference clock
 				-- Sync source signals
-				sync_in => (0 => bp_trig_in, -- Corresponds to source #2 in REFCLK
+				sync_in => (0 => time_trig(1), -- Corresponds to source #2 in REFCLK
 							1 => not irigb_before_target, -- Corresponds to source #3
-							2 => bp_time_in, -- Corresponds to source #4
+							2 => time_trig(0), -- Corresponds to source #4
 							3 => bp_gpio_int_in, -- Corresponds to source #5
 							4 => user_mux_in(0), -- Corresponds to source #6 - sma_a
 							5 => user_mux_in(1) -- Corresponds to source #7 - sma_b

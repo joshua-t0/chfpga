@@ -40,6 +40,7 @@ type integer_array is array (natural range <>) of integer;
 type integer_array_array is array (natural range <>) of integer_array; -- Can be sliced
 type integer_2d_array is array (natural range <>, natural range <>) of integer; -- Can't be sliced
 type bool_array is array (natural range <>) of boolean;
+type bool_array_array is array (natural range <>) of bool_array; -- Can be sliced
 
 -- generic types and subtypes
 subtype Byte is std_logic_vector(7 downto 0);
@@ -688,6 +689,7 @@ function min(vin: integer_array) return integer;
 function min(LEFT, RIGHT: unsigned) return unsigned;
 
 function count(vin: integer_array; target:integer) return integer;
+function divided_ramp(N: natural; d: positive) return integer_array;
 function to_std_logic(i:boolean) return std_logic; -- converts bool to std_logic
 function to_slv(i:integer; n: integer) return std_logic_vector; -- converts integer to standard_logic_vector with specified number of bits
 function to_slv(r:real; n: integer) return std_logic_vector; -- converts real to standard_logic_vector with specified number of bits
@@ -980,6 +982,15 @@ begin
 	end loop;
 	return vout;
 end count;
+
+function divided_ramp(N: natural; d: positive) return integer_array is
+	variable v: integer_array(0 to N - 1);
+begin
+	for i in 0 to N - 1 loop
+		v(i) := i / d;
+	end loop;
+	return v;
+end divided_ramp;
 
 FUNCTION to_std_logic(i:boolean) return std_logic is -- converts bool to std_logic
 begin

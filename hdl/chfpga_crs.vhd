@@ -922,8 +922,7 @@ begin
 
 			-- Time signal
 
-			bp_time_in => sma_irig,
-			bp_trig_in => bp_irig,
+			time_trig => (sma_irig, bp_irig),
 
 			-- ADC inputs
 			adc_axis_tdata        => adc_axis_tdata(0 to NUMBER_OF_ADCS - 1),

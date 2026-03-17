@@ -66,10 +66,10 @@ ENTITY chFPGA_testbench IS
 
 
 		-- ADCDAQ Configuration
-		ADC_IS_DIFFERENTIAL: integer_array_array := (0 to NUMBER_OF_ADCS_MAX-1 => (0 to 8 => 1)); -- All inputs are differential by default unless specified otherwise by the top level
+		ADC_IS_DIFFERENTIAL: bool_array_array := (0 to NUMBER_OF_ADCS_MAX-1 => (0 to 8 => TRUE)); -- All inputs are differential by default unless specified otherwise by the top level
 		ADC_INSTANTIATE_PLL: bool_array(0 to NUMBER_OF_ADCS_MAX-1):=( others=>FALSE);
 		ADC_USE_EXT_DATA_CLK: bool_array(0 to NUMBER_OF_ADCS_MAX-1):=(others=>FALSE);
-		ADC_INSTANTIATE_BUFMR: integer_array_array(0 to NUMBER_OF_ADCS_MAX-1) := (0 to NUMBER_OF_ADCS_MAX-1 => (0 to 8 => -1));
+		ADC_CLOCKING_REGION_MAP: integer_array_array(0 to NUMBER_OF_ADCS_MAX-1) := (0 to NUMBER_OF_ADCS_MAX-1 => (0 to 8 => -1));
 		ADC_PROVIDE_BUFFERED_DIVCLK: bool_array(0 to NUMBER_OF_ADCS_MAX-1) := (0=>TRUE, others=>FALSE);
 		CHAN_CLK_SOURCE_LANE: integer :=0; -- Indicate which ADC is the source of the antenna processing clock. Must be one that has ADC_INSTANTIATE_PLL=TRUE so we have a BUFG that can clock the logic across the chip
 
@@ -342,8 +342,6 @@ CHFPGA0: entity work.chFPGA
 		NUMBER_OF_CORRELATORS         => NUMBER_OF_CORRELATORS,
 		NUMBER_OF_CROSSBAR_INPUTS     => NUMBER_OF_CROSSBAR_INPUTS,
 		NUMBER_OF_CROSSBAR_OUTPUTS    => NUMBER_OF_CROSSBAR_OUTPUTS,
-		NUMBER_OF_GPU_LINKS           => NUMBER_OF_GPU_LINKS,
-		NUMBER_OF_GPU_REFCLKS         => NUMBER_OF_GPU_REFCLKS,
 		NUMBER_OF_BP_SHUFFLE_LINKS    => NUMBER_OF_BP_SHUFFLE_LINKS,
 		NUMBER_OF_BP_SHUFFLE_REFCLKS  => NUMBER_OF_BP_SHUFFLE_REFCLKS,
 		NUMBER_OF_I2C_PORTS           => NUMBER_OF_I2C_PORTS,
@@ -358,7 +356,7 @@ CHFPGA0: entity work.chFPGA
 		ADC_IS_DIFFERENTIAL           => ADC_IS_DIFFERENTIAL,
 		ADC_INSTANTIATE_PLL           => ADC_INSTANTIATE_PLL,
 		ADC_USE_EXT_DATA_CLK          => ADC_USE_EXT_DATA_CLK,
-		ADC_INSTANTIATE_BUFMR         => ADC_INSTANTIATE_BUFMR,
+		ADC_CLOCKING_REGION_MAP       => ADC_CLOCKING_REGION_MAP,
 		ADC_PROVIDE_BUFFERED_DIVCLK   => ADC_PROVIDE_BUFFERED_DIVCLK,
 		CHAN_CLK_SOURCE_LANE                => CHAN_CLK_SOURCE_LANE,
 		SIM                           => SIM
