@@ -65,9 +65,16 @@ puts "--------------------------------------------------------------------------
 puts "Synthesizing OOC modules"
 puts "------------------------------------------------------------------------------------------------------------"
 puts ""
-  reset_run *_synth_1
-  launch_runs *_synth_1 -jobs 16 -verbose
-  wait_on_run *_synth_1
+
+  set synth_runs [get_runs *_synth_1]
+  
+  if {[llength $synth_runs] == 0} {
+    puts "INFO: no synth runs to execute, skipping"
+  } else {
+      reset_run   $synth_runs
+      launch_runs $synth_runs -jobs 8 -verbose
+      wait_on_run $synth_runs
+  }
 
 
 puts ""
@@ -75,48 +82,18 @@ puts "--------------------------------------------------------------------------
 puts "Synthesizing global project"
 puts "------------------------------------------------------------------------------------------------------------"
 puts ""
-  launch_runs synth_1 -jobs 16 -verbose
+  launch_runs synth_1 -jobs 8 -verbose
   wait_on_run synth_1
+
 
 puts ""
 puts "------------------------------------------------------------------------------------------------------------"
 puts "Implementing"
 puts "------------------------------------------------------------------------------------------------------------"
 puts ""
-  launch_runs impl_1 -to_step write_bitstream -jobs 16 -verbose
+  launch_runs impl_1 -to_step write_bitstream -jobs 8 -verbose
   wait_on_run impl_1
 
-#   foreach r [get_runs -filter {IS_SYNTHESIS}] {
-#     launch_runs $r -jobs 8 -verbose
-#     wait_on_run $r
-# }
-
-  # These wait_on_run commands surface stdout/stderr - we really only need the
-  # impl_1 but would rather see what's happening on the way there.
-  # wait_on_run pfb_fft_bitgrowth_0_synth_1     \
-  #   zynq_tcpipe_crs_smartconnect_0_0_synth_1  \
-  #   zynq_tcpipe_crs_system_ila_0_0_synth_1    \
-  #   zynq_tcpipe_crs_zynq_ultra_ps_e_0_0_synth_1
-
-  # wait_on_run synth_1
-  # wait_on_run [get_runs -filter {NAME ~= "*synth_1"}]
-
-  # wait_on_run impl_1
-
-
-# set active_runs [get_runs -filter {STATUS=="running"}]
-# set active_runs {}
-# foreach r [get_runs] {
-#     set status [get_property STATUS $r]
-#     if {$status eq "running" || $status eq "queued"} {
-#         lappend active_runs $r
-#     }
-# }
-
-# puts "Active runs:"
-# foreach r $active_runs { puts "  $r" }
-
-  # wait_on_run $active_runs
 
 # Display timing summary
 # Make sure the run exists and is completed

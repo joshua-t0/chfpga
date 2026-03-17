@@ -215,7 +215,6 @@ create_clock -period 100.000 -name raw_clk10 -waveform {0.000 50.000} [get_ports
 # Also feeds a MMCM to generate the internal 200 MHz, control systel clock (CLK125), SYSMON clock and CORR clock
 create_clock -period 8.000 -name SFP_CLK [get_ports sfp_clk_p]
 create_clock -period 8.000 -name arm_spi_virt_clk
-
 # Make unrelated MMCM-generated system clocks independent from the other clocks
 set_clock_groups -name ARM_SPI_CLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks arm_spi_virt_clk]
 set_clock_groups -name CLK125_GROUP -asynchronous -group [get_clocks -include_generated_clocks clk125_nobuf]
@@ -290,7 +289,8 @@ set_input_delay -clock [get_clocks arm_spi_virt_clk] 4.000 [get_ports fmc?_spi_m
 
 # Ignore path from the internal 200 MHz to the channel clock 0
 # There is one path between the IRIG-B output and the event capture register used to capture the frame number (on chan clock)  and IRIG-B time (on clk200)
-#set_false_path -from [get_clocks CLK200_MMCM_NOBUF] -to [get_clocks {chan_clk_nobuf[0]}]
+# Not needed since proper CDC was added.
+# set_false_path -from [get_clocks CLK200_MMCM_NOBUF] -to [get_clocks {chan_clk_nobuf[0]}]
 
 
 # Eliminate paths ending to synchronizing registers in the clock module (CLK0)

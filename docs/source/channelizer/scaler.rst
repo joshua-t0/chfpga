@@ -321,4 +321,3 @@ Memory Map
 
 .. include-docs:: SCALER
     :start-after: SCALER Module Memory Map
-

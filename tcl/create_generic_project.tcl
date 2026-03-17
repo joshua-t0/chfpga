@@ -420,7 +420,7 @@ foreach ip_obj  [get_ips] {
   set ip_name [get_property NAME $ip_obj]
   # puts "Checking if $ip_name is in $ooc_ip_files"
   if {[lsearch $ooc_ip_files "*/$ip_name.*"] >=0} {
-      puts "Adding $ip_name"
+      puts "Adding $ip_name, specifically adding $ip_obj to IP list"
     lappend ip_list $ip_obj
   }
 }

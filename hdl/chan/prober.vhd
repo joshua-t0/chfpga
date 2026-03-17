@@ -616,7 +616,8 @@ begin
                     frame_header.STREAM_ID := stream_id;
                     frame_header.STREAM_ID(15 downto 12) := std_logic_vector(resize(burst_ctr, 4)); -- place the burst frame number in the top 4 bits of STREAM ID
                     frame_header.SERIAL_FLAGS :=  '0' & burst_flags(to_integer(burst_ctr))(TUSER_GAINBANK_BIT downto 0); -- capture serial flags (gain bank, adc overflow, fft overflow on last word
-                    frame_header.FLAGS := burst_flags(to_integer(burst_ctr));
+                    -- frame_header.FLAGS := burst_flags(to_integer(burst_ctr));
+                    frame_header.FLAGS := "0000"; -- making prober compatible with ucap (mode = 0, subframe = 0)
                     frame_header.TIMESTAMP := std_logic_vector(burst_timestamp); -- timestamp of the first frame in the burst
                     frame_header_bytes := struct_to_bytes(frame_header); -- Store the header into an array of bytes for insertion into the FIFO
 
