@@ -1232,24 +1232,32 @@ fifo_rd_proc: process(all)
 	end process;
 
 -- This is a First-Word fall through FIFO
-fifo0 : entity work.ADCDAQ_FIFO
-	PORT MAP (
-		rst           => fifo_rst, -- ZCU111 / U+ has only srst, but we don't need this FIFO for those.
-		wr_clk        => divclk_vect(0),
-		wr_en         => fifo_wr_en,
-		din           => fifo_din,
-		-- wr_data_count => fifo_wr_data_count,
-		prog_full     => fifo_prog_full, -- on the wr_clk
-		overflow      => fifo_overflow,
-		full          => open,
+fifo_underflow <= fifo_rd_en and fifo_empty;
 
-		rd_clk        => adc_clk,
-		rd_en         => fifo_rd_en,
-		dout          => fifo_dout, -- FIFO is fallthrough
-		-- rd_data_count => fifo_rd_data_count,
-		underflow     => fifo_underflow,
-		empty         => fifo_empty,
-		valid         => fifo_data_valid
+fifo0 : entity work.generic_fifo
+	generic map (
+		FPGA_SERIES      => FPGA_SERIES,
+		MEMORY_TYPE      => "embedded",
+		IS_ASYNC         => TRUE,
+		IS_FWFT          => TRUE,
+		DATA_WIDTH       => 32,
+		DEPTH            => 1024, -- 1024 words is enough for 4096 samples. Needs to be large enough in case one channel is configured with a delay compared to the others.
+		PROG_FULL_THRESH => 16
+	)
+	port map (
+		wr_clk      => divclk_vect(0),
+		wr_en       => fifo_wr_en,
+		din         => fifo_din,
+		prog_full   => fifo_prog_full, -- on the wr_clk
+		overflow    => fifo_overflow,
+
+		rd_clk      => adc_clk,
+		rd_en       => fifo_rd_en,
+		dout        => fifo_dout, -- FIFO is fallthrough
+		empty       => fifo_empty,
+		valid       => fifo_data_valid,
+
+		rst         => fifo_rst
 	);
 
 
