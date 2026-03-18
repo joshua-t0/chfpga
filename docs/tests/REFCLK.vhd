@@ -18,7 +18,7 @@ use UNISIM.VComponents.all;
 --! Handles the FMC Reference Clock generation, SYNC event detection and generation, and ADC SYNC signal generation
 entity REFCLK is
 	 GENERIC (
-	 	PLATFORM_ID: integer;
+	 	PLATFORM_TYPE: platform_type_enum;
 	 	NUMBER_OF_MEZZANINES: integer;
 	 	IMPLEMENT_CLOCK_ENCODED_SYNC: boolean := FALSE;
 		SIM: BOOLEAN := FALSE

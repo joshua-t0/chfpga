@@ -23,7 +23,7 @@ use work.tb_package.all;
 use std.textio.all;
 ENTITY ucorr44_array_testbench IS
 	generic (
-	   PLATFORM_ID: integer  := PLATFORM_ID_CRS;
+	   PLATFORM_TYPE: platform_type_enum  := CRS;
 	    NCHAN: integer := 64;
 	    NCHAN_PER_CLK: integer := 32; 
         NBINS: integer := 32;-- bins per correlator (not total)
@@ -104,7 +104,7 @@ begin
 
 --    ct0: entity work.uct_engine
 --        generic map (
---            PLATFORM_ID => PLATFORM_ID,
+--            PLATFORM_TYPE => PLATFORM_TYPE,
 --            NUMBER_OF_INPUT_LANES => NCHAN, -- Number of channelizer inputs
 --            CT_LEVEL => 1 -- Corner-turning level: 1: single-board (local) only (no backplane), 2: Option 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Option 2 + additional 4x4 corner-turn between 2 or 4 sub-backplanes (8 or 16 boards)
 --        )
@@ -146,7 +146,7 @@ begin
 
        ucorr44_array0: entity work.ucorr44_array
             generic map (
-                PLATFORM_ID => PLATFORM_ID_CRS, -- needed to determine the RPM spacing of the DSP and BRAM elements and choose the right primitives
+                PLATFORM_TYPE => CRS, -- needed to determine the RPM spacing of the DSP and BRAM elements and choose the right primitives
                 NCHAN => NCHAN, 
                 NCORR   => NCORR,
                 NBINS_PER_CORR => NBINS,

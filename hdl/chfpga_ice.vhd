@@ -33,7 +33,7 @@ use work.chfpga_config.all; -- get all configuratoin parameters
 -- The ports of this top-level entity correspond to physical pins on the Kintex 7 FPGA on that board. The location of these pins are defined in the constraint file.
 entity chfpga_ice is
 	 generic (
-			PLATFORM_ID: INTEGER                         := PLATFORM_ID_MGK7MB; -- identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705
+			PLATFORM_TYPE: platform_type_enum                         := MGK7MB; -- identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705
 
 			-- Clocking
 
@@ -969,7 +969,7 @@ bufr_rawclk10 : BUFR
 
 	chfpga0: entity work.chfpga
 		GENERIC MAP(
-			PLATFORM_ID                     => PLATFORM_ID,
+			PLATFORM_TYPE                     => PLATFORM_TYPE,
 
 			-- clocks
 			SYSTEM_CLOCK_SOURCE             => SYSTEM_CLOCK_SOURCE,

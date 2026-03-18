@@ -36,7 +36,7 @@ use work.chfpga_config.all;
 -- The ports of this top-level entity correspond to physical pins on the Kintex 7 FPGA on that board. The location of these pins are defined in the constraint file.
 entity chFPGA_KC705 is
 	 generic (
-			PLATFORM_ID: INTEGER                         := PLATFORM_ID_KC705;
+			PLATFORM_TYPE: platform_type_enum                         := KC705;
 
 			-- Clocking
 
@@ -385,7 +385,7 @@ begin
 
 	chfpga0: entity work.chfpga	
 		generic map(
-			PLATFORM_ID              => PLATFORM_ID, 
+			PLATFORM_TYPE              => PLATFORM_TYPE, 
 
 			-- Clocking configuration
 

@@ -35,7 +35,7 @@ use work.tb_package.all;
 
 ENTITY chFPGA_testbench IS
 	 GENERIC (
-		PLATFORM_ID: INTEGER:= PLATFORM_ID_MGK7MB; -- identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705, 2= ICEBoard
+		PLATFORM_TYPE: platform_type_enum:= MGK7MB; -- identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705, 2= ICEBoard
 
 		BLINKER_PRESENT: BOOLEAN :=TRUE; -- Indicates if the LED flasher is to be implemented by setting the DUMMY flag of the BLINKER module
 
@@ -331,7 +331,7 @@ bp_shuffle_refclk_n_vect <= (others => xge_refclk_n);
 
 CHFPGA0: entity work.chFPGA
 	GENERIC MAP(
-		PLATFORM_ID                   => PLATFORM_ID,
+		PLATFORM_TYPE                   => PLATFORM_TYPE,
 		BLINKER_PRESENT               => BLINKER_PRESENT,
 		SYSTEM_CLOCK_SOURCE           => SYSTEM_CLOCK_SOURCE,
 		BSB_INTERFACE                 => BSB_INTERFACE,

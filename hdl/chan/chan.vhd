@@ -46,7 +46,7 @@ entity chan is
 		--
 		-- For non-OOC usage, this entity can be instantiated using the entity instantiation method with GENERICS
 
-		PLATFORM_ID: integer               ; -- PLATFORM_ID_MGK7MB; -- This generics is locked to the MGK7MB when using CHAN as an OOC.
+		PLATFORM_TYPE: platform_type_enum               ; -- MGK7MB; -- This generics is locked to the MGK7MB when using CHAN as an OOC.
 		IMPLEMENT_FFT: boolean             ;
 		FFT_TYPE: fft_type_enum            ;
 		SCALER_USE_COMPLEX_GAINS: boolean  ;
@@ -156,7 +156,7 @@ architecture impl of CHAN is
 
 	-- Constants
 
-	constant FPGA_SERIES: integer          := FPGA_SERIES_LIST(PLATFORM_ID);
+	constant FPGA_SERIES: fpga_series_enum          := PLATFORM_INFO(PLATFORM_TYPE).FPGA_SERIES;
 	constant FFT_BINS_PER_WORD: integer    := FFT_INFO(FFT_TYPE).BINS_PER_WORD;
 	constant FFT_BITS_PER_WORD: integer    := FFT_BITS_PER_BIN * FFT_BINS_PER_WORD;
 	constant FFT_BINS_PER_FRAME: integer   := ADC_SAMPLES_PER_FRAME / 2;

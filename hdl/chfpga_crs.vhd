@@ -31,7 +31,7 @@ use xpm.vcomponents.ALL;
 entity chfpga_crs is
 	generic (
 
-		PLATFORM_ID: integer := PLATFORM_ID_CRS; --  Identifies the type of platform on which the firmware is running.
+		PLATFORM_TYPE: platform_type_enum := CRS; --  Identifies the type of platform on which the firmware is running.
 
 		-- Clocking config
 
@@ -852,7 +852,7 @@ begin
 
 	chfpga0: entity work.chfpga
 		generic map (
-			PLATFORM_ID => PLATFORM_ID,
+			PLATFORM_TYPE => PLATFORM_TYPE,
 
 			-- Clocking config
 			SYSTEM_CLOCK_SOURCE => SYSTEM_CLOCK_SOURCE,

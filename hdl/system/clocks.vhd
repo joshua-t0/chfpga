@@ -42,7 +42,7 @@ use work.chFPGA_Package.ALL; -- Get all component definitions
 --    In this case, the MMCM instantiated here has to be put in the same half as the BUFGMUX, and its output can directly drive the BUFGMUX
 entity clocks is
 	generic (
-		PLATFORM_ID: integer;
+		PLATFORM_TYPE: platform_type_enum;
 		CLOCK_SOURCE: clk_source_enum           := SFP_REFCLK; -- Clock to use to feed the system MMCM input.  Either "SYSCLK" (uses sysclk_p/n (LVDS)), "SYSCLK_BUFG" (uses sysclk_bufg),  "SFP_REFCLK" (uses sfp_refclk_p/n (GTREFCLK)), "CLK10_BUFG" (uses clk10_bufg)
 		CLOCK_FREQ: real                        := 200.0; -- Frequency of the clock source specified by CLOCK_SOURCE, in MHz
 		CHAN_CLK_SOURCE: chan_clk_source_enum   := ADC;
@@ -119,7 +119,7 @@ architecture impl of clocks is
 	attribute ASYNC_REG: string;
 	attribute DONT_TOUCH: string;
 
-	constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
+	constant FPGA_SERIES: fpga_series_enum := PLATFORM_INFO(PLATFORM_TYPE).FPGA_SERIES;
 
 	-- Platform information structure
 	-- type sys_clk_params is record
@@ -237,7 +237,7 @@ begin
 
 		when work.chfpga_package.SFP_REFCLK =>
 
-			gen_bufgte7: if FPGA_SERIES = FPGA_KINTEX7 generate
+			gen_bufgte7: if FPGA_SERIES = KINTEX7 generate
 
 				ibufds_gtrefclk: IBUFDS_GTE2
 					port map (
@@ -249,7 +249,7 @@ begin
 					);
 			end generate gen_bufgte7;
 
-			gen_bufgteup: if PLATFORM_ID = PLATFORM_ID_ZCU111 or PLATFORM_ID = PLATFORM_ID_CRS generate
+			gen_bufgteup: if PLATFORM_TYPE = ZCU111 or PLATFORM_TYPE = CRS generate
 
 				ibufds_mgtpllrefclk: IBUFDS
 					port map (
@@ -291,7 +291,7 @@ begin
 		);
 	-- Use the sysclk_p/n LVDS differential clock to feed the system MMCM
 
-	k7_sys_mmcm_gen: if FPGA_SERIES = FPGA_KINTEX7 generate
+	k7_sys_mmcm_gen: if FPGA_SERIES = KINTEX7 generate
 
 		mmcm_adv_inst: MMCME2_ADV
 			generic map (
@@ -359,7 +359,7 @@ begin
 			);
 	end generate k7_sys_mmcm_gen;
 
-	usp_sys_mmcm_gen: if FPGA_SERIES = FPGA_ULTRASCALEPLUS generate
+	usp_sys_mmcm_gen: if FPGA_SERIES = ULTRASCALEPLUS generate
 
 		mmcm_adv_inst: MMCME4_ADV
 			generic map (

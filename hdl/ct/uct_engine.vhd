@@ -39,7 +39,7 @@ use work.chFPGA_Package.ALL;
 --
 entity uct_engine is
 	generic (
-		PLATFORM_ID: integer; -- necessary to select the proper FIFOs
+		PLATFORM_TYPE: platform_type_enum; -- necessary to select the proper FIFOs
 		NUMBER_OF_INPUT_LANES: integer := 8; -- Number of channelizer inputs
 		BINS_PER_INPUT_WORD: integer   := 4;
 		INPUT_WORD_WIDTH: integer      := 32; -- width of the scaler output word

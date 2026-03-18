@@ -70,7 +70,7 @@ begin
     
     sysmon0: entity work.sysmon
         GENERIC MAP (
-            PLATFORM_ID => PLATFORM_ID_ZCU111
+            PLATFORM_TYPE => ZCU111
             )
         PORT MAP(
             -- Control interface

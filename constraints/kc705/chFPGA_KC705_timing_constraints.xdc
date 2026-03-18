@@ -33,7 +33,7 @@ set_clock_groups -name REFCLK_GROUP -asynchronous -group [get_clocks -include_ge
 # set_clock_groups -name CLK125_GROUP -asynchronous -group [get_clocks n_1_MMCM0]
 
 # Set the frequency counter clock (clock is outputted by a fabric mux)
-create_clock -period 3.200 -name FREQ_CTR [get_pins */*.system0/freq_ctr_blk.freq_ctr0/k7.srcclk0/I]
+create_clock -period 3.200 -name FREQ_CTR [get_pins */*.system0/freq_ctr_blk.freq_ctr0/srcclk_bufg_gen*.bufh0/I]
 set_clock_groups -name FREQ_CTR_GROUP -asynchronous -group [get_clocks FREQ_CTR]
 
 

@@ -40,7 +40,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 -- Frames are captured Every N frames.
 entity ucap is
 	generic (
-		FPGA_SERIES: integer; -- Used to select the appropriate FIFO memory type
+		FPGA_SERIES: fpga_series_enum; -- Used to select the appropriate FIFO memory type
 	    NUMBER_OF_CHANNELS: integer := 8; -- Warning: current design works only with NUMBER_OF_CHANNELS = 8
 	    NUMBER_OF_SOURCES : integer := 2; -- Warning; current design works only with NUMBER_OF_SOURCES = 2
         CAPTURE_BITS_PER_WORD: integer := 128 -- must be a multiple of 8 bits

@@ -232,7 +232,7 @@ end generate;
 
 dut0: entity work.uct_engine
 	generic map (
-	    PLATFORM_ID => PLATFORM_ID_CRS,
+	    PLATFORM_TYPE => CRS,
         NUMBER_OF_INPUT_LANES => NCHAN,
 		LANE_TO_LINK_MAP       => LANE_TO_LINK_MAP,
 		LINK_TO_QUAD_MAP       => LINK_TO_QUAD_MAP,

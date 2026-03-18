@@ -18,7 +18,7 @@
 --  2012-09-18 JFC: Cleanup. Added comments. Removed version Generics
 --  2012-09-23 JFC: Moved fan readout (debouncing) circuitry in here.
 --  2012-11-05 JFC: Removed RST from the fan tachymeter measurment logic to slightly reduce logic.
---  2013-01-30 JFC: Added PLATFORM_ID field to allow the Python software to instantiate the appropriate handlers for the specific platform
+--  2013-01-30 JFC: Added PLATFORM_TYPE field to allow the Python software to instantiate the appropriate handlers for the specific platform
 ----------------------------------------------------------------------------------
 library IEEE;
 use ieee.std_logic_1164.all;
@@ -50,7 +50,7 @@ use xpm.vcomponents.all;
 --!   - IP Port offsets for the data capture and correlator outputs
 entity GPIO is
 	generic (
-		--PLATFORM_ID: INTEGER; --! identifies the type of platform on which the firmware is running
+		--PLATFORM_TYPE: platform_type_enum; --! identifies the type of platform on which the firmware is running
 		--COOKIE : integer := 16#42#;
 		--PROTOCOL_VERSION: INTEGER; --! Protocol version used to determins compatibility with the python support software
 		--NUMBER_OF_ADCS: INTEGER; --! Number of antenna processing blocks that are implemented
@@ -265,7 +265,7 @@ architecture Behavioral of GPIO is
 
 attribute async_reg : string;
 
-constant FPGA_SERIES:integer := PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES;
+constant FPGA_SERIES:fpga_series_enum := PLATFORM_INFO(PLATFORM_TYPE).FPGA_SERIES;
 constant WORDS_PER_FRAME: integer := ADC_SAMPLES_PER_FRAME / ADC_SAMPLES_PER_WORD;
 constant LOG2_WORDS_PER_FRAME: integer := integer_log2(WORDS_PER_FRAME); --! Number of words per frame. One word is 4 8-bit time samples or 2 8+8-bits frequency samples.
 constant LOG2_SAMPLES_PER_FRAME: integer := integer_log2(ADC_SAMPLES_PER_FRAME);
@@ -511,7 +511,7 @@ begin
 --! |         |  5  | 7:0  | NUMBER_OF_CHANNELIZERS_WITH_FFT   | Indicates how many channelizers have a FFT module. Those will be channeizers 0 to N-1|
 --! |         |  6  | 7:0  | NUMBER_OF_GPU_LINKS         | Indicates how GPU Links are implemented. If zero, the GPU module is not present at all (not even the common registers)|
 --! |         | 7-10| 31:0 | firmware_timestamp          | 32-bit word containing the timestamp of the firmware inserted during the bitgen process |
---! |         | 11  | 7:0  | PLATFORM_ID                 | Type of platform on which the firmware is running. 0=ML605, 1=KC705, 3=MGK7MB, 4=ZCU111 |
+--! |         | 11  | 7:0  | PLATFORM_TYPE                 | Type of platform on which the firmware is running. 0=ML605, 1=KC705, 3=MGK7MB, 4=ZCU111 |
 --! |         |12-19| 63:57| (unused)                    | |
 --! |         |     | 56:0 | FPGA_DNA                    | FPGA unique serial number |
 --! |         | 20  | 7:0  | NUMBER_OF_CROSSBAR_INPUTS   | Indicates how many channelizers are connected to the crossbar inputs. Those will be channeizers 0 to N-1|
@@ -664,7 +664,7 @@ STATUS_BYTES(6) <= to_slv(NUMBER_OF_GPU_LINKS,8);
 STATUS_BYTES(7 to 10) <= to_slv8_array(firmware_timestamp);  -- ** ToDo: still used by Python, but redundant with core regs.
 
 -- STATUS Bytes 11: Platform ID
-STATUS_BYTES(11) <= to_slv(PLATFORM_ID, 8);
+STATUS_BYTES(11) <= to_slv(platform_type_enum'pos(PLATFORM_TYPE), 8);
 
 -- STATUS Bytes 12-19: FPGA serial number
 STATUS_BYTES(12)(7 downto 1) <= (others=>'0');
@@ -1260,7 +1260,7 @@ user_gen: for i in 0 to 3 generate
 end generate;
 
 --! Implement USR_ACCESS for VIRTEX6-based platforms
-USRACCESS_V6: if FPGA_SERIES=FPGA_VIRTEX6 generate
+USRACCESS_V6: if FPGA_SERIES=VIRTEX6 generate
 	USR_ACCESS0: USR_ACCESS_VIRTEX6
 		port map(
 			CFGCLK    => open,--1-bit Configuration Clock output
@@ -1271,7 +1271,7 @@ end generate;
 
 --! Implement USR_ACCESS for 7-series platforms
 
-USRACCESS_7: if FPGA_SERIES=FPGA_KINTEX7 or FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
+USRACCESS_7: if FPGA_SERIES=KINTEX7 or FPGA_SERIES=ULTRASCALEPLUS generate
 	USR_ACCESS0: USR_ACCESSE2
 		port map(
 			CFGCLK    => open, --1-bit Configuration Clock output
@@ -1280,7 +1280,7 @@ USRACCESS_7: if FPGA_SERIES=FPGA_KINTEX7 or FPGA_SERIES=FPGA_ULTRASCALEPLUS gene
 			);
 end generate;
 
-gen_dna7: if FPGA_SERIES=FPGA_KINTEX7 generate
+gen_dna7: if FPGA_SERIES=KINTEX7 generate
 	dna0 : DNA_PORT
 		generic map (
 			SIM_DNA_VALUE => X"000000000000000" -- Specifies a sample 57-bit DNA value for simulation
@@ -1294,7 +1294,7 @@ gen_dna7: if FPGA_SERIES=FPGA_KINTEX7 generate
 		);
 	end generate;
 
-gen_dnaup: if FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
+gen_dnaup: if FPGA_SERIES=ULTRASCALEPLUS generate
 	-- The core currently reads only 57 bits
 	dna0 : DNA_PORTE2
 		port map (

@@ -154,67 +154,76 @@ constant NULL_INTEGER_ARRAY: integer_array(1 to 0) := (others => 0);
 -- Is used both by the HDL source code and runtime software to identify the
 -- hardware (FPGA and PCB type) on which the firmware runs
 --
--- The number is used to index FPGA_SERIES_LIST below
-constant PLATFORM_ID_ML605: integer :=0;
-constant PLATFORM_ID_KC705: integer :=1;
-constant PLATFORM_ID_UNUSED: integer :=2;
-constant PLATFORM_ID_MGK7MB: integer :=3;
-constant PLATFORM_ID_ZCU111: integer :=4;
-constant PLATFORM_ID_CRS: integer :=5;
+-- The enum position preserves the legacy integer encoding.
+type platform_type_enum is (
+	ML605,
+	KC705,
+	UNUSED,
+	MGK7MB,
+	ZCU111,
+	CRS
+	);
+
+-- FPGA series encoding
+--
+-- Dummy entries preserve the legacy integer values for the real FPGA families:
+--  - 6: VIRTEX6
+--  - 7: KINTEX7
+--  - 8: ULTRASCALE
+--  - 9: ULTRASCALEPLUS
+type fpga_series_enum is (
+	RESERVED0,
+	RESERVED1,
+	RESERVED2,
+	RESERVED3,
+	RESERVED4,
+	RESERVED5,
+	VIRTEX6,
+	KINTEX7,
+	ULTRASCALE,
+	ULTRASCALEPLUS
+	);
 
 -- Platform information structure
 type PLATFORM_INFO_STRUCT is
 	record
-		FPGA_SERIES: integer; -- indicates that the series of the FPGA. Is typically used to select low level primitives
+		FPGA_SERIES: fpga_series_enum; -- indicates the series of the FPGA. Is typically used to select low level primitives
 		DSP_TILE_DELTA_RPM_Y: integer; -- vertical spacing between DSP tiles in RPM coordinates
 		DSP_BEL_DELTA_RPM_Y: integer; -- vertical spacing between DSPs BELs within a tile, in RPM coordinates
 		BRAM_TILE_DELTA_RPM_Y: integer; -- vertical spacing between BRAM tiles in RPM coordinates
 		BRAM_BEL_DELTA_RPM_Y: integer; -- vertical spacing between BRAMs BELs within a tile, in RPM coordinates
 	end record;
 
-type PLATFORM_INFO_ARRAY is array (NATURAL RANGE <>) of PLATFORM_INFO_STRUCT;
-
--- FPGA series list
---
--- Is indexed by the PLATFORM_ID value to obtain the FPGA series, which is used to select low-level primitives.
---
---  - 6: for VIRTEX6,
---  - 7: VIRTEX/KINTEX7
---  - 8: Ultrascale
---  - 9: Ultrascale+
-constant FPGA_VIRTEX6: integer := 6;
-constant FPGA_KINTEX7: integer := 7;
-constant FPGA_ULTRASCALE: integer := 8;
-constant FPGA_ULTRASCALEPLUS: integer := 9;
+type PLATFORM_INFO_ARRAY is array (platform_type_enum range <>) of PLATFORM_INFO_STRUCT;
 
 -- Define platform-specific constants
 constant PLATFORM_INFO: PLATFORM_INFO_ARRAY := (
-	PLATFORM_ID_ML605 => (
-		FPGA_SERIES => FPGA_VIRTEX6,
+	ML605 => (
+		FPGA_SERIES => VIRTEX6,
 		DSP_TILE_DELTA_RPM_Y => 0, -- to be defined of ever needed again
 		DSP_BEL_DELTA_RPM_Y => 0,
 		BRAM_TILE_DELTA_RPM_Y => 0,
 		BRAM_BEL_DELTA_RPM_Y => 0
 		),
 
-	PLATFORM_ID_KC705 => (
-		FPGA_SERIES => FPGA_KINTEX7,
+	KC705 => (
+		FPGA_SERIES => KINTEX7,
 		DSP_TILE_DELTA_RPM_Y => 5,
 		DSP_BEL_DELTA_RPM_Y => 5,
 		BRAM_TILE_DELTA_RPM_Y => 5,
 		BRAM_BEL_DELTA_RPM_Y => 5
 		),
 
-	PLATFORM_ID_UNUSED => (
-		FPGA_SERIES => FPGA_KINTEX7,
+	UNUSED => (
+		FPGA_SERIES => KINTEX7,
 		DSP_TILE_DELTA_RPM_Y => 5,
 		DSP_BEL_DELTA_RPM_Y => 5,
 		BRAM_TILE_DELTA_RPM_Y => 5,
 		BRAM_BEL_DELTA_RPM_Y => 5
 		),
 
-	PLATFORM_ID_MGK7MB => (
-		FPGA_SERIES => FPGA_KINTEX7,
+	MGK7MB => (
+		FPGA_SERIES => KINTEX7,
 		-- site spacing in slice coordinates
 		--DSP_TILE_DELTA_RPM_Y => 2, -- was 10
 		--DSP_BEL_DELTA_RPM_Y => 1, -- was 5
@@ -228,8 +237,8 @@ constant PLATFORM_INFO: PLATFORM_INFO_ARRAY := (
 		BRAM_BEL_DELTA_RPM_Y => 1 -- BRAMs within a tile are spaced by 1 RPM_Y grip unit (yeah, different from DSPs!)
 		),
 
-	PLATFORM_ID_ZCU111 => (
-		FPGA_SERIES => FPGA_ULTRASCALEPLUS,
+	ZCU111 => (
+		FPGA_SERIES => ULTRASCALEPLUS,
 		DSP_TILE_DELTA_RPM_Y => 10,
 		DSP_BEL_DELTA_RPM_Y => 1,
 		BRAM_TILE_DELTA_RPM_Y => 10,
@@ -237,25 +246,14 @@ constant PLATFORM_INFO: PLATFORM_INFO_ARRAY := (
 		),
 
 
-	PLATFORM_ID_CRS => (
-		FPGA_SERIES => FPGA_ULTRASCALEPLUS,
+	CRS => (
+		FPGA_SERIES => ULTRASCALEPLUS,
 		DSP_TILE_DELTA_RPM_Y => 10,
 		DSP_BEL_DELTA_RPM_Y => 1,
 		BRAM_TILE_DELTA_RPM_Y => 10,
 		BRAM_BEL_DELTA_RPM_Y => 1
 		)
 
-	);
-
-
-
-constant FPGA_SERIES_LIST: integer_array:=(
-	PLATFORM_ID_ML605 => FPGA_VIRTEX6,
-	PLATFORM_ID_KC705 => FPGA_KINTEX7,
-	PLATFORM_ID_UNUSED => FPGA_KINTEX7,
-	PLATFORM_ID_MGK7MB => FPGA_KINTEX7,
-	PLATFORM_ID_ZCU111 => FPGA_ULTRASCALEPLUS,
-	PLATFORM_ID_CRS => FPGA_ULTRASCALEPLUS
 	);
 
 -- Hardware-related constants
@@ -771,8 +769,8 @@ function word_to_struct(w: slv32_array(0 to SHUFFLE_FRAME_HEADER_WORD_LENGTH-1):
 PROCEDURE axis32_write_buffer(buffer_in: in Word32Array; signal stream_out: out AXIS32_DAT_STRUCT; signal clk: in std_logic);
 
 function rpm_to_string(rpm: rpm_coord_struct) return string; -- convert a RPM coordinate pair into a "XnYn" string
-function get_cmac44_rpm_coords_struct_array(platform_id: integer; N_CHAN: integer; layout: string) return cmac44_rpm_coord_struct_array; -- returns the locations of the CMAC44 DSPs and BRAMs for a corr44 correlator core with specified layout
-function get_corr44_rloc_origins_struct_array(platform_id:integer; N_CHAN:integer) return corr44_rloc_origins_struct_array; -- returns the layout and absolute location of each corr4 core in a corr44_array
+function get_cmac44_rpm_coords_struct_array(platform_type: platform_type_enum; N_CHAN: integer; layout: string) return cmac44_rpm_coord_struct_array; -- returns the locations of the CMAC44 DSPs and BRAMs for a corr44 correlator core with specified layout
+function get_corr44_rloc_origins_struct_array(platform_type: platform_type_enum; N_CHAN: integer) return corr44_rloc_origins_struct_array; -- returns the layout and absolute location of each corr4 core in a corr44_array
 
 pure function flatten(x : slv_array) return std_logic_vector;
 pure function unflatten(s : std_logic_vector; num_slices : positive) return slv_array;
@@ -1639,17 +1637,16 @@ end function rpm_to_string;
 -- For a N-channel correlator, each CORR44 is N DSP tiles high, or 2*N DSP high.
 -- The layout can be provided for columns ordered as BRAM-DSP-DSP-BRAM (layout="BDDB") or BRAM-DSP-DSP-BRAM (layout="DBBD").
 -- In the first case, the origin (0,0) refer to a FIFO. In the second case, it refers to a DSP.
-function get_cmac44_rpm_coords_struct_array(platform_id: integer; N_CHAN: integer; layout:string) return cmac44_rpm_coord_struct_array is
+function get_cmac44_rpm_coords_struct_array(platform_type: platform_type_enum; N_CHAN: integer; layout:string) return cmac44_rpm_coord_struct_array is
  	variable rpm: cmac44_rpm_coord_struct_array;
- 	variable fpga_family: integer;
  	variable pf_info: PLATFORM_INFO_STRUCT;
  	variable DSP_XL, DSP_XR, FIFO_XL, FIFO_XR, DSP_Y0, FIFO_Y0: integer;
 begin
 
 
-	pf_info := PLATFORM_INFO(platform_id);
+	pf_info := PLATFORM_INFO(platform_type);
 
-	if platform_id = PLATFORM_ID_MGK7MB then
+	if platform_type = MGK7MB then
 
 	 	--DSP_X0L:=361;
 	 	--DSP_X0R:=381;
@@ -1707,7 +1704,7 @@ begin
 	 	FIFO_Y0 := 0; -- position of the FIFO, which must be at the bottom
 
 
-	elsif platform_id = PLATFORM_ID_ZCU111 or platform_id = PLATFORM_ID_CRS then
+	elsif platform_type = ZCU111 or platform_type = CRS then
 
 
 	 	if layout="BDDB" then
@@ -1770,15 +1767,15 @@ end function get_cmac44_rpm_coords_struct_array;
 
 -- Return the platform-specific layout and locations of the corr44 cores
 --
-function get_corr44_rloc_origins_struct_array(platform_id:integer; N_CHAN:integer) return corr44_rloc_origins_struct_array is
+function get_corr44_rloc_origins_struct_array(platform_type: platform_type_enum; N_CHAN: integer) return corr44_rloc_origins_struct_array is
  	variable locs: corr44_rloc_origins_struct_array;
  	variable CORR44_DELTA_Y, X0, X1, Y0, Y1, Y2, Y3: integer;
 
 begin
 
-	CORR44_DELTA_Y := PLATFORM_INFO(platform_id).DSP_TILE_DELTA_RPM_Y * (N_CHAN+1);
+	CORR44_DELTA_Y := PLATFORM_INFO(platform_type).DSP_TILE_DELTA_RPM_Y * (N_CHAN+1);
 
-	if platform_id = PLATFORM_ID_MGK7MB then
+	if platform_type = MGK7MB then
 		-- This is the absolute locations of the CORR44 cores on the 7K420.
 		-- Coordinates are in the RPM_GRID system. They refer to the bottom-left corner of the CORR44, which is a BRAM/FIFO.
 		-- Coordinates provide dby this function must therefore only refer only to FIFO18E1 sites.
@@ -1820,9 +1817,9 @@ begin
 			others => (layout => "unknown", loc => (-1,-1))
 			);
 		return locs;
-	else -- if platform_id
+	else -- if platform_type
 		assert FALSE report "UNSUPPORTED PLATFORM for correlator" severity ERROR;
-	end if; -- if platform_id
+	end if; -- if platform_type
 
 end function;
 

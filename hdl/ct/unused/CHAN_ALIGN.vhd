@@ -32,7 +32,7 @@ use work.chFPGA_Package.ALL; -- Get all component definitions
 --
 entity CHAN_ALIGN is
 	generic (
-		PLATFORM_ID: integer;
+		PLATFORM_TYPE: platform_type_enum;
 		NUMBER_OF_LANES: integer -- Number of channelizer lanes to align
 	);
 	port (
@@ -69,7 +69,7 @@ end entity CHAN_ALIGN;
 -- Describes the logic that implement the entity's functionnalities. See this architecture for the implementation details.
 architecture impl of CHAN_ALIGN is
 
-	constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
+	constant FPGA_SERIES: fpga_series_enum := PLATFORM_INFO(PLATFORM_TYPE).FPGA_SERIES;
 
 	signal s_axis_tfirst: std_logic_vector(0 to NUMBER_OF_LANES - 1);
 	signal fifo_din: slv36_array(0 to NUMBER_OF_LANES - 1);
@@ -116,7 +116,7 @@ begin
 		fifo_din(i)(31 downto 0)  <= s_axis_tdata(i);
 		fifo_wr_en(i)             <= s_axis_tvalid(i) and not fifo_inhibit;
 
-		align_fifo_k7: if FPGA_SERIES = FPGA_KINTEX7 generate
+		align_fifo_k7: if FPGA_SERIES = KINTEX7 generate
 
 			fifo0: entity work.shuffle_crossbar_align_fifo
 				port map (
@@ -137,7 +137,7 @@ begin
 				);
 		end generate align_fifo_k7;
 
-		align_fifo_usp: if FPGA_SERIES = FPGA_ULTRASCALEPLUS generate
+		align_fifo_usp: if FPGA_SERIES = ULTRASCALEPLUS generate
 
 			fifo0: entity work.shuffle_crossbar_align_fifo_usp
 				port map (

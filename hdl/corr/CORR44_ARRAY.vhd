@@ -36,7 +36,7 @@ use UNISIM.VComponents.all;
 --
 entity CORR44_ARRAY is
 	GENERIC (
-		PLATFORM_ID: integer;
+		PLATFORM_TYPE: platform_type_enum;
 		NUMBER_OF_CORRELATORS: integer;
 		NUMBER_OF_WORDS_PER_BIN: integer
 		--LEFT_DSP_RPM_X: integer_array;
@@ -94,7 +94,7 @@ attribute RLOC_ORIGIN : string;
 constant N: integer := 4 * NUMBER_OF_WORDS_PER_BIN; -- number of complex samples per frequency bin = number of channels per frequency bin
 
 -- Get the lower left coordinate of each corr44 core
-constant corr44_rpm: corr44_rloc_origins_struct_array := get_corr44_rloc_origins_struct_array(PLATFORM_ID, N);
+constant corr44_rpm: corr44_rloc_origins_struct_array := get_corr44_rloc_origins_struct_array(PLATFORM_TYPE, N);
 
 
 signal s_axis_tdata_reg: slv32_array(0 to NUMBER_OF_CORRELATORS-1); -- input data stream containing the channelized data from every antenna processor. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
@@ -202,7 +202,7 @@ CORRGENi: for i in 0 to NUMBER_OF_CORRELATORS-1 generate
 begin
 	corr0: entity work.corr44
 		generic map (
-			PLATFORM_ID             => PLATFORM_ID,
+			PLATFORM_TYPE             => PLATFORM_TYPE,
 			RPM_LAYOUT              => corr44_rpm(i).layout,
 			CORR_NUMBER             => i, -- will be used in the packet header and to determine the RPM location of the CORR44 cores
 			NUMBER_OF_WORDS_PER_BIN => NUMBER_OF_WORDS_PER_BIN-- corresponds to the number of clocks per bin

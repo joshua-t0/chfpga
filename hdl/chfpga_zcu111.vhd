@@ -28,7 +28,7 @@ entity chfpga_zcu111 is
 	generic (
 
 		-- NOTE: All generics values must be literals if the module is to be imported in a block diagram
-		PLATFORM_ID: integer := PLATFORM_ID_ZCU111; -- Identifies the type of platform on which the firmware is running.
+		PLATFORM_TYPE: platform_type_enum := ZCU111; -- Identifies the type of platform on which the firmware is running.
 
 		-- Clocking config
 		SYSTEM_CLOCK_SOURCE: clk_source_enum     := CLK10_BUFG; -- 10 MHz BUFG-buffered reference (from FPGA_REFCLK_OUT_C)
@@ -319,7 +319,7 @@ begin
 --------*/
 	chfpga0: entity work.chfpga
 		generic map (
-			PLATFORM_ID => PLATFORM_ID,
+			PLATFORM_TYPE => PLATFORM_TYPE,
 
 			-- Clocking config
 			SYSTEM_CLOCK_SOURCE => SYSTEM_CLOCK_SOURCE,

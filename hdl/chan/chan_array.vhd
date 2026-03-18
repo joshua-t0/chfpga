@@ -32,7 +32,7 @@ use work.chFPGA_config.ALL; -- Get implementation-specific definitions
 
 entity chan_array is
 	generic (
-		PLATFORM_ID                     : integer;
+		PLATFORM_TYPE                     : platform_type_enum;
 		ADC_TYPE                        : adc_type_enum;
 		NUMBER_OF_ADCS                  : integer;
 		NUMBER_OF_CHANNELIZERS          : integer                                           := NUMBER_OF_ADCS;
@@ -153,7 +153,7 @@ architecture impl of chan_array is
 	attribute SHREG_EXTRACT: string;
 
 	-- Constants
-	constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
+	constant FPGA_SERIES: fpga_series_enum := PLATFORM_INFO(PLATFORM_TYPE).FPGA_SERIES;
 	constant ADC_SAMPLES_PER_WORD            : integer := FFT_INFO(FFT_TYPE).SAMPLES_PER_WORD;
 	constant ADC_BITS_PER_SAMPLE             : integer := FFT_INFO(FFT_TYPE).BITS_PER_SAMPLE;
 
@@ -300,6 +300,7 @@ begin
 
 				adcdaq0: entity work.adcdaq
 					generic map (
+						FPGA_SERIES             => FPGA_SERIES,
 						IMPLEMENT_ADCDAQ        => TRUE, --
 						PROVIDE_BUFFERED_DIVCLK => ADC_PROVIDE_BUFFERED_DIVCLK(i),
 						USE_EXT_DATA_CLK        => ADC_USE_EXT_DATA_CLK(i), -- Use array to select whether a PLL should be used for this instance.
@@ -576,7 +577,7 @@ begin
 
 		chan0: entity work.chan
 		    generic map(
-				PLATFORM_ID => PLATFORM_ID,
+				PLATFORM_TYPE => PLATFORM_TYPE,
 				IMPLEMENT_FFT => i < NUMBER_OF_CHANNELIZERS_WITH_FFT,
 				FFT_TYPE => FFT_TYPE,
 				SCALER_USE_COMPLEX_GAINS => CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS, -- don't use config param here

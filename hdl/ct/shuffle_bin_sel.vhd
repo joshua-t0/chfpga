@@ -111,7 +111,7 @@ use work.chfpga_package.ALL; -- Get all component definitions
 
 entity shuffle_bin_sel is
 	generic (
-		PLATFORM_ID        : integer;       -- necessary to select the proper FIFOs
+		PLATFORM_TYPE        : platform_type_enum;       -- necessary to select the proper FIFOs
 		BIN_SEL_NUMBER     : integer;       -- Bin selector index number. Output lanes will be numbered in the packet header as lane_number=  BIN_SEL_NUMBER*NUMBER_OF_OUTPUTS + bin_sel_output_lane_index
 		NUMBER_OF_INPUTS   : integer;       -- Number of input streams. Must be a multiple of NUMBER_OF_OUTPUTS.
 		NUMBER_OF_OUTPUTS  : integer := 1;  -- Number of output streams. Must be a multiple of 2 if COMBINE_DATA_FLAGS=TRUE
@@ -172,7 +172,7 @@ architecture behavioral of shuffle_bin_sel is
 	attribute KEEP: string;
 	attribute EQUIVALENT_REGISTER_REMOVAL: string;
 
-	constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
+	constant FPGA_SERIES: fpga_series_enum := PLATFORM_INFO(PLATFORM_TYPE).FPGA_SERIES;
 	constant NUMBER_OF_INPUT_LANES_PER_OUTPUT: integer := NUMBER_OF_INPUTS / NUMBER_OF_OUTPUTS;
 
 	--- Signal definitions ------------------------------------
@@ -555,7 +555,7 @@ begin
 
 		embed_fifo_gen: if FIFO_TYPE_MAP(i) = 0 and i MOD 2 = 1 generate
 
-			data_fifo_k7: if FPGA_SERIES = FPGA_KINTEX7 generate
+			data_fifo_k7: if FPGA_SERIES = KINTEX7 generate
 
 				data_fifo0: entity work.shuffle_bin_sel_data_fifo_embed
 					port map (
@@ -576,7 +576,7 @@ begin
 
 			end generate data_fifo_k7;
 
-			data_fifo_up: if FPGA_SERIES = FPGA_ULTRASCALEPLUS generate
+			data_fifo_up: if FPGA_SERIES = ULTRASCALEPLUS generate
 
 				data_fifo0: entity work.shuffle_bin_sel_data_fifo_embed_up
 					port map (

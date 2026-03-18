@@ -15,7 +15,7 @@
 --  2012-09-18 JFC: Cleanup. Added comments. Removed version Generics
 --  2012-09-23 JFC: Moved fan readout (debouncing) circuitry in here.
 --  2012-11-05 JFC: Removed RST from the fan tachymeter measurment logic to slightly reduce logic.
---  2013-01-30 JFC: Added PLATFORM_ID field to allow the Python software to instantiate the appropriate handlers for the specific platform
+--  2013-01-30 JFC: Added PLATFORM_TYPE field to allow the Python software to instantiate the appropriate handlers for the specific platform
 ----------------------------------------------------------------------------------
 
 library IEEE;
@@ -61,7 +61,7 @@ use xpm.vcomponents.ALL;
 --
 entity gpio is
 	generic (
-		PLATFORM_ID: integer; -- identifies the type of platform on which the firmware is running
+		PLATFORM_TYPE: platform_type_enum; -- identifies the type of platform on which the firmware is running
 		COOKIE: integer := 16#42#;
 		PROTOCOL_VERSION: integer; -- Protocol version used to determins compatibility with the python support software
 
@@ -296,7 +296,7 @@ architecture impl of gpio is
 
 	attribute ASYNC_REG: string;
 
-	constant FPGA_SERIES: integer := PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES;
+	constant FPGA_SERIES: fpga_series_enum := PLATFORM_INFO(PLATFORM_TYPE).FPGA_SERIES;
 	constant WORDS_PER_FRAME: integer := ADC_SAMPLES_PER_FRAME / ADC_SAMPLES_PER_WORD;
 	constant LOG2_WORDS_PER_FRAME: integer := integer_log2(WORDS_PER_FRAME); -- Number of words per frame. One word is 4 8-bit time samples or 2 8+8-bits frequency samples.
 	constant LOG2_SAMPLES_PER_FRAME: integer := integer_log2(ADC_SAMPLES_PER_FRAME);
@@ -513,7 +513,7 @@ begin
 	-- |         |  5  | 7:0  | NUMBER_OF_CHANNELIZERS_WITH_FFT   | Indicates how many channelizers have a FFT module. Those will be channeizers 0 to N-1|
 	-- |         |  6  | 7:0  | NUMBER_OF_GPU_LINKS         | Indicates how GPU Links are implemented. If zero, the GPU module is not present at all (not even the common registers)|
 	-- |         | 7-10| 31:0 | firmware_timestamp          | 32-bit word containing the timestamp of the firmware inserted during the bitgen process |
-	-- |         |  11 | 7:0  | PLATFORM_ID                 | Type of platform on which the firmware is running. 0=ML605, 1=KC705, 3=MGK7MB, 4=ZCU111 |
+	-- |         |  11 | 7:0  | PLATFORM_TYPE                 | Type of platform on which the firmware is running. 0=ML605, 1=KC705, 3=MGK7MB, 4=ZCU111 |
 	-- |         |12-19| 63:57| (unused)                    | (unused) |
 	-- |         |     | 56:0 | FPGA_DNA                    | FPGA unique serial number|
 	-- |         |  20 | 7:0  | NUMBER_OF_CT_INPUTS   | Indicates how many channelizers are connected to the crossbar inputs. Those will be channeizers 0 to N-1|
@@ -690,7 +690,7 @@ begin
 
 	-- STATUS Bytes 11: Platform ID
 
-	status_bytes(11) <= to_slv(PLATFORM_ID, 8);
+	status_bytes(11) <= to_slv(platform_type_enum'pos(PLATFORM_TYPE), 8);
 
 	-- STATUS Bytes 12-19: FPGA serial number
 
@@ -1355,7 +1355,7 @@ begin
 	end generate user_gen;
 
 	-- Implement USR_ACCESS for VIRTEX6-based platforms
-	usraccess_v6: if FPGA_SERIES = FPGA_VIRTEX6 generate
+	usraccess_v6: if FPGA_SERIES = VIRTEX6 generate
 
 		usr_access0: USR_ACCESS_VIRTEX6
 			port map (
@@ -1367,7 +1367,7 @@ begin
 
 	-- Implement USR_ACCESS for 7-series platforms
 
-	usraccess_7: if FPGA_SERIES = FPGA_KINTEX7 or FPGA_SERIES = FPGA_ULTRASCALEPLUS generate
+	usraccess_7: if FPGA_SERIES = KINTEX7 or FPGA_SERIES = ULTRASCALEPLUS generate
 
 		usr_access0: USR_ACCESSE2
 			port map (
@@ -1377,7 +1377,7 @@ begin
 			);
 	end generate usraccess_7;
 
-	gen_dna7: if FPGA_SERIES = FPGA_KINTEX7 generate
+	gen_dna7: if FPGA_SERIES = KINTEX7 generate
 
 		dna0: DNA_PORT
 			generic map (
@@ -1392,7 +1392,7 @@ begin
 			);
 	end generate gen_dna7;
 
-	gen_dnaup: if FPGA_SERIES = FPGA_ULTRASCALEPLUS generate
+	gen_dnaup: if FPGA_SERIES = ULTRASCALEPLUS generate
 		-- The core currently reads only 57 bits
 		dna0: DNA_PORTE2
 			port map (

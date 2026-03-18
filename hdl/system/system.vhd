@@ -41,7 +41,7 @@ use work.chFPGA_package.ALL;
 --
 entity system is
 	generic (
-		PLATFORM_ID: integer; -- identifies the type of platform on which the firmware is running
+		PLATFORM_TYPE: platform_type_enum; -- identifies the type of platform on which the firmware is running
 		COOKIE: integer := 16#42#;
 		PROTOCOL_VERSION: integer; -- Protocol version used to determins compatibility with the python support software
 
@@ -350,7 +350,7 @@ architecture impl of system is
 	constant MODULE_I2C_ADDR: integer       := 5;
 	constant NUMBER_OF_SYS_MODULES: integer := 6;
 
-	constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
+	constant FPGA_SERIES: fpga_series_enum := PLATFORM_INFO(PLATFORM_TYPE).FPGA_SERIES;
 
 
 	-- System ROUTER output interface buses
@@ -557,7 +557,7 @@ begin
 
 		gpio0: entity work.gpio
 			generic map (
-				PLATFORM_ID => PLATFORM_ID,
+				PLATFORM_TYPE => PLATFORM_TYPE,
 				PROTOCOL_VERSION => PROTOCOL_VERSION,
 
 				-- ADC info
@@ -891,7 +891,7 @@ begin
 
 		sysmon0: entity work.sysmon
 			generic map (
-				PLATFORM_ID => PLATFORM_ID
+				PLATFORM_TYPE => PLATFORM_TYPE
 			)
 			port map (
 				-- Control interface
@@ -1034,7 +1034,7 @@ begin
 
 		refclk0: entity work.refclk
 			generic map (
-				PLATFORM_ID => PLATFORM_ID,
+				PLATFORM_TYPE => PLATFORM_TYPE,
 				NUMBER_OF_MEZZANINES => NUMBER_OF_ADC_BOARDS,
 				SIM => SIM
 			)
@@ -1109,7 +1109,7 @@ begin
 		blinker0: entity work.blinker
 			generic map (
 				DUMMY => not BLINKER_PRESENT,
-				PING_PONG => PLATFORM_ID=PLATFORM_ID_ZCU111 or PLATFORM_ID=PLATFORM_ID_KC705 or PLATFORM_ID=PLATFORM_ID_ML605 -- We have 8 LEDS on these platform to perform a nice light show
+				PING_PONG => PLATFORM_TYPE=ZCU111 or PLATFORM_TYPE=KC705 or PLATFORM_TYPE=ML605 -- We have 8 LEDS on these platform to perform a nice light show
 			)
 			port map (
 				rst  => blinker_rst, -- do not blink if Link Status = 0

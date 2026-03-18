@@ -7,7 +7,7 @@
 
 ### MMCMs ###
 # We need to put the ADCDAQ PLL in the same bank as the BUFR that drives it (Bank 13)
-#set_property LOC MMCME2_ADV_X0Y3 [get_cells {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[0].adcdaq0/IMPL.USEPLL.PLL0/U0/mmcm_adv_inst}]
+#set_property LOC MMCME2_ADV_X0Y3 [get_cells {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[0].adcdaq0/impl_gen.pll_gen.pll0/U0/mmcm_adv_inst}]
 # The Channelizer MMCM has 2 inputs:  adcdaq0 and System MMCM (CLK200). If Tey are there were driven directly (no BUFG) by both the ADCDAQ BUFR and Sysntem MMCM output, . The MMCM must be adjacent, but on a half that has enough BUFGs
 #set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/clk0/gen_chanpll_k7.chan_mmcm0]
 #set_property LOC MMCME2_ADV_X0Y3 [get_cells chfpga0/clk0/gen_chanpll_k7.mmcm_case.chan_mmcm0]

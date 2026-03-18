@@ -47,7 +47,7 @@ use xpm.vcomponents.ALL;
 -- The accuracy is determined by the accuracy of the reference clock.
 entity freq_ctr is
 	generic (
-		FPGA_SERIES: integer;
+		FPGA_SERIES: fpga_series_enum;
 		NUMBER_OF_CLK_IN_PORTS: integer := 8
 	);
 	port (
@@ -164,34 +164,31 @@ begin
 	src_clk_fabric <= clk_in_div2(to_integer(freq_ctr_src_sel));
 
 	-- Pass the selected signal through a clock buffer to facilitate timing and remove tool complaints
-	-- A regional/horizontal clock  will suffice as the frequency counter is very localized
-	-- For the K7, we use a BUFH, as there usually  are plenty of them (12 per clock regions), where BUFGs are scarce/.
-	k7: if FPGA_SERIES = 7 generate
+	-- A regional/horizontal clock will suffice as the frequency counter is very localized.
+	-- For the K7, we use a BUFH, as there usually are plenty of them (12 per clock region), where BUFGs are scarce.
+	-- For Ultrascale+, we use a BUFG. The clock network is flexible and allows those to use only localized clocking
+	-- tracks. There are no other types of clock buffers apart from variants of BUFG.
+	-- We also use a BUFG for Virtex 6. There are 32 BUFGs in a chip (16 on top half, 16 on bottom half).
+	-- BUFH and BUFR could also potentially be used. Optimal buffer selection was not done as this is mostly legacy tech now.
+	srcclk_bufg_gen: case FPGA_SERIES generate
 
-		srcclk0: BUFH
-			port map (
-				i => src_clk_fabric,
-				o => src_clk
-			);
+		when KINTEX7 =>
+			bufh0: BUFH
+				port map (
+					i => src_clk_fabric,
+					o => src_clk
+				);
 
-	end generate k7;
+		when VIRTEX6 | ULTRASCALEPLUS =>
+			bufg0: BUFG
+				port map (
+					i => src_clk_fabric, -- 1-bit input: Clock buffer input
+					o => src_clk -- 1-bit output: Clock buffer output
+				);
 
-	-- For the Ultrascale+, we have plenty of BUFGs (24 per clock region). The
-	-- clock network is flexible an dallows those to use only localized clocking
-	-- tracks. There are no other types of clock buffers apart from varioants of
-	-- BUFG.
-	--
-	-- We also use a BUFG for Virtex 6. There are 32 BUFGs in a chip (16 on top
-	-- half, 16 on bottom half). BUFH and BUFR could also potentially be used.
-	-- Optimal buffer selection was not done as this is mostly legacy tech now.
-	v6: if FPGA_SERIES = FPGA_VIRTEX6 or FPGA_SERIES = FPGA_ULTRASCALEPLUS generate
-
-		srcclk0: BUFG
-			port map (
-				i => src_clk_fabric, -- 1-bit input: Clock buffer input
-				o => src_clk -- 1-bit output: Clock buffer output
-			);
-	end generate v6;
+		when others =>
+			assert FALSE report "Unsupported FPGA_SERIES in freq_ctr" severity FAILURE;
+	end generate srcclk_bufg_gen;
 
 	-- resynchronize the gate_en signal to the src_clk to make sure we don't mess up the freq_ctr counter operation
 	gate_en_cdc: xpm_cdc_single

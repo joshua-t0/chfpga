@@ -45,7 +45,7 @@ use work.chFPGA_Package.ALL;
 
 entity generic_fifo is
 	generic (
-		FPGA_SERIES      : integer; -- Is ignored by "bram" and "distributed" MEMORY_TYPES
+		FPGA_SERIES      : fpga_series_enum; -- Is ignored by "bram" and "distributed" MEMORY_TYPES
 		MEMORY_TYPE      : string; -- "embedded", "bram", "distributed"
 		IS_ASYNC         : boolean;
 		IS_FWFT          : boolean;
@@ -291,7 +291,7 @@ begin
 		signal prim_rdrstbusy_raw : std_logic_vector(N - 1 downto 0) := (others => '0');
 
 	begin
-		assert not (FPGA_SERIES = FPGA_KINTEX7 and not IS_ASYNC and IS_FWFT)
+		assert not (FPGA_SERIES = KINTEX7 and not IS_ASYNC and IS_FWFT)
 		report "generic_fifo: K7 embedded sync FIFO with FWFT: forcing EN_SYN=FALSE for zero-latency FWFT"
 		severity NOTE;
 		-- Put the data that is wide enough to accomodate the primitive width. It's possible not all bits will be used.
@@ -339,8 +339,8 @@ begin
 		end generate;
 
 		-- Busy mux: synthetic on K7 (from extended reset), real on USP (from primitive)
-		prim_wr_rst_busy <= (others => wr_rst_hold) when (FPGA_SERIES = FPGA_KINTEX7) else prim_wrrstbusy_raw;
-		prim_rd_rst_busy <= (others => rd_rst_hold) when (FPGA_SERIES = FPGA_KINTEX7) else prim_rdrstbusy_raw;
+		prim_wr_rst_busy <= (others => wr_rst_hold) when (FPGA_SERIES = KINTEX7) else prim_wrrstbusy_raw;
+		prim_rd_rst_busy <= (others => rd_rst_hold) when (FPGA_SERIES = KINTEX7) else prim_rdrstbusy_raw;
 
 		-- Gated enables and busy outputs (same formulas for both platforms)
 		gated_wr_en <= wr_en and not (wr_rst_cdc or or(prim_wr_rst_busy));
@@ -378,7 +378,7 @@ begin
 
 
 			-- K7 FIFO18E1 path (single primitive)
-			fifo_gen: if FPGA_SERIES = FPGA_KINTEX7 and FI.use_fifo18 generate
+			fifo_gen: if FPGA_SERIES = KINTEX7 and FI.use_fifo18 generate
 				fifo0: FIFO18E1
 					generic map (
 						ALMOST_FULL_OFFSET      => to_bit_vector(DEPTH - PROG_FULL_THRESH, 13),
@@ -413,7 +413,7 @@ begin
 
 
 			-- K7 FIFO36E1 path (N parallel primitives)
-			elsif FPGA_SERIES = FPGA_KINTEX7 and not FI.use_fifo18 generate
+			elsif FPGA_SERIES = KINTEX7 and not FI.use_fifo18 generate
 					fifo0: FIFO36E1
 						generic map (
 							ALMOST_FULL_OFFSET      => to_bit_vector(DEPTH - PROG_FULL_THRESH, 13),
@@ -450,7 +450,7 @@ begin
 						);
 
 
-			elsif FPGA_SERIES = FPGA_ULTRASCALEPLUS and FI.use_fifo18 generate
+			elsif FPGA_SERIES = ULTRASCALEPLUS and FI.use_fifo18 generate
 				-- USP FIFO18E2 path (single primitive)
 				fifo0: FIFO18E2
 					generic map (
@@ -494,7 +494,7 @@ begin
 						CASOREGIMUXEN => '0',
 						CASPRVEMPTY   => '0'
 					);
-			elsif FPGA_SERIES = FPGA_ULTRASCALEPLUS and not FI.use_fifo18 generate
+			elsif FPGA_SERIES = ULTRASCALEPLUS and not FI.use_fifo18 generate
 				fifo0: FIFO36E2
 					generic map (
 						CLOCK_DOMAINS           => sel(IS_ASYNC, "INDEPENDENT", "COMMON"),

@@ -32,7 +32,7 @@ use work.chFPGA_Package.all;
 entity chan_fifo is
 
 	generic (
-		FPGA_SERIES: integer;
+		FPGA_SERIES: fpga_series_enum;
 		DATA_WIDTH : integer := 64;
 		USER_WIDTH : integer := 4;
 		ALMOST_FULL_THRESH_OFFSET: integer := 16; -- number of words from FULL
@@ -70,7 +70,7 @@ begin
 
     fifo_gen: case FPGA_SERIES generate
 
-        when k7_case:FPGA_KINTEX7 =>
+        when k7_case:KINTEX7 =>
             signal fifo_din: std_logic_vector(71 downto 0);
             signal fifo_dout: std_logic_vector(71 downto 0);
             signal fifo_wr_en: std_logic;
@@ -154,7 +154,7 @@ begin
 
         end k7_case;
 
-        when usp_case:FPGA_ULTRASCALEPLUS =>
+        when usp_case:ULTRASCALEPLUS =>
             signal fifo_wr_rst_busy: std_logic;
             signal fifo_rd_rst_busy: std_logic;
             signal fifo_wr_en: std_logic;

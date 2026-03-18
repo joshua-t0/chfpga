@@ -35,7 +35,7 @@ use xpm.vcomponents.all;
 --
 entity UCORR44_ARRAY is
 	GENERIC (
-		PLATFORM_ID: integer;
+		PLATFORM_TYPE: platform_type_enum;
 		NCORR: integer := 1; -- number of correlators
 		NCHAN: integer :=8; -- number of channels to correlate per correlator
 		NBINS_PER_CORR: integer :=2048; -- Number of bins to be processed by each correlator
@@ -97,7 +97,7 @@ architecture Behavioral of UCORR44_ARRAY is
     constant N: integer := NCHAN;
     constant NCHAN_PER_CLK: integer  := INPUT_WIDTH/NCORR/N_BITS_PER_BIN; -- Number of channels
     constant NCLK_PER_BIN: integer := NCHAN / NCHAN_PER_CLK; -- Number of clock needed to send all channels for one bin
-    constant URAM_MAX: integer := sel(PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES=FPGA_ULTRASCALEPLUS, 64 / NCORR, 0);
+    constant URAM_MAX: integer := sel(PLATFORM_INFO(PLATFORM_TYPE).FPGA_SERIES=ULTRASCALEPLUS, 64 / NCORR, 0);
     signal rst_reg: std_logic_vector(0 to NCORR-1);
     attribute DONT_TOUCH of rst_reg: signal is "true";
     -- Control signals
@@ -279,7 +279,7 @@ begin
 
 		data_fifo0: entity work.generic_fifo
 			generic map (
-				FPGA_SERIES      => PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES,
+				FPGA_SERIES      => PLATFORM_INFO(PLATFORM_TYPE).FPGA_SERIES,
 				MEMORY_TYPE      => "embedded",
 				IS_ASYNC         => TRUE,
 				DATA_WIDTH       => 9,       -- 8 data + 1 tlast
@@ -312,7 +312,7 @@ begin
 		-- attribute RLOC_ORIGIN of corr0: label is rpm_to_string(corr44_rpm(i).loc);
 		corr0: entity work.ucorr44
 			generic map (
-				PLATFORM_ID           => PLATFORM_ID,
+				PLATFORM_TYPE           => PLATFORM_TYPE,
 				CORR_NUMBER           => i, -- will be used in the packet header and to determine the RPM location of the CORR44 cores
 				NCORR                 => NCORR, -- used only to format STREAM ID
 				NBINS                 => NBINS_PER_CORR, -- number of bins per correlator

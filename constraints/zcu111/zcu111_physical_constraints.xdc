@@ -9,7 +9,7 @@ set_property BITSTREAM.CONFIG.USR_ACCESS TIMESTAMP [current_design]
 # Frequency counter
 # ----------------
 # Constrain the frequency counter clock. The clock frequency on this net is 1/2 if the measured clock source
-create_clock -period 2.5 -name FREQ_CTR [get_pins chfpga0/*.system0/*.freq_ctr0/v6.srcclk0/I]
+create_clock -period 2.5 -name FREQ_CTR [get_pins chfpga0/*.system0/*.freq_ctr0/srcclk_bufg_gen*.bufg0/I]
 set_clock_groups -name FREQ_CTR_GROUP -asynchronous -group [get_clocks FREQ_CTR]
 
 # 100 MHz clock provided by the PS to the PL is not in phase with any other clock

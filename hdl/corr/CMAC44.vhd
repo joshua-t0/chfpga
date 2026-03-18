@@ -54,7 +54,7 @@ use unimacro.Vcomponents.all;
 -- See the Entity architecture for more implementation details.
 entity CMAC44 is
 	GENERIC (
-		PLATFORM_ID: integer;
+		PLATFORM_TYPE: platform_type_enum;
 		RPM_NAME: string; -- name of the RPM set name that identify which correlator the DSPs and BRAMs belong to.
 		RPM_COORDS: cmac44_rpm_coord_struct -- RPM coordinates of the DSPs and BRAMs
 --		DSP_RPM_X: integer := 45; -- X coordinate for both DSP1 and DSP2. They are on top of each other, in the same tile.
@@ -264,7 +264,7 @@ attribute KEEP_HIERARCHY : string;
 --constant BRAM_RLOC: string := sel(DSP_LEFT, "X78Y1", "X34Y1");
 
 -- Get the FPGA series for this platform so we can chose which DSP primitive to use
-constant FPGA_SERIES:integer := PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES;
+constant FPGA_SERIES:fpga_series_enum := PLATFORM_INFO(PLATFORM_TYPE).FPGA_SERIES;
 
 -- DSP & BRAM vertical spacing in RPM coordinates for this platform
 attribute KEEP_HIERARCHY of Behavioral: architecture is "YES";
@@ -540,7 +540,7 @@ acc_fifo_rd_en <= first_frame_completed0 and s_axis_xy_tvalid and not rst_reg; -
 -- *** to Update*** We do not need a FWFT FIFO because we know one clock in advance when we need a new value out of the FIFO.
 --
 -- NOTE: When EN_SYN=TRUE, then FWFT *must* be FALSE.
-gen_fifo7: if FPGA_SERIES=FPGA_KINTEX7 generate
+gen_fifo7: if FPGA_SERIES=KINTEX7 generate
 	attribute U_SET of acc_fifo0: label is RPM_NAME;
 	attribute RLOC of acc_fifo0: label is rpm_to_string(RPM_COORDS.FIFO);
 begin
@@ -582,7 +582,7 @@ begin
 		);
 end generate;
 
-gen_fifoup: if FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
+gen_fifoup: if FPGA_SERIES=ULTRASCALEPLUS generate
 	attribute U_SET of acc_fifo0 : label is RPM_NAME;
 	attribute RLOC of acc_fifo0: label is rpm_to_string(RPM_COORDS.FIFO);
 begin

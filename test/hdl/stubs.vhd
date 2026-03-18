@@ -132,7 +132,7 @@ use ieee.std_logic_1164.all;
 use work.chfpga_package.all;
 entity sysmon is
 	generic (
-		PLATFORM_ID: integer
+		PLATFORM_TYPE: platform_type_enum
 	);
 	port (
 		ctrl_cmd_in_dat: in AXIS8_DAT_STRUCT;
@@ -162,7 +162,7 @@ use ieee.std_logic_1164.all;
 use work.chfpga_package.all;
 entity bct_engine is
 	generic (
-		PLATFORM_ID: integer;
+		PLATFORM_TYPE: platform_type_enum;
 		NUMBER_OF_INPUT_LANES: integer := 16;
 		BINS_PER_INPUT_WORD: integer   := 2;
 		BITS_PER_INPUT_BIN: integer    := 8 + 8;
@@ -316,7 +316,7 @@ use IEEE.NUMERIC_STD.ALL;
 use work.chFPGA_Package.all;
 entity CORR44_ARRAY is
 	GENERIC (
-		PLATFORM_ID: integer;
+		PLATFORM_TYPE: platform_type_enum;
 		NUMBER_OF_CORRELATORS: integer;
 		NUMBER_OF_WORDS_PER_BIN: integer
 	);

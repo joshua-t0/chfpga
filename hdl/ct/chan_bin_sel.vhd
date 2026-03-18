@@ -103,7 +103,7 @@ use work.chfpga_package.ALL; -- Get all component definitions
 
 entity chan_bin_sel is
 	generic (
-		PLATFORM_ID      : integer;
+		PLATFORM_TYPE      : platform_type_enum;
 		LANE_NUMBER      : integer; --
 		NUMBER_OF_INPUTS : integer  -- Number of lanes to capture simultaneously. Must be a multiple of 4 between 4 and 16.
 	);
@@ -162,7 +162,7 @@ architecture impl of chan_bin_sel is
 	attribute KEEP: string;
 	attribute EQUIVALENT_REGISTER_REMOVAL: string;
 
-	constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
+	constant FPGA_SERIES: fpga_series_enum := PLATFORM_INFO(PLATFORM_TYPE).FPGA_SERIES;
 
 	signal s_axis_global_tfirst: std_logic;
 
@@ -489,7 +489,7 @@ begin
 
 	-- 7-series have only async resets (rst pin) on their embedded FIFOs, ultrascale+ has only synchronous reset (srst)
 
-	data_fifo_k7: if FPGA_SERIES = FPGA_KINTEX7 generate
+	data_fifo_k7: if FPGA_SERIES = KINTEX7 generate
 
 		data_fifo0: entity work.chdist_data_embed_fifo
 			port map (
@@ -510,7 +510,7 @@ begin
 
 	end generate data_fifo_k7;
 
-	data_fifo_up: if FPGA_SERIES = FPGA_ULTRASCALEPLUS generate
+	data_fifo_up: if FPGA_SERIES = ULTRASCALEPLUS generate
 
 		data_fifo0: entity work.chdist_data_embed_fifo_up
 			port map (

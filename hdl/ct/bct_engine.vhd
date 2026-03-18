@@ -38,7 +38,7 @@ use work.chFPGA_Package.ALL;
 --    - CROSSBAR3 shuffle_crossbar
 entity bct_engine is
 	generic (
-		PLATFORM_ID: integer; -- necessary to select the proper FIFOs
+		PLATFORM_TYPE: platform_type_enum; -- necessary to select the proper FIFOs
 		NUMBER_OF_INPUT_LANES: integer := 16; -- Number of channelizer inputs
 		BINS_PER_INPUT_WORD: integer   := 2;
 		BITS_PER_INPUT_BIN: integer    := 8 + 8; -- BCT has double the resolution, but 8+8 bits are used for bypass mode only. Non-bypass uses 4+4 bits. 
@@ -599,7 +599,7 @@ begin
 
 		chan_crossbar0: entity work.chan_crossbar
 			generic map (
-				PLATFORM_ID            => PLATFORM_ID,  -- needed to select family-dependent FIFOs
+				PLATFORM_TYPE            => PLATFORM_TYPE,  -- needed to select family-dependent FIFOs
 				NUMBER_OF_INPUT_LANES  => NUMBER_OF_CB1_INPUT_LANES,
 				NUMBER_OF_OUTPUT_LANES => NUMBER_OF_CB1_OUTPUT_LANES,
 				BINSEL_PBLOCK_MAP      => (0 to 4 => 0, 5 to 8 => 1, 9 to 12 => 1, 13 to 15 => 0)
@@ -757,7 +757,7 @@ begin
 
 		crossbar2: entity work.shuffle_crossbar -- use component instantiation to delay binding in if-generate block and prevent errors during elaboration
 			generic map (
-				PLATFORM_ID                        => PLATFORM_ID,  -- needed to select family-dependent FIFOs
+				PLATFORM_TYPE                        => PLATFORM_TYPE,  -- needed to select family-dependent FIFOs
 				NUMBER_OF_INPUT_LANES              => NUMBER_OF_BP_PCB_SHUFFLE_LANES, -- Number of input streams
 				NUMBER_OF_OUTPUT_LANES             => NUMBER_OF_BP_QSFP_SHUFFLE_LANES, -- Number of output streams
 				NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL => 4,
@@ -834,7 +834,7 @@ begin
 
 		crossbar3: entity work.shuffle_crossbar -- use component instantiation to delay binding in if-generate block and prevent errors during elaboration
 			generic map (
-				PLATFORM_ID                        => PLATFORM_ID,  -- needed to select family-dependent FIFOs
+				PLATFORM_TYPE                        => PLATFORM_TYPE,  -- needed to select family-dependent FIFOs
 				NUMBER_OF_INPUT_LANES              => NUMBER_OF_CB3_INPUT_LANES, -- Number of input streams
 				NUMBER_OF_OUTPUT_LANES             => NUMBER_OF_CB3_OUTPUT_LANES, -- Number of output streams
 				NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL => 1,

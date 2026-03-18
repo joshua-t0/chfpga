@@ -58,7 +58,7 @@ use xpm.vcomponents.all;
 -- See the Entity architecture for more implementation details.
 entity UCORR44 is
 	GENERIC (
-		PLATFORM_ID: integer := PLATFORM_ID_CRS;
+		PLATFORM_TYPE: platform_type_enum := CRS;
 		NCHAN: integer := 64; -- Number of inputs to correlate
 		NCHAN_PER_CLK: integer := 32; -- Number of channels provided on each clock
 		NBINS: integer; -- Number of bins to be processed by this correlator (before decimation)

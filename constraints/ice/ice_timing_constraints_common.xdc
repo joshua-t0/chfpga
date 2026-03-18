@@ -19,7 +19,7 @@
 # Reaassigning a clock causes methodology critical warnings
 # The following creates Methogology critical warning - primary clock placed on output or net of clock modifying block
 # Clock appears but Timing is failed because async group is missing (tries to time with clk200).
-create_clock -period 3.200 -name FREQ_CTR [get_pins */*.system0/freq_ctr_blk.freq_ctr0/k7.srcclk0/I]
+create_clock -period 3.200 -name FREQ_CTR [get_pins */*.system0/freq_ctr_blk.freq_ctr0/srcclk_bufg_gen*.bufh0/I]
 set_clock_groups -name FREQ_CTR_GROUP -asynchronous -group [get_clocks FREQ_CTR]
 
 # create_clock -period 3.200 -name FREQ_CTR [get_pins */freq_ctr_blk.freq_ctr0/K7.SRCCLK0/O] # same critical warning
@@ -308,7 +308,7 @@ set_false_path -to [get_cells -hierarchical -filter {NAME =~ "*/clk0/*" && ASYNC
 # set_output_delay -clock [get_clocks fmca_spi_sck] 0.000 [get_ports fmca_spi_mosi]
 
 # Remove timing constraints from the FIFO Reset signal
-#set_false_path -from [get_pins {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[*].adcdaq0/IMPL.FIFO_RST_INT_reg/C}] -to [get_pins {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[*].adcdaq0/IMPL.FIFO_RST_reg/D}]
+#set_false_path -from [get_pins {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[*].adcdaq0/impl_gen.FIFO_RST_INT_reg/C}] -to [get_pins {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[*].adcdaq0/impl_gen.FIFO_RST_reg/D}]
 
 #set_clock_groups -name ADCCLK_GROUP -asynchronous -group [get_clocks -include_generated_clocks ADCCLK?]
 

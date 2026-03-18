@@ -36,7 +36,7 @@ use work.chFPGA_Package.ALL; -- Get all component definitions
 -- Implements a 2nd and 3rd-level corner-turn operation with data that is already packetized with header and flags.
 entity shuffle_crossbar is
 	generic (
-		PLATFORM_ID: integer; -- necessary to select the proper FIFOs
+		PLATFORM_TYPE: platform_type_enum; -- necessary to select the proper FIFOs
 		NUMBER_OF_INPUT_LANES: integer              := 16; -- Number of input streams
 		NUMBER_OF_OUTPUT_LANES: integer             := 8; -- Number of output streams
 		NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL: integer := 1;
@@ -753,7 +753,7 @@ begin
 		----------------------------------------
 		binsel_i: entity work.shuffle_bin_sel
 			generic map (
-				PLATFORM_ID        => PLATFORM_ID,
+				PLATFORM_TYPE        => PLATFORM_TYPE,
 				BIN_SEL_NUMBER     => i,
 				NUMBER_OF_INPUTS   => NUMBER_OF_INPUT_LANES,
 				NUMBER_OF_OUTPUTS  => NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL,

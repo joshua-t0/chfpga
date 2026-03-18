@@ -34,7 +34,7 @@ use work.chFPGA_Package.all; -- Get all component definitions
 -- The ports of this top-level entity correspond to physical pins on the Virtex 6 FPGA on that board. The location of these pins are defined in the constraint file.
 entity chFPGA_ML605 is
 	 GENERIC (
-        PLATFORM_ID: INTEGER:= 0; -- identifies the type of platform on which the firmware is running. 0=ML605, 1=KC705
+        PLATFORM_TYPE: platform_type_enum := ML605; -- identifies the type of platform on which the firmware is running
         UDP_MAC_PRESENT: BOOLEAN :=TRUE; -- Indicates if the Ethernet interface is to be implemented (sets the DYMMY flag on the MAC). Used for debugging only.
         FMC_IF_PRESENT: BOOLEAN :=TRUE; -- Indicates if the SYSTEM submodule is to be implemented (sets its flag on the MAC). Used for debugging only, as the system would not work without it.
         BLINKER_PRESENT: BOOLEAN :=TRUE; -- Indicates if the LED flasher is to be implemented by setting the DUMMY flag of the BLINKER module
@@ -248,7 +248,7 @@ begin
 -- Instantiates the base chFPGA with the geretics neeeded to adapt it to the current platform
 CHFPGA0: chFPGA
 	GENERIC MAP(
-		PLATFORM_ID => PLATFORM_ID,
+		PLATFORM_TYPE => PLATFORM_TYPE,
 		UDP_MAC_PRESENT=>UDP_MAC_PRESENT,
 		FMC_IF_PRESENT=>FMC_IF_PRESENT,
 		BLINKER_PRESENT=>BLINKER_PRESENT,

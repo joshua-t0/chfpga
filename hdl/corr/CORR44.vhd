@@ -40,7 +40,7 @@ entity CORR44 is
 -- TODO: Check what's passed
 -- TODO: words per bin
 	generic (
-		PLATFORM_ID: integer; -- necessary to select the DSP RPM spacing and instantiate the proper DSP and FIFO primitives
+		PLATFORM_TYPE: platform_type_enum; -- necessary to select the DSP RPM spacing and instantiate the proper DSP and FIFO primitives
 		RPM_LAYOUT: string; -- Name of the layout of the correlator DSP, BRAM and FIFO elements  (e.g. "BDDB" or "DBBD")
 		CORR_NUMBER: integer := 0; -- used for packet header and to determine the CORR44 RPM locations
 		NUMBER_OF_WORDS_PER_BIN: integer := 4; -- also corresponds to the number of clocks per bin. There are 4 samples per word.
@@ -121,7 +121,7 @@ attribute shreg_extract: string;
 -- constant MODULE_CORR_ADDR: integer :=1;
 -- constant MODULE_ACC_ADDR: integer :=2;
 
-constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
+constant FPGA_SERIES: fpga_series_enum := PLATFORM_INFO(PLATFORM_TYPE).FPGA_SERIES;
 
 constant N: integer := 4 * NUMBER_OF_WORDS_PER_BIN; -- number of complex samples per frequency bin = number of channels per frequency bin
 
@@ -129,13 +129,13 @@ constant NUMBER_OF_CMACS : integer := (N+1)*2;
 
 
 -- Get the relative RPM position of the elements in the corr44 cores for the specified layout
-constant cmac_rpms: cmac44_rpm_coord_struct_array := get_cmac44_rpm_coords_struct_array(PLATFORM_ID, N, RPM_LAYOUT);
+constant cmac_rpms: cmac44_rpm_coord_struct_array := get_cmac44_rpm_coords_struct_array(PLATFORM_TYPE, N, RPM_LAYOUT);
 
 -- DSP & BRAM vertical spacing in RPM coordinates
-constant DSP_TILE_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_ID).DSP_TILE_DELTA_RPM_Y;
-constant BRAM_TILE_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_ID).BRAM_TILE_DELTA_RPM_Y;
-constant DSP_BEL_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_ID).DSP_BEL_DELTA_RPM_Y;
-constant BRAM_BEL_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_ID).BRAM_BEL_DELTA_RPM_Y;
+constant DSP_TILE_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_TYPE).DSP_TILE_DELTA_RPM_Y;
+constant BRAM_TILE_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_TYPE).BRAM_TILE_DELTA_RPM_Y;
+constant DSP_BEL_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_TYPE).DSP_BEL_DELTA_RPM_Y;
+constant BRAM_BEL_DELTA_RPM_Y: integer := PLATFORM_INFO(PLATFORM_TYPE).BRAM_BEL_DELTA_RPM_Y;
 
 signal buf: slv32_array(0 to NUMBER_OF_WORDS_PER_BIN-1);
 signal x: slv8_array(0 to N-1);
@@ -354,7 +354,7 @@ cmac: for i in 0 to NUMBER_OF_CMACS-1 generate
 begin
 	cmac0: entity work.CMAC44
 		GENERIC map (
-			PLATFORM_ID => PLATFORM_ID,
+			PLATFORM_TYPE => PLATFORM_TYPE,
 			RPM_NAME => "RPM_CORR" & integer'IMAGE(CORR_NUMBER),
 			RPM_COORDS => cmac_rpms(i) -- relative coordinates of the DSPs, FIFO and BRAM
 			)
@@ -552,8 +552,8 @@ main: process(all) begin
 -- 38bits x 512 words Embedded FIFO
 -- 36 bits for data, 1 bit for TLAST, 1 bit to indicate a new readout sequence (i.e data is from CMAC0)
 -- EMbedded FIFO has only rs on K7, and only srst on Ultrascale+
-assert FPGA_SERIES=FPGA_KINTEX7 report "FPGA_SERIES should be KINTEX7" severity failure;
-DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
+assert FPGA_SERIES=KINTEX7 report "FPGA_SERIES should be KINTEX7" severity failure;
+DATA_FIFO_K7: if FPGA_SERIES=KINTEX7 generate
 	data_fifo : entity work.CORR44_DATA_FIFO
 	  PORT MAP (
 		rst       => rst_all, -- async reset on K7 Embed FIFO
@@ -571,7 +571,7 @@ DATA_FIFO_K7: if FPGA_SERIES=FPGA_KINTEX7 generate
 		valid     => data_fifo_valid
 	  );
 end generate;
-DATA_FIFO_UP: if FPGA_SERIES=FPGA_ULTRASCALEPLUS generate
+DATA_FIFO_UP: if FPGA_SERIES=ULTRASCALEPLUS generate
 	data_fifo : entity work.CORR44_DATA_FIFO_UP
 	  PORT MAP (
 		srst      => rst_all, -- sync reset on u+ embedded FIFO

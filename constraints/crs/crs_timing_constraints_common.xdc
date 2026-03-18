@@ -80,7 +80,7 @@ set_false_path -to [get_ports buck_sync_*]
 # Constrain the frequency counter clock. The clock frequency on this net is 1/2 if the measured clock source
 # no constraint: Causes  critical warning: no clock reaching counter registers clock inputs
 # Reaassigning a clock causes methodology critical warnings
-create_clock -period 3.200 -name FREQ_CTR [get_pins */*.system0/*.freq_ctr0/*.srcclk0/I]
+create_clock -period 3.200 -name FREQ_CTR [get_pins */*.system0/*.freq_ctr0/srcclk_bufg_gen*.bufg0/I]
 set_clock_groups -name FREQ_CTR_GROUP -asynchronous -group [get_clocks FREQ_CTR]
 
 

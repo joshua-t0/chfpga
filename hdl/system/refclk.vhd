@@ -40,7 +40,7 @@ use xpm.vcomponents.ALL;
 -- Handles the FMC Reference Clock generation, SYNC event detection and generation, and ADC SYNC signal generation
 entity refclk is
 	generic (
-		PLATFORM_ID: integer;
+		PLATFORM_TYPE: platform_type_enum;
 		NUMBER_OF_MEZZANINES: integer;
 		IMPLEMENT_CLOCK_ENCODED_SYNC: boolean := FALSE;
 		SIM: BOOLEAN                          := FALSE
@@ -112,7 +112,7 @@ architecture impl of refclk is
 	attribute IOB: string;
 	attribute ASYNC_REG: string;
 
-	constant FPGA_SERIES: integer := FPGA_SERIES_LIST(PLATFORM_ID);
+	constant FPGA_SERIES: fpga_series_enum := PLATFORM_INFO(PLATFORM_TYPE).FPGA_SERIES;
 
 	-- Control and monitor signals
 	signal control_bytes: slv8_array(0 to 2); -- default value set in the CMD_SLAVE
@@ -454,7 +454,7 @@ begin
 
 		refclk_bufg_gen: case FPGA_SERIES generate
 
-		when bufr_case: FPGA_VIRTEX6 | FPGA_KINTEX7 =>
+		when bufr_case: VIRTEX6 | KINTEX7 =>
 			signal fmc_refclk_bufr: std_logic;
 		begin
 			-- Virtex-6 and Kintex-7:

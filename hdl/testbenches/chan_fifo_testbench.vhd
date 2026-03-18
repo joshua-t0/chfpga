@@ -129,7 +129,7 @@ begin
 
 		fifo0: entity work.chan_fifo
 			generic map (
-				FPGA_SERIES => FPGA_ULTRASCALEPLUS,
+				FPGA_SERIES => ULTRASCALEPLUS,
 				DATA_WIDTH => OUT_BITS_PER_WORD,
 				USER_WIDTH  => 4
 				)

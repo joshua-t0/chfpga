@@ -71,6 +71,7 @@ use xpm.vcomponents.all;
 --
 entity adcdaq is
 	GENERIC (
+		FPGA_SERIES            : fpga_series_enum := KINTEX7; -- Used by low-level primitives selected inside ADCDAQ, including generic_fifo
 		SAMPLES_PER_FRAME       : integer := 2048; -- Number of samples per frame, used to packetize the output data stream
 		IMPLEMENT_ADCDAQ 		: BOOLEAN:= TRUE; -- Indicates if the block is to be implemented. If False, a dummy module will be generated but the I/Os will be preserved.
 		INSTANTIATE_IDELAYCTRL 	: BOOLEAN:= TRUE;  -- Indicates if this module implements a IDELAYCTRL. Only one of the DAQ modules needs to implemt it. The tools will generate and place the other ones automatically.
@@ -111,7 +112,7 @@ entity adcdaq is
 
 		divclk_out_bufr : out  std_logic; -- 200-MHz divclk generated directly from the ADC clock using a BUFR. Can be fed to a MMCM/PLL in the clocking region covered by the BUFR (to generate channelizer clock). This clock stops when adcdaq_reset is asserted, and starts forwarding the ADC clock immediately when deasserted.
 		divclk_out_bufg : out  std_logic; -- Buffered verison divclk_out_bufr, provided only if PROVIDE_BUFFERED_DIVCLK is TRUE.
-		adc_clk_out_div2: out  std_logic:='0'; -- Logic line (not a clock) pulsing at half the local divclk frequency, to be used by the frequency counter
+		adc_clk_out_div2: out  std_logic :='0'; -- Logic line (not a clock) pulsing at half the local divclk frequency, to be used by the frequency counter. Init required for sims.
 
 		-- External clocks
 
@@ -426,7 +427,7 @@ bsb_regs0: entity work.bsb_regs
 	);
 
 
-IMPL: if IMPLEMENT_ADCDAQ=TRUE generate
+impl_gen: if IMPLEMENT_ADCDAQ generate
 	-- Determine how many BUFMR we need based on the
 	-- BUFR+MAP indices. We need a BUFMR in every region where data lines come in,
 	-- but we also need one in the clock region where the clock enters the chip to
@@ -472,7 +473,7 @@ IMPL: if IMPLEMENT_ADCDAQ=TRUE generate
 	signal clk_iodelay_load: std_logic;
 
 	-- signal DIVCLK_BUFR  : std_logic; -- Word clock - bypass PLL
-	signal adc_clk_out_div2_int: std_logic := '0'; -- Init required
+	-- signal adc_clk_out_div2_int: std_logic := '0'; -- Init required
 
 	attribute S of serdes_out : signal is "yes"; -- Make sure that no logic (particularly the BUFIO2, ISERDES, IDELAY2) is trimmed out by ensuring that the output word is "SAVEd"
 	attribute DONT_TOUCH of divclk_local_vect_d: signal is "yes"; -- preserve clock net name to facilitate timing constraining and analysis
@@ -484,7 +485,7 @@ begin
 -- The technique varies whether a PLL is used or not (The PLL is used to generate the word clock when some input lines are in regions that cannot be reached by a simple BUFR).
 ---------------------------------------------------------------------------------------
 gen_clk_ibuf: if IS_DIFFERENTIAL(8) generate
-	IBUFGDS0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
+	ibufgds0 : IBUFGDS -- Instantiate a differential (LVDS) input pad pair
 		generic map(
 			DIFF_TERM => TRUE
 		)
@@ -520,7 +521,7 @@ clk_iodelay_load_cdc0: xpm_cdc_single
 		dest_out => clk_iodelay_load
 	);
 
-CLKDLY0: IDELAYE2 -- For 7-series
+clkdly0: IDELAYE2 -- For 7-series
 	generic map (
 		CINVCTRL_SEL => "FALSE", -- Dynamically inverts the Clock (C) polarity.
 		DELAY_SRC => "IDATAIN", -- Specifies the source to the IODELAY component.
@@ -554,8 +555,8 @@ status_bytes(8)(7 downto 5)<=(others=>'0');
 
 -- Instantiate BUFMRs if needed for a 7-series FPGA
 -- This is needed to allow the clock signal to reach the BUFIO and BUFRs in adjacent clocking regions.
-BUFMR_SEL: if INSTANTIATE_BUFMR generate
-	BUFMRn : BUFMR
+bufmr_gen: if INSTANTIATE_BUFMR generate
+	bufmr0 : BUFMR
 		port map (
 		I => clka_dly, -- 1-bit input: Clock input (Connect to IBUFG)
 		O => clka_bufmr -- 1-bit output: Clock output (connect to BUFIOs/BUFRs)
@@ -570,8 +571,8 @@ end generate;
 -- If the external clocks (from another PLL) is used for the data acquisition, it is used only for clocking the local logic and determine when a sufficient number of bytes have passed to activate data storage.
 -- Otherwise, the BUFR drives the output clock of the SERDES and the input of the FIFO.
 -- Very impotaantly, this divider is resettable so we know its phase relating to the data clock.
-BUFRGEN: for i in 0 to NUMBER_OF_BUFR-1 generate
-	BUFRn : BUFR
+bufr_gen: for i in 0 to NUMBER_OF_BUFR-1 generate
+	bufr0 : BUFR
 		generic map (
 			BUFR_DIVIDE => "2", -- use 2 since we are in DDR ("BYPASS", "1", "2", "3", "4", "5", "6", "7", "8")
 			SIM_DEVICE => "7SERIES"
@@ -594,7 +595,7 @@ divclk_out_bufr <= divclk_local_vect(0); -- Make the divclk BUFR output acessibl
 -- Since the reference clock can be delayed (See REFCLK module), and the ADC clock is synchronous to this reference clock,
 -- we can scan the reference clock delay and acquire the ADC clock waveform.
 -- Phase jumps caused by the timing of the ADC SYNC signal  vs the ADC input clock can be thus measured, and the timing can be optimized.
-IDDR_CLK:IDDR
+clk_iddr0:IDDR
 	generic map(
 		DDR_CLK_EDGE=>"SAME_EDGE_PIPELINED"--"OPPOSITE_EDGE","SAME_EDGE"--or "SAME_EDGE_PIPELINED"
 		)
@@ -606,7 +607,7 @@ IDDR_CLK:IDDR
 		D  => clka_dly--1-bit DDR data input
 	);
 
-DIVCLK_BUFG_SEL: if PROVIDE_BUFFERED_DIVCLK generate
+divclk_bufg_gen: if PROVIDE_BUFFERED_DIVCLK generate
 	divclk_bufg0 : BUFG
 		port map (
 			I => divclk_local_vect(0), -- Clock buffer input
@@ -617,7 +618,7 @@ else generate
 end generate;
 
 
-USEPLL: if INSTANTIATE_PLL=TRUE generate
+pll_gen: if INSTANTIATE_PLL=TRUE generate
 	signal clk_fb_bufg_out: std_logic;
 	signal clk_fb_bufg_in: std_logic;
 	-- signal ADC_CLK_OUT_PLL_NOBUF: std_logic; -- PLL-generated clock before BUFG buffering
@@ -649,7 +650,7 @@ begin
 	-- Input Clock   Input Freq (MHz)   Input Jitter (UI)
 	------------------------------------------------------------------------------
 	-- primary           212.5            0.010
-	PLL0 : MMCME2_ADV
+	pll0 : MMCME2_ADV
 	generic map (
 		BANDWIDTH            => "HIGH",
 		CLKOUT4_CASCADE      => FALSE,
@@ -701,18 +702,18 @@ begin
 
 
 	-- Feedback buffer, to cancel out the delays from the PLL to the loads
-	BUFG_IO0 : BUFG
+	io_bufg0 : BUFG
 		port map (
 			I => ioclk_out_pll_nobuf, -- Clock buffer input
 			O => ioclk_out_pll -- Clock buffer output
 		);
 
-	BUFG_DIV0 : BUFG
+	div_bufg0 : BUFG
 		port map (
 			I => divclk_out_pll_nobuf, -- Clock buffer input
 			O => divclk_out_pll -- Clock buffer output
 		);
-	BUFG_FB0 : BUFG
+	fb_bufg0 : BUFG
 		port map (
 			I => clk_fb_bufg_in, -- Clock buffer input
 			O => clk_fb_bufg_out -- Clock buffer output
@@ -727,7 +728,7 @@ else generate -- If the PLL is not instantiated, tie the related output signals 
 end generate;
 
 
-USEEXTCLK : if USE_EXT_DATA_CLK generate
+extclk_gen: if USE_EXT_DATA_CLK generate
 	---------------------------------------------------------
 	-- Clocks are provided by an external PLL.
 	---------------------------------------------------------
@@ -743,8 +744,8 @@ else generate
 	-- ioclk_vect comes from BUFIO connected to clka_bufmr
 	-- divclk comes from the BUFR
 
-	BUFIOGEN: for i in 0 to NUMBER_OF_BUFIO-1 generate
-		BUFIO0 : BUFIO
+	bufio_gen: for i in 0 to NUMBER_OF_BUFIO-1 generate
+		bufio0 : BUFIO
 			port map (
 				I => clka_bufmr, -- Buffer input
 				O => ioclk_local_vect(i) -- Buffer output
@@ -762,8 +763,8 @@ end generate;
 ---------------------------------------------------------------------------------------
 
 -- Instantiate a IDELAYCTRL if requested. There must be one and only one of these instantiated in each clocking region
-DELAYCTRL_SEL: if INSTANTIATE_IDELAYCTRL=TRUE generate
-	IDELAYCTRL0 : IDELAYCTRL
+dlyctrl_gen: if INSTANTIATE_IDELAYCTRL generate
+	idelayctrl0 : IDELAYCTRL
 		port map (
 			REFCLK => clk200, -- 1-bit reference clock input
 			RST => idelayctrl_reset_all, -- 1-bit reset input
@@ -779,7 +780,7 @@ end generate;
 --   DATA
 ---------------------------------------------------------------------------------------
 
-GBIT: for i in 0 to 7 generate
+bit_gen: for i in 0 to 7 generate
 	signal ad_bit: std_logic;
 	signal ad_dly_bit: std_logic;
 	signal serdes_clk_bit: std_logic;
@@ -789,7 +790,7 @@ GBIT: for i in 0 to 7 generate
 begin
 
 	gen_data_ibuf: if IS_DIFFERENTIAL(i) generate
-	   IBUFDS0 : IBUFDS -- Instantiate a differential (LVDS) input pad & buffer
+	   ibufds0 : IBUFDS -- Instantiate a differential (LVDS) input pad & buffer
 			generic map(
 				DIFF_TERM => TRUE -- Make sure the 100 ohm termination is enabled
 				)
@@ -826,7 +827,7 @@ begin
 		);
 
 
-	DLY0: IDELAYE2 -- For 7-series
+	dly0: IDELAYE2 -- For 7-series
 		generic map (
 			CINVCTRL_SEL => "FALSE", -- Dynamically inverts the Clock (C) polarity.
 			DELAY_SRC => "IDATAIN", -- Specifies the source to the IODELAY component.
@@ -857,7 +858,7 @@ begin
 	
 
 	status_bytes(i)(7 downto 5)<=(others=>'0'); -- do not leave these status bits undriven
-	ISERDESE0 : ISERDESE1
+	iserdes0 : ISERDESE1
 		generic map (
 			DATA_RATE => "DDR", -- SDR or DDR
 			DATA_WIDTH => 4, -- Parallel data width (2-8, 10)
@@ -944,10 +945,10 @@ begin
 --  2) The frequency is slow enough that timing is not an issue
 clkdiv2: process(all) begin
 	if rising_edge(divclk_vect(0)) then
-			adc_clk_out_div2_int <= not adc_clk_out_div2_int;
+			adc_clk_out_div2 <= not adc_clk_out_div2;
 		end if; -- RST/CLK
 	end process;
-adc_clk_out_div2 <= adc_clk_out_div2_int;
+-- adc_clk_out_div2 <= adc_clk_out_div2_int;
 
 ---------------------------------------------------------------------------------
 ----- Clock valid process
@@ -960,16 +961,16 @@ adc_clk_out_div2 <= adc_clk_out_div2_int;
 -- Every ADCs will discard the same number of samples on their local clock, allowing synchronization to be maintained independent of the MMCM lock delay.
 -- NOTE: The adc_clk_valid is set ont the divclk_local_vect(0) clock, but it is used by processes clocked on divclk (which is either from divclk_local or from the PLL). We assume the tools are smart enough to know the delays between the two and ensure proper timing.
 clkvalid_proc: process(all) begin
-		if adcdaq_reset_all then
-				word_ctr <= (others=>'0');
-				adc_clk_valid <= '0';
-			elsif rising_edge(divclk_local_vect(0)) then
-				word_ctr <= word_ctr + 1;
-				if (SIM=FALSE and ((USE_EXT_DATA_CLK=TRUE and SIGNED(word_ctr)=CLK_VALID_OFFSET) or (USE_EXT_DATA_CLK=FALSE and word_ctr=512+CLK_VALID_OFFSET))) or (SIM=TRUE and word_ctr=64+CLK_VALID_OFFSET) then -- In SIM mode, just wait 64 words (256 samples). We substract 2 to let time for the sample alignment process to accumulate an extra word for alignment.
-					adc_clk_valid <= '1' after 10 ps; -- delay to make sure that simulation work. Otherwise AUTO_SERDES_RESET rise at same time as CLK_VALID
-				end if;
-			end if; -- RST/CLK
-		end process;
+	if adcdaq_reset_all then
+			word_ctr <= (others=>'0');
+			adc_clk_valid <= '0';
+	elsif rising_edge(divclk_local_vect(0)) then
+		word_ctr <= word_ctr + 1;
+		if (SIM=FALSE and ((USE_EXT_DATA_CLK=TRUE and SIGNED(word_ctr)=CLK_VALID_OFFSET) or (USE_EXT_DATA_CLK=FALSE and word_ctr=512+CLK_VALID_OFFSET))) or (SIM=TRUE and word_ctr=64+CLK_VALID_OFFSET) then -- In SIM mode, just wait 64 words (256 samples). We substract 2 to let time for the sample alignment process to accumulate an extra word for alignment.
+			adc_clk_valid <= '1' after 10 ps; -- delay to make sure that simulation work. Otherwise AUTO_SERDES_RESET rise at same time as CLK_VALID
+		end if;
+	end if; -- RST/CLK
+end process;
 
 
 ---------------------------------------------------------------------------------
@@ -1008,19 +1009,18 @@ clkvalid_proc: process(all) begin
 -- But we release RST on the read clock
 -- We now use a built-in FIFO. The reset controld the PRE input of a register clocked on the wr clock.
 -- And the core generator includes logic to stretch the pulse.
-fifo_rst_proc: process(all)
-	begin
-		-- generate the fifo_rst, which is a delayed version of the adcdaq_reset_all.
-			if adcdaq_reset_all then -- Resets only on global reset
-				fifo_rst_ctr <= (others=>'0');
-				fifo_rst <= '1';
-			elsif rising_edge(divclk_vect(0)) then
-				fifo_rst_ctr <= fifo_rst_ctr + 1;
-				if signed(fifo_rst_ctr) = -1 then
-					fifo_rst <= '0';
-				end if;
-			end if;
-		end process;
+fifo_rst_proc: process(all)	begin
+	-- generate the fifo_rst, which is a delayed version of the adcdaq_reset_all.
+	if adcdaq_reset_all then -- Resets only on global reset
+		fifo_rst_ctr <= (others=>'0');
+		fifo_rst <= '1';
+	elsif rising_edge(divclk_vect(0)) then
+		fifo_rst_ctr <= fifo_rst_ctr + 1;
+		if signed(fifo_rst_ctr) = -1 then
+			fifo_rst <= '0';
+		end if;
+	end if;
+end process;
 
 -- fifo_rst <= fifo_rst_int; -- for the built-in FIFO, the reset circuitry is in the divclk clock domain
 
@@ -1280,10 +1280,7 @@ capture2_proc: process(all)
 				end if;
 			end if; -- RST,CLK
 		end process;
-end generate; --if IMPLEMENT_ADCDAQ=TRUE
-
---debug1: if false generate
-NO_IMPL: if IMPLEMENT_ADCDAQ=FALSE generate
+else generate -- do not implement the ADCDAQ, just connect the inputs to the outputs
 -- generate dummy IBUFDS to prevent errors with the UCF
 	BIT_GEN: for i in 0 to 7 generate
 		data_ibuf : IBUFGDS -- Instantiate a differential (LVDS) input pad

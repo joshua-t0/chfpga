@@ -31,7 +31,7 @@ use UNISIM.VComponents.ALL;
 -- internal and external voltages and temperatures
 entity sysmon is
 	generic (
-		PLATFORM_ID: integer
+		PLATFORM_TYPE: platform_type_enum
 	);
 	port (
 		-- Control interface
@@ -65,7 +65,7 @@ end entity sysmon;
 architecture impl of sysmon is
 
 
-	constant FPGA_SERIES: integer := PLATFORM_INFO(PLATFORM_ID).FPGA_SERIES;
+	constant FPGA_SERIES: fpga_series_enum := PLATFORM_INFO(PLATFORM_TYPE).FPGA_SERIES;
 
 	--- Define Control word and its signals
 	signal sysmon_bsb_rst: std_logic; -- BSB reset resynchronized to the sysmon clock
@@ -200,7 +200,7 @@ begin
 	vauxn_vect <= (13=> vaux_curr_n, 12=> vaux_volt_n, others => '0'); -- 16-bit input N-side auxiliary analog input
 	vauxp_vect <= (13=> vaux_curr_p, 12=> vaux_volt_p, others => '0'); -- 16-bit input P-side auxiliary analog input
 
-	sysmon6_gen: if FPGA_SERIES = FPGA_VIRTEX6 generate
+	sysmon6_gen: if FPGA_SERIES = VIRTEX6 generate
 
 		sysmon0: UNISIM.VComponents.SYSMON  -- avoid name cossition between entity name and Xilinx primitive name
 			generic map (
@@ -265,7 +265,7 @@ begin
 	end generate sysmon6_gen;
 
 
-	sysmon7_gen: if FPGA_SERIES = FPGA_KINTEX7 generate
+	sysmon7_gen: if FPGA_SERIES = KINTEX7 generate
 
 		xadc0: XADC
 			generic map (
@@ -329,7 +329,7 @@ begin
 	end generate sysmon7_gen;
 
 
-	sysmon_zup_gen: if FPGA_SERIES = FPGA_ULTRASCALEPLUS generate  -- Might need more specificity to set the SIM_DEVICE correctly on non-ZYNQ Ultrascale+
+	sysmon_zup_gen: if FPGA_SERIES = ULTRASCALEPLUS generate  -- Might need more specificity to set the SIM_DEVICE correctly on non-ZYNQ Ultrascale+
 
 		sysmone4_inst: SYSMONE4  -- Tried to use SYSMONE1 but cannot set SIM_DEVICE: fails at bitgen DRC
 			generic map (
