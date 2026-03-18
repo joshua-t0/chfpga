@@ -77,7 +77,7 @@ Key hardware-specific parameters
 
 The wrapper :file:`hdl/chfpga_kc705.vhd` hard-codes the following parameters:
 
-- **PLATFORM_ID**: Passed as ``PLATFORM_ID_MGK7MB`` to `chfpga` (shared Kintex-7 BSB clock logic; `chfpga.vhd` ``bsb_clk_sel`` supports both ``PLATFORM_ID_KC705`` and ``PLATFORM_ID_MGK7MB``).
+- **PLATFORM_TYPE**: Passed as ``MGK7MB`` to `chfpga` (shared Kintex-7 BSB clock logic; `chfpga.vhd` ``bsb_clk_sel`` supports both ``KC705`` and ``MGK7MB``).
 - **SYSTEM_CLOCK_SOURCE** = ``SYSCLK``, **SYSTEM_CLOCK_FREQ** = 200.0
 - **BSB_TYPE** = ``UDP_GMII`` (Marvell PHY, not SGMII transceiver)
 - **NUMBER_OF_ADC_BOARDS** = 1, **NUMBER_OF_ADCS** = 8

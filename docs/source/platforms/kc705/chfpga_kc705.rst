@@ -11,7 +11,7 @@ Description
 
 The platform wrapper :file:`chfpga_kc705.vhd` is the top-level entity used to implement `chFPGA` on the KC705. It defines the I/Os that connect the FPGA to the board-specific hardware. All entity port names are **lowercase** (e.g. ``cpu_reset``, ``gpio_led``, ``sysclk_p``, ``phy_rxclk``, ``adc0_ahdp``, ``refclk_m2c_p``, ``mgt_pll_m2c_p``).
 
-The wrapper passes ``PLATFORM_ID_MGK7MB`` to the `chfpga` core (shared Kintex-7 BSB clock logic; the core's ``bsb_clk_sel`` supports both ``PLATFORM_ID_KC705`` and ``PLATFORM_ID_MGK7MB``).
+The wrapper passes ``MGK7MB`` to the `chfpga` core (shared Kintex-7 BSB clock logic; the core's ``bsb_clk_sel`` supports both ``KC705`` and ``MGK7MB``).
 
 ================================
 Key hardware-specific parameters

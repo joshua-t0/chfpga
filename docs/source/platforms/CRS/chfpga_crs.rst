@@ -19,7 +19,7 @@ The wrapper hard-codes the following parameters that are specific to the IceBoar
 
 .. todo:: Update hardware config parameters
 
-- PLATFORM_ID = PLATFORM_ID_CRS
+- PLATFORM_TYPE = CRS
 - Clocking
 
 

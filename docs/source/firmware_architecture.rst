@@ -340,7 +340,7 @@ Configuration management
 - Software should determine the capability of the firmware by reading registers in order to instantiate and configure the corresponding Python objects accordingly.
 - Capability registers that inform on whether a module is present or not are typically found in the GPIO module. Access to a module shall not be made unless we know the module is there to respond. The GPIO module shall be instantiated first to gather the firmware capability information before instantiating the rest of the objects. Presence of a module should **not** be detected by checking if  access to one of its registers succeeds.
 - Module-specific capability registers can be placed in their specific modules.
-- We generally try to put as much capability information in capability registers as possible to minimize the need to keep the Python code up to date with firmware changes. However, Python-based look up tables might be necessary to provide detailed configuration based on some FPGA capability register in order to minimize the amount of logic resources allocated to these registers. This is the case of platform-specific constants which are looked up from the PLATFORM_ID parameter found in GPIO.
+- We generally try to put as much capability information in capability registers as possible to minimize the need to keep the Python code up to date with firmware changes. However, Python-based look up tables might be necessary to provide detailed configuration based on some FPGA capability register in order to minimize the amount of logic resources allocated to these registers. This is the case of platform-specific constants which are looked up from the PLATFORM_TYPE parameter found in GPIO.
 -
 
 

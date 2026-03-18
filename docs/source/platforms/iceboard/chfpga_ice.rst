@@ -21,7 +21,7 @@ The wrapper hard-codes the following parameters that are specific to the IceBoar
 Platform ID
 ===========
 
-PLATFORM_ID = PLATFORM_ID_MGK7MB
+PLATFORM_TYPE = MGK7MB
 
 Clocking
 ========

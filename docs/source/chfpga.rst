@@ -78,9 +78,9 @@ Generic parameters
 
 Two general-purpose parameters appear outside the functional groups:
 
-**PLATFORM_ID** *(integer)*
+**PLATFORM_TYPE** *(integer)*
 
-Integer identifying the target platform. Used internally to select low-level primitives (FIFO types, DSP/BRAM RPM coordinates, etc.). Predefined constants in ``chFPGA_Package``: ``PLATFORM_ID_KC705``, ``PLATFORM_ID_MGK7MB`` (ICEBoard), ``PLATFORM_ID_CRS``, etc.
+Integer identifying the target platform. Used internally to select low-level primitives (FIFO types, DSP/BRAM RPM coordinates, etc.). Predefined constants in ``chFPGA_Package``: ``KC705``, ``MGK7MB`` (ICEBoard), ``CRS``, etc.
 
 **PROTOCOL_VERSION** *(integer)*
 
