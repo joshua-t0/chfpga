@@ -81,6 +81,7 @@ end entity generic_fifo;
 
 architecture impl of generic_fifo is
 
+	attribute RST_FALSE_PATH : string;
 	-- Internal clocks: clk when synchronous, wr_clk/rd_clk when asynchronous
 	signal wr_clk_i : std_logic;
 	signal rd_clk_i : std_logic;
@@ -379,6 +380,8 @@ begin
 
 			-- K7 FIFO18E1 path (single primitive)
 			fifo_gen: if FPGA_SERIES = KINTEX7 and FI.use_fifo18 generate
+					attribute RST_FALSE_PATH of fifo0 : label is "TRUE"; -- Custom attribute to help writing an XDC constraint to ignore the reset path for the FIFO
+            begin
 				fifo0: FIFO18E1
 					generic map (
 						ALMOST_FULL_OFFSET      => to_bit_vector(DEPTH - PROG_FULL_THRESH, 13),
@@ -414,6 +417,8 @@ begin
 
 			-- K7 FIFO36E1 path (N parallel primitives)
 			elsif FPGA_SERIES = KINTEX7 and not FI.use_fifo18 generate
+					attribute RST_FALSE_PATH of fifo0 : label is "TRUE"; -- Custom attribute to help writing an XDC constraint to ignore the reset path for the FIFO
+            begin
 					fifo0: FIFO36E1
 						generic map (
 							ALMOST_FULL_OFFSET      => to_bit_vector(DEPTH - PROG_FULL_THRESH, 13),
