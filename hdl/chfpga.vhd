@@ -1007,6 +1007,7 @@ begin
 
 			udp_mac0: entity work.udp_mac
 				generic map (
+					FPGA_SERIES => FPGA_SERIES,
 					PHY_TYPE => sel(BSB_INTERFACE, (UDP_GMII => GMII, UDP_SGMII => SGMII)),  -- map BSB_INTERFACE to udp_mac PHY_TYPE: UDP_GMII->GMII, UDP_SGMII->SGMII
 					BROADCAST_IP_PORT => 41000, -- port on which broadcast requests and replies are made. This is fixed as it is used to discover the boards on the network and configure them.
 					SIM => SIM

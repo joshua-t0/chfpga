@@ -56,6 +56,7 @@ use work.chfpga_package.all; -- Get all component definitions
 --
 entity udp_mac is
 	GENERIC (
+		FPGA_SERIES: fpga_series_enum := KINTEX7;
 		PHY_TYPE: phy_type_enum; -- -- "GMII": Alaska 881111 PHY,  or "SGMII": SFP module
 		BROADCAST_IP_PORT: integer;-- ! Port on which broadcast requests and replies are made. This is fixed as it is used to discover the boards on the network and configure them.
 		SIM: boolean := FALSE --
@@ -212,6 +213,9 @@ begin
 
 	-- Instantiate UDP MAC transmitter
 	tx0: entity work.udp_mac_tx
+		generic map (
+			FPGA_SERIES => FPGA_SERIES
+		)
 		port map(
 
 			local_mac_addr       => local_mac_addr,

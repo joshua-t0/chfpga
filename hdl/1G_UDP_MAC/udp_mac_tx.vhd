@@ -46,6 +46,9 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
+library work;
+use work.chFPGA_Package.all;
+
 --library work;
 --use work.CRC32;
 --use work.ip_package.all; -- Import definition of components for IP cores used in this module
@@ -57,6 +60,9 @@ use UNISIM.VComponents.all;
 
 
 entity udp_mac_tx is
+	GENERIC (
+		FPGA_SERIES: fpga_series_enum := KINTEX7
+	);
 
 	PORT (
 			-- User-side streaming interface
@@ -224,19 +230,33 @@ ip_length <= std_logic_vector(tx_payload_length + 28);
 gmii_txd_out2 <= ip_checksum_out WHEN ip_checksum_insert = '1' else gmii_txd_out;
 
 -- Data FIFO instance
-data_fifo0 : entity work.udp_mac_tx_data_fifo
+data_fifo0 : entity work.generic_fifo
+	generic map (
+		FPGA_SERIES      => FPGA_SERIES,
+		MEMORY_TYPE      => "embedded",
+		IS_ASYNC         => TRUE,
+		IS_FWFT          => TRUE,
+		DATA_WIDTH       => 9,
+		DEPTH            => 16384,
+		PROG_FULL_THRESH => 16381
+	)
 	port map (
-		rst    => rst,
-		wr_clk => tx_clk,
-		rd_clk => gmii_txclk,
-		din(8) => s_axis_udp_tx_tlast,
-		din(7 downto 0) => s_axis_udp_tx_tdata,
-		wr_en  => tx_fifo_wr_en,
-		rd_en  => tx_fifo_rd_en,
-		dout   => tx_fifo_dout,
-		full   => tx_fifo_full,
-		almost_full   => tx_fifo_almost_full,
-		empty  => tx_fifo_empty
+		rst              => rst,
+		wr_clk           => tx_clk,
+		rd_clk           => gmii_txclk,
+		din(8)           => s_axis_udp_tx_tlast,
+		din(7 downto 0)  => s_axis_udp_tx_tdata,
+		wr_en            => tx_fifo_wr_en,
+		rd_en            => tx_fifo_rd_en,
+		dout             => tx_fifo_dout,
+		full             => tx_fifo_full,
+		prog_full        => tx_fifo_almost_full,
+		overflow         => open,
+		wr_rst_busy      => open,
+		empty            => tx_fifo_empty,
+		prog_empty       => open,
+		valid            => open,
+		rd_rst_busy      => open
 		);
 
 -- Frame FIFO instance
@@ -244,7 +264,16 @@ data_fifo0 : entity work.udp_mac_tx_data_fifo
 -- Stores the number of bytes stored in the DATA, and to which tranmit channel they should be sent.
 -- We need to store the length here because the length of the packet must be sent *before* the data in the IP header.
 -- The FIFO also allows clock domain crossing from the user data clock to the GMII interface clock.
-frame_fifo0 : entity work.udp_mac_tx_frame_fifo
+frame_fifo0 : entity work.generic_fifo
+	generic map (
+		FPGA_SERIES      => FPGA_SERIES,
+		MEMORY_TYPE      => "distributed",
+		IS_ASYNC         => TRUE,
+		IS_FWFT          => FALSE,
+		DATA_WIDTH       => 18,
+		DEPTH            => 128,
+		PROG_FULL_THRESH => 125
+	)
 	port map (
 		rst         => rst,
 		wr_clk      => tx_clk,
@@ -254,8 +283,13 @@ frame_fifo0 : entity work.udp_mac_tx_frame_fifo
 		rd_en       => tx_frame_fifo_rd_en,
 		dout        => tx_frame_fifo_dout,
 		full        => tx_frame_fifo_full,
-		almost_full => tx_frame_fifo_almost_full,
-		empty       => tx_frame_fifo_empty
+		prog_full   => tx_frame_fifo_almost_full,
+		overflow    => open,
+		wr_rst_busy => open,
+		empty       => tx_frame_fifo_empty,
+		prog_empty  => open,
+		valid       => open,
+		rd_rst_busy => open
 			);
 
 
