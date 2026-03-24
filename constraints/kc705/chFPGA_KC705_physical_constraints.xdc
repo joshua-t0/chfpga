@@ -16,7 +16,6 @@ set_operating_conditions -board_layers 16+
 
 set_property IOSTANDARD LVCMOS18 [get_ports sfpclk_qo_p]
 set_property PACKAGE_PIN L7 [get_ports sfpclk_qo_n]
-set_property PACKAGE_PIN L7 [get_ports sfpclk_qo_n]
 
 #################################
 
@@ -40,7 +39,7 @@ set_property PACKAGE_PIN L7 [get_ports sfpclk_qo_n]
 
 #set_property LOC XADC_X0Y0 [get_cells SYSMON0/SYSMON_TIMING_IGNORE]
 
-# Force the CLK0 MMCM to be in the same half of the FPGA as the ADCDAQ PLL so their outputs can reach a single BUFGMUX that select which clock is to be used for data processing. 
+# Force the CLK0 MMCM to be in the same half of the FPGA as the ADCDAQ PLL so their outputs can reach a single BUFGMUX that select which clock is to be used for data processing.
 
 #set_property LOC MMCME2_ADV_X0Y4 [get_cells CLK0/CLK200/MMCM0]
 
@@ -65,7 +64,7 @@ set_property IOSTANDARD LVCMOS15 [get_ports cpu_reset]
 
 #################################
 
-# Allows access to the KC705  as well as FMC I2C devices through a I2C switch 
+# Allows access to the KC705  as well as FMC I2C devices through a I2C switch
 
 set_property PACKAGE_PIN K21 [get_ports i2c_sck]
 set_property DRIVE 8 [get_ports i2c_sck]
@@ -221,7 +220,7 @@ set_property IOSTANDARD LVCMOS25 [get_ports sfp_los]
 # set_property PACKAGE_PIN G4 [get_ports sfp_rx_n]
 
 
-# Reference clock for the SFP+: use the lon-board low jitter PLL SI5326 
+# Reference clock for the SFP+: use the lon-board low jitter PLL SI5326
 
 # On MGTREFCLK0P_116 and MGTREFCLK0N_116
 
@@ -257,7 +256,7 @@ set_property PACKAGE_PIN L8 [get_ports sfpclk_qo_p]
 
 #####################################################
 
-# FMC HPC Connections 
+# FMC HPC Connections
 
 #####################################################
 
@@ -303,10 +302,10 @@ set_property PACKAGE_PIN AE23 [get_ports refclk_m2c_p]
 set_property PACKAGE_PIN AF23 [get_ports refclk_m2c_n]
 
 # MGT PLL Reference clocks
-set_property PACKAGE_PIN C8 [get_ports mgt_pll_m2c_p[0]]
-set_property PACKAGE_PIN C7 [get_ports mgt_pll_m2c_n[0]]
-set_property PACKAGE_PIN E8 [get_ports mgt_pll_m2c_p[1]]
-set_property PACKAGE_PIN E7 [get_ports mgt_pll_m2c_n[1]]
+set_property PACKAGE_PIN C8 [get_ports {mgt_pll_m2c_p[0]}]
+set_property PACKAGE_PIN C7 [get_ports {mgt_pll_m2c_n[0]}]
+set_property PACKAGE_PIN E8 [get_ports {mgt_pll_m2c_p[1]}]
+set_property PACKAGE_PIN E7 [get_ports {mgt_pll_m2c_n[1]}]
 
 #------------------
 
@@ -814,12 +813,12 @@ set_property PACKAGE_PIN AJ23 [get_ports {adc1_bhdn[7]}]
 #set_property LOC DCIRESET_X0Y0 [get_cells CHFPGA0/REFCLK0/DCIRESET0]
 #set_property LOC USR_ACCESS_X0Y0 [get_cells CHFPGA0/GPIO0/USR_ACCESS0]
 
-#set_property LOC BUFR_X0Y23 [get_cells {CHFPGA0/ANTGEN[2].ADCDAQ0/impl_gen.bufr_gen[0].bufr0}]
-#set_property LOC BUFR_X0Y22 [get_cells {CHFPGA0/ANTGEN[3].ADCDAQ0/impl_gen.bufr_gen[0].bufr0}]
-#set_property LOC BUFR_X0Y1 [get_cells {CHFPGA0/ANTGEN[5].ADCDAQ0/impl_gen.bufr_gen[0].bufr0}]
-#set_property LOC BUFR_X0Y5 [get_cells {CHFPGA0/ANTGEN[5].ADCDAQ0/impl_gen.bufr_gen[1].bufr0}]
-set_property DRIVE 4 [get_ports spi_sck]
-set_property SLEW SLOW [get_ports spi_sck]
+set_property LOC BUFR_X0Y23 [get_cells {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[2].adcdaq0/impl_gen.bufr_gen[0].bufr0}]
+set_property LOC BUFR_X0Y22 [get_cells {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[3].adcdaq0/impl_gen.bufr_gen[0].bufr0}]
+set_property LOC BUFR_X0Y1 [get_cells {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[5].adcdaq0/impl_gen.bufr_gen[0].bufr0}]
+set_property LOC BUFR_X0Y5 [get_cells {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[5].adcdaq0/impl_gen.bufr_gen[1].bufr0}]
+#set_property DRIVE 4 [get_ports spi_sck]
+#set_property SLEW SLOW [get_ports spi_sck]
 # Fix FIFO XDCs
 
 #set_false_path -from [get_cells -hierarchical ngwrdrst.grst.rd_rst_reg*]
@@ -871,4 +870,28 @@ set_property SLEW SLOW [get_ports spi_sck]
 #resize_pblock [get_pblocks CORR1] -add {DSP48_X3Y30:DSP48_X5Y39}
 #resize_pblock [get_pblocks CORR1] -add {RAMB18_X3Y30:RAMB18_X6Y39}
 #resize_pblock [get_pblocks CORR1] -add {RAMB36_X3Y15:RAMB36_X6Y19}
+
+# Add some placement constraints on the ADCDAQ logic. Without it, some gates get stuck in the middle of the FFT with crazy routing and long delays.
+# create_pblock ADCDAQ
+# add_cells_to_pblock [get_pblocks ADCDAQ] [get_cells -quiet [list \
+#           {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[0].adc_ready_cdc0} \
+#           {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[0].adcdaq0} \
+#           {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[1].adc_ready_cdc0} \
+#           {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[1].adcdaq0} \
+#           {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[2].adc_ready_cdc0} \
+#           {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[2].adcdaq0} \
+#           {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[3].adc_ready_cdc0} \
+#           {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[3].adcdaq0} \
+#           {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[4].adc_ready_cdc0} \
+#           {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[4].adcdaq0} \
+#           {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[5].adc_ready_cdc0} \
+#           {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[5].adcdaq0} \
+#           {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[6].adc_ready_cdc0} \
+#           {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[6].adcdaq0} \
+#           {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[7].adc_ready_cdc0} \
+#           {chfpga0/chan_array0/adc_gen.ev8aq160_case.adcgen[7].adcdaq0}]]
+# resize_pblock [get_pblocks ADCDAQ] -add {SLICE_X0Y0:SLICE_X11Y349}
+# resize_pblock [get_pblocks ADCDAQ] -add {RAMB18_X0Y0:RAMB18_X0Y139}
+# resize_pblock [get_pblocks ADCDAQ] -add {RAMB36_X0Y0:RAMB36_X0Y69}
+# set_property IS_SOFT FALSE [get_pblocks ADCDAQ]
 
