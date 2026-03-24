@@ -1003,7 +1003,6 @@ function xpm_fifo_features(
     overflow, data_valid, prog_full, wr_data_count, almost_full, wr_ack,
     underflow, prog_empty, rd_data_count, almost_empty : boolean := FALSE
   ) return string is
-	variable l: line;
 	variable v: std_logic_vector(15 downto 0);
 begin
 	v := (0 => to_std_logic(overflow),
@@ -1017,8 +1016,7 @@ begin
 	      11 => to_std_logic(almost_empty),
 	      12 => to_std_logic(data_valid),
 	      others => '0');
-	IEEE.std_logic_textio.hwrite(l, v);
-	return l.all;
+	return to_hstring(unsigned(v));
 end xpm_fifo_features;
 
 FUNCTION to_slv(i:integer; n: integer) return std_logic_vector is -- converts integer to standard_logic_vector with specified number of bits
