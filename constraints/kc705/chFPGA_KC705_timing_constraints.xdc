@@ -1,14 +1,14 @@
 ######################################
 # TIMING CONSTRAINTS
 ######################################
-create_clock -period 2.350 -name ADCCLK1 -waveform {0.000 1.175} [get_ports adc0_bdrp]
-create_clock -period 2.350 -name ADCCLK0 -waveform {0.000 1.175} [get_ports adc0_adrp]
-create_clock -period 2.350 -name ADCCLK2 -waveform {0.000 1.175} [get_ports adc0_cdrp]
-create_clock -period 2.350 -name ADCCLK3 -waveform {0.000 1.175} [get_ports adc0_ddrp]
-create_clock -period 2.350 -name ADCCLK4 -waveform {0.000 1.175} [get_ports adc1_adrp]
-create_clock -period 2.350 -name ADCCLK5 -waveform {0.000 1.175} [get_ports adc1_bdrp]
-create_clock -period 2.350 -name ADCCLK6 -waveform {0.000 1.175} [get_ports adc1_cdrp]
-create_clock -period 2.350 -name ADCCLK7 -waveform {0.000 1.175} [get_ports adc1_ddrp]
+create_clock -period 2.5 -name ADCCLK1 -waveform {0.000 1.25} [get_ports adc0_bdrp]
+create_clock -period 2.5 -name ADCCLK0 -waveform {0.000 1.25} [get_ports adc0_adrp]
+create_clock -period 2.5 -name ADCCLK2 -waveform {0.000 1.25} [get_ports adc0_cdrp]
+create_clock -period 2.5 -name ADCCLK3 -waveform {0.000 1.25} [get_ports adc0_ddrp]
+create_clock -period 2.5 -name ADCCLK4 -waveform {0.000 1.25} [get_ports adc1_adrp]
+create_clock -period 2.5 -name ADCCLK5 -waveform {0.000 1.25} [get_ports adc1_bdrp]
+create_clock -period 2.5 -name ADCCLK6 -waveform {0.000 1.25} [get_ports adc1_cdrp]
+create_clock -period 2.5 -name ADCCLK7 -waveform {0.000 1.25} [get_ports adc1_ddrp]
 #create_generated_clock -name ADC_CLK_SLAVE -source [get_ports adc0_bdrp] -multiply_by 1 [get_ports {adc0_adrp adc0_cdrp adc0_ddrp}]
 
 create_clock -period 5.000 -name SYSCLK -waveform {0.000 2.500} [get_ports sysclk_p]
@@ -36,6 +36,10 @@ set_clock_groups -name REFCLK_GROUP -asynchronous -group [get_clocks -include_ge
 create_clock -period 3.200 -name FREQ_CTR [get_pins */*.system0/freq_ctr_blk.freq_ctr0/srcclk_bufg_gen*.bufh0/I]
 set_clock_groups -name FREQ_CTR_GROUP -asynchronous -group [get_clocks FREQ_CTR]
 
+
+
+# Ignore the reset path for the FIFOs in generic_fifo
+set_false_path -to [get_pins -of_objects [get_cells -hier -filter {RST_FALSE_PATH == "TRUE"}] -filter {REF_PIN_NAME == RST}]
 
 
 
