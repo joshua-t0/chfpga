@@ -78,8 +78,11 @@ The ``rst`` input is treated as **asynchronous**. The wrapper:
 Detailed description
 ====================
 
-Embedded FIFO: primitive selection (depth-first, FIFO18-first)
---------------------------------------------------------------
+Embedded FIFO
+-------------
+
+Primitive selection (depth-first, FIFO18-first)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For ``MEMORY_TYPE`` = ``"embedded"``, the wrapper uses a **depth-first,
 FIFO18-first** algorithm to minimize BRAM usage:
@@ -97,8 +100,8 @@ FIFO18-first** algorithm to minimize BRAM usage:
 Supported primitive depths are 512, 1024, 2048, 4096, 8192 words. ``DEPTH``
 must equal one of these.
 
-K7 and FWFT
------------
+Kintex-7 and FWFT
+^^^^^^^^^^^^^^^^^
 
 On Kintex-7, the embedded synchronous FIFO primitive does not support
 first-word-fall-through (FWFT) with zero latency. When ``IS_FWFT`` is
@@ -107,11 +110,29 @@ TRUE, the wrapper **forces** async mode (EN_SYN = FALSE) internally even when
 ports while the primitive runs in independent clock mode and delivers
 zero-latency FWFT. A NOTE assertion reports this situation at elaboration.
 
-Embedded FIFO: reset pipeline
------------------------------
+Resets
+^^^^^^
+Embedded FIFO resets differ significantly between Kintex-7 and Ultrascale+.
+- Kintex-7: The reset is asynchronous and is internally synchronized::
+
+    A reset synchronizer circuit has been introduced to 7 series FPGAs. RST
+    must be asserted for five cycles to reset all read and write address
+    counters and initialize flags after power-up. RST does not clear the
+    memory, nor does it clear the output register. When RST is asserted High,
+    EMPTY and ALMOSTEMPTY are set to 1, FULL and ALMOSTFULL are reset to 0.
+    The RST signal must be High for at least five read clock and write clock
+    cycles to ensure all internal states are reset to correct values. During
+    Reset, both RDEN and WREN must be deasserted (held Low).
+
+
+- Ultrascale+: The reset line must be synchronous to the wr_clk::
+
+   The reset spec and implementation has been changed completely compared to 7 series FIFOs. RST is synchronous to WRCLK. To assert RST, it must be asserted for one setup time prior to the rising edge of WRCLK. RST has an optional inversion at the input.
+
+   If RST is asserted, the WRRSTBUSY output asserts immediately after the rising edge of WRCLK, and remains asserted until the reset operation is complete. Following the assertion of WRRSTBUSY, the internal reset is synchronized to the RDCLK domain. Upon arrival in the RDCLK domain, the RDRSTBUSY is asserted, and is held asserted until the resetting of all RDCLK domain signals is complete, then RDRSTBUSY is deasserted. In common-clock Mode, this logic is simplified because the clock domain crossing is not required.
 
 The embedded path uses a **unified reset pipeline** for both Kintex-7 and
-Ultrascale+ (no platform-specific generate in the reset logic):
+Ultrascale+:
 
 1. Asynchronous ``rst`` is synchronized to the write clock with
    ``xpm_cdc_async_rst`` → short pulse ``wr_rst_cdc``.
@@ -129,8 +150,37 @@ Ultrascale+ (no platform-specific generate in the reset logic):
    respectively; ``wr_rst_busy`` and ``rd_rst_busy`` are derived from the same
    expressions.
 
+
+On 7-series devices, the RST pin of the FIFO18E1/FIFO36E1 primitives directly drive the reset synchronizer circuit and is subject to the
+primitive's recovery/removal timing checks. Those checks can be noticeably
+tighter than ordinary synchronous timing paths. In blocks with difficult placement constraints, especially I/O-driven ones such
+as ``ADCDAQ``, this can become the dominant timing problem even when the
+launching reset logic is placed physically close to the FIFO. The issue is not
+usually LUT depth; it is the combination of a hard primitive reset arc and a
+route constrained by surrounding clocking and I/O resources.
+
+
+However, since the 7-series have a synchronizer,  wecan safely treat the primitive reset as a
+functionally asynchronous control path, provided the reset pulse is long enough and there are no reads or writes
+during reset. We can therefore apply a false-path constraint on the internal built-in FIFO reset network to the RST pin. This is also what the legacy Xilinx FIFO Generator IP does for "built-in" async FIFOs. 
+
+In order to facilitate constraining the RST ping on Kintex-7 embeded FIFOs instantiated by  ``generic_fifo``, its primitive instances are marked with a custom ``RST_FALSE_PATH=TRUE`` attribute.
+Vivado preserves that attribute as a cell property after synthesis, so the XDC
+can directly select the marked FIFO primitive cells and apply the exception to
+their ``RST`` pins. Note that this attribute is not set for Ultrascale+ embeded FIFOs.
+
+A false path constraint can therefore be added for the whole design with simply::
+   
+.. code-block:: tcl
+
+    set_false_path -to [get_pins -of_objects [get_cells -hier -filter {RST_FALSE_PATH == "TRUE"}] -filter {REF_PIN_NAME == RST}]
+
+
+
+
+
 Width / depth vs resources (embedded)
--------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The following table summarizes representative ``DATA_WIDTH`` /
 ``DEPTH`` combinations and the resulting primitive configuration and
@@ -166,8 +216,57 @@ For widths ≤ 36 bits and depth ≤ 512, a single FIFO18 is used when possible 
 save resources. For depth > 512 or width > 36, FIFO36 primitives are used,
 with parallel instances when the data width exceeds one primitive's width.
 
-XPM path (bram / distributed)
-------------------------------
+BRAM FIFO
+---------
+
+Implementation
+^^^^^^^^^^^^^^
+
+For ``MEMORY_TYPE`` = ``"bram"``, the wrapper instantiates ``xpm_fifo_sync``
+when ``IS_ASYNC`` is ``FALSE`` and ``xpm_fifo_async`` when ``IS_ASYNC`` is
+``TRUE``. The XPM FIFO is configured with block RAM storage and uses the same
+generic FIFO interface as the other implementations.
+
+Reset behavior
+^^^^^^^^^^^^^^
+
+The asynchronous ``rst`` input is first synchronized to the write clock, then
+fed into the XPM FIFO. The wrapper uses the XPM ``wr_rst_busy`` /
+``rd_rst_busy`` outputs to gate access during reset and release.
+
+Unlike the ``embedded`` implementation, the ``bram`` path does not expose the
+same hard embedded FIFO primitive reset arc directly. In practice, this avoids
+the specific recovery/removal timing issue seen with ``FIFO18E1`` / ``FIFO36E1``
+in placement-constrained blocks such as ``ADCDAQ``. This is why ``bram`` is the
+preferred choice there, even if the embedded implementation can be more
+resource-efficient in simpler parts of the design.
+
+Distributed FIFO
+----------------
+
+Implementation
+^^^^^^^^^^^^^^
+
+For ``MEMORY_TYPE`` = ``"distributed"``, the wrapper uses the same XPM FIFO
+path as ``"bram"``, but requests distributed RAM storage instead of block RAM.
+This is generally most appropriate for relatively small FIFOs where saving BRAM
+matters more than maximizing depth.
+
+Reset behavior
+^^^^^^^^^^^^^^
+
+The reset handling is the same XPM-based scheme used by the ``bram``
+implementation: reset is synchronized to the write clock, and the XPM busy
+outputs are used to gate accesses safely during reset.
+
+Because this path does not expose the hard embedded FIFO primitive reset arc in
+the same way as ``MEMORY_TYPE = "embedded"``, it does not have the same reset
+timing sensitivity described above. The main reason to avoid ``distributed`` is
+usually capacity or resource trade-offs, not the embedded FIFO reset-timing
+problem.
+
+XPM path summary (bram / distributed)
+-------------------------------------
 
 For ``MEMORY_TYPE`` = ``"bram"`` or ``"distributed"``, the wrapper
 instantiates ``xpm_fifo_sync`` (when ``IS_ASYNC`` is ``FALSE``)

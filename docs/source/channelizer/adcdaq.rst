@@ -123,7 +123,17 @@ Architecture
 Output FIFO
 -----------
 
-????The output FIFO is an asynchronous FIFO with a width of 32 bits and a depth of 1024 words. It is used to buffer the output data from the ADCDAQ before it is sent to the user.
+``ADCDAQ`` uses an asynchronous output FIFO to cross from the ADC capture word clock to the user readout clock. The FIFO is 32 bits wide and 1024 words deep and is used to absorb clock phase differences while allowing deterministic synchronized release of data across multiple channels.
+
+For ``ADCDAQ``, the FIFO implementation matters for timing closure.
+
+The ``embedded`` FIFO implementation maps directly to Xilinx hard FIFO primitives such as ``FIFO36E1`` on 7-series devices. In that mode, the FIFO reset drives the primitive's internal embedded FIFO control logic. That reset path is subject to relatively strict recovery/removal timing checks.
+
+In ``ADCDAQ``, those reset timing requirements interact poorly with the module's I/O-driven placement constraints. The data capture path is strongly shaped by ``BUFIO``/``BUFR`` reach, SERDES placement, IDELAY resources, and clock-region topology. As a result, the reset path to the embedded FIFO primitive can become difficult to route with enough margin, and timing failures were observed regularly on Kintex-7 designs even when the associated logic was placed close to the FIFO.
+
+Using the ``bram`` FIFO implementation avoids this problem. In that mode, the FIFO is implemented using a BRAM-based XPM FIFO rather than exposing the hard embedded FIFO reset arc directly. The problematic primitive reset recovery/removal path is therefore not present in the same way, and timing closure for ``ADCDAQ`` is much more reliable.
+
+For this reason, ``ADCDAQ`` should prefer the ``bram`` FIFO implementation rather than the ``embedded`` FIFO implementation, even if the embedded FIFO may save some resources in less timing-constrained parts of the design.
 
 Clocking
 ========
