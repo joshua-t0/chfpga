@@ -33,8 +33,8 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 use IEEE.NUMERIC_STD.ALL;
 
-library UNISIM;
-use UNISIM.VComponents.all;
+library work;
+use work.chFPGA_Package.all;
 
 library xpm;
 use xpm.vcomponents.all;
@@ -79,7 +79,8 @@ use xpm.vcomponents.all;
 --
 entity udp_mac_rx is
 	generic(
-		BROADCAST_IP_PORT: integer := 40999
+		BROADCAST_IP_PORT: integer := 40999;
+		FPGA_SERIES      : fpga_series_enum := KINTEX7
 		);
 	port (
 		-- User-side streaming interface
@@ -185,11 +186,7 @@ architecture impl of udp_mac_rx is
 	signal rx_data_fifo_valid: std_logic;
 	signal rx_data_fifo_dout: std_logic_vector(8 downto 0);
 	signal rx_data_fifo_din: std_logic_vector(8 downto 0) := (others => '0');
-	signal rx_data_fifo_wr_count: std_logic_vector(12 downto 0);
-	signal rx_data_fifo_dout64: std_logic_vector(63 downto 0);
-	signal rx_data_fifo_dout8: std_logic_vector(7 downto 0);
-	signal wr_rst: std_logic; -- write domain reset
-	signal rd_rst: std_logic;
+	signal rx_data_fifo_wr_rst_busy: std_logic; -- write domain reset
 
 	-- RX frame FIFO signals
 
@@ -237,116 +234,34 @@ crc32_0: entity work.udp_mac_crc32
 	);
 
 -- Instantiate Data FIFO
--- This is a First-Word-Fall-Through FIFO
--- This stored the data frame. Bit 8 indicates wether this is the last byte.
--- DATA_FIFO0 : entity work.udp_mac_rx_data_fifo
---	port map (
---		rst         => rst,
---		wr_clk      => rx_clk,
---		rd_clk      => clk,
---		din         => rx_data_fifo_din,
---		wr_en       => rx_data_fifo_wr_en,
---		rd_en       => rx_data_fifo_rd_en,
---		dout        => rx_data_fifo_dout,
---		full        => open,
---		almost_full => rx_data_fifo_almost_full,
---		empty       => rx_data_fifo_empty,
---		valid       => rx_data_fifo_valid
---		);
-
--- Independent clock Builtin FWFT FIFO, 9-bit input data width, 9-bit output data width, with output register, latency=0
--- This FIFO stores the data frame. Bit 8 indicates wether this is the last byte of the frame (TLAST).
-
-rx_data_fifo_dout <= rx_data_fifo_dout8(0) & rx_data_fifo_dout64(7 downto 0);
-rx_data_fifo_valid <= not rx_data_fifo_empty;
-
--- Generate the resets
--- - FIFO36 has a async reset, reset must be 5 read and write clocks, no rd/wr_en during reset
--- - XPM FIFO: reset sync to wr_clk, wr_rst_busy seems to extend the whole reset cycle, no rd/rw during reset
---
--- Implementation:
--- - Use a XMP macro to generate a 5 clock reet on the write domain. That is the slowest clock, so we have more clocks on the rd domain. This is used to reset the FIFO and XPM FIFO.
--- - We genrate a reset sync to rd domain until 1) the wr domain reset is completed and the XPM reset busy signal goes low.
--- - wr reset resets the wr state machine and olds the wr_en low.
--- - rd reset masks the rd_en.
-
--- Write domain reset, assumed to be the slowest clock in the system
-data_fifo_rst0: xpm_cdc_async_rst
+-- Data FIFO: embedded async FWFT (same depth as legacy FIFO36 9-bit mode: 4096 words)
+data_fifo0 : entity work.generic_fifo
 	generic map (
-		RST_ACTIVE_HIGH => 1, -- Active high reset
-		DEST_SYNC_FF => 6 -- Reset pulse minimum width
+		FPGA_SERIES      => FPGA_SERIES,
+		MEMORY_TYPE      => "embedded",
+		IS_ASYNC         => TRUE,
+		IS_FWFT          => TRUE,
+		DATA_WIDTH       => 9,
+		DEPTH            => 4096,
+		PROG_FULL_THRESH => 4080 -- ALMOST_FULL_OFFSET = 16 words (same as legacy 13D"16")
 	)
 	port map (
-		src_arst => rst,
-		dest_clk => gmii_rxclk,
-		dest_arst => wr_rst
+		rst         => rst,
+		wr_clk      => gmii_rxclk,
+		rd_clk      => clk,
+		din         => rx_data_fifo_din,
+		wr_en       => rx_data_fifo_wr_en,
+		rd_en       => rx_data_fifo_rd_en,
+		dout        => rx_data_fifo_dout,
+		full        => open,
+		prog_full   => rx_data_fifo_almost_full,
+		overflow    => open,
+		wr_rst_busy => rx_data_fifo_wr_rst_busy, -- sync to gmii_rxclk, used to reset state machine until FIFO is ready
+		empty       => rx_data_fifo_empty,
+		prog_empty  => open,
+		valid       => rx_data_fifo_valid,
+		rd_rst_busy => open
 	);
--- Read domain reset
-data_fifo_rst1: xpm_cdc_async_rst
-	generic map (RST_ACTIVE_HIGH => 1) -- Active high reset
-	port map (
-		src_arst => wr_rst or rx_frame_fifo_wr_rst_busy, -- write domain reset
-		dest_clk => clk,
-		dest_arst => rd_rst
-	);
-
--- Data FIFO
---
--- The Data FIFO is implemented directly using a FIFI36 primitive so we can leverage the embedded
--- FIFO logic. This can't be done with a XPM macro. The FIFO is 4Kbytes deep, allowing for large
--- ethernet packets but not quite jumbo frames. Command packets should typically be limited to the
--- standard MTU of less than 1K. Large memories are written page by page.
-data_fifo0 : FIFO36E1  -- 7-series
-	generic map (
-		ALMOST_FULL_OFFSET => 13D"16",    -- ALMOST_FULL asserts 16 bytes before FULL
-		DATA_WIDTH => 9,                  -- Data width is 9 bits, meaning that depth = 36K/9 = 4K bytes
-		DO_REG => 1,                      -- Enable output register (1-0) Must be 1 if EN_SYN = FALSE
-		EN_SYN => FALSE,                  -- Asynchronous FIFO
-		FIFO_MODE => "FIFO36",            -- "FIFO36" or "FIFO36_72"
-		FIRST_WORD_FALL_THROUGH => TRUE,   -- We want FWFT
-		SIM_DEVICE => "7SERIES"
-	)
-	port map (
-
-		-- Write interfce
-
-		wrclk => gmii_rxclk,              -- 1-bit input: Rising edge write clock.
-		wren  => rx_data_fifo_wr_en,  -- 1-bit input: Write enable
-
-		di(63 downto 8) => (others => '0'), -- data bus is 64 bit, only 8 LSBs are used
-		di(7 downto 0)  => rx_data_fifo_din(7 downto 0),
-		dip(7 downto 1) => (others => '0'), -- Parity bus is 8 bits, only LSB is used
-		dip(0)          => rx_data_fifo_din(8),
-
-		WRCOUNT => rx_data_fifo_wr_count, -- for debug
-
-		-- Read interface
-
-		rdclk => clk, -- Read clock
-		rden  => rx_data_fifo_rd_en, -- Read enable
-		regce => '1', -- 1-bit input: Clock enable
-
-		do  => rx_data_fifo_dout64, -- 64-bit data output. Valid data is in 8 LSBs
-		dop => rx_data_fifo_dout8, -- 8 bit parity output. Valid data is on LSB
-		-- DO(7 downto 0) => rx_data_fifo_dout(7 downto 0), -- Partial assignment causes a synthesis error
-		-- DOP(0) => rx_data_fifo_dout(8), -- Partial assignment causes a synthesis error
-
-		-- Status flags
-
-		almostfull => rx_data_fifo_almost_full, -- 1-bit output: Almost full flag
-		empty => rx_data_fifo_empty,            -- 1-bit output: Empty flag
-		full => open,                           -- 1-bit output: Full flag
-
-
-		-- ECC Signals (unused)
-		injectdbiterr => '0',
-		injectsbiterr => '0',
-
-		-- Resets
-
-		rst    => wr_rst, -- Async -- write domain reset reset, must be high at least 5 cycles of the slowest clock
-		rstreg => '0'  -- Output register reset
-   );
 
 
 
@@ -358,54 +273,33 @@ data_fifo0 : FIFO36E1  -- 7-series
 -- The frame validity flag is written in this FIFO once the data is finished to be written in the
 -- DATA FIFO. If the flag is '0', the frame will be discarded.
 --FRAME_FIFO0 : entity work.udp_mac_rx_frame_fifo
---	port map (
---		rst    => rst,
---		wr_clk => rx_clk,
---		rd_clk => clk,
---		din    => rx_frame_fifo_din,
---		wr_en  => rx_frame_fifo_wr_en,
---		rd_en  => rx_frame_fifo_rd_en,
---		dout   => rx_frame_fifo_dout,
---		full   => rx_frame_fifo_full,
---		empty  => rx_frame_fifo_empty,
---		valid  => rx_frame_fifo_valid
---		);
-
-frame_fifo0: xpm_fifo_async
-    generic map (
-       FIFO_MEMORY_TYPE => "dist", -- String
-       READ_MODE => "fwft",         -- String
-       FIFO_READ_LATENCY => 0,     --must be 0 for READ_MODE=fwft
-       WRITE_DATA_WIDTH => 1,     -- DECIMAL
-       FIFO_WRITE_DEPTH => 64,   --
-       READ_DATA_WIDTH => 1,      -- DECIMAL
-       FULL_RESET_VALUE => 0,      -- DECIMAL
-       SIM_ASSERT_CHK => 1,        -- DECIMAL; 0=disable simulation messages, 1=enable simulation messages
-       USE_ADV_FEATURES => "1000", -- Hex string: bit 0: overflow, 1:prog_full, 2:wr_count, 3:almost_full, 8:underflow, 9:prog_empty, 10:rd_count, 11: almost_empty, [12:valid]
-       WR_DATA_COUNT_WIDTH => 11    -- Not needed
-    )
-    port map (
-
-       rst => wr_rst, -- Reset -- write domain reset, synchronous to wr_clk.
-       wr_rst_busy => rx_frame_fifo_wr_rst_busy,
-
-       -- Write domain
-       wr_clk => gmii_rxclk,         -- Write clock
-       din    => rx_frame_fifo_din,   -- Write Data:
-       wr_en  => rx_frame_fifo_wr_en, -- Write Enable: Must be held active-low when rst or wr_rst_busy is active high.
-       full   => rx_frame_fifo_full,  -- Full Flag:  Write requests are ignored when the FIFO is full.
-
-        -- Read domain
-       rd_clk     => clk,          -- Read clock
-       rd_en      => rx_frame_fifo_rd_en,            -- 1-bit input: Read Enable: Must be held low when rd_rst_busy is active high.
-       dout       => rx_frame_fifo_dout,              -- Read Data
-       data_valid => rx_frame_fifo_valid,       -- Read Data Valid: High when data is available on dout.
-       empty      => rx_frame_fifo_empty,            -- Empty Flag: High when FIFO is empty. Read requests are ignored.
-
-       injectdbiterr => '0', -- Double Bit Error Injection: Injects a double bit error
-       injectsbiterr => '0', -- Single Bit Error Injection: Injects a single bit error
-       sleep => '0'         -- Dynamic power saving: If sleep is High, the memory/fifo block is in power saving mode.
-    );
+frame_fifo0 : entity work.generic_fifo
+	generic map (
+		FPGA_SERIES      => FPGA_SERIES,
+		MEMORY_TYPE      => "distributed",
+		IS_ASYNC         => TRUE,
+		IS_FWFT          => TRUE,
+		DATA_WIDTH       => 1,
+		DEPTH            => 64,
+		PROG_FULL_THRESH => 59 -- Max allowed value. Not used.
+	)
+	port map (
+		rst         => rst,
+		wr_clk      => gmii_rxclk,
+		rd_clk      => clk,
+		din         => rx_frame_fifo_din,
+		wr_en       => rx_frame_fifo_wr_en,
+		rd_en       => rx_frame_fifo_rd_en,
+		dout        => rx_frame_fifo_dout,
+		full        => rx_frame_fifo_full,
+		prog_full   => open,
+		overflow    => rx_frame_fifo_overflow,
+		wr_rst_busy => rx_frame_fifo_wr_rst_busy, -- sync to gmii_rxclk, used to reset state machine until FIFO is ready
+		empty       => rx_frame_fifo_empty,
+		prog_empty  => open,
+		valid       => rx_frame_fifo_valid,
+		rd_rst_busy => open
+	);
 
 
 ---------------------
@@ -423,10 +317,10 @@ m_axis_udp_rx_tlast <= rx_data_fifo_dout(8);
 --
 -- There are generated combinatorially, but we run this at 125 MHz, so we don't worry about timing here
 
--- Fetch the next frame flag when 0) we are not in reset, 1) there is a frame bit available; 2) there is a data byte available; 3) we are reading the last byte of a frame; 4) the AXI-S link has absorbed the data or the flag indicates we are flushing the frame
-rx_frame_fifo_rd_en <= '1' when rd_rst = '0' and rx_frame_fifo_valid = '1' and  rx_data_fifo_valid = '1' and rx_data_fifo_dout(8) = '1' and (rx_frame_fifo_dout(0) = '0' or m_axis_udp_rx_tready = '1') else '0';
--- Read the data fifo if 0) we ar enot in reset, 1) we have a frame flag and either: the user read the data or the data is to be flushed according to the frame flag
-rx_data_fifo_rd_en <= '1' when rd_rst = '0' and rx_frame_fifo_valid = '1' and (rx_frame_fifo_dout(0) = '0' or m_axis_udp_rx_tready = '1') else '0';
+-- Fetch the next frame flag when  1) there is a frame bit available; 2) there is a data byte available; 3) we are reading the last byte of a frame; 4) the AXI-S link has absorbed the data or the flag indicates we are flushing the frame
+rx_frame_fifo_rd_en <= rx_frame_fifo_valid and  rx_data_fifo_valid and rx_data_fifo_dout(8) and (not rx_frame_fifo_dout(0) or m_axis_udp_rx_tready);
+-- Read the data fifo if  1) we have a frame flag and either: the user read the data or the data is to be flushed according to the frame flag
+rx_data_fifo_rd_en <= rx_frame_fifo_valid and (not rx_frame_fifo_dout(0) or m_axis_udp_rx_tready);
 
 
 ---------------------
@@ -819,7 +713,7 @@ begin
 		end case;
 
 		-- sync reset
-		if wr_rst  then
+		if rx_data_fifo_wr_rst_busy or rx_frame_fifo_wr_rst_busy then
 			arp_request <= '0';
 			rx_overflow_int <= '0';
 			rx_data_fifo_wr_en <= '0';
@@ -829,9 +723,6 @@ begin
 
 	end if; -- gmii_rxclk
 end process; -- rx_back_end
-
-
-
 
 end impl;
 

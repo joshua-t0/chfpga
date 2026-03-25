@@ -238,7 +238,7 @@ data_fifo0 : entity work.generic_fifo
 		IS_FWFT          => TRUE,
 		DATA_WIDTH       => 9,
 		DEPTH            => 16384,
-		PROG_FULL_THRESH => 16381
+		PROG_FULL_THRESH => 16380
 	)
 	port map (
 		rst              => rst,

@@ -251,7 +251,8 @@ begin
 
 	rx0: entity work.udp_mac_rx
 		generic map(
-			BROADCAST_IP_PORT => BROADCAST_IP_PORT
+			BROADCAST_IP_PORT => BROADCAST_IP_PORT,
+			FPGA_SERIES       => FPGA_SERIES
 			)
 		port map(
 			local_mac_addr           => local_mac_addr,
