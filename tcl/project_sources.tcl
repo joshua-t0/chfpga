@@ -255,3 +255,30 @@ set crs_ct_hdl_files [concat $crs_hdl_base_files [list \
   ]]
 
 
+#*****************************************************************************************
+# ZCU111 Platform
+#*****************************************************************************************
+
+set zcu111_platform_dir "${hdl_dir}/platforms/zcu111"
+set zcu111_target_part "xczu28dr-ffvg1517-2-e"
+set zcu111_bd_name "zynq_tcpipe_zcu111"
+
+# Same CHORD PFB/FFT as CRS (out-of-context synthesis); see fft_type_chord
+set zcu111_ooc_ip_files $fft_type_chord
+
+set zcu111_ct_ip_files [list \
+  "CMAC_USP/CMAC_USP.xci" \
+ ]
+
+set zcu111_hdl_base_files [concat $hdl_base_files [list \
+  "platforms/zcu111/chfpga_zcu111.vhd" \
+  "chan/ucap.vhd" \
+  "ct/uct_engine.vhd" \
+ ]]
+
+set zcu111_ct_hdl_files [concat $zcu111_hdl_base_files [list \
+  "ct/upack.vhd" \
+  "100GE_UDP_MAC/cge.vhd" \
+ ]]
+
+

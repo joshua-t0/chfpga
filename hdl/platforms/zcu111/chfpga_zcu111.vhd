@@ -60,8 +60,8 @@ entity chfpga_zcu111 is
 		CT_TYPE: ct_type_enum                     := CONFIG_CT_TYPE;
 		CT_LEVEL: integer                         := CONFIG_CT_LEVEL;
 		CT_LANE_TO_LINK_MAP: integer_array        := CONFIG_CT_LANE_TO_LINK_MAP;
-		CT_LINK_TO_QUAD_MAP: integer_array       := (1 to 0 => 0); -- no GTY links
-		CT_QUAD_TO_REFCLK_MAP: integer_array     := (1 to 0 => 0);
+		CT_LINK_TO_QUAD_MAP: integer_array(1 to 0) := (others => 0); -- no GTY links
+		CT_QUAD_TO_REFCLK_MAP: integer_array(1 to 0)     := (others => 0);
 		CT_LANE_TO_GROUP_MAP: integer_array      := (0 => 0);
 
 		-- Correlator config
@@ -70,7 +70,8 @@ entity chfpga_zcu111 is
 
 		-- Real-time data offload links configuration (100G QSFP)
 		DATA_LINK_TYPE: data_link_type_enum         := CONFIG_DATA_LINK_TYPE;
-
+        DATA_LINK_LINK_TO_QUAD_MAP : integer_array := (0 => 0); -- dummy
+        DATA_LINK_QUAD_TO_REFCLK_MAP : integer_array := (0 => 0); -- dummy
 		-- Peripheral config
 		BLINKER_PRESENT: boolean                  := TRUE;
 		NUMBER_OF_I2C_PORTS: integer              := 0;
@@ -82,9 +83,7 @@ entity chfpga_zcu111 is
 
 		-- Derived parameters
 		NUMBER_OF_CT_LINKS: integer                := CT_LINK_TO_QUAD_MAP'LENGTH;
-		NUMBER_OF_CT_REFCLKS: integer              := sel(CT_QUAD_TO_REFCLK_MAP'LENGTH > 0, max(CT_QUAD_TO_REFCLK_MAP) + 1, 0);
-		NUMBER_OF_GPU_LINKS: integer              := sel(DATA_LINK_TYPE /= NONE, DATA_LINK_LINK_TO_QUAD_MAP'LENGTH, 0);
-		NUMBER_OF_GPU_REFCLKS: integer             := sel(DATA_LINK_TYPE /= NONE, max(DATA_LINK_QUAD_TO_REFCLK_MAP) + 1, 0)
+		NUMBER_OF_CT_REFCLKS: integer              := sel(CT_QUAD_TO_REFCLK_MAP'LENGTH > 0, max(CT_QUAD_TO_REFCLK_MAP) + 1, 0)
 	);
 
   port (
