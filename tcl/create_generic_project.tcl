@@ -11,6 +11,7 @@
 #   ip_files
 #   hdl_files
 #   const_files
+#   platform_dir (optional): if set, ip_dir and const_dir become <platform_dir>/ip_cores and <platform_dir>/constraints
 #
 # Usage examples:
 #   # Normal project creation from a project directory
@@ -76,7 +77,14 @@ set util_files [list \
 
 
 
+set platform_dir [file normalize $platform_dir]
+set ip_dir [file normalize [file join $platform_dir ip_cores]]
+set const_dir [file normalize [file join $platform_dir constraints]]
+
 # Expand and normaline file and folder names
+set full_const_files  {}
+foreach f $const_files {lappend full_const_files [file normalize "$const_dir/$f"]}
+
 set full_ip_files  {}
 foreach f $ip_files { lappend full_ip_files [file normalize "$ip_dir/$f"]}
 
@@ -94,8 +102,6 @@ foreach f $hdl_files {lappend full_hdl_files [file normalize "$hdl_dir/$f"]}
 set full_ip_libraries  {}
 foreach f $ip_libraries {lappend full_ip_libraries [file normalize "$repo_dir/$f"]}
 
-set full_const_files  {}
-foreach f $const_files {lappend full_const_files [file normalize "$const_dir/$f"]}
 
 set full_util_files  {}
 foreach f $util_files {lappend full_util_files [file normalize "$repo_dir/$f"]}
@@ -369,6 +375,9 @@ set_property -name "steps.synth_design.args.no_lc" -value $no_lc -obj $synth_obj
 set_property -name "steps.synth_design.args.shreg_min_size" -value "5" -obj $synth_obj
 set_property -name "steps.synth_design.args.assert" -value "1" -obj $synth_obj
 
+# Top-level synthesis: disable incremental compile (no reuse of prior synth checkpoint)
+set_property AUTO_INCREMENTAL_CHECKPOINT 0 $synth_obj
+
 # set the current synth run
 current_run -synthesis $synth_obj
 
@@ -430,9 +439,7 @@ foreach ip_obj  [get_ips] {
 # set file_obj  [get_ips $full_ooc_ip_files]
 puts "OOC ip files are $ip_list"
 
-# export_ip_user_files -of_objects  [get_files  /home/jfcliche/chfpga/_Cores/KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci] -sync -lib_map_path [list {modelsim=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/modelsim} {questa=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/questa} {xcelium=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/xcelium} {vcs=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/vcs} {riviera=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/riviera}] -force -quiet
-# set_property generate_synth_checkpoint true [get_files  /home/jfcliche/chfpga/_Cores/KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci]
-# generate_target all [get_files  /home/jfcliche/chfpga/_Cores/KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci]
+
 
 if {[llength $ip_list] > 0} {
   # Re-target imported OOC IPs to the current part before configuring their runs.

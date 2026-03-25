@@ -239,7 +239,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../_Cores/CRS/GTY/gtwizard_ultrascale_0.xci">
+      <File Path="$PPRDIR/../../../hdl/platforms/crs/ip_cores/GTY/gtwizard_ultrascale_0.xci">
         <FileInfo>
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>

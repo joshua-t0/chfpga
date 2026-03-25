@@ -60,45 +60,43 @@ set hdl_base_files [list  \
 
 
 
-set fft_type_chime "KC705/FFT2/FFT2.xci"
-set fft_type_hirax "KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci"
-set fft_type_hirax_3dsp "KC705/hirax_bit_growth_3dsp/hirax_bit_growth_3dsp.xci"
-set fft_type_chord "CRS/pfb_fft_bitgrowth_0/pfb_fft_bitgrowth_0.xci"
+set fft_type_chime "FFT2/FFT2.xci"
+set fft_type_hirax "hirax_bit_growth_0/hirax_bit_growth_0.xci"
+# Relative to ooc_ip_dir; OOC cores live under each platform's ip_cores (see create_project.tcl platform_dir)
+set fft_type_hirax_3dsp "hirax_bit_growth_3dsp/hirax_bit_growth_3dsp.xci"
+set fft_type_chord "pfb_fft_bitgrowth_0/pfb_fft_bitgrowth_0.xci"
 
 #*****************************************************************************************
 # ICE Platform
 #*****************************************************************************************
 
-
+set ice_platform_dir "${hdl_dir}/platforms/ice"
 set ice_target_part "xc7k420tffg901-2"
 
 set ice_ct_ooc_ip_files $fft_type_hirax
 set ice_corr16_ooc_ip_files $fft_type_hirax_3dsp
 
-# KC705/SCALER_CMUL/SCALER_CMUL.xci to be added if using complex gains
+# SCALER_CMUL/SCALER_CMUL.xci to be added if using complex gains
 
 set ice_base_ip_files [list \
-  "KC705/ADCDAQ_FIFO/ADCDAQ_FIFO.xci" \
-  "KC705/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci" \
-  "KC705/UDP_MAC_TX_DATA_FIFO/udp_mac_tx_data_fifo.xci" \
-  "KC705/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci"\
+  "gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci"\
 ]
 
 set ice_ct_ip_files [concat $ice_base_ip_files [list \
-  "KC705/SHUFFLE_BIN_SEL_FLAGS_FIFO4/SHUFFLE_BIN_SEL_FLAGS_FIFO4.xci" \
-  "KC705/SHUFFLE_BIN_SEL_DATA_FIFO_EMBED/SHUFFLE_BIN_SEL_DATA_FIFO_EMBED.xci" \
-  "KC705/SHUFFLE_BIN_SEL_DATA_FIFO_BRAM/SHUFFLE_BIN_SEL_DATA_FIFO_BRAM.xci" \
-  "KC705/SHUFFLE_BIN_SEL_FLAGS_FIFO6/SHUFFLE_BIN_SEL_FLAGS_FIFO6.xci" \
-  "KC705/SHUFFLE_BIN_SEL_MASK_RAM/SHUFFLE_BIN_SEL_MASK_RAM.xci" \
-  "KC705/SHUFFLE_CROSSBAR_ALIGN_FIFO/SHUFFLE_CROSSBAR_ALIGN_FIFO.xci" \
-  "KC705/XGLINK_RX_DATA_FIFO/XGLINK_RX_DATA_FIFO.xci" \
-  "KC705/XGLINK_TX_DATA_FIFO/XGLINK_TX_DATA_FIFO.xci" \
-  "KC705/CHDIST_FRAME_FIFO/CHDIST_FRAME_FIFO.xci" \
-  "KC705/CHDIST_SCALER_FLAGS_FIFO/CHDIST_SCALER_FLAGS_FIFO.xci" \
-  "KC705/CHDIST_DATA_EMBED_FIFO/CHDIST_DATA_EMBED_FIFO.xci" \
-  "KC705/MASK_RAM/MASK_RAM.xci" \
-  "KC705/XG_UDP_MAC_TX_HEADER_FIFO/XGMII_UDP_MAC_TX_HEADER_FIFO.xci" \
-  "KC705/XG_UDP_MAC_TX_DATA_FIFO/XGMII_UDP_MAC_TX_DATA_FIFO.xci" \
+  "SHUFFLE_BIN_SEL_FLAGS_FIFO4/SHUFFLE_BIN_SEL_FLAGS_FIFO4.xci" \
+  "SHUFFLE_BIN_SEL_DATA_FIFO_EMBED/SHUFFLE_BIN_SEL_DATA_FIFO_EMBED.xci" \
+  "SHUFFLE_BIN_SEL_DATA_FIFO_BRAM/SHUFFLE_BIN_SEL_DATA_FIFO_BRAM.xci" \
+  "SHUFFLE_BIN_SEL_FLAGS_FIFO6/SHUFFLE_BIN_SEL_FLAGS_FIFO6.xci" \
+  "SHUFFLE_BIN_SEL_MASK_RAM/SHUFFLE_BIN_SEL_MASK_RAM.xci" \
+  "SHUFFLE_CROSSBAR_ALIGN_FIFO/SHUFFLE_CROSSBAR_ALIGN_FIFO.xci" \
+  "XGLINK_RX_DATA_FIFO/XGLINK_RX_DATA_FIFO.xci" \
+  "XGLINK_TX_DATA_FIFO/XGLINK_TX_DATA_FIFO.xci" \
+  "CHDIST_FRAME_FIFO/CHDIST_FRAME_FIFO.xci" \
+  "CHDIST_SCALER_FLAGS_FIFO/CHDIST_SCALER_FLAGS_FIFO.xci" \
+  "CHDIST_DATA_EMBED_FIFO/CHDIST_DATA_EMBED_FIFO.xci" \
+  "MASK_RAM/MASK_RAM.xci" \
+  "XG_UDP_MAC_TX_HEADER_FIFO/XGMII_UDP_MAC_TX_HEADER_FIFO.xci" \
+  "XG_UDP_MAC_TX_DATA_FIFO/XGMII_UDP_MAC_TX_DATA_FIFO.xci" \
  ]]
 
 set ice_corr16_ip_files $ice_base_ip_files
@@ -108,7 +106,7 @@ set ice_corr16_ip_files $ice_base_ip_files
 
 
 set ice_hdl_base_files [concat $hdl_base_files [list \
-  "chfpga_ice.vhd" \
+  "platforms/ice/chfpga_ice.vhd" \
   \
   "system/spi.vhd" \
   "system/i2c.vhd" \
@@ -171,17 +169,15 @@ set ice_corr16_hdl_files [concat $ice_hdl_base_files [list \
 # KC705 Platform
 #*****************************************************************************************
 
+set kc705_platform_dir "${hdl_dir}/platforms/kc705"
 set kc705_target_part "xc7k325tffg900-2"
 
 set kc705_corr8_ooc_ip_files $fft_type_hirax_3dsp
-set kc705_corr8_ip_files [list \
-  "KC705/ADCDAQ_FIFO/ADCDAQ_FIFO.xci" \
-  "KC705/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci" \
-  "KC705/UDP_MAC_TX_DATA_FIFO/udp_mac_tx_data_fifo.xci" \
-]
+# Paths relative to ${kc705_platform_dir}/ip_cores (includes hirax_bit_growth_3dsp copied from IceBoard tree)
+set kc705_corr8_ip_files {}
 
 set kc705_hdl_base_files [concat $hdl_base_files [list \
-  "chfpga_kc705.vhd" \
+  "platforms/kc705/chfpga_kc705.vhd" \
   \
   "system/spi.vhd" \
   "system/i2c.vhd" \
@@ -209,6 +205,7 @@ set kc705_corr8_hdl_files [concat $kc705_hdl_base_files [list \
 # CRS Platform
 #*****************************************************************************************
 
+set crs_platform_dir "${hdl_dir}/platforms/crs"
 set crs_target_part "xczu47dr-ffvg1517-1-i"
 set crs_bd_name "zynq_tcpipe_crs"
 
@@ -216,19 +213,19 @@ set crs_ooc_ip_files $fft_type_chord
 
 set crs_corr8_ip_files []
 
-# For corr32, 64, which need the GTYs for corner turning
+# For corr32, 64, which need the GTYs for corner turning (paths relative to ${crs_platform_dir}/ip_cores)
 set crs_corr_ip_files [list \
- "CRS/GTY/gtwizard_ultrascale_0.xci" \
+ "GTY/gtwizard_ultrascale_0.xci" \
  ]
 
 set crs_ct_ip_files [concat [list \
- "CRS/CMAC_USP/CMAC_USP.xci" \
+ "CMAC_USP/CMAC_USP.xci" \
  ]]
 
 
 
 set crs_hdl_base_files [concat $hdl_base_files [list \
- "chfpga_crs.vhd" \
+ "platforms/crs/chfpga_crs.vhd" \
  "chan/ucap.vhd" \
  "ct/uct_engine.vhd" \
  ]]

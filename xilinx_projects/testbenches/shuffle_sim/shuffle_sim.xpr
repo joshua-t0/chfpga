@@ -84,14 +84,14 @@
   <FileSets Version="1" Minor="31">
     <FileSet Name="sources_1" Type="DesignSrcs" RelSrcDir="$PSRCDIR/sources_1">
       <Filter Type="Srcs"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/XGLINK_RX_DATA_FIFO/XGLINK_RX_DATA_FIFO.xci">
+      <File Path="$PPRDIR/../../hdl/platforms/ice/ip_cores/XGLINK_RX_DATA_FIFO/XGLINK_RX_DATA_FIFO.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/XGLINK_TX_DATA_FIFO/XGLINK_TX_DATA_FIFO.xci">
+      <File Path="$PPRDIR/../../hdl/platforms/ice/ip_cores/XGLINK_TX_DATA_FIFO/XGLINK_TX_DATA_FIFO.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -244,7 +244,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci">
+      <File Path="$PPRDIR/../../hdl/platforms/ice/ip_cores/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci">
         <FileInfo>
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>

@@ -9,17 +9,19 @@ cd [file normalize [file dirname [info script]]]
 # Get variables defining project sources
 source ../../tcl/project_sources.tcl
 
+set platform_dir $ice_platform_dir
+
 # Set project target part and source files
 set target_part $ice_target_part
 set ooc_ip_files $ice_corr16_ooc_ip_files
 set ip_files $ice_corr16_ip_files
-set hdl_files [concat $ice_corr16_hdl_files "chfpga_ice_corr16_config.vhd" ]
+set hdl_files [concat $ice_corr16_hdl_files "platforms/ice/chfpga_ice_corr16_config.vhd"]
 set const_files [list \
-	"ice/ice_timing_constraints_common.xdc" \
-	"ice/ice_physical_constraints_common.xdc" \
-	"ice/ice_physical_constraints_corr.xdc"\
-	"ice/ice_physical_constraints_ucorr44.xdc"\
-	"ice/ice_physical_constraints_hirax_fft.xdc"\
+	"ice_timing_constraints_common.xdc" \
+	"ice_physical_constraints_common.xdc" \
+	"ice_physical_constraints_corr.xdc"\
+	"ice_physical_constraints_ucorr44.xdc"\
+	"ice_physical_constraints_hirax_fft.xdc"\
 ]
 
 # Enable LUT combining, otherwise the design does not fit

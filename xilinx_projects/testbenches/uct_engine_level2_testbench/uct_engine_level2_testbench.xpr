@@ -253,7 +253,7 @@
       </Config>
     </FileSet>
     <FileSet Name="gtwizard_ultrascale_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/gtwizard_ultrascale_0" RelGenDir="$PGENDIR/gtwizard_ultrascale_0">
-      <File Path="$PPRDIR/../../../_Cores/CRS/GTY/gtwizard_ultrascale_0.xci">
+      <File Path="$PPRDIR/../../../hdl/platforms/crs/ip_cores/GTY/gtwizard_ultrascale_0.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
