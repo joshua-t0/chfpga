@@ -123,17 +123,25 @@ Architecture
 Output FIFO
 -----------
 
-``ADCDAQ`` uses an asynchronous output FIFO to cross from the ADC capture word clock to the user readout clock. The FIFO is 32 bits wide and 1024 words deep and is used to absorb clock phase differences while allowing deterministic synchronized release of data across multiple channels.
+``ADCDAQ`` uses an asynchronous output FIFO that provides the following functions:
 
-For ``ADCDAQ``, the FIFO implementation matters for timing closure.
+- Cross the data from the ADC capture word clock domain to the user readout clock domain.
+- Allow easy synchronization of multiple ADCDAQ output streams.
+- Allow buffering to compensate for large analog delays due to cable lengths
 
-The ``embedded`` FIFO implementation maps directly to Xilinx hard FIFO primitives such as ``FIFO36E1`` on 7-series devices. In that mode, the FIFO reset drives the primitive's internal embedded FIFO control logic. That reset path is subject to relatively strict recovery/removal timing checks.
+We use a ``generic_fifo`` wrapper to instantiate the FIFO. The FIFO is 32 bits wide and 1024 words deep and is used to absorb clock phase differences while allowing deterministic synchronized release of data across multiple channels. We use an ``embedded`` FIFO implementation to save resources. On a Kintex-7, this FIFO requires a false_path timing constraint so the asynchronous FIFO reset is properly timed (see :ref:`generic_fifo:Embedded FIFO`).
 
-In ``ADCDAQ``, those reset timing requirements interact poorly with the module's I/O-driven placement constraints. The data capture path is strongly shaped by ``BUFIO``/``BUFR`` reach, SERDES placement, IDELAY resources, and clock-region topology. As a result, the reset path to the embedded FIFO primitive can become difficult to route with enough margin, and timing failures were observed regularly on Kintex-7 designs even when the associated logic was placed close to the FIFO.
+Athough the downstream pipeline should run on on a word clock speed that is the same than the ADC capture word clock, the phase of the ADC data arrival is unknown and the data needs to be realigned the downstream pipeline clock. The asynchronous FIFO allows this.
+The FIFO can also thoretically allows the downstream pipeline to run on a faster clock speed than the ADC capture word clock (if there is a need for that, but we generally don't have much overhead here)  AND if all the downstream logic can handle non-contiguous data arrival (the FFT does not). 
 
-Using the ``bram`` FIFO implementation avoids this problem. In that mode, the FIFO is implemented using a BRAM-based XPM FIFO rather than exposing the hard embedded FIFO reset arc directly. The problematic primitive reset recovery/removal path is therefore not present in the same way, and timing closure for ``ADCDAQ`` is much more reliable.
+In order to support aligning data output for multiple ADCDAQs, incoming words are are stored in the FIFO until it is sufficiently full, and then sends out the ``data_ready`` signal is  asserted. The user can combine the ``data_ready`` signals from all ADCDAQs and generate a ``send_data`` signal that will instruct all ADCDAQ instances to begin output streaming simultaneously. 
 
-For this reason, ``ADCDAQ`` should prefer the ``bram`` FIFO implementation rather than the ``embedded`` FIFO implementation, even if the embedded FIFO may save some resources in less timing-constrained parts of the design.
+The ``data_ready`` signal is asserted when the FIFO is full enough to guarantee that a valid word will always be ready to send out when ``send_data`` is asserted (assuming we read the data no faster than the FIFO fills).
+
+The FIFO overhead between ALMOST_FULL and FULL can absorb a reasonable amount of pipelining delay between the outgoing ``data_ready`` and the returning ``data_ready``, which is useful since the ADCDAQs are spread across the FPGA. 
+
+The FIFO buffering is also used to implement arbitrary delays on the ADC data. A programmable word delay can be set to hold off writing incoming data into the FIFO for a number of clocks at startup, effectively delaying the data by that number of clocks. The output stream synchronization will let the FIFOs of all ADCDAQs fill up until the channel with the largest delay is ready. The headroom between ALMOST_FULL and FULL can also be used to absorb that delay.
+The FIFO has a depth of 1024 words, with a threshold of 16 words, which allows for a maximum delay of 1024 - 16 = 1008 clocks, i.e. about 500 ns at 200 MHz or about 100 m of maximum differential cable length between channels. 
 
 Clocking
 ========

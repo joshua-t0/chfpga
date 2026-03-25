@@ -1,6 +1,6 @@
 .. _chfpga_crs:
 
-:entity:`chfpga_crs` platform wrapper (*chfpga_crs.vhd*)
+:entity:`chfpga_crs` platform wrapper (*hdl/platforms/crs/chfpga_crs.vhd*)
 ********************************************************
 
 
@@ -32,6 +32,6 @@ The wrapper hard-codes the following parameters that are specific to the IceBoar
 Entity definition
 =================
 
-.. parse:: hdl/chfpga_crs.vhd
+.. parse:: hdl/platforms/crs/chfpga_crs.vhd
 
 .. autoentity:: chfpga_crs

@@ -1,7 +1,7 @@
 .. _chfpga_ice_ct_config:
 
-``ct`` configuration (*chfpga_ice_ct_config.vhd*)
-*************************************************
+``ct`` configuration (*hdl/platforms/ice/chfpga_ice_ct_config.vhd*)
+*******************************************************************
 
 Description
 ===========
@@ -52,7 +52,7 @@ This config uses the following parameters (see :ref:`config_param_reference` for
 Package definition
 ==================
 
-.. parse:: hdl/chfpga_ice_ct_config.vhd
+.. parse:: hdl/platforms/ice/chfpga_ice_ct_config.vhd
 
 
 

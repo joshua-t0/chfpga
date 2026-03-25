@@ -1,7 +1,7 @@
 .. _chfpga_ice:
 
 ********************************************************
-:entity:`chfpga_ice` platform wrapper (*chfpga_ice.vhd*)
+:entity:`chfpga_ice` platform wrapper (*hdl/platforms/ice/chfpga_ice.vhd*)
 ********************************************************
 
 ===========
@@ -67,7 +67,7 @@ BSB bus is connected to the 1 Gb Ethernet UDP/MAC that interfaces the SFP port u
 Entity definition
 =================
 
-.. parse:: hdl/chfpga_ice.vhd
+.. parse:: hdl/platforms/ice/chfpga_ice.vhd
 
 .. autoentity:: chfpga_ice
 

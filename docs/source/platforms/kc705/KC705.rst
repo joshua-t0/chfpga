@@ -75,7 +75,7 @@ Supported firmware configuration:
 Key hardware-specific parameters
 ================================
 
-The wrapper :file:`hdl/chfpga_kc705.vhd` hard-codes the following parameters:
+The wrapper :file:`hdl/platforms/kc705/chfpga_kc705.vhd` hard-codes the following parameters:
 
 - **PLATFORM_TYPE**: Passed as ``MGK7MB`` to `chfpga` (shared Kintex-7 BSB clock logic; `chfpga.vhd` ``bsb_clk_sel`` supports both ``KC705`` and ``MGK7MB``).
 - **SYSTEM_CLOCK_SOURCE** = ``SYSCLK``, **SYSTEM_CLOCK_FREQ** = 200.0
@@ -151,4 +151,4 @@ Build
 
 - Vivado project: :file:`xilinx_projects/chfpga_kc705_corr8/`
 - Target part: ``xc7k325tffg900-2``
-- IP cores in :file:`_Cores/KC705/` must be generated for this part (see :file:`tcl/project_sources.tcl` for ``kc705_corr8`` IP and HDL lists).
+- IP cores for this build live under :file:`hdl/platforms/kc705/ip_cores/` (see :file:`tcl/project_sources.tcl` for ``kc705_corr8`` IP and HDL lists). The out-of-context ``hirax_bit_growth_3dsp`` FFT IP is copied from the IceBoard IP tree into that folder.

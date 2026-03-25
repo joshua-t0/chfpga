@@ -1,13 +1,13 @@
 .. _chfpga_ice_corr16_config:
 
-``corr16`` configuration (*chfpga_ice_corr16_config.vhd*)
+``corr16`` configuration (*hdl/platforms/ice/chfpga_ice_corr16_config.vhd*)
 *********************************************************
 
 
 Description
 ===========
 
-The file `chfpga_ice_corr_config.vhd` defines the package `chfpga_config` containing constants that configure the `chFPGA` firmware for correlator operations on the IceBoard platform.
+The file `chfpga_ice_corr16_config.vhd` defines the package `chfpga_config` containing constants that configure the `chFPGA` firmware for correlator operations on the IceBoard platform.
 
 This configuration includes:
 
@@ -35,6 +35,6 @@ This config uses the following parameters (see :ref:`config_param_reference` for
 Package definition
 ==================
 
-.. parse:: hdl/chfpga_ice_corr16_config.vhd
+.. parse:: hdl/platforms/ice/chfpga_ice_corr16_config.vhd
 
 

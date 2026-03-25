@@ -31,13 +31,15 @@ The IceBoard is a Kintex-7-based FPGA motherboard designed by McGill Cosmology I
 
 Detailed description of the IceBoard hardware can be found at https://winterlandcosmology.bitbucket.io/iceboard-docs/
 
+IceBoard-related HDL, constraint files, and Vivado IP cores are grouped under :file:`hdl/platforms/ice/`: the platform wrapper and ``chfpga_ice_*_config`` packages, a :file:`constraints/` subdirectory for XDC, and :file:`ip_cores/` for the ``.xci`` IP listed in :file:`tcl/project_sources.tcl` for the ``ice_ct`` and ``ice_corr16`` builds. Vivado projects live in :file:`xilinx_projects/chfpga_ice_ct/` and :file:`xilinx_projects/chfpga_ice_corr16/`.
+
 
 Clocking hardware
 =================
 
 The IceBoard uses two on-board PLLs to distribute clocks to the FPGA, ARM, Ethernet PHY and backplane fabric. All devices are ultimately derived from a common reference clock to minimize relative phase noise between analogue signal paths.
 
-The following table summarizes the main clock sources and how they appear in the FPGA design (see ``constraints/ice/ice_physical_constraints_common.xdc`` and ``hdl/chfpga_ice.vhd``):
+The following table summarizes the main clock sources and how they appear in the FPGA design (see ``hdl/platforms/ice/constraints/ice_physical_constraints_common.xdc`` and ``hdl/platforms/ice/chfpga_ice.vhd``):
 
 .. list-table::
    :header-rows: 1

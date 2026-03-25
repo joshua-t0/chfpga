@@ -22,7 +22,7 @@ As in the main :ref:`KC705 platform document <kc705_platform>`: SYSCLK 200 MHz, 
 Entity definition
 =================
 
-.. parse:: hdl/chfpga_kc705.vhd
+.. parse:: hdl/platforms/kc705/chfpga_kc705.vhd
 
 .. autoentity:: chFPGA_KC705
 
@@ -55,4 +55,4 @@ This config uses the following parameters (see :ref:`config_param_reference` for
 Package definition
 ==================
 
-.. parse:: hdl/chfpga_kc705_corr8_config.vhd
+.. parse:: hdl/platforms/kc705/chfpga_kc705_corr8_config.vhd
