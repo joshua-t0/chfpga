@@ -4,7 +4,7 @@
     "xci_name": "hirax_bit_growth_3dsp",
     "component_reference": "user.org:user:hirax_bit_growth_3dsp:1.0",
     "ip_revision": "2",
-    "gen_directory": "../../../xilinx_projects/chfpga_ice_corr16/chfpga_ice_corr16.gen/sources_1/ip/hirax_bit_growth_3dsp",
+    "gen_directory": "gen",
     "parameters": {
       "component_parameters": {
         "Component_Name": [ { "value": "hirax_bit_growth_3dsp", "resolve_type": "user", "usage": "all" } ]
@@ -28,7 +28,7 @@
         "IPCONTEXT": [ { "value": "IP_Flow" } ],
         "IPREVISION": [ { "value": "2" } ],
         "MANAGED": [ { "value": "TRUE" } ],
-        "OUTPUTDIR": [ { "value": "../../../xilinx_projects/chfpga_ice_corr16/chfpga_ice_corr16.gen/sources_1/ip/hirax_bit_growth_3dsp" } ],
+        "OUTPUTDIR": [ { "value": "gen" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "." } ],
         "SWVERSION": [ { "value": "2022.2" } ],

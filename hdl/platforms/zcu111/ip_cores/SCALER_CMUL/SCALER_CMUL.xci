@@ -4,7 +4,7 @@
     "xci_name": "SCALER_CMUL",
     "component_reference": "xilinx.com:ip:cmpy:6.0",
     "ip_revision": "21",
-    "gen_directory": "../../../xilinx_projects/chfpga_zcu111/chfpga_zcu111.gen/sources_1/ip/SCALER_CMUL",
+    "gen_directory": "gen",
     "parameters": {
       "component_parameters": {
         "Component_Name": [ { "value": "SCALER_CMUL", "resolve_type": "user", "usage": "all" } ],
@@ -82,7 +82,7 @@
         "IPCONTEXT": [ { "value": "IP_Flow" } ],
         "IPREVISION": [ { "value": "21" } ],
         "MANAGED": [ { "value": "TRUE" } ],
-        "OUTPUTDIR": [ { "value": "../../../xilinx_projects/chfpga_zcu111/chfpga_zcu111.gen/sources_1/ip/SCALER_CMUL" } ],
+        "OUTPUTDIR": [ { "value": "gen" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "." } ],
         "SWVERSION": [ { "value": "2022.2" } ],

@@ -4,7 +4,7 @@
     "xci_name": "pfb_fft_bitgrowth_0",
     "component_reference": "user.org:user:pfb_fft_bitgrowth:1.0",
     "ip_revision": "2",
-    "gen_directory": "gen/pfb_fft_bitgrowth_0",
+    "gen_directory": "gen",
     "parameters": {
       "component_parameters": {
         "Component_Name": [ { "value": "pfb_fft_bitgrowth_0", "resolve_type": "user", "usage": "all" } ]
@@ -20,7 +20,7 @@
         "SIMULATOR_LANGUAGE": [ { "value": "MIXED" } ],
         "SPEEDGRADE": [ { "value": "-2" } ],
         "STATIC_POWER": [ { "value": "" } ],
-        "TEMPERATURE_GRADE": [ { "value": "I" } ],
+        "TEMPERATURE_GRADE": [ { "value": "E" } ],
         "USE_RDI_CUSTOMIZATION": [ { "value": "TRUE" } ],
         "USE_RDI_GENERATION": [ { "value": "TRUE" } ]
       },
@@ -28,7 +28,7 @@
         "IPCONTEXT": [ { "value": "IP_Flow" } ],
         "IPREVISION": [ { "value": "2" } ],
         "MANAGED": [ { "value": "TRUE" } ],
-        "OUTPUTDIR": [ { "value": "gen/pfb_fft_bitgrowth_0" } ],
+        "OUTPUTDIR": [ { "value": "gen" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "." } ],
         "SWVERSION": [ { "value": "2022.2" } ],
