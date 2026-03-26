@@ -13,8 +13,8 @@ create_clock -period 2.5 -name FREQ_CTR [get_pins chfpga0/*.system0/*.freq_ctr0/
 set_clock_groups -name FREQ_CTR_GROUP -asynchronous -group [get_clocks FREQ_CTR]
 
 # 100 MHz clock provided by the PS to the PL is not in phase with any other clock
-set_clock_groups -name CLK_PL0_GROUP -asynchronous -group [get_clocks clk_pl_0]
-
+# set_clock_groups -name CLK_PL0_GROUP -asynchronous -group [get_clocks clk_pl_0]
+set_clock_groups -name CLK_PL0_GROUP -asynchronous -group [get_clocks -of_objects [get_nets aclk]]
 ########################################
 # SMA clock input
 ########################################
