@@ -19,7 +19,7 @@
 <!-- Code quality improvements, cleanup, consolidation without changing behavior. Format: - [ ] **T### Brief title** — Description (added YYYY-MM-DD) -->
 
 - [ ] **T003 Update chfpga_zcu111 to latest API (based on chfpga_crs)** — Use enum generics, CT/GPU/corr maps, FFT_TYPE, CORR_READOUT_BINS, remove CROSSBAR1_TYPE/NUMBER_OF_CORRELATORS (added 2025-02-25)
-  - Context: `hdl/chfpga_zcu111.vhd`, `hdl/chfpga_zcu111_ct_config.vhd`
+  - Context: `hdl/platforms/zcu111/chfpga_zcu111.vhd`, `hdl/platforms/zcu111/chfpga_zcu111_ct_config.vhd`
 - [ ] **T002 Replace IP FIFOs with generic_fifo** — Replace IP FIFOs with generic_fifo. Start with small standalone FIFOs (ADCDAQ, CHAN_ARRAY). If it works, replace FIFO arrays in the CT engine (added 2025-02-19)
   - Context: `hdl/common/generic_fifo.vhd`; ADCDAQ, CHAN_ARRAY, CT engine
 
