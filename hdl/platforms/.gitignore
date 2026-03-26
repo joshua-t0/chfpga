@@ -6,3 +6,10 @@
 !*/ip_cores/**/
 !*/ip_cores/*/
 !*/ip_cores/*/*.xci
+
+# Vivado scratch when sourcing BD Tcl from <platform>/bd/
+*/bd/myproj/
+*/bd/.Xil/
+*/bd/*.bda
+# CRS: BD write_bd_tcl output under bd/gen/ (regenerate via create_project.tcl). ZCU111 tracks bd/gen/ — not ignored here.
+crs/bd/gen/
