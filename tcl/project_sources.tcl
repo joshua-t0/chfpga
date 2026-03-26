@@ -18,10 +18,9 @@ set no_lc "1"
 set repo_dir [file normalize "../../"]
 
 
-set bd_dir "${repo_dir}/hdl/TCPIPE"
-set ip_dir "${repo_dir}/_Cores/"
+# set ip_dir "${repo_dir}/_Cores/"
 set hdl_dir "${repo_dir}/hdl/"
-set const_dir "${repo_dir}/constraints/"
+# set const_dir "${repo_dir}/constraints/"
 set bd_name ""
 
 set hdl_base_files [list  \
