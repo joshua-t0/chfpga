@@ -133,8 +133,8 @@ BSB interface
 Constraint files
 ================
 
-- :file:`constraints/kc705/chFPGA_KC705_timing_constraints.xdc`
-- :file:`constraints/kc705/chFPGA_KC705_physical_constraints.xdc`
+- :file:`hdl/platforms/kc705/constraints/chFPGA_KC705_timing_constraints.xdc`
+- :file:`hdl/platforms/kc705/constraints/chFPGA_KC705_physical_constraints.xdc`
 
 Port names in the constraint files are **lowercase** to match the wrapper entity. Physical constraints include pblocks for ANT0–7, CORR0–7, ADCDAQ, PHY, I2C, SPI (ICE-style floorplanning).
 

@@ -1,6 +1,11 @@
 ZCU111
 ******
 
+Source tree
+===========
+
+Platform-specific RTL, constraints, and Xilinx IP for this board live under :file:`hdl/platforms/zcu111/`: the wrapper and configuration packages (:file:`chfpga_zcu111.vhd`, :file:`chfpga_zcu111_ct_config.vhd`), :file:`constraints/zcu111_physical_constraints.xdc`, and :file:`ip_cores/` (Vivado ``.xci`` cores). The CHORD channelizer FFT is the same out-of-context ``pfb_fft_bitgrowth_0`` core as on CRS (see :file:`tcl/project_sources.tcl`, ``fft_type_chord`` / ``zcu111_ooc_ip_files``). The Zynq PS/PL block design for TCPIP lives under :file:`hdl/platforms/zcu111/bd/gen/zynq_tcpipe_zcu111/` (Vivado ``write_bd_tcl`` remote layout: ``.bd`` and generated IP products); the checked-in Tcl is :file:`hdl/platforms/zcu111/bd/zynq_tcpipe_zcu111.tcl`. If the ``.bd`` is missing, :file:`create_generic_project.tcl` sources that Tcl to recreate it. The Vivado project is :file:`xilinx_projects/chfpga_zcu111/`.
+
 Platform wrapper
 ================
 
@@ -14,8 +19,8 @@ Supported firmware configuration:
 - ``chfpga_zcu111_ct_config``: 8-channel F-Engine, corner-turn, 100G offload; no correlator. See :ref:`config_param_reference` for full parameter descriptions.
 
 
-``ct`` configuration (*chfpga_zcu111_ct_config.vhd*)
-----------------------------------------------------
+``ct`` configuration (:file:`hdl/platforms/zcu111/chfpga_zcu111_ct_config.vhd`)
+-------------------------------------------------------------------------------
 
 8-channel F-Engine, UCT corner-turn (single-board), and 100G Ethernet real-time data offload via UPACK+CGE. No on-board correlator; data is offloaded to an external X-Engine.
 

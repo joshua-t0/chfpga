@@ -11,4 +11,5 @@ Platform wrappers
    kc705/KC705
    CRS/CRS
    ZCU111/ZCU111
+   ml605/ml605
    bit_widths
