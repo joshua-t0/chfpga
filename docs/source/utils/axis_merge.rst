@@ -4,7 +4,7 @@
 :entity:`axis_merge` (*axis_merge.vhd*): N-port packet-level round-robin AXIS merge
 ******************************************************************************************
 
-.. parse:: hdl/common/axis_merge.vhd
+.. parse:: hdl/utils/axis_merge.vhd
 
 .. default-role:: vhdl:entity
 
@@ -12,6 +12,57 @@ Entity documentation
 ====================
 
 .. autoentity:: axis_merge
+
+Parameters
+==========
+
+- **N_PORTS:** Number of AXI4-Stream input ports to merge. Port indices run from 0 to
+  ``N_PORTS − 1``. Default: 2.
+
+- **DATA_WIDTH:** Data width in bits for all AXIS buses (input and output). Default: 8.
+
+- **USE_FIFO:** When ``TRUE`` (default), an internal :entity:`axis_sync_fifo` is inserted
+  between the arbitration mux and the output to break the combinatorial path from
+  ``m_axis_tready`` back to ``s_axis_tready``. When ``FALSE``, the output is driven
+  directly (combinatorial back-pressure path; suitable for moderate clock rates only).
+
+Interface
+=========
+
+Input streams (slave side)
+--------------------------
+
+- ``s_axis_tdata``: Array of ``N_PORTS`` input data buses, each ``DATA_WIDTH`` bits wide.
+  Type: ``slv_array(0 to N_PORTS − 1)(DATA_WIDTH − 1 downto 0)``.
+
+- ``s_axis_tvalid``: ``N_PORTS``-bit vector of source-valid handshake signals, one per port.
+
+- ``s_axis_tlast``: ``N_PORTS``-bit vector of end-of-packet markers, one per port. Arbitration
+  advances to the next round-robin candidate only when the current port asserts ``tlast`` and
+  the transfer is accepted.
+
+- ``s_axis_tready``: ``N_PORTS``-bit vector of back-pressure outputs. Only the currently
+  selected port's bit is driven high; all others are held low.
+
+Output stream (master side)
+---------------------------
+
+- ``m_axis_tdata``: Merged output data bus (``DATA_WIDTH`` bits).
+
+- ``m_axis_tvalid``: Asserts when the selected input port has valid data (or when the internal
+  FIFO has data, when ``USE_FIFO = TRUE``).
+
+- ``m_axis_tlast``: End-of-packet marker forwarded from the selected input port.
+
+- ``m_axis_tready``: Back-pressure input from the downstream consumer.
+
+Clock and reset
+---------------
+
+- ``clk``: System clock. All arbitration logic and (if enabled) the internal FIFO are
+  synchronous to the rising edge.
+
+- ``rst``: Synchronous active-high reset. Clears the arbitration state. Default: ``'0'``.
 
 Overview
 ========
@@ -137,3 +188,16 @@ port to finish before choosing the next — gives 1 dead cycle, acceptable for o
 
 **TREADY path**: The single dead cycle keeps one MUX LUT in the reply path. Fully breaking the
 combinatorial tready path would require a 2-deep FIFO and an extra dead cycle.
+
+Implementation details
+======================
+
+Principle of operations
+-----------------------
+
+The arbiter maintains a ``current_port`` register and a ``current_port_active`` flag. While a port is active, its data passes through an N:1 combinatorial mux to the output (or to an internal :entity:`axis_sync_fifo` when ``USE_FIFO`` is true). When the last word of a packet is accepted (``tlast`` and ``tready`` both asserted simultaneously), ``current_port_active`` clears and the arbiter searches a double-length copy of ``s_axis_tvalid`` starting from ``current_port + 1`` to select the next valid port in round-robin order, incurring one dead cycle between packets. Only the currently selected port's ``s_axis_tready`` bit is driven high; all others are held low.
+
+Clocking
+--------
+
+All arbitration logic and the optional internal :entity:`axis_sync_fifo` operate in a single clock domain driven by ``clk``. There are no multi-clock-domain crossings.

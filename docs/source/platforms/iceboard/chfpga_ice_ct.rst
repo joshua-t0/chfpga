@@ -55,4 +55,10 @@ Package definition
 .. parse:: hdl/platforms/ice/chfpga_ice_ct_config.vhd
 
 
+Implementation details
+======================
 
+Principle of operations
+-----------------------
+
+This package configures the IceBoard firmware as a multi-board F-Engine and corner-turn node without an on-board correlator. It enables 16 HIRAX-format channelizers (8-bit, 2048-sample FFT, 18+18-bit complex output) with per-channelizer PROBER BRAM capture, a BCT corner-turn at level 3 (within-board, intra-crate, and inter-crate GTY backplane shuffling), and 8×10G Ethernet real-time offload (``DATA_LINK_TYPE = XGE``) of the corner-turned data to an external X-Engine.

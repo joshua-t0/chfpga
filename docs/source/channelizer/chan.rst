@@ -33,9 +33,63 @@ Entity
 
 .. autoentity:: chan
 
+Parameters
+==========
 
-Additional details
-==================
+- **PLATFORM_TYPE:** Target FPGA platform. Selects platform-specific primitives (e.g., embedded memories). Defined as an enumerated type in :doc:`../chfpga_package`.
+- **IMPLEMENT_FFT:** When ``FALSE``, the FFT sub-module is not instantiated. Useful for partial builds or debugging.
+- **FFT_TYPE:** Selects the FFT configuration (e.g., ``CHIME``, ``D3A``, ``HIRAX``). Determines ADC width, sample count, bin width, and other FFT-derived parameters via the ``FFT_INFO`` lookup table in :doc:`../chfpga_package`.
+- **SCALER_USE_COMPLEX_GAINS:** When ``TRUE``, the scaler applies complex (16+16i)-bit gains per bin. When ``FALSE``, 16-bit real gains are used.
+- **CAPTURE_TYPE:** Selects the data capture engine type (``BRAM`` for internal PROBER, ``URAM`` for external UCAP). Determines capture bus width and number of capture sources.
+- **CT_TYPE:** Corner-turn type. Determines the width of the output AXI-Streaming bus that feeds the corner-turn or correlator engine.
+- **IMPLEMENT_CHAN:** When ``FALSE``, no sub-modules are instantiated but the BSB router is still present. Useful for lightweight test builds. Default is ``TRUE``.
+- **SIM:** When ``TRUE``, simulation-friendly behavior is enabled (e.g., shorter delays). Bound to the global ``GLOBAL_SIM`` constant by default.
+
+Interface
+=========
+
+ADC input
+---------
+
+- ``in_dat_tdata/tvalid/tlast``: Non-blocking AXI4-Streaming input bus carrying ``ADC_SAMPLES_PER_WORD`` ADC samples per clock, each ``ADC_BITS_PER_SAMPLE`` bits wide. The first (earliest) sample occupies the MSBs.
+- ``in_dat_tuser``: Per-sample saturation flags (one bit per sample, MSB = first sample).
+- ``in_clk``: Input and signal processing clock. All signal processing from ADC input to the output FIFO write side runs on this clock.
+- ``in_reset``: Synchronous (``in_clk``) reset for all sub-modules except ADCDAQ.
+
+Output
+------
+
+- ``out_dat_tdata/tvalid/tlast/tuser``: Non-blocking AXI4-Streaming output bus carrying scaled complex frequency bins. Width is ``OUT_BITS_PER_WORD`` (set by ``CT_TYPE``). ``tuser`` carries per-frame flags.
+- ``out_dat_almost_empty``: Asserted approximately 15 clocks before the output FIFO empties, used for flow control by downstream logic.
+- ``out_dat_send``: Flow-control input. When asserted, the output FIFO begins sending data. Typically driven by ``chan_align_blk`` to synchronize all channelizer outputs.
+- ``out_clk``: Output clock for the ``out_dat`` bus. May differ from ``in_clk`` to re-align multi-phase channelizers.
+- ``out_reset``: Resets the output FIFO only. Synchronous to ``out_clk``.
+
+Monitoring
+----------
+
+- ``lane_monitor``: 4-bit diagnostic bus for lane monitoring.
+
+BSB control interface
+---------------------
+
+- ``s_axis_bsb_*/m_axis_bsb_*``: Blocking 8-bit AXI4-Streaming Byte-Serial-Bus (BSB) command/reply interface for accessing the memory-mapped registers of all sub-modules.
+- ``bsb_clk``: BSB interface clock.
+- ``bsb_rst``: Synchronous reset for the BSB interface.
+- ``m_axis_adcdaq_bsb_*/s_axis_adcdaq_bsb_*``: BSB pass-through interface routed to the external ADCDAQ module associated with this channelizer.
+
+Data capture interface
+----------------------
+
+- ``cap_source_req``: Requests which capture source (0 = FUNCGEN output, 1 = SCALER output) to stream. Source switch occurs on a frame boundary.
+- ``cap_source_ack``: Reflects the capture source currently being streamed, aligned to the ``m_axis_cap`` data.
+- ``m_axis_cap_tdata/tvalid/tlast``: Wide capture output bus (``CAPTURE_BITS_PER_WORD`` bits) for the external UCAP module (when ``CAPTURE_TYPE = URAM``).
+- ``m_axis_prober_tdata/tvalid/tlast/tready``: 8-bit blocking AXI-Streaming output from the internal PROBER capture module (when ``CAPTURE_TYPE = BRAM``).
+- ``axis_prober_clk``: Clock for the PROBER output stream.
+
+
+Implementation details
+======================
 
 Parametrization
 ---------------

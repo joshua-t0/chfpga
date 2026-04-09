@@ -19,3 +19,16 @@ Configuration parameters
 - :ref:`CONFIG_CORR_TYPE <config_corr_type>` — UCORR44; 64-input correlator
 - :ref:`CONFIG_CORR_READOUT_BINS <config_corr_readout_bins>` — (0 => 0)
 - :ref:`CONFIG_DATA_LINK_TYPE <config_data_link_type>` — NONE; no real-time offload
+
+Package definition
+------------------
+
+.. parse:: hdl/platforms/crs/chfpga_crs_corr64_config.vhd
+
+Implementation details
+======================
+
+Principle of operations
+-----------------------
+
+This package defines compile-time constants for a CRS board acting as a 64-input correlator node spanning two crates. It configures 8 CHORD-format F-Engine channelizers with URAM-based centralized capture, a multi-crate UCT corner-turn (``CT_LEVEL = 3``) that uses 3 PCB backplane links for intra-crate shuffling and 2 SFP links for inter-crate shuffling across 8 boards total, and a 64-input UCORR44 correlator that accumulates all baselines locally. No real-time data offload is active.

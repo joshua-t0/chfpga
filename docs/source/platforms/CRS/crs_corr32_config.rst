@@ -19,3 +19,16 @@ Configuration parameters
 - :ref:`CONFIG_CORR_TYPE <config_corr_type>` — UCORR44; 32-input correlator
 - :ref:`CONFIG_CORR_READOUT_BINS <config_corr_readout_bins>` — (0 => 0)
 - :ref:`CONFIG_DATA_LINK_TYPE <config_data_link_type>` — NONE; no real-time offload
+
+Package definition
+------------------
+
+.. parse:: hdl/platforms/crs/chfpga_crs_corr32_config.vhd
+
+Implementation details
+======================
+
+Principle of operations
+-----------------------
+
+This package defines compile-time constants that select the firmware personality for a CRS board acting as a 32-input correlator node in a single crate. It enables 8 CHORD-format F-Engine channelizers with URAM-based centralized capture, configures a UCT crate-level corner-turn (``CT_LEVEL = 2``) that exchanges data across 4 boards via 3 PCB backplane links, and instantiates a 32-input UCORR44 correlator that accumulates products locally. No real-time data offload is active; all output is through the register/BSB interface.

@@ -18,6 +18,44 @@ Entity documentation
 
 .. autoentity:: fft
 
+Parameters
+==========
+
+- **IMPLEMENT_FFT:** When ``FALSE``, the FFT is not instantiated and a bypass path propagates input samples to the output with sign extension. Default is ``TRUE``.
+- **FFT_TYPE:** Selects the FFT geometry via the ``FFT_INFO`` lookup table (e.g., ``CHIME``, ``D3A``, ``HIRAX``). Determines sample width, samples per word, bins per word, bits per bin, and pipeline latency.
+- **ROTATE_BINS:** When ``TRUE``, output bins are rotated cyclically so that low-frequency bins are spread across multiple output word lanes, improving uniformity for corner-turn processing. Default is ``FALSE``.
+
+Interface
+=========
+
+Data interface
+--------------
+
+- ``s_axis_in_dat_tdata/tvalid/tlast/tuser``: Non-blocking AXI4-Streaming input carrying ``ADC_SAMPLES_PER_WORD`` ADC samples per clock. ``TVALID`` must be continuously asserted since the CASPER FFT processes data on every clock.
+
+  - ``ADC_SAMPLES_PER_WORD`` samples per clock (4 for CHIME, 8 for D3A/CHORD).
+  - Each sample is signed two's complement, ``ADC_BITS_PER_SAMPLE`` bits wide.
+  - First (earliest) sample is in the MSBs of the word.
+  - ``TUSER`` contains the ADC frame-wide overflow flag, valid on ``TLAST``.
+
+- ``m_axis_out_dat_tdata/tvalid/tlast/tuser``: Non-blocking AXI4-Streaming output carrying ``FFT_BINS_PER_WORD`` complex frequency bins per clock.
+
+  - ``FFT_BINS_PER_WORD`` complex bins per clock (2 for CHIME, 4 for D3A/CHORD).
+  - Each bin is signed two's complement; real part is in the MSBs of the bin, imaginary part in the LSBs.
+  - Lowest-indexed bin is in the MSBs of the word.
+  - ``TUSER`` contains both the ADC frame-wide and FFT frame-wide overflow flags, valid on ``TLAST``.
+
+Clock and reset
+---------------
+
+- ``clk``: Processing clock, shared by the input and output buses.
+- ``reset``: Synchronous reset. Triggers the initial SYNC sequence that initializes the FFT pipeline.
+
+BSB control interface
+---------------------
+
+- ``s_axis_bsb_*/m_axis_bsb_*``: Blocking 8-bit AXI4-Streaming BSB command/reply interface for memory-mapped register access (shift schedule, overflow counters, bypass mode, etc.).
+- ``bsb_clk/bsb_rst``: BSB clock and synchronous reset.
 
 
 Principle of operations
@@ -42,27 +80,6 @@ FFT selection
 -------------
 
 The type of FFT is selected by the ``FFT_TYPE`` constant defined in the configuration package. ``FFT_TYPE`` is used  to select the FFT configuration parameters from the ``FFT_INFO`` structure, and a case-generate statement selects which FFT entity to instantiate and maps the input bus to whatever interface that particular FFT has, as different CASPER-generated FFTs may have slightly different port names and structures. All FFT entities have been generated using the CASPER framework, which explains why they may have different interfaces despite serving the same purpose.
-
-Interface signals
------------------
-
-Data is provided to the FFT over an AXI4-Streaming, non-blocking input interface. The data word structure contains:
-
- - ``ADC_SAMPLES_PER_WORD`` samples per clock (4 for CHIME, 8 for D3A/CHORD). 
- - Each sample is signed (2's complement format)
- - First sample is in the MSB of the word
- - TUSER contains the ADC frame-wide overflow flag, valid on TLAST
- - TVALID must be always '1' because the FFT processes data on every clock (see section below).  
-
-The output is also an AXI4-Streaming, non-blocking interface. Each output word contains:
-
- - ``FFT_BINS_PER_WORD`` complex frequency bins per clock (2 for CHIME, 4 for D3A/CHORD). 
- - Each bin is signed (2's complement format)
- - First bin is in the MSB of the word
- - Real part is in the MSB of the bin, Imaginary part is in the LSB
- - TUSER contains the FFT frame-wide overflow flag, valid on TLAST, in addition to the ADC frame-wide overflow flag
-
-A BSB interface is also available to read and write the memory map registers used to configure and monitor the FFT. 
 
 Clocking and resets
 -------------------

@@ -15,6 +15,48 @@ Its main roles are:
 - let multiple channels fill before output is released,
 - support deterministic synchronized start of streaming across channels.
 
+Parameters
+==========
+
+The FIFO is instantiated inside `ADCDAQ` using the :doc:`../utils/generic_fifo` wrapper. The relevant configuration as used by `ADCDAQ` is:
+
+- **DATA_WIDTH:** 32 bits (four 8-bit ADC samples per word).
+- **DEPTH:** 1024 words.
+- **MEMORY_TYPE:** ``"bram"`` — see `Implementation choice`_ below for the rationale.
+- **ALMOST_FULL_THRESHOLD:** Set to provide enough headroom (≥ 16 words) for the ``data_ready`` / ``send_data`` round-trip propagation delay across multiple ADCDAQ instances.
+
+Interface
+=========
+
+Write side (ADC capture clock domain)
+--------------------------------------
+
+- ``wr_clk``: ADC word clock (typically 200 MHz for 800 MSPS operation). Data is written on every valid word output by the SERDES capture logic.
+- ``wr_en``: Write enable, asserted when captured words are valid and the FIFO write path is active.
+- ``din``: 32-bit data word containing four 8-bit two's-complement ADC samples.
+- ``almost_full``: Asserted when the FIFO fill level reaches the configured threshold. Used to derive ``data_ready``.
+
+Read side (user readout clock domain)
+--------------------------------------
+
+- ``rd_clk``: User readout clock. Must have the same frequency as ``wr_clk`` and a fixed phase relationship with the ADC word clock.
+- ``rd_en``: Read enable, asserted when ``send_data`` is active and a valid word is available.
+- ``dout``: 32-bit word output, forwarded to ``m_axis_adc_tdata``.
+- ``empty``: Asserted when no valid data is available for readout.
+
+Implementation details
+======================
+
+Principle of operations
+-----------------------
+
+The ADCDAQ FIFO bridges the ADC capture word clock and the user readout clock domains. Captured words are written into the FIFO by the ADC-side logic and held until the fill level crosses the ``almost_full`` threshold, at which point ``data_ready`` is asserted. Once the user asserts ``send_data``, the read-side logic begins draining the FIFO and driving the AXI4-Streaming output bus. The FIFO depth of 1024 words provides headroom to absorb clock phase differences, multi-channel start-up skew, and programmable per-channel sample delays (up to ~1008 word-clock cycles, equivalent to roughly 100 m of differential cable length at 200 MHz).
+
+Clocking
+--------
+
+This is a fully asynchronous (dual-clock) FIFO: the write side runs on the ADC capture word clock and the read side runs on the user readout clock. The two clocks must have the same nominal frequency and a fixed phase relationship (typically both derived from the same ADC source) to prevent long-term FIFO overflow or underflow.
+
 Implementation choice
 =====================
 

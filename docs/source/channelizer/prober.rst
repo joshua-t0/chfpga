@@ -29,21 +29,45 @@ Entity documentation
 
 
 
+Parameters
+==========
+
+- **SIM:** When ``TRUE``, enables simulation-friendly behaviour (e.g., shorter timeouts). Default is ``FALSE``.
+- **NUMBER_OF_INPUTS:** Number of selectable input data sources. Default is 2 (source 0 = FUNCGEN output, source 1 = SCALER output).
+
+Interface
+=========
+
+Input
+-----
+
+- ``in_dat0``, ``in_dat1``: Non-blocking 32-bit AXI4-Streaming data inputs (``in_clk`` domain), one per source. Source 0 is typically the `FUNCGEN` output; source 1 is the `SCALER` output.
+- ``in_clk``: Write-side clock. All data capture logic runs on this clock.
+- ``in_reset``: Asynchronous reset. Resets the data FIFO and capture counters.
+
+Output
+------
+
+- ``out_tdata/tvalid/tlast/tready``: Blocking 8-bit AXI4-Streaming output (``out_clk`` domain). Each packet consists of a 10-byte header followed by the captured frame contents.
+- ``out_clk``: Read-side clock for the output stream and state machine.
+
+BSB control
+-----------
+
+- ``s_axis_bsb_*/m_axis_bsb_*``: Blocking 8-bit AXI4-Streaming Byte-Serial Bus command/reply interface for memory-mapped register access (capture period, source selection, stream ID, etc.).
+- ``ctrl_clk``: Control bus clock (independent of ``in_clk`` and ``out_clk``).
+- ``ctrl_reset``: Synchronous reset for the BSB interface and control registers.
+
+Implementation details
+======================
+
 Principle of operations
-=======================
+-----------------------
 
-Interface signals
-------------------
-
-Data is provided to `PROBER` over two 32-bit non-blocking AXI4-Streaming interfaces operating in the ``in_clk`` clock domain. 
-``in_dat0`` and ``in_dat1`` are inputs for sources 0 (typically `FUNCGEN` output) and 1 (`SCALER` output) respectively.
-
-Data frames from the selected source are buffered and streamed out using an 8-bit wide blocking AXI4-Streaming interface operating on the ``out_clk`` clock domain. The output packets contain a 10-byte header followed by frame contents. 
-
-A BSB interface operating on the ``ctrl_clk`` clock provides access to the memory-mapped control and status registers. 
+`PROBER` captures bursts of data frames from one of two 32-bit non-blocking AXI4-Streaming input sources (``in_clk`` domain) and streams them out as 8-bit blocking AXI4-Streaming packets (``out_clk`` domain), each preceded by a 10-byte header. Capture is triggered periodically by configurable primary and sub-period counters. A request/acknowledge handshake between clock domains ensures that a new burst is not started before the previous one has been fully transmitted.
 
 Clocking and resets
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 The input stream, output stream and BSB stream operate on the ``in_clk``, ``out_clk`` and ``ctrl_clk`` clocks. These are fully independent clocks, although ``out_clk`` is usually identical to ``ctrl_clk``. 
 
@@ -57,7 +81,7 @@ The reset signals are active high.
 .. todo:: Clarify if resets are synchronous or asynchronous, and whether data can be active during reset. 
 
 Period counters
----------------
+~~~~~~~~~~~~~~~
 
 Two independent counters continuously count frames from both sources simultaneously, each with its own programmable period. These are called primary periods. A burst capture starts when the primary period counter reaches the programmed value. Independent counters are used to ensure that the frames are always captured on a multiple of the primary period, even if we switch to another source and come back to the original source. 
 
@@ -69,7 +93,7 @@ In typical applications, the primary periods are set to the slowest capture rate
 
 
 Data capture method
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 A burst capture is triggered on the last word of a frame when the period counter is zero or the sub-period bits of the period counter are all zeros. When this happens, ``burst_capture`` is asserted and the timestamp is captured. Data is stored in the FIFO while burst_capture is asserted. On the TLAST word of a frame during a capture, the TUSER flags are stored in an array, and on the last frame of the burst, a readout request is asserted by toggling the readout request bit.
 
@@ -79,7 +103,7 @@ When data transmission is complete, the acknowledge bit is set to match the requ
 
 
 Header format
--------------
+~~~~~~~~~~~~~
 
 The header format is defined in the ``chfpga_package.vhd`` file. The header contains the following information:
 
@@ -104,7 +128,7 @@ The header format is defined in the ``chfpga_package.vhd`` file. The header cont
 .. todo:: Update code to use a UCAP-like header format. Byte3 = 0000mmss where mm=mode and ss=subframe, replace the zeros with TUSER flags. Check if scaler issues TUSER flags, and does it combine all the scaler overflow flags?
 
 Data FIFO
----------
+~~~~~~~~~
 
 The data FIFO is a 36-bit wide, 2048-word deep FWFT asynchronous FIFO with zero read latency. The FIFO stores the 32-bit data plus the TLAST flag, with the remaining bits being unused. The FIFO is implemented using two 18-bit x 2048 FIFO36E2 primitives in parallel to reduce fabric logic utilization and because the XPM_FIFO macro does not support the embedded FIFO. The input data is presented in the 36-bit wide ``data_fifo_din``. The lower 18 bits are fed to the ``di`` and ``dip`` port of the first FIFO primitive, and the upper 18 bits are fed to the other.
 
@@ -114,7 +138,7 @@ The data FIFO is a 36-bit wide, 2048-word deep FWFT asynchronous FIFO with zero 
 
 
 Readout state machine
----------------------
+~~~~~~~~~~~~~~~~~~~~~
 
 The state machine is in the following states:
 

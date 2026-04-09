@@ -26,96 +26,88 @@ Entity documentation
 
 .. autoentity:: adcdaq
 
-
-.. .. highlight:: vhdl
-
-..  .. role:: vhdl(code)
-..   :language: vhdl
-
-
-Detailed description
-====================
-
-Overview
-========
-
-`ADCDAQ` implements the data acquisition of one of the EV8AQ160 ADC channel in 4-channel mode and in  1:1 DMUX mode (i.e. only the high bus signals  (AH/BH/CH/DH) are used, and data is DDR (double data rate)). Clock and data lines can be individually configured to be individually configured to be single-ended or differential using the ``IS_DIFFERENTIAL`` generic.  The module uses a 4:1 SERDES to combine the bits of 4 consecutive bytes into a 32-bit word, with the word clock frequency being 1/4 of the ADC sampling frequency (200 MHz for an 800 MSPS ADC). The use of the SERDES and associated IOB clocking allows handling of high sample rates up to 850 MSPS on a Kintex-7 FPGA.
-
-This ADC is typically used on the McGill's MGADC08 FMC mezzanine card with Kintex-7 platforms (IceBoards, KC705). The connectivity between the FMC and the FPGA is such that the ADC clocks and data lines may end up in different banks. `ADCDAQ` is parametrizable to allow multi-clock-region clocking via the ``CLOCKING_REGION_MAP`` generic. A PLL-based clocking approach is also supported (``INSTANTIATE_PLL``, ``USE_EXT_DATA_CLK``) for those pinout configurations where the clock cannot be routed to the data lines using the IOB local clocking resources.
-
-The module is designed to perform deterministic ADC SYNC sequencing. The module can be reset while the ADC SYNC line is being activated, i.e. while the ADC clocks are stopped. The reset clears all deserializers and data framing counters. Once the ADCDAQ reset is deasserted, data will start being captured and framed as soon as the ADC starts clocking again after the ADC SYNC line is released. A configurable number of samples will be dropped to ensure the PLL (if present)  had time to stabilize, and optionally to compensate for differential delays between analog inputs (caused, e.g., by cable lenghts). 
-
-Data is packed into ``SAMPLES_PER_FRAME``-sample frames (``SAMPLES_PER_FRAME/4`` words) and the words are stored in an asynchronous FIFO. Once the FIFO is sufficiently full, the ``data_ready`` signal is  asserted. The user can then assert ``send_data`` to begin output streaming. This allows multiple ADCDAQ instances to be synchronized and start streaming in sync even if each ADC operate on clocks with differents delays and phases.
-
-`ADCDAQ` operation is controlled by registers accessed through the BSB control and monitoring bus. 
-
-Key generics
-============
-
-
-- ``SAMPLES_PER_FRAME``: Integer that defines the number of samples per frame.
-- ``INSTANTIATE_PLL``: When TRUE, enables generation of bit and word clocks (IOCLK/DIVCLK) using a PLL. The clocks are made available on ``ioclk_out_pll`` and ``divclk_out_pll``.
-- ``CLOCKING_REGION_MAP``: maps on which clock region the corresponding data and clock lines are associated. This will instantiate the BUFR/BUFIO in each specified region, and data bit processing will use the relevant clock. The clock region is identified by an arbitrary integer number 0, 1, 2, ... (the number does not correspond to a physical bank or FPGA clock region). If any number is negative, no BUFMR is instantiated to feed the BUFIO/BUFR. Integers at indices 0-7 of the vector are the clock region of the data lines, and integer at index  8 is the clock region of the clock line (the bank that will have the BUFMR).     
-- ``IS_DIFFERENTIAL``: If TRUE, selects differential reception per input line. If FALSE, single-ended reception is used. If single-ended, only the P side will be used.
-- ``PROVIDE_BUFFERED_DIVCLK``: When TRUE, exports a BUFG-buffered word clock on ``divclk_out_bufg`` for downstream logic such as a channelizer.
-- ``USE_EXT_DATA_CLK``: when TRUE, uses external bit and word clocks provided by ``ioclk_in`` and ``divclk_in`` instead of locally generated clocks. These are generally connected to the ``ioclk_out_pll`` and ``divclk_out_pll`` clocks of another ADCDAQ instance. This allows capture even when data lines are spread beyond the reach of the local BUFIO/BUFR resources.
-- ``CLK_VALID_OFFSET``: adjusts the point at which captured words are considered valid after startup. This is used to compensate for the pipelining delay in the ADC.
-
-Interfaces
+Parameters
 ==========
 
-ADC input interface
--------------------
+- **FPGA_SERIES:** Target FPGA device series (``KINTEX7`` or ``ULTRASCALE_PLUS``). Selects SERDES, FIFO, and IDELAY primitives appropriate for the target family.
+- **SAMPLES_PER_FRAME:** Number of ADC samples per output frame. Determines when ``TLAST`` is asserted on the readout bus. Default is 2048.
+- **IMPLEMENT_ADCDAQ:** When ``FALSE``, a dummy module is generated with preserved I/O ports but no capture logic. Useful for partial builds.
+- **INSTANTIATE_IDELAYCTRL:** When ``TRUE``, instantiates an IDELAYCTRL primitive in this module. Only one ADCDAQ per clock region needs to instantiate this; the tools auto-place others.
+- **INSTANTIATE_PLL:** When ``TRUE``, instantiates a PLL/MMCM to generate globally-buffered IOCLK and DIVCLK signals for export to other ADCDAQ instances in non-adjacent clock regions.
+- **CLOCKING_REGION_MAP:** Integer array mapping each data line (indices 0–7) and the ADC clock (index 8) to a BUFR/BUFIO clock region integer. If all entries are negative, no BUFMR is instantiated.
+- **IS_DIFFERENTIAL:** Per-line flag array. When ``TRUE``, differential reception is used (IBUFDS). When ``FALSE``, only the P input is used as a single-ended input. Applies to data lines (0–7) and clock (8).
+- **PROVIDE_BUFFERED_DIVCLK:** When ``TRUE``, exports a BUFG-buffered word clock on ``divclk_out_bufg`` for downstream logic such as a channelizer.
+- **USE_EXT_DATA_CLK:** When ``TRUE``, uses externally provided bit and word clocks (``ioclk_in`` / ``divclk_in``) rather than locally derived clocks. Required when data lines span non-adjacent clock regions.
+- **CLK_VALID_OFFSET:** Word-clock cycles to wait after ADC startup before data is declared valid. Compensates for PLL lock time and analog pipeline delays. Default is −3.
+- **SIM:** When ``TRUE``, simulation-friendly behavior is enabled (e.g., shorter startup timeouts).
 
-8-bit double-data-rate (DDR) ADC data on the ``adc_data_h_p/n`` data lines (named "AHD/BHD/CHD/DHD" on the ADC) is captured on  both the rising and falling edges of the data clock ``adc_clk_h_p/n`` (named "ADC/BDR/CDR/DDR" on the ADC). The Nth sample is captured on the rising edge, and the N+1th sample is captured on the falling edge.
+Interface
+=========
 
-The "low" lines of the ADC ("ALD/BLD/CLD/DLD") and the out-of-range ("\*OR") are not used in order to preserve FPGA pins and maximize the number of ADCs that can fit onto a FMC mezzanine and a single FPGA. Since the ADC nicely saturates an over-range signal to 0x00 and 0xFF, the over-range is recreated internally by looking for those values.
+ADC physical input
+------------------
 
-The FPGA was demonstrated to be fast enough to handle the required 800 MSPS data rate using by capturing data on both edges of the 400 MHz data clock from the ADC.  
+8-bit double-data-rate (DDR) ADC data on the ``adc_data_h_p/n`` lines (named AHD/BHD/CHD/DHD on the EV8AQ160 ADC) is captured on both edges of the data clock ``adc_clk_h_p/n``. ADC data is offset-binary-encoded and converted to two's complement internally; 0x00 is the most negative value, 0xFF the most positive, and 0x80 the midpoint.
 
-ADC data is offset-binary-encoded. 0x00 is the most negative differential value, and 0xFF is the most positive differential value. 0x80 is the midpoint of the differential range. Note that the data is converted to two's complement by the `ADCDAQ`.
+- ``adc_data_h_p/n``: 8-bit differential DDR data bus from the EV8AQ160 ADC (AHD/BHD/CHD/DHD lines).
+- ``adc_clk_h_p/n``: Differential DDR data clock from the ADC (nominally 400 MHz for 800 MSPS operation).
 
 Readout interface
 -----------------
 
-- ``m_axis_adc_*`` is the 32-bit output AXI4-Streaming interface on a non-blocking AXI-Stream bus. There are 4 samples per 32-bit word, with the first sample in the MSBs. Data is signed two's complement. TUSER is a 4-bit vector carrying one overrange flag per sample, with the first sample corresponding to the MSB.
-- ``adc_clk`` is the readout clock.
-- ``data_ready``: Set HIGH by ADCDAQ to indicate that enough words are buffered to begin output safely, i.e. it is guaranteed that a valid word will come out when ``send_data`` is asserted..
-- ``send_data``:  When '1', ADCDAQ starts sending data form the FIFO (TVALID=1). This signal is somewhat similar to a TREADY signal, except it does not immediately start or stop the data flow. This line is usually asserted whn ALL ADCs have their data_ready signal HIGH, and stays there until the pipeline is reset.
+``m_axis_adc_*`` is the 32-bit output AXI4-Streaming interface on a non-blocking bus. There are 4 samples per 32-bit word, with the first (earliest) sample in the MSBs. Data is signed two's complement. ``ADCDAQ`` does not begin transmitting until the FIFO is sufficiently full and ``send_data`` is asserted, allowing multiple instances to start streaming in sync.
 
-Incoming ADC data is packed four samples at a time into a 32-bit AXI4-Streaming word operating at one quarter of the sampling rate (typically 200 MHz for an 800 MSPS ADC).
+- ``m_axis_adc_tdata``: 32-bit word containing four 8-bit two's-complement samples. The earliest sample is in the most significant byte.
+- ``m_axis_adc_tvalid``: Valid strobe for the output word.
+- ``m_axis_adc_tlast``: Asserted on the last word of each frame (every ``SAMPLES_PER_FRAME / 4`` clocks).
+- ``m_axis_adc_tuser``: 4-bit overrange flags, one per sample (MSB = first sample). Overrange is detected when a sample code reaches 0x00 or 0xFF.
+- ``data_ready``: Asserted when the output FIFO has accumulated enough words to guarantee uninterrupted streaming. Used to synchronize multiple ADCDAQ instances before asserting ``send_data``.
+- ``send_data``: When asserted, the ADCDAQ begins streaming data (``TVALID`` goes high). Typically driven simultaneously for all channels once all report ``data_ready``.
+- ``adc_clk``: Readout clock. Must match the ADC word clock frequency with a fixed phase relationship.
 
-The output stream uses:
+Output clocks
+-------------
 
-- ``TDATA``: 32-bit word containing four 8-bit samples in two's-complement format. The first sample is in the most significant byte.
-- ``TUSER``: 4-bit vector carrying one overrange flag per sample. The first sample corresponds to the most significant bit.
-- ``TVALID``: asserted when a valid output word is present.
-- ``TLAST``: asserted on the last word of the frame.
+- ``ioclk_out_pll``: PLL-generated SERDES bit clock buffered by BUFG (available when ``INSTANTIATE_PLL = TRUE``).
+- ``divclk_out_pll``: PLL-generated word clock buffered by BUFG (available when ``INSTANTIATE_PLL = TRUE``).
+- ``divclk_out_bufr``: Word clock derived directly from the ADC clock using a BUFR. Stops when ``adcdaq_reset`` is asserted.
+- ``divclk_out_bufg``: BUFG-buffered version of ``divclk_out_bufr`` (available when ``PROVIDE_BUFFERED_DIVCLK = TRUE``).
+- ``adc_clk_out_div2``: Logic signal toggling at half the word clock rate, used by a frequency counter for health monitoring.
 
-Clocks
-------
+External clock inputs
+---------------------
 
-- ``ioclk_out_pll`` and ``divclk_out_pll`` are BUFG-buffered clocks generated by the PLL when ``INSTANTIATE_PLL = TRUE``.
-- ``divclk_out_bufr`` is the BUFR-buffered word clock derived directly from the ADC clock.
-- ``divclk_out_bufg`` is the BUFG-buffered version of the local word clock.
-- ``ioclk_in`` and ``divclk_in`` are the external bit and word clocks used when ``USE_EXT_DATA_CLK = TRUE``.
+- ``ioclk_in``: External SERDES bit clock input (used when ``USE_EXT_DATA_CLK = TRUE``).
+- ``divclk_in``: External word clock input (used when ``USE_EXT_DATA_CLK = TRUE``).
 
-- ``ref_clk`` is used by the clock sampling logic.
-- ``clk200`` is used by the IDELAY controller when that controller is instantiated.
+Reset and control
+-----------------
 
-
-Reset and control interface
----------------------------
-
-- ``adcdaq_reset`` is the external asynchronous reset used during ADC SYNC sequencing. This will reset the internal state of the module and the FIFO, even if there is no clock from the ADC, therefore ensuring that the data capture will start in a known state whenever the ADC data starts clocking out data again.
+- ``adcdaq_reset``: Asynchronous reset. Clears deserializers, word counters, and the output FIFO even in the absence of an ADC clock. Should be asserted during ADC SYNC sequencing.
 
 BSB interface
 -------------
 
-- ``s_axis_bsb_*`` / ``m_axis_bsb_*``: Byte-serial-Bus (BSB) interface to access the control and status registers. This is a pair of blocking 8-bit AXI-Streaming buses.
-- ``bsb_clk`` and ``bsb_rst`` clock and reset for the BSB interface.
+- ``s_axis_bsb_*/m_axis_bsb_*``: Blocking 8-bit AXI4-Streaming BSB command/reply interface for control and status register access (delay tuning, soft resets, pattern capture, health status).
+- ``bsb_clk/bsb_rst``: BSB interface clock and synchronous reset.
+- ``ref_clk``: Reference clock used by the ADC clock sampling logic for delay calibration.
+- ``clk200``: 200 MHz clock for the IDELAYCTRL primitive.
 
 
+Implementation details
+======================
+
+Principle of operations
+-----------------------
+
+`ADCDAQ` implements the data acquisition of one EV8AQ160 ADC channel in 4-channel/1:1-DMUX mode, using a 4:1 SERDES to capture 8-bit DDR data on both edges of the 400 MHz ADC clock and combine them into 32-bit words at one quarter of the sampling frequency (200 MHz for 800 MSPS). Clock and data lines can be individually configured as single-ended or differential via the ``IS_DIFFERENTIAL`` generic. Words are stored in an asynchronous output FIFO that bridges the ADC capture clock to the user readout clock; once the FIFO is sufficiently full, ``data_ready`` is asserted, and all connected ADCDAQ instances begin streaming together when ``send_data`` is asserted, enabling deterministic cross-channel synchronization.
+
+The module supports deterministic ADC SYNC sequencing: asserting ``adcdaq_reset`` while the ADC SYNC line halts the ADC clocks clears all deserializers, word counters, and the output FIFO. After SYNC is released and the ADC restarts, a configurable number of initial samples is discarded (``CLK_VALID_OFFSET``) to allow the PLL to stabilize and to compensate for inter-channel cable delays. Operation is controlled via BSB memory-mapped registers for delay tuning, soft resets, debug pattern capture, and health monitoring.
+
+Clocking
+--------
+
+The module supports two clocking modes. In internal clocking mode (``USE_EXT_DATA_CLK = FALSE``), the ADC clock is buffered locally via ``BUFIO`` (SERDES bit clock) and ``BUFR`` (word clock); this works when all relevant data lines are in the same or an adjacent clock region. In external clocking mode (``USE_EXT_DATA_CLK = TRUE``), SERDES clocks generated by another ADCDAQ instance's PLL (``ioclk_out_pll``, ``divclk_out_pll``) are used instead, enabling capture across non-adjacent I/O banks. A local divide-by-two ``BUFR`` is always instantiated to run the word counter and generate the ``adc_clk_valid`` reference, ensuring deterministic startup timing independent of PLL lock.
 
 Architecture
 ============

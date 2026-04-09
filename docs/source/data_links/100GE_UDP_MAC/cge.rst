@@ -57,10 +57,18 @@ BSB
 
 - ``s_axis_bsb_t*`` / ``m_axis_bsb_t*`` on ``bsb_clk`` / ``bsb_rst``: Register access and status readback.
 
+Implementation details
+======================
+
 Principle of operations
-=======================
+-----------------------
 
 `cge` wraps the Xilinx **100G Ethernet** solution (CMAC + supporting MAC/PHY logic) for UltraScale+. It presents a **wide AXI-Stream** transmit interface on ``clk``, bridges to four serialized lanes on ``tx_p/n``, and exposes BSB registers for configuration, optional built-in traffic generation when ``IMPLEMENT_PACKET_GENERATOR`` is enabled, and diagnostics. ``clk322_out`` provides a high-speed sideband clock for logic that must align with the serdes timeline. UDP framing and software-visible defaults for MAC/IP/port follow the same conceptual model as `xge_array`, adapted to the 100G IP boundary.
+
+Architecture
+------------
+
+The TX datapath crosses two clock domains through a pair of async FIFOs: a **data FIFO** (256-bit write on ``clk``, 512-bit read on ``clk322_out``, 8×RAMB36) and a **1-bit flag FIFO** that tracks packet boundaries to guarantee full packets are available before the CMAC starts reading, preventing underflow. The write side packs user 256-bit words two-at-a-time; the read side presents 512-bit words with per-half ``tvalid``/``tlast`` byte-enables to the Xilinx **CMAC_USP** IP. A four-state startup FSM (``INIT_CMAC`` → ``CMAC_LOCKED`` → ``CMAC_ALIGNED`` → ``FIFO_READY``) controls when TX is permitted. The packet generator (when enabled) produces Ethernet/IPv4/UDP frames entirely in RTL on the ``clk`` side. BSB registers expose CMAC resets, packet-generator parameters, and DRP access to the CMAC.
 
 Memory map
 ==========

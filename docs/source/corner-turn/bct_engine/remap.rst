@@ -13,6 +13,40 @@ Entity documentation
 
 .. autoentity:: remap
 
+Parameters
+==========
+
+- **NUMBER_OF_INPUT_LANES:** Number of input data lanes. Determines the width of the ``s_axis_*`` port arrays. Defaults to 4.
+- **NUMBER_OF_OUTPUT_LANES:** Number of output data lanes. Determines the width of the ``m_axis_*`` port arrays and the ``lane_map`` array. Can differ from ``NUMBER_OF_INPUT_LANES`` to allow lane count changes. Defaults to 4.
+
+Interface
+=========
+
+Input
+-----
+
+- ``s_axis_tvalid``: Per-lane valid flags on the input. Non-blocking — the module always accepts data.
+- ``s_axis_tdata``: Per-lane 32-bit input data.
+- ``s_axis_tlast``: Per-lane end-of-frame flag.
+
+Output
+------
+
+- ``m_axis_tvalid``: Per-lane valid flags on the remapped output. Lane ``n`` presents the valid of input lane ``lane_map(n)``.
+- ``m_axis_tdata``: Per-lane 32-bit remapped output data.
+- ``m_axis_tlast``: Per-lane remapped end-of-frame flag.
+
+Control
+-------
+
+- ``lane_map``: Array of 4-bit values, one per output lane. ``lane_map(n)`` specifies which input lane index feeds output lane ``n``. Can be driven by a register or hard-coded at elaboration time.
+
+Clocking
+--------
+
+- ``clk``: Single clock for all logic.
+- ``rst``: Synchronous active-high reset.
+
 Principle of Operations
 =======================
 
@@ -40,3 +74,16 @@ The `remap` module is instantiated in the :entity:`shuffle_crossbar` after the a
 3. **Pipeline delay**: The remapper also provides a pipeline delay stage that gives the bin selector module time to look up its bin selection map from RAM.
 
 The remapping configuration is controlled through memory-mapped registers in the shuffle crossbar's control interface.
+
+Implementation details
+======================
+
+Architecture
+------------
+
+The remapping is implemented as a single registered pipeline stage: on each rising clock edge the process iterates over all output lanes, converts the 4-bit ``lane_map`` value for that lane into an integer index, and registers the corresponding input ``tvalid``, ``tdata``, and ``tlast`` signals into the output registers. The combinatorial lookup and the output registration are fused in a single ``if rising_edge`` process, giving exactly one clock cycle of pipeline latency with no additional buffering. Synthesis can infer this as a simple register array without any routing fabric.
+
+Clocking
+--------
+
+All logic is clocked by the single ``clk`` input. The synchronous ``rst`` forces all ``m_axis_tvalid`` outputs to zero on the next rising edge without clearing the data registers, matching the non-blocking AXI-Streaming convention used elsewhere in the corner-turn engine.

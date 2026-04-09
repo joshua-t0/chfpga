@@ -37,7 +37,7 @@ Parameters
 
 - **USE_LITTLE_ENDIAN:** When ``TRUE``, the first bit transmitted from each 32-bit user word follows LSB-first per-byte ordering; when ``FALSE``, MSB-first (see `xge_udp_mac_tx`).
 
-- **SIM:** Enables simulation-oriented elaboration where applicable.
+- **`SIM`:** Enables simulation-oriented elaboration where applicable.
 
 Interface
 =========
@@ -52,7 +52,15 @@ Interface
 
 - **Reset:** ``areset`` — asynchronous reset to the array and contained cores.
 
+Implementation details
+======================
+
 Principle of operations
-=======================
+-----------------------
 
 `xge_array` instantiates one `xglink_core` (shared multi-lane GTX/QPLL fabric) and one `xge_udp_mac_tx` per lane. Each lane accepts **32-bit AXI-Stream** UDP payloads on its own user clock, builds Ethernet/IPv4/UDP frames with that lane's default or BSB-programmed addresses, and feeds **64B/66B**-style words into the corresponding TX lane of `xglink_core`. RX pins are connected for transceiver commonality; the in-tree use case emphasizes high-rate UDP transmit into the backplane or corner-turn fabric. BSB space multiplexes per-lane MAC/IP/port overrides and status. Reference clocks and quad/lane mapping generics must match the board's GTX bank wiring.
+
+Architecture
+------------
+
+All `xge_udp_mac_tx` instances share a single TX word clock (``xglink_tx_clk``) produced by `xglink_core`; each lane's user-side AXI-Stream runs on its own independent ``s_axis_tx_clk``. A shared BSB router (inside `xglink_core`) distributes control and status bytes across all lanes plus an array-level register set for test-pattern generation, overflow flags, and destination-address mode. The ``dest_address_mode`` control bit allows per-lane destination IP/MAC addresses to be derived dynamically from lane index for corner-turn configurations, overriding the compile-time defaults. Per-lane sticky overflow registers track both data and frame-level FIFO overflows independently.

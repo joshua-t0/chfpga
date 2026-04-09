@@ -14,6 +14,21 @@ Entity documentation
 
 .. autoentity:: freq_ctr
 
+Parameters
+==========
+
+- **FPGA_SERIES:** Target FPGA series, defined as ``fpga_series_enum`` in :doc:`../chfpga_package`. Selects the appropriate clock buffer primitive for the measured-signal path (``BUFH`` on Kintex-7, ``BUFG`` on Virtex-6 and UltraScale+).
+- **NUMBER_OF_CLK_IN_PORTS:** Number of divide-by-two clock input signals that can be measured (default 8, up to 128 as indexed by the 7-bit source select field).
+
+Interface
+=========
+
+- ``s/m_axis_bsb_t*``: BSB (Byte-Stream Bus) interface for register access (control and status bytes).
+- ``bsb_clk``/``bsb_rst``: BSB clock and reset.
+- ``clk200``: 200 MHz reference clock. Used as the gate clock to time the measurement window.
+- ``clk_in_div2``: Vector of ``NUMBER_OF_CLK_IN_PORTS`` divide-by-two logic signals, one per clock to be measured. Each toggles at half the rate of the represented clock.
+- ``rst``: Synchronous reset, synchronous to ``clk200``.
+
 
 Additional details
 ==================
@@ -97,4 +112,18 @@ Memory map
 
 .. include-docs:: freq_ctr
     :start-after: Memory map
+
+
+Implementation details
+======================
+
+Principle of operations
+-----------------------
+
+The frequency counter gates the measured signal for a user-defined number of 200 MHz reference-clock cycles, then counts the rising edges of the selected input during that window. Each input is a divide-by-two logic signal (toggling at half the true clock rate) selected by a 7-bit mux, routed through a platform-specific clock buffer (BUFH on Kintex-7, BUFG on Ultrascale+), and used to clock a 32-bit edge counter. The ratio of signal count to gate count, multiplied by the reference frequency and corrected for the divide-by-two factor, gives the measured clock frequency. Software initiates a measurement by toggling ``start`` low then high, waits for ``ready`` to assert, and then reads the signal counter.
+
+Clocking
+--------
+
+Three clock domains are used: ``clk200`` (200 MHz) clocks the gate counter and defines the measurement window; the selected divide-by-two signal (after BUFH/BUFG) clocks the 32-bit signal counter; and ``bsb_clk`` clocks the register interface. Dedicated CDC cells synchronize ``start``, ``gate_en``, and ``ready`` across all domain crossings to prevent metastability and spurious results.
 

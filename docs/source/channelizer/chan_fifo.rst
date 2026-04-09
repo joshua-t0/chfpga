@@ -13,32 +13,62 @@ Entity documentation
 
 .. autoentity:: chan_fifo
 
-Key Features
-============
+Parameters
+==========
 
-- **Asynchronous operation**: Supports independent read and write clocks for clock domain crossing
-- **FWFT mode**: First-word-fall-through with zero latency for improved throughput
-- **AXI-Streaming compatible**: Full support for AXI-Streaming protocol with ``tdata``, ``tuser``, ``tlast``, ``tvalid``, and ``tready`` signals
-- **Configurable data width**: Supports configurable data width (default 64 bits) and user width (default 4 bits)
-- **Status flags**: Provides ``empty``, ``full``, ``almost_full``, ``almost_empty``, and ``overflow`` status signals
-- **Write count**: Provides write count for monitoring FIFO occupancy (Ultrascale+ only)
+- **FPGA_SERIES:** Target FPGA series (``KINTEX7`` or ``ULTRASCALE_PLUS``). Selects the appropriate embedded FIFO primitive: FIFO36E1 for 7-Series, FIFO36E2 for Ultrascale+.
+- **DATA_WIDTH:** Width of the ``tdata`` payload in bits. Default is 64.
+- **USER_WIDTH:** Width of the ``tuser`` sideband in bits. Default is 4.
+- **ALMOST_FULL_THRESH_OFFSET:** Number of words below full at which ``almost_full`` is asserted. Default is 16.
+- **ALMOST_EMPTY_THRESH_OFFSET:** Number of words above empty at which ``almost_empty`` is asserted. Default is 16.
 
-Principle of Operations
-=======================
+Interface
+=========
 
-The `chan_fifo` module implements an asynchronous First-Word-Fall-Through (FWFT) FIFO used at the output of the channelizer to buffer data during clock domain crossing operations. The FIFO allows data to be written at one clock rate (channelizer clock) and read at a different clock rate (corner-turn or output clock).
+Write side
+----------
 
-The module uses Xilinx embedded FIFO primitives (FIFO36E1 for 7-Series, FIFO36E2 for Ultrascale+) to provide efficient resource usage and high performance.
+- ``s_axis_tdata/tuser/tlast/tvalid``: Non-blocking AXI4-Streaming write interface (channelizer clock domain).
+- ``s_axis_clk``: Write clock (channelizer clock).
 
+Read side
+---------
 
+- ``m_axis_tdata/tuser/tlast/tvalid``: Non-blocking AXI4-Streaming read interface (corner-turn/output clock domain).
+- ``m_axis_tready``: Read enable. Defaults to ``'1'``.
+- ``m_axis_clk``: Read clock (corner-turn clock).
 
-Platform-Specific Implementation
+Status flags
+------------
+
+- ``empty``: Asserted when the FIFO has no data.
+- ``full``: Asserted when the FIFO is full.
+- ``almost_full``: Asserted when the FIFO is within ``ALMOST_FULL_THRESH_OFFSET`` words of full.
+- ``almost_empty``: Asserted when the FIFO has fewer than ``ALMOST_EMPTY_THRESH_OFFSET`` words remaining.
+- ``overflow``: Asserted when a write is attempted to a full FIFO.
+- ``wr_count``: 10-bit write-side occupancy counter (Ultrascale+ only; driven to zero for Kintex-7).
+- ``rst``: Asynchronous reset. For Kintex-7, must be held for at least 31 cycles of the slowest clock; no read or write operations may occur during this period.
+
+Implementation details
+======================
+
+Principle of operations
+-----------------------
+
+The `chan_fifo` module implements an asynchronous First-Word-Fall-Through (FWFT) FIFO used at the output of the channelizer to buffer data during clock domain crossing operations. The FIFO allows data to be written at one clock rate (channelizer clock) and read at a different clock rate (corner-turn or output clock). The module uses Xilinx embedded FIFO primitives (FIFO36E1 for 7-Series, FIFO36E2 for Ultrascale+) to provide efficient resource usage, and the primitive is selected at synthesis time via the ``FPGA_SERIES`` generic.
+
+Clocking
+--------
+
+The write side is clocked by ``s_axis_clk`` (channelizer clock domain) and the read side by ``m_axis_clk`` (corner-turn or output clock domain). Both clocks are fully independent. Reset handling differs by platform: on Kintex-7, an internal counter holds the embedded FIFO reset for at least 31 write-clock cycles; on Ultrascale+, ``wr_rst_busy`` and ``rd_rst_busy`` gate write and read enables during reset to avoid data corruption.
+
+Platform-specific implementation
 ---------------------------------
 
 The module automatically selects the appropriate FIFO primitive based on the ``FPGA_SERIES`` generic:
 
-**7-Series (Kintex-7) Implementation**
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**7-Series (Kintex-7)**
+~~~~~~~~~~~~~~~~~~~~~~~
 
 - Uses ``FIFO36E1`` primitive
 - Configuration: 512 words × 72 bits, asynchronous, FWFT, zero latency
@@ -46,8 +76,8 @@ The module automatically selects the appropriate FIFO primitive based on the ``F
 - Reset sequencer: Implements a counter-based reset sequencer to ensure proper FIFO initialization
 - Write/read enables are gated during reset to prevent data corruption
 
-**Ultrascale+ Implementation**
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Ultrascale+**
+~~~~~~~~~~~~~~~
 
 - Uses ``FIFO36E2`` primitive
 - Configuration: 512 words × 72 bits, independent clock domains, FWFT, registered output
@@ -55,7 +85,7 @@ The module automatically selects the appropriate FIFO primitive based on the ``F
 - Reset busy signals: Uses ``wr_rst_busy`` and ``rd_rst_busy`` to gate write/read operations during reset
 - Write count: Provides ``wr_count`` output for FIFO occupancy monitoring
 
-Data Mapping
+Data mapping
 ------------
 
 The FIFO stores AXI-Streaming signals in a 72-bit wide format:
@@ -72,8 +102,8 @@ For Ultrascale+, the data is split into:
 - ``DIN[63:0]`` and ``DINP[7:0]`` (data and parity inputs)
 - ``DOUT[63:0]`` and ``DOUTP[7:0]`` (data and parity outputs)
 
-Usage in Channelizer
-====================
+Usage in channelizer
+--------------------
 
 The `chan_fifo` is instantiated at the output of the :entity:`chan` (channelizer) module to:
 

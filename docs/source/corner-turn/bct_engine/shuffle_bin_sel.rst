@@ -30,7 +30,54 @@ Entity documentation
 
 .. autoentity:: shuffle_bin_sel
 
+Parameters
+==========
 
+- **PLATFORM_TYPE:** FPGA platform type enumerated in the chFPGA package. Propagated to FIFO primitive selection logic; Kintex-7 uses FIFO36E2 embedded FIFOs while Ultrascale+ can use BRAM or URAM blocks.
+- **BIN_SEL_NUMBER:** Logical index of this bin-selector instance within the shuffle crossbar. Used to address its BSB register page.
+- **NUMBER_OF_INPUTS:** Number of incoming packet streams (input lanes) to arbitrate among.
+- **NUMBER_OF_OUTPUTS:** Number of independent output streams produced by this instance. Defaults to 1.
+- **COMBINE_DATA_FLAGS:** When ``TRUE``, data and flag blocks within each packet are merged into a single combined block before being stored in the FIFO. Defaults to ``TRUE``.
+- **WORDS_PER_BIN_MAX:** Maximum number of 32-bit words per frequency bin. Used to size the internal data FIFOs. Defaults to 4.
+- **BINS_PER_FRAME_MAX:** Maximum number of frequency bins per frame. Used to size the bin-selection mask RAM and internal counters. Defaults to 64.
+- **FIFO_TYPE_MAP:** Integer array specifying, for each data FIFO, which primitive type to use (e.g., embedded FIFO36E2, BRAM, distributed RAM). Allows fine-grained resource control when multiple instances are placed in different floorplan regions.
+
+Interface
+=========
+
+Packet input
+------------
+
+- ``s_axis_tdata``: Per-input-lane 32-bit input data word. Carries header, data bins, scaler flags, frame flags, and footer in order.
+- ``s_axis_tvalid``: Per-input-lane valid flags. The input is non-blocking — data is absorbed whenever valid.
+- ``s_axis_tlast``: Per-input-lane end-of-packet flag.
+- ``s_axis_global_tvalid``: Global valid flag, asserted for the duration of the longest packet across all input lanes. Used to keep write windows of internal FIFOs aligned.
+- ``s_axis_global_tlast``: Active high on the last word of the global packet window.
+
+Packet output
+-------------
+
+- ``m_axis_tdata``: Per-output-lane 32-bit output data word. Carries the re-packed header, selected bin data, flags, and footer.
+- ``m_axis_tvalid``: Per-output-lane valid flags.
+- ``m_axis_tlast``: Per-output-lane end-of-packet flag.
+- ``m_axis_terror``: Per-output-lane error flag. Asserted when the output FIFO detected an underflow or when the packet could not be assembled correctly.
+
+Control
+-------
+
+- ``shuffle_flags_mask``: 32-bit register selecting which flag bits are included in the output packet footer. Each set bit enables the corresponding flag field.
+
+BSB control interface
+---------------------
+
+- ``s_axis_bsb_*/m_axis_bsb_*``: BSB command and reply byte streams for software-controlled register access (bin-selection mask, monitoring registers, etc.).
+- ``bsb_clk/bsb_rst``: Dedicated clock and synchronous reset for the BSB interface.
+
+Clocking
+--------
+
+- ``clk``: AXI-Streaming data clock.
+- ``rst``: Synchronous active-high reset.
 
 Additional details
 ------------------

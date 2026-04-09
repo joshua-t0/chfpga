@@ -13,6 +13,97 @@ Entity documentation
 
 .. autoentity:: generic_fifo
 
+Parameters
+==========
+
+- **FPGA_SERIES:** FPGA family, defined as an enumerated type in ``chfpga_package``. Selects
+  the correct embedded FIFO primitive generation (FIFO18E1/FIFO36E1 for Kintex-7;
+  FIFO18E2/FIFO36E2 for Ultrascale+). Ignored for ``"bram"`` and ``"distributed"``
+  memory types.
+
+- **MEMORY_TYPE:** Implementation to use. ``"embedded"`` uses platform-specific hard FIFO
+  primitives; ``"bram"`` uses the Xilinx XPM FIFO macro with block RAM; ``"distributed"``
+  uses the XPM FIFO macro with distributed RAM.
+
+- **IS_ASYNC:** When ``TRUE``, the FIFO is asynchronous (dual-clock): connect ``wr_clk`` and
+  ``rd_clk``. When ``FALSE``, the FIFO is synchronous (single-clock): connect ``clk`` only.
+
+- **IS_FWFT:** When ``TRUE``, first-word fall-through mode: the first word written appears on
+  ``dout`` without a read cycle. When ``FALSE``, standard (registered-output) mode.
+
+- **DATA_WIDTH:** Data width in bits. For the ``"embedded"`` type, parallel FIFO primitives are
+  used automatically when the width exceeds one primitive's capacity.
+
+- **DEPTH:** FIFO depth in words. Defaults to the largest power-of-two depth that fits in a
+  single FIFO18 at the given ``DATA_WIDTH``. For ``"embedded"`` type, must equal a supported
+  primitive depth (512, 1024, 2048, 4096, 8192).
+
+- **PROG_FULL_THRESH_OFFSET:** Offset below ``DEPTH`` at which ``prog_full`` asserts (default
+  **10**). Overridden by ``PROG_FULL_THRESH``.
+
+- **PROG_FULL_THRESH:** Absolute word count at or above which ``prog_full`` asserts. Defaults
+  to ``DEPTH − PROG_FULL_THRESH_OFFSET``.
+
+- **PROG_EMPTY_THRESH_OFFSET:** Word count at or below which ``prog_empty`` asserts (default
+  **10**). Overridden by ``PROG_EMPTY_THRESH``.
+
+- **PROG_EMPTY_THRESH:** Absolute word count at or below which ``prog_empty`` asserts. Defaults
+  to ``PROG_EMPTY_THRESH_OFFSET``.
+
+Interface
+=========
+
+Write side
+----------
+
+- ``clk``: Single clock for synchronous FIFOs (``IS_ASYNC = FALSE``). Leave unconnected for
+  asynchronous FIFOs (defaults to ``'0'``).
+
+- ``wr_clk``: Write clock for asynchronous FIFOs (``IS_ASYNC = TRUE``). Leave unconnected for
+  synchronous FIFOs.
+
+- ``wr_en``: Write enable. Gated internally during reset; a write attempted while the FIFO
+  is full is silently ignored (the ``overflow`` flag is set instead).
+
+- ``din``: Write data input (``DATA_WIDTH`` bits wide).
+
+- ``full``: Asserts when the FIFO cannot accept another write.
+
+- ``prog_full``: Programmable almost-full flag, controlled by ``PROG_FULL_THRESH``.
+
+- ``overflow``: Asserts for one cycle when a write is attempted while the FIFO is full.
+
+- ``wr_rst_busy``: Write-domain reset busy. Asserts from the beginning of reset until the
+  write domain has completed its reset sequence. Gate ``wr_en`` on this signal if needed.
+
+Read side
+---------
+
+- ``rd_clk``: Read clock for asynchronous FIFOs (``IS_ASYNC = TRUE``). Leave unconnected for
+  synchronous FIFOs.
+
+- ``rd_en``: Read enable. Gated internally during reset.
+
+- ``dout``: Read data output (``DATA_WIDTH`` bits wide). In FWFT mode, valid data appears
+  without a read cycle; in standard mode, a read cycle is required first.
+
+- ``empty``: Asserts when no data is available to read.
+
+- ``prog_empty``: Programmable almost-empty flag, controlled by ``PROG_EMPTY_THRESH``.
+
+- ``valid``: Data-valid qualifier. In FWFT mode, equivalent to ``not empty``. Undefined in
+  standard mode for embedded FIFOs.
+
+- ``rd_rst_busy``: Read-domain reset busy. Asserts until the read domain has completed its
+  reset sequence.
+
+Reset
+-----
+
+- ``rst``: Asynchronous reset (active high). Internally synchronized to each clock domain
+  using ``xpm_cdc_async_rst``. Both ``wr_en`` and ``rd_en`` are gated off during reset.
+  Monitor ``wr_rst_busy`` / ``rd_rst_busy`` before accessing the FIFO after reset.
+
 Overview
 ========
 
@@ -273,3 +364,16 @@ instantiates ``xpm_fifo_sync`` (when ``IS_ASYNC`` is ``FALSE``)
 or ``xpm_fifo_async`` (when ``IS_ASYNC`` is ``TRUE``). Reset is synchronized to the
 write clock and the XPM busy outputs are used for gating and for
 ``wr_rst_busy`` / ``rd_rst_busy``.
+
+Implementation details
+======================
+
+Principle of operations
+-----------------------
+
+``generic_fifo`` selects between three storage implementations at elaboration time via the ``MEMORY_TYPE`` generic. For ``"embedded"``, a depth-first, FIFO18-first algorithm determines the narrowest fitting Kintex-7 or Ultrascale+ primitive (FIFO18E1/E2 or FIFO36E1/E2) and instantiates parallel primitives when the data width exceeds one primitive's capacity; a unified reset pipeline using ``xpm_cdc_async_rst`` handles the differing reset requirements between device families. For ``"bram"`` and ``"distributed"``, the Xilinx XPM ``xpm_fifo_sync`` / ``xpm_fifo_async`` macros are instantiated directly, with reset synchronized to the write clock and accesses gated by the XPM busy outputs.
+
+Clocking
+--------
+
+Synchronous mode (``IS_ASYNC = FALSE``) uses the single ``clk`` port for both write and read. Asynchronous mode (``IS_ASYNC = TRUE``) uses separate ``wr_clk`` and ``rd_clk`` ports. The ``rst`` input is treated as asynchronous and is synchronized into each clock domain internally by ``xpm_cdc_async_rst``; both ``wr_en`` and ``rd_en`` are gated off during reset in all modes.

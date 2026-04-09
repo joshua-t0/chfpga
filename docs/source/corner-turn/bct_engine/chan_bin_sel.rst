@@ -33,7 +33,50 @@ Entity documentation
 
 .. autoentity:: chan_bin_sel
 
+Parameters
+==========
 
+- **PLATFORM_TYPE:** FPGA platform type enumerated in the chFPGA package. Selects the embedded FIFO primitive to use (FIFO36E2 for Kintex-7, URAM or BRAM for Ultrascale+) for the internal data and flag FIFOs.
+- **LANE_NUMBER:** Logical index of this bin-selector instance within the channelizer crossbar. Used to identify the correct BSB register page.
+- **NUMBER_OF_INPUTS:** Number of channelizer input lanes (i.e., the number of ``chan_bin_sel`` instances connected in parallel in ``chan_crossbar``).
+
+Interface
+=========
+
+Channelizer data input
+-----------------------
+
+- ``s_axis_tdata``: Per-lane 32-bit input data words, each containing two frequency bins from the channelizer. One array entry per input lane.
+- ``s_axis_tuser``: Per-lane 4-bit sideband word carrying ADC overflow, FFT overflow, and scaler flags.
+- ``s_axis_tvalid``: Per-lane valid flags. The input is non-blocking.
+- ``s_axis_tlast``: Per-lane end-of-frame flag.
+- ``s_axis_global_tvalid``: Global valid flag, asserted for the duration of the longest input frame across all lanes. Used to align the write windows of all lane FIFOs.
+- ``s_axis_global_tlast``: Active high on the last word of the global frame window.
+
+Bin counter control
+--------------------
+
+- ``bin_ctr_en``: Enables the internal bin counter to track which frequency bin is currently being processed.
+- ``bin_ctr_clr``: Clears the internal bin counter.
+
+Packetized output
+-----------------
+
+- ``m_axis_tdata``: 32-bit output data carrying the packetized corner-turn stream. The packet starts with a header word, followed by a data block, a scaler-flag block, and a frame-flag block.
+- ``m_axis_tvalid``: Output valid flag.
+- ``m_axis_tlast``: Output end-of-packet flag.
+
+BSB control interface
+---------------------
+
+- ``s_axis_bsb_*/m_axis_bsb_*``: BSB command and reply byte streams for software-controlled register access.
+- ``bsb_clk/bsb_rst``: Dedicated clock and synchronous reset for the BSB interface.
+
+Clocking
+--------
+
+- ``clk``: AXI-Streaming clock for all data-path logic.
+- ``rst``: Synchronous active-high reset.
 
 Additional details
 ------------------

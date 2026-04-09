@@ -13,28 +13,34 @@ Entity documentation
 
 .. autoentity:: crc32_64
 
-Principle of Operations
-=======================
+Parameters
+==========
 
-The `crc32_64` module computes a 32-bit CRC (Cyclic Redundancy Check) checksum for 64-bit data streams. It processes 64-bit words and generates a CRC-32 value that can be used for error detection in packet transmission.
+None — this entity has no generic parameters.
 
-The module implements a pipelined CRC computation using a Linear Feedback Shift Register (LFSR) that processes one 64-bit word per clock cycle. The CRC polynomial and initialization values are configured for compatibility with standard CRC-32 algorithms used in networking protocols.
+Interface
+=========
 
-Key Features
-------------
+- ``din``: 64-bit input data word. The CRC is computed over the bit sequence starting from ``din(0)`` (little-endian shift direction, per the CRC-32 standard polynomial ``0xEDB88320``).
 
-- **Pipelined operation**: Processes one 64-bit word per clock cycle
-- **64-bit data width**: Operates on 64-bit input words
-- **32-bit CRC output**: Generates a 32-bit CRC checksum
-- **Synchronous reset**: Includes reset functionality for initialization
+- ``crc_out``: 32-bit running CRC output. Updated one clock after each enabled input word. The entity registers its own output as the previous CRC state, so the output can be fed back externally between packets but is not required during a continuous word stream.
 
-Usage in XXVGLINK
------------------
+- ``en``: Clock enable. When high, ``crc_out`` is updated with the contribution of ``din``; when low, ``crc_out`` is held.
 
-The `crc32_64` module is instantiated in both the :entity:`xxvglink_tx` (transmitter) and :entity:`xxvglink_rx` (receiver) modules:
+- ``clk``: Clock.
 
-- **In xxvglink_tx**: Computes the CRC for outgoing packets to be appended to the packet data
-- **In xxvglink_rx**: Computes the CRC for incoming packets to verify data integrity
+- ``rst``: Synchronous active-high reset; initializes ``crc_out`` to ``0xFFFFFFFF`` (standard CRC-32 initial value).
 
-The CRC computation is used to detect transmission errors in the high-speed serial link data streams.
+Implementation details
+======================
+
+Principle of operations
+-----------------------
+
+`crc32_64` implements a fully combinatorial, parallel CRC-32 expansion for a 64-bit data word using a Linear Feedback Shift Register (LFSR). Each output bit is expressed as an XOR of a fixed subset of the 64 input bits and the 32 previous CRC bits; this lookup is derived from the CRC-32 polynomial (``0xEDB88320``, IEEE 802.3) unrolled for 64 simultaneous input bits using the standard parallel-CRC technique. The result is registered on the rising edge of ``clk`` when ``en`` is asserted, giving one word per clock cycle of throughput with one cycle of latency. A synchronous ``rst`` pre-loads ``crc_out`` with ``0xFFFFFFFF`` as required by the Ethernet CRC-32 convention.
+
+The module is used in both :entity:`xxvglink_tx` and :entity:`xxvglink_rx`:
+
+- **In xxvglink_tx**: ``en`` is asserted for each payload word; the final ``crc_out`` is transmitted as the last word of the frame before the EOF ordered-set block.
+- **In xxvglink_rx**: ``en`` is asserted for each received payload word including the received CRC word; a residue of ``0x00000000`` (or an equivalent known constant) indicates a valid frame.
 

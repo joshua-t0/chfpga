@@ -41,6 +41,49 @@ Entity documentation
 
 .. autoentity:: chan_crossbar
 
+Parameters
+==========
+
+- **PLATFORM_TYPE:** FPGA platform type enumerated in the chFPGA package. Propagated down to each :entity:`chan_bin_sel` instance to select the correct embedded FIFO primitive.
+- **NUMBER_OF_INPUT_LANES:** Number of channelizer output lanes feeding the crossbar. Determines the width of the ``s_axis_*`` port arrays. Defaults to 16.
+- **NUMBER_OF_OUTPUT_LANES:** Number of bin-selector outputs (i.e., the number of :entity:`chan_bin_sel` instances). Determines the width of the ``m_axis_*`` port arrays. Defaults to 16.
+- **BINSEL_PBLOCK_MAP:** Integer array mapping each bin-selector index to a floorplan pblock region for placement-and-routing constraints. Each entry encodes a pblock identifier used by the implementation scripts.
+
+Interface
+=========
+
+Channelizer data input
+-----------------------
+
+- ``s_axis_tvalid``: Shared valid flag for all input lanes (non-blocking).
+- ``s_axis_tdata``: Per-lane 32-bit input data. Each word contains two frequency bins from the F-Engine channelizer.
+- ``s_axis_tlast``: Shared end-of-frame flag for all input lanes.
+- ``s_axis_tuser``: Per-lane 4-bit sideband carrying ADC overflow, FFT overflow, and scaler flags.
+
+Per-bin-selector output
+------------------------
+
+- ``m_axis_tvalid``: Per-output-lane valid flag from each :entity:`chan_bin_sel` instance.
+- ``m_axis_tdata``: Per-output-lane 32-bit packetized output word (header, data, scaler flags, frame flags).
+- ``m_axis_tlast``: Per-output-lane end-of-packet flag.
+
+Monitoring
+----------
+
+- ``lane_monitor``: Single-bit monitoring output, taken from lane 0 of the :entity:`align32` sub-module for debug frame-timing measurements.
+- ``frame_clk_out``: Frame reference clock output for external timing analysis.
+
+BSB control interface
+---------------------
+
+- ``s_axis_bsb_*/m_axis_bsb_*``: BSB command and reply byte streams for software-controlled register access.
+- ``bsb_clk/bsb_rst``: Dedicated clock and synchronous reset for the BSB interface.
+
+Clocking
+--------
+
+- ``clk``: AXI-Streaming clock for all data-path logic.
+- ``rst``: Synchronous active-high reset.
 
 Additional details
 ------------------

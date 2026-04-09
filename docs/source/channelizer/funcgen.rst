@@ -50,11 +50,24 @@ Parameters
 Interface
 =========
 
-- **Data:** ``s_axis_adc_*`` (from ADC), ``m_axis_adc_*`` (toward FFT) — same ``tdata`` width, ``tuser`` collapses per-sample flags to one frame flag on ``m_axis``.
+Data
+----
 
-- **BSB:** ``s_axis_bsb_t*`` / ``m_axis_bsb_t*``, ``bsb_clk``, ``bsb_rst`` — mode ``fn_sel``, waveform RAM, noise seeds, etc.
+- ``s_axis_adc_tdata/tvalid/tlast/tuser``: Non-blocking AXI4-Streaming input from the ADC. ``ADC_SAMPLES_PER_WORD`` samples per clock (8 for D3A/CHORD, typically 4 for other configurations), each ``ADC_BITS_PER_SAMPLE`` bits wide in signed two's complement. First sample is in the MSBs. ``TUSER`` carries one overflow flag per sample (MSB = first sample). FUNCGEN can handle non-continuous ``TVALID``, though some downstream blocks (e.g., the FFT) require continuous data.
 
-- **Clock / reset:** ``clk``, ``rst`` (synchronous).
+- ``m_axis_adc_tdata/tvalid/tlast/tuser``: Non-blocking AXI4-Streaming output toward the FFT. Same ``TDATA`` word structure as the input. ``TUSER`` is collapsed to a single frame-wide overflow flag, set if any sample in the frame overranged; valid only on ``TLAST``.
+
+BSB
+---
+
+- ``s_axis_bsb_t*`` / ``m_axis_bsb_t*``: Blocking 8-bit AXI4-Streaming BSB command/reply interface for memory-mapped register access (mode ``fn_sel``, waveform RAM, noise seeds, etc.).
+- ``bsb_clk``, ``bsb_rst``: BSB clock and synchronous reset.
+
+Clock and reset
+---------------
+
+- ``clk``: Processing clock. Both input and output AXI-Streaming buses are synchronous to this clock.
+- ``rst``: Synchronous reset.
 
 UDP Control Memory Map
 ======================
@@ -64,20 +77,6 @@ UDP Control Memory Map
 
 Principle of operations
 =======================
-
-Interface signals
------------------
-
-The ADC data is provided to FUNCGEN through a non-blocking AXI4-Streaming interface (``s_axis_adc_*``). The data word structure contains:
- - ``ADC_SAMPLES_PER_WORD`` samples per clock (8 for D3A/CHORD, typically 4 for other configurations).
- - Each sample is signed (2's complement format), ``ADC_BITS_PER_SAMPLE`` bits wide (typically 14 bits).
- - First sample is in the MSB of the word (CASPER library convention, facilitates signal inspection in simulation).
- - TUSER contains one overflow flag per sample, with the first sample's overflow flag in the MSB of the TUSER vector.
- - TVALID and TLAST indicate the validity and framing of the data. FUNCGEN can handle data where TVALID is not always '1', although some downstream components (e.g., the FFT) may require continuous data.
-
-The output is also a non-blocking AXI4-Streaming interface (``m_axis_adc_*``) with the same TDATA structure as the input. However, the TUSER signal contains only a single bit frame-wide overflow flag that indicates if **any** sample has an overflow in the frame. This bit is valid only on the last word of a frame (i.e., when TLAST='1').
-
-A BSB interface is also available to read and write the memory map registers used to configure and monitor the function generator.
 
 Clocking
 --------
@@ -129,4 +128,17 @@ Overflow statistics
 The overflow counter counts over ``stats_period`` (user-defined) frames the number of sample overflows from the ADC or the number of overflows injected through the buffer (from modes FN_FRAME_WORD_CTR_RAM_FLAGS, FN_FRAME8, or FN_FRAME4). The overflow count for other modes (FN_RAM, FN_NOISE, FN_RAM_NIBBLE4) is 0. The maximum number of frames over which to count the number of overflows is 65535. When counting overflows from the buffer, each sample's LSB indicates if there is an overflow or not, so to simulate an overflow in a sample, set the sample value to 1. Overflow counting is enabled with ``stats_enable`` and the result can be read from ``overflow_ctr``.
 
 The TUSER overflow flag is a crude overflow indicator; one might expect to have a few ADC overflows in each frame as a compromise to having too much quantization noise. One overflow in a 16384 sample frame is just 0.01% saturation occurrence. For this reason, a high-resolution overflow statistics module is included.
+
+Implementation details
+======================
+
+Principle of operations
+-----------------------
+
+`FUNCGEN` sits between the ADC capture block and the FFT and acts as a programmable data source. In normal operation (``fn_sel = FN_ADC``) it passes ADC samples unchanged, collapsing per-sample overflow flags into a single frame-wide flag on ``TLAST``. In test or calibration modes it substitutes synthetic data (waveform RAM, LFSR noise, or frame/word counters) while keeping the same AXI4-Streaming framing. Mode switches take effect on frame boundaries to prevent partial-frame corruption.
+
+Clocking
+--------
+
+The data pipeline runs entirely on the ``clk`` domain. The BSB control registers are clocked by the separate ``bsb_clk`` domain; quasi-static configuration fields cross directly without CDC logic, but the dynamic ``enable``, ``stats_enable``, and ``fn_sel`` fields use explicit CDC synchronizers to protect data integrity during live changes.
 

@@ -71,8 +71,11 @@ BSB and reset
 
 - ``areset``: Asynchronous reset.
 
+Implementation details
+======================
+
 Principle of operations
-=======================
+-----------------------
 
 `xglink_core` is the **integration shell** for one or more **7-series GTX** channels: it instantiates Wizard-generated `xglink_gtx`, QPLL/CPLL clocking, TX/RX startup FSMs, 64B/66B framing (`xglink_tx` path elements, `xglink_rx`, scrambler/descrambler, block sync), and a BSB address router so software can bring up links, read eye/DRP-style status, and control per-quad / per-lane parameters. TX accepts **32-bit** words with **2-bit** headers when ``tx_ready`` allows; RX presents aligned descrambled data with per-lane recovered clocks. The design targets compact backplane or 10GbE-like payloads over a custom **64B/66B** line code.
 

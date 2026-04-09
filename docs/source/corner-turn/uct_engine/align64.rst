@@ -20,6 +20,49 @@ Entity documentation
 
 .. autoentity:: align64
 
+Parameters
+==========
+
+- **NUMBER_OF_LANES:** Number of 64-bit data lanes to align. Determines the width of all per-lane port arrays. Defaults to 4.
+- **ENABLE_MONITORING_LOGIC:** When ``TRUE``, instantiates extra monitoring logic that allows software to read internal alignment state via the ``mon_*`` ports. Defaults to ``FALSE``.
+- **BUFFERING_DEPTH:** Depth (in words) of each per-lane :entity:`align64_fifo` instance. Controls how much misalignment (in words) can be tolerated between lanes. Defaults to 128.
+
+Interface
+=========
+
+Input
+-----
+
+- ``s_axis_tvalid``: Per-lane valid flags. The module is non-blocking and always accepts incoming data.
+- ``s_axis_tdata``: Per-lane 64-bit input data.
+- ``s_axis_tlast``: Per-lane end-of-frame flag.
+
+Output
+------
+
+- ``m_axis_tvalid``: Global valid flag derived from lane 0. Asserted when aligned data is available on all lanes.
+- ``m_axis_tdata``: Per-lane 64-bit aligned output data. All lanes are valid simultaneously.
+- ``m_axis_tlast``: Global end-of-frame flag, driven from lane 0.
+
+Error detection
+---------------
+
+- ``lane_error``: Per-lane error flag. Asserted when a lane's frame boundaries are inconsistent with lane 0 (frame-length mismatch or missing start-of-frame).
+
+Monitoring (only meaningful when ``ENABLE_MONITORING_LOGIC=TRUE``)
+-------------------------------------------------------------------
+
+- ``mon_reset``: Clears sticky monitoring counters. Synchronous to ``clk``.
+- ``mon_lane``: 4-bit index selecting which lane to monitor.
+- ``mon_source``: 4-bit code selecting which internal signal to observe (FIFO occupancy, valid flags, error flags, etc.).
+- ``mon_word``: 16-bit monitoring output. Value depends on ``mon_source``.
+
+Clocking
+--------
+
+- ``clk``: Single clock for all logic.
+- ``rst``: Synchronous active-high reset.
+
 Principle of Operations
 =======================
 
@@ -90,4 +133,17 @@ Usage in UCT_Engine
 The `align64` module is used in the :entity:`uct_engine` to align incoming data streams from multiple sources (direct connections and GTY transceiver links). It ensures that 64-bit data words from all lanes are properly aligned before being processed by downstream corner-turn stages.
 
 The module is critical for reliable operation in multi-board corner-turn configurations where data arrives from different physical sources with variable delays.
+
+Implementation details
+======================
+
+Architecture
+------------
+
+Each lane has an independent :entity:`align64_fifo` instance (512 words deep, FWFT). A per-lane state machine with four states (``READ``, ``FLUSH_UNTIL_EMPTY``, ``FLUSH_UNTIL_EOF``, ``HOLD``) controls when the FIFO is read. All lanes share a registered copy of the lane-0 ``not almost_empty`` flag (``fifo_lane0_rd_en``); the ``DONT_TOUCH`` attribute prevents the synthesiser from merging these equivalent registers, preserving their usefulness as a distributed fanout tree for timing closure. The ``almost_empty`` threshold is set to ``BUFFERING_DEPTH`` (default 128), acting as a delay line: lane 0 is held until it has accumulated at least this many words, giving slower lanes time to populate their own FIFOs before readout begins. FIFO writes are suppressed at the ``almost_full`` threshold (500 words) except for ``tlast`` words, ensuring frame boundaries are never lost.
+
+Clocking
+--------
+
+All logic, including all FIFO instances, operates on the single ``clk`` clock. The design is pipelined to close timing at 400 MHz on Ultrascale+ devices. The monitoring block uses an ``xpm_cdc_async_rst`` primitive to synchronise the ``mon_reset`` signal from software (potentially on a different clock domain) back to ``clk`` before it qualifies any internal counters.
 

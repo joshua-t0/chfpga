@@ -25,22 +25,58 @@ Entity documentation
 Parameters
 ==========
 
-- SYNC_STAGES: ``xpm_cdc_async_rst`` depth (2…10).
+- **SYNC_STAGES:** ``xpm_cdc_async_rst`` synchronizer chain depth (2–10). Default: 3.
 
-- MIN_ASSERT_CYCLES: Minimum ``rst_out`` pulse length in ``clk`` cycles.
+- **MIN_ASSERT_CYCLES:** Minimum number of ``clk`` cycles that ``rst_out`` remains asserted
+  after the synchronizer releases, guaranteeing the vendor FIFO primitive's reset pulse-width
+  requirement. Default: 5.
 
-- POWER_ON_CYCLES: Optional extra reset extension after startup (mimics IP power-on).
+- **POWER_ON_CYCLES:** Optional power-on reset extension in ``clk`` cycles, mimicking the
+  behavior of Xilinx FIFO Generator IP at startup. Set to 0 to disable. Default: 0.
 
 Interface
 =========
 
-- ``clk``: Target clock domain.
+- ``clk``: Target clock domain. All outputs are synchronous to this clock.
 
-- ``arst``: Asynchronous reset request (active high).
+- ``arst``: Asynchronous reset request (active high). Asserts ``rst_out`` immediately through
+  the CDC chain and holds it asserted for at least ``MIN_ASSERT_CYCLES`` after the synchronizer
+  deasserts.
 
-- ``rst_out`` / ``rst_busy``: Synchronized, stretched reset and busy for FIFO IP-style handshake.
+- ``rst_out``: Synchronized, stretched active-high reset output suitable for driving hard
+  FIFO primitive reset pins.
+
+- ``rst_busy``: Mirrors ``rst_out``; asserted whenever the reset pipeline is active.
+
+Implementation details
+======================
+
+Architecture
+------------
+
+Three combinatorial conditions are OR-ed to produce ``rst_out`` and ``rst_busy``:
+
+1. ``power_rst`` — a counter-based power-on pulse of ``POWER_ON_CYCLES`` cycles (optional).
+2. ``cdc_rst`` — the ``xpm_cdc_async_rst`` output: asserts asynchronously on ``arst``,
+   deasserts synchronously after ``SYNC_STAGES`` clock cycles.
+3. ``hold_rst`` — a counter that keeps ``rst_out`` high for ``MIN_ASSERT_CYCLES`` additional
+   ``clk`` cycles after ``cdc_rst`` begins to release.
+
+Clocking
+--------
+
+Single clock ``clk``. The asynchronous ``arst`` input passes through ``xpm_cdc_async_rst``
+(async assert, synchronous deassert) before all further logic is clocked on ``clk``.
 
 Principle of operations
-=======================
+-----------------------
 
-**Not instantiated in-tree today** (**reference only**): **chains ``xpm_cdc_async_rst`` with a cycle counter so vendor FIFOs see clean reset assertion and release**. **Production path uses `generic_fifo` instead**.
+This block is **not instantiated in the current chFPGA tree**; it is kept as a **reference**
+for hard-FIFO reset sequencing next to embedded FIFO primitives. The production FIFO reset
+path is implemented inside `generic_fifo`.
+
+When ``arst`` asserts, ``rst_out`` asserts immediately (asynchronously through the CDC
+primitive). When ``arst`` deasserts, ``cdc_rst`` releases after ``SYNC_STAGES`` ``clk`` cycles;
+the hold counter then keeps ``rst_out`` high for a further ``MIN_ASSERT_CYCLES`` cycles,
+ensuring the embedded FIFO primitive sees a sufficiently long reset pulse regardless of the
+asynchronous release timing.

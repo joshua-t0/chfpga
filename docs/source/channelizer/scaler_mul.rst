@@ -9,54 +9,52 @@
 .. default-role:: vhdl:entity
 
 Entity documentation
---------------------
+====================
 
 .. autoentity:: scaler_mul
 
+Parameters
+==========
+
+- **A_WIDTH:** Bit width of signed multiplicand ``a``. Must be ≤ 42. When ``A_WIDTH > 25``, two cascaded DSP48E1 primitives are used automatically. Default is 18.
+- **B_WIDTH:** Bit width of unsigned multiplier ``b``. Must be ≤ 17. Default is 16.
+- **P_WIDTH:** Bit width of the signed product output ``p``. Defaults to ``A_WIDTH + B_WIDTH``.
+
+Interface
+=========
+
+- ``a``: Signed multiplicand, up to 42 bits wide.
+- ``b``: Unsigned multiplier, up to 17 bits wide.
+- ``p``: Signed product of width ``P_WIDTH``, available 3 clock cycles after the inputs are presented.
+- ``clk``: Clock. The module has a fixed pipeline latency of 3 clock cycles regardless of the number of DSP stages.
+
+Implementation details
+======================
+
 Principle of operations
-=======================
+-----------------------
 
-The `SCALER_MUL` module implements a signed multiplier using Xilinx DSP48E1 primitives (there are no special optimizations for the DSP48E2; the tools just remap the DSP48E1 to a DSP48E2). It computes the product P = A × B where:
-
-- **A**: Signed operand up to 42 bits wide
-- **B**: Unsigned operand up to 17 bits wide  
-- **P**: Signed product with width A_WIDTH + B_WIDTH
-
-The module automatically selects between single-stage and two-stage implementations based on the width of operand A:
-
-- **Single-stage (A_WIDTH ≤ 25)**: Uses one DSP48E1 primitive
-- **Two-stage (A_WIDTH > 25)**: Uses two cascaded DSP48E1 primitives to handle wider operands
+The `SCALER_MUL` module implements a signed × unsigned multiplier using Xilinx DSP48E1 primitives (the tools transparently remap these to DSP48E2 on Ultrascale+). It computes P = A × B where A is a signed operand up to 42 bits wide and B is an unsigned operand up to 17 bits wide. When ``A_WIDTH`` ≤ 25 a single DSP48E1 suffices; for wider A operands two cascaded DSP48E1s are used, with B routed through the cascade bus (BCOUT→BCIN) to avoid fabric routing. The pipeline has a fixed latency of **3 clock cycles** regardless of whether one or two DSP stages are used.
 
 Latency
--------
+~~~~~~~
 
-The multiplier has a fixed latency of **3 clock cycles** regardless of the number of stages:
+- **Clock 1**: Inputs registered in DSP1 input registers (AREG, BREG). BCOUT cascades to DSP2 if two-stage.
+- **Clock 2**: DSP1 multiplier output registered in MREG; for two-stage, DSP2 computes the upper partial product via BCIN.
+- **Clock 3**: Single-stage — full product registered in DSP1 PREG. Two-stage — lower partial product registered in fabric, upper partial product registered in DSP2 PREG; concatenated to form the final output.
 
-- **Clock 1**: Inputs are registered in DSP1 input registers (AREG, BREG). BCOUT cascades to DSP2 if two-stage.
-- **Clock 2**: 
-  - DSP1 multiplier output is registered in MREG
-  - For two-stage: DSP2 receives upper A bits and B via BCIN, computes partial product
-- **Clock 3**: 
-  - Single-stage: Full product is registered in DSP1 PREG and appears on output
-  - Two-stage: Lower partial product from DSP1 is registered in fabric registers, upper partial product from DSP2 is registered in DSP2 PREG
+Two-stage implementation
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-Two-Stage Implementation Details
----------------------------------
+When ``A_WIDTH > 25``, the multiplier splits the operation:
 
-When A_WIDTH > 25, the multiplier splits the operation:
+1. **DSP1**: Computes the product of the lower 17 bits of A with B. Lower partial product appears on P output (no PREG register). BCOUT provides B operand to DSP2 via cascade.
 
-1. **DSP1**: Computes the product of the lower 17 bits of A with B
-   - Lower partial product appears on P output (no PREG register)
-   - BCOUT provides B operand to DSP2 via cascade
-
-2. **DSP2**: Computes the product of the upper bits of A with B, and adds the shifted lower partial product
-   - Uses BCIN to receive B from DSP1 BCOUT (avoids fabric routing)
-   - Uses PCIN to receive the lower partial product from DSP1 PCOUT, shifted right by 17 bits
-   - Upper partial product is registered in PREG
+2. **DSP2**: Computes the product of the upper bits of A with B, adding the shifted lower partial product via PCIN. Upper partial product is registered in PREG.
 
 The final product is assembled by concatenating the upper bits from DSP2 with the lower bits from DSP1.
 
 Usage in SCALER
-----------------
+~~~~~~~~~~~~~~~
 
 The `SCALER_MUL` module is instantiated by the :entity:`scaler` module to multiply FFT output data with gain coefficients. Multiple instances are used in parallel to process all frequency bins in a word simultaneously.

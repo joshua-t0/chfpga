@@ -19,3 +19,16 @@ Configuration parameters
 - :ref:`CONFIG_CORR_TYPE <config_corr_type>` — UCORR44; 8-input correlator
 - :ref:`CONFIG_CORR_READOUT_BINS <config_corr_readout_bins>` — (0, 1, 2, 3); bins for readout
 - :ref:`CONFIG_DATA_LINK_TYPE <config_data_link_type>` — NONE; no real-time offload
+
+Package definition
+------------------
+
+.. parse:: hdl/platforms/crs/chfpga_crs_corr8_config.vhd
+
+Implementation details
+======================
+
+Principle of operations
+-----------------------
+
+This package defines compile-time constants for a self-contained, single-board CRS 8-input correlator. It enables 8 CHORD-format F-Engine channelizers with URAM-based centralized capture, a single-board UCT corner-turn (``CT_LEVEL = 1``) with a bypass lane and no backplane data exchange, and an 8-input UCORR44 correlator that reads out four spectral bins locally. No real-time data offload is active.

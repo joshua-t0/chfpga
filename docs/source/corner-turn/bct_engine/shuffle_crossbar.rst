@@ -43,6 +43,53 @@ Entity documentation
 
 .. autoentity:: shuffle_crossbar
 
+Parameters
+==========
+
+- **PLATFORM_TYPE:** FPGA platform type enumerated in the chFPGA package. Propagated to :entity:`shuffle_bin_sel` to select the appropriate embedded FIFO primitives.
+- **NUMBER_OF_INPUT_LANES:** Number of input packet lanes (one per backplane or QSFP GTX receiver). Defaults to 16.
+- **NUMBER_OF_OUTPUT_LANES:** Total number of output lanes across all bin-selector instances. Defaults to 8.
+- **NUMBER_OF_OUTPUT_LANES_PER_BIN_SEL:** Number of output lanes produced by each individual :entity:`shuffle_bin_sel` instance. Determines how many bin-selector instances are created. Defaults to 1.
+- **EIGHT_BIT_SUPPORT:** When ``TRUE``, enables processing of 8-bit (rather than the standard 4-bit real, 4-bit imaginary) bin data. Defaults to ``FALSE``.
+- **COMBINE_DATA_FLAGS:** When ``TRUE``, data and flag blocks are merged into a single combined block before storage in the output FIFO. Propagated to each :entity:`shuffle_bin_sel`. Defaults to ``TRUE``.
+- **WORDS_PER_BIN_MAX:** Maximum number of 32-bit words per frequency bin. Used to size internal data FIFOs. Defaults to 4.
+- **BINS_PER_FRAME_MAX:** Maximum number of frequency bins per input frame. Used to size mask RAMs and counters. Defaults to 64.
+- **BIN_SEL_FIFO_TYPE_MAP:** 2-D integer array specifying the FIFO primitive type for each FIFO within each bin-selector instance. Allows per-instance, per-FIFO resource control.
+- **SHUFFLE_FLAGS_MASK:** Default 32-bit mask applied at elaboration time to select which flag bits are included in the output packet footer. Can be overridden via BSB register.
+
+Interface
+=========
+
+Packet input
+------------
+
+- ``s_axis_tvalid``: Per-input-lane valid flags. Non-blocking.
+- ``s_axis_tdata``: Per-input-lane 32-bit packet data (header, bin data, scaler flags, frame flags, footer).
+- ``s_axis_tlast``: Per-input-lane end-of-packet flag.
+
+Packet output
+-------------
+
+- ``m_axis_tvalid``: Per-output-lane valid flags.
+- ``m_axis_tdata``: Per-output-lane 32-bit re-packed packet data.
+- ``m_axis_tlast``: Per-output-lane end-of-packet flag.
+
+Control and monitoring
+----------------------
+
+- ``align_pulse``: Alignment pulse output from the internal :entity:`align32` sub-module, indicating the start of a new aligned frame. Propagated up to :entity:`bct_engine` for debug.
+
+BSB control interface
+---------------------
+
+- ``s_axis_bsb_*/m_axis_bsb_*``: BSB command and reply byte streams for software-controlled register access.
+- ``bsb_clk/bsb_rst``: Dedicated clock and synchronous reset for the BSB interface.
+
+Clocking
+--------
+
+- ``clk``: AXI-Streaming data clock.
+- ``rst``: Synchronous active-high reset.
 
 Additional details
 ------------------

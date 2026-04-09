@@ -35,9 +35,9 @@ Entity documentation
 .. autoentity:: scaler
 
 
-====================
-Detailed description
-====================
+======================
+Implementation details
+======================
 
 Principle of operations
 =======================
@@ -59,8 +59,8 @@ The scaler processes FFT output data through a pipelined sequence:
 
 **Output**: The final output is packed into the main output word and is sent on the output port.
 
-Generic parameters
-==================
+Parameters
+==========
 
 - ``FFT_BITS_PER_BIN``: Bits per frequency bin (sum of real + imaginary bits). E.g. 36 (18+18) bits for CHIME FFT, 64 (32+32) bits for the CHORD FFT 
 - ``FFT_BINS_PER_WORD``: Number of frequency bins per word. E.g. 2 for CHIME FFT, 4 for CHORD FFT. 
@@ -74,8 +74,8 @@ Generic parameters
 
 Other generics are derived from the above parameters and are not generally user-configurable.
 
-Interfaces
-==========
+Interface
+=========
 
 - **Input AXI4-Streaming interface** (``s_axis_in_*``): Non-blocking AXI4-Streaming interface synchronous to ``clk``. Receives FFT output data.
 

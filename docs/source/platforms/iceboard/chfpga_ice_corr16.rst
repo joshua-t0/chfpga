@@ -38,3 +38,10 @@ Package definition
 .. parse:: hdl/platforms/ice/chfpga_ice_corr16_config.vhd
 
 
+Implementation details
+======================
+
+Principle of operations
+-----------------------
+
+This package defines compile-time constants that configure the IceBoard firmware for a self-contained 16-input on-board correlator. It enables 16 HIRAX_3DSP-format F-Engine channelizers (8-bit, 2048-sample FFT, 25+25-bit complex output) with per-channelizer PROBER BRAM capture, a BCT single-board corner-turn (``CT_LEVEL = 1``) with no backplane data exchange, and a 16-input UCORR44 correlator. No real-time data offload is active.

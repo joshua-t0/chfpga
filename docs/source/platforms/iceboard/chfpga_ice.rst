@@ -73,3 +73,173 @@ Entity definition
 
 .. autoentity:: chfpga_ice
 
+Parameters
+==========
+
+- **PLATFORM_TYPE:** Platform type identifier. Fixed to ``MGK7MB`` for this wrapper.
+- **SYSTEM_CLOCK_SOURCE:** Source of the system reference clock. ``SFP_REFCLK`` uses the 125 MHz GTX reference clock from the on-board SFP oscillator. This clock is fed into an MMCM to generate 62.5, 125, 200, and 250 MHz internal system clocks.
+- **SYSTEM_CLOCK_FREQ:** System reference clock frequency in MHz (default: 125.0).
+- **CHAN_CLK_SOURCE:** Channelizer clock source. ``ADC`` derives the channelizer clock from the word clock recovered from ADC 0.
+- **CHAN_CLK_SOURCE_LANE:** Index of the ADC channel that provides the channelizer clock (default: 0). Must correspond to an ADC with ``ADC_PROVIDE_BUFFERED_DIVCLK = TRUE``.
+- **CHAN_CLK_FREQ:** Channelizer clock frequency in MHz when using an MMCM source (default: 200.0).
+- **CT_CLK_SOURCE:** Corner-turn engine clock source, from the active configuration package via ``CONFIG_CT_CLK_SOURCE``.
+- **BSB_INTERFACE:** BSB interface type. ``UDP_SGMII`` uses a 1 Gb/s serial SFP link with the UDP/IP/MAC stack.
+- **CAP_INTERFACE:** Capture data interface type. ``BSB`` streams captured and correlator data over the BSB interface.
+- **SGMII_CLOCK_SOURCE:** 125 MHz clock source for the SGMII SFP GTX. ``REFCLK`` uses the GTX reference clock from ``sfp_clk_p/n``.
+- **ADC_TYPE:** ADC chip type. ``EV8AQ160`` selects the EV8AQ160 8-bit quad-channel ADC used on the MGADC08 mezzanine boards.
+- **NUMBER_OF_ADC_BOARDS:** Number of FMC ADC mezzanine boards (default: 2, for FMC A and FMC B).
+- **NUMBER_OF_ADCS:** Total number of ADC channels (default: 16, 8 per mezzanine).
+- **ADC_TO_ADC_BOARD_MAP:** Integer array mapping each ADC channel (0–15) to its FMC mezzanine board (0 = FMC A, 1 = FMC B).
+- **ADC_IS_DIFFERENTIAL:** All ADC data and clock inputs are LVDS differential.
+- **ADC_PROVIDE_BUFFERED_DIVCLK:** ADC 0 provides the BUFG-buffered word clock used by all channelizers.
+- **ADC_INSTANTIATE_PLL:** No ADC channel requires an additional PLL; BUFRs/BUFIOs with BUFMRs are sufficient on this board.
+- **ADC_USE_EXT_DATA_CLK:** No ADC channel uses an external PLL-generated clock.
+- **ADC_CLOCKING_REGION_MAP:** Per-channel BUFMR/BUFR/BUFIO assignment for the Kintex-7 IO bank layout. Each entry maps bit/clock indices to a BUFMR region; a value of -1 disables BUFMR for that line.
+- **NUMBER_OF_CHANNELIZERS:** Total number of channelizer blocks (default: ``NUMBER_OF_ADCS``).
+- **NUMBER_OF_CHANNELIZERS_WITH_FFT:** Number of channelizers with an FFT block, from the configuration package.
+- **FFT_TYPE:** Channelizer FFT type, from the configuration package.
+- **CAPTURE_TYPE:** Channelizer data capture type, from the configuration package.
+- **CT_TYPE:** Corner-turn type (``BCT`` or ``UCT``), from the configuration package.
+- **CT_LEVEL:** Corner-turn level: 1 = single-board, 2 = crate-level, 3 = multi-crate.
+- **CT_LANE_TO_LINK_MAP:** Integer array mapping corner-turn lanes to GTX link indices. A value of −1 is a bypass lane (no GTX). The IceBoard supports up to 19 backplane PCB lanes and 4 backplane QUAD lanes (mapped to links 0–18).
+- **CT_LINK_TO_QUAD_MAP:** Integer array mapping each GTX link to a QPLL/QUAD (5 quads for links 0–18).
+- **CT_QUAD_TO_REFCLK_MAP:** Integer array mapping each QUAD to a reference clock index.
+- **CT_LANE_TO_GROUP_MAP:** Integer array assigning each lane to a lane group (group 0 for backplane PCB lanes, group 1 for backplane QUAD lanes).
+- **NUMBER_OF_CT_LINKS** *(derived)*: Total GTX link count for corner-turn.
+- **NUMBER_OF_CT_REFCLKS** *(derived)*: Number of corner-turn GTX reference clocks.
+- **CORR_TYPE:** Correlator type (``UCORR44``, ``CORR44``, or ``NONE``), from the configuration package.
+- **CORR_READOUT_BINS:** Frequency bins to read out from the correlator, from the configuration package.
+- **DATA_LINK_TYPE:** Real-time data offload type. ``XGE`` enables the 8×10G Ethernet interface; ``NONE`` disables it.
+- **DATA_LINK_LINK_TO_QUAD_MAP:** Maps 10G Ethernet channels to GTX QUADs. Ignored when ``DATA_LINK_TYPE = NONE``.
+- **DATA_LINK_QUAD_TO_REFCLK_MAP:** Maps 10G Ethernet QUADs to reference clocks. Ignored when ``DATA_LINK_TYPE = NONE``.
+- **NUMBER_OF_I2C_PORTS:** Number of I2C ports (default: 1).
+- **NUMBER_OF_SPI_PORTS:** Number of SPI ports (default: ``NUMBER_OF_ADC_BOARDS`` = 2, one per FMC).
+- **BLINKER_PRESENT:** Whether the LED blinker/status module is implemented.
+- **IMPLEMENT_LCD:** Whether an LCD driver is implemented (default: FALSE — IceBoard has no LCD).
+- **IMPLEMENT_ARM_SPI:** Whether an ARM SPI interface is implemented (default: TRUE — IceBoard uses an external ARM processor).
+- **SIM:** Simulation mode. When ``TRUE``, accelerates simulations.
+- **NUMBER_OF_GPU_LINKS** *(derived)*: Number of 10G Ethernet links; 0 if ``DATA_LINK_TYPE = NONE``.
+- **NUMBER_OF_GPU_REFCLKS** *(derived)*: Number of 10G Ethernet reference clocks.
+
+Interface
+=========
+
+System
+------
+
+- ``cpu_reset_n``: (in) Active-low hardware reset from the IceBoard control circuitry.
+
+Clocks
+------
+
+- ``raw_clk10``: (in) 10 MHz single-ended board reference clock on a SRCC pin, before the external PLL. Used for frequency monitoring; buffered internally through a BUFR.
+- ``mgt_clk10_p/n``: (in) LVDS 10 MHz backplane reference clock from the external PLL in bypass mode. Used for ADC synchronization.
+- ``mgt_clk100_p/n``: (in) LVDS 100 MHz MGT reference clock from the external PLL. Used for connectivity frequency-counter tests.
+- ``mgt_clk200_p/n``: (in) LVDS 200 MHz MGT reference clock from the external PLL.
+- ``mgt_clk125_p/n``: (in) LVDS 125 MHz MGT reference clock from the external PLL.
+
+User I/O
+--------
+
+- ``sma_a``: (inout) SMA-A motherboard connector. Bidirectional; direction and function are software-programmable through the ``user_mux`` interface.
+- ``sma_b_fpga_led2``: (inout) SMA-B connector and FPGA LED2. Bidirectional; direction software-programmable.
+- ``fpga_led1_bp_sma``: (inout) FPGA LED1 and backplane SMA. Bidirectional; direction software-programmable.
+
+Time and trigger
+----------------
+
+- ``bp_time_p/n``: (in) LVDS backplane time signal (IRIG-B or similar).
+- ``bp_trig_p/n``: (in) LVDS backplane trigger / sync-in signal.
+- ``bp_gpio_int``: (inout) Backplane GPIO interrupt line.
+- ``bp_buck_sync``: (inout) Backplane buck regulator synchronization.
+
+I2C
+---
+
+- ``i2c_scl/sda``: (inout) I2C bus to onboard peripherals.
+
+ARM SPI
+-------
+
+- ``arm_spi_sck/mosi/cs_n``: (in) SPI bus driven by the external ARM processor.
+- ``arm_spi_miso``: (out) SPI MISO line back to the ARM.
+- ``flash_spi_cs_n``: (inout) Flash memory SPI chip select.
+- ``arm_irq_n``: (inout) ARM interrupt line.
+
+GPIO devices
+------------
+
+- ``gpio_rst_n``: (inout) Reset for onboard GPIO devices (I/O expander, etc.).
+- ``gpio_irq_n``: (inout) Interrupt from onboard GPIO devices.
+
+UART
+----
+
+- ``uart_tx/rx``: (inout) UART lines between the FPGA and the ARM or external connector.
+
+SFP (BSB)
+---------
+
+- ``sfp_clk_p/n``: (in) LVDS 125 MHz SFP reference clock from the on-board high-quality oscillator.
+- ``sfp_tx_p/n``: (out) Serialized SGMII data from FPGA GTX to the SFP module.
+- ``sfp_rx_p/n``: (in) Serialized SGMII data from the SFP module to FPGA GTX.
+
+10G Ethernet (real-time data offload)
+--------------------------------------
+
+- ``xge_tx_p/n[0:NUMBER_OF_GPU_LINKS-1]``: (out) Serialized 10G Ethernet transmit lanes. Active only when ``DATA_LINK_TYPE = XGE``.
+- ``xge_rx_p/n[0:NUMBER_OF_GPU_LINKS-1]``: (in) Serialized 10G Ethernet receive lanes.
+- ``xge_refclk_p/n[0:NUMBER_OF_GPU_REFCLKS-1]``: (in) Reference clocks for the 10G Ethernet GTX links.
+
+Corner-turn shuffle links
+-------------------------
+
+- ``bp_shuffle_tx_p/n[0:NUMBER_OF_CT_LINKS-1]``: (out) GTX transmit lanes for backplane data shuffling.
+- ``bp_shuffle_rx_p/n[0:NUMBER_OF_CT_LINKS-1]``: (in) GTX receive lanes for backplane data shuffling.
+- ``bp_shuffle_refclk_p/n[0:NUMBER_OF_CT_REFCLKS-1]``: (in) Reference clocks for the backplane shuffle GTX links.
+
+Power supply synchronization
+-----------------------------
+
+- ``sync_1v0_gtx/sync_3v3/sync_12v0/sync_5v0/sync_1v0/sync_vadj/sync_1v5/sync_1v8/sync_1v2``: (out) Buck regulator synchronization signals for all motherboard power rails, driven from ``chfpga``'s internal ``buck_sync`` vector.
+
+FMC A ADC (channels 0–7)
+-------------------------
+
+- ``fmca_adc0_ahd{p,n}[7:0]`` … ``fmca_adc1_dhd{p,n}[7:0]``: (in) 8-bit DDR parallel data buses from the two EV8AQ160 ADC chips on FMC A. Each chip provides four output ports (A, B, C, D) in high-bit mode.
+- ``fmca_adc0_adr{p,n}`` … ``fmca_adc1_ddr{p,n}``: (in) Data Ready clock for each ADC output port (clocks DDR data on both edges).
+- ``fmca_adc_sync_p/n``: (out) SYNC signal to the FMC A ADCs.
+- ``fmca_adc_rst_n``: (out) Active-low reset for FMC A ADCs.
+- ``fmca_spi_sck/mosi/miso/addr[2:0]/cs_n/rst_n_alt``: SPI control bus to the FMC A mezzanine (ADC programming, IO expander).
+- ``fmca_adc_pll_lock``: (in) ADC PLL lock status from FMC A.
+- ``fmca_buck1v8_sync/buck3v3_sync``: (out) Buck synchronization for FMC A power supplies.
+- ``fmca_refclk_m2c_p/n``: (in) LVDS 10 MHz reference clock forwarded from FMC A to the FPGA.
+- ``fmca_mgt_pll_refclk_p/n[0:1]``: (in) MGT PLL reference clocks from FMC A.
+
+FMC B ADC (channels 8–15)
+--------------------------
+
+Mirrors FMC A with the ``fmcb_`` prefix on all signals: ``fmcb_adc0_*`` through ``fmcb_adc1_*``, ``fmcb_spi_*``, ``fmcb_adc_pll_lock``, ``fmcb_buck*``, ``fmcb_refclk_*``, ``fmcb_mgt_pll_refclk_*``.
+
+Implementation details
+======================
+
+Architecture
+------------
+
+The entity instantiates `chfpga` with IceBoard-specific generics, and directly instantiates Xilinx primitives for clock input buffering:
+
+- ``IBUFDS_GTE2`` for each of the differential MGT reference clock inputs (``mgt_clk10``, ``mgt_clk100``, ``mgt_clk200``, ``mgt_clk125``), buffered through ``BUFG`` or ``BUFH``.
+- A ``BUFR`` for the single-ended ``raw_clk10`` input.
+- ``IOBUF`` primitives for all bidirectional signals (``sma_a``, ``sma_b_fpga_led2``, ``fpga_led1_bp_sma``, ``gpio_rst_n``, ``gpio_irq_n``, ``uart_tx``, ``uart_rx``, ``arm_irq_n``, ``flash_spi_cs_n``, ``bp_gpio_int``).
+- ``IBUFGDS`` for the differential ``bp_time`` and ``bp_trig`` inputs.
+
+Principle of operations
+-----------------------
+
+The 125 MHz SFP reference clock (``sfp_clk_p/n``) is the system reference inside ``chfpga``, where an MMCM generates 62.5, 125, 200, and 250 MHz system clocks. ADC data arrives via 16 DDR parallel buses from the two MGADC08 FMC mezzanines (8 channels each). The ADC word clock from ADC 0 is BUFG-buffered by ``chfpga`` and used to clock all channelizers.
+
+The BSB interface uses an SGMII 1G Ethernet link over the SFP port, driven by the GTX transceiver. This means the ARM processor communicates with the FPGA via standard UDP/IP packets over Ethernet, with no DMA or AXI interconnect involved.
+
+For configurations with ``CT_LEVEL > 1``, the backplane shuffle GTX links are enabled; their IO buffers are otherwise suppressed to avoid DRC errors on unconnected pins. The 10G Ethernet ports are only active when ``DATA_LINK_TYPE = XGE``.
+

@@ -13,28 +13,44 @@ Entity documentation
 
 .. autoentity:: xglink_crc32_32
 
-Principle of Operations
-=======================
+Parameters
+==========
 
-The `xglink_crc32_32` module computes a 32-bit CRC (Cyclic Redundancy Check) checksum for data streams. It processes 32-bit words and generates a CRC-32 value that can be used for error detection in packet transmission.
+No generic parameters.
 
-The module implements a pipelined CRC computation that processes one 32-bit word per clock cycle. The CRC polynomial and initialization values are configured for compatibility with standard CRC-32 algorithms used in networking protocols.
+Interface
+=========
 
-Key Features
-------------
+Data
+----
 
-- **Pipelined operation**: Processes one 32-bit word per clock cycle
-- **32-bit data width**: Operates on 32-bit input words
-- **32-bit CRC output**: Generates a 32-bit CRC checksum
-- **Synchronous reset**: Includes reset functionality for initialization
+- ``data_in``: 32-bit input word. Bit 0 is treated as the first bit to be transmitted (LSB-first convention matching the CRC-32 polynomial evaluation order).
 
-Usage in XGLINK
----------------
+- ``crc_out``: 32-bit registered CRC output. Updated one clock cycle after ``crc_en`` is asserted. Contains the running CRC over all words fed since the last reset.
 
-The `xglink_crc32_32` module is instantiated in both the :entity:`xglink_tx` (transmitter) and :entity:`xglink_rx` (receiver) modules:
+- ``crc_out_comb``: 32-bit combinatorial CRC output. Available in the same clock cycle as ``data_in`` but with longer combinatorial delay than ``crc_out``.
 
-- **In xglink_tx**: Computes the CRC for outgoing packets to be appended to the packet data
-- **In xglink_rx**: Computes the CRC for incoming packets to verify data integrity
+Control
+-------
 
-The CRC computation is used to detect transmission errors in the high-speed serial link data streams.
+- ``crc_en``: CRC enable. When ``'1'``, the input word is incorporated into the running CRC on the next rising edge of ``clk``. When ``'0'``, the register holds its current value.
 
+- ``rst``: Synchronous reset. Initialises the LFSR to all-ones (``X"FFFFFFFF"``), which is the standard CRC-32 initial value.
+
+- ``clk``: Clock.
+
+Implementation details
+======================
+
+Principle of operations
+-----------------------
+
+The CRC is computed using the standard Ethernet CRC-32 polynomial:
+
+.. math::
+
+   G(x) = 1 + x + x^2 + x^4 + x^5 + x^7 + x^8 + x^{10} + x^{11} + x^{12} + x^{16} + x^{22} + x^{23} + x^{26} + x^{32}
+
+The combinatorial LFSR equations ``lfsr_c`` are computed from both the current register state ``lfsr_q`` and ``data_in`` in a single combinatorial stage, processing all 32 bits in parallel. The registered output ``lfsr_q`` is updated on the rising edge of ``clk`` when ``crc_en='1'`` or held otherwise.
+
+The module is used in both `xglink_tx` (CRC appended to outgoing frames) and `xglink_rx` (CRC verified on incoming frames). After feeding the payload words, the transmitter reads ``crc_out`` and appends it. The receiver checks that the final CRC over payload plus received CRC equals the expected residue; any mismatch asserts ``m_axis_rx_terror``.

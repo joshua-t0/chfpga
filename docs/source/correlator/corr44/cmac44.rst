@@ -15,6 +15,79 @@ Entity documentation
 
 .. autoentity:: cmac44
 
+Parameters
+----------
+
+- **PLATFORM_TYPE:** FPGA platform type, defined as a ``platform_type_enum`` in :doc:`../../chfpga_package`. Selects the DSP and FIFO hard-macro primitives (``DSP48E1``/``DSP48E2``, ``FIFO18E1``/``FIFO18E2``) appropriate for the target device.
+- **RPM_NAME:** String name of the RPM placement group. All DSPs and BRAMs in this CMAC receive the same ``U_SET`` attribute so that Vivado keeps them together for relative placement.
+- **RPM_COORDS:** Record of type ``cmac44_rpm_coord_struct`` holding the RPM grid coordinates of the two DSPs, the accumulator FIFO, and the capture BRAM within the tile.
+
+Interface
+---------
+
+Input (``s_axis_xy_*``)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+- ``s_axis_xy_tvalid``: AXI4-Stream valid. A new pair of complex samples is consumed on every cycle where this signal is asserted.
+- ``s_axis_xy_tlast``: AXI4-Stream last. Marks the end of one frequency-bin's samples and increments the accumulator address.
+- ``s_axis_xy_last_frame``: Must be held high across every valid word of the final integration frame. Triggers transfer of accumulated sums to the capture BRAM at the end of the frame.
+- ``s_axis_xy_tdata``: 16-bit word carrying two (4+4)-bit signed complex values packed as ``x_re[3:0]:x_im[3:0]:y_re[3:0]:y_im[3:0]``.
+- ``s_axis_xy_xconj``: When ``'1'``, the complex conjugate of the X sample is used (imaginary part sign-flipped before multiplication).
+- ``s_axis_xy_yconj``: When ``'1'``, the complex conjugate of the Y sample is used.
+
+Output (``m_axis_z_out_*``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- ``m_axis_z_out_tdata``: 36-bit readout word containing one (18+18)-bit saturated complex accumulated product.
+- ``m_axis_z_out_tlast``: Marks the last readout word of the local capture buffer.
+- ``m_axis_z_out_tvalid``: Valid flag for the readout bus.
+- ``m_axis_z_out_start``: Rising edge triggers the start of the readout sequence for this CMAC.
+- ``m_axis_z_out_send``: Lazy flow-control input. ``'1'`` allows data to flow; ``'0'`` requests a pause. The effect is delayed by the pipeline latency.
+- ``m_axis_z_out_local_data``: ``'1'`` while transmitting this CMAC's own capture data; ``'0'`` while forwarding data from the downstream CMAC in the chain.
+
+Daisy-chain input (``s_axis_z_in_*``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- ``s_axis_z_in_tdata``, ``s_axis_z_in_tlast``, ``s_axis_z_in_tvalid``: Readout stream from the next CMAC in the daisy chain, forwarded on ``m_axis_z_out_*`` once this CMAC has completed its own readout.
+- ``s_axis_z_in_send``: Lazy flow-control signal sent toward the downstream CMAC.
+- ``s_axis_z_in_start``: Start signal asserted toward the downstream CMAC when this CMAC transitions to chain-forwarding mode.
+
+Miscellaneous
+~~~~~~~~~~~~~
+
+- ``no_accum``: When ``'1'``, the accumulator is bypassed; only the most recent product is captured. Used for debugging.
+- ``re2``, ``im2``: Debug outputs exposing the 18-bit signed real and imaginary parts of the current DSP accumulator result.
+- ``rd_err``, ``wr_err``: Sticky FIFO read/write error flags, cleared on ``rst``.
+- ``readout_err``: Sticky flag set when a new capture frame begins before the previous readout has completed.
+- ``clk``: System clock. All logic is synchronous to this clock.
+- ``rst``: Synchronous reset (registered internally). Clears all state, error flags, and AXI-S valids.
+
+Implementation details
+----------------------
+
+Architecture
+~~~~~~~~~~~~
+
+Each CMAC44 cell uses exactly four hard-macro primitives arranged vertically in one FPGA column, two tiles high:
+
+- **DSP48E1 (or DSP48E2) × 2** — DSP1 computes the four cross-product terms (*ac*, *bd*, *ad+bc*) using the pre-adder, cascaded P output, and carry-in corrections; DSP2 accumulates the (*ac*−*bd*) real and (*ad*+*bc*) imaginary parts together with overflow guard bits.
+- **FIFO18E1 (or FIFO18E2) × 1** — A synchronous 512×36-bit circular accumulator FIFO. The previous partial sum is read one clock before the new product is written back, giving zero-latency vector accumulation across up to 512 independent product slots.
+- **RAMB18E1 × 1** — A 512×36-bit capture BRAM. At the end of each integration period, the accumulated sums are written here, allowing readout to proceed while the next integration starts (dead-time-free operation).
+
+The precise placement of all four primitives is controlled through the ``RPM_NAME`` / ``RPM_COORDS`` generics and Vivado ``U_SET`` / ``RLOC`` attributes, allowing many CMAC44 cells to be tiled densely in the FPGA fabric.
+
+Clocking
+~~~~~~~~
+
+All logic is synchronous to a single ``clk``. There is no internal clock-domain crossing; CDC between the input and output clocks is handled at the parent :entity:`CORR44` level.
+
+Principle of operations
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+On each valid input clock, DSP1 computes the complex product of the (X, Y) sample pair and DSP2 adds the result to the currently addressed FIFO slot. The FIFO acts as a circular buffer so that up to 512 independent product-accumulators run concurrently, one per frequency bin or element pair.
+
+When ``s_axis_xy_last_frame`` is asserted, each accumulated sum is written into the capture BRAM at the matching address instead of back to the FIFO. Once the final frame's last word is stored, the CMAC enters readout mode and streams all capture BRAM words on ``m_axis_z_out_*``. The lazy ``send`` flow-control signal allows the downstream consumer to pause the stream without requiring immediate back-pressure logic in every pipeline stage of the chain.
+
 Architecture implementation
 ---------------------------
 
