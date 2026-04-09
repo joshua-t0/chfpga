@@ -21,8 +21,8 @@ Entity documentation
 Parameters
 ==========
 
-- **FPGA_SERIES:** FPGA series to target, defined as an enumerated type in :doc:`../chfpga_package`. Is used to instantiate the proper platform-specific embedded FIFOs. 
-- **PHY_TYPE:** PHY type to use, defined as an enum value in :doc:`../chfpga_package`. Valid values are ``GMII`` or ``SGMII``. ``GMII`` uses a 8-bit GMII interface, while ``SGMII`` uses a 1Gbps  serial interface implemented using a GTX transceiver.
+- **FPGA_SERIES:** FPGA series to target, defined as an enumerated type in `chfpga_package`. Is used to instantiate the proper platform-specific embedded FIFOs. 
+- **PHY_TYPE:** PHY type to use, defined as an enum value in `chfpga_package`. Valid values are ``GMII`` or ``SGMII``. ``GMII`` uses a 8-bit GMII interface, while ``SGMII`` uses a 1Gbps  serial interface implemented using a GTX transceiver.
 - **BROADCAST_IP_PORT:** IP port to use for receiving broadcast packets. This port number is fixed in order to allow broadcast packets to be received even if the networking is not set-up yet.
 - **SIM:** Simulation mode. If ``TRUE``, the module will not use the PHY interface and will instead use a simple loopback testbench.
 
@@ -47,8 +47,8 @@ Interface
 
 - ``signal_detect``: Signal detect signal to the GMII-to-SGMII bridge from the SFP transceiver.  
 
-- ``s_axis_udp_tx_*/m_axis_udp_rx_*``: AXIS used data interface to the UDP transmitter/receiver.
-AXIS interface is 8-bit wide, blocking, and synchronous to the ``clk125`` clock.
+- ``s_axis_udp_tx / m_axis_udp_rx (_tdata/_tvalid/_tlast/_tready)``: AXIS used data interface to the UDP transmitter/receiver.
+  AXIS interface is 8-bit wide, blocking, and synchronous to the ``clk125`` clock.
 
 - ``tx_overflow/rx_overflow``: Overflow flags indicating an overflow condition in the FIFOs for the TX and RX paths. These are a sticky signals, reset only by `rst`.  
 

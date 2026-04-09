@@ -11,3 +11,4 @@ Shared VHDL building blocks used across the firmware.
 
    axis_merge
    generic_fifo
+   fifo_reset_sync

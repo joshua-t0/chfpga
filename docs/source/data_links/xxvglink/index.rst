@@ -35,5 +35,6 @@ The XXVGLINK system consists of:
    xxvglink_descrambler
    xxvglink_block_sync
    xxvglink_data_fifo
+   xxvglink_tx_startup_fsm
    crc32_64
 
