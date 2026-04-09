@@ -36,9 +36,6 @@ use IEEE.NUMERIC_STD.ALL;
 library work;
 use work.chFPGA_Package.all;
 
-library xpm;
-use xpm.vcomponents.all;
-
 -- Implements a simplified Gigabit Ethernet UDP/IP/Ethernet Receiver Packetizer and MAC with a GMII output interface with ARP functionality.
 --
 -- This module receives 1G Ethernet data from a GMII (8-bit parallel) interface
@@ -88,7 +85,6 @@ entity udp_mac_rx is
 		local_mac_addr         : in std_logic_vector(47 downto 0);
 		local_ip_addr          : in std_logic_vector(31 downto 0);
 		local_ip_port          : in std_logic_vector(15 downto 0);
-		local_subarray         : in std_logic_vector(1 downto 0);
 
 		latest_remote_mac_addr : out std_logic_vector(47 downto 0);
 		latest_remote_ip_addr  : out std_logic_vector(31 downto 0);
@@ -157,7 +153,6 @@ architecture impl of udp_mac_rx is
 	signal rx_payload_length: unsigned(15 downto 0); -- payload length
 	signal rx_payload_ctr: unsigned(15 downto 0) := (others => '0'); -- payload counter.
 
-	--signal rx_clk: std_logic;
 	signal gmii_rx_en: std_logic;
 	signal gmii_rx_d: std_logic_vector(7 downto 0 );
 
@@ -175,7 +170,6 @@ architecture impl of udp_mac_rx is
 	signal rx_crc_init: std_logic:='1'; --
 	signal rx_crc_en: std_logic:='0'; --
 	signal rx_crc_out: std_logic_vector(7 downto 0); -- Ethernet CRC byte
-	signal rx_crc_reg_out: std_logic_vector(31 downto 0); -- Ethernet CRC word
 
 	-- RX data FIFO signals
 
@@ -200,8 +194,6 @@ architecture impl of udp_mac_rx is
 	signal rx_frame_fifo_overflow: std_logic;
 	signal rx_frame_fifo_wr_rst_busy: std_logic;
 
-	signal rx_overflow_int: std_logic;
-
 begin
 
 
@@ -209,28 +201,25 @@ begin
 --  U D P    R E C E I V E R
 ----------------------------------------------------------------------
 
-rx_overflow <= rx_overflow_int;
-
 -- Reassign names to clarify the code
 --rx_clk <= gmii_rxclk;
 gmii_rx_en <= gmii_rxctrl_rxdv; -- receive data valid
 gmii_rx_d <= gmii_rxd;
 
 -- Compute UDP payload length from UDP packet length
-rx_payload_length <= (unsigned(rx_udp_length)-8);
+rx_payload_length <= unsigned(rx_udp_length) - 8;
 
 -- Instantiate CRC32 Engine
 crc32_0: entity work.udp_mac_crc32
 	port map(
---		crc_reg => eth_crc,
 		crc     => rx_crc_out,
-		crc_reg => rx_crc_reg_out,
+		crc_reg => open,
 		d       => rx_data_dly4,
 		calc    => rx_crc_calc,
 		init    => rx_crc_init,
 		d_valid => rx_crc_en,
 		clk     => gmii_rxclk,
-		reset   => rst
+		reset   => rx_data_fifo_wr_rst_busy or rx_frame_fifo_wr_rst_busy
 	);
 
 -- Instantiate Data FIFO
@@ -345,7 +334,7 @@ begin
 			rx_frame <= '0';
 			rx_start_of_frame <= '0';
 			rx_data <= X"00"; -- not needed, just to facilitate simulation
-	elsif gmii_rx_en = '1' and gmii_rx_d = X"D5" then -- Found first SOF, set PRE_FRAME so that FRAME will be set for the next byte
+		elsif gmii_rx_en = '1' and gmii_rx_d = X"D5" then -- Found first SOF, set PRE_FRAME so that FRAME will be set for the next byte
 			rx_start_of_frame <= '1';
 			rx_data <= gmii_rx_d; -- not needed, just to facilitate simulation
 		else -- valid data coming, set FRAME and clock data byte
@@ -392,8 +381,6 @@ begin
 					if rx_frame_fifo_full = '1'  or unsigned(local_ip_port) = 0 then -- skip the frame if the frame FIFO is full since we won't have room to store it anyway, or if we haven't defined a valid port yet.
 						rx_state <= RX_STATE_SKIP;
 					else
-						--mac_addr_match <= '0';
-						--ip_addr_match <= '0';
 						rx_state <= RX_STATE_MAC_DEST_ADDR;
 						rx_state_ctr <= (others => '0');
 					end if;
@@ -541,9 +528,9 @@ begin
 				if rx_frame = '0' then
 					rx_state <= RX_STATE_STDBY; -- fall back to standby state if frame is interrupted during the header
 				elsif rx_state_ctr = 2-1 then
-					if (ip_addr_broadcast='0' and rx_data_wide(15 downto 0) = local_ip_port) or (ip_addr_broadcast='1' and rx_data_wide(15 downto 0) = (std_logic_vector(to_unsigned(BROADCAST_IP_PORT/4,14)) & local_subarray)) then
+					if (ip_addr_broadcast='0' and rx_data_wide(15 downto 0) = local_ip_port) or (ip_addr_broadcast='1' and rx_data_wide(15 downto 0) = std_logic_vector(to_unsigned(BROADCAST_IP_PORT,16))) then
 						-- if mac_addr_match='1' and ip_addr_match='1' then
-						if ip_addr_broadcast='0' or (ip_addr_broadcast='1' and local_subarray(0)='1') then
+						if not ip_addr_broadcast then
 							latest_remote_mac_addr <= latest_remote_mac_addr_temp; -- Store MAC address of received packet to be used by the transmitter as a reply address
 							latest_remote_ip_addr <= latest_remote_ip_addr_temp; -- Store source IP address
 							latest_remote_ip_port <= latest_remote_ip_port_temp; -- Store the IP port number
@@ -586,7 +573,7 @@ begin
 
 				if rx_frame = '0' or rx_data_fifo_almost_full='1' then -- Packet is interrupted or data FIFO is almost full
 					-- Register that an overflow has occured
-					rx_overflow_int <= rx_overflow_int or rx_data_fifo_almost_full;
+					rx_overflow <= '1' when rx_data_fifo_almost_full or rx_frame_fifo_overflow;
 					-- Write a dummy data byte with the LAST flag (there are a few bytes of space left in the FIFO to write it because we used the almost_full flag)
 					rx_data_fifo_din(8) <= '1';
 					rx_data_fifo_wr_en <= '1';
@@ -715,7 +702,7 @@ begin
 		-- sync reset
 		if rx_data_fifo_wr_rst_busy or rx_frame_fifo_wr_rst_busy then
 			arp_request <= '0';
-			rx_overflow_int <= '0';
+			rx_overflow <= '0';
 			rx_data_fifo_wr_en <= '0';
 			rx_frame_fifo_wr_en <= '0';
 			rx_state <= RX_STATE_STDBY;

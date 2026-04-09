@@ -164,6 +164,8 @@ type platform_type_enum is (
 	CRS
 	);
 
+type platform_type_enum_array is array (natural range <>) of platform_type_enum;
+
 -- FPGA series encoding
 --
 -- Dummy entries preserve the legacy integer values for the real FPGA families:
@@ -728,6 +730,7 @@ function bitwidth(value: integer) return integer;-- Computes the minimum number 
 function shift_left(i:std_logic_vector; n: integer) return std_logic_vector; -- shift left a STD_LOGIC_VECTOR
 function shift_left(ARG:slv8_array; COUNT: natural) return slv8_array; -- shift left a byte array
 function shift_right(i:std_logic_vector; n: integer) return std_logic_vector; -- shift right a STD_LOGIC_VECTOR with zero padding from the left
+function shift_right(arg: std_logic_vector; n: natural; insert: std_logic) return std_logic_vector; -- like shift_right(arg,n) then arg'low := insert
 function shift_right(x:slv2_array)  return slv2_array; -- shift right a slv2_array.
 function shift_right(x:slv3_array)  return slv3_array; -- shift right a slv3_array.
 function shift_right(x:slv4_array)  return slv4_array; -- shift right a slv4_array.
@@ -753,6 +756,7 @@ function all_same(v: std_logic_vector; high:integer; low:integer) return boolean
 function all_same(v: signed; high:integer; low:integer) return boolean;
 
 function is_in(i:integer; list:integer_array) return boolean;
+function is_in(x: platform_type_enum; x_array: platform_type_enum_array) return boolean;
 function num_ones(v: std_logic_vector) return integer; -- Return number of bits that are '1'.
 
 function cmplx(re, im:integer) return complex; -- Create a complex value out of two integer values
@@ -1455,6 +1459,16 @@ begin
     return FALSE;
 end function;
 
+function is_in(x: platform_type_enum; x_array: platform_type_enum_array) return boolean is
+begin
+	for i in x_array'range loop
+		if x = x_array(i) then
+			return TRUE;
+		end if;
+	end loop;
+	return FALSE;
+end function;
+
 
 function num_ones(v: std_logic_vector) return integer is
 	variable count: integer := 0;
@@ -1517,6 +1531,14 @@ end function;
 function shift_right(i:std_logic_vector; n: integer) return std_logic_vector is
 begin
 	return std_logic_vector(shift_right(unsigned(i), n));
+end function;
+
+function shift_right(arg: std_logic_vector; n: natural; insert: std_logic) return std_logic_vector is
+	variable t: std_logic_vector(arg'range);
+begin
+	t := shift_right(arg, n);
+	t(arg'LEFT) := insert;
+	return t;
 end function;
 
 function shift_right(x:slv_array)  return slv_array is

@@ -674,7 +674,6 @@ i2c_process :process(all)
 				local_mac_addr     => X"001BFC43BAFF",
 				local_ip_addr      => X"0A0A0A0A",
 				local_ip_port      => X"A028",
-				local_subarray     => "00",
 				-- tx_mac_dest_addr     => X"123456780A0B", -- last bits must match the address set by the switch
 				-- tx_ip_dest_addr      => X"0A0A0A0B",
 				remote_mac_addr0     => X"FFFFFFFFFFFF", -- last bits must match the address set by the switch

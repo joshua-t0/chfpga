@@ -81,7 +81,6 @@ entity udp_mac is
     local_mac_addr : in  std_logic_vector;
     local_ip_addr  : in  std_logic_vector;
     local_ip_port  : in  std_logic_vector;
-    local_subarray : in  std_logic_vector;
     remote_mac_addr0 : in  std_logic_vector;
     remote_ip_addr0  : in  std_logic_vector;
     remote_ip_port0  : in  std_logic_vector;

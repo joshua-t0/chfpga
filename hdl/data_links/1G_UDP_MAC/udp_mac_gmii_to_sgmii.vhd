@@ -3,19 +3,10 @@
 -- Engineer: JF Cliche
 --
 -- Create Date:
--- Design Name:
--- Module Name:    UDP_MAG_GMII_TO_SGMII
--- Project Name: CHIME
--- Target Devices:
--- Tool versions: ISE, Vivado
--- Description: GMII to SGMII core wrapper
---
--- Dependencies:
---
--- Revision:  See GIT repository
-
--- Additional Comments:
---
+-- Module Name: udp_mac
+-- Project Name: chFPGA
+-- Target Devices: 7-Series
+-- Tool versions: Vivado 2022.2
 ----------------------------------------------------------------------------------
 
 library unisim;
@@ -26,12 +17,8 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library work;
---use work.ip_package.all; -- Import definition of components used in this module
 
---------------------------------------------------------------------------------
--- The entity declaration for the example design
---------------------------------------------------------------------------------
-
+-- GMII to SGMII core wrapper
 entity udp_mac_gmii_to_sgmii is
 	generic (
 		SIM: BOOLEAN := FALSE
@@ -108,7 +95,6 @@ architecture top_level of udp_mac_gmii_to_sgmii is
 	signal user_reset: std_logic;
 	signal an_restart: std_logic;
 	signal loss_of_signal: std_logic;
-	signal config_vector_int: std_logic_vector(4 downto 0);
 	signal an_config_vector: std_logic_vector(15 downto 0);
 
 	attribute DONT_TOUCH of userclk2_nobuf: signal is "yes";
@@ -117,8 +103,6 @@ architecture top_level of udp_mac_gmii_to_sgmii is
 	-- PMA reset generation signals for tranceiver
 	signal pma_reset_pipe: std_logic_vector(3 downto 0); -- flip-flop pipeline for reset duration stretch
 	signal pma_reset: std_logic;                         -- Synchronous transcevier PMA reset
-	signal init_reset: std_logic := '1';
-	signal init_reset_ctr: unsigned(21 downto 0) := (others=>'0');
 
 	-- Signals used for an IDELAYCTRL
 	signal idelayctrl_reset_sync: std_logic;               -- Used to create a reset pulse in the IDELAYCTRL clock domain.
@@ -126,41 +110,19 @@ architecture top_level of udp_mac_gmii_to_sgmii is
 	signal idelayctrl_reset: std_logic;                    -- The reset pulse for the IDELAYCTRL.
 
 	-- GMII signals
-	signal gmii_txd_delay: std_logic_vector(7 downto 0); -- Internal gmii_txd signal after IDELAY.
-	signal gmii_tx_en_delay: std_logic;                  -- Internal gmii_tx_en signal after IDELAY.
-	signal gmii_tx_er_delay: std_logic;                  -- Internal gmii_tx_er signal after IDELAY.
 	signal gmii_txd_iff: std_logic_vector(7 downto 0);   -- gmii_txd signal for input IOB flip-flop.
 	signal gmii_tx_en_iff: std_logic;                    -- gmii_tx_en signal for input IOB flip-flop.
 	signal gmii_tx_er_iff: std_logic;                    -- gmii_tx_er signal for input IOB flip-flop.
-	signal gmii_txd_reg: std_logic_vector(7 downto 0);   -- Internal gmii_txd signal.
-	signal gmii_tx_en_reg: std_logic;                    -- Internal gmii_tx_en signal.
-	signal gmii_tx_er_reg: std_logic;                    -- Internal gmii_tx_er signal.
 	signal gmii_txd_int: std_logic_vector(7 downto 0);   -- gmii_txd signal after Tx Elastic Buffer.
 	signal gmii_tx_en_int: std_logic;                    -- gmii_tx_en signal after Tx Elastic Buffer.
 	signal gmii_tx_er_int: std_logic;                    -- gmii_tx_er signal after Tx Elastic Buffer.
 	signal gmii_rxd_int: std_logic_vector(7 downto 0);   -- Internal gmii_rxd signal.
 	signal gmii_rx_dv_int: std_logic;                    -- Internal gmii_rx_dv signal.
 	signal gmii_rx_er_int: std_logic;                    -- Internal gmii_rx_er signal.
-	signal gmii_rxd_obuf: std_logic_vector(7 downto 0);  -- gmii_rxd registered in IOBs prior to an OBUF.
-	signal gmii_rx_dv_obuf: std_logic;                   -- gmii_rx_dv registered in IOBs prior to an OBUF.
-	signal gmii_rx_er_obuf: std_logic;                   -- gmii_rx_er registered in IOBs prior to an OBUF.
-
-	-- Extra registers to ease IOB placement
-	signal status_vector_int : std_logic_vector(15 downto 0);
 
 	-- These attributes will stop timing errors being reported in back annotated
 	-- SDF simulation.
 	attribute ASYNC_REG of pma_reset_pipe: signal is "true";
-
-FUNCTION sel(b: BOOLEAN; if_true: integer; if_false: integer) return integer is
-	begin
-		if b then
-			return if_true;
-		else
-			return if_false;
-		end if;
-	end sel;
-
 
 begin
 
@@ -294,21 +256,6 @@ port map (
 --    -----------------------------------------------------------------------------
 --    -- Transceiver PMA reset circuitry
 --    -----------------------------------------------------------------------------
--- -- Hold the rest line for some delay after FPGA configuration and reset to make sure the link comes up.
--- -- Otherwise we have 2-3% link up failure rate (known to happen on cores v14.3 rev1 and v15, maybe this is a SFP thing).
-process(all) begin
-	if reset then
-		init_reset <= '1';
-		init_reset_ctr <= (others=>'0');
-	elsif rising_edge(clk125) then
-		init_reset_ctr <= init_reset_ctr + 1;
-		if signed(init_reset_ctr)=-1 then
-			init_reset<= '0';
-		end if;
-	end if;
-end process;
-
-
 	 -- Create a reset pulse of a decent length
 	 process(all) begin
 	 if reset or user_reset then
@@ -371,10 +318,10 @@ end process;
 			--  bit 2: Power down: 1:enabled
 			--  bit 3: Isolate: 1:enabled
 			--  bit 4: Auto-negotiation Enable: 1:enabled
-			configuration_vector   => config_vector_int, --"10000"
+			configuration_vector   => config_vector(20 downto 16), --"10000"
 
 
-			status_vector        => status_vector_int,
+			status_vector        => status_vector,
 
 
 			-- Ports present if auto-negotiation is enabled
@@ -491,7 +438,7 @@ end process;
 
 	 -- status_vector(0) <= resetdone;
 	 --status_vector(0) <= resetdone;
-	 --status_vector(3 downto 1) <= status_vector_int(3 downto 1);
+	 --status_vector(3 downto 1) <= status_vector(3 downto 1);
 	 --status_vector(4) <= pma_reset;
 	 --status_vector(5) <= mmcm_locked_int;
 	 --status_vector(6) <= signal_detect;
@@ -500,13 +447,10 @@ end process;
 	 --status_vector(9) <= reset;
 	 --status_vector(10) <= mmcm_reset;
 
-	 status_vector <= status_vector_int; -- pass the native core stus vector.
-
 	 basex_or_sgmii <= config_vector(31);
 	 an_restart <= config_vector(30);
 	 user_reset <= config_vector(29);
 	 loss_of_signal <= config_vector(28);
-	 config_vector_int <= config_vector(20 downto 16);
 	 an_config_vector <= config_vector(15 downto 0);
 
 

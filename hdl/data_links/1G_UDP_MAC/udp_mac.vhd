@@ -58,7 +58,7 @@ entity udp_mac is
 	GENERIC (
 		FPGA_SERIES: fpga_series_enum := KINTEX7;
 		PHY_TYPE: phy_type_enum; -- -- "GMII": Alaska 881111 PHY,  or "SGMII": SFP module
-		BROADCAST_IP_PORT: integer;-- ! Port on which broadcast requests and replies are made. This is fixed as it is used to discover the boards on the network and configure them.
+		BROADCAST_IP_PORT: integer;-- Port on which broadcast requests and replies are made. This is fixed as it is used to discover the boards on the network and configure them.
 		SIM: boolean := FALSE --
 		);
 
@@ -68,7 +68,6 @@ entity udp_mac is
 		local_mac_addr: in std_logic_vector(47 downto 0);
 		local_ip_addr: in std_logic_vector(31 downto 0);
 		local_ip_port: in std_logic_vector(15 downto 0);
-		local_subarray: in std_logic_vector(1 downto 0); -- Defines on which of the 4 broadcast ports this fpga will respond.
 
 		-- Remote addresses
 		
@@ -84,10 +83,10 @@ entity udp_mac is
 		-- GMII PHY interface (Gbit Ethernet)
 		-- (Marvell Alaska 10-100-1000BASE-T PHY, used if PHY_TYPE="GMII")
 		------------------------------------
-		phy_rxclk : in std_logic:='0'; --Clock provided by the PHY to clock the RX bus
+		phy_rxclk : in std_logic:='0'; -- Clock provided by the PHY to clock the RX bus
 		phy_rxctrl_rxdv : in std_logic:='0';
 		phy_rxd : in std_logic_vector(7 downto 0):=(others=>'0');
-		phy_txclk : in std_logic:='0';-- Clock provided by the phy to clock the TX bus. We use clk125 instead for this purpose.
+		phy_txclk : in std_logic:='0';-- **Not Used ** : Clock provided by the phy to clock the TX bus. We use clk125 instead for this purpose.
 		phy_txer : out std_logic;
 		phy_reset_l : out std_logic;
 		phy_txc_gtxclk : out std_logic; -- Clock synchronous to the TX bus provided to the PHY. Is clk125.
@@ -118,7 +117,7 @@ entity udp_mac is
 		-- UDP data interface
 		------------------------------------
 
-		-- TX port
+		-- TX port -- synchronous to clk125
 
 		s_axis_udp_tx_tvalid : in std_logic;
 		s_axis_udp_tx_tdata : in  std_logic_vector (7 downto 0); -- will be axis_udp_tx_tdata
@@ -127,7 +126,7 @@ entity udp_mac is
 		tx_port: in std_logic_vector(1 downto 0):="00";
 		tx_overflow: out std_logic;
 
-		-- RX port
+		-- RX port -- synchronous to clk125
 
 		m_axis_udp_rx_tdata  : out std_logic_vector (7 downto 0);
 		m_axis_udp_rx_tvalid : out std_logic;
@@ -141,7 +140,7 @@ entity udp_mac is
 
 		clk125: in std_logic; -- 125 Mhz clock for the UDP data interface and GMII PHY TX clock (SGMII uses sfp_refclk as a source)
 		-- clk200: in std_logic; -- clock used for the SGMII reset logic. Must always be present.
-		rst: in std_logic:='0'
+		rst: in std_logic := '0'
 		);
 
 end udp_mac;
@@ -161,20 +160,7 @@ signal gmii_txc_gtxclk:  std_logic;
 signal gmii_txen:  std_logic;
 signal gmii_txd:   std_logic_vector(7 downto 0);
 
---signal phy_rxclk: std_logic;
---signal phy_txclk: std_logic;
-
---signal status_vector: std_logic_vector(15 downto 0);
 signal gmii_clk: std_logic; -- clock provided by the SGMII core to clock both the TX and RX GMII interface side
-
-signal gtrefclk       : std_logic;                    -- Route gtrefclk through an IBUFG.
-signal gtrefclk_i     : std_logic;
-signal gtrefclk_buf_i : std_logic;                    -- Route gtrefclk through an IBUFG.
--- signal refclk_sel: std_logic;
--- Set the SAVE attribute to prevent the toold from removing all the logic if not used
--- attribute S: string;
--- attribute S of rx_data: signal is "yes";
--- attribute S of tx_data: signal is "yes";
 
 signal latest_remote_mac_addr: std_logic_vector(47 downto 0);
 signal latest_remote_ip_addr: std_logic_vector(31 downto 0);
@@ -191,14 +177,12 @@ signal arp_mac_addr: std_logic_vector(47 downto 0);
 signal arp_ip_addr: std_logic_vector(31 downto 0);
 
 signal arp_request: std_logic;
-signal reset_done_int: std_logic;
 signal tx_rst: std_logic;
 
 begin
 
 	gmii_reset_l <= not rst;
 	--GMII_TXC_GTXCLK<=CLK125;
-	reset_done <= reset_done_int;
 
 	-- Select thedestination address: Either the user provided one, or if zero, use the last source
 	remote_mac_addr_sel0 <= remote_mac_addr0 when unsigned(remote_mac_addr0)/=0 else latest_remote_mac_addr;
@@ -209,7 +193,7 @@ begin
 	remote_ip_addr_sel1 <= remote_ip_addr1 when unsigned(remote_ip_addr1)/=0 else latest_remote_ip_addr;
 	remote_ip_port_sel1 <= remote_ip_port1 when unsigned(remote_ip_port1)/=0 else std_logic_vector(unsigned(latest_remote_ip_port)+1);
 
-	tx_rst <= rst or (not reset_done_int);
+	tx_rst <= rst or (not reset_done);
 
 	-- Instantiate UDP MAC transmitter
 	tx0: entity work.udp_mac_tx
@@ -258,7 +242,6 @@ begin
 			local_mac_addr           => local_mac_addr,
 			local_ip_addr            => local_ip_addr,
 			local_ip_port            => local_ip_port,
-			local_subarray           => local_subarray,
 			latest_remote_mac_addr   => latest_remote_mac_addr,
 			latest_remote_ip_addr    => latest_remote_ip_addr,
 			latest_remote_ip_port    => latest_remote_ip_port,
@@ -294,7 +277,7 @@ begin
 			phy_txctl_txen <= gmii_txen;
 			phy_txd        <= gmii_txd;
 			phy_txer       <= gmii_txer;
-			reset_done_int <= '1';
+			reset_done <= '1';
 
 			-- RX bus signals
 
@@ -321,15 +304,13 @@ begin
 			gmii_txclk <= gmii_clk; -- use the clock provided by the SGMII core (userclk2) for the GMII TX bus
 			gmii_rxclk <= gmii_clk; -- use the clock provided by the SGMII core (userclk2) for the GMII RX bus
 
-			-- sfp_refclk <= gtrefclk; -- pass the GTX reference clock
-
 			sgmii0: entity work.udp_mac_gmii_to_sgmii
 				generic map (
 					SIM => SIM
 					)
 				port map (
 					-- Tranceiver Interface
-					gtrefclk_nobuf   => sfp_refclk_nobuf,
+					gtrefclk_nobuf   => sfp_refclk_nobuf, -- Non-buffered reference clock used to derive the TX and RX path clocks
 					gtrefclk_buf     => sfp_refclk_buf,
 					txp              => sfp_tx_p,
 					txn              => sfp_tx_n,
@@ -352,8 +333,8 @@ begin
 					status_vector => status_vector,
 					config_vector => config_vector,
 					mmcm_locked   => mmcm_locked,
-					reset_done    => reset_done_int,
-					clk125        => clk125,
+					reset_done    => reset_done,
+					clk125        => clk125, -- stable clock, used to reset the GTX core
 					signal_detect => signal_detect,
 					reset         => rst
 					);

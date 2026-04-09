@@ -49,16 +49,7 @@ use IEEE.NUMERIC_STD.ALL;
 library work;
 use work.chFPGA_Package.all;
 
---library work;
---use work.CRC32;
---use work.ip_package.all; -- Import definition of components for IP cores used in this module
-
--- Uncomment the following library declaration if instantiating
--- any Xilinx primitives in this code.
-library UNISIM;
-use UNISIM.VComponents.all;
-
-
+-- UDP/IP/MAC transmitter with a GMII interface. Also handles ARP.
 entity udp_mac_tx is
 	GENERIC (
 		FPGA_SERIES: fpga_series_enum := KINTEX7
@@ -93,7 +84,7 @@ entity udp_mac_tx is
 		s_axis_udp_tx_tlast : in std_logic;
 		s_axis_udp_tx_tready: out std_logic;
 
-		tx_port_offset: in std_logic_vector(1 downto 0):="00"; -- will be axis_udp_tx_tuser
+		tx_port_offset: in std_logic_vector(1 downto 0) := "00"; -- will be axis_udp_tx_tuser
 		tx_clk : in  std_logic; -- data bus clock
 
 		tx_overflow: out std_logic;
@@ -161,7 +152,6 @@ signal ip_length: std_logic_vector(15 downto 0); -- IP packet length (including 
 
 
 signal tx_ctr: unsigned(15 downto 0) := (others=>'0'); -- General purpose counter. Indexes the header RAM.
---signal HEADER_BYTE: std_logic_vector(7 downto 0); -- General purpose counter. Indexes the header RAM.
 signal gmii_txd_out, gmii_txd_out2: std_logic_vector(7 downto 0); --
 signal gmii_txen_out: std_logic:='0'; --
 
@@ -199,11 +189,9 @@ signal s_axis_udp_tx_tready_int: std_logic;
 
 signal tx_frame_fifo_din, tx_frame_fifo_dout: std_logic_vector(17 downto 0); --
 signal tx_frame_length: unsigned(15 downto 0) := (0=>'1', others=>'0'); -- needed in case there is no reset
-signal tx_frame_length_plus_one: unsigned(15 downto  0) ;
 
 signal tx_frame_fifo_wr_en: std_logic :='0';
 signal tx_frame_fifo_rd_en: std_logic :='0';
-signal tx_frame_previous: std_logic :='0';
 signal tx_frame_fifo_empty :  std_logic;
 signal tx_frame_fifo_full: std_logic;
 signal tx_frame_fifo_almost_full: std_logic;
@@ -322,25 +310,16 @@ tx_frame_fifo_din(17 downto 16) <= tx_port_offset; -- If the END of frame is det
 --   2) know how many bytes to read from the FIFO
 tx_front_end : process(all) begin
 	if rising_edge(tx_clk) then
-			-- Determine if the transmit buffer has overflow. Now we are very conservative and assume there is an overflow if we ever have to throttle the data source.
-			-- which in practive should not be a problem
-			if (tx_fifo_wr_en='1' and tx_fifo_full='1') or
-			   (tx_frame_fifo_wr_en='1' and tx_frame_fifo_full='1') then
-				tx_overflow <= '1';
-			end if;
+		-- Determine if the transmit buffer has overflow. Now we are very conservative and assume there is an overflow if we ever have to throttle the data source.
+		-- which in practive should not be a problem
+		tx_overflow <= '0' when rst else 
+					'1' when (tx_fifo_wr_en and tx_fifo_full) or (tx_frame_fifo_wr_en and tx_frame_fifo_full);
 
-			if s_axis_udp_tx_tvalid and s_axis_udp_tx_tlast then -- but if this is the last byte of the packet
-				tx_frame_length <= to_unsigned(1, tx_frame_length'length); -- ... reset the counter to 1
-			elsif tx_fifo_wr_en and not tx_fifo_full then -- if we are actually writing a byte in the fifo...
-				tx_frame_length <= tx_frame_length + 1; --... increase the byte counter
-			end if;
+		tx_frame_length <= to_unsigned(1, tx_frame_length'length) when rst or(s_axis_udp_tx_tvalid and s_axis_udp_tx_tlast) -- sync reset or last byte of packet → counter = 1
+			else tx_frame_length + 1 when (tx_fifo_wr_en and not tx_fifo_full); -- byte written into FIFO
 
-			if rst then -- synchronous reset
-				tx_frame_length <= to_unsigned(1, tx_frame_length'length);
-				tx_overflow <= '0';
-			end if; --rst
-		end if; -- CLK
-	end process;
+	end if; -- CLK
+end process;
 
 
 -- GMII transmit process
@@ -350,21 +329,14 @@ tx_back_end : process(all) begin
 	if rising_edge(gmii_txclk) then
 
 		-- Output registering with CRC or CHECKSUM insertion
-		if crc_insert then
-			gmii_txd <= crc_out;
-		else
-			gmii_txd <= gmii_txd_out2;
-		end if;
+		gmii_txd <= crc_out when crc_insert else gmii_txd_out2;
 
 		GMII_TXEN <= gmii_txen_out;
 
 		-- Detect a '0'-to-'1' transition on the arp_request input to trigger ARP packet
 		-- transmission
 		arp_request_previous <= arp_request;
-		if(arp_request_previous='0' and arp_request='1') then
-			send_arp <= '1';
-		end if;
-
+		send_arp <= '1' when arp_request_previous = '0' and arp_request = '1';
 
 		-- Data source selector
 		--
@@ -706,7 +678,7 @@ crc32_0: entity work.udp_mac_crc32 -- we explicitely specify the work library be
 -- Computes the 16-bit IP header checksum while the Ethernet header bytes are being sent. This is because
 -- we need to send the checksum *before* the IP header is sent.
 ip_checksum : process(all) begin
-	if (gmii_txclk'EVENT and gmii_txclk='1') then
+	if rising_edge(gmii_txclk) then
 			if ip_checksum_init then
 				ip_checksum_reg <= (others => '0');
 				ip_checksum_msb <= (others => '0'); -- not needed, just to make simulations look nicer
@@ -727,7 +699,7 @@ ip_checksum : process(all) begin
 	end process; --ip_checksum
 
 ip_checksum_out16 <= not(ip_checksum_reg(15 downto 0) + ("00000000000" & ip_checksum_reg(20 downto 16)));
-ip_checksum_out <= std_logic_vector(ip_checksum_out16(15 downto 8)) WHEN ip_checksum_is_msb = '1' else std_logic_vector(ip_checksum_out16(7 downto 0));
+ip_checksum_out <= std_logic_vector(ip_checksum_out16(15 downto 8)) when ip_checksum_is_msb else std_logic_vector(ip_checksum_out16(7 downto 0));
 
 end Behavioral;
 
