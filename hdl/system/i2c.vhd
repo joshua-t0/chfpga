@@ -449,30 +449,19 @@ begin
 			--   a) SCK and SDA high for tBUF after a STOP condtion, or
 			---  b) SCK and SDA high for tHIGH_MAX
 
-			if idle_ctr /= IDLE_CTR_MAX then
-				idle_ctr <= idle_ctr + 1;
-			end if;
-			if idle_ctr = tBUF - 1 then
-				idle_clk_at_tBUF <= '1';
-			else
-				idle_clk_at_tBUF <= '0';
-			end if;
+			idle_ctr <= idle_ctr + 1 when idle_ctr /= IDLE_CTR_MAX;
+			idle_clk_at_tBUF <= '1' when idle_ctr = tBUF - 1 else '0';
+			idle_clk_at_tHIGH <= '1' when idle_ctr = tHIGH_MAX - 1 else '0';
 
-			if idle_ctr = tHIGH_MAX - 1 then
-				idle_clk_at_tHIGH <= '1';
-			else
-				idle_clk_at_tHIGH <= '0';
-			end if;
-
-			if (sck_in = '0' or sda_in = '0') then -- if SDK or SDA are low, reset IDLE detection
+			if sck_in = '0' or sda_in = '0' then -- if SDK or SDA are low, reset IDLE detection
 				idle_ctr <= 0;
 				bus_idle <= '0';
 				stop_detected <= '0';
-			elsif (sda_in_prev = '0' and sda_in = '1' and sck_in = '1') then -- if STOP condition (low-to-high SDA transition while CLK=High)
+			elsif sda_in_prev = '0' and sda_in = '1' and sck_in = '1' then -- if STOP condition (low-to-high SDA transition while CLK=High)
 				stop_detected <= '1';
 				idle_ctr <= 0;
 				bus_idle <= '0';
-			elsif (stop_detected = '1' and idle_clk_at_tBUF = '1') or (stop_detected = '0' and idle_clk_at_tHIGH = '1') then
+			elsif stop_detected = '1' and idle_clk_at_tBUF = '1' or stop_detected = '0' and idle_clk_at_tHIGH = '1' then
 				bus_idle <= '1';
 			end if;
 
@@ -490,11 +479,7 @@ begin
 			end if;
 
 			-- Timing counter. Counts up by default, unless resetted by the code below
-			if clk_ctr_clear then
-				clk_ctr <= 0;
-			elsif clk_ctr /= CLK_CTR_MAX then -- don't roll over
-				clk_ctr <= clk_ctr + 1; -- invrement unless overriden below
-			end if;
+			clk_ctr <= 0 when clk_ctr_clear else clk_ctr + 1 when clk_ctr /= CLK_CTR_MAX; -- don't roll over
 			clk_ctr_clear <= '0'; -- this is a single pulse signal. Always return to zero unless overriden below.
 
 			-- Check time limits. Make sure that the value is zero on the next clock if clk_ctr_clear is active (even if the counter is not yet cleared).
