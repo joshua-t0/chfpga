@@ -178,7 +178,7 @@ The KC705 does not have any backplane GTX shuffle links; accordingly ``CT_LEVEL 
 Description
 ===========
 
-The file :file:`chfpga_kc705_corr8_config.vhd` defines the package `chfpga_config` used to configure `chFPGA` for the 8-channel correlator configuration on the KC705. This configuration includes data acquisition from one FMC ADC mezzanine (8 channels), 8 channelizers with FFT (HIRAX 3-DSP style), an 8-input :math:`N^2` correlator (UCORR44), and no real-time data offload.
+The file :file:`chfpga_kc705_corr8_config.vhd` defines the package ``chfpga_config`` used to configure `chFPGA` for the 8-channel correlator configuration on the KC705. This configuration includes data acquisition from one FMC ADC mezzanine (8 channels), 8 channelizers with FFT (HIRAX 3-DSP style), an 8-input :math:`N^2` correlator (UCORR44), and no real-time data offload.
 
 Configuration parameters
 ========================

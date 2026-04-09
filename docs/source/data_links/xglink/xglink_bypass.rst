@@ -78,8 +78,8 @@ Architecture
 
 The module contains two FIFOs:
 
-- A TX data FIFO (`xglink_tx_data_fifo`, synchronous BRAM-based, 512 × 33 bits) accepts data from the user TX interface.
-- An RX data FIFO (`XGLINK_RX_DATA_FIFO`, AXI4-Stream, synchronous) provides data to the user RX interface with ``tready='1'`` (non-blocking output).
+- A TX data FIFO (:doc:`xglink_tx_data_fifo`, synchronous BRAM-based, 512 × 33 bits) accepts data from the user TX interface.
+- An RX data FIFO (:doc:`xglink_rx_data_fifo`, AXI4-Stream, synchronous) provides data to the user RX interface with ``tready='1'`` (non-blocking output).
 
 Principle of operations
 -----------------------

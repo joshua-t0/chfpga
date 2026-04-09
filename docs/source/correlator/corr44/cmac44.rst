@@ -18,7 +18,7 @@ Entity documentation
 Parameters
 ----------
 
-- **PLATFORM_TYPE:** FPGA platform type, defined as a ``platform_type_enum`` in :doc:`../../chfpga_package`. Selects the DSP and FIFO hard-macro primitives (``DSP48E1``/``DSP48E2``, ``FIFO18E1``/``FIFO18E2``) appropriate for the target device.
+- **PLATFORM_TYPE:** FPGA platform type, defined as a ``platform_type_enum`` in :doc:`/chfpga_package`. Selects the DSP and FIFO hard-macro primitives (``DSP48E1``/``DSP48E2``, ``FIFO18E1``/``FIFO18E2``) appropriate for the target device.
 - **RPM_NAME:** String name of the RPM placement group. All DSPs and BRAMs in this CMAC receive the same ``U_SET`` attribute so that Vivado keeps them together for relative placement.
 - **RPM_COORDS:** Record of type ``cmac44_rpm_coord_struct`` holding the RPM grid coordinates of the two DSPs, the accumulator FIFO, and the capture BRAM within the tile.
 

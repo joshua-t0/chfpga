@@ -19,7 +19,7 @@
 Overview
 ========
 
-`xglink_rx` **depacketizes** 64B/66B data blocks arriving from `xglink_core` into a **non-blocking 32-bit AXI-Stream**. It detects start-of-frame and end-of-frame control codes, strips the framing, verifies the trailing CRC-32 (`xglink_crc32_32`), and bridges the GTX recovered clock domain to the user AXI-Stream clock through an asynchronous FIFO (`XGLINK_RX_DATA_FIFO`). An error flag is asserted on the last word of any frame with a bad CRC or unexpected framing.
+`xglink_rx` **depacketizes** 64B/66B data blocks arriving from `xglink_core` into a **non-blocking 32-bit AXI-Stream**. It detects start-of-frame and end-of-frame control codes, strips the framing, verifies the trailing CRC-32 (`xglink_crc32_32`), and bridges the GTX recovered clock domain to the user AXI-Stream clock through an asynchronous FIFO (:doc:`xglink_rx_data_fifo`). An error flag is asserted on the last word of any frame with a bad CRC or unexpected framing.
 
 Entity documentation
 --------------------
@@ -92,7 +92,7 @@ The receiver contains:
 
 - A CRC-32 engine (`xglink_crc32_32`) clocked by ``rx_clk`` that computes the running CRC over all received payload words.
 - A two-stage pipeline that delays data by one word so the CRC word can be stripped before presentation to the user.
-- An asynchronous RX FIFO (`XGLINK_RX_DATA_FIFO`) bridging the ``rx_clk`` domain to the user ``m_axis_rx_clk`` domain.
+- An asynchronous RX FIFO (:doc:`xglink_rx_data_fifo`) bridging the ``rx_clk`` domain to the user ``m_axis_rx_clk`` domain.
 
 Principle of operations
 -----------------------

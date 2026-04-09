@@ -12,7 +12,7 @@
    xglink_crc32_32
    ../../navbar_separator
 
-.. parse:: hdl/XGLINK/xglink_tx.vhd
+.. parse:: hdl/data_links/XGLINK/xglink_tx.vhd
 
 .. default-role:: vhdl:entity
 
@@ -58,4 +58,4 @@ Implementation details
 
 - **Byte order:** First byte on the wire is the **MSB** of the 32-bit user word (bit 24 first), consistent with `xglink_core` (not configurable).
 
-- **FIFO:** A Xilinx **TX data FIFO** (`XGLINK_TX_DATA_FIFO`) bridges rate / phase between user logic and the TX state machine; see :doc:`xglink_tx_data_fifo` for core GUI exports if needed.
+- **FIFO:** A Xilinx **TX data FIFO** (:doc:`xglink_tx_data_fifo`) bridges rate / phase between user logic and the TX state machine.

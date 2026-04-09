@@ -16,7 +16,7 @@ Entity documentation
 Parameters
 ==========
 
-- **FPGA_SERIES:** FPGA family, defined as an enumerated type in ``chfpga_package``. Selects
+- **FPGA_SERIES:** FPGA family, defined as an enumerated type in :doc:`/chfpga_package`. Selects
   the correct embedded FIFO primitive generation (FIFO18E1/FIFO36E1 for Kintex-7;
   FIFO18E2/FIFO36E2 for Ultrascale+). Ignored for ``"bram"`` and ``"distributed"``
   memory types.

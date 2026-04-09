@@ -121,7 +121,7 @@ Output FIFO
 - Allow easy synchronization of multiple ADCDAQ output streams.
 - Allow buffering to compensate for large analog delays due to cable lengths
 
-We use a ``generic_fifo`` wrapper to instantiate the FIFO. The FIFO is 32 bits wide and 1024 words deep and is used to absorb clock phase differences while allowing deterministic synchronized release of data across multiple channels. We use an ``embedded`` FIFO implementation to save resources. On a Kintex-7, this FIFO requires a false_path timing constraint so the asynchronous FIFO reset is properly timed (see :ref:`generic_fifo:Embedded FIFO`).
+We use a ``generic_fifo`` wrapper to instantiate the FIFO. The FIFO is 32 bits wide and 1024 words deep and is used to absorb clock phase differences while allowing deterministic synchronized release of data across multiple channels. We use an ``embedded`` FIFO implementation to save resources. On a Kintex-7, this FIFO requires a false_path timing constraint so the asynchronous FIFO reset is properly timed (see `generic_fifo`).
 
 Athough the downstream pipeline should run on on a word clock speed that is the same than the ADC capture word clock, the phase of the ADC data arrival is unknown and the data needs to be realigned the downstream pipeline clock. The asynchronous FIFO allows this.
 The FIFO can also thoretically allows the downstream pipeline to run on a faster clock speed than the ADC capture word clock (if there is a need for that, but we generally don't have much overhead here)  AND if all the downstream logic can handle non-contiguous data arrival (the FFT does not). 

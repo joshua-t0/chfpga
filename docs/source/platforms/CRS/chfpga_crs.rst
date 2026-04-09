@@ -1,7 +1,7 @@
 .. _chfpga_crs:
 
 :entity:`chfpga_crs` platform wrapper (*hdl/platforms/crs/chfpga_crs.vhd*)
-********************************************************
+**************************************************************************
 
 
 Description

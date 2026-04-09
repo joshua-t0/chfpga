@@ -24,7 +24,8 @@
 
    platforms/platforms
    chfpga
-   common/index
+   chfpga_package
+   utils/index
    system/index
    channelizer/index
    CT Engine <corner-turn/index>

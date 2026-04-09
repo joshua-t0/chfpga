@@ -70,9 +70,9 @@ http://documentation-style-guide-sphinx.readthedocs.io/en/latest/style-guide.htm
     - Index sections (contents, Quick links): ####_####
     - Main sections: ***_***
 
-The `toctree` directive includes a RST file one level down from the current level, i.e. the top heading level of that document becomes a sub-heading in the master document, independent from the heading style (``**``, ``===`` etc.).  The heading levels of RST documents included `toctree` are independent from each other.
+The ``toctree`` directive includes a RST file one level down from the current level, i.e. the top heading level of that document becomes a sub-heading in the master document, independent from the heading style (``**``, ``===`` etc.).  The heading levels of RST documents included ``toctree`` are independent from each other.
 
-Content included with the `include` directive is as if it was typed in that document, so this is essentially a single RST document in which case the heading levels must be consistent.)
+Content included with the ``include`` directive is as if it was typed in that document, so this is essentially a single RST document in which case the heading levels must be consistent.)
 
 
 
@@ -80,7 +80,7 @@ Content included with the `include` directive is as if it was typed in that docu
 Building the documentation
 --------------------------
 
-Activate the Python environment in which the `pychfpga` docuemntation tools were installed::
+Activate the Python environment in which the ``pychfpga`` docuemntation tools were installed::
 
     source <my_venv_path>/bin/activate
 
@@ -105,7 +105,7 @@ Running the code style checker
 ==============================
 
 
-We check the consistency of our code (indentation, case, etc.) using the python program `vsg` (VHDL Style Guide).
+We check the consistency of our code (indentation, case, etc.) using the python program ``vsg`` (VHDL Style Guide).
 We use a configuration file (``vsg_rules.yaml``) that defines the rules that match our style.
 
 Make sure that the python environent is activated (see section above) so we can access ``vsg``.

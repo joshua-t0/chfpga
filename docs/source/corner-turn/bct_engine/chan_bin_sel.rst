@@ -27,7 +27,7 @@ The module contains a set of control and monitoring memory-map registers.
 
 
 Entity documentation
---------------------
+====================
 
 .. parse:: hdl/ct/chan_bin_sel.vhd
 
@@ -78,34 +78,33 @@ Clocking
 - ``clk``: AXI-Streaming clock for all data-path logic.
 - ``rst``: Synchronous active-high reset.
 
-Additional details
-------------------
 
 Memory map
-----------
+==========
 
 .. include-docs:: CHAN_BIN_SEL
     :start-after: chan_bin_sel Memory Map
 
 Implementation details
-----------------------
+======================
 
 Data FIFO
-~~~~~~~~~
+---------
 
 .. .. include-docs:: chan_bin_sel
     :start-after: Data FIFOs
 
 
 Data Flag FIFO
-~~~~~~~~~~~~~~
+--------------
+
 
 .. .. include-docs:: chan_bin_sel
     :start-after: Data flags FIFOs
 
 
 Data flags combining
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 Data flags from consecutive bins can be combined by the front end, i.e. before the write process by setting the ``combine_data_flags`` bit. Indeed, since there is only 16 channels that feed the bin selectors, there are only 16 data (scaler) flags for each bin. This means that there is a full half-filled data flag word for each group of 4 data words (16 bytes, one (4+4) bit complex value for each channel).
 
@@ -126,7 +125,8 @@ In term of implementation, we used to have the FIFO readout process do the data 
 
 
 Readout Flags FIFO
-~~~~~~~~~~~~~~~~~~
+------------------
+
 
 The flags FIFO describe provide instructions to the readout logic on how to read each block of data from the data FIFO.
 It indicates:
@@ -139,7 +139,7 @@ The FIFO physically centralises all the information that is needed to sequence t
 
 
 FIFO writing process
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 `recv_flags` indicate whether we are expecting the header words.  The header word counter `recv_header_word_ctr` is incremented when valid data comes in. When the 4th word is received we clear recv_flags so data processing can start. No data from the header is saved. The data processing counters are reset during the header phase.
 
@@ -172,7 +172,7 @@ data_fifo_wr_en_packet_flags_dly=1: The data written in the FIFO is: lower bits:
 
 
 FIFO readout process
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 The FIFO readout logic implements a one-hot encoded state machine with five states that control the order in which data is transmitted:
 

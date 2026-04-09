@@ -364,7 +364,7 @@ The Ethernet packet size and data rate at the output of the 10G transmitter are:
       Ethernet frame size: 4160 bytes
       Ethernet data rate: 4160 * 8/2.56e-6/2 = 6.500 Gbits/s (confirmed with bmon)
 
-   -    For 2 frames/packets, with flags::
+   - For 2 frames/packets, with flags::
 
       UDP payload size: 4756 bytes (confirmed with tcpdump)
       Ethernet frame size: 4800 bytes (4756+42+7)//8*8) (confirmed with wireshark)

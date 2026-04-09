@@ -48,7 +48,7 @@ Entity documentation
 Parameters
 ==========
 
-- **PLATFORM_TYPE:** Target platform, defined as ``platform_type_enum`` in :doc:`../chfpga_package`.
+- **PLATFORM_TYPE:** Target platform, defined as ``platform_type_enum`` in :doc:`/chfpga_package`.
 - **COOKIE:** 7-bit application firmware identifier read back in the STATUS register (default ``0x42``).
 - **PROTOCOL_VERSION:** 16-bit protocol version reported to host software for compatibility checking.
 - **NUMBER_OF_ADCS:** Number of ADC channels implemented in the firmware.

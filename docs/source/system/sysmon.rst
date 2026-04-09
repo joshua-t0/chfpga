@@ -21,7 +21,7 @@ Entity documentation
 Parameters
 ----------
 
-- **PLATFORM_TYPE:** Platform type, defined as an enumerated type in :doc:`../chfpga_package`. Is used to instantiate the platform-dependent XADC/SYSMON primitive.
+- **PLATFORM_TYPE:** Platform type, defined as an enumerated type in :doc:`/chfpga_package`. Is used to instantiate the platform-dependent XADC/SYSMON primitive.
 
 Interface
 ---------

@@ -1,7 +1,7 @@
 .. _chfpga_ice_corr16_config:
 
 ``corr16`` configuration (*hdl/platforms/ice/chfpga_ice_corr16_config.vhd*)
-*********************************************************
+***************************************************************************
 
 
 Description

@@ -21,8 +21,8 @@ Entity documentation
 Parameters
 ==========
 
-- **FPGA_SERIES:** FPGA series to target, defined as an enumerated type in `chfpga_package`. Is used to instantiate the proper platform-specific embedded FIFOs. 
-- **PHY_TYPE:** PHY type to use, defined as an enum value in `chfpga_package`. Valid values are ``GMII`` or ``SGMII``. ``GMII`` uses a 8-bit GMII interface, while ``SGMII`` uses a 1Gbps  serial interface implemented using a GTX transceiver.
+- **FPGA_SERIES:** FPGA series to target, defined as an enumerated type in :doc:`/chfpga_package`. Is used to instantiate the proper platform-specific embedded FIFOs. 
+- **PHY_TYPE:** PHY type to use, defined as an enum value in :doc:`/chfpga_package`. Valid values are ``GMII`` or ``SGMII``. ``GMII`` uses a 8-bit GMII interface, while ``SGMII`` uses a 1Gbps  serial interface implemented using a GTX transceiver.
 - **BROADCAST_IP_PORT:** IP port to use for receiving broadcast packets. This port number is fixed in order to allow broadcast packets to be received even if the networking is not set-up yet.
 - **SIM:** Simulation mode. If ``TRUE``, the module will not use the PHY interface and will instead use a simple loopback testbench.
 
@@ -50,7 +50,7 @@ Interface
 - ``s_axis_udp_tx / m_axis_udp_rx (_tdata/_tvalid/_tlast/_tready)``: AXIS used data interface to the UDP transmitter/receiver.
   AXIS interface is 8-bit wide, blocking, and synchronous to the ``clk125`` clock.
 
-- ``tx_overflow/rx_overflow``: Overflow flags indicating an overflow condition in the FIFOs for the TX and RX paths. These are a sticky signals, reset only by `rst`.  
+- ``tx_overflow/rx_overflow``: Overflow flags indicating an overflow condition in the FIFOs for the TX and RX paths. These are a sticky signals, reset only by ``rst``.  
 
 - ``tx_port``: Destination port for the next TX packet. Selects whether the packet is sent to TX channel 0 or 1. This signal is synchronous with th rest of the AXIS TX interface, and is register on the last byte of the frame (TLAST=1).
 
@@ -69,19 +69,19 @@ The UDP/IP/MAC stack is implemented using the following modules:
 
 - `udp_mac_tx`: UDP/ARP packet transmitter with a GMII interface.
 - `udp_mac_rx`: UDP/ARP packet receiver with a GMII interface.
-- `udp_mac_gmii_to_sgmii`: GMII to SGMII converter used when the PHY type is `SGMII`
+- `udp_mac_gmii_to_sgmii`: GMII to SGMII converter used when the PHY type is ``SGMII``
 
 
 Clocking
 --------
 
-In `GMII` mode, 125 MHz `clk125` clock provided by the user is used for the TX path of the GMII interface. We don't use the TX clock provided by the PHY. The RX path uses the recovered clock, which is sent to a global buffer so it can clock the Rx front end logic.
+In ``GMII`` mode, 125 MHz ``clk125`` clock provided by the user is used for the TX path of the GMII interface. We don't use the TX clock provided by the PHY. The RX path uses the recovered clock, which is sent to a global buffer so it can clock the Rx front end logic.
 
 In SGMII mode, we provide a reference clock, and the GTX generates its RX and TX clocks from it. It generates a 125 MHz clock that is used for both the TX and RX paths of the GMII interface to the the GMII-to_SGMII bridge. The RX path uses the clock that is recovered by the GTX. We still use the ``clk125`` but only as a stable clock for the reset of the GTX core. Note that both a buffered and non-buffered version of the reference clock are provided to the gmii-to-sgmii bridge core in order to allow access to the buffered clock if needed. The buffering is done in the `clocks` module, as the reference clock can also be used as a system clock to drive the system MMCM.
 
-Both `udp_tx` and `udp_rx` have an asynchronous FIFO between the GMII and the user AXIS interface bus clock domain, which is the `clk125` clock for both the TX and RX paths.
+Both `udp_mac_tx` and `udp_mac_rx` have an asynchronous FIFO between the GMII and the user AXIS interface bus clock domain, which is the ``clk125`` clock for both the TX and RX paths.
 
-It is assumed that the GMII clocks (directly from the PHY or derived by the gmii-to-sgmii bridge) are not faster than the `clk125` clock.
+It is assumed that the GMII clocks (directly from the PHY or derived by the gmii-to-sgmii bridge) are not faster than the ``clk125`` clock.
 
 
 Principle of operations

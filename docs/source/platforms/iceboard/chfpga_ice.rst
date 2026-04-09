@@ -52,7 +52,7 @@ The corner-turn clock source ``CT_CLK_SOURCE`` depends on the mode of operation,
 
 In ``ct`` (corner-turn) configs, the Corner-turn engine  operate on the backplane transmitter clock (``CT_CLK_SOURCE = BP_SHUFFLE_TXCLK``) (about 244 MHz). The extra speed compared to the 200 MHz channelizer clock  provides the extra clock cycles required to transmit the packet headers and flags.
 
-In `corr*` (correlator) mode(s), a simple internal corner-turning is used (``CT_LEVEL=1``) and backplane transitters are not implemented, so that clock is not available. We therefore use the internal CORR_CLOCK, which is a 250 MHz clock generated from the system clock by the `clocks` module).
+In ``corr*`` (correlator) mode(s), a simple internal corner-turning is used (``CT_LEVEL=1``) and backplane transitters are not implemented, so that clock is not available. We therefore use the internal CORR_CLOCK, which is a 250 MHz clock generated from the system clock by the :entity:`clocks` module.
 
 .. Note:: We used to use the 1st stage of the full `bct_engine` corner-turn engine to feed the correlator, which added the headers and flags, and therefore required a higher clock speed. Hence the historical use of CORR_CLK. Modern compiles use the new simple corner-turn and new UCORR44, which does not expect any extra information.  CRS platforms operate at higher speed (400 MHz) and avoids using an even faster clock by using the channelizer clock as a corner-turn engine clock (``CT_CLK_SOURCE = ADC_CLK``) and correlator clocks . The Ice platform could do this, and CORR_CLK could probably be completely removed from the design.
 

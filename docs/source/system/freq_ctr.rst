@@ -17,7 +17,7 @@ Entity documentation
 Parameters
 ==========
 
-- **FPGA_SERIES:** Target FPGA series, defined as ``fpga_series_enum`` in :doc:`../chfpga_package`. Selects the appropriate clock buffer primitive for the measured-signal path (``BUFH`` on Kintex-7, ``BUFG`` on Virtex-6 and UltraScale+).
+- **FPGA_SERIES:** Target FPGA series, defined as ``fpga_series_enum`` in :doc:`/chfpga_package`. Selects the appropriate clock buffer primitive for the measured-signal path (``BUFH`` on Kintex-7, ``BUFG`` on Virtex-6 and UltraScale+).
 - **NUMBER_OF_CLK_IN_PORTS:** Number of divide-by-two clock input signals that can be measured (default 8, up to 128 as indexed by the 7-bit source select field).
 
 Interface

@@ -28,7 +28,7 @@ Entity documentation
 Parameters
 ==========
 
-- **PLATFORM_TYPE:** Target platform, defined as ``platform_type_enum`` in :doc:`../chfpga_package`. Determines which MMCM primitive variant is instantiated (``MMCME2_ADV`` on Kintex-7, ``MMCME4_ADV`` on UltraScale+).
+- **PLATFORM_TYPE:** Target platform, defined as ``platform_type_enum`` in :doc:`/chfpga_package`. Determines which MMCM primitive variant is instantiated (``MMCME2_ADV`` on Kintex-7, ``MMCME4_ADV`` on UltraScale+).
 - **CLOCK_SOURCE:** Input clock that feeds the system MMCM. Valid values: ``SYSCLK`` (differential LVDS pad ``sysclk_p/n``), ``SYSCLK_BUFG`` (pre-buffered clock), ``SFP_REFCLK`` (GTX/MGT reference clock ``sfp_refclk_p/n``), ``CLK10_BUFG`` (10 MHz BUFG clock).
 - **CLOCK_FREQ:** Frequency of the selected clock source in MHz. Used to compute the MMCM multiplication factors to reach a 1 GHz VCO.
 - **CHAN_CLK_SOURCE:** Source for the 8-phase channelizer MMCM. ``MMCM`` generates an 8-phase clock from ``clk200``; ``ADC`` passes ``adc_clk`` directly to all channel clock outputs.

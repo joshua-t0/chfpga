@@ -108,7 +108,7 @@ Architecture
 Clocking
 --------
 
-A single ``clk_out`` word clock is generated from the first lane's GTX TX clock and distributed to all TX and RX user interfaces. Each RX lane's GTX recovered clock independently clocks the receive front end; the per-lane RX data FIFO (`xglink_rx_data_fifo`) crosses from that recovered clock to ``clk_out``.
+A single ``clk_out`` word clock is generated from the first lane's GTX TX clock and distributed to all TX and RX user interfaces. Each RX lane's GTX recovered clock independently clocks the receive front end; the per-lane RX data FIFO (:doc:`xglink_rx_data_fifo`) crosses from that recovered clock to ``clk_out``.
 
 Principle of operations
 -----------------------
