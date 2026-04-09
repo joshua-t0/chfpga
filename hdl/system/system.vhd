@@ -121,7 +121,6 @@ entity system is
 		local_mac_addr: out std_logic_vector(47 downto 0);
 		local_ip_addr: out std_logic_vector(31 downto 0);
 		local_ip_port: out std_logic_vector(15 downto 0);
-		local_subarray: out std_logic_vector(1 downto 0);
 		remote_mac_addr: out std_logic_vector(47 downto 0);
 		remote_ip_addr: out std_logic_vector(31 downto 0);
 		remote_ip_port0: out std_logic_vector(15 downto 0); -- normally set to zero to reply to the same port as the last command
@@ -612,7 +611,6 @@ begin
 				local_mac_addr       => local_mac_addr,
 				local_base_ip_addr   => local_ip_addr,
 				local_base_ip_port   => local_ip_port,
-				local_subarray       => local_subarray,
 				remote_mac_addr1     => remote_mac_addr,
 				remote_ip_addr1      => remote_ip_addr,
 				remote_ip_port0      => remote_ip_port0,
@@ -1109,7 +1107,7 @@ begin
 		blinker0: entity work.blinker
 			generic map (
 				DUMMY => not BLINKER_PRESENT,
-				PING_PONG => PLATFORM_TYPE=ZCU111 or PLATFORM_TYPE=KC705 or PLATFORM_TYPE=ML605 -- We have 8 LEDS on these platform to perform a nice light show
+				PING_PONG => is_in(PLATFORM_TYPE, (ZCU111, KC705, ML605)) -- Eight LEDs on these platforms for the status light pattern
 			)
 			port map (
 				rst  => blinker_rst, -- do not blink if Link Status = 0
