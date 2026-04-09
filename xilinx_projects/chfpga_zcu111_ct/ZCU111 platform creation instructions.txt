@@ -1,7 +1,7 @@
 Creating a platform
 
 New platform
-Specify xsa from xilinx_projects/chfpga_zcu111/*.xsa
+Specify xsa from xilinx_projects/chfpga_zcu111_ct/*.xsa
 
 SHoult it have a embedded bitstream for XilFPGA and XilSecure to load properly?
 We may have to select generate FSBL for the same reason as above

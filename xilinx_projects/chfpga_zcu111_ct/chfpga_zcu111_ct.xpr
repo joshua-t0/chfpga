@@ -3,7 +3,7 @@
 <!--                                                         -->
 <!-- Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.   -->
 
-<Project Version="7" Minor="61" Path="/home/jfcliche/chfpga/xilinx_projects/chfpga_zcu111/chfpga_zcu111.xpr">
+<Project Version="7" Minor="61" Path="/home/jfcliche/chfpga/xilinx_projects/chfpga_zcu111_ct/chfpga_zcu111_ct.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
     <Option Name="Id" Val="71cf15f7965243eb8c75e6d2c1ae1823"/>
