@@ -26,8 +26,8 @@ set bd_name ""
 set hdl_base_files [list  \
  "chfpga_package.vhd" \
  "chfpga.vhd" \
- "common/generic_fifo.vhd" \
- "common/axis_merge.vhd" \
+ "utils/generic_fifo.vhd" \
+ "utils/axis_merge.vhd" \
  "bsb/axis_sync_fifo.vhd" \
  "bsb/bsb_sync_fifo.vhd" \
  "bsb/bsb_router.vhd" \
@@ -116,11 +116,11 @@ set ice_hdl_base_files [concat $hdl_base_files [list \
   \
   "ct/bct_engine.vhd"\
   \
-  "1G_UDP_MAC/udp_mac_crc32.vhd" \
-  "1G_UDP_MAC/udp_mac_tx.vhd" \
-  "1G_UDP_MAC/udp_mac_rx.vhd" \
-  "1G_UDP_MAC/udp_mac_gmii_to_sgmii.vhd" \
-  "1G_UDP_MAC/udp_mac.vhd" \
+  "data_links/1G_UDP_MAC/udp_mac_crc32.vhd" \
+  "data_links/1G_UDP_MAC/udp_mac_tx.vhd" \
+  "data_links/1G_UDP_MAC/udp_mac_rx.vhd" \
+  "data_links/1G_UDP_MAC/udp_mac_gmii_to_sgmii.vhd" \
+  "data_links/1G_UDP_MAC/udp_mac.vhd" \
   ]]
 
 
@@ -132,22 +132,22 @@ set ice_ct_hdl_files [concat $ice_hdl_base_files [list \
   "ct/shuffle_bin_sel.vhd"\
   "ct/shuffle_crossbar.vhd"\
   \
-  "XGLINK/xglink_bypass.vhd"\
-  "XGLINK/xglink_crc32_32.vhd"\
-  "XGLINK/xglink_tx.vhd"\
-  "XGLINK/xglink_rx.vhd"\
-  "XGLINK/xglink_gtx.vhd"\
-  "XGLINK/xglink_rx_startup_fsm.vhd"\
-  "XGLINK/xglink_tx_startup_fsm.vhd"\
-  "XGLINK/xglink_scrambler.vhd"\
-  "XGLINK/xglink_block_sync.vhd"\
-  "XGLINK/xglink_descrambler.vhd"\
-  "XGLINK/xglink_core.vhd"\
-  "XGLINK/xglink_array.vhd"\
-  "XGLINK/xglink_sync_block.vhd"\
+  "data_links/XGLINK/xglink_bypass.vhd"\
+  "data_links/XGLINK/xglink_crc32_32.vhd"\
+  "data_links/XGLINK/xglink_tx.vhd"\
+  "data_links/XGLINK/xglink_rx.vhd"\
+  "data_links/XGLINK/xglink_gtx.vhd"\
+  "data_links/XGLINK/xglink_rx_startup_fsm.vhd"\
+  "data_links/XGLINK/xglink_tx_startup_fsm.vhd"\
+  "data_links/XGLINK/xglink_scrambler.vhd"\
+  "data_links/XGLINK/xglink_block_sync.vhd"\
+  "data_links/XGLINK/xglink_descrambler.vhd"\
+  "data_links/XGLINK/xglink_core.vhd"\
+  "data_links/XGLINK/xglink_array.vhd"\
+  "data_links/XGLINK/xglink_sync_block.vhd"\
   \
-  "10GE_UDP_MAC/xge_udp_mac_tx.vhd" \
-  "10GE_UDP_MAC/xge_array.vhd" \
+  "data_links/10GE_UDP_MAC/xge_udp_mac_tx.vhd" \
+  "data_links/10GE_UDP_MAC/xge_array.vhd" \
   ]]
 
 
@@ -187,10 +187,10 @@ set kc705_hdl_base_files [concat $hdl_base_files [list \
   \
   "ct/bct_engine.vhd"\
   \
-  "1G_UDP_MAC/udp_mac_crc32.vhd" \
-  "1G_UDP_MAC/udp_mac_tx.vhd" \
-  "1G_UDP_MAC/udp_mac_rx.vhd" \
-  "1G_UDP_MAC/udp_mac.vhd" \
+  "data_links/1G_UDP_MAC/udp_mac_crc32.vhd" \
+  "data_links/1G_UDP_MAC/udp_mac_tx.vhd" \
+  "data_links/1G_UDP_MAC/udp_mac_rx.vhd" \
+  "data_links/1G_UDP_MAC/udp_mac.vhd" \
   ]]
 
 set kc705_corr8_hdl_files [concat $kc705_hdl_base_files [list \
@@ -233,16 +233,16 @@ set crs_hdl_base_files [concat $hdl_base_files [list \
 set crs_corr_hdl_files [concat $crs_hdl_base_files [list \
  "ct/align64_fifo.vhd" \
  "ct/align64.vhd" \
- "XXVGLINK/xxvglink_data_fifo.vhd" \
- "XXVGLINK/xxvglink_bypass.vhd" \
- "XXVGLINK/crc32_64.vhd" \
- "XXVGLINK/xxvglink_tx.vhd" \
- "XXVGLINK/xxvglink_rx.vhd" \
- "XXVGLINK/xxvglink_scrambler.vhd" \
- "XXVGLINK/xxvglink_block_sync.vhd" \
- "XXVGLINK/xxvglink_descrambler.vhd" \
- "XXVGLINK/xxvglink_core.vhd" \
- "XXVGLINK/xxvglink_array.vhd" \
+ "data_links/XXVGLINK/xxvglink_data_fifo.vhd" \
+ "data_links/XXVGLINK/xxvglink_bypass.vhd" \
+ "data_links/XXVGLINK/crc32_64.vhd" \
+ "data_links/XXVGLINK/xxvglink_tx.vhd" \
+ "data_links/XXVGLINK/xxvglink_rx.vhd" \
+ "data_links/XXVGLINK/xxvglink_scrambler.vhd" \
+ "data_links/XXVGLINK/xxvglink_block_sync.vhd" \
+ "data_links/XXVGLINK/xxvglink_descrambler.vhd" \
+ "data_links/XXVGLINK/xxvglink_core.vhd" \
+ "data_links/XXVGLINK/xxvglink_array.vhd" \
  "corr/UCMAC44_ARRAY.vhd" \
  "corr/UCORR44.vhd" \
  "corr/UCORR44_ARRAY.vhd" \
@@ -250,7 +250,7 @@ set crs_corr_hdl_files [concat $crs_hdl_base_files [list \
 
 set crs_ct_hdl_files [concat $crs_hdl_base_files [list \
   "ct/upack.vhd" \
-  "100GE_UDP_MAC/cge.vhd"\
+  "data_links/100GE_UDP_MAC/cge.vhd"\
   ]]
 
 
@@ -277,7 +277,7 @@ set zcu111_hdl_base_files [concat $hdl_base_files [list \
 
 set zcu111_ct_hdl_files [concat $zcu111_hdl_base_files [list \
   "ct/upack.vhd" \
-  "100GE_UDP_MAC/cge.vhd" \
+  "data_links/100GE_UDP_MAC/cge.vhd" \
  ]]
 
 

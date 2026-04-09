@@ -89,13 +89,13 @@
   <FileSets Version="1" Minor="31">
     <FileSet Name="sources_1" Type="DesignSrcs" RelSrcDir="$PSRCDIR/sources_1" RelGenDir="$PGENDIR/sources_1">
       <Filter Type="Srcs"/>
-      <File Path="$PPRDIR/../../hdl/1G_UDP_MAC/udp_mac_crc32.vhd">
+      <File Path="$PPRDIR/../../hdl/data_links/1G_UDP_MAC/udp_mac_crc32.vhd">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/1G_UDP_MAC/udp_mac_rx.vhd">
+      <File Path="$PPRDIR/../../hdl/data_links/1G_UDP_MAC/udp_mac_rx.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>

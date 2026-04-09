@@ -148,70 +148,70 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../hdl/XXVGLINK/xxvglink_tx_startup_fsm.vhd">
+      <File Path="$PPRDIR/../../../hdl/data_links/XXVGLINK/xxvglink_tx_startup_fsm.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../hdl/XXVGLINK/xxvglink_core.vhd">
+      <File Path="$PPRDIR/../../../hdl/data_links/XXVGLINK/xxvglink_core.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../hdl/XXVGLINK/xxvglink_array.vhd">
+      <File Path="$PPRDIR/../../../hdl/data_links/XXVGLINK/xxvglink_array.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../hdl/XXVGLINK/xxvglink_tx.vhd">
+      <File Path="$PPRDIR/../../../hdl/data_links/XXVGLINK/xxvglink_tx.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../hdl/XXVGLINK/xxvglink_data_fifo.vhd">
+      <File Path="$PPRDIR/../../../hdl/data_links/XXVGLINK/xxvglink_data_fifo.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../hdl/XXVGLINK/xxvglink_rx.vhd">
+      <File Path="$PPRDIR/../../../hdl/data_links/XXVGLINK/xxvglink_rx.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../hdl/XXVGLINK/xxvglink_bypass.vhd">
+      <File Path="$PPRDIR/../../../hdl/data_links/XXVGLINK/xxvglink_bypass.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../hdl/XXVGLINK/xxvglink_descrambler.vhd">
+      <File Path="$PPRDIR/../../../hdl/data_links/XXVGLINK/xxvglink_descrambler.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../hdl/XXVGLINK/xxvglink_scrambler.vhd">
+      <File Path="$PPRDIR/../../../hdl/data_links/XXVGLINK/xxvglink_scrambler.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../hdl/XXVGLINK/crc32_64.vhd">
+      <File Path="$PPRDIR/../../../hdl/data_links/XXVGLINK/crc32_64.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -225,7 +225,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../hdl/XXVGLINK/xxvglink_block_sync.vhd">
+      <File Path="$PPRDIR/../../../hdl/data_links/XXVGLINK/xxvglink_block_sync.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
