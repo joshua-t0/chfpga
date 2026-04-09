@@ -5,6 +5,8 @@
 :entity:`chfpga_kc705` platform wrapper and configurations
 **********************************************************
 
+.. default-role:: vhdl:entity
+
 ===========
 Description
 ===========

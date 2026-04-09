@@ -13,3 +13,19 @@ Entity documentation
 
 .. autoentity:: UCMAC44_ARRAY
 
+Parameters
+==========
+
+UltraRAM and DSP sizing per MAC bank — see entity.
+
+Interface
+=========
+
+- Vector product inputs from ``UCORR44``.
+
+- Wide accumulator outputs / read ports.
+
+Principle of operations
+=======================
+
+UltraRAM-backed MAC array companion to ``UCORR44``: stores partial sums efficiently for large correlator instantiations.

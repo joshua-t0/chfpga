@@ -4,7 +4,7 @@
 :entity:`crc32_64` (*crc32_64.vhd*): 64-bit CRC-32 Computation Module
 *********************************************************************
 
-.. parse:: hdl/XXVGLINK/crc32_64.vhd
+.. parse:: hdl/data_links/XXVGLINK/crc32_64.vhd
 
 .. default-role:: vhdl:entity
 

@@ -4,12 +4,12 @@
 :entity:`generic_fifo` (*generic_fifo.vhd*): Universal FIFO wrapper
 **************************************************************************
 
-.. parse:: hdl/common/generic_fifo.vhd
+.. parse:: hdl/utils/generic_fifo.vhd
 
 .. default-role:: vhdl:entity
 
 Entity documentation
---------------------
+====================
 
 .. autoentity:: generic_fifo
 
@@ -82,7 +82,7 @@ Embedded FIFO
 -------------
 
 Primitive selection (depth-first, FIFO18-first)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For ``MEMORY_TYPE`` = ``"embedded"``, the wrapper uses a **depth-first,
 FIFO18-first** algorithm to minimize BRAM usage:

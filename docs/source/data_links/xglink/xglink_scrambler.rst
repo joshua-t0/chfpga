@@ -4,9 +4,16 @@
 :entity:`xglink_scrambler` (*xglink_scrambler.vhd*): 64B/66B Scrambler
 **********************************************************************
 
-.. parse:: hdl/XGLINK/xglink_scrambler.vhd
+.. parse:: hdl/data_links/XGLINK/xglink_scrambler.vhd
 
 .. default-role:: vhdl:entity
+
+Overview
+========
+
+64B/66B **scrambler** used on the **transmit** path of XGLINK. XORs payload with an LFSR sequence per the Ethernet-style 64B/66B rules to improve transition density and EMI. Typically instantiated inside `xglink_tx` ahead of the GTX gearbox.
+
+
 
 Entity documentation
 --------------------
@@ -30,5 +37,5 @@ Key Features
 Usage in XGLINK
 ---------------
 
-The scrambler is used in the :entity:`xglink_tx` module to scramble data before transmission over the GTX transceiver. The scrambled data helps ensure reliable clock recovery at the receiver and reduces EMI emissions.
+The scrambler sits in `xglink_tx` so data entering the GTX is scrambled before serialization. That helps **clock recovery** at the far end and reduces **EMI**.
 

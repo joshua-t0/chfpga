@@ -4,7 +4,7 @@
 :entity:`xglink_tx_startup_fsm` (*xglink_tx_startup_fsm.vhd*): TX Startup State Machine
 ***************************************************************************************
 
-.. parse:: hdl/XGLINK/xglink_tx_startup_fsm.vhd
+.. parse:: hdl/data_links/XGLINK/xglink_tx_startup_fsm.vhd
 
 .. default-role:: vhdl:entity
 

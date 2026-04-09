@@ -4,7 +4,7 @@
 :entity:`xxvglink_tx` (*xxvglink_tx.vhd*): 25G Serial Link Transmitter
 **********************************************************************
 
-.. parse:: hdl/XXVGLINK/xxvglink_tx.vhd
+.. parse:: hdl/data_links/XXVGLINK/xxvglink_tx.vhd
 
 .. default-role:: vhdl:entity
 

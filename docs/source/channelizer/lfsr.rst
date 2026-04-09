@@ -4,7 +4,7 @@
 :entity:`lfsr` (*lfsr.vhd*): Linear Feedback Shift Register
 ***********************************************************
 
-.. default-role:: entity
+.. default-role:: vhdl:entity
 
 Overview
 ========

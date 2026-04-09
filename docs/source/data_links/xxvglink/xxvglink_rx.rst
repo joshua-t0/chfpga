@@ -4,7 +4,7 @@
 :entity:`xxvglink_rx` (*xxvglink_rx.vhd*): 25G Serial Link Receiver
 *******************************************************************
 
-.. parse:: hdl/XXVGLINK/xxvglink_rx.vhd
+.. parse:: hdl/data_links/XXVGLINK/xxvglink_rx.vhd
 
 .. default-role:: vhdl:entity
 

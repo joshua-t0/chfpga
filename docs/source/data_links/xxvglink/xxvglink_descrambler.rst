@@ -4,7 +4,7 @@
 :entity:`xxvglink_descrambler` (*xxvglink_descrambler.vhd*): 64B/66B Descrambler
 ********************************************************************************
 
-.. parse:: hdl/XXVGLINK/xxvglink_descrambler.vhd
+.. parse:: hdl/data_links/XXVGLINK/xxvglink_descrambler.vhd
 
 .. default-role:: vhdl:entity
 

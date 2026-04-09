@@ -14,7 +14,7 @@
    ../../navbar_separator  
 
 
-.. parse:: hdl/10GE_UDP_MAC/xge_udp_mac_tx.vhd
+.. parse:: hdl/data_links/10GE_UDP_MAC/xge_udp_mac_tx.vhd
 
 .. default-role:: vhdl:entity
 

@@ -4,7 +4,7 @@
 :entity:`xglink_rx_startup_fsm` (*xglink_rx_startup_fsm.vhd*): RX Startup State Machine
 ***************************************************************************************
 
-.. parse:: hdl/XGLINK/xglink_rx_startup_fsm.vhd
+.. parse:: hdl/data_links/XGLINK/xglink_rx_startup_fsm.vhd
 
 .. default-role:: vhdl:entity
 

@@ -97,7 +97,6 @@ entity GPIO is
 		local_mac_addr: out std_logic_vector(47 downto 0);
 		local_base_ip_addr: out std_logic_vector(31 downto 0);
 		local_base_ip_port: out std_logic_vector(15 downto 0);
-		local_subarray: out std_logic_vector(1 downto 0);
 		-- UDP TX channel 0 remote network configuration
 		--   MAC & IP addresses are hardwired to be those of the perviously received packet
 		remote_ip_port0: out std_logic_vector(15 downto 0); -- normally set to zero to reply to the same port as the last command
@@ -1354,8 +1353,6 @@ network_setup_proc: process(ctrl_clk)
 			-- FPGA network interface addresses
 			local_mac_addr     <= spi_fpga_local_mac_address;
 			local_base_ip_addr <= spi_fpga_local_ip_address;
-			local_subarray     <= (others=>'0');
-
 			-- Control Channel(UDP Channel 0) parameters
 			local_base_ip_port <= spi_fpga_local_ip_port; -- command listening port
 			-- Command reply IP and MAC: hardwired to be the same as the the source addres of the previous incoming command packets

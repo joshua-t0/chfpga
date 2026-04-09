@@ -4,7 +4,7 @@
 :entity:`xxvglink_core` (*xxvglink_core.vhd*): 25G Serial Link Core
 *******************************************************************
 
-.. parse:: hdl/XXVGLINK/xxvglink_core.vhd
+.. parse:: hdl/data_links/XXVGLINK/xxvglink_core.vhd
 
 .. default-role:: vhdl:entity
 

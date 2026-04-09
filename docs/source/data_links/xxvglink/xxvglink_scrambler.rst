@@ -4,7 +4,7 @@
 :entity:`xxvglink_scrambler` (*xxvglink_scrambler.vhd*): 64B/66B Scrambler
 **************************************************************************
 
-.. parse:: hdl/XXVGLINK/xxvglink_scrambler.vhd
+.. parse:: hdl/data_links/XXVGLINK/xxvglink_scrambler.vhd
 
 .. default-role:: vhdl:entity
 

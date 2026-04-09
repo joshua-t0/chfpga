@@ -1,37 +1,6 @@
-.. _shuffle_crossbar-align-fifo-xil-module:
+.. _shuffle-crossbar-align-fifo-xil-module:
 
 Shuffle Crossbar Align FIFO
-***************************
+****************************
 
-.. image:: ../../../images/xilinx_modules/shuffle_crossbar_align_fifo.png
-    :width: 25%
-
-Basic
-=====
-
-.. image:: ../../../images/xilinx_modules/shuffle_crossbar_align_fifo1.png
-    :width: 100%
-
-Native Ports
-============
-
-.. image:: ../../../images/xilinx_modules/shuffle_crossbar_align_fifo2.png
-	:width: 100%
-
-Status Flags
-============
-
-.. image:: ../../../images/xilinx_modules/shuffle_crossbar_align_fifo3.png
-	:width: 100%
-
-Data Counts
-===========
-
-.. image:: ../../../images/xilinx_modules/shuffle_crossbar_align_fifo4.png
-	:width: 100%
-
-Summary
-=======
-
-.. image:: ../../../images/xilinx_modules/shuffle_crossbar_align_fifo5.png
-	:width: 100%
+Xilinx **FIFO Generator** IP core instance used between the shuffle crossbar and the alignment stage of `bct_engine`. Provides elasticity to absorb phase differences between the crossbar output and the downstream alignment logic. Width equals the full data word; depth sized for the worst-case pipeline skew.

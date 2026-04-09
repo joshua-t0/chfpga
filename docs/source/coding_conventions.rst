@@ -23,6 +23,34 @@ We use Sphinx and a custom-made Sphinx extension to semi-automatically fetch the
 
 Sphinx is used to compile the documentation into stand-alone HTML files. A Bitbucket continuous integration pipeline script automatically builds and publishes the documentation whenver select branches are pushed to the repository. Howver, local building is preferred when working on documentation so almost-instantaneous feedback can be acheived.
 
+Module RST documentation guidelines
+-----------------------------------
+
+Each VHDL Entity should have a corresponding RST that documents it. Its goal is not to explain what can be obviously gleaned by looking at the code (or asking an AI to do it), but rather to describe how a user can use the module (e.g. parameters and interface) and describe any non-obvious design techniques, constraints and tradeoffs that led to this particular design.
+
+Modules typically use vhdl:entity as a default role (backticks), except for math-heavy modules where the default role is math.  
+
+    .. default-role:: vhdl:entity
+
+We typically favor the following sections:
+
+1. **Overview** — Quick summary of that the entity does.
+2. **Entity documentation** —  Automatically generated API description table (using the ``autoentity`` directive)::
+
+
+    .. parse:: hdl/...
+    .. autoentity:: <entity_name>
+
+3. **Parameters** — Generics/parameters used by the entity. The parameters may be grouped by function, and the amount of details should normally be sufficient to allow the user to configure the module as needed.  This should be more detailed than the "autoentity" description. Very complex parameter usage can be deferred to the "implementation details" section.
+
+4. **Interface** — Description of the entity's ports. Here agin, descriptions can be made by group of signals, with sufficient details to allow the module to be used correctly. The clock domain on which signals and buses operate should be clear. The data format of vectors should be described. The synchronous or asynchronous nature of reset inputs should be stated.
+
+5. **Implementation details** — Optional subsections such as **Architecture**, **Clocking**, reset/CDC, timing/placement, FIFO or primitive choices, mode-switch hazards, etc. 
+
+6. **Memory map** — For blocks with BSB registers,  use ``.. include-docs::`` to automatically import the register map from the module's source code documentation.  Optional **Registers** subsection(s) can be added to describe register groups or bring-up workflow.
+
+
+**Wrapper / platform pages** (e.g. ``chfpga``, board tops) should stress board-specific hardware and related lockic and clocking structure. Description of placement and timing constraints should be provided.
 
 
 
@@ -108,8 +136,33 @@ Version control tool
 We use ``git`` to version-control the source files. ``LFS`` us used to store files that do not easily *diff* or are generally too big.
 ``git-lfs`` must therefore be installed and initialized before code is cloned, committed and pushed.
 
-Commit names
+Branch names
 ------------
+
+In general, branch names are not authoritative; tags are used instead to identify production releases. Having a flexible way of quickly indentifying pre-production versions during the various phases of firmware maturity is still very useful.
+
+For pre-production version, we use the following rules:
+
+- Alpha branches: Code created/modified by en author, with minimal testing.
+  - Work in progress: <author_initials>/dev, or <autor_initials>/<feature _name>:  Some platforms may compile, some may not. Only the author knows.
+  - Alpha release: <author_initials>/<platform>_{config}: usually points to a "build" commit containing a new bitstream that meets timing for that platform and configuration only. This is mostly for the allowing the author to keep track of all the code variations in a sane manner.
+
+ 
+- Beta branches: develop/<platform>_<config>: The platform/config is released for testing
+
+- Release branch: master/<platform>_<config>: The platform/config is released for production
+
+The alpha branch methodology proved very convenient during th very active development phase of the code. The author always work on the /dev branch, but can fast-forward the /platform-config branch to the dev/branch with a simple click of some GIT GUI interface (like GitKraken) or with a simple command::
+
+   git branch -f <platform>_<config> HEAD
+
+
+Tagging convention
+------------------
+
+
+Commit messages convention
+--------------------------
 
 We try to standardize the names of the commits using the convention listed below:
 

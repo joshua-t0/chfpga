@@ -40,6 +40,21 @@ Entity documentation
 
 .. autoentity:: funcgen
 
+Parameters
+==========
+
+- **ADC_SAMPLES_PER_WORD / ADC_BITS_PER_SAMPLE / ADC_SAMPLES_PER_FRAME:** Input / output word geometry (must match ADC / FFT expectations).
+
+- **IMPLEMENT_DELAY_CAPTURE:** Optional delay-capture logic when ``TRUE``.
+
+Interface
+=========
+
+- **Data:** ``s_axis_adc_*`` (from ADC), ``m_axis_adc_*`` (toward FFT) — same ``tdata`` width, ``tuser`` collapses per-sample flags to one frame flag on ``m_axis``.
+
+- **BSB:** ``s_axis_bsb_t*`` / ``m_axis_bsb_t*``, ``bsb_clk``, ``bsb_rst`` — mode ``fn_sel``, waveform RAM, noise seeds, etc.
+
+- **Clock / reset:** ``clk``, ``rst`` (synchronous).
 
 UDP Control Memory Map
 ======================

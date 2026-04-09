@@ -4,7 +4,7 @@
 :entity:`xglink_crc32_32` (*xglink_crc32_32.vhd*): CRC-32 Computation Module
 ****************************************************************************
 
-.. parse:: hdl/XGLINK/xglink_crc32_32.vhd
+.. parse:: hdl/data_links/XGLINK/xglink_crc32_32.vhd
 
 .. default-role:: vhdl:entity
 

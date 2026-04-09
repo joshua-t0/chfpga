@@ -12,7 +12,7 @@
    xglink_crc32_32
    ../../navbar_separator
 
-.. parse:: hdl/XGLINK/xglink_rx.vhd
+.. parse:: hdl/data_links/XGLINK/xglink_rx.vhd
 
 .. default-role:: vhdl:entity
 

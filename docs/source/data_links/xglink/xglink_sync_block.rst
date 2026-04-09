@@ -4,7 +4,7 @@
 :entity:`xglink_sync_block` (*xglink_sync_block.vhd*): Clock Domain Crossing Synchronizer
 *****************************************************************************************
 
-.. parse:: hdl/XGLINK/xglink_sync_block.vhd
+.. parse:: hdl/data_links/XGLINK/xglink_sync_block.vhd
 
 .. default-role:: vhdl:entity
 

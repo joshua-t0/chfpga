@@ -4,7 +4,7 @@
 :entity:`xglink_gtx` (*xglink_gtx.vhd*): GTX Transceiver Wrapper
 ****************************************************************
 
-.. parse:: hdl/XGLINK/xglink_gtx.vhd
+.. parse:: hdl/data_links/XGLINK/xglink_gtx.vhd
 
 .. default-role:: vhdl:entity
 

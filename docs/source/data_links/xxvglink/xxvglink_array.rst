@@ -4,7 +4,7 @@
 :entity:`xxvglink_array` (*xxvglink_array.vhd*): 25G Serial Link Array
 **********************************************************************
 
-.. parse:: hdl/XXVGLINK/xxvglink_array.vhd
+.. parse:: hdl/data_links/XXVGLINK/xxvglink_array.vhd
 
 .. default-role:: vhdl:entity
 

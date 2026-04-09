@@ -4,7 +4,7 @@
 :entity:`udp_mac_tx` (*udp_mac_tx.vhd*): UDP/IP/Ethernet Transmitter
 ********************************************************************
 
-.. parse:: hdl/1G_UDP_MAC/udp_mac_tx.vhd
+.. parse:: hdl/data_links/1G_UDP_MAC/udp_mac_tx.vhd
 
 .. default-role:: vhdl:entity
 

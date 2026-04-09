@@ -4,7 +4,7 @@
 :entity:`xxvglink_data_fifo` (*xxvglink_data_fifo.vhd*): XXVGLINK Data FIFO
 ***************************************************************************
 
-.. parse:: hdl/XXVGLINK/xxvglink_data_fifo.vhd
+.. parse:: hdl/data_links/XXVGLINK/xxvglink_data_fifo.vhd
 
 .. default-role:: vhdl:entity
 

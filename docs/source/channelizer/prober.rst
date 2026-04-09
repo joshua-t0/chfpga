@@ -4,6 +4,8 @@
 :entity:`prober` (*prober.vhd*): Data capture
 *********************************************
 
+.. default-role:: vhdl:entity
+
 Overview
 ========
 Prober periodically captures bursts of up to 4 data frames from one of two user-selectable sources and streams them over an 8-bit AXI4 STREAM interface as packets with a header indicating data flags, frame number, stream ID etc. The number of frames to capture in a contiguous burst and the number of frames between capture bursts are configurable by software through BSB memory-mapped registers. The data source and fast data capture rates can be changed at any time during operation without resetting the data pipeline.

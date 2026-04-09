@@ -3,29 +3,4 @@
 CHDIST Data Embed FIFO
 **********************
 
-.. image:: ../../../images/xilinx_modules/chdist_data_embed_fifo.png
-    :width: 25%
-
-Basic
-=====
-
-.. image:: ../../../images/xilinx_modules/chdist_data_embed_fifo1.png
-	:width: 100%
-
-Native Ports
-============
-
-.. image:: ../../../images/xilinx_modules/chdist_data_embed_fifo2.png
-	:width: 100%
-
-Status Flags
-============
-
-.. image:: ../../../images/xilinx_modules/chdist_data_embed_fifo3.png
-	:width: 100%
-
-Summary
-=======
-
-.. image:: ../../../images/xilinx_modules/chdist_data_embed_fifo4.png
-	:width: 100%
+Xilinx **Embedded FIFO** IP core instance used in the channel distribution path of `bct_engine` to buffer data words between the channel distribution logic and the embedding stage. Configured as a synchronous FIFO with embedded-memory primitives (FIFO18/FIFO36). Key configuration: width and depth sized to the channelized data word width and maximum burst latency.

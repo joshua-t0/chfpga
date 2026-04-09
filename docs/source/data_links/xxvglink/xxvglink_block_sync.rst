@@ -4,7 +4,7 @@
 :entity:`xxvglink_block_sync` (*xxvglink_block_sync.vhd*): Block Synchronization State Machine
 **********************************************************************************************
 
-.. parse:: hdl/XXVGLINK/xxvglink_block_sync.vhd
+.. parse:: hdl/data_links/XXVGLINK/xxvglink_block_sync.vhd
 
 .. default-role:: vhdl:entity
 
