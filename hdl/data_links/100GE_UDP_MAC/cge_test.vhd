@@ -62,7 +62,7 @@ begin
       IB => pl_clk_n  -- 1-bit input: Diff_n buffer input (connect directly to top-level port)
    );
 
-	ct0: entity work.uram_ct
+	ct0: entity work.upack
 		--generic map (
 		--	IMPLEMENT_PACKET_GENERATOR => TRUE
 		-- 	)
@@ -83,8 +83,8 @@ begin
 
 			clk=> clk,
 			rst => rst,
-			ctrl_clk => ctrl_clk, -- used as init_clk
-			ctrl_rst => ctrl_rst
+			bsb_clk => ctrl_clk, -- used as init_clk
+			bsb_rst => ctrl_rst
 		 );
 
 
