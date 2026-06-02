@@ -217,9 +217,9 @@ set crs_corr_ip_files [list \
  "GTY/gtwizard_ultrascale_0.xci" \
  ]
 
-set crs_ct_ip_files [concat [list \
- "CMAC_USP/CMAC_USP.xci" \
- ]]
+set crs_ct_ip_files [list \
+ "cmac_usplus_1/cmac_usplus_1.xci" \
+]
 
 
 
@@ -266,7 +266,7 @@ set zcu111_bd_name "zynq_tcpipe_zcu111"
 set zcu111_ooc_ip_files $fft_type_chord
 
 set zcu111_ct_ip_files [list \
-  "CMAC_USP/CMAC_USP.xci" \
+  "cmac_usplus_1/cmac_usplus_1.xci" \
  ]
 
 set zcu111_hdl_base_files [concat $hdl_base_files [list \
