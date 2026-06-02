@@ -36,7 +36,7 @@ Entity documentation
 Parameters
 ==========
 
-- **PLATFORM_TYPE:** Target platform, defined as ``platform_type_enum`` in :doc:`/chfpga_package`. Selects FPGA-series-specific primitives throughout all sub-modules.
+- **PLATFORM_TYPE:** Target platform, defined as ``platform_type_enum`` in :ref:`chfpga-package`. Selects FPGA-series-specific primitives throughout all sub-modules.
 - **COOKIE:** 7-bit application firmware identifier reported in the GPIO STATUS register (default ``0x42``).
 - **PROTOCOL_VERSION:** 16-bit protocol version reported to the host software for compatibility checking.
 - **NUMBER_OF_ADCS:** Number of ADC channels implemented.

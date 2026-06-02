@@ -21,8 +21,8 @@ Entity documentation
 Parameters
 ==========
 
-- **FPGA_SERIES:** FPGA series to target, defined as an enumerated type in :doc:`/chfpga_package`. Is used to instantiate the proper platform-specific embedded FIFOs. 
-- **PHY_TYPE:** PHY type to use, defined as an enum value in :doc:`/chfpga_package`. Valid values are ``GMII`` or ``SGMII``. ``GMII`` uses a 8-bit GMII interface, while ``SGMII`` uses a 1Gbps  serial interface implemented using a GTX transceiver.
+- **FPGA_SERIES:** FPGA series to target, defined as an enumerated type in :ref:`chfpga-package`. Is used to instantiate the proper platform-specific embedded FIFOs. 
+- **PHY_TYPE:** PHY type to use, defined as an enum value in :ref:`chfpga-package`. Valid values are ``GMII`` or ``SGMII``. ``GMII`` uses a 8-bit GMII interface, while ``SGMII`` uses a 1Gbps  serial interface implemented using a GTX transceiver.
 - **BROADCAST_IP_PORT:** IP port to use for receiving broadcast packets. This port number is fixed in order to allow broadcast packets to be received even if the networking is not set-up yet.
 - **SIM:** Simulation mode. If ``TRUE``, the module will not use the PHY interface and will instead use a simple loopback testbench.
 

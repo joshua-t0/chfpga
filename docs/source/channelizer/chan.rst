@@ -36,9 +36,9 @@ Entity
 Parameters
 ==========
 
-- **PLATFORM_TYPE:** Target FPGA platform. Selects platform-specific primitives (e.g., embedded memories). Defined as an enumerated type in :doc:`/chfpga_package`.
+- **PLATFORM_TYPE:** Target FPGA platform. Selects platform-specific primitives (e.g., embedded memories). Defined as an enumerated type in :ref:`chfpga-package`.
 - **IMPLEMENT_FFT:** When ``FALSE``, the FFT sub-module is not instantiated. Useful for partial builds or debugging.
-- **FFT_TYPE:** Selects the FFT configuration (e.g., ``CHIME``, ``D3A``, ``HIRAX``). Determines ADC width, sample count, bin width, and other FFT-derived parameters via the ``FFT_INFO`` lookup table in :doc:`/chfpga_package`.
+- **FFT_TYPE:** Selects the FFT configuration (e.g., ``CHIME``, ``D3A``, ``HIRAX``). Determines ADC width, sample count, bin width, and other FFT-derived parameters via the ``FFT_INFO`` lookup table in :ref:`chfpga-package`.
 - **SCALER_USE_COMPLEX_GAINS:** When ``TRUE``, the scaler applies complex (16+16i)-bit gains per bin. When ``FALSE``, 16-bit real gains are used.
 - **CAPTURE_TYPE:** Selects the data capture engine type (``BRAM`` for internal PROBER, ``URAM`` for external UCAP). Determines capture bus width and number of capture sources.
 - **CT_TYPE:** Corner-turn type. Determines the width of the output AXI-Streaming bus that feeds the corner-turn or correlator engine.

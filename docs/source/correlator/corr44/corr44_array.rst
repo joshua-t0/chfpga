@@ -6,10 +6,8 @@
 
 .. parse:: hdl/corr/CORR44_ARRAY.vhd
 
-Entity documentation
---------------------
-
 .. default-role:: vhdl:entity
+
 
 Entity documentation
 --------------------
@@ -19,8 +17,8 @@ Entity documentation
 Parameters
 ----------
 
-- **PLATFORM_TYPE:** FPGA platform type, defined as a ``platform_type_enum`` in :doc:`/chfpga_package`. Passed down to each :entity:`CORR44` instance to select the correct hard-macro primitives and RPM layouts.
-- **NUMBER_OF_CORRELATORS:** Number of independent :entity:`CORR44` correlator cores instantiated in the array. Each core receives its own input data stream and produces its own integrated-product output stream.
+- **PLATFORM_TYPE:** FPGA platform type, defined as a ``platform_type_enum`` in :ref:`chfpga-package`. Passed down to each `corr44` instance to select the correct hard-macro primitives and RPM layouts.
+- **NUMBER_OF_CORRELATORS:** Number of independent `CORR44` correlator cores instantiated in the array. Each core receives its own input data stream and produces its own integrated-product output stream.
 - **NUMBER_OF_WORDS_PER_BIN:** Number of 32-bit input words per frequency bin, which also equals the number of input clocks per bin. There are 4 complex samples per 32-bit word, so the total samples per bin is ``4 × NUMBER_OF_WORDS_PER_BIN``.
 
 Interface

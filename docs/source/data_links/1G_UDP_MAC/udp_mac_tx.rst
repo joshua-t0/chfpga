@@ -26,7 +26,7 @@ Entity documentation
 Parameters
 ==========
 
-- **FPGA_SERIES:** FPGA family, defined as an enumerated type in :doc:`/chfpga_package`.
+- **FPGA_SERIES:** FPGA family, defined as an enumerated type in :ref:`chfpga-package`.
   Passed to the internal `generic_fifo` instances to select the correct embedded FIFO primitive
   generation. Default: ``KINTEX7``.
 

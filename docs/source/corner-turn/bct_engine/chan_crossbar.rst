@@ -35,7 +35,7 @@ Generics are used to specialize the module for the first stage corner-turn opera
 
 
 Entity documentation
---------------------
+====================
 
 .. parse:: hdl/ct/chan_crossbar.vhd
 
@@ -85,38 +85,37 @@ Clocking
 - ``clk``: AXI-Streaming clock for all data-path logic.
 - ``rst``: Synchronous active-high reset.
 
-Additional details
-------------------
+
 
 Memory map
-----------
+==========
 
 .. include-docs:: CHAN_CROSSBAR
     :start-after: Memory Map
 
 Implementation details
-----------------------
+======================
 
 Clocking
-........
+--------
 
 `chan_crossbar` operates fully on the CT-Engine clock domain, which is slightly faster than the channelizer clock in order to leave extra cycles to insert the packet headers and flags into the frames. 
 
 .. todo:: Explain the required clocking ratio. Roughly 1/8 = 12.5% faster for the scaler flags (1 bit per 4+4-bit value). 
 
 Alignment
-.........
+---------
 
 The module assumes that the packets from the channelizers are already aligned via the F-Engine FIFO. We used to have a separate aligner, but we merged the alignment funcitonality in the F-ENGINE output FIFO to preserve BRAM resources.
 
 Continuity
-..........
+----------
 
 `chan_crossbar` processes TVALID as expected; data does not need to be present on every clock. In fact, discontinuities are expected 
 since the channelizers generate data on a slower clock than the CT-Engine clock.
 
 
 Remapping (or lack thereof)
-...........................
+---------------------------
 
 `chan_crossbar` does not implement input or output remapping. Input remapping is not necessary as we assume we want the channels sent in the logical order. Channel remapping can be done offline at the end of the pipeline if needed. Output remapping would be useful to select which bins are sent to which boards by the shuffle links, but we can do this selection by setting the bin maps accordingly, so there is no need to waste resources implementing large muxes for this, and push the burden to the software.

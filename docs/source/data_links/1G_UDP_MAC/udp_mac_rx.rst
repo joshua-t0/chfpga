@@ -32,7 +32,7 @@ Parameters
   regardless of address filtering. Setting a fixed well-known port allows broadcast reception
   even before per-session addressing is configured. Default: 40999.
 
-- **FPGA_SERIES:** FPGA family, defined as an enumerated type in :doc:`/chfpga_package`.
+- **FPGA_SERIES:** FPGA family, defined as an enumerated type in :ref:`chfpga-package`.
   Selects the appropriate embedded FIFO primitive generation (FIFO18E1 for Kintex-7,
   FIFO18E2 for Ultrascale+). Default: ``KINTEX7``.
 

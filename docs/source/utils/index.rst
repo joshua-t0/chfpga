@@ -10,5 +10,6 @@ Shared VHDL building blocks used across the firmware.
    :maxdepth: 1
 
    axis_merge
+   axi_lite
    generic_fifo
    fifo_reset_sync

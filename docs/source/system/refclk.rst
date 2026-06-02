@@ -17,7 +17,7 @@ Entity documentation
 Parameters
 ==========
 
-- **PLATFORM_TYPE:** Target platform, defined as ``platform_type_enum`` in :doc:`/chfpga_package`. Used to select the correct IDELAY primitive variant and clock buffer configuration.
+- **PLATFORM_TYPE:** Target platform, defined as ``platform_type_enum`` in :ref:`chfpga-package`. Used to select the correct IDELAY primitive variant and clock buffer configuration.
 - **NUMBER_OF_MEZZANINES:** Number of FMC ADC mezzanine boards. Sets the width of the ``fmc_refclk_p/n``, ``fmc_refclk``, ``fmc_refclk_div2``, and ``adc_sync_p/n`` port arrays.
 - **IMPLEMENT_CLOCK_ENCODED_SYNC:** When ``TRUE``, generates a pulse-width-modulated 10 MHz output clock (``clk10_out``) that encodes SYNC events as a shorter-than-50% duty-cycle high pulse. When ``FALSE``, ``clk10_out`` passes the BUFG-buffered FMC reference clock from mezzanine 0.
 - **SIM:** When ``TRUE``, uses a shortened PLL stabilisation timeout (16 ``clk10`` cycles instead of 65536) to accelerate simulations.

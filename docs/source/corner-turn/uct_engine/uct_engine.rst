@@ -82,24 +82,24 @@ The UCT Engine uses the following modules:
 - :doc:`align64_fifo`: 64-bit alignment FIFO used by the align64 module
 
 Memory Maps
------------
+===========
 
 The UCT Engine has three separate memory-mapped register sets, one for each corner-turn level:
 
 Level 1 Corner-Turn Memory Map
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------
 
 .. include-docs:: uct_engine
     :start-after: Level 1 Corner-Turn Memory Map
 
 Level 2 Corner-Turn Memory Map
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------
 
 .. include-docs:: uct_engine
     :start-after: Level 2 Corner-Turn Memory Map
 
 Level 3 Corner-Turn Memory Map
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------
 
 .. include-docs:: uct_engine
     :start-after: Level 3 Corner-Turn Memory Map

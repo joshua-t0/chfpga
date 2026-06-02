@@ -24,7 +24,7 @@ The module contains a set of control and monitoring memory-map registers.
    ip_cores/shuffle_bin_sel_flags_fifo
 
 Entity documentation
---------------------
+====================
 
 .. parse:: hdl/ct/shuffle_bin_sel.vhd
 
@@ -79,20 +79,18 @@ Clocking
 - ``clk``: AXI-Streaming data clock.
 - ``rst``: Synchronous active-high reset.
 
-Additional details
-------------------
 
 Memory map
-----------
+==========
 
 .. include-docs:: shuffle_bin_sel
     :start-after: shuffle_bin_sel Memory Map
 
 Implementation details
-----------------------
+======================
 
 Data blocks
-~~~~~~~~~~~
+-----------
 
 The data FIFO stores 3 types of data, called data blocks. Each block correspond to groups of consecutive data in the incoming packets, and each require slightly different FIFO write and read sequences:
 
@@ -107,7 +105,7 @@ The packet header is not included as it is not stored in the FIFO. The readout l
 There are two FIFOs:
 
 Data FIFO
-~~~~~~~~~
+---------
 
 The data FIFO stored the data/flag word(s) from each input lane when the bin selection map indicates the corresponding words fort that bin shall be kept. The same FIFO stores the selected channelizer data words, the data flag words from the same selected bins, all the frame flag words (ADC and FFT overflow flags which are not bin-dependent), and the packet flag word. It is possible to use a single FIFO for all this information because the data is already grouped in blocks, and the number of frames per packet is not changed.
 
@@ -120,7 +118,7 @@ The DATA FIFO can be implemented as BRAM/Embedded FIFO or shift-register FIFO, d
 The data FIFO used to stores flags to guide the readout process, such as the NEXT_INPUT flag that indicated that a word was the last of its block. This was a bad idea in terms of routing, as all these flags had to be routed from each FIFO to a central state machine that coordinated the data FIFO readout. The Flags FIFO is used for this purpose instead.
 
 Readout Flags FIFO
-~~~~~~~~~~~~~~~~~~
+------------------
 
 The flags FIFO describe provide instructions to the readout logic on how to read each block of data from the data FIFO.
 
@@ -141,7 +139,7 @@ To further preserve space, the FLAGS FIFO can be implemented as a deep 4-bit wid
 
 
 FIFO writing process
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 `recv_flags` indicate whether we are expecting the header words.  The header word counter `recv_header_word_ctr` is incremented when valid data comes in. When the 4th word is received we clear recv_flags so data processing can start. No data from the header is saved. The data processing counters are reset during the header phase.
 
@@ -187,7 +185,7 @@ data_fifo_wr_en_packet_flags_dly=1: The data written in the FIFO is: lower bits:
 
 
 FIFO readout process
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 The FIFO readout logic is relatively simple.
 

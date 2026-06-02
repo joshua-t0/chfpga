@@ -31,7 +31,7 @@ Entity documentation
 Parameters
 ==========
 
-- **PLATFORM_TYPE:** Target FPGA platform. Selects platform-specific primitives. Defined as an enumerated type in :doc:`/chfpga_package`.
+- **PLATFORM_TYPE:** Target FPGA platform. Selects platform-specific primitives. Defined as an enumerated type in :ref:`chfpga-package`.
 - **ADC_TYPE:** Type of ADC interface. Selects between EV8AQ160 (differential SERDES-based) and AXIS (AXI-Streaming) ADC front-ends.
 - **NUMBER_OF_ADCS:** Total number of ADC channels to instantiate.
 - **NUMBER_OF_CHANNELIZERS:** Number of channelizer instances. Defaults to ``NUMBER_OF_ADCS``.
