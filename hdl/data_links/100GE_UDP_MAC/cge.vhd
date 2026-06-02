@@ -87,8 +87,8 @@ architecture impl of cge is
 -- Signals
 
 
-	signal control_bytes: slv8_array(0 to 5);
-	signal status_bytes: slv8_array(0 to 5);
+	signal control_bytes: slv8_array(0 to 8);
+	signal status_bytes: slv8_array(0 to 6);
 
 	signal tx_axis_tdata: std_logic_vector(511 downto 0);
 	signal tx_axis_tvalid: std_logic;
@@ -98,12 +98,53 @@ architecture impl of cge is
 
 	signal gt_txp_out, gt_txn_out: std_logic_vector(3 downto 0);
 
-	signal drp_out: std_logic_vector(15 downto 0);
-	signal drp_in: std_logic_vector(15 downto 0) := (others => '0');
-	signal drp_addr: std_logic_vector(9 downto 0) := (others => '0');
-	signal drp_rdy: std_logic;
-	signal drp_en: std_logic := '0';
-	signal drp_we: std_logic := '0';
+	-- CMAC config port (bsb_regs 16-bit RAM): target selected by control byte 6
+	constant CMAC_RAM_ADDR_WIDTH   : positive := 16;
+	constant DRP_ADDR_WIDTH         : positive := 10; -- core and GT channel DRP
+	constant CMN_DRP_ADDR_WIDTH     : positive := 16; -- GT common DRP
+	constant NUM_GT_LANES          : positive := 4;
+
+	-- control_bytes(6)(2:0) config_port_sel; (5:4) gt_lane_sel
+	constant CMAC_PORT_CORE_DRP    : unsigned(2 downto 0) := "001";
+	constant CMAC_PORT_GT_CMN_DRP  : unsigned(2 downto 0) := "010";
+	constant CMAC_PORT_GT_CH_DRP   : unsigned(2 downto 0) := "011";
+
+	signal ram_din      : std_logic_vector(15 downto 0);
+	signal ram_dout     : std_logic_vector(15 downto 0);
+	signal ram_addr     : std_logic_vector(CMAC_RAM_ADDR_WIDTH - 1 downto 0);
+	signal ram_wr_en    : std_logic;
+	signal ram_rd_en    : std_logic;
+	signal ram_en       : std_logic;
+	signal ram_dout_rdy : std_logic;
+
+	signal cmac_config_port_sel : unsigned(2 downto 0);
+	signal gt_lane_sel          : unsigned(1 downto 0);
+
+	-- Shared DRP-style RAM beat to all CMAC config ports (16-bit data)
+	signal drp_addr     : std_logic_vector(DRP_ADDR_WIDTH - 1 downto 0);
+	signal cmn_drp_addr : std_logic_vector(CMN_DRP_ADDR_WIDTH - 1 downto 0);
+	signal drp_din      : std_logic_vector(15 downto 0);
+	signal drp_dout     : std_logic_vector(15 downto 0);
+	signal drp_en       : std_logic;
+	signal drp_we       : std_logic;
+	signal drp_rdy      : std_logic;
+
+	signal core_drp_dout : std_logic_vector(15 downto 0);
+	signal core_drp_rdy  : std_logic;
+	signal cmn_drp_dout  : std_logic_vector(15 downto 0);
+	signal cmn_drp_rdy   : std_logic;
+	signal gt_ch_drp_dout : slv_array(NUM_GT_LANES - 1 downto 0)(15 downto 0);
+	signal gt_ch_drp_rdy  : std_logic_vector(NUM_GT_LANES - 1 downto 0);
+
+	signal core_drp_en  : std_logic;
+	signal cmn_drp_en   : std_logic;
+	signal gt_ch_drp_en : std_logic_vector(NUM_GT_LANES - 1 downto 0);
+
+	-- Per-lane GT PRBS / DFE fabric (latched from control bytes 7-8; channel DRP via BSB RAM)
+	signal gt_rxdfelpmreset  : std_logic_vector(NUM_GT_LANES - 1 downto 0) := (others => '0');
+	signal gt_rxprbscntreset : std_logic_vector(NUM_GT_LANES - 1 downto 0) := (others => '0');
+	signal gt_rxprbssel      : std_logic_vector(4 * NUM_GT_LANES - 1 downto 0) := (others => '0');
+	signal gt_txprbssel      : std_logic_vector(4 * NUM_GT_LANES - 1 downto 0) := (others => '0');
 
 	signal cmac_reset_tx_datapath: std_logic := '0';
 	signal cmac_reset_rx_datapath: std_logic := '0';
@@ -111,6 +152,7 @@ architecture impl of cge is
 	signal cmac_core_tx_reset: std_logic := '0';
 
 	signal ctl_tx_enable: std_logic;
+	signal ctl_tx_rsfec_enable: std_logic;
 	signal ctl_tx_send_idle: std_logic;
 	signal ctl_tx_send_rfi: std_logic;
 	signal ctl_tx_send_lfi: std_logic;
@@ -220,6 +262,25 @@ begin
 	-- CONTROL Byte 4-5
 	capture_byte_number <= to_unsigned(control_bytes(4 to 5));
 
+	ctl_tx_rsfec_enable <= control_bytes(0)(4);
+
+	-- CONTROL Byte 6: GT lane select and BSB RAM/DRP port target
+	gt_lane_sel            <= unsigned(control_bytes(6)(5 downto 4));
+	cmac_config_port_sel   <= unsigned(control_bytes(6)(2 downto 0));
+
+	-- Latch per-lane PRBS / DFE fabric (control bytes 7-8)
+	gt_ctl_store_proc: process(bsb_clk) is
+		variable lane : integer range 0 to NUM_GT_LANES - 1;
+	begin
+		if rising_edge(bsb_clk) then
+			lane := to_integer(gt_lane_sel);
+			gt_rxdfelpmreset(lane)  <= control_bytes(7)(7);
+			gt_rxprbscntreset(lane) <= control_bytes(8)(7);
+			gt_txprbssel(4 * lane + 3 downto 4 * lane) <= '0' & control_bytes(8)(5 downto 3);
+			gt_rxprbssel(4 * lane + 3 downto 4 * lane) <= '0' & control_bytes(8)(2 downto 0);
+		end if;
+	end process gt_ctl_store_proc;
+
 	---- STATUS Byte 0
 
 	status_bytes(0) <= (
@@ -242,6 +303,11 @@ begin
 
 	status_bytes(5) <= capture_byte;
 
+	-- STATUS Byte 6: active config port and GT lane (shadow of control byte 6)
+	status_bytes(6)(2 downto 0) <= std_logic_vector(cmac_config_port_sel);
+	status_bytes(6)(5 downto 4) <= std_logic_vector(gt_lane_sel);
+	status_bytes(6)(7 downto 6) <= (others => '0');
+
 	-- Memory Map
 	-- ------------------------------------------------------------------------------
 	-- |  Page   | Addr|Bit(s)|     Name             | Description                   |
@@ -257,6 +323,10 @@ begin
 	-- |         |  1  | 7:0  | number_of_udp_words     | Number of UDP words |
 	-- |         | 2-3 |15:0  | packet_spacing_in_words | Packet spacing in words (16 bits) |
 	-- |         | 4-5 |15:0  | capture_byte_number     | Capture byte number (16 bits) |
+	-- |         |  0  |  4   | ctl_tx_rsfec_enable     | RS-FEC enable (fabric) |
+	-- |         |  6  | 5:4  | gt_lane_sel             | GT lane for bytes 7-8 and GT channel DRP |
+	-- |         |     | 2:0  | config_port_sel         | BSB RAM target (1=core DRP,2=GT cmn,3=GT ch DRP+lane) |
+	-- |         | 7-8  | -   | gt_prbs_fabric          | PRBS / DFE reset (per lane) |
 	-- | STATUS  |  0  |  0   | tx_gt_locked_led        | TX GT locked LED |
 	-- |         |     |  1   | tx_ovfout_sticky        | TX overflow output sticky |
 	-- |         |     |  2   | tx_unfout_sticky        | TX underflow output sticky |
@@ -269,17 +339,21 @@ begin
 	-- |         |  2  | 7:0  | out_frame_ctr           | Output frame counter |
 	-- |         | 3-4 |15:0  | packet_length            | Packet length (16 bits) |
 	-- |         |  5  | 7:0  | capture_byte            | Capture byte |
-	-- | RAM     | 0-1023 | - | CMAC_DRP                | CMAC DRP register access (10-bit address) |
+	-- |         |  6  | 5:4  | gt_lane_sel             | Active GT lane (readback) |
+	-- |         |     | 2:0  | config_port_sel         | Active RAM target (readback) |
+	-- | RAM     |  *   | -    | Offset within selected port; 16-bit RAM beats |
+	-- |         |      |      | 1=core DRP | 2=GT common DRP | 3=GT channel DRP (lane from byte 6) |
 	-- ------------------------------------------------------------------------------
 
 	bsb_regs0: entity work.bsb_regs
 		generic map (
-			DEFAULT_CONTROL_BYTES => X"00_11_0020_0000",
-			USE_RAM_DOUT_RDY => TRUE, -- need to wait for the RDY signal on RAM read accesses
+			DEFAULT_CONTROL_BYTES => X"00_11_0020_0000_00_00_00",
+			USE_RAM_DOUT_RDY => TRUE,
+			USE_PIPELINED_RAM_WRITE => FALSE,
 			RAM_DATA_WIDTH => 16,
-			RAM_ADDR_WIDTH => 10, -- CMAC DRP Address bus is 10 bits
-			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), -- Number of bits in the control word
-			NUMBER_OF_STATUS_BYTES => status_bytes'Length(1) -- Number of bits in the status word.
+			RAM_ADDR_WIDTH => CMAC_RAM_ADDR_WIDTH,
+			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1),
+			NUMBER_OF_STATUS_BYTES => status_bytes'Length(1)
 		)
 		port map (
 			s_axis_bsb_tdata => s_axis_bsb_tdata,
@@ -292,21 +366,49 @@ begin
 			m_axis_bsb_tready => m_axis_bsb_tready,
 			bsb_clk          => bsb_clk,
 			bsb_rst          => bsb_rst,
-
-			CONTROL_BYTES => control_bytes,
-			STATUS_BYTES => status_bytes,
-
-			-- DRP interface
-			RAM_DIN      => drp_in,
-			RAM_DOUT     => drp_out,
-			RAM_DOUT_RDY => drp_rdy,
-			RAM_WR_EN    => drp_we,
-			RAM_EN       => drp_en,
-			RAM_ADDR     => drp_addr
-
-			-- -- System
-			-- RST => areset
+			control_bytes => control_bytes,
+			status_bytes  => status_bytes,
+			RAM_DIN      => ram_din,
+			RAM_DOUT     => ram_dout,
+			RAM_DOUT_RDY => ram_dout_rdy,
+			RAM_WR_EN    => ram_wr_en,
+			RAM_RD_EN    => ram_rd_en,
+			RAM_EN       => ram_en,
+			RAM_ADDR     => ram_addr
 		);
+
+	-- Route bsb_regs RAM port per control_bytes(6)(2:0) (config_port_sel)
+	drp_en       <= ram_en;
+	drp_we       <= ram_wr_en;
+	drp_din      <= ram_din;
+	drp_addr     <= ram_addr(DRP_ADDR_WIDTH - 1 downto 0);
+	cmn_drp_addr <= ram_addr(CMN_DRP_ADDR_WIDTH - 1 downto 0);
+
+	core_drp_en  <= drp_en when cmac_config_port_sel = CMAC_PORT_CORE_DRP else '0';
+	cmn_drp_en   <= drp_en when cmac_config_port_sel = CMAC_PORT_GT_CMN_DRP else '0';
+	gt_ch_drp_en_gen: for i in 0 to NUM_GT_LANES - 1 generate
+		gt_ch_drp_en(i) <= drp_en when cmac_config_port_sel = CMAC_PORT_GT_CH_DRP and gt_lane_sel = to_unsigned(i, gt_lane_sel'length) else '0';
+	end generate gt_ch_drp_en_gen;
+
+	ram_dout_rdy <= drp_rdy;
+	ram_dout     <= drp_dout;
+
+	config_port_mux: process(all) begin
+		case cmac_config_port_sel is
+			when CMAC_PORT_CORE_DRP =>
+				drp_dout <= core_drp_dout;
+				drp_rdy  <= core_drp_rdy;
+			when CMAC_PORT_GT_CMN_DRP =>
+				drp_dout <= cmn_drp_dout;
+				drp_rdy  <= cmn_drp_rdy;
+			when CMAC_PORT_GT_CH_DRP =>
+				drp_dout <= gt_ch_drp_dout(to_integer(gt_lane_sel));
+				drp_rdy  <= gt_ch_drp_rdy(to_integer(gt_lane_sel));
+			when others =>
+				drp_dout <= (others => '0');
+				drp_rdy  <= drp_en and not drp_we;
+		end case;
+	end process config_port_mux;
 
 -- The ``flag_fifo`` is a 1-bit x 16  asynchronous distributed-RAM FIFO. A '0' is pushed in the FIFO
 -- to indicate that a packet is complete in the data FIFO.
@@ -755,88 +857,140 @@ end block fifo_rd_block;
 
 
 
-CMAC_INST: entity work.CMAC_USP
+CMAC_INST: entity work.cmac_usplus_1
   port map (
 		gt_txp_out => gt_txp_out,
 		gt_txn_out => gt_txn_out,
 		gt_ref_clk_p => refclk_p,
 		gt_ref_clk_n => refclk_n,
-
-		-- input clocks
-		init_clk => bsb_clk, -- 100 MHz
-
-		-- output clocks
-		gt_txusrclk2 => clk_out_int, -- 322 MHz clock output to clock user signals
+		init_clk => bsb_clk,
+		gt_txusrclk2 => clk_out_int,
 		gt_ref_clk_out => refclk_out_int,
-		-- gt_rxrecclkout => gt_rxrecclkout,
-
-
-		-- TX control
-	   ctl_tx_enable => ctl_tx_enable, -- Allow data transmit (if 0, transmits only idles)
-	   ctl_tx_send_idle => ctl_tx_send_idle, -- transmit only idles
-	   ctl_tx_send_rfi => ctl_tx_send_rfi, -- trnasmit only remote fault indicator
-	   ctl_tx_send_lfi => ctl_tx_send_lfi, -- transmit only local fault indicator
-	   ctl_tx_test_pattern => ctl_tx_test_pattern, -- send test pattern (scrambled IDLEs),
-		ctl_tx_rsfec_enable => ctl_tx_enable,
-		-- AXI4-Streaming data interface
+		ctl_tx_enable => ctl_tx_enable,
+		ctl_tx_test_pattern => ctl_tx_test_pattern,
+		ctl_tx_send_rfi => ctl_tx_send_rfi,
+		ctl_tx_send_lfi => ctl_tx_send_lfi,
+		ctl_tx_send_idle => ctl_tx_send_idle,
 		tx_axis_tready => tx_axis_tready,
 		tx_axis_tvalid => tx_axis_tvalid,
 		tx_axis_tdata => tx_axis_tdata,
 		tx_axis_tlast => tx_axis_tlast,
 		tx_axis_tkeep => tx_axis_tkeep,
-		tx_axis_tuser => '0', -- 0=good packet, 1=bad packet
-		tx_ovfout => tx_ovfout, -- tx buffer overflow output
-		tx_unfout => tx_unfout, -- tx buffer underflow output
-
-		tx_preamblein => tx_preamblein, -- Assuming the SFD (0xD5) follows.
-
+		tx_axis_tuser => '0',
+		tx_ovfout => tx_ovfout,
+		tx_unfout => tx_unfout,
+		tx_preamblein => tx_preamblein,
 		gt_loopback_in => (others => '0'),
-		-- gt_powergoodout => gt_powergoodout,
+		gt_drpclk      => bsb_clk,
 
-		-- resets
-		gtwiz_reset_tx_datapath => cmac_reset_tx_datapath, -- always 0 in example design
-		gtwiz_reset_rx_datapath => cmac_reset_rx_datapath, -- always 0 in example design
-		sys_reset => cmac_sys_reset, -- reset input to the CMAC core
-		core_tx_reset => cmac_core_tx_reset, -- TX reset input to the core
+		-- GT transceiver debug / attribute ports (inactive; required when ADD_GT_CNTRL_STS_PORTS=1)
+		gt_eyescanreset    => (others => '0'),
+		gt_eyescantrigger  => (others => '0'),
+		gt_rxcdrhold       => (others => '0'),
+		gt_rxpolarity      => (others => '0'),
+		gt_rxrate          => (others => '0'),
+		gt_txdiffctrl      => (others => '0'),
+		gt_txpolarity      => (others => '0'),
+		gt_txinhibit       => (others => '0'),
+		gt_txpippmen       => (others => '0'),
+		gt_txpippmsel      => (others => '0'),
+		gt_txpostcursor    => (others => '0'),
+		gt_txprbsforceerr  => (others => '0'),
+		gt_txprecursor     => (others => '0'),
+		gt_rxdfelpmreset   => gt_rxdfelpmreset,
+		gt_rxlpmen         => (others => '0'),
+		gt_rxprbscntreset  => gt_rxprbscntreset,
+		gt_rxprbssel       => gt_rxprbssel,
+		gt_txprbssel       => gt_txprbssel,
+		ctl_tx_rsfec_enable => ctl_tx_rsfec_enable,
 
-		usr_tx_reset => usr_tx_reset_pre, -- out. Is 1 when the GTY has finished initializing and the CMAC core is taken out of reset. Use to reset user tx logic.
+		gt_eyescandataerror => open,
+		gt_rxrecclkout      => open,
+		gt_powergoodout     => open,
+		gt_txbufstatus      => open,
+		gt_rxprbserr        => open,
+		gt_rxresetdone      => open,
+		gt_txresetdone      => open,
+		gt_rxbufstatus      => open,
 
-		-- stats
-		-- stat_tx_bad_fcs => stat_tx_bad_fcs,
-		-- stat_tx_broadcast => stat_tx_broadcast,
-		-- stat_tx_frame_error => stat_tx_frame_error,
-		-- stat_tx_local_fault => stat_tx_local_fault,
-		-- stat_tx_multicast => stat_tx_multicast,
-		-- stat_tx_packet_64_bytes => stat_tx_packet_64_bytes,
-		-- stat_tx_packet_65_127_bytes => stat_tx_packet_65_127_bytes,
-		-- stat_tx_packet_128_255_bytes => stat_tx_packet_128_255_bytes,
-		-- stat_tx_packet_256_511_bytes => stat_tx_packet_256_511_bytes,
-		-- stat_tx_packet_512_1023_bytes => stat_tx_packet_512_1023_bytes,
-		-- stat_tx_packet_1024_1518_bytes => stat_tx_packet_1024_1518_bytes,
-		-- stat_tx_packet_1519_1522_bytes => stat_tx_packet_1519_1522_bytes,
-		-- stat_tx_packet_1523_1548_bytes => stat_tx_packet_1523_1548_bytes,
-		-- stat_tx_packet_1549_2047_bytes => stat_tx_packet_1549_2047_bytes,
-		-- stat_tx_packet_2048_4095_bytes => stat_tx_packet_2048_4095_bytes,
-		-- stat_tx_packet_4096_8191_bytes => stat_tx_packet_4096_8191_bytes,
-		-- stat_tx_packet_8192_9215_bytes => stat_tx_packet_8192_9215_bytes,
-		-- stat_tx_packet_large => stat_tx_packet_large,
-		-- stat_tx_packet_small => stat_tx_packet_small,
-		-- stat_tx_total_bytes => stat_tx_total_bytes,
-		-- stat_tx_total_good_bytes => stat_tx_total_good_bytes,
-		-- stat_tx_total_good_packets => stat_tx_total_good_packets,
-		-- stat_tx_total_packets => stat_tx_total_packets,
-		-- stat_tx_unicast => stat_tx_unicast,
-		-- stat_tx_vlan => stat_tx_vlan,
+		stat_tx_bad_fcs => open,
+		stat_tx_broadcast => open,
+		stat_tx_frame_error => open,
+		stat_tx_local_fault => open,
+		stat_tx_multicast => open,
+		stat_tx_packet_1024_1518_bytes => open,
+		stat_tx_packet_128_255_bytes => open,
+		stat_tx_packet_1519_1522_bytes => open,
+		stat_tx_packet_1523_1548_bytes => open,
+		stat_tx_packet_1549_2047_bytes => open,
+		stat_tx_packet_2048_4095_bytes => open,
+		stat_tx_packet_256_511_bytes => open,
+		stat_tx_packet_4096_8191_bytes => open,
+		stat_tx_packet_512_1023_bytes => open,
+		stat_tx_packet_64_bytes => open,
+		stat_tx_packet_65_127_bytes => open,
+		stat_tx_packet_8192_9215_bytes => open,
+		stat_tx_packet_large => open,
+		stat_tx_packet_small => open,
+		stat_tx_total_bytes => open,
+		stat_tx_total_good_bytes => open,
+		stat_tx_total_good_packets => open,
+		stat_tx_total_packets => open,
+		stat_tx_unicast => open,
+		stat_tx_vlan => open,
 
-		-- DRP interface
+		gtwiz_reset_tx_datapath => cmac_reset_tx_datapath,
+		gtwiz_reset_rx_datapath => cmac_reset_rx_datapath,
+		sys_reset => cmac_sys_reset,
+		core_tx_reset => cmac_core_tx_reset,
+		usr_tx_reset => usr_tx_reset_pre,
+
+		-- Core DRP
 		core_drp_reset => bsb_rst,
-		drp_clk => bsb_clk,
-		drp_addr => drp_addr,
-		drp_di => drp_in,
-		drp_en => drp_en,
-		drp_do => drp_out,
-		drp_rdy => drp_rdy,
-		drp_we => drp_we
+		drp_clk        => bsb_clk,
+		drp_addr       => drp_addr,
+		drp_di         => drp_din,
+		drp_en         => core_drp_en,
+		drp_do         => core_drp_dout,
+		drp_rdy        => core_drp_rdy,
+		drp_we         => drp_we,
+
+		-- GT common DRP (gt_cmn_drp_0)
+		common0_drpaddr => cmn_drp_addr,
+		common0_drpdi   => drp_din,
+		common0_drpen   => cmn_drp_en,
+		common0_drpdo   => cmn_drp_dout,
+		common0_drprdy  => cmn_drp_rdy,
+		common0_drpwe   => drp_we,
+
+		-- GT channel DRP (gt_ch_drp_0 .. 3)
+		gt0_drpaddr => drp_addr,
+		gt0_drpdi   => drp_din,
+		gt0_drpen   => gt_ch_drp_en(0),
+		gt0_drpdo   => gt_ch_drp_dout(0),
+		gt0_drprdy  => gt_ch_drp_rdy(0),
+		gt0_drpwe   => drp_we,
+
+		gt1_drpaddr => drp_addr,
+		gt1_drpdi   => drp_din,
+		gt1_drpen   => gt_ch_drp_en(1),
+		gt1_drpdo   => gt_ch_drp_dout(1),
+		gt1_drprdy  => gt_ch_drp_rdy(1),
+		gt1_drpwe   => drp_we,
+
+		gt2_drpaddr => drp_addr,
+		gt2_drpdi   => drp_din,
+		gt2_drpen   => gt_ch_drp_en(2),
+		gt2_drpdo   => gt_ch_drp_dout(2),
+		gt2_drprdy  => gt_ch_drp_rdy(2),
+		gt2_drpwe   => drp_we,
+
+		gt3_drpaddr => drp_addr,
+		gt3_drpdi   => drp_din,
+		gt3_drpen   => gt_ch_drp_en(3),
+		gt3_drpdo   => gt_ch_drp_dout(3),
+		gt3_drprdy  => gt_ch_drp_rdy(3),
+		gt3_drpwe   => drp_we
   );
 
 end architecture impl;
