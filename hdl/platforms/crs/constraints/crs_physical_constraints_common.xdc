@@ -256,7 +256,7 @@ set_property PACKAGE_PIN D9 [get_ports {fpc_d[1]}]
 ########################################
 ########################################
 
-# NOTE: UCORR44 constraints are in crs_physical_constraints_ucorr44_*_LOCs.xdc 
+# NOTE: UCORR44 constraints are in crs_physical_constraints_ucorr44_*_LOCs.xdc
 # NOTE: CHAN and FFT constraints are in crs_physical_constraints_chan_LOCs.xdc and crs_physical_constraints_chord_fft_LOCs.xdc
 
 ############################################################################
@@ -273,7 +273,7 @@ set_property EXCLUDE_PLACEMENT 1 [get_pblocks ADC]
 ############################################################################
 
 create_pblock SYSTEM
-add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list chfpga0/clk0 chfpga0/bsb_master_blk.ctrl_master0 chfpga0/chan_router_blk.chan_router0 chfpga0/ct_clk_blk.ct_reset_cdc0 chfpga0/top_router_blk.top_router0]]
+add_cells_to_pblock [get_pblocks SYSTEM] [get_cells -quiet [list chfpga0/bsb_master_blk.ctrl_master0 chfpga0/clk0 chfpga0/ct_clk_blk.ct_reset_cdc0 chfpga0/top_router_blk.top_router0]]
 resize_pblock [get_pblocks SYSTEM] -add {SLICE_X113Y300:SLICE_X118Y419}
 resize_pblock [get_pblocks SYSTEM] -add {DSP48E2_X22Y120:DSP48E2_X22Y167}
 set_property IS_SOFT FALSE [get_pblocks SYSTEM]
@@ -304,10 +304,6 @@ resize_pblock [get_pblocks DEBUG] -add {RAMB18_X1Y180:RAMB18_X1Y191 RAMB18_X0Y16
 resize_pblock [get_pblocks DEBUG] -add {RAMB36_X1Y90:RAMB36_X1Y95 RAMB36_X0Y84:RAMB36_X0Y95}
 set_property IS_SOFT FALSE [get_pblocks DEBUG]
 
-set_property C_CLK_INPUT_FREQ_HZ 300000000 [get_debug_cores dbg_hub]
-set_property C_ENABLE_CLK_DIVIDER false [get_debug_cores dbg_hub]
-set_property C_USER_SCAN_CHAIN 1 [get_debug_cores dbg_hub]
-connect_debug_port dbg_hub/clk [get_nets smp_OBUF[3]]
 
 ############################################################################
 # UCAP
@@ -322,3 +318,8 @@ resize_pblock [get_pblocks UCAP] -add {URAM288_X0Y64:URAM288_X0Y79}
 set_property EXCLUDE_PLACEMENT 1 [get_pblocks UCAP]
 
 
+
+set_property C_CLK_INPUT_FREQ_HZ 300000000 [get_debug_cores dbg_hub]
+set_property C_ENABLE_CLK_DIVIDER false [get_debug_cores dbg_hub]
+set_property C_USER_SCAN_CHAIN 1 [get_debug_cores dbg_hub]
+connect_debug_port dbg_hub/clk [get_nets smp_OBUF[3]]

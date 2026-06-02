@@ -451,3 +451,4 @@ set_property LOC RAMB36_X3Y87 [get_cells {chfpga0/chan_array0/chan_gen[7]*/*fft0
 set_property LOC RAMB36_X3Y86 [get_cells {chfpga0/chan_array0/chan_gen[7]*/*fft0/*fft0/U0/pfb_fft_bitgrowth_struct/pfb_fir_real/pol1_in8_first_tap/delay_bram/ram/xpm_memory*/*/*_bram_0}]
 set_property LOC RAMB36_X3Y85 [get_cells {chfpga0/chan_array0/chan_gen[7]*/*fft0/*fft0/U0/pfb_fft_bitgrowth_struct/pfb_fir_real/pol1_in8_tap2/delay_bram/ram/xpm_memory*/*/*_bram_0}]
 set_property LOC RAMB36_X3Y84 [get_cells {chfpga0/chan_array0/chan_gen[7]*/*fft0/*fft0/U0/pfb_fft_bitgrowth_struct/pfb_fir_real/pol1_in8_tap3/delay_bram/ram/xpm_memory*/*/*_bram_0}]
+

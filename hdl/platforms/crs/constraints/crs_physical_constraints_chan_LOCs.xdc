@@ -356,3 +356,4 @@ set_property LOC RAMB36_X11Y89 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0
 set_property LOC RAMB36_X11Y90 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/*funcgen0/*ram0/*/*bram_6}]
 set_property LOC RAMB36_X11Y91 [get_cells {chfpga0/chan_array0/chan_gen[7].chan0/*funcgen0/*ram0/*/*bram_7}]
 
+
