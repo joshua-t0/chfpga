@@ -6,7 +6,7 @@
 <Project Version="7" Minor="61" Path="/home/vbidula/chfpgalite/xilinx_projects/chfpga_ice_corr16/chfpga_ice_corr16.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
-    <Option Name="Id" Val="02b794bb0e2241a28a07b931e6333ea4"/>
+    <Option Name="Id" Val="0fa01df03f3240babcea13e89f238174"/>
     <Option Name="Part" Val="xc7k420tffg901-2"/>
     <Option Name="CompiledLibDir" Val="$PCACHEDIR/compile_simlib"/>
     <Option Name="CompiledLibDirXSim" Val=""/>
@@ -69,13 +69,13 @@
     <Option Name="WTVcsLaunchSim" Val="0"/>
     <Option Name="WTRivieraLaunchSim" Val="0"/>
     <Option Name="WTActivehdlLaunchSim" Val="0"/>
-    <Option Name="WTXSimExportSim" Val="286"/>
-    <Option Name="WTModelSimExportSim" Val="286"/>
-    <Option Name="WTQuestaExportSim" Val="286"/>
+    <Option Name="WTXSimExportSim" Val="268"/>
+    <Option Name="WTModelSimExportSim" Val="268"/>
+    <Option Name="WTQuestaExportSim" Val="268"/>
     <Option Name="WTIesExportSim" Val="43"/>
-    <Option Name="WTVcsExportSim" Val="286"/>
-    <Option Name="WTRivieraExportSim" Val="286"/>
-    <Option Name="WTActivehdlExportSim" Val="285"/>
+    <Option Name="WTVcsExportSim" Val="268"/>
+    <Option Name="WTRivieraExportSim" Val="268"/>
+    <Option Name="WTActivehdlExportSim" Val="267"/>
     <Option Name="GenerateIPUpgradeLog" Val="TRUE"/>
     <Option Name="XSimRadix" Val="hex"/>
     <Option Name="XSimTimeUnit" Val="ns"/>
@@ -96,7 +96,7 @@
       <File Path="$PSRCDIR/sources_1/ip/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/KC705/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci"/>
-          <Attr Name="ImportTime" Val="1771836839"/>
+          <Attr Name="ImportTime" Val="1764706902"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -105,7 +105,7 @@
       <File Path="$PSRCDIR/sources_1/ip/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/KC705/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci"/>
-          <Attr Name="ImportTime" Val="1771836839"/>
+          <Attr Name="ImportTime" Val="1764706902"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -114,7 +114,7 @@
       <File Path="$PSRCDIR/sources_1/ip/udp_mac_tx_data_fifo/udp_mac_tx_data_fifo.xci">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/KC705/UDP_MAC_TX_DATA_FIFO/udp_mac_tx_data_fifo.xci"/>
-          <Attr Name="ImportTime" Val="1771836839"/>
+          <Attr Name="ImportTime" Val="1764706902"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -402,74 +402,6 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_1/ip/ADCDAQ_FIFO/ADCDAQ_FIFO.xci">
-        <FileInfo>
-          <Attr Name="AutoDisabled" Val="1"/>
-          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/KC705/ADCDAQ_FIFO/ADCDAQ_FIFO.xci"/>
-          <Attr Name="ImportTime" Val="1771836839"/>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PGENDIR/sources_1/ip/hirax_3dsp_24bit/src/hirax_3dsp_dist_mem_gen_i2_vivado.coe">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PGENDIR/sources_1/ip/hirax_3dsp_24bit/src/hirax_3dsp_dist_mem_gen_i1_vivado.coe">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PGENDIR/sources_1/ip/hirax_3dsp_24bit/src/hirax_3dsp_dist_mem_gen_i0_vivado.coe">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PGENDIR/sources_1/ip/hirax_3dsp_24bit/src/hirax_3dsp_dist_mem_gen_i3_vivado.coe">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PGENDIR/sources_1/ip/hirax_3dsp_29bit/src/hirax_3dsp_dist_mem_gen_i2_vivado.coe">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PGENDIR/sources_1/ip/hirax_3dsp_29bit/src/hirax_3dsp_dist_mem_gen_i1_vivado.coe">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PGENDIR/sources_1/ip/hirax_3dsp_29bit/src/hirax_3dsp_dist_mem_gen_i0_vivado.coe">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PGENDIR/sources_1/ip/hirax_3dsp_29bit/src/hirax_3dsp_dist_mem_gen_i3_vivado.coe">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/hirax_3dsp_29bit/hirax_3dsp_29bit/hirax_3dsp_29bit.xci">
-        <FileInfo>
-          <Attr Name="AutoDisabled" Val="1"/>
-          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/KC705/hirax_3dsp_29bit/hirax_3dsp_29bit/hirax_3dsp_29bit.xci"/>
-          <Attr Name="ImportTime" Val="1774282976"/>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <Config>
         <Option Name="DesignMode" Val="RTL"/>
         <Option Name="TopModule" Val="chfpga_ice"/>
@@ -540,47 +472,22 @@
           <Attr Name="UsedInSteps" Val="impl_1;WRITE_BITSTREAM;TCL.POST"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/utils_1/imports/synth_1/chfpga_ice.dcp">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedInSteps" Val="synth_1"/>
-          <Attr Name="AutoDcp" Val="1"/>
-        </FileInfo>
-      </File>
       <Config>
         <Option Name="TopAutoSet" Val="TRUE"/>
       </Config>
     </FileSet>
-    <FileSet Name="hirax_bit_growth_3dsp" Type="BlockSrcs" RelSrcDir="$PSRCDIR/hirax_bit_growth_3dsp" RelGenDir="$PGENDIR/hirax_bit_growth_3dsp">
-      <File Path="$PSRCDIR/sources_1/ip/hirax_bit_growth_3dsp/hirax_bit_growth_3dsp.xci">
+    <FileSet Name="hirax_bitgrowth_3dsp_24bit_jun8_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/hirax_bitgrowth_3dsp_24bit_jun8_0" RelGenDir="$PGENDIR/hirax_bitgrowth_3dsp_24bit_jun8_0">
+      <File Path="$PSRCDIR/sources_1/ip/hirax_bitgrowth_3dsp_24bit_jun8_0/hirax_bitgrowth_3dsp_24bit_jun8_0.xci">
         <FileInfo>
-          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/KC705/hirax_bit_growth_3dsp/hirax_bit_growth_3dsp.xci"/>
-          <Attr Name="ImportTime" Val="1772133334"/>
+          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/KC705/hirax_bitgrowth_3dsp_24bit_jun8_0/hirax_bitgrowth_3dsp_24bit_jun8_0.xci"/>
+          <Attr Name="ImportTime" Val="1780950577"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <Config>
-        <Option Name="TopModule" Val="hirax_bit_growth_3dsp"/>
-        <Option Name="dataflowViewerSettings" Val="min_width=16"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
-      </Config>
-    </FileSet>
-    <FileSet Name="hirax_3dsp_24bit" Type="BlockSrcs" RelSrcDir="$PSRCDIR/hirax_3dsp_24bit" RelGenDir="$PGENDIR/hirax_3dsp_24bit">
-      <File Path="$PPRDIR/../../_Cores/KC705/hirax_3dsp_24bit/hirax_3dsp_24bit/hirax_3dsp_24bit.xci">
-        <FileInfo>
-          <Attr Name="AutoDisabled" Val="1"/>
-          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/KC705/hirax_3dsp_24bit/hirax_3dsp_24bit/hirax_3dsp_24bit.xci"/>
-          <Attr Name="ImportTime" Val="1774283196"/>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <Config>
-        <Option Name="TopModule" Val="hirax_3dsp_24bit"/>
+        <Option Name="TopModule" Val="hirax_bitgrowth_3dsp_24bit_jun8_0"/>
         <Option Name="dataflowViewerSettings" Val="min_width=16"/>
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
@@ -608,15 +515,15 @@
     </Simulator>
   </Simulators>
   <Runs Version="1" Minor="19">
-    <Run Id="synth_1" Type="Ft3:Synth" SrcSet="sources_1" Part="xc7k420tffg901-2" ConstrsSet="constrs_1" Description="Higher performance designs, resource sharing is turned off, the global fanout guide is set to a lower number, FSM extraction forced to one-hot, LUT combining is disabled, equivalent registers are preserved, SRL are inferred  with a larger threshold" AutoIncrementalCheckpoint="true" IncrementalCheckpoint="$PSRCDIR/utils_1/imports/synth_1/chfpga_ice.dcp" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/synth_1">
+    <Run Id="synth_1" Type="Ft3:Synth" SrcSet="sources_1" Part="xc7k420tffg901-2" ConstrsSet="constrs_1" Description="Higher performance designs, resource sharing is turned off, the global fanout guide is set to a lower number, FSM extraction forced to one-hot, LUT combining is disabled, equivalent registers are preserved, SRL are inferred  with a larger threshold" AutoIncrementalCheckpoint="true" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/synth_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Flow_PerfOptimized_high" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design">
           <Option Id="Assert">1</Option>
-          <Option Id="FsmExtraction">1</Option>
           <Option Id="Directive">7</Option>
-          <Option Id="ResourceSharing">2</Option>
           <Option Id="ShregMinSize">5</Option>
+          <Option Id="ResourceSharing">2</Option>
+          <Option Id="FsmExtraction">1</Option>
           <Option Id="KeepEquivalentRegisters">1</Option>
         </Step>
       </Strategy>
@@ -625,28 +532,16 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="hirax_bit_growth_3dsp_synth_1" Type="Ft3:Synth" SrcSet="hirax_bit_growth_3dsp" Part="xc7k420tffg901-2" ConstrsSet="hirax_bit_growth_3dsp" Description="Higher performance designs, resource sharing is turned off, the global fanout guide is set to a lower number, FSM extraction forced to one-hot, LUT combining is disabled, equivalent registers are preserved, SRL are inferred  with a larger threshold" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/hirax_bit_growth_3dsp_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/hirax_bit_growth_3dsp_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/hirax_bit_growth_3dsp_synth_1">
+    <Run Id="hirax_bitgrowth_3dsp_24bit_jun8_0_synth_1" Type="Ft3:Synth" SrcSet="hirax_bitgrowth_3dsp_24bit_jun8_0" Part="xc7k420tffg901-2" ConstrsSet="hirax_bitgrowth_3dsp_24bit_jun8_0" Description="Higher performance designs, resource sharing is turned off, the global fanout guide is set to a lower number, FSM extraction forced to one-hot, LUT combining is disabled, equivalent registers are preserved, SRL are inferred  with a larger threshold" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/hirax_bitgrowth_3dsp_24bit_jun8_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/hirax_bitgrowth_3dsp_24bit_jun8_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/hirax_bitgrowth_3dsp_24bit_jun8_0_synth_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Flow_PerfOptimized_high" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design">
           <Option Id="FsmExtraction">1</Option>
+          <Option Id="ResourceSharing">2</Option>
+          <Option Id="Directive">7</Option>
           <Option Id="KeepEquivalentRegisters">1</Option>
           <Option Id="ShregMinSize">5</Option>
-          <Option Id="Directive">7</Option>
-          <Option Id="ResourceSharing">2</Option>
         </Step>
-      </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
-      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2022"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="hirax_3dsp_24bit_synth_1" Type="Ft3:Synth" SrcSet="hirax_3dsp_24bit" Part="xc7k420tffg901-2" ConstrsSet="hirax_3dsp_24bit" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/hirax_3dsp_24bit_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/hirax_3dsp_24bit_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/hirax_3dsp_24bit_synth_1">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
-        <Step Id="synth_design"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2022"/>
@@ -682,28 +577,9 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="hirax_bit_growth_3dsp_impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="hirax_bit_growth_3dsp" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="hirax_bit_growth_3dsp_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/hirax_bit_growth_3dsp_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/hirax_bit_growth_3dsp_impl_1">
+    <Run Id="hirax_bitgrowth_3dsp_24bit_jun8_0_impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="hirax_bitgrowth_3dsp_24bit_jun8_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="hirax_bitgrowth_3dsp_24bit_jun8_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/hirax_bitgrowth_3dsp_24bit_jun8_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/hirax_bitgrowth_3dsp_24bit_jun8_0_impl_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
-        <Step Id="init_design"/>
-        <Step Id="opt_design"/>
-        <Step Id="power_opt_design"/>
-        <Step Id="place_design"/>
-        <Step Id="post_place_power_opt_design"/>
-        <Step Id="phys_opt_design"/>
-        <Step Id="route_design"/>
-        <Step Id="post_route_phys_opt_design"/>
-        <Step Id="write_bitstream"/>
-      </Strategy>
-      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2022"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="hirax_3dsp_24bit_impl_1" Type="Ft2:EntireDesign" Part="xc7k420tffg901-2" ConstrsSet="hirax_3dsp_24bit" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="hirax_3dsp_24bit_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/hirax_3dsp_24bit_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/hirax_3dsp_24bit_impl_1">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
