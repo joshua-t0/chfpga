@@ -62,7 +62,7 @@ set hdl_base_files [list  \
 
 set fft_type_chime "KC705/FFT2/FFT2.xci"
 set fft_type_hirax "KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci"
-set fft_type_hirax_3dsp "KC705/hirax_bit_growth_3dsp/hirax_bit_growth_3dsp.xci"
+set fft_type_hirax_3dsp "KC705/hirax_bitgrowth_3dsp_24bit_jun8_0/hirax_bitgrowth_3dsp_24bit_jun8_0.xci"
 set fft_type_chord "CRS/pfb_fft_bitgrowth_0/pfb_fft_bitgrowth_0.xci"
 
 #*****************************************************************************************
@@ -76,9 +76,8 @@ set ice_ct_ooc_ip_files $fft_type_hirax
 set ice_corr16_ooc_ip_files $fft_type_hirax_3dsp
 
 # KC705/SCALER_CMUL/SCALER_CMUL.xci to be added if using complex gains
-
+# "KC705/ADCDAQ_FIFO/ADCDAQ_FIFO.xci" no longer used
 set ice_base_ip_files [list \
-  "KC705/ADCDAQ_FIFO/ADCDAQ_FIFO.xci" \
   "KC705/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci" \
   "KC705/UDP_MAC_TX_DATA_FIFO/udp_mac_tx_data_fifo.xci" \
   "KC705/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci"\
