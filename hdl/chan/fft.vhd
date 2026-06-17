@@ -616,7 +616,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
                     out00    => fft_dout0_int,
                     out01    => fft_dout1_int,
 
-                    bitshift    => to_slv(0, 11),
+                    bitshift    => fft_shift_schedule(10 downto 0),
                     overflow(0) => fft_overflow,
                     -- ce_1     => fft_clk_en,
                     clk    => clk
@@ -665,4 +665,3 @@ end generate FFT_GEN;
 
 
 end Behavioral;
-
