@@ -62,8 +62,8 @@ set hdl_base_files [list  \
 set fft_type_chime "FFT2/FFT2.xci"
 set fft_type_hirax "hirax_bit_growth_0/hirax_bit_growth_0.xci"
 # Relative to ooc_ip_dir; OOC cores live under each platform's ip_cores (see create_project.tcl platform_dir)
-set fft_type_hirax_3dsp "hirax_bit_growth_3dsp/hirax_bit_growth_3dsp.xci"
 set fft_type_chord "pfb_fft_bitgrowth_0/pfb_fft_bitgrowth_0.xci"
+set fft_type_hirax_3dsp "KC705/hirax_bitgrowth_3dsp_24bit_jun8_0/hirax_bitgrowth_3dsp_24bit_jun8_0.xci"
 
 #*****************************************************************************************
 # ICE Platform
@@ -78,6 +78,7 @@ set ice_corr16_ooc_ip_files $fft_type_hirax_3dsp
 # SCALER_CMUL/SCALER_CMUL.xci to be added if using complex gains
 
 set ice_base_ip_files [list \
+  "KC705/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci"\
   "gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci"\
 ]
 
