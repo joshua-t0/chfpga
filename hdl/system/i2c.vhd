@@ -461,7 +461,7 @@ begin
 				stop_detected <= '1';
 				idle_ctr <= 0;
 				bus_idle <= '0';
-			elsif stop_detected = '1' and idle_clk_at_tBUF = '1' or stop_detected = '0' and idle_clk_at_tHIGH = '1' then
+			elsif (stop_detected = '1' and idle_clk_at_tBUF = '1') or (stop_detected = '0' and idle_clk_at_tHIGH = '1') then
 				bus_idle <= '1';
 			end if;
 
