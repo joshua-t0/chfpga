@@ -3,10 +3,10 @@
 <!--                                                         -->
 <!-- Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.   -->
 
-<Project Version="7" Minor="61" Path="/home/vbidula/chfpgalite/xilinx_projects/chfpga_ice_corr16/chfpga_ice_corr16.xpr">
+<Project Version="7" Minor="61" Path="/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_corr16/chfpga_ice_corr16.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
-    <Option Name="Id" Val="0fa01df03f3240babcea13e89f238174"/>
+    <Option Name="Id" Val="0b90e7e20f614371bed24e658306be0c"/>
     <Option Name="Part" Val="xc7k420tffg901-2"/>
     <Option Name="CompiledLibDir" Val="$PCACHEDIR/compile_simlib"/>
     <Option Name="CompiledLibDirXSim" Val=""/>
@@ -93,33 +93,6 @@
   <FileSets Version="1" Minor="31">
     <FileSet Name="sources_1" Type="DesignSrcs" RelSrcDir="$PSRCDIR/sources_1" RelGenDir="$PGENDIR/sources_1">
       <Filter Type="Srcs"/>
-      <File Path="$PSRCDIR/sources_1/ip/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci">
-        <FileInfo>
-          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/KC705/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci"/>
-          <Attr Name="ImportTime" Val="1764706902"/>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PSRCDIR/sources_1/ip/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci">
-        <FileInfo>
-          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/KC705/udp_mac_tx_frame_fifo/udp_mac_tx_frame_fifo.xci"/>
-          <Attr Name="ImportTime" Val="1764706902"/>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PSRCDIR/sources_1/ip/udp_mac_tx_data_fifo/udp_mac_tx_data_fifo.xci">
-        <FileInfo>
-          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/KC705/UDP_MAC_TX_DATA_FIFO/udp_mac_tx_data_fifo.xci"/>
-          <Attr Name="ImportTime" Val="1764706902"/>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../../hdl/chfpga_package.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -470,16 +443,12 @@
         </FileInfo>
       </File>
       <Config>
-        <Option Name="TopModule" Val="hirax_bit_growth_3dsp"/>
-        <Option Name="dataflowViewerSettings" Val="min_width=16"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
+        <Option Name="TopAutoSet" Val="TRUE"/>
       </Config>
     </FileSet>
     <FileSet Name="hirax_bitgrowth_3dsp_24bit_jun8_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/hirax_bitgrowth_3dsp_24bit_jun8_0" RelGenDir="$PGENDIR/hirax_bitgrowth_3dsp_24bit_jun8_0">
-      <File Path="$PSRCDIR/sources_1/ip/hirax_bitgrowth_3dsp_24bit_jun8_0/hirax_bitgrowth_3dsp_24bit_jun8_0.xci">
+      <File Path="$PPRDIR/../../hdl/platforms/ice/ip_cores/hirax_bitgrowth_3dsp_24bit_jun8_0/hirax_bitgrowth_3dsp_24bit_jun8_0.xci">
         <FileInfo>
-          <Attr Name="ImportPath" Val="$PPRDIR/../../_Cores/KC705/hirax_bitgrowth_3dsp_24bit_jun8_0/hirax_bitgrowth_3dsp_24bit_jun8_0.xci"/>
-          <Attr Name="ImportTime" Val="1780950577"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -487,6 +456,20 @@
       </File>
       <Config>
         <Option Name="TopModule" Val="hirax_bitgrowth_3dsp_24bit_jun8_0"/>
+        <Option Name="dataflowViewerSettings" Val="min_width=16"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="gmii_to_sgmii_bridge" Type="BlockSrcs" RelSrcDir="$PSRCDIR/gmii_to_sgmii_bridge" RelGenDir="$PGENDIR/gmii_to_sgmii_bridge">
+      <File Path="$PPRDIR/../../hdl/platforms/ice/ip_cores/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <Config>
+        <Option Name="TopModule" Val="gmii_to_sgmii_bridge"/>
         <Option Name="dataflowViewerSettings" Val="min_width=16"/>
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
@@ -514,18 +497,18 @@
     </Simulator>
   </Simulators>
   <Runs Version="1" Minor="19">
-    <Run Id="synth_1" Type="Ft3:Synth" SrcSet="sources_1" Part="xc7k420tffg901-2" ConstrsSet="constrs_1" Description="Higher performance designs, resource sharing is turned off, the global fanout guide is set to a lower number, FSM extraction forced to one-hot, LUT combining is disabled, equivalent registers are preserved, SRL are inferred  with a larger threshold" AutoIncrementalCheckpoint="true" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/synth_1">
+    <Run Id="synth_1" Type="Ft3:Synth" SrcSet="sources_1" Part="xc7k420tffg901-2" ConstrsSet="constrs_1" Description="Higher performance designs, resource sharing is turned off, the global fanout guide is set to a lower number, FSM extraction forced to one-hot, LUT combining is disabled, equivalent registers are preserved, SRL are inferred  with a larger threshold" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/synth_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Flow_PerfOptimized_high" Flow="Vivado Synthesis 2022">
           <Desc>Higher performance designs, resource sharing is turned off, the global fanout guide is set to a lower number, FSM extraction forced to one-hot, LUT combining is disabled, equivalent registers are preserved, SRL are inferred  with a larger threshold</Desc>
         </StratHandle>
         <Step Id="synth_design">
           <Option Id="Assert">1</Option>
-          <Option Id="Directive">7</Option>
-          <Option Id="ShregMinSize">5</Option>
-          <Option Id="ResourceSharing">2</Option>
-          <Option Id="FsmExtraction">1</Option>
           <Option Id="KeepEquivalentRegisters">1</Option>
+          <Option Id="Directive">7</Option>
+          <Option Id="ResourceSharing">2</Option>
+          <Option Id="ShregMinSize">5</Option>
+          <Option Id="FsmExtraction">1</Option>
         </Step>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -539,11 +522,11 @@
           <Desc>Higher performance designs, resource sharing is turned off, the global fanout guide is set to a lower number, FSM extraction forced to one-hot, LUT combining is disabled, equivalent registers are preserved, SRL are inferred  with a larger threshold</Desc>
         </StratHandle>
         <Step Id="synth_design">
-          <Option Id="FsmExtraction">1</Option>
-          <Option Id="ResourceSharing">2</Option>
-          <Option Id="Directive">7</Option>
           <Option Id="KeepEquivalentRegisters">1</Option>
+          <Option Id="Directive">7</Option>
+          <Option Id="ResourceSharing">2</Option>
           <Option Id="ShregMinSize">5</Option>
+          <Option Id="FsmExtraction">1</Option>
         </Step>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
