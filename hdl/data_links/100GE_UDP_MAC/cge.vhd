@@ -87,7 +87,7 @@ architecture impl of cge is
 -- Signals
 
 
-	signal control_bytes: slv8_array(0 to 8);
+	signal control_bytes: slv8_array(0 to 7);
 	signal status_bytes: slv8_array(0 to 6);
 
 	signal tx_axis_tdata: std_logic_vector(511 downto 0);
@@ -224,17 +224,10 @@ architecture impl of cge is
 	signal capture_tlast: std_logic;
 
 begin
-	-- clk <= clk_out_int;
 	clk322_out <= clk_out_int;
-	-- refclk_div2 <= refclk_div2_int;
 	refclk_out <= refclk_out_int;
 	tx_p <= reverse_bits_and_dir(gt_txp_out);
 	tx_n <= reverse_bits_and_dir(gt_txn_out);
-
-	-- clk_out_div2 <= clk_out_div2_int;
-
-	-- link_enable <='1';
-
 
 	-- CONTROL Byte 0
 
@@ -242,10 +235,8 @@ begin
 	cmac_reset_rx_datapath <= control_bytes(0)(1);
 	cmac_sys_reset <= control_bytes(0)(2);
 	cmac_core_tx_reset <= control_bytes(0)(3);
+	ctl_tx_rsfec_enable <= control_bytes(0)(4);
 
-	-- send_continuous_pkts <= control_bytes(0)(4);
-	-- lbus_tx_rx_restart_in <= control_bytes(0)(5);
-	-- simplex_mode_rx_aligned <= control_bytes(0)(6);
 	enable_packet_generator <= control_bytes(0)(7);
 	-- CONTROL Byte 1
 	number_of_udp_words <= unsigned(control_bytes(1));
@@ -253,31 +244,24 @@ begin
 	-- CONTROL Byte 2-3
 	packet_spacing_in_words <= to_unsigned(control_bytes(2 to 3));
 
-	-- ctl_tx_enable <=  control_bytes(1)(0);
-	-- ctl_tx_send_idle <=  control_bytes(1)(1);
-	-- ctl_tx_send_rfi <=  control_bytes(1)(2);
-	-- ctl_tx_send_lfi <=  control_bytes(1)(3);
-	-- ctl_tx_test_pattern <=  control_bytes(1)(4);
-
 	-- CONTROL Byte 4-5
 	capture_byte_number <= to_unsigned(control_bytes(4 to 5));
 
-	ctl_tx_rsfec_enable <= control_bytes(0)(4);
 
 	-- CONTROL Byte 6: GT lane select and BSB RAM/DRP port target
 	gt_lane_sel            <= unsigned(control_bytes(6)(5 downto 4));
 	cmac_config_port_sel   <= unsigned(control_bytes(6)(2 downto 0));
 
-	-- Latch per-lane PRBS / DFE fabric (control bytes 7-8)
+	-- CONTROL Byte 6: PRBS / DFE controls
 	gt_ctl_store_proc: process(bsb_clk) is
 		variable lane : integer range 0 to NUM_GT_LANES - 1;
 	begin
 		if rising_edge(bsb_clk) then
 			lane := to_integer(gt_lane_sel);
 			gt_rxdfelpmreset(lane)  <= control_bytes(7)(7);
-			gt_rxprbscntreset(lane) <= control_bytes(8)(7);
-			gt_txprbssel(4 * lane + 3 downto 4 * lane) <= '0' & control_bytes(8)(5 downto 3);
-			gt_rxprbssel(4 * lane + 3 downto 4 * lane) <= '0' & control_bytes(8)(2 downto 0);
+			gt_rxprbscntreset(lane) <= control_bytes(7)(6);
+			gt_txprbssel(4 * lane + 3 downto 4 * lane) <= '0' & control_bytes(7)(5 downto 3);
+			gt_rxprbssel(4 * lane + 3 downto 4 * lane) <= '0' & control_bytes(7)(2 downto 0);
 		end if;
 	end process gt_ctl_store_proc;
 
@@ -316,17 +300,19 @@ begin
 	-- |         |     |  1   | cmac_reset_rx_datapath | Reset CMAC RX datapath |
 	-- |         |     |  2   | cmac_sys_reset         | CMAC system reset |
 	-- |         |     |  3   | cmac_core_tx_reset     | CMAC core TX reset |
-	-- |         |     |  4   | (unused)                |                               |
+	-- |         |     |  4   | ctl_tx_rsfec_enable     | RS-FEC enable (fabric) |
 	-- |         |     |  5   | (unused)                |                               |
 	-- |         |     |  6   | (unused)                |                               |
 	-- |         |     |  7   | enable_packet_generator | Enable packet generator |
 	-- |         |  1  | 7:0  | number_of_udp_words     | Number of UDP words |
 	-- |         | 2-3 |15:0  | packet_spacing_in_words | Packet spacing in words (16 bits) |
 	-- |         | 4-5 |15:0  | capture_byte_number     | Capture byte number (16 bits) |
-	-- |         |  0  |  4   | ctl_tx_rsfec_enable     | RS-FEC enable (fabric) |
 	-- |         |  6  | 5:4  | gt_lane_sel             | GT lane for bytes 7-8 and GT channel DRP |
 	-- |         |     | 2:0  | config_port_sel         | BSB RAM target (1=core DRP,2=GT cmn,3=GT ch DRP+lane) |
-	-- |         | 7-8  | -   | gt_prbs_fabric          | PRBS / DFE reset (per lane) |
+	-- |         | 7    | 7  | gt_prbs_fabric_reset    | PRBS / DFE reset (per lane) |
+	-- |         |      | 6    | gt_rxprbscntreset       | PRBS counter reset (active lane) |
+	-- |         |      | 5:3  | gt_txprbssel            | PRBS TX select (active lane) |
+	-- |         |      | 2:0  | gt_rxprbssel            | PRBS RX select (active lane) |
 	-- | STATUS  |  0  |  0   | tx_gt_locked_led        | TX GT locked LED |
 	-- |         |     |  1   | tx_ovfout_sticky        | TX overflow output sticky |
 	-- |         |     |  2   | tx_unfout_sticky        | TX underflow output sticky |
@@ -341,8 +327,7 @@ begin
 	-- |         |  5  | 7:0  | capture_byte            | Capture byte |
 	-- |         |  6  | 5:4  | gt_lane_sel             | Active GT lane (readback) |
 	-- |         |     | 2:0  | config_port_sel         | Active RAM target (readback) |
-	-- | RAM     |  *   | -    | Offset within selected port; 16-bit RAM beats |
-	-- |         |      |      | 1=core DRP | 2=GT common DRP | 3=GT channel DRP (lane from byte 6) |
+	-- | RAM     |  *   | -    | ram_offset              | Offset within selected port (16-bit RAM beats). Port: 1=core DRP, 2=GT common DRP, 3=GT channel DRP (lane from byte 6) |
 	-- ------------------------------------------------------------------------------
 
 	bsb_regs0: entity work.bsb_regs
