@@ -72,13 +72,12 @@ set fft_type_chord "pfb_fft_bitgrowth_0/pfb_fft_bitgrowth_0.xci"
 set ice_platform_dir "${hdl_dir}/platforms/ice"
 set ice_target_part "xc7k420tffg901-2"
 
-set ice_ct_ooc_ip_files $fft_type_hirax
+set ice_ct_ooc_ip_files $fft_type_hirax_3dsp
 set ice_corr16_ooc_ip_files $fft_type_hirax_3dsp
 
 # SCALER_CMUL/SCALER_CMUL.xci to be added if using complex gains
 
 set ice_base_ip_files [list \
-  "gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci"\
   "gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci"\
 ]
 

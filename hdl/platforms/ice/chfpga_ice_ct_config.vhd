@@ -13,8 +13,7 @@ package chfpga_config is
 	constant CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS: boolean    := FALSE;
 	constant CONFIG_CHAN_NUMBER_OF_CAPTURE_SOURCES: integer   := 2;
 	constant CONFIG_CHAN_CAPTURE_TYPE: chan_capture_type_enum := PROBER;
-	constant CONFIG_CHAN_FFT_TYPE: fft_type_enum              := HIRAX;
-	--constant CONFIG_CAPTURE_BITS_PER_WORD: integer            := 32;
+	constant CONFIG_CHAN_FFT_TYPE: fft_type_enum              := HIRAX_3DSP;
 
 	-- Corner-turn engine configuration
 
