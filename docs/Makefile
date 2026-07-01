@@ -12,7 +12,7 @@ export BUILDDIR
 
 # User-friendly check for uv (creates/syncs .venv from pyproject.toml via uv run)
 ifeq ($(shell which $(UV) >/dev/null 2>&1; echo $$?), 1)
-	$(error The '$(UV)' command was not found. Install uv (https://docs.astral.sh/uv/) or set UV to its full path.)
+$(error The '$(UV)' command was not found. Install uv (https://docs.astral.sh/uv/) or set UV to its full path.)
 endif
 
 # Internal variables.

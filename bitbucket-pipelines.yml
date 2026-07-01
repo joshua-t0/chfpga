@@ -17,14 +17,15 @@ pipelines:
           - pip
           - venv
         script: # Modify the commands below to build your repository.
+          - curl -LsSf https://astral.sh/uv/install.sh | sh
+          - export PATH="$HOME/.local/bin:$PATH"
           - DOC_PUBLISH_FOLDER='chfpga/'$BITBUCKET_BRANCH
           - make docs
           - git clone git@bitbucket.org:winterlandcosmology/winterlandcosmology.bitbucket.io.git www
           - mkdir -p www/$DOC_PUBLISH_FOLDER/
           - rm -rf www/$DOC_PUBLISH_FOLDER/*
-          - ls -al
-          - ls -al build
-          - cp -r build/html/* www/$DOC_PUBLISH_FOLDER/
+          - ls -al docs/build/html
+          - cp -r docs/build/html/* www/$DOC_PUBLISH_FOLDER/
           - cd www/chfpga
           - rm -rf latest
           - mkdir -p latest

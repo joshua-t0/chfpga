@@ -85,7 +85,7 @@ docs:
 	+$(MAKE) -C $(DOCS_DIR) $(DOCS_GOALS)
 
 # Swallow goals passed after "docs" so the root make does not look for them
-DOCS_PHONY := clean html html_verbose rst dirhtml singlehtml pickle json htmlhelp qthelp applehelp devhelp epub epub3 latex latexpdf latexpdfja text man texinfo info gettext changes xml pseudoxml linkcheck doctest coverage dummy help
+DOCS_PHONY := clean html html_verbose rst dirhtml singlehtml pickle json htmlhelp qthelp applehelp devhelp epub epub3 latex latexpdf latexpdfja text man texinfo info gettext changes xml pseudoxml linkcheck doctest coverage dummy
 .PHONY: $(DOCS_PHONY)
 $(DOCS_PHONY): docs
 	@:
