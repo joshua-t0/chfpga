@@ -25,7 +25,7 @@ Parameters
 
 - **LANE_TO_QUAD_MAP:** Maps each lane index to a GTX quad id (0 … N−1).
 
-- **QUAD_TO_REFCLK_MAP:** Maps each quad to a reference clock index (0 … ``NUMBER_OF_REFCLK``−1).
+- **QUAD_TO_REFCLK_MAP:** Maps each quad to a reference clock index (0 … ``NUMBER_OF_REFCLK`` − 1).
 
 - **NUMBER_OF_TX_LANES:** Number of TX-only lanes (defaults to the length of ``LANE_TO_QUAD_MAP``).
 

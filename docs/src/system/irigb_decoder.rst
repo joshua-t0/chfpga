@@ -39,7 +39,7 @@ Implementation details
 Principle of operations
 -----------------------
 
-The decoder measures the low-duration of each IRIG-B bit in milliseconds and classifies it as a ``0`` bit (low 7–8 ms), ``1`` bit (low 4–5 ms), or position marker P (low 1–2 ms). Two consecutive P markers identify the frame reference point (``Pr``), which synchronises the state machine to ``S1`` and begins decoding a new frame.
+The decoder measures the low-duration of each IRIG-B bit in milliseconds and classifies it as a ``0`` bit (low 7-8 ms), ``1`` bit (low 4-5 ms), or position marker P (low 1-2 ms). Two consecutive P markers identify the frame reference point (``Pr``), which synchronises the state machine to ``S1`` and begins decoding a new frame.
 
 BCD time fields (seconds, minutes, hours, day-of-year, year, SBS) are accumulated bit-by-bit as the frame progresses through its 100-state machine. When the final P marker is detected in state ``P0``, the accumulated values are registered into ``ts`` and the sub-second counter is reset.
 

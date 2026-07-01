@@ -6,13 +6,13 @@ use work.irigb_package.irigb;
 
 -- IRIG-B time decoder
 --
--- This entity decodes IRIG-B time and places it in the `ts` data structure at the end of each
+-- This entity decodes IRIG-B time and places it in the ``ts`` data structure at the end of each
 -- second. The occcurence of the start bit is detected only at the end of the bit, therefore
--- delaying the decoding my an additional 10 ms. The `ts` structure therefore always shows the time
+-- delaying the decoding my an additional 10 ms. The ``ts`` structure therefore always shows the time
 -- 1.010 seconds later that the real time (excluding all registering delays on the IRIG-B signal,
--- decoding logic, an final `ts` registering).
+-- decoding logic, an final ``ts`` registering).
 --
--- The `ts` structure contains a subsecond (ss) field that is not sampled on each second but rather
+-- The ``ts`` structure contains a subsecond (ss) field that is not sampled on each second but rather
 -- continuously counts time within the current second with a 200 MHz clock (5 ns). The counter is
 -- reset at the beginning of each frame. All but the last bit of the counter make up the ``ss``
 -- subsecond field, which can therefore be use to interpolate time within the second with a
@@ -30,11 +30,11 @@ use work.irigb_package.irigb;
 -- The leading edge of that marker is the beginning of the second that is encoded in the frame.
 --
 -- We capture the hours, minutes, seconds etc. into separate signals as the frame bits are coming
--- in. Those fields are reistered  into the `ts` structure on the beginning of the next frame.
+-- in. Those fields are reistered  into the ``ts`` structure on the beginning of the next frame.
 --
 entity irigb_decoder is port (
 	clk_200mhz : in std_logic; -- 200 MHz clock, used to sample and decode the IRIGB signal and interpolate time between seconds
-	irig : in std_logic_vector(0 to 7); -- IRIG-B sources, one of which is selected by the index in `source`
+	irig : in std_logic_vector(0 to 7); -- IRIG-B sources, one of which is selected by the index in ``source``
 	source : in unsigned(2 downto 0); -- Selects which IRIG-B source to use
     pol : in std_logic; -- IRIG-B signal polarity: 0= normal, 1=inverted
 	pps: out std_logic; -- Pulsed high for 0.5s at the eginning of each new IRIG-B frame
@@ -315,10 +315,10 @@ begin
 			--the time 10 ms later that the real rising edge of the IRIG-B (plus a few 200-MHz
 			--register stages). Also, the time that appears is the time of the last frame, not the
 			--time of the current frame, adding a 1 second delay between the real time and captured
-			--time . Finally, the time structure coming out of this module (`ts`) is a registered
+			--time . Finally, the time structure coming out of this module (``ts``) is a registered
 			--version of the time thah was captured, adding an extra 200 MHz clock delay.
 			--
-			-- In total, this means that `ts` appears at least 1.010005 later than the actual time.
+			-- In total, this means that ``ts`` appears at least 1.010005 later than the actual time.
 			-- This excludes the time it gets for the IRIG-B signal on the FPGA pin to generte the
 			-- strobe signal.This will be many additional clocks.
 			--

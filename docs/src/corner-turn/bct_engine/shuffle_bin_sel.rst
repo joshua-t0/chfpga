@@ -141,33 +141,33 @@ To further preserve space, the FLAGS FIFO can be implemented as a deep 4-bit wid
 FIFO writing process
 --------------------
 
-`recv_flags` indicate whether we are expecting the header words.  The header word counter `recv_header_word_ctr` is incremented when valid data comes in. When the 4th word is received we clear recv_flags so data processing can start. No data from the header is saved. The data processing counters are reset during the header phase.
+``recv_flags`` indicate whether we are expecting the header words.  The header word counter ``recv_header_word_ctr`` is incremented when valid data comes in. When the 4th word is received we clear recv_flags so data processing can start. No data from the header is saved. The data processing counters are reset during the header phase.
 
 In the data phase, we count, from the fastest to slowest counters: words, bins, frames and blocks.
 The limit of these counters are changed from block to block:
 
-- During the header phase, we set the counter limits to  `number_of_input_words_per_bin` words,
-  `number_of_input_bins_per_frame` bins, and 'last_frame_number` frames and set the block counter to
+- During the header phase, we set the counter limits to  ``number_of_input_words_per_bin`` words,
+  ``number_of_input_bins_per_frame`` bins, and ``last_frame_number`` frames and set the block counter to
   DATA_BLOCK.
 
-- In the DATA_BLOCK, we count `number_of_input_words_per_bin` words,
-  `number_of_input_bins_per_frame` bins, and 'last_frame_number` frames.
+- In the DATA_BLOCK, we count ``number_of_input_words_per_bin`` words,
+  ``number_of_input_bins_per_frame`` bins, and ``last_frame_number`` frames.
 
 - On the last word of the last bin of the last frame of the DATA_BLOCK,  we write to the readout
-  flag FIFO to read `last_word_number=number_of_input_words_per_bin` if the bin was selected. We
+  flag FIFO to read ``last_word_number=number_of_input_words_per_bin`` if the bin was selected. We
   increment the block counter to DATA_FLAGS_BLOCK, and set the word counter limit to 1 word.
 
-- In the DATA_FLAG_BLOCK, we now count 1 word, `number_of_input_bins_per_frame` bins, and
-  'last_frame_number` frames. In other words (pun intended), we store one data flag word for each
+- In the DATA_FLAG_BLOCK, we now count 1 word, ``number_of_input_bins_per_frame`` bins, and
+  ``last_frame_number`` frames. In other words (pun intended), we store one data flag word for each
   bin and each frame.
 
 - On the last word of the last bin of the last frame of the DATA_FLAGS_BLOCK,  we write to the
-  readout flag FIFO to read `last_word_number=1` words if the bin was selected. We increment the
+  readout flag FIFO to read ``last_word_number=1`` words if the bin was selected. We increment the
   block counter to FRAME_FLAGS_BLOCK, and we set the word counter limit to
-  `last_frame_flags_word_number` and the bin  counter limit to 1 bin.
+  ``last_frame_flags_word_number`` and the bin  counter limit to 1 bin.
 
-- In the FRAME_FLAGS_BLOCK, we now count `last_frame_flags_word_number word`, 1 bin, and
-  'last_frame_number` frames. In other words, we store `last_frame_flags_word_number word` frame
+- In the FRAME_FLAGS_BLOCK, we now count ``last_frame_flags_word_number``, 1 bin, and
+  ``last_frame_number`` frames. In other words, we store ``last_frame_flags_word_number`` frame
   flags words each frame.
 
 - On the last word of the last bin of the last frame of the FRAME_FLAGS_BLOCK,  we increment the
@@ -180,7 +180,7 @@ The limit of these counters are changed from block to block:
   the FIFO. Readout flags are written on the last word of each block.
 
 
-data_fifo_wr_en_packet_flags_dly=1: The data written in the FIFO is: lower bits: the TLAST flag of each input lane, which indicate if every lane finished at the same time. Other bits are zero.
+``data_fifo_wr_en_packet_flags_dly=1`` : The data written in the FIFO is: lower bits: the TLAST flag of each input lane, which indicate if every lane finished at the same time. Other bits are zero.
 
 
 

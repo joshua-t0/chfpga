@@ -38,8 +38,8 @@ Data input
 Run-time control
 ~~~~~~~~~~~~~~~~
 
-- ``bin_set``: 4-bit value selecting which bin within each decimation block to process (0 to ``NDECIM``−1).
-- ``auto_bin_set``: When ``'1'``, the bin selection cycles automatically through 0…``NDECIM``−1 at each integration period boundary.
+- ``bin_set``: 4-bit value selecting which bin within each decimation block to process (0 to ``NDECIM`` - 1).
+- ``auto_bin_set``: When ``'1'``, the bin selection cycles automatically through 0…``NDECIM`` - 1 at each integration period boundary.
 - ``offset_encoding``: When ``'1'``, the input samples use offset-binary encoding; the core XORs each byte with ``0x88`` to convert to two's complement before correlation.
 - ``integ_period``: 16-bit integration period in input frames. After this many frames, the accumulated products are captured and a new integration period begins.
 - ``autocorr_only``: When ``'1'``, only auto-correlations (diagonal products) are computed, roughly halving the number of CMAC operations.

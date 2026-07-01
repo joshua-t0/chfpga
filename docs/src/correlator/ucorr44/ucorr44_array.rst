@@ -59,7 +59,7 @@ Implementation details
 Architecture
 ~~~~~~~~~~~~
 
-The array instantiates ``NCORR`` :entity:`UCORR44` cores and one :entity:`generic_fifo` output FIFO. The incoming wide data bus is split and pipelined into per-correlator streams. The readout outputs of all cores are daisy-chained: the output of core *i* is fed as the cascade input of core *i*−1, so data flows through the chain and exits from core 0 into the shared output FIFO. A :entity:`bsb_regs` instance exposes control and status registers for the entire array.
+The array instantiates ``NCORR`` :entity:`UCORR44` cores and one :entity:`generic_fifo` output FIFO. The incoming wide data bus is split and pipelined into per-correlator streams. The readout outputs of all cores are daisy-chained: the output of core *i* is fed as the cascade input of core *i* - 1, so data flows through the chain and exits from core 0 into the shared output FIFO. A :entity:`bsb_regs` instance exposes control and status registers for the entire array.
 
 Clocking
 ~~~~~~~~

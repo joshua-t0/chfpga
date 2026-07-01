@@ -298,7 +298,7 @@ Documentation
 
 This documentation is generated using Sphinx, since the firmware control software and the telescope operation software is all written in Python and is therefore also documentd in Sphinx. We used to use Doxygen, but preferred not to have an additional tool, and wanted to have more flexibility in structuring the documentation and extending the source code with figures, variable references etc. And since we invested time learning RestucturedText, we preferred to avoid having the documenter to learn Markdown as well.
 
-The tricky part is to document VHDL code. Sphinx does not natively support extracting docs from the VHDL language. We try to put lots of comments in the VHDL source code and didn't want to be led away from that good practice. We ended up writing our own Sphinx Domain extension, `VHDLDomain`, which includes our own a full VHDL language parser that allows us to to extract the main VHDL elements from the code and extract the accompanying *docstrings*, and provide a functionality akin to the Sphinx ``autodoc`` module, except for VHDL.
+The tricky part is to document VHDL code. Sphinx does not natively support extracting docs from the VHDL language. We try to put lots of comments in the VHDL source code and didn't want to be led away from that good practice. We ended up writing our own Sphinx Domain extension, ``VHDLDomain``, which includes our own a full VHDL language parser that allows us to to extract the main VHDL elements from the code and extract the accompanying *docstrings*, and provide a functionality akin to the Sphinx ``autodoc`` module, except for VHDL.
 
 
 Python packages

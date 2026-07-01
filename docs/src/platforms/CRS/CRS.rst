@@ -168,7 +168,7 @@ By simplifying the fraction ``k1/k2``, we find the lowest integers ``k1`` and ``
    k1/k2 = 15/16  => k1 = 15, k2=16
    fcommon_max = 3000/16/k1 = 3200/16/k2 = 12.5 MHz
 
-We need to divide `fcommon_max` further with an integer to get below 10 MHz, but we also want this frequency to be a submultiple of 10 MHz. So::
+We need to divide ``fcommon_max`` further with an integer to get below 10 MHz, but we also want this frequency to be a submultiple of 10 MHz. So::
 
    fsysref = fcommmon_max/k3 = 10 MHz/k4
    k3/k4 = 12.5/10  = 25/20 = 5/4, -> k3=5, k4=4

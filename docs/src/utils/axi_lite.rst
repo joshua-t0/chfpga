@@ -53,16 +53,16 @@ One-shot full-word AXI write (used by :entity:`cge` for ``CONFIGURATION_TX_REG1`
 - ``USE_RAM_DOUT_RDY => TRUE``
 - ``USE_PIPELINED_RAM_WRITE => FALSE``
 
-:cge: RAM port mux (control byte 6, bits 2:0)
+`cge` RAM port mux (control byte 6, bits 2:0)
 =============================================
 
-+-------+------------------+------------------------------------------+
-| Value | Name             | Target                                   |
-+=======+==================+==========================================+
-| 0     | AXI              | PG203 map via :entity:`axi_lite`         |
-| 1     | Core DRP         | CMAC core ``drp_*`` (addr ``[9:0]``)     |
-| 2     | GT common DRP    | ``common0_drp*`` (addr ``[15:0]``)       |
-| 3–6   | GT channel 0–3   | ``gt0_drp*`` … ``gt3_drp*`` (addr ``[9:0]``) |
-+-------+------------------+------------------------------------------+
++-------+------------------+----------------------------------------------+
+| Value | Name             | Target                                       |
++=======+==================+==============================================+
+| 0     | AXI              | PG203 map via :entity:`axi_lite`             |
+| 1     | Core DRP         | CMAC core ``drp_*`` (addr ``[9:0]``)         |
+| 2     | GT common DRP    | ``common0_drp*`` (addr ``[15:0]``)           |
+| 3-6   | GT channel 0-3   | ``gt0_drp*`` … ``gt3_drp*`` (addr ``[9:0]``) |
++-------+------------------+----------------------------------------------+
 
 Set the mux before RAM read/write commands. ``RAM_ADDR`` is an offset within the selected port only.

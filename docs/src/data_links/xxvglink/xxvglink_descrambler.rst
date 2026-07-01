@@ -9,7 +9,7 @@
 .. default-role:: vhdl:entity
 
 Entity documentation
---------------------
+====================
 
 .. autoentity:: xxvglink_descrambler
 

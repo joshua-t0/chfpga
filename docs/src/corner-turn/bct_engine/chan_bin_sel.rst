@@ -110,7 +110,7 @@ Data flags from consecutive bins can be combined by the front end, i.e. before t
 
 Half-packing the data flag word is inefficient, but it is necessary to have the flag word to represent only one bin if we need to easily perform further channel selection in the following crossbar. That 2nd bin selector can do the data flag combining. The resulting set of flags from all combined channels will result in a block of data flags what will be a integer number of fully utilized data flag words that can be handled easily fby the following 3rd crossbar if need be.
 
-One exception to this is the `shuffle16` mode, in which we pack 128 bins into a frame in order to fit all the data from the 16 channelizers into only 8 bin selector outputs (to feed the 8 links to the receiving node). With half used data words, the word rate is, on average::
+One exception to this is the ``shuffle16`` mode, in which we pack 128 bins into a frame in order to fit all the data from the 16 channelizers into only 8 bin selector outputs (to feed the 8 links to the receiving node). With half used data words, the word rate is, on average::
 
     {(4 header words/frame) + (128 bins/frame)* [ (4 data words/bin) + (1 data flag word/bin)] + (1 frame flags word/frame) + (1 packet flags/frame) } / (2.56 us/frame) = 252.34375 Mwords/s (8.075 Gbit/s)
 
@@ -118,7 +118,7 @@ This exceeds the speed of the corner turn engine's internal clock of 244.140625 
 
     {(4 header words/frame) + (128 bins/frame)* [ (4 data words/bin) + (0.5 data flag word/bin)] + (1 frame flags word/frame) + (1 packet flags/packet) } / (2.56 us/frame) = 227.34375 Mwords/s (7.275 Gbit/s)
 
-Now this fits or 50x clock. The combined flags  cannot be used by a downstream bin selector, but those are bypassed anyways in `shuffle16` mode.
+Now this fits or 50x clock. The combined flags  cannot be used by a downstream bin selector, but those are bypassed anyways in ``shuffle16`` mode.
 
 In term of implementation, we used to have the FIFO readout process do the data flags combining, but that caused a number of subtle problems. The extra cycles that were needed to read two sets of flags from the FIFOs to combine them into a single 32-bit-wide flag word caused the data from the next frame wo start piling up in the data fifo, reducing the effective FIFO capacity, and causing the data to be sent in large bursts. This problem was exacerbated by downstream logic that waited for a full frame to be completed before forwarding it. That didn't help aligners do their job. A front end combiner eliminated these complex data dynamics problems.
 
@@ -141,22 +141,22 @@ The FIFO physically centralises all the information that is needed to sequence t
 FIFO writing process
 --------------------
 
-`recv_flags` indicate whether we are expecting the header words.  The header word counter `recv_header_word_ctr` is incremented when valid data comes in. When the 4th word is received we clear recv_flags so data processing can start. No data from the header is saved. The data processing counters are reset during the header phase.
+``recv_flags`` indicate whether we are expecting the header words.  The header word counter ``recv_header_word_ctr`` is incremented when valid data comes in. When the 4th word is received we clear recv_flags so data processing can start. No data from the header is saved. The data processing counters are reset during the header phase.
 
 In the data phase, we count, from the fastest to slowest counters: words, bins, frames and blocks.
 The limit of these counters are changed from block to block:
 
-  - During the header phase, we set the counter limits to  `number_of_input_words_per_bin` words, `number_of_input_bins_per_frame` bins, and 'last_frame_number` frames and set the block counter to DATA_BLOCK.
+  - During the header phase, we set the counter limits to  ``number_of_input_words_per_bin`` words, ``number_of_input_bins_per_frame`` bins, and ``last_frame_number`` frames and set the block counter to DATA_BLOCK.
 
-  - In the DATA_BLOCK, we count `number_of_input_words_per_bin` words, `number_of_input_bins_per_frame` bins, and 'last_frame_number` frames.
+  - In the DATA_BLOCK, we count ``number_of_input_words_per_bin`` words, ``number_of_input_bins_per_frame`` bins, and ``last_frame_number`` frames.
 
-  - On the last word of the last bin of the last frame of the DATA_BLOCK,  we write to the readout flag FIFO to read `last_word_number=number_of_input_words_per_bin` if the bin was selected. We increment the block counter to DATA_FLAGS_BLOCK, and set the word counter limit to 1 word.
+  - On the last word of the last bin of the last frame of the DATA_BLOCK,  we write to the readout flag FIFO to read ``last_word_number=number_of_input_words_per_bin`` if the bin was selected. We increment the block counter to DATA_FLAGS_BLOCK, and set the word counter limit to 1 word.
 
-  - In the DATA_FLAG_BLOCK, we now count 1 word, `number_of_input_bins_per_frame` bins, and 'last_frame_number` frames. In other words (pun intended), we store one data flag word for each bin and each frame.
+  - In the DATA_FLAG_BLOCK, we now count 1 word, ``number_of_input_bins_per_frame`` bins, and ``last_frame_number`` frames. In other words (pun intended), we store one data flag word for each bin and each frame.
 
-  - On the last word of the last bin of the last frame of the DATA_FLAGS_BLOCK,  we write to the readout flag FIFO to read `last_word_number=1` words if the bin was selected. We increment the block counter to FRAME_FLAGS_BLOCK, and we set the word counter limit to `last_frame_flags_word_number` and the bin  counter limit to 1 bin.
+  - On the last word of the last bin of the last frame of the DATA_FLAGS_BLOCK,  we write to the readout flag FIFO to read ``last_word_number=1`` words if the bin was selected. We increment the block counter to FRAME_FLAGS_BLOCK, and we set the word counter limit to ``last_frame_flags_word_number`` and the bin  counter limit to 1 bin.
 
-  - In the FRAME_FLAGS_BLOCK, we now count `last_frame_flags_word_number word`, 1 bin, and 'last_frame_number` frames. In other words, we store `last_frame_flags_word_number word` frame flags words each frame.
+  - In the FRAME_FLAGS_BLOCK, we now count ``last_frame_flags_word_number word``, 1 bin, and ``last_frame_number`` frames. In other words, we store ``last_frame_flags_word_number word`` frame flags words each frame.
 
   - On the last word of the last bin of the last frame of the FRAME_FLAGS_BLOCK,  we increment the block counter to FLUSH_BLOCK, and we set the word counter limit back to 1.
 
@@ -167,7 +167,7 @@ The limit of these counters are changed from block to block:
     Readout flags are written on the last word of each block.
 
 
-data_fifo_wr_en_packet_flags_dly=1: The data written in the FIFO is: lower bits: the TLAST flag of each input lane, which indicate if every lane finished at the same time. Other bits are zero.
+``data_fifo_wr_en_packet_flags_dly=1`` : The data written in the FIFO is: lower bits: the TLAST flag of each input lane, which indicate if every lane finished at the same time. Other bits are zero.
 
 
 
@@ -178,15 +178,15 @@ The FIFO readout logic implements a one-hot encoded state machine with five stat
 
 - **send_header**: Sends the 4-word packet header. Transmission is triggered by the arrival of the first frame of a packet to minimize the delay between header and data, which is important for downstream packet aligners.
 
-- **send_data**: Reads and transmits data from the data FIFO. Data is sent as it becomes available, so the FIFO doesn't need to store large amounts of data. When the last data word of the packet is detected (indicated by a flag bit in the FIFO output), the state machine transitions to either `send_data_flags` (if flags are enabled) or directly to `send_packet_flags` (if flags are disabled or in bypass mode).
+- **send_data**: Reads and transmits data from the data FIFO. Data is sent as it becomes available, so the FIFO doesn't need to store large amounts of data. When the last data word of the packet is detected (indicated by a flag bit in the FIFO output), the state machine transitions to either ``send_data_flags`` (if flags are enabled) or directly to ``send_packet_flags`` (if flags are disabled or in bypass mode).
 
-- **send_data_flags**: Reads and transmits scaler (data) flags from the data flags FIFO. When the last flag word is detected, transitions to `send_frame_flags`.
+- **send_data_flags**: Reads and transmits scaler (data) flags from the data flags FIFO. When the last flag word is detected, transitions to ``send_frame_flags``.
 
-- **send_frame_flags**: Reads and transmits frame flags (ADC and FFT overflow flags) from the frame flags FIFO. When the last flag word is detected, transitions to `send_packet_flags`.
+- **send_frame_flags**: Reads and transmits frame flags (ADC and FFT overflow flags) from the frame flags FIFO. When the last flag word is detected, transitions to ``send_packet_flags``.
 
-- **send_packet_flags**: Sends a single packet flag word (currently all zeros) with the TLAST flag set, marking the end of the packet. Then transitions back to `send_header` to prepare for the next packet.
+- **send_packet_flags**: Sends a single packet flag word (currently all zeros) with the TLAST flag set, marking the end of the packet. Then transitions back to ``send_header`` to prepare for the next packet.
 
-The state machine is manually encoded (not inferred by the synthesizer) as a one-hot state machine to reduce logic depth. This allows the state variables to be used combinatorially to generate FIFO read enables (`data_fifo_rd_en`, `data_flags_fifo_rd_en`, `frame_flags_fifo_rd_en`) without additional decoding logic.
+The state machine is manually encoded (not inferred by the synthesizer) as a one-hot state machine to reduce logic depth. This allows the state variables to be used combinatorially to generate FIFO read enables (``data_fifo_rd_en``, ``data_flags_fifo_rd_en``, ``frame_flags_fifo_rd_en``) without additional decoding logic.
 
 The readout process assumes the destination can always accept data (non-blocking output). This simplifies the logic and helps meet timing constraints. The data flags and frame flags FIFOs must buffer a full packet's worth of flags plus any flags arriving while the FIFOs are being emptied, since flags are only sent after all data for the packet has been transmitted.
 

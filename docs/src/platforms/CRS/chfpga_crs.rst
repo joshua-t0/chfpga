@@ -139,7 +139,7 @@ Architecture
 
 The entity instantiates:
 
-- `zynq_tcpipe_crs`: The Zynq MPSoC block diagram containing the Zynq processing system, the integrated RF-ADC IP core (providing 8 analog channels as 128-bit-wide AXI-Stream buses at the ``plclk`` word rate), and two AXI-Stream DMA engines connecting the BSB command/reply and data capture buses to the ARM processor.
+- ``zynq_tcpipe_crs``: The Zynq MPSoC block diagram containing the Zynq processing system, the integrated RF-ADC IP core (providing 8 analog channels as 128-bit-wide AXI-Stream buses at the ``plclk`` word rate), and two AXI-Stream DMA engines connecting the BSB command/reply and data capture buses to the ARM processor.
 - `chfpga`: The main chFPGA signal-processing core, configured with CRS-specific platform generics.
 
 The wrapper also instantiates the following Xilinx primitives directly:

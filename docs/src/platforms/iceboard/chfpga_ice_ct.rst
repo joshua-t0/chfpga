@@ -6,7 +6,7 @@
 Description
 ===========
 
-This module defines the package `chfpga_config` that provides the constants used to configure the `chFPGA` firmware for correlator operations on the IceBoard platform.
+This module defines the package ``chfpga_config`` that provides the constants used to configure the `chFPGA` firmware for correlator operations on the IceBoard platform.
 
 This configuration includes:
 

@@ -1,12 +1,4 @@
-
-
 .. title:: chFPGA
-
-.. .. image:: images/chfpga_logo.svg
-..    :width: 30%
-
-.. -------------------------------------------------
-
 
 Introduction
 ************
@@ -17,7 +9,7 @@ Introduction
 ``chFPGA`` is a multiplatform FPGA firmware designed to implement wide bandwidth radiotelescope and radio-interferometers front-ends. It provides the following components:
 
 - F-Engine (channelizer)
-- Corner-turn engine (groups data from one or multiple boards by frequency)
+- Corner-turn engine (groups data from one or multiple boards by frequency) with periodic data capture for monitoring
 - Optional X-engine (:math:`N^2` correlator)
 - Optional real-time 80G/100G Ethernet streaming of corner-turned data
 - Hardware platform management and peripheral controllers...
@@ -26,6 +18,14 @@ A block diagram of the firmware is provided below.
 
 .. figure:: ./images/chfpga_simple_block_diagram_v2.svg
    :width: 70%
+
+`chFPGA` is meant to be operated through the ``pychfpga`` Python package (https://winterlandcosmology.bitbucket.io/pychfpga), which provides a Python high-level interface to every subsystem of the `chFPGA` firmware and provides platform wrappers and servers for on-site automated operations. 
+
+``chFPGA`` was originally designed for the Canadian Hydrogen Intensity Mapping Experiment (CHIME) radiotelescope, which consists of an array of 128 Kintex-7 FPGA boards (IceBoards) that digitizes 1024 dual-polarization feeds at 800 MHz @ 8 bits per sample, implement a 2048-sample FFT, scales and  corner-turns the data between groups of 32 boards, and feeds the real-time baseband data to a 256-node GPU-based correlator farm. The firmware is also used on the same platform by  ``CHIME`` outriggers and the ``HIRAX`` telescope.
+
+``chFPGA`` is now also used for the CHORD telescope (128 Xilinx Ultrascale+ RfSoC FPGA boards (CRS platform), 512-dual-polarization feeds sampled at 3200 MSPS @ 14-bits, 16384-sample FFT,  on-board corner-turning and 100G Ethernet offload to an Ethernet switch to perform the final corner-turn). Other configurations allow corner-turning between 4- , 8- or eventually 16 boards in a backplane, and allow the implementation of a single- or multi-board embedded firmware X-engine (correlator).
+
+The firmware is also used around the world on many small (2-16 element) arrays to implement single-board full N-square correlators.
 
 
 Features
@@ -63,11 +63,12 @@ The main features of ``chFPGA`` are:
    - Can be scaled from a single board up to 32 boards
    - Uses backplane or SFP/QSFP links to perform 10/25Gbps data exchange between boards
 
-- X-Engine
+- X-Engine (a.k.a. :math:`N^2` correlator)
 
    - Processes (4+4i)-bits data from the corner-turn engine
    - Scaleable to any number of inputs
    - Is highly optimized for maximum density and speed.
+   - Uses both BRAM and URAM for integrated product storage
 
 - Real-time data offload
 
@@ -88,59 +89,28 @@ The main features of ``chFPGA`` are:
 - Control interface
 
    - Configuration, operation and monitoring of every sybsystem performed through memory-mapped read/write registers accessed through a lightweight 8-bit bus interface.
+   - Can use a firmware-based UDP packet receiver/transmitter or DMA the command stream to/from an on-chip ARM processor.
 
-Python control software
-=======================
+- Supported hardware platforms
 
-`chFPGA` is operated through the ``pychfpga`` Python package, which provides a Python high-level interface to every subsystem of the `chFPGA` firmware and provides platform wrappers and servers for on-site automated operations.
-
-
-Supported hardware platforms
-============================
-
-``chFPGA`` has been used on multiple hardware platforms FPGAs:
+   ``chFPGA`` has been used on multiple hardware platforms FPGAs:
 
 
-- **ML605** : *Xilinx ML605 Virtex 6 Evaluation kit*, with one HPC and one LPC FMC connector for ADC mezzanine boards.  The first full firmware implementations of ``chfpga`` were done on that platform around 2010. The code base has not been maintained since we moved to the more scalable IceBoard and because the modern development tools that we use (Vivado) no longer support the Virtex 6.
+   - **ML605** : *Xilinx ML605 Virtex 6 Evaluation kit*, with one HPC and one LPC FMC connector for ADC mezzanine boards.  The first full firmware implementations of ``chfpga`` were done on that platform around 2010. The code base has not been maintained since we moved to the more scalable IceBoard and because the modern development tools that we use (Vivado) no longer support the Virtex 6.
 
-- **KC705** : *Xilinx KC705 Kintex 7 Evaluation board*, with two HPC FMCs. Used for prototyping the chfpga before the availability of the IceBoards.
+   - **KC705** : *Xilinx KC705 Kintex 7 Evaluation board*, with two HPC FMCs. Used for prototyping the chfpga before the availability of the IceBoards.
 
-- **MGK7MB/IceBoard**: *McGill Cosmology Lab MGK7MB/IceBoard* is a home-made Kintex 7 FPGA board with two HPC FMCs, which was designed specifically for implementing large and fully synchronized high-density array of FPGA boards. With chFPGA, each board can digitize and process 16 analog inputs at 800 MSPS @ 8 bits.  Those boards are used for large interferometers such as the CHIME telescope (128 boards), but are also used for smaller outrigger telescopes or benchtop experiments. More than 500 such boards have been produced.
+   - **MGK7MB/IceBoard**: *McGill Cosmology Lab MGK7MB/IceBoard* is a home-made Kintex 7 FPGA board with two HPC FMCs, which was designed specifically for implementing large and fully synchronized high-density array of FPGA boards. With chFPGA, each board can digitize and process 16 analog inputs at 800 MSPS @ 8 bits.  Those boards are used for large interferometers such as the CHIME telescope (128 boards), but are also used for smaller outrigger telescopes or benchtop experiments. More than 500 such boards have been produced.
 
-- **ZCU111**: *Xilinx Ultrascale+ RfSoC Evaluation board* was the first RfSoC platform on which chFPGA was ported to make use of the  embedded high-frequency ADCs and 100G Ethernet interfaces. On this platform, chFPGA can acquire and process 8 analog inputs at 3000 MSPS.
+   - **ZCU111**: *Xilinx Ultrascale+ RfSoC Evaluation board* was the first RfSoC platform on which chFPGA was ported to make use of the  embedded high-frequency ADCs and 100G Ethernet interfaces. On this platform, chFPGA can acquire and process 8 analog inputs at 3000 MSPS.
 
-- **CRS**: *t0 Ultrascale+ RfSoC* is a compact RfSoC FPGA board designed to implement next-generation high performance and large-density signal processing arrays. On these boards, chFPGA can process 8 analog channels at 3200 GSPS @ 14 bits, perform on-board N^2 correlationor corner-turn the channelized data and stream it through its 100G interface.
+   - **CRS**: *t0 Ultrascale+ RfSoC* is a compact RfSoC FPGA board designed to implement next-generation high performance and large-density signal processing arrays. On these boards, chFPGA can process 8 analog channels at 3200 GSPS @ 14 bits, perform on-board N^2 correlationor corner-turn the channelized data and stream it through its 100G interface.
 
-The firmware is structured so new platform wrappers and configuration files can be added with minimal effort.
+   The firmware is structured so new platform wrappers and configuration files can be added with minimal effort.
 
 
 .. 16 ADC analog channels at 800 Msps, channelizes the data in 1024 frequency bins (F-engine), and can either implement an on-board 16-channel correlator (X-engine) or reorder and redistribute the data with other boards before sending it to an external correlator.
 
-Real-world applications
-=======================
-
-``chFPGA`` was originally designed for the Canadian Hydrogen Intensity Mapping Experiment (CHIME) radiotelescope, which consists of an array of 128 Kintex-7 FPGA boards (IceBoards) that digitizes 1024 dual-polarization feeds at 800 MHz @ 8 bits per sample, implement a 2048-sample FFT, scales and  corner-turns the data between groups of 32 boards, and feeds the real-time baseband data to a 256-node GPU-based correlator farm. The firmware is also used on the same platform by  ``CHIME`` outriggers and the ``HIRAX`` telescope.
-
-``chFPGA`` is also used on an array of 128 Xilinx Ultrascale+ RfSoC FPGA boards (CRS platform) to digitize the signals from 512-dual-polarization feeds, sample the feeds at 3200 MSPS @ 14-bits, perform a 16384-sample FFT and on-board corner-turn, and offloads the resulting data over 100G Ethernet links through a Ethernet switch that performs the final corner-turn. Other configurations allow corner-turning between 4- , 8- or eventually 16 boards in a backplane, and allow the implementation of a single- or multi-board embedded firmware X-engine (correlator).
-
-The firmware is also used around the world on many small (2-16 element) arrays to implement single-board full N-square correlators.
-
-
-.. A block diagram of chFPGA used in this configuration is shown in chfpga_block_diagram_.
-
-.. .. _chfpga_block_diagram:
-.. .. figure:: images/chFPGA_block_diagram2.svg
-..    :width: 50%
-
-
-
-.. #########
-.. Contents:
-.. #########
-
-
-.. Firmware features
-.. =================
 
 
 
@@ -150,9 +120,79 @@ The firmware is also used around the world on many small (2-16 element) arrays t
 
 
 
+
+Build instructions
+==================
+
+
+
+Requirements
+------------
+   - A good build computer. Vivado is resource-hungry, especially for large projects. For decent build times (1 h max) , it is recommended to have a computer with:
+      - At least 4  **fast** CPU cores. * is preferably better. Vivado is not that great at parallelizing the work, so fewer fast cores is better than more slow cores.
+      - At least 32G of RAM. Fast DDR memory will probably help
+
+   - Ubuntu operating system.  The following versions have been tested:
+       - 22.04 LTS: is the version we  tested
+       - Scripts are written for bash, so it is recommended to use a bash-compatible shell.
+
+	- git LFS (git >1.8.2 includes LFS by default. Make sure ``git-lfs`` is initialized on your account.)
+
+   - AMD (Xilinx) Vivado IDE:
+      - 2022.2: Tested and works with Ubuntu 2022.2
+      - 2025.1: Does not meet timing constraints (routing algorithms changed...)
+      - Licenses:
+         - Standard synthesis/implementation license for the target FPGA
+         - CMAC (100G Ethernet hardware corelicense is required for building on Ultrascale+ platforms with corner-turn configurations
+
+Cloning the repository
+----------------------
+
+Get the ``chfpga`` repository::
+
+	$ git clone https://jfcliche@bitbucket.org/winterlandcosmology/chfpgalite.git
+
+
+Building the firmware
+---------------------
+
+First, activate the Vivado environment you want to use to build the project. For example::
+
+   source /tools/Xilinx/Vivado/2022.2/settings64.sh
+
+Method 1: Using ``make``
+........................
+
+Method 2: Invoking the build scripts directly
+.............................................
+
+``cd`` to the xilinx_project subfolder that corresponds to the platform and configuration you are building, e.g.::
+
+   cd chfpga/xilinx_projects/chfpga_crs_corr32
+
+
+To create the project, build the firmware and generate a bitstream, execute::
+
+   ./build_project.tcl 
+
+This can take up to 45-50 minutes for the largest projects. A bitstream named ``chfpga_<platform>_<configuration>.bit`` will be placed in the project folder. Note that command will automatically create the .xpr project by invoking the ``create_project.tcl`` script .
+
+
+Method 3: Using Vivado IDE
+..........................
+
+``cd`` to the xilinx_project subfolder that corresponds to the platform and configuration you are building.
+
+To create the .xpr file for the project, run::
+
+   ./create_project.tcl
+
+You can then open the generated .xpr file in Vivado IDE and take it from there.
+
+
+
 Historical notes
 ================
-
 
 Firmware Name
 -------------
@@ -190,75 +230,3 @@ During this evolution, the `chFPGA` code base was improved incrementally to add 
 .. Online documentation can be found at: https://winterlandcosmology.bitbucket.io/pychfpga
 
 
-
-Requirements
-============
-
-
-Repository Access
------------------
-
-``chfpga`` and many of its dependencies are hosted in a private git repository on ``bitbucket``.
-
-Before you start, you therefore need:
-
-- A bitbucket (free) account (https://bitbucket.org)
-- A ssh private/public key pair, with the public key attached to your bitbucket account
-
-
-Software tools
---------------
-
-- The following programs should be installed
-   - Ubuntu operating system.  
-       - 22.04 LTS: is the version we  tested
-       - Scripts are written for bash, so it is recommended to use a bash-compatible shell.
-
-	- git LFS (git >1.8.2 includes LFS by default. Make sure ``git-lfs`` is initialized on your account.)
-
-   - AMD (Xilinx) Vivado IDE:
-      - 2022.2: Tested and works with Ubuntu 2022.2
-      - 2025.1: Does not meet timing constraints
-      - Licenses:
-         - Standard synthesis/implementation license
-         - CMAC (100G Ethernet hardware corelicense is required for building on Ultrascale+ platforms with corner-turn configurations
-
-Hardware
---------
-
-Vivado is resource-hungry, especially for large projects. For decent speed, it is recommended to have a computer with:
-- At least 4  **fast** CPU cores. * is preferably better. Vivado is not that great at parallelizing the work, so fewer fast cores is better than more slow cores.
-- At least 32G of RAM. Fast DDR memory will probably help
-
-
-Cloning the repository
-======================
-
-Get the ``chfpga`` repository::
-
-	$ git clone git@bitbucket.org:winterlandcosmology/chfpgalite.git  # add the ``-b`` option to specify a branch
-
-
-
-
-Building the firmware
-=====================
-
-First, activate the Vivado environment you want to use to build the project. For example::
-
-   source /tools/Xilinx/Vivado/2022.2/settings64.sh
-
-
-``cd`` to the xilinx_project subfolder that corresponds to the platform and configuration you are building.
-
-To create the .xpr file for the project, run::
-
-   ./create_project.tcl
-
-You can then open the generated .xpr file in Vivado IDE and take it from there.
-
-If you want to buidl the firmware and generate a bitstream, you can directly run the following command (the ``create_project.tcl`` script will be called automatically)::
-
-   ./build_project.tcl 
-
-When finished (this can take up to 45-50 minutes for the largest projects on a decent machine), a  bitstream named ``chfpga_<platform>_<configuration>.bit`` will be placed in the project folder. 

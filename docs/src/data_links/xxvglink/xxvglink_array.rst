@@ -23,9 +23,9 @@ Parameters
 
 - **LANE_TO_LINK_MAP:** Maps each logical lane index to a physical GTY link number. The length of this array sets ``NUMBER_OF_LANES``.
 
-- **LINK_TO_QUAD_MAP:** Maps each physical GTY link to a quad index (0 … N−1). The length of this array sets ``NUMBER_OF_LINKS``.
+- **LINK_TO_QUAD_MAP:** Maps each physical GTY link to a quad index (0 … N - 1). The length of this array sets ``NUMBER_OF_LINKS``.
 
-- **QUAD_TO_REFCLK_MAP:** Maps each quad to a reference clock index (0 … ``NUMBER_OF_REFCLK``−1).
+- **QUAD_TO_REFCLK_MAP:** Maps each quad to a reference clock index (0 … ``NUMBER_OF_REFCLK`` - 1).
 
 - **IMPLEMENT_RX:** When ``TRUE`` (default), the receive path (GTY RX and `xxvglink_rx` instances) is instantiated. Set to ``FALSE`` for TX-only designs to reduce resource usage.
 
