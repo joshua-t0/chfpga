@@ -36,19 +36,4 @@ pipelines:
           - git add $DOC_PUBLISH_FOLDER chfpga/latest/
           - git diff-index --quiet HEAD -- || git commit -m "Auto update of $DOC_PUBLISH_FOLDER documentation"
           - git push
-          # - |
-          #   for i in 1 2 3 4 5; do
-          #     git add $DOC_PUBLISH_FOLDER chfpga/latest/
-          #     git diff-index --quiet HEAD -- || git commit -m "Auto update of $DOC_PUBLISH_FOLDER documentation"
-          #     git push && break
-          #     echo "Push attempt $i failed, pulling and retrying in ${i}0 seconds..."
-          #     sleep ${i}0
-          #     git reset --soft HEAD~1
-          #     git reset HEAD .
-          #     git checkout -- chfpga/latest/ || true
-          #     rm -rf chfpga/latest
-          #     git pull origin master
-          #     mkdir -p chfpga/latest
-          #     sed "s|__TARGET__|../$BITBUCKET_BRANCH/|g" ../docs/src/_static/latest-redirect.html.template > chfpga/latest/index.html
-          #   done
 
