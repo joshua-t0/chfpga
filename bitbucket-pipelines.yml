@@ -19,10 +19,7 @@ pipelines:
           - venv
           - uv-cache
 
-        concurrency: # Make sure multiple pipelines are not run at the same time (repo lock collision)
-          group: docs-deploy
-          cancel_in_progress: false        
-
+        concurrency-group: docs-deploy  # serialize deploys to bitbucket.io (FIFO queue)
         script: # Modify the commands below to build your repository.
           - curl -LsSf https://astral.sh/uv/install.sh | sh
           - export PATH="$HOME/.local/bin:$PATH"
