@@ -94,7 +94,7 @@ branch_name = os.environ.get('BITBUCKET_BRANCH', '')
 short_hash = ''
 try:
     from git import Repo
-    repo = Repo(os.path.abspath('../..'))  # Go up two levels from docs/source/ to repo root
+    repo = Repo(os.path.abspath('../..'))  # Go up two levels from docs/src/ to repo root
     head_commit = repo.head.commit
     short_hash = str(head_commit)[:8]
 

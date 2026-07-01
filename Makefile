@@ -6,7 +6,7 @@
 #   Docs (from repo root):
 #     make docs                    # build HTML (default)
 #     make docs html | make docs clean | make docs clean html
-#     Uses docs/.venv and docs/pyproject.toml (pip install -e docs).
+#     Uses docs/pyproject.toml via uv (syncs docs/.venv automatically).
 #
 #   Vivado (from repo root, all equivalent):
 #     make crs_corr32 project      # convenience: <config> <action>
@@ -69,13 +69,12 @@ help:
 
 # =============================================================================
 # DOCS MODE:  make docs [targets...]
-#   Creates docs/.venv, pip-installs docs/ (pyproject.toml), runs make -C docs.
+#   Delegates to docs/Makefile (uv syncs docs/.venv from pyproject.toml).
 #   Examples:  make docs  |  make docs html  |  make docs clean  |  make docs clean html
 # =============================================================================
 ifeq ($(_G1),docs)
 
 DOCS_DIR  := docs
-DOCS_VENV := $(DOCS_DIR)/.venv
 DOCS_GOALS := $(filter-out docs,$(MAKECMDGOALS))
 ifeq ($(strip $(DOCS_GOALS)),)
   DOCS_GOALS := html
@@ -83,9 +82,7 @@ endif
 
 .PHONY: docs
 docs:
-	[ -d $(DOCS_VENV) ] || python3 -m venv $(DOCS_VENV)
-	$(DOCS_VENV)/bin/pip install -e $(DOCS_DIR)
-	+$(MAKE) -C $(DOCS_DIR) SPHINXBUILD=$(abspath $(DOCS_VENV))/bin/sphinx-build $(DOCS_GOALS)
+	+$(MAKE) -C $(DOCS_DIR) $(DOCS_GOALS)
 
 # Swallow goals passed after "docs" so the root make does not look for them
 DOCS_PHONY := clean html html_verbose rst dirhtml singlehtml pickle json htmlhelp qthelp applehelp devhelp epub epub3 latex latexpdf latexpdfja text man texinfo info gettext changes xml pseudoxml linkcheck doctest coverage dummy help

@@ -1,3 +1,5 @@
+# pyproject.toml: Used for building chfpga documentation using sphinx
+
 [build-system]
     requires = [
         "setuptools>=64", # >=64 required for setuptools-scm
@@ -13,6 +15,7 @@
     authors = [
         { name = "JF Cliche", email = "jfcliche@jfcliche.com" }
         ]
+    requires-python = "==3.12.*" # we match the Python version for pychfpga, but it works for >3.10
     dependencies = [
         "setuptools>=64", # required by setuptools-scm
         "setuptools-scm>=8.0",
@@ -20,7 +23,7 @@
         "sphinx_rtd_theme",
         "sphinxcontrib.restbuilder",  # used for debugging output
         "gitpython",
-        "vhdl_sphinx_domain @ git+https://github.com/jfcliche/vhdl-sphinx-domain.git"
+        "vhdl_sphinx_domain @ git+https://github.com/jfcliche/vhdl-sphinx-domain.git"  # Might have to pin this to a specific commit
         ]
 
 [tool.setuptools.packages.find]
@@ -31,6 +34,6 @@
 #         ]
 
 [tool.setuptools_scm]
-version_file = "source/_version.py"
+version_file = "src/_version.py"
 root = ".."  # root of the git repo
 

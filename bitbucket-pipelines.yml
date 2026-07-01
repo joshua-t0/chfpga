@@ -3,7 +3,7 @@
 # Only use spaces to indent your .yml configuration.
 # -----
 # You can specify a custom docker image from Docker Hub as your build environment.
-image: python:3.8
+image: python:3.12
 clone:
   lfs: true
 definitions:
@@ -17,12 +17,8 @@ pipelines:
           - pip
           - venv
         script: # Modify the commands below to build your repository.
-          - python -m venv .venv
-          - source .venv/bin/activate
           - DOC_PUBLISH_FOLDER='chfpga/'$BITBUCKET_BRANCH
-          - cd docs
-          - pip install -e .
-          - make html
+          - make docs
           - git clone git@bitbucket.org:winterlandcosmology/winterlandcosmology.bitbucket.io.git www
           - mkdir -p www/$DOC_PUBLISH_FOLDER/
           - rm -rf www/$DOC_PUBLISH_FOLDER/*
