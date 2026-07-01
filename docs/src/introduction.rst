@@ -1,8 +1,5 @@
-.. title:: chFPGA
-
 Introduction
 ************
-
 
 ..  chFPGA: Data acquisition, Channelizer, corner-turn and correlator engine FPGA firmware for the IceBoard FPGAs
 
@@ -14,10 +11,10 @@ Introduction
 - Optional real-time 80G/100G Ethernet streaming of corner-turned data
 - Hardware platform management and peripheral controllers...
 
-A block diagram of the firmware is provided below.
 
 .. figure:: ./images/chfpga_simple_block_diagram_v2.svg
    :width: 70%
+
 
 `chFPGA` is meant to be operated through the ``pychfpga`` Python package (https://winterlandcosmology.bitbucket.io/pychfpga), which provides a Python high-level interface to every subsystem of the `chFPGA` firmware and provides platform wrappers and servers for on-site automated operations. 
 
@@ -27,6 +24,13 @@ A block diagram of the firmware is provided below.
 
 The firmware is also used around the world on many small (2-16 element) arrays to implement single-board full N-square correlators.
 
+
+Links
+=====
+
+- Source code: https://bitbucket.org/winterlandcosmology/chfpga
+
+- Documentation: https://winterlandcosmology.bitbucket.io/chfpga/latest (remove ``latest`` to select a specific version)
 
 Features
 ========
