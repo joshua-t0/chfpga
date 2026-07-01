@@ -76,8 +76,8 @@ A lot of information can be obtained from the comments in the VHDL, but if in do
 ## File Locations
 
 - VHDL source: hdl/
-- Documentation source: docs/source/
-- Images: docs/source/images/
+- Documentation source: docs/src/
+- Images: docs/src/images/
 - Build output: docs/build/
 
 ## Module documentation patterns (reference)
