@@ -1,39 +1,35 @@
-# This is a sample build configuration for Python.
-# Check our guides at https://confluence.atlassian.com/x/x4UWN for more examples.
-# Only use spaces to indent your .yml configuration.
-# -----
-# You can specify a custom docker image from Docker Hub as your build environment.
+# Build the chfpga documentation and publish it to the winterlandcosmology.bitbucket.io repo
+
 image: python:3.12
 clone:
-  lfs: true
+  lfs: true # clone the repo with lfs enabled
+
 definitions:
   caches:
-    pip: ~/.cache/pip
-    venv: .venv
     uv-cache: ~/.cache/uv
+
 pipelines:
   default:
     - step:
         caches:
-          - pip
-          - venv
           - uv-cache
 
-        concurrency-group: docs-deploy  # serialize deploys to bitbucket.io (FIFO queue)
-        script: # Modify the commands below to build your repository.
-          - curl -LsSf https://astral.sh/uv/install.sh | sh
-          - export PATH="$HOME/.local/bin:$PATH"
-          - DOC_PUBLISH_FOLDER='chfpga/'$BITBUCKET_BRANCH
+        concurrency-group: docs-deploy  # serialize deploys to prevent git access collisions on bitbucket.io
+
+        script: 
+          - curl -LsSf https://astral.sh/uv/install.sh | sh  # install uv
+          - export PATH="$HOME/.local/bin:$PATH"  # add uv to path
           - make docs
-          - git clone git@bitbucket.org:winterlandcosmology/winterlandcosmology.bitbucket.io.git www
-          - mkdir -p www/$DOC_PUBLISH_FOLDER/ && rm -rf www/$DOC_PUBLISH_FOLDER/*
-          - cp -r docs/build/html/* www/$DOC_PUBLISH_FOLDER/
-          - mkdir -p www/chfpga/latest
-          - sed "s|__TARGET__|../$BITBUCKET_BRANCH/|g" docs/src/_static/latest-redirect.html.template > www/chfpga/latest/index.html
-          - cd www
-          - git config --global user.email "bb-pipelines@jfcliche.com"
-          - git config --global user.name "BitBucket Pipelines"
-          - git add $DOC_PUBLISH_FOLDER chfpga/latest/
-          - git diff-index --quiet HEAD -- || git commit -m "Auto update of $DOC_PUBLISH_FOLDER documentation"
-          - git push
+          - DOC_PUBLISH_FOLDER='chfpga/'$BITBUCKET_BRANCH
+          - git clone git@bitbucket.org:winterlandcosmology/winterlandcosmology.bitbucket.io.git www  # get the docs repo
+          - mkdir -p www/$DOC_PUBLISH_FOLDER/ && rm -rf www/$DOC_PUBLISH_FOLDER/* # Ensure the publish folder exists and is empty
+          - cp -r docs/build/html/* www/$DOC_PUBLISH_FOLDER/ # Copy the built docs to the publish folder
+          - mkdir -p www/chfpga/latest # Create the latest folder
+          - sed "s|__TARGET__|../$BITBUCKET_BRANCH/|g" docs/src/_static/latest-redirect.html.template > www/chfpga/latest/index.html # Create the latest redirect with the docs we just built as the target
+          - cd www 
+          - git config --global user.email "bb-pipelines@jfcliche.com" 
+          - git config --global user.name "BitBucket Pipelines" 
+          - git add $DOC_PUBLISH_FOLDER chfpga/latest/ # Add the publish folder and latest redirect to the git index
+          - git diff-index --quiet HEAD -- || git commit -m "Auto update of $DOC_PUBLISH_FOLDER documentation" # Commit the changes if there are any
+          - git push # Push the changes to the docs repo
 
