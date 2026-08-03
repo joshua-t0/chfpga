@@ -41,7 +41,7 @@ Configuration parameters
 This config uses the following parameters (see :ref:`config_param_reference` for full descriptions):
 
 - :ref:`CONFIG_CHAN_IMPLEMENT_FFT <config_chan_implement_fft>` — TRUE; F-Engine with FFT
-- :ref:`CONFIG_CHAN_FFT_TYPE <config_chan_fft_type>` — HIRAX_3DSP; 8-bit, 2048 samples, 25+25 output
+- :ref:`CONFIG_CHAN_FFT_TYPE <config_chan_fft_type>` — HIRAX_3DSP; 8-bit, 2048 samples, 24+24 output
 - :ref:`CONFIG_NUMBER_OF_CHANNELIZERS_WITH_FFT <config_number_of_channelizers_with_fft>` — 8
 - :ref:`CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS <config_chan_scaler_use_complex_gains>` — FALSE
 - :ref:`CONFIG_CHAN_CAPTURE_TYPE <config_chan_capture_type>` — PROBER; per-channelizer BRAM capture

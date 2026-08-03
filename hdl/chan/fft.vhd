@@ -603,7 +603,7 @@ FFT_GEN: if IMPLEMENT_FFT=TRUE generate
             fft_tdata <= (fft_dout0_int & fft_dout1_int);
 
 		when HIRAX_3DSP =>
-			-- Same as FFT_TYPE_CHIME, but allows bitgrowth limited to 25+25 bits, use 3-DSP complex multipliers, and
+			-- Same as FFT_TYPE_CHIME, but allows bitgrowth limited to 24+24 bits, uses 3-DSP complex multipliers, and
 			fft0: entity work.hirax_bitgrowth_3dsp_24bit_jun8_0
                 PORT MAP(
                     sync_in(0)  => fft_sync_in,

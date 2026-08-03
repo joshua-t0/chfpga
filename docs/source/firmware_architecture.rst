@@ -65,7 +65,7 @@ Channelizer parameters
 
 .. _config_chan_fft_type:
 
-- **CONFIG_CHAN_FFT_TYPE** (fft_type_enum): Selects the FFT variant. Values: ``NONE``, ``CHIME``, ``D3A``, ``CHORD``, ``HIRAX``, ``HIRAX_3DSP``. CHORD uses 14-bit samples, 16384 samples/frame, 32+32 bit output (CRS/ZCU111). HIRAX and HIRAX_3DSP use 8-bit samples, 2048 samples/frame (IceBoard, KC705). HIRAX_3DSP uses 25+25 bit output for reduced resource usage.
+- **CONFIG_CHAN_FFT_TYPE** (fft_type_enum): Selects the FFT variant. Values: ``NONE``, ``CHIME``, ``D3A``, ``CHORD``, ``HIRAX``, ``HIRAX_3DSP``. CHORD uses 14-bit samples, 16384 samples/frame, 32+32 bit output (CRS/ZCU111). HIRAX and HIRAX_3DSP use 8-bit samples, 2048 samples/frame (IceBoard, KC705). HIRAX_3DSP uses 24+24 bit output.
 
 .. _config_number_of_channelizers_with_fft:
 
@@ -455,4 +455,3 @@ Resources
 
 - Kintex 7 datasheet - AC/DC characteristics (DS182)
 - Play with parameters in the FIFO generator (13.2)
-
