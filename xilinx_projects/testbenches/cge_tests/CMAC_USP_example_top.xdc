@@ -118,12 +118,13 @@
 
 #set_clock_groups -asynchronous -group [get_clocks gt_ref_clk_p]
 
-create_pblock FFT
-add_cells_to_pblock [get_pblocks FFT] -top
-resize_pblock [get_pblocks FFT] -add {SLICE_X22Y421:SLICE_X110Y479}
-resize_pblock [get_pblocks FFT] -add {DSP48E2_X2Y170:DSP48E2_X21Y191}
-resize_pblock [get_pblocks FFT] -add {RAMB18_X2Y170:RAMB18_X10Y191}
-resize_pblock [get_pblocks FFT] -add {RAMB36_X2Y85:RAMB36_X10Y95}
-set_property EXCLUDE_PLACEMENT 1 [get_pblocks FFT]
-set_property IS_SOFT FALSE [get_pblocks FFT]
-create_clock -period 2.500 -name ctrl_clk -waveform {0.000 1.250} [get_ports ctrl_clk]
+# CGE floorplanning copied from CRS-CT constraints for isolated CGE implementation tests
+create_pblock CGE
+add_cells_to_pblock [get_pblocks CGE] [get_cells -quiet [list cge0]]
+resize_pblock [get_pblocks CGE] -add {SLICE_X13Y180:SLICE_X14Y219 SLICE_X0Y180:SLICE_X12Y239}
+resize_pblock [get_pblocks CGE] -add {DSP48E2_X0Y72:DSP48E2_X0Y95}
+resize_pblock [get_pblocks CGE] -add {RAMB18_X1Y72:RAMB18_X1Y87 RAMB18_X0Y72:RAMB18_X0Y95}
+resize_pblock [get_pblocks CGE] -add {RAMB36_X1Y36:RAMB36_X1Y43 RAMB36_X0Y36:RAMB36_X0Y47}
+set_property EXCLUDE_PLACEMENT 1 [get_pblocks CGE]
+set_property IS_SOFT FALSE [get_pblocks CGE]
+

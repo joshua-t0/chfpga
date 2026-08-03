@@ -9,19 +9,21 @@ cd [file normalize [file dirname [info script]]]
 # Get variables defining project sources
 source ../../tcl/project_sources.tcl
 
+set platform_dir $crs_platform_dir
+
 # Set project target part and source files
 set target_part $crs_target_part
 set bd_name $crs_bd_name
 set ooc_ip_files $crs_ooc_ip_files
 set ip_files $crs_corr_ip_files
-set hdl_files [concat $crs_corr_hdl_files "chfpga_crs_corr64_config.vhd" ]
+set hdl_files [concat $crs_corr_hdl_files "platforms/crs/chfpga_crs_corr64_config.vhd"]
 set const_files [list \
-  "crs/crs_timing_constraints_common.xdc"\
-  "crs/crs_physical_constraints_corr64.xdc"\
-  "crs/crs_physical_constraints_ucorr44_64_LOCs.xdc"\
-  "crs/crs_physical_constraints_common.xdc"\
-  "crs/crs_physical_constraints_chord_fft_LOCs.xdc"\
-  "crs/crs_physical_constraints_chan_LOCs.xdc"\
+  "crs_timing_constraints_common.xdc"\
+  "crs_physical_constraints_corr64.xdc"\
+  "crs_physical_constraints_ucorr44_64_LOCs.xdc"\
+  "crs_physical_constraints_common.xdc"\
+  "crs_physical_constraints_chord_fft_LOCs.xdc"\
+  "crs_physical_constraints_chan_LOCs.xdc"\
 ]
 
 # Create project

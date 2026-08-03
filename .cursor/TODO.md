@@ -18,10 +18,10 @@
 
 <!-- Code quality improvements, cleanup, consolidation without changing behavior. Format: - [ ] **T### Brief title** — Description (added YYYY-MM-DD) -->
 
-- [ ] **T003 Update chfpga_zcu111 to latest API (based on chfpga_crs)** — Use enum generics, CT/GPU/corr maps, FFT_TYPE, CORR_READOUT_BINS, remove CROSSBAR1_TYPE/NUMBER_OF_CORRELATORS (added 2025-02-25)
-  - Context: `hdl/chfpga_zcu111.vhd`, `hdl/chfpga_zcu111_ct_config.vhd`
+- [X] **T003 Update chfpga_zcu111 (Vivado project `chfpga_zcu111_ct`) to latest API (based on chfpga_crs)** — Use enum generics, CT/GPU/corr maps, FFT_TYPE, CORR_READOUT_BINS, remove CROSSBAR1_TYPE/NUMBER_OF_CORRELATORS (added 2025-02-25)
+  - Context: `hdl/platforms/zcu111/chfpga_zcu111.vhd`, `hdl/platforms/zcu111/chfpga_zcu111_ct_config.vhd`
 - [ ] **T002 Replace IP FIFOs with generic_fifo** — Replace IP FIFOs with generic_fifo. Start with small standalone FIFOs (ADCDAQ, CHAN_ARRAY). If it works, replace FIFO arrays in the CT engine (added 2025-02-19)
-  - Context: `hdl/common/generic_fifo.vhd`; ADCDAQ, CHAN_ARRAY, CT engine
+  - Context: `hdl/utils/generic_fifo.vhd`; ADCDAQ, CHAN_ARRAY, CT engine
 
 ---
 
@@ -29,8 +29,8 @@
 
 <!-- New functionality or enhancements. Format: - [ ] **T### Brief title** — Description (added YYYY-MM-DD) -->
 
-- [ ] **T001 Merge PROBER outputs in chan_array** — Use axis_merge to merge PROBER outputs in chan_array so we can have a single stream output from either UCAP or the PROBERS (added 2025-02-19)
-  - Context: `chan_array.vhd`, `axis_merge` in `hdl/common/`
+- [X] **T001 Merge PROBER outputs in chan_array** — Use axis_merge to merge PROBER outputs in chan_array so we can have a single stream output from either UCAP or the PROBERS (added 2025-02-19)
+  - Context: `chan_array.vhd`, `axis_merge` in `hdl/utils/`
 
 ---
 

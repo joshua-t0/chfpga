@@ -1,6 +1,8 @@
 file_list:
     - "*.vhd"
-    - "*UDP_MAC/*.vhd"
+    - "data_links/*UDP_MAC/*.vhd"
+    - "data_links/XGLINK/*.vhd"
+    - "data_links/XXVGLINK/*.vhd"
     - chan/*.vhd
     - bsb/*.vhd
     - corr/*.vhd

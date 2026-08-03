@@ -103,7 +103,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_crc32_32.vhd">
+      <File Path="$PPRDIR/../../hdl/data_links/XGLINK/xglink_crc32_32.vhd">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>

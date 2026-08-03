@@ -6,11 +6,11 @@ puts "Project will be created in folder [pwd]"
 create_project -force -part xczu47dr-ffvg1517-1-i xxvglink_array_testbench xxvglink_array_testbench
 
 set hdl "../../../hdl"
-set core "../../../_Cores/CRS"
+set core "../../../hdl/platforms/crs/ip_cores"
 add_files -fileset sources_1		\
 	"$hdl/testbenches/xxvglink_array_testbench.vhd"	\
 	"$hdl/testbenches/tb_package.vhd"		\
-	[ glob $hdl/XXVGLINK/*.vhd ]	\
+	[ glob $hdl/data_links/XXVGLINK/*.vhd ]	\
 	"$hdl/bsb/bsb_regs.vhd"		\
 	"$hdl/bsb/bsb_router.vhd"		\
 	"$hdl/bsb/bsb_sync_fifo.vhd"	\

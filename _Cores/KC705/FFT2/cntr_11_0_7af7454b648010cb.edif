@@ -1,0 +1,533 @@
+(edif cntr_11_0_7af7454b648010cb
+  (edifVersion 2 0 0)
+  (edifLevel 0)
+  (keywordMap (keywordLevel 0))
+  (status
+    (written
+      (timestamp 2021 10 1 1 43 59)
+      (program "Xilinx ngc2edif" (version "P_INT.20191124"))
+      (author "Xilinx. Inc ")
+      (comment "This EDIF netlist is to be used within supported synthesis tools")
+      (comment "for determining resource/timing estimates of the design component")
+      (comment "represented by this netlist.")
+      (comment "Command line: cntr_11_0_7af7454b648010cb.ngc ")))
+  (external UNISIMS
+    (edifLevel 0)
+    (technology (numberDefinition))
+    (cell VCC
+      (cellType GENERIC)
+        (view view_1
+          (viewType NETLIST)
+          (interface
+            (port P
+              (direction OUTPUT)
+            )
+          )
+      )
+    )
+    (cell XORCY
+      (cellType GENERIC)
+        (view view_1
+          (viewType NETLIST)
+          (interface
+            (port CI
+              (direction INPUT)
+            )
+            (port LI
+              (direction INPUT)
+            )
+            (port O
+              (direction OUTPUT)
+            )
+          )
+      )
+    )
+    (cell MUXCY
+      (cellType GENERIC)
+        (view view_1
+          (viewType NETLIST)
+          (interface
+            (port CI
+              (direction INPUT)
+            )
+            (port DI
+              (direction INPUT)
+            )
+            (port S
+              (direction INPUT)
+            )
+            (port O
+              (direction OUTPUT)
+            )
+          )
+      )
+    )
+    (cell FDRE
+      (cellType GENERIC)
+        (view view_1
+          (viewType NETLIST)
+          (interface
+            (port C
+              (direction INPUT)
+            )
+            (port CE
+              (direction INPUT)
+            )
+            (port D
+              (direction INPUT)
+            )
+            (port R
+              (direction INPUT)
+            )
+            (port Q
+              (direction OUTPUT)
+            )
+          )
+      )
+    )
+    (cell LUT3
+      (cellType GENERIC)
+        (view view_1
+          (viewType NETLIST)
+          (interface
+            (port I0
+              (direction INPUT)
+            )
+            (port I1
+              (direction INPUT)
+            )
+            (port I2
+              (direction INPUT)
+            )
+            (port O
+              (direction OUTPUT)
+            )
+          )
+      )
+    )
+  )
+
+  (library cntr_11_0_7af7454b648010cb_lib
+    (edifLevel 0)
+    (technology (numberDefinition))
+    (cell cntr_11_0_7af7454b648010cb
+      (cellType GENERIC)
+        (view view_1
+          (viewType NETLIST)
+          (interface
+            (port clk
+              (direction INPUT)
+            )
+            (port ce
+              (direction INPUT)
+            )
+            (port sinit
+              (direction INPUT)
+            )
+            (port load
+              (direction INPUT)
+            )
+            (port (array (rename l "l(4:0)") 5)
+              (direction INPUT))
+            (port (array (rename q "q(4:0)") 5)
+              (direction OUTPUT))
+            (designator "6vlx240tff1156-1")
+            (property TYPE (string "cntr_11_0_7af7454b648010cb") (owner "Xilinx"))
+            (property BUS_INFO (string "5:INPUT:l(4:0)") (owner "Xilinx"))
+            (property BUS_INFO (string "5:OUTPUT:q(4:0)") (owner "Xilinx"))
+            (property X_CORE_INFO (string "c_counter_binary_v11_0, Xilinx CORE Generator 13.4") (owner "Xilinx"))
+            (property CHECK_LICENSE_TYPE (string "cntr_11_0_7af7454b648010cb,c_counter_binary_v11_0,{}") (owner "Xilinx"))
+            (property CORE_GENERATION_INFO (string "cntr_11_0_7af7454b648010cb,c_counter_binary_v11_0,{c_ainit_val=0,c_ce_overrides_sync=0,c_count_by=1,c_count_mode=1,c_count_to=1,c_fb_latency=0,c_has_ce=1,c_has_load=1,c_has_sclr=0,c_has_sinit=1,c_has_sset=0,c_has_thresh0=0,c_implementation=0,c_latency=1,c_load_low=0,c_restrict_count=0,c_sclr_overrides_sset=1,c_sinit_val=0,c_thresh0_value=1,c_verbosity=0,c_width=5,c_xdevicefamily=virtex6}") (owner "Xilinx"))
+            (property SHREG_MIN_SIZE (string "-1") (owner "Xilinx"))
+            (property SHREG_EXTRACT_NGC (string "Yes") (owner "Xilinx"))
+            (property NLW_UNIQUE_ID (integer 0) (owner "Xilinx"))
+            (property NLW_MACRO_TAG (integer 0) (owner "Xilinx"))
+            (property NLW_MACRO_ALIAS (string "cntr_11_0_7af7454b648010cb_cntr_11_0_7af7454b648010cb") (owner "Xilinx"))
+          )
+          (contents
+            (instance XST_VCC
+              (viewRef view_1 (cellRef VCC (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+            )
+            (instance (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_3__carryxor "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_simple_model.i_gt_1.carrychaingen[3].carryxor")
+              (viewRef view_1 (cellRef XORCY (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+            )
+            (instance (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_2__carryxor "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_simple_model.i_gt_1.carrychaingen[2].carryxor")
+              (viewRef view_1 (cellRef XORCY (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+            )
+            (instance (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_1__carryxor "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_simple_model.i_gt_1.carrychaingen[1].carryxor")
+              (viewRef view_1 (cellRef XORCY (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+            )
+            (instance (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carryxortop "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_simple_model.i_gt_1.carryxortop")
+              (viewRef view_1 (cellRef XORCY (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+            )
+            (instance (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_carryxor0 "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_simple_model.carryxor0")
+              (viewRef view_1 (cellRef XORCY (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+            )
+            (instance (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_3__carrymux "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_simple_model.i_gt_1.carrychaingen[3].carrymux")
+              (viewRef view_1 (cellRef MUXCY (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+            )
+            (instance (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_2__carrymux "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_simple_model.i_gt_1.carrychaingen[2].carrymux")
+              (viewRef view_1 (cellRef MUXCY (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+            )
+            (instance (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_1__carrymux "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_simple_model.i_gt_1.carrychaingen[1].carrymux")
+              (viewRef view_1 (cellRef MUXCY (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+            )
+            (instance (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_carrymux0 "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_simple_model.carrymux0")
+              (viewRef view_1 (cellRef MUXCY (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+            )
+            (instance (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_1 "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_q.i_simple.qreg/fd/output_1")
+              (viewRef view_1 (cellRef FDRE (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+              (property INIT (string "0") (owner "Xilinx"))
+            )
+            (instance (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_2 "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_q.i_simple.qreg/fd/output_2")
+              (viewRef view_1 (cellRef FDRE (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+              (property INIT (string "0") (owner "Xilinx"))
+            )
+            (instance (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_3 "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_q.i_simple.qreg/fd/output_3")
+              (viewRef view_1 (cellRef FDRE (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+              (property INIT (string "0") (owner "Xilinx"))
+            )
+            (instance (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_4 "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_q.i_simple.qreg/fd/output_4")
+              (viewRef view_1 (cellRef FDRE (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+              (property INIT (string "0") (owner "Xilinx"))
+            )
+            (instance (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_5 "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_q.i_simple.qreg/fd/output_5")
+              (viewRef view_1 (cellRef FDRE (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+              (property INIT (string "0") (owner "Xilinx"))
+            )
+            (instance (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum11 "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/Mmux_i_simple_model.halfsum11")
+              (viewRef view_1 (cellRef LUT3 (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+              (property INIT (string "74") (owner "Xilinx"))
+            )
+            (instance (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum21 "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/Mmux_i_simple_model.halfsum21")
+              (viewRef view_1 (cellRef LUT3 (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+              (property INIT (string "47") (owner "Xilinx"))
+            )
+            (instance (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum31 "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/Mmux_i_simple_model.halfsum31")
+              (viewRef view_1 (cellRef LUT3 (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+              (property INIT (string "47") (owner "Xilinx"))
+            )
+            (instance (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum41 "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/Mmux_i_simple_model.halfsum41")
+              (viewRef view_1 (cellRef LUT3 (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+              (property INIT (string "47") (owner "Xilinx"))
+            )
+            (instance (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum51 "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/Mmux_i_simple_model.halfsum51")
+              (viewRef view_1 (cellRef LUT3 (libraryRef UNISIMS)))
+              (property XSTLIB (boolean (true)) (owner "Xilinx"))
+              (property INIT (string "1B") (owner "Xilinx"))
+            )
+            (net (rename l_4_ "l(4)")
+              (joined
+                (portRef (member l 0))
+                (portRef I2
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum51))
+              )
+            )
+            (net (rename l_3_ "l(3)")
+              (joined
+                (portRef (member l 1))
+                (portRef I0
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum41))
+              )
+            )
+            (net (rename l_2_ "l(2)")
+              (joined
+                (portRef (member l 2))
+                (portRef I0
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum31))
+              )
+            )
+            (net (rename l_1_ "l(1)")
+              (joined
+                (portRef (member l 3))
+                (portRef I0
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum21))
+              )
+            )
+            (net (rename l_0_ "l(0)")
+              (joined
+                (portRef (member l 4))
+                (portRef I0
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum11))
+              )
+            )
+            (net clk
+              (joined
+                (portRef clk)
+                (portRef C
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_1))
+                (portRef C
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_2))
+                (portRef C
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_3))
+                (portRef C
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_4))
+                (portRef C
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_5))
+              )
+            )
+            (net ce
+              (joined
+                (portRef ce)
+                (portRef CE
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_1))
+                (portRef CE
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_2))
+                (portRef CE
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_3))
+                (portRef CE
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_4))
+                (portRef CE
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_5))
+              )
+            )
+            (net sinit
+              (joined
+                (portRef sinit)
+                (portRef R
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_1))
+                (portRef R
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_2))
+                (portRef R
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_3))
+                (portRef R
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_4))
+                (portRef R
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_5))
+              )
+            )
+            (net load
+              (joined
+                (portRef load)
+                (portRef DI
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_carrymux0))
+                (portRef I0
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum51))
+                (portRef I1
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum11))
+                (portRef I1
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum21))
+                (portRef I1
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum31))
+                (portRef I1
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum41))
+              )
+            )
+            (net (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_5_ "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_q.i_simple.qreg/fd/output(5)")
+              (joined
+                (portRef (member q 0))
+                (portRef Q
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_5))
+                (portRef I1
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum51))
+              )
+            )
+            (net (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_4_ "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_q.i_simple.qreg/fd/output(4)")
+              (joined
+                (portRef (member q 1))
+                (portRef Q
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_4))
+                (portRef I2
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum41))
+              )
+            )
+            (net (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_3_ "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_q.i_simple.qreg/fd/output(3)")
+              (joined
+                (portRef (member q 2))
+                (portRef Q
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_3))
+                (portRef I2
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum31))
+              )
+            )
+            (net (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_2_ "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_q.i_simple.qreg/fd/output(2)")
+              (joined
+                (portRef (member q 3))
+                (portRef Q
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_2))
+                (portRef I2
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum21))
+              )
+            )
+            (net (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_1_ "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_q.i_simple.qreg/fd/output(1)")
+              (joined
+                (portRef (member q 4))
+                (portRef Q
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_1))
+                (portRef I2
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum11))
+              )
+            )
+            (net N0
+              (joined
+                (portRef P (instanceRef XST_VCC))
+                (portRef CI
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_carrymux0))
+                (portRef DI
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_1__carrymux))
+                (portRef DI
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_2__carrymux))
+                (portRef DI
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_3__carrymux))
+                (portRef CI
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_carryxor0))
+              )
+            )
+            (net (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_sum_simple_3_ "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/sum_simple(3)")
+              (joined
+                (portRef D
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_4))
+                (portRef O
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_3__carryxor))
+              )
+            )
+            (net (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_sum_simple_2_ "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/sum_simple(2)")
+              (joined
+                (portRef D
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_3))
+                (portRef O
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_2__carryxor))
+              )
+            )
+            (net (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_sum_simple_1_ "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/sum_simple(1)")
+              (joined
+                (portRef D
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_2))
+                (portRef O
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_1__carryxor))
+              )
+            )
+            (net (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_sum_simple_4_ "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/sum_simple(4)")
+              (joined
+                (portRef D
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_5))
+                (portRef O
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carryxortop))
+              )
+            )
+            (net (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_sum_simple_0_ "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/sum_simple(0)")
+              (joined
+                (portRef D
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_q_i_simple_qreg_fd_output_1))
+                (portRef O
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_carryxor0))
+              )
+            )
+            (net (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_carry_simple_3_ "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/carry_simple(3)")
+              (joined
+                (portRef O
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_3__carrymux))
+                (portRef CI
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carryxortop))
+              )
+            )
+            (net (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_carry_simple_2_ "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/carry_simple(2)")
+              (joined
+                (portRef O
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_2__carrymux))
+                (portRef CI
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_3__carrymux))
+                (portRef CI
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_3__carryxor))
+              )
+            )
+            (net (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_carry_simple_1_ "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/carry_simple(1)")
+              (joined
+                (portRef O
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_1__carrymux))
+                (portRef CI
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_2__carrymux))
+                (portRef CI
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_2__carryxor))
+              )
+            )
+            (net (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_carry_simple_0_ "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/carry_simple(0)")
+              (joined
+                (portRef O
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_carrymux0))
+                (portRef CI
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_1__carrymux))
+                (portRef CI
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_1__carryxor))
+              )
+            )
+            (net (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_halfsum_3_ "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_simple_model.halfsum(3)")
+              (joined
+                (portRef S
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_3__carrymux))
+                (portRef LI
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_3__carryxor))
+                (portRef O
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum41))
+              )
+            )
+            (net (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_halfsum_2_ "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_simple_model.halfsum(2)")
+              (joined
+                (portRef S
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_2__carrymux))
+                (portRef LI
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_2__carryxor))
+                (portRef O
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum31))
+              )
+            )
+            (net (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_halfsum_1_ "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_simple_model.halfsum(1)")
+              (joined
+                (portRef S
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_1__carrymux))
+                (portRef LI
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carrychaingen_1__carryxor))
+                (portRef O
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum21))
+              )
+            )
+            (net (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_halfsum_4_ "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_simple_model.halfsum(4)")
+              (joined
+                (portRef LI
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_i_gt_1_carryxortop))
+                (portRef O
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum51))
+              )
+            )
+            (net (rename U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_halfsum_0_ "U0/i_synth/i_baseblox.i_baseblox_counter/the_addsub/no_pipelining.the_addsub/i_lut6.i_lut6_addsub/i_simple_model.halfsum(0)")
+              (joined
+                (portRef S
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_carrymux0))
+                (portRef LI
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_i_simple_model_carryxor0))
+                (portRef O
+ (instanceRef U0_i_synth_i_baseblox_i_baseblox_counter_the_addsub_no_pipelining_the_addsub_i_lut6_i_lut6_addsub_Mmux_i_simple_model_halfsum11))
+              )
+            )
+          )
+      )
+    )
+  )
+
+  (design cntr_11_0_7af7454b648010cb
+    (cellRef cntr_11_0_7af7454b648010cb
+      (libraryRef cntr_11_0_7af7454b648010cb_lib)
+    )
+    (property PART (string "6vlx240tff1156-1") (owner "Xilinx"))
+  )
+)
+

@@ -5,12 +5,13 @@
 #
 # The script should be launched from the project folder  from a script that defines the following key parameters:
 #   target_part
-#   bd_name
+#   bd_name (optional): block design name; BD path is <platform_dir>/bd/gen/<bd_name>/<bd_name>.bd (Vivado write_bd_tcl layout); Tcl is <platform_dir>/bd/<bd_name>.tcl
 #   config_file
 #   top_wrapper_file
 #   ip_files
 #   hdl_files
 #   const_files
+#   platform_dir (optional): if set, ip_dir and const_dir become <platform_dir>/ip_cores and <platform_dir>/constraints
 #
 # Usage examples:
 #   # Normal project creation from a project directory
@@ -58,9 +59,9 @@ if {!$list_files_only} {
 }
 
 
-# # BD files, path relative to the bd_dir
+# BD file path relative to <platform_dir>/bd (Vivado remote BD: bd/gen/<bd_name>/<bd_name>.bd)
 set bd_files {}
-if { ${bd_name} ne ""} {lappend bd_files "${bd_name}/${bd_name}.bd"}
+if { ${bd_name} ne ""} {lappend bd_files "gen/${bd_name}/${bd_name}.bd"}
 
 
 # user IP library folder, in $repo_dir/
@@ -76,7 +77,15 @@ set util_files [list \
 
 
 
+set platform_dir [file normalize $platform_dir]
+set ip_dir [file normalize [file join $platform_dir ip_cores]]
+set const_dir [file normalize [file join $platform_dir constraints]]
+set _platform_bd [file normalize [file join $platform_dir bd]]
+
 # Expand and normaline file and folder names
+set full_const_files  {}
+foreach f $const_files {lappend full_const_files [file normalize "$const_dir/$f"]}
+
 set full_ip_files  {}
 foreach f $ip_files { lappend full_ip_files [file normalize "$ip_dir/$f"]}
 
@@ -84,7 +93,7 @@ set full_ooc_ip_files  {}
 foreach f $ooc_ip_files { lappend full_ooc_ip_files [file normalize "$ip_dir/$f"]}
 
 set full_bd_files  {}
-foreach f $bd_files { lappend full_bd_files [file normalize "$bd_dir/$f"]}
+foreach f $bd_files { lappend full_bd_files [file normalize "$_platform_bd/$f"]}
 
 set full_hdl_files  {}
 # lappend full_hdl_files [file normalize "$hdl_dir/$config_file"]
@@ -94,33 +103,33 @@ foreach f $hdl_files {lappend full_hdl_files [file normalize "$hdl_dir/$f"]}
 set full_ip_libraries  {}
 foreach f $ip_libraries {lappend full_ip_libraries [file normalize "$repo_dir/$f"]}
 
-set full_const_files  {}
-foreach f $const_files {lappend full_const_files [file normalize "$const_dir/$f"]}
 
 set full_util_files  {}
 foreach f $util_files {lappend full_util_files [file normalize "$repo_dir/$f"]}
 
 
 # Regenerate block design to make sure the .bd file is there
-if { ${bd_name} ne ""} {
-  if { ![file exists "${bd_dir}/${bd_name}/${bd_name}.bd"]} {
-    if {!$list_files_only} {
-      puts ""
-      puts "    -----------------------------------------------"
-      puts "    Creating block diagram ${bd_name}.bd in folder ${bd_dir}/${bd_name}"
-      puts "    -----------------------------------------------"
-      puts ""
-    }
+if { ${bd_name} ne "" && !$list_files_only} {
+  set _bd_gen_dir [file normalize [file join $_platform_bd gen]]
+  set _bd_file [file normalize [file join $_bd_gen_dir $bd_name "${bd_name}.bd"]]
+  puts "*** BD file: $_bd_file"
+  if { ![file exists $_bd_file]} {
+    puts ""
+    puts "    -----------------------------------------------"
+    puts "    Creating block diagram ${bd_name}.bd in folder ${_platform_bd}/gen/${bd_name}"
+    puts "    -----------------------------------------------"
+    puts ""
 
-    # The tcl script that builds the block diagram will put it in the folder specified in the global
-    # variable ::origin_dir_loc. Since a project is not currently open, it will create a project
-    # 'myproj' in the current directory and will fail if that project already exists, so we have to
-    # delete it beforehand.
-    set ::origin_dir_loc ${bd_dir}
-    file delete -force "$bd_dir/myproj"
-    cd $bd_dir
-    source "${bd_dir}/${bd_name}.tcl"
-    file delete -force "$bd_dir/myproj"
+    # BD Tcl (write_bd_tcl) creates ${origin_dir}/${design_name}/${design_name}.bd; origin_dir -> .../bd/gen
+    file mkdir $_bd_gen_dir
+    set ::origin_dir_loc $_bd_gen_dir
+    file delete -force [file join $_platform_bd myproj]
+    cd $_platform_bd
+    source "${bd_name}.tcl"
+    # write_bd_tcl opens create_project project_1 myproj; close before rm or later
+    # saves hit [Project 1-202] on .../bd/myproj/project_1.xpr
+    catch { close_project }
+    file delete -force [file join $_platform_bd myproj]
     cd $proj_dir
   }
 }
@@ -208,7 +217,7 @@ create_project -force ${proj_name} . -part $target_part
 
 set irp [concat [get_property ip_repo_paths [current_project]] [list $ip_dir] "${ip_dir}KC705/hirax_bit_growth_0"]
 
-puts "*** IP repo paths = $irp"
+puts "*** IP repo paths = $ip_dir"
 set_property ip_repo_paths $ip_dir [current_project]
 update_ip_catalog
 
@@ -224,6 +233,7 @@ set_property -name "enable_resource_estimation" -value "0" -objects $obj
 set_property -name "enable_vhdl_2008" -value "1" -objects $obj
 set_property -name "ip_cache_permissions" -value "read write" -objects $obj
 set_property -name "ip_output_repo" -value "$proj_dir/${proj_name}.cache/ip" -objects $obj
+# set_property -name "ip_output_repo" -value "$ip_dir/.." -objects $obj
 set_property -name "mem.enable_memory_map_generation" -value "1" -objects $obj
 set_property -name "part" -value $target_part -objects $obj
 # set_property -name "platform.board_id" -value "zcu111" -objects $obj
@@ -259,19 +269,57 @@ if { $fileset_obj != {} } {
    update_ip_catalog -rebuild
 }
 
-
+puts "*** Adding bd and hdl files"
 add_files -norecurse -fileset $fileset_obj [concat $full_bd_files $full_hdl_files]
 
-# Import IP definitions into the project so regenerated products live under the
-# current project instead of following metadata from another project's .gen dir.
+# Reference platform .xci files in-repo (do not import/copy). OUTPUTDIR in each .xci
+# should be relative (e.g. gen/...) under the core directory so products stay local.
 if {[llength [concat $full_ip_files $full_ooc_ip_files]] > 0} {
-  import_files -force -norecurse -fileset $fileset_obj [concat $full_ip_files $full_ooc_ip_files]
+  puts "*** Adding ip files"
+  # Have to suppress the IP relocation warning. Tried *everything* that CLaude and GPT could think of. GPT thinks its inherent of our flow where an out-of-project IP gets added to the project and is consirered to have been "moved" by default. 
+  set_msg_config -id {Vivado 12-13650} -suppress
+  add_files -norecurse -fileset $fileset_obj [concat $full_ip_files $full_ooc_ip_files]
+  # read_ip [concat $full_ip_files $full_ooc_ip_files]
 }
-
+puts "*** Set .xci file properties"
 # Set 'sources_1' fileset file properties for remote files
 foreach file_obj  [get_files -of_objects $fileset_obj [list "*.xci"]] {
   set_property -name "generate_files_for_reference" -value "0" -objects $file_obj
   set_property -name "registered_with_manager" -value "1" -objects $file_obj
+}
+
+puts "*** Regenerate IP"
+
+
+# Retarget IPs to the current project/part. Only reset outputs for .xcis we add from
+# platform ip_cores (full_ip_files / full_ooc_ip_files); nested BD IPs cannot be reset alone.
+set _platform_xci {}
+foreach _p [concat $full_ip_files $full_ooc_ip_files] {
+  lappend _platform_xci [file normalize $_p]
+}
+set _repo_ips [get_ips -quiet]
+if {[llength $_repo_ips] > 0} {
+  if {[catch {upgrade_ip $_repo_ips -quiet} _uerr]} {
+    puts "Note: upgrade_ip: $_uerr"
+  }
+  set _reset_ips {}
+  foreach ip_obj $_repo_ips {
+    set ipf ""
+    catch {set ipf [get_property IP_FILE $ip_obj]}
+    if {$ipf eq ""} { continue }
+    set ipn [file normalize $ipf]
+    foreach want $_platform_xci {
+      if {$ipn eq $want} {
+        lappend _reset_ips $ip_obj
+        break
+      }
+    }
+  }
+  if {[llength $_reset_ips] > 0} {
+    if {[catch {reset_target all $_reset_ips} _rerr]} {
+      puts "Note: reset_target all (platform IP): $_rerr"
+    }
+  }
 }
 
 # Set OOC
@@ -287,7 +335,9 @@ foreach file_obj  [get_files -of_objects $fileset_obj [list "*.xci"]] {
 # Don't set "generate_synth_checkpoint" -value "0" for non-OOC .xci and see what happens
 
 
-foreach file_obj  [get_files -of_objects $fileset_obj "*.bd"] {
+# -quiet: no Vivado 12-818 when the project has no block designs (e.g. KC705)
+set _bd_file_objs [get_files -quiet -of_objects $fileset_obj "*.bd"]
+foreach file_obj $_bd_file_objs {
   set_property -name "registered_with_manager" -value "1" -objects $file_obj
 }
 
@@ -369,6 +419,9 @@ set_property -name "steps.synth_design.args.no_lc" -value $no_lc -obj $synth_obj
 set_property -name "steps.synth_design.args.shreg_min_size" -value "5" -obj $synth_obj
 set_property -name "steps.synth_design.args.assert" -value "1" -obj $synth_obj
 
+# Top-level synthesis: disable incremental compile (no reuse of prior synth checkpoint)
+set_property AUTO_INCREMENTAL_CHECKPOINT 0 $synth_obj
+
 # set the current synth run
 current_run -synthesis $synth_obj
 
@@ -430,9 +483,7 @@ foreach ip_obj  [get_ips] {
 # set file_obj  [get_ips $full_ooc_ip_files]
 puts "OOC ip files are $ip_list"
 
-# export_ip_user_files -of_objects  [get_files  /home/jfcliche/chfpga/_Cores/KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci] -sync -lib_map_path [list {modelsim=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/modelsim} {questa=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/questa} {xcelium=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/xcelium} {vcs=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/vcs} {riviera=/home/jfcliche/chfpga/xilinx_projects/chfpga_ice_ct/chfpga_ice_ct.cache/compile_simlib/riviera}] -force -quiet
-# set_property generate_synth_checkpoint true [get_files  /home/jfcliche/chfpga/_Cores/KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci]
-# generate_target all [get_files  /home/jfcliche/chfpga/_Cores/KC705/hirax_bit_growth_0/hirax_bit_growth_0.xci]
+
 
 if {[llength $ip_list] > 0} {
   # Re-target imported OOC IPs to the current part before configuring their runs.

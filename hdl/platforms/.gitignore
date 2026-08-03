@@ -1,0 +1,17 @@
+# Track Xilinx IP catalog files at:
+#   <platform_name>/ip_cores/<core_name>/<core_name>.xci
+# (one folder under ip_cores; no gen/, src/, or other deeper trees.)
+# Gitignore cannot check that <core_name>.xci matches the parent folder name; keep that by convention.
+*/ip_cores/**/*
+!*/ip_cores/**/
+!*/ip_cores/*/
+!*/ip_cores/*/*.xci
+
+# Vivado scratch when sourcing BD Tcl from <platform>/bd/
+*/bd/
+!*/bd/*.tcl
+# */bd/myproj/
+# */bd/.Xil/
+# */bd/*.bda
+# CRS: BD write_bd_tcl output under bd/gen/ (regenerate via create_project.tcl). ZCU111 tracks bd/gen/ — not ignored here.
+# crs/bd/gen/

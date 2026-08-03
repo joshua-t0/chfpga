@@ -82,7 +82,7 @@
   <FileSets Version="1" Minor="31">
     <FileSet Name="sources_1" Type="DesignSrcs" RelSrcDir="$PSRCDIR/sources_1">
       <Filter Type="Srcs"/>
-      <File Path="$PPRDIR/../../_Cores/ZCU111/CORR44_DATA_FIFO/CORR44_DATA_FIFO.xci">
+      <File Path="$PPRDIR/../../hdl/platforms/zcu111/ip_cores/CORR44_DATA_FIFO_UP/CORR44_DATA_FIFO_UP.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -133,7 +133,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../_Cores/ZCU111/AXI4S_REG_SLICE/AXI4S_REG_SLICE.xci">
+      <File Path="$PPRDIR/../../hdl/platforms/zcu111/ip_cores/AXI4S_REG_SLICE/AXI4S_REG_SLICE.xci">
         <FileInfo>
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -141,7 +141,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../_Cores/ZCU111/CMD_FIFO/CMD_FIFO.xci">
+      <File Path="$PPRDIR/../../hdl/platforms/zcu111/ip_cores/CMD_FIFO/CMD_FIFO.xci">
         <FileInfo>
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>

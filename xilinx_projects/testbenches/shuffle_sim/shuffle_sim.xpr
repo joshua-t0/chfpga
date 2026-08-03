@@ -84,14 +84,14 @@
   <FileSets Version="1" Minor="31">
     <FileSet Name="sources_1" Type="DesignSrcs" RelSrcDir="$PSRCDIR/sources_1">
       <Filter Type="Srcs"/>
-      <File Path="$PPRDIR/../../_Cores/KC705/XGLINK_RX_DATA_FIFO/XGLINK_RX_DATA_FIFO.xci">
+      <File Path="$PPRDIR/../../hdl/platforms/ice/ip_cores/XGLINK_RX_DATA_FIFO/XGLINK_RX_DATA_FIFO.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/XGLINK_TX_DATA_FIFO/XGLINK_TX_DATA_FIFO.xci">
+      <File Path="$PPRDIR/../../hdl/platforms/ice/ip_cores/XGLINK_TX_DATA_FIFO/XGLINK_TX_DATA_FIFO.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -146,97 +146,97 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_bypass.vhd">
+      <File Path="$PPRDIR/../../hdl/data_links/XGLINK/xglink_bypass.vhd">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_crc32_32.vhd">
-        <FileInfo>
-          <Attr Name="Library" Val="xil_defaultlib"/>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_tx.vhd">
+      <File Path="$PPRDIR/../../hdl/data_links/XGLINK/xglink_crc32_32.vhd">
         <FileInfo>
           <Attr Name="Library" Val="xil_defaultlib"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_rx.vhd">
+      <File Path="$PPRDIR/../../hdl/data_links/XGLINK/xglink_tx.vhd">
         <FileInfo>
           <Attr Name="Library" Val="xil_defaultlib"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_gtx.vhd">
+      <File Path="$PPRDIR/../../hdl/data_links/XGLINK/xglink_rx.vhd">
         <FileInfo>
           <Attr Name="Library" Val="xil_defaultlib"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_rx_startup_fsm.vhd">
+      <File Path="$PPRDIR/../../hdl/data_links/XGLINK/xglink_gtx.vhd">
         <FileInfo>
           <Attr Name="Library" Val="xil_defaultlib"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_tx_startup_fsm.vhd">
+      <File Path="$PPRDIR/../../hdl/data_links/XGLINK/xglink_rx_startup_fsm.vhd">
         <FileInfo>
           <Attr Name="Library" Val="xil_defaultlib"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_scrambler.vhd">
+      <File Path="$PPRDIR/../../hdl/data_links/XGLINK/xglink_tx_startup_fsm.vhd">
         <FileInfo>
           <Attr Name="Library" Val="xil_defaultlib"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_block_sync.vhd">
+      <File Path="$PPRDIR/../../hdl/data_links/XGLINK/xglink_scrambler.vhd">
         <FileInfo>
           <Attr Name="Library" Val="xil_defaultlib"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_descrambler.vhd">
+      <File Path="$PPRDIR/../../hdl/data_links/XGLINK/xglink_block_sync.vhd">
         <FileInfo>
           <Attr Name="Library" Val="xil_defaultlib"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_core.vhd">
+      <File Path="$PPRDIR/../../hdl/data_links/XGLINK/xglink_descrambler.vhd">
         <FileInfo>
           <Attr Name="Library" Val="xil_defaultlib"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_sync_block.vhd">
+      <File Path="$PPRDIR/../../hdl/data_links/XGLINK/xglink_core.vhd">
         <FileInfo>
           <Attr Name="Library" Val="xil_defaultlib"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_array.vhd">
+      <File Path="$PPRDIR/../../hdl/data_links/XGLINK/xglink_sync_block.vhd">
         <FileInfo>
           <Attr Name="Library" Val="xil_defaultlib"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../hdl/XGLINK/xglink_sync.vhd">
+      <File Path="$PPRDIR/../../hdl/data_links/XGLINK/xglink_array.vhd">
+        <FileInfo>
+          <Attr Name="Library" Val="xil_defaultlib"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../hdl/data_links/XGLINK/xglink_sync.vhd">
         <FileInfo>
           <Attr Name="Library" Val="xil_defaultlib"/>
           <Attr Name="AutoDisabled" Val="1"/>
@@ -244,7 +244,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../_Cores/KC705/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci">
+      <File Path="$PPRDIR/../../hdl/platforms/ice/ip_cores/gmii_to_sgmii_bridge/gmii_to_sgmii_bridge.xci">
         <FileInfo>
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>

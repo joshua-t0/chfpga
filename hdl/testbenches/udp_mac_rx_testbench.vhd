@@ -77,14 +77,6 @@ clk125_process :process
 			local_mac_addr           => X"12340a0a0313",
 			local_ip_addr            => X"0a0a0313",
 			local_ip_port            => X"8F9F",
-			local_subarray           => "00",
---			latest_remote_mac_addr   => (others => '0'),
---			latest_remote_ip_addr    => (others => '0'),
---			latest_remote_ip_port    => (others => '0'),
-
---			arp_request              => arp_request,
---			arp_remote_mac_addr      => arp_mac_addr,
---			arp_remote_ip_addr       => arp_ip_addr,
 
 			m_axis_udp_rx_tdata      => rx_tdata,
 			m_axis_udp_rx_tvalid     => rx_tvalid,

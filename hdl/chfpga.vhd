@@ -651,7 +651,6 @@ architecture impl of chFPGA is
 
 	-- Global UDP/Ethernet signals  from GPIO
 	signal local_mac_addr: std_logic_vector(47 downto 0);
-	signal local_subarray: std_logic_vector(1 downto 0);
 	signal local_ip_addr: std_logic_vector(31 downto 0);
 	signal local_base_ip_port: std_logic_vector(15 downto 0);
 	signal remote_ip_port0: std_logic_vector(15 downto 0);
@@ -1007,8 +1006,9 @@ begin
 
 			udp_mac0: entity work.udp_mac
 				generic map (
+					FPGA_SERIES => FPGA_SERIES,
 					PHY_TYPE => sel(BSB_INTERFACE, (UDP_GMII => GMII, UDP_SGMII => SGMII)),  -- map BSB_INTERFACE to udp_mac PHY_TYPE: UDP_GMII->GMII, UDP_SGMII->SGMII
-					BROADCAST_IP_PORT => 41000, -- port on which broadcast requests and replies are made. This is fixed as it is used to discover the boards on the network and configure them.
+					BROADCAST_IP_PORT => 41000, -- port on which broadcast packets are received
 					SIM => SIM
 				)
 				port map (
@@ -1016,7 +1016,6 @@ begin
 					local_mac_addr => local_mac_addr,
 					local_ip_addr  => local_ip_addr,
 					local_ip_port  => local_base_ip_port,
-					local_subarray => local_subarray,
 					-- User-side streaming interface
 
 					-- UDP outgoing traffic port/channel 0 network parameters
@@ -1526,7 +1525,6 @@ begin
 					local_mac_addr       => local_mac_addr,
 					local_ip_addr        => local_ip_addr,
 					local_ip_port        => local_base_ip_port,
-					local_subarray       => local_subarray,
 					remote_mac_addr      => remote_mac_addr1,
 					remote_ip_addr       => remote_ip_addr1,
 					remote_ip_port0      => remote_ip_port0,

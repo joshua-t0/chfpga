@@ -1,0 +1,6 @@
+ML605 (legacy)
+***************
+
+The Virtex-6 ML605 evaluation board was an early ``chFPGA`` target. The codebase is not maintained on current toolchains (ISE-era; not a Vivado flow in this repository).
+
+Platform-specific sources for this board are grouped under :file:`hdl/platforms/ml605/`: the top-level wrapper :file:`chfpga_ml605.vhd` (entity ``chFPGA_ML605``) and :file:`constraints/chFPGA_ML605_UCF.ucf`. Legacy ISE project artifacts may still appear under :file:`xilinx_projects/chFPGA_ML605/`.

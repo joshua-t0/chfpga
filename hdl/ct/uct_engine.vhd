@@ -59,7 +59,7 @@ entity uct_engine is
 		-- Dervived parameters
 		OUTPUT_WIDTH: integer     := NUMBER_OF_INPUT_LANES * INPUT_WORD_WIDTH;  -- assumes inputs are 32 bits wide, and CT preserves data rate
 		NUMBER_OF_LINKS: integer  := LINK_TO_QUAD_MAP'LENGTH; --  Number of physical data links (GTYs) - Do not override
-		NUMBER_OF_REFCLK: integer := max(QUAD_TO_REFCLK_MAP) + 1; -- Number of reference clocks - Do not override
+		NUMBER_OF_REFCLK: integer := sel(QUAD_TO_REFCLK_MAP'LENGTH >0, max(QUAD_TO_REFCLK_MAP) + 1, 0); -- Number of reference clocks - Do not override
 		PRE_DECIMATE: boolean     := CT_LEVEL > 1 -- True if we want to decimate the first 256 bins of the spectrum before entering the backplane shuffle
 	);
 	port (

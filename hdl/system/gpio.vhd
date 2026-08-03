@@ -49,7 +49,7 @@ use xpm.vcomponents.ALL;
 -- - FMC ADC Reset line
 -- - ADC status and control (calibration freeze, overrange/overvoltage, PLL lock)
 -- - Fan speed readout
--- - Network configuration (MAC, IP, port, subarray) and UDP link monitoring
+-- - Network configuration (MAC, IP, port) and UDP link monitoring
 -- - IP Port offsets for the data capture and correlator outputs
 -- - Event-synchronized PWM generation
 -- - User output mux (selectable signals to SMA)
@@ -130,7 +130,6 @@ entity gpio is
 		local_mac_addr: out std_logic_vector(47 downto 0);
 		local_base_ip_addr: out std_logic_vector(31 downto 0);
 		local_base_ip_port: out std_logic_vector(15 downto 0);
-		local_subarray: out std_logic_vector(1 downto 0);
 		-- UDP TX channel 0 remote network configuration
 		--   MAC & IP addresses are hardwired to be those of the perviously received packet
 		
@@ -1437,7 +1436,6 @@ begin
 			-- FPGA network interface addresses
 			local_mac_addr     <= spi_fpga_local_mac_address;
 			local_base_ip_addr <= spi_fpga_local_ip_address;
-			local_subarray     <= (others => '0');
 
 			-- Control Channel(UDP Channel 0) parameters
 			local_base_ip_port <= spi_fpga_local_ip_port; -- command listening port
