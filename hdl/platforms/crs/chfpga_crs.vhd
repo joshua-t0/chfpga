@@ -265,6 +265,7 @@ architecture impl of chfpga_crs is
 	attribute IO_BUFFER_TYPE: string;
 	attribute DONT_TOUCH: string;
 	attribute IOB: string;
+	attribute shreg_extract: string;
 
 	signal bp_shuffle_tx_p_int, bp_shuffle_tx_n_int: std_logic_vector(0 to NUMBER_OF_CT_LINKS - 1);
 	-- Tell the tools not to infer buffers and autoplace IO ports for the following if the ports are not connected
@@ -348,9 +349,14 @@ architecture impl of chfpga_crs is
 	signal buck_sync: std_logic_vector(0 to 15);
 	signal gpio_led: std_logic_vector(7 downto 0);
 	signal sma_irig, bp_irig: std_logic;
+	signal sma_irig_reg1, bp_irig_reg1: std_logic;
+	signal sma_irig_reg2, bp_irig_reg2: std_logic;
+	-- Capture IRIG-B in the IOB on the falling edge of the selected 10 MHz reference
+	-- (clk10_bufg from BUFGMUX, selected by clk10_sel) for setup/hold margin.
+	attribute IOB of sma_irig_reg1, bp_irig_reg1: signal is "true";
+	attribute shreg_extract of sma_irig_reg1, bp_irig_reg1, sma_irig_reg2, bp_irig_reg2: signal is "no";
 	signal sma_out: std_logic_vector(0 to 3);
 	signal qsfp_txp_int, qsfp_txn_int: std_logic_vector(0 to 3);
-	signal irigb_reg: std_logic;
 
 	signal lcd_db: std_logic_vector(3 downto 0);
 
@@ -548,18 +554,26 @@ begin
 			o  => bp_irig
 		);
 
+	-- Sample IRIG-B into IOB FFs on the falling edge of SYSCLK, which is always running but should be in sync with the active 10 MHz reference clock once the PLL sync sequence is performed. Sampling ont he falling edge gives us about 50 ns setup/hold time. 
+	-- We then re-sample into the rising edge of sysclk since the IRIG-B decoder operates on clk200, which is locked on the rising edges of SYSCLK.
+	irig_reg1_proc: process(all) begin
+		if falling_edge(sysclk_bufg) then
+			sma_irig_reg1 <= sma_irig;
+			bp_irig_reg1  <= bp_irig;
+		end if;
+	end process;
 
-	-- Select IRIG-B source
-	irigb_proc: process(all) begin
-		if rising_edge(plclk_bufg) then
-			irigb_reg <= sma_irig when clk10_sel else bp_irig;
+	irig_reg2_proc: process(all) begin
+		if rising_edge(sysclk_bufg) then
+			sma_irig_reg2 <= sma_irig_reg1;
+			bp_irig_reg2  <= bp_irig_reg1;
 		end if;
 	end process;
 
 	-- 7-segment display
 	led7b(5 downto 0) <= gpio_led(6 downto 1); -- a-f segments (forming a circle)
 	led7b(6)          <= sma_out(2);           -- central g segment
-	led7b(7)          <= sma_out(3);           -- decimal point
+	led7b(7)          <= sma_out(3);           -- decimal point 
 
 
 	-- OLED Display (SSD1306)
@@ -922,7 +936,7 @@ begin
 
 			-- Time signal
 
-			time_trig => (sma_irig, bp_irig),
+			time_trig => (sma_irig_reg2, bp_irig_reg2),
 
 			-- ADC inputs
 			adc_axis_tdata        => adc_axis_tdata(0 to NUMBER_OF_ADCS - 1),
