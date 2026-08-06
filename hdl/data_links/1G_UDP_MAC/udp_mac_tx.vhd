@@ -223,7 +223,7 @@ data_fifo0 : entity work.generic_fifo
 		FPGA_SERIES      => FPGA_SERIES,
 		MEMORY_TYPE      => "embedded",
 		IS_ASYNC         => TRUE,
-		IS_FWFT          => TRUE,
+		IS_FWFT          => FALSE,
 		DATA_WIDTH       => 9,
 		DEPTH            => 16384,
 		PROG_FULL_THRESH => 16380
@@ -702,4 +702,3 @@ ip_checksum_out16 <= not(ip_checksum_reg(15 downto 0) + ("00000000000" & ip_chec
 ip_checksum_out <= std_logic_vector(ip_checksum_out16(15 downto 8)) when ip_checksum_is_msb else std_logic_vector(ip_checksum_out16(7 downto 0));
 
 end Behavioral;
-
