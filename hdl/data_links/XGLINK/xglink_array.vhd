@@ -482,6 +482,10 @@ core0: entity work.xglink_core
 		QUAD_TO_REFCLK_MAP          => QUAD_TO_REFCLK_MAP,
 		NUMBER_OF_CONTROL_BYTES     => control_bytes'Length(1),
 		NUMBER_OF_STATUS_BYTES      => status_bytes'Length(1),
+		-- BCT adds a two-bit router after the top-level CT router.  Therefore
+		-- XGLINK's five module-select bits are BSB address bits 13 downto 9,
+		-- rather than the direct-XGE bits 15 downto 11.
+		BSB_ROUTER_ADDRESS_MASK     => "-----11111---------",
 		EXAMPLE_SIMULATION          => 1,
 		EXAMPLE_SIM_GTRESET_SPEEDUP => "TRUE",    -- simulation setting for GT SecureIP model
 		DONT_RESET_ON_DATA_ERROR_IN => '0',

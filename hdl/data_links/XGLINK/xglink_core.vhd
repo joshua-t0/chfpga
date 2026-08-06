@@ -43,6 +43,9 @@ entity xglink_core is
 		DONT_RESET_ON_DATA_ERROR_IN : std_logic := '0';
 		NUMBER_OF_CONTROL_BYTES     : integer :=0;
 		NUMBER_OF_STATUS_BYTES      : integer :=0;
+		-- BSB bits used to select an XGLINK module.  Direct XGE places the
+		-- module immediately below the three-bit top-level BSB router.
+		BSB_ROUTER_ADDRESS_MASK     : std_logic_vector(CTRL_CMD_ADDR_WIDTH-1 downto 0) := "---11111-----------";
 		SIM                         : boolean := false
 		);
 	port (
@@ -411,7 +414,7 @@ end process;
 bsb_router0: entity work.bsb_router
 	generic map (
 		NUMBER_OF_PORTS=> NUMBER_OF_MODULES,
-		ADDRESS_MASK => "---11111-----------" --'1': used to generate port index, '-' = don't care,
+		ADDRESS_MASK => BSB_ROUTER_ADDRESS_MASK -- '1': used to generate port index, '-' = don't care
 	)
 	port map(
 		-- Upstream BSB interface
