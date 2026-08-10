@@ -887,7 +887,11 @@ begin
 	-- Data is sent first after the header until the data for all frames of the packet is completed. So the data is sent as it comes, and the FIFO does not have to store lots of data.
 	-- The data flags and frame flags FIFOs, however, are not sent until data is completed, so they must store a full set of flags for one full packet, plus the extra flags that are arriving while the flag FIFOs are emptied.
 
-	number_of_input_lanes <= shift_left(resize(last_fifo_number - first_fifo_number, number_of_input_lanes'LENGTH), 2); -- number of input lanes included in the output stream. This is just for populating the header.
+	-- Number of input lanes included in the output stream (4 lanes per FIFO,
+	-- and the FIFO range is inclusive, hence the +1, applied after the resize
+	-- so the 2-bit FIFO-number arithmetic cannot wrap). This is just for
+	-- populating the NUMBER_OF_CHANNELS field of the packet header.
+	number_of_input_lanes <= shift_left(resize(last_fifo_number - first_fifo_number, number_of_input_lanes'LENGTH) + 1, 2);
 
 	-- Build the packet header, to be used by the FIFO readout process
 	-- Build the header
