@@ -16,12 +16,19 @@
 --   2011-08-25 JFC: Added SPI_CLK_ENABLE flag to stop the SPI clock
 --   2012-04-04 JFC: Changed to synchrounous reset to eliminate unwanted latch
 --   2013-08-16 JFC: Cleanup. Removed REV0.
+--   2026-08-07 VB: Synchronize start_trig into clk200 before edge detection. The raw
+--                  bsb_clk-to-clk200 crossing could silently swallow the start edge
+--                  (transaction never runs, host reads stale RX_DATA), with a
+--                  probability that depended on placement, i.e. varied per build.
 
 ----------------------------------------------------------------------------------
 
 library IEEE;
 use IEEE.std_logic_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
+
+library xpm;
+use xpm.vcomponents.ALL;
 
 use work.chFPGA_Package.ALL; -- Get all component definitions
 
@@ -75,6 +82,7 @@ architecture impl of spi is
 	signal default_addr: std_logic_vector(2 downto 0);
 	signal bytes: unsigned(1 downto 0);
 	signal start_trig: std_logic;
+	signal start_trig_sync: std_logic;
 	signal start_trig_previous: std_logic;
 	signal spi_reset: std_logic;
 	signal spi_clk_enable: std_logic;
@@ -137,6 +145,31 @@ begin
 	spi_mosi  <= tx_register(31);
 	spi_rst_n <= not spi_reset;
 
+	-- Synchronize the start trigger into the clk200 domain before edge detection.
+	--
+	-- start_trig is a bsb_clk-domain register bit, and bsb_clk (CLK125) is constrained
+	-- asynchronous to clk200. Sampling it raw in the edge detector below lets a transition
+	-- land in the routing-skew/metastability window between the history flop and the
+	-- comparison logic: the flop captures '1' while the comparison still sees '0', and the
+	-- edge is permanently swallowed. The engine then never starts the transaction, READY
+	-- stays high, and the host reads a stale RX_DATA (typically 0000 or FFFF). Whether this
+	-- happened depended on routing delays, i.e. changed from build to build.
+	--
+	-- The other control bytes (tx_data, addr, bytes, spi_port, alt_timing, spi_clk_enable)
+	-- also cross into clk200 unsynchronized, but they are safe by protocol: software writes
+	-- them milliseconds before raising start_trig and does not change them during a
+	-- transaction, so they are stable whenever this (now clean) start edge samples them.
+	start_trig_cdc0: xpm_cdc_single
+		generic map (
+			SRC_INPUT_REG => 0
+		)
+		port map (
+			src_clk  => '0',
+			src_in   => start_trig,
+			dest_clk => clk200,
+			dest_out => start_trig_sync
+		);
+
 
 	bsb_regs0: entity work.bsb_regs
 		generic map (
@@ -185,9 +218,9 @@ begin
 					ce <= '0';
 				end if;
 
-				-- Set  the start bit if a 0-to-1 transition is detected on the start_trig bit.
-				start_trig_previous <= start_trig;
-				if start_trig = '1' and start_trig_previous = '0' then
+				-- Set  the start bit if a 0-to-1 transition is detected on the (synchronized) start_trig bit.
+				start_trig_previous <= start_trig_sync;
+				if start_trig_sync = '1' and start_trig_previous = '0' then
 					start <= '1';
 				end if;
 
