@@ -17,9 +17,12 @@ The corner turn engine takes the packets coming out of N F-Engine channelizers a
 
 - `upack`: UltraRAM-based packetizer and corner-turn engine for Ultrascale+ FPGAs. Uses UltraRAM for high-density storage.
 
+- `ct_prober`: Corner-turn output capture probe. Occasionally captures complete corner-turn output packets from one selectable lane and streams them to the host over the slow capture path (cookie ``0xA2``) for verification of the corner-turn operation.
+
 .. toctree::
    :hidden:
 
    bct_engine/bct_engine
    uct_engine/uct_engine
    upack
+   ct_prober

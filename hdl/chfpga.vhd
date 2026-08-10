@@ -143,6 +143,7 @@ entity chfpga is
 		-- Corner-turn engine config
 		CT_TYPE: ct_type_enum;
 		CT_LEVEL: integer := 1;
+		IMPLEMENT_CT_PROBER: boolean := FALSE; -- Capture probe on the corner-turn output (BSB port 6, cookie 0xA2)
 
 		CT_LANE_TO_LINK_MAP: integer_array   := (0 => -1, 1 => 0, 2 => 1, 3 => 2, 4 to 7 => -1); -- List indicating the GTX/GTY link number associated to each lane. -1 means a bypass  lane (no GTY, stays internal to the board).
 		CT_LINK_TO_QUAD_MAP: integer_array   := (0 to 2 => 0); -- Indicates which quad is associated to each GTY link.
@@ -588,6 +589,7 @@ architecture impl of chFPGA is
 	constant GPU_LINK_BASE_PORT: integer    := 3; -- Top level address for the GPU link subsystem
 	constant CORR_BASE_PORT: integer        := 4; -- Top level address for the correlator subsystem (exclusive with the 2nd and 3rd crossbar)
 	constant UPACK_BASE_PORT: integer       := 5; -- Top level address of the CT-Engine backplane shuffle subsystem.
+	constant CT_PROBER_BASE_PORT: integer   := 6; -- Top-level address for the corner-turn output capture probe.
 	constant UCAP_BASE_PORT: integer        := 7; -- Top-level address for the UltraRAM-based data capture engine.
 	constant NUMBER_OF_PORTS: integer       := 8; -- Total number of top-level subsystems to be addressed.
 
@@ -596,15 +598,19 @@ architecture impl of chFPGA is
 
 	-- constant NUMBER_OF_PROBES: INTEGER := NUMBER_OF_CHANNELIZERS+NUMBER_OF_CORRELATORS; -- Number of data probes (data transsmission channels) that need to be send back to the host computer through the Ethernet
 
-	-- Number of data capture streams to forward to the host computer. Those can come from PROBER, UCAP or CORR.
-	-- PROBER/UCAP are in the low indices, CORR follows 
-	constant NUMBER_OF_CHAN_PROBES: integer := sel(CAPTURE_TYPE = PROBER, NUMBER_OF_CHANNELIZERS, 0) + 
+	-- Number of data capture streams to forward to the host computer. Those can come from PROBER, UCAP, CORR or CT_PROBER.
+	-- PROBER/UCAP are in the low indices, CORR follows, CT_PROBER is last
+	constant NUMBER_OF_CHAN_PROBES: integer := sel(CAPTURE_TYPE = PROBER, NUMBER_OF_CHANNELIZERS, 0) +
 	                                      sel(CAPTURE_TYPE = UCAP, 1, 0);
 	constant NUMBER_OF_CORR_PROBES: integer := sel(CORR_TYPE /= NONE, 1, 0);
-	constant NUMBER_OF_PROBES: integer := NUMBER_OF_CHAN_PROBES + NUMBER_OF_CORR_PROBES;
+	constant NUMBER_OF_CT_PROBES: integer := sel(IMPLEMENT_CT_PROBER, 1, 0);
+	constant NUMBER_OF_PROBES: integer := NUMBER_OF_CHAN_PROBES + NUMBER_OF_CORR_PROBES + NUMBER_OF_CT_PROBES;
 
 	-- Index of the correlator capture probe
-	constant CORR_PROBE_BASE_PORT: integer := NUMBER_OF_CHAN_PROBES; 
+	constant CORR_PROBE_BASE_PORT: integer := NUMBER_OF_CHAN_PROBES;
+
+	-- Index of the corner-turn capture probe
+	constant CT_PROBER_CAP_INDEX: integer := NUMBER_OF_CHAN_PROBES + NUMBER_OF_CORR_PROBES;
 
 	constant ADC_INSTANTIATE_IDELAYCTRL: bool_array(0 to NUMBER_OF_ADCS - 1) := (0 => TRUE, others => FALSE); -- Determines which ADCDAQ instantiates a DELAY controller (calibrator). We need to instantiate only one in the whole design, and the tools will add all the others where needed.
 
@@ -1214,7 +1220,7 @@ begin
 	-- |  3 | 0x30000  | XGE or CGE                         | Real-time data offload Links, 10G or 100G Ethernet |
 	-- |  4 | 0x40000  | CORR44 or UCORR44                  | X-Engine/Correlator subsystem |
 	-- |  5 | 0x50000  | UPACK                              | Frame aggregator and packetizer (Ultrascale+ only) |
-	-- |  6 | 0x60000  | (unused)                           |             |
+	-- |  6 | 0x60000  | CT_PROBER                          | Corner-turn output capture probe |
 	-- |  7 | 0x70000  | UCAP                               | UltraRAM-based data capture engine (Ultrascale+ only) |
 
 	top_router_blk: block
@@ -2091,6 +2097,77 @@ begin
 
         end generate ct_case;
     end generate ct_gen;
+
+	-----------------------------------------------------------
+	-----------------------------------------------------------
+	-- Corner-turn output capture probe
+	-----------------------------------------------------------
+	-----------------------------------------------------------
+	--
+	-- Captures occasional snapshots of one lane of the corner-turn output (the exact data the
+	-- X-engine links would carry) and streams them to the host over the slow capture path with
+	-- the cookie 0xA2. See ct/ct_prober.vhd for the full description.
+
+	ct_prober_gen: if IMPLEMENT_CT_PROBER generate
+		-- Pipelined reset and input registers: the corner-turn output is a wide 244 MHz bus
+		-- that may have to be routed a long distance to the capture FIFO, so we mirror the
+		-- pipelining used for the other corner-turn output consumers (GPU links, correlator).
+		signal ct_prober_reset: std_logic;
+		signal ct_prober_reset_reg: std_logic;
+		signal ct_prober_in_tdata: std_logic_vector(CT_OUT_WIDTH - 1 downto 0);
+		signal ct_prober_in_tvalid: std_logic;
+		signal ct_prober_in_tlast: std_logic;
+		attribute shreg_extract of ct_prober_in_tdata, ct_prober_in_tvalid, ct_prober_in_tlast: signal is "no";
+	begin
+
+		assert CT_TYPE /= NONE report "IMPLEMENT_CT_PROBER requires a corner-turn engine" severity FAILURE;
+
+		process(all) begin
+			if rising_edge(ct_clk) then
+				ct_prober_reset <= ct_reset;
+				ct_prober_reset_reg <= ct_prober_reset;
+
+				ct_prober_in_tdata <= ct_out_tdata;
+				ct_prober_in_tvalid <= ct_out_tvalid and not ct_prober_reset_reg;
+				ct_prober_in_tlast <= ct_out_tlast;
+			end if; -- clk
+		end process;
+
+		ct_prober0: entity work.ct_prober
+			generic map (
+				FPGA_SERIES     => FPGA_SERIES,
+				NUMBER_OF_LANES => 8,
+				SIM             => SIM
+			)
+			port map (
+				-- Corner-turn output snoop (lane 0 at MSBs)
+				in_tdata  => ct_prober_in_tdata,
+				in_tvalid => ct_prober_in_tvalid,
+				in_tlast  => ct_prober_in_tlast,
+				in_clk    => ct_clk,
+				in_reset  => ct_prober_reset_reg,
+
+				-- 8-bit data capture stream to bsb_master (on cap_clk)
+				out_tdata  => cap_data(CT_PROBER_CAP_INDEX),
+				out_tvalid => cap_valid(CT_PROBER_CAP_INDEX),
+				out_tlast  => cap_last(CT_PROBER_CAP_INDEX),
+				out_tready => cap_ready(CT_PROBER_CAP_INDEX),
+				out_clk    => cap_clk,
+
+				-- Control interface (command and reply stream buses)
+				s_axis_bsb_tdata  => top_router_bsb_cmd_tdata(CT_PROBER_BASE_PORT),
+				s_axis_bsb_tvalid => top_router_bsb_cmd_tvalid(CT_PROBER_BASE_PORT),
+				s_axis_bsb_tlast  => top_router_bsb_cmd_tlast(CT_PROBER_BASE_PORT),
+				s_axis_bsb_tready => top_router_bsb_cmd_tready(CT_PROBER_BASE_PORT),
+				m_axis_bsb_tdata  => top_router_bsb_rply_tdata(CT_PROBER_BASE_PORT),
+				m_axis_bsb_tvalid => top_router_bsb_rply_tvalid(CT_PROBER_BASE_PORT),
+				m_axis_bsb_tlast  => top_router_bsb_rply_tlast(CT_PROBER_BASE_PORT),
+				m_axis_bsb_tready => top_router_bsb_rply_tready(CT_PROBER_BASE_PORT),
+				bsb_clk           => bsb_clk,
+				bsb_rst           => bsb_rst
+			);
+
+	end generate ct_prober_gen;
 
 	-----------------------------------------------------------
 	-----------------------------------------------------------

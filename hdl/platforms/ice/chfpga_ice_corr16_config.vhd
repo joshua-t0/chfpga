@@ -19,6 +19,7 @@ package chfpga_config is
 	constant CONFIG_CT_TYPE: ct_type_enum             := BCT; -- "UCT" or "BCT"
 	constant CONFIG_CT_LEVEL: integer := 1;
 	constant CONFIG_CT_CLK_SOURCE: ct_clk_source_enum := ADC_CLK; -- Use the ADC clock directly. at CT_LEVEL=1, we don't need packet overheads
+	constant CONFIG_IMPLEMENT_CT_PROBER: boolean      := FALSE; -- No corner-turn capture probe in the correlator config
 
 	-- Correlator config
 

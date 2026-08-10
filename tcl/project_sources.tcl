@@ -115,6 +115,7 @@ set ice_hdl_base_files [concat $hdl_base_files [list \
   "chan/adcdaq.vhd" \
   \
   "ct/bct_engine.vhd"\
+  "ct/ct_prober.vhd"\
   \
   "data_links/1G_UDP_MAC/udp_mac_crc32.vhd" \
   "data_links/1G_UDP_MAC/udp_mac_tx.vhd" \

@@ -113,6 +113,7 @@ entity chfpga_ice is
 
 	        CT_TYPE: ct_type_enum                             := CONFIG_CT_TYPE;
 			CT_LEVEL: integer                            := CONFIG_CT_LEVEL;
+			IMPLEMENT_CT_PROBER: boolean                 := CONFIG_IMPLEMENT_CT_PROBER; -- Capture probe on the corner-turn output
 
 			CT_LANE_TO_LINK_MAP: integer_array            := ( -- Associate the concatenated BP PCB and QUAD lanes to GTX links. -1 means a bypass lane.
 			                                                -- Backplane PCB Lanes
@@ -1007,6 +1008,7 @@ bufr_rawclk10 : BUFR
 
             CT_TYPE                         => CT_TYPE,
             CT_LEVEL                        => CT_LEVEL,
+			IMPLEMENT_CT_PROBER             => IMPLEMENT_CT_PROBER,
 
 			CT_LANE_TO_LINK_MAP             => CT_LANE_TO_LINK_MAP,
 			CT_LINK_TO_QUAD_MAP     => CT_LINK_TO_QUAD_MAP,

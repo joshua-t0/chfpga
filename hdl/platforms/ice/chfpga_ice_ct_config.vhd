@@ -20,6 +20,7 @@ package chfpga_config is
 	constant CONFIG_CT_TYPE: ct_type_enum             := BCT; -- "UCT" or "BCT"
 	constant CONFIG_CT_LEVEL: integer                 := 3;
 	constant CONFIG_CT_CLK_SOURCE: ct_clk_source_enum := BP_SHUFFLE_TXCLK; -- "CORR_CLK" for corr config
+	constant CONFIG_IMPLEMENT_CT_PROBER: boolean      := TRUE; -- Capture probe on the corner-turn output (cookie 0xA2)
 
 	-- Correlator config
 
