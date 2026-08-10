@@ -239,12 +239,24 @@ begin
 	---------------------------------------------------------------------
 	-- ROUTER
 	---------------------------------------------------------------------
-	-- Routes the commands and replies to/from the crossbar subsystems
+	-- Routes the commands and replies to/from the crossbar subsystems.
+	--
+	-- The port index field must sit just below the address bits consumed
+	-- upstream: the top-level router decodes bits 18:16 and the corner-turn
+	-- engine router decodes bits 15:14, leaving this crossbar a 14-bit space
+	-- in which the 5-bit port index occupies bits 13:9 (port 0 = common
+	-- registers, ports 1..N = bin selectors) and each port keeps a 9-bit
+	-- register space. This matches the software drivers, which address port p
+	-- at offset p * 0x200. The mask historically read "---11111-----------"
+	-- (bits 15:11), which was only valid when the crossbar owned a full
+	-- 16-bit address space; under the corner-turn engine router it overlapped
+	-- the parent's port field, so most bin selectors were unaddressable and
+	-- their configuration writes were silently lost.
 
 	crossbar_router0: entity work.bsb_router
 		generic map (
 			NUMBER_OF_PORTS => NUMBER_OF_BIN_SEL + 1,  -- one bus per BIN_SEL, plus one common register bank
-			ADDRESS_MASK    => "---11111-----------" -- '1': used to generate port index, '-' = don't care,
+			ADDRESS_MASK    => "-----11111---------" -- '1': used to generate port index, '-' = don't care,
 		)
 		port map (
 			-- Upstream BSB interface
