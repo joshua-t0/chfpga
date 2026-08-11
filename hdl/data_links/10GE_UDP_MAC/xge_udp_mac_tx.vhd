@@ -310,10 +310,17 @@ tx_front_end : process(all) begin
 data_overflow <= data_fifo_overflow_sticky;
 frame_overflow <= header_fifo_overflow_sticky;
 
-fifo_readout : process(all) begin
-	if rising_edge(clk) then
+-- Accumulate the FIFO overflow pulses into sticky flags in the WRITE clock
+-- domain: the FIFO generator's `overflow` outputs are single-cycle pulses
+-- synchronous to wr_clk (s_axis_tx_clk), so latching them on the read clock
+-- would be an unsynchronized pulse crossing that can miss events when the
+-- user clock differs from the 322 MHz transmit clock (as it does with the
+-- corner turn's 244 MHz ct_clk driving s_axis_tx_clk). The sticky levels are
+-- then consumed in the same s_axis_tx_clk domain by xge_array's overflow
+-- process.
+overflow_sticky_proc : process(all) begin
+	if rising_edge(s_axis_tx_clk) then
 			if RST then -- synchronous reset
-				-- data_fifo_alignment<='0';
 				DATA_FIFO_OVERFLOW_STICKY <= '0';
 				header_fifo_overflow_sticky <= '0';
 			else
