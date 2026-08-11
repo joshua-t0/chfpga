@@ -27,6 +27,9 @@ use IEEE.std_logic_misc.ALL; -- for reduce functions
 library UNISIM;
 use UNISIM.VComponents.ALL;
 
+library xpm;
+use xpm.vcomponents.ALL;
+
 library work;
 use work.chFPGA_Package.ALL;
 
@@ -106,6 +109,7 @@ architecture impl of xge_array is
 	signal xglink_tx_ready: std_logic_vector(0 to NUMBER_OF_TX_LANES - 1);
 	signal xglink_tx_clk: std_logic;
 	signal xglink_tx_resetdone: std_logic_vector(0 to NUMBER_OF_TX_LANES - 1);
+	signal xglink_tx_resetdone_sync: std_logic;
 
 	signal mac_dest_addr: slv48_array(0 to GLOBAL_NUMBER_OF_GPU_LINKS - 1);
 	signal ip_dest_addr: slv32_array(0 to GLOBAL_NUMBER_OF_GPU_LINKS - 1);
@@ -156,6 +160,22 @@ begin
 	-- STATUS Byte 5
 	status_bytes(3) <= resize(reverse_bits_and_dir(frame_overflow_sticky), 8);
 
+	-- Synchronize the lane-0 GTX resetdone (generated on the 322 MHz txusrclk
+	-- domain inside xglink_core) into the user data-clock domain before the
+	-- test-pattern generator consumes it. With s_axis_tx_clk driven by ct_clk
+	-- (244 MHz) this is a real clock-domain crossing; the signal is a
+	-- quasi-static level, so a single-bit synchronizer is sufficient.
+	resetdone_cdc0: xpm_cdc_single
+		generic map (
+			SRC_INPUT_REG => 0
+		)
+		port map (
+			src_clk => '0',
+			src_in => xglink_tx_resetdone(0),
+			dest_clk => s_axis_tx_clk(0),
+			dest_out => xglink_tx_resetdone_sync
+		);
+
 	-- Test pattern generator
 	test_pat_proc: process(all) begin
 		if rising_edge(s_axis_tx_clk(0)) then
@@ -171,7 +191,7 @@ begin
 			test_tlast <= '0';
 
 			-- Generate test pattern
-			if not link_enable or not xglink_tx_resetdone(0) then
+			if not link_enable or not xglink_tx_resetdone_sync then
 				test_packet_ctr <= (others => '0');
 				test_frame_ctr <= (others => '0');
 				test_tvalid <= '0';
