@@ -780,6 +780,8 @@ architecture impl of chFPGA is
 	signal axis_gpu_tdata: slv32_array(0 to NUMBER_OF_DATA_LINKS - 1);
 	signal axis_gpu_tvalid: std_logic_vector(0 to NUMBER_OF_DATA_LINKS - 1);
 	signal axis_gpu_tlast: std_logic_vector(0 to NUMBER_OF_DATA_LINKS - 1);
+	attribute equivalent_register_removal of axis_gpu_tdata, axis_gpu_tvalid, axis_gpu_tlast: signal is "no";
+	attribute shreg_extract of axis_gpu_tdata, axis_gpu_tvalid, axis_gpu_tlast: signal is "no";
 	-- signal axis_gpu_clk: slv(NUMBER_OF_DATA_LINKS - 1 downto 0);
 
 	-----------------------
@@ -2181,7 +2183,6 @@ begin
 	DATA_LINK_GEN: if DATA_LINK_TYPE /= NONE generate
 
 		signal axis_gpu_clk: std_logic_vector(axis_gpu_tdata'RANGE);
-		signal clk322: std_logic;
 
 		-- Pipelined bsb resets
 		signal gpu_bsb_rst: std_logic;
@@ -2201,12 +2202,39 @@ begin
 			end if;
 		end process;
 
-		-- Pipeline the 2nd crossbar output (non-blocking AXI-Streaming bus) to the input to the GPU link blocks to facilitate routing
-		process(all) begin
+		-- Pipeline the corner-turn output to the 10G GPU link inputs (one register
+		-- stage on ct_clk to ease routing). Lane 0 is at the MSBs of ct_out_tdata
+		-- (the bct_engine output flattening reverses lane order), so we slice with
+		-- the reversed lane index; this makes QSFP lane N carry the stream whose
+		-- packet-header STREAM_ID lane nibble is N (same convention as ct_prober).
+		-- All lanes share one TVALID/TLAST. The 244 MHz -> 322 MHz clock-domain
+		-- crossing into the 10G core is handled by the independent-clock TX FIFOs
+		-- inside each xge_udp_mac_tx, which were generated for exactly this
+		-- 244/322 write/read configuration.
+		--
+		-- Rate budget (s_axis_tx_tready is tied high in the MAC, so overflow is
+		-- avoided by construction rather than by backpressure): the worst
+		-- realistic corner-turn configuration (flags on, 1 frame/packet,
+		-- 597-word packets every 625-cycle frame) is 7.46 Gb/s payload and about
+		-- 77% wire duty against the 10.000 Gb/s effective link capacity, and at
+		-- most about one packet (<= 1221 words) resides in the 2048-word TX data
+		-- FIFO at any time.
+		process(all)
+
+			variable rlane, lsb: integer;
+
+		begin
 			if rising_edge(ct_clk) then
 				gpu_reset <= ct_reset;
 				gpu_reset_reg <= gpu_reset;
 
+				for i in 0 to NUMBER_OF_DATA_LINKS - 1 loop
+					rlane := NUMBER_OF_DATA_LINKS - 1 - i;
+					lsb := 32 * rlane;
+					axis_gpu_tdata(i) <= ct_out_tdata(lsb + 31 downto lsb);
+					axis_gpu_tvalid(i) <= ct_out_tvalid and not gpu_reset;
+					axis_gpu_tlast(i) <= ct_out_tlast;
+				end loop;
 			end if;
 		end process;
 
@@ -2240,14 +2268,14 @@ begin
 						-- Clock monitors to be fed to the frequency counter
 						refclk_div2 => gpu_refclk_div2,
 						txclk_div2 => gpu_txclk_div2,
-						clk322_out => clk322,
+						clk322_out => open, -- was used by the 2023 clocking hack (f19db20f); gpu_txclk_div2 keeps the clock observable
 
 						-- input data interface
 						s_axis_tx_tdata  => axis_gpu_tdata,
 						s_axis_tx_tvalid => axis_gpu_tvalid,
 						s_axis_tx_tlast  => axis_gpu_tlast,
 						s_axis_tx_tready => open, -- data is always been sent, independent on whether the transmitter is ready or not. W ehave to set out data rate right to avoid overflows.
-						s_axis_tx_clk => (others => clk322), -- ** patch . was axis_gpu_clk,
+						s_axis_tx_clk => axis_gpu_clk, -- ct_clk on every lane; the MAC TX FIFOs handle the 244->322 MHz crossing
 						areset => gpu_reset_reg, -- async input, so we can use the channel reset
 
 						s_axis_bsb_tdata => top_router_bsb_cmd_tdata(GPU_LINK_BASE_PORT),
