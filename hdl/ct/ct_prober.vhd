@@ -73,8 +73,8 @@ use work.chFPGA_Package.ALL; -- Get all component definitions
 --   |-------------------------------|-------------|-----------------------|
 --   | flags off, 1 frame/packet     |   517 words |            3          |
 --   | flags off, 2 frames/packet    |  1029 words |            1          |
---   | flags on,  1 frame/packet     |   597 words |            3          |
---   | flags on,  2 frames/packet    |  1221 words |     does not fit      |
+--   | flags on,  1 frame/packet     |   582 words |            3          |
+--   | flags on,  2 frames/packet    |  1159 words |            1          |
 --
 -- An oversized burst is not fatal: FIFO writes are dropped and the sticky
 -- data_fifo_overflow_sticky status bit is raised, but the captured packet is truncated.
