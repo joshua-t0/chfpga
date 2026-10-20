@@ -87,7 +87,7 @@ architecture impl of cge is
 -- Signals
 
 
-	signal control_bytes: slv8_array(0 to 19);
+	signal control_bytes: slv8_array(0 to 20);
 	signal status_bytes: slv8_array(0 to 6);
 
 	signal tx_axis_tdata: std_logic_vector(511 downto 0);
@@ -148,6 +148,7 @@ architecture impl of cge is
 	signal gt_txdiffctrl     : std_logic_vector(5 * NUM_GT_LANES - 1 downto 0);
 	signal gt_txprecursor    : std_logic_vector(5 * NUM_GT_LANES - 1 downto 0);
 	signal gt_txpostcursor   : std_logic_vector(5 * NUM_GT_LANES - 1 downto 0);
+	signal gt_rxlpmen        : std_logic_vector(NUM_GT_LANES - 1 downto 0);
 
 	signal cmac_reset_tx_datapath: std_logic := '0';
 	signal cmac_reset_rx_datapath: std_logic := '0';
@@ -276,6 +277,10 @@ begin
 		gt_txpostcursor(5 * i + 4 downto 5 * i) <= control_bytes(10 + 3 * i)(4 downto 0);
 	end generate gt_tx_drive_gen;
 
+	-- CONTROL Byte 20 bits 3:0: RX equalizer mode per lane (GTY RXLPMEN, UG578). 0 = DFE (reset value, previous tie-off),
+	-- 1 = LPM. After a change, pulse the RX equalizer reset of that lane (byte 7 bit 7, RXDFELPMRESET).
+	gt_rxlpmen <= control_bytes(20)(NUM_GT_LANES - 1 downto 0);
+
 	---- STATUS Byte 0
 
 	status_bytes(0) <= (
@@ -327,6 +332,7 @@ begin
 	-- |         | 8+3i | 4:0 | gt_txdiffctrl (lane i)  | TX swing, lane i=0-3 (0 = 390 mV ... 31 = 1040 mV) |
 	-- |         | 9+3i | 4:0 | gt_txprecursor (lane i) | TX pre-cursor emphasis, lane i=0-3 (0 = none) |
 	-- |         |10+3i | 4:0 | gt_txpostcursor (lane i)| TX post-cursor emphasis, lane i=0-3 (0 = none) |
+	-- |         | 20   | 3:0 | gt_rxlpmen (bit i = lane i) | RX equalizer mode: 0 = DFE, 1 = LPM |
 	-- | STATUS  |  0  |  0   | tx_gt_locked_led        | TX GT locked LED |
 	-- |         |     |  1   | tx_ovfout_sticky        | TX overflow output sticky |
 	-- |         |     |  2   | tx_unfout_sticky        | TX underflow output sticky |
@@ -346,7 +352,7 @@ begin
 
 	bsb_regs0: entity work.bsb_regs
 		generic map (
-			DEFAULT_CONTROL_BYTES => X"00_11_0020_0000_00_00" & X"000000_000000_000000_000000", -- bytes 8-19 (TX drive) = 0: 390 mV, no pre/post-cursor
+			DEFAULT_CONTROL_BYTES => X"00_11_0020_0000_00_00" & X"000000_000000_000000_000000" & X"00", -- bytes 8-19 (TX drive) = 0: 390 mV, no pre/post-cursor; byte 20 = 0: DFE
 			USE_RAM_DOUT_RDY => TRUE,
 			USE_PIPELINED_RAM_WRITE => FALSE,
 			RAM_DATA_WIDTH => 16,
@@ -897,7 +903,7 @@ CMAC_INST: entity work.cmac_usplus_1
 		gt_txprbsforceerr  => (others => '0'),
 		gt_txprecursor     => gt_txprecursor,
 		gt_rxdfelpmreset   => gt_rxdfelpmreset,
-		gt_rxlpmen         => (others => '0'),
+		gt_rxlpmen         => gt_rxlpmen,
 		gt_rxprbscntreset  => gt_rxprbscntreset,
 		gt_rxprbssel       => gt_rxprbssel,
 		gt_txprbssel       => gt_txprbssel,
