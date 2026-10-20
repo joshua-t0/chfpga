@@ -9,6 +9,11 @@ Overview
 
 UCAP periodically captures raw data frames coming from eight 128-bit AXI Stream buses and streams  out the the captured data  through a single 8-bit AXI stream bus. This module is typically used to capture raw ADC of FFT data from the 'CHAN' module and stream it through UDP packets over a Gigabit Ethernet interface.
 
+Python interface
+~~~~~~~~~~~~~~~~
+
+The ``pychfpga`` memory-mapped model is ``pychfpga/fpga_firmware/chfpga/f_engine/ucap.py`` (class ``UCAP``), exposed on a board as ``chFPGA.UCAP``.
+
 
 Features
 --------
@@ -175,8 +180,9 @@ Read process and packet formatting
 
 The read process (``rd_blk``) handles data readout and packet formatting. It consists of two main components:
 
-1. **Read sequencer**: A state machine that generates RAM read addresses and opcodes for the data processor. It operates in three states:
+1. **Read sequencer**: A state machine that generates RAM read addresses and opcodes for the data processor. It operates in four states:
    - ``READ_SEQ_WAIT``: Waits for buffers to be ready for readout
+   - ``READ_SEQ_DELAY``: Optional wait of ``readout_delay`` ADC input frames (``s_axis_tlast`` of the source that filled the batch) so boards can stagger UDP bursts
    - ``READ_SEQ_SEND_HEADER``: Sends the 10-byte packet header
    - ``READ_SEQ_SEND_DATA``: Sends the packet data (8192 bytes per packet)
 
@@ -235,7 +241,7 @@ UCAP is configured and monitored through BSB (Byte-Serial Bus) control registers
   - ``sub_period``: Sub-capture period (5 bits)
   - ``source_sel_out``: Source selection request for each channel (8 bits)
   - ``user_stream_id``: User-defined stream identifier (8 bits)
-  - ``output_source_sel``: Output stream selection (0=UCAP data, 1=auxiliary)
+  - ``readout_delay``: Pre-transmit delay in ADC input frames (16 bits, 0 = no delay)
   - ``user_reset``: User reset trigger
 
 - **Status registers**:

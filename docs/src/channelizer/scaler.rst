@@ -51,7 +51,7 @@ The scaler processes FFT output data through a pipelined sequence:
 
 **Gain application**: Each complex bin in the input word is multiplied by its corresponding real or complex gain coefficient from the gain table using a pipelined multiplier.
 
-**Post-gain shift**: After multiplication, a configurable left shift (``post_scaler_left_shift``, 0-31 bits) is applied to all results for global scaling. For floating-point gains, an additional per-bin shift is added. Overflow is detected during this shift operation.
+**Post-gain shift**: After multiplication, a configurable left shift (0-31 bits) is applied to all results for global scaling. There is one shift register per gain bank (``post_scaler_left_shift_bank0`` / ``post_scaler_left_shift_bank1``). The datapath uses the register of the active bank, delayed by the gain-table RAM latency so it arrives at the multiplier with the coefficients from that bank. For floating-point gains, an additional per-bin shift is added. Overflow is detected during this shift operation.
 
 **Rounding**: The shifted values are rounded before truncation to the output bit width. Three rounding modes are supported: truncation (no rounding), normal rounding (ties round up), and convergent rounding (ties round to even to avoid bias). Overflows caused by rounding are detected.
 
@@ -165,7 +165,7 @@ If the ``USE_COMPLEX_GAINS`` generic is TRUE, the gain is a complex value, repre
 
 For complex gains, the first 16-bit integer contain the Imaginary part of bin 0 and  the second word (bytes at address 2 and 3) contains the Real part of the same bin. Then we proceed for bin 1, etc.
 
-The complex gain is fed to the complex multiplier along withthe compled value from the FFT. The product is then left-shifted by the global left shift stored in ``post_scaler_left_shift`` register before being further processed by the rounding and saturation logic.
+The complex gain is fed to the complex multiplier along withthe compled value from the FFT. The product is then left-shifted by the active bank's left-shift register (delayed to match CMUL latency) before being further processed by the rounding and saturation logic.
 
 Real integer gain format
 ------------------------
@@ -174,7 +174,7 @@ If the ``USE_COMPLEX_GAINS`` generics is FALSE and ``use_float_gains`` register 
 
 For real gains, the first integer stored in memory contains the coefficient for bin 0, the second integer contains the coefficient for bin 1, etc. 
 
-Each real and imaginary part of the corresponding input value will be multiplied by this value, and the global left shift stored in ``post_scaler_left_shift`` register will be applied to the result.
+Each real and imaginary part of the corresponding input value will be multiplied by this value, and the active bank's left-shift register will be applied to the result.
 
 
 
@@ -189,7 +189,7 @@ Floating point gains encode both a log and linear gain for each bin, allowing fo
 - Bits 15:11: 5 bit log gain (unsigned exponent). 
 - Bits 10:0: 11 bit linear unsigned gain (mantissa)
 
-A real-multiplier multiplied both Re an dIm component of each bin withthe linear gain, and the sum of the per-bin log gain and the global left shift  ``post_scaler_left_shift`` are used to left-shift the product
+A real-multiplier multiplied both Re an dIm component of each bin withthe linear gain, and the sum of the per-bin log gain and the active bank's left-shift register are used to left-shift the product
 
 Note that both the linear and log  parts are unsigned to maximize the resolution/range of the gain.
 
@@ -204,6 +204,8 @@ Gain switching
 ==============
 
 The scaler supports two independent gain banks (bank 0 and bank 1) that can be stored simultaneously in memory. The inactive bank can be programmed while the active bank is being used, and then the banks can be swapped, allowing for seamless gain switching. The scaler can switch between these banks using either asynchronous or synchronous switching modes.
+
+Each bank has its own post-scaler left-shift register (``post_scaler_left_shift_bank0`` at control byte 0 bits 4:0, ``post_scaler_left_shift_bank1`` at control byte 13 bits 4:0). Writing the inactive bank's shift does not change the live datapath. When ``current_gain_bank`` switches, the corresponding shift is selected after the same RAM latency as the coefficient readout so the new gains and new shift arrive at the multiplier together.
 
 **Asynchronous switching**: When the ``synchronize_gain_bank_switch`` register is set to '0', the gain bank switches immediately at the next frame boundary (when TLAST is detected) after the ``next_gain_bank`` register is written. 
 
