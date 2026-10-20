@@ -729,11 +729,29 @@ function bitwidth(value: integer) return integer;-- Computes the minimum number 
 
 function shift_left(i:std_logic_vector; n: integer) return std_logic_vector; -- shift left a STD_LOGIC_VECTOR
 function shift_left(ARG:slv8_array; COUNT: natural) return slv8_array; -- shift left a byte array
-function shift_right(i:std_logic_vector; n: integer) return std_logic_vector; -- shift right a STD_LOGIC_VECTOR with zero padding from the left
-function shift_right(arg: std_logic_vector; n: natural; insert: std_logic) return std_logic_vector; -- like shift_right(arg,n) then arg'low := insert
-function shift_right(x:slv2_array)  return slv2_array; -- shift right a slv2_array.
-function shift_right(x:slv3_array)  return slv3_array; -- shift right a slv3_array.
-function shift_right(x:slv4_array)  return slv4_array; -- shift right a slv4_array.
+
+-- Delay-line / index-range shift toward 'RIGHT by n, filling vacated 'LEFT bits with '0'.
+-- Works for both ascending (`to`) and descending (`downto`) ranges: elements move toward
+-- arg'RIGHT; the n slots at arg'LEFT become '0'. Oldest pipeline value is at 'RIGHT.
+-- n < 1 returns arg unchanged; n >= arg'LENGTH returns all zeros. Call as shift_right(pipe, 1).
+function shift_right(arg: std_logic_vector; n: integer) return std_logic_vector;
+
+-- One-step delay line: shift_right(arg, n) then replace arg'LEFT with insert.
+-- Only n = 1 is supported (one vacated slot). Simulation asserts n = 1 with severity failure.
+-- Always call with a named association: shift_right(pipe, 1, insert => new_bit).
+function shift_right(arg: std_logic_vector; n: natural; insert: std_logic) return std_logic_vector;
+
+-- Delay-line / index-range shift of an slv_array toward 'RIGHT by n, filling vacated 'LEFT
+-- elements with (others => '0'). Works for both `to` and `downto` index ranges. Element width
+-- is taken from x(x'LEFT). n < 1 returns x unchanged; n >= x'LENGTH returns all-zero elements.
+-- Call as shift_right(pipe, 1). The one-argument form shift_right(x) is removed.
+function shift_right(x: slv_array; n: natural) return slv_array;
+
+-- One-step slv_array delay line: shift_right(x, n) then replace x'LEFT with insert.
+-- insert is one element (std_logic_vector), not a bit. Only n = 1 is supported.
+-- Simulation asserts n = 1 with severity failure.
+-- Always call with a named association: shift_right(pipe, 1, insert => new_word).
+function shift_right(x: slv_array; n: natural; insert: std_logic_vector) return slv_array;
 function clip(v:signed; width_minus_one:integer)  return signed;
 function any_one(v: std_logic_vector) return boolean; -- Return TRUE if any bit is '1'.
 function any_one(v: unsigned) return boolean; -- Return TRUE if any bit is '1'.
@@ -1527,50 +1545,60 @@ begin
 	return RESULT;
 end function;
 
--- shift right a STD_LOGIC_VECTOR with zero padding on the left
-function shift_right(i:std_logic_vector; n: integer) return std_logic_vector is
+-- Delay-line shift toward 'RIGHT; vacated 'LEFT bits are '0'. See package declaration.
+function shift_right(arg: std_logic_vector; n: integer) return std_logic_vector is
+	variable r: std_logic_vector(arg'RANGE) := (others => '0');
 begin
-	return std_logic_vector(shift_right(unsigned(i), n));
+	if n < 1 then
+		return arg;
+	elsif n < arg'LENGTH then
+		if arg'ASCENDING then
+			r(arg'LEFT + n to arg'RIGHT) := arg(arg'LEFT to arg'RIGHT - n);
+		else
+			r(arg'LEFT - n downto arg'RIGHT) := arg(arg'LEFT downto arg'RIGHT + n);
+		end if;
+	end if;
+	return r;
 end function;
 
+-- One-step delay line: shift then write insert at 'LEFT. n must be 1.
 function shift_right(arg: std_logic_vector; n: natural; insert: std_logic) return std_logic_vector is
-	variable t: std_logic_vector(arg'range);
+	variable t: std_logic_vector(arg'RANGE);
 begin
+	assert n = 1
+		report "shift_right(std_logic_vector, n, insert) only supports n = 1"
+		severity failure;
 	t := shift_right(arg, n);
 	t(arg'LEFT) := insert;
 	return t;
 end function;
 
-function shift_right(x:slv_array)  return slv_array is
-	variable r: slv_array(x'RANGE);
+-- Delay-line shift toward 'RIGHT; vacated 'LEFT elements are zero. See package declaration.
+function shift_right(x: slv_array; n: natural) return slv_array is
+	variable r: slv_array(x'RANGE)(x(x'LEFT)'RANGE) := (others => (others => '0'));
 begin
-	r(x'LEFT-1 downto 0) := x(x'LEFT downto 1);
-	r(x'LEFT) := (others=>'0');
+	if n < 1 then
+		return x;
+	elsif n < x'LENGTH then
+		if x'ASCENDING then
+			r(x'LEFT + n to x'RIGHT) := x(x'LEFT to x'RIGHT - n);
+		else
+			r(x'LEFT - n downto x'RIGHT) := x(x'LEFT downto x'RIGHT + n);
+		end if;
+	end if;
 	return r;
 end function;
 
-function shift_right(x:slv2_array)  return slv2_array is
-	variable r: slv2_array(x'RANGE);
+-- One-step slv_array delay line: shift then write insert at 'LEFT. n must be 1.
+function shift_right(x: slv_array; n: natural; insert: std_logic_vector) return slv_array is
+	variable t: slv_array(x'RANGE)(x(x'LEFT)'RANGE);
 begin
-	r(x'LEFT-1 downto 0) := x(x'LEFT downto 1);
-	r(x'LEFT) := (others=>'0');
-	return r;
-end function;
-
-function shift_right(x:slv3_array)  return slv3_array is
-	variable r: slv3_array(x'RANGE);
-begin
-	r(x'LEFT-1 downto 0) := x(x'LEFT downto 1);
-	r(x'LEFT) := (others=>'0');
-	return r;
-end function;
-
-function shift_right(x:slv4_array)  return slv4_array is
-	variable r: slv4_array(x'RANGE);
-begin
-	r(x'LEFT-1 downto 0) := x(x'LEFT downto 1);
-	r(x'LEFT) := (others=>'0');
-	return r;
+	assert n = 1
+		report "shift_right(slv_array, n, insert) only supports n = 1"
+		severity failure;
+	t := shift_right(x, n);
+	t(x'LEFT) := insert;
+	return t;
 end function;
 
 -- clip (saturate) the signed value to the specified bit width

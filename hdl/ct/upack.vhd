@@ -554,7 +554,7 @@ begin
 		-- signal tvalid_pre, tlast_pre: std_logic;
 		-- signal col_pre: std_logic_vector(1 downto 0);
 		signal tvalid, tlast: std_logic_vector(5 downto 0);
-		signal col: slv2_array(5 downto 0);
+		signal col: slv_array(5 downto 0)(1 downto 0);
 		signal insert_ts: std_logic_vector(5 downto 0);
 		signal eot: std_logic_vector(5 downto 0);
 		signal tdata_reg: std_logic_vector(255 downto 0);
@@ -626,7 +626,7 @@ begin
 				tlast <= shift_right(tlast, 1); -- shift in a '0', overriden below
 				insert_ts <= shift_right(insert_ts, 1); -- shift in a '0', overriden below
 				eot <= shift_right(eot, 1); -- shift in a '0', overriden below
-				col <= shift_right(col); -- shift in overriden below
+				col <= shift_right(col, 1); -- shift in overriden below
 				col(col'LEFT) <= col_var;
 
 				word_ctr <= word_ctr + 1;
