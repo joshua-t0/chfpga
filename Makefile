@@ -12,10 +12,12 @@
 #     make crs_corr32 project      # convenience: <config> <action>
 #     make CONFIG=crs_corr32 project
 #     make crs_corr32              # shorthand: default action is 'bitstream'
+#     make crs_corr32 DEST=/path   # build bitstream and copy .bit to /path
 #
 #   From inside a project directory (e.g. xilinx_projects/chfpga_crs_corr32):
 #     ../make project              # CONFIG inferred from directory name
 #     ../make bitstream
+#     ../make bitstream DEST=/path # copy .bit to /path after build
 #     ../make clean
 #
 # Actions:  project | bitstream | clean  (Vivado);  docs [targets...]  (Sphinx)
@@ -55,6 +57,7 @@ help:
 	@echo "    make [<config> ... | <glob>] [<action>]  # e.g. crs_*; action = project|bitstream|clean|status"
 	@echo "    make [<config> ...] project     # Create project for specified config(s)"
 	@echo "    make [<config> ...] [bitstream]# Build bitstream for specified config(s)"
+	@echo "    make [<config> ...] bitstream DEST=<path>  # also copy .bit into <path> if specified"
 	@echo "    make [<config> ...] clean       # Clean project and bitstream (incl. .bit) for specified config(s)"
 	@echo "    make clean                      # From repo root: all config build dirs + platform gen/ (from .xci/.bd sources)"
 	@echo "    make [<config> ...] status      # Print build status for specified config(s)"
@@ -104,7 +107,7 @@ all:
 	  while [ $$(jobs -r 2>/dev/null | wc -l) -ge $$max ]; do sleep 2; done; \
 	  log="xilinx_projects/chfpga_$$c/build.log"; \
 	  echo "Starting $$c (log: $$log)"; \
-	  $(MAKE) CONFIG=$$c bitstream & \
+	  $(MAKE) CONFIG=$$c DEST='$(DEST)' bitstream & \
 	  configs+=("$$c"); pids+=($$!); \
 	done; \
 	failed=(); \
@@ -217,10 +220,10 @@ $(foreach g,$(filter-out $(VALID_CONFIGS),$(_WRAP_CFG_GOALS)),$(eval $g: $(filte
 # action target only. Do not use action: $(configs) or the config goal is built twice and the second
 # time Make prints "Nothing to be done for <config>".
 ifeq ($(strip $(filter $(ACTIONS),$(MAKECMDGOALS))),)
-$(foreach c,$(WRAPPER_CONFIGS),$(eval $c: ; @+$(MAKE) CONFIG=$c $(WRAPPER_ACTION)))
+$(foreach c,$(WRAPPER_CONFIGS),$(eval $c: ; @+$(MAKE) CONFIG=$c DEST='$(DEST)' $(WRAPPER_ACTION)))
 else
 project bitstream clean status:
-	@+for c in $(WRAPPER_CONFIGS); do $(MAKE) CONFIG=$$c $@ || exit $$?; done
+	@+for c in $(WRAPPER_CONFIGS); do $(MAKE) CONFIG=$$c DEST='$(DEST)' $@ || exit $$?; done
 $(foreach c,$(WRAPPER_CONFIGS),$(eval $c: ; @:))
 endif
 
@@ -305,7 +308,13 @@ $(PROJ_XPR): $(DEPS)
 # Full build: synth + impl + bitstream.
 # Rebuild only when .bit is missing or older than project or any source. Log to build.log and stdout.
 # Like project, phony bitstream has no recipe so Make prints "Nothing to be done" when up to date.
+# If DEST=<dir> is set, copy the bitstream there (even when the .bit is already up to date).
 bitstream: $(PROJ_BIT)
+ifneq ($(strip $(DEST)),)
+	@mkdir -p '$(DEST)'
+	@cp -f '$(PROJ_BIT)' '$(DEST)/'
+	@echo "Copied $(PROJ_BIT) -> $(DEST)/$(notdir $(PROJ_BIT))"
+endif
 
 $(PROJ_BIT): $(PROJ_XPR) $(DEPS)
 	@cd '$(PROJECT_DIR)' && rm -f $(PROJ_NAME).bit && \
