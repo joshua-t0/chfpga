@@ -87,7 +87,7 @@ architecture impl of cge is
 -- Signals
 
 
-	signal control_bytes: slv8_array(0 to 7);
+	signal control_bytes: slv8_array(0 to 19);
 	signal status_bytes: slv8_array(0 to 6);
 
 	signal tx_axis_tdata: std_logic_vector(511 downto 0);
@@ -145,6 +145,9 @@ architecture impl of cge is
 	signal gt_rxprbscntreset : std_logic_vector(NUM_GT_LANES - 1 downto 0) := (others => '0');
 	signal gt_rxprbssel      : std_logic_vector(4 * NUM_GT_LANES - 1 downto 0) := (others => '0');
 	signal gt_txprbssel      : std_logic_vector(4 * NUM_GT_LANES - 1 downto 0) := (others => '0');
+	signal gt_txdiffctrl     : std_logic_vector(5 * NUM_GT_LANES - 1 downto 0);
+	signal gt_txprecursor    : std_logic_vector(5 * NUM_GT_LANES - 1 downto 0);
+	signal gt_txpostcursor   : std_logic_vector(5 * NUM_GT_LANES - 1 downto 0);
 
 	signal cmac_reset_tx_datapath: std_logic := '0';
 	signal cmac_reset_rx_datapath: std_logic := '0';
@@ -265,6 +268,14 @@ begin
 		end if;
 	end process gt_ctl_store_proc;
 
+	-- CONTROL Bytes 8-19: per-lane TX driver settings (GTY async ports, UG578 Table 3-35). Dedicated bytes per lane,
+	-- not muxed by gt_lane_sel. Reset value 0 = 390 mV swing, no pre/post-cursor (previous tie-off).
+	gt_tx_drive_gen: for i in 0 to NUM_GT_LANES - 1 generate
+		gt_txdiffctrl(5 * i + 4 downto 5 * i)   <= control_bytes(8 + 3 * i)(4 downto 0);
+		gt_txprecursor(5 * i + 4 downto 5 * i)  <= control_bytes(9 + 3 * i)(4 downto 0);
+		gt_txpostcursor(5 * i + 4 downto 5 * i) <= control_bytes(10 + 3 * i)(4 downto 0);
+	end generate gt_tx_drive_gen;
+
 	---- STATUS Byte 0
 
 	status_bytes(0) <= (
@@ -307,12 +318,15 @@ begin
 	-- |         |  1  | 7:0  | number_of_udp_words     | Number of UDP words |
 	-- |         | 2-3 |15:0  | packet_spacing_in_words | Packet spacing in words (16 bits) |
 	-- |         | 4-5 |15:0  | capture_byte_number     | Capture byte number (16 bits) |
-	-- |         |  6  | 5:4  | gt_lane_sel             | GT lane for bytes 7-8 and GT channel DRP |
+	-- |         |  6  | 5:4  | gt_lane_sel             | GT lane for byte 7 and GT channel DRP |
 	-- |         |     | 2:0  | config_port_sel         | BSB RAM target (1=core DRP,2=GT cmn,3=GT ch DRP+lane) |
 	-- |         | 7    | 7  | gt_prbs_fabric_reset    | PRBS / DFE reset (per lane) |
 	-- |         |      | 6    | gt_rxprbscntreset       | PRBS counter reset (active lane) |
 	-- |         |      | 5:3  | gt_txprbssel            | PRBS TX select (active lane) |
 	-- |         |      | 2:0  | gt_rxprbssel            | PRBS RX select (active lane) |
+	-- |         | 8+3i | 4:0 | gt_txdiffctrl (lane i)  | TX swing, lane i=0-3 (0 = 390 mV ... 31 = 1040 mV) |
+	-- |         | 9+3i | 4:0 | gt_txprecursor (lane i) | TX pre-cursor emphasis, lane i=0-3 (0 = none) |
+	-- |         |10+3i | 4:0 | gt_txpostcursor (lane i)| TX post-cursor emphasis, lane i=0-3 (0 = none) |
 	-- | STATUS  |  0  |  0   | tx_gt_locked_led        | TX GT locked LED |
 	-- |         |     |  1   | tx_ovfout_sticky        | TX overflow output sticky |
 	-- |         |     |  2   | tx_unfout_sticky        | TX underflow output sticky |
@@ -332,7 +346,7 @@ begin
 
 	bsb_regs0: entity work.bsb_regs
 		generic map (
-			DEFAULT_CONTROL_BYTES => X"00_11_0020_0000_00_00_00",
+			DEFAULT_CONTROL_BYTES => X"00_11_0020_0000_00_00" & X"000000_000000_000000_000000", -- bytes 8-19 (TX drive) = 0: 390 mV, no pre/post-cursor
 			USE_RAM_DOUT_RDY => TRUE,
 			USE_PIPELINED_RAM_WRITE => FALSE,
 			RAM_DATA_WIDTH => 16,
@@ -874,14 +888,14 @@ CMAC_INST: entity work.cmac_usplus_1
 		gt_rxcdrhold       => (others => '0'),
 		gt_rxpolarity      => (others => '0'),
 		gt_rxrate          => (others => '0'),
-		gt_txdiffctrl      => (others => '0'),
+		gt_txdiffctrl      => gt_txdiffctrl,
 		gt_txpolarity      => (others => '0'),
 		gt_txinhibit       => (others => '0'),
 		gt_txpippmen       => (others => '0'),
 		gt_txpippmsel      => (others => '0'),
-		gt_txpostcursor    => (others => '0'),
+		gt_txpostcursor    => gt_txpostcursor,
 		gt_txprbsforceerr  => (others => '0'),
-		gt_txprecursor     => (others => '0'),
+		gt_txprecursor     => gt_txprecursor,
 		gt_rxdfelpmreset   => gt_rxdfelpmreset,
 		gt_rxlpmen         => (others => '0'),
 		gt_rxprbscntreset  => gt_rxprbscntreset,
