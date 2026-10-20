@@ -92,7 +92,7 @@ architecture impl of ucap is
     subtype int8 is integer range 0 to NUMBER_OF_CHANNELS-1; -- used for channel and buffer indexing
 
 
-	signal control_bytes: slv8_array(0 to 10);
+	signal control_bytes: slv8_array(0 to 12);
 	signal status_bytes: slv8_array(0 to 3);
 
 	signal in_frame_ctr: unsigned(7 downto 0);
@@ -107,6 +107,7 @@ architecture impl of ucap is
 	signal user_reset, user_reset_reg: std_logic;
 	signal overrun: std_logic;
     signal user_stream_id: std_logic_vector(7 downto 0);
+    signal readout_delay_reg: unsigned(15 downto 0); -- ADC input frames to wait after ram_readout_trig (0 = no delay)
     -- Signals used for both write and read processes
     signal chan_pair_sel: u3_array(0 to NUMBER_OF_CHANNEL_PAIRS-1);
 	signal capture_timestamp: u48_array(0 to NUMBER_OF_SOURCES-1);
@@ -153,6 +154,8 @@ begin
 -- |         | 8   | 7:5  | (unused)       | |
 -- |         |     | 4:0 | sub-period capture rate               | |
 -- |         |  9  | 7:0 | source_sel           | Source selection for each physical channel (bit 0 = channel 0)|
+-- |         | 10  | 7:0 | user_stream_id       | Bits 11:4 of STREAM_ID in packet headers |
+-- |         |11-12|15:0 | readout_delay        | Pre-transmit delay in ADC input frames (0 = no delay). Keep base_period >> delay+burst drain or overrun may stick. |
 -- | STATUS  |  0  | 7:4 | (unused)        | |
 -- |         |  0  |  3  | fifo_overflow_sticky        | |
 -- |         |  0  |  2  | overrun        | |
@@ -164,7 +167,7 @@ begin
 
 	bsb_regs0: entity work.bsb_regs
 		GENERIC MAP (
-			DEFAULT_CONTROL_BYTES=> X"08_1A_02cb41_02cb41_17_00_00",
+			DEFAULT_CONTROL_BYTES=> X"08_1A_02cb41_02cb41_17_00_00_0000",
 			NUMBER_OF_CONTROL_BYTES => control_bytes'Length(1), -- Number of bits in the control word
 			NUMBER_OF_STATUS_BYTES => status_bytes'Length(1) -- Number of bits in the status word.
 		)
@@ -205,6 +208,9 @@ begin
 
 	-- CONTROL bytes 10: user stream ID
 	user_stream_id <= control_bytes(10);
+
+	-- CONTROL bytes 11-12: readout delay (ADC input frames)
+	readout_delay_reg <= to_unsigned(control_bytes(11 to 12));
 
 	-- STATUS byte 0
 	status_bytes(0)(0) <= fifo_overflow_sticky;
@@ -534,7 +540,7 @@ begin
 	----------------------
 	rd_blk: block
         -- read sequencer signals
-		type READ_SEQ_STATE_TYPE IS (READ_SEQ_WAIT, READ_SEQ_SEND_HEADER, READ_SEQ_SEND_DATA);
+		type READ_SEQ_STATE_TYPE IS (READ_SEQ_WAIT, READ_SEQ_DELAY, READ_SEQ_SEND_HEADER, READ_SEQ_SEND_DATA);
 		signal read_seq_state: READ_SEQ_STATE_TYPE;
 		signal header_byte_ctr: integer range 0 to FRAME_HEADER_BYTE_LENGTH; -- counts header bytes in the read sequencer
         signal read_seq_byte_ctr: unsigned(15 downto 0);  -- counts frame (0-1), word and byte for the read sequencer
@@ -542,6 +548,9 @@ begin
         --   14:4: word number (11 bits, 16384/8=2048 words)
 		--   3:0: byte number (4 bits, 8 samples/word = 16 bytes/word)
         signal ram_readout_mask: std_logic_vector(0 to NUMBER_OF_BUFFERS-1); -- bit pattern indicating the buffers being processed as a batch
+        signal readout_delay_target: unsigned(15 downto 0); -- readout_delay_reg ADC input frames
+        signal readout_delay_ctr: unsigned(15 downto 0);
+        signal readout_delay_src: std_logic; -- capture source whose tlast ticks the delay counter
 
         -- read processor
         type READ_PROC_OP_TYPE is (
@@ -570,6 +579,7 @@ begin
 
 	begin
 
+        readout_delay_target <= readout_delay_reg;
 
 	    rd_proc: process(all)
 		    variable frame_header: FRAME_HEADER_STRUCT;
@@ -627,8 +637,34 @@ begin
                         -- If any buffer is ready for transmission, grab the trigger pattern so we can process them as a batch.
 	            		if any_one(ram_readout_trig and not ram_readout_trig_ack) then -- ack won't affect trig until the next clock. Anticipate the result.
                             ram_readout_mask <= ram_readout_trig;
-                            read_seq_state <= READ_SEQ_SEND_HEADER;
+                            for i in 0 to NUMBER_OF_BUFFERS-1 loop
+                                if ram_readout_trig(i) then
+                                    readout_delay_src <= ram_readout_src(i);
+                                    exit;
+                                end if;
+                            end loop;
+                            if readout_delay_reg = 0 then
+                                read_seq_state <= READ_SEQ_SEND_HEADER;
+                            else
+                                readout_delay_ctr <= (others => '0');
+                                read_seq_state <= READ_SEQ_DELAY;
+                            end if;
 	            		end if;
+                    when READ_SEQ_DELAY =>
+                        -- Wait readout_delay_reg ADC input frames after ram_readout_trig
+                        -- before the first header. Tick uses s_axis_tlast of the source that
+                        -- filled the batch (same frame boundary as wr_blk). ram_readout_trig
+                        -- stays asserted until the batch is fully read; keep base_period
+                        -- larger than this delay plus burst drain time or overrun may stick.
+                        if s_axis_tvalid(to_integer(to_unsigned(readout_delay_src))) and
+                           s_axis_tlast(to_integer(to_unsigned(readout_delay_src))) then
+                            if readout_delay_ctr = readout_delay_target - 1 then
+                                readout_delay_ctr <= (others => '0');
+                                read_seq_state <= READ_SEQ_SEND_HEADER;
+                            else
+                                readout_delay_ctr <= readout_delay_ctr + 1;
+                            end if;
+                        end if;
                     when READ_SEQ_SEND_HEADER => -- Instruct the readout logic to send header data
 	                    if not fifo_full then
 	                        read_proc_op(read_proc_op'LEFT) <= READ_PROC_SEND_HEADER;
@@ -692,7 +728,8 @@ begin
 	            -- but we have finished reading the header well before its value changes again.
 	            frame_header.PROBE_ID := X"A0";
 	            frame_header.PROBE_ID(0) := src; -- current source;
-	            frame_header.SERIAL_FLAGS := "0000"; -- serial_flags(2 downto 0) & in_dat(source).TUSER(TUSER_SERIAL_FLAGS_BIT);
+	            frame_header.SERIAL_FLAGS := "0000"; -- UCAP does not use TUSER
+	            frame_header.SERIAL_FLAGS(3) := overrun; -- Sticky overrun bit. 
 	            frame_header.FLAGS := mode & std_logic_vector(read_proc_pkt_ctr(1 downto 0)); --mode and subframe number;
 	            -- Override the capture flag withthe overflow flags so we know  from the packet header if somewhing is amiss with the stream
 	            --frame_header.FLAGS(TUSER_CAPTURE_BIT) := data_fifo_overflow_sticky or header_fifo_overflow_sticky;
@@ -777,6 +814,7 @@ begin
 	                fifo_in_tvalid <= '0'; -- needed
 	                read_seq_byte_ctr <= (others => '0');
 	                read_seq_state <= READ_SEQ_WAIT; -- needed to make sure we start with header transmission
+                    readout_delay_ctr <= (others => '0');
                     read_proc_byte_ctr <= (others=> '0'); -- needed for the first frame header transmission
                     read_proc_pkt_ctr <= (others=> '0'); -- needed for the first frame header transmission
 	            end if; -- reset
