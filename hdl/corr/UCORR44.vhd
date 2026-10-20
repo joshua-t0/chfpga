@@ -66,7 +66,8 @@ entity UCORR44 is
 		CORR_NUMBER: integer := 0; -- correlator number to be used in packet headers
         NCORR: integer := 1;
 		URAM_MAX: integer := 64;
-		READOUT_BIN: integer := 0 -- bin number sacrificed for the readout cycle
+		READOUT_BIN: integer := 0; -- bin number sacrificed for the readout cycle
+		BINS_PER_FRAME_LOG2: integer := 3 -- Aggregate 2**N readout bins per AXIS frame / UDP packet (TLAST every 2**N bins, or on the last bin). Must be >= 1. 3 => 8 bins/frame.
 		);
 	PORT(
 
@@ -295,7 +296,8 @@ begin
 			CORR_NUMBER => CORR_NUMBER,
 			NCORR => NCORR,
 			URAM_MAX => URAM_MAX,
-			READOUT_BIN => READOUT_BIN
+			READOUT_BIN => READOUT_BIN,
+			BINS_PER_FRAME_LOG2 => BINS_PER_FRAME_LOG2
 		)
 		port map (
 			s_axis_xy_tdata => xy_tdata,

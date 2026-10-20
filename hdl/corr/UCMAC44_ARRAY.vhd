@@ -38,10 +38,12 @@ use xpm.vcomponents.ALL;
 --
 -- Data is stored in two banks: one for accumulation and one for readout. The readout bank of every
 -- CMAC is read on the first cycle of each frame, capturing NCMAC products. Each (18+18)=36-bit product
--- is packed into 5-bytes (40 bits). When m_axis_z_send='1', a 10 byte header and NCMAC*5-byte products are
--- streamed out byte-by-byte (10 + 5N bytes total) during the next 2047 clocks, while the rest of
--- the frame is being accumulated. A full readout requires 2048 frames, which sets the minimum
--- integration time. Once an integration is completed, banks are interchanged.
+-- is packed into 5 bytes (40 bits): bits 35:0 are the accumulated value, bit 36 is imag saturation,
+-- bit 37 is real saturation (matching UCorrPacketProcessor flags 0x10 / 0x20). The flags are recovered
+-- from the sticky min/max encoding written back to RAM on overflow. When m_axis_z_send='1', a 10 byte
+-- header and NCMAC*5-byte products are streamed out byte-by-byte (10 + 5N bytes total) during the next
+-- 2047 clocks, while the rest of the frame is being accumulated. A full readout requires 2048 frames,
+-- which sets the minimum integration time. Once an integration is completed, banks are interchanged.
 --
 -- .. todo:
 --   Document/deal with NCMAC=odd value
@@ -53,7 +55,8 @@ entity UCMAC44_ARRAY is
 		CORR_NUMBER     : integer; -- correlator number to be used in packet headers
 		NCORR           : integer := 1; -- Total number of correlators. Used only in computing the STREAM_ID (id = bin*NCORR+CORR_NUMBER)
 		URAM_MAX        : integer := 64; -- Maximum number of URAM that will be used. The rest will use BRAMs.
-		READOUT_BIN     : integer := 0 -- Bin number sacrificed for the readout cycle
+		READOUT_BIN     : integer := 0; -- Bin number sacrificed for the readout cycle
+		BINS_PER_FRAME_LOG2 : integer := 3 -- Aggregate 2**N readout bins per AXIS frame (TLAST every 2**N bins, or on the last bin). Must be >= 1. 3 => 8 bins/frame.
 	);
 	port (
 		-- Data be correlated & integrated. NCMAC channels (NCMAC bytes). AXI4-Streaming, non-blocking.
@@ -162,9 +165,27 @@ architecture impl of UCMAC44_ARRAY is
 
 
 	-- Constants
-	constant BYTES_PER_PRODUCT: integer := 5; -- (18+18) bits + 4 extra bits = 40 bits = 5 bytes
+	constant BYTES_PER_PRODUCT: integer := 5; -- (18+18) product + imag/real sat flags in bits 36/37 = 40 bits = 5 bytes
 	--  constant NBINS_TO_READOUT: integer := 2048; -- maximum number of bins that will be read and sent
 	constant LOG2_NCORR: integer := integer_log2(NCORR);
+	constant SAT_POS: std_logic_vector(17 downto 0) := "011111111111111111"; -- +2^17-1, sticky overflow encoding
+	constant SAT_NEG: std_logic_vector(17 downto 0) := "100000000000000000"; -- -2^17, sticky overflow encoding
+
+	-- Pack one RAM product into 5 little-endian bytes. Bits 35:0 are the (18+18)-bit
+	-- accumulated value; bit 36 = imag sat, bit 37 = real sat. Saturation is the same
+	-- min/max encoding used to clamp ram_din on overflow, so it is still present at readout.
+	function pack_product(ram_word: std_logic_vector(35 downto 0)) return slv8_array is
+		variable prod: unsigned(8 * BYTES_PER_PRODUCT - 1 downto 0);
+	begin
+		prod := resize(unsigned(ram_word), prod'length);
+		if ram_word(17 downto 0) = SAT_POS or ram_word(17 downto 0) = SAT_NEG then
+			prod(36) := '1';
+		end if;
+		if ram_word(35 downto 18) = SAT_POS or ram_word(35 downto 18) = SAT_NEG then
+			prod(37) := '1';
+		end if;
+		return to_slv8_array(reverse_bytes(std_logic_vector(prod)));
+	end function;
 
 	attribute keep_hierarchy of impl: architecture is "YES";
 	-- attribute RLOC_ORIGIN of Behavioral: architecture is ORIGIN;
@@ -201,6 +222,7 @@ begin
 		signal ro_active: std_logic := '0'; -- bank readout busy
 		signal ro_shift: std_logic := '0'; -- data available for shift out
 		signal ro_last: std_logic := '0'; -- is the last shift out of the integ period
+		signal ro_group_end: std_logic := '0'; -- close the AXIS frame (assert TLAST) on this bin: every 2**BINS_PER_FRAME_LOG2 bins, or the last bin
 		signal ro_bin_set: std_logic_vector(3 downto 0); -- bin set to be placed in the headers
 		signal dc_busy: std_logic := '0'; -- daisy chain readout busy
 		signal timestamp, integ_timestamp, readout_timestamp: unsigned(47 downto 0);
@@ -303,8 +325,13 @@ begin
 						m_axis_z_tvalid <= '0';
 						if m_axis_z_send then -- we have a byte to shift out and we are allowed to send it
 							m_axis_z_tvalid <= '1';
-							if byte_ctr = 1 then -- tlast when last byte.
-								m_axis_z_tlast <= '1';
+							if byte_ctr = 1 then -- last byte of this bin's packet
+								-- Aggregation: only close the AXIS frame (assert TLAST) on a
+								-- group boundary (every 2**BINS_PER_FRAME_LOG2 bins, or the last
+								-- bin). Non-boundary bins keep tlast='0' so several bins pack into
+								-- one DMA frame / UDP datagram. ro_group_end was registered with
+								-- this bin (see capture branch below), same lifetime as ro_last.
+								m_axis_z_tlast <= ro_group_end;
 								ro_shift <= '0'; -- stop shifting
 								if ro_last then -- if last readout on integration period
 									ro_active <= '0';
@@ -334,14 +361,14 @@ begin
 						-- Capture the RAM outputs, slice them in 5-byte products,  and store them in the shift register
 						-- This affects a large number of registers, implying large fanout controls
 						for i in 0 to NCMAC - 1 loop
-                            prod_bytes := to_slv8_array(reverse_bytes(std_logic_vector(resize(unsigned(ram_dout(i)), 8 * BYTES_PER_PRODUCT))));
+							prod_bytes := pack_product(ram_dout(i));
 							bytes(FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * i to FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * (i + 1) - 1) <= prod_bytes;
 						end loop;
 
 						-- Override the first product bytes after the frame header with the autocorrelation products if autocorr='1'
 						if autocorr_only then
 							for i in 0 to NCMAC / AUTOCORR_STRIDE - 2 loop -- assume that last one is not an autocorrelation (first N elements in N+1 high column are autocorrs)
-                                prod_bytes := to_slv8_array(reverse_bytes(std_logic_vector(resize(unsigned(ram_dout(i * AUTOCORR_STRIDE)), 8 * BYTES_PER_PRODUCT))));
+								prod_bytes := pack_product(ram_dout(i * AUTOCORR_STRIDE));
 								bytes(FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * i to FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * (i + 1) - 1) <= prod_bytes;
 							end loop;
 
@@ -357,6 +384,16 @@ begin
 						end if;
 						ro_shift <= '1'; -- there is data to shift out
 						ro_last <= '0'; -- is this the last readout? overriden below.
+						-- Aggregation frame boundary for this bin: assert TLAST every
+						-- 2**BINS_PER_FRAME_LOG2 bins (i.e. when the low bits of the bin
+						-- index are all ones, bin mod 2**N = 2**N-1). The last bin below
+						-- forces it too so the frame always closes. Registered here so it
+						-- stays stable while this bin's packet shifts out (like ro_last).
+						if ro_word_ctr1(BINS_PER_FRAME_LOG2 - 1 downto 0) = (BINS_PER_FRAME_LOG2 - 1 downto 0 => '1') then
+							ro_group_end <= '1';
+						else
+							ro_group_end <= '0';
+						end if;
 						-- Increment the readout word counter, or reset it if this is the last integration
 						-- The readout word counter must be ready before we set the RAM read address for reading the first word of the next frame.
 						-- Since we increment the counter 2 clocks after first word, and the next first word is almost one frame away,
@@ -366,6 +403,7 @@ begin
 							-- Set the readout word counter(address) in preparation for the readout phase.
 							ro_word_ctr1 <= (others => '0');
 							ro_last <= '1';
+							ro_group_end <= '1'; -- the last bin always closes the AXIS frame
 						end if;
 					end if; -- ro_shift, ro_word2
 
@@ -423,6 +461,7 @@ begin
 
 					frame <= (others => '0');
 					ro_active <= '0';
+					ro_group_end <= '0';
 					overrun <= '0';
 
 					timestamp <= (others => '0');
@@ -833,13 +872,13 @@ begin
 
 				dsp2_c_re_sign3 <= ram_dout(i)(35); -- register the real part sign bit
 				re_sat3 <= to_std_logic(first_frame2 = '0' and (
-	                                                ram_dout(i)(35 downto 18) = "011111111111111111" or
-	                                                ram_dout(i)(35 downto 18) = "100000000000000000"));
+	                                                ram_dout(i)(35 downto 18) = SAT_POS or
+	                                                ram_dout(i)(35 downto 18) = SAT_NEG));
 
 				dsp2_c_im_sign3 <= ram_dout(i)(17); -- register the imaginary part sign bit
 				im_sat3 <= to_std_logic(first_frame2 = '0' and (
-	                                                ram_dout(i)(17 downto 0) = "011111111111111111" or
-	                                                ram_dout(i)(17 downto 0) = "100000000000000000"));
+	                                                ram_dout(i)(17 downto 0) = SAT_POS or
+	                                                ram_dout(i)(17 downto 0) = SAT_NEG));
 
 				-------------
 				-- CLOCK 4: Register the post-accumulation result in DSP2.P
@@ -861,13 +900,13 @@ begin
 		-- Saturate accumulated sum before storing it into the RAM
 		-- This implies combinatorial logic between the DSP P output and the FIFO/BRAM inputs
 		-- Real part:
-		ram_din(i)(35 downto 18) <= "011111111111111111" when (re_sat4 = '1' and dsp2_c_re_sign4 = '0') or (dsp2_p(26) = '1' and dsp2_p(27) = '0') else
-			"100000000000000000" when (re_sat4 = '1' and dsp2_c_re_sign4 = '1') or (dsp2_p(26) = '0' and dsp2_p(27) = '1') else
+		ram_din(i)(35 downto 18) <= SAT_POS when (re_sat4 = '1' and dsp2_c_re_sign4 = '0') or (dsp2_p(26) = '1' and dsp2_p(27) = '0') else
+			SAT_NEG when (re_sat4 = '1' and dsp2_c_re_sign4 = '1') or (dsp2_p(26) = '0' and dsp2_p(27) = '1') else
 			dsp2_p(26 downto 9);
 
 		-- Imaginary part:
-		ram_din(i)(17 downto 0) <= "011111111111111111" when (im_sat4 = '1' and dsp2_c_im_sign4 = '0') or (dsp2_c_im_sign4 = '0' and dsp2_ab_im_sign4 = '0' and dsp2_p(47) = '1') else
-			"100000000000000000" when (im_sat4 = '1' and dsp2_c_im_sign4 = '1') or (dsp2_c_im_sign4 = '1' and dsp2_ab_im_sign4 = '1' and dsp2_p(47) = '0') else
+		ram_din(i)(17 downto 0) <= SAT_POS when (im_sat4 = '1' and dsp2_c_im_sign4 = '0') or (dsp2_c_im_sign4 = '0' and dsp2_ab_im_sign4 = '0' and dsp2_p(47) = '1') else
+			SAT_NEG when (im_sat4 = '1' and dsp2_c_im_sign4 = '1') or (dsp2_c_im_sign4 = '1' and dsp2_ab_im_sign4 = '1' and dsp2_p(47) = '0') else
 			dsp2_p(47 downto 30);
 
 
