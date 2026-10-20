@@ -25,7 +25,10 @@ ENTITY ucap_testbench IS
 
  		BITS_PER_SAMPLE: integer := 16; 
  		SAMPLES_PER_WORD: integer := 8;
- 		SAMPLES_PER_FRAME: integer := 16384
+ 		SAMPLES_PER_FRAME: integer := 16384;
+		-- 0: first output immediately after the first captured burst.
+		-- N: hardware waits N additional ADC input frames (READOUT_DELAY).
+		READOUT_DELAY_REG: integer := 256
  		);
 END ucap_testbench;
 
@@ -37,9 +40,11 @@ ARCHITECTURE behavior OF ucap_testbench IS
 
     constant CLK_PERIOD : time := 1000000/375 * 1 ps; -- 375 MHz
     constant BSB_CLK_PERIOD : time := 10 ns; --
-    constant CTRL_CLK_PERIOD : time := 10 ns; --
     constant WORDS_PER_FRAME : integer:= SAMPLES_PER_FRAME/SAMPLES_PER_WORD;
     constant ADC_BITS_PER_WORD: integer := BITS_PER_SAMPLE * SAMPLES_PER_WORD;
+    -- Mode 2 stores 8 frames per burst (frame_max = 7).
+    constant BURST_FRAMES : integer := 8;
+
 
 	--Inputs
 	--signal reset : std_logic := '0';
@@ -55,12 +60,12 @@ ARCHITECTURE behavior OF ucap_testbench IS
     signal source_sel_out: std_logic_vector(0 to NUMBER_OF_CHANNELS - 1); -- data source request
     signal source_sel_in: std_logic_vector(0 to NUMBER_OF_CHANNELS - 1) := (others => '0'); -- curent data source on tdata
 
-    signal tlast_out, tvalid_out, tready_out: std_logic;
+    signal tlast_out, tvalid_out: std_logic;
     signal tdata_out: std_logic_vector(7 downto 0);
 
-	signal cmd_tdata: slv8;
-	signal cmd_tvalid: std_logic;
-	signal cmd_tlast: std_logic;
+	signal cmd_tdata: slv8 := (others => '0');
+	signal cmd_tvalid: std_logic := '0';
+	signal cmd_tlast: std_logic := '0';
 	signal cmd_tready: std_logic;
 
 
@@ -91,12 +96,9 @@ begin
 
 	ucap0: entity work.ucap
         generic map (
+            FPGA_SERIES => ULTRASCALEPLUS,
             NUMBER_OF_CHANNELS => NUMBER_OF_CHANNELS,
             NUMBER_OF_SOURCES => NUMBER_OF_SOURCES
---            ADC_BITS_PER_SAMPLE => BITS_PER_SAMPLE,
---            ADC_SAMPLES_PER_WORD => SAMPLES_PER_WORD,
---            ADC_SAMPLES_PER_FRAME => SAMPLES_PER_FRAME,
---            SIM => TRUE
         )
 		port map (
 
@@ -118,18 +120,49 @@ begin
 			s_axis_clk => clk,
 			rst => rst,
 
-		-- CTRL_CMD_DAT => (TDATA=> cmd_tdata, TVALID => cmd_tvalid, TLAST => cmd_tlast),
-		CMD_DAT.TDATA => cmd_tdata,
-		CMD_DAT.TVALID => cmd_tvalid,
-		CMD_DAT.TLAST => cmd_tlast,
-		CMD_RDY.TREADY =>cmd_tready,
+		s_axis_bsb_tdata => cmd_tdata,
+		s_axis_bsb_tvalid => cmd_tvalid,
+		s_axis_bsb_tlast => cmd_tlast,
+		s_axis_bsb_tready => cmd_tready,
 
-		RPLY_DAT => open,
-		RPLY_RDY => (TREADY => '1'),
+		m_axis_bsb_tdata => open,
+		m_axis_bsb_tvalid => open,
+		m_axis_bsb_tlast => open,
+		m_axis_bsb_tready => '1',
 
-			ctrl_clk => bsb_clk,
-			ctrl_rst => bsb_rst
+			bsb_clk => bsb_clk,
+			bsb_rst => bsb_rst
 		 );
+
+	-- Count input tlasts until the first output byte. Delay=0 starts streaming
+	-- right after the first captured burst; delay=N waits N extra frames.
+	check_delay: process(clk)
+		variable tlast_count: integer := 0;
+		variable reported: boolean := false;
+		variable min_tlasts: integer;
+		variable max_tlasts: integer;
+	begin
+		if rising_edge(clk) then
+			if rst = '1' then
+				tlast_count := 0;
+				reported := false;
+			else
+				if tvalid_in(0) = '1' and tlast_in(0) = '1' then
+					tlast_count := tlast_count + 1;
+				end if;
+				if (not reported) and tvalid_out = '1' then
+					reported := true;
+					min_tlasts := BURST_FRAMES + READOUT_DELAY_REG;
+					max_tlasts := min_tlasts + 2;
+					report "First UCAP output after " & integer'image(tlast_count) & " input tlasts (expected " & integer'image(min_tlasts) & ")";
+					assert tlast_count >= min_tlasts
+						report "UCAP readout delay too short" severity error;
+					assert tlast_count <= max_tlasts
+						report "UCAP readout delay too long" severity error;
+				end if;
+			end if;
+		end if;
+	end process;
 
 
 	sim_proc: process
@@ -157,6 +190,8 @@ begin
         ch0:= 0;
         ch1 := 1;
         fpga_write_control(bsb_clk, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 0, mode*64 + ch1*8 + ch0);  -- 64=bypass
+        fpga_write_control(bsb_clk, cmd_tdata, cmd_tvalid, cmd_tlast, cmd_tready, 11, READOUT_DELAY_REG, 2);
+        sleep(clk, 20);
 
         -- send channelizer data
         for frame in 0 to 1500 loop
