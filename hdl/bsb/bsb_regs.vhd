@@ -379,11 +379,12 @@ cmd_proc: process(all)
 							if RAM_ADDR_WIDTH /= 0 then --Make sure this block of code is not synthesized if no RAM/DRP access is needed
 
 								if not wait_state and s_axis_bsb_tvalid then
-									if RAM_DATA_WIDTH = 16 and is_msb = '1' then -- if we are in 16-bit mode and this is the second byte (MSB)
-										ram_din_int(15 downto 8) <= s_axis_bsb_tdata;
-										ram_din_int(7 downto 0) <= previous_byte;
-										ram_wr_en_int <= '1';
-										addr <= addr + 1;
+									if RAM_DATA_WIDTH = 16 then -- if we are in 16-bit mode
+										if is_msb then -- if this is the second byte (MSB)
+											ram_din_int(15 downto 8) <= s_axis_bsb_tdata;
+											ram_din_int(7 downto 0) <= previous_byte;
+											ram_wr_en_int <= '1';
+										end if; -- if msb then
 									else -- if 8 bit mode, store and write always
 										ram_din_int(15 downto 8) <= (others => '0'); -- make sure the net is always driven even in 8-bit mode to suppress warnings
 										ram_din_int(7 downto 0) <= s_axis_bsb_tdata;
@@ -391,11 +392,11 @@ cmd_proc: process(all)
 										-- Set the write address along with WR_EN=1 and the data.
 										-- We don't increment the address on the first write of the block, as addr already contains our first target address.
 										-- But we set ram_write_addr_incr=1 so we will increment it when we setup the next write cycles.
-										if ram_write_addr_incr then
-											addr <= addr + 1;
-										end if;
-										ram_write_addr_incr <= '1';
 									end if;
+									if ram_write_addr_incr then
+										addr <= addr + 1;
+									end if;
+									ram_write_addr_incr <= '1';
 
 									if USE_PIPELINED_RAM_WRITE = FALSE and (RAM_DATA_WIDTH /= 16 or is_msb = '1') then -- if we need to wait for a ready signal and we actually wrote a byte/word (i.e. not interrupted half-word), then process a wait state. The end of frame will be handled there.
 										s_axis_bsb_tready <= '0'; -- we won't grab new data until the RAM is ready
