@@ -108,11 +108,11 @@ architecture Behavioral of SCALER is
     constant COEFF_BYTES_PER_FRAME: integer := COEFF_WORDS_PER_FRAME * COEFF_BITS_PER_WORD / 8;
     constant LOG2_COEFF_BYTES_PER_FRAME: integer := integer_log2(COEFF_BYTES_PER_FRAME); -- number of address bits to access gain coefficients byte-wise
     constant LOG2_COEFF_WORDS_PER_FRAME: integer := integer_log2(FFT_WORDS_PER_FRAME); -- number of address bits to access gain coefficients word-wise
-    -- Describe how many integers in total there are in a post-gain word. The number includes both real or imaginary parts.
-    -- The post-gain processing applies post-scaling, rounding and saturation to each integer individually,
+    -- Describe how many components in total there are in a post-gain word. The number includes both real or imaginary parts.
+    -- The post-gain processing applies post-scaling, rounding and saturation to each component individually,
     -- whether they are the real or complex component of the product.
-    constant INTEGERS_PER_WORD:integer := FFT_BINS_PER_WORD * 2;
-    constant INTEGER_WIDTH: integer := sel(USE_COMPLEX_GAINS,
+    constant COMPONENTS_PER_WORD:integer := FFT_BINS_PER_WORD * 2;
+    constant PRODUCT_COMPONENT_WIDTH: integer := sel(USE_COMPLEX_GAINS,
                                            FFT_BITS_PER_BIN/2 + COEFF_BITS_PER_BIN/2 + 1, -- complex gains, +1 to account for add operation in complex multiplication
                                            FFT_BITS_PER_BIN/2 + COEFF_BITS_PER_BIN); -- real gain (float or not)
     --constant SCALAR_WIDTH:integer := FFT_BITS_PER_BIN * sel(USE_COMPLEX_GAINS, 2, 1);
@@ -126,7 +126,7 @@ architecture Behavioral of SCALER is
     constant FB: integer := FFT_BITS_PER_BIN; -- FFT complex sample width
     constant OB: integer := OUT_BITS_PER_BIN; -- Output complex sample width
     constant CB: integer := CAP_BITS_PER_BIN; -- Capture complex sample width
-    constant IPW: integer := INTEGERS_PER_WORD; -- Integers per word
+    constant IPW: integer := COMPONENTS_PER_WORD; -- Components per word
     constant BPW: integer := FFT_BITS_PER_WORD; -- Number of bits in an FFT word (all bins combined)
 
     -- pipelined reset
@@ -144,33 +144,34 @@ architecture Behavioral of SCALER is
     signal in_dat_dly2_tuser    : std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);  
 
     --- Define Control word and its signals
-    signal control_bytes: slv8_array(0 to 12); -- default value set in the CMD_SLAVE
+    signal control_bytes: slv8_array(0 to 13); -- default value set in the CMD_SLAVE
     signal status_bytes: slv8_array(0 to 17);
 
     signal bypass_scaler: std_logic;
     signal soft_reset: std_logic;
-    signal post_scaler_left_shift: std_logic_vector(4 downto 0); -- can shift up to 31 bits left
+    signal post_scaler_left_shift_bank: slv_array(0 to 1)(4 downto 0); -- per-bank left shift, 0-31 bits
+    signal post_scaler_left_shift: std_logic_vector(4 downto 0); -- applied shift: bank selected by current_gain_bank_dly2
 
     -- Stage 1: shift result
-    signal stage1_word: signed_array(0 to INTEGERS_PER_WORD-1)(INTEGER_WIDTH-1 downto 0);
-    signal stage1_sign: std_logic_vector(0 to INTEGERS_PER_WORD-1); -- Indicates the sign of each of the 4 numbers in the incoming word
-    signal stage1_overflow: std_logic_vector(0 to INTEGERS_PER_WORD-1);
+    signal stage1_word: signed_array(0 to COMPONENTS_PER_WORD-1)(PRODUCT_COMPONENT_WIDTH-1 downto 0);
+    signal stage1_sign: std_logic_vector(0 to COMPONENTS_PER_WORD-1); -- Indicates the sign of each of the 4 numbers in the incoming word
+    signal stage1_overflow: std_logic_vector(0 to COMPONENTS_PER_WORD-1);
     signal stage1_tvalid: std_logic;
     signal stage1_tlast: std_logic;
     signal stage1_tuser: std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);
 
     -- stage 2: rounding result
-    signal stage2_word: signed_array(0 to INTEGERS_PER_WORD-1)(7 downto 0);
-    signal stage2_sign: std_logic_vector(0 to INTEGERS_PER_WORD-1); -- Indicates the sign of each of the 4 numbers in the incoming word
-    signal stage2_overflow: std_logic_vector(0 to INTEGERS_PER_WORD-1);
+    signal stage2_word: signed_array(0 to COMPONENTS_PER_WORD-1)(7 downto 0);
+    signal stage2_sign: std_logic_vector(0 to COMPONENTS_PER_WORD-1); -- Indicates the sign of each of the 4 numbers in the incoming word
+    signal stage2_overflow: std_logic_vector(0 to COMPONENTS_PER_WORD-1);
     signal stage2_tvalid: std_logic;
     signal stage2_tlast: std_logic;
     signal stage2_tuser: std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);
 
     -- stage 3: saturation and output
-    signal stage3_word: signed_array(0 to INTEGERS_PER_WORD-1)(7 downto 0);
-    signal stage3_sign: std_logic_vector(0 to INTEGERS_PER_WORD-1); -- Indicates the sign of each of the 4 numbers in the incoming word
-    signal stage3_overflow: std_logic_vector(0 to INTEGERS_PER_WORD-1);
+    signal stage3_word: signed_array(0 to COMPONENTS_PER_WORD-1)(7 downto 0);
+    signal stage3_sign: std_logic_vector(0 to COMPONENTS_PER_WORD-1); -- Indicates the sign of each of the 4 numbers in the incoming word
+    signal stage3_overflow: std_logic_vector(0 to COMPONENTS_PER_WORD-1);
     signal stage3_tvalid: std_logic;
     signal stage3_tlast: std_logic;
     signal stage3_tuser: std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);
@@ -207,6 +208,8 @@ architecture Behavioral of SCALER is
     signal next_gain_bank: std_logic; -- 1 bit
     signal gain_bank_switch_frame_number: std_logic_vector(31 downto 0);
     signal current_gain_bank: std_logic;
+    signal current_gain_bank_dly1: std_logic;
+    signal current_gain_bank_dly2: std_logic;
     signal synchronize_gain_bank_switch: std_logic;
 
 
@@ -214,7 +217,7 @@ architecture Behavioral of SCALER is
     signal scaled_data_tvalid: std_logic;
     signal scaled_data_tuser: std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);
     signal scaled_data_tlast: std_logic;
-    signal scaled_data_tdata: std_logic_vector(INTEGER_WIDTH*INTEGERS_PER_WORD-1 downto 0);
+    signal scaled_data_tdata: std_logic_vector(PRODUCT_COMPONENT_WIDTH*COMPONENTS_PER_WORD-1 downto 0);
     signal scaled_data_log_gain: unsigned_array(0 to FFT_BINS_PER_WORD-1)(5 downto 0);
 
 
@@ -256,7 +259,7 @@ begin
 -- | CONTROL  |  0     |  7      | soft_reset                        | Soft reset signal. When '1', resets internal counters and state.                                 |
 -- |          |        |  6      | bypass_scaler                     | When '1', bypasses the scaling operations and passes input data directly to output (with optional transformations based on bypass_data_type). |
 -- |          |        |  5      | four_bits                         | Is '1' when only the top 4 bits are of interest (i.e. rounding is done on the 5th bit). In this case the lower 4 bits of the results are zero. |
--- |          |        |  4:0    | post_scaler_left_shift            | Post-scaler left shift amount (0-31). Applied after gain multiplication for global scaling.      |
+-- |          |        |  4:0    | post_scaler_left_shift_bank0      | Post-scaler left shift for gain bank 0 (0-31). Applied after RAM latency when bank 0 is active.   |
 -- |          |  1     |  7      | gain_table_page(5)                | MSB of gain table page address                                                                   |
 -- |          |        |  6      | use_offset_binary                 | When '1', Offset_binary encoding is used on the output of the scaler. The input data and gains are not affected and are always provided in 2's complement. |
 -- |          |        |  5      | gain_table_page(4)                | Bit 4 of gain table page address                                                                 |
@@ -277,6 +280,7 @@ begin
 -- |          |        |  4:3    | bypass_data_type                  | When bypass_scaler is '1': "00": input, "01": 1+0j if any saturation, "10": 1+0j or 0+1j if positive or negative saturation respectively |
 -- |          |        |  2:0    | cap_data_type                     | "000": raw output, "001": scaled input, "010": 4-bit, "100": Even bins, "101": odd bins          |
 -- |          |11:12   | 15:0    | stats_bin_number                  | Bin number on which to measure overflow stats when stats_single_bin='1'.                        |
+-- |          | 13     |  4:0    | post_scaler_left_shift_bank1      | Post-scaler left shift for gain bank 1 (0-31). Applied after RAM latency when bank 1 is active.   |
 -- | STATUS   |  0     |  7      | stats_ready                       | '1' when new stats data has been captured                                                       |
 -- |          |        |  6      | current_gain_bank                 | Currently used gain bank.                                                                       |
 -- |          |        |  5      | eight_bit_support                 | '1' when this scaler implementation supports (8+8) bit output mode                              |
@@ -298,10 +302,10 @@ begin
 
 
 -- CONTROL Byte 0
-soft_reset             <= control_bytes(0)(7);
-bypass_scaler          <= control_bytes(0)(6);
-four_bits              <= control_bytes(0)(5);
-post_scaler_left_shift <= control_bytes(0)(4 downto 0);
+soft_reset                    <= control_bytes(0)(7);
+bypass_scaler                 <= control_bytes(0)(6);
+four_bits                     <= control_bytes(0)(5);
+post_scaler_left_shift_bank(0) <= control_bytes(0)(4 downto 0);
 
 -- CONTROL Byte 1
 assert gain_table_page'LENGTH <= gain_table_page_padded'LENGTH report "Not enough register space for gain_table_page (have "&str(gain_table_page_padded'LENGTH)&" but need " & str(gain_table_page'LENGTH) & ")" severity FAILURE;
@@ -338,6 +342,13 @@ cap_data_type  <= control_bytes(10)(2 downto 0); -- "000": main scaler output, "
 
 -- CONTROL bytes 11-12
 stats_bin_number <= to_unsigned(control_bytes(11 to 12));
+
+-- CONTROL Byte 13
+post_scaler_left_shift_bank(1) <= control_bytes(13)(4 downto 0);
+
+-- Applied post-scaler shift follows the gain bank after RAM_LATENCY so it
+-- arrives at the multiplier with the coefficients from that bank.
+post_scaler_left_shift <= post_scaler_left_shift_bank(to_integer(unsigned'(0 => current_gain_bank_dly2)));
 
 -- STATUS Byte 0
 status_bytes(0)(7)   <= stats_ready;
@@ -388,7 +399,8 @@ bsb_regs0: entity work.bsb_regs
                                 X"05F5E1" & -- Bytes 3-5: stats_frame_count
                                 X"00000000" & --Bytes 6-9: gain_bank_switch_frame_number
                                 X"00"& -- Byte 10: use_float_gains=0,mon_reset_stats=0, mon_ctrl=0, bypass_data_type[1:0]="00", cap_data_type[1:0]="00"
-                                X"0000", -- Bytes 11-12: stats_bin_number
+                                X"0000" & -- Bytes 11-12: stats_bin_number
+                                X"01", -- Byte 13: post_scaler_left_shift_bank1=1 (same default as bank 0 in byte 0)
         RAM_ADDR_WIDTH => BSB_RAM_ADDR_WIDTH,
         RAM_LATENCY=> RAM_LATENCY
         )
@@ -519,74 +531,103 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
     --
     mul_gen: if USE_COMPLEX_GAINS generate
 
-        signal scaled_data_even_tdata: slv80;
-        signal scaled_data_odd_tdata: slv80;
+        -- Widths derived from generics; must match the hardcoded SCALER_CMUL IP
+        -- (C_A_WIDTH=18, C_B_WIDTH=16, C_OUT_WIDTH=35, TDATA 48/32/80, C_LATENCY=6).
+        constant FFT_COMPONENT_WIDTH      : integer := FFT_BITS_PER_BIN / 2;
+        constant COEFF_COMPONENT_WIDTH    : integer := COEFF_BITS_PER_BIN / 2;
+        constant CMUL_A_COMPONENT_WIDTH   : integer := ((FFT_COMPONENT_WIDTH + 7) / 8) * 8; -- byte-aligned AXI component
+        constant CMUL_A_TDATA_WIDTH       : integer := 2 * CMUL_A_COMPONENT_WIDTH;
+        constant CMUL_B_COMPONENT_WIDTH   : integer := ((COEFF_COMPONENT_WIDTH + 7) / 8) * 8; -- byte-aligned AXI component
+        constant CMUL_B_TDATA_WIDTH       : integer := 2 * CMUL_B_COMPONENT_WIDTH;
+        constant CMUL_OUT_COMPONENT_WIDTH : integer := ((PRODUCT_COMPONENT_WIDTH + 7) / 8) * 8; -- byte-aligned product component
+        constant CMUL_DOUT_TDATA_WIDTH    : integer := 2 * CMUL_OUT_COMPONENT_WIDTH;
+        constant CMUL_LATENCY           : integer := 6; -- Must match SCALER_CMUL C_LATENCY
 
-        signal coeff_even_din: slv32;
-        signal coeff_odd_din: slv32;
+        signal left_shift_cmul_dly: slv_array(0 to CMUL_LATENCY-1)(4 downto 0);
+        signal post_scaler_left_shift_cmul: std_logic_vector(4 downto 0);
 
-        signal cmul0_a_tdata: std_logic_vector(47 downto 0);
-        signal cmul1_a_tdata: std_logic_vector(47 downto 0);
-
+        signal cmul_tvalid : std_logic_vector(0 to FFT_BINS_PER_WORD-1);
+        signal cmul_tlast  : std_logic_vector(0 to FFT_BINS_PER_WORD-1);
+        signal cmul_tuser  : slv_array(0 to FFT_BINS_PER_WORD-1)(FFT_TUSER_BITS_PER_WORD-1 downto 0);
+        signal cmul_dout   : slv_array(0 to FFT_BINS_PER_WORD-1)(CMUL_DOUT_TDATA_WIDTH-1 downto 0);
 
     begin
-        cplx_width_gen: if FFT_BINS_PER_WORD /= 2 generate
-            assert FALSE report "Complex gains are currently only supported with 2 bins per word" severity FAILURE;
+        cplx_ip_width_gen: if FFT_COMPONENT_WIDTH /= 18 or COEFF_COMPONENT_WIDTH /= 16 or PRODUCT_COMPONENT_WIDTH /= 35
+            or CMUL_A_TDATA_WIDTH /= 48 or CMUL_B_TDATA_WIDTH /= 32 or CMUL_DOUT_TDATA_WIDTH /= 80 generate
+            assert FALSE report "Complex gains currently require SCALER_CMUL widths: 18x16=35, TDATA 48/32/80" severity FAILURE;
         end generate;
 
+        -- Delay the RAM-aligned left-shift through CMUL latency so scaled_data_log_gain
+        -- matches the complex product at the CMUL output.
+        cmul_shift_dly: process(clk)
+        begin
+            if rising_edge(clk) then
+                left_shift_cmul_dly <= shift_right(left_shift_cmul_dly, 1, insert => post_scaler_left_shift);
+            end if;
+        end process;
+        post_scaler_left_shift_cmul <= left_shift_cmul_dly(left_shift_cmul_dly'RIGHT);
+
         -- fft data word:     MSB->LSB: Re(N),   Im(N),   Re(N+1), Im(N+1)
-        -- gain word: MSB->LSB: Re(N+1), Im(N+1), Re(N),   Im(N)
-        -- single multiplier product format: Im, Re
+        -- gain word:         MSB->LSB: Re(N+1), Im(N+1), Re(N),   Im(N)   (bin 0 in the LSBs)
+        -- CMUL AXI TDATA:    each Re/Im component is byte-aligned via resize() (zero-pad MSBs,
+        --                    not sign-extend); imaginary in the high component: Im, Re
+        -- single multiplier product format: Im, Re (same AXI layout, byte-aligned components)
         -- Final scaled output format: MSB->LSB: Re(N), Im(N), Re(N+1), Im(N+1)
 
-        -- Select gain coefficient for the even bin
-        coeff_even_din <= coeff_ram_dout(15 downto 0) & coeff_ram_dout(31 downto 16); -- Im:Re
-        cmul0_a_tdata <= ("000000" & in_dat_dly2_tdata(2*18+17 downto 2*18+0) & "000000" & in_dat_dly2_tdata(3*18+17 downto 3*18+0)); -- Im:Re, padded for byte align
-        -- Instantiate complex multiplier for the even bin
-        -- Data packing: byte-aligned, imaginary in the high bits
-        cmul0: entity work.SCALER_CMUL
-        PORT MAP (
-            aclk => clk,
-            s_axis_a_tvalid => in_dat_dly2_tvalid,
-            s_axis_a_tuser => in_dat_dly2_tuser,
-            s_axis_a_tlast => in_dat_dly2_tlast,
-            s_axis_a_tdata => cmul0_a_tdata,
-            s_axis_b_tvalid => in_dat_dly2_tvalid,
-            s_axis_b_tdata => coeff_even_din,
-            m_axis_dout_tvalid => scaled_data_tvalid,
-            m_axis_dout_tuser => scaled_data_tuser,
-            m_axis_dout_tlast => scaled_data_tlast,
-            m_axis_dout_tdata => scaled_data_even_tdata
-          );
-          scaled_data_tdata(4*INTEGER_WIDTH - 1 downto 3*INTEGER_WIDTH) <= scaled_data_even_tdata(34 downto 0); -- Re(N)
-          scaled_data_tdata(3*INTEGER_WIDTH - 1 downto 2*INTEGER_WIDTH) <= scaled_data_even_tdata(74 downto 40); -- Im(N)
+        -- One SCALER_CMUL per bin. i=0 is the first (MSB) FFT bin N.
+        gen_cmul: for i in 0 to FFT_BINS_PER_WORD-1 generate
+            -- FFT word is MSB-first: bin i occupies one FFT_BITS_PER_BIN field from the top.
+            constant FFT_RE_HI : integer := FFT_BITS_PER_WORD - 1 - i * FFT_BITS_PER_BIN;
+            constant FFT_RE_LO : integer := FFT_RE_HI - FFT_COMPONENT_WIDTH + 1;
+            constant FFT_IM_HI : integer := FFT_RE_LO - 1;
+            constant FFT_IM_LO : integer := FFT_IM_HI - FFT_COMPONENT_WIDTH + 1;
+            -- Coeff word is LSB-first: bin i occupies COEFF_BITS_PER_BIN from the bottom, Im then Re.
+            constant COEFF_IM_LO : integer := i * COEFF_BITS_PER_BIN;
+            constant COEFF_RE_LO : integer := COEFF_IM_LO + COEFF_COMPONENT_WIDTH;
+            -- scaled_data is MSB-first Re,Im per bin (same order as the FFT word).
+            constant OUT_RE_HI : integer := (COMPONENTS_PER_WORD - 2 * i) * PRODUCT_COMPONENT_WIDTH - 1;
+            constant OUT_RE_LO : integer := (COMPONENTS_PER_WORD - 2 * i - 1) * PRODUCT_COMPONENT_WIDTH;
+            constant OUT_IM_HI : integer := OUT_RE_LO - 1;
+            constant OUT_IM_LO : integer := (COMPONENTS_PER_WORD - 2 * i - 2) * PRODUCT_COMPONENT_WIDTH;
 
-          scaled_data_log_gain(1) <= resize(unsigned(post_scaler_left_shift), 6);
+            signal cmul_a_tdata : std_logic_vector(CMUL_A_TDATA_WIDTH-1 downto 0);
+            signal coeff_din    : std_logic_vector(CMUL_B_TDATA_WIDTH-1 downto 0);
+        begin
+            -- CMUL B: Im:Re from the LSB-packed coefficient word, each half sized to the IP B component
+            coeff_din <= resize(coeff_ram_dout(COEFF_IM_LO + COEFF_COMPONENT_WIDTH - 1 downto COEFF_IM_LO), CMUL_B_COMPONENT_WIDTH)
+                       & resize(coeff_ram_dout(COEFF_RE_LO + COEFF_COMPONENT_WIDTH - 1 downto COEFF_RE_LO), CMUL_B_COMPONENT_WIDTH);
+            -- CMUL A: Im:Re, each component zero-padded (MSB) to the AXI byte-aligned component
+            cmul_a_tdata <= resize(in_dat_dly2_tdata(FFT_IM_HI downto FFT_IM_LO), CMUL_A_COMPONENT_WIDTH)
+                          & resize(in_dat_dly2_tdata(FFT_RE_HI downto FFT_RE_LO), CMUL_A_COMPONENT_WIDTH);
 
+            -- Data packing: byte-aligned, imaginary in the high bits. Sideband from instance 0 is used downstream.
+            cmul: entity work.SCALER_CMUL
+            PORT MAP (
+                aclk => clk,
+                s_axis_a_tvalid => in_dat_dly2_tvalid,
+                s_axis_a_tuser => in_dat_dly2_tuser,
+                s_axis_a_tlast => in_dat_dly2_tlast,
+                s_axis_a_tdata => cmul_a_tdata,
+                s_axis_b_tvalid => in_dat_dly2_tvalid,
+                s_axis_b_tdata => coeff_din,
+                m_axis_dout_tvalid => cmul_tvalid(i),
+                m_axis_dout_tuser => cmul_tuser(i),
+                m_axis_dout_tlast => cmul_tlast(i),
+                m_axis_dout_tdata => cmul_dout(i)
+              );
 
-        -- Instantiate complex multiplier for the odd bin
-         coeff_odd_din <= coeff_ram_dout(32+15 downto 32+0) & coeff_ram_dout(32+31 downto 32+16);
-        cmul1_a_tdata <= ("000000" & in_dat_dly2_tdata(0*18+17 downto 0*18+0) & "000000" & in_dat_dly2_tdata(1*18+17 downto 1*18+0));
-        cmul1: entity work.SCALER_CMUL
-          PORT MAP (
-            aclk => clk,
-            s_axis_a_tvalid => in_dat_dly2_tvalid,
-            s_axis_a_tuser => "00",
-            s_axis_a_tlast => in_dat_dly2_tlast,
-            s_axis_a_tdata => cmul1_a_tdata,
-            s_axis_b_tvalid => in_dat_dly2_tvalid,
-            s_axis_b_tdata => coeff_odd_din,
-            m_axis_dout_tvalid => open,
-            m_axis_dout_tuser => open,
-            m_axis_dout_tlast => open,
-            m_axis_dout_tdata => scaled_data_odd_tdata
-          );
+            -- Remap CMUL output (Im in high aligned component, Re in low) into scaled_data Re,Im from the MSB.
+            -- resize() drops the AXI pad MSBs of each component, leaving the PRODUCT_COMPONENT_WIDTH product.
+            scaled_data_tdata(OUT_RE_HI downto OUT_RE_LO) <= resize(cmul_dout(i)(CMUL_OUT_COMPONENT_WIDTH - 1 downto 0), PRODUCT_COMPONENT_WIDTH); -- Re
+            scaled_data_tdata(OUT_IM_HI downto OUT_IM_LO) <= resize(cmul_dout(i)(2 * CMUL_OUT_COMPONENT_WIDTH - 1 downto CMUL_OUT_COMPONENT_WIDTH), PRODUCT_COMPONENT_WIDTH); -- Im
 
-          -- remap the CMUL output into the scaled_data vector (order from MSB to LSB: Re(N), Im(N), Re(N+1), Im(N+1))
-          scaled_data_tdata(2*INTEGER_WIDTH - 1 downto 1*INTEGER_WIDTH) <= scaled_data_odd_tdata(34 downto 0); -- Re(N+1)
-          scaled_data_tdata(1*INTEGER_WIDTH - 1 downto 0*INTEGER_WIDTH) <= scaled_data_odd_tdata(74 downto 40); -- Im(N+1)
+            scaled_data_log_gain(FFT_BINS_PER_WORD - 1 - i) <= resize(unsigned(post_scaler_left_shift_cmul), 6);
+        end generate;
 
-          scaled_data_log_gain(0) <= resize(unsigned(post_scaler_left_shift), 6);
+        -- Pass through the CMUL(0) output control signals. All CMULs should have the same control signals.
+        scaled_data_tvalid <= cmul_tvalid(0);
+        scaled_data_tuser  <= cmul_tuser(0);
+        scaled_data_tlast  <= cmul_tlast(0);
 
     ---------------
     -- REAL gains
@@ -594,7 +635,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
     else generate -- if no complex gains
 
         signal coeff: unsigned_array(0 to FFT_BINS_PER_WORD-1)(COEFF_BITS_PER_BIN-1 downto 0);
-        signal fft_reg_tdata: signed_array(0 to INTEGERS_PER_WORD-1)(FFT_BITS_PER_BIN/2-1 downto 0);
+        signal fft_reg_tdata: signed_array(0 to COMPONENTS_PER_WORD-1)(FFT_BITS_PER_BIN/2-1 downto 0);
         signal fft_reg_tvalid: std_logic;
         signal fft_reg_tlast: std_logic;
         signal fft_reg_tuser: std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);
@@ -634,7 +675,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 CLK => clk,
                 A => std_logic_vector(fft_reg_tdata(i)), -- 18/32-bit signed
                 B => std_logic_vector(coeff(i / 2)), -- 16 bit unsigned
-                P => scaled_data_tdata((i + 1) * INTEGER_WIDTH - 1 downto i * INTEGER_WIDTH) -- 34/48 bit signed
+                P => scaled_data_tdata((i + 1) * PRODUCT_COMPONENT_WIDTH - 1 downto i * PRODUCT_COMPONENT_WIDTH) -- 34/48 bit signed
               );
         end generate;
 
@@ -703,8 +744,8 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
 --
     scaler_proc: process(all)
         variable scaled_data_log_gain_var: integer range 0 to 63;
-        variable word_var: signed(INTEGER_WIDTH-1 downto 0);
-        variable OUT_WORD_VAR: signed_array(0 to INTEGERS_PER_WORD - 1)(7 downto 0);
+        variable word_var: signed(PRODUCT_COMPONENT_WIDTH-1 downto 0);
+        variable OUT_WORD_VAR: signed_array(0 to COMPONENTS_PER_WORD - 1)(7 downto 0);
         variable round_down_var: std_logic;
     begin
         if rising_edge(clk) then
@@ -740,6 +781,11 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             in_dat_dly2_tlast  <= in_dat_dly1_tlast;
             in_dat_dly2_tuser  <= in_dat_dly1_tuser;
 
+            -- Delay the active gain bank by RAM_LATENCY so the applied left-shift
+            -- switches with the coefficients from the new bank, not two cycles early.
+            current_gain_bank_dly1 <= current_gain_bank;
+            current_gain_bank_dly2 <= current_gain_bank_dly1;
+
 
             -- RESET:  See at the bottom of this process
 
@@ -754,10 +800,10 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             stage1_tlast   <= scaled_data_tlast;
             stage1_tuser   <= scaled_data_tuser;
 
-            for i in 0 to INTEGERS_PER_WORD-1 loop
+            for i in 0 to COMPONENTS_PER_WORD-1 loop
                 -- get an integer. The to_10() standard function makes sure that 'U' values are converted to zeros and
                 -- prevent simulation warnings in the following computations
-                word_var := to_01(signed(scaled_data_tdata((i+1)*INTEGER_WIDTH-1 downto i*INTEGER_WIDTH)));
+                word_var := to_01(signed(scaled_data_tdata((i+1)*PRODUCT_COMPONENT_WIDTH-1 downto i*PRODUCT_COMPONENT_WIDTH)));
 
                 -- Store the sign bit before shifting
                 stage1_sign(i) <= sign_bit(word_var); -- preserve the sign that may be destroyed by the shift operation
@@ -770,7 +816,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 -- Note: We cannot use and_reduce() with a range determined from a variable: it does not synthersize. But we can compare a variable range of a
                 -- signed value with a constant.
 
-                stage1_overflow(i) <= to_std_logic(not all_same(word_var, INTEGER_WIDTH-1, INTEGER_WIDTH-1-scaled_data_log_gain_var)); 
+                stage1_overflow(i) <= to_std_logic(not all_same(word_var, PRODUCT_COMPONENT_WIDTH-1, PRODUCT_COMPONENT_WIDTH-1-scaled_data_log_gain_var)); 
             end loop;
 
 
@@ -780,12 +826,12 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             stage2_tuser   <= stage1_tuser;
             stage2_sign <= stage1_sign;
             stage2_overflow <= stage1_overflow; -- overriden below if rounding overflow detected
-            for i in 0 to INTEGERS_PER_WORD-1 loop
+            for i in 0 to COMPONENTS_PER_WORD-1 loop
                 if four_bits = '1' or EIGHT_BIT_SUPPORT = FALSE then
                     if rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND or rounding_mode = ROUNDING_MODE_ROUND then -- if rounding
                         stage2_word(i)(7 downto 4) <= msb(msb(stage1_word(i), 4 + 1) + 1, 4);
                         stage2_word(i)(3 downto 0) <= "0000";
-                        round_down_var := to_std_logic(rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND and stage1_word(i)(INTEGER_WIDTH-1-4)='1' and stage1_word(i)(INTEGER_WIDTH-1-4-1 downto 0)=0);
+                        round_down_var := to_std_logic(rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND and stage1_word(i)(PRODUCT_COMPONENT_WIDTH-1-4)='1' and stage1_word(i)(PRODUCT_COMPONENT_WIDTH-1-4-1 downto 0)=0);
                         if round_down_var then
                             stage2_word(i)(4) <= '0';
                         end if;
@@ -812,7 +858,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 elsif EIGHT_BIT_SUPPORT then -- four_bits = '0'
                     if rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND or rounding_mode = ROUNDING_MODE_ROUND then -- if rounding
                         stage2_word(i) <= msb(msb(stage1_word(i), 8 + 1) + 1, 8);
-                        round_down_var := to_std_logic(rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND and stage1_word(i)(INTEGER_WIDTH-1-8)='1' and stage1_word(i)(INTEGER_WIDTH-1-8-1 downto 0)=0);
+                        round_down_var := to_std_logic(rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND and stage1_word(i)(PRODUCT_COMPONENT_WIDTH-1-8)='1' and stage1_word(i)(PRODUCT_COMPONENT_WIDTH-1-8-1 downto 0)=0);
                         if round_down_var then
                             stage2_word(i)(0) <= '0';
                         end if;
@@ -834,7 +880,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             -- PIPELINE STAGE 3: Correct final result
 
             -- Stage 3a: Apply saturation
-            for i in 0 to INTEGERS_PER_WORD-1 loop
+            for i in 0 to COMPONENTS_PER_WORD-1 loop
                 OUT_WORD_VAR(i) := stage2_word(i);
                 if stage2_overflow(i) then
                     if not stage2_sign(i) then
@@ -861,14 +907,14 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
 
             -- Stage 3c: apply offset encoding if requested
             if use_offset_binary then
-                for i in 0 to INTEGERS_PER_WORD-1 loop
+                for i in 0 to COMPONENTS_PER_WORD-1 loop
                     OUT_WORD_VAR(i)(7) := not OUT_WORD_VAR(i)(7); -- Implement offset binary by inverting the sign bit.
                 end loop;
             end if;
 
             -- Stage 3d: Clear lower nibble in 4-bit mode
             if four_bits='1' or EIGHT_BIT_SUPPORT = FALSE then
-                for i in 0 to INTEGERS_PER_WORD-1 loop
+                for i in 0 to COMPONENTS_PER_WORD-1 loop
                     OUT_WORD_VAR(i)(3 downto 0) := "0000";
                 end loop;
             end if;
@@ -891,6 +937,8 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 word_ctr <= (others=> '0');
                 frame_ctr <= (others=> '0');
                 current_gain_bank <= '0';
+                current_gain_bank_dly1 <= '0';
+                current_gain_bank_dly2 <= '0';
             end if; -- IF RST
 
         end if; -- clk
@@ -925,7 +973,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         end loop;
 
                     when "100" => -- send the MSBs of the raw FFT input. Used to send FUNCGEN data to correlator/corner-turn engines with FFT bypass
-                        for i in 0 to INTEGERS_PER_WORD-1 loop
+                        for i in 0 to COMPONENTS_PER_WORD-1 loop
                             m_axis_out_tdata((i+1)*OB/2-1 downto i*OB/2) <= msb_pad(in_dat_dly1_tdata((i+1)*FB/2-1 downto i*FB/2), OB/2);
                         end loop;
                         m_axis_out_tlast <= in_dat_dly1_tlast;
@@ -1014,7 +1062,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
 
                 case cap_data_type is
                     when "000" => -- send main scaler output (default)
-                        for i in 0 to INTEGERS_PER_WORD-1 loop
+                        for i in 0 to COMPONENTS_PER_WORD-1 loop
                             m_axis_cap_tdata((i+1)*CB/2-1 downto i*CB/2) <= msb_pad(m_axis_out_tdata((i+1)*OB/2-1 downto i*OB/2), CB/2);
                         end loop;
                         m_axis_cap_tlast <= m_axis_out_tlast;
@@ -1024,14 +1072,14 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                     when "001" => -- send MSBs of pre-gain (raw) FFT output
 
                         -- We forward the upper N bits of the FFT integers to the upper N bits of the output integer
-                        for i in 0 to INTEGERS_PER_WORD-1 loop
+                        for i in 0 to COMPONENTS_PER_WORD-1 loop
                             m_axis_cap_tdata((i+1)*CB/2-1 downto i*CB/2) <= msb_pad(in_dat_dly1_tdata((i+1)*FB/2-1 downto i*FB/2), CB/2);
                         end loop;
                         m_axis_cap_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= in_dat_dly1_tuser;
 
 
                     when "010" => -- send MSBs of the post-gain FFT output with saturation
-                        for i in 0 to INTEGERS_PER_WORD-1 loop
+                        for i in 0 to COMPONENTS_PER_WORD-1 loop
                             m_axis_cap_tdata((i+1)*CB/2-1 downto i*CB/2) <=
                                 ('1', others => '0') when stage1_overflow(i)='1' and stage1_sign(i)='1' else
                                 ('0', others => '1') when stage1_overflow(i)='1' and stage1_sign(i)='0' else
@@ -1042,7 +1090,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                         m_axis_cap_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= stage1_tuser;
 
                     when "011" => -- send the 4+4 bit scaled values
-                        for i in 0 to INTEGERS_PER_WORD-1 loop
+                        for i in 0 to COMPONENTS_PER_WORD-1 loop
                             m_axis_cap_tdata((i+1)*CB/2-1 downto i*CB/2) <= msb_pad(std_logic_vector(stage3_word(i)), CB/2); -- MSB->LSB: 3,2,1,0 = Re(N), Im(N), Re(N+1), Im(N+1)
                         end loop;
                         m_axis_cap_tlast <= stage3_tlast;
