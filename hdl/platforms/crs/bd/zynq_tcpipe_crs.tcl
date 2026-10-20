@@ -592,10 +592,14 @@ proc create_root_design { parentCell } {
     CONFIG.ADC3_Outclk_Freq {100.000} \
     CONFIG.ADC3_Refclk_Freq {3200.000} \
     CONFIG.ADC3_Sampling_Rate {3.2} \
-    CONFIG.ADC_Bypass_BG_Cal02 {true} \
-    CONFIG.ADC_Bypass_BG_Cal12 {true} \
-    CONFIG.ADC_Bypass_BG_Cal22 {true} \
-    CONFIG.ADC_Bypass_BG_Cal32 {true} \
+    CONFIG.ADC_Bypass_BG_Cal00 {false} \
+    CONFIG.ADC_Bypass_BG_Cal02 {false} \
+    CONFIG.ADC_Bypass_BG_Cal10 {false} \
+    CONFIG.ADC_Bypass_BG_Cal12 {false} \
+    CONFIG.ADC_Bypass_BG_Cal20 {false} \
+    CONFIG.ADC_Bypass_BG_Cal22 {false} \
+    CONFIG.ADC_Bypass_BG_Cal30 {false} \
+    CONFIG.ADC_Bypass_BG_Cal32 {false} \
     CONFIG.ADC_CalOpt_Mode00 {1} \
     CONFIG.ADC_CalOpt_Mode02 {1} \
     CONFIG.ADC_CalOpt_Mode10 {1} \
