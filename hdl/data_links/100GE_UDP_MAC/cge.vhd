@@ -270,7 +270,7 @@ begin
 	end process gt_ctl_store_proc;
 
 	-- CONTROL Bytes 8-19: per-lane TX driver settings (GTY async ports, UG578 Table 3-35). Dedicated bytes per lane,
-	-- not muxed by gt_lane_sel. Reset value: swing code 24 = 950 mV (Vivado IBERT default, works at site), no pre/post-cursor.
+	-- not muxed by gt_lane_sel. Reset value: swing code 24 = 950 mV, pre-cursor 0, post-cursor code 15 = 3.99 dB (site tests).
 	gt_tx_drive_gen: for i in 0 to NUM_GT_LANES - 1 generate
 		gt_txdiffctrl(5 * i + 4 downto 5 * i)   <= control_bytes(8 + 3 * i)(4 downto 0);
 		gt_txprecursor(5 * i + 4 downto 5 * i)  <= control_bytes(9 + 3 * i)(4 downto 0);
@@ -331,7 +331,7 @@ begin
 	-- |         |      | 2:0  | gt_rxprbssel            | PRBS RX select (active lane) |
 	-- |         | 8+3i | 4:0 | gt_txdiffctrl (lane i)  | TX swing, lane i=0-3 (0 = 390 mV ... 31 = 1040 mV; reset 24 = 950 mV) |
 	-- |         | 9+3i | 4:0 | gt_txprecursor (lane i) | TX pre-cursor emphasis, lane i=0-3 (0 = none) |
-	-- |         |10+3i | 4:0 | gt_txpostcursor (lane i)| TX post-cursor emphasis, lane i=0-3 (0 = none) |
+	-- |         |10+3i | 4:0 | gt_txpostcursor (lane i)| TX post-cursor emphasis, lane i=0-3 (0 = none; reset 15 = 3.99 dB) |
 	-- |         | 20   | 3:0 | gt_rxlpmen (bit i = lane i) | RX equalizer mode: 0 = DFE, 1 = LPM |
 	-- | STATUS  |  0  |  0   | tx_gt_locked_led        | TX GT locked LED |
 	-- |         |     |  1   | tx_ovfout_sticky        | TX overflow output sticky |
@@ -352,7 +352,7 @@ begin
 
 	bsb_regs0: entity work.bsb_regs
 		generic map (
-			DEFAULT_CONTROL_BYTES => X"00_11_0020_0000_00_00" & X"180000_180000_180000_180000" & X"00", -- bytes 8-19 (TX drive, swing/pre/post per lane): 950 mV, no pre/post-cursor; byte 20 = 0: DFE
+			DEFAULT_CONTROL_BYTES => X"00_11_0020_0000_00_00" & X"18000F_18000F_18000F_18000F" & X"00", -- bytes 8-19 (TX drive, swing/pre/post per lane): 950 mV, pre 0, post 3.99 dB; byte 20 = 0: DFE
 			USE_RAM_DOUT_RDY => TRUE,
 			USE_PIPELINED_RAM_WRITE => FALSE,
 			RAM_DATA_WIDTH => 16,
