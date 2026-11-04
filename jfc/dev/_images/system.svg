@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="322.69376"
+   height="230.93037"
+   viewBox="0 0 322.69376 230.93037"
+   version="1.1"
+   id="svg34"
+   sodipodi:docname="system.svg"
+   inkscape:version="1.4.2 (1:1.4.2+202505120738+ebf0e940d0)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs
+     id="defs34" />
+  <sodipodi:namedview
+     id="namedview34"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="2.2571429"
+     inkscape:cx="189.17722"
+     inkscape:cy="144.6519"
+     inkscape:window-width="1920"
+     inkscape:window-height="1011"
+     inkscape:window-x="0"
+     inkscape:window-y="32"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg34" />
+  <title
+     id="title1">SYSTEM Block Diagram</title>
+  <!-- Background -->
+  <!-- Main SYSTEM container -->
+  <rect
+     x="5"
+     y="0.75"
+     width="220.10625"
+     height="229.43037"
+     fill="none"
+     stroke="#000000"
+     stroke-width="1.5"
+     stroke-dasharray="4, 2"
+     id="rect2" />
+  <text
+     x="12"
+     y="13.75"
+     font-family="sans-serif"
+     font-size="11px"
+     font-weight="bold"
+     fill="#000000"
+     id="text2">SYSTEM</text>
+  <!-- Command Input Arrow -->
+  <line
+     x1="0"
+     y1="95.75"
+     x2="25"
+     y2="95.75"
+     stroke="#000000"
+     stroke-width="1.5"
+     id="line2" />
+  <polygon
+     points="33,100 25,104 25,96 "
+     fill="#000000"
+     id="polygon2"
+     transform="translate(0,-4.25)" />
+  <text
+     x="7.3256779"
+     y="91.5093"
+     font-family="sans-serif"
+     font-size="8px"
+     fill="#000000"
+     id="text3">BSB</text>
+  <!-- ROUTER block -->
+  <rect
+     x="35"
+     y="65.75"
+     width="55"
+     height="60"
+     fill="#ffffff"
+     stroke="#000000"
+     stroke-width="1"
+     id="rect3" />
+  <text
+     x="41"
+     y="90.75"
+     font-family="sans-serif"
+     font-size="10px"
+     font-weight="bold"
+     fill="#000000"
+     id="text4">ROUTER</text>
+  <text
+     x="42.161377"
+     y="97.522217"
+     font-family="sans-serif"
+     font-size="7px"
+     fill="#666666"
+     id="text5">sys_router0</text>
+  <!-- Reply Output Arrow -->
+  <line
+     x1="33"
+     y1="110.75"
+     x2="0"
+     y2="110.75"
+     stroke="#000000"
+     stroke-width="1.5"
+     id="line5" />
+  <polygon
+     points="0,115 8,119 8,111 "
+     fill="#000000"
+     id="polygon5"
+     transform="translate(0,-4.25)" />
+  <!-- Vertical bus line from router -->
+  <line
+     x1="90"
+     y1="95.75"
+     x2="110"
+     y2="95.75"
+     stroke="#000000"
+     stroke-width="1"
+     id="line6" />
+  <line
+     x1="110"
+     y1="40.75"
+     x2="110"
+     y2="161.4077"
+     stroke="#000000"
+     stroke-width="1.5"
+     id="line7" />
+  <!-- Horizontal connections to each module -->
+  <line
+     x1="110"
+     y1="40.75"
+     x2="130"
+     y2="40.75"
+     stroke="#000000"
+     stroke-width="1"
+     id="line8" />
+  <line
+     x1="109.77848"
+     y1="64.45253"
+     x2="129.77849"
+     y2="64.45253"
+     stroke="#000000"
+     stroke-width="1"
+     id="line9" />
+  <line
+     x1="110"
+     y1="89.041138"
+     x2="130"
+     y2="89.041138"
+     stroke="#000000"
+     stroke-width="1"
+     id="line10" />
+  <line
+     x1="110"
+     y1="145.75"
+     x2="130"
+     y2="145.75"
+     stroke="#000000"
+     stroke-width="1"
+     id="line11" />
+  <!-- Module blocks - Column 1 -->
+  <!-- GPIO -->
+  <rect
+     x="130"
+     y="29.509495"
+     width="70"
+     height="19.601267"
+     fill="#ffffff"
+     stroke="#000000"
+     stroke-width="0.999998"
+     id="rect13" />
+  <text
+     x="152"
+     y="39.75"
+     font-family="sans-serif"
+     font-size="10px"
+     font-weight="bold"
+     fill="#000000"
+     id="text13">GPIO</text>
+  <text
+     x="151.79639"
+     y="46.177845"
+     font-family="sans-serif"
+     font-size="7px"
+     fill="#666666"
+     id="text14">0x0000</text>
+  <!-- SYSMON -->
+  <g
+     id="g34"
+     transform="translate(0,-14.661392)">
+    <rect
+       x="130"
+       y="69.424049"
+       width="70"
+       height="18.439869"
+       fill="#ffffff"
+       stroke="#000000"
+       stroke-width="0.999997"
+       id="rect14" />
+    <text
+       x="140"
+       y="79"
+       font-family="sans-serif"
+       font-size="10px"
+       font-weight="bold"
+       fill="#000000"
+       id="text15">SYSMON</text>
+    <text
+       x="151.79639"
+       y="85.760117"
+       font-family="sans-serif"
+       font-size="7px"
+       fill="#666666"
+       id="text16">0x1000</text>
+  </g>
+  <!-- FREQ_CTR -->
+  <g
+     id="g35"
+     transform="translate(0.22151899,-25.737342)">
+    <rect
+       x="130"
+       y="104.42405"
+       width="70"
+       height="21.594936"
+       fill="#ffffff"
+       stroke="#000000"
+       stroke-width="1"
+       id="rect16" />
+    <text
+       x="137"
+       y="114"
+       font-family="sans-serif"
+       font-size="10px"
+       font-weight="bold"
+       fill="#000000"
+       id="text17">FREQ_CTR</text>
+    <text
+       x="147.53798"
+       y="123.56329"
+       font-family="sans-serif"
+       font-size="7px"
+       fill="#666666"
+       id="text18">0x2000</text>
+  </g>
+  <!-- SPI -->
+  <g
+     id="g36"
+     transform="translate(0.22151899,-34.155063)">
+    <rect
+       x="130"
+       y="140.31012"
+       width="70"
+       height="18.050632"
+       fill="#ffffff"
+       stroke="#000000"
+       stroke-width="0.999999"
+       id="rect18" />
+    <text
+       x="156"
+       y="149"
+       font-family="sans-serif"
+       font-size="10px"
+       font-weight="bold"
+       fill="#000000"
+       id="text19">SPI</text>
+    <text
+       x="151.79639"
+       y="156.20316"
+       font-family="sans-serif"
+       font-size="7px"
+       fill="#666666"
+       id="text20">0x3000</text>
+  </g>
+  <!-- Module blocks - Column 2 -->
+  <!-- REFCLK -->
+  <g
+     id="g37"
+     transform="translate(-79.968354,94.768987)">
+    <rect
+       x="210"
+       y="34.20253"
+       width="70"
+       height="19.601265"
+       fill="#ffffff"
+       stroke="#000000"
+       stroke-width="1"
+       id="rect20" />
+    <text
+       x="225"
+       y="44"
+       font-family="sans-serif"
+       font-size="10px"
+       font-weight="bold"
+       fill="#000000"
+       id="text21">REFCLK</text>
+    <text
+       x="231.79639"
+       y="50.649361"
+       font-family="sans-serif"
+       font-size="7px"
+       fill="#666666"
+       id="text22">0x4000</text>
+  </g>
+  <!-- I2C -->
+  <g
+     id="g38"
+     transform="translate(-80.511715,81.746836)">
+    <rect
+       x="210"
+       y="69.867088"
+       width="70"
+       height="18.272152"
+       fill="#ffffff"
+       stroke="#000000"
+       stroke-width="1"
+       id="rect22" />
+    <text
+       x="236"
+       y="79"
+       font-family="sans-serif"
+       font-size="10px"
+       font-weight="bold"
+       fill="#000000"
+       id="text23">I2C</text>
+    <text
+       x="231.79639"
+       y="85.981644"
+       font-family="sans-serif"
+       font-size="7px"
+       fill="#666666"
+       id="text24">0x5000</text>
+  </g>
+  <!-- Horizontal connections to column 2 -->
+  <line
+     x1="199.99998"
+     y1="40.75"
+     x2="232.5558"
+     y2="40.75"
+     stroke="#000000"
+     stroke-width="1"
+     id="line24" />
+  <!-- BLINKER (no command interface) -->
+  <g
+     id="g39"
+     transform="translate(-155.50633,38.724684)">
+    <rect
+       x="285"
+       y="148"
+       width="70"
+       height="22.722094"
+       fill="#ececec"
+       stroke="#000000"
+       stroke-width="1"
+       stroke-dasharray="3,2"
+       id="rect27"
+       style="fill:none;stroke:#000000;stroke-dasharray:none" />
+    <text
+       x="295.45898"
+       y="163.00607"
+       font-family="sans-serif"
+       font-size="10px"
+       font-weight="bold"
+       fill="#000000"
+       id="text27">BLINKER</text>
+  </g>
+  <text
+     x="290"
+     y="171.75"
+     font-family="sans-serif"
+     font-size="7px"
+     fill="#666666"
+     id="text28" />
+  <!-- Output arrows to pins -->
+  <!-- LED output from BLINKER -->
+  <line
+     x1="110"
+     y1="116.29607"
+     x2="130"
+     y2="116.29607"
+     stroke="#000000"
+     stroke-width="1"
+     id="line39" />
+  <line
+     x1="110"
+     y1="161.4077"
+     x2="130"
+     y2="161.4077"
+     stroke="#000000"
+     stroke-width="1"
+     id="line38" />
+  <text
+     x="233.56339"
+     y="42.9692"
+     font-family="sans-serif"
+     font-size="7px"
+     fill="#666666"
+     id="text16-6">I/Os(SMAs,FAN,Bucks,etc)</text>
+  <line
+     x1="199.99998"
+     y1="114.05639"
+     x2="232.5558"
+     y2="114.05639"
+     stroke="#000000"
+     stroke-width="1"
+     id="line41" />
+  <line
+     x1="199.99998"
+     y1="139.90158"
+     x2="232.5558"
+     y2="139.90158"
+     stroke="#000000"
+     stroke-width="1"
+     id="line42" />
+  <line
+     x1="199.99998"
+     y1="159.63792"
+     x2="232.5558"
+     y2="159.63792"
+     stroke="#000000"
+     stroke-width="1"
+     id="line43" />
+  <line
+     x1="199.99998"
+     y1="197.23094"
+     x2="232.5558"
+     y2="197.23094"
+     stroke="#000000"
+     stroke-width="1"
+     id="line40" />
+  <text
+     x="233.56339"
+     y="116.27559"
+     font-family="sans-serif"
+     font-size="7px"
+     fill="#666666"
+     id="text41">I/Os(SPI ports)</text>
+  <text
+     x="233.56339"
+     y="142.12079"
+     font-family="sans-serif"
+     font-size="7px"
+     fill="#666666"
+     id="text42">I/Os (REFCLKs, SYNC)</text>
+  <text
+     x="233.56339"
+     y="161.85712"
+     font-family="sans-serif"
+     font-size="7px"
+     fill="#666666"
+     id="text43">I/Os (I2C Ports)</text>
+  <text
+     x="233.56339"
+     y="199.45013"
+     font-family="sans-serif"
+     font-size="7px"
+     fill="#666666"
+     id="text40">I/Os(LEDs)</text>
+  <metadata
+     id="metadata43">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>SYSTEM Block Diagram</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+</svg>

@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="700"
+   height="600"
+   viewBox="0 0 700 600"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="gpio.svg"
+   inkscape:version="1.4.2 (1:1.4.2+202505120738+ebf0e940d0)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false" />
+  <title id="title1">GPIO Block Diagram</title>
+  
+  <!-- Main GPIO container -->
+  <rect
+     x="10"
+     y="10"
+     width="680"
+     height="580"
+     fill="none"
+     stroke="#000000"
+     stroke-width="2"
+     stroke-dasharray="4, 2"
+     id="rect_main" />
+  <text
+     x="20"
+     y="30"
+     font-family="sans-serif"
+     font-size="14px"
+     font-weight="bold"
+     fill="#000000"
+     id="text_title">GPIO</text>
+
+  <!-- BSB Control Interface -->
+  <rect x="30" y="50" width="150" height="80" fill="#e8f4f8" stroke="#000000" stroke-width="1.5" id="rect_bsb" />
+  <text x="40" y="70" font-family="sans-serif" font-size="11px" font-weight="bold" fill="#000000">BSB Control</text>
+  <text x="40" y="85" font-family="sans-serif" font-size="9px" fill="#000000">ctrl_cmd_in</text>
+  <text x="40" y="100" font-family="sans-serif" font-size="9px" fill="#000000">ctrl_rply_out</text>
+  <text x="40" y="115" font-family="sans-serif" font-size="8px" fill="#666666">Memory-mapped</text>
+  
+  <!-- Input arrow for BSB -->
+  <line x1="0" y1="95" x2="30" y2="95" stroke="#000000" stroke-width="1.5" id="line_bsb_in" />
+  <polygon points="38,100 30,104 30,96" fill="#000000" id="poly_bsb_in" transform="translate(0,-5)" />
+
+  <!-- ARM SPI Interface -->
+  <rect x="220" y="50" width="120" height="80" fill="#fff4e8" stroke="#000000" stroke-width="1.5" id="rect_arm_spi" />
+  <text x="230" y="70" font-family="sans-serif" font-size="11px" font-weight="bold" fill="#000000">ARM SPI</text>
+  <text x="230" y="85" font-family="sans-serif" font-size="9px" fill="#000000">arm_spi_sck</text>
+  <text x="230" y="100" font-family="sans-serif" font-size="9px" fill="#000000">arm_spi_mosi</text>
+  <text x="230" y="115" font-family="sans-serif" font-size="9px" fill="#000000">arm_spi_miso</text>
+  
+  <!-- ARM SPI signals -->
+  <line x1="340" y1="75" x2="370" y2="75" stroke="#000000" stroke-width="1" id="line_arm_sck" />
+  <line x1="340" y1="90" x2="370" y2="90" stroke="#000000" stroke-width="1" id="line_arm_mosi" />
+  <line x1="340" y1="105" x2="370" y2="105" stroke="#000000" stroke-width="1" id="line_arm_miso" />
+  <polygon points="378,80 370,84 370,76" fill="#000000" id="poly_arm_sck" transform="translate(0,-5)" />
+  <polygon points="378,95 370,99 370,91" fill="#000000" id="poly_arm_mosi" transform="translate(0,-5)" />
+  <polygon points="370,110 378,110 370,106 370,114" fill="#000000" id="poly_arm_miso" transform="translate(0,-5)" />
+
+  <!-- IRIG-B Module -->
+  <rect x="400" y="50" width="120" height="80" fill="#f0f0f0" stroke="#000000" stroke-width="1.5" id="rect_irigb" />
+  <text x="410" y="70" font-family="sans-serif" font-size="11px" font-weight="bold" fill="#000000">IRIG-B</text>
+  <text x="410" y="85" font-family="sans-serif" font-size="9px" fill="#000000">Decoder</text>
+  <text x="410" y="100" font-family="sans-serif" font-size="9px" fill="#000000">Encoder</text>
+  <text x="410" y="115" font-family="sans-serif" font-size="8px" fill="#666666">Time sync</text>
+  
+  <!-- IRIG-B signals -->
+  <line x1="520" y1="95" x2="550" y2="95" stroke="#000000" stroke-width="1" id="line_irigb_out" />
+  <polygon points="558,100 550,104 550,96" fill="#000000" id="poly_irigb_out" transform="translate(0,-5)" />
+  <text x="555" y="90" font-family="sans-serif" font-size="8px" fill="#000000">irigb_out</text>
+  
+  <line x1="0" y1="110" x2="400" y2="110" stroke="#000000" stroke-width="1" id="line_irigb_in" />
+  <polygon points="408,115 400,119 400,111" fill="#000000" id="poly_irigb_in" transform="translate(0,-5)" />
+  <text x="5" y="105" font-family="sans-serif" font-size="8px" fill="#000000">irigb_mux_in[0:7]</text>
+
+  <!-- Buck Synchronization -->
+  <rect x="30" y="160" width="150" height="60" fill="#e8f8e8" stroke="#000000" stroke-width="1.5" id="rect_buck" />
+  <text x="40" y="180" font-family="sans-serif" font-size="11px" font-weight="bold" fill="#000000">Buck Sync</text>
+  <text x="40" y="195" font-family="sans-serif" font-size="9px" fill="#000000">buck_sync[0:N-1]</text>
+  <text x="40" y="210" font-family="sans-serif" font-size="8px" fill="#666666">PWM signals</text>
+  
+  <!-- Buck sync outputs -->
+  <line x1="180" y1="190" x2="210" y2="190" stroke="#000000" stroke-width="1" id="line_buck_out" />
+  <polygon points="218,195 210,199 210,191" fill="#000000" id="poly_buck_out" transform="translate(0,-5)" />
+
+  <!-- ADC Control -->
+  <rect x="220" y="160" width="150" height="100" fill="#f8e8e8" stroke="#000000" stroke-width="1.5" id="rect_adc" />
+  <text x="230" y="180" font-family="sans-serif" font-size="11px" font-weight="bold" fill="#000000">ADC Control</text>
+  <text x="230" y="195" font-family="sans-serif" font-size="9px" fill="#000000">adc_rst</text>
+  <text x="230" y="210" font-family="sans-serif" font-size="9px" fill="#000000">adc_cal_freeze</text>
+  <text x="230" y="225" font-family="sans-serif" font-size="9px" fill="#000000">adc_status</text>
+  <text x="230" y="240" font-family="sans-serif" font-size="8px" fill="#666666">(lock, flags)</text>
+  
+  <!-- ADC signals -->
+  <line x1="370" y1="195" x2="400" y2="195" stroke="#000000" stroke-width="1" id="line_adc_rst" />
+  <polygon points="408,200 400,204 400,196" fill="#000000" id="poly_adc_rst" transform="translate(0,-5)" />
+  <line x1="370" y1="210" x2="400" y2="210" stroke="#000000" stroke-width="1" id="line_adc_cal" />
+  <polygon points="408,215 400,219 400,211" fill="#000000" id="poly_adc_cal" transform="translate(0,-5)" />
+  
+  <line x1="0" y1="230" x2="220" y2="230" stroke="#000000" stroke-width="1" id="line_adc_status" />
+  <polygon points="228,235 220,239 220,231" fill="#000000" id="poly_adc_status" transform="translate(0,-5)" />
+
+  <!-- Fan Control -->
+  <rect x="400" y="160" width="120" height="60" fill="#f8f8e8" stroke="#000000" stroke-width="1.5" id="rect_fan" />
+  <text x="410" y="180" font-family="sans-serif" font-size="11px" font-weight="bold" fill="#000000">Fan Control</text>
+  <text x="410" y="195" font-family="sans-serif" font-size="9px" fill="#000000">fan_pwm</text>
+  <text x="410" y="210" font-family="sans-serif" font-size="9px" fill="#000000">fan_tach</text>
+  
+  <!-- Fan signals -->
+  <line x1="520" y1="195" x2="550" y2="195" stroke="#000000" stroke-width="1" id="line_fan_pwm" />
+  <polygon points="558,200 550,204 550,196" fill="#000000" id="poly_fan_pwm" transform="translate(0,-5)" />
+  <line x1="0" y1="210" x2="400" y2="210" stroke="#000000" stroke-width="1" id="line_fan_tach" />
+  <polygon points="408,215 400,219 400,211" fill="#000000" id="poly_fan_tach" transform="translate(0,-5)" />
+
+  <!-- Network Configuration -->
+  <rect x="30" y="290" width="200" height="100" fill="#e8e8f8" stroke="#000000" stroke-width="1.5" id="rect_net" />
+  <text x="40" y="310" font-family="sans-serif" font-size="11px" font-weight="bold" fill="#000000">Network Config</text>
+  <text x="40" y="325" font-family="sans-serif" font-size="9px" fill="#000000">MAC Address</text>
+  <text x="40" y="340" font-family="sans-serif" font-size="9px" fill="#000000">IP Address</text>
+  <text x="40" y="355" font-family="sans-serif" font-size="9px" fill="#000000">UDP Ports</text>
+  <text x="40" y="370" font-family="sans-serif" font-size="8px" fill="#666666">Local & Remote</text>
+  
+  <!-- Network config outputs -->
+  <line x1="230" y1="325" x2="260" y2="325" stroke="#000000" stroke-width="1" id="line_mac" />
+  <line x1="230" y1="340" x2="260" y2="340" stroke="#000000" stroke-width="1" id="line_ip" />
+  <line x1="230" y1="355" x2="260" y2="355" stroke="#000000" stroke-width="1" id="line_port" />
+  <polygon points="268,330 260,334 260,326" fill="#000000" id="poly_mac" transform="translate(0,-5)" />
+  <polygon points="268,345 260,349 260,341" fill="#000000" id="poly_ip" transform="translate(0,-5)" />
+  <polygon points="268,360 260,364 260,356" fill="#000000" id="poly_port" transform="translate(0,-5)" />
+
+  <!-- User Controls -->
+  <rect x="260" y="290" width="150" height="100" fill="#f8f0e8" stroke="#000000" stroke-width="1.5" id="rect_user" />
+  <text x="270" y="310" font-family="sans-serif" font-size="11px" font-weight="bold" fill="#000000">User Controls</text>
+  <text x="270" y="325" font-family="sans-serif" font-size="9px" fill="#000000">Global Resets</text>
+  <text x="270" y="340" font-family="sans-serif" font-size="9px" fill="#000000">Triggers</text>
+  <text x="270" y="355" font-family="sans-serif" font-size="9px" fill="#000000">User Mux</text>
+  <text x="270" y="370" font-family="sans-serif" font-size="8px" fill="#666666">PWM, PPS, etc.</text>
+  
+  <!-- User control outputs -->
+  <line x1="410" y1="325" x2="440" y2="325" stroke="#000000" stroke-width="1" id="line_user_reset" />
+  <line x1="410" y1="340" x2="440" y2="340" stroke="#000000" stroke-width="1" id="line_user_trig" />
+  <line x1="410" y1="355" x2="440" y2="355" stroke="#000000" stroke-width="1" id="line_user_mux" />
+  <polygon points="448,330 440,334 440,326" fill="#000000" id="poly_user_reset" transform="translate(0,-5)" />
+  <polygon points="448,345 440,349 440,341" fill="#000000" id="poly_user_trig" transform="translate(0,-5)" />
+  <polygon points="448,360 440,364 440,356" fill="#000000" id="poly_user_mux" transform="translate(0,-5)" />
+
+  <!-- Status Monitoring -->
+  <rect x="440" y="290" width="150" height="100" fill="#f0f0f0" stroke="#000000" stroke-width="1.5" id="rect_status" />
+  <text x="450" y="310" font-family="sans-serif" font-size="11px" font-weight="bold" fill="#000000">Status Monitor</text>
+  <text x="450" y="325" font-family="sans-serif" font-size="9px" fill="#000000">UDP Stats</text>
+  <text x="450" y="340" font-family="sans-serif" font-size="9px" fill="#000000">SFP Status</text>
+  <text x="450" y="355" font-family="sans-serif" font-size="9px" fill="#000000">Packet Counters</text>
+  <text x="450" y="370" font-family="sans-serif" font-size="8px" fill="#666666">Read-only</text>
+  
+  <!-- Status inputs -->
+  <line x1="0" y1="325" x2="440" y2="325" stroke="#000000" stroke-width="1" id="line_udp_stats" />
+  <line x1="0" y1="340" x2="440" y2="340" stroke="#000000" stroke-width="1" id="line_sfp_status" />
+  <line x1="0" y1="355" x2="440" y2="355" stroke="#000000" stroke-width="1" id="line_pkt_ctr" />
+  <polygon points="448,330 440,334 440,326" fill="#000000" id="poly_udp_stats" transform="translate(0,-5)" />
+  <polygon points="448,345 440,349 440,341" fill="#000000" id="poly_sfp_status" transform="translate(0,-5)" />
+  <polygon points="448,360 440,364 440,356" fill="#000000" id="poly_pkt_ctr" transform="translate(0,-5)" />
+
+  <!-- LCD Interface (optional) -->
+  <rect x="30" y="420" width="120" height="60" fill="#f8f8f8" stroke="#000000" stroke-width="1" stroke-dasharray="2,2" id="rect_lcd" />
+  <text x="40" y="440" font-family="sans-serif" font-size="10px" font-weight="bold" fill="#666666">LCD Interface</text>
+  <text x="40" y="455" font-family="sans-serif" font-size="8px" fill="#666666">(optional)</text>
+  <text x="40" y="470" font-family="sans-serif" font-size="8px" fill="#666666">lcd_db, lcd_e, etc.</text>
+  
+  <!-- LCD outputs -->
+  <line x1="150" y1="450" x2="180" y2="450" stroke="#999999" stroke-width="1" stroke-dasharray="2,2" id="line_lcd" />
+  <polygon points="188,455 180,459 180,451" fill="#999999" id="poly_lcd" transform="translate(0,-5)" />
+
+  <!-- Backplane Interface -->
+  <rect x="180" y="420" width="150" height="60" fill="#e8f0f8" stroke="#000000" stroke-width="1.5" id="rect_bp" />
+  <text x="190" y="440" font-family="sans-serif" font-size="11px" font-weight="bold" fill="#000000">Backplane</text>
+  <text x="190" y="455" font-family="sans-serif" font-size="9px" fill="#000000">bp_buck_sync</text>
+  <text x="190" y="470" font-family="sans-serif" font-size="9px" fill="#000000">bp_gpio_int</text>
+  
+  <!-- Backplane signals -->
+  <line x1="330" y1="455" x2="360" y2="455" stroke="#000000" stroke-width="1" id="line_bp_sync" />
+  <line x1="330" y1="470" x2="360" y2="470" stroke="#000000" stroke-width="1" id="line_bp_int" />
+  <polygon points="368,460 360,464 360,456" fill="#000000" id="poly_bp_sync" transform="translate(0,-5)" />
+  <polygon points="368,475 360,479 360,471" fill="#000000" id="poly_bp_int" transform="translate(0,-5)" />
+
+  <!-- Clock and Reset -->
+  <rect x="360" y="420" width="120" height="60" fill="#f0f0f0" stroke="#000000" stroke-width="1.5" id="rect_clk" />
+  <text x="370" y="440" font-family="sans-serif" font-size="11px" font-weight="bold" fill="#000000">Clocks</text>
+  <text x="370" y="455" font-family="sans-serif" font-size="9px" fill="#000000">clk200, clk10</text>
+  <text x="370" y="470" font-family="sans-serif" font-size="9px" fill="#000000">clk200_reset</text>
+  
+  <!-- Clock inputs -->
+  <line x1="0" y1="455" x2="360" y2="455" stroke="#000000" stroke-width="1" id="line_clk_in" />
+  <line x1="0" y1="470" x2="360" y2="470" stroke="#000000" stroke-width="1" id="line_rst_in" />
+  <polygon points="368,460 360,464 360,456" fill="#000000" id="poly_clk_in" transform="translate(0,-5)" />
+  <polygon points="368,475 360,479 360,471" fill="#000000" id="poly_rst_in" transform="translate(0,-5)" />
+
+  <!-- Notes -->
+  <text x="30" y="520" font-family="sans-serif" font-size="10px" font-weight="bold" fill="#000000">Notes:</text>
+  <text x="30" y="540" font-family="sans-serif" font-size="8px" fill="#666666">• GPIO provides configuration registers and control signals for system components</text>
+  <text x="30" y="555" font-family="sans-serif" font-size="8px" fill="#666666">• ARM SPI interface allows external processor to access memory-mapped registers</text>
+  <text x="30" y="570" font-family="sans-serif" font-size="8px" fill="#666666">• IRIG-B decoder/encoder provides time synchronization capabilities</text>
+
+</svg>
+
