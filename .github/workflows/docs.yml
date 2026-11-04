@@ -1,0 +1,81 @@
+# Build Sphinx docs with `make docs` and publish each branch under its own
+# folder on the gh-pages branch (same layout as bitbucket-pipelines.yml's
+# chfpga/$BITBUCKET_BRANCH publish path). Root index.html is the branch
+# selector (docs/branch_selector.html).
+#
+# Modelled on pychfpga .github/workflows/docs.yml (uv, concurrency, per-branch
+# rsync). Assumes the gh-pages branch already exists.
+
+name: Docs
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - jfc/dev
+      - 'jfc/crs_*'
+      - 'jfc/ib_*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: documentation-deployment
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0  # setuptools-scm version from git history
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          prune-cache: true
+          cache-dependency-glob: |
+            docs/uv.lock
+            docs/pyproject.toml
+
+      # ubuntu-latest includes make; docs/Makefile runs `uv run sphinx-build`.
+      - name: Build HTML
+        run: make docs
+        env:
+          UV_PYTHON_PREFERENCE: only-system
+
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: www
+
+      - name: Publish branch docs
+        run: rsync -a --delete docs/build/html/ "www/${GITHUB_REF_NAME}/"
+
+      - name: Update branch selector
+        run: python3 docs/update_branch_selector.py www
+
+      - name: Update latest redirect
+        run: |
+          mkdir -p www/latest
+          sed "s|__TARGET__|../${GITHUB_REF_NAME}/|g" docs/src/_static/latest-redirect.html.template > www/latest/index.html
+
+      - name: Push docs
+        run: |
+          set -euo pipefail
+          cd www
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -A
+          if git status --porcelain | grep -q .; then
+            git commit -m "docs: update ${GITHUB_REF_NAME}"
+            git push
+          else
+            echo "No documentation changes to publish"
+          fi

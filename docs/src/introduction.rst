@@ -16,7 +16,7 @@ Introduction
    :width: 70%
 
 
-`chFPGA` is meant to be operated through the ``pychfpga`` Python package (https://winterlandcosmology.bitbucket.io/pychfpga), which provides a Python high-level interface to every subsystem of the `chFPGA` firmware and provides platform wrappers and servers for on-site automated operations. 
+`chFPGA` is meant to be operated through the ``pychfpga`` Python package (https://winterlandcosmology.github.io/pychfpga), which provides a Python high-level interface to every subsystem of the `chFPGA` firmware and provides platform wrappers and servers for on-site automated operations. 
 
 `chFPGA` is used in the following applications by building the appropriate firmware configuration:
 
@@ -30,9 +30,9 @@ Introduction
 Links
 =====
 
-- Source code: https://bitbucket.org/winterlandcosmology/chfpga
+- Source code: https://github.com/winterlandcosmology/chfpga
 
-- Documentation: https://winterlandcosmology.bitbucket.io/chfpga/latest (or click `here <https://winterlandcosmology.bitbucket.io/chfpga>`_ to select a specific version)
+- Documentation: https://winterlandcosmology.github.io/chfpga/latest (or click `here <https://winterlandcosmology.github.io/chfpga>`_ to select a specific version)
 
 Features
 ========
@@ -140,7 +140,7 @@ Cloning the repository
 
 Get the ``chfpga`` repository::
 
-	$ git clone https://jfcliche@bitbucket.org/winterlandcosmology/chfpgalite.git
+	$ git clone https://github.com/winterlandcosmology/chfpga.git
 
 
 Building the firmware
@@ -232,6 +232,6 @@ During this evolution, the `chFPGA` code base was improved incrementally to add 
 
 .. Use UTF-8 encoding
 
-.. Online documentation can be found at: https://winterlandcosmology.bitbucket.io/pychfpga
+.. Online documentation can be found at: https://winterlandcosmology.github.io/pychfpga
 
 

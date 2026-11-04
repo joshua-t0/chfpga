@@ -1,5 +1,12 @@
 .. Use UTF-8 encoding
 
+Quick links
+===========
+
+- Source code: https://github.com/winterlandcosmology/chfpga
+
+- Online documentation: https://winterlandcosmology.github.io/chfpga (use ``make docs`` to build the documentation locally in ``docs/build/html``)
+
 
 Introduction
 ============
@@ -12,6 +19,4 @@ Introduction
 - Optional real-time 80G/100G Ethernet streaming of corner-turned data
 - Hardware platform management and peripheral controllers...
 
-Online documentation of ``chFPGA`` can be found at https://winterlandcosmology.bitbucket.io/chfpga/
-
-Arrays of one or more FPGAs running the ``chFPGA`` firmware are meant to be operated through the Python package ``pychfpga`` (see  https://winterlandcosmology.bitbucket.io/pychfpga)
+Arrays of one or more FPGAs running the ``chFPGA`` firmware are meant to be operated through the Python package ``pychfpga`` (see https://winterlandcosmology.github.io/pychfpga)

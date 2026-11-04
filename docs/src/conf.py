@@ -90,7 +90,11 @@ build_info = dict(
     committer_name="Unknown", committer_email="Unknown", commit_date="Unknown")
 
 # Update build info and project name with branch/commit from git
-branch_name = os.environ.get('BITBUCKET_BRANCH', '')
+branch_name = (
+    os.environ.get('BITBUCKET_BRANCH')
+    or os.environ.get('GITHUB_REF_NAME')
+    or ''
+)
 short_hash = ''
 try:
     from git import Repo
