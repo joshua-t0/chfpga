@@ -317,7 +317,7 @@ begin
 				CLKOUT5_PHASE       => 0.000,
 				CLKOUT5_DUTY_CYCLE  => 0.500,
 				CLKOUT5_USE_FINE_PS => FALSE,
-				CLKOUT6_DIVIDE      => 16, -- 62.5 MHz always. For SYSMON
+				CLKOUT6_DIVIDE      => 20, -- 50 MHz (was 62.5 MHz). For SYSMON. 62.5 MHz = 51.2 samples at 3.2 GSPS: 5 cycles = 256 samples, which produced a 12.5 MHz comb in the RF-ADC spectra. 50 MHz = 64 samples, so any residual coupling moves to a 50 MHz comb (diagnostic: the comb follows this clock if the MMCM output is the aggressor).
 				CLKOUT6_PHASE       => 0.000,
 				CLKOUT6_DUTY_CYCLE  => 0.500,
 				CLKOUT6_USE_FINE_PS => FALSE,
@@ -379,7 +379,7 @@ begin
 				CLKOUT5_DIVIDE     => 4, -- 250 MHz always. used for embedded correlator (when present).
 				CLKOUT5_PHASE      => 0.000,
 				CLKOUT5_DUTY_CYCLE => 0.500,
-				CLKOUT6_DIVIDE     => 16, -- 62.5 MHz always. For SYSMON
+				CLKOUT6_DIVIDE     => 20, -- 50 MHz (was 62.5 MHz). For SYSMON. See the K7 instance above.
 				CLKOUT6_PHASE      => 0.000,
 				CLKOUT6_DUTY_CYCLE => 0.500,
 				CLKIN1_PERIOD      => SYS_MMCM_CLKIN_PERIOD,
