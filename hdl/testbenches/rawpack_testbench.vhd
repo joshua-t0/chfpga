@@ -27,6 +27,7 @@ entity rawpack_testbench is
 		GAP_PERIOD: integer := 0; -- if > 0, tvalid is low one clock out of GAP_PERIOD
 		NUMBER_OF_PACKETS: integer := 40; -- packets to check before disabling the stream
 		CHANGE_TEST: integer range 0 to 1 := 0; -- 1: write another packet size and mode while the stream runs; they must be ignored until it is stopped
+		RESTART_TEST: integer range 0 to 1 := 0; -- 1: first a short run in the other mode (one channel if SINGLE = 0), then the run that is checked: the packet counters of A and B must restart at zero
 		RESET_TEST: integer range 0 to 1 := 0; -- 1: reset the packetizer in the middle of the stream (enable stays set) and check that it restarts cleanly
 		DUMP_FILE: string := "" -- if not empty, every packet is written to this file as one line of hex bytes (starting at the Ethernet header)
 	);
@@ -55,6 +56,8 @@ architecture behavior of rawpack_testbench is
 
 	signal stream_enabled: boolean := FALSE; -- the testbench has asked for the raw stream
 	signal packets_checked: integer := 0;
+	signal cur_single: integer range 0 to 1 := SINGLE; -- mode of the run in progress
+	signal run_number: integer := 0; -- number of runs that came before the run in progress
 	signal pass_words_before, pass_words_after: integer := 0;
 	signal done: boolean := FALSE;
 
@@ -133,7 +136,9 @@ begin
 	end process stim_proc;
 
 	-- Control sequence
-	ctrl_proc: process begin
+	ctrl_proc: process
+		variable first_packet: integer := 0; -- packets checked before the main run
+	begin
 		wait for 200 ns;
 		wait until rising_edge(clk);
 		bsb_rst <= '0';
@@ -147,10 +152,23 @@ begin
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 3, 16#03#); -- rotate the source port over 4 values
 		wait for 1 us;
 		stream_enabled <= TRUE;
+		if RESTART_TEST = 1 then
+			-- A run in the other mode, stopped completely. In single-channel mode it advances only the
+			-- packet counter of stream A. The next run must start with both counters at zero.
+			cur_single <= 1 - SINGLE;
+			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 1 + 2 * (1 - SINGLE) + 4 * PORT_PER_CHANNEL);
+			wait until packets_checked >= NUMBER_OF_PACKETS / 4;
+			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 2 * (1 - SINGLE) + 4 * PORT_PER_CHANNEL);
+			wait for 5 us; -- the last packets go out
+			wait until rising_edge(clk);
+			first_packet := packets_checked;
+			cur_single <= SINGLE;
+			run_number <= 1;
+		end if;
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 1 + 2 * SINGLE + 4 * PORT_PER_CHANNEL);
 
 		if CHANGE_TEST = 1 then
-			wait until packets_checked >= NUMBER_OF_PACKETS / 4;
+			wait until packets_checked >= first_packet + NUMBER_OF_PACKETS / 4;
 			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 2, BLOCKS_PER_PACKET + 3);
 			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 1 + 2 * (1 - SINGLE) + 4 * PORT_PER_CHANNEL);
 		end if;
@@ -158,7 +176,7 @@ begin
 		if RESET_TEST = 1 then
 			-- Reset in the middle of a packet. The stream must restart by itself on a frame boundary,
 			-- with the packet counter back to zero and no leftover from the interrupted packet.
-			wait until packets_checked >= NUMBER_OF_PACKETS / 2;
+			wait until packets_checked >= first_packet + NUMBER_OF_PACKETS / 2;
 			wait for 123 * CLK_PERIOD;
 			wait until rising_edge(clk);
 			rst <= '1';
@@ -167,7 +185,7 @@ begin
 			rst <= '0';
 		end if;
 
-		wait until packets_checked >= NUMBER_OF_PACKETS;
+		wait until packets_checked >= first_packet + NUMBER_OF_PACKETS;
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 2 * SINGLE * (1 - CHANGE_TEST) + 2 * (1 - SINGLE) * CHANGE_TEST);
 		wait for 5 us; -- the packet in progress must complete, then the pass-through bus comes back
 
@@ -198,6 +216,7 @@ begin
 		variable stream_ctr: int_pair := (0, 0); -- packets of each stream since the last reset
 		variable expected_stream: integer := 0; -- the streams take turns: A, then B
 		variable number_of_resets: integer := 0;
+		variable run_seen: integer := 0;
 		variable rst_prev: std_logic := '1';
 		variable expected: std_logic_vector(11 downto 0);
 		variable got: std_logic_vector(11 downto 0);
@@ -220,6 +239,13 @@ begin
 			number_of_resets := number_of_resets + 1;
 		end if;
 		rst_prev := rst;
+		if run_number /= run_seen then -- a new run after a complete stop: the counters and the stream order start again
+			assert not in_packet report "A packet of the previous run is not complete" severity FAILURE;
+			run_seen := run_number;
+			have_next := (FALSE, FALSE);
+			stream_ctr := (0, 0);
+			expected_stream := 0;
+		end if;
 		if rst = '1' and stream_enabled then -- reset during the stream: forget the packet in progress
 			assert out_tvalid = '0' or nwords = 0 or in_packet report "Unexpected output in reset" severity FAILURE;
 			nwords := 0;
@@ -295,7 +321,7 @@ begin
 					-- Each packet holds one channel. The streams take turns: A, then B (A only in single-channel mode).
 					stream := pkt(46) / 128;
 					assert stream = expected_stream report "Wrong stream order: got stream " & integer'image(stream) severity FAILURE;
-					expected_stream := 0 when SINGLE = 1 else 1 - stream;
+					expected_stream := 0 when cur_single = 1 else 1 - stream;
 					chan := CHAN_A when stream = 0 else CHAN_B;
 					-- UDP
 					expected_ctr := stream_ctr(stream);
@@ -307,14 +333,14 @@ begin
 					-- Raw stream header
 					assert be(42, 2) = 16#5241# report "Bad magic" severity FAILURE;
 					assert pkt(44) = 3 report "Bad format version" severity FAILURE;
-					assert pkt(45) = SOURCE + 4 * SINGLE report "Bad flags: " & integer'image(pkt(45)) severity FAILURE;
+					assert pkt(45) = SOURCE + 4 * cur_single report "Bad flags: " & integer'image(pkt(45)) severity FAILURE;
 					assert pkt(46) = 128 * stream + chan report "Bad channel byte: " & integer'image(pkt(46)) severity FAILURE;
 					assert pkt(47) = BLOCKS_PER_PACKET report "Bad blocks_per_packet" severity FAILURE;
 					assert be(48, 3) = 0 and be(51, 3) = expected_ctr report "Bad packet counter: " & integer'image(be(51, 3)) severity FAILURE;
 					assert be(54, 3) = 0 report "Bad frame number (high)" severity FAILURE;
 					frame := be(57, 3);
 					word := be(60, 2);
-					assert pkt(62) = 1 + number_of_resets report "Bad stream number: " & integer'image(pkt(62)) severity FAILURE;
+					assert pkt(62) = 1 + number_of_resets + run_number report "Bad stream number: " & integer'image(pkt(62)) severity FAILURE;
 					assert pkt(63) = 0 report "Reserved field not zero" severity FAILURE;
 					if have_next(stream) then
 						assert frame = next_frame(stream) and word = next_word(stream)

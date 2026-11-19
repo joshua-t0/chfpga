@@ -69,12 +69,13 @@ Bytes        Content
 46           Bits 2:0 = channel number of the samples of this packet. Bit 7 = stream:
              0 = stream A, 1 = stream B.
 47           Blocks per packet
-48-53        Packet counter of this stream (48 bits), zero at reset
+48-53        Packet counter of this stream (48 bits). Zero on the first packet of each
+             start from the stopped state, and after a reset.
 54-59        Frame number (48 bits) of the first sample; same counter as the `ucap` timestamp
 60-61        Word number (0-2047) of the first sample in its frame. The first sample of the
              packet is sample 8 x word of that frame.
 62           Stream number: incremented every time the streams start, including a restart
-             after a reset (which also zeroes the packet counters)
+             after a reset. The packet counters restart at zero at the same time.
 63           Reserved (0)
 64...        Samples: 96 bytes per block
 ===========  ==========================================================================
@@ -85,7 +86,9 @@ significant bit first, so every 2 samples fill exactly 3 bytes. A sample value i
 sample divided by 4 (signed, -2048 to 2047). The samples of a packet are in time order and belong
 to one channel. A block is 64 samples. The first packets after the stream is enabled start on the
 first sample of a frame; with 64 blocks per packet a frame is exactly 4 packets of each stream.
-The packets of A and B with the same packet counter cover the same time.
+The packets of A and B with the same packet counter cover the same time: the two counters
+restart at zero each time the streams start from the stopped state, so a run in single-channel
+mode (which sends stream A only) does not put them out of step.
 
 A receiver detects lost packets with the packet counter of each stream and places the samples in
 time with the frame and word numbers.
