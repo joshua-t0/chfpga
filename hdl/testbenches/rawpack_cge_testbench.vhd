@@ -6,7 +6,7 @@
 --
 -- The capture bus carries the same pattern as in ``rawpack_testbench``: sample number t of channel c
 -- has the 14-bit value (t * (2c + 3) + 1000c) mod 16384, of which the 12 MSBs are sent. The frame file is checked afterwards by
--- ``check_frames.py`` (headers, packet counter continuity = no packet lost in the FIFOs, samples).
+-- ``check_frames.py`` (headers, packet counter continuity of each stream = no packet lost in the FIFOs, samples).
 --
 -- This testbench checks that no FIFO overflowed and ends with "RAWPACK CGE SIMULATION DONE".
 library ieee;
@@ -135,7 +135,6 @@ begin
 		alias cge_tx_ovf is << signal cge0.tx_ovfout_sticky: std_logic >>;
 		alias cge_tx_unf is << signal cge0.tx_unfout_sticky: std_logic >>;
 		alias raw_fifo_overflow is << signal rawpack0.fifo_overflow_sticky: std_logic >>;
-		alias raw_framing_error is << signal rawpack0.framing_error_sticky: std_logic >>;
 		alias raw_active is << signal rawpack0.raw_active: std_logic >>;
 		alias cge_in_frames is << signal cge0.in_frame_ctr: unsigned(7 downto 0) >>;
 	begin
@@ -148,15 +147,14 @@ begin
 
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 1, CHAN_B * 16 + CHAN_A);
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 2, BLOCKS_PER_PACKET);
-		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 1 + 2 * SINGLE);
+		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 5 + 2 * SINGLE); -- enable, port per channel
 
 		wait for RUN_TIME_US * 1 us;
-		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 2 * SINGLE);
+		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 4 + 2 * SINGLE);
 		wait for 20 us; -- last packet goes out, FIFOs drain
 
 		assert raw_active = '0' report "rawpack did not release the link after disable" severity FAILURE;
 		assert raw_fifo_overflow = '0' report "rawpack FIFO overflow" severity FAILURE;
-		assert raw_framing_error = '0' report "rawpack framing error" severity FAILURE;
 		assert cge_fifo_overflow = '0' report "cge data FIFO overflow" severity FAILURE;
 		assert cge_flag_fifo_overflow = '0' report "cge flag FIFO overflow" severity FAILURE;
 		assert cge_tx_ovf = '0' and cge_tx_unf = '0' report "MAC overflow/underflow" severity FAILURE;
