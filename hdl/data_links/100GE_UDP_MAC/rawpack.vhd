@@ -63,14 +63,18 @@ use work.chFPGA_Package.ALL;
 --       46     bits 2:0 = channel number (0-7) of the samples of this packet,
 --              bit 7 = stream: 0 = stream A (first channel), 1 = stream B (second channel)
 --       47     blocks_per_packet
---       48-53  packet counter of this stream (48 bits), zero at reset. Each stream has its own counter.
+--       48-53  packet counter of this stream (48 bits). Each stream has its own counter. The two counters
+--              are zero on the first packets of a stream that starts from the stopped state
+--              (raw_active = 0), and after a reset.
 --       54-59  frame number (48 bits) of the first sample of the packet. Counts frames since the
 --              channelizer reset, like the UCAP timestamp.
 --       60-61  word number (0-2047) of the first sample of the packet within its frame. The first
 --              sample is sample number 8 * word of that frame.
 --       62     stream number: incremented every time the streams start (when they are enabled, and when
---              they restart after a packetizer reset). The packet counters restart at zero only on a
---              reset, so a change of stream number tells a receiver that the counters may have restarted.
+--              they restart after a packetizer reset). The packet counters restart at zero at the same
+--              time, so a change of stream number tells a receiver that the counters have restarted.
+--              (If ``enable`` is set again before the last packets of the previous run are out, the
+--              counters continue: the mode cannot change in that case, so A and B stay in step.)
 --       63     reserved (0)
 --   Bytes 64...  96 * blocks_per_packet bytes of samples.
 --
@@ -303,7 +307,7 @@ begin
 	-- |         |      |  2   | fifo_overflow       | Packet FIFO overflow (sticky until reset). The streams are not valid after an overflow: reset. |
 	-- |         |  1   | 7:0  | packet_ctr          | Low 8 bits of the packet counter of stream A |
 	-- |         |  2   | 7:0  | source_sel          | Data source of each channel (bit 0 = channel 0) |
-	-- |         | 3-8  | 47:0 | packet_ctr_a        | Packet counter of stream A (48 bits). The bytes are read one at a time: read it when the stream is stopped. |
+	-- |         | 3-8  | 47:0 | packet_ctr_a        | Packet counter of stream A (48 bits): packets sent since the last start. The bytes are read one at a time: read it when the stream is stopped. |
 	-- |         | 9-14 | 47:0 | packet_ctr_b        | Packet counter of stream B (48 bits)      |
 	-- ------------------------------------------------------------------------------------------
 	bsb_regs0: entity work.bsb_regs
@@ -645,6 +649,17 @@ begin
 
 			if or fifo_overflow then
 				fifo_overflow_sticky <= '1';
+			end if;
+
+			-- A stream that starts from the stopped state starts with the packet counters at zero. The
+			-- counters of A and B are then equal for the packets that cover the same time, whatever was
+			-- sent before (a run in single-channel mode advances only the counter of A, and leaves the
+			-- turn to stream B). The counters
+			-- keep their value after the stream stops, so that the host can read them. The transmitter
+			-- is idle here: raw_active is still '0' on the first clock cycle of ``enable``.
+			if enable = '1' and raw_active = '0' then
+				packet_ctr <= (others => (others => '0'));
+				last_stream <= NUMBER_OF_STREAMS - 1; -- stream A is sent first, also after a run in single-channel mode
 			end if;
 
 			if rst then
