@@ -52,6 +52,7 @@ architecture behavior of rawpack_cge_testbench is
 	signal bsb_cmd_tready: std_logic;
 
 	signal done: boolean := FALSE;
+	signal check_link1: boolean := FALSE;
 
 	function sample_value(chan: integer; frame: integer; word: integer; s: integer) return std_logic_vector is
 		variable t: integer;
@@ -130,6 +131,16 @@ begin
 				bsb_clk => bsb_clk,
 				bsb_rst => bsb_rst
 			);
+
+		-- At the end of the test, the same checks as for the first link. They are here because the
+		-- names of this block exist only with two links.
+		check1_proc: process begin
+			wait until check_link1;
+			assert << signal cge1.fifo_overflow_sticky: std_logic >> = '0' report "cge1 data FIFO overflow" severity FAILURE;
+			assert << signal cge1.flag_fifo_overflow_sticky: std_logic >> = '0' report "cge1 flag FIFO overflow" severity FAILURE;
+			assert << signal cge1.tx_ovfout_sticky: std_logic >> = '0' and << signal cge1.tx_unfout_sticky: std_logic >> = '0' report "MAC 1 overflow/underflow" severity FAILURE;
+			wait;
+		end process check1_proc;
 	end generate cge1_gen;
 
 	-- Capture bus stimulus: continuous data, as from the ADCs
@@ -189,11 +200,8 @@ begin
 		assert cge_fifo_overflow = '0' report "cge data FIFO overflow" severity FAILURE;
 		assert cge_flag_fifo_overflow = '0' report "cge flag FIFO overflow" severity FAILURE;
 		assert cge_tx_ovf = '0' and cge_tx_unf = '0' report "MAC overflow/underflow" severity FAILURE;
-		if LINKS > 1 then
-			assert << signal cge1_gen.cge1.fifo_overflow_sticky: std_logic >> = '0' report "cge1 data FIFO overflow" severity FAILURE;
-			assert << signal cge1_gen.cge1.flag_fifo_overflow_sticky: std_logic >> = '0' report "cge1 flag FIFO overflow" severity FAILURE;
-			assert << signal cge1_gen.cge1.tx_ovfout_sticky: std_logic >> = '0' and << signal cge1_gen.cge1.tx_unfout_sticky: std_logic >> = '0' report "MAC 1 overflow/underflow" severity FAILURE;
-		end if;
+		check_link1 <= TRUE; -- the second link is checked in its generate block
+		wait for 1 ns;
 		report "RAWPACK CGE SIMULATION DONE (cge input frame counter, 8 bits: " & integer'image(to_integer(cge_in_frames)) & ")";
 		done <= TRUE;
 		wait for 100 ns;
