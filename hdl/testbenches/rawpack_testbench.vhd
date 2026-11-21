@@ -27,8 +27,6 @@ entity rawpack_testbench is
 		CHAN_D: integer := 0;
 		SOURCE: integer := 0; -- data source of all channels
 		STREAM_ENABLE: integer range 1 to 15 := 15; -- streams to send: bit 0 = A, 1 = B (link 0), 2 = C, 3 = D (link 1)
-		PORT_PER_CHANNEL: integer range 0 to 1 := 1; -- 1: the second stream of a link uses the UDP destination port + 1
-		ROUND: integer range 0 to 1 := 1; -- 1: the samples are rounded. 0: truncated.
 		BLOCKS_PER_PACKET: integer := 64;
 		GAP_PERIOD: integer := 0; -- if > 0, tvalid is low one clock out of GAP_PERIOD
 		NUMBER_OF_PACKETS: integer := 40; -- packets to check before disabling the streams
@@ -109,9 +107,7 @@ architecture behavior of rawpack_testbench is
 		variable v: integer;
 	begin
 		v := to_integer(signed(x));
-		if ROUND = 1 then
-			v := v + 2;
-		end if;
+		v := v + 2; -- rounded: a half goes up
 		v := v - (v mod 4);
 		v := v / 4;
 		if v > 2047 then
@@ -132,8 +128,7 @@ begin
 
 	uut: entity work.rawpack
 		generic map (
-			NUMBER_OF_LINKS => LINKS,
-			ROUND_SAMPLES => ROUND = 1
+			NUMBER_OF_LINKS => LINKS
 		)
 		port map (
 			s_axis_raw_tdata  => raw_tdata,
@@ -248,9 +243,9 @@ begin
 			cur_mask <= RESTART_ENABLE mod MASK_LIMIT;
 			stop_upstream(RESTART_ENABLE);
 			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 29, RESTART_ENABLE);
-			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 1 + 4 * PORT_PER_CHANNEL);
+			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 1);
 			wait until packets_checked >= NUMBER_OF_PACKETS / 4;
-			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 4 * PORT_PER_CHANNEL);
+			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 0);
 			upstream_stopped <= '0'; -- the host starts the upstream transmitter again
 			wait for 5 us; -- the last packets go out
 			wait until rising_edge(clk);
@@ -260,13 +255,12 @@ begin
 		end if;
 		stop_upstream(STREAM_ENABLE);
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 29, STREAM_ENABLE);
-		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 1 + 4 * PORT_PER_CHANNEL);
+		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 1);
 
 		if CHANGE_TEST = 1 then
 			wait until packets_checked >= first_packet + NUMBER_OF_PACKETS / 4;
 			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 2, BLOCKS_PER_PACKET + 3);
 			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 29, OTHER_MASK);
-			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 1 + 4 * (1 - PORT_PER_CHANNEL));
 		end if;
 
 		if RESET_TEST = 1 then
@@ -282,7 +276,7 @@ begin
 		end if;
 
 		wait until packets_checked >= first_packet + NUMBER_OF_PACKETS;
-		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 4 * PORT_PER_CHANNEL);
+		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 0);
 		upstream_stopped <= '0';
 		wait for 5 us; -- the packets in progress must complete, then the pass-through bus comes back
 
@@ -487,13 +481,13 @@ begin
 						expected_ctr := stream_ctr(index);
 						stream_ctr(index) := stream_ctr(index) + 1;
 						assert be(34, 2) = 16#A027# + (expected_ctr mod 4) report "Bad UDP source port: " & integer'image(be(34, 2)) severity FAILURE;
-						assert be(36, 2) = 16#A028# + 2 * LINK + index * PORT_PER_CHANNEL report "Bad UDP destination port: " & integer'image(be(36, 2)) severity FAILURE;
+						assert be(36, 2) = 16#A410# + 2 * LINK + index report "Bad UDP destination port: " & integer'image(be(36, 2)) severity FAILURE;
 						assert be(38, 2) = PACKET_BYTES - 34 report "Bad UDP length" severity FAILURE;
 						assert be(40, 2) = 0 report "Bad UDP checksum" severity FAILURE;
 						-- Raw stream header
 						assert be(42, 2) = 16#5241# report "Bad magic" severity FAILURE;
 						assert pkt(44) = 4 report "Bad format version" severity FAILURE;
-						assert pkt(45) = SOURCE + 2 * ROUND + 4 * cur_mask report "Bad flags: " & integer'image(pkt(45)) severity FAILURE;
+						assert pkt(45) = SOURCE + 2 + 4 * cur_mask report "Bad flags: " & integer'image(pkt(45)) severity FAILURE;
 						assert pkt(46) = 16 * stream + chan report "Bad channel byte: " & integer'image(pkt(46)) severity FAILURE;
 						assert pkt(47) = BLOCKS_PER_PACKET report "Bad blocks_per_packet" severity FAILURE;
 						assert be(48, 3) = 0 and be(51, 3) = expected_ctr report "Bad packet counter: " & integer'image(be(51, 3)) severity FAILURE;

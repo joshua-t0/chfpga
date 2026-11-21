@@ -62,8 +62,7 @@ use work.chFPGA_Package.ALL;
 --   Bytes 0-13   Ethernet header (dest MAC, source MAC, ethertype 0x0800). Each link has its own addresses.
 --   Bytes 14-33  IPv4 header (no options, DF set, TTL 64, protocol UDP, valid header checksum)
 --   Bytes 34-41  UDP header (checksum = 0, i.e. not used). The destination port is ``port_dest`` of the
---                link for its first stream and ``port_dest`` + 1 for its second stream (same port if
---                ``port_per_channel`` = 0).
+--                link for its first stream and ``port_dest`` + 1 for its second stream.
 --   Bytes 42-63  Raw stream header:
 --       42-43  magic 0x5241 ("RA")
 --       44     format version (4 = one channel in each packet, up to 4 streams, sample width in byte 63)
@@ -103,13 +102,9 @@ entity rawpack is
 		NUMBER_OF_CHANNELS: integer := 8;
 		NUMBER_OF_SOURCES: integer  := 2;
 		NUMBER_OF_LINKS: integer range 1 to 2 := 1; -- 100G links (output buses)
-		STREAMS_PER_LINK: integer := 2; -- streams (channels) on each link. 2 for 12-bit samples.
-		SAMPLE_BITS: integer := 12; -- bits sent for each sample. Only 12 is implemented (3:4 gearbox).
-		ROUND_SAMPLES: boolean := TRUE; -- TRUE: round to SAMPLE_BITS. FALSE: truncate.
 
 		DEFAULT_ENABLE: std_logic                         := '0';
 		DEFAULT_STREAM_ENABLE: std_logic_vector(3 downto 0) := "0011"; -- streams A and B
-		DEFAULT_PORT_PER_CHANNEL: std_logic               := '1'; -- '1': the second stream of a link uses UDP destination port port_dest + 1
 		DEFAULT_CHAN_A: integer range 0 to 7              := 0;
 		DEFAULT_CHAN_B: integer range 0 to 7              := 1;
 		DEFAULT_CHAN_C: integer range 0 to 7              := 2;
@@ -120,14 +115,14 @@ entity rawpack is
 		DEFAULT_IP_SRC_ADDR: slv32   := X"0AC00002";
 		DEFAULT_IP_DEST_ADDR: slv32  := X"FFFFFFFF";
 		DEFAULT_IP_SRC_PORT: slv16   := X"A027";
-		DEFAULT_IP_DEST_PORT: slv16  := X"A028";
+		DEFAULT_IP_DEST_PORT: slv16  := X"A410"; -- 42000: stream A. Not 41000 to 41002, which UPACK and TCPipe use.
 		-- Link 1
 		DEFAULT_MAC_SRC_ADDR_1: slv48  := X"005d03000001";
 		DEFAULT_MAC_DEST_ADDR_1: slv48 := X"FFFFFFFFFFFF";
 		DEFAULT_IP_SRC_ADDR_1: slv32   := X"0AC10002";
 		DEFAULT_IP_DEST_ADDR_1: slv32  := X"FFFFFFFF";
 		DEFAULT_IP_SRC_PORT_1: slv16   := X"A027";
-		DEFAULT_IP_DEST_PORT_1: slv16  := X"A02A"
+		DEFAULT_IP_DEST_PORT_1: slv16  := X"A412" -- 42002: stream C
 	);
 	port (
 		-- Capture bus (same bus as UCAP), synchronous to clk
@@ -166,6 +161,8 @@ end entity rawpack;
 
 architecture impl of rawpack is
 
+	constant STREAMS_PER_LINK: integer := 2; -- streams (channels) on each link: two 12-bit channels are 76.8 Gb/s
+	constant SAMPLE_BITS: integer := 12; -- bits sent for each sample. The gearbox below is for this width.
 	constant NUMBER_OF_STREAMS: integer := NUMBER_OF_LINKS * STREAMS_PER_LINK; -- stream s is on link s / STREAMS_PER_LINK
 	constant MAX_STREAMS: integer := 4; -- streams in the register map
 	constant MAX_LINKS: integer := 2; -- links in the register map
@@ -181,7 +178,7 @@ architecture impl of rawpack is
 
 	-- bsb_regs indexes this vector from 0 (byte 0 bit 7 = element 0), so the range must be ascending
 	constant DEFAULT_CONTROL_BYTES: std_logic_vector(0 to 54 * 8 - 1) :=
-		"00000" & DEFAULT_PORT_PER_CHANNEL & '0' & DEFAULT_ENABLE &                     -- byte 0
+		"0000000" & DEFAULT_ENABLE &                                                    -- byte 0
 		'0' & to_slv(DEFAULT_CHAN_B, 3) & '0' & to_slv(DEFAULT_CHAN_A, 3) &             -- byte 1
 		to_slv(DEFAULT_BLOCKS_PER_PACKET, 8) &                                          -- byte 2
 		X"00" &                                                                         -- byte 3
@@ -224,7 +221,6 @@ architecture impl of rawpack is
 	signal stream_en: std_logic_vector(0 to NUMBER_OF_STREAMS - 1) := (others => '0'); -- streams that are sent
 	signal stream_mask: std_logic_vector(3 downto 0) := (others => '0'); -- the same, for the header
 	signal link_en: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0'); -- links with at least one stream
-	signal port_per_channel: std_logic := '0';
 	signal sel: u3_stream_array := (others => (others => '0')); -- channel of each stream
 	signal blocks_per_packet: unsigned(7 downto 0) := (others => '0');
 	signal last_block: unsigned(7 downto 0) := (others => '0'); -- blocks_per_packet - 1
@@ -248,7 +244,7 @@ architecture impl of rawpack is
 	signal w0: unsigned(10 downto 0);
 	signal src: std_logic_vector(0 to NUMBER_OF_STREAMS - 1) := (others => '0'); -- data source of the channel of each stream
 
-	-- Stage R: the samples reduced to SAMPLE_BITS (rounded or truncated), in time order
+	-- Stage R: the samples rounded to SAMPLE_BITS, in time order
 	type chan_stream_array is array (0 to NUMBER_OF_STREAMS - 1) of std_logic_vector(CHAN_WIDTH - 1 downto 0);
 	signal pr: chan_stream_array;
 	signal vr: std_logic := '0';
@@ -314,9 +310,6 @@ architecture impl of rawpack is
 
 begin
 
-	assert SAMPLE_BITS = 12 report "rawpack: only SAMPLE_BITS = 12 is implemented (the gearbox packs four 192-bit words into three 256-bit words)" severity FAILURE;
-	assert STREAMS_PER_LINK = 2 report "rawpack: only STREAMS_PER_LINK = 2 is implemented (register map and link capacity)" severity FAILURE;
-
 	-- Bridge the BSB bus to the clk domain so all the registers are synchronous to the data path.
 	bsb_fifo0: entity work.bsb_async_fifo
 		port map (
@@ -349,7 +342,6 @@ begin
 	-- |  Page   | Addr |Bit(s)|     Name            | Description                               |
 	-- |---------|------|------|---------------------|-------------------------------------------|
 	-- | CONTROL |  0   |  0   | enable              | '1': send the enabled streams. '0': stop  |
-	-- |         |      |  2   | port_per_channel    | '1': the UDP destination port of the second stream of a link is port_dest + 1. '0': the streams of a link use port_dest. (*) |
 	-- |         |  1   | 2:0  | chan_a              | Channel of stream A (0-7)                 |
 	-- |         |      | 6:4  | chan_b              | Channel of stream B (0-7)                 |
 	-- |         |  2   | 7:0  | blocks_per_packet   | Blocks (96 bytes, 64 samples) per packet. 4 to 90. (*) |
@@ -420,7 +412,7 @@ begin
 		status_bytes(27) <= to_slv(NUMBER_OF_LINKS, 4) & to_slv(NUMBER_OF_STREAMS, 4);
 		status_bytes(28) <= to_slv(SAMPLE_BITS, 8);
 		status_bytes(29) <= FORMAT_VERSION;
-		status_bytes(30) <= (0 => to_std_logic(ROUND_SAMPLES), others => '0');
+		status_bytes(30) <= (0 => '1', others => '0');
 	end process status_proc;
 
 	-- Register the control values and pre-compute everything that depends only on them. These
@@ -455,7 +447,6 @@ begin
 					stream_en(s) <= control_bytes(29)(s);
 					stream_mask(s) <= control_bytes(29)(s);
 				end loop;
-				port_per_channel <= control_bytes(0)(2);
 				blocks_per_packet <= unsigned(control_bytes(2));
 			end if;
 			for k in 0 to NUMBER_OF_LINKS - 1 loop
@@ -505,12 +496,9 @@ begin
 				header1(l) <= mac_dest(l) & mac_src(l) & X"0800" & ip_header(20 * 8 - 1 downto 2 * 8);
 				-- Rotating the source port lets the receiving NIC spread the packets over its receive queues
 				port_src_eff := unsigned(port_src(l)) + unsigned(packet_ctr(s)(7 downto 0) and unsigned(src_port_mask));
-				port_dest_eff := unsigned(port_dest(l));
-				if port_per_channel = '1' then
-					port_dest_eff := unsigned(port_dest(l)) + (s mod STREAMS_PER_LINK);
-				end if;
+				port_dest_eff := unsigned(port_dest(l)) + (s mod STREAMS_PER_LINK); -- each stream has its own port
 				udp_header := std_logic_vector(port_src_eff) & std_logic_vector(port_dest_eff) & std_logic_vector(udp_length) & X"0000";
-				flags := (0 => src(s), 1 => to_std_logic(ROUND_SAMPLES), 7 => fifo_overflow_sticky, others => '0');
+				flags := (0 => src(s), 1 => '1', 7 => fifo_overflow_sticky, others => '0'); -- bit 1: the samples are rounded
 				flags(5 downto 2) := stream_mask;
 				chan_byte := '0' & to_slv(s, 3) & '0' & std_logic_vector(sel(s));
 				-- The packet counter, the frame and word numbers and the run number are set when the packet is sent
@@ -569,7 +557,7 @@ begin
 				for n in 0 to SAMPLES_PER_WORD - 1 loop
 					hi := (SAMPLES_PER_WORD - n) * IN_BITS_PER_SAMPLE - 1;
 					x := signed(ch0(s)(hi downto hi - BITS_PER_SAMPLE + 1));
-					if ROUND_SAMPLES and ch0(s)(hi - BITS_PER_SAMPLE) = '1' and x /= to_signed(2 ** (BITS_PER_SAMPLE - 1) - 1, BITS_PER_SAMPLE) then
+					if ch0(s)(hi - BITS_PER_SAMPLE) = '1' and x /= to_signed(2 ** (BITS_PER_SAMPLE - 1) - 1, BITS_PER_SAMPLE) then
 						x := x + 1;
 					end if;
 					pr(s)((n + 1) * BITS_PER_SAMPLE - 1 downto n * BITS_PER_SAMPLE) <= std_logic_vector(x);
