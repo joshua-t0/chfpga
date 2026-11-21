@@ -2456,10 +2456,18 @@ begin
 
 				signal refclk, refclk_div2: std_logic;
 
-				-- Data bus into the 100G interface
-				signal cge_in_tdata: std_logic_vector(255 downto 0);
-				signal cge_in_tvalid: std_logic;
-				signal cge_in_tlast: std_logic;
+				-- Data bus into each 100G interface. Raw ADC samples: streams A and B on link 0, streams C and D on link 1.
+				signal cge_in_tdata: slv_array(0 to NUMBER_OF_CGE_LINKS - 1)(255 downto 0);
+				signal cge_in_tvalid: std_logic_vector(0 to NUMBER_OF_CGE_LINKS - 1);
+				signal cge_in_tlast: std_logic_vector(0 to NUMBER_OF_CGE_LINKS - 1);
+
+				-- BSB buses under the RAWPACK port. Port 0: rawpack. Port 1: the second 100G interface.
+				signal raw_bsb_cmd_tdata: slv8_array(0 to 1);
+				signal raw_bsb_cmd_tvalid, raw_bsb_cmd_tlast: std_logic_vector(0 to 1);
+				signal raw_bsb_cmd_tready: std_logic_vector(0 to 1) := (others => '1');
+				signal raw_bsb_rply_tdata: slv8_array(0 to 1) := (others => (others => '0'));
+				signal raw_bsb_rply_tvalid, raw_bsb_rply_tlast: std_logic_vector(0 to 1) := (others => '0');
+				signal raw_bsb_rply_tready: std_logic_vector(0 to 1);
 
 			begin
 				cge_pipe_proc: process(all) begin
@@ -2482,11 +2490,58 @@ begin
 					end if; -- clk
 				end process;
 
+				-- Commands of the RAWPACK port. With one link they all go to rawpack. With two links, a router
+				-- sends the addresses with bit 15 set to the second 100G interface, so the addresses of
+				-- rawpack do not change.
+				raw_bsb_single_gen: if NUMBER_OF_CGE_LINKS = 1 generate
+					raw_bsb_cmd_tdata(0) <= top_router_bsb_cmd_tdata(RAWPACK_BASE_PORT);
+					raw_bsb_cmd_tvalid(0) <= top_router_bsb_cmd_tvalid(RAWPACK_BASE_PORT);
+					raw_bsb_cmd_tlast(0) <= top_router_bsb_cmd_tlast(RAWPACK_BASE_PORT);
+					top_router_bsb_cmd_tready(RAWPACK_BASE_PORT) <= raw_bsb_cmd_tready(0);
+					top_router_bsb_rply_tdata(RAWPACK_BASE_PORT) <= raw_bsb_rply_tdata(0);
+					top_router_bsb_rply_tvalid(RAWPACK_BASE_PORT) <= raw_bsb_rply_tvalid(0);
+					top_router_bsb_rply_tlast(RAWPACK_BASE_PORT) <= raw_bsb_rply_tlast(0);
+					raw_bsb_rply_tready(0) <= top_router_bsb_rply_tready(RAWPACK_BASE_PORT);
+				end generate raw_bsb_single_gen;
+
+				raw_bsb_router_gen: if NUMBER_OF_CGE_LINKS > 1 generate
+					raw_router0: entity work.bsb_router
+						generic map (
+							NUMBER_OF_PORTS => 2,
+							ADDRESS_MASK => "---1---------------" -- '1': used to generate port index, '-' = don't care,
+						)
+						port map (
+							s_axis_bsb_tdata => top_router_bsb_cmd_tdata(RAWPACK_BASE_PORT),
+							s_axis_bsb_tvalid => top_router_bsb_cmd_tvalid(RAWPACK_BASE_PORT),
+							s_axis_bsb_tlast => top_router_bsb_cmd_tlast(RAWPACK_BASE_PORT),
+							s_axis_bsb_tready => top_router_bsb_cmd_tready(RAWPACK_BASE_PORT),
+							m_axis_bsb_tdata => top_router_bsb_rply_tdata(RAWPACK_BASE_PORT),
+							m_axis_bsb_tvalid => top_router_bsb_rply_tvalid(RAWPACK_BASE_PORT),
+							m_axis_bsb_tlast => top_router_bsb_rply_tlast(RAWPACK_BASE_PORT),
+							m_axis_bsb_tready => top_router_bsb_rply_tready(RAWPACK_BASE_PORT),
+
+							m_axis_routed_bsb_tdata => raw_bsb_cmd_tdata,
+							m_axis_routed_bsb_tvalid => raw_bsb_cmd_tvalid,
+							m_axis_routed_bsb_tlast => raw_bsb_cmd_tlast,
+							m_axis_routed_bsb_tready => raw_bsb_cmd_tready,
+							s_axis_routed_bsb_tdata => raw_bsb_rply_tdata,
+							s_axis_routed_bsb_tvalid => raw_bsb_rply_tvalid,
+							s_axis_routed_bsb_tlast => raw_bsb_rply_tlast,
+							s_axis_routed_bsb_tready => raw_bsb_rply_tready,
+
+							cmd_overflow => open,
+
+							clk => bsb_clk,
+							rst => gpu_bsb_rst_reg
+						);
+				end generate raw_bsb_router_gen;
+
 				-- The raw samples come from the UCAP capture bus, which must be on ct_clk (CT_CLK_SOURCE = ADC_CLK).
 				rawpack0: entity work.rawpack
 					generic map (
 						NUMBER_OF_CHANNELS => raw_tdata'length,
-						NUMBER_OF_SOURCES => raw_tvalid'length
+						NUMBER_OF_SOURCES => raw_tvalid'length,
+						NUMBER_OF_LINKS => NUMBER_OF_CGE_LINKS
 					)
 					port map (
 						s_axis_raw_tdata  => raw_tdata,
@@ -2504,17 +2559,57 @@ begin
 						clk => ct_clk,
 						rst => cge_reset,
 
-						s_axis_bsb_tdata => top_router_bsb_cmd_tdata(RAWPACK_BASE_PORT),
-						s_axis_bsb_tvalid => top_router_bsb_cmd_tvalid(RAWPACK_BASE_PORT),
-						s_axis_bsb_tlast => top_router_bsb_cmd_tlast(RAWPACK_BASE_PORT),
-						s_axis_bsb_tready => top_router_bsb_cmd_tready(RAWPACK_BASE_PORT),
-						m_axis_bsb_tdata => top_router_bsb_rply_tdata(RAWPACK_BASE_PORT),
-						m_axis_bsb_tvalid => top_router_bsb_rply_tvalid(RAWPACK_BASE_PORT),
-						m_axis_bsb_tlast => top_router_bsb_rply_tlast(RAWPACK_BASE_PORT),
-						m_axis_bsb_tready => top_router_bsb_rply_tready(RAWPACK_BASE_PORT),
+						s_axis_bsb_tdata => raw_bsb_cmd_tdata(0),
+						s_axis_bsb_tvalid => raw_bsb_cmd_tvalid(0),
+						s_axis_bsb_tlast => raw_bsb_cmd_tlast(0),
+						s_axis_bsb_tready => raw_bsb_cmd_tready(0),
+						m_axis_bsb_tdata => raw_bsb_rply_tdata(0),
+						m_axis_bsb_tvalid => raw_bsb_rply_tvalid(0),
+						m_axis_bsb_tlast => raw_bsb_rply_tlast(0),
+						m_axis_bsb_tready => raw_bsb_rply_tready(0),
 						bsb_clk => bsb_clk,
 						bsb_rst => gpu_bsb_rst_reg
 					);
+
+				-- Second 100G interface, on the second hard MAC of the device. It carries the raw streams
+				-- of link 1 only. Its registers are the same as those of cge0.
+				cge1_gen: if NUMBER_OF_CGE_LINKS > 1 generate
+					cge1: entity work.cge
+						generic map (
+							CMAC_IP => 2,
+							BSB_ADDR_WIDTH => 15, -- bit 15 selects this module in the RAWPACK port
+							DEFAULT_MAC_SRC_ADDR => X"005d03000001",
+							DEFAULT_IP_SRC_ADDR => X"0AC10002"
+						)
+						port map (
+							tx_p => cge1_tx_p,
+							tx_n => cge1_tx_n,
+							refclk_p => cge1_refclk_p,
+							refclk_n => cge1_refclk_n,
+
+							refclk_out => open,
+							clk322_out => open,
+
+							s_axis_tx_tdata  => cge_in_tdata(1),
+							s_axis_tx_tvalid => cge_in_tvalid(1),
+							s_axis_tx_tlast  => cge_in_tlast(1),
+							clk => ct_clk,
+
+							rst => cge_reset,
+
+							s_axis_bsb_tdata => raw_bsb_cmd_tdata(1),
+							s_axis_bsb_tvalid => raw_bsb_cmd_tvalid(1),
+							s_axis_bsb_tlast => raw_bsb_cmd_tlast(1),
+							s_axis_bsb_tready => raw_bsb_cmd_tready(1),
+							m_axis_bsb_tdata => raw_bsb_rply_tdata(1),
+							m_axis_bsb_tvalid => raw_bsb_rply_tvalid(1),
+							m_axis_bsb_tlast => raw_bsb_rply_tlast(1),
+							m_axis_bsb_tready => raw_bsb_rply_tready(1),
+							bsb_clk => bsb_clk,
+							bsb_rst => gpu_bsb_rst_reg
+						);
+				end generate cge1_gen;
+
 
 				cge0: entity work.cge
 					port map (
@@ -2528,9 +2623,9 @@ begin
 						clk322_out    => cge_clk322, -- 322 MHz generated by the core to clock all user interface signals.
 
 						-- input data interface
-						s_axis_tx_tdata  => cge_in_tdata,
-						s_axis_tx_tvalid => cge_in_tvalid,
-						s_axis_tx_tlast  => cge_in_tlast,
+						s_axis_tx_tdata  => cge_in_tdata(0),
+						s_axis_tx_tvalid => cge_in_tvalid(0),
+						s_axis_tx_tlast  => cge_in_tlast(0),
 						clk => ct_clk,
 
 						rst => cge_reset,
