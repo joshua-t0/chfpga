@@ -52,8 +52,10 @@ use work.chFPGA_Package.ALL;
 -- (normally from ``upack``) is passed to the output of link 0 with one clock of latency. Thus
 -- ``upack`` can use link 0 while streams C and D use link 1. The raw streams of link 0 and the
 -- pass-through bus are mutually exclusive: stop the upstream transmitter before enabling streams A
--- or B. When ``enable`` is cleared, the packets in progress are completed and sent before the
--- output is handed back.
+-- or B. If a frame of the pass-through bus is open when the raw streams take link 0 (the upstream
+-- transmitter was stopped in the middle of a frame), the module closes it with one last word, so
+-- that the first raw packet is a frame of its own. When ``enable`` is cleared, the packets in
+-- progress are completed and sent before the output is handed back.
 --
 -- Packet format (all multi-byte header fields are big-endian)
 --
@@ -306,6 +308,7 @@ architecture impl of rawpack is
 	signal pkt_tlast: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0');
 	signal raw_active: std_logic := '0'; -- the module is not completely stopped
 	signal link_active: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0'); -- the raw streams own the output of the link
+	signal pass_open: std_logic := '0'; -- a frame of the pass-through bus is on the output of link 0 without its last word
 
 	attribute ram_style: string;
 
@@ -829,10 +832,24 @@ begin
 					m_axis_out_tdata(l) <= pkt_tdata(l);
 					m_axis_out_tvalid(l) <= pkt_tvalid(l);
 					m_axis_out_tlast(l) <= pkt_tlast(l);
+					-- The raw streams take link 0 while a frame of the pass-through bus is open: the upstream
+					-- transmitter was stopped in the middle of a frame, or it is still sending. Close that
+					-- frame with one last word. If not, cge would put the first raw packet at the end of it,
+					-- and that packet would be lost. No raw packet can be on the output yet: the first one is
+					-- complete in its FIFO more than one packet length after ``enable``.
+					if l = 0 and pass_open = '1' and pkt_tvalid(l) = '0' then
+						m_axis_out_tdata(l) <= (others => '0');
+						m_axis_out_tvalid(l) <= '1';
+						m_axis_out_tlast(l) <= '1';
+						pass_open <= '0';
+					end if;
 				elsif l = 0 then
 					m_axis_out_tdata(l) <= s_axis_in_tdata;
 					m_axis_out_tvalid(l) <= s_axis_in_tvalid;
 					m_axis_out_tlast(l) <= s_axis_in_tlast;
+					if s_axis_in_tvalid then
+						pass_open <= not s_axis_in_tlast;
+					end if;
 				else
 					m_axis_out_tvalid(l) <= '0';
 					m_axis_out_tlast(l) <= '0';
@@ -841,6 +858,7 @@ begin
 			if rst then
 				m_axis_out_tvalid <= (others => '0');
 				m_axis_out_tlast <= (others => '0');
+				pass_open <= '0';
 			end if;
 		end if;
 	end process out_proc;

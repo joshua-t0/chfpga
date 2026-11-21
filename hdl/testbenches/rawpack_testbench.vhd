@@ -4,7 +4,8 @@
 -- BSB registers, then decodes every packet coming out of each link and checks the headers, the IP
 -- checksum, the continuity of the timestamps and every sample. Also checks the pass-through bus of
 -- link 0: before the streams are enabled and after they are disabled, or all the time if no stream
--- uses link 0.
+-- uses link 0. The pass-through bus carries frames. When the raw streams take link 0 in the middle
+-- of one, the module must close that frame before its first packet.
 --
 -- The test ends with the message "RAWPACK TEST PASSED" or a failure.
 --
@@ -34,6 +35,7 @@ entity rawpack_testbench is
 		CHANGE_TEST: integer range 0 to 1 := 0; -- 1: write another packet size and other streams while the streams run; they must be ignored until the module is stopped
 		RESTART_TEST: integer range 0 to 1 := 0; -- 1: first a short run with the streams RESTART_ENABLE, then the run that is checked: the packet counters must restart at zero
 		RESTART_ENABLE: integer range 1 to 15 := 1; -- streams of the first run of RESTART_TEST
+		PASS_MUTE: integer range 0 to 1 := 1; -- 1: the upstream transmitter (pass-through bus) is stopped in the middle of a frame before a run that uses link 0, as the host does. 0: it sends all the time.
 		RESET_TEST: integer range 0 to 1 := 0; -- 1: reset the packetizer in the middle of the stream (enable stays set) and check that it restarts cleanly
 		DUMP_FILE: string := "" -- if not empty, every packet of link 0 is written to this file as one line of hex bytes (starting at the Ethernet header). The packets of link 1 go to the file with ".1" added.
 	);
@@ -45,6 +47,7 @@ architecture behavior of rawpack_testbench is
 	constant BSB_CLK_PERIOD: time := 8 ns; -- 125 MHz
 	constant WORDS_PER_FRAME: integer := 2048;
 	constant PASS_WORD: std_logic_vector(255 downto 0) := X"A5A5A5A5_00000000_11111111_22222222_33333333_44444444_55555555_C3C3C3C3";
+	constant PASS_FRAME_WORDS: integer := 37; -- length of the frames on the pass-through bus
 	constant STREAMS: integer := 2 * LINKS;
 	constant MASK_LIMIT: integer := 2 ** STREAMS; -- streams that do not exist are ignored by the module
 	type int_array4 is array (0 to 3) of integer;
@@ -87,6 +90,11 @@ architecture behavior of rawpack_testbench is
 	alias pass_words_before: integer is pass_before(0);
 	alias pass_words_after: integer is pass_after(0);
 	signal done: boolean := FALSE;
+	signal pass_tvalid, pass_tlast: std_logic := '0';
+	signal upstream_stopped: std_logic := '0'; -- the upstream transmitter is stopped
+	signal pass_index: integer := 0; -- word of the upstream frame
+	signal closed: int_link_array := (others => 0); -- open pass-through frames that the module closed, on each link (only link 0 has them)
+	alias terminators: integer is closed(0);
 
 	-- Sample value sent for a given channel and absolute sample number
 	function sample_value(chan: integer; frame: integer; word: integer; s: integer) return std_logic_vector is
@@ -135,8 +143,8 @@ begin
 			raw_rst           => raw_rst,
 
 			s_axis_in_tdata  => PASS_WORD,
-			s_axis_in_tvalid => '1',
-			s_axis_in_tlast  => '0',
+			s_axis_in_tvalid => pass_tvalid,
+			s_axis_in_tlast  => pass_tlast,
 
 			m_axis_out_tdata  => out_tdata,
 			m_axis_out_tvalid => out_tvalid,
@@ -187,6 +195,15 @@ begin
 		end if;
 	end process stim_proc;
 
+	-- Pass-through bus: frames of PASS_FRAME_WORDS words. Like upack, the transmitter keeps its frame
+	-- timing while it is stopped: only tvalid is removed, so it stops and starts in the middle of frames.
+	pass_proc: process begin
+		wait until rising_edge(clk);
+		pass_tvalid <= not upstream_stopped;
+		pass_tlast <= to_std_logic(pass_index = PASS_FRAME_WORDS - 1);
+		pass_index <= (pass_index + 1) mod PASS_FRAME_WORDS;
+	end process pass_proc;
+
 	sum_proc: process(all)
 		variable n: integer;
 	begin
@@ -200,6 +217,15 @@ begin
 	-- Control sequence
 	ctrl_proc: process
 		variable first_packet: integer := 0; -- packets checked before the main run
+
+		-- What the host does before a run that uses link 0: it stops the upstream transmitter. Here always in the middle of a frame.
+		procedure stop_upstream(mask: integer) is
+		begin
+			if PASS_MUTE = 1 and mask mod 4 /= 0 then
+				wait until rising_edge(clk) and pass_index = 5;
+				upstream_stopped <= '1';
+			end if;
+		end procedure;
 	begin
 		wait for 200 ns;
 		wait until rising_edge(clk);
@@ -220,16 +246,19 @@ begin
 			-- A run with other streams, stopped completely. It advances only the packet counters of its
 			-- streams. The next run must start with all the counters at zero.
 			cur_mask <= RESTART_ENABLE mod MASK_LIMIT;
+			stop_upstream(RESTART_ENABLE);
 			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 29, RESTART_ENABLE);
 			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 1 + 4 * PORT_PER_CHANNEL);
 			wait until packets_checked >= NUMBER_OF_PACKETS / 4;
 			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 4 * PORT_PER_CHANNEL);
+			upstream_stopped <= '0'; -- the host starts the upstream transmitter again
 			wait for 5 us; -- the last packets go out
 			wait until rising_edge(clk);
 			first_packet := packets_checked;
 			cur_mask <= STREAM_ENABLE mod MASK_LIMIT;
 			run_number <= 1;
 		end if;
+		stop_upstream(STREAM_ENABLE);
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 29, STREAM_ENABLE);
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 1 + 4 * PORT_PER_CHANNEL);
 
@@ -254,12 +283,17 @@ begin
 
 		wait until packets_checked >= first_packet + NUMBER_OF_PACKETS;
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 4 * PORT_PER_CHANNEL);
+		upstream_stopped <= '0';
 		wait for 5 us; -- the packets in progress must complete, then the pass-through bus comes back
 
 		assert pass_words_before > 100 report "Pass-through bus not seen before enable" severity FAILURE;
 		if raw_seen(0) then
 			assert pass_words_after > 100 report "Pass-through bus not seen after disable" severity FAILURE;
+			-- Each run on link 0 started in the middle of an upstream frame: the module closed it
+			assert terminators >= 1 + RESTART_TEST * to_integer(unsigned'("" & to_std_logic(RESTART_ENABLE mod 4 /= 0 and STREAM_ENABLE mod 4 /= 0))) or RESET_TEST = 1
+				report "The open pass-through frames were not closed: " & integer'image(terminators) severity FAILURE;
 		else
+			assert terminators = 0 report "A frame was closed on link 0, which no raw stream used" severity FAILURE;
 			-- No stream used link 0: the pass-through bus had the link all the time
 			assert pass_words_before > NUMBER_OF_PACKETS * 3 * BLOCKS_PER_PACKET / 4 report "The pass-through bus did not keep link 0" severity FAILURE;
 		end if;
@@ -300,6 +334,9 @@ begin
 			variable number_of_resets: integer := 0;
 			variable run_seen: integer := 0;
 			variable mask_seen: integer := -1;
+			variable pass_open: boolean := FALSE; -- a pass-through frame is on the output without its last word
+			variable pass_len: integer := 0; -- words of the pass-through frame in progress
+			variable pass_resync: boolean := TRUE; -- the next pass-through frame can be short: the bus comes back in the middle of a frame, or the test starts in one
 			variable rst_prev: std_logic := '1';
 			variable expected: std_logic_vector(11 downto 0);
 			variable got: std_logic_vector(11 downto 0);
@@ -348,14 +385,31 @@ begin
 				start := -1;
 				run_start(LINK) <= -1;
 				expected_index := next_index(0);
+				pass_open := FALSE;
+				pass_len := 0;
+				pass_resync := TRUE;
 			end if;
 			if cur_mask /= mask_seen then -- the streams change only while the module is stopped: the order starts again
 				mask_seen := cur_mask;
 				expected_index := next_index(0);
 			end if;
 			if rst = '0' and out_tvalid(LINK) = '1' then
-				if LINK = 0 and not in_packet and out_tdata(LINK) = PASS_WORD then
-					assert out_tlast(LINK) = '0' report "Unexpected tlast on pass-through word" severity FAILURE;
+				if LINK = 0 and not in_packet and out_tdata(LINK) = (255 downto 0 => '0') and out_tlast(LINK) = '1' then
+					-- The word that closes a pass-through frame when the raw streams take the link
+					assert stream_enabled and link_mask /= 0 report "A closing word on link 0 while it has no raw stream" severity FAILURE;
+					assert pass_open report "A closing word with no open pass-through frame" severity FAILURE;
+					pass_open := FALSE;
+					pass_len := 0;
+					closed(LINK) <= closed(LINK) + 1;
+				elsif LINK = 0 and not in_packet and out_tdata(LINK) = PASS_WORD then
+					-- Pass-through frames arrive complete, except the first one after the raw streams give the link back
+					pass_len := pass_len + 1;
+					pass_open := out_tlast(LINK) = '0';
+					if out_tlast(LINK) = '1' then
+						assert pass_resync or pass_len = PASS_FRAME_WORDS report "Pass-through frame of " & integer'image(pass_len) & " words" severity FAILURE;
+						pass_len := 0;
+						pass_resync := FALSE;
+					end if;
 					if seen_raw then
 						pass_after(LINK) <= pass_after(LINK) + 1;
 					else
@@ -365,6 +419,8 @@ begin
 				else
 					assert stream_enabled report "Raw data on the output before enable" severity FAILURE;
 					assert link_mask /= 0 report "Raw data on link " & integer'image(LINK) & ", which has no stream" severity FAILURE;
+					assert in_packet or not pass_open report "A raw packet starts inside an open pass-through frame" severity FAILURE;
+					pass_resync := TRUE;
 					in_packet := TRUE;
 					seen_raw := TRUE;
 					raw_seen(LINK) <= TRUE;
