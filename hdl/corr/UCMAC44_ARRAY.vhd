@@ -51,6 +51,7 @@ entity UCMAC44_ARRAY is
 	generic (
 		NCMAC           : integer := 8 * 9 / 2; -- Number of CMACs. There will be 2*NCMAC DSP48s, and min(URAM_MAX, NCMAC/2) UltraRAMs
 		NPROD           : integer := 2048; -- Number of products to be stored by each CMAC. Sets memory depth. Must be 2048 if URAM_MAX > 0
+		WIDE_AUTOCORR   : boolean := FALSE; -- TRUE: the autocorrelations are accumulated as 36-bit unsigned numbers. Only if a CMAC always has the same pair of inputs (one clock for each bin).
 		AUTOCORR_STRIDE : integer := 1; -- Spacing (in CMACs) between autocorrelation products. We assume there will be NCMAC/AUTOCORR_STRIDE-1 autocorrelations
 		CORR_NUMBER     : integer; -- correlator number to be used in packet headers
 		NCORR           : integer := 1; -- Total number of correlators. Used only in computing the STREAM_ID (id = bin*NCORR+CORR_NUMBER)
@@ -73,6 +74,9 @@ entity UCMAC44_ARRAY is
 
 		overrun       : out std_logic; -- indicates that data could not be streamed out fast enough and data was lost
 		overrun_reset : in std_logic;
+
+		last_frame  : out std_logic; -- '1' while the frame on the input is the last frame of an integration (one clock late)
+		integ_start : out std_logic_vector(47 downto 0); -- timestamp of the first frame of the integration in progress, as in the result packets
 
 		-- Byte-serialized cascadable data input/outputs, AXI-Streaming, 8-bit, sloppy blocking via `send`
 		m_axis_z_tdata  : out std_logic_vector(7 downto 0);
@@ -174,17 +178,28 @@ architecture impl of UCMAC44_ARRAY is
 	-- Pack one RAM product into 5 little-endian bytes. Bits 35:0 are the (18+18)-bit
 	-- accumulated value; bit 36 = imag sat, bit 37 = real sat. Saturation is the same
 	-- min/max encoding used to clamp ram_din on overflow, so it is still present at readout.
-	function pack_product(ram_word: std_logic_vector(35 downto 0)) return slv8_array is
+	--
+	-- A wide autocorrelation (see WIDE_AUTOCORR) is a 36-bit unsigned number: its 18 LSBs are in bits
+	-- 35:18, where the real part is, and its 18 MSBs are in bits 17:0, where the imaginary part
+	-- (always zero) is. It has no saturation and its flags are zero. A sum below 2^17 has the
+	-- same bytes as before.
+	function pack_product(ram_word: std_logic_vector(35 downto 0); wide: boolean := FALSE) return slv8_array is
 		variable prod: unsigned(8 * BYTES_PER_PRODUCT - 1 downto 0);
 	begin
 		prod := resize(unsigned(ram_word), prod'length);
-		if ram_word(17 downto 0) = SAT_POS or ram_word(17 downto 0) = SAT_NEG then
+		if not wide and (ram_word(17 downto 0) = SAT_POS or ram_word(17 downto 0) = SAT_NEG) then
 			prod(36) := '1';
 		end if;
-		if ram_word(35 downto 18) = SAT_POS or ram_word(35 downto 18) = SAT_NEG then
+		if not wide and (ram_word(35 downto 18) = SAT_POS or ram_word(35 downto 18) = SAT_NEG) then
 			prod(37) := '1';
 		end if;
 		return to_slv8_array(reverse_bytes(std_logic_vector(prod)));
+	end function;
+
+	-- The CMACs that accumulate a wide autocorrelation: the first of each group of AUTOCORR_STRIDE, but not in the last group
+	function is_wide(i: integer) return boolean is
+	begin
+		return WIDE_AUTOCORR and i mod AUTOCORR_STRIDE = 0 and i / AUTOCORR_STRIDE < NCMAC / AUTOCORR_STRIDE - 1;
 	end function;
 
 	attribute keep_hierarchy of impl: architecture is "YES";
@@ -231,6 +246,8 @@ begin
 		--    ram_rd_addr <= (not acc_bank1) & std_logic_vector(ro_word_ctr1) when rd_word_ctr1=READOUT_BIN else
 		--                   acc_bank1 & std_logic_vector(rd_word_ctr1);
 		ram_wr_addr <= acc_bank5 & std_logic_vector(wr_word_ctr5);
+		last_frame <= last_frame1;
+		integ_start <= std_logic_vector(integ_timestamp);
 
 		wr_proc: process(all)
 
@@ -361,14 +378,14 @@ begin
 						-- Capture the RAM outputs, slice them in 5-byte products,  and store them in the shift register
 						-- This affects a large number of registers, implying large fanout controls
 						for i in 0 to NCMAC - 1 loop
-							prod_bytes := pack_product(ram_dout(i));
+							prod_bytes := pack_product(ram_dout(i), is_wide(i));
 							bytes(FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * i to FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * (i + 1) - 1) <= prod_bytes;
 						end loop;
 
 						-- Override the first product bytes after the frame header with the autocorrelation products if autocorr='1'
 						if autocorr_only then
 							for i in 0 to NCMAC / AUTOCORR_STRIDE - 2 loop -- assume that last one is not an autocorrelation (first N elements in N+1 high column are autocorrs)
-								prod_bytes := pack_product(ram_dout(i * AUTOCORR_STRIDE));
+								prod_bytes := pack_product(ram_dout(i * AUTOCORR_STRIDE), is_wide(i * AUTOCORR_STRIDE));
 								bytes(FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * i to FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * (i + 1) - 1) <= prod_bytes;
 							end loop;
 
@@ -534,6 +551,8 @@ begin
 		signal im_sat4: std_logic;
 		signal re_sat4: std_logic;
 		signal dsp2_ab_im_sign4: std_logic;
+		signal first3, first4: std_logic; -- wide autocorrelation: no sum from the RAM (first frame of an integration)
+		signal high3, high4, high4_plus1: std_logic_vector(17 downto 0);
 
 		signal a: signed(3 downto 0); --
 		signal b: signed(3 downto 0); --
@@ -643,9 +662,13 @@ begin
 
 		-- AB = ((im & 0x7FFFF) << 29) | (( bin_to_int(p, 8) & 0x7FFFF)<<9) |(bit(p, 25) << 8)  # im, 9 bits, sign extended to 19 bits, in AB[47:29]. bd, 8 bits, is sign extended to 19 bits and is in AB[27:9].
 		-- dsp2_c(47 downto 29) <= (others=>'0'); -- im
-		dsp2_c(47 downto 30) <= ram_dout(i)(17 downto 0); -- im
+		-- Wide autocorrelation: the DSP adds only the 18 LSBs of the sum (unsigned), in the field of the real part,
+		-- where its arithmetic is correct modulo 2^18. The 18 MSBs are not in the DSP: see high_new.
+		dsp2_c(47 downto 30) <= (others => '0') when is_wide(i) else
+		                        ram_dout(i)(17 downto 0); -- im
 		dsp2_c(29 downto 28) <= "00"; -- guard bits
-		dsp2_c(27)           <= ram_dout(i)(35);
+		dsp2_c(27)           <= '0' when is_wide(i) else
+		                        ram_dout(i)(35);
 		dsp2_c(26 downto 9)  <= ram_dout(i)(35 downto 18); -- im
 		dsp2_c(8 downto 0)   <= (others => '0');
 		dsp2_cin             <= '1';
@@ -892,6 +915,22 @@ begin
 				im_sat4 <= im_sat3;
 				dsp2_ab_im_sign4 <= dsp2_ab(47); -- register the AB sign bit
 
+				-- Wide autocorrelation: the 18 MSBs of the sum, which the RAM has where the imaginary part is. The
+				-- power of a frame is not negative and is less than 2^17, so the 18 LSBs pass 2^18 one time at most,
+				-- and then their MSB goes from 1 to 0 (dsp2_c_re_sign4 has the MSB that was in the RAM).
+				if is_wide(i) then
+					first3 <= first_frame2 or no_accum;
+					first4 <= first3;
+					high3 <= ram_dout(i)(17 downto 0);
+					if first3 then
+						high4 <= (others => '0');
+						high4_plus1 <= (others => '0');
+					else
+						high4 <= high3;
+						high4_plus1 <= std_logic_vector(unsigned(high3) + 1);
+					end if;
+				end if;
+
 
 			end if; -- clk
 		end process dsp_proc;
@@ -900,12 +939,15 @@ begin
 		-- Saturate accumulated sum before storing it into the RAM
 		-- This implies combinatorial logic between the DSP P output and the FIFO/BRAM inputs
 		-- Real part:
-		ram_din(i)(35 downto 18) <= SAT_POS when (re_sat4 = '1' and dsp2_c_re_sign4 = '0') or (dsp2_p(26) = '1' and dsp2_p(27) = '0') else
+		ram_din(i)(35 downto 18) <= dsp2_p(26 downto 9) when is_wide(i) else -- wide autocorrelation: no saturation
+			SAT_POS when (re_sat4 = '1' and dsp2_c_re_sign4 = '0') or (dsp2_p(26) = '1' and dsp2_p(27) = '0') else
 			SAT_NEG when (re_sat4 = '1' and dsp2_c_re_sign4 = '1') or (dsp2_p(26) = '0' and dsp2_p(27) = '1') else
 			dsp2_p(26 downto 9);
 
 		-- Imaginary part:
-		ram_din(i)(17 downto 0) <= SAT_POS when (im_sat4 = '1' and dsp2_c_im_sign4 = '0') or (dsp2_c_im_sign4 = '0' and dsp2_ab_im_sign4 = '0' and dsp2_p(47) = '1') else
+		ram_din(i)(17 downto 0) <= high4 when is_wide(i) and (first4 = '1' or dsp2_c_re_sign4 = '0' or dsp2_p(26) = '1') else
+			high4_plus1 when is_wide(i) else -- the 18 LSBs went from 1x... to 0x...: they passed 2^18
+			SAT_POS when (im_sat4 = '1' and dsp2_c_im_sign4 = '0') or (dsp2_c_im_sign4 = '0' and dsp2_ab_im_sign4 = '0' and dsp2_p(47) = '1') else
 			SAT_NEG when (im_sat4 = '1' and dsp2_c_im_sign4 = '1') or (dsp2_c_im_sign4 = '1' and dsp2_ab_im_sign4 = '1' and dsp2_p(47) = '0') else
 			dsp2_p(47 downto 30);
 

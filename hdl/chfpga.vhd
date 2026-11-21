@@ -623,6 +623,14 @@ architecture impl of chFPGA is
 	signal CLK125: std_logic; -- 125 MHz clock for the command interface and the Ethernet communications
 	signal clk200: std_logic; -- 200 MHz system clock from the carrier board
 	signal corr_clk: std_logic; -- Correlator clock, derived from the carrier board.
+	-- The correlator has the last frame of an integration: the scalers can switch their gain bank at the end of
+	-- their frame. Driven only where the scalers and the correlator have the same clock and less than one frame of delay.
+	signal integ_last_frame_reg: std_logic_vector(0 to 1) := "00";
+	-- Features of a correlator on the same board and the same clock as the channelizers (corr8): the gain bank switch at
+	-- the end of an integration, the split-sample mode and the wide autocorrelations
+	constant LOCAL_CORR: boolean := CORR_TYPE = UCORR44 and CT_LEVEL = 1 and CT_CLK_SOURCE = ADC_CLK;
+	signal split_mode, split_sat_reset: std_logic := '0';
+	signal split_sat_count: slv_array(0 to 3)(15 downto 0);
 	signal bsb_clk: std_logic;
 	signal cap_clk: std_logic; -- Data capture clock, either bsb_clk or axis_cap_clk
 	signal sysmon_clk: std_logic;
@@ -1803,6 +1811,7 @@ begin
 			NUMBER_OF_CHANNELIZERS_WITH_FFT => NUMBER_OF_CHANNELIZERS_WITH_FFT,
 			FFT_TYPE => FFT_TYPE,
 			CAPTURE_TYPE => CAPTURE_TYPE,
+			SPLIT_SAMPLE_SUPPORT => LOCAL_CORR,
             -- ADC config
 			ADC_IS_DIFFERENTIAL => ADC_IS_DIFFERENTIAL,
 			ADC_PROVIDE_BUFFERED_DIVCLK => ADC_PROVIDE_BUFFERED_DIVCLK,
@@ -1874,6 +1883,10 @@ begin
 			chan_out_tlast => chan_out_tlast,
 			ct_clk => ct_clk,
 			ct_reset => ct_reset,
+			integ_last_frame => integ_last_frame_reg(integ_last_frame_reg'RIGHT),
+			split_mode => split_mode,
+			split_sat_count => split_sat_count,
+			split_sat_reset => split_sat_reset,
 
 			-- 8-bit Data Capture streaming interface from PROBER Oor UCAP (on axis_cap_clk)
 			
@@ -2795,6 +2808,10 @@ begin
 				signal corr_in_tvalid: std_logic;
 				signal corr_in_tlast: std_logic;
 				attribute shreg_extract of corr_in_tdata, corr_in_tvalid, corr_in_tlast: signal is "no";
+				-- The scalers can switch their gain bank at the end of an integration only if they have the clock of the
+				-- correlator and the data takes less than one frame from the scalers to the correlator (no corner-turn memory)
+				constant GAIN_SWITCH_SUPPORT: boolean := LOCAL_CORR;
+				signal integ_last_frame: std_logic;
 
 			begin
 
@@ -2804,6 +2821,9 @@ begin
 						corr_in_tdata  <= ct_out_tdata;
 						corr_in_tlast  <= ct_out_tlast;
 						corr_in_tvalid <= ct_out_tvalid;
+						if GAIN_SWITCH_SUPPORT then
+							integ_last_frame_reg <= integ_last_frame & integ_last_frame_reg(0); -- pipeline to the channelizers
+						end if;
 					end if; -- clk
 				end process corr_pipe;
 
@@ -2815,9 +2835,16 @@ begin
 						NCORR                 => NCORR, -- equals to the number of bins per input word
 						NBINS_PER_CORR        => NBINS_PER_CORR,
 						BIN_DECIMATION_FACTOR => BIN_DECIMATION_FACTOR,
+						GAIN_SWITCH_SUPPORT   => GAIN_SWITCH_SUPPORT,
+						SPLIT_SAMPLE_SUPPORT  => LOCAL_CORR,
+						WIDE_AUTOCORR         => LOCAL_CORR,
 						READOUT_BINS          => CORR_READOUT_BINS
 					)
 					port map (
+						integ_last_frame => integ_last_frame,
+						split_mode       => split_mode,
+						split_sat_reset  => split_sat_reset,
+						split_sat_count  => split_sat_count,
 						-- Input data interface (AXI4-Streaning, non-blocking)
 						-- One input per channelizer
 

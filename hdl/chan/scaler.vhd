@@ -71,6 +71,11 @@ entity scaler is
 
         -- Channelizer monitoring (synchronous to ``mon_clk``)
 
+        -- '1' while the frame in the correlator is the last frame of an integration (synchronous to ``clk``).
+        -- Used with switch_at_integration. The delay from the input of the scaler to the correlator and back
+        -- must be less than one frame.
+        integ_last_frame : in std_logic := '0';
+
         fifo_overflow   : in std_logic:= '0'; -- Used to monitor the channelizer FIFO since it does not haveits own BSB registers.
         mon_clk: in std_logic := '0';
         mon_tvalid: in std_logic:= '0';
@@ -145,7 +150,8 @@ architecture Behavioral of SCALER is
 
     --- Define Control word and its signals
     signal control_bytes: slv8_array(0 to 13); -- default value set in the CMD_SLAVE
-    signal status_bytes: slv8_array(0 to 17);
+    signal status_bytes: slv8_array(0 to 18);
+    signal switch_at_integration: std_logic;
 
     signal bypass_scaler: std_logic;
     signal soft_reset: std_logic;
@@ -280,6 +286,7 @@ begin
 -- |          |        |  4:3    | bypass_data_type                  | When bypass_scaler is '1': "00": input, "01": 1+0j if any saturation, "10": 1+0j or 0+1j if positive or negative saturation respectively |
 -- |          |        |  2:0    | cap_data_type                     | "000": raw output, "001": scaled input, "010": 4-bit, "100": Even bins, "101": odd bins          |
 -- |          |11:12   | 15:0    | stats_bin_number                  | Bin number on which to measure overflow stats when stats_single_bin='1'.                        |
+-- |          | 13     |  7      | switch_at_integration             | When '1', the next gain bank is activated at the end of a correlator integration (integ_last_frame), not at a frame number |
 -- |          | 13     |  4:0    | post_scaler_left_shift_bank1      | Post-scaler left shift for gain bank 1 (0-31). Applied after RAM latency when bank 1 is active.   |
 -- | STATUS   |  0     |  7      | stats_ready                       | '1' when new stats data has been captured                                                       |
 -- |          |        |  6      | current_gain_bank                 | Currently used gain bank.                                                                       |
@@ -298,6 +305,7 @@ begin
 -- |          |14:15   | 15:0    | mon_word                          | Monitor word value                                                                              |
 -- |          | 16     |  7:0    | mon_clk_ctr                       | Monitor clock counter                                                                           |
 -- |          | 17     |  7:0    | mon_bit_ctr                       | Monitor bit counter                                                                             |
+-- |          | 18     |  0      | gain_switch_armed                 | '1' while switch_at_integration is set and the next gain bank is not yet the current one |
 -- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -344,6 +352,7 @@ cap_data_type  <= control_bytes(10)(2 downto 0); -- "000": main scaler output, "
 stats_bin_number <= to_unsigned(control_bytes(11 to 12));
 
 -- CONTROL Byte 13
+switch_at_integration <= control_bytes(13)(7);
 post_scaler_left_shift_bank(1) <= control_bytes(13)(4 downto 0);
 
 -- Applied post-scaler shift follows the gain bank after RAM_LATENCY so it
@@ -384,6 +393,9 @@ status_bytes(13) <= std_logic_vector(cap_frame_ctr);
 status_bytes(14 to 15) <= to_slv8_array(mon_word);
 status_bytes(16) <= std_logic_vector(mon_clk_ctr);
 status_bytes(17) <= std_logic_vector(mon_bit_ctr);
+
+-- STATUS Byte 18
+status_bytes(18) <= (0 => switch_at_integration and (next_gain_bank xor current_gain_bank), others => '0'); -- gain_switch_armed
 
 -----------------------------------------------------------------------------------
 -- BSB Memory-Mapped interface
@@ -758,7 +770,13 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 if s_axis_in_tlast then
                     word_ctr <= (others=> '0');
                     frame_ctr <= frame_ctr + 1;
-                    if synchronize_gain_bank_switch='0' or std_logic_vector(frame_ctr) = gain_bank_switch_frame_number then
+                    if switch_at_integration then
+                        -- The correlator has the last frame of an integration: this frame, since the delay to the
+                        -- correlator and back is less than one frame. The next frame is the first one of an integration.
+                        if integ_last_frame then
+                            current_gain_bank <= next_gain_bank;
+                        end if;
+                    elsif synchronize_gain_bank_switch='0' or std_logic_vector(frame_ctr) = gain_bank_switch_frame_number then
                         current_gain_bank <= next_gain_bank;
                     end if;
                 end if;

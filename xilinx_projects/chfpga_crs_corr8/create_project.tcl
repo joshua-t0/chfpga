@@ -28,3 +28,7 @@ set const_files [list \
 ]
 # Create project
 source ../../tcl/create_generic_project.tcl
+
+# The corr8 design with two 100G links, the split-sample stage and the wide scalers does not meet timing with
+# the placer directive of the other builds (Explore: -0.052 ns). ExtraNetDelay_high gives +0.013 ns (Vivado 2022.2).
+set_property -name "steps.place_design.args.directive" -value "ExtraNetDelay_high" -objects [get_runs impl_1]

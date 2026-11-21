@@ -164,6 +164,42 @@ cge
 
 Tests the 100G Ethernet corner-turn engine (CGE). Verifies corner-turn operations, packet handling, and Ethernet interface integration.
 
+gain_switch
+~~~~~~~~~~~
+
+**File:** ``hdl/testbenches/gain_switch_testbench.vhd``
+
+**Run with:** ``xilinx_projects/testbenches/gain_switch_testbench/run.sh [GENERIC=value ...]`` (Vivado simulator, no project needed)
+
+Self-checking test of the switch of the scaler gain bank at the end of a correlator integration. Two scalers feed ``UCORR44_ARRAY`` through a delay line that stands for the channelizer FIFO (``DELAY``). The test arms the scalers at many times in an integration, close together around its end, and checks on the input of the multipliers of the correlator that every integration has data of one gain bank only, that the two scalers switch on the same clock, that a gain table written a second time before the switch is the one used, and that the frame-number mode still works. With ``BINS=8192 INTEG=2100`` (the real frame length) it also checks the products in the result packets. ``BREAK=1`` (the signal of the correlator one frame late) and a ``DELAY`` of one frame or more must fail.
+
+sample_split
+~~~~~~~~~~~~
+
+**File:** ``hdl/testbenches/sample_split_testbench.vhd``
+
+**Run with:** ``xilinx_projects/testbenches/sample_split_testbench/run.sh``
+
+Self-checking test of the split-sample stage against a model in the testbench, on every clock: the default mode (the values pass with no change), every value from -128 to 127 on every component in the split mode (parts, saturation and its counters), random data with a common signal on four inputs (the products of the parts give the products of the wide values exactly), and mode changes at random times (a frame has one mode only).
+
+scaler_width
+~~~~~~~~~~~~
+
+**File:** ``hdl/testbenches/scaler_width_testbench.vhd``
+
+**Run with:** ``xilinx_projects/testbenches/scaler_width_testbench/run.sh``
+
+Gives the same random data, gains and settings to a scaler with (4+4)-bit outputs and to a scaler with (8+8)-bit outputs, and checks that the 4-bit values are the same on every clock in the 4-bit mode, for each rounding mode. This shows that the default mode of the corr8 build, which has scalers with (8+8)-bit outputs for the split-sample mode, gives the correlator the same data as before.
+
+ucorr_acc
+~~~~~~~~~
+
+**File:** ``hdl/testbenches/ucorr_acc_testbench.vhd``
+
+**Run with:** ``xilinx_projects/testbenches/ucorr_acc_testbench/run.sh [GENERIC=value ...]`` (15 minutes or more)
+
+Self-checking test of the correlator accumulators with frames of the real length. Three inputs are constant at full scale and five are random. The testbench has the exact sum of the power of each input in each bin and compares it with the 36-bit autocorrelations of the result packets (``WIDE=1``). ``DUMP_FILE`` writes the result records, to compare all the products with those of the design before a change (``CORR_SRC``). ``INTEG=32768 CONSTANT_ONLY=1 INTEGRATIONS=1`` checks one integration of 32768 frames at full scale (3211264).
+
 rawpack
 ~~~~~~~
 

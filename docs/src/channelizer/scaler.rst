@@ -211,6 +211,14 @@ Each bank has its own post-scaler left-shift register (``post_scaler_left_shift_
 
 **Synchronous switching**: When the ``synchronize_gain_bank_switch`` register is set to '1', the gain bank switches only when the internal frame counter matches the ``gain_bank_switch_frame_number`` register value. This ensures that all scalers across multiple channelizers (and potentially across multiple boards) switch gain banks on the exact same frame number. The user must keep track of the gain tables and the frame number at which the table was applied in order to revert the gains downstream in the processing pipeline.
 
+**Switching at the end of a correlator integration**: When the ``switch_at_integration`` register (control byte 13 bit 7) is set to '1', the two modes above are not used. The gain bank switches at the end of the frame during which the ``integ_last_frame`` input is '1'. The correlator (``UCORR44_ARRAY``) sets that input while it has the last frame of an integration. Thus the first frame of the next integration and all the frames after it use the new bank, and no frame of the integration that ends uses it. The host does not need a frame number.
+
+This is correct only if the data takes less than one frame to go from the input of the scaler to the correlator, and ``integ_last_frame`` less than the rest of that frame to come back: the scaler and the correlator are then in the same frame when the scaler makes its decision. ``chfpga.vhd`` connects ``integ_last_frame`` only for a correlator on the same board and the same clock as the scalers (``CT_LEVEL`` = 1 with ``CT_CLK_SOURCE`` = ``ADC_CLK``, as in corr8), where the delay is the channelizer FIFO (512 words at most) and some registers, for frames of 2048 words. In the other builds the input stays at '0' and this mode never switches.
+
+The status bit ``gain_switch_armed`` (status byte 18 bit 0) is '1' while ``switch_at_integration`` is set and the next gain bank is not yet the bank in use.
+
+To switch several channelizers at the end of the same integration, the host clears ``gain_switch_enable`` in the correlator (control byte 3 bit 5 of ``UCORR44_ARRAY``), sets the next gain bank of each scaler, then sets ``gain_switch_enable``. Without this, the end of an integration can come between the writes to two scalers. The correlator reports the timestamp of the first frame of the integration in progress (status bytes 6 to 11), which is the timestamp of the result packets of that integration.
+
 The current gain bank in use is indicated in the TUSER field of the output data of the SCALER(valid on TLAST only), allowing downstream processing to track which gain bank was applied to each frame.  
 
 

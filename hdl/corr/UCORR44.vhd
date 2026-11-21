@@ -67,6 +67,7 @@ entity UCORR44 is
         NCORR: integer := 1;
 		URAM_MAX: integer := 64;
 		READOUT_BIN: integer := 0; -- bin number sacrificed for the readout cycle
+		WIDE_AUTOCORR: boolean := FALSE; -- TRUE: 36-bit unsigned autocorrelations. Only with one clock for each bin (NCHAN = NCHAN_PER_CLK).
 		BINS_PER_FRAME_LOG2: integer := 3 -- Aggregate 2**N readout bins per AXIS frame / UDP packet (TLAST every 2**N bins, or on the last bin). Must be >= 1. 3 => 8 bins/frame.
 		);
 	PORT(
@@ -86,6 +87,9 @@ entity UCORR44 is
 
         overrun: out std_logic;
         overrun_reset: in std_logic;
+
+        last_frame: out std_logic; -- '1' while the frame in the multiplier array is the last frame of an integration
+        integ_start: out std_logic_vector(47 downto 0); -- timestamp of the first frame of the integration in progress
 
 		-- Byte-serialized cascadable data input/outputs, AXI-Streaming, 8-bit, sloppy blocking via `send`
 		z_out_tdata: out std_logic_vector(7 downto 0);
@@ -293,6 +297,7 @@ begin
 			NCMAC => NCMAC,
 			NPROD => NBINS / NDECIM * NCLK,
 			AUTOCORR_STRIDE => NCOL_PER_CLK,
+			WIDE_AUTOCORR => WIDE_AUTOCORR and NCLK = 1,
 			CORR_NUMBER => CORR_NUMBER,
 			NCORR => NCORR,
 			URAM_MAX => URAM_MAX,
@@ -311,6 +316,8 @@ begin
 		    no_accum => no_accum,
 	        overrun => overrun,
 	        overrun_reset => overrun_reset,
+	        last_frame => last_frame,
+	        integ_start => integ_start,
 	        autocorr_only => autocorr_only,
 	        corr_id => corr_id,
 

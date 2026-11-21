@@ -18,6 +18,7 @@ F-Engine
    prober
    ucap
    chan_fifo
+   sample_split
    fft_delay
 
 

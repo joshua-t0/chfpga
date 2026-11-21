@@ -91,6 +91,7 @@ entity chan is
 		out_dat_send: in  std_logic := '1'; -- Set to '1' by the sink to indicate that output data can be sent. Has a one clock latency.
 		out_clk: in  std_logic;
 		out_reset: in  std_logic;
+		integ_last_frame: in std_logic := '0'; -- to the scaler (synchronous to in_clk): the correlator has the last frame of an integration
 
 		-- Common data interface signals
 		-- Global trigger/capture signal.
@@ -578,6 +579,8 @@ begin
 				reset     => scaler_reset_in,
 
 				-- FIFO monitoring
+
+				integ_last_frame => integ_last_frame,
 
 				fifo_overflow => fifo_overflow, -- We ask SCALER to monitor the channel FIFO for us
 				mon_clk => out_clk,

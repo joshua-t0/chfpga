@@ -43,6 +43,9 @@ entity UCORR44_ARRAY is
 		N_BITS_PER_BIN: integer := 4+4; -- The correlator only supports 4+4 bit format.
 		SOFT_NINTEG: integer := 8192; -- default integration period (number of frames)
 		SOFT_AUTOCORR_ONLY: boolean := FALSE;
+		WIDE_AUTOCORR: boolean := FALSE; -- TRUE: the autocorrelations are 36-bit unsigned numbers (only with one clock for each bin)
+		SPLIT_SAMPLE_SUPPORT: boolean := FALSE; -- TRUE: the split-sample stage (sample_split) is in front of the correlator (reported in the status bytes; its control and status are here)
+		GAIN_SWITCH_SUPPORT: boolean := FALSE; -- TRUE if integ_last_frame is connected to the scalers (reported in the status bytes only)
 		READOUT_BINS: integer_array(0 to NCORR-1) := (others => 0); -- array of integers indicating which bin is sacrificed to the readout cycle for each correlator
         INPUT_WIDTH: integer := 256 -- Number of bits of the input bus. Is divided in NCORR sections (CORR 0 in MSB),
 	);
@@ -56,6 +59,16 @@ entity UCORR44_ARRAY is
 		s_axis_data_tdata : in  slv(INPUT_WIDTH-1 downto 0); -- input data stream containing the channelized data from every channelizer. Each frame must contain up to 512 words each containing four (4+4) bit signed complex values.
 		s_axis_data_tvalid : in  std_logic; --
 		s_axis_data_tlast : in  std_logic; --
+
+		-- '1' while the frame in the correlators is the last frame of an integration, if gain_switch_enable is set.
+		-- The scalers switch their gain bank at the end of their frame if they see this signal. This is correct
+		-- if the delay from the scaler input to here and back is less than one frame.
+		integ_last_frame : out std_logic;
+
+		-- Control and status of the split-sample stage (sample_split), synchronous to clk
+		split_mode      : out std_logic;
+		split_sat_reset : out std_logic;
+		split_sat_count : in slv_array(0 to 3)(15 downto 0) := (others => (others => '0')); -- of the 4 wide inputs
 
 		clk : in std_logic; -- Input clock channelized data.
 		rst: in std_logic; -- Reset synchronous to the input clock
@@ -102,7 +115,11 @@ architecture Behavioral of UCORR44_ARRAY is
     attribute DONT_TOUCH of rst_reg: signal is "true";
     -- Control signals
     signal control_bytes: slv8_array(0 to 3);
-    signal status_bytes: slv8_array(0 to 5);
+    signal status_bytes: slv8_array(0 to 19);
+    signal gain_switch_enable, gain_switch_enable_resync, gain_switch_enable_frame: std_logic;
+    signal split_mode_reg: std_logic;
+    signal last_frame: std_logic_vector(0 to NCORR-1);
+    signal integ_start: slv_array(0 to NCORR-1)(47 downto 0);
     signal user_reset: std_logic;
     signal user_reset_resync: std_logic;
     signal overrun_reset, overrun_reset_resync: std_logic;
@@ -150,6 +167,8 @@ begin
     -- |         | 1-2 | 15:0 | integ_period           | Integration period (number of frames) |
     -- |         |  3  |  7   | offset_encoding        | Offset binary encoding |
     -- |         |     |  6   | auto_bin_set            | Auto bin set |
+    -- |         |     |  5   | gain_switch_enable      | '1': the scalers that wait for it switch their gain bank at the end of the integration |
+    -- |         |     |  4   | split_mode              | '1': split-sample mode (see sample_split). It takes effect at the end of a frame. |
     -- |         |     | 3:0  | bin_set                 | Manual bin set |
     -- | STATUS  |  0  |  0   | or(overrun)            | OR of all overrun flags |
     -- |         |     |  1   | rst                     | Reset status |
@@ -161,14 +180,18 @@ begin
     -- |         |  3  | 7:0  | in_frame_ctr            | Input frame counter |
     -- |         |  4  | 7:0  | out_frame_ctr           | Output frame counter |
     -- |         |  5  | 3:0  | NCLK_PER_BIN            | Number of clocks per bin |
-    -- |         |     | 7:4  | (unused)                | |
+    -- |         |     |  4   | GAIN_SWITCH_SUPPORT     | '1': the scalers can switch their gain bank at the end of an integration |
+    -- |         |     |  5   | SPLIT_SAMPLE_SUPPORT    | '1': the build has the split-sample mode |
+    -- |         |     |  6   | WIDE_AUTOCORR           | '1': the autocorrelations are 36-bit unsigned numbers |
+    -- |         |12-..| 15:0 | split_sat_count(i)      | For each of the 4 wide inputs (2 bytes each): words with a saturated value in the split-sample mode. Cleared by overrun_reset. |
+    -- |         | 6-11| 47:0 | integ_start             | Timestamp of the first frame of the integration in progress (the timestamp of its result packets) |
     -- ------------------------------------------------------------------------------
 
 	bsb_regs0: entity work.bsb_regs
 		GENERIC MAP (
 			DEFAULT_CONTROL_BYTES=> "0000000" & to_std_logic(SOFT_AUTOCORR_ONLY) &
 			                        to_slv(SOFT_NINTEG-1,16) &
-			                        X"40", -- COntrol byte 3: no autobin, offset_encoding=0, manual_bin_set=0
+			                        X"60", -- Control byte 3: auto_bin_set=1, gain_switch_enable=1, offset_encoding=0, manual_bin_set=0
 			NUMBER_OF_CONTROL_BYTES => control_bytes'LENGTH(1), -- Number of bits in the control word
 			NUMBER_OF_STATUS_BYTES => status_bytes'LENGTH(1) -- Number of bits in the status word.
 		)
@@ -201,6 +224,8 @@ begin
 
     offset_encoding <= control_bytes(3)(7);
     auto_bin_set <= control_bytes(3)(6);
+    gain_switch_enable <= control_bytes(3)(5);
+    split_mode_reg <= control_bytes(3)(4);
     bin_set      <= control_bytes(3)(3 downto 0);
 
 
@@ -225,6 +250,26 @@ begin
 
     -- Status Byte 5
     status_bytes(5)(3 downto 0) <= to_slv(NCLK_PER_BIN, 4);
+    status_bytes(5)(4) <= to_std_logic(GAIN_SWITCH_SUPPORT);
+    status_bytes(5)(5) <= to_std_logic(SPLIT_SAMPLE_SUPPORT);
+    status_bytes(5)(6) <= to_std_logic(WIDE_AUTOCORR and NCLK_PER_BIN = 1 and BIN_DECIMATION_FACTOR = 1);
+    status_bytes(5)(7) <= '0';
+
+    sat_gen: for i in 0 to 3 generate
+        status_bytes(12 + 2 * i to 13 + 2 * i) <= to_slv8_array(unsigned(split_sat_count(i)));
+    end generate sat_gen;
+
+	split_cdc0: xpm_cdc_single
+		generic map (SRC_INPUT_REG => 0)
+		port map (src_clk => '0', src_in => split_mode_reg, dest_clk => clk, dest_out => split_mode);
+	split_sat_reset <= overrun_reset_resync;
+
+    -- Status bytes 6-11. The value changes one time for each integration: read it two times.
+    status_bytes(6 to 11) <= to_slv8_array(unsigned(integ_start(0)));
+
+	gain_cdc0: xpm_cdc_single
+		generic map (SRC_INPUT_REG => 0)
+		port map (src_clk => '0', src_in => gain_switch_enable, dest_clk => clk, dest_out => gain_switch_enable_resync);
 
 
 	-- Synchronize the software-controlled user reset to the correlator clock to ensure proper release from reset
@@ -262,6 +307,14 @@ begin
 
 			-- Count the input and output frames for debugging
 			in_frame_ctr <= in_frame_ctr + 1 when s_axis_data_tvalid and s_axis_data_tlast;
+
+			-- All the correlators have the same integration timing: the first one gives it
+			-- The enable acts from the end of a frame, so that the signal to the scalers goes high only there, far from
+			-- the time at which the scalers look at it. The disable acts at once: the host disables, then arms the scalers.
+			if s_axis_data_tvalid = '1' and s_axis_data_tlast = '1' then
+				gain_switch_enable_frame <= gain_switch_enable_resync;
+			end if;
+			integ_last_frame <= last_frame(0) and gain_switch_enable_frame and gain_switch_enable_resync and not rst_reg(0);
 			out_frame_ctr <= out_frame_ctr + 1 when m_axis_data_tvalid and m_axis_data_tlast;
 
 		end if; -- clk
@@ -320,7 +373,8 @@ begin
 				NCHAN_PER_CLK         => NCHAN_PER_CLK,
 				NDECIM => BIN_DECIMATION_FACTOR,
 				URAM_MAX              => URAM_MAX,
-				READOUT_BIN           => READOUT_BINS(i)
+				READOUT_BIN           => READOUT_BINS(i),
+				WIDE_AUTOCORR         => WIDE_AUTOCORR
 				)
 			port map(
 				s_axis_tvalid => corr_in_tvalid(i),
@@ -335,6 +389,8 @@ begin
 				no_accum        => no_accum,
 				overrun         => overrun(i),
 				overrun_reset   => overrun_reset,
+				last_frame      => last_frame(i),
+				integ_start     => integ_start(i),
 				corr_id         => corr_id,
 
 				z_out_tdata  => z_tdata(i),
