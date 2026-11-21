@@ -17,92 +17,115 @@ use IEEE.numeric_std.ALL;
 library work;
 use work.chFPGA_Package.ALL;
 
--- Streams raw ADC samples of one or two channels as UDP packets for the 100G MAC (``cge``). Each sample is
--- sent as 12 bits: the 12 most significant bits of the 14-bit ADC sample (the 2 low bits are dropped).
+-- Streams raw ADC samples of up to four channels as UDP packets for one or two 100G MACs (``cge``).
+-- Each sample is sent as 12 bits: the 14-bit ADC sample rounded to its 12 most significant bits.
 --
--- Each packet holds the samples of ONE channel. With two channels, the module sends two packet
--- streams, A and B, one for each channel: a packet of A, then the packet of B that covers the same
--- time. A receiver gets contiguous samples of a channel from each packet, and it can separate the
--- two streams with the UDP destination port or with the stream bit of the header.
+-- Each packet holds the samples of ONE channel. Each channel is a packet stream: streams A, B, C
+-- and D. A link carries ``STREAMS_PER_LINK`` streams (two with 12-bit samples): streams A and B go
+-- to link 0, streams C and D go to link 1. On a link the streams take turns: a packet of the first
+-- stream, then the packet of the next stream that covers the same time. A receiver gets contiguous
+-- samples of a channel from each packet, and it can separate the streams with the UDP destination
+-- port or with the stream number of the header.
 --
 -- The module taps the capture bus that feeds UCAP (8 samples per clock per channel, each sample
--- MSB-aligned in 16 bits). Two channels (A and B) are selected at run time. The data source of each
--- channel (0 = FUNCGEN output, i.e. ADC or test pattern, 1 = SCALER output) is the one currently
--- selected by UCAP (UCAP control byte 9); ``rawpack`` only reports it in the packet header. Both
--- channels should use the same source. The frame timing is taken from the source of channel A.
+-- MSB-aligned in 16 bits). The channel of each stream is selected at run time. The data source of
+-- each channel (0 = FUNCGEN output, i.e. ADC or test pattern, 1 = SCALER output) is the one
+-- currently selected by UCAP (UCAP control byte 9); ``rawpack`` only reports it in the packet
+-- header. All channels should use the same source. The frame timing is taken from the source of
+-- the channel of stream A.
 --
 -- Data rate: 8 samples x 12 bits = 96 bits per clock for each channel (38.4 Gb/s at 400 MHz, 76.8 Gb/s
--- for two channels). For each channel, two consecutive input words make a 192-bit word, and a 3:4
--- gearbox packs four of these (a "block": 8 input words, 64 samples) into 3 words of 256 bits. A
--- packet carries ``blocks_per_packet`` blocks preceded by two 32-byte header words. Each channel has
--- a block RAM FIFO that holds its packets until they are sent: a packet is sent when it is complete
--- in its FIFO, so the two streams never mix inside a packet.
+-- for the two channels of a link). For each channel, two consecutive input words make a 192-bit
+-- word, and a 3:4 gearbox packs four of these (a "block": 8 input words, 64 samples) into 3 words of
+-- 256 bits. A packet carries ``blocks_per_packet`` blocks preceded by two 32-byte header words. Each
+-- stream has a block RAM FIFO that holds its packets until they are sent: a packet is sent when it
+-- is complete in its FIFO, so the streams never mix inside a packet.
 --
--- In single-channel mode only stream A is sent.
+-- ``stream_enable`` selects the streams that are sent. All the enabled streams start on the same
+-- frame and stop together (``enable``). A link is in use when at least one of its streams is
+-- enabled.
 --
--- Output bus: 256-bit non-blocking AXI4-Stream in the format expected by ``cge``: the first byte on
--- the wire is the most significant byte of the word.
+-- Output buses: one 256-bit non-blocking AXI4-Stream bus for each link, in the format expected by
+-- ``cge``: the first byte on the wire is the most significant byte of the word.
 --
--- When the module is disabled, the ``s_axis_in`` bus (normally from ``upack``) is passed to the
--- output with one clock of latency. The two uses are mutually exclusive: stop the upstream
--- transmitter before enabling ``rawpack``. When ``enable`` is cleared, the packets in progress are
--- completed and sent before the output is handed back.
+-- Link 0 has a pass-through input: when no stream of link 0 is in use, the ``s_axis_in`` bus
+-- (normally from ``upack``) is passed to the output of link 0 with one clock of latency. Thus
+-- ``upack`` can use link 0 while streams C and D use link 1. The raw streams of link 0 and the
+-- pass-through bus are mutually exclusive: stop the upstream transmitter before enabling streams A
+-- or B. When ``enable`` is cleared, the packets in progress are completed and sent before the
+-- output is handed back.
 --
 -- Packet format (all multi-byte header fields are big-endian)
 --
---   Bytes 0-13   Ethernet header (dest MAC, source MAC, ethertype 0x0800)
+--   Bytes 0-13   Ethernet header (dest MAC, source MAC, ethertype 0x0800). Each link has its own addresses.
 --   Bytes 14-33  IPv4 header (no options, DF set, TTL 64, protocol UDP, valid header checksum)
---   Bytes 34-41  UDP header (checksum = 0, i.e. not used). The destination port is ``port_dest`` for
---                stream A and ``port_dest`` + 1 for stream B (same port if ``port_per_channel`` = 0).
+--   Bytes 34-41  UDP header (checksum = 0, i.e. not used). The destination port is ``port_dest`` of the
+--                link for its first stream and ``port_dest`` + 1 for its second stream (same port if
+--                ``port_per_channel`` = 0).
 --   Bytes 42-63  Raw stream header:
 --       42-43  magic 0x5241 ("RA")
---       44     format version (3 = one channel in each packet, 12-bit samples, little-endian bit packing)
+--       44     format version (4 = one channel in each packet, up to 4 streams, sample width in byte 63)
 --       45     flags: bit 0 = data source of the channel of this packet,
---                     bit 2 = single-channel mode (stream B is not sent),
+--                     bit 1 = the samples are rounded (0: truncated),
+--                     bits 5:2 = streams that are sent (bit 2 = stream A ... bit 5 = stream D),
 --                     bit 7 = internal FIFO overflow (sticky)
 --       46     bits 2:0 = channel number (0-7) of the samples of this packet,
---              bit 7 = stream: 0 = stream A (first channel), 1 = stream B (second channel)
+--              bits 6:4 = stream number: 0 = A, 1 = B (link 0), 2 = C, 3 = D (link 1)
 --       47     blocks_per_packet
---       48-53  packet counter of this stream (48 bits). Each stream has its own counter. The two counters
---              are zero on the first packets of a stream that starts from the stopped state
+--       48-53  packet counter of this stream (48 bits). Each stream has its own counter. All the counters
+--              are zero on the first packets of a run that starts from the stopped state
 --              (raw_active = 0), and after a reset.
 --       54-59  frame number (48 bits) of the first sample of the packet. Counts frames since the
 --              channelizer reset, like the UCAP timestamp.
 --       60-61  word number (0-2047) of the first sample of the packet within its frame. The first
 --              sample is sample number 8 * word of that frame.
---       62     stream number: incremented every time the streams start (when they are enabled, and when
+--       62     run number: incremented every time the streams start (when they are enabled, and when
 --              they restart after a packetizer reset). The packet counters restart at zero at the same
---              time, so a change of stream number tells a receiver that the counters have restarted.
+--              time, so a change of run number tells a receiver that the counters have restarted.
 --              (If ``enable`` is set again before the last packets of the previous run are out, the
---              counters continue: the mode cannot change in that case, so A and B stay in step.)
---       63     reserved (0)
+--              counters continue: the settings cannot change in that case, so the streams stay in step.)
+--       63     bits in each sample (12)
 --   Bytes 64...  96 * blocks_per_packet bytes of samples.
 --
 -- Sample packing: the payload is a little-endian bit stream, i.e. stream bit n is bit (n mod 8) of
 -- payload byte (n / 8). Sample number i of the packet occupies stream bits 12*i to 12*i+11 (LSB
 -- first), and the samples are in time order: x(t), x(t+1), x(t+2), ... Every 2 samples fill exactly
--- 3 bytes. A sample value is the 14-bit ADC sample divided by 4 (signed, -2048 to 2047). The first
+-- 3 bytes. A sample value is the 14-bit ADC sample divided by 4 and rounded to the nearest integer
+-- (signed, -2048 to 2047; a half goes up, and 2047.5 and more give 2047). The first
 -- packets after ``enable`` start on the first word of a frame. With the default 64 blocks per
 -- packet, a packet holds 4096 samples and a frame of 16384 samples is exactly 4 packets of each
--- stream. The packets of A and B with the same packet counter cover the same time.
+-- stream. The packets of all streams with the same packet counter cover the same time.
 --
 entity rawpack is
 	generic (
 		NUMBER_OF_CHANNELS: integer := 8;
 		NUMBER_OF_SOURCES: integer  := 2;
+		NUMBER_OF_LINKS: integer range 1 to 2 := 1; -- 100G links (output buses)
+		STREAMS_PER_LINK: integer := 2; -- streams (channels) on each link. 2 for 12-bit samples.
+		SAMPLE_BITS: integer := 12; -- bits sent for each sample. Only 12 is implemented (3:4 gearbox).
+		ROUND_SAMPLES: boolean := TRUE; -- TRUE: round to SAMPLE_BITS. FALSE: truncate.
 
 		DEFAULT_ENABLE: std_logic                         := '0';
-		DEFAULT_SINGLE: std_logic                         := '0'; -- '1': send channel A only
-		DEFAULT_PORT_PER_CHANNEL: std_logic               := '1'; -- '1': stream B uses UDP destination port port_dest + 1
+		DEFAULT_STREAM_ENABLE: std_logic_vector(3 downto 0) := "0011"; -- streams A and B
+		DEFAULT_PORT_PER_CHANNEL: std_logic               := '1'; -- '1': the second stream of a link uses UDP destination port port_dest + 1
 		DEFAULT_CHAN_A: integer range 0 to 7              := 0;
 		DEFAULT_CHAN_B: integer range 0 to 7              := 1;
+		DEFAULT_CHAN_C: integer range 0 to 7              := 2;
+		DEFAULT_CHAN_D: integer range 0 to 7              := 3;
 		DEFAULT_BLOCKS_PER_PACKET: integer range 4 to 90  := 64; -- 64 blocks = 6144 bytes = 4096 samples, 4 packets of each stream per frame
 		DEFAULT_MAC_SRC_ADDR: slv48  := X"005d03000000";
 		DEFAULT_MAC_DEST_ADDR: slv48 := X"FFFFFFFFFFFF"; -- Ethernet broadcast
 		DEFAULT_IP_SRC_ADDR: slv32   := X"0AC00002";
 		DEFAULT_IP_DEST_ADDR: slv32  := X"FFFFFFFF";
 		DEFAULT_IP_SRC_PORT: slv16   := X"A027";
-		DEFAULT_IP_DEST_PORT: slv16  := X"A028"
+		DEFAULT_IP_DEST_PORT: slv16  := X"A028";
+		-- Link 1
+		DEFAULT_MAC_SRC_ADDR_1: slv48  := X"005d03000001";
+		DEFAULT_MAC_DEST_ADDR_1: slv48 := X"FFFFFFFFFFFF";
+		DEFAULT_IP_SRC_ADDR_1: slv32   := X"0AC10002";
+		DEFAULT_IP_DEST_ADDR_1: slv32  := X"FFFFFFFF";
+		DEFAULT_IP_SRC_PORT_1: slv16   := X"A027";
+		DEFAULT_IP_DEST_PORT_1: slv16  := X"A02A"
 	);
 	port (
 		-- Capture bus (same bus as UCAP), synchronous to clk
@@ -112,15 +135,15 @@ entity rawpack is
 		source_sel_in     : in std_logic_vector(0 to NUMBER_OF_CHANNELS - 1) := (others => '0'); -- data source currently on tdata for each channel
 		raw_rst           : in std_logic := '0'; -- resets the frame counters. Use the same reset as UCAP to get the same frame numbers.
 
-		-- Pass-through input (used when rawpack is disabled)
+		-- Pass-through input of link 0 (used when no raw stream uses link 0)
 		s_axis_in_tdata  : in std_logic_vector(255 downto 0) := (others => '0');
 		s_axis_in_tvalid : in std_logic                      := '0';
 		s_axis_in_tlast  : in std_logic                      := '0';
 
-		-- Output to cge
-		m_axis_out_tdata  : out std_logic_vector(255 downto 0);
-		m_axis_out_tvalid : out std_logic := '0';
-		m_axis_out_tlast  : out std_logic := '0';
+		-- Outputs to cge, one bus for each link
+		m_axis_out_tdata  : out slv_array(0 to NUMBER_OF_LINKS - 1)(255 downto 0);
+		m_axis_out_tvalid : out std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0');
+		m_axis_out_tlast  : out std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0');
 
 		clk : in std_logic;
 		rst : in std_logic; -- synchronous reset of the packetizer
@@ -141,27 +164,36 @@ end entity rawpack;
 
 architecture impl of rawpack is
 
-	constant NUMBER_OF_STREAMS: integer := 2; -- stream 0 = A, stream 1 = B
+	constant NUMBER_OF_STREAMS: integer := NUMBER_OF_LINKS * STREAMS_PER_LINK; -- stream s is on link s / STREAMS_PER_LINK
+	constant MAX_STREAMS: integer := 4; -- streams in the register map
+	constant MAX_LINKS: integer := 2; -- links in the register map
 	constant SAMPLES_PER_WORD: integer := 8;
 	constant IN_BITS_PER_SAMPLE: integer := 16; -- capture bus sample width (sample is MSB-aligned)
-	constant BITS_PER_SAMPLE: integer := 12; -- bits sent per sample: the MSBs of the capture bus sample
+	constant BITS_PER_SAMPLE: integer := SAMPLE_BITS; -- bits sent per sample: the MSBs of the capture bus sample
 	constant CHAN_WIDTH: integer := SAMPLES_PER_WORD * BITS_PER_SAMPLE; -- 96 bits per clock for one channel
 	constant PAIR_WIDTH: integer := 2 * CHAN_WIDTH; -- 192 bits: two consecutive input words of one channel
 	constant GEARBOX_STEP: integer := 256 - PAIR_WIDTH; -- 64: bits that each output word takes from the next pair, more than the previous one
-	constant FORMAT_VERSION: std_logic_vector(7 downto 0) := X"03";
+	constant FORMAT_VERSION: std_logic_vector(7 downto 0) := X"04";
+	constant LINK_ADDRESS_BYTES: integer := 24; -- MAC, IP and port registers of a link
+	constant LINK1_BASE: integer := 30; -- first address register of link 1
 
 	-- bsb_regs indexes this vector from 0 (byte 0 bit 7 = element 0), so the range must be ascending
-	constant DEFAULT_CONTROL_BYTES: std_logic_vector(0 to 28 * 8 - 1) :=
-		"00000" & DEFAULT_PORT_PER_CHANNEL & DEFAULT_SINGLE & DEFAULT_ENABLE &          -- byte 0
+	constant DEFAULT_CONTROL_BYTES: std_logic_vector(0 to 54 * 8 - 1) :=
+		"00000" & DEFAULT_PORT_PER_CHANNEL & '0' & DEFAULT_ENABLE &                     -- byte 0
 		'0' & to_slv(DEFAULT_CHAN_B, 3) & '0' & to_slv(DEFAULT_CHAN_A, 3) &             -- byte 1
 		to_slv(DEFAULT_BLOCKS_PER_PACKET, 8) &                                          -- byte 2
 		X"00" &                                                                         -- byte 3
 		DEFAULT_MAC_DEST_ADDR & DEFAULT_MAC_SRC_ADDR &                                  -- bytes 4-15
 		DEFAULT_IP_DEST_ADDR & DEFAULT_IP_SRC_ADDR &                                    -- bytes 16-23
-		DEFAULT_IP_DEST_PORT & DEFAULT_IP_SRC_PORT;                                     -- bytes 24-27
+		DEFAULT_IP_DEST_PORT & DEFAULT_IP_SRC_PORT &                                    -- bytes 24-27
+		'0' & to_slv(DEFAULT_CHAN_D, 3) & '0' & to_slv(DEFAULT_CHAN_C, 3) &             -- byte 28
+		"0000" & DEFAULT_STREAM_ENABLE &                                                -- byte 29
+		DEFAULT_MAC_DEST_ADDR_1 & DEFAULT_MAC_SRC_ADDR_1 &                              -- bytes 30-41
+		DEFAULT_IP_DEST_ADDR_1 & DEFAULT_IP_SRC_ADDR_1 &                                -- bytes 42-49
+		DEFAULT_IP_DEST_PORT_1 & DEFAULT_IP_SRC_PORT_1;                                 -- bytes 50-53
 
-	signal control_bytes: slv8_array(0 to 27);
-	signal status_bytes: slv8_array(0 to 14);
+	signal control_bytes: slv8_array(0 to 53);
+	signal status_bytes: slv8_array(0 to 30);
 
 	signal cmd_dat_int_tdata: std_logic_vector(7 downto 0);
 	signal cmd_dat_int_tvalid: std_logic;
@@ -176,10 +208,20 @@ architecture impl of rawpack is
 	type u3_stream_array is array (0 to NUMBER_OF_STREAMS - 1) of unsigned(2 downto 0);
 	type u48_stream_array is array (0 to NUMBER_OF_STREAMS - 1) of unsigned(47 downto 0);
 	type slv256_stream_array is array (0 to NUMBER_OF_STREAMS - 1) of std_logic_vector(255 downto 0);
+	type slv256_link_array is array (0 to NUMBER_OF_LINKS - 1) of std_logic_vector(255 downto 0);
+	type slv48_link_array is array (0 to NUMBER_OF_LINKS - 1) of slv48;
+	type slv32_link_array is array (0 to NUMBER_OF_LINKS - 1) of slv32;
+	type slv16_link_array is array (0 to NUMBER_OF_LINKS - 1) of slv16;
+	type u17_link_array is array (0 to NUMBER_OF_LINKS - 1) of unsigned(16 downto 0);
+	type u20_link_array is array (0 to NUMBER_OF_LINKS - 1) of unsigned(19 downto 0);
+	type u11_link_array is array (0 to NUMBER_OF_LINKS - 1) of unsigned(10 downto 0);
+	type int_link_array is array (0 to NUMBER_OF_LINKS - 1) of integer range 0 to STREAMS_PER_LINK - 1;
 
 	-- Registered control values
 	signal enable: std_logic := '0';
-	signal single: std_logic := '0';
+	signal stream_en: std_logic_vector(0 to NUMBER_OF_STREAMS - 1) := (others => '0'); -- streams that are sent
+	signal stream_mask: std_logic_vector(3 downto 0) := (others => '0'); -- the same, for the header
+	signal link_en: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0'); -- links with at least one stream
 	signal port_per_channel: std_logic := '0';
 	signal sel: u3_stream_array := (others => (others => '0')); -- channel of each stream
 	signal blocks_per_packet: unsigned(7 downto 0) := (others => '0');
@@ -187,9 +229,9 @@ architecture impl of rawpack is
 	signal last_word: unsigned(10 downto 0) := (others => '0'); -- 3 * blocks_per_packet - 1: last data word of a packet
 	signal fifo_words_per_packet: unsigned(10 downto 0) := (others => '1'); -- 3 * blocks_per_packet + 1: the data words and the information word
 	signal src_port_mask: std_logic_vector(7 downto 0);
-	signal mac_dest, mac_src: slv48;
-	signal ip_dest, ip_src: slv32;
-	signal port_dest, port_src: slv16;
+	signal mac_dest, mac_src: slv48_link_array;
+	signal ip_dest, ip_src: slv32_link_array;
+	signal port_dest, port_src: slv16_link_array;
 
 	-- Frame tracking, one per data source
 	signal frame_ctr: u48_array(0 to NUMBER_OF_SOURCES - 1) := (others => (others => '0'));
@@ -204,7 +246,14 @@ architecture impl of rawpack is
 	signal w0: unsigned(10 downto 0);
 	signal src: std_logic_vector(0 to NUMBER_OF_STREAMS - 1) := (others => '0'); -- data source of the channel of each stream
 
-	-- Stage 1: 12-bit packing, and two consecutive input words joined
+	-- Stage R: the samples reduced to SAMPLE_BITS (rounded or truncated), in time order
+	type chan_stream_array is array (0 to NUMBER_OF_STREAMS - 1) of std_logic_vector(CHAN_WIDTH - 1 downto 0);
+	signal pr: chan_stream_array;
+	signal vr: std_logic := '0';
+	signal tsr: unsigned(47 downto 0);
+	signal wr: unsigned(10 downto 0);
+
+	-- Stage 1: two consecutive input words joined
 	type pair_stream_array is array (0 to NUMBER_OF_STREAMS - 1) of std_logic_vector(PAIR_WIDTH - 1 downto 0);
 	signal d1: pair_stream_array;
 	signal v1: std_logic := '0';
@@ -216,12 +265,12 @@ architecture impl of rawpack is
 	signal phase: unsigned(1 downto 0) := (others => '0'); -- pair number in the block
 	signal block_ctr: unsigned(7 downto 0) := (others => '0'); -- block number in the packet
 	signal hold: pair_stream_array;
-	signal stream_number: unsigned(7 downto 0) := (others => '0'); -- not cleared by rst, so a restart after a reset is visible
+	signal stream_number: unsigned(7 downto 0) := (others => '0'); -- run number. Not cleared by rst, so a restart after a reset is visible
 
 	-- Packet FIFO of each stream (block RAM). For each packet it holds one information word (frame
 	-- and word number of the first sample), then the data words. It holds a complete packet of its
-	-- stream while a packet of the other stream is sent: at most about 1.4 packets (380 words with the
-	-- largest packets).
+	-- stream while a packet of the other stream of the link is sent: at most about 1.4 packets (380
+	-- words with the largest packets).
 	constant FIFO_ADDR_WIDTH: integer := 9; -- 512 words
 	type fifo_ptr_array is array (0 to NUMBER_OF_STREAMS - 1) of unsigned(FIFO_ADDR_WIDTH downto 0);
 	signal fifo_wr_data: slv256_stream_array;
@@ -235,28 +284,35 @@ architecture impl of rawpack is
 
 	-- Header
 	signal udp_length, ip_length: unsigned(15 downto 0);
-	signal csum_a, csum_b, csum_c: unsigned(16 downto 0);
-	signal csum_total: unsigned(19 downto 0);
-	signal ip_checksum: std_logic_vector(15 downto 0);
-	signal header1: std_logic_vector(255 downto 0);
+	signal csum_a: unsigned(16 downto 0);
+	signal csum_b, csum_c: u17_link_array;
+	signal csum_total: u20_link_array;
+	signal ip_checksum: slv16_link_array;
+	signal header1: slv256_link_array; -- first header word of each link
 	signal header2: slv256_stream_array; -- second header word of each stream, without the fields that change with each packet
 
-	-- Packet sequencer
+	-- Packet sequencer of each link
 	type tx_state_type is (IDLE, START, SEND_HEADER1, SEND_HEADER2, SEND_DATA);
-	signal tx_state: tx_state_type := IDLE;
-	signal tx_stream: integer range 0 to NUMBER_OF_STREAMS - 1 := 0; -- stream of the packet in progress
-	signal last_stream: integer range 0 to NUMBER_OF_STREAMS - 1 := NUMBER_OF_STREAMS - 1; -- stream of the previous packet
-	signal rd_word_ctr: unsigned(10 downto 0) := (others => '0'); -- data words read from the FIFO
-	signal tx_word_ctr: unsigned(10 downto 0) := (others => '0'); -- data words sent
+	type tx_state_array is array (0 to NUMBER_OF_LINKS - 1) of tx_state_type;
+	signal tx_state: tx_state_array := (others => IDLE);
+	signal tx_stream: int_link_array := (others => 0); -- stream of the packet in progress, counted in the link
+	signal last_stream: int_link_array := (others => STREAMS_PER_LINK - 1); -- stream of the previous packet
+	signal rd_word_ctr: u11_link_array := (others => (others => '0')); -- data words read from the FIFO
+	signal tx_word_ctr: u11_link_array := (others => (others => '0')); -- data words sent
+	signal tx_idle: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '1');
 	signal packet_ctr: u48_stream_array := (others => (others => '0'));
-	signal pkt_tdata: std_logic_vector(255 downto 0);
-	signal pkt_tvalid: std_logic := '0';
-	signal pkt_tlast: std_logic := '0';
-	signal raw_active: std_logic := '0';
+	signal pkt_tdata: slv256_link_array;
+	signal pkt_tvalid: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0');
+	signal pkt_tlast: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0');
+	signal raw_active: std_logic := '0'; -- the module is not completely stopped
+	signal link_active: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0'); -- the raw streams own the output of the link
 
 	attribute ram_style: string;
 
 begin
+
+	assert SAMPLE_BITS = 12 report "rawpack: only SAMPLE_BITS = 12 is implemented (the gearbox packs four 192-bit words into three 256-bit words)" severity FAILURE;
+	assert STREAMS_PER_LINK = 2 report "rawpack: only STREAMS_PER_LINK = 2 is implemented (register map and link capacity)" severity FAILURE;
 
 	-- Bridge the BSB bus to the clk domain so all the registers are synchronous to the data path.
 	bsb_fifo0: entity work.bsb_async_fifo
@@ -289,27 +345,39 @@ begin
 	-- ------------------------------------------------------------------------------------------
 	-- |  Page   | Addr |Bit(s)|     Name            | Description                               |
 	-- |---------|------|------|---------------------|-------------------------------------------|
-	-- | CONTROL |  0   |  0   | enable              | '1': stream raw samples. '0': pass the upstream bus through |
-	-- |         |      |  1   | single              | '1': send stream A only. Taken into account only while the stream is stopped (raw_active = 0). |
-	-- |         |      |  2   | port_per_channel    | '1': the UDP destination port of stream B is port_dest + 1. '0': the two streams use port_dest. Taken into account only while the stream is stopped. |
+	-- | CONTROL |  0   |  0   | enable              | '1': send the enabled streams. '0': stop  |
+	-- |         |      |  2   | port_per_channel    | '1': the UDP destination port of the second stream of a link is port_dest + 1. '0': the streams of a link use port_dest. (*) |
 	-- |         |  1   | 2:0  | chan_a              | Channel of stream A (0-7)                 |
 	-- |         |      | 6:4  | chan_b              | Channel of stream B (0-7)                 |
-	-- |         |  2   | 7:0  | blocks_per_packet   | Blocks (96 bytes, 64 samples) per packet. 4 to 90. Taken into account only while the stream is stopped (raw_active = 0). |
+	-- |         |  2   | 7:0  | blocks_per_packet   | Blocks (96 bytes, 64 samples) per packet. 4 to 90. (*) |
 	-- |         |  3   | 7:0  | src_port_mask       | UDP source port = src_port + (packet counter and mask) |
-	-- |         | 4-9  | 47:0 | mac_dest            | Destination MAC address                   |
-	-- |         |10-15 | 47:0 | mac_src             | Source MAC address                        |
-	-- |         |16-19 | 31:0 | ip_dest             | Destination IP address                    |
-	-- |         |20-23 | 31:0 | ip_src              | Source IP address                         |
-	-- |         |24-25 | 15:0 | port_dest           | UDP destination port of stream A          |
-	-- |         |26-27 | 15:0 | port_src            | UDP source port                           |
+	-- |         | 4-9  | 47:0 | mac_dest            | Link 0: destination MAC address           |
+	-- |         |10-15 | 47:0 | mac_src             | Link 0: source MAC address                |
+	-- |         |16-19 | 31:0 | ip_dest             | Link 0: destination IP address            |
+	-- |         |20-23 | 31:0 | ip_src              | Link 0: source IP address                 |
+	-- |         |24-25 | 15:0 | port_dest           | Link 0: UDP destination port of stream A  |
+	-- |         |26-27 | 15:0 | port_src            | Link 0: UDP source port                   |
+	-- |         | 28   | 2:0  | chan_c              | Channel of stream C (0-7)                 |
+	-- |         |      | 6:4  | chan_d              | Channel of stream D (0-7)                 |
+	-- |         | 29   | 3:0  | stream_enable       | Streams to send: bit 0 = A, 1 = B (link 0), 2 = C, 3 = D (link 1). (*) |
+	-- |         |30-53 |      | (link 1)            | Link 1: same registers as bytes 4-27. port_dest is the port of stream C. |
 	-- | STATUS  |  0   |  0   | running             | Samples are being packed                  |
-	-- |         |      |  1   | raw_active          | The output bus carries the raw stream     |
+	-- |         |      |  1   | raw_active          | The module is not completely stopped      |
 	-- |         |      |  2   | fifo_overflow       | Packet FIFO overflow (sticky until reset). The streams are not valid after an overflow: reset. |
+	-- |         |      | 5:4  | link_active         | The raw streams own the output of link 0 (bit 4), link 1 (bit 5) |
 	-- |         |  1   | 7:0  | packet_ctr          | Low 8 bits of the packet counter of stream A |
 	-- |         |  2   | 7:0  | source_sel          | Data source of each channel (bit 0 = channel 0) |
 	-- |         | 3-8  | 47:0 | packet_ctr_a        | Packet counter of stream A (48 bits): packets sent since the last start. The bytes are read one at a time: read it when the stream is stopped. |
-	-- |         | 9-14 | 47:0 | packet_ctr_b        | Packet counter of stream B (48 bits)      |
+	-- |         | 9-14 | 47:0 | packet_ctr_b        | Packet counter of stream B                |
+	-- |         |15-20 | 47:0 | packet_ctr_c        | Packet counter of stream C                |
+	-- |         |21-26 | 47:0 | packet_ctr_d        | Packet counter of stream D                |
+	-- |         | 27   | 3:0  | number_of_streams   | Streams in this firmware (2 or 4)         |
+	-- |         |      | 7:4  | number_of_links     | 100G links in this firmware (1 or 2)      |
+	-- |         | 28   | 7:0  | sample_bits         | Bits in each sample (12)                  |
+	-- |         | 29   | 7:0  | format_version      | Packet format version (4)                 |
+	-- |         | 30   |  0   | rounded             | '1': the samples are rounded. '0': truncated. |
 	-- ------------------------------------------------------------------------------------------
+	-- (*) Taken into account only while the module is completely stopped (raw_active = 0).
 	bsb_regs0: entity work.bsb_regs
 		generic map (
 			DEFAULT_CONTROL_BYTES   => DEFAULT_CONTROL_BYTES,
@@ -332,11 +400,25 @@ begin
 			status_bytes  => status_bytes
 		);
 
-	status_bytes(0) <= (0 => running, 1 => raw_active, 2 => fifo_overflow_sticky, others => '0');
-	status_bytes(1) <= std_logic_vector(packet_ctr(0)(7 downto 0));
-	status_bytes(2) <= reverse_bits_and_dir(source_sel_in);
-	status_bytes(3 to 8) <= to_slv8_array(packet_ctr(0));
-	status_bytes(9 to 14) <= to_slv8_array(packet_ctr(1));
+	status_proc: process(all) begin
+		status_bytes(0) <= (0 => running, 1 => raw_active, 2 => fifo_overflow_sticky, others => '0');
+		for l in 0 to NUMBER_OF_LINKS - 1 loop
+			status_bytes(0)(4 + l) <= link_active(l);
+		end loop;
+		status_bytes(1) <= std_logic_vector(packet_ctr(0)(7 downto 0));
+		status_bytes(2) <= reverse_bits_and_dir(source_sel_in);
+		for s in 0 to MAX_STREAMS - 1 loop
+			if s < NUMBER_OF_STREAMS then
+				status_bytes(3 + 6 * s to 8 + 6 * s) <= to_slv8_array(packet_ctr(s));
+			else
+				status_bytes(3 + 6 * s to 8 + 6 * s) <= (others => (others => '0'));
+			end if;
+		end loop;
+		status_bytes(27) <= to_slv(NUMBER_OF_LINKS, 4) & to_slv(NUMBER_OF_STREAMS, 4);
+		status_bytes(28) <= to_slv(SAMPLE_BITS, 8);
+		status_bytes(29) <= FORMAT_VERSION;
+		status_bytes(30) <= (0 => to_std_logic(ROUND_SAMPLES), others => '0');
+	end process status_proc;
 
 	-- Register the control values and pre-compute everything that depends only on them. These
 	-- values are static while the stream is running.
@@ -348,26 +430,48 @@ begin
 		variable port_src_eff, port_dest_eff: unsigned(15 downto 0);
 		variable flags: std_logic_vector(7 downto 0);
 		variable chan_byte: std_logic_vector(7 downto 0);
+		variable base: integer;
+		variable l: integer range 0 to NUMBER_OF_LINKS - 1;
+		variable any: std_logic;
 	begin
 		if rising_edge(clk) then
 			enable <= control_bytes(0)(0);
-			sel(0) <= unsigned(control_bytes(1)(2 downto 0));
-			sel(1) <= unsigned(control_bytes(1)(6 downto 4));
-			-- The mode, the port option and the packet size are taken only while the raw stream is
-			-- completely stopped, so a change made while it runs (or before the last packet is out)
+			for s in 0 to NUMBER_OF_STREAMS - 1 loop
+				if s < 2 then
+					sel(s) <= unsigned(control_bytes(1)(4 * s + 2 downto 4 * s));
+				else
+					sel(s) <= unsigned(control_bytes(28)(4 * (s - 2) + 2 downto 4 * (s - 2)));
+				end if;
+			end loop;
+			-- The streams to send, the port option and the packet size are taken only while the module
+			-- is completely stopped, so a change made while it runs (or before the last packet is out)
 			-- cannot corrupt a packet.
 			if not raw_active then
-				single <= control_bytes(0)(1);
+				stream_mask <= (others => '0');
+				for s in 0 to NUMBER_OF_STREAMS - 1 loop
+					stream_en(s) <= control_bytes(29)(s);
+					stream_mask(s) <= control_bytes(29)(s);
+				end loop;
 				port_per_channel <= control_bytes(0)(2);
 				blocks_per_packet <= unsigned(control_bytes(2));
 			end if;
+			for k in 0 to NUMBER_OF_LINKS - 1 loop
+				any := '0';
+				for i in 0 to STREAMS_PER_LINK - 1 loop
+					any := any or stream_en(k * STREAMS_PER_LINK + i);
+				end loop;
+				link_en(k) <= any;
+			end loop;
 			src_port_mask <= control_bytes(3);
-			mac_dest <= std_logic_vector(to_unsigned(control_bytes(4 to 9)));
-			mac_src <= std_logic_vector(to_unsigned(control_bytes(10 to 15)));
-			ip_dest <= std_logic_vector(to_unsigned(control_bytes(16 to 19)));
-			ip_src <= std_logic_vector(to_unsigned(control_bytes(20 to 23)));
-			port_dest <= std_logic_vector(to_unsigned(control_bytes(24 to 25)));
-			port_src <= std_logic_vector(to_unsigned(control_bytes(26 to 27)));
+			for k in 0 to NUMBER_OF_LINKS - 1 loop
+				base := 4 when k = 0 else LINK1_BASE;
+				mac_dest(k) <= std_logic_vector(to_unsigned(control_bytes(base to base + 5)));
+				mac_src(k) <= std_logic_vector(to_unsigned(control_bytes(base + 6 to base + 11)));
+				ip_dest(k) <= std_logic_vector(to_unsigned(control_bytes(base + 12 to base + 15)));
+				ip_src(k) <= std_logic_vector(to_unsigned(control_bytes(base + 16 to base + 19)));
+				port_dest(k) <= std_logic_vector(to_unsigned(control_bytes(base + 20 to base + 21)));
+				port_src(k) <= std_logic_vector(to_unsigned(control_bytes(base + 22 to base + 23)));
+			end loop;
 
 			-- Packet geometry: 3 data words per block
 			bpp := resize(blocks_per_packet, 11);
@@ -379,34 +483,38 @@ begin
 			udp_length <= 30 + shift_left(resize(last_word + 1, 16), 5);
 			ip_length <= 20 + udp_length;
 
-			-- IP header checksum, computed over three clocks. Constant header words:
+			-- IP header checksum of each link, computed over three clocks. Constant header words:
 			-- 0x4500 (version/length/DSCP), 0x0000 (ID), 0x4000 (don't fragment), 0x4011 (TTL 64, UDP).
 			csum_a <= resize(ip_length, 17) + X"4500";
-			csum_b <= resize(unsigned(ip_src(31 downto 16)), 17) + unsigned(ip_src(15 downto 0));
-			csum_c <= resize(unsigned(ip_dest(31 downto 16)), 17) + unsigned(ip_dest(15 downto 0));
-			csum_total <= resize(csum_a, 20) + csum_b + csum_c + X"8011";
-			fold := resize(csum_total(15 downto 0), 17) + csum_total(19 downto 16);
-			fold := resize(fold(15 downto 0), 17) + fold(16 downto 16); -- add the carry back (1's complement sum)
-			ip_checksum <= not std_logic_vector(fold(15 downto 0));
+			for k in 0 to NUMBER_OF_LINKS - 1 loop
+				csum_b(k) <= resize(unsigned(ip_src(k)(31 downto 16)), 17) + unsigned(ip_src(k)(15 downto 0));
+				csum_c(k) <= resize(unsigned(ip_dest(k)(31 downto 16)), 17) + unsigned(ip_dest(k)(15 downto 0));
+				csum_total(k) <= resize(csum_a, 20) + csum_b(k) + csum_c(k) + X"8011";
+				fold := resize(csum_total(k)(15 downto 0), 17) + csum_total(k)(19 downto 16);
+				fold := resize(fold(15 downto 0), 17) + fold(16 downto 16); -- add the carry back (1's complement sum)
+				ip_checksum(k) <= not std_logic_vector(fold(15 downto 0));
+			end loop;
 
 			-- Header words. The first byte on the wire is the most significant byte.
-			ip_header := X"4500" & std_logic_vector(ip_length) & X"0000" & X"4000" & X"40" & X"11" & ip_checksum & ip_src & ip_dest;
-			header1 <= mac_dest & mac_src & X"0800" & ip_header(20 * 8 - 1 downto 2 * 8);
 			for s in 0 to NUMBER_OF_STREAMS - 1 loop
+				l := s / STREAMS_PER_LINK;
+				ip_header := X"4500" & std_logic_vector(ip_length) & X"0000" & X"4000" & X"40" & X"11" & ip_checksum(l) & ip_src(l) & ip_dest(l);
+				header1(l) <= mac_dest(l) & mac_src(l) & X"0800" & ip_header(20 * 8 - 1 downto 2 * 8);
 				-- Rotating the source port lets the receiving NIC spread the packets over its receive queues
-				port_src_eff := unsigned(port_src) + unsigned(packet_ctr(s)(7 downto 0) and unsigned(src_port_mask));
-				port_dest_eff := unsigned(port_dest);
-				if port_per_channel = '1' and s = 1 then
-					port_dest_eff := unsigned(port_dest) + 1;
+				port_src_eff := unsigned(port_src(l)) + unsigned(packet_ctr(s)(7 downto 0) and unsigned(src_port_mask));
+				port_dest_eff := unsigned(port_dest(l));
+				if port_per_channel = '1' then
+					port_dest_eff := unsigned(port_dest(l)) + (s mod STREAMS_PER_LINK);
 				end if;
 				udp_header := std_logic_vector(port_src_eff) & std_logic_vector(port_dest_eff) & std_logic_vector(udp_length) & X"0000";
-				flags := (0 => src(s), 2 => single, 7 => fifo_overflow_sticky, others => '0');
-				chan_byte := to_std_logic(s = 1) & "0000" & std_logic_vector(sel(s));
-				-- The packet counter, the frame and word numbers and the stream number are set when the packet is sent
+				flags := (0 => src(s), 1 => to_std_logic(ROUND_SAMPLES), 7 => fifo_overflow_sticky, others => '0');
+				flags(5 downto 2) := stream_mask;
+				chan_byte := '0' & to_slv(s, 3) & '0' & std_logic_vector(sel(s));
+				-- The packet counter, the frame and word numbers and the run number are set when the packet is sent
 				header2(s) <= ip_header(15 downto 0) & udp_header &
 				              X"5241" & FORMAT_VERSION & flags & chan_byte &
 				              std_logic_vector(blocks_per_packet) &
-				              X"000000000000" & X"000000000000" & X"0000" & X"0000";
+				              X"000000000000" & X"000000000000" & X"0000" & X"00" & to_slv(SAMPLE_BITS, 8);
 			end loop;
 		end if;
 	end process ctrl_proc;
@@ -431,13 +539,14 @@ begin
 		end if;
 	end process frame_proc;
 
-	-- Stages 0 and 1: select the channel of each stream, keep the 12 MSBs of each sample, and join
-	-- two consecutive input words (an even word of the frame, then the odd word that follows) into
-	-- one 192-bit word. Frames have an even number of words, so the word number tells which half a
-	-- word is.
+	-- Stages 0, R and 1: select the channel of each stream, reduce each sample to SAMPLE_BITS, and
+	-- join two consecutive input words (an even word of the frame, then the odd word that follows)
+	-- into one 192-bit word. Frames have an even number of words, so the word number tells which
+	-- half a word is.
 	sel_proc: process(all)
 		variable s0: integer range 0 to NUMBER_OF_SOURCES - 1;
-		variable packed: std_logic_vector(CHAN_WIDTH - 1 downto 0); -- the 8 samples of a channel, 12 bits each, first sample in the low bits
+		variable hi: integer;
+		variable x: signed(BITS_PER_SAMPLE - 1 downto 0);
 	begin
 		if rising_edge(clk) then
 			for s in 0 to NUMBER_OF_STREAMS - 1 loop
@@ -449,26 +558,39 @@ begin
 			ts0 <= frame_ctr(s0);
 			w0 <= word_ctr(s0);
 
+			-- Stage R. Sample n in time order is in input slot 7-n (the first sample is in the MSBs of
+			-- the capture word). It goes to position n, so that the output bit stream is in time order.
+			-- Rounding adds the first dropped bit (half of the new step). The largest value stays as it
+			-- is: it cannot go up.
+			for s in 0 to NUMBER_OF_STREAMS - 1 loop
+				for n in 0 to SAMPLES_PER_WORD - 1 loop
+					hi := (SAMPLES_PER_WORD - n) * IN_BITS_PER_SAMPLE - 1;
+					x := signed(ch0(s)(hi downto hi - BITS_PER_SAMPLE + 1));
+					if ROUND_SAMPLES and ch0(s)(hi - BITS_PER_SAMPLE) = '1' and x /= to_signed(2 ** (BITS_PER_SAMPLE - 1) - 1, BITS_PER_SAMPLE) then
+						x := x + 1;
+					end if;
+					pr(s)((n + 1) * BITS_PER_SAMPLE - 1 downto n * BITS_PER_SAMPLE) <= std_logic_vector(x);
+				end loop;
+			end loop;
+			vr <= v0;
+			tsr <= ts0;
+			wr <= w0;
+
+			-- Stage 1
 			v1 <= '0';
 			for s in 0 to NUMBER_OF_STREAMS - 1 loop
-				-- Sample n in time order is in input slot 7-n (the first sample is in the MSBs of the capture
-				-- word). It goes to position n, so that the output bit stream is in time order.
-				for n in 0 to SAMPLES_PER_WORD - 1 loop
-					packed((n + 1) * BITS_PER_SAMPLE - 1 downto n * BITS_PER_SAMPLE) :=
-						ch0(s)((SAMPLES_PER_WORD - n) * IN_BITS_PER_SAMPLE - 1 downto (SAMPLES_PER_WORD - n) * IN_BITS_PER_SAMPLE - BITS_PER_SAMPLE);
-				end loop;
-				if v0 then
-					if w0(0) = '0' then
-						d1(s)(CHAN_WIDTH - 1 downto 0) <= packed;
+				if vr then
+					if wr(0) = '0' then
+						d1(s)(CHAN_WIDTH - 1 downto 0) <= pr(s);
 					else
-						d1(s)(PAIR_WIDTH - 1 downto CHAN_WIDTH) <= packed;
+						d1(s)(PAIR_WIDTH - 1 downto CHAN_WIDTH) <= pr(s);
 					end if;
 				end if;
 			end loop;
-			if v0 then
-				if w0(0) = '0' then
-					ts1 <= ts0;
-					w1 <= w0;
+			if vr then
+				if wr(0) = '0' then
+					ts1 <= tsr;
+					w1 <= wr;
 				else
 					v1 <= '1';
 				end if;
@@ -476,6 +598,7 @@ begin
 
 			if rst then
 				v0 <= '0';
+				vr <= '0';
 				v1 <= '0';
 				w1 <= (others => '1'); -- not a frame start: a pair without its first word cannot start the stream
 			end if;
@@ -520,7 +643,7 @@ begin
 							end if;
 						end loop;
 					end if;
-					if (phase /= 0 or block_ctr = 0) and (s = 0 or single = '0') then
+					if (phase /= 0 or block_ctr = 0) and stream_en(s) = '1' then
 						fifo_wr_en(s) <= '1';
 					end if;
 				end loop;
@@ -579,9 +702,9 @@ begin
 		end process fifo_proc;
 	end generate fifo_gen;
 
-	-- Packet sequencer. A packet is sent when it is complete in its FIFO, and the streams take
-	-- turns: A, then B. For each packet: read the information word, send the two header words, then
-	-- the data words. A word read from a FIFO is available two clocks later:
+	-- Packet sequencer of each link. A packet is sent when it is complete in its FIFO, and the
+	-- streams of the link take turns. For each packet: read the information word, send the two
+	-- header words, then the data words. A word read from a FIFO is available two clocks later:
 	--
 	--   state         FIFO word read    word sent
 	--   START         information
@@ -589,107 +712,135 @@ begin
 	--   SEND_HEADER2  data 1            header 2 (with the information word)
 	--   SEND_DATA     data 2, 3, ...    data 0, 1, ...
 	tx_proc: process(all)
-		variable other: integer range 0 to NUMBER_OF_STREAMS - 1;
+		variable cand: integer range 0 to STREAMS_PER_LINK - 1;
+		variable found: boolean;
+		variable s: integer range 0 to NUMBER_OF_STREAMS - 1; -- stream of the packet in progress on the link
 	begin
 		if rising_edge(clk) then
-			pkt_tvalid <= '0';
-			pkt_tlast <= '0';
+			for l in 0 to NUMBER_OF_LINKS - 1 loop
+				pkt_tvalid(l) <= '0';
+				pkt_tlast(l) <= '0';
+				s := l * STREAMS_PER_LINK + tx_stream(l);
 
-			case tx_state is
-				when IDLE =>
-					other := NUMBER_OF_STREAMS - 1 - last_stream;
-					if packet_ready(other) then
-						tx_stream <= other;
-						tx_state <= START;
-					elsif packet_ready(last_stream) then
-						tx_stream <= last_stream;
-						tx_state <= START;
-					end if;
+				case tx_state(l) is
+					when IDLE =>
+						-- The stream after the previous one first, so that the streams take turns
+						found := FALSE;
+						for k in 1 to STREAMS_PER_LINK loop
+							cand := (last_stream(l) + k) mod STREAMS_PER_LINK;
+							if not found and packet_ready(l * STREAMS_PER_LINK + cand) = '1' then
+								tx_stream(l) <= cand;
+								tx_state(l) <= START;
+								found := TRUE;
+							end if;
+						end loop;
 
-				when START =>
-					fifo_rd_ptr(tx_stream) <= fifo_rd_ptr(tx_stream) + 1;
-					rd_word_ctr <= (others => '0');
-					tx_state <= SEND_HEADER1;
+					when START =>
+						fifo_rd_ptr(s) <= fifo_rd_ptr(s) + 1;
+						rd_word_ctr(l) <= (others => '0');
+						tx_state(l) <= SEND_HEADER1;
 
-				when SEND_HEADER1 =>
-					fifo_rd_ptr(tx_stream) <= fifo_rd_ptr(tx_stream) + 1;
-					rd_word_ctr <= rd_word_ctr + 1;
-					pkt_tdata <= header1;
-					pkt_tvalid <= '1';
-					tx_state <= SEND_HEADER2;
+					when SEND_HEADER1 =>
+						fifo_rd_ptr(s) <= fifo_rd_ptr(s) + 1;
+						rd_word_ctr(l) <= rd_word_ctr(l) + 1;
+						pkt_tdata(l) <= header1(l);
+						pkt_tvalid(l) <= '1';
+						tx_state(l) <= SEND_HEADER2;
 
-				when SEND_HEADER2 =>
-					fifo_rd_ptr(tx_stream) <= fifo_rd_ptr(tx_stream) + 1;
-					rd_word_ctr <= rd_word_ctr + 1;
-					pkt_tdata(255 downto 128) <= header2(tx_stream)(255 downto 128);
-					pkt_tdata(127 downto 80) <= std_logic_vector(packet_ctr(tx_stream));
-					pkt_tdata(79 downto 32) <= fifo_q(tx_stream)(58 downto 11); -- frame number of the first sample
-					pkt_tdata(31 downto 16) <= "00000" & fifo_q(tx_stream)(10 downto 0); -- word number of the first sample
-					pkt_tdata(15 downto 0) <= std_logic_vector(stream_number) & X"00";
-					pkt_tvalid <= '1';
-					packet_ctr(tx_stream) <= packet_ctr(tx_stream) + 1;
-					tx_word_ctr <= (others => '0');
-					tx_state <= SEND_DATA;
+					when SEND_HEADER2 =>
+						fifo_rd_ptr(s) <= fifo_rd_ptr(s) + 1;
+						rd_word_ctr(l) <= rd_word_ctr(l) + 1;
+						pkt_tdata(l)(255 downto 128) <= header2(s)(255 downto 128);
+						pkt_tdata(l)(127 downto 80) <= std_logic_vector(packet_ctr(s));
+						pkt_tdata(l)(79 downto 32) <= fifo_q(s)(58 downto 11); -- frame number of the first sample
+						pkt_tdata(l)(31 downto 16) <= "00000" & fifo_q(s)(10 downto 0); -- word number of the first sample
+						pkt_tdata(l)(15 downto 0) <= std_logic_vector(stream_number) & header2(s)(7 downto 0);
+						pkt_tvalid(l) <= '1';
+						packet_ctr(s) <= packet_ctr(s) + 1;
+						tx_word_ctr(l) <= (others => '0');
+						tx_state(l) <= SEND_DATA;
 
-				when SEND_DATA =>
-					if rd_word_ctr <= last_word then
-						fifo_rd_ptr(tx_stream) <= fifo_rd_ptr(tx_stream) + 1;
-						rd_word_ctr <= rd_word_ctr + 1;
-					end if;
-					-- The gearbox words are little-endian (stream bit 0 in bit 0); cge sends the most significant byte first.
-					pkt_tdata <= reverse_bytes(fifo_q(tx_stream));
-					pkt_tvalid <= '1';
-					tx_word_ctr <= tx_word_ctr + 1;
-					if tx_word_ctr = last_word then
-						pkt_tlast <= '1';
-						last_stream <= tx_stream;
-						tx_state <= IDLE;
-					end if;
-			end case;
+					when SEND_DATA =>
+						if rd_word_ctr(l) <= last_word then
+							fifo_rd_ptr(s) <= fifo_rd_ptr(s) + 1;
+							rd_word_ctr(l) <= rd_word_ctr(l) + 1;
+						end if;
+						-- The gearbox words are little-endian (stream bit 0 in bit 0); cge sends the most significant byte first.
+						pkt_tdata(l) <= reverse_bytes(fifo_q(s));
+						pkt_tvalid(l) <= '1';
+						tx_word_ctr(l) <= tx_word_ctr(l) + 1;
+						if tx_word_ctr(l) = last_word then
+							pkt_tlast(l) <= '1';
+							last_stream(l) <= tx_stream(l);
+							tx_state(l) <= IDLE;
+						end if;
+				end case;
+			end loop;
 
 			if or fifo_overflow then
 				fifo_overflow_sticky <= '1';
 			end if;
 
-			-- A stream that starts from the stopped state starts with the packet counters at zero. The
-			-- counters of A and B are then equal for the packets that cover the same time, whatever was
-			-- sent before (a run in single-channel mode advances only the counter of A, and leaves the
-			-- turn to stream B). The counters
-			-- keep their value after the stream stops, so that the host can read them. The transmitter
-			-- is idle here: raw_active is still '0' on the first clock cycle of ``enable``.
+			-- A run that starts from the stopped state starts with the packet counters at zero. The
+			-- counters of all streams are then equal for the packets that cover the same time, whatever
+			-- was sent before (a run with fewer streams advances only their counters, and can leave the
+			-- turn to the second stream of a link). The counters keep their value after the streams
+			-- stop, so that the host can read them. The transmitters are idle here: raw_active is still
+			-- '0' on the first clock cycle of ``enable``.
 			if enable = '1' and raw_active = '0' then
 				packet_ctr <= (others => (others => '0'));
-				last_stream <= NUMBER_OF_STREAMS - 1; -- stream A is sent first, also after a run in single-channel mode
+				last_stream <= (others => STREAMS_PER_LINK - 1); -- the first stream of each link is sent first
 			end if;
 
 			if rst then
-				tx_state <= IDLE;
-				last_stream <= NUMBER_OF_STREAMS - 1;
+				tx_state <= (others => IDLE);
+				last_stream <= (others => STREAMS_PER_LINK - 1);
 				fifo_rd_ptr <= (others => (others => '0'));
 				packet_ctr <= (others => (others => '0'));
 				fifo_overflow_sticky <= '0';
-				pkt_tvalid <= '0';
-				pkt_tlast <= '0';
+				pkt_tvalid <= (others => '0');
+				pkt_tlast <= (others => '0');
 			end if;
 		end if;
 	end process tx_proc;
 
-	-- Output selection. The raw stream owns the output from ``enable`` until its last packet is out.
-	out_proc: process(all) begin
+	idle_gen: for l in 0 to NUMBER_OF_LINKS - 1 generate
+		tx_idle(l) <= to_std_logic(tx_state(l) = IDLE);
+	end generate idle_gen;
+
+	-- Output selection. ``raw_active`` tells that the module is not completely stopped: the settings
+	-- are frozen. On each link, the raw streams own the output from ``enable`` until the last packet
+	-- of the link is out, if at least one stream of the link is enabled.
+	out_proc: process(all)
+		variable wr_any, empty_all: std_logic;
+	begin
 		if rising_edge(clk) then
-			raw_active <= enable or running or (or fifo_wr_en) or not (and fifo_empty) or to_std_logic(tx_state /= IDLE);
-			if raw_active or pkt_tvalid then
-				m_axis_out_tdata <= pkt_tdata;
-				m_axis_out_tvalid <= pkt_tvalid;
-				m_axis_out_tlast <= pkt_tlast;
-			else
-				m_axis_out_tdata <= s_axis_in_tdata;
-				m_axis_out_tvalid <= s_axis_in_tvalid;
-				m_axis_out_tlast <= s_axis_in_tlast;
-			end if;
+			raw_active <= enable or running or (or fifo_wr_en) or not (and fifo_empty) or not (and tx_idle);
+			for l in 0 to NUMBER_OF_LINKS - 1 loop
+				wr_any := '0';
+				empty_all := '1';
+				for i in 0 to STREAMS_PER_LINK - 1 loop
+					wr_any := wr_any or fifo_wr_en(l * STREAMS_PER_LINK + i);
+					empty_all := empty_all and fifo_empty(l * STREAMS_PER_LINK + i);
+				end loop;
+				link_active(l) <= (link_en(l) and (enable or running)) or wr_any or not empty_all or not tx_idle(l);
+
+				if link_active(l) or pkt_tvalid(l) then
+					m_axis_out_tdata(l) <= pkt_tdata(l);
+					m_axis_out_tvalid(l) <= pkt_tvalid(l);
+					m_axis_out_tlast(l) <= pkt_tlast(l);
+				elsif l = 0 then
+					m_axis_out_tdata(l) <= s_axis_in_tdata;
+					m_axis_out_tvalid(l) <= s_axis_in_tvalid;
+					m_axis_out_tlast(l) <= s_axis_in_tlast;
+				else
+					m_axis_out_tvalid(l) <= '0';
+					m_axis_out_tlast(l) <= '0';
+				end if;
+			end loop;
 			if rst then
-				m_axis_out_tvalid <= '0';
-				m_axis_out_tlast <= '0';
+				m_axis_out_tvalid <= (others => '0');
+				m_axis_out_tlast <= (others => '0');
 			end if;
 		end if;
 	end process out_proc;
