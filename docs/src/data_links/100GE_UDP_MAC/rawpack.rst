@@ -9,18 +9,25 @@
 Overview
 ========
 
-`rawpack` streams raw ADC samples of one or two channels over the 100G Ethernet link as UDP
-packets. It sends 12 bits for each sample: the 12 most significant bits of the 14-bit ADC sample.
-Each packet holds the samples of one channel. With two channels there are two packet streams, A
-and B, one for each channel. A receiver gets contiguous samples of a channel from each packet, and
-separates the streams with the UDP destination port or with the stream bit of the header.
+`rawpack` streams raw ADC samples of one to four channels over the 100G Ethernet links as UDP
+packets. It sends 12 bits for each sample: the 14-bit ADC sample rounded to 12 bits. Each packet
+holds the samples of one channel. Each channel is a packet stream: streams A, B, C and D. A
+receiver gets contiguous samples of a channel from each packet, and separates the streams with
+the UDP destination port or with the stream number of the header.
 
-It sits between `upack` and `cge`:
+A 100G link carries two streams (``STREAMS_PER_LINK``). With ``NUMBER_OF_LINKS`` = 2, streams A and
+B go to link 0 and streams C and D go to link 1, which has its own `cge` on the second hard MAC of
+the device. ``stream_enable`` selects the streams that are sent.
 
-- When disabled (reset state), the `upack` stream passes through with one clock of latency.
-- When enabled, the link carries the raw stream instead. The two uses are mutually
-  exclusive: stop the `upack` transmitter before enabling `rawpack`. When `rawpack` is disabled
-  again, the packets in progress are completed before the link is handed back.
+On link 0, `rawpack` sits between `upack` and `cge`:
+
+- While no stream of link 0 is in use (reset state), the `upack` stream passes through with one
+  clock of latency. This is also the case while only streams C and D are sent: `upack` and the
+  raw streams of link 1 can run at the same time.
+- When stream A or B is enabled, link 0 carries the raw streams instead. The two uses of link 0
+  are mutually exclusive: stop the `upack` transmitter before enabling stream A or B. When
+  `rawpack` is disabled again, the packets in progress are completed before the link is handed
+  back.
 
 The samples are taken from the capture bus that feeds `ucap` (8 samples per clock per channel),
 so no extra logic is added to the channelizers. The data source of each channel (FUNCGEN output,
@@ -29,17 +36,20 @@ reports it in the packet header.
 
 Data rates at 3.2 GS/s:
 
-=============  ================  ==============================  ==================
-Mode           Sample data rate  Packets (64 blocks per packet)  Samples per packet
-=============  ================  ==============================  ==================
-Two channels   76.8 Gb/s         2 x 0.78125 million per second  4096 of one channel
-One channel    38.4 Gb/s         0.78125 million per second      4096
-=============  ================  ==============================  ==================
+==============  ================  ===============================  ===================
+Streams         Sample data rate  Packets (64 blocks per packet)   Samples per packet
+==============  ================  ===============================  ===================
+Four (2 links)  2 x 76.8 Gb/s     4 x 0.78125 million per second   4096 of one channel
+Two (1 link)    76.8 Gb/s         2 x 0.78125 million per second   4096 of one channel
+One             38.4 Gb/s         0.78125 million per second       4096
+==============  ================  ===============================  ===================
 
-For each channel, two consecutive input words make a 192-bit word, and a 3:4 gearbox packs these
-into 256-bit words. Each channel has a block RAM FIFO (512 words) that holds its packets until
-they are sent. A packet is sent when it is complete in its FIFO, and the streams take turns: a
-packet of A, then the packet of B that covers the same time.
+For each stream, the samples are rounded to 12 bits, two consecutive input words make a 192-bit
+word, and a 3:4 gearbox packs these into 256-bit words. Each stream has a block RAM FIFO (512
+words) that holds its packets until they are sent. Each link has a sequencer: a packet is sent
+when it is complete in its FIFO, and the streams of the link take turns, a packet of the first
+stream, then the packet of the second stream that covers the same time. All the enabled streams
+start on the same frame.
 
 Entity documentation
 ====================
@@ -59,36 +69,38 @@ Bytes        Content
 ===========  ==========================================================================
 0-13         Ethernet header: destination MAC, source MAC, ethertype 0x0800
 14-33        IPv4 header: no options, DF set, TTL 64, protocol UDP, valid header checksum
-34-41        UDP header. The checksum is 0 (not used). The destination port is
-             ``port_dest`` for stream A and ``port_dest`` + 1 for stream B (the same port
-             if ``port_per_channel`` = 0).
+34-41        UDP header. The checksum is 0 (not used). The destination port is the
+             ``port_dest`` of the link for its first stream and ``port_dest`` + 1 for its
+             second stream (the same port if ``port_per_channel`` = 0).
 42-43        Magic number 0x5241 ("RA")
-44           Format version (3)
-45           Flags: bit 0 = data source of the channel of this packet,
-             bit 2 = single-channel mode, bit 7 = internal FIFO overflow (sticky)
-46           Bits 2:0 = channel number of the samples of this packet. Bit 7 = stream:
-             0 = stream A, 1 = stream B.
+44           Format version (4)
+45           Flags: bit 0 = data source of the channel of this packet, bit 1 = the samples
+             are rounded (0: truncated), bits 5:2 = streams that are sent (bit 2 = A ...
+             bit 5 = D), bit 7 = internal FIFO overflow (sticky)
+46           Bits 2:0 = channel number of the samples of this packet. Bits 6:4 = stream:
+             0 = A, 1 = B (link 0), 2 = C, 3 = D (link 1).
 47           Blocks per packet
 48-53        Packet counter of this stream (48 bits). Zero on the first packet of each
              start from the stopped state, and after a reset.
 54-59        Frame number (48 bits) of the first sample; same counter as the `ucap` timestamp
 60-61        Word number (0-2047) of the first sample in its frame. The first sample of the
              packet is sample 8 x word of that frame.
-62           Stream number: incremented every time the streams start, including a restart
+62           Run number: incremented every time the streams start, including a restart
              after a reset. The packet counters restart at zero at the same time.
-63           Reserved (0)
+63           Bits in each sample (12)
 64...        Samples: 96 bytes per block
 ===========  ==========================================================================
 
 The sample area is a little-endian bit stream: stream bit *n* is bit (*n* mod 8) of byte
 (*n* / 8). Sample *i* of the packet occupies stream bits 12 *i* to 12 *i* + 11, least
 significant bit first, so every 2 samples fill exactly 3 bytes. A sample value is the 14-bit ADC
-sample divided by 4 (signed, -2048 to 2047). The samples of a packet are in time order and belong
+sample divided by 4 and rounded to the nearest integer (signed, -2048 to 2047; a half goes up, and
+the largest value does not wrap). The samples of a packet are in time order and belong
 to one channel. A block is 64 samples. The first packets after the stream is enabled start on the
 first sample of a frame; with 64 blocks per packet a frame is exactly 4 packets of each stream.
-The packets of A and B with the same packet counter cover the same time: the two counters
-restart at zero each time the streams start from the stopped state, so a run in single-channel
-mode (which sends stream A only) does not put them out of step.
+The packets of all streams with the same packet counter cover the same time: all the counters
+restart at zero each time the streams start from the stopped state, so a run with fewer streams
+does not put them out of step.
 
 A receiver detects lost packets with the packet counter of each stream and places the samples in
 time with the frame and word numbers.
@@ -96,20 +108,31 @@ time with the frame and word numbers.
 Parameters
 ==========
 
-- **DEFAULT_ENABLE / DEFAULT_SINGLE / DEFAULT_CHAN_A / DEFAULT_CHAN_B / DEFAULT_BLOCKS_PER_PACKET:**
-  reset values of the corresponding registers.
+- **NUMBER_OF_LINKS:** number of 100G links, i.e. of output buses (1 or 2).
+
+- **STREAMS_PER_LINK / SAMPLE_BITS:** streams on each link and bits sent for each sample. Only 2
+  and 12 are implemented (an assertion stops other values): another sample width needs another
+  gearbox.
+
+- **ROUND_SAMPLES:** TRUE rounds the samples to ``SAMPLE_BITS``, FALSE truncates them.
+
+- **DEFAULT_ENABLE / DEFAULT_STREAM_ENABLE / DEFAULT_CHAN_A ... DEFAULT_CHAN_D /
+  DEFAULT_BLOCKS_PER_PACKET:** reset values of the corresponding registers.
 
 - **DEFAULT_MAC_SRC_ADDR / DEFAULT_MAC_DEST_ADDR / DEFAULT_IP_SRC_ADDR / DEFAULT_IP_DEST_ADDR /
   DEFAULT_IP_SRC_PORT / DEFAULT_IP_DEST_PORT:** reset values of the addresses used in the packet
-  headers. All can be changed at run time.
+  headers of link 0. The same names with ``_1`` are those of link 1. All can be changed at run time.
 
 Registers
 =========
 
 `rawpack` is at port 6 of the top-level BSB router. The memory map is in the entity source
-(control bytes 0-27, status bytes 0-14). Notes:
+(control bytes 0-53, status bytes 0-30). With two links, the registers of the second `cge` are in
+the same port, at the addresses with bit 15 set, and `SYSTEM` reports 8 GPU links (4 lanes for
+each 100G link). Notes:
 
-- ``blocks_per_packet`` (4 to 90), ``single`` and ``port_per_channel`` are taken into account only while the stream is completely stopped (status bit ``raw_active`` = 0). Host software should disable the stream and wait for ``raw_active`` to clear before changing them.
+- ``blocks_per_packet`` (4 to 90), ``stream_enable`` and ``port_per_channel`` are taken into account only while the streams are completely stopped (status bit ``raw_active`` = 0). Host software should disable the streams and wait for ``raw_active`` to clear before changing them.
+- Status bytes 27 to 30 describe the firmware: number of streams and links, sample width, format version and rounding.
 - ``src_port_mask`` adds the low bits of the packet counter to the UDP source port, so that the
   receiving network card spreads the packets over several receive queues. The receiver then has
   to put the packets back in order using the packet counter.
@@ -118,5 +141,5 @@ Simulation
 ==========
 
 See :doc:`the testbench list </testbenches/index>`: ``rawpack_testbench`` (self-checking unit
-test) and ``rawpack_cge_testbench`` (full-rate chain with `cge` and a behavioural model of the
-100G MAC). Both are run with the scripts in ``xilinx_projects/testbenches/rawpack_testbench/``.
+test, one checker for each link) and ``rawpack_cge_testbench`` (full-rate chain with one `cge` and
+one behavioural model of the 100G MAC for each link). Both are run with the scripts in ``xilinx_projects/testbenches/rawpack_testbench/``.

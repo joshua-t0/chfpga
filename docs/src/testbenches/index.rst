@@ -171,7 +171,7 @@ rawpack
 
 **Run with:** ``xilinx_projects/testbenches/rawpack_testbench/run.sh [GENERIC=value ...]`` (Vivado simulator, no project needed)
 
-Self-checking test of the raw ADC sample streamer. Drives a known pattern on the capture bus, enables the stream through the BSB registers and checks every packet: Ethernet/IP/UDP headers, IP checksum, the order of the two streams, the packet counter and the continuity of the timestamps of each stream, and every sample. Also checks that the upstream bus passes through before the stream is enabled and after it is disabled. Generics select the channels, the data source, single-channel mode (``SINGLE=1``), the packet size and gaps in the input (``GAP_PERIOD``). ``DUMP_FILE`` writes the packets to a file for use by host software tests.
+Self-checking test of the raw ADC sample streamer, with one or two 100G links (``LINKS``) and any set of streams (``STREAM_ENABLE``). Drives a known pattern on the capture bus, enables the stream through the BSB registers and checks every packet: Ethernet/IP/UDP headers, IP checksum, the order of the two streams, the packet counter and the continuity of the timestamps of each stream, and every sample. Also checks that the upstream bus passes through before the stream is enabled and after it is disabled. Generics select the channels, the data source, single-channel mode (``SINGLE=1``), the packet size and gaps in the input (``GAP_PERIOD``). ``DUMP_FILE`` writes the packets to a file for use by host software tests.
 
 rawpack_cge
 ~~~~~~~~~~~
@@ -180,7 +180,7 @@ rawpack_cge
 
 **Run with:** ``xilinx_projects/testbenches/rawpack_testbench/run_chain.sh [GENERIC=value ...]``
 
-Full-rate test of the chain capture bus, ``rawpack``, ``cge``. The Xilinx 100G MAC inside ``cge`` is replaced by a behavioural model that paces the transmit stream at the 100 Gb/s line rate (including preamble, FCS and inter-frame gap), fails on a transmit underflow and writes every frame to a file. The testbench fails if any FIFO overflows, and ``check_frames.py`` then checks all the frames: headers, no packet lost, every sample.
+Full-rate test of the chain capture bus, ``rawpack``, ``cge``, with one ``cge`` and one MAC model for each 100G link (``LINKS``, 2 by default). The Xilinx 100G MAC inside ``cge`` is replaced by a behavioural model that paces the transmit stream at the 100 Gb/s line rate (including preamble, FCS and inter-frame gap), fails on a transmit underflow and writes every frame to a file. The testbench fails if any FIFO overflows, and ``check_frames.py`` then checks all the frames: headers, no packet lost, every sample.
 
 cge_test
 ~~~~~~~~
