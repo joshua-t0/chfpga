@@ -189,10 +189,10 @@ begin
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 28, CHAN_D * 16 + CHAN_C);
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 2, BLOCKS_PER_PACKET);
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 29, STREAM_ENABLE);
-		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 5); -- enable, port per channel
+		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 1); -- enable
 
 		wait for RUN_TIME_US * 1 us;
-		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 4);
+		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 0);
 		wait for 20 us; -- last packet goes out, FIFOs drain
 
 		assert raw_active = '0' report "rawpack did not release the link after disable" severity FAILURE;

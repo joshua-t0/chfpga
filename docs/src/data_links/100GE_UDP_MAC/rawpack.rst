@@ -15,7 +15,7 @@ holds the samples of one channel. Each channel is a packet stream: streams A, B,
 receiver gets contiguous samples of a channel from each packet, and separates the streams with
 the UDP destination port or with the stream number of the header.
 
-A 100G link carries two streams (``STREAMS_PER_LINK``). With ``NUMBER_OF_LINKS`` = 2, streams A and
+A 100G link carries two streams. With ``NUMBER_OF_LINKS`` = 2, streams A and
 B go to link 0 and streams C and D go to link 1, which has its own `cge` on the second hard MAC of
 the device. ``stream_enable`` selects the streams that are sent.
 
@@ -71,7 +71,7 @@ Bytes        Content
 14-33        IPv4 header: no options, DF set, TTL 64, protocol UDP, valid header checksum
 34-41        UDP header. The checksum is 0 (not used). The destination port is the
              ``port_dest`` of the link for its first stream and ``port_dest`` + 1 for its
-             second stream (the same port if ``port_per_channel`` = 0).
+             second stream.
 42-43        Magic number 0x5241 ("RA")
 44           Format version (4)
 45           Flags: bit 0 = data source of the channel of this packet, bit 1 = the samples
@@ -110,12 +110,6 @@ Parameters
 
 - **NUMBER_OF_LINKS:** number of 100G links, i.e. of output buses (1 or 2).
 
-- **STREAMS_PER_LINK / SAMPLE_BITS:** streams on each link and bits sent for each sample. Only 2
-  and 12 are implemented (an assertion stops other values): another sample width needs another
-  gearbox.
-
-- **ROUND_SAMPLES:** TRUE rounds the samples to ``SAMPLE_BITS``, FALSE truncates them.
-
 - **DEFAULT_ENABLE / DEFAULT_STREAM_ENABLE / DEFAULT_CHAN_A ... DEFAULT_CHAN_D /
   DEFAULT_BLOCKS_PER_PACKET:** reset values of the corresponding registers.
 
@@ -131,7 +125,7 @@ Registers
 the same port, at the addresses with bit 15 set, and `SYSTEM` reports 8 GPU links (4 lanes for
 each 100G link). Notes:
 
-- ``blocks_per_packet`` (4 to 90), ``stream_enable`` and ``port_per_channel`` are taken into account only while the streams are completely stopped (status bit ``raw_active`` = 0). Host software should disable the streams and wait for ``raw_active`` to clear before changing them.
+- ``blocks_per_packet`` (4 to 90) and ``stream_enable`` are taken into account only while the streams are completely stopped (status bit ``raw_active`` = 0). Host software should disable the streams and wait for ``raw_active`` to clear before changing them.
 - Status bytes 27 to 30 describe the firmware: number of streams and links, sample width, format version and rounding.
 - ``src_port_mask`` adds the low bits of the packet counter to the UDP source port, so that the
   receiving network card spreads the packets over several receive queues. The receiver then has
