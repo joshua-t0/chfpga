@@ -222,6 +222,7 @@ set crs_corr_ip_files [list \
 
 set crs_ct_ip_files [list \
  "cmac_usplus_1/cmac_usplus_1.xci" \
+ "cmac_usplus_2/cmac_usplus_2.xci" \
 ]
 
 

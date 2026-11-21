@@ -159,6 +159,7 @@ entity chfpga is
 		-- Data offload configuration
 
 		DATA_LINK_TYPE: data_link_type_enum; -- NONE, XGE (10G), UPACK_CGE (100G) or RAW_CGE (100G, raw ADC streamer only)
+		NUMBER_OF_CGE_LINKS: integer range 1 to 2 := 1; -- 100G links. The second link (on the second hard MAC) carries only raw ADC streams.
 		DATA_LINK_LINK_TO_QUAD_MAP: integer_array := (0 => 0);
 		DATA_LINK_QUAD_TO_REFCLK_MAP: integer_array  := (0 => 0);
 
@@ -354,6 +355,12 @@ entity chfpga is
 
 		cge_refclk_p: in std_logic := '0';
 		cge_refclk_n: in std_logic := '1';
+
+		-- Second 100G link (NUMBER_OF_CGE_LINKS = 2)
+		cge1_tx_p: out std_logic_vector(0 to 3);
+		cge1_tx_n: out std_logic_vector(0 to 3);
+		cge1_refclk_p: in std_logic := '0';
+		cge1_refclk_n: in std_logic := '1';
 
 		------------------------------------
 		-- Corner-Turn Engine
@@ -1493,7 +1500,7 @@ begin
 					NUMBER_OF_CT_CB1_OUTPUTS => sel(CT_LEVEL = 1, 0, count(CT_LANE_TO_GROUP_MAP, 0)), -- 0 means no level-2 corner-turn, otherwise assume number of CT1 outputs = number of CT2 inputs = number of CT2 lanes (lane group 0). This info is used by the software to figure out the number of BCT chan_crossbar bin_sels and should normally be queried from the BCT engine but it's not there for historical reasons. It could be derived from other parameters.
 
 					-- Realtime data offload links
-					NUMBER_OF_GPU_LINKS         => NUMBER_OF_DATA_LINKS,
+					NUMBER_OF_GPU_LINKS         => NUMBER_OF_DATA_LINKS * NUMBER_OF_CGE_LINKS, -- 4 lanes for each 100G link: the host finds the second link with this number
 					NUMBER_OF_GPU_REFCLKS       => NUMBER_OF_DATA_LINK_REFCLKS,
 
 					-- X-Engine/Correlator info
@@ -2213,10 +2220,18 @@ begin
 				signal uct_tvalid: std_logic;
 				signal uct_tlast: std_logic;
 
-				-- Data bus into the 100G interface: UPACK data or raw ADC samples
-				signal cge_in_tdata: std_logic_vector(255 downto 0);
-				signal cge_in_tvalid: std_logic;
-				signal cge_in_tlast: std_logic;
+				-- Data bus into each 100G interface. Link 0: UPACK data or raw ADC samples. Link 1: raw ADC samples.
+				signal cge_in_tdata: slv_array(0 to NUMBER_OF_CGE_LINKS - 1)(255 downto 0);
+				signal cge_in_tvalid: std_logic_vector(0 to NUMBER_OF_CGE_LINKS - 1);
+				signal cge_in_tlast: std_logic_vector(0 to NUMBER_OF_CGE_LINKS - 1);
+
+				-- BSB buses under the RAWPACK port. Port 0: rawpack. Port 1: the second 100G interface.
+				signal raw_bsb_cmd_tdata: slv8_array(0 to 1);
+				signal raw_bsb_cmd_tvalid, raw_bsb_cmd_tlast: std_logic_vector(0 to 1);
+				signal raw_bsb_cmd_tready: std_logic_vector(0 to 1) := (others => '1');
+				signal raw_bsb_rply_tdata: slv8_array(0 to 1) := (others => (others => '0'));
+				signal raw_bsb_rply_tvalid, raw_bsb_rply_tlast: std_logic_vector(0 to 1) := (others => '0');
+				signal raw_bsb_rply_tready: std_logic_vector(0 to 1);
 
 			begin
 				-- Pipeline the 2nd crossbar output (non-blocking AXI-Streaming bus) to the input to the GPU link blocks to facilitate routing
@@ -2271,13 +2286,61 @@ begin
 						bsb_rst => gpu_bsb_rst_reg
 					);
 
-				-- RAWPACK sits between UPACK and CGE. When enabled, it replaces the UPACK stream by the raw
-				-- samples of two channels taken from the UCAP capture bus (which is on the same clock, since
-				-- ct_clk = adc_clk in the configurations that have the 100G link). Otherwise it is transparent.
+				-- Commands of the RAWPACK port. With one link they all go to rawpack. With two links, a router
+				-- sends the addresses with bit 15 set to the second 100G interface, so the addresses of
+				-- rawpack do not change.
+				raw_bsb_single_gen: if NUMBER_OF_CGE_LINKS = 1 generate
+					raw_bsb_cmd_tdata(0) <= top_router_bsb_cmd_tdata(RAWPACK_BASE_PORT);
+					raw_bsb_cmd_tvalid(0) <= top_router_bsb_cmd_tvalid(RAWPACK_BASE_PORT);
+					raw_bsb_cmd_tlast(0) <= top_router_bsb_cmd_tlast(RAWPACK_BASE_PORT);
+					top_router_bsb_cmd_tready(RAWPACK_BASE_PORT) <= raw_bsb_cmd_tready(0);
+					top_router_bsb_rply_tdata(RAWPACK_BASE_PORT) <= raw_bsb_rply_tdata(0);
+					top_router_bsb_rply_tvalid(RAWPACK_BASE_PORT) <= raw_bsb_rply_tvalid(0);
+					top_router_bsb_rply_tlast(RAWPACK_BASE_PORT) <= raw_bsb_rply_tlast(0);
+					raw_bsb_rply_tready(0) <= top_router_bsb_rply_tready(RAWPACK_BASE_PORT);
+				end generate raw_bsb_single_gen;
+
+				raw_bsb_router_gen: if NUMBER_OF_CGE_LINKS > 1 generate
+					raw_router0: entity work.bsb_router
+						generic map (
+							NUMBER_OF_PORTS => 2,
+							ADDRESS_MASK => "---1---------------" -- '1': used to generate port index, '-' = don't care,
+						)
+						port map (
+							s_axis_bsb_tdata => top_router_bsb_cmd_tdata(RAWPACK_BASE_PORT),
+							s_axis_bsb_tvalid => top_router_bsb_cmd_tvalid(RAWPACK_BASE_PORT),
+							s_axis_bsb_tlast => top_router_bsb_cmd_tlast(RAWPACK_BASE_PORT),
+							s_axis_bsb_tready => top_router_bsb_cmd_tready(RAWPACK_BASE_PORT),
+							m_axis_bsb_tdata => top_router_bsb_rply_tdata(RAWPACK_BASE_PORT),
+							m_axis_bsb_tvalid => top_router_bsb_rply_tvalid(RAWPACK_BASE_PORT),
+							m_axis_bsb_tlast => top_router_bsb_rply_tlast(RAWPACK_BASE_PORT),
+							m_axis_bsb_tready => top_router_bsb_rply_tready(RAWPACK_BASE_PORT),
+
+							m_axis_routed_bsb_tdata => raw_bsb_cmd_tdata,
+							m_axis_routed_bsb_tvalid => raw_bsb_cmd_tvalid,
+							m_axis_routed_bsb_tlast => raw_bsb_cmd_tlast,
+							m_axis_routed_bsb_tready => raw_bsb_cmd_tready,
+							s_axis_routed_bsb_tdata => raw_bsb_rply_tdata,
+							s_axis_routed_bsb_tvalid => raw_bsb_rply_tvalid,
+							s_axis_routed_bsb_tlast => raw_bsb_rply_tlast,
+							s_axis_routed_bsb_tready => raw_bsb_rply_tready,
+
+							cmd_overflow => open,
+
+							clk => bsb_clk,
+							rst => gpu_bsb_rst_reg
+						);
+				end generate raw_bsb_router_gen;
+
+				-- RAWPACK sits between UPACK and CGE. It sends the raw samples of up to two channels on each
+				-- 100G link, taken from the UCAP capture bus (which is on the same clock, since ct_clk =
+				-- adc_clk in the configurations that have the 100G link). On link 0, it replaces the UPACK
+				-- stream when one of the streams of that link is enabled. Otherwise it is transparent.
 				rawpack0: entity work.rawpack
 					generic map (
 						NUMBER_OF_CHANNELS => raw_tdata'length,
-						NUMBER_OF_SOURCES => raw_tvalid'length
+						NUMBER_OF_SOURCES => raw_tvalid'length,
+						NUMBER_OF_LINKS => NUMBER_OF_CGE_LINKS
 					)
 					port map (
 						s_axis_raw_tdata  => raw_tdata,
@@ -2297,17 +2360,56 @@ begin
 						clk => ct_clk,
 						rst => cge_reset,
 
-						s_axis_bsb_tdata => top_router_bsb_cmd_tdata(RAWPACK_BASE_PORT),
-						s_axis_bsb_tvalid => top_router_bsb_cmd_tvalid(RAWPACK_BASE_PORT),
-						s_axis_bsb_tlast => top_router_bsb_cmd_tlast(RAWPACK_BASE_PORT),
-						s_axis_bsb_tready => top_router_bsb_cmd_tready(RAWPACK_BASE_PORT),
-						m_axis_bsb_tdata => top_router_bsb_rply_tdata(RAWPACK_BASE_PORT),
-						m_axis_bsb_tvalid => top_router_bsb_rply_tvalid(RAWPACK_BASE_PORT),
-						m_axis_bsb_tlast => top_router_bsb_rply_tlast(RAWPACK_BASE_PORT),
-						m_axis_bsb_tready => top_router_bsb_rply_tready(RAWPACK_BASE_PORT),
+						s_axis_bsb_tdata => raw_bsb_cmd_tdata(0),
+						s_axis_bsb_tvalid => raw_bsb_cmd_tvalid(0),
+						s_axis_bsb_tlast => raw_bsb_cmd_tlast(0),
+						s_axis_bsb_tready => raw_bsb_cmd_tready(0),
+						m_axis_bsb_tdata => raw_bsb_rply_tdata(0),
+						m_axis_bsb_tvalid => raw_bsb_rply_tvalid(0),
+						m_axis_bsb_tlast => raw_bsb_rply_tlast(0),
+						m_axis_bsb_tready => raw_bsb_rply_tready(0),
 						bsb_clk => bsb_clk,
 						bsb_rst => gpu_bsb_rst_reg
 					);
+
+				-- Second 100G interface, on the second hard MAC of the device. It carries the raw streams
+				-- of link 1 only. Its registers are the same as those of cge0.
+				cge1_gen: if NUMBER_OF_CGE_LINKS > 1 generate
+					cge1: entity work.cge
+						generic map (
+							CMAC_IP => 2,
+							BSB_ADDR_WIDTH => 15, -- bit 15 selects this module in the RAWPACK port
+							DEFAULT_MAC_SRC_ADDR => X"005d03000001",
+							DEFAULT_IP_SRC_ADDR => X"0AC10002"
+						)
+						port map (
+							tx_p => cge1_tx_p,
+							tx_n => cge1_tx_n,
+							refclk_p => cge1_refclk_p,
+							refclk_n => cge1_refclk_n,
+
+							refclk_out => open,
+							clk322_out => open,
+
+							s_axis_tx_tdata  => cge_in_tdata(1),
+							s_axis_tx_tvalid => cge_in_tvalid(1),
+							s_axis_tx_tlast  => cge_in_tlast(1),
+							clk => ct_clk,
+
+							rst => cge_reset,
+
+							s_axis_bsb_tdata => raw_bsb_cmd_tdata(1),
+							s_axis_bsb_tvalid => raw_bsb_cmd_tvalid(1),
+							s_axis_bsb_tlast => raw_bsb_cmd_tlast(1),
+							s_axis_bsb_tready => raw_bsb_cmd_tready(1),
+							m_axis_bsb_tdata => raw_bsb_rply_tdata(1),
+							m_axis_bsb_tvalid => raw_bsb_rply_tvalid(1),
+							m_axis_bsb_tlast => raw_bsb_rply_tlast(1),
+							m_axis_bsb_tready => raw_bsb_rply_tready(1),
+							bsb_clk => bsb_clk,
+							bsb_rst => gpu_bsb_rst_reg
+						);
+				end generate cge1_gen;
 
 				-- Use COMPONENT instantiation if this is synthesized as an out-of-context module
 				cge0: entity work.cge
@@ -2322,9 +2424,9 @@ begin
 						clk322_out    => cge_clk322, -- 322 MHz generated by the core to clock all user interface signals.
 
 						-- input data interface
-						s_axis_tx_tdata  => cge_in_tdata,
-						s_axis_tx_tvalid => cge_in_tvalid,
-						s_axis_tx_tlast  => cge_in_tlast,
+						s_axis_tx_tdata  => cge_in_tdata(0),
+						s_axis_tx_tvalid => cge_in_tvalid(0),
+						s_axis_tx_tlast  => cge_in_tlast(0),
 						clk => ct_clk,
 
 
