@@ -2541,7 +2541,8 @@ begin
 					generic map (
 						NUMBER_OF_CHANNELS => raw_tdata'length,
 						NUMBER_OF_SOURCES => raw_tvalid'length,
-						NUMBER_OF_LINKS => NUMBER_OF_CGE_LINKS
+						NUMBER_OF_LINKS => NUMBER_OF_CGE_LINKS,
+						PASS_THROUGH => FALSE
 					)
 					port map (
 						s_axis_raw_tdata  => raw_tdata,
@@ -2550,7 +2551,7 @@ begin
 						source_sel_in     => raw_source,
 						raw_rst           => raw_rst,
 
-						-- no upstream packetizer: the pass-through input is left idle
+						-- no upstream packetizer: there is no pass-through bus (PASS_THROUGH = FALSE)
 
 						m_axis_out_tdata  => cge_in_tdata,
 						m_axis_out_tvalid => cge_in_tvalid,
