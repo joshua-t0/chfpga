@@ -14,11 +14,14 @@ for g in "$@"; do generics+=(-generic_top "$g"); done
 rm -f cmac_frames.txt cmac_frames_1.txt
 # The second link uses the second MAC IP: its simulation model is the same model with another name and another output file
 sed -e 's/cmac_usplus_1/cmac_usplus_2/g' -e 's/cmac_frames.txt/cmac_frames_1.txt/' "$hdl/testbenches/cmac_usplus_1_sim_model.vhd" > cmac_usplus_2_sim_model.vhd
+rm -rf xsim.dir/rawpack_cge_tb  # never run an old snapshot when the compilation fails
 xvlog -nolog "$XILINX_VIVADO/data/verilog/src/glbl.v" > /dev/null
 xvhdl -2008 -nolog "$hdl/chfpga_package.vhd" "$hdl/bsb/bsb_regs.vhd" "$hdl/bsb/bsb_async_fifo.vhd" \
 	"$hdl/data_links/100GE_UDP_MAC/rawpack.vhd" "$hdl/testbenches/cmac_usplus_1_sim_model.vhd" cmac_usplus_2_sim_model.vhd "$hdl/data_links/100GE_UDP_MAC/cge.vhd" \
-	"$hdl/testbenches/tb_package.vhd" "$hdl/testbenches/rawpack_cge_testbench.vhd" | grep -E 'ERROR|WARNING' || true
-xelab -nolog -L xpm -L unisim work.rawpack_cge_testbench work.glbl -s rawpack_cge_tb "${generics[@]}" | grep -E 'ERROR' || true
+	"$hdl/testbenches/tb_package.vhd" "$hdl/testbenches/rawpack_cge_testbench.vhd" > compile.log 2>&1 \
+	|| { grep ERROR compile.log; echo "Failure: compilation error"; exit 1; }
+xelab -nolog -L xpm -L unisim work.rawpack_cge_testbench work.glbl -s rawpack_cge_tb "${generics[@]}" > elaborate.log 2>&1 \
+	|| { grep ERROR elaborate.log; echo "Failure: elaboration error"; exit 1; }
 # SLEEP_CHECK and EMPTY_CHECK are start-up messages of the XPM FIFO simulation models while in reset
 xsim rawpack_cge_tb -nolog -R | grep -E 'DONE|Failure|Error|ERROR|overflow|underflow' | grep -vE 'SLEEP_CHECK|EMPTY_CHECK' || true
 files=(cmac_frames.txt)
