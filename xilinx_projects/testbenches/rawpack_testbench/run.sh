@@ -14,4 +14,4 @@ xvlog -nolog "$XILINX_VIVADO/data/verilog/src/glbl.v" > /dev/null
 xvhdl -2008 -nolog "$hdl/chfpga_package.vhd" "$hdl/bsb/bsb_regs.vhd" "$hdl/bsb/bsb_async_fifo.vhd" \
 	"$hdl/data_links/100GE_UDP_MAC/rawpack.vhd" "$hdl/testbenches/tb_package.vhd" "$hdl/testbenches/rawpack_testbench.vhd" | grep -E 'ERROR|WARNING' || true
 xelab -nolog -L xpm -L unisim work.rawpack_testbench work.glbl -s rawpack_tb "${generics[@]}" | grep -E 'ERROR' || true
-xsim rawpack_tb -nolog -R | grep -E 'PASSED|Failure|Error|ERROR|Header word'
+xsim rawpack_tb -nolog -R | grep -E 'PASSED|Failure|Error|ERROR|header word'

@@ -19,9 +19,12 @@ use work.tb_package.ALL;
 
 entity rawpack_cge_testbench is
 	generic (
+		LINKS: integer range 1 to 2 := 2; -- 100G links: one cge and one MAC model for each
 		CHAN_A: integer := 2;
 		CHAN_B: integer := 5;
-		SINGLE: integer range 0 to 1 := 0;
+		CHAN_C: integer := 7;
+		CHAN_D: integer := 0;
+		STREAM_ENABLE: integer range 1 to 15 := 15; -- streams to send: bit 0 = A, 1 = B (link 0), 2 = C, 3 = D (link 1)
 		BLOCKS_PER_PACKET: integer := 64;
 		RUN_TIME_US: integer := 500; -- duration of the stream
 		CLK_PERIOD_PS: integer := 2500 -- data clock period: 400 MHz
@@ -41,8 +44,8 @@ architecture behavior of rawpack_cge_testbench is
 	signal raw_tdata: slv_array(0 to 7)(127 downto 0) := (others => (others => '0'));
 	signal raw_tvalid, raw_tlast: std_logic_vector(0 to 1) := "00";
 
-	signal cge_in_tdata: std_logic_vector(255 downto 0);
-	signal cge_in_tvalid, cge_in_tlast: std_logic;
+	signal cge_in_tdata: slv_array(0 to LINKS - 1)(255 downto 0);
+	signal cge_in_tvalid, cge_in_tlast: std_logic_vector(0 to LINKS - 1);
 
 	signal bsb_cmd_tdata: std_logic_vector(7 downto 0) := (others => '0');
 	signal bsb_cmd_tvalid, bsb_cmd_tlast: std_logic := '0';
@@ -64,6 +67,9 @@ begin
 	refclk <= not refclk after REFCLK_PERIOD / 2 when not done;
 
 	rawpack0: entity work.rawpack
+		generic map (
+			NUMBER_OF_LINKS => LINKS
+		)
 		port map (
 			s_axis_raw_tdata  => raw_tdata,
 			s_axis_raw_tvalid => raw_tvalid,
@@ -92,9 +98,9 @@ begin
 			refclk_p => refclk,
 			refclk_n => not refclk,
 
-			s_axis_tx_tdata  => cge_in_tdata,
-			s_axis_tx_tvalid => cge_in_tvalid,
-			s_axis_tx_tlast  => cge_in_tlast,
+			s_axis_tx_tdata  => cge_in_tdata(0),
+			s_axis_tx_tvalid => cge_in_tvalid(0),
+			s_axis_tx_tlast  => cge_in_tlast(0),
 			clk => clk,
 			rst => rst,
 
@@ -102,6 +108,29 @@ begin
 			bsb_clk => bsb_clk,
 			bsb_rst => bsb_rst
 		);
+
+	-- Second link: the same block with the second MAC IP (its model writes cmac_frames_1.txt)
+	cge1_gen: if LINKS > 1 generate
+		cge1: entity work.cge
+			generic map (
+				CMAC_IP => 2,
+				BSB_ADDR_WIDTH => 15
+			)
+			port map (
+				refclk_p => refclk,
+				refclk_n => not refclk,
+
+				s_axis_tx_tdata  => cge_in_tdata(1),
+				s_axis_tx_tvalid => cge_in_tvalid(1),
+				s_axis_tx_tlast  => cge_in_tlast(1),
+				clk => clk,
+				rst => rst,
+
+				m_axis_bsb_tready => '1',
+				bsb_clk => bsb_clk,
+				bsb_rst => bsb_rst
+			);
+	end generate cge1_gen;
 
 	-- Capture bus stimulus: continuous data, as from the ADCs
 	stim_proc: process
@@ -146,11 +175,13 @@ begin
 		wait for 5 us; -- let the MAC model and the cge FIFOs come out of reset
 
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 1, CHAN_B * 16 + CHAN_A);
+		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 28, CHAN_D * 16 + CHAN_C);
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 2, BLOCKS_PER_PACKET);
-		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 5 + 2 * SINGLE); -- enable, port per channel
+		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 29, STREAM_ENABLE);
+		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 5); -- enable, port per channel
 
 		wait for RUN_TIME_US * 1 us;
-		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 4 + 2 * SINGLE);
+		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 4);
 		wait for 20 us; -- last packet goes out, FIFOs drain
 
 		assert raw_active = '0' report "rawpack did not release the link after disable" severity FAILURE;
@@ -158,6 +189,11 @@ begin
 		assert cge_fifo_overflow = '0' report "cge data FIFO overflow" severity FAILURE;
 		assert cge_flag_fifo_overflow = '0' report "cge flag FIFO overflow" severity FAILURE;
 		assert cge_tx_ovf = '0' and cge_tx_unf = '0' report "MAC overflow/underflow" severity FAILURE;
+		if LINKS > 1 then
+			assert << signal cge1_gen.cge1.fifo_overflow_sticky: std_logic >> = '0' report "cge1 data FIFO overflow" severity FAILURE;
+			assert << signal cge1_gen.cge1.flag_fifo_overflow_sticky: std_logic >> = '0' report "cge1 flag FIFO overflow" severity FAILURE;
+			assert << signal cge1_gen.cge1.tx_ovfout_sticky: std_logic >> = '0' and << signal cge1_gen.cge1.tx_unfout_sticky: std_logic >> = '0' report "MAC 1 overflow/underflow" severity FAILURE;
+		end if;
 		report "RAWPACK CGE SIMULATION DONE (cge input frame counter, 8 bits: " & integer'image(to_integer(cge_in_frames)) & ")";
 		done <= TRUE;
 		wait for 100 ns;
