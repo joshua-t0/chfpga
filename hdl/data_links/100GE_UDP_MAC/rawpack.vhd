@@ -52,10 +52,13 @@ use work.chFPGA_Package.ALL;
 -- (normally from ``upack``) is passed to the output of link 0 with one clock of latency. Thus
 -- ``upack`` can use link 0 while streams C and D use link 1. The raw streams of link 0 and the
 -- pass-through bus are mutually exclusive: stop the upstream transmitter before enabling streams A
--- or B. If a frame of the pass-through bus is open when the raw streams take link 0 (the upstream
--- transmitter was stopped in the middle of a frame), the module closes it with one last word, so
--- that the first raw packet is a frame of its own. When ``enable`` is cleared, the packets in
--- progress are completed and sent before the output is handed back.
+-- or B. The link changes hands only between two frames of the pass-through bus, so no frame of
+-- that bus is cut: the raw streams wait for the end of the frame in progress before their first
+-- packet, and the pass-through bus gets the link back at the start of a frame. Thus the upstream
+-- transmitter can run all the time; its frames are not sent while streams A or B have the link.
+-- If the upstream transmitter stopped in the middle of a frame, the module closes that frame with
+-- one last word after GAP_TIMEOUT clocks. When ``enable`` is cleared, the packets in progress are
+-- completed and sent before the output is handed back.
 --
 -- Packet format (all multi-byte header fields are big-endian)
 --
@@ -102,6 +105,7 @@ entity rawpack is
 		NUMBER_OF_CHANNELS: integer := 8;
 		NUMBER_OF_SOURCES: integer  := 2;
 		NUMBER_OF_LINKS: integer range 1 to 2 := 1; -- 100G links (output buses)
+		PASS_THROUGH: boolean := TRUE; -- TRUE: link 0 carries the s_axis_in bus while no raw stream uses it. FALSE: there is no upstream bus.
 
 		DEFAULT_ENABLE: std_logic                         := '0';
 		DEFAULT_STREAM_ENABLE: std_logic_vector(3 downto 0) := "0011"; -- streams A and B
@@ -304,7 +308,11 @@ architecture impl of rawpack is
 	signal pkt_tlast: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0');
 	signal raw_active: std_logic := '0'; -- the module is not completely stopped
 	signal link_active: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0'); -- the raw streams own the output of the link
-	signal pass_open: std_logic := '0'; -- a frame of the pass-through bus is on the output of link 0 without its last word
+	-- Link 0 with a pass-through bus
+	constant GAP_TIMEOUT: integer := 255; -- clocks with no word in the middle of an upstream frame after which the frame is closed
+	signal up_open: std_logic := '0'; -- the upstream bus is in the middle of a frame (followed on every clock, whoever has the link)
+	signal raw_owns: std_logic := '0'; -- the raw streams have the output of link 0. It changes only between two upstream frames.
+	signal gap_ctr: unsigned(7 downto 0) := (others => '0');
 
 	attribute ram_style: string;
 
@@ -719,7 +727,8 @@ begin
 						found := FALSE;
 						for k in 1 to STREAMS_PER_LINK loop
 							cand := (last_stream(l) + k) mod STREAMS_PER_LINK;
-							if not found and packet_ready(l * STREAMS_PER_LINK + cand) = '1' then
+							-- Link 0 with a pass-through bus: no packet before the raw streams have the link
+							if not found and packet_ready(l * STREAMS_PER_LINK + cand) = '1' and (l /= 0 or not PASS_THROUGH or raw_owns = '1') then
 								tx_stream(l) <= cand;
 								tx_state(l) <= START;
 								found := TRUE;
@@ -803,7 +812,7 @@ begin
 	-- are frozen. On each link, the raw streams own the output from ``enable`` until the last packet
 	-- of the link is out, if at least one stream of the link is enabled.
 	out_proc: process(all)
-		variable wr_any, empty_all: std_logic;
+		variable wr_any, empty_all, open_n: std_logic;
 	begin
 		if rising_edge(clk) then
 			raw_active <= enable or running or (or fifo_wr_en) or not (and fifo_empty) or not (and tx_idle);
@@ -816,37 +825,51 @@ begin
 				end loop;
 				link_active(l) <= (link_en(l) and (enable or running)) or wr_any or not empty_all or not tx_idle(l);
 
-				if link_active(l) or pkt_tvalid(l) then
-					m_axis_out_tdata(l) <= pkt_tdata(l);
-					m_axis_out_tvalid(l) <= pkt_tvalid(l);
-					m_axis_out_tlast(l) <= pkt_tlast(l);
-					-- The raw streams take link 0 while a frame of the pass-through bus is open: the upstream
-					-- transmitter was stopped in the middle of a frame, or it is still sending. Close that
-					-- frame with one last word. If not, cge would put the first raw packet at the end of it,
-					-- and that packet would be lost. No raw packet can be on the output yet: the first one is
-					-- complete in its FIFO more than one packet length after ``enable``.
-					if l = 0 and pass_open = '1' and pkt_tvalid(l) = '0' then
-						m_axis_out_tdata(l) <= (others => '0');
-						m_axis_out_tvalid(l) <= '1';
-						m_axis_out_tlast(l) <= '1';
-						pass_open <= '0';
-					end if;
-				elsif l = 0 then
-					m_axis_out_tdata(l) <= s_axis_in_tdata;
-					m_axis_out_tvalid(l) <= s_axis_in_tvalid;
-					m_axis_out_tlast(l) <= s_axis_in_tlast;
-					if s_axis_in_tvalid then
-						pass_open <= not s_axis_in_tlast;
+				m_axis_out_tdata(l) <= pkt_tdata(l);
+				m_axis_out_tvalid(l) <= pkt_tvalid(l);
+				m_axis_out_tlast(l) <= pkt_tlast(l);
+			end loop;
+
+			-- Link 0 with a pass-through bus. The link changes hands only between two upstream frames.
+			if PASS_THROUGH then
+				open_n := up_open; -- state of the upstream bus after the word of this clock
+				if s_axis_in_tvalid then
+					open_n := not s_axis_in_tlast;
+				end if;
+				up_open <= open_n;
+				gap_ctr <= (others => '0');
+				if raw_owns then
+					-- Give the link back when the raw streams are done, at the start of an upstream frame
+					if link_active(0) = '0' and pkt_tvalid(0) = '0' and open_n = '0' then
+						raw_owns <= '0';
 					end if;
 				else
-					m_axis_out_tvalid(l) <= '0';
-					m_axis_out_tlast(l) <= '0';
+					m_axis_out_tdata(0) <= s_axis_in_tdata;
+					m_axis_out_tvalid(0) <= s_axis_in_tvalid;
+					m_axis_out_tlast(0) <= s_axis_in_tlast;
+					if link_active(0) then
+						if open_n = '0' then
+							raw_owns <= '1'; -- the upstream frame in progress is complete
+						elsif s_axis_in_tvalid = '0' then
+							-- The upstream transmitter stopped in the middle of a frame (cge would put the
+							-- first raw packet at the end of it): close the frame with one last word.
+							gap_ctr <= gap_ctr + 1;
+							if gap_ctr = GAP_TIMEOUT then
+								m_axis_out_tdata(0) <= (others => '0');
+								m_axis_out_tvalid(0) <= '1';
+								m_axis_out_tlast(0) <= '1';
+								raw_owns <= '1';
+							end if;
+						end if;
+					end if;
 				end if;
-			end loop;
+			end if;
+
 			if rst then
 				m_axis_out_tvalid <= (others => '0');
 				m_axis_out_tlast <= (others => '0');
-				pass_open <= '0';
+				up_open <= '0';
+				raw_owns <= '0';
 			end if;
 		end if;
 	end process out_proc;

@@ -24,10 +24,16 @@ On link 0, `rawpack` sits between `upack` and `cge`:
 - While no stream of link 0 is in use (reset state), the `upack` stream passes through with one
   clock of latency. This is also the case while only streams C and D are sent: `upack` and the
   raw streams of link 1 can run at the same time.
-- When stream A or B is enabled, link 0 carries the raw streams instead. The two uses of link 0
-  are mutually exclusive: stop the `upack` transmitter before enabling stream A or B. When
-  `rawpack` is disabled again, the packets in progress are completed before the link is handed
-  back.
+- When stream A or B is enabled, link 0 carries the raw streams instead. The link changes hands
+  only between two `upack` frames, so no `upack` frame is cut: `rawpack` sends the frame in
+  progress to its end before its first packet (the stream FIFOs hold the data during that time,
+  194 clocks at most), and `upack` gets the link back at the start of a frame, after the raw
+  packets in progress are complete. The `upack` transmitter can thus stay on; its frames are not
+  sent while stream A or B is on.
+- If the `upack` transmitter is stopped in the middle of a frame (it does that when its
+  ``TX_ENABLE`` is cleared) and stays stopped for 256 clocks while the raw streams wait for the
+  link, `rawpack` closes that frame with one last word, so that the first raw packet is a frame
+  of its own in `cge`.
 
 The samples are taken from the capture bus that feeds `ucap` (8 samples per clock per channel),
 so no extra logic is added to the channelizers. The data source of each channel (FUNCGEN output,
@@ -109,6 +115,8 @@ Parameters
 ==========
 
 - **NUMBER_OF_LINKS:** number of 100G links, i.e. of output buses (1 or 2).
+- **PASS_THROUGH:** TRUE (default) if link 0 carries the ``s_axis_in`` bus while no raw stream
+  uses it. FALSE if there is no such bus (corr8): the logic that shares the link is then removed.
 
 - **DEFAULT_ENABLE / DEFAULT_STREAM_ENABLE / DEFAULT_CHAN_A ... DEFAULT_CHAN_D /
   DEFAULT_BLOCKS_PER_PACKET:** reset values of the corresponding registers.

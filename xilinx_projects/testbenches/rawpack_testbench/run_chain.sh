@@ -10,7 +10,8 @@ here=$(cd "$(dirname "$0")" && pwd)
 hdl=$here/../../../hdl
 mkdir -p "$here/work" && cd "$here/work"
 generics=()
-for g in "$@"; do generics+=(-generic_top "$g"); done
+upstream=1  # default of the UPSTREAM generic
+for g in "$@"; do generics+=(-generic_top "$g"); [[ $g == UPSTREAM=* ]] && upstream=${g#*=}; done
 rm -f cmac_frames.txt cmac_frames_1.txt
 # The second link uses the second MAC IP: its simulation model is the same model with another name and another output file
 sed -e 's/cmac_usplus_1/cmac_usplus_2/g' -e 's/cmac_frames.txt/cmac_frames_1.txt/' "$hdl/testbenches/cmac_usplus_1_sim_model.vhd" > cmac_usplus_2_sim_model.vhd
@@ -27,4 +28,4 @@ xsim rawpack_cge_tb -nolog -R | grep -E 'DONE|Failure|Error|ERROR|overflow|under
 files=(cmac_frames.txt)
 [ -s cmac_frames_1.txt ] && files+=(cmac_frames_1.txt)
 [ -s cmac_frames.txt ] || files=(cmac_frames_1.txt)
-python3 "$here/check_frames.py" "${files[@]}" --min-packets 10
+python3 "$here/check_frames.py" "${files[@]}" --min-packets 10 --upstream "$upstream"

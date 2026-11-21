@@ -26,7 +26,9 @@ entity rawpack_cge_testbench is
 		CHAN_D: integer := 0;
 		STREAM_ENABLE: integer range 1 to 15 := 15; -- streams to send: bit 0 = A, 1 = B (link 0), 2 = C, 3 = D (link 1)
 		BLOCKS_PER_PACKET: integer := 64;
-		RUN_TIME_US: integer := 500; -- duration of the stream
+		RUN_TIME_US: integer := 500; -- duration of a run
+		RUNS: integer := 1; -- number of runs (start, RUN_TIME_US, stop), each a little longer than the last
+		UPSTREAM: integer range 0 to 2 := 1; -- frames on the pass-through bus of link 0, with the timing of upack (194 words every 256 clocks). 0: none, the module has no such bus. 1: all the time. 2: the transmitter is stopped in the middle of a frame during each run.
 		CLK_PERIOD_PS: integer := 2500 -- data clock period: 400 MHz
 	);
 end rawpack_cge_testbench;
@@ -51,6 +53,12 @@ architecture behavior of rawpack_cge_testbench is
 	signal bsb_cmd_tvalid, bsb_cmd_tlast: std_logic := '0';
 	signal bsb_cmd_tready: std_logic;
 
+	signal up_tdata: std_logic_vector(255 downto 0) := (others => '0');
+	signal up_tvalid, up_tlast: std_logic := '0';
+	signal up_on, up_stopped: boolean := FALSE;
+	signal up_index: integer range 0 to 255 := 0; -- clock of the upstream frame period
+	signal up_frame: integer := 0;
+
 	signal done: boolean := FALSE;
 	signal check_link1: boolean := FALSE;
 
@@ -69,9 +77,14 @@ begin
 
 	rawpack0: entity work.rawpack
 		generic map (
-			NUMBER_OF_LINKS => LINKS
+			NUMBER_OF_LINKS => LINKS,
+			PASS_THROUGH => UPSTREAM /= 0
 		)
 		port map (
+			s_axis_in_tdata  => up_tdata,
+			s_axis_in_tvalid => up_tvalid,
+			s_axis_in_tlast  => up_tlast,
+
 			s_axis_raw_tdata  => raw_tdata,
 			s_axis_raw_tvalid => raw_tvalid,
 			s_axis_raw_tlast  => raw_tlast,
@@ -143,6 +156,22 @@ begin
 		end process check1_proc;
 	end generate cge1_gen;
 
+	-- Upstream frames: every word has the mark "UPST", the frame number and its position in the
+	-- frame, so that check_frames.py can tell that a frame is complete. Like upack, the transmitter
+	-- keeps its frame timing while it is stopped.
+	up_proc: process begin
+		wait until rising_edge(clk);
+		if up_on then
+			up_tdata <= X"55505354" & std_logic_vector(to_unsigned(up_frame, 32)) & std_logic_vector(to_unsigned(up_index, 16)) & (175 downto 0 => '0');
+			up_tvalid <= to_std_logic(up_index < 194 and not up_stopped);
+			up_tlast <= to_std_logic(up_index = 193);
+			up_index <= (up_index + 1) mod 256;
+			if up_index = 255 then
+				up_frame <= up_frame + 1;
+			end if;
+		end if;
+	end process up_proc;
+
 	-- Capture bus stimulus: continuous data, as from the ADCs
 	stim_proc: process
 		variable frame, word: integer := 0;
@@ -184,18 +213,27 @@ begin
 		rst <= '0';
 		raw_rst <= '0';
 		wait for 5 us; -- let the MAC model and the cge FIFOs come out of reset
+		up_on <= UPSTREAM /= 0;
+		wait for 5 us; -- upstream frames only
 
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 1, CHAN_B * 16 + CHAN_A);
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 28, CHAN_D * 16 + CHAN_C);
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 2, BLOCKS_PER_PACKET);
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 29, STREAM_ENABLE);
-		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 1); -- enable
+		for r in 0 to RUNS - 1 loop
+			if UPSTREAM = 2 then
+				wait until rising_edge(clk) and up_index = 50;
+				up_stopped <= TRUE;
+			end if;
+			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 1); -- enable
+			wait for RUN_TIME_US * 1 us + r * 137 * CLK_PERIOD;
+			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 0);
+			wait for 20 us; -- last packet goes out, FIFOs drain
+			up_stopped <= FALSE;
+			assert raw_active = '0' report "rawpack did not release the link after disable" severity FAILURE;
+			wait for 5 us; -- upstream frames only
+		end loop;
 
-		wait for RUN_TIME_US * 1 us;
-		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 0);
-		wait for 20 us; -- last packet goes out, FIFOs drain
-
-		assert raw_active = '0' report "rawpack did not release the link after disable" severity FAILURE;
 		assert raw_fifo_overflow = '0' report "rawpack FIFO overflow" severity FAILURE;
 		assert cge_fifo_overflow = '0' report "cge data FIFO overflow" severity FAILURE;
 		assert cge_flag_fifo_overflow = '0' report "cge flag FIFO overflow" severity FAILURE;
