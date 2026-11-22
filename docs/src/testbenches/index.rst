@@ -164,6 +164,15 @@ cge
 
 Tests the 100G Ethernet corner-turn engine (CGE). Verifies corner-turn operations, packet handling, and Ethernet interface integration.
 
+scaler_gain_switch
+~~~~~~~~~~~~~~~~~~
+
+**File:** ``hdl/testbenches/scaler_gain_switch_testbench.vhd``
+
+**Run with:** ``xilinx_projects/testbenches/scaler_gain_switch_testbench/run.sh [WRAP=1]``
+
+Self-checking test of the switch of the scaler gain bank at a frame number: a target that is ahead (the switch is at the end of that frame and not before), a target that is past when the bank is selected (the switch is at the end of the frame in progress, with the late flag), an old target, the unsynchronised mode, and the register that has the frame of the switch. ``WRAP=1`` starts the frame counter 30 frames before its limit with a target after the limit.
+
 rawpack
 ~~~~~~~
 

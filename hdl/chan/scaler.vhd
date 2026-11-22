@@ -40,7 +40,8 @@ entity scaler is
         SCALER_TUSER_BITS_PER_WORD: integer := FFT_BINS_PER_WORD + FFT_TUSER_BITS_PER_WORD + 1; -- add overflow bits (one per bin) and current gain bank
         OUT_BITS_PER_WORD: integer := OUT_BITS_PER_BIN * FFT_BINS_PER_WORD;
         CAP_BITS_PER_BIN: integer := CAP_BITS_PER_WORD / FFT_BINS_PER_WORD; -- minimum is 4+4, but can be increased to use 8-bit mode or get more of the input data in bypass mode for capture purposes.
-        EIGHT_BIT_SUPPORT: boolean := OUT_BITS_PER_BIN >= 8+8 -- TRUE of the scaler supports (8+8) bit output in addition to the 4+4 bit output
+        EIGHT_BIT_SUPPORT: boolean := OUT_BITS_PER_BIN >= 8+8; -- TRUE of the scaler supports (8+8) bit output in addition to the 4+4 bit output
+        FRAME_CTR_RESET_VALUE: std_logic_vector(31 downto 0) := (others => '0') -- value of the frame counter after a reset. For simulations of the counter near its limit.
         );
     port (
         -- Input Interface (Non Blocking AXI-Streaming, synchronous to ``clk``)
@@ -70,6 +71,11 @@ entity scaler is
         reset   : in  std_logic; -- clk-synchronous reset
 
         -- Channelizer monitoring (synchronous to ``mon_clk``)
+
+        -- '1' while the frame in the correlator is the last frame of an integration (synchronous to ``clk``).
+        -- Used with switch_at_integration. The delay from the input of the scaler to the correlator and back
+        -- must be less than one frame.
+        integ_last_frame : in std_logic := '0';
 
         fifo_overflow   : in std_logic:= '0'; -- Used to monitor the channelizer FIFO since it does not haveits own BSB registers.
         mon_clk: in std_logic := '0';
@@ -145,7 +151,13 @@ architecture Behavioral of SCALER is
 
     --- Define Control word and its signals
     signal control_bytes: slv8_array(0 to 13); -- default value set in the CMD_SLAVE
-    signal status_bytes: slv8_array(0 to 17);
+    signal status_bytes: slv8_array(0 to 22);
+    -- Switch of the gain bank at a frame number
+    signal target_diff: unsigned(31 downto 0); -- frame counter - target frame, modulo 2^32
+    signal target_reached, target_exact: std_logic := '0'; -- the frame in progress is at or past the target; is the target
+    signal gain_switch_frame: unsigned(31 downto 0) := (others => '0'); -- number of the frame at the end of which the gain bank changed last
+    signal gain_switch_late, gain_switch_late_reset: std_logic := '0';
+    signal switch_at_integration: std_logic;
 
     signal bypass_scaler: std_logic;
     signal soft_reset: std_logic;
@@ -268,7 +280,7 @@ begin
 -- |          |  2     |  7      | stats_capture                     | '0' clears the stats_done flag. when '1', the stats are captured and stats_done is set to '1' when the next frame block completes |
 -- |          |        |  6      | symmetric_saturation              | When '1', negative values will saturate to -127 (8-bit mode) or -7 (4-bit mode). Otherwise they saturate on -128 and -8 respectively. |
 -- |          |        |  5      | zero_on_saturation                | When '1', the real/imaginary pairs are zeroed if either the real part or imaginary part encounters an overflow. |
--- |          |        |  4      | synchronize_gain_bank_switch      | When '1', The target gain bank is activated only when the target frame number has been reached   |
+-- |          |        |  4      | synchronize_gain_bank_switch      | When '1', the target gain bank is activated at the end of the target frame, or of the frame in progress if the target is past (see gain_switch_late). Was: only when the target frame number has been reached   |
 -- |          |        |  3      | fifo_overflow_reset               | Resets the fifo_overflow_sticky status bit                                                       |
 -- |          |        |  2      | stats_single_bin                  | When '1', overflow stats operate only on bin specified in stats_bin_number                       |
 -- |          |        |  1:0    | rounding_mode                     | Specifies the type of rounding: '00' = No rounding (truncation), '01' = standard rounding (ties always round up), '10' = convergent rounding (ties round toward the even values) |
@@ -280,6 +292,8 @@ begin
 -- |          |        |  4:3    | bypass_data_type                  | When bypass_scaler is '1': "00": input, "01": 1+0j if any saturation, "10": 1+0j or 0+1j if positive or negative saturation respectively |
 -- |          |        |  2:0    | cap_data_type                     | "000": raw output, "001": scaled input, "010": 4-bit, "100": Even bins, "101": odd bins          |
 -- |          |11:12   | 15:0    | stats_bin_number                  | Bin number on which to measure overflow stats when stats_single_bin='1'.                        |
+-- |          | 13     |  7      | switch_at_integration             | When '1', the next gain bank is activated at the end of a correlator integration (integ_last_frame), not at a frame number |
+-- |          |        |  6      | gain_switch_late_reset            | '1' clears gain_switch_late |
 -- |          | 13     |  4:0    | post_scaler_left_shift_bank1      | Post-scaler left shift for gain bank 1 (0-31). Applied after RAM latency when bank 1 is active.   |
 -- | STATUS   |  0     |  7      | stats_ready                       | '1' when new stats data has been captured                                                       |
 -- |          |        |  6      | current_gain_bank                 | Currently used gain bank.                                                                       |
@@ -298,6 +312,9 @@ begin
 -- |          |14:15   | 15:0    | mon_word                          | Monitor word value                                                                              |
 -- |          | 16     |  7:0    | mon_clk_ctr                       | Monitor clock counter                                                                           |
 -- |          | 17     |  7:0    | mon_bit_ctr                       | Monitor bit counter                                                                             |
+-- |          | 18     |  0      | gain_switch_armed                 | '1' while switch_at_integration is set and the next gain bank is not yet the current one |
+-- |          |        |  1      | gain_switch_late                  | Set when a switch at a frame number (synchronize_gain_bank_switch) came after its target frame, because the bank was selected too late. Cleared by gain_switch_late_reset. |
+-- |          | 19:22  | 31:0    | gain_switch_frame                 | Number of the frame at the end of which the gain bank changed last: the target frame for a switch that was on time. The next frame is the first one with the new bank. |
 -- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -344,6 +361,8 @@ cap_data_type  <= control_bytes(10)(2 downto 0); -- "000": main scaler output, "
 stats_bin_number <= to_unsigned(control_bytes(11 to 12));
 
 -- CONTROL Byte 13
+switch_at_integration <= control_bytes(13)(7);
+gain_switch_late_reset <= control_bytes(13)(6);
 post_scaler_left_shift_bank(1) <= control_bytes(13)(4 downto 0);
 
 -- Applied post-scaler shift follows the gain bank after RAM_LATENCY so it
@@ -384,6 +403,13 @@ status_bytes(13) <= std_logic_vector(cap_frame_ctr);
 status_bytes(14 to 15) <= to_slv8_array(mon_word);
 status_bytes(16) <= std_logic_vector(mon_clk_ctr);
 status_bytes(17) <= std_logic_vector(mon_bit_ctr);
+
+-- STATUS Byte 18
+status_bytes(18) <= (0 => switch_at_integration and (next_gain_bank xor current_gain_bank), -- gain_switch_armed
+                     1 => gain_switch_late, others => '0');
+
+-- STATUS Bytes 19-22
+status_bytes(19 to 22) <= to_slv8_array(gain_switch_frame);
 
 -----------------------------------------------------------------------------------
 -- BSB Memory-Mapped interface
@@ -758,12 +784,38 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 if s_axis_in_tlast then
                     word_ctr <= (others=> '0');
                     frame_ctr <= frame_ctr + 1;
-                    if synchronize_gain_bank_switch='0' or std_logic_vector(frame_ctr) = gain_bank_switch_frame_number then
+                    if switch_at_integration then
+                        -- The correlator has the last frame of an integration: this frame, since the delay to the
+                        -- correlator and back is less than one frame. The next frame is the first one of an integration.
+                        if integ_last_frame then
+                            current_gain_bank <= next_gain_bank;
+                        end if;
+                    elsif synchronize_gain_bank_switch='0' or target_reached='1' then
+                        -- Frame-number mode: at the end of the target frame, or of the frame in progress if the target is past
+                        -- (the host selected the bank too late). Before, a late selection waited for the counter to come back
+                        -- to the target: 6 hours.
                         current_gain_bank <= next_gain_bank;
+                        if synchronize_gain_bank_switch='1' and target_exact='0' and next_gain_bank /= current_gain_bank then
+                            gain_switch_late <= '1';
+                        end if;
                     end if;
                 end if;
             end if;
 
+
+            -- Number of the last frame that had the bank that was in use before the last change, in all the modes
+            if current_gain_bank /= current_gain_bank_dly1 then
+                gain_switch_frame <= frame_ctr - 1;
+            end if;
+            if gain_switch_late_reset then
+                gain_switch_late <= '0';
+            end if;
+
+            -- The frame in progress against the target, modulo 2^32: at or past it if the difference is not negative as
+            -- a signed number. Two registers: the result is used only at the end of the frame.
+            target_diff <= frame_ctr - unsigned(gain_bank_switch_frame_number);
+            target_reached <= not target_diff(31);
+            target_exact <= to_std_logic(target_diff = 0);
 
             -- Pipeline the data to compensate for the RAM access latency to
             -- the coefficients arrive at the same time as their corresponding
@@ -935,7 +987,8 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 in_dat_dly1_tvalid <= '0';
                 in_dat_dly2_tvalid <= '0';
                 word_ctr <= (others=> '0');
-                frame_ctr <= (others=> '0');
+                frame_ctr <= unsigned(FRAME_CTR_RESET_VALUE);
+                gain_switch_late <= '0';
                 current_gain_bank <= '0';
                 current_gain_bank_dly1 <= '0';
                 current_gain_bank_dly2 <= '0';
