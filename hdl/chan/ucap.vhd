@@ -45,8 +45,8 @@ entity ucap is
 	    NUMBER_OF_SOURCES : integer := 2; -- Warning; current design works only with NUMBER_OF_SOURCES = 2
         CAPTURE_BITS_PER_WORD: integer := 128; -- must be a multiple of 8 bits
         -- Buffers that have memory (the first ones). The other buffers have no memory: the logic and the format of the
-        -- output do not change, but the data of those buffers are zeros. With 2: mode 0 has channels 0 and 1 only,
-        -- mode 1 has its first selected channel only, and mode 3 has 4 frames and then zeros.
+        -- output do not change, but the data of those buffers are zeros. With 4: mode 0 has channels 0 to 3 only,
+        -- mode 1 has its first two selected channels only, mode 2 its first one, and mode 3 has 8 frames and then zeros.
         BUFFERS_WITH_MEMORY: integer := 8;
         MEMORY_PRIMITIVE: string := "ultra" -- "ultra" (UltraRAM) or "block" (block RAM)
 	);

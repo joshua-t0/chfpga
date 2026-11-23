@@ -218,6 +218,15 @@ ucorr88
 
 Self-checking test of ``UCORR44_ARRAY`` with (8+8)-bit inputs (one correlator of 8 inputs, short frames). All the inputs are random. A model computes the 36 products of each bin, and all the result records of three integrations are compared with it. With ``SAMPLE_BITS=8`` the same test runs on the (4+4)-bit correlator: this shows that the two correlators have the same order and the same signs of the products. The test ends with ``UCORR88 TEST PASSED``.
 
+ucap_buffers
+~~~~~~~~~~~~
+
+**File:** ``hdl/testbenches/ucap_buffers_testbench.vhd``
+
+**Run with:** ``xilinx_projects/testbenches/ucap_buffers_testbench/run.sh [MODE=0..3] [BUFFERS=4 MEMORY=ultra]`` (3 minutes)
+
+Self-checking test of ``ucap`` with memory in some of its buffers only (``BUFFERS_WITH_MEMORY``). The module under test and a reference with 8 UltraRAM buffers get the same data and commands, and their output streams of one capture are compared packet for packet: the headers must be equal, and the data must be equal to those of the reference or all zeros, in the fraction ``BUFFERS / 8`` of the packets. The default is 2 buffers in block RAM (with the register stages in front of the memories). The test ends with ``UCAP BUFFERS TEST PASSED``.
+
 scaler_gain_switch
 ~~~~~~~~~~~~~~~~~~
 

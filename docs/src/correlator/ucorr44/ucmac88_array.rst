@@ -13,27 +13,35 @@ What limits the width of the sums
 ---------------------------------
 
 Each sum is read and written one time for each frame, so each clock a correlator reads and writes all the sums of one
-bin. One RAM gives 72 bits for each clock. The device has 80 UltraRAMs, and the correlator had 64 block RAMs (8 more
-RAM words). That is 22 RAM words of 72 bits for each of the 4 correlators: 1584 bits for 36 products. The module packs
-the sums with no unused bits:
+bin. One RAM gives 72 bits for each clock. Thus the number of RAMs sets the width of the sums. The module packs the
+sums of its 36 products in RAM words of 72 bits with no unused bits. Each correlator has 2 RAM words in block RAM
+(64 block RAMs for the 4 correlators), and the others are UltraRAMs, which UCAP also uses:
 
 .. list-table::
    :header-rows: 1
 
-   * - Product
-     - Number
-     - Bits
-     - Total
-   * - Cross-product
-     - 28
-     - 24 + 24
-     - 1344
-   * - Autocorrelation
-     - 8
-     - 30
-     - 240
+   * - Cross-products
+     - Autocorrelations
+     - RAM words for each correlator
+     - UltraRAMs of the correlator
+     - UCAP buffers with memory
+   * - 22 + 22 bits (the ``crs_corr8`` build)
+     - 26 bits
+     - 20
+     - 72
+     - 4 (UltraRAM)
+   * - 24 + 24 bits
+     - 30 bits
+     - 22
+     - 80
+     - 0, or some in block RAM
 
-The correlator thus uses all the UltraRAMs. UCAP has none: see ``BUFFERS_WITH_MEMORY`` of ``ucap``.
+The version with 24 + 24 bits was also built (``WIDE_CORR_CROSS_BITS``, ``WIDE_CORR_AUTO_BITS`` and
+``WIDE_CORR_UCAP_BUFFERS`` in ``chfpga.vhd``, ``URAM_TOTAL``, and the LOC constraints). With UCAP buffers in block RAM
+the block RAM of the device is 97 % used or more, and those builds did not complete the placement.
+
+The text below gives the fields for 24 bits. With ``CROSS_BITS = 22``, ``IM_HIGH`` has 4 bits (-8 to 7) and ``RE``
+has 22 bits; the result record has them sign-extended to 24 bits.
 
 The cell
 --------
@@ -78,7 +86,8 @@ Saturation:
   as saturated.
 - ``IM_HIGH`` stays at its largest value (31) or its smallest value (-32) when it gets there. The real part is then
   not valid, because the carries are no longer counted.
-- An autocorrelation is not negative. Its sum is in bits 18 and above of ``dsp2``, and it stays at `2^{30} - 1`.
+- An autocorrelation is not negative. Its sum is in bits 18 and above of ``dsp2``, and it stays at
+  `2^{AUTO\_BITS} - 1`.
 
 Result record
 -------------
@@ -96,8 +105,8 @@ a saturation from the values.
      - ``RE``, signed
      - ``IM_HIGH & IM_LOW``, signed
    * - Autocorrelation
-     - 0 (bits 47:30)
-     - Unsigned number in bits 29:0
+     - 0
+     - Unsigned number of ``AUTO_BITS`` bits
 
 A record of 36 products has 226 bytes (190 bytes for the 4-bit correlator, 197 with its wide cross-products).
 

@@ -631,11 +631,13 @@ architecture impl of chFPGA is
 	constant LOCAL_CORR: boolean := CORR_TYPE = UCORR44 and CT_LEVEL = 1 and CT_CLK_SOURCE = ADC_CLK;
 	-- Experiment: the correlator on the board has (8+8)-bit inputs for all the channelizers, with exact products and
 	-- wide sums (UCMAC88_ARRAY). It replaces the 4-bit correlator, its split-sample mode and its wide products.
-	-- The sums use all the UltraRAMs, so UCAP has block RAMs for some of its buffers only.
+	-- Each bit of the sums needs RAM: with 22 + 22-bit cross-products and 26-bit autocorrelations the correlator has 72
+	-- UltraRAMs (and its 64 block RAMs), and UCAP has UltraRAMs for 4 of its 8 buffers. 24 + 24 and 30 bits need all the
+	-- 80 UltraRAMs: then UCAP needs block RAM, and those builds did not place (see docs: ucmac88_array).
 	constant WIDE_CORR: boolean := LOCAL_CORR;
-	constant WIDE_CORR_CROSS_BITS: integer := 24; -- bits of each part of the sum of a cross-product
-	constant WIDE_CORR_AUTO_BITS: integer := 30; -- bits of the sum of an autocorrelation
-	constant WIDE_CORR_UCAP_BUFFERS: integer := 2; -- UCAP buffers that have memory (block RAM)
+	constant WIDE_CORR_CROSS_BITS: integer := 22; -- bits of each part of the sum of a cross-product
+	constant WIDE_CORR_AUTO_BITS: integer := 26; -- bits of the sum of an autocorrelation
+	constant WIDE_CORR_UCAP_BUFFERS: integer := 4; -- UCAP buffers that have memory (UltraRAM)
 	constant CHAN_OUT_WIDTH: integer := sel(WIDE_CORR, 64, 32); -- bits of a channelizer output word: 4 bins of (4+4) or (8+8) bits
 	signal split_mode, split_sat_reset: std_logic := '0';
 	signal split_sat_count: slv_array(0 to 3)(15 downto 0);
@@ -1822,7 +1824,7 @@ begin
 			SPLIT_SAMPLE_SUPPORT => LOCAL_CORR and not WIDE_CORR,
 			WIDE_SAMPLE_SUPPORT => WIDE_CORR,
 			UCAP_BUFFERS => sel(WIDE_CORR, WIDE_CORR_UCAP_BUFFERS, 8),
-			UCAP_MEMORY => sel(WIDE_CORR, "block", "ultra"),
+			UCAP_MEMORY => "ultra",
             -- ADC config
 			ADC_IS_DIFFERENTIAL => ADC_IS_DIFFERENTIAL,
 			ADC_PROVIDE_BUFFERED_DIVCLK => ADC_PROVIDE_BUFFERED_DIVCLK,
@@ -2854,7 +2856,7 @@ begin
 						N_BITS_PER_BIN        => CT_OUT_BITS_PER_BIN,
 						CROSS_BITS            => WIDE_CORR_CROSS_BITS,
 						AUTO_BITS             => WIDE_CORR_AUTO_BITS,
-						URAM_TOTAL            => sel(WIDE_CORR, 80, 64),
+						URAM_TOTAL            => sel(WIDE_CORR, 72, 64),
 						READOUT_BINS          => CORR_READOUT_BINS
 					)
 					port map (
