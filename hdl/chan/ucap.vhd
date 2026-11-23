@@ -48,7 +48,12 @@ entity ucap is
         -- output do not change, but the data of those buffers are zeros. With 4: mode 0 has channels 0 to 3 only,
         -- mode 1 has its first two selected channels only, mode 2 its first one, and mode 3 has 8 frames and then zeros.
         BUFFERS_WITH_MEMORY: integer := 8;
-        MEMORY_PRIMITIVE: string := "ultra" -- "ultra" (UltraRAM) or "block" (block RAM)
+        MEMORY_PRIMITIVE: string := "ultra"; -- "ultra" (UltraRAM) or "block" (block RAM)
+        -- TRUE (only with BUFFERS_WITH_MEMORY = 4 and UltraRAM): mode 0 captures one frame of each of the 8 channels at
+        -- the same time, and not two frames. Buffer k (0 to 3) gets channel 2k in its first half through its first port
+        -- and channel 2k + 1 in its second half through its second port, which the readout also uses. The packets are
+        -- those of mode 0 with frame number 0 only. The other modes do not change (buffers 0 to 3).
+        MODE0_ONE_FRAME: boolean := FALSE
 	);
     port (
         -- Input data buses, synchronous to s_axis_clk
@@ -94,7 +99,7 @@ architecture impl of ucap is
     constant NUMBER_OF_CHANNEL_PAIRS: integer := NUMBER_OF_CHANNELS/2;
     -- Block RAMs can be far from this logic (they are where the device has free ones): then the address, enable and
     -- data inputs of the buffers have register stages in front of them.
-    constant RAM_INPUT_STAGES: integer := sel(MEMORY_PRIMITIVE = "block", 2, 0);
+    constant RAM_INPUT_STAGES: integer := sel(MEMORY_PRIMITIVE = "block", 2, sel(MODE0_ONE_FRAME, 1, 0)); -- one stage after the port multiplexers of MODE0_ONE_FRAME
     constant XPM_LATENCY: integer := 4; -- read latency of the memories
     constant RAM_LATENCY: integer := XPM_LATENCY + RAM_INPUT_STAGES; -- read latency of the buffers, from ram_rd_addr and ram_rd_en. Used to align the ram reads
 
@@ -119,6 +124,7 @@ architecture impl of ucap is
     signal readout_delay_reg: unsigned(15 downto 0); -- ADC input frames to wait after ram_readout_trig (0 = no delay)
     -- Signals used for both write and read processes
     signal chan_pair_sel: u3_array(0 to NUMBER_OF_CHANNEL_PAIRS-1);
+    signal one_frame_mode: std_logic; -- mode 0 with MODE0_ONE_FRAME: 8 channels, one frame each, two channels in each buffer
 	signal capture_timestamp: u48_array(0 to NUMBER_OF_SOURCES-1);
     signal ram_readout_trig: std_logic_vector(0 to NUMBER_OF_BUFFERS-1);
     signal ram_readout_trig_ack: std_logic_vector(0 to NUMBER_OF_BUFFERS-1); -- pulses to '1' when a ram buffer processing is finished
@@ -197,6 +203,7 @@ begin
 		);
 
 	-- CONTROL byte 0 -1 : mode and channel selection
+	one_frame_mode  <= to_std_logic(MODE0_ONE_FRAME and control_bytes(0)(7 downto 6) = "00");
 	mode            <= control_bytes(0)(7 downto 6); -- "00": 8-channel mode, "01": 4-channel, "10": 2-channel, "11": 1-channel
 	chan_sel_map(1) <= unsigned(control_bytes(0)(5 downto 3));
 	chan_sel_map(0) <= unsigned(control_bytes(0)(2 downto 0));
@@ -233,7 +240,8 @@ begin
 	status_bytes(1) <= std_logic_vector(in_frame_ctr);
 	status_bytes(2) <= std_logic_vector(out_frame_ctr);
 	status_bytes(3) <= std_logic_vector(m_clk_ctr);
-	status_bytes(4) <= to_slv(BUFFERS_WITH_MEMORY, 8); -- 0 from a firmware that does not have this byte: all the buffers have memory
+	status_bytes(4)(6 downto 0) <= to_slv(BUFFERS_WITH_MEMORY, 7);
+	status_bytes(4)(7) <= to_std_logic(MODE0_ONE_FRAME); -- mode 0 gives one frame of each of the 8 channels -- 0 from a firmware that does not have this byte: all the buffers have memory
 
     ------------------------------------------------------------
     -- UltraRAM data buffers
@@ -248,7 +256,47 @@ begin
     --
 	uram_gen: for i in 0 to NUMBER_OF_BUFFERS-1 generate
 		begin
-		mem_gen: if i < BUFFERS_WITH_MEMORY generate
+		mem_gen: if i < BUFFERS_WITH_MEMORY and MODE0_ONE_FRAME generate
+			-- Buffer with two ports. Port A writes. Port B writes the second channel in the one-frame mode, and reads.
+			-- (2 * i and 2 * i + 1 are the buffers of the two channels in the write logic of mode 0.)
+			signal a_din, b_din, a_din_reg, b_din_reg: std_logic_vector(CAPTURE_BITS_PER_WORD - 1 downto 0);
+			signal a_addr, b_addr, a_addr_reg, b_addr_reg: std_logic_vector(11 downto 0);
+			signal a_en, b_en, b_we, a_en_reg, b_en_reg, b_we_reg: std_logic;
+		begin
+			assert BUFFERS_WITH_MEMORY = NUMBER_OF_BUFFERS / 2 and MEMORY_PRIMITIVE = "ultra" report "MODE0_ONE_FRAME needs UltraRAM for one half of the buffers" severity FAILURE;
+			a_din <= ram_din(2 * i) when one_frame_mode else ram_din(i);
+			a_addr <= ram_wr_addr(2 * i) when one_frame_mode else ram_wr_addr(i); -- first half of the buffer (the frame number is 0)
+			a_en <= ram_wr_en(2 * i) when one_frame_mode else ram_wr_en(i);
+			b_din <= ram_din(2 * i + 1);
+			b_we <= ram_wr_en(2 * i + 1) and one_frame_mode;
+			b_addr <= '1' & ram_wr_addr(2 * i + 1)(10 downto 0) when b_we else ram_rd_addr(i); -- second half of the buffer
+			b_en <= b_we or ram_rd_en(i);
+			process(s_axis_clk) begin -- the register stage of RAM_INPUT_STAGES
+				if rising_edge(s_axis_clk) then
+					a_din_reg <= a_din; a_addr_reg <= a_addr; a_en_reg <= a_en;
+					b_din_reg <= b_din; b_addr_reg <= b_addr; b_en_reg <= b_en; b_we_reg <= b_we;
+				end if;
+			end process;
+			uram0: xpm_memory_tdpram
+				generic map (
+					MEMORY_PRIMITIVE => "ultra",
+					CLOCKING_MODE => "common_clock",
+					ADDR_WIDTH_A => 12, WRITE_DATA_WIDTH_A => CAPTURE_BITS_PER_WORD, BYTE_WRITE_WIDTH_A => CAPTURE_BITS_PER_WORD, READ_DATA_WIDTH_A => CAPTURE_BITS_PER_WORD,
+					ADDR_WIDTH_B => 12, WRITE_DATA_WIDTH_B => CAPTURE_BITS_PER_WORD, BYTE_WRITE_WIDTH_B => CAPTURE_BITS_PER_WORD, READ_DATA_WIDTH_B => CAPTURE_BITS_PER_WORD,
+					MEMORY_SIZE => CAPTURE_BITS_PER_WORD * 4096,
+					READ_LATENCY_A => XPM_LATENCY, READ_LATENCY_B => XPM_LATENCY,
+					WRITE_MODE_A => "no_change", WRITE_MODE_B => "no_change",
+					SIM_ASSERT_CHK => 1,
+					WRITE_PROTECT => 1
+				)
+				port map (
+					dina => a_din_reg, addra => a_addr_reg, ena => a_en_reg, wea => "1", douta => open,
+					dinb => b_din_reg, addrb => b_addr_reg, enb => b_en_reg, web(0) => b_we_reg, doutb => ram_dout(i),
+					clka => s_axis_clk, clkb => s_axis_clk, rsta => rst, rstb => rst,
+					regcea => '1', regceb => '1', sleep => '0',
+					injectsbiterra => '0', injectdbiterra => '0', injectsbiterrb => '0', injectdbiterrb => '0'
+				);
+		elsif i < BUFFERS_WITH_MEMORY generate
 			-- the inputs of the memory, after RAM_INPUT_STAGES register stages
 			signal din_pipe: slv_array(0 to RAM_INPUT_STAGES)(CAPTURE_BITS_PER_WORD - 1 downto 0);
 			signal wr_addr_pipe, rd_addr_pipe: slv12_array(0 to RAM_INPUT_STAGES);
@@ -496,6 +544,9 @@ begin
 
                 -- Set the maximum frame number stored for each channel
                 frame_max <= to_unsigned(FRAMES_PER_BLOCK*K-1, 4); -- mode 1: 4 frames, mode 2: 8 frames, mode 3: 16 frames
+                if one_frame_mode then
+                    frame_max <= (others => '0'); -- one frame of each channel
+                end if;
 
                 -- Set the memory enable and address
                 -- Determine when buffers will capture data based on the mode and frame number.
@@ -629,6 +680,8 @@ begin
             variable src: std_logic; -- channel source
             variable src_int: integer range 0 to 1; -- channel source as an integer
             variable ram_readout_ack_var: std_logic_vector(0 to NUMBER_OF_BUFFERS-1);
+            variable ready: std_logic_vector(0 to NUMBER_OF_BUFFERS-1);
+            variable chan_buf: unsigned(2 downto 0); -- buffer of the write logic that has the data that are sent
 
 	    begin
 	        if rising_edge(s_axis_clk) then
@@ -672,8 +725,15 @@ begin
 	            	when READ_SEQ_WAIT =>
                         header_byte_ctr <= 0;
                         -- If any buffer is ready for transmission, grab the trigger pattern so we can process them as a batch.
-	            		if any_one(ram_readout_trig and not ram_readout_trig_ack) then -- ack won't affect trig until the next clock. Anticipate the result.
-                            ram_readout_mask <= ram_readout_trig;
+	            		ready := ram_readout_trig and not ram_readout_trig_ack; -- ack won't affect trig until the next clock. Anticipate the result.
+	            		if one_frame_mode then -- a buffer has two channels: it is ready when its two channels are complete
+	            			for i in 0 to NUMBER_OF_BUFFERS / 2 - 1 loop
+	            				ready(i) := ram_readout_trig(2 * i) and ram_readout_trig(2 * i + 1) and not ram_readout_trig_ack(2 * i);
+	            			end loop;
+	            			ready(NUMBER_OF_BUFFERS / 2 to NUMBER_OF_BUFFERS - 1) := (others => '0');
+	            		end if;
+	            		if any_one(ready) then
+                            ram_readout_mask <= ready when one_frame_mode else ram_readout_trig;
                             for i in 0 to NUMBER_OF_BUFFERS-1 loop
                                 if ram_readout_trig(i) then
                                     readout_delay_src <= ram_readout_src(i);
@@ -738,6 +798,11 @@ begin
                                 ram_readout_ack_var(to_integer(buf_ix(buf_ix'LEFT))) := '1'; -- current buffer bit
                                 ram_readout_mask <= ram_readout_mask and not ram_readout_ack_var; -- clear the current buffer bit in the mask register.
                                 ram_readout_trig_ack <= ram_readout_ack_var; -- signal the write process we have finished with this buffer
+                                if one_frame_mode then -- the two channels of this buffer
+                                    ram_readout_trig_ack <= (others => '0');
+                                    ram_readout_trig_ack(2 * to_integer(buf_ix(buf_ix'LEFT)(1 downto 0))) <= '1';
+                                    ram_readout_trig_ack(2 * to_integer(buf_ix(buf_ix'LEFT)(1 downto 0)) + 1) <= '1';
+                                end if;
                                 if ram_readout_mask = ram_readout_ack_var then -- if this was the last buffer in the mask
                                     read_seq_state <= READ_SEQ_WAIT; -- Go back to wait mode to check for new buffers
                                 else
@@ -753,7 +818,11 @@ begin
 
                 -- Convert useful signals to variables and integers for ease of use
                 buf := buf_ix(0);
-                src := ram_readout_src(to_integer(buf));
+                chan_buf := buf;
+                if one_frame_mode then -- the first half of buffer k has channel 2k, the second half has channel 2k + 1
+                    chan_buf := buf(1 downto 0) & read_proc_pkt_ctr(2);
+                end if;
+                src := ram_readout_src(to_integer(chan_buf));
                 src_int := to_integer(to_unsigned(src));
 
 	            -- Prepare the frame information.
@@ -777,8 +846,8 @@ begin
 	            case mode is
 	                when  "00" => -- 8 channel mode (pkt ctr = 3 bit chan, 1 bit seq, 2 bit subframe)
 	                    -- STREAM_ID = "000" [1-bit frame #] [8-bit crate/slot #] "0" [3-bit chan #]
-			            frame_header.STREAM_ID(12) := read_proc_pkt_ctr(2); -- frame (0-1)
-			            frame_header.STREAM_ID(2 downto 0) := std_logic_vector(buf); -- channel (0-7)
+			            frame_header.STREAM_ID(12) := read_proc_pkt_ctr(2) and not one_frame_mode; -- frame (0-1); always 0 in the one-frame mode
+			            frame_header.STREAM_ID(2 downto 0) := std_logic_vector(chan_buf); -- channel (0-7)
 	                when "01" => -- 4-channel mode   (pkt ctr = 2 bit chan, 2 bit seq, 2 bit subframe)
 	                    -- STREAM_ID = "00" [2-bit frame #] [8-bit crate/slot #] "0" [3-bit chan #]
 			            frame_header.STREAM_ID(13 downto 12) := std_logic_vector'(buf(0) & read_proc_pkt_ctr(2)); -- frame (0-3)

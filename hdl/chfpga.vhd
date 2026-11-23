@@ -1825,6 +1825,7 @@ begin
 			WIDE_SAMPLE_SUPPORT => WIDE_CORR,
 			UCAP_BUFFERS => sel(WIDE_CORR, WIDE_CORR_UCAP_BUFFERS, 8),
 			UCAP_MEMORY => "ultra",
+			UCAP_MODE0_ONE_FRAME => WIDE_CORR, -- with 4 buffers: mode 0 gives one frame of each of the 8 channels
             -- ADC config
 			ADC_IS_DIFFERENTIAL => ADC_IS_DIFFERENTIAL,
 			ADC_PROVIDE_BUFFERED_DIVCLK => ADC_PROVIDE_BUFFERED_DIVCLK,

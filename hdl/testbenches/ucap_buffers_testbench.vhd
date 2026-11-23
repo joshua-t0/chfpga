@@ -6,6 +6,9 @@
 -- the reference, or all zeros (a buffer with no memory), and the fraction of the packets with equal data must be
 -- BUFFERS / 8. With BUFFERS = 8 the two streams must be equal.
 --
+-- With ONE_FRAME and MODE = 0 (one frame of each of the 8 channels): the module under test sends 32 packets, and the 4
+-- packets of channel c must be equal (header and data) to the packets of frame 0 of channel c of the reference.
+--
 -- The test ends with the message "UCAP BUFFERS TEST PASSED" or a failure.
 library ieee;
 use ieee.std_logic_1164.ALL;
@@ -21,7 +24,8 @@ entity ucap_buffers_testbench is
 		CH0: integer := 5; -- first selected channel
 		CH1: integer := 2; -- second selected channel
 		BUFFERS: integer := 2;
-		MEMORY: string := "block"
+		MEMORY: string := "block";
+		ONE_FRAME: boolean := FALSE -- MODE0_ONE_FRAME of the module under test (with BUFFERS = 4, MEMORY = ultra)
 	);
 end entity;
 
@@ -47,6 +51,8 @@ architecture sim of ucap_buffers_testbench is
 	shared variable store: byte_store;
 	type int2 is array (0 to 1) of integer;
 	signal count: int2 := (0, 0);
+	constant ONE_FRAME_TEST: boolean := ONE_FRAME and MODE = 0;
+	constant DUT_PACKETS: integer := sel(ONE_FRAME_TEST, PACKETS / 2, PACKETS);
 begin
 	clk <= not clk after 1.333 ns when not done;
 	bsb_clk <= not bsb_clk after 5 ns when not done;
@@ -62,7 +68,7 @@ begin
 		);
 
 	dut0: entity work.ucap
-		generic map (FPGA_SERIES => ULTRASCALEPLUS, BUFFERS_WITH_MEMORY => BUFFERS, MEMORY_PRIMITIVE => MEMORY)
+		generic map (FPGA_SERIES => ULTRASCALEPLUS, BUFFERS_WITH_MEMORY => BUFFERS, MEMORY_PRIMITIVE => MEMORY, MODE0_ONE_FRAME => ONE_FRAME)
 		port map (
 			s_axis_tdata => tdata_in, s_axis_tvalid => tvalid_in, s_axis_tlast => tlast_in, source_sel_out => open, source_sel_in => "00000000",
 			s_axis_clk => clk, rst => rst,
@@ -111,11 +117,26 @@ begin
 
 	check: process
 		variable equal, zeros: boolean;
-		variable n_equal, n_zero, base: integer := 0;
+		variable n_equal, n_zero, base, ref_base: integer := 0;
 	begin
-		wait until count(0) = PACKETS * PACKET_BYTES and count(1) = PACKETS * PACKET_BYTES for 20 ms;
-		assert count(0) = PACKETS * PACKET_BYTES and count(1) = PACKETS * PACKET_BYTES
+		wait until count(0) = PACKETS * PACKET_BYTES and count(1) = DUT_PACKETS * PACKET_BYTES for 20 ms;
+		wait for 200 us; -- no more bytes after the last packet
+		assert count(0) = PACKETS * PACKET_BYTES and count(1) = DUT_PACKETS * PACKET_BYTES
 			report "Output bytes: " & integer'image(count(0)) & " and " & integer'image(count(1)) & ", expected " & integer'image(PACKETS * PACKET_BYTES) severity FAILURE;
+		if ONE_FRAME_TEST then
+			for c in 0 to 7 loop -- channel
+				for sub in 0 to 3 loop -- packet of the frame
+					base := ((c / 2) * 8 + (c mod 2) * 4 + sub) * PACKET_BYTES; -- buffer c / 2, first or second half
+					ref_base := (c * 8 + sub) * PACKET_BYTES; -- buffer c of the reference, frame 0
+					for b in 0 to PACKET_BYTES - 1 loop
+						assert store(1, base + b) = store(0, ref_base + b) report "Channel " & integer'image(c) & " packet " & integer'image(sub) & " byte " & integer'image(b) & " is not equal to the reference" severity FAILURE;
+					end loop;
+				end loop;
+			end loop;
+			report "UCAP BUFFERS TEST PASSED: one frame of each of the 8 channels, 32 packets equal to the reference";
+			done <= TRUE;
+			wait;
+		end if;
 		for p in 0 to PACKETS - 1 loop
 			base := p * PACKET_BYTES;
 			for b in 0 to FRAME_HEADER_BYTE_LENGTH - 1 loop

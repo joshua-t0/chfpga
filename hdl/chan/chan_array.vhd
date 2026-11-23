@@ -43,6 +43,7 @@ entity chan_array is
 		WIDE_SAMPLE_SUPPORT             : boolean := FALSE; -- TRUE: all the channelizers have 8-bit outputs, and chan_out_tdata has (8+8) bits for each bin (not with SPLIT_SAMPLE_SUPPORT)
 		UCAP_BUFFERS                    : integer := 8; -- UCAP buffers that have memory (see ucap)
 		UCAP_MEMORY                     : string := "ultra"; -- memory of the UCAP buffers: "ultra" or "block"
+		UCAP_MODE0_ONE_FRAME            : boolean := FALSE; -- UCAP mode 0 captures one frame of each of the 8 channels (see ucap)
 		NUMBER_OF_CAPTURE_SOURCES       : integer                                           := CHAN_CAPTURE_INFO(CAPTURE_TYPE).NUMBER_OF_SOURCES;
 		CAPTURE_BITS_PER_WORD           : integer                                           := CHAN_CAPTURE_INFO(CAPTURE_TYPE).INPUT_WIDTH;
 		ADC_SAMPLES_PER_FRAME           : integer := FFT_INFO(FFT_TYPE).SAMPLES_PER_FRAME;
@@ -817,6 +818,7 @@ begin
 					FPGA_SERIES => FPGA_SERIES,
 					BUFFERS_WITH_MEMORY => UCAP_BUFFERS,
 					MEMORY_PRIMITIVE => UCAP_MEMORY,
+					MODE0_ONE_FRAME => UCAP_MODE0_ONE_FRAME,
 					CAPTURE_BITS_PER_WORD => CAPTURE_BITS_PER_WORD
 				)
 				port map (
