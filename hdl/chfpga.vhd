@@ -629,6 +629,14 @@ architecture impl of chFPGA is
 	-- Features of a correlator on the same board and the same clock as the channelizers (corr8): the gain bank switch at
 	-- the end of an integration, the split-sample mode and the wide autocorrelations
 	constant LOCAL_CORR: boolean := CORR_TYPE = UCORR44 and CT_LEVEL = 1 and CT_CLK_SOURCE = ADC_CLK;
+	-- Experiment: the correlator on the board has (8+8)-bit inputs for all the channelizers, with exact products and
+	-- wide sums (UCMAC88_ARRAY). It replaces the 4-bit correlator, its split-sample mode and its wide products.
+	-- The sums use all the UltraRAMs, so UCAP has block RAMs for some of its buffers only.
+	constant WIDE_CORR: boolean := LOCAL_CORR;
+	constant WIDE_CORR_CROSS_BITS: integer := 24; -- bits of each part of the sum of a cross-product
+	constant WIDE_CORR_AUTO_BITS: integer := 30; -- bits of the sum of an autocorrelation
+	constant WIDE_CORR_UCAP_BUFFERS: integer := 2; -- UCAP buffers that have memory (block RAM)
+	constant CHAN_OUT_WIDTH: integer := sel(WIDE_CORR, 64, 32); -- bits of a channelizer output word: 4 bins of (4+4) or (8+8) bits
 	signal split_mode, split_sat_reset: std_logic := '0';
 	signal split_sat_count: slv_array(0 to 3)(15 downto 0);
 	signal bsb_clk: std_logic;
@@ -766,7 +774,7 @@ architecture impl of chFPGA is
 	signal chan_clk_src_sel: std_logic;
 
 	-- Channelizer outputs (from chan_array)
-	signal chan_out_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(31 downto 0);
+	signal chan_out_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(CHAN_OUT_WIDTH - 1 downto 0);
 	signal chan_out_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
 	signal chan_out_tvalid: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
 	signal chan_out_tlast: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
@@ -774,7 +782,7 @@ architecture impl of chFPGA is
 	attribute equivalent_register_removal of chan_out_tdata, chan_out_tuser, chan_out_tvalid, chan_out_tlast: signal is "no";
 	attribute shreg_extract of chan_out_tdata, chan_out_tuser, chan_out_tvalid, chan_out_tlast: signal is "no";
 	
-	constant CT_OUT_BITS_PER_BIN: integer := 4 + 4;
+	constant CT_OUT_BITS_PER_BIN: integer := CHAN_OUT_WIDTH / FFT_INFO(FFT_TYPE).BINS_PER_WORD; -- 4 + 4, or 8 + 8
 	constant CT_OUT_WIDTH: integer := FFT_INFO(FFT_TYPE).BINS_PER_WORD * CT_OUT_BITS_PER_BIN * NUMBER_OF_CHANNELIZERS; -- 
 
 	signal ct_out_tdata: std_logic_vector(CT_OUT_WIDTH - 1 downto 0); -- TODO: parametrize this, even if this is mostly fixed for the platform
@@ -1811,7 +1819,10 @@ begin
 			NUMBER_OF_CHANNELIZERS_WITH_FFT => NUMBER_OF_CHANNELIZERS_WITH_FFT,
 			FFT_TYPE => FFT_TYPE,
 			CAPTURE_TYPE => CAPTURE_TYPE,
-			SPLIT_SAMPLE_SUPPORT => LOCAL_CORR,
+			SPLIT_SAMPLE_SUPPORT => LOCAL_CORR and not WIDE_CORR,
+			WIDE_SAMPLE_SUPPORT => WIDE_CORR,
+			UCAP_BUFFERS => sel(WIDE_CORR, WIDE_CORR_UCAP_BUFFERS, 8),
+			UCAP_MEMORY => sel(WIDE_CORR, "block", "ultra"),
             -- ADC config
 			ADC_IS_DIFFERENTIAL => ADC_IS_DIFFERENTIAL,
 			ADC_PROVIDE_BUFFERED_DIVCLK => ADC_PROVIDE_BUFFERED_DIVCLK,
@@ -1970,13 +1981,13 @@ begin
     ct_gen: if CT_TYPE /= NONE generate
         signal ct_reset_reg0, ct_reset_reg1, ct_reset_reg2: std_logic;
 
-        signal ct_in1_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(31 downto 0);
+        signal ct_in1_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(CHAN_OUT_WIDTH - 1 downto 0);
         signal ct_in1_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
         signal ct_in1_tvalid: std_logic;
         signal ct_in1_tlast: std_logic;
         attribute shreg_extract of ct_in1_tdata, ct_in1_tuser, ct_in1_tvalid, ct_in1_tlast: signal is "no";
 
-        signal ct_in2_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(31 downto 0);
+        signal ct_in2_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(CHAN_OUT_WIDTH - 1 downto 0);
         signal ct_in2_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
         signal ct_in2_tvalid: std_logic;
         signal ct_in2_tlast: std_logic;
@@ -2070,6 +2081,7 @@ begin
                     generic map (
                         PLATFORM_TYPE => PLATFORM_TYPE,
                         NUMBER_OF_INPUT_LANES => NUMBER_OF_CHANNELIZERS, -- Number of channelizer inputs
+                        INPUT_WORD_WIDTH => CHAN_OUT_WIDTH,
 
 						-- Corner-turning level: 1: single-board (local) only (no backplane), 2: Level 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Level 2 + additional 2x2 corner-turn between 2 sub-backplanes (8 boards)
 						CT_LEVEL => CT_LEVEL, 
@@ -2836,9 +2848,13 @@ begin
 						NBINS_PER_CORR        => NBINS_PER_CORR,
 						BIN_DECIMATION_FACTOR => BIN_DECIMATION_FACTOR,
 						GAIN_SWITCH_SUPPORT   => GAIN_SWITCH_SUPPORT,
-						SPLIT_SAMPLE_SUPPORT  => LOCAL_CORR,
-						WIDE_AUTOCORR         => LOCAL_CORR,
-						WIDE_CROSS            => LOCAL_CORR,
+						SPLIT_SAMPLE_SUPPORT  => LOCAL_CORR and not WIDE_CORR,
+						WIDE_AUTOCORR         => LOCAL_CORR and not WIDE_CORR,
+						WIDE_CROSS            => LOCAL_CORR and not WIDE_CORR,
+						N_BITS_PER_BIN        => CT_OUT_BITS_PER_BIN,
+						CROSS_BITS            => WIDE_CORR_CROSS_BITS,
+						AUTO_BITS             => WIDE_CORR_AUTO_BITS,
+						URAM_TOTAL            => sel(WIDE_CORR, 80, 64),
 						READOUT_BINS          => CORR_READOUT_BINS
 					)
 					port map (

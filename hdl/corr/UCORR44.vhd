@@ -67,6 +67,9 @@ entity UCORR44 is
         NCORR: integer := 1;
 		URAM_MAX: integer := 64;
 		READOUT_BIN: integer := 0; -- bin number sacrificed for the readout cycle
+		SAMPLE_BITS: integer := 4 + 4; -- Bits of one input value. 8 + 8: the multipliers are those of UCMAC88_ARRAY (exact products of 8-bit components; only with one clock for each bin)
+		CROSS_BITS: integer := 24; -- SAMPLE_BITS = 16: bits of each part of the sum of a cross-product
+		AUTO_BITS: integer := 30; -- SAMPLE_BITS = 16: bits of the sum of an autocorrelation
 		WIDE_CROSS: boolean := FALSE; -- TRUE: the cross-products of the odd inputs with each other (1, 3, 5...) have 22 + 22 bits and an overflow flag. In the split-sample mode they are the products of the low parts. Only with one clock for each bin.
 		WIDE_AUTOCORR: boolean := FALSE; -- TRUE: 36-bit unsigned autocorrelations. Only with one clock for each bin (NCHAN = NCHAN_PER_CLK).
 		BINS_PER_FRAME_LOG2: integer := 3 -- Aggregate 2**N readout bins per AXIS frame / UDP packet (TLAST every 2**N bins, or on the last bin). Must be >= 1. 3 => 8 bins/frame.
@@ -74,7 +77,7 @@ entity UCORR44 is
 	PORT(
 
 		-- Data be correlated & integrated. NCHAN channels (NCHAN bytes). AXI4-Streaming, non-blocking.
-		s_axis_tdata: in slv_array(0 to NCHAN_PER_CLK - 1)(7 downto 0); -- Contains both (4+4) bit, Re in MSB
+		s_axis_tdata: in slv_array(0 to NCHAN_PER_CLK - 1)(SAMPLE_BITS - 1 downto 0); -- Re in the MSBs, Im in the LSBs
 		s_axis_tlast: in std_logic;
 		s_axis_tvalid: in std_logic;
 
@@ -197,8 +200,17 @@ architecture impl of UCORR44 is
 	end function;
 	constant wide_cross_cmacs: bool_array(0 to NCMAC - 1) := get_wide_cross_cmacs;
 
-	signal xy_tdata: slv_array(0 to NCMAC - 1)(15 downto 0);
+	signal xy_tdata: slv_array(0 to NCMAC - 1)(2 * SAMPLE_BITS - 1 downto 0);
 	signal xy_swap: std_logic_vector(0 to NCMAC - 1);
+	-- offset binary: the MSB of each component is inverted
+	function get_offset_mask return std_logic_vector is
+		variable m: std_logic_vector(SAMPLE_BITS - 1 downto 0) := (others => '0');
+	begin
+		m(SAMPLE_BITS - 1) := '1';
+		m(SAMPLE_BITS / 2 - 1) := '1';
+		return m;
+	end function;
+	constant OFFSET_MASK: std_logic_vector(SAMPLE_BITS - 1 downto 0) := get_offset_mask;
 	signal xy_tvalid: std_logic;
 	signal xy_tlast: std_logic;
 
@@ -217,14 +229,14 @@ begin
 
 
     corr_blk: block is
-		signal staging_tdata: slv_array(0 to NCHAN - 1)(7 downto 0); -- data staging (assembly) vector
+		signal staging_tdata: slv_array(0 to NCHAN - 1)(SAMPLE_BITS - 1 downto 0); -- data staging (assembly) vector
 		signal staging_tvalid: std_logic;
 		signal staging_tlast: std_logic;
 		signal staging_bin_set: std_logic_vector(3 downto 0);
     	signal xy_tlast_reg: std_logic;
 
-		signal x: slv_array(0 to NCHAN - 1)(7 downto 0) := (others => (others => '0')); -- fixed correlation vector. Init value for nice sims only.
-		signal y: slv_array(0 to NCHAN - 1)(7 downto 0):= (others => (others => '0')); -- rotating correlation vector. Init value for nice sims only.
+		signal x: slv_array(0 to NCHAN - 1)(SAMPLE_BITS - 1 downto 0) := (others => (others => '0')); -- fixed correlation vector. Init value for nice sims only.
+		signal y: slv_array(0 to NCHAN - 1)(SAMPLE_BITS - 1 downto 0):= (others => (others => '0')); -- rotating correlation vector. Init value for nice sims only.
 		signal xsel: std_logic_vector(NCHAN / 2 to NCHAN - 1); -- mux selection vector, only applies to muxes fron NCHAN / 2+1 to NCHAN. Elements frm 0 to NCHAN / 2 are not touches and shoudl be synthesized out.
 
 		signal clk_ctr: unsigned(4 downto 0); -- counts from 0 to NCLK (inclusively)
@@ -235,8 +247,8 @@ begin
         xyj_gen: for j in 0 to NCOL_PER_CLK-1 generate
             xyi_gen: for i in 0 to NCHAN generate
                 xy_swap(i * NCOL_PER_CLK + j) <= '1' when i>= NCHAN / 2 + 1 and (i + j >= NCHAN or xsel(i + j) = '1') else '0';
-                xy_tdata(i * NCOL_PER_CLK + j)(15 downto 8) <= x(i - 1) when i>= NCHAN / 2 + 1 and (i + j >= NCHAN or xsel(i + j) = '1') else x(i);
-                xy_tdata(i * NCOL_PER_CLK + j)(7 downto 0) <= y((i + j) mod NCHAN);
+                xy_tdata(i * NCOL_PER_CLK + j)(2 * SAMPLE_BITS - 1 downto SAMPLE_BITS) <= x(i - 1) when i>= NCHAN / 2 + 1 and (i + j >= NCHAN or xsel(i + j) = '1') else x(i);
+                xy_tdata(i * NCOL_PER_CLK + j)(SAMPLE_BITS - 1 downto 0) <= y((i + j) mod NCHAN);
             end generate; --i
         end generate; --j
 
@@ -261,7 +273,7 @@ begin
 				if s_axis_tvalid then
 					if bin_ctr = to_integer(bin_set_int) then -- if bin is in the selected bin set
                         for i in 0 to NCHAN_PER_CLK - 1 loop
-                            staging_tdata(to_integer(word_ctr)*NCHAN_PER_CLK+i) <= s_axis_tdata(i) xor x"88" when offset_encoding else s_axis_tdata(i);
+                            staging_tdata(to_integer(word_ctr)*NCHAN_PER_CLK+i) <= s_axis_tdata(i) xor OFFSET_MASK when offset_encoding else s_axis_tdata(i);
                         end loop;
                     end if;
 					if (bin_ctr = NDECIM - 1 and word_ctr=NCLK_PER_BIN - 1) or s_axis_tlast='1' then -- set tvalid and tlast on the last word of the decimation block
@@ -315,49 +327,95 @@ begin
 	end block corr_blk;
 
 
-	corr0: entity work.UCMAC44_ARRAY
-		generic map (
-			NCMAC => NCMAC,
-			NPROD => NBINS / NDECIM * NCLK,
-			AUTOCORR_STRIDE => NCOL_PER_CLK,
-			WIDE_AUTOCORR => WIDE_AUTOCORR and NCLK = 1,
-			WIDE_CROSS => wide_cross_cmacs,
-			CORR_NUMBER => CORR_NUMBER,
-			NCORR => NCORR,
-			URAM_MAX => URAM_MAX,
-			READOUT_BIN => READOUT_BIN,
-			BINS_PER_FRAME_LOG2 => BINS_PER_FRAME_LOG2
-		)
-		port map (
-			s_axis_xy_tdata => xy_tdata,
-			s_axis_xy_tvalid => xy_tvalid,
-			s_axis_xy_tlast => xy_tlast,
-			s_axis_xy_swap => xy_swap,
+	cmac_gen: if SAMPLE_BITS = 16 generate
+		assert NCLK = 1 report "UCMAC88_ARRAY needs one clock for each bin" severity FAILURE;
+		corr0: entity work.UCMAC88_ARRAY
+			generic map (
+				NCMAC => NCMAC,
+				AUTOCORR_STRIDE => NCOL_PER_CLK,
+				CROSS_BITS => CROSS_BITS,
+				AUTO_BITS => AUTO_BITS,
+				CORR_NUMBER => CORR_NUMBER,
+				NCORR => NCORR,
+				URAM_MAX => URAM_MAX,
+				READOUT_BIN => READOUT_BIN,
+				BINS_PER_FRAME_LOG2 => BINS_PER_FRAME_LOG2
+			)
+			port map (
+				s_axis_xy_tdata => xy_tdata,
+				s_axis_xy_tvalid => xy_tvalid,
+				s_axis_xy_tlast => xy_tlast,
+				s_axis_xy_swap => xy_swap,
 
 
-	        integ_period => integ_period,
-            bin_set => xy_bin_set,
-		    no_accum => no_accum,
-	        overrun => overrun,
-	        overrun_reset => overrun_reset,
-	        last_frame => last_frame,
-	        integ_start => integ_start,
-	        autocorr_only => autocorr_only,
-	        corr_id => corr_id,
+		        integ_period => integ_period,
+	            bin_set => xy_bin_set,
+			    no_accum => no_accum,
+		        overrun => overrun,
+		        overrun_reset => overrun_reset,
+		        last_frame => last_frame,
+		        integ_start => integ_start,
+		        autocorr_only => autocorr_only,
+		        corr_id => corr_id,
 
-			m_axis_z_tdata => z_out_tdata,
-			m_axis_z_tlast => z_out_tlast,
-			m_axis_z_tvalid => z_out_tvalid,
-			m_axis_z_send => z_out_send,
+				m_axis_z_tdata => z_out_tdata,
+				m_axis_z_tlast => z_out_tlast,
+				m_axis_z_tvalid => z_out_tvalid,
+				m_axis_z_send => z_out_send,
 
-			s_axis_z_tdata => z_in_tdata,
-			s_axis_z_tlast => z_in_tlast,
-			s_axis_z_tvalid => z_in_tvalid,
-			s_axis_z_send => z_in_send,
+				s_axis_z_tdata => z_in_tdata,
+				s_axis_z_tlast => z_in_tlast,
+				s_axis_z_tvalid => z_in_tvalid,
+				s_axis_z_send => z_in_send,
 
-			clk => clk,
-			rst => rst
-	);
+				clk => clk,
+				rst => rst
+		);
+	else generate
+		corr0: entity work.UCMAC44_ARRAY
+			generic map (
+				NCMAC => NCMAC,
+				NPROD => NBINS / NDECIM * NCLK,
+				AUTOCORR_STRIDE => NCOL_PER_CLK,
+				WIDE_AUTOCORR => WIDE_AUTOCORR and NCLK = 1,
+				WIDE_CROSS => wide_cross_cmacs,
+				CORR_NUMBER => CORR_NUMBER,
+				NCORR => NCORR,
+				URAM_MAX => URAM_MAX,
+				READOUT_BIN => READOUT_BIN,
+				BINS_PER_FRAME_LOG2 => BINS_PER_FRAME_LOG2
+			)
+			port map (
+				s_axis_xy_tdata => xy_tdata,
+				s_axis_xy_tvalid => xy_tvalid,
+				s_axis_xy_tlast => xy_tlast,
+				s_axis_xy_swap => xy_swap,
+
+
+		        integ_period => integ_period,
+	            bin_set => xy_bin_set,
+			    no_accum => no_accum,
+		        overrun => overrun,
+		        overrun_reset => overrun_reset,
+		        last_frame => last_frame,
+		        integ_start => integ_start,
+		        autocorr_only => autocorr_only,
+		        corr_id => corr_id,
+
+				m_axis_z_tdata => z_out_tdata,
+				m_axis_z_tlast => z_out_tlast,
+				m_axis_z_tvalid => z_out_tvalid,
+				m_axis_z_send => z_out_send,
+
+				s_axis_z_tdata => z_in_tdata,
+				s_axis_z_tlast => z_in_tlast,
+				s_axis_z_tvalid => z_in_tvalid,
+				s_axis_z_send => z_in_send,
+
+				clk => clk,
+				rst => rst
+		);
+	end generate cmac_gen;
 
 end architecture impl;
 

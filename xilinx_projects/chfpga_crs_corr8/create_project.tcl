@@ -20,7 +20,7 @@ set hdl_files [concat $crs_corr8_hdl_files "platforms/crs/chfpga_crs_corr8_confi
 set const_files [list \
 	 "crs_timing_constraints_common.xdc"\
 	 "crs_physical_constraints_corr.xdc"\
-	 "crs_physical_constraints_ucorr44_8_LOCs.xdc"\
+	 "crs_physical_constraints_ucorr88_8_LOCs.xdc"\
 	 "crs_physical_constraints_raw_cge.xdc"\
 	 "crs_physical_constraints_common.xdc"\
 	 "crs_physical_constraints_chord_fft_LOCs.xdc"\

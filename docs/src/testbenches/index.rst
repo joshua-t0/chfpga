@@ -200,6 +200,24 @@ ucorr_acc
 
 Self-checking test of the correlator accumulators with frames of the real length. Three inputs are constant at full scale and five are random. The testbench has the exact sum of the power of each input in each bin and compares it with the 36-bit autocorrelations of the result packets (``WIDE=1``). ``DUMP_FILE`` writes the result records, to compare all the products with those of the design before a change (``CORR_SRC``). ``INTEG=32768 CONSTANT_ONLY=1 INTEGRATIONS=1`` checks one integration of 32768 frames at full scale (3211264).
 
+ucmac88
+~~~~~~~
+
+**File:** ``hdl/testbenches/ucmac88_testbench.vhd``
+
+**Run with:** ``xilinx_projects/testbenches/ucmac88_testbench/run.sh [GENERIC=value ...]`` (3 minutes)
+
+Self-checking test of the (8+8)-bit correlator cells (``UCMAC88_ARRAY``, 36 CMACs, short frames). Random values and values at the limits go to all the CMACs for four integrations. A model computes the fields of each sum with the saturation rules of the module, and each result record is compared with the model. Where nothing is saturated, ``RE - IM_HIGH`` is compared with the exact sum of the real parts. The third integration takes the real and imaginary parts of the cross-products past their limits in the two directions. ``AUTO_BITS=20`` also saturates the autocorrelations, and ``CROSS_BITS=22`` tests another width. The test ends with ``UCMAC88 TEST PASSED``.
+
+ucorr88
+~~~~~~~
+
+**File:** ``hdl/testbenches/ucorr88_testbench.vhd``
+
+**Run with:** ``xilinx_projects/testbenches/ucorr88_testbench/run.sh [SAMPLE_BITS=8 INTEG=1300]`` (3 minutes)
+
+Self-checking test of ``UCORR44_ARRAY`` with (8+8)-bit inputs (one correlator of 8 inputs, short frames). All the inputs are random. A model computes the 36 products of each bin, and all the result records of three integrations are compared with it. With ``SAMPLE_BITS=8`` the same test runs on the (4+4)-bit correlator: this shows that the two correlators have the same order and the same signs of the products. The test ends with ``UCORR88 TEST PASSED``.
+
 scaler_gain_switch
 ~~~~~~~~~~~~~~~~~~
 

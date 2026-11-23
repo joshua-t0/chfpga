@@ -20,6 +20,7 @@ The UCORR44 system consists of:
    ucorr44_array
    ucorr44
    ucmac44_array
+   ucmac88_array
    ../../navbar_separator
 
 

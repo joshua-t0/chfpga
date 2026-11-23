@@ -154,6 +154,7 @@ set ice_ct_hdl_files [concat $ice_hdl_base_files [list \
 
 set ice_corr16_hdl_files [concat $ice_hdl_base_files [list \
   "corr/UCMAC44_ARRAY.vhd"\
+  "corr/UCMAC88_ARRAY.vhd"\
   "corr/UCORR44.vhd"\
   "corr/UCORR44_ARRAY.vhd"\
   ]]
@@ -196,6 +197,7 @@ set kc705_hdl_base_files [concat $hdl_base_files [list \
 
 set kc705_corr8_hdl_files [concat $kc705_hdl_base_files [list \
   "corr/UCMAC44_ARRAY.vhd"\
+  "corr/UCMAC88_ARRAY.vhd"\
   "corr/UCORR44.vhd"\
   "corr/UCORR44_ARRAY.vhd"\
   ]]
@@ -250,6 +252,7 @@ set crs_corr_hdl_files [concat $crs_hdl_base_files [list \
  "data_links/XXVGLINK/xxvglink_core.vhd" \
  "data_links/XXVGLINK/xxvglink_array.vhd" \
  "corr/UCMAC44_ARRAY.vhd" \
+ "corr/UCMAC88_ARRAY.vhd" \
  "corr/UCORR44.vhd" \
  "corr/UCORR44_ARRAY.vhd" \
  ]]

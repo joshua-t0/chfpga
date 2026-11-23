@@ -40,7 +40,10 @@ entity UCORR44_ARRAY is
 		NCHAN: integer :=8; -- number of channels to correlate per correlator
 		NBINS_PER_CORR: integer :=2048; -- Number of bins to be processed by each correlator
 		BIN_DECIMATION_FACTOR: integer := 1; -- Only 1 out of every BIN_DECIMATION_FACTOR bin is processed in order to provide extra comoputing cycles and use less resources
-		N_BITS_PER_BIN: integer := 4+4; -- The correlator only supports 4+4 bit format.
+		N_BITS_PER_BIN: integer := 4+4; -- 4+4, or 8+8: exact products of 8-bit components with wide sums (UCMAC88_ARRAY; only with one clock for each bin)
+		CROSS_BITS: integer := 24; -- N_BITS_PER_BIN = 16: bits of each part of the sum of a cross-product
+		AUTO_BITS: integer := 30; -- N_BITS_PER_BIN = 16: bits of the sum of an autocorrelation
+		URAM_TOTAL: integer := 64; -- UltraRAMs for all the correlators (the other RAMs of the accumulators are block RAMs)
 		SOFT_NINTEG: integer := 8192; -- default integration period (number of frames)
 		SOFT_AUTOCORR_ONLY: boolean := FALSE;
 		WIDE_CROSS: boolean := FALSE; -- TRUE: the cross-products of the odd inputs with each other have 22 + 22 bits and an overflow flag, and the result records are longer (only with one clock for each bin)
@@ -111,12 +114,12 @@ architecture Behavioral of UCORR44_ARRAY is
     constant N: integer := NCHAN;
     constant NCHAN_PER_CLK: integer  := INPUT_WIDTH/NCORR/N_BITS_PER_BIN; -- Number of channels
     constant NCLK_PER_BIN: integer := NCHAN / NCHAN_PER_CLK; -- Number of clock needed to send all channels for one bin
-    constant URAM_MAX: integer := sel(PLATFORM_INFO(PLATFORM_TYPE).FPGA_SERIES=ULTRASCALEPLUS, 64 / NCORR, 0);
+    constant URAM_MAX: integer := sel(PLATFORM_INFO(PLATFORM_TYPE).FPGA_SERIES=ULTRASCALEPLUS, URAM_TOTAL / NCORR, 0);
     signal rst_reg: std_logic_vector(0 to NCORR-1);
     attribute DONT_TOUCH of rst_reg: signal is "true";
     -- Control signals
     signal control_bytes: slv8_array(0 to 3);
-    signal status_bytes: slv8_array(0 to 19);
+    signal status_bytes: slv8_array(0 to 21);
     signal gain_switch_enable, gain_switch_enable_resync, gain_switch_enable_frame: std_logic;
     signal split_mode_reg: std_logic;
     signal last_frame: std_logic_vector(0 to NCORR-1);
@@ -257,6 +260,9 @@ begin
     status_bytes(5)(6) <= to_std_logic(WIDE_AUTOCORR and NCLK_PER_BIN = 1 and BIN_DECIMATION_FACTOR = 1);
     status_bytes(5)(7) <= to_std_logic(WIDE_CROSS and NCLK_PER_BIN = 1 and BIN_DECIMATION_FACTOR = 1);
 
+    -- Bytes 20 and 21: widths of the sums of the (8+8)-bit correlator. Zero: the correlator has (4+4)-bit inputs.
+    status_bytes(20) <= to_slv(sel(N_BITS_PER_BIN = 16, CROSS_BITS, 0), 8);
+    status_bytes(21) <= to_slv(sel(N_BITS_PER_BIN = 16, AUTO_BITS, 0), 8);
     sat_gen: for i in 0 to 3 generate
         status_bytes(12 + 2 * i to 13 + 2 * i) <= to_slv8_array(unsigned(split_sat_count(i)));
     end generate sat_gen;
@@ -375,6 +381,9 @@ begin
 				NCHAN_PER_CLK         => NCHAN_PER_CLK,
 				NDECIM => BIN_DECIMATION_FACTOR,
 				URAM_MAX              => URAM_MAX,
+				SAMPLE_BITS           => N_BITS_PER_BIN,
+				CROSS_BITS            => CROSS_BITS,
+				AUTO_BITS             => AUTO_BITS,
 				READOUT_BIN           => READOUT_BINS(i),
 				WIDE_AUTOCORR         => WIDE_AUTOCORR,
 				WIDE_CROSS            => WIDE_CROSS

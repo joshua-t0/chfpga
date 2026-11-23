@@ -43,7 +43,12 @@ entity ucap is
 		FPGA_SERIES: fpga_series_enum; -- Used to select the appropriate FIFO memory type
 	    NUMBER_OF_CHANNELS: integer := 8; -- Warning: current design works only with NUMBER_OF_CHANNELS = 8
 	    NUMBER_OF_SOURCES : integer := 2; -- Warning; current design works only with NUMBER_OF_SOURCES = 2
-        CAPTURE_BITS_PER_WORD: integer := 128 -- must be a multiple of 8 bits
+        CAPTURE_BITS_PER_WORD: integer := 128; -- must be a multiple of 8 bits
+        -- Buffers that have memory (the first ones). The other buffers have no memory: the logic and the format of the
+        -- output do not change, but the data of those buffers are zeros. With 2: mode 0 has channels 0 and 1 only,
+        -- mode 1 has its first selected channel only, and mode 3 has 4 frames and then zeros.
+        BUFFERS_WITH_MEMORY: integer := 8;
+        MEMORY_PRIMITIVE: string := "ultra" -- "ultra" (UltraRAM) or "block" (block RAM)
 	);
     port (
         -- Input data buses, synchronous to s_axis_clk
@@ -93,7 +98,7 @@ architecture impl of ucap is
 
 
 	signal control_bytes: slv8_array(0 to 12);
-	signal status_bytes: slv8_array(0 to 3);
+	signal status_bytes: slv8_array(0 to 4);
 
 	signal in_frame_ctr: unsigned(7 downto 0);
 	signal out_frame_ctr: unsigned(7 downto 0);
@@ -224,6 +229,7 @@ begin
 	status_bytes(1) <= std_logic_vector(in_frame_ctr);
 	status_bytes(2) <= std_logic_vector(out_frame_ctr);
 	status_bytes(3) <= std_logic_vector(m_clk_ctr);
+	status_bytes(4) <= to_slv(BUFFERS_WITH_MEMORY, 8); -- 0 from a firmware that does not have this byte: all the buffers have memory
 
     ------------------------------------------------------------
     -- UltraRAM data buffers
@@ -238,6 +244,7 @@ begin
     --
 	uram_gen: for i in 0 to NUMBER_OF_BUFFERS-1 generate
 		begin
+		mem_gen: if i < BUFFERS_WITH_MEMORY generate
 		   	-- xpm_memory_sdpram: Simple Dual Port RAM
 		   	-- Xilinx Parameterized Macro, version 2022.1
 		   	-- UltraRAM primitive is organized as 4K x 72 bits.
@@ -245,7 +252,7 @@ begin
 		   	-- Addr width: we use all the memory space 4K words.
 		   	uram0 : xpm_memory_sdpram
 			   	generic map (
-			      MEMORY_PRIMITIVE => "ultra",      -- force the use of UltraRAM
+			      MEMORY_PRIMITIVE => MEMORY_PRIMITIVE,      -- UltraRAM, or block RAM
                     -- write bus A
 			      ADDR_WIDTH_A => 12,               -- 4k (12 bits) per URAM
 			      WRITE_DATA_WIDTH_A => CAPTURE_BITS_PER_WORD,        -- 8 byte (64 bits) wide write bus
@@ -266,7 +273,7 @@ begin
 			      --USE_MEM_INIT => 1,               -- DECIMAL
 			      --USE_MEM_INIT_MMI => 0,           -- DECIMAL
 			      --WAKEUP_TIME => "disable_sleep",  -- String
-			      WRITE_MODE_B => "write_first",     -- URAM is either read_first or write_first
+			      WRITE_MODE_B => sel(MEMORY_PRIMITIVE = "ultra", "write_first", "read_first"),     -- URAM is either read_first or write_first; block RAM must be read_first (a buffer is not read while it is written)
 			      WRITE_PROTECT => 1               -- DECIMAL
 				)
 				port map (
@@ -292,6 +299,9 @@ begin
 					regceb => '1',
 					clkb => '0'
 			   );
+		else generate
+			ram_dout(i) <= (others => '0');
+		end generate mem_gen;
 	end generate uram_gen;
 
     -- Write block: writes data to memory

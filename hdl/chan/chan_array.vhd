@@ -40,6 +40,9 @@ entity chan_array is
 		FFT_TYPE                        : fft_type_enum;
 		CAPTURE_TYPE                    : chan_capture_type_enum;
 		SPLIT_SAMPLE_SUPPORT            : boolean := FALSE; -- TRUE: the first half of the channelizers have 8-bit outputs, and the split-sample stage (sample_split) is in front of the outputs
+		WIDE_SAMPLE_SUPPORT             : boolean := FALSE; -- TRUE: all the channelizers have 8-bit outputs, and chan_out_tdata has (8+8) bits for each bin (not with SPLIT_SAMPLE_SUPPORT)
+		UCAP_BUFFERS                    : integer := 8; -- UCAP buffers that have memory (see ucap)
+		UCAP_MEMORY                     : string := "ultra"; -- memory of the UCAP buffers: "ultra" or "block"
 		NUMBER_OF_CAPTURE_SOURCES       : integer                                           := CHAN_CAPTURE_INFO(CAPTURE_TYPE).NUMBER_OF_SOURCES;
 		CAPTURE_BITS_PER_WORD           : integer                                           := CHAN_CAPTURE_INFO(CAPTURE_TYPE).INPUT_WIDTH;
 		ADC_SAMPLES_PER_FRAME           : integer := FFT_INFO(FFT_TYPE).SAMPLES_PER_FRAME;
@@ -104,7 +107,7 @@ entity chan_array is
 
 		-- Channelizer Outputs (on ct_clk)
 
-		chan_out_tdata        : out slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(31 downto 0);
+		chan_out_tdata        : out slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(sel(WIDE_SAMPLE_SUPPORT, 64, 32) - 1 downto 0);
 		chan_out_tuser        : out slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
 		chan_out_tvalid       : out std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
 		chan_out_tlast        : out std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
@@ -224,7 +227,7 @@ architecture impl of chan_array is
 	constant NARROW_WIDTH: integer := CT_INFO(CT_TYPE).INPUT_WIDTH;
 	function fifo_out_width(i: integer) return integer is
 	begin
-		if SPLIT_SAMPLE_SUPPORT and i < NUMBER_OF_CHANNELIZERS / 2 then
+		if WIDE_SAMPLE_SUPPORT or (SPLIT_SAMPLE_SUPPORT and i < NUMBER_OF_CHANNELIZERS / 2) then
 			return 2 * NARROW_WIDTH;
 		end if;
 		return NARROW_WIDTH;
@@ -235,7 +238,14 @@ architecture impl of chan_array is
 	signal fifo_out_tvalid, fifo_out_tlast: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
 begin
 
-	split_gen: if SPLIT_SAMPLE_SUPPORT generate
+	split_gen: if WIDE_SAMPLE_SUPPORT generate
+		assert not SPLIT_SAMPLE_SUPPORT report "WIDE_SAMPLE_SUPPORT and SPLIT_SAMPLE_SUPPORT cannot be used together" severity FAILURE;
+		chan_out_tdata <= fifo_out_tdata;
+		chan_out_tuser <= fifo_out_tuser;
+		chan_out_tvalid <= fifo_out_tvalid;
+		chan_out_tlast <= fifo_out_tlast;
+		split_sat_count <= (others => (others => '0'));
+	elsif SPLIT_SAMPLE_SUPPORT generate
 		signal wide_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(2 * NARROW_WIDTH - 1 downto 0);
 	begin
 		assert NUMBER_OF_CHANNELIZERS = 8 report "The split-sample mode is for 8 channelizers" severity FAILURE;
@@ -805,6 +815,8 @@ begin
 			ucap0: entity work.ucap
 				generic map (
 					FPGA_SERIES => FPGA_SERIES,
+					BUFFERS_WITH_MEMORY => UCAP_BUFFERS,
+					MEMORY_PRIMITIVE => UCAP_MEMORY,
 					CAPTURE_BITS_PER_WORD => CAPTURE_BITS_PER_WORD
 				)
 				port map (
