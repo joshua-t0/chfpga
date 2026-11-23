@@ -67,6 +67,7 @@ entity UCORR44 is
         NCORR: integer := 1;
 		URAM_MAX: integer := 64;
 		READOUT_BIN: integer := 0; -- bin number sacrificed for the readout cycle
+		WIDE_CROSS: boolean := FALSE; -- TRUE: the cross-products of the odd inputs with each other (1, 3, 5...) have 22 + 22 bits and an overflow flag. In the split-sample mode they are the products of the low parts. Only with one clock for each bin.
 		WIDE_AUTOCORR: boolean := FALSE; -- TRUE: 36-bit unsigned autocorrelations. Only with one clock for each bin (NCHAN = NCHAN_PER_CLK).
 		BINS_PER_FRAME_LOG2: integer := 3 -- Aggregate 2**N readout bins per AXIS frame / UDP packet (TLAST every 2**N bins, or on the last bin). Must be >= 1. 3 => 8 bins/frame.
 		);
@@ -173,6 +174,28 @@ architecture impl of UCORR44 is
 	constant NCLK: integer := NDECIM * NCLK_PER_BIN; -- Number of clocks the correlator should take to compute the products
 	constant NCMAC : integer := P / NCLK;
 	constant NCOL_PER_CLK: integer := NCHAN / 2 / NCLK; -- Number of columns if the squarified prodict matrix (NCHAN+1 rows bu NCHAN/2 cols) to processed per clock
+
+	-- The CMACs that have the product of two different odd inputs. CMAC i * NCOL_PER_CLK + j has the inputs
+	-- (i, (i + j) mod NCHAN), or ((i + j) mod NCHAN, i - 1) if i + j >= NCHAN (see xy_gen), with one clock for each bin.
+	function get_wide_cross_cmacs return bool_array is
+		variable r: bool_array(0 to NCMAC - 1) := (others => FALSE);
+		variable a, b: integer;
+	begin
+		if WIDE_CROSS and NCLK = 1 then
+			for i in 0 to NCHAN loop
+				for j in 0 to NCOL_PER_CLK - 1 loop
+					if i + j < NCHAN then
+						a := i; b := i + j;
+					else
+						a := (i + j) mod NCHAN; b := i - 1;
+					end if;
+					r(i * NCOL_PER_CLK + j) := a mod 2 = 1 and b mod 2 = 1 and a /= b;
+				end loop;
+			end loop;
+		end if;
+		return r;
+	end function;
+	constant wide_cross_cmacs: bool_array(0 to NCMAC - 1) := get_wide_cross_cmacs;
 
 	signal xy_tdata: slv_array(0 to NCMAC - 1)(15 downto 0);
 	signal xy_swap: std_logic_vector(0 to NCMAC - 1);
@@ -298,6 +321,7 @@ begin
 			NPROD => NBINS / NDECIM * NCLK,
 			AUTOCORR_STRIDE => NCOL_PER_CLK,
 			WIDE_AUTOCORR => WIDE_AUTOCORR and NCLK = 1,
+			WIDE_CROSS => wide_cross_cmacs,
 			CORR_NUMBER => CORR_NUMBER,
 			NCORR => NCORR,
 			URAM_MAX => URAM_MAX,

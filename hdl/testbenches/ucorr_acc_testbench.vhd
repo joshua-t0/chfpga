@@ -1,8 +1,10 @@
 -- Self-checking testbench for the accumulators of the correlator (UCORR44_ARRAY, one correlator of
 -- 8 inputs, frames of the real length: 2048 words).
 --
--- Inputs 0 to 2 are constant at full scale (-7 - 7j, 7 - 7j, and -8 - 8j, which the 4 bits can
--- also hold). Inputs 3 to 7 are random. The testbench has the exact sum of the power of each input
+-- Inputs 0 to 3, 5 and 7 are constant at full scale (input 2 at -8 - 8j, which the 4 bits can also
+-- hold). Inputs 4 and 6 are random. The cross-products of the odd inputs with each other (the wide
+-- cross-products: 22 + 22 bits) are then +98, -98, +98j or -98j for each frame: the testbench checks
+-- their exact sums and their overflow flag. The testbench has the exact sum of the power of each input
 -- in each bin for each integration, and compares it with the autocorrelations in the result
 -- packets, for the first 64 bins (and the constant inputs in all the bins). With WIDE = 1 (36-bit unsigned autocorrelations) they must be equal, with no saturation
 -- flag, also when the sum is more than the 18 bits of the other products can hold (INTEG = 2100
@@ -38,7 +40,7 @@ end ucorr_acc_testbench;
 architecture behavior of ucorr_acc_testbench is
 	constant CLK_PERIOD: time := 2.5 ns;
 	constant WORDS: integer := 2048;
-	constant RECORD_BYTES: integer := 10 + 36 * 5;
+	constant RECORD_BYTES: integer := 10 + 36 * 5 + 7 * WIDE; -- with the wide cross-products: one more byte for each of the 6, and a byte of overflow flags
 	signal clk: std_logic := '0';
 	signal clk_on: boolean := FALSE;
 	signal rst: std_logic := '1';
@@ -63,6 +65,7 @@ begin
 			NBINS_PER_CORR => WORDS,
 			SOFT_NINTEG    => INTEG,
 			WIDE_AUTOCORR  => WIDE = 1,
+			WIDE_CROSS     => WIDE = 1,
 			READOUT_BINS   => (0 => 0),
 			INPUT_WIDTH    => 64
 		)
@@ -84,7 +87,7 @@ begin
 
 	stim_proc: process
 		variable lcg: integer := 1;
-		variable re, im, k: integer;
+		variable re, im, k, ch: integer;
 		variable frame, word: integer := 0;
 	begin
 		wait for 50 ns;
@@ -105,13 +108,17 @@ begin
 					end loop;
 				end loop;
 			end if;
-			corr_tdata(63 downto 56) <= X"99"; -- -7 - 7j
-			corr_tdata(55 downto 48) <= X"79"; -- 7 - 7j
-			corr_tdata(47 downto 40) <= X"88"; -- -8 - 8j
-			if CONSTANT_ONLY = 1 then
-				corr_tdata(47 downto 0) <= X"779977997799";
-			else
-				for ch in 3 to 7 loop
+			corr_tdata(63 downto 56) <= X"99"; -- input 0: -7 - 7j
+			corr_tdata(55 downto 48) <= X"79"; -- input 1: 7 - 7j
+			corr_tdata(47 downto 40) <= X"88"; -- input 2: -8 - 8j
+			corr_tdata(39 downto 32) <= X"99"; -- input 3: -7 - 7j
+			corr_tdata(31 downto 24) <= X"77"; -- input 4 (if constant): 7 + 7j
+			corr_tdata(23 downto 16) <= X"97"; -- input 5: -7 + 7j
+			corr_tdata(15 downto 8) <= X"77"; -- input 6 (if constant): 7 + 7j
+			corr_tdata(7 downto 0) <= X"79"; -- input 7: 7 - 7j
+			if CONSTANT_ONLY = 0 then
+				for ch_half in 2 to 3 loop -- inputs 4 and 6 are random
+					ch := 2 * ch_half;
 					lcg := (lcg * 75 + 74) mod 65537; -- a fast generator of numbers from 0 to 65536
 					re := (lcg / 16) mod 15 - 7;
 					im := (lcg / 512) mod 15 - 7;
@@ -145,6 +152,13 @@ begin
 		variable ts: unsigned(47 downto 0);
 		variable prod: unsigned(39 downto 0);
 		variable value: unsigned(35 downto 0);
+		type int6 is array (0 to 5) of integer;
+		constant WIDE_POS: int6 := (6, 14, 22, 27, 33, 35); -- inputs (1,3), (3,5), (5,7), (1,5), (1,7), (3,7)
+		constant WIDE_RE: int6 := (0, 0, -98, -98, 98, 0); -- x_a * conj(x_b) for each frame
+		constant WIDE_IM: int6 := (98, 98, 0, 0, 0, -98);
+		variable ext: std_logic_vector(7 downto 0);
+		variable x_re, x_im: integer;
+		variable im_same_sign: boolean := TRUE;
 		file dump: text;
 		variable dump_open: boolean := FALSE;
 		variable l: line;
@@ -168,10 +182,34 @@ begin
 							dump_open := TRUE;
 						end if;
 						write(l, integration); write(l, string'(" ")); write(l, bin); write(l, string'(" "));
-						for i in 10 to RECORD_BYTES - 1 loop
+						for i in 10 to 10 + 179 loop -- the 36 products
 							hwrite(l, rec(i));
 						end loop;
 						writeline(dump, l);
+					end if;
+					if WIDE = 1 then
+						-- The wide cross-products: products 6, 14, 22, 27, 33 and 35, with their MSBs in the bytes after the 36 products
+						for k in 0 to 5 loop
+							for b in 0 to 4 loop
+								prod(8 * b + 7 downto 8 * b) := unsigned(rec(10 + 5 * WIDE_POS(k) + b));
+							end loop;
+							ext := rec(10 + 180 + k);
+							assert prod(39 downto 36) = "0000" report "Flag bits set in a wide cross-product" severity FAILURE;
+							x_re := to_integer(signed(ext(7 downto 4))) * 262144 + to_integer(signed(prod(35 downto 18)));
+							x_im := to_integer(signed(ext(3 downto 0))) * 262144 + to_integer(signed(prod(17 downto 0)));
+							if 98 * INTEG > 7 * 262144 + 131071 then
+								assert rec(10 + 186)(k) = '1' report "No overflow flag on a wide cross-product that is past its limit" severity FAILURE;
+							else
+								assert rec(10 + 186)(k) = '0' report "Overflow flag on wide cross-product " & integer'image(WIDE_POS(k)) severity FAILURE;
+								assert x_re = WIDE_RE(k) * INTEG and abs x_im = abs WIDE_IM(k) * INTEG
+									report "Wide cross-product " & integer'image(WIDE_POS(k)) & ", bin " & integer'image(bin) & ": " & integer'image(x_re) & " " & integer'image(x_im) &
+									       ", expected " & integer'image(WIDE_RE(k) * INTEG) & " " & integer'image(WIDE_IM(k) * INTEG) severity FAILURE;
+								assert k = 0 or (x_im > 0) = ((WIDE_IM(k) > 0) = im_same_sign) or WIDE_IM(k) = 0 report "The signs of the imaginary parts do not agree" severity FAILURE;
+								if k = 0 then
+									im_same_sign := x_im > 0; -- product 6 expects +98j: tells the sign convention of the correlator
+								end if;
+							end if;
+						end loop;
 					end if;
 					if WIDE = 1 and (bin <= CHECK_BINS or CONSTANT_ONLY = 1) then
 						for ch in 0 to 7 loop -- the autocorrelation of input ch is product 4 * ch
@@ -179,10 +217,10 @@ begin
 								prod(8 * b + 7 downto 8 * b) := unsigned(rec(10 + 20 * ch + b)); -- the LSB is first
 							end loop;
 							value := prod(17 downto 0) & prod(35 downto 18);
-							if CONSTANT_ONLY = 1 or ch < 2 then
-								expected := 98 * INTEG;
-							elsif ch = 2 then
+							if ch = 2 then
 								expected := 128 * INTEG;
+							elsif CONSTANT_ONLY = 1 or (ch /= 4 and ch /= 6) then
+								expected := 98 * INTEG;
 							else
 								expected := sums(integration mod 2, bin, ch);
 							end if;

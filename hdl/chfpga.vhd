@@ -2838,6 +2838,7 @@ begin
 						GAIN_SWITCH_SUPPORT   => GAIN_SWITCH_SUPPORT,
 						SPLIT_SAMPLE_SUPPORT  => LOCAL_CORR,
 						WIDE_AUTOCORR         => LOCAL_CORR,
+						WIDE_CROSS            => LOCAL_CORR,
 						READOUT_BINS          => CORR_READOUT_BINS
 					)
 					port map (

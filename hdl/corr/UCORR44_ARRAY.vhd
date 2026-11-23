@@ -43,6 +43,7 @@ entity UCORR44_ARRAY is
 		N_BITS_PER_BIN: integer := 4+4; -- The correlator only supports 4+4 bit format.
 		SOFT_NINTEG: integer := 8192; -- default integration period (number of frames)
 		SOFT_AUTOCORR_ONLY: boolean := FALSE;
+		WIDE_CROSS: boolean := FALSE; -- TRUE: the cross-products of the odd inputs with each other have 22 + 22 bits and an overflow flag, and the result records are longer (only with one clock for each bin)
 		WIDE_AUTOCORR: boolean := FALSE; -- TRUE: the autocorrelations are 36-bit unsigned numbers (only with one clock for each bin)
 		SPLIT_SAMPLE_SUPPORT: boolean := FALSE; -- TRUE: the split-sample stage (sample_split) is in front of the correlator (reported in the status bytes; its control and status are here)
 		GAIN_SWITCH_SUPPORT: boolean := FALSE; -- TRUE if integ_last_frame is connected to the scalers (reported in the status bytes only)
@@ -183,6 +184,7 @@ begin
     -- |         |     |  4   | GAIN_SWITCH_SUPPORT     | '1': the scalers can switch their gain bank at the end of an integration |
     -- |         |     |  5   | SPLIT_SAMPLE_SUPPORT    | '1': the build has the split-sample mode |
     -- |         |     |  6   | WIDE_AUTOCORR           | '1': the autocorrelations are 36-bit unsigned numbers |
+    -- |         |     |  7   | WIDE_CROSS              | '1': the cross-products of the odd inputs have 22 + 22 bits, and a result record has one more byte for each of them |
     -- |         |12-..| 15:0 | split_sat_count(i)      | For each of the 4 wide inputs (2 bytes each): words with a saturated value in the split-sample mode. Cleared by overrun_reset. |
     -- |         | 6-11| 47:0 | integ_start             | Timestamp of the first frame of the integration in progress (the timestamp of its result packets) |
     -- ------------------------------------------------------------------------------
@@ -253,7 +255,7 @@ begin
     status_bytes(5)(4) <= to_std_logic(GAIN_SWITCH_SUPPORT);
     status_bytes(5)(5) <= to_std_logic(SPLIT_SAMPLE_SUPPORT);
     status_bytes(5)(6) <= to_std_logic(WIDE_AUTOCORR and NCLK_PER_BIN = 1 and BIN_DECIMATION_FACTOR = 1);
-    status_bytes(5)(7) <= '0';
+    status_bytes(5)(7) <= to_std_logic(WIDE_CROSS and NCLK_PER_BIN = 1 and BIN_DECIMATION_FACTOR = 1);
 
     sat_gen: for i in 0 to 3 generate
         status_bytes(12 + 2 * i to 13 + 2 * i) <= to_slv8_array(unsigned(split_sat_count(i)));
@@ -374,7 +376,8 @@ begin
 				NDECIM => BIN_DECIMATION_FACTOR,
 				URAM_MAX              => URAM_MAX,
 				READOUT_BIN           => READOUT_BINS(i),
-				WIDE_AUTOCORR         => WIDE_AUTOCORR
+				WIDE_AUTOCORR         => WIDE_AUTOCORR,
+				WIDE_CROSS            => WIDE_CROSS
 				)
 			port map(
 				s_axis_tvalid => corr_in_tvalid(i),

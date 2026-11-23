@@ -18,7 +18,7 @@ for g in "$@"; do generics+=(-generic_top "$g"); done
 rm -rf xsim.dir/ucorr_acc_tb  # never run an old snapshot when the compilation fails
 tb=$hdl/testbenches/ucorr_acc_testbench.vhd
 if [ -n "$CORR_SRC" ]; then  # a design before the change does not have the generic for the wide autocorrelations
-	grep -v "WIDE_AUTOCORR  => WIDE = 1," "$tb" > ucorr_acc_testbench_old.vhd
+	grep -v -e "WIDE_AUTOCORR  => WIDE = 1," -e "WIDE_CROSS     => WIDE = 1," "$tb" > ucorr_acc_testbench_old.vhd
 	tb=ucorr_acc_testbench_old.vhd
 fi
 xvlog -nolog "$XILINX_VIVADO/data/verilog/src/glbl.v" > /dev/null

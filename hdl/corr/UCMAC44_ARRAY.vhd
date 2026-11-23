@@ -51,7 +51,8 @@ entity UCMAC44_ARRAY is
 	generic (
 		NCMAC           : integer := 8 * 9 / 2; -- Number of CMACs. There will be 2*NCMAC DSP48s, and min(URAM_MAX, NCMAC/2) UltraRAMs
 		NPROD           : integer := 2048; -- Number of products to be stored by each CMAC. Sets memory depth. Must be 2048 if URAM_MAX > 0
-		WIDE_AUTOCORR   : boolean := FALSE; -- TRUE: the autocorrelations are accumulated as 36-bit unsigned numbers. Only if a CMAC always has the same pair of inputs (one clock for each bin).
+		WIDE_AUTOCORR   : boolean := FALSE; -- TRUE: the autocorrelations are accumulated as 24-bit unsigned numbers. Only if a CMAC always has the same pair of inputs (one clock for each bin).
+		WIDE_CROSS      : bool_array(0 to NCMAC - 1) := (others => FALSE); -- TRUE for a CMAC: its product is accumulated in 22 + 22 bits, with an overflow flag. The 4 more bits of each part are in bits of the RAM word of an autocorrelation that this one does not use (needs WIDE_AUTOCORR). A result record has one more byte for each of these CMACs, and one byte of overflow flags.
 		AUTOCORR_STRIDE : integer := 1; -- Spacing (in CMACs) between autocorrelation products. We assume there will be NCMAC/AUTOCORR_STRIDE-1 autocorrelations
 		CORR_NUMBER     : integer; -- correlator number to be used in packet headers
 		NCORR           : integer := 1; -- Total number of correlators. Used only in computing the STREAM_ID (id = bin*NCORR+CORR_NUMBER)
@@ -183,16 +184,23 @@ architecture impl of UCMAC44_ARRAY is
 	-- 35:18, where the real part is, and its 18 MSBs are in bits 17:0, where the imaginary part
 	-- (always zero) is. It has no saturation and its flags are zero. A sum below 2^17 has the
 	-- same bytes as before.
-	function pack_product(ram_word: std_logic_vector(35 downto 0); wide: boolean := FALSE) return slv8_array is
+	--
+	-- A wide cross-product (see WIDE_CROSS) has the 18 LSBs of its real and imaginary parts as the other products.
+	-- Its two flags are zero. Its 4 + 4 MSBs are in one more byte at the end of the record, and its overflow flag in the last byte.
+	function pack_product(ram_word: std_logic_vector(35 downto 0); wide: boolean := FALSE; autocorr: boolean := FALSE) return slv8_array is
 		variable prod: unsigned(8 * BYTES_PER_PRODUCT - 1 downto 0);
 	begin
 		prod := resize(unsigned(ram_word), prod'length);
+		if autocorr then -- a wide autocorrelation has 6 MSBs; the other bits of that field are not its bits
+			prod(17 downto 6) := (others => '0');
+		end if;
 		if not wide and (ram_word(17 downto 0) = SAT_POS or ram_word(17 downto 0) = SAT_NEG) then
 			prod(36) := '1';
 		end if;
 		if not wide and (ram_word(35 downto 18) = SAT_POS or ram_word(35 downto 18) = SAT_NEG) then
 			prod(37) := '1';
 		end if;
+
 		return to_slv8_array(reverse_bytes(std_logic_vector(prod)));
 	end function;
 
@@ -201,6 +209,77 @@ architecture impl of UCMAC44_ARRAY is
 	begin
 		return WIDE_AUTOCORR and i mod AUTOCORR_STRIDE = 0 and i / AUTOCORR_STRIDE < NCMAC / AUTOCORR_STRIDE - 1;
 	end function;
+
+	-- Number of CMACs with a wide cross-product before CMAC i (i = NCMAC: all of them)
+	function wide_cross_count(i: integer) return integer is
+		variable n: integer := 0;
+	begin
+		for k in 0 to i - 1 loop
+			if WIDE_CROSS(k) then
+				n := n + 1;
+			end if;
+		end loop;
+		return n;
+	end function;
+	constant NWIDE_CROSS: integer := wide_cross_count(NCMAC);
+	-- Position of the byte of each wide cross-product after the products of a result record
+	function get_wide_cross_index return integer_array is
+		variable r: integer_array(0 to NCMAC - 1);
+	begin
+		for k in 0 to NCMAC - 1 loop
+			r(k) := wide_cross_count(k);
+		end loop;
+		return r;
+	end function;
+	constant WIDE_CROSS_INDEX: integer_array(0 to NCMAC - 1) := get_wide_cross_index;
+	constant NEXT_BYTES: integer := sel(NWIDE_CROSS > 0, NWIDE_CROSS + 1, 0); -- bytes at the end of a result record: one for each wide cross-product, and their overflow flags
+
+	-- A wide autocorrelation is a 24-bit number: the 18 LSBs where the real part is (bits 35:18 of the RAM word) and
+	-- the 6 MSBs in bits 5:0. Bits 17:9 of its RAM word hold the counters of a wide cross-product, the "guest":
+	-- overflow flag (bit 17), then the signed counters of the times that the 18 bits of its real part (bits 16:13) and
+	-- of its imaginary part (bits 12:9) passed their limits, up or down. The value of a part of the cross-product is
+	-- counter * 2^18 + its 18 bits (signed). So the wide cross-products need no more memory.
+	--
+	-- The autocorrelation that has the counters of each wide cross-product: the first CMAC of its group if that is a
+	-- wide autocorrelation with no guest, or the last wide autocorrelation with no guest. They are near in the array.
+	function get_wide_cross_host return integer_array is
+		variable host: integer_array(0 to NCMAC - 1) := (others => -1);
+		variable used: bool_array(0 to NCMAC - 1) := (others => FALSE);
+		variable a: integer;
+	begin
+		for p in 0 to NCMAC - 1 loop
+			if WIDE_CROSS(p) then
+				a := (p / AUTOCORR_STRIDE) * AUTOCORR_STRIDE;
+				if not is_wide(a) or used(a) then
+					a := -1;
+					for k in NCMAC - 1 downto 0 loop
+						if a < 0 and is_wide(k) and not used(k) then
+							a := k;
+						end if;
+					end loop;
+				end if;
+				assert a >= 0 report "WIDE_CROSS: there is no wide autocorrelation to hold the counters of CMAC " & integer'image(p) severity FAILURE;
+				host(p) := a;
+				used(a) := TRUE;
+			end if;
+		end loop;
+		return host;
+	end function;
+	constant WIDE_CROSS_HOST: integer_array(0 to NCMAC - 1) := get_wide_cross_host; -- for a wide cross-product: its autocorrelation
+	function get_wide_cross_guest return integer_array is
+		variable guest: integer_array(0 to NCMAC - 1) := (others => -1);
+	begin
+		for p in 0 to NCMAC - 1 loop
+			if WIDE_CROSS_HOST(p) >= 0 then
+				guest(WIDE_CROSS_HOST(p)) := p;
+			end if;
+		end loop;
+		return guest;
+	end function;
+	constant WIDE_CROSS_GUEST: integer_array(0 to NCMAC - 1) := get_wide_cross_guest; -- for an autocorrelation: its wide cross-product, or -1
+	-- For each wide cross-product, in the clock in which its sum is written: the 18 bits of the real part pass their
+	-- upper limit (bit 3) or their lower limit (bit 2), and the same for the imaginary part (bits 1 and 0)
+	signal wide_overflow: slv_array(0 to NCMAC - 1)(3 downto 0) := (others => (others => '0'));
 
 	attribute keep_hierarchy of impl: architecture is "YES";
 	-- attribute RLOC_ORIGIN of Behavioral: architecture is ORIGIN;
@@ -232,7 +311,7 @@ begin
 		signal acc_bank1, acc_bank5: std_logic; -- Accumulator bank
 		signal ro_word_ctr_max: unsigned(10 downto 0); -- Number of words to readout
 
-		signal bytes: slv8_array(0 to FRAME_HEADER_BYTE_LENGTH + NCMAC * BYTES_PER_PRODUCT - 1); -- readout buffer: header + products
+		signal bytes: slv8_array(0 to FRAME_HEADER_BYTE_LENGTH + NCMAC * BYTES_PER_PRODUCT + NEXT_BYTES - 1); -- readout buffer: header, products, then the MSBs and the overflow flags of the wide cross-products
 		signal byte_ctr: integer range 0 to bytes'LENGTH;
 		signal ro_active: std_logic := '0'; -- bank readout busy
 		signal ro_shift: std_logic := '0'; -- data available for shift out
@@ -378,14 +457,19 @@ begin
 						-- Capture the RAM outputs, slice them in 5-byte products,  and store them in the shift register
 						-- This affects a large number of registers, implying large fanout controls
 						for i in 0 to NCMAC - 1 loop
-							prod_bytes := pack_product(ram_dout(i), is_wide(i));
+							prod_bytes := pack_product(ram_dout(i), is_wide(i) or WIDE_CROSS(i), is_wide(i));
+							if WIDE_CROSS(i) then -- its counters and its flag are in the RAM word of its autocorrelation
+								-- (minimum and maximum: the indexes must be in range also for a CMAC that is not a wide cross-product)
+								bytes(minimum(FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * NCMAC + WIDE_CROSS_INDEX(i), bytes'HIGH)) <= ram_dout(maximum(WIDE_CROSS_HOST(i), 0))(16 downto 9);
+								bytes(minimum(FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * NCMAC + NWIDE_CROSS, bytes'HIGH))(minimum(WIDE_CROSS_INDEX(i), 7)) <= ram_dout(maximum(WIDE_CROSS_HOST(i), 0))(17);
+							end if;
 							bytes(FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * i to FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * (i + 1) - 1) <= prod_bytes;
 						end loop;
 
 						-- Override the first product bytes after the frame header with the autocorrelation products if autocorr='1'
 						if autocorr_only then
 							for i in 0 to NCMAC / AUTOCORR_STRIDE - 2 loop -- assume that last one is not an autocorrelation (first N elements in N+1 high column are autocorrs)
-								prod_bytes := pack_product(ram_dout(i * AUTOCORR_STRIDE), is_wide(i * AUTOCORR_STRIDE));
+								prod_bytes := pack_product(ram_dout(i * AUTOCORR_STRIDE), is_wide(i * AUTOCORR_STRIDE), is_wide(i * AUTOCORR_STRIDE));
 								bytes(FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * i to FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * (i + 1) - 1) <= prod_bytes;
 							end loop;
 
@@ -397,7 +481,7 @@ begin
 							-- we have NCMAC = (NCHAN+1)*AUTOCORR_STRIDE CMACs, we can deduct if with  NCHAN = NCMAC/AUTOCORR_STRIDE-1
 							byte_ctr <= FRAME_HEADER_BYTE_LENGTH + (NCMAC / AUTOCORR_STRIDE - 1) * BYTES_PER_PRODUCT;
 						else
-							byte_ctr <= FRAME_HEADER_BYTE_LENGTH + NCMAC * BYTES_PER_PRODUCT;
+							byte_ctr <= FRAME_HEADER_BYTE_LENGTH + NCMAC * BYTES_PER_PRODUCT + NEXT_BYTES;
 						end if;
 						ro_shift <= '1'; -- there is data to shift out
 						ro_last <= '0'; -- is this the last readout? overriden below.
@@ -553,6 +637,12 @@ begin
 		signal dsp2_ab_im_sign4: std_logic;
 		signal first3, first4: std_logic; -- wide autocorrelation: no sum from the RAM (first frame of an integration)
 		signal high3, high4, high4_plus1: std_logic_vector(17 downto 0);
+		signal re_up, re_dn, im_up, im_dn: std_logic; -- wide cross-product: the 18 bits of a part pass a limit
+		-- wide autocorrelation: the counters of its guest, with one more and one less, and its overflow flag
+		signal ext3, ext_new: std_logic_vector(8 downto 0) := (others => '0');
+		signal xre4, xre4_up, xre4_dn, xim4, xim4_up, xim4_dn: signed(3 downto 0);
+		signal xflag4: std_logic;
+		signal guest_overflow: std_logic_vector(3 downto 0);
 
 		signal a: signed(3 downto 0); --
 		signal b: signed(3 downto 0); --
@@ -859,7 +949,9 @@ begin
 				rstp          => '0' -- 1-bit input: Reset input for PREG
 			);
 
-		dsp_proc: process(all) begin
+		dsp_proc: process(all)
+			variable ext3_v: std_logic_vector(8 downto 0);
+		begin
 			if rising_edge(clk) then
 				-------------
 				-- CLOCK 1 - sign-corrected data is clocked into the DSP1 A & B registers, and we register sign and zero flags
@@ -921,7 +1013,21 @@ begin
 				if is_wide(i) then
 					first3 <= first_frame2 or no_accum;
 					first4 <= first3;
-					high3 <= ram_dout(i)(17 downto 0);
+					high3 <= "000000000000" & ram_dout(i)(5 downto 0);
+					-- The counters of the guest (a wide cross-product), with one more and one less
+					ext3 <= ram_dout(i)(17 downto 9);
+					if first3 then
+						ext3_v := (others => '0');
+					else
+						ext3_v := ext3;
+					end if;
+					xflag4 <= ext3_v(8);
+					xre4 <= signed(ext3_v(7 downto 4));
+					xre4_up <= signed(ext3_v(7 downto 4)) + 1;
+					xre4_dn <= signed(ext3_v(7 downto 4)) - 1;
+					xim4 <= signed(ext3_v(3 downto 0));
+					xim4_up <= signed(ext3_v(3 downto 0)) + 1;
+					xim4_dn <= signed(ext3_v(3 downto 0)) - 1;
 					if first3 then
 						high4 <= (others => '0');
 						high4_plus1 <= (others => '0');
@@ -939,14 +1045,38 @@ begin
 		-- Saturate accumulated sum before storing it into the RAM
 		-- This implies combinatorial logic between the DSP P output and the FIFO/BRAM inputs
 		-- Real part:
-		ram_din(i)(35 downto 18) <= dsp2_p(26 downto 9) when is_wide(i) else -- wide autocorrelation: no saturation
+		-- Wide cross-product: the 18 bits of each part go past their limits with no saturation, and a counter in the RAM
+		-- word of an autocorrelation (see WIDE_CROSS_HOST) keeps the number of times, up or down. The sum of the real part has one more bit in the DSP (bit 27). For the imaginary
+		-- part, the signs of the two numbers and of their sum tell.
+		re_up <= dsp2_p(26) and not dsp2_p(27);
+		re_dn <= dsp2_p(27) and not dsp2_p(26);
+		im_up <= not dsp2_c_im_sign4 and not dsp2_ab_im_sign4 and dsp2_p(47);
+		im_dn <= dsp2_c_im_sign4 and dsp2_ab_im_sign4 and not dsp2_p(47);
+		wide_overflow(i) <= (re_up & re_dn & im_up & im_dn) when WIDE_CROSS(i) else "0000";
+
+		-- Wide autocorrelation: the new counters of its guest
+		guest_overflow <= wide_overflow(maximum(WIDE_CROSS_GUEST(i), 0)) when WIDE_CROSS_GUEST(i) >= 0 else "0000";
+		ext_new(7 downto 4) <= std_logic_vector(xre4_up) when guest_overflow(3) = '1' else
+		                       std_logic_vector(xre4_dn) when guest_overflow(2) = '1' else
+		                       std_logic_vector(xre4);
+		ext_new(3 downto 0) <= std_logic_vector(xim4_up) when guest_overflow(1) = '1' else
+		                       std_logic_vector(xim4_dn) when guest_overflow(0) = '1' else
+		                       std_logic_vector(xim4);
+		-- Overflow: a counter goes past its limits (the cross-product is then not valid)
+		ext_new(8) <= xflag4 or (guest_overflow(3) and to_std_logic(xre4 = 7)) or (guest_overflow(2) and to_std_logic(xre4 = -8))
+		                     or (guest_overflow(1) and to_std_logic(xim4 = 7)) or (guest_overflow(0) and to_std_logic(xim4 = -8));
+
+		ram_din(i)(35 downto 18) <= dsp2_p(26 downto 9) when is_wide(i) or WIDE_CROSS(i) else -- wide products: no saturation
 			SAT_POS when (re_sat4 = '1' and dsp2_c_re_sign4 = '0') or (dsp2_p(26) = '1' and dsp2_p(27) = '0') else
 			SAT_NEG when (re_sat4 = '1' and dsp2_c_re_sign4 = '1') or (dsp2_p(26) = '0' and dsp2_p(27) = '1') else
 			dsp2_p(26 downto 9);
 
 		-- Imaginary part:
-		ram_din(i)(17 downto 0) <= high4 when is_wide(i) and (first4 = '1' or dsp2_c_re_sign4 = '0' or dsp2_p(26) = '1') else
-			high4_plus1 when is_wide(i) else -- the 18 LSBs went from 1x... to 0x...: they passed 2^18
+		ram_din(i)(17 downto 0) <= dsp2_p(47 downto 30) when WIDE_CROSS(i) else
+			ext_new & "000" & high4(5 downto 0) when is_wide(i) and WIDE_CROSS_GUEST(i) >= 0 and (first4 = '1' or dsp2_c_re_sign4 = '0' or dsp2_p(26) = '1') else
+			ext_new & "000" & high4_plus1(5 downto 0) when is_wide(i) and WIDE_CROSS_GUEST(i) >= 0 else
+			"000000000000" & high4(5 downto 0) when is_wide(i) and (first4 = '1' or dsp2_c_re_sign4 = '0' or dsp2_p(26) = '1') else
+			"000000000000" & high4_plus1(5 downto 0) when is_wide(i) else -- the 18 LSBs went from 1x... to 0x...: they passed 2^18
 			SAT_POS when (im_sat4 = '1' and dsp2_c_im_sign4 = '0') or (dsp2_c_im_sign4 = '0' and dsp2_ab_im_sign4 = '0' and dsp2_p(47) = '1') else
 			SAT_NEG when (im_sat4 = '1' and dsp2_c_im_sign4 = '1') or (dsp2_c_im_sign4 = '1' and dsp2_ab_im_sign4 = '1' and dsp2_p(47) = '0') else
 			dsp2_p(47 downto 30);
@@ -1033,7 +1163,6 @@ begin
 			);
 
 	end generate ram_gen;
-
 
 end architecture impl;
 
