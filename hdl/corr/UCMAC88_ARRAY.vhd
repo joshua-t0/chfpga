@@ -76,7 +76,7 @@ entity UCMAC88_ARRAY is
 		NCORR           : integer := 1; -- Total number of correlators (not used; as UCMAC44_ARRAY)
 		URAM_MAX        : integer := 20; -- Maximum number of RAM words (72 bits) in UltraRAM. The others use block RAMs.
 		READOUT_BIN     : integer := 0; -- Bin number sacrificed for the readout cycle
-		BINS_PER_FRAME_LOG2 : integer := 3 -- Aggregate 2**N readout bins per AXIS frame (TLAST every 2**N bins, or on the last bin). Must be >= 1. 3 => 8 bins/frame.
+		BINS_PER_FRAME_LOG2 : integer := 3 -- Aggregate 2**N readout bins per AXIS frame (TLAST every 2**N bins, or on the last bin). 3 => 8 bins/frame. 0: TLAST on each record.
 	);
 	port (
 		-- Data be correlated & integrated. AXI4-Streaming, non-blocking.
@@ -225,6 +225,7 @@ begin
 		signal ro_active: std_logic := '0'; -- bank readout busy
 		signal ro_shift: std_logic := '0'; -- data available for shift out
 		signal ro_last: std_logic := '0'; -- is the last shift out of the integ period
+		constant GROUP_MASK: unsigned(10 downto 0) := to_unsigned(2 ** BINS_PER_FRAME_LOG2 - 1, 11); -- 0: each record closes a frame
 		signal ro_group_end: std_logic := '0'; -- close the AXIS frame (assert TLAST) on this bin: every 2**BINS_PER_FRAME_LOG2 bins, or the last bin
 		signal ro_bin_set: std_logic_vector(3 downto 0); -- bin set to be placed in the headers
 		signal dc_busy: std_logic := '0'; -- daisy chain readout busy
@@ -398,7 +399,7 @@ begin
 						-- index are all ones, bin mod 2**N = 2**N-1). The last bin below
 						-- forces it too so the frame always closes. Registered here so it
 						-- stays stable while this bin's packet shifts out (like ro_last).
-						if ro_word_ctr1(BINS_PER_FRAME_LOG2 - 1 downto 0) = (BINS_PER_FRAME_LOG2 - 1 downto 0 => '1') then
+						if (ro_word_ctr1 and GROUP_MASK) = GROUP_MASK then
 							ro_group_end <= '1';
 						else
 							ro_group_end <= '0';

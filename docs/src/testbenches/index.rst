@@ -214,7 +214,7 @@ ucorr88
 
 **File:** ``hdl/testbenches/ucorr88_testbench.vhd``
 
-**Run with:** ``xilinx_projects/testbenches/ucorr88_testbench/run.sh [SAMPLE_BITS=8 INTEG=1300]`` (3 minutes)
+**Run with:** ``xilinx_projects/testbenches/ucorr88_testbench/run.sh [SAMPLE_BITS=8 INTEG=1300]`` (3 minutes), or ``run.sh NCORR=4 PARALLEL=TRUE WORDS=16 INTEG=1050 INTEGRATIONS=2`` for four correlators with the parallel readout (the records come from the correlators in turn, 8 records in a frame, and a record takes no more than its bytes and 16 clocks; without ``PARALLEL=TRUE``: four correlators in the daisy chain)
 
 Self-checking test of ``UCORR44_ARRAY`` with (8+8)-bit inputs (one correlator of 8 inputs, short frames). All the inputs are random. A model computes the 36 products of each bin, and all the result records of three integrations are compared with it. With ``SAMPLE_BITS=8`` the same test runs on the (4+4)-bit correlator: this shows that the two correlators have the same order and the same signs of the products. The test ends with ``UCORR88 TEST PASSED``.
 

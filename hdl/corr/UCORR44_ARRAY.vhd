@@ -50,6 +50,7 @@ entity UCORR44_ARRAY is
 		WIDE_AUTOCORR: boolean := FALSE; -- TRUE: the autocorrelations are 36-bit unsigned numbers (only with one clock for each bin)
 		SPLIT_SAMPLE_SUPPORT: boolean := FALSE; -- TRUE: the split-sample stage (sample_split) is in front of the correlator (reported in the status bytes; its control and status are here)
 		GAIN_SWITCH_SUPPORT: boolean := FALSE; -- TRUE if integ_last_frame is connected to the scalers (reported in the status bytes only)
+		PARALLEL_READOUT: boolean := FALSE; -- TRUE: the correlators are read at the same time and their records are sent in turn (only with N_BITS_PER_BIN = 16). FALSE: one correlator after the other.
 		READOUT_BINS: integer_array(0 to NCORR-1) := (others => 0); -- array of integers indicating which bin is sacrificed to the readout cycle for each correlator
         INPUT_WIDTH: integer := 256 -- Number of bits of the input bus. Is divided in NCORR sections (CORR 0 in MSB),
 	);
@@ -144,10 +145,12 @@ architecture Behavioral of UCORR44_ARRAY is
     signal corr_in_tvalid: std_logic_vector(0 to NCORR-1);
 	attribute shreg_extract of corr_in_tdata, corr_in_tlast, corr_in_tvalid: signal is "no";
 
-    signal z_tdata: slv_array(0 to NCORR)(7 downto 0);
-    signal z_tlast: std_logic_vector(0 to NCORR);
-    signal z_tvalid: std_logic_vector(0 to NCORR);
-    signal z_send: std_logic_vector(0 to NCORR);
+    -- Readout stream of each correlator: zo is its output, zi is the input of its chain port
+    signal zo_tdata, zi_tdata: slv_array(0 to NCORR-1)(7 downto 0);
+    signal zo_tvalid, zo_tlast, zo_send, zi_tvalid, zi_tlast, zi_send: std_logic_vector(0 to NCORR-1) := (others => '0');
+    signal f_tdata: std_logic_vector(7 downto 0); -- input of the output FIFO
+    signal f_tvalid, f_tlast: std_logic;
+    signal almost_full: std_logic;
 
     signal overrun:std_logic_vector(0 to NCORR-1);
     signal in_frame_ctr: unsigned(7 downto 0);
@@ -239,6 +242,7 @@ begin
     status_bytes(0)(1) <= rst;
     status_bytes(0)(2) <= s_axis_data_tvalid;
     status_bytes(0)(3) <= s_axis_data_tlast;
+    status_bytes(0)(4) <= to_std_logic(PARALLEL_READOUT);
 
     -- Status Byte 1
     status_bytes(1) <= to_slv(NCHAN, 8);
@@ -334,12 +338,10 @@ begin
 	fifo_gen: block
 		signal fifo_dout: std_logic_vector(8 downto 0);
 		signal fifo_valid: std_logic;
-		signal almost_full: std_logic;
 	begin
 		m_axis_data_tdata  <= fifo_dout(7 downto 0);
 		m_axis_data_tlast  <= fifo_dout(8);
 		m_axis_data_tvalid <= fifo_valid;
-		z_send(0) <= not almost_full;
 
 		data_fifo0: entity work.generic_fifo
 			generic map (
@@ -348,12 +350,13 @@ begin
 				IS_ASYNC         => TRUE,
 				DATA_WIDTH       => 9,       -- 8 data + 1 tlast
 				IS_FWFT          => TRUE,
-				PROG_FULL_THRESH_OFFSET => 32 -- almost_full asserts 32 words before full
+				-- Chain: the data stops a few clocks after almost_full. Parallel readout: a record that has its grant is sent to its end.
+				PROG_FULL_THRESH_OFFSET => sel(PARALLEL_READOUT, 400, 32)
 			)
 			port map (
 				wr_clk      => clk,
-				wr_en       => z_tvalid(0),
-				din         => z_tlast(0) & z_tdata(0),
+				wr_en       => f_tvalid,
+				din         => f_tlast & f_tdata,
 				prog_full   => almost_full,
 
 				rd_clk      => out_clk,
@@ -366,10 +369,106 @@ begin
 
 		end block fifo_gen;
 
-	-- Connect null stream to the cascade input of CORR[NCORR]
-	z_tvalid(NCORR) <= '0'; -- no data coming into the last corr
-	z_tdata(NCORR) <= (others => '0'); -- don't leave floating to prevent warnings
-	z_tlast(NCORR) <= '0'; -- don't leave floating to prevent warnings
+	-- Readout chain: correlator 0 sends its records, then it passes the data of correlator 1, and so on.
+	-- A readout takes NCORR * NBINS_PER_CORR frames or more.
+	chain_gen: if not PARALLEL_READOUT generate
+		f_tdata <= zo_tdata(0);
+		f_tvalid <= zo_tvalid(0);
+		f_tlast <= zo_tlast(0);
+		zo_send(0) <= not almost_full;
+		link_gen: for i in 0 to NCORR - 1 generate
+			last_gen: if i = NCORR - 1 generate
+				zi_tvalid(i) <= '0'; -- no data comes into the last correlator
+				zi_tdata(i) <= (others => '0');
+				zi_tlast(i) <= '0';
+			else generate
+				zi_tvalid(i) <= zo_tvalid(i + 1);
+				zi_tdata(i) <= zo_tdata(i + 1);
+				zi_tlast(i) <= zo_tlast(i + 1);
+				zo_send(i + 1) <= zi_send(i);
+			end generate;
+		end generate;
+	end generate;
+
+	-- Parallel readout: all the correlators read one bin for each frame, and this block takes one record from each
+	-- correlator in turn. A readout then takes NBINS_PER_CORR frames, or the time that the output needs.
+	-- The correlators are far from each other, so the grant and the data have pipeline registers. A grant is a pulse
+	-- for one record. Near each correlator, a latch makes the "send" level from it and clears it on the last byte of
+	-- the record (each record has TLAST: BINS_PER_FRAME_LOG2 = 0). This block makes the frames of 8 records.
+	-- shortcut: the frames are closed by a record count, so the correlators must have a number of records for each
+	-- integration that makes a multiple of 8 in total (true with 2048 bins). Upgrade if other bin counts are used.
+	parallel_gen: if PARALLEL_READOUT generate
+		constant STAGES: integer := 2; -- pipeline registers in each direction
+		signal grant: std_logic_vector(0 to NCORR - 1) := (others => '0');
+		type slv9_pipe is array (0 to STAGES - 1) of std_logic_vector(9 downto 0); -- tvalid, tlast, tdata
+		type slv9_pipes is array (0 to NCORR - 1) of slv9_pipe;
+		signal data_pipe: slv9_pipes := (others => (others => (others => '0')));
+		type grant_pipes is array (0 to NCORR - 1) of std_logic_vector(0 to STAGES - 1);
+		signal grant_pipe: grant_pipes := (others => (others => '0'));
+		signal cur: integer range 0 to NCORR - 1 := 0; -- correlator that sends
+		signal busy: std_logic := '0'; -- a record of correlator cur has its grant and is not complete
+		signal rec_ctr: unsigned(2 downto 0) := (others => '0'); -- records in the output frame
+		attribute shreg_extract of data_pipe: signal is "no";
+		attribute shreg_extract of grant_pipe: signal is "no";
+	begin
+		assert N_BITS_PER_BIN = 16 report "PARALLEL_READOUT needs N_BITS_PER_BIN = 16" severity FAILURE;
+		assert (NCORR * NBINS_PER_CORR) mod 8 = 0 report "PARALLEL_READOUT needs a multiple of 8 records for each integration" severity FAILURE;
+
+		local_gen: for i in 0 to NCORR - 1 generate
+			zi_tvalid(i) <= '0';
+			zi_tdata(i) <= (others => '0');
+			zi_tlast(i) <= '0';
+			process(clk)
+			begin
+				if rising_edge(clk) then
+					grant_pipe(i) <= grant(i) & grant_pipe(i)(0 to STAGES - 2);
+					data_pipe(i)(0) <= zo_tvalid(i) & zo_tlast(i) & zo_tdata(i);
+					for k in 1 to STAGES - 1 loop
+						data_pipe(i)(k) <= data_pipe(i)(k - 1);
+					end loop;
+					if zo_tvalid(i) = '1' and zo_tlast(i) = '1' then -- last byte of the record
+						zo_send(i) <= '0';
+					elsif grant_pipe(i)(STAGES - 1) = '1' then
+						zo_send(i) <= '1';
+					end if;
+					if rst_reg(i) = '1' then
+						zo_send(i) <= '0';
+					end if;
+				end if;
+			end process;
+		end generate;
+
+		process(clk)
+			variable d: std_logic_vector(9 downto 0);
+		begin
+			if rising_edge(clk) then
+				grant <= (others => '0');
+				f_tvalid <= '0';
+				f_tlast <= '0';
+				if busy = '0' then
+					if almost_full = '0' then -- there is space for one record
+						grant(cur) <= '1';
+						busy <= '1';
+					end if;
+				else
+					d := data_pipe(cur)(STAGES - 1);
+					f_tvalid <= d(9);
+					f_tdata <= d(7 downto 0);
+					if d(9) = '1' and d(8) = '1' then
+						f_tlast <= and(rec_ctr);
+						rec_ctr <= rec_ctr + 1;
+						cur <= (cur + 1) mod NCORR;
+						busy <= '0';
+					end if;
+				end if;
+				if rst = '1' then
+					cur <= 0;
+					busy <= '0';
+					rec_ctr <= (others => '0');
+				end if;
+			end if;
+		end process;
+	end generate;
 
 	corr_gen: for i in 0 to NCORR-1 generate
 		-- set the position of the core44 core
@@ -384,6 +483,7 @@ begin
 				NCHAN_PER_CLK         => NCHAN_PER_CLK,
 				NDECIM => BIN_DECIMATION_FACTOR,
 				URAM_MAX              => URAM_MAX,
+				BINS_PER_FRAME_LOG2   => sel(PARALLEL_READOUT, 0, 3),
 				SAMPLE_BITS           => N_BITS_PER_BIN,
 				CROSS_BITS            => CROSS_BITS,
 				AUTO_BITS             => AUTO_BITS,
@@ -408,15 +508,15 @@ begin
 				integ_start     => integ_start(i),
 				corr_id         => corr_id,
 
-				z_out_tdata  => z_tdata(i),
-				z_out_tvalid => z_tvalid(i),
-				z_out_tlast  => z_tlast(i),
-				z_out_send   => z_send(i),
+				z_out_tdata  => zo_tdata(i),
+				z_out_tvalid => zo_tvalid(i),
+				z_out_tlast  => zo_tlast(i),
+				z_out_send   => zo_send(i),
 
-				z_in_tdata  => z_tdata(i + 1),
-				z_in_tvalid => z_tvalid(i + 1),
-				z_in_tlast  => z_tlast(i + 1),
-				z_in_send   => z_send(i + 1),
+				z_in_tdata  => zi_tdata(i),
+				z_in_tvalid => zi_tvalid(i),
+				z_in_tlast  => zi_tlast(i),
+				z_in_send   => zi_send(i),
 
 				clk => clk,
 				rst => rst_reg(i)

@@ -2858,6 +2858,7 @@ begin
 						CROSS_BITS            => WIDE_CORR_CROSS_BITS,
 						AUTO_BITS             => WIDE_CORR_AUTO_BITS,
 						URAM_TOTAL            => sel(WIDE_CORR, 72, 64),
+						PARALLEL_READOUT      => WIDE_CORR, -- the 4 correlators are read at the same time: a readout takes one quarter of the frames
 						READOUT_BINS          => CORR_READOUT_BINS
 					)
 					port map (

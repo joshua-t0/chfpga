@@ -122,6 +122,30 @@ correlator, 197 with its wide cross-products).
 Status byte 22 of ``UCORR44_ARRAY`` is 1 for this format. The first build of the (8+8)-bit correlator (23 Nov 2026) has
 0 there: its records have ``RE`` in bits 47:24 and ``IM_HIGH & IM_LOW`` in bits 23:0, with no flags.
 
+Parallel readout
+----------------
+
+With the daisy chain, correlator 0 sends all its records, then correlator 1, and so on. Each correlator reads one bin
+for each frame, so the readout of 4 correlators of 2048 bins takes 8192 frames or more (one record for each frame:
+353 Mbit/s with records of 226 bytes), and the integration period cannot be shorter.
+
+With the generic ``PARALLEL_READOUT`` of ``UCORR44_ARRAY`` (``chfpga``: with ``WIDE_CORR``), all the correlators read
+at the same time and a block in ``UCORR44_ARRAY`` takes one record from each correlator in turn:
+
+- The block gives a grant pulse to one correlator when the output FIFO has space for a full record. It then passes
+  the bytes of this correlator to the FIFO until the last byte of the record, and goes to the next correlator.
+- The correlators are far from each other, so the grant and the data have two pipeline registers in each direction.
+  A latch near each correlator makes its ``send`` level from the grant and clears it on the last byte of the record.
+- Each correlator closes each record with TLAST (``BINS_PER_FRAME_LOG2 = 0``). The block makes the output frames
+  of 8 records. A frame (one datagram) then has the records of all the correlators in turn: bin 0 of correlators 0
+  to 3, then bin 1 of correlators 0 to 3.
+- A record takes its number of bytes and approximately 8 clocks, so 4 records of 226 bytes take approximately 940 of
+  the 2048 clocks of a frame. The readout takes 2048 frames if the output accepts 4 records for each frame
+  (1.4 Gbit/s). If the output is slower, the output sets the time.
+- Status byte 0, bit 4 of ``UCORR44_ARRAY`` is 1 with the parallel readout.
+
+The records, their headers and the sums do not change.
+
 Simulation
 ----------
 
