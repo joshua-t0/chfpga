@@ -25,6 +25,7 @@ set const_files [list \
 	 "crs_physical_constraints_common.xdc"\
 	 "crs_physical_constraints_chord_fft_LOCs.xdc"\
 	 "crs_physical_constraints_chan_LOCs.xdc"\
+	 "crs_physical_constraints_ucorr88_8_ucap.xdc"\
 ]
 # Create project
 source ../../tcl/create_generic_project.tcl

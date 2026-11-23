@@ -1,21 +1,27 @@
 # CRS corr8 with the (8+8)-bit correlator (UCMAC88_ARRAY): CORR pblock and URAM/DSP LOCs for ucorr44_array0
-# Used with crs_physical_constraints_corr.xdc (CORN pblock), in the place of crs_physical_constraints_ucorr44_8_LOCs.xdc.
+# Used with crs_physical_constraints_corr.xdc (CORN pblock), in the place of crs_physical_constraints_ucorr44_8_LOCs.xdc,
+# and with crs_physical_constraints_ucorr88_8_ucap.xdc (after crs_physical_constraints_common.xdc).
 #
 # Each correlator has 20 UltraRAMs (all 80 of the device: UCAP has none) and 2 RAM words in block RAM.
-# Correlator c has URAM288_X0Y(20c) to Y(20c + 19), in the order of its RAM words, and the DSP sites beside them:
-# DSP48E2_X0 to X2, Y(72 + 30c) to Y(101 + 30c). dsp1 of each CMAC has an even Y (dsp2 is above it, on the cascade),
-# at the height of the RAM word that has the LSBs of its sum. Columns X1 and X2 (nearest to the UltraRAMs) come first.
+# Correlator c has URAM288_X0Y(20c) to Y(20c + 19), in the order of its RAM words, and the DSP sites beside them.
+# dsp1 of each CMAC has an even Y (dsp2 is above it, on the cascade), near the height of the RAM word that has the
+# LSBs of its sum. Columns X1 and X2 (nearest to the UltraRAMs) come first.
+# CMACs 33 to 35 have no LOC: their sums are in the two block RAM words, and the placer puts their DSPs near those
+# block RAMs (as for the last CMACs of the 4-bit correlator).
+#
+# In the top clock region (Y420 to Y479) the CORR pblock has only the columns to the right of the DEBUG pblock
+# (SLICE_X0 to X14, DSP48E2_X0, RAMB36_X0 and RAMB36_X1Y90 to Y95 are for the logic analyzer).
 
 ############################################################################
 # Correlator pblock
 ############################################################################
 create_pblock CORR
 add_cells_to_pblock [get_pblocks CORR] [get_cells -quiet [list chfpga0/CORRGEN.corr_sel_gen.ucorr44_case.ucorr44_array0]]
-resize_pblock [get_pblocks CORR] -add {SLICE_X6Y180:SLICE_X25Y479}
-resize_pblock [get_pblocks CORR] -add {DSP48E2_X0Y72:DSP48E2_X2Y191}
+resize_pblock [get_pblocks CORR] -add {SLICE_X6Y180:SLICE_X25Y419 SLICE_X15Y420:SLICE_X25Y479}
+resize_pblock [get_pblocks CORR] -add {DSP48E2_X0Y72:DSP48E2_X2Y167 DSP48E2_X1Y168:DSP48E2_X2Y191}
 resize_pblock [get_pblocks CORR] -add {PCIE4CE4_X0Y0:PCIE4CE4_X0Y0}
-resize_pblock [get_pblocks CORR] -add {RAMB18_X0Y72:RAMB18_X1Y191}
-resize_pblock [get_pblocks CORR] -add {RAMB36_X0Y36:RAMB36_X1Y95}
+resize_pblock [get_pblocks CORR] -add {RAMB18_X0Y72:RAMB18_X1Y167 RAMB18_X1Y168:RAMB18_X1Y179}
+resize_pblock [get_pblocks CORR] -add {RAMB36_X0Y36:RAMB36_X1Y83 RAMB36_X1Y84:RAMB36_X1Y89}
 resize_pblock [get_pblocks CORR] -add {URAM288_X0Y0:URAM288_X0Y79}
 set_property IS_SOFT FALSE [get_pblocks CORR]
 
@@ -139,9 +145,6 @@ set_property LOC DSP48E2_X1Y94 [get_cells chfpga0/*ucorr44_array0/corr_gen[0]*/*
 set_property LOC DSP48E2_X1Y96 [get_cells chfpga0/*ucorr44_array0/corr_gen[0]*/*/dsp_gen[30].dsp1]
 set_property LOC DSP48E2_X2Y96 [get_cells chfpga0/*ucorr44_array0/corr_gen[0]*/*/dsp_gen[31].dsp1]
 set_property LOC DSP48E2_X0Y96 [get_cells chfpga0/*ucorr44_array0/corr_gen[0]*/*/dsp_gen[32].dsp1]
-set_property LOC DSP48E2_X1Y98 [get_cells chfpga0/*ucorr44_array0/corr_gen[0]*/*/dsp_gen[33].dsp1]
-set_property LOC DSP48E2_X2Y98 [get_cells chfpga0/*ucorr44_array0/corr_gen[0]*/*/dsp_gen[34].dsp1]
-set_property LOC DSP48E2_X1Y100 [get_cells chfpga0/*ucorr44_array0/corr_gen[0]*/*/dsp_gen[35].dsp1]
 set_property LOC DSP48E2_X1Y102 [get_cells chfpga0/*ucorr44_array0/corr_gen[1]*/*/dsp_gen[0].dsp1]
 set_property LOC DSP48E2_X2Y102 [get_cells chfpga0/*ucorr44_array0/corr_gen[1]*/*/dsp_gen[1].dsp1]
 set_property LOC DSP48E2_X0Y102 [get_cells chfpga0/*ucorr44_array0/corr_gen[1]*/*/dsp_gen[2].dsp1]
@@ -175,9 +178,6 @@ set_property LOC DSP48E2_X1Y124 [get_cells chfpga0/*ucorr44_array0/corr_gen[1]*/
 set_property LOC DSP48E2_X1Y126 [get_cells chfpga0/*ucorr44_array0/corr_gen[1]*/*/dsp_gen[30].dsp1]
 set_property LOC DSP48E2_X2Y126 [get_cells chfpga0/*ucorr44_array0/corr_gen[1]*/*/dsp_gen[31].dsp1]
 set_property LOC DSP48E2_X0Y126 [get_cells chfpga0/*ucorr44_array0/corr_gen[1]*/*/dsp_gen[32].dsp1]
-set_property LOC DSP48E2_X1Y128 [get_cells chfpga0/*ucorr44_array0/corr_gen[1]*/*/dsp_gen[33].dsp1]
-set_property LOC DSP48E2_X2Y128 [get_cells chfpga0/*ucorr44_array0/corr_gen[1]*/*/dsp_gen[34].dsp1]
-set_property LOC DSP48E2_X1Y130 [get_cells chfpga0/*ucorr44_array0/corr_gen[1]*/*/dsp_gen[35].dsp1]
 set_property LOC DSP48E2_X1Y132 [get_cells chfpga0/*ucorr44_array0/corr_gen[2]*/*/dsp_gen[0].dsp1]
 set_property LOC DSP48E2_X2Y132 [get_cells chfpga0/*ucorr44_array0/corr_gen[2]*/*/dsp_gen[1].dsp1]
 set_property LOC DSP48E2_X0Y132 [get_cells chfpga0/*ucorr44_array0/corr_gen[2]*/*/dsp_gen[2].dsp1]
@@ -211,9 +211,6 @@ set_property LOC DSP48E2_X1Y154 [get_cells chfpga0/*ucorr44_array0/corr_gen[2]*/
 set_property LOC DSP48E2_X1Y156 [get_cells chfpga0/*ucorr44_array0/corr_gen[2]*/*/dsp_gen[30].dsp1]
 set_property LOC DSP48E2_X2Y156 [get_cells chfpga0/*ucorr44_array0/corr_gen[2]*/*/dsp_gen[31].dsp1]
 set_property LOC DSP48E2_X0Y156 [get_cells chfpga0/*ucorr44_array0/corr_gen[2]*/*/dsp_gen[32].dsp1]
-set_property LOC DSP48E2_X1Y158 [get_cells chfpga0/*ucorr44_array0/corr_gen[2]*/*/dsp_gen[33].dsp1]
-set_property LOC DSP48E2_X2Y158 [get_cells chfpga0/*ucorr44_array0/corr_gen[2]*/*/dsp_gen[34].dsp1]
-set_property LOC DSP48E2_X1Y160 [get_cells chfpga0/*ucorr44_array0/corr_gen[2]*/*/dsp_gen[35].dsp1]
 set_property LOC DSP48E2_X1Y162 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[0].dsp1]
 set_property LOC DSP48E2_X2Y162 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[1].dsp1]
 set_property LOC DSP48E2_X0Y162 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[2].dsp1]
@@ -227,26 +224,23 @@ set_property LOC DSP48E2_X1Y168 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/
 set_property LOC DSP48E2_X2Y168 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[10].dsp1]
 set_property LOC DSP48E2_X1Y170 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[11].dsp1]
 set_property LOC DSP48E2_X2Y170 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[12].dsp1]
-set_property LOC DSP48E2_X0Y170 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[13].dsp1]
-set_property LOC DSP48E2_X1Y172 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[14].dsp1]
+set_property LOC DSP48E2_X1Y172 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[13].dsp1]
+set_property LOC DSP48E2_X2Y172 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[14].dsp1]
 set_property LOC DSP48E2_X1Y174 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[15].dsp1]
 set_property LOC DSP48E2_X2Y174 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[16].dsp1]
-set_property LOC DSP48E2_X0Y174 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[17].dsp1]
-set_property LOC DSP48E2_X1Y176 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[18].dsp1]
-set_property LOC DSP48E2_X2Y176 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[19].dsp1]
-set_property LOC DSP48E2_X1Y178 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[20].dsp1]
-set_property LOC DSP48E2_X2Y178 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[21].dsp1]
-set_property LOC DSP48E2_X0Y178 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[22].dsp1]
-set_property LOC DSP48E2_X1Y180 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[23].dsp1]
-set_property LOC DSP48E2_X2Y180 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[24].dsp1]
-set_property LOC DSP48E2_X0Y180 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[25].dsp1]
-set_property LOC DSP48E2_X1Y182 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[26].dsp1]
-set_property LOC DSP48E2_X2Y182 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[27].dsp1]
-set_property LOC DSP48E2_X0Y182 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[28].dsp1]
-set_property LOC DSP48E2_X1Y184 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[29].dsp1]
-set_property LOC DSP48E2_X1Y186 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[30].dsp1]
-set_property LOC DSP48E2_X2Y186 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[31].dsp1]
-set_property LOC DSP48E2_X0Y186 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[32].dsp1]
-set_property LOC DSP48E2_X1Y188 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[33].dsp1]
-set_property LOC DSP48E2_X2Y188 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[34].dsp1]
-set_property LOC DSP48E2_X1Y190 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[35].dsp1]
+set_property LOC DSP48E2_X1Y176 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[17].dsp1]
+set_property LOC DSP48E2_X2Y176 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[18].dsp1]
+set_property LOC DSP48E2_X1Y178 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[19].dsp1]
+set_property LOC DSP48E2_X2Y178 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[20].dsp1]
+set_property LOC DSP48E2_X1Y180 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[21].dsp1]
+set_property LOC DSP48E2_X2Y180 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[22].dsp1]
+set_property LOC DSP48E2_X1Y182 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[23].dsp1]
+set_property LOC DSP48E2_X2Y182 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[24].dsp1]
+set_property LOC DSP48E2_X1Y184 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[25].dsp1]
+set_property LOC DSP48E2_X2Y184 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[26].dsp1]
+set_property LOC DSP48E2_X1Y186 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[27].dsp1]
+set_property LOC DSP48E2_X2Y186 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[28].dsp1]
+set_property LOC DSP48E2_X1Y188 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[29].dsp1]
+set_property LOC DSP48E2_X2Y188 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[30].dsp1]
+set_property LOC DSP48E2_X1Y190 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[31].dsp1]
+set_property LOC DSP48E2_X2Y190 [get_cells chfpga0/*ucorr44_array0/corr_gen[3]*/*/dsp_gen[32].dsp1]

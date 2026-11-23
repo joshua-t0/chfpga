@@ -92,7 +92,11 @@ architecture impl of ucap is
 
     constant NUMBER_OF_BUFFERS: integer := NUMBER_OF_CHANNELS;
     constant NUMBER_OF_CHANNEL_PAIRS: integer := NUMBER_OF_CHANNELS/2;
-    constant RAM_LATENCY: integer := 4; -- read latency of the buffers. Used to configure the buffer and align the ram reads
+    -- Block RAMs can be far from this logic (they are where the device has free ones): then the address, enable and
+    -- data inputs of the buffers have register stages in front of them.
+    constant RAM_INPUT_STAGES: integer := sel(MEMORY_PRIMITIVE = "block", 2, 0);
+    constant XPM_LATENCY: integer := 4; -- read latency of the memories
+    constant RAM_LATENCY: integer := XPM_LATENCY + RAM_INPUT_STAGES; -- read latency of the buffers, from ram_rd_addr and ram_rd_en. Used to align the ram reads
 
     subtype int8 is integer range 0 to NUMBER_OF_CHANNELS-1; -- used for channel and buffer indexing
 
@@ -245,6 +249,29 @@ begin
 	uram_gen: for i in 0 to NUMBER_OF_BUFFERS-1 generate
 		begin
 		mem_gen: if i < BUFFERS_WITH_MEMORY generate
+			-- the inputs of the memory, after RAM_INPUT_STAGES register stages
+			signal din_pipe: slv_array(0 to RAM_INPUT_STAGES)(CAPTURE_BITS_PER_WORD - 1 downto 0);
+			signal wr_addr_pipe, rd_addr_pipe: slv12_array(0 to RAM_INPUT_STAGES);
+			signal wr_en_pipe, rd_en_pipe: std_logic_vector(0 to RAM_INPUT_STAGES);
+			attribute shreg_extract: string;
+			attribute shreg_extract of din_pipe, wr_addr_pipe, rd_addr_pipe, wr_en_pipe, rd_en_pipe: signal is "no";
+		begin
+			din_pipe(0) <= ram_din(i);
+			wr_addr_pipe(0) <= ram_wr_addr(i);
+			wr_en_pipe(0) <= ram_wr_en(i);
+			rd_addr_pipe(0) <= ram_rd_addr(i);
+			rd_en_pipe(0) <= ram_rd_en(i);
+			pipe_gen: for k in 1 to RAM_INPUT_STAGES generate
+				process(s_axis_clk) begin
+					if rising_edge(s_axis_clk) then
+						din_pipe(k) <= din_pipe(k - 1);
+						wr_addr_pipe(k) <= wr_addr_pipe(k - 1);
+						wr_en_pipe(k) <= wr_en_pipe(k - 1);
+						rd_addr_pipe(k) <= rd_addr_pipe(k - 1);
+						rd_en_pipe(k) <= rd_en_pipe(k - 1);
+					end if;
+				end process;
+			end generate pipe_gen;
 		   	-- xpm_memory_sdpram: Simple Dual Port RAM
 		   	-- Xilinx Parameterized Macro, version 2022.1
 		   	-- UltraRAM primitive is organized as 4K x 72 bits.
@@ -264,7 +291,7 @@ begin
 			      --MEMORY_OPTIMIZATION => "true",   -- String
 			      MEMORY_SIZE => CAPTURE_BITS_PER_WORD * 4096,         -- 128-bit word * 4096 words/URAM
 			      --MESSAGE_CONTROL => 0,            -- DECIMAL
-			      READ_LATENCY_B => RAM_LATENCY,     -- Needs to be >= of cascade height to allow registering. Synthesis ask for more than 4 to have full pipelining (4 is partial).
+			      READ_LATENCY_B => XPM_LATENCY,     -- Needs to be >= of cascade height to allow registering. Synthesis ask for more than 4 to have full pipelining (4 is partial).
 			      --READ_RESET_VALUE_B => "0",       -- String
 			      --RST_MODE_A => "SYNC",            -- String
 			      --RST_MODE_B => "SYNC",            -- String
@@ -278,15 +305,15 @@ begin
 				)
 				port map (
 					-- Write port
-					dina => ram_din(i),
-					addra => ram_wr_addr(i),
-					ena => ram_wr_en(i),
+					dina => din_pipe(RAM_INPUT_STAGES),
+					addra => wr_addr_pipe(RAM_INPUT_STAGES),
+					ena => wr_en_pipe(RAM_INPUT_STAGES),
 					wea => "1",
 
 					-- read port
 					doutb => ram_dout(i),
-					addrb => ram_rd_addr(i),
-					enb => ram_rd_en(i),
+					addrb => rd_addr_pipe(RAM_INPUT_STAGES),
+					enb => rd_en_pipe(RAM_INPUT_STAGES),
 
 					-- clock and reset
 					clka => s_axis_clk,

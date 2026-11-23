@@ -253,10 +253,10 @@ begin
 
 	-- The data on the input of the multipliers, with the frame counter of the correlator: an integration has one value only
 	data_proc: process
-		alias xy_tdata is <<signal corr0.corr_gen(0).corr0.corr0.s_axis_xy_tdata: slv_array(0 to 35)(15 downto 0)>>;
-		alias xy_tvalid is <<signal corr0.corr_gen(0).corr0.corr0.s_axis_xy_tvalid: std_logic>>;
-		alias xy_tlast is <<signal corr0.corr_gen(0).corr0.corr0.s_axis_xy_tlast: std_logic>>;
-		alias frame is <<signal corr0.corr_gen(0).corr0.corr0.ctrl_blk.frame: unsigned(15 downto 0)>>;
+		alias xy_tdata is <<signal corr0.corr_gen(0).corr0.cmac_gen.corr0.s_axis_xy_tdata: slv_array(0 to 35)(15 downto 0)>>;
+		alias xy_tvalid is <<signal corr0.corr_gen(0).corr0.cmac_gen.corr0.s_axis_xy_tvalid: std_logic>>;
+		alias xy_tlast is <<signal corr0.corr_gen(0).corr0.cmac_gen.corr0.s_axis_xy_tlast: std_logic>>;
+		alias frame is <<signal corr0.corr_gen(0).corr0.cmac_gen.corr0.ctrl_blk.frame: unsigned(15 downto 0)>>;
 		variable first, a, b: slv_array(0 to 35)(15 downto 0);
 		variable have_first: boolean := FALSE;
 		variable n_values: integer := 0;

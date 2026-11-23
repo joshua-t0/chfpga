@@ -23,7 +23,7 @@ if [ -n "$CORR_SRC" ]; then  # a design before the change does not have the gene
 fi
 xvlog -nolog "$XILINX_VIVADO/data/verilog/src/glbl.v" > /dev/null
 xvhdl -2008 -nolog "$hdl/chfpga_package.vhd" "$hdl/bsb/bsb_regs.vhd" "$hdl/utils/generic_fifo.vhd" \
-	"$corr/UCMAC44_ARRAY.vhd" "$corr/UCORR44.vhd" "$corr/UCORR44_ARRAY.vhd" "$tb" > compile.log 2>&1 \
+	"$corr/UCMAC44_ARRAY.vhd" $(ls "$corr/UCMAC88_ARRAY.vhd" 2>/dev/null) "$corr/UCORR44.vhd" "$corr/UCORR44_ARRAY.vhd" "$tb" > compile.log 2>&1 \
 	|| { grep ERROR compile.log; echo "Failure: compilation error"; exit 1; }
 xelab -nolog -L xpm -L unisim work.ucorr_acc_testbench work.glbl -s ucorr_acc_tb "${generics[@]}" > elaborate.log 2>&1 \
 	|| { grep ERROR elaborate.log; echo "Failure: elaboration error"; exit 1; }

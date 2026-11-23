@@ -28,7 +28,7 @@ STUB
 rm -rf xsim.dir/gain_switch_tb  # never run an old snapshot when the compilation fails
 xvlog -nolog "$XILINX_VIVADO/data/verilog/src/glbl.v" > /dev/null
 xvhdl -2008 -nolog "$hdl/chfpga_package.vhd" "$hdl/bsb/bsb_regs.vhd" "$hdl/utils/generic_fifo.vhd" scaler_cmul_stub.vhd \
-	"$hdl/chan/scaler_mul.vhd" "$hdl/chan/scaler.vhd" "$hdl/corr/UCMAC44_ARRAY.vhd" "$hdl/corr/UCORR44.vhd" "$hdl/corr/UCORR44_ARRAY.vhd" \
+	"$hdl/chan/scaler_mul.vhd" "$hdl/chan/scaler.vhd" "$hdl/corr/UCMAC44_ARRAY.vhd" "$hdl/corr/UCMAC88_ARRAY.vhd" "$hdl/corr/UCORR44.vhd" "$hdl/corr/UCORR44_ARRAY.vhd" \
 	"$hdl/testbenches/tb_package.vhd" "$hdl/testbenches/gain_switch_testbench.vhd" > compile.log 2>&1 \
 	|| { grep ERROR compile.log; echo "Failure: compilation error"; exit 1; }
 xelab -nolog -L xpm -L unisim work.gain_switch_testbench work.glbl -s gain_switch_tb "${generics[@]}" > elaborate.log 2>&1 \
