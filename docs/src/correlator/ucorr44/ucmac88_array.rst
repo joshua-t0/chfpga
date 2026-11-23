@@ -77,8 +77,9 @@ The sum of a cross-product has three fields in the RAM:
      - Bits 41:18 of the sum of `V`: the sum of the real parts plus ``IM_HIGH`` (the carries and borrows of ``IM_LOW``
        go in it).
 
-So the sum of the imaginary parts is ``IM_HIGH & IM_LOW`` (a signed 24-bit number), and the sum of the real parts is
-``RE - IM_HIGH``. The host computes this subtraction.
+So the sum of the imaginary parts is ``IM_HIGH & IM_LOW``, and the sum of the real parts is ``RE - IM_HIGH``. The
+readout computes this subtraction (one clock after it reads the RAM), so the result records have the two sums as
+plain numbers.
 
 Saturation:
 
@@ -92,23 +93,34 @@ Saturation:
 Result record
 -------------
 
-The 10-byte header, then 6 bytes for each product (a little-endian 48-bit word). There are no flag bits: the host finds
-a saturation from the values.
+The 10-byte header, then for each product a little-endian word of `2 \cdot CROSS\_BITS + 2` bits in whole bytes: 6
+bytes with ``CROSS_BITS = 22``.
 
 .. list-table::
    :header-rows: 1
 
-   * - Product
-     - Bits 47:24
-     - Bits 23:0
-   * - Cross-product
-     - ``RE``, signed
-     - ``IM_HIGH & IM_LOW``, signed
-   * - Autocorrelation
+   * - Bits (``CROSS_BITS = 22``)
+     - Cross-product
+     - Autocorrelation
+   * - 21:0
+     - Sum of the imaginary parts, signed
+     - Unsigned number of ``AUTO_BITS`` bits, in the LSBs (bits 25:0)
+   * - 43:22
+     - Sum of the real parts, signed (``RE - IM_HIGH``)
+     - (the MSBs of the number, zeros)
+   * - 44
+     - The imaginary part is saturated
      - 0
-     - Unsigned number of ``AUTO_BITS`` bits
+   * - 45
+     - The real part is saturated, or not valid because the imaginary part is saturated
+     - The autocorrelation is saturated
 
-A record of 36 products has 226 bytes (190 bytes for the 4-bit correlator, 197 with its wide cross-products).
+A saturated part has the largest or the smallest value of its field. The two flags are in the same bits of the last
+byte of a product as in the records of ``UCMAC44_ARRAY``. A record of 36 products has 226 bytes (190 bytes for the 4-bit
+correlator, 197 with its wide cross-products).
+
+Status byte 22 of ``UCORR44_ARRAY`` is 1 for this format. The first build of the (8+8)-bit correlator (23 Nov 2026) has
+0 there: its records have ``RE`` in bits 47:24 and ``IM_HIGH & IM_LOW`` in bits 23:0, with no flags.
 
 Simulation
 ----------

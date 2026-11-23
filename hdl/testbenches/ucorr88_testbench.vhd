@@ -23,13 +23,15 @@ entity ucorr88_testbench is
 		SAMPLE_BITS: integer := 16; -- 16: (8+8)-bit inputs. 8: (4+4)-bit inputs.
 		WORDS: integer := 32; -- words (bins) in a frame
 		INTEG: integer := 320; -- frames in an integration (the readout of all the bins must fit)
-		INTEGRATIONS: integer := 3 -- integrations to check
+		INTEGRATIONS: integer := 3; -- integrations to check
+		CROSS_BITS: integer := 22; -- SAMPLE_BITS = 16: bits of each part of the sum of a cross-product
+		AUTO_BITS: integer := 26 -- SAMPLE_BITS = 16: bits of the sum of an autocorrelation
 	);
 end entity;
 
 architecture sim of ucorr88_testbench is
 	constant COMP_BITS: integer := SAMPLE_BITS / 2;
-	constant PROD_BYTES: integer := sel(SAMPLE_BITS = 16, 6, 5);
+	constant PROD_BYTES: integer := sel(SAMPLE_BITS = 16, (2 * CROSS_BITS + 2 + 7) / 8, 5);
 	constant RECORD_BYTES: integer := 10 + 36 * PROD_BYTES;
 	signal clk: std_logic := '0';
 	signal rst: std_logic := '1';
@@ -52,6 +54,8 @@ begin
 			NCHAN          => 8,
 			NBINS_PER_CORR => 2048,
 			N_BITS_PER_BIN => SAMPLE_BITS,
+			CROSS_BITS     => CROSS_BITS,
+			AUTO_BITS      => AUTO_BITS,
 			URAM_TOTAL     => 20,
 			SOFT_NINTEG    => INTEG,
 			READOUT_BINS   => (0 => 0),
@@ -151,13 +155,15 @@ begin
 						for b in 0 to PROD_BYTES - 1 loop -- the LSB is first
 							prod(8 * b + 7 downto 8 * b) := rec(10 + PROD_BYTES * i + b);
 						end loop;
+						if SAMPLE_BITS = 16 then
+							assert prod(47 downto 2 * CROSS_BITS) = (47 downto 2 * CROSS_BITS => '0') report "Saturation flag" severity FAILURE;
+						end if;
 						if SAMPLE_BITS = 16 and i mod 4 = 0 and i < 32 then -- autocorrelation: unsigned number
 							x_re := to_integer(unsigned(prod(30 downto 0)));
 							x_im := 0;
-							assert prod(47 downto 30) = "000000000000000000" report "Autocorrelation with bits above bit 29" severity FAILURE;
-						elsif SAMPLE_BITS = 16 then
-							x_im := to_integer(signed(prod(23 downto 0)));
-							x_re := to_integer(signed(prod(47 downto 24))) - to_integer(signed(prod(23 downto 18))); -- RE - IM_HIGH
+						elsif SAMPLE_BITS = 16 then -- two signed numbers of CROSS_BITS bits
+							x_im := to_integer(signed(prod(CROSS_BITS - 1 downto 0)));
+							x_re := to_integer(signed(prod(2 * CROSS_BITS - 1 downto CROSS_BITS)));
 						else
 							assert prod(39 downto 36) = "0000" report "Saturation flag" severity FAILURE;
 							x_re := to_integer(signed(prod(35 downto 18)));

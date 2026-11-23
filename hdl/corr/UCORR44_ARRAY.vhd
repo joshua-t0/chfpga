@@ -119,7 +119,7 @@ architecture Behavioral of UCORR44_ARRAY is
     attribute DONT_TOUCH of rst_reg: signal is "true";
     -- Control signals
     signal control_bytes: slv8_array(0 to 3);
-    signal status_bytes: slv8_array(0 to 21);
+    signal status_bytes: slv8_array(0 to 22);
     signal gain_switch_enable, gain_switch_enable_resync, gain_switch_enable_frame: std_logic;
     signal split_mode_reg: std_logic;
     signal last_frame: std_logic_vector(0 to NCORR-1);
@@ -263,6 +263,9 @@ begin
     -- Bytes 20 and 21: widths of the sums of the (8+8)-bit correlator. Zero: the correlator has (4+4)-bit inputs.
     status_bytes(20) <= to_slv(sel(N_BITS_PER_BIN = 16, CROSS_BITS, 0), 8);
     status_bytes(21) <= to_slv(sel(N_BITS_PER_BIN = 16, AUTO_BITS, 0), 8);
+    -- Byte 22: format of the result records of the (8+8)-bit correlator. 1: the two parts of a product are plain signed
+    -- numbers of CROSS_BITS bits, with two saturation flags above them. 0 (first build): RE and IM_HIGH & IM_LOW in 24 + 24 bits.
+    status_bytes(22) <= to_slv(sel(N_BITS_PER_BIN = 16, 1, 0), 8);
     sat_gen: for i in 0 to 3 generate
         status_bytes(12 + 2 * i to 13 + 2 * i) <= to_slv8_array(unsigned(split_sat_count(i)));
     end generate sat_gen;

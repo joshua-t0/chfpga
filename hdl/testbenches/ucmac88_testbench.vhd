@@ -1,8 +1,9 @@
 -- Self-checking testbench of UCMAC88_ARRAY: the (8+8)-bit multipliers and their wide accumulators.
 --
 -- Random and extreme input values go to all the CMACs for some integrations. A model in the testbench computes the
--- fields of the sums (RE and IM_HIGH & IM_LOW, with the saturation rules of the module), and each result record is
--- compared with the model. Where nothing is saturated, RE - IM_HIGH is also compared with the exact sum of the real parts.
+-- fields of the sums (RE and IM_HIGH & IM_LOW, with the saturation rules of the module) and what the readout makes of
+-- them: the two parts and the two saturation flags of each result record are compared with the model. A product with
+-- no flag must be the exact sum of the products.
 -- The frames are short (WORDS words) so that a run takes a few minutes. The bin READOUT_BIN is not compared
 -- (the module does not accumulate it correctly: see UCMAC44_ARRAY).
 --
@@ -30,7 +31,8 @@ entity ucmac88_testbench is
 end entity;
 
 architecture sim of ucmac88_testbench is
-	constant RECORD_BYTES: integer := FRAME_HEADER_BYTE_LENGTH + 6 * NCMAC;
+	constant PRODUCT_BYTES: integer := (2 * CROSS_BITS + 2 + 7) / 8;
+	constant RECORD_BYTES: integer := FRAME_HEADER_BYTE_LENGTH + PRODUCT_BYTES * NCMAC;
 	constant CROSS_MAX: integer := 2 ** (CROSS_BITS - 1) - 1;
 	constant CROSS_MIN: integer := -(2 ** (CROSS_BITS - 1));
 	constant AUTO_MAX: real := 2.0 ** AUTO_BITS - 1.0;
@@ -46,7 +48,7 @@ architecture sim of ucmac88_testbench is
 	signal done: boolean := FALSE;
 
 	type sum_array is array (0 to NCMAC - 1, 0 to WORDS - 1) of real; -- exact for these integers
-	shared variable snap_re, snap_im, snap_re_tot: sum_array; -- the fields of the integration that is read out, and its exact sums of the real parts
+	shared variable snap_re, snap_im, snap_re_tot, snap_im_tot: sum_array; -- the fields of the integration that is read out, and its exact sums of the real parts
 	shared variable snap_number: integer := -1;
 	signal records_checked, saturations_seen, exact_checked: integer := 0;
 
@@ -165,7 +167,7 @@ begin
 			end loop;
 			-- the module now reads out this integration: one bin for each frame in which its byte buffer is free
 			assert snap_number < 0 or records_checked >= (snap_number + 1) * WORDS - WORDS report "The readout of the integration before is not complete" severity FAILURE;
-			snap_re := acc_re; snap_im := acc_im; snap_re_tot := re_tot; snap_number := n;
+			snap_re := acc_re; snap_im := acc_im; snap_re_tot := re_tot; snap_im_tot := im_tot; snap_number := n;
 		end loop;
 		-- one more integration time for the last readout (zeros on the inputs)
 		tdata <= (others => (others => '0'));
@@ -179,17 +181,20 @@ begin
 		assert overrun = '0' report "Readout overrun" severity FAILURE;
 		assert records_checked = INTEGRATIONS * WORDS report "Number of result records: " & integer'image(records_checked) & ", expected " & integer'image(INTEGRATIONS * WORDS) severity FAILURE;
 		assert INTEGRATIONS < 3 or saturations_seen > 0 report "No saturation was seen" severity FAILURE;
-		report "UCMAC88 TEST PASSED: " & integer'image(records_checked) & " records, " & integer'image(saturations_seen) & " saturated values, " & integer'image(exact_checked) & " exact real sums";
+		report "UCMAC88 TEST PASSED: " & integer'image(records_checked) & " records, " & integer'image(saturations_seen) & " saturation flags, " & integer'image(exact_checked) & " exact products";
 		done <= TRUE;
 		wait;
 	end process;
 
+	-- Each result record against the model: the readout gives the sum of the real parts (RE - IM_HIGH) and the sum of
+	-- the imaginary parts as signed numbers of CROSS_BITS bits, with two saturation flags above them.
 	check: process(clk)
 		variable rec: slv8_array(0 to RECORD_BYTES - 1);
 		variable n: integer := 0;
-		variable bin: integer;
-		variable w48: std_logic_vector(47 downto 0);
-		variable re, im: real;
+		variable bin, hi: integer;
+		variable w: std_logic_vector(8 * PRODUCT_BYTES - 1 downto 0);
+		variable re, im, exp_re, exp_im, d: real;
+		variable re_flag, im_flag, exp_re_flag, exp_im_flag: boolean;
 		variable sat: integer;
 		variable exact: integer := 0;
 	begin
@@ -201,33 +206,54 @@ begin
 				bin := records_checked mod WORDS;
 				sat := 0;
 				for i in 0 to NCMAC - 1 loop
-					for k in 0 to 5 loop -- little-endian
-						w48(8 * k + 7 downto 8 * k) := rec(FRAME_HEADER_BYTE_LENGTH + 6 * i + k);
+					for k in 0 to PRODUCT_BYTES - 1 loop -- little-endian
+						w(8 * k + 7 downto 8 * k) := rec(FRAME_HEADER_BYTE_LENGTH + PRODUCT_BYTES * i + k);
 					end loop;
+					im_flag := w(2 * CROSS_BITS) = '1';
+					re_flag := w(2 * CROSS_BITS + 1) = '1';
+					assert unsigned(w(w'high downto 2 * CROSS_BITS + 2)) = 0 report "Bits above the flags are not zero" severity FAILURE;
 					if is_auto(i) then
-						re := real(to_integer(unsigned(w48(47 downto 24)))) * 16777216.0 + real(to_integer(unsigned(w48(23 downto 0))));
+						re := real(to_integer(unsigned(w(AUTO_BITS - 1 downto 0))));
 						im := 0.0;
-						if re = AUTO_MAX then sat := sat + 1; end if;
+						assert unsigned(w(2 * CROSS_BITS downto AUTO_BITS)) = 0 report "Autocorrelation with bits above its width" severity FAILURE;
+						exp_re := snap_re(i, bin); exp_im := 0.0;
+						exp_re_flag := exp_re = AUTO_MAX; exp_im_flag := FALSE;
 					else
-						re := real(to_integer(signed(w48(47 downto 24))));
-						im := real(to_integer(signed(w48(23 downto 0))));
-						if re = real(CROSS_MAX) or re = real(CROSS_MIN) then sat := sat + 1; end if;
-						if im >= real(HIGH_MAX) * 262144.0 or im < real(-HIGH_MAX) * 262144.0 then sat := sat + 1; end if;
-					end if;
-					-- the formula of the host: sum of the real parts = RE - IM_HIGH (valid if nothing is saturated)
-					if bin /= 0 and not is_auto(i) and re /= real(CROSS_MAX) and re /= real(CROSS_MIN) and im < real(HIGH_MAX) * 262144.0 and im >= real(-HIGH_MAX) * 262144.0 then
-						assert re - floor(im / 262144.0) = snap_re_tot(i, bin) report "RE - IM_HIGH is not the sum of the real parts: CMAC " & integer'image(i) & " bin " & integer'image(bin) severity FAILURE;
-						exact := exact + 1;
+						im := real(to_integer(signed(w(CROSS_BITS - 1 downto 0))));
+						re := real(to_integer(signed(w(2 * CROSS_BITS - 1 downto CROSS_BITS))));
+						-- from the fields of the model (RE, and IM_HIGH & IM_LOW)
+						hi := integer(floor(snap_im(i, bin) / 262144.0));
+						exp_im_flag := hi >= HIGH_MAX or hi <= -HIGH_MAX - 1;
+						d := snap_re(i, bin) - real(hi);
+						exp_re_flag := TRUE;
+						if snap_re(i, bin) = real(CROSS_MAX) or (snap_re(i, bin) /= real(CROSS_MIN) and d > real(CROSS_MAX)) then
+							exp_re := real(CROSS_MAX);
+						elsif snap_re(i, bin) = real(CROSS_MIN) or d < real(CROSS_MIN) then
+							exp_re := real(CROSS_MIN);
+						else
+							exp_re := d; exp_re_flag := FALSE;
+						end if;
+						exp_im := snap_im(i, bin);
+						if exp_im_flag then
+							if hi > 0 then exp_im := real(CROSS_MAX); else exp_im := real(CROSS_MIN); end if;
+							exp_re_flag := TRUE; -- the real part is not valid
+						end if;
 					end if;
 					if bin /= 0 then -- bin 0 is the readout bin
-						assert re = snap_re(i, bin) and im = snap_im(i, bin)
+						assert re = exp_re and im = exp_im and re_flag = exp_re_flag and im_flag = exp_im_flag
 							report "Integration " & integer'image(snap_number) & " bin " & integer'image(bin) & " CMAC " & integer'image(i) & ": " & real'image(re) & " " & real'image(im) &
-							       ", expected " & real'image(snap_re(i, bin)) & " " & real'image(snap_im(i, bin)) severity FAILURE;
+							       " flags " & boolean'image(re_flag) & " " & boolean'image(im_flag) & ", expected " & real'image(exp_re) & " " & real'image(exp_im) &
+							       " flags " & boolean'image(exp_re_flag) & " " & boolean'image(exp_im_flag) severity FAILURE;
+						if re_flag then sat := sat + 1; end if;
+						if im_flag then sat := sat + 1; end if;
+						-- with no flag, the two parts are the exact sums
+						if not is_auto(i) and not re_flag and not im_flag then
+							assert re = snap_re_tot(i, bin) and im = snap_im_tot(i, bin) report "A product with no flag is not the exact sum: CMAC " & integer'image(i) & " bin " & integer'image(bin) severity FAILURE;
+							exact := exact + 1;
+						end if;
 					end if;
 				end loop;
-				if bin /= 0 then
-					saturations_seen <= saturations_seen + sat;
-				end if;
+				saturations_seen <= saturations_seen + sat;
 				exact_checked <= exact;
 				records_checked <= records_checked + 1;
 			end if;

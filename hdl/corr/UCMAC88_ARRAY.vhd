@@ -35,7 +35,7 @@ use xpm.vcomponents.ALL;
 -- - The accumulators of all the CMACs are packed in RAM words of 72 bits with no unused bits between them:
 --   36 CMACs with 8 autocorrelations of 30 bits and 28 cross-products of 48 bits fill 22 RAM words exactly.
 --   The first URAM_MAX words are UltraRAMs, the others are block RAMs.
--- - A result record has the 10-byte header, then 6 bytes for each product (little-endian 48-bit word). See below.
+-- - A result record has the 10-byte header, then 6 bytes for each product (with CROSS_BITS = 22). See below.
 --
 -- Each CMAC has two DSP48E2, for x = a + jb and y = c + jd:
 --
@@ -54,7 +54,7 @@ use xpm.vcomponents.ALL;
 --   two MSBs of IM_LOW before and after the addition tell). IM_HIGH & IM_LOW is the sum of the imaginary parts
 --   as a signed 24-bit number.
 -- - RE (24 bits, signed): bits 41:18 of the sum of V. This is the sum of the real parts plus IM_HIGH (the carries
---   and borrows of IM_LOW go in it). So: sum of the real parts = RE - IM_HIGH. The host computes this.
+--   and borrows of IM_LOW go in it). So: sum of the real parts = RE - IM_HIGH. The readout computes this.
 --
 -- Saturation: RE stays at its largest or smallest value when the sum passes it (also a sum that is exactly at a
 -- limit is taken as saturated). IM_HIGH stays at its largest value (31) or smallest value (-32) when it gets there.
@@ -63,9 +63,9 @@ use xpm.vcomponents.ALL;
 -- An autocorrelation is a number that is not negative: its sum is in bits 18 and above of the DSP, and it stays
 -- at 2^AUTO_BITS - 1 when it passes that value.
 --
--- Result record, 6 bytes for each product (little-endian): bits 47:24 = RE (sign-extended to 24 bits),
--- bits 23:0 = IM_HIGH & IM_LOW (sign-extended to 24 bits). For an autocorrelation: an unsigned number in bits 29:0.
--- There are no flag bits: the host finds a saturation from the values.
+-- Result record: the 10-byte header, then for each product a little-endian word of 2 * CROSS_BITS + 2 bits in whole
+-- bytes (6 bytes for 22 bits). The readout computes the sum of the real parts (RE - IM_HIGH), so the record has the two
+-- parts as plain signed numbers of CROSS_BITS bits, and two saturation flags above them. See product_bytes.
 entity UCMAC88_ARRAY is
 	generic (
 		NCMAC           : integer := 8 * 9 / 2; -- Number of CMACs
@@ -118,7 +118,7 @@ architecture impl of UCMAC88_ARRAY is
 	attribute KEEP_HIERARCHY: string;
 	attribute keep_hierarchy of impl: architecture is "YES";
 
-	constant BYTES_PER_PRODUCT: integer := 6;
+	constant BYTES_PER_PRODUCT: integer := (2 * CROSS_BITS + 2 + 7) / 8; -- the two parts and two saturation flags: 6 bytes for 22 bits
 
 	function is_auto(i: integer) return boolean is
 	begin
@@ -143,25 +143,56 @@ architecture impl of UCMAC88_ARRAY is
 	-- The sums of all the CMACs for one bin. A cross-product: RE, IM_HIGH, IM_LOW (in the LSBs).
 	signal acc_dout: std_logic_vector(72 * NWORDS - 1 downto 0);
 	signal acc_din: std_logic_vector(72 * NWORDS - 1 downto 0) := (others => '0');
-
-	-- The 6 bytes of a product in a result record
-	function product_bytes(acc: std_logic_vector; i: integer) return slv8_array is
-		constant LSB: integer := acc_offset(i);
-		variable prod: std_logic_vector(8 * BYTES_PER_PRODUCT - 1 downto 0) := (others => '0');
-	begin
-		if is_auto(i) then
-			prod(AUTO_BITS - 1 downto 0) := acc(LSB + AUTO_BITS - 1 downto LSB);
-		else
-			prod(47 downto 24) := std_logic_vector(resize(signed(acc(LSB + 2 * CROSS_BITS - 1 downto LSB + CROSS_BITS)), 24));
-			prod(23 downto 0) := std_logic_vector(resize(signed(acc(LSB + CROSS_BITS - 1 downto LSB)), 24)); -- IM_HIGH & IM_LOW
-		end if;
-		return to_slv8_array(reverse_bytes(prod));
-	end function;
+	signal ro_raw: std_logic_vector(72 * NWORDS - 1 downto 0); -- the sums of the readout bin of this frame (the result bytes need a subtraction: one more clock)
 
 	constant SAT_POS: std_logic_vector(CROSS_BITS - 1 downto 0) := std_logic_vector(to_signed(2 ** (CROSS_BITS - 1) - 1, CROSS_BITS));
 	constant SAT_NEG: std_logic_vector(CROSS_BITS - 1 downto 0) := std_logic_vector(to_signed(-(2 ** (CROSS_BITS - 1)), CROSS_BITS));
 
 	constant HIGH_BITS: integer := CROSS_BITS - 18; -- bits of IM_HIGH
+
+	-- The bytes of a product in a result record (little-endian word), from the sums of one bin.
+	-- Cross-product: bits CROSS_BITS - 1 : 0 = sum of the imaginary parts, bits 2 * CROSS_BITS - 1 : CROSS_BITS = sum of the
+	-- real parts (RE - IM_HIGH), bit 2 * CROSS_BITS = the imaginary part is saturated, bit 2 * CROSS_BITS + 1 = the real part
+	-- is saturated or not valid (also set when the imaginary part is saturated). A saturated part has the largest or the
+	-- smallest value. Autocorrelation: unsigned number in the LSBs, bit 2 * CROSS_BITS + 1 = saturated.
+	function product_bytes(acc: std_logic_vector; i: integer) return slv8_array is
+		constant LSB: integer := acc_offset(i);
+		variable prod: std_logic_vector(8 * BYTES_PER_PRODUCT - 1 downto 0) := (others => '0');
+		variable re_field: std_logic_vector(CROSS_BITS - 1 downto 0);
+		variable im_high: signed(HIGH_BITS - 1 downto 0);
+		variable d: signed(CROSS_BITS downto 0); -- RE - IM_HIGH, with one more bit
+		variable re_sat, im_sat: std_logic;
+	begin
+		if is_auto(i) then
+			prod(AUTO_BITS - 1 downto 0) := acc(LSB + AUTO_BITS - 1 downto LSB);
+			prod(2 * CROSS_BITS + 1) := and(acc(LSB + AUTO_BITS - 1 downto LSB));
+		else
+			re_field := acc(LSB + 2 * CROSS_BITS - 1 downto LSB + CROSS_BITS);
+			im_high := signed(acc(LSB + CROSS_BITS - 1 downto LSB + 18));
+			im_sat := to_std_logic(im_high = 2 ** (HIGH_BITS - 1) - 1 or im_high = -(2 ** (HIGH_BITS - 1)));
+			d := resize(signed(re_field), CROSS_BITS + 1) - resize(im_high, CROSS_BITS + 1);
+			re_sat := '1';
+			if re_field = SAT_POS or (re_field /= SAT_NEG and d(CROSS_BITS) = '0' and d(CROSS_BITS - 1) = '1') then
+				prod(2 * CROSS_BITS - 1 downto CROSS_BITS) := SAT_POS;
+			elsif re_field = SAT_NEG or (d(CROSS_BITS) = '1' and d(CROSS_BITS - 1) = '0') then
+				prod(2 * CROSS_BITS - 1 downto CROSS_BITS) := SAT_NEG;
+			else
+				prod(2 * CROSS_BITS - 1 downto CROSS_BITS) := std_logic_vector(d(CROSS_BITS - 1 downto 0));
+				re_sat := '0';
+			end if;
+			if im_sat = '0' then
+				prod(CROSS_BITS - 1 downto 0) := acc(LSB + CROSS_BITS - 1 downto LSB);
+			elsif im_high(HIGH_BITS - 1) = '0' then
+				prod(CROSS_BITS - 1 downto 0) := SAT_POS;
+			else
+				prod(CROSS_BITS - 1 downto 0) := SAT_NEG;
+			end if;
+			prod(2 * CROSS_BITS) := im_sat;
+			prod(2 * CROSS_BITS + 1) := re_sat or im_sat;
+		end if;
+		return to_slv8_array(reverse_bytes(prod));
+	end function;
+
 
 	signal rst_reg: std_logic;
 
@@ -172,7 +203,7 @@ architecture impl of UCMAC88_ARRAY is
 
 	signal tvalid0, tvalid1, tvalid2, tvalid3, tvalid4: std_logic := '0';
 	signal tlast0, tlast1, tlast2, tlast3, tlast4: std_logic;
-	signal ro_word1, ro_word2: std_logic := '1'; -- first word of frame
+	signal ro_word1, ro_word2, ro_word3: std_logic := '1'; -- first word of frame
 	signal last_frame1, last_frame2, last_frame3, last_frame4: std_logic;
 	signal first_frame1, first_frame2: std_logic := '1'; -- init needed
 
@@ -272,6 +303,10 @@ begin
 				tvalid2 <= tvalid1;
 				tlast2 <= tlast1;
 				ro_word2 <= ro_word1;
+				ro_word3 <= ro_word2;
+				if ro_word2 then
+					ro_raw <= acc_dout; -- the RAM has the readout bin on its outputs
+				end if;
 				last_frame2 <= last_frame1;
 				first_frame2 <= first_frame1;
 
@@ -319,7 +354,7 @@ begin
 							bytes(0 to bytes'LENGTH - 2) <= bytes(1 to bytes'LENGTH - 1);
 							byte_ctr <= byte_ctr - 1;
 						end if; -- if m_axis_z_send='1'
-					elsif ro_word2 then -- ro_shift=0 ,ro_active=1
+					elsif ro_word3 then -- ro_shift=0 ,ro_active=1
 						-- Readout is active, no shift is in progress, and are processing the 1st product word of the frame,
 						-- meaning the RAM outputs data from the readout bank. .
 						-- We therefore capture the products in the byte array, set the byte counter and enable ro_shift.
@@ -338,13 +373,13 @@ begin
 						-- Capture the RAM outputs, slice them in 5-byte products,  and store them in the shift register
 						-- This affects a large number of registers, implying large fanout controls
 						for i in 0 to NCMAC - 1 loop
-							bytes(FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * i to FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * (i + 1) - 1) <= product_bytes(acc_dout, i);
+							bytes(FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * i to FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * (i + 1) - 1) <= product_bytes(ro_raw, i);
 						end loop;
 
 						-- Override the first product bytes after the frame header with the autocorrelation products if autocorr='1'
 						if autocorr_only then
 							for i in 0 to NCMAC / AUTOCORR_STRIDE - 2 loop -- assume that last one is not an autocorrelation (first N elements in N+1 high column are autocorrs)
-								bytes(FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * i to FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * (i + 1) - 1) <= product_bytes(acc_dout, i * AUTOCORR_STRIDE);
+								bytes(FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * i to FRAME_HEADER_BYTE_LENGTH + BYTES_PER_PRODUCT * (i + 1) - 1) <= product_bytes(ro_raw, i * AUTOCORR_STRIDE);
 							end loop;
 						end if;
 
