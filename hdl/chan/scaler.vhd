@@ -41,6 +41,7 @@ entity scaler is
         OUT_BITS_PER_WORD: integer := OUT_BITS_PER_BIN * FFT_BINS_PER_WORD;
         CAP_BITS_PER_BIN: integer := CAP_BITS_PER_WORD / FFT_BINS_PER_WORD; -- minimum is 4+4, but can be increased to use 8-bit mode or get more of the input data in bypass mode for capture purposes.
         EIGHT_BIT_SUPPORT: boolean := OUT_BITS_PER_BIN >= 8+8; -- TRUE of the scaler supports (8+8) bit output in addition to the 4+4 bit output
+        EXPONENT_BITS: integer := 0; -- 0: no exponent mode. 1 to 3: bits of the exponent of a bin in the exponent mode (value = 4-bit output x 2^exponent). Only with (4+4)-bit outputs. The latency is 4 clocks more.
         FRAME_CTR_RESET_VALUE: std_logic_vector(31 downto 0) := (others => '0') -- value of the frame counter after a reset. For simulations of the counter near its limit.
         );
     port (
@@ -57,6 +58,12 @@ entity scaler is
         m_axis_out_tvalid   : out std_logic;
         m_axis_out_tlast    : out std_logic;
         m_axis_out_tuser    : out std_logic_vector(SCALER_TUSER_BITS_PER_WORD-1 downto 0);  -- Bit 0: ADC overflow, Bit 1: FFT Overflow; Bit 2+ Scaler overflow for bin 0,1,2..., last bit: gain bank.  Valid on TLAST only
+        -- Exponent bits of each bin of m_axis_out_tdata (EXPONENT_BITS > 0): EXPONENT_BITS + 1 bits for each bin (1 bit, not used, if
+        -- EXPONENT_BITS = 0), in the order of the bins of m_axis_out_tdata: the bin in the LSBs of tdata has its bits in the LSBs.
+        -- The MSB of a bin tells that the bin has an exponent in this scaler (exponent_enable = '1', exponent_max is not 0 and
+        -- the bin is not in the table of the bins with no exponent): the packetizer gives exponents in the packets to the bins
+        -- that have it. The other bits are the exponent (0 if the MSB is 0).
+        m_axis_out_texp     : out std_logic_vector(FFT_BINS_PER_WORD * sel(EXPONENT_BITS > 0, EXPONENT_BITS + 1, 1) - 1 downto 0);
 
         -- Capture output interface (non-blocking AXI-Streaming, synchronous to ``clk``)
 
@@ -150,7 +157,7 @@ architecture Behavioral of SCALER is
     signal in_dat_dly2_tuser    : std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);  
 
     --- Define Control word and its signals
-    signal control_bytes: slv8_array(0 to 13); -- default value set in the CMD_SLAVE
+    signal control_bytes: slv8_array(0 to 13 + sel(EXPONENT_BITS > 0, 1, 0)); -- default value set in the CMD_SLAVE. Byte 14 is only in a build with the exponent mode
     signal status_bytes: slv8_array(0 to 22);
     -- Switch of the gain bank at a frame number
     signal target_diff: unsigned(31 downto 0); -- frame counter - target frame, modulo 2^32
@@ -171,6 +178,72 @@ architecture Behavioral of SCALER is
     signal stage1_tvalid: std_logic;
     signal stage1_tlast: std_logic;
     signal stage1_tuser: std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);
+
+    -- Exponent mode (EXPONENT_BITS > 0). See exp_gen.
+    constant EXP_BITS: integer := sel(EXPONENT_BITS > 0, EXPONENT_BITS, 1); -- bits of an exponent
+    constant EXPF_BITS: integer := sel(EXPONENT_BITS > 0, EXPONENT_BITS + 1, 1); -- bits of a bin in m_axis_out_texp: the bit that tells that the bin has an exponent, and the exponent
+    constant EXP_MAX: integer := 2 ** EXPONENT_BITS - 1; -- largest exponent. Stage 1 has this number of bits above the 4-bit window.
+    constant WIDE_WIDTH: integer := PRODUCT_COMPONENT_WIDTH + EXP_MAX;
+    signal exponent_enable: std_logic;
+    -- Run-time controls of the exponent mode
+    signal exponent_max: unsigned(2 downto 0); -- largest exponent that a bin can get (control field)
+    signal exp_table_select: std_logic; -- '1': the RAM interface of the host reads and writes the table of the bins with no exponent, not the gain tables
+    constant LOG2_EXP_TABLE_BYTES: integer := integer_log2(FFT_BINS_PER_FRAME / 8); -- the table has one bit for each bin of a frame
+    signal exp_table_ctrl_dout: std_logic_vector(7 downto 0) := (others => '0');
+    signal exp_table_dout: std_logic_vector(FFT_BINS_PER_WORD-1 downto 0) := (others => '0'); -- bit j: bin j of the word (bin 4 x word + j) has no exponent
+    signal gain_ram_ctrl_dout: std_logic_vector(7 downto 0);
+    signal gain_ram_ctrl_wr_en: std_logic;
+
+    -- Control bytes after a reset. Byte 14 (exponent_max = the largest exponent of the build) is only in a build with the exponent mode.
+    function default_control_bytes return std_logic_vector is
+        constant BASE: std_logic_vector := X"21" & -- Byte 0
+                                           X"60" & -- Byte 1
+                                           X"02" & -- Byte 2: stats_capture=0, symmetric_saturation=0,, zero_on_saturation=0, synchronize_gain_bank_switch=0,, fifo_overflow_reset=0, stats_single_bin=0, rounding_mode =2
+                                           X"05F5E1" & -- Bytes 3-5: stats_frame_count
+                                           X"00000000" & --Bytes 6-9: gain_bank_switch_frame_number
+                                           X"00"& -- Byte 10: use_float_gains=0,mon_reset_stats=0, mon_ctrl=0, bypass_data_type[1:0]="00", cap_data_type[1:0]="00"
+                                           X"0000" & -- Bytes 11-12: stats_bin_number
+                                           X"01"; -- Byte 13: post_scaler_left_shift_bank1=1 (same default as bank 0 in byte 0)
+    begin
+        if EXPONENT_BITS > 0 then
+            return BASE & to_slv(EXP_MAX, 8); -- Byte 14: exp_table_select=0, exponent_max=EXP_MAX
+        end if;
+        return BASE;
+    end function;
+    -- stage1_word with EXP_MAX more bits above has WIDE_WIDTH bits. The exponent stages use only its EXP_MAX + 5 top bits
+    -- (bit j of stage1x_top is bit PRODUCT_COMPONENT_WIDTH - 5 + j of that word: the 4-bit field and the bit below it for
+    -- each exponent) and one bit that says if a bit below them is '1'.
+    constant TOP_WIDTH: integer := EXP_MAX + 5;
+    signal stage1x_top: signed_array(0 to COMPONENTS_PER_WORD-1)(TOP_WIDTH-1 downto 0);
+    signal stage1x_sticky: std_logic_vector(0 to COMPONENTS_PER_WORD-1);
+    signal stage1x_overflow: std_logic_vector(0 to COMPONENTS_PER_WORD-1); -- the product with its shift does not fit in the word of WIDE_WIDTH bits
+    signal scaled_data_wide_shift: unsigned_array(0 to FFT_BINS_PER_WORD-1)(5 downto 0); -- scaled_data_log_gain - EXP_MAX, or 0 if that is negative: bits that go out of stage1x_word
+
+    function wide_shift(log_gain: unsigned(5 downto 0)) return unsigned is
+    begin
+        if log_gain > EXP_MAX then
+            return log_gain - EXP_MAX;
+        end if;
+        return to_unsigned(0, 6);
+    end function;
+
+    -- Input of stage 1: the products of the multipliers (EXPONENT_BITS = 0), or the products one clock later
+    -- (EXPONENT_BITS > 0: a register stage between the DSP blocks and the shifter, which is wider in that case)
+    signal s1in_tdata: std_logic_vector(PRODUCT_COMPONENT_WIDTH*COMPONENTS_PER_WORD-1 downto 0);
+    signal s1in_log_gain, s1in_wide_shift: unsigned_array(0 to FFT_BINS_PER_WORD-1)(5 downto 0);
+    signal s1in_tvalid: std_logic;
+    signal s1in_tlast: std_logic;
+    signal s1in_tuser: std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);
+
+    -- Input of stage 2: stage 1 (EXPONENT_BITS = 0), or stage 1 after the selection of the exponent, 3 clocks later
+    signal s2in_word: signed_array(0 to COMPONENTS_PER_WORD-1)(PRODUCT_COMPONENT_WIDTH-1 downto 0);
+    signal s2in_sign: std_logic_vector(0 to COMPONENTS_PER_WORD-1);
+    signal s2in_overflow: std_logic_vector(0 to COMPONENTS_PER_WORD-1);
+    signal s2in_tvalid: std_logic;
+    signal s2in_tlast: std_logic;
+    signal s2in_tuser: std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);
+    signal s2in_exp, stage2_exp, stage3_exp: unsigned_array(0 to FFT_BINS_PER_WORD-1)(EXP_BITS-1 downto 0) := (others => (others => '0'));
+    signal s2in_has_exp, stage2_has_exp, stage3_has_exp: std_logic_vector(0 to FFT_BINS_PER_WORD-1) := (others => '0'); -- the bin has an exponent (exponent mode)
 
     -- stage 2: rounding result
     signal stage2_word: signed_array(0 to COMPONENTS_PER_WORD-1)(7 downto 0);
@@ -294,7 +367,10 @@ begin
 -- |          |11:12   | 15:0    | stats_bin_number                  | Bin number on which to measure overflow stats when stats_single_bin='1'.                        |
 -- |          | 13     |  7      | switch_at_integration             | When '1', the next gain bank is activated at the end of a correlator integration (integ_last_frame), not at a frame number |
 -- |          |        |  6      | gain_switch_late_reset            | '1' clears gain_switch_late |
+-- |          |        |  5      | exponent_enable                   | '1': exponent mode (builds with EXPONENT_BITS > 0, 4-bit outputs). Each bin has the smallest exponent for which its real and imaginary parts are from -7 to 7: value = output x 2^exponent. See exp_gen. |
 -- |          | 13     |  4:0    | post_scaler_left_shift_bank1      | Post-scaler left shift for gain bank 1 (0-31). Applied after RAM latency when bank 1 is active.   |
+-- |          | 14     |  7      | exp_table_select                  | Builds with EXPONENT_BITS > 0 only (the byte is not there in the other builds). '1': the RAM interface reads and writes the table of the bins with no exponent (see exp_table_gen), not the gain tables. |
+-- |          |        |  2:0    | exponent_max                      | Largest exponent of a bin in the exponent mode (after a reset: the largest one of the build, 2^EXPONENT_BITS - 1). A value that needs more is limited at this exponent and has its overflow flag. 0: the output of the 4-bit mode. |
 -- | STATUS   |  0     |  7      | stats_ready                       | '1' when new stats data has been captured                                                       |
 -- |          |        |  6      | current_gain_bank                 | Currently used gain bank.                                                                       |
 -- |          |        |  5      | eight_bit_support                 | '1' when this scaler implementation supports (8+8) bit output mode                              |
@@ -313,6 +389,8 @@ begin
 -- |          | 16     |  7:0    | mon_clk_ctr                       | Monitor clock counter                                                                           |
 -- |          | 17     |  7:0    | mon_bit_ctr                       | Monitor bit counter                                                                             |
 -- |          | 18     |  0      | gain_switch_armed                 | '1' while switch_at_integration is set and the next gain bank is not yet the current one |
+-- |          |        |  5      | exponent_controls                 | '1': the build has exponent_max and the table of the bins with no exponent (control byte 14) |
+-- |          |        |  4:2    | exponent_bits                     | EXPONENT_BITS: bits of the exponent of a bin in the exponent mode. 0: the build does not have the exponent mode. |
 -- |          |        |  1      | gain_switch_late                  | Set when a switch at a frame number (synchronize_gain_bank_switch) came after its target frame, because the bank was selected too late. Cleared by gain_switch_late_reset. |
 -- |          | 19:22  | 31:0    | gain_switch_frame                 | Number of the frame at the end of which the gain bank changed last: the target frame for a switch that was on time. The next frame is the first one with the new bank. |
 -- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -363,7 +441,17 @@ stats_bin_number <= to_unsigned(control_bytes(11 to 12));
 -- CONTROL Byte 13
 switch_at_integration <= control_bytes(13)(7);
 gain_switch_late_reset <= control_bytes(13)(6);
+exponent_enable <= control_bytes(13)(5) when EXPONENT_BITS > 0 else '0';
 post_scaler_left_shift_bank(1) <= control_bytes(13)(4 downto 0);
+
+-- CONTROL Byte 14 (builds with the exponent mode)
+exp_ctrl_gen: if EXPONENT_BITS > 0 generate
+    exp_table_select <= control_bytes(14)(7);
+    exponent_max <= unsigned(control_bytes(14)(2 downto 0));
+else generate
+    exp_table_select <= '0';
+    exponent_max <= "000";
+end generate exp_ctrl_gen;
 
 -- Applied post-scaler shift follows the gain bank after RAM_LATENCY so it
 -- arrives at the multiplier with the coefficients from that bank.
@@ -405,8 +493,12 @@ status_bytes(16) <= std_logic_vector(mon_clk_ctr);
 status_bytes(17) <= std_logic_vector(mon_bit_ctr);
 
 -- STATUS Byte 18
-status_bytes(18) <= (0 => switch_at_integration and (next_gain_bank xor current_gain_bank), -- gain_switch_armed
-                     1 => gain_switch_late, others => '0');
+status_bytes(18)(0) <= switch_at_integration and (next_gain_bank xor current_gain_bank); -- gain_switch_armed
+status_bytes(18)(1) <= gain_switch_late;
+status_bytes(18)(4 downto 2) <= to_slv(EXPONENT_BITS, 3);
+status_bytes(18)(5) <= to_std_logic(EXPONENT_BITS > 0); -- exponent_controls
+status_bytes(18)(7 downto 6) <= "00";
+assert EXPONENT_BITS = 0 or (EXPONENT_BITS <= 3 and OUT_BITS_PER_BIN = 4 + 4) report "EXPONENT_BITS must be 0, or 1 to 3 with (4+4)-bit outputs" severity FAILURE;
 
 -- STATUS Bytes 19-22
 status_bytes(19 to 22) <= to_slv8_array(gain_switch_frame);
@@ -419,14 +511,7 @@ bsb_regs0: entity work.bsb_regs
     GENERIC MAP (
         NUMBER_OF_CONTROL_BYTES=>control_bytes'Length(1), -- Number of bits in the control word
         NUMBER_OF_STATUS_BYTES=>status_bytes'Length(1), -- Number of bits in the status word.
-        DEFAULT_CONTROL_BYTES=> X"21" & -- Byte 0
-                                X"60" & -- Byte 1
-                                X"02" & -- Byte 2: stats_capture=0, symmetric_saturation=0,, zero_on_saturation=0, synchronize_gain_bank_switch=0,, fifo_overflow_reset=0, stats_single_bin=0, rounding_mode =2
-                                X"05F5E1" & -- Bytes 3-5: stats_frame_count
-                                X"00000000" & --Bytes 6-9: gain_bank_switch_frame_number
-                                X"00"& -- Byte 10: use_float_gains=0,mon_reset_stats=0, mon_ctrl=0, bypass_data_type[1:0]="00", cap_data_type[1:0]="00"
-                                X"0000" & -- Bytes 11-12: stats_bin_number
-                                X"01", -- Byte 13: post_scaler_left_shift_bank1=1 (same default as bank 0 in byte 0)
+        DEFAULT_CONTROL_BYTES=> default_control_bytes,
         RAM_ADDR_WIDTH => BSB_RAM_ADDR_WIDTH,
         RAM_LATENCY=> RAM_LATENCY
         )
@@ -447,13 +532,15 @@ bsb_regs0: entity work.bsb_regs
         status_bytes => status_bytes,
 
         RAM_DIN => coeff_ram_ctrl_din,
-        RAM_DOUT => coeff_ram_ctrl_dout,
+        RAM_DOUT => coeff_ram_ctrl_dout, -- from the gain tables or from the table of the bins with no exponent
         RAM_ADDR => coeff_ram_ctrl_addr,
         RAM_WR_EN => coeff_ram_ctrl_wr_en,
         RAM_RD_EN => open -- the ram is always reading
     );
 
 coeff_ram_ctrl_addr_int <= (gain_table_page & coeff_ram_ctrl_addr);
+gain_ram_ctrl_wr_en <= coeff_ram_ctrl_wr_en and not exp_table_select;
+coeff_ram_ctrl_dout <= exp_table_ctrl_dout when exp_table_select = '1' else gain_ram_ctrl_dout;
 coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
 
 
@@ -507,9 +594,9 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
 
             addra => coeff_ram_ctrl_addr_int,
             dina => coeff_ram_ctrl_din,
-            douta => coeff_ram_ctrl_dout,
+            douta => gain_ram_ctrl_dout,
             ena => '1',
-            wea(0) => coeff_ram_ctrl_wr_en,
+            wea(0) => gain_ram_ctrl_wr_en,
             clka => bsb_clk,
             rsta => bsb_rst,
 
@@ -648,6 +735,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             scaled_data_tdata(OUT_IM_HI downto OUT_IM_LO) <= resize(cmul_dout(i)(2 * CMUL_OUT_COMPONENT_WIDTH - 1 downto CMUL_OUT_COMPONENT_WIDTH), PRODUCT_COMPONENT_WIDTH); -- Im
 
             scaled_data_log_gain(FFT_BINS_PER_WORD - 1 - i) <= resize(unsigned(post_scaler_left_shift_cmul), 6);
+            scaled_data_wide_shift(FFT_BINS_PER_WORD - 1 - i) <= wide_shift(resize(unsigned(post_scaler_left_shift_cmul), 6));
         end generate;
 
         -- Pass through the CMUL(0) output control signals. All CMULs should have the same control signals.
@@ -751,6 +839,9 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 scaled_data_tvalid <= scaled_data_tvalid_dly2;
                 scaled_data_tuser <= scaled_data_tuser_dly2;
                 scaled_data_log_gain <= scaled_data_log_gain_dly2;
+                for i in 0 to FFT_BINS_PER_WORD - 1 loop
+                    scaled_data_wide_shift(i) <= wide_shift(scaled_data_log_gain_dly2(i)); -- used with EXPONENT_BITS > 0 only
+                end loop;
 
                 if rst_reg then
                     fft_reg_tvalid <= '0';
@@ -773,6 +864,9 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
         variable word_var: signed(PRODUCT_COMPONENT_WIDTH-1 downto 0);
         variable OUT_WORD_VAR: signed_array(0 to COMPONENTS_PER_WORD - 1)(7 downto 0);
         variable round_down_var: std_logic;
+        variable wide_shift_var: integer range 0 to 63;
+        variable wide_var: signed(WIDE_WIDTH-1 downto 0);
+        variable sticky_var: std_logic;
     begin
         if rising_edge(clk) then
 
@@ -848,20 +942,20 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             -- PIPELINE STAGE 1: Implement a barrel shifter to
             -- shift-left the read/imaginary parts of the products and
             -- determine if there is an overflow
-            stage1_tvalid  <= scaled_data_tvalid;
-            stage1_tlast   <= scaled_data_tlast;
-            stage1_tuser   <= scaled_data_tuser;
+            stage1_tvalid  <= s1in_tvalid;
+            stage1_tlast   <= s1in_tlast;
+            stage1_tuser   <= s1in_tuser;
 
             for i in 0 to COMPONENTS_PER_WORD-1 loop
                 -- get an integer. The to_10() standard function makes sure that 'U' values are converted to zeros and
                 -- prevent simulation warnings in the following computations
-                word_var := to_01(signed(scaled_data_tdata((i+1)*PRODUCT_COMPONENT_WIDTH-1 downto i*PRODUCT_COMPONENT_WIDTH)));
+                word_var := to_01(signed(s1in_tdata((i+1)*PRODUCT_COMPONENT_WIDTH-1 downto i*PRODUCT_COMPONENT_WIDTH)));
 
                 -- Store the sign bit before shifting
                 stage1_sign(i) <= sign_bit(word_var); -- preserve the sign that may be destroyed by the shift operation
                 -- Store the shifted integer. We'll fix overflows in the next phase.
                 -- convert shift value into an integer
-                scaled_data_log_gain_var := to_integer(scaled_data_log_gain(i/2));
+                scaled_data_log_gain_var := to_integer(s1in_log_gain(i/2));
                 stage1_word(i) <= shift_left(word_var, scaled_data_log_gain_var);
 
                 -- Determine if all bits shifted out and the final sign bits have the same sign as the sign bit. If not, we are in overflow condition.
@@ -869,60 +963,81 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 -- signed value with a constant.
 
                 stage1_overflow(i) <= to_std_logic(not all_same(word_var, PRODUCT_COMPONENT_WIDTH-1, PRODUCT_COMPONENT_WIDTH-1-scaled_data_log_gain_var)); 
+
+                -- Exponent mode: the same word with EXP_MAX more bits above (its LSBs are stage1_word). It has an overflow only
+                -- if the shift is more than EXP_MAX and the bits that go out are not all the sign. Only its top bits are
+                -- kept, with one bit for all the bits below them: these are the bits 0 to PRODUCT_COMPONENT_WIDTH - 6 - shift
+                -- of the product, so this bit does not wait for the shifter.
+                if EXPONENT_BITS > 0 then
+                    wide_var := shift_left(resize(word_var, WIDE_WIDTH), scaled_data_log_gain_var);
+                    stage1x_top(i) <= wide_var(WIDE_WIDTH-1 downto PRODUCT_COMPONENT_WIDTH-5);
+                    stage1_word(i) <= wide_var(PRODUCT_COMPONENT_WIDTH-1 downto 0); -- the same value as above, from one shifter
+                    sticky_var := '0';
+                    for m in 0 to PRODUCT_COMPONENT_WIDTH-6 loop
+                        if word_var(m) = '1' and scaled_data_log_gain_var <= PRODUCT_COMPONENT_WIDTH-6-m then
+                            sticky_var := '1';
+                        end if;
+                    end loop;
+                    stage1x_sticky(i) <= sticky_var;
+                    wide_shift_var := to_integer(s1in_wide_shift(i/2));
+                    stage1x_overflow(i) <= to_std_logic(not all_same(word_var, PRODUCT_COMPONENT_WIDTH-1, PRODUCT_COMPONENT_WIDTH-1-wide_shift_var));
+                end if;
             end loop;
 
 
             -- PIPELINE STAGE 2: apply rounding and detect rounding overflows
-            stage2_tvalid  <= stage1_tvalid;
-            stage2_tlast   <= stage1_tlast;
-            stage2_tuser   <= stage1_tuser;
-            stage2_sign <= stage1_sign;
-            stage2_overflow <= stage1_overflow; -- overriden below if rounding overflow detected
+            stage2_tvalid  <= s2in_tvalid;
+            stage2_tlast   <= s2in_tlast;
+            stage2_tuser   <= s2in_tuser;
+            stage2_sign <= s2in_sign;
+            stage2_exp <= s2in_exp;
+            stage2_has_exp <= s2in_has_exp;
+            stage2_overflow <= s2in_overflow; -- overriden below if rounding overflow detected
             for i in 0 to COMPONENTS_PER_WORD-1 loop
                 if four_bits = '1' or EIGHT_BIT_SUPPORT = FALSE then
                     if rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND or rounding_mode = ROUNDING_MODE_ROUND then -- if rounding
-                        stage2_word(i)(7 downto 4) <= msb(msb(stage1_word(i), 4 + 1) + 1, 4);
+                        stage2_word(i)(7 downto 4) <= msb(msb(s2in_word(i), 4 + 1) + 1, 4);
                         stage2_word(i)(3 downto 0) <= "0000";
-                        round_down_var := to_std_logic(rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND and stage1_word(i)(PRODUCT_COMPONENT_WIDTH-1-4)='1' and stage1_word(i)(PRODUCT_COMPONENT_WIDTH-1-4-1 downto 0)=0);
+                        round_down_var := to_std_logic(rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND and s2in_word(i)(PRODUCT_COMPONENT_WIDTH-1-4)='1' and s2in_word(i)(PRODUCT_COMPONENT_WIDTH-1-4-1 downto 0)=0);
                         if round_down_var then
                             stage2_word(i)(4) <= '0';
                         end if;
                         -- Detect post-rounding saturations to be applied on next pipeline stage
                         -- First: if the rounding causes a positive value to overflow (rounds 7.5 to -8)
-                        if msb(stage1_word(i), 5) = "01111" then -- If we have a tie, convergent rounding would make the number even, but it's already even after rounding, so the test is the same for normal and convergent rounding.
+                        if msb(s2in_word(i), 5) = "01111" then -- If we have a tie, convergent rounding would make the number even, but it's already even after rounding, so the test is the same for normal and convergent rounding.
                             stage2_overflow(i) <= '1';-- the rounding will cause a overflow
                         -- Second, if the rounding adds 0.5, so we can never overflow a negative value.
                         -- Instead, here we check that the value is not -8 after rounding, so we can saturate to -7 if symmetric saturation is enabled
                         -- We check for 2 conditions.
                         --     a) we had -8.0 prior to rounding, so we are still -8 after rounding.
                         --     b) We were -7.5 and rounded back down to -8 by convergent rounding
-                        elsif symmetric_saturation='1' and ( msb(stage1_word(i), 5) = "10000" or (msb(stage1_word(i), 5) = "10001" and round_down_var = '1')) then --if the rounding causes a negative value to overflow
+                        elsif symmetric_saturation='1' and ( msb(s2in_word(i), 5) = "10000" or (msb(s2in_word(i), 5) = "10001" and round_down_var = '1')) then --if the rounding causes a negative value to overflow
                             stage2_overflow(i) <= '1';-- the rounded value will exceed -7
                         end if;
                     else -- no rounding (i.e truncate)
-                        stage2_word(i)(7 downto 4) <= msb(stage1_word(i), 4);
+                        stage2_word(i)(7 downto 4) <= msb(s2in_word(i), 4);
                         stage2_word(i)(3 downto 0) <= "0000";
-                        if symmetric_saturation='1' and msb(stage1_word(i), 4) = "1000" then --if the rounding causes a negative value to overflow
+                        if symmetric_saturation='1' and msb(s2in_word(i), 4) = "1000" then --if the rounding causes a negative value to overflow
                             stage2_overflow(i) <= '1';
                         end if;
                     end if;
 
                 elsif EIGHT_BIT_SUPPORT then -- four_bits = '0'
                     if rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND or rounding_mode = ROUNDING_MODE_ROUND then -- if rounding
-                        stage2_word(i) <= msb(msb(stage1_word(i), 8 + 1) + 1, 8);
-                        round_down_var := to_std_logic(rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND and stage1_word(i)(PRODUCT_COMPONENT_WIDTH-1-8)='1' and stage1_word(i)(PRODUCT_COMPONENT_WIDTH-1-8-1 downto 0)=0);
+                        stage2_word(i) <= msb(msb(s2in_word(i), 8 + 1) + 1, 8);
+                        round_down_var := to_std_logic(rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND and s2in_word(i)(PRODUCT_COMPONENT_WIDTH-1-8)='1' and s2in_word(i)(PRODUCT_COMPONENT_WIDTH-1-8-1 downto 0)=0);
                         if round_down_var then
                             stage2_word(i)(0) <= '0';
                         end if;
                         -- Detect saturations to be applied on next pipeline stage
-                        if msb(stage1_word(i), 9) = "011111111" then --if the rounding causes a positive value to overflow
+                        if msb(s2in_word(i), 9) = "011111111" then --if the rounding causes a positive value to overflow
                             stage2_overflow(i) <= '1';-- the rounding will cause a overflow
-                        elsif symmetric_saturation='1' and ( msb(stage1_word(i), 9) = "100000000" or (msb(stage1_word(i), 9) = "100000001" and round_down_var = '1')) then --if the rounding causes a negative value to overflow
+                        elsif symmetric_saturation='1' and ( msb(s2in_word(i), 9) = "100000000" or (msb(s2in_word(i), 9) = "100000001" and round_down_var = '1')) then --if the rounding causes a negative value to overflow
                             stage2_overflow(i) <= '1';-- the rounded value will exceed -7
                         end if;
                     else -- no rounding (i.e. truncate)
-                        stage2_word(i) <= msb(stage1_word(i), 8);
-                        if symmetric_saturation='1' and msb(stage1_word(i), 8) = "10000000" then --if the rounding causes a negative value to overflow
+                        stage2_word(i) <= msb(s2in_word(i), 8);
+                        if symmetric_saturation='1' and msb(s2in_word(i), 8) = "10000000" then --if the rounding causes a negative value to overflow
                             stage2_overflow(i) <= '1';
                         end if;
                     end if;
@@ -978,6 +1093,8 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
             stage3_overflow <= stage2_overflow;
             stage3_sign <= stage2_sign;
             stage3_tuser <= stage2_tuser;
+            stage3_exp <= stage2_exp;
+            stage3_has_exp <= stage2_has_exp;
 
             -- Synchronous reset
             if rst_reg then
@@ -997,6 +1114,277 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
         end if; -- clk
     end process scaler_proc;
 
+    -------------------------------------------------------------------
+    -- Input of stage 1
+    -------------------------------------------------------------------
+    -- With the exponent mode in the build, one register stage is between the multipliers and the shifter of stage 1:
+    -- the path from the DSP blocks through the shifter was the one with the least margin, and the shifter is wider.
+    s1in_gen: if EXPONENT_BITS > 0 generate
+        process(clk) begin
+            if rising_edge(clk) then
+                s1in_tdata <= scaled_data_tdata;
+                s1in_log_gain <= scaled_data_log_gain;
+                s1in_wide_shift <= scaled_data_wide_shift;
+                s1in_tvalid <= scaled_data_tvalid;
+                s1in_tlast <= scaled_data_tlast;
+                s1in_tuser <= scaled_data_tuser;
+                if rst_reg then
+                    s1in_tvalid <= '0';
+                end if;
+            end if;
+        end process;
+    else generate
+        s1in_tdata <= scaled_data_tdata;
+        s1in_log_gain <= scaled_data_log_gain;
+        s1in_wide_shift <= scaled_data_wide_shift;
+        s1in_tvalid <= scaled_data_tvalid;
+        s1in_tlast <= scaled_data_tlast;
+        s1in_tuser <= scaled_data_tuser;
+    end generate s1in_gen;
+
+    -------------------------------------------------------------------
+    -- Exponent mode: selection of the exponent between stage 1 and stage 2
+    -------------------------------------------------------------------
+    -- With exponent_enable = '1', each bin (its real and imaginary parts together) gets the smallest exponent e from 0
+    -- to EXP_MAX for which the two parts, divided by 2^e and rounded as rounding_mode says, are from -7 to 7. Stage 2
+    -- then gets the word of stage 1 moved down by e bits, so the rounding and the saturation of the 4-bit mode are
+    -- used as they are, and with e = 0 the output is that of the 4-bit mode. If no exponent is sufficient, e is
+    -- EXP_MAX, and the parts that are not from -7 to 7 have the overflow flag: they saturate as in the 4-bit mode.
+    -- With exponent_enable = '0', e is 0 and the overflow flags are those of stage 1: the output is the same as
+    -- without the mode, 4 clocks later (these 3 stages and the register stage in front of stage 1).
+    -- Two controls change this at run time: exponent_max puts the largest exponent below EXP_MAX (a value that needs
+    -- more is limited as above, at exponent_max), and a table gives the bins that have no exponent (see exp_table0).
+    -- A bin with no exponent, and all the bins with exponent_max = 0, have the output of exponent_enable = '0'.
+    --
+    -- Three stages, for the 2.5 ns clock:
+    --   A: for each part and each e, a flag: the part is from -7 to 7 with that exponent
+    --   B: the exponent of each bin
+    --   C: the word of each part, moved down by the exponent
+    -- The stages have only the top bits of the word of stage 1 (stage1x_top) and the bit for the bits below them
+    -- (stage1x_sticky): stage 2 uses the 4-bit field, the bit below it, and if a bit below that one is '1'.
+    exp_gen: if EXPONENT_BITS > 0 generate
+        constant W: integer := PRODUCT_COMPONENT_WIDTH;
+        type fit_array is array (0 to COMPONENTS_PER_WORD-1) of std_logic_vector(0 to EXP_MAX);
+        signal a_fit: fit_array; -- a_fit(i)(e) = '1': part i is from -7 to 7 with the exponent e
+        signal a_top, b_top: signed_array(0 to COMPONENTS_PER_WORD-1)(TOP_WIDTH-1 downto 0);
+        signal a_sticky, b_sticky: std_logic_vector(0 to COMPONENTS_PER_WORD-1);
+        signal a_sign, a_overflow, b_sign, b_overflow: std_logic_vector(0 to COMPONENTS_PER_WORD-1);
+        signal a_tvalid, a_tlast, b_tvalid, b_tlast: std_logic;
+        signal a_tuser, b_tuser: std_logic_vector(FFT_TUSER_BITS_PER_WORD-1 downto 0);
+        signal b_exp: unsigned_array(0 to FFT_BINS_PER_WORD-1)(EXP_BITS-1 downto 0);
+        signal b_has_exp: std_logic_vector(0 to FFT_BINS_PER_WORD-1) := (others => '0');
+        -- Run-time controls
+        signal x_word_ctr: unsigned(LOG2_FFT_WORDS_PER_FRAME-1 downto 0) := (others => '0'); -- number of the word that is at the output of the multipliers
+        signal a_off: std_logic_vector(FFT_BINS_PER_WORD-1 downto 0) := (others => '0'); -- the table for the word of stage A: bit j = bin j of the word has no exponent
+        signal exp_on: std_logic := '0'; -- the mode is on and the largest exponent is not 0
+        signal lim: unsigned(EXP_BITS-1 downto 0) := (others => '1'); -- the largest exponent (exponent_max, not more than EXP_MAX)
+        signal lim_above: std_logic_vector(0 to EXP_MAX) := (others => '0'); -- lim_above(k) = '1': the largest exponent is more than k
+        signal lim_is: std_logic_vector(0 to EXP_MAX) := (others => '0'); -- lim_is(k) = '1': the largest exponent is k
+        signal exp_table_ctrl_addr: std_logic_vector(LOG2_EXP_TABLE_BYTES-1 downto 0);
+        signal exp_table_ctrl_wr_en: std_logic;
+    begin
+        exp_table_ctrl_addr <= std_logic_vector(resize(unsigned(coeff_ram_ctrl_addr_int), LOG2_EXP_TABLE_BYTES)); -- page & address, as the gain tables
+        exp_table_ctrl_wr_en <= coeff_ram_ctrl_wr_en and exp_table_select;
+        -- Table of the bins with no exponent: one bit for each bin of a frame, '1' = the bin has no exponent (it is limited
+        -- as in the 4-bit mode). The memory has zeros after the configuration: all the bins have an exponent. A reset does
+        -- not change it. The table is the same for the two gain banks.
+        -- The host writes it through the RAM interface with exp_table_select = '1': bin b is bit (b mod 8) of byte
+        -- (b / 8); the bytes are in pages of 512 as the gain tables (gain_table_page 0 and 1 for 8192 bins).
+        -- The scaler reads one word of FFT_BINS_PER_WORD bits for each word of the frame, at the output of the
+        -- multipliers: 2 clocks of the memory and one register later the bits are with the word of stage A.
+        assert FFT_BINS_PER_WORD = 1 or FFT_BINS_PER_WORD = 2 or FFT_BINS_PER_WORD = 4 or FFT_BINS_PER_WORD = 8
+            report "The table of the bins with no exponent needs 1, 2, 4 or 8 bins in a word" severity FAILURE;
+        exp_table0 : xpm_memory_tdpram
+        generic map (
+            CLOCKING_MODE => "independent_clock",
+            MEMORY_PRIMITIVE => "block",
+            -- Port A: the host, 8 bits
+            WRITE_DATA_WIDTH_A => 8,
+            BYTE_WRITE_WIDTH_A => 8,
+            READ_DATA_WIDTH_A  => 8,
+            ADDR_WIDTH_A       => LOG2_EXP_TABLE_BYTES,
+            READ_LATENCY_A     => RAM_LATENCY,
+            -- Port B: the scaler, the bits of the bins of one word
+            WRITE_DATA_WIDTH_B => FFT_BINS_PER_WORD,
+            BYTE_WRITE_WIDTH_B => FFT_BINS_PER_WORD,
+            READ_DATA_WIDTH_B  => FFT_BINS_PER_WORD,
+            ADDR_WIDTH_B       => LOG2_FFT_WORDS_PER_FRAME,
+            READ_LATENCY_B     => 2,
+            MEMORY_SIZE => FFT_BINS_PER_FRAME, -- in bits
+            USE_EMBEDDED_CONSTRAINT => 0,
+            MEMORY_OPTIMIZATION => "true",
+            MESSAGE_CONTROL => 0,
+            SIM_ASSERT_CHK => 0,
+            USE_MEM_INIT => 0, -- the memory has zeros
+            WRITE_MODE_A => "no_change",
+            WRITE_MODE_B => "no_change",
+            WRITE_PROTECT => 1
+        )
+        port map (
+            addra => exp_table_ctrl_addr,
+            dina => coeff_ram_ctrl_din,
+            douta => exp_table_ctrl_dout,
+            ena => '1',
+            wea(0) => exp_table_ctrl_wr_en,
+            clka => bsb_clk,
+            rsta => bsb_rst,
+
+            addrb => std_logic_vector(x_word_ctr),
+            dinb => (others=>'0'),
+            doutb => exp_table_dout,
+            enb => '1',
+            web(0) => '0',
+            clkb => clk,
+            rstb => '0',
+
+            injectdbiterra => '0', injectdbiterrb => '0', injectsbiterra => '0', injectsbiterrb => '0',
+            regcea => '1',
+            regceb => '1',
+            sleep => '0'
+        );
+
+        process(clk)
+            variable t: signed(TOP_WIDTH-1 downto 0);
+            variable lim_var: integer range 0 to EXP_MAX;
+            variable over: std_logic;
+            variable top5: std_logic_vector(4 downto 0);
+            variable in_range, low_zero, fit: boolean;
+            variable e: integer range 0 to EXP_MAX;
+            variable down: signed(TOP_WIDTH-1 downto 0);
+            variable lower: std_logic;
+            variable moved: signed(W-1 downto 0);
+        begin
+            if rising_edge(clk) then
+                -- Run-time controls. The largest exponent does not change often: it has registers here, so that stage B
+                -- has one signal for each exponent.
+                lim_var := minimum(to_integer(exponent_max), EXP_MAX);
+                lim <= to_unsigned(lim_var, EXP_BITS);
+                for k in 0 to EXP_MAX loop
+                    lim_above(k) <= to_std_logic(lim_var > k);
+                    lim_is(k) <= to_std_logic(lim_var = k);
+                end loop;
+                exp_on <= exponent_enable and to_std_logic(lim_var /= 0);
+                -- Number of the word at the output of the multipliers: the address of the table
+                if scaled_data_tvalid then
+                    x_word_ctr <= x_word_ctr + 1;
+                    if scaled_data_tlast then
+                        x_word_ctr <= (others => '0');
+                    end if;
+                end if;
+                a_off <= exp_table_dout;
+
+                -- Stage A
+                a_tvalid <= stage1_tvalid;
+                a_tlast <= stage1_tlast;
+                a_tuser <= stage1_tuser;
+                a_top <= stage1x_top;
+                a_sticky <= stage1x_sticky;
+                a_sign <= stage1_sign;
+                a_overflow <= stage1_overflow;
+                for i in 0 to COMPONENTS_PER_WORD-1 loop
+                    t := stage1x_top(i);
+                    for k in 0 to EXP_MAX loop
+                        -- With the exponent k the 4-bit value is t(4+k downto 1+k), and t(k) is the first bit below it
+                        in_range := all_same(t, TOP_WIDTH-1, 4+k); -- the bits above are the sign
+                        top5 := std_logic_vector(t(4+k downto k));
+                        low_zero := stage1x_sticky(i) = '0';
+                        for j in 0 to k-1 loop
+                            if t(j) = '1' then
+                                low_zero := FALSE;
+                            end if;
+                        end loop;
+                        if rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND or rounding_mode = ROUNDING_MODE_ROUND then
+                            -- 7.5 and more goes to 8. Below -7.5 goes to -8, and -7.5 also with the convergent rounding.
+                            fit := in_range and top5 /= "01111" and top5 /= "10000" and
+                                   not (top5 = "10001" and low_zero and rounding_mode = ROUNDING_MODE_CONVERGENT_ROUND);
+                        else -- truncation
+                            fit := in_range and top5(4 downto 1) /= "1000";
+                        end if;
+                        a_fit(i)(k) <= to_std_logic(fit and stage1x_overflow(i) = '0');
+                    end loop;
+                end loop;
+
+                -- Stage B: the first exponent with which the two parts of the bin fit (a part that fits with an exponent
+                -- fits with all the larger ones), but not more than the largest exponent. A part that does not fit with
+                -- the largest exponent has its overflow flag. A bin with no exponent (the table, or a largest exponent
+                -- of 0, or the mode off) has the exponent 0 and the overflow flags of stage 1: the 4-bit mode.
+                -- Bin i here is bin FFT_BINS_PER_WORD - 1 - i of the word.
+                b_tvalid <= a_tvalid;
+                b_tlast <= a_tlast;
+                b_tuser <= a_tuser;
+                b_top <= a_top;
+                b_sticky <= a_sticky;
+                b_sign <= a_sign;
+                for i in 0 to FFT_BINS_PER_WORD-1 loop
+                    e := to_integer(lim);
+                    for k in EXP_MAX - 1 downto 0 loop
+                        if a_fit(2*i)(k) = '1' and a_fit(2*i+1)(k) = '1' and lim_above(k) = '1' then
+                            e := k;
+                        end if;
+                    end loop;
+                    b_has_exp(i) <= exp_on and not a_off(FFT_BINS_PER_WORD-1-i);
+                    if exp_on = '1' and a_off(FFT_BINS_PER_WORD-1-i) = '0' then
+                        b_exp(i) <= to_unsigned(e, EXP_BITS);
+                        for part in 2*i to 2*i+1 loop
+                            over := '0';
+                            for k in 0 to EXP_MAX loop
+                                if lim_is(k) = '1' and a_fit(part)(k) = '0' then
+                                    over := '1';
+                                end if;
+                            end loop;
+                            b_overflow(part) <= over;
+                        end loop;
+                    else
+                        b_exp(i) <= (others => '0');
+                        b_overflow(2*i) <= a_overflow(2*i);
+                        b_overflow(2*i+1) <= a_overflow(2*i+1);
+                    end if;
+                end loop;
+
+                -- Stage C: move the word down. Stage 2 gets the 4-bit field and the bit below it at the top of its word,
+                -- then one bit that is the OR of all the bits below (those that go out and those that stage 1 did not
+                -- keep), so that it still knows if the value is exactly between two output values (convergent rounding).
+                s2in_tvalid <= b_tvalid;
+                s2in_tlast <= b_tlast;
+                s2in_tuser <= b_tuser;
+                s2in_sign <= b_sign;
+                s2in_overflow <= b_overflow;
+                s2in_exp <= b_exp;
+                s2in_has_exp <= b_has_exp;
+                for i in 0 to COMPONENTS_PER_WORD-1 loop
+                    e := to_integer(b_exp(i / 2));
+                    down := shift_right(b_top(i), e);
+                    lower := b_sticky(i);
+                    for k in 1 to EXP_MAX loop
+                        if e >= k and b_top(i)(k-1) = '1' then
+                            lower := '1';
+                        end if;
+                    end loop;
+                    moved := (others => '0');
+                    moved(W-1 downto W-5) := down(4 downto 0); -- with e = 0 these are the top bits of stage1_word
+                    moved(W-6) := lower;
+                    s2in_word(i) <= moved;
+                end loop;
+
+                if rst_reg then
+                    a_tvalid <= '0';
+                    b_tvalid <= '0';
+                    s2in_tvalid <= '0';
+                    x_word_ctr <= (others => '0');
+                end if;
+            end if;
+        end process;
+    else generate
+        s2in_word <= stage1_word;
+        s2in_sign <= stage1_sign;
+        s2in_overflow <= stage1_overflow;
+        s2in_tvalid <= stage1_tvalid;
+        s2in_tlast <= stage1_tlast;
+        s2in_tuser <= stage1_tuser;
+        s2in_exp <= (others => (others => '0'));
+        s2in_has_exp <= (others => '0');
+    end generate exp_gen;
+
     -- Assign MAIN OUTPUT
     out_blk: block begin
         process(all) begin
@@ -1006,6 +1394,7 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                 -- Set defaults in case we don't assign them below
                 m_axis_out_tdata<= (others => '0');
                 m_axis_out_tuser <= (others => '0'); -- sets flags only set on last frame to 0
+                m_axis_out_texp <= (others => '0');
 
                 m_axis_out_tuser(FFT_TUSER_BITS_PER_WORD-1 downto 0) <= stage3_tuser; -- pass on the USER bits
                 -- Add gain bank flag
@@ -1023,6 +1412,10 @@ coeff_ram_addr <= (current_gain_bank & std_logic_vector(word_ctr));
                             m_axis_out_tdata((2*i+1)*OB/2-1 downto (2*i+0)*OB/2) <= msb_pad(std_logic_vector(stage3_word(2*i)), OB/2); -- MSB->LSB: 3,2,1,0 = Re(N), Im(N), Re(N+1), Im(N+1)
                             m_axis_out_tdata((2*i+2)*OB/2-1 downto (2*i+1)*OB/2) <= msb_pad(std_logic_vector(stage3_word(2*i+1)), OB/2); -- MSB->LSB: 3,2,1,0 = Re(N), Im(N), Re(N+1), Im(N+1)
                             m_axis_out_tuser(FFT_TUSER_BITS_PER_WORD+i+1) <= stage3_overflow(2*i) or stage3_overflow(2*i+1); -- Set overflow flag if either Re or Im overflow
+                            m_axis_out_texp(i*EXPF_BITS+EXP_BITS-1 downto i*EXPF_BITS) <= std_logic_vector(stage3_exp(i)); -- 0 if the exponent mode is off
+                            if EXPONENT_BITS > 0 then
+                                m_axis_out_texp(i*EXPF_BITS+EXPF_BITS-1) <= stage3_has_exp(i); -- the bin has an exponent
+                            end if;
                         end loop;
 
                     when "100" => -- send the MSBs of the raw FFT input. Used to send FUNCGEN data to correlator/corner-turn engines with FFT bypass

@@ -71,6 +71,7 @@ Parameters
 - ``CAP_BITS_PER_WORD``: Total width of the capture output port. The capture output word holds various number of values depending on the software-selected capture output format. 
   Typically 32 bits for Iceboard (to feed `PROBER`), or 128 bits for CRS (to feed `UCAP`)
 - ``EIGHT_BIT_SUPPORT``: TRUE when scaler supports 8+8 bit output in addition to 4+4 bit output
+- ``EXPONENT_BITS``: 0 (default): the scaler does not have the exponent mode. 1 to 3: bits of the exponent of a bin in the exponent mode (see `Exponent mode`_). Only with (4+4)-bit outputs (``OUT_BITS_PER_BIN`` = 8).
 
 Other generics are derived from the above parameters and are not generally user-configurable.
 
@@ -321,6 +322,53 @@ Offset encoding
 When offset encoding is enabled, the output data is represented via an offset encoding instead of the two's complement. Practically speaking, this amounts to inverting the sign bit.
 
 
+
+Exponent mode
+=============
+
+This mode is in the scaler only if the generic ``EXPONENT_BITS`` is 1, 2 or 3 (the status field ``exponent_bits``, status byte 18 bits 4:2, has the value of the generic). The host starts it with the register ``exponent_enable`` (control byte 13 bit 5, '0' after a reset).
+
+In this mode the scaler gives each bin an exponent ``e``, and the value of the bin is::
+
+    value = (4-bit real part + j x 4-bit imaginary part) x 2^e
+
+- ``e`` is the smallest number from 0 to 2^EXPONENT_BITS - 1 for which the real part and the imaginary part of the bin, divided by 2^e and rounded, are from -7 to 7. The real part and the imaginary part of a bin have the same exponent.
+- The rounding is that of ``rounding_mode``. Thus 7.5 x 2^e gets the exponent ``e + 1``.
+- A value that the 4 bits can hold has the exponent 0 and the same output bits as without the mode. There is one exception: without the symmetric saturation, the value -8 is not used in this mode (-8 is sent as -4 with the exponent 1).
+- If the largest exponent is not sufficient, the bin has the largest exponent, and each part that is not from -7 to 7 has the saturation value of the 4-bit mode (``symmetric_saturation``, ``zero_on_saturation``). The scaler overflow flag of the bin is set, and the overflow statistics count it. In this mode the flag is not set for a bin that an exponent holds.
+- The output ``m_axis_out_texp`` has ``EXPONENT_BITS`` + 1 bits for each bin of the word, in the order of the bins of ``m_axis_out_tdata``: the bin in the 8 LSBs of the data has its bits in the LSBs. They are valid with the data. With the mode off they are 0.
+
+  - The ``EXPONENT_BITS`` LSBs of a bin are its exponent.
+  - The MSB of a bin is a bit that tells that the bin has an exponent in this scaler: it is 1 if ``exponent_enable`` is '1', ``exponent_max`` is not 0, and the bin is not in the table of the bins with no exponent (see below). It does not tell that the exponent is not 0. This bit goes with the sample to the packetizer (`upack`), which gives exponents in the packets to the bins that have it. So the host writes the bins that have an exponent in the scalers only.
+- With EXPONENT_BITS = 3 the largest value is 7 x 128 = 896 steps of the 4-bit output: 42 dB above the range of the 4 bits.
+
+Run-time controls of the exponent mode
+--------------------------------------
+
+The driver of the host (corriscope, class ``SCALER``) has the fields of this mode as ``EXPONENT_ENABLE``, ``EXPONENT_MAX``, ``EXPONENT_BITS``, ``EXPONENT_SETTINGS_AVAILABLE`` (``exponent_controls``) and ``WRITE_BINS_WITH_NO_EXPONENT`` (``exp_table_select``). ``set_bins_with_exponent`` takes the bins in the order of the frequency and writes the table.
+
+A build with the exponent mode has one more control byte (byte 14; the status bit ``exponent_controls``, status byte 18 bit 5, is '1'):
+
+- ``exponent_max`` (control byte 14 bits 2:0; after a reset: 2^EXPONENT_BITS - 1). The exponent of a bin is not larger than this number. A bin that needs more is limited as if the largest exponent of the build was not sufficient: it has the exponent ``exponent_max``, the saturation value of the 4-bit mode in each part that is not from -7 to 7, and its overflow flag. With 3 a value is not more than 7 x 8 = 56 steps and has 8 bits. With 0 the output is that of the 4-bit mode.
+- ``exp_table_select`` (control byte 14 bit 7; '0' after a reset). With '1', the RAM interface of the scaler reads and writes the *table of the bins with no exponent*, not the gain tables.
+
+The table has one bit for each bin of a frame. A '1' means that the bin has no exponent: its exponent is 0 and it is limited as in the 4-bit mode, with its overflow flag, also when ``exponent_enable`` is '1'. After the configuration of the FPGA the table has zeros: all the bins have an exponent. A reset does not change the table. The two gain banks use the same table.
+
+The bins of the table are in the order of the bins in the scaler, which is that of the gain tables and not that of the frequency: word *w* of a frame has the bins 4 *w* to 4 *w* + 3 of the table, one for each of the 4 outputs of the FFT. With the FFT of the CRS, frequency bin *f* is bin 4 x (*f* mod 2048) + ((*f* / 2048 + *f*) mod 4) of the table. The host driver gives this order to a gain table with ``natural_to_fft_order``; do the same for this table. The playlist of the packetizer (the list of the bins of each packet) uses the same numbers.
+
+To write the table:
+
+1. Write ``exp_table_select`` = '1' (keep ``exponent_max`` in the same byte).
+2. Write the bytes with RAM write commands, as the gain tables: 512 bytes for each value of ``gain_table_page`` (1024 bytes, pages 0 and 1, for 8192 bins). Bin ``b`` is bit ``b mod 8`` of byte ``b / 8`` (bit 0 is the least significant bit).
+3. Write ``exp_table_select`` = '0'.
+
+A change of ``exponent_max`` or of the table while frames flow acts in some clocks: some frames can have bins of the two settings.
+
+Implementation of the controls: the table is one block RAM (a RAMB18), read with the number of the word at the output of the multipliers. The latency of the scaler does not change (14 clocks).
+
+Implementation: stage 1 (the shift) makes a second word with 2^EXPONENT_BITS - 1 more bits above the 4-bit field. Three more pipeline stages between stage 1 and stage 2 find, for each part and each exponent, if the part is from -7 to 7; then the exponent of each bin; then they move the word down by the exponent, and stage 2 and stage 3 do the rounding and the saturation of the 4-bit mode on it. Only the top bits of the second word (2^EXPONENT_BITS + 4 bits) and one bit that is the OR of all the bits below them go through these stages: the rounding uses no other bit. One more register stage is between the multipliers and the shifter of stage 1, because the path from the DSP blocks through the shifter had the least margin. The latency of a scaler with ``EXPONENT_BITS`` > 0 is thus 4 clocks more than that of a scaler without it (14 clocks in place of 10), with the mode on or off. A scaler with ``EXPONENT_BITS`` = 0 has no change. The capture outputs that take their data from stage 1 (``cap_data_type`` "010" and others) have 1 clock of this delay.
+
+Do not use ``EXPONENT_BITS`` > 0 in a build in which the correlator sets ``integ_last_frame`` (``switch_at_integration``): that function was tested with the latency of 10 clocks only.
 
 Overflow statistics module
 ==========================
