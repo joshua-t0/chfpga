@@ -18,6 +18,7 @@ Configuration parameters
 - :ref:`CONFIG_CT_LANE_TO_LINK_MAP <config_ct_lane_to_link_map>` — (0 => -1); bypass lane
 - :ref:`CONFIG_CORR_TYPE <config_corr_type>` — NONE; X-Engine off-board
 - :ref:`CONFIG_DATA_LINK_TYPE <config_data_link_type>` — UPACK_CGE; 100G Ethernet offload
+- ``CONFIG_EXPONENT_BITS`` — 2 in the ``crs_ct`` configuration, 3 in the ``crs_ct_exponent3`` configuration (the same source; only this constant differs: ``chfpga_crs_ct_exponent3_config.vhd``); exponent mode of the F-engine packets (off after a reset: see ``upack``). The host writes the bins that have an exponent in the scalers only; each scaler tells the packetizer, with each bin, if the bin has an exponent. With 2: exponents from 0 to 3, UCAP has 4 buffers with memory (8 UltraRAMs) in place of 8 and its mode 0 captures one frame of each of the 8 channels, and the packetizer has the other 8 UltraRAMs. With 3: exponents from 0 to 7, sent with 2 or 4 bits in the packets, the packetizer has all the 16 UltraRAMs and **UCAP has no buffer with memory**: its registers and its packets do not change, the data of a capture are zeros, and its status byte 4 reads 0 buffers with memory (bits 6:0).
 
 Package definition
 ------------------
