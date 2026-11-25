@@ -18,10 +18,12 @@ library work;
 use work.chFPGA_Package.ALL;
 
 -- Streams raw ADC samples of up to four channels as UDP packets for one or two 100G MACs (``cge``).
--- Each sample is sent as 12 bits: the 14-bit ADC sample rounded to its 12 most significant bits.
+-- Each sample is sent as 12 bits (the 14-bit ADC sample rounded to its 12 most significant bits), or
+-- as 14 bits (the ADC sample as it is). The control register ``sample_bits`` selects the number of
+-- bits at run time.
 --
 -- Each packet holds the samples of ONE channel. Each channel is a packet stream: streams A, B, C
--- and D. A link carries ``STREAMS_PER_LINK`` streams (two with 12-bit samples): streams A and B go
+-- and D. A link carries ``STREAMS_PER_LINK`` streams (two, with 12-bit and with 14-bit samples): streams A and B go
 -- to link 0, streams C and D go to link 1. On a link the streams take turns: a packet of the first
 -- stream, then the packet of the next stream that covers the same time. A receiver gets contiguous
 -- samples of a channel from each packet, and it can separate the streams with the UDP destination
@@ -34,10 +36,19 @@ use work.chFPGA_Package.ALL;
 -- header. All channels should use the same source. The frame timing is taken from the source of
 -- the channel of stream A.
 --
--- Data rate: 8 samples x 12 bits = 96 bits per clock for each channel (38.4 Gb/s at 400 MHz, 76.8 Gb/s
--- for the two channels of a link). For each channel, two consecutive input words make a 192-bit
--- word, and a 3:4 gearbox packs four of these (a "block": 8 input words, 64 samples) into 3 words of
--- 256 bits. A packet carries ``blocks_per_packet`` blocks preceded by two 32-byte header words. Each
+-- Data rate with 12-bit samples: 8 samples x 12 bits = 96 bits per clock for each channel (38.4 Gb/s
+-- at 400 MHz, 76.8 Gb/s for the two channels of a link). For each channel, two consecutive input
+-- words make a 192-bit word, and a 3:4 gearbox packs four of these (a "block": 8 input words, 64
+-- samples) into 3 words of 256 bits.
+-- Data rate with 14-bit samples: 112 bits per clock for each channel (44.8 Gb/s, 89.6 Gb/s for the two
+-- channels of a link; 90.7 Gb/s on the link with the headers, the preamble and the gap of the default
+-- packets). Two consecutive input words make a 224-bit word, and a 7:8 gearbox packs eight of these
+-- (16 input words, 128 samples) into 7 words of 256 bits.
+-- A packet carries ``blocks_per_packet`` blocks of 64 samples preceded by two 32-byte header words.
+-- With 14-bit samples ``blocks_per_packet`` is a multiple of 4 (76 at most), so that a packet has an
+-- even number of 256-bit words: the path to the 100G MAC takes two words at a time. With 12-bit
+-- samples use an even ``blocks_per_packet`` for the same reason (an odd value gives an odd number
+-- of words; the module does not change it). Each
 -- stream has a block RAM FIFO that holds its packets until they are sent: a packet is sent when it
 -- is complete in its FIFO, so the streams never mix inside a packet.
 --
@@ -75,7 +86,7 @@ use work.chFPGA_Package.ALL;
 --                     bit 7 = internal FIFO overflow (sticky)
 --       46     bits 2:0 = channel number (0-7) of the samples of this packet,
 --              bits 6:4 = stream number: 0 = A, 1 = B (link 0), 2 = C, 3 = D (link 1)
---       47     blocks_per_packet
+--       47     blocks_per_packet, as the module has taken it (a block is 64 samples)
 --       48-53  packet counter of this stream (48 bits). Each stream has its own counter. All the counters
 --              are zero on the first packets of a run that starts from the stopped state
 --              (raw_active = 0), and after a reset.
@@ -88,14 +99,18 @@ use work.chFPGA_Package.ALL;
 --              time, so a change of run number tells a receiver that the counters have restarted.
 --              (If ``enable`` is set again before the last packets of the previous run are out, the
 --              counters continue: the settings cannot change in that case, so the streams stay in step.)
---       63     bits in each sample (12)
---   Bytes 64...  96 * blocks_per_packet bytes of samples.
+--       63     bits in each sample (12 or 14)
+--   Bytes 64...  96 * blocks_per_packet bytes of samples (12 bits), or 112 * blocks_per_packet bytes (14 bits).
 --
 -- Sample packing: the payload is a little-endian bit stream, i.e. stream bit n is bit (n mod 8) of
--- payload byte (n / 8). Sample number i of the packet occupies stream bits 12*i to 12*i+11 (LSB
--- first), and the samples are in time order: x(t), x(t+1), x(t+2), ... Every 2 samples fill exactly
--- 3 bytes. A sample value is the 14-bit ADC sample divided by 4 and rounded to the nearest integer
--- (signed, -2048 to 2047; a half goes up, and 2047.5 and more give 2047). The first
+-- payload byte (n / 8). With B bits in each sample (byte 63 of the header), sample number i of the
+-- packet occupies stream bits B*i to B*i+B-1 (LSB first), and the samples are in time order: x(t),
+-- x(t+1), x(t+2), ... 12 bits: every 2 samples fill exactly 3 bytes, and a sample value is the 14-bit
+-- ADC sample divided by 4 and rounded to the nearest integer (signed, -2048 to 2047; a half goes up,
+-- and 2047.5 and more give 2047). 14 bits: every 4 samples fill exactly 7 bytes, and a sample value
+-- is the 14-bit ADC sample (signed, -8192 to 8191): the 14 most significant bits of the 16-bit field
+-- of the capture bus, for any data source (the 2 bits below are dropped, not rounded; the ADC source
+-- has no information there). The first
 -- packets after ``enable`` start on the first word of a frame. With the default 64 blocks per
 -- packet, a packet holds 4096 samples and a frame of 16384 samples is exactly 4 packets of each
 -- stream. The packets of all streams with the same packet counter cover the same time.
@@ -165,8 +180,9 @@ end entity rawpack;
 
 architecture impl of rawpack is
 
-	constant STREAMS_PER_LINK: integer := 2; -- streams (channels) on each link: two 12-bit channels are 76.8 Gb/s
-	constant SAMPLE_BITS: integer := 12; -- bits sent for each sample. The gearbox below is for this width.
+	constant STREAMS_PER_LINK: integer := 2; -- streams (channels) on each link: two 12-bit channels are 76.8 Gb/s, two 14-bit channels are 89.6 Gb/s
+	constant SAMPLE_BITS: integer := 12; -- bits sent for each sample when the control register sample_bits is 12
+	constant ADC_SAMPLE_BITS: integer := 14; -- bits sent for each sample when the control register sample_bits is 14: the ADC sample as it is
 	constant NUMBER_OF_STREAMS: integer := NUMBER_OF_LINKS * STREAMS_PER_LINK; -- stream s is on link s / STREAMS_PER_LINK
 	constant MAX_STREAMS: integer := 4; -- streams in the register map
 	constant MAX_LINKS: integer := 2; -- links in the register map
@@ -174,14 +190,16 @@ architecture impl of rawpack is
 	constant IN_BITS_PER_SAMPLE: integer := 16; -- capture bus sample width (sample is MSB-aligned)
 	constant BITS_PER_SAMPLE: integer := SAMPLE_BITS; -- bits sent per sample: the MSBs of the capture bus sample
 	constant CHAN_WIDTH: integer := SAMPLES_PER_WORD * BITS_PER_SAMPLE; -- 96 bits per clock for one channel
-	constant PAIR_WIDTH: integer := 2 * CHAN_WIDTH; -- 192 bits: two consecutive input words of one channel
-	constant GEARBOX_STEP: integer := 256 - PAIR_WIDTH; -- 64: bits that each output word takes from the next pair, more than the previous one
+	constant CHAN_WIDTH_14: integer := SAMPLES_PER_WORD * ADC_SAMPLE_BITS; -- 112 bits per clock for one channel
+	constant PAIR_WIDTH: integer := 2 * CHAN_WIDTH_14; -- 224 bits: two consecutive input words of one channel (192 of them with 12-bit samples)
+	constant GEARBOX_STEP: integer := 256 - PAIR_WIDTH; -- 32: the gearbox moves by this number of bits, or by two times this number with 12-bit samples
+	constant MAX_BLOCKS_14: integer := 76; -- blocks_per_packet with 14-bit samples: 76 x 112 = 8512 bytes of samples (MTU of 9000)
 	constant FORMAT_VERSION: std_logic_vector(7 downto 0) := X"04";
 	constant LINK_ADDRESS_BYTES: integer := 24; -- MAC, IP and port registers of a link
 	constant LINK1_BASE: integer := 30; -- first address register of link 1
 
 	-- bsb_regs indexes this vector from 0 (byte 0 bit 7 = element 0), so the range must be ascending
-	constant DEFAULT_CONTROL_BYTES: std_logic_vector(0 to 54 * 8 - 1) :=
+	constant DEFAULT_CONTROL_BYTES: std_logic_vector(0 to 55 * 8 - 1) :=
 		"0000000" & DEFAULT_ENABLE &                                                    -- byte 0
 		'0' & to_slv(DEFAULT_CHAN_B, 3) & '0' & to_slv(DEFAULT_CHAN_A, 3) &             -- byte 1
 		to_slv(DEFAULT_BLOCKS_PER_PACKET, 8) &                                          -- byte 2
@@ -193,10 +211,11 @@ architecture impl of rawpack is
 		"0000" & DEFAULT_STREAM_ENABLE &                                                -- byte 29
 		DEFAULT_MAC_DEST_ADDR_1 & DEFAULT_MAC_SRC_ADDR_1 &                              -- bytes 30-41
 		DEFAULT_IP_DEST_ADDR_1 & DEFAULT_IP_SRC_ADDR_1 &                                -- bytes 42-49
-		DEFAULT_IP_DEST_PORT_1 & DEFAULT_IP_SRC_PORT_1;                                 -- bytes 50-53
+		DEFAULT_IP_DEST_PORT_1 & DEFAULT_IP_SRC_PORT_1 &                                -- bytes 50-53
+		to_slv(SAMPLE_BITS, 8);                                                         -- byte 54
 
-	signal control_bytes: slv8_array(0 to 53);
-	signal status_bytes: slv8_array(0 to 30);
+	signal control_bytes: slv8_array(0 to 54);
+	signal status_bytes: slv8_array(0 to 31);
 
 	signal cmd_dat_int_tdata: std_logic_vector(7 downto 0);
 	signal cmd_dat_int_tvalid: std_logic;
@@ -226,10 +245,13 @@ architecture impl of rawpack is
 	signal stream_mask: std_logic_vector(3 downto 0) := (others => '0'); -- the same, for the header
 	signal link_en: std_logic_vector(0 to NUMBER_OF_LINKS - 1) := (others => '0'); -- links with at least one stream
 	signal sel: u3_stream_array := (others => (others => '0')); -- channel of each stream
-	signal blocks_per_packet: unsigned(7 downto 0) := (others => '0');
-	signal last_block: unsigned(7 downto 0) := (others => '0'); -- blocks_per_packet - 1
-	signal last_word: unsigned(10 downto 0) := (others => '0'); -- 3 * blocks_per_packet - 1: last data word of a packet
-	signal fifo_words_per_packet: unsigned(10 downto 0) := (others => '1'); -- 3 * blocks_per_packet + 1: the data words and the information word
+	signal samples_14_bits: std_logic := '0'; -- '1': the samples are sent with 14 bits. '0': with 12 bits. From the control register sample_bits.
+	signal blocks_per_packet: unsigned(7 downto 0) := (others => '0'); -- units of 64 samples. With 14-bit samples it is a multiple of 4.
+	signal last_block: unsigned(7 downto 0) := (others => '0'); -- gearbox blocks of a packet, minus one. A gearbox block is 64 samples (12 bits) or 128 samples (14 bits).
+	signal last_word: unsigned(10 downto 0) := (others => '0'); -- last data word of a packet: 3 * blocks_per_packet - 1 (12 bits), 7 * blocks_per_packet / 2 - 1 (14 bits)
+	signal fifo_words_per_packet: unsigned(10 downto 0) := (others => '1'); -- the data words and the information word
+	signal phase_step: unsigned(2 downto 0) := "010"; -- 2 with 12-bit samples, 1 with 14-bit samples
+	signal sample_bits_byte: std_logic_vector(7 downto 0); -- bits in each sample, for the header and the status
 	signal src_port_mask: std_logic_vector(7 downto 0);
 	signal mac_dest, mac_src: slv48_link_array;
 	signal ip_dest, ip_src: slv32_link_array;
@@ -254,6 +276,9 @@ architecture impl of rawpack is
 	signal vr: std_logic := '0';
 	signal tsr: unsigned(47 downto 0);
 	signal wr: unsigned(10 downto 0);
+	-- The same stage for 14-bit samples: the samples as they are, in time order
+	type chan14_stream_array is array (0 to NUMBER_OF_STREAMS - 1) of std_logic_vector(CHAN_WIDTH_14 - 1 downto 0);
+	signal pr14: chan14_stream_array;
 
 	-- Stage 1: two consecutive input words joined
 	type pair_stream_array is array (0 to NUMBER_OF_STREAMS - 1) of std_logic_vector(PAIR_WIDTH - 1 downto 0);
@@ -262,9 +287,16 @@ architecture impl of rawpack is
 	signal ts1: unsigned(47 downto 0);
 	signal w1: unsigned(10 downto 0) := (others => '1');
 
-	-- Stage 2: 3:4 gearbox of each stream
+	-- Stage 2: gearbox of each stream (3:4 with 12-bit samples, 7:8 with 14-bit samples)
 	signal running: std_logic := '0';
-	signal phase: unsigned(1 downto 0) := (others => '0'); -- pair number in the block
+	signal phase: unsigned(2 downto 0) := (others => '0'); -- position in the block: the output word takes 32 * phase bits of the new pair. It goes up by phase_step for each pair.
+	-- Copies of the phase for the output multiplexers (256 multiplexers of 8 inputs for each stream):
+	-- one copy for each 32 bits of the output word of each stream, so that no copy has a long net
+	type u3_lane_array is array (0 to 7) of unsigned(2 downto 0);
+	type u3_phase_array is array (0 to NUMBER_OF_STREAMS - 1) of u3_lane_array;
+	signal gphase: u3_phase_array := (others => (others => (others => '0')));
+	attribute dont_touch: string;
+	attribute dont_touch of gphase: signal is "true";
 	signal block_ctr: unsigned(7 downto 0) := (others => '0'); -- block number in the packet
 	signal hold: pair_stream_array;
 	signal stream_number: unsigned(7 downto 0) := (others => '0'); -- run number. Not cleared by rst, so a restart after a reset is visible
@@ -272,7 +304,7 @@ architecture impl of rawpack is
 	-- Packet FIFO of each stream (block RAM). For each packet it holds one information word (frame
 	-- and word number of the first sample), then the data words. It holds a complete packet of its
 	-- stream while a packet of the other stream of the link is sent: at most about 1.4 packets (380
-	-- words with the largest packets).
+	-- words with the largest packets of 12-bit samples, 390 words with those of 14-bit samples).
 	constant FIFO_ADDR_WIDTH: integer := 9; -- 512 words
 	type fifo_ptr_array is array (0 to NUMBER_OF_STREAMS - 1) of unsigned(FIFO_ADDR_WIDTH downto 0);
 	signal fifo_wr_data: slv256_stream_array;
@@ -352,7 +384,7 @@ begin
 	-- | CONTROL |  0   |  0   | enable              | '1': send the enabled streams. '0': stop  |
 	-- |         |  1   | 2:0  | chan_a              | Channel of stream A (0-7)                 |
 	-- |         |      | 6:4  | chan_b              | Channel of stream B (0-7)                 |
-	-- |         |  2   | 7:0  | blocks_per_packet   | Blocks (96 bytes, 64 samples) per packet. 4 to 90. (*) |
+	-- |         |  2   | 7:0  | blocks_per_packet   | Blocks of 64 samples per packet (96 bytes with 12-bit samples, 112 bytes with 14-bit samples). 12 bits: 4 to 90. 14 bits: a multiple of 4 from 4 to 76 (the firmware takes the multiple of 4 below, and 76 at most). (*) |
 	-- |         |  3   | 7:0  | src_port_mask       | UDP source port = src_port + (packet counter and mask) |
 	-- |         | 4-9  | 47:0 | mac_dest            | Link 0: destination MAC address           |
 	-- |         |10-15 | 47:0 | mac_src             | Link 0: source MAC address                |
@@ -364,6 +396,7 @@ begin
 	-- |         |      | 6:4  | chan_d              | Channel of stream D (0-7)                 |
 	-- |         | 29   | 3:0  | stream_enable       | Streams to send: bit 0 = A, 1 = B (link 0), 2 = C, 3 = D (link 1). (*) |
 	-- |         |30-53 |      | (link 1)            | Link 1: same registers as bytes 4-27. port_dest is the port of stream C. |
+	-- |         | 54   | 7:0  | sample_bits         | Number of bits of a sample: 12 (after a reset) or 14. Another value gives 12. (*) |
 	-- | STATUS  |  0   |  0   | running             | Samples are being packed                  |
 	-- |         |      |  1   | raw_active          | The module is not completely stopped      |
 	-- |         |      |  2   | fifo_overflow       | Packet FIFO overflow (sticky until reset). The streams are not valid after an overflow: reset. |
@@ -376,9 +409,11 @@ begin
 	-- |         |21-26 | 47:0 | packet_ctr_d        | Packet counter of stream D                |
 	-- |         | 27   | 3:0  | number_of_streams   | Streams in this firmware (2 or 4)         |
 	-- |         |      | 7:4  | number_of_links     | 100G links in this firmware (1 or 2)      |
-	-- |         | 28   | 7:0  | sample_bits         | Bits in each sample (12)                  |
+	-- |         | 28   | 7:0  | sample_bits         | Bits in each sample (12 or 14): the setting that the module has taken |
 	-- |         | 29   | 7:0  | format_version      | Packet format version (4)                 |
-	-- |         | 30   |  0   | rounded             | '1': the samples are rounded. '0': truncated. |
+	-- |         | 30   |  0   | rounded             | '1': the samples are rounded (12 bits). '0': the bits below the sample are dropped (14 bits: an ADC sample has none). |
+	-- |         |      |  1   | sample_bits_14_support | '1': the firmware can send 14-bit samples (control register ``sample_bits``) |
+	-- |         | 31   | 7:0  | blocks_per_packet   | The value that the module has taken (with 14-bit samples: a multiple of 4, 76 at most) |
 	-- ------------------------------------------------------------------------------------------
 	-- (*) Taken into account only while the module is completely stopped (raw_active = 0).
 	bsb_regs0: entity work.bsb_regs
@@ -403,6 +438,8 @@ begin
 			status_bytes  => status_bytes
 		);
 
+	sample_bits_byte <= to_slv(ADC_SAMPLE_BITS, 8) when samples_14_bits = '1' else to_slv(SAMPLE_BITS, 8);
+
 	status_proc: process(all) begin
 		status_bytes(0) <= (0 => running, 1 => raw_active, 2 => fifo_overflow_sticky, others => '0');
 		for l in 0 to NUMBER_OF_LINKS - 1 loop
@@ -418,9 +455,10 @@ begin
 			end if;
 		end loop;
 		status_bytes(27) <= to_slv(NUMBER_OF_LINKS, 4) & to_slv(NUMBER_OF_STREAMS, 4);
-		status_bytes(28) <= to_slv(SAMPLE_BITS, 8);
+		status_bytes(28) <= sample_bits_byte;
 		status_bytes(29) <= FORMAT_VERSION;
-		status_bytes(30) <= (0 => '1', others => '0');
+		status_bytes(30) <= (0 => not samples_14_bits, 1 => '1', others => '0');
+		status_bytes(31) <= std_logic_vector(blocks_per_packet);
 	end process status_proc;
 
 	-- Register the control values and pre-compute everything that depends only on them. These
@@ -436,6 +474,8 @@ begin
 		variable base: integer;
 		variable l: integer range 0 to NUMBER_OF_LINKS - 1;
 		variable any: std_logic;
+		variable bpp_v: unsigned(7 downto 0);
+		variable n: unsigned(10 downto 0);
 	begin
 		if rising_edge(clk) then
 			enable <= control_bytes(0)(0);
@@ -455,7 +495,20 @@ begin
 					stream_en(s) <= control_bytes(29)(s);
 					stream_mask(s) <= control_bytes(29)(s);
 				end loop;
-				blocks_per_packet <= unsigned(control_bytes(2));
+				-- 14-bit samples: 128 samples make 7 output words, and a packet must have an even number of
+				-- words (the path to the 100G MAC takes two words at a time). So a packet has a multiple of
+				-- 4 blocks of 64 samples, and 76 at most (the MTU of 9000).
+				bpp_v := unsigned(control_bytes(2));
+				if control_bytes(54) = to_slv(ADC_SAMPLE_BITS, 8) then
+					bpp_v(1 downto 0) := "00";
+					if bpp_v > MAX_BLOCKS_14 then
+						bpp_v := to_unsigned(MAX_BLOCKS_14, 8);
+					elsif bpp_v = 0 then
+						bpp_v := to_unsigned(4, 8);
+					end if;
+				end if;
+				blocks_per_packet <= bpp_v;
+				samples_14_bits <= to_std_logic(control_bytes(54) = to_slv(ADC_SAMPLE_BITS, 8));
 			end if;
 			for k in 0 to NUMBER_OF_LINKS - 1 loop
 				any := '0';
@@ -475,11 +528,21 @@ begin
 				port_src(k) <= std_logic_vector(to_unsigned(control_bytes(base + 22 to base + 23)));
 			end loop;
 
-			-- Packet geometry: 3 data words per block
+			-- Packet geometry. 12 bits: a gearbox block is 64 samples in 3 data words. 14 bits: a gearbox
+			-- block is 128 samples (2 blocks of the register) in 7 data words.
 			bpp := resize(blocks_per_packet, 11);
-			last_block <= blocks_per_packet - 1;
-			last_word <= shift_left(bpp, 1) + bpp - 1;
-			fifo_words_per_packet <= shift_left(bpp, 1) + bpp + 1;
+			n := shift_right(bpp, 1);
+			if samples_14_bits then
+				last_block <= n(7 downto 0) - 1;
+				last_word <= shift_left(n, 3) - n - 1;
+				fifo_words_per_packet <= shift_left(n, 3) - n + 1;
+				phase_step <= "001";
+			else
+				last_block <= blocks_per_packet - 1;
+				last_word <= shift_left(bpp, 1) + bpp - 1;
+				fifo_words_per_packet <= shift_left(bpp, 1) + bpp + 1;
+				phase_step <= "010";
+			end if;
 
 			-- Lengths: UDP header (8) + raw stream header (22) + 32 bytes per data word
 			udp_length <= 30 + shift_left(resize(last_word + 1, 16), 5);
@@ -506,14 +569,14 @@ begin
 				port_src_eff := unsigned(port_src(l)) + unsigned(packet_ctr(s)(7 downto 0) and unsigned(src_port_mask));
 				port_dest_eff := unsigned(port_dest(l)) + (s mod STREAMS_PER_LINK); -- each stream has its own port
 				udp_header := std_logic_vector(port_src_eff) & std_logic_vector(port_dest_eff) & std_logic_vector(udp_length) & X"0000";
-				flags := (0 => src(s), 1 => '1', 7 => fifo_overflow_sticky, others => '0'); -- bit 1: the samples are rounded
+				flags := (0 => src(s), 1 => not samples_14_bits, 7 => fifo_overflow_sticky, others => '0'); -- bit 1: the samples are rounded (12 bits)
 				flags(5 downto 2) := stream_mask;
 				chan_byte := '0' & to_slv(s, 3) & '0' & std_logic_vector(sel(s));
 				-- The packet counter, the frame and word numbers and the run number are set when the packet is sent
 				header2(s) <= ip_header(15 downto 0) & udp_header &
 				              X"5241" & FORMAT_VERSION & flags & chan_byte &
 				              std_logic_vector(blocks_per_packet) &
-				              X"000000000000" & X"000000000000" & X"0000" & X"00" & to_slv(SAMPLE_BITS, 8);
+				              X"000000000000" & X"000000000000" & X"0000" & X"00" & sample_bits_byte;
 			end loop;
 		end if;
 	end process ctrl_proc;
@@ -569,6 +632,8 @@ begin
 						x := x + 1;
 					end if;
 					pr(s)((n + 1) * BITS_PER_SAMPLE - 1 downto n * BITS_PER_SAMPLE) <= std_logic_vector(x);
+					-- 14-bit samples: the 14 MSBs of the capture bus sample, with no change
+					pr14(s)((n + 1) * ADC_SAMPLE_BITS - 1 downto n * ADC_SAMPLE_BITS) <= ch0(s)(hi downto hi - ADC_SAMPLE_BITS + 1);
 				end loop;
 			end loop;
 			vr <= v0;
@@ -578,11 +643,20 @@ begin
 			-- Stage 1
 			v1 <= '0';
 			for s in 0 to NUMBER_OF_STREAMS - 1 loop
+				-- The pair starts at bit 0 of d1: 192 bits with 12-bit samples, 224 bits with 14-bit samples
 				if vr then
-					if wr(0) = '0' then
-						d1(s)(CHAN_WIDTH - 1 downto 0) <= pr(s);
+					if samples_14_bits then
+						if wr(0) = '0' then
+							d1(s)(CHAN_WIDTH_14 - 1 downto 0) <= pr14(s);
+						else
+							d1(s)(2 * CHAN_WIDTH_14 - 1 downto CHAN_WIDTH_14) <= pr14(s);
+						end if;
 					else
-						d1(s)(PAIR_WIDTH - 1 downto CHAN_WIDTH) <= pr(s);
+						if wr(0) = '0' then
+							d1(s)(CHAN_WIDTH - 1 downto 0) <= pr(s);
+						else
+							d1(s)(2 * CHAN_WIDTH - 1 downto CHAN_WIDTH) <= pr(s);
+						end if;
 					end if;
 				end if;
 			end loop;
@@ -604,12 +678,23 @@ begin
 		end if;
 	end process sel_proc;
 
-	-- Stage 2: 3:4 gearbox of each stream. Four 192-bit words make three 256-bit words. Output word
-	-- j of a block is made of the last 192-64j bits of pair j and the first 64(j+1) bits of pair
-	-- j+1, so no output is produced on the first pair of a block. On the first pair of a packet,
-	-- that free slot is used to write the information word of the packet in the FIFO.
+	-- Stage 2: gearbox of each stream.
+	--
+	-- 14-bit samples: eight 224-bit pairs make seven 256-bit words (a block of 128 samples). ``phase``
+	-- goes from 0 to 7. Output word ``phase`` - 1 of a block is made of the last 256 - 32 * phase bits
+	-- of the previous pair and the first 32 * phase bits of the new pair, so no output is produced on
+	-- the first pair of a block.
+	--
+	-- 12-bit samples: four 192-bit pairs make three 256-bit words (a block of 64 samples). The same
+	-- multiplexers are used: ``phase`` goes by steps of 2 (0, 2, 4, 6), and ``hold`` gets the pair 32
+	-- bits higher, so that its last bit is at bit 223 as with the 224-bit pairs. The output words are
+	-- then the same as those of a gearbox that moves by 64 bits on 192-bit words.
+	--
+	-- On the first pair of a packet, the free slot is used to write the information word of the
+	-- packet in the FIFO.
 	gbx_proc: process(all)
 		variable accept: boolean;
+		variable word: std_logic_vector(255 downto 0);
 	begin
 		if rising_edge(clk) then
 			fifo_wr_en <= (others => '0');
@@ -631,24 +716,29 @@ begin
 
 			if accept then
 				for s in 0 to NUMBER_OF_STREAMS - 1 loop
-					hold(s) <= d1(s);
-					if phase = 0 then
-						fifo_wr_data(s) <= (others => '0');
-						fifo_wr_data(s)(58 downto 0) <= std_logic_vector(ts1) & std_logic_vector(w1); -- information word
+					if samples_14_bits then
+						hold(s) <= d1(s);
 					else
-						for p in 1 to 3 loop
-							if phase = p then
-								fifo_wr_data(s) <= d1(s)(GEARBOX_STEP * p - 1 downto 0) & hold(s)(PAIR_WIDTH - 1 downto GEARBOX_STEP * (p - 1));
+						hold(s)(PAIR_WIDTH - 1 downto GEARBOX_STEP) <= d1(s)(2 * CHAN_WIDTH - 1 downto 0);
+					end if;
+					for l in 0 to 7 loop -- each 32 bits of the output word, with its copy of the phase
+						word := (others => '0');
+						word(58 downto 0) := std_logic_vector(ts1) & std_logic_vector(w1); -- information word (phase 0)
+						for p in 1 to 7 loop
+							if gphase(s)(l) = p then
+								word := d1(s)(GEARBOX_STEP * p - 1 downto 0) & hold(s)(PAIR_WIDTH - 1 downto GEARBOX_STEP * (p - 1));
 							end if;
 						end loop;
-					end if;
+						fifo_wr_data(s)(32 * l + 31 downto 32 * l) <= word(32 * l + 31 downto 32 * l);
+						gphase(s)(l) <= gphase(s)(l) + phase_step;
+					end loop;
 					if (phase /= 0 or block_ctr = 0) and stream_en(s) = '1' then
 						fifo_wr_en(s) <= '1';
 					end if;
 				end loop;
 
-				phase <= phase + 1;
-				if phase = 3 then
+				phase <= phase + phase_step; -- 7 + 1 and 6 + 2 are 0: the next block
+				if phase + phase_step = 0 then
 					if block_ctr = last_block then
 						block_ctr <= (others => '0');
 					else
@@ -660,6 +750,7 @@ begin
 			if rst then
 				running <= '0';
 				phase <= (others => '0');
+				gphase <= (others => (others => (others => '0')));
 				block_ctr <= (others => '0');
 				fifo_wr_en <= (others => '0');
 			end if;

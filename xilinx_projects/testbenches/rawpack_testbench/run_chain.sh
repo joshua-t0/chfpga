@@ -8,7 +8,8 @@
 set -e
 here=$(cd "$(dirname "$0")" && pwd)
 hdl=$here/../../../hdl
-mkdir -p "$here/work" && cd "$here/work"
+work=${WORK:-$here/work}  # another directory (WORK=...) lets several cases run at the same time
+mkdir -p "$work" && cd "$work"
 generics=()
 upstream=1  # default of the UPSTREAM generic
 for g in "$@"; do generics+=(-generic_top "$g"); [[ $g == UPSTREAM=* ]] && upstream=${g#*=}; done

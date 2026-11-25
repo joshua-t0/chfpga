@@ -7,7 +7,8 @@
 set -e
 here=$(cd "$(dirname "$0")" && pwd)
 hdl=$here/../../../hdl
-mkdir -p "$here/work" && cd "$here/work"
+work=${WORK:-$here/work}  # another directory (WORK=...) lets several cases run at the same time
+mkdir -p "$work" && cd "$work"
 generics=()
 for g in "$@"; do generics+=(-generic_top "$g"); done
 rm -rf xsim.dir/rawpack_tb  # never run an old snapshot when the compilation fails

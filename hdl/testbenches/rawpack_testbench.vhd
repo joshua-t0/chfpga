@@ -31,6 +31,8 @@ entity rawpack_testbench is
 		SOURCE: integer := 0; -- data source of all channels
 		STREAM_ENABLE: integer range 1 to 15 := 15; -- streams to send: bit 0 = A, 1 = B (link 0), 2 = C, 3 = D (link 1)
 		BLOCKS_PER_PACKET: integer := 64;
+		SAMPLE_BITS: integer := 12; -- number of bits of a sample in the run that is checked: 12 or 14
+		RESTART_BITS: integer := 0; -- number of bits of a sample in the first run of RESTART_TEST (0: as SAMPLE_BITS). All the runs are checked.
 		GAP_PERIOD: integer := 0; -- if > 0, tvalid is low one clock out of GAP_PERIOD
 		NUMBER_OF_PACKETS: integer := 40; -- packets to check before disabling the streams
 		CHANGE_TEST: integer range 0 to 1 := 0; -- 1: write another packet size and other streams while the streams run; they must be ignored until the module is stopped
@@ -84,6 +86,7 @@ architecture behavior of rawpack_testbench is
 	signal link_packets: int_link_array := (others => 0); -- packets checked on each link
 	signal packets_checked: integer := 0;
 	signal cur_mask: integer range 0 to 15 := STREAM_ENABLE mod MASK_LIMIT; -- streams of the run in progress
+	signal cur_bits: integer := SAMPLE_BITS; -- number of bits of a sample in the run in progress
 	signal run_number: integer := 0; -- number of runs that came before the run in progress
 	signal run_start: int_link_array := (others => -1); -- word number of the first sample of the run in progress, as each link gives it
 	signal pass_before, pass_after: int_link_array := (others => 0); -- pass-through words seen on each link (only link 0 has them)
@@ -92,6 +95,8 @@ architecture behavior of rawpack_testbench is
 	alias pass_words_before: integer is pass_before(0);
 	alias pass_words_after: integer is pass_after(0);
 	signal done: boolean := FALSE;
+	type int_stream_array is array (0 to STREAMS - 1) of integer;
+	signal fifo_max: int_stream_array := (others => 0); -- largest number of words in the packet FIFO of each stream (of 512)
 	signal pass_tvalid, pass_tlast: std_logic := '0';
 	signal upstream_stopped: std_logic := '0'; -- the upstream transmitter is stopped
 	signal pass_index: integer := 0; -- word of the upstream frame
@@ -110,6 +115,36 @@ architecture behavior of rawpack_testbench is
 		t := (frame * WORDS_PER_FRAME + word) * 8 + s;
 		return std_logic_vector(to_unsigned((t * (2 * chan + 3) + chan * 1000) mod 16384, 14));
 	end function;
+
+	-- The number of blocks of 64 samples that the module puts in a packet. With 14-bit samples it is
+	-- a multiple of 4 (an even number of 256-bit words in a packet), from 4 to 76.
+	function packet_blocks(bits: integer; blocks: integer) return integer is
+		variable b: integer;
+	begin
+		if bits /= 14 then
+			return blocks;
+		end if;
+		b := blocks - blocks mod 4;
+		if b > 76 then
+			b := 76;
+		elsif b = 0 then
+			b := 4;
+		end if;
+		return b;
+	end function;
+
+	-- Data words (256 bits) of a packet
+	function packet_data_words(bits: integer; blocks: integer) return integer is
+	begin
+		if bits = 14 then
+			return 7 * packet_blocks(bits, blocks) / 2;
+		end if;
+		return 3 * blocks;
+	end function;
+
+	constant FIRST_BITS: integer := sel(RESTART_BITS = 0, SAMPLE_BITS, RESTART_BITS);
+	constant OTHER_BITS: integer := sel(SAMPLE_BITS = 14, 12, 14);
+	constant MAX_DATA_WORDS: integer := maximum(packet_data_words(12, BLOCKS_PER_PACKET), packet_data_words(14, BLOCKS_PER_PACKET));
 
 	-- The 12-bit value that the module must send for a 14-bit sample
 	function reduced(x: std_logic_vector(13 downto 0)) return std_logic_vector is
@@ -261,6 +296,7 @@ begin
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 16, 16#0A0A0A01#, 4); -- link 0: dest IP 10.10.10.1
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 42, 16#0A0A0B01#, 4); -- link 1: dest IP 10.10.11.1
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 3, 16#03#); -- rotate the source port over 4 values
+		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 54, SAMPLE_BITS);
 		wait for 1 us;
 		stream_enabled <= TRUE;
 		-- Short runs that start and stop at every position of the upstream frame. The checker fails on
@@ -286,6 +322,8 @@ begin
 			-- A run with other streams, stopped completely. It advances only the packet counters of its
 			-- streams. The next run must start with all the counters at zero.
 			cur_mask <= RESTART_ENABLE mod MASK_LIMIT;
+			cur_bits <= FIRST_BITS;
+			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 54, FIRST_BITS);
 			stop_upstream(RESTART_ENABLE);
 			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 29, RESTART_ENABLE);
 			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 0, 1);
@@ -296,6 +334,8 @@ begin
 			wait until rising_edge(clk);
 			first_packet := packets_checked;
 			cur_mask <= STREAM_ENABLE mod MASK_LIMIT;
+			cur_bits <= SAMPLE_BITS;
+			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 54, SAMPLE_BITS);
 			run_number <= run_number + 1;
 		end if;
 		stop_upstream(STREAM_ENABLE);
@@ -306,6 +346,7 @@ begin
 			wait until packets_checked >= first_packet + NUMBER_OF_PACKETS / 4;
 			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 2, BLOCKS_PER_PACKET + 3);
 			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 29, OTHER_MASK);
+			fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 54, OTHER_BITS); -- the number of bits of a sample also
 		end if;
 
 		if RESET_TEST = 1 then
@@ -344,10 +385,23 @@ begin
 			assert link_packets(l) > 0 or (cur_mask / 4 ** l) mod 4 = 0 or RESTART_TEST = 1 report "No packet on link " & integer'image(l) severity FAILURE;
 		end loop;
 		report "RAWPACK TEST PASSED: " & integer'image(packets_checked) & " packets checked, " &
-		       integer'image(pass_words_before) & "/" & integer'image(pass_words_after) & " pass-through words before/after";
+		       integer'image(pass_words_before) & "/" & integer'image(pass_words_after) & " pass-through words before/after, " &
+		       "largest FIFO level " & integer'image(maximum(fifo_max(0), fifo_max(STREAMS - 1))) & " of 512 words (first and last stream)";
 		done <= TRUE;
 		wait;
 	end process ctrl_proc;
+
+	-- Largest level of the packet FIFO of each stream
+	level_gen: for s in 0 to STREAMS - 1 generate
+		level_proc: process
+			alias level is <<signal ^.uut.fifo_gen(s).level: unsigned(9 downto 0)>>;
+		begin
+			wait until rising_edge(clk);
+			if to_integer(level) > fifo_max(s) then
+				fifo_max(s) <= to_integer(level);
+			end if;
+		end process level_proc;
+	end generate level_gen;
 
 	-- All the links must give the same first sample for a run: the streams start together
 	start_proc: process(all) begin
@@ -360,10 +414,9 @@ begin
 	-- Packet checker of each link
 	check_gen: for LINK in 0 to LINKS - 1 generate
 		check_proc: process
-			constant DATA_WORDS: integer := 3 * BLOCKS_PER_PACKET;
-			constant PACKET_BYTES: integer := 32 * (2 + DATA_WORDS);
+			variable pkt_words, pkt_bytes, pkt_blocks: integer; -- of the run in progress
 			type byte_array is array (natural range <>) of integer range 0 to 255;
-			variable pkt: byte_array(0 to PACKET_BYTES - 1);
+			variable pkt: byte_array(0 to 32 * (2 + MAX_DATA_WORDS) - 1);
 			variable nwords: integer := 0;
 			variable in_packet: boolean := FALSE;
 			variable seen_raw: boolean := FALSE;
@@ -380,8 +433,9 @@ begin
 			variable pass_len: integer := 0; -- words of the pass-through frame in progress
 			variable pass_resync: boolean := TRUE; -- the next pass-through frame can be short: the test starts in the middle of a frame, or a reset came
 			variable rst_prev: std_logic := '1';
-			variable expected: std_logic_vector(11 downto 0);
-			variable got: std_logic_vector(11 downto 0);
+			variable expected: std_logic_vector(13 downto 0);
+			variable got: std_logic_vector(13 downto 0);
+			variable sample14: std_logic_vector(13 downto 0);
 			variable chan, t_word, t_s, bitpos: integer;
 			file dump: text;
 			variable dump_open: boolean := FALSE;
@@ -407,6 +461,9 @@ begin
 		begin
 			wait until rising_edge(clk);
 			link_mask := (cur_mask / 4 ** LINK) mod 4;
+			pkt_blocks := packet_blocks(cur_bits, BLOCKS_PER_PACKET);
+			pkt_words := packet_data_words(cur_bits, BLOCKS_PER_PACKET);
+			pkt_bytes := 32 * (2 + pkt_words);
 			if rst = '1' and rst_prev = '0' and stream_enabled then
 				number_of_resets := number_of_resets + 1;
 			end if;
@@ -465,14 +522,15 @@ begin
 					in_packet := TRUE;
 					seen_raw := TRUE;
 					raw_seen(LINK) <= TRUE;
-					assert nwords < 2 + DATA_WORDS report "Packet too long" severity FAILURE;
+					assert nwords < 2 + pkt_words report "Packet too long" severity FAILURE;
 					for b in 0 to 31 loop
 						pkt(32 * nwords + b) := to_integer(unsigned(out_tdata(LINK)(255 - 8 * b downto 248 - 8 * b)));
 					end loop;
 					nwords := nwords + 1;
 
 					if out_tlast(LINK) then
-						assert nwords = 2 + DATA_WORDS report "Wrong packet length: " & integer'image(nwords) & " words" severity FAILURE;
+						assert nwords = 2 + pkt_words report "Wrong packet length: " & integer'image(nwords) & " words" severity FAILURE;
+						assert cur_bits /= 14 or nwords mod 2 = 0 report "A packet of 14-bit samples has an odd number of words: " & integer'image(nwords) severity FAILURE;
 
 						if DUMP_FILE'length > 0 then
 							if not dump_open then
@@ -483,7 +541,7 @@ begin
 								end if;
 								dump_open := TRUE;
 							end if;
-							for i in 0 to PACKET_BYTES - 1 loop
+							for i in 0 to pkt_bytes - 1 loop
 								hwrite(l, std_logic_vector(to_unsigned(pkt(i), 8)));
 							end loop;
 							writeline(dump, l);
@@ -507,7 +565,7 @@ begin
 						assert be(12, 2) = 16#0800# report "Bad ethertype" severity FAILURE;
 						-- IPv4 header
 						assert be(14, 2) = 16#4500# report "Bad IP version/header length" severity FAILURE;
-						assert be(16, 2) = PACKET_BYTES - 14 report "Bad IP length: " & integer'image(be(16, 2)) severity FAILURE;
+						assert be(16, 2) = pkt_bytes - 14 report "Bad IP length: " & integer'image(be(16, 2)) severity FAILURE;
 						assert be(20, 2) = 16#4000# and be(22, 2) = 16#4011# report "Bad IP flags/TTL/protocol" severity FAILURE;
 						sum := 0;
 						for i in 0 to 9 loop
@@ -529,41 +587,47 @@ begin
 						stream_ctr(index) := stream_ctr(index) + 1;
 						assert be(34, 2) = 16#A027# + (expected_ctr mod 4) report "Bad UDP source port: " & integer'image(be(34, 2)) severity FAILURE;
 						assert be(36, 2) = 16#A410# + 2 * LINK + index report "Bad UDP destination port: " & integer'image(be(36, 2)) severity FAILURE;
-						assert be(38, 2) = PACKET_BYTES - 34 report "Bad UDP length" severity FAILURE;
+						assert be(38, 2) = pkt_bytes - 34 report "Bad UDP length" severity FAILURE;
 						assert be(40, 2) = 0 report "Bad UDP checksum" severity FAILURE;
 						-- Raw stream header
 						assert be(42, 2) = 16#5241# report "Bad magic" severity FAILURE;
 						assert pkt(44) = 4 report "Bad format version" severity FAILURE;
-						assert pkt(45) = SOURCE + 2 + 4 * cur_mask report "Bad flags: " & integer'image(pkt(45)) severity FAILURE;
+						assert pkt(45) = SOURCE + 2 * to_integer(unsigned'("" & to_std_logic(cur_bits = 12))) + 4 * cur_mask report "Bad flags: " & integer'image(pkt(45)) severity FAILURE; -- bit 1: rounded (12 bits only)
 						assert pkt(46) = 16 * stream + chan report "Bad channel byte: " & integer'image(pkt(46)) severity FAILURE;
-						assert pkt(47) = BLOCKS_PER_PACKET report "Bad blocks_per_packet" severity FAILURE;
+						assert pkt(47) = pkt_blocks report "Bad blocks_per_packet: " & integer'image(pkt(47)) severity FAILURE;
 						assert be(48, 3) = 0 and be(51, 3) = expected_ctr report "Bad packet counter: " & integer'image(be(51, 3)) severity FAILURE;
 						assert be(54, 3) = 0 report "Bad frame number (high)" severity FAILURE;
 						frame := be(57, 3);
 						word := be(60, 2);
 						assert pkt(62) = (1 + number_of_resets + run_number) mod 256 report "Bad run number: " & integer'image(pkt(62)) severity FAILURE;
-						assert pkt(63) = 12 report "Bad sample width" severity FAILURE;
+						assert pkt(63) = cur_bits report "Bad number of bits of a sample: " & integer'image(pkt(63)) severity FAILURE;
 						-- The packets of all streams with the same counter cover the same time
 						n := frame * WORDS_PER_FRAME + word;
 						if start < 0 then
 							assert word = 0 report "First packet does not start on a frame boundary" severity FAILURE;
-							start := n - expected_ctr * 8 * BLOCKS_PER_PACKET;
+							start := n - expected_ctr * 8 * pkt_blocks;
 							run_start(LINK) <= start;
 						end if;
-						assert n = start + expected_ctr * 8 * BLOCKS_PER_PACKET
+						assert n = start + expected_ctr * 8 * pkt_blocks
 							report "Timestamp error: stream " & integer'image(stream) & " packet " & integer'image(expected_ctr) & " starts at word " & integer'image(n) &
-							       ", expected " & integer'image(start + expected_ctr * 8 * BLOCKS_PER_PACKET) severity FAILURE;
+							       ", expected " & integer'image(start + expected_ctr * 8 * pkt_blocks) severity FAILURE;
 
-						-- Samples: little-endian bit stream, 12 bits per sample, one channel
-						for i in 0 to 64 * BLOCKS_PER_PACKET - 1 loop
-							for b in 0 to 11 loop
-								bitpos := 12 * i + b;
+						-- Samples: little-endian bit stream, 12 or 14 bits per sample, one channel
+						for i in 0 to 64 * pkt_blocks - 1 loop
+							got := (others => '0');
+							for b in 0 to cur_bits - 1 loop
+								bitpos := cur_bits * i + b;
 								v := pkt(64 + bitpos / 8);
 								got(b) := to_unsigned(v, 8)(bitpos mod 8);
 							end loop;
 							t_word := frame * WORDS_PER_FRAME + word + i / 8; -- absolute word number of this sample
 							t_s := i mod 8;
-							expected := reduced(sample_value(chan, t_word / WORDS_PER_FRAME, t_word mod WORDS_PER_FRAME, t_s));
+							sample14 := sample_value(chan, t_word / WORDS_PER_FRAME, t_word mod WORDS_PER_FRAME, t_s);
+							if cur_bits = 14 then
+								expected := sample14; -- the ADC sample as it is
+							else
+								expected := "00" & reduced(sample14);
+							end if;
 							assert got = expected
 								report "Sample mismatch in packet " & integer'image(link_packets(LINK)) & " of link " & integer'image(LINK) & " sample " & integer'image(i) &
 								       ": got " & integer'image(to_integer(unsigned(got))) & ", expected " & integer'image(to_integer(unsigned(expected))) severity FAILURE;
