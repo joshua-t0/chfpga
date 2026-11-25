@@ -160,6 +160,7 @@ entity chfpga is
 
 		DATA_LINK_TYPE: data_link_type_enum; -- NONE, XGE (10G), or UPACK_CGE (100G)
 		NUMBER_OF_CGE_LINKS: integer range 1 to 2 := 1; -- 100G links. The second link (on the second hard MAC) carries only raw ADC streams.
+		EXPONENT_BITS: integer range 0 to 3 := 0; -- Exponent mode of the F-engine packets (UPACK_CGE, UCT level 1, no correlator): bits of the exponent of each sample in the scalers. 0: no exponent mode.
 		DATA_LINK_LINK_TO_QUAD_MAP: integer_array := (0 => 0);
 		DATA_LINK_QUAD_TO_REFCLK_MAP: integer_array  := (0 => 0);
 
@@ -623,6 +624,17 @@ architecture impl of chFPGA is
 	signal CLK125: std_logic; -- 125 MHz clock for the command interface and the Ethernet communications
 	signal clk200: std_logic; -- 200 MHz system clock from the carrier board
 	signal corr_clk: std_logic; -- Correlator clock, derived from the carrier board.
+	-- Exponent mode of the F-engine packets (see upack and scaler). The packetizer takes UltraRAMs from UCAP:
+	-- with exponents of 2 bits UCAP has 4 of its 8 buffers (mode 0 then gives one frame of each of the 8 channels),
+	-- and with exponents of 3 bits UCAP has no buffer with memory (its logic, registers and packets do not change;
+	-- the data of a capture are zeros).
+	constant UCAP_NO_BUFFERS: boolean := EXPONENT_BITS = 3;
+	constant UCAP_4_BUFFERS: boolean := EXPONENT_BITS > 0 and not UCAP_NO_BUFFERS;
+	constant CHAN_OUT_WIDTH: integer := 32; -- bits of a channelizer output word: 4 bins of (4+4) bits
+	-- Exponent mode: each bin of a channelizer word has EXPONENT_BITS + 1 more bits on the way to the packetizer (the bit that tells that the bin has an exponent, and the exponent)
+	constant EXPF_BITS: integer := sel(EXPONENT_BITS > 0, EXPONENT_BITS + 1, 0);
+	constant CHAN_EXP_WIDTH: integer := FFT_INFO(FFT_TYPE).BINS_PER_WORD * EXPF_BITS; -- 0 without the exponent mode
+	constant CT_IN_WIDTH: integer := CHAN_OUT_WIDTH + CHAN_EXP_WIDTH; -- bits of an input word of the corner-turn engine
 	signal bsb_clk: std_logic;
 	signal cap_clk: std_logic; -- Data capture clock, either bsb_clk or axis_cap_clk
 	signal sysmon_clk: std_logic;
@@ -760,6 +772,7 @@ architecture impl of chFPGA is
 	-- Channelizer outputs (from chan_array)
 	signal chan_out_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(31 downto 0);
 	signal chan_out_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
+	signal chan_out_texp: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(FFT_INFO(FFT_TYPE).BINS_PER_WORD * sel(EXPONENT_BITS > 0, EXPONENT_BITS + 1, 1) - 1 downto 0);
 	signal chan_out_tvalid: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
 	signal chan_out_tlast: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
 
@@ -770,9 +783,13 @@ architecture impl of chFPGA is
 	constant CT_OUT_WIDTH: integer := FFT_INFO(FFT_TYPE).BINS_PER_WORD * CT_OUT_BITS_PER_BIN * NUMBER_OF_CHANNELIZERS; -- 
 
 	signal ct_out_tdata: std_logic_vector(CT_OUT_WIDTH - 1 downto 0); -- TODO: parametrize this, even if this is mostly fixed for the platform
+	-- Output of the corner-turn engine with the exponent bits, and the exponent bits alone (sample n of ct_out_tdata, which has 8 bits, has EXPONENT_BITS + 1 bits from bit (EXPONENT_BITS + 1) * n: the exponent, and above it the bit that tells that the bin has an exponent)
+	signal ct_out_full_tdata: std_logic_vector(NUMBER_OF_CHANNELIZERS * CT_IN_WIDTH - 1 downto 0);
+	signal ct_out_texp: std_logic_vector(FFT_INFO(FFT_TYPE).BINS_PER_WORD * NUMBER_OF_CHANNELIZERS * sel(EXPONENT_BITS > 0, EXPONENT_BITS + 1, 1) - 1 downto 0) := (others => '0');
 	signal ct_out_tvalid: std_logic;
 	signal ct_out_tlast: std_logic;
 	attribute shreg_extract of ct_out_tdata, ct_out_tvalid, ct_out_tlast: signal is "no";
+	attribute shreg_extract of ct_out_full_tdata: signal is "no";
 
 	-----------------------
 	-- Backplane PCB & QUAD shuffle signals
@@ -1803,6 +1820,9 @@ begin
 			NUMBER_OF_CHANNELIZERS_WITH_FFT => NUMBER_OF_CHANNELIZERS_WITH_FFT,
 			FFT_TYPE => FFT_TYPE,
 			CAPTURE_TYPE => CAPTURE_TYPE,
+			EXPONENT_BITS => EXPONENT_BITS,
+			UCAP_BUFFERS => sel(UCAP_NO_BUFFERS, 0, sel(UCAP_4_BUFFERS, 4, 8)),
+			UCAP_MODE0_ONE_FRAME => UCAP_4_BUFFERS, -- with 4 buffers: mode 0 gives one frame of each of the 8 channels
             -- ADC config
 			ADC_IS_DIFFERENTIAL => ADC_IS_DIFFERENTIAL,
 			ADC_PROVIDE_BUFFERED_DIVCLK => ADC_PROVIDE_BUFFERED_DIVCLK,
@@ -1870,6 +1890,7 @@ begin
 			-- Channelizer Outputs (on ct_clk)
 			chan_out_tdata => chan_out_tdata,
 			chan_out_tuser => chan_out_tuser,
+			chan_out_texp => chan_out_texp,
 			chan_out_tvalid => chan_out_tvalid,
 			chan_out_tlast => chan_out_tlast,
 			ct_clk => ct_clk,
@@ -1957,18 +1978,42 @@ begin
     ct_gen: if CT_TYPE /= NONE generate
         signal ct_reset_reg0, ct_reset_reg1, ct_reset_reg2: std_logic;
 
-        signal ct_in1_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(31 downto 0);
+        signal ct_in0_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(CT_IN_WIDTH - 1 downto 0); -- the channelizer words; in the exponent mode each bin has its sample and its exponent
+        signal ct_in1_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(CT_IN_WIDTH - 1 downto 0);
         signal ct_in1_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
         signal ct_in1_tvalid: std_logic;
         signal ct_in1_tlast: std_logic;
         attribute shreg_extract of ct_in1_tdata, ct_in1_tuser, ct_in1_tvalid, ct_in1_tlast: signal is "no";
 
-        signal ct_in2_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(31 downto 0);
+        signal ct_in2_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(CT_IN_WIDTH - 1 downto 0);
         signal ct_in2_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
         signal ct_in2_tvalid: std_logic;
         signal ct_in2_tlast: std_logic;
         attribute shreg_extract of ct_in2_tdata, ct_in2_tuser, ct_in2_tvalid, ct_in2_tlast: signal is "no";
     begin
+
+        -- Words for the corner-turn engine. It moves the bits of each bin of each channelizer together, so in the
+        -- exponent mode a bin is its sample (the MSBs) and its exponent. The exponents are taken out again after it.
+        ct_in0_gen: if EXPONENT_BITS = 0 generate
+            ct_in0_tdata <= chan_out_tdata;
+            ct_out_tdata <= ct_out_full_tdata;
+        else generate
+            constant BINS: integer := FFT_INFO(FFT_TYPE).BINS_PER_WORD;
+            constant SB: integer := CHAN_OUT_WIDTH / BINS; -- bits of a sample
+            constant BB: integer := SB + EXPF_BITS; -- bits of a bin with its exponent bits
+        begin
+            assert CT_TYPE = UCT and CT_LEVEL = 1 and DATA_LINK_TYPE = UPACK_CGE
+                report "The exponent mode is for the corner-turn level 1 with the packetizer (UPACK_CGE) and no correlator" severity FAILURE;
+            chan_pack_gen: for i in 0 to NUMBER_OF_CHANNELIZERS - 1 generate
+                bin_pack_gen: for b in 0 to BINS - 1 generate
+                    ct_in0_tdata(i)(BB * b + BB - 1 downto BB * b) <= chan_out_tdata(i)(SB * b + SB - 1 downto SB * b) & chan_out_texp(i)(EXPF_BITS * b + EXPF_BITS - 1 downto EXPF_BITS * b);
+                end generate bin_pack_gen;
+            end generate chan_pack_gen;
+            out_unpack_gen: for n in 0 to BINS * NUMBER_OF_CHANNELIZERS - 1 generate
+                ct_out_tdata(SB * n + SB - 1 downto SB * n) <= ct_out_full_tdata(BB * n + BB - 1 downto BB * n + EXPF_BITS);
+                ct_out_texp(EXPF_BITS * n + EXPF_BITS - 1 downto EXPF_BITS * n) <= ct_out_full_tdata(BB * n + EXPF_BITS - 1 downto BB * n);
+            end generate out_unpack_gen;
+        end generate ct_in0_gen;
 
        process(all) begin
             if rising_edge(ct_clk) then
@@ -1979,7 +2024,7 @@ begin
                 -- distance from the channelizer to the input of the CT Engine.
                 ct_reset_reg1 <= ct_reset_reg0;
 
-                ct_in1_tdata <= chan_out_tdata; -- convert from slv32() to slv_array()(31 downto 0)
+                ct_in1_tdata <= ct_in0_tdata; -- convert from slv32() to slv_array()(31 downto 0)
                 ct_in1_tuser <= chan_out_tuser;
                 ct_in1_tlast <= chan_out_tlast(0);
                 ct_in1_tvalid <= chan_out_tvalid(0) when not ct_reset_reg1 else '0';
@@ -2017,7 +2062,7 @@ begin
                         s_axis_tlast => ct_in2_tlast, -- idem
 
                         -- Non-blocking output stream, synchronous to `clk`
-                        m_axis_tdata => ct_out_tdata,
+                        m_axis_tdata => ct_out_full_tdata,
                         m_axis_tvalid => ct_out_tvalid,
                         m_axis_tlast => ct_out_tlast,
 
@@ -2057,6 +2102,7 @@ begin
                     generic map (
                         PLATFORM_TYPE => PLATFORM_TYPE,
                         NUMBER_OF_INPUT_LANES => NUMBER_OF_CHANNELIZERS, -- Number of channelizer inputs
+                        INPUT_WORD_WIDTH => CT_IN_WIDTH,
 
 						-- Corner-turning level: 1: single-board (local) only (no backplane), 2: Level 1 plus 4x4 subbackplane corner-turn (4 boards, using GTY), 3: Level 2 + additional 2x2 corner-turn between 2 sub-backplanes (8 boards)
 						CT_LEVEL => CT_LEVEL, 
@@ -2073,7 +2119,7 @@ begin
                         s_axis_tlast => ct_in2_tlast, -- idem
 
                         -- Non-blocking output stream, synchronous to `clk`
-                        m_axis_tdata => ct_out_tdata,
+                        m_axis_tdata => ct_out_full_tdata,
                         m_axis_tvalid => ct_out_tvalid,
                         m_axis_tlast => ct_out_tlast,
 
@@ -2257,9 +2303,13 @@ begin
 
 			-- UPACK_CGE includes the UPACK module feeding the CGE module (100G link). 
 			upack0: entity work.upack
+				generic map (
+					EXPONENT_BITS => EXPONENT_BITS
+				)
 				port map (
 					-- input data bus
 					s_axis_in_tdata => ct_out_tdata,
+					s_axis_in_texp => ct_out_texp,
 						s_axis_in_tvalid => ct_out_tvalid,
 						s_axis_in_tlast => ct_out_tlast,
 

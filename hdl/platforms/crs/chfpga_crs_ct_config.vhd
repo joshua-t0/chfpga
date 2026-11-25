@@ -31,6 +31,7 @@ package chfpga_config is
     -- 10/100G Ethernet Real-time data offload links configuration
     constant CONFIG_DATA_LINK_TYPE: data_link_type_enum       := UPACK_CGE;
     constant CONFIG_NUMBER_OF_CGE_LINKS: integer := 2; -- 100G links. 2: a second link on SFP28 cages 1 to 4, for raw ADC streams (needs a 100G link type)
+    constant CONFIG_EXPONENT_BITS: integer := 2; -- Exponent mode of the F-engine packets (see upack and scaler): each sample is a 4-bit value with an exponent. 3: exponents of 3 bits (0 to 7), fields of 2 or 4 bits in the packets, and UCAP has no buffer with memory (the packetizer has all the UltraRAMs). 2: exponents of 2 bits (0 to 3), and UCAP has 4 buffers. 0: no exponent mode
 
 
 end chfpga_config;

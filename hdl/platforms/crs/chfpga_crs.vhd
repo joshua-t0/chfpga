@@ -115,6 +115,7 @@ entity chfpga_crs is
 
 		DATA_LINK_TYPE: data_link_type_enum := CONFIG_DATA_LINK_TYPE; --
 		NUMBER_OF_CGE_LINKS: integer range 1 to 2 := CONFIG_NUMBER_OF_CGE_LINKS; -- 100G links. 2: a second link on SFP28 cages 1 to 4, for raw ADC streams.
+		EXPONENT_BITS: integer range 0 to 3 := CONFIG_EXPONENT_BITS; -- Exponent mode of the F-engine packets: bits of the exponent of each sample. 0: no exponent mode.
 		DATA_LINK_LINK_TO_QUAD_MAP: integer_array   := (0 to 3=> 0); -- Channels 0-3 use QUAD0, Channels 4-7 use QUAD1. Ignored if DATA_LINK_TYPE is NONE
 		DATA_LINK_QUAD_TO_REFCLK_MAP: integer_array    := (0 to 0=>0); -- Both QUAD0 and QUAD1 use refclk(0)
 
@@ -906,6 +907,7 @@ begin
 
 			DATA_LINK_TYPE        => DATA_LINK_TYPE,
 			NUMBER_OF_CGE_LINKS   => NUMBER_OF_CGE_LINKS,
+			EXPONENT_BITS         => EXPONENT_BITS,
 			DATA_LINK_LINK_TO_QUAD_MAP                => DATA_LINK_LINK_TO_QUAD_MAP,
 			DATA_LINK_QUAD_TO_REFCLK_MAP                 => DATA_LINK_QUAD_TO_REFCLK_MAP,
 
