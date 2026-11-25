@@ -5,8 +5,9 @@ Each file holds the frames of one 100G link. Verifies, for every frame: the Ethe
 headers (lengths, IP checksum), the raw stream header (format 4), that the packet counter and the
 timestamps of each stream are contiguous (no packet lost anywhere in the chain), and every sample
 against the testbench pattern: sample number t of channel c has the 14-bit value
-(t * (2c + 3) + 1000c) mod 16384 at the input, and it is sent as 12 bits (rounded or truncated, as
-the header says).
+(t * (2c + 3) + 1000c) mod 16384 at the input. The header gives the number of bits of a sample: 12
+(the sample rounded or truncated, as the header says) or 14 (the sample as it is; such a frame must
+have an even number of 32-byte words).
 
 Verifies, over all the files: that a stream is on its link (streams A and B on the first file,
 C and D on the second), and that the packets of all streams with the same packet counter start on
@@ -21,7 +22,7 @@ was stopped in the middle of a frame: the frames that the firmware closed with a
 accepted, one for each run at most.
 
 Uses only the Python standard library.
-Usage: check_frames.py FILE [FILE ...] [--min-packets N] [--upstream {0,1,2}]
+Usage: check_frames.py FILE [FILE ...] [--min-packets N] [--upstream {0,1,2}] [--sample-bits {12,14}]
 """
 import argparse
 import sys
@@ -42,14 +43,14 @@ def reduce_sample(value, rounded):
     return min(value >> 2, 2047) & 0xFFF
 
 
-def check(paths, min_packets=1, upstream=0):
+def check(paths, min_packets=1, upstream=0, sample_bits=None):
     expected_ctr = {}      # stream -> packet counter of its next packet
     run_of = {}            # stream -> run number of its last packet
     origin = {}            # (run, stream) -> first sample of its packet number 0, UDP destination port
     counts = {}            # (run, stream) -> packets
     up_frames = []         # for each upstream frame of link 0: (frame number, raw packets of link 0 before it)
     up_closed = 0
-    payload_bytes = 0
+    samples_checked = 0
     total = 0
     for link, path in enumerate(paths):
         n = 0
@@ -94,12 +95,15 @@ def check(paths, min_packets=1, upstream=0):
                 if h[0:2] != b'RA' or h[2] != 4:
                     fail('bad magic/version')
                 run = h[20]
-                if h[21] != 12:
-                    fail(f'sample width {h[21]} (expected 12)')
+                bits = h[21]
+                if bits not in (12, 14) or (sample_bits and bits != sample_bits):
+                    fail(f'{bits} bits in a sample (expected {sample_bits or "12 or 14"})')
                 flags, chan_byte, blocks = h[3], h[4], h[5]
                 if flags & 0xC0:
                     fail(f'error flags set (0x{flags:02X})')
                 rounded = bool(flags & 2)
+                if bits == 14 and (rounded or len(frame) % 64 or blocks % 4):
+                    fail(f'14-bit samples: rounded flag {rounded}, {len(frame) / 32:g} words, {blocks} blocks (expected not rounded, an even number of words, a multiple of 4 blocks)')
                 mask = (flags >> 2) & 0xF
                 stream, chan = (chan_byte >> 4) & 7, chan_byte & 7
                 if not mask & (1 << stream):
@@ -110,8 +114,8 @@ def check(paths, min_packets=1, upstream=0):
                 ctr = int.from_bytes(h[6:12], 'big')
                 first_sample = (int.from_bytes(h[12:18], 'big') * WORDS_PER_FRAME + int.from_bytes(h[18:20], 'big')) * 8
                 data = frame[64:]
-                if len(data) != 96 * blocks:
-                    fail(f'{len(data)} sample bytes, expected {96 * blocks}')
+                if len(data) != 8 * bits * blocks:
+                    fail(f'{len(data)} sample bytes, expected {8 * bits * blocks}')
                 samples = blocks * 64
 
                 if run != run_of.get(stream):
@@ -131,20 +135,23 @@ def check(paths, min_packets=1, upstream=0):
                     fail(f'stream {NAMES[stream]}: UDP destination port {dest_port}, was {origin[1, stream][1]}')
                 expected_ctr[stream] = ctr + 1
 
-                # 2 samples per 3 bytes, little-endian bit stream, one channel in time order
+                # Little-endian bit stream, one channel in time order: 2 samples of 12 bits in 3 bytes, or 4 samples of 14 bits in 7 bytes
                 i = 0
-                for g in range(0, len(data), 3):
-                    w = int.from_bytes(data[g:g + 3], 'little')
-                    for k in range(2):
-                        got = (w >> (12 * k)) & 0xFFF
+                group = 3 if bits == 12 else 7
+                for g in range(0, len(data), group):
+                    w = int.from_bytes(data[g:g + group], 'little')
+                    for k in range(8 * group // bits):
+                        got = (w >> (bits * k)) & ((1 << bits) - 1)
                         t = first_sample + i
-                        expected = reduce_sample((t * (2 * chan + 3) + 1000 * chan) % 16384, rounded)
+                        expected = (t * (2 * chan + 3) + 1000 * chan) % 16384
+                        if bits == 12:
+                            expected = reduce_sample(expected, rounded)
                         if got != expected:
                             fail(f'sample {i} (channel {chan}, t={t}): got {got}, expected {expected}')
                         i += 1
+                samples_checked += i
                 n += 1
                 counts[run, stream] = counts.get((run, stream), 0) + 1
-                payload_bytes += len(data)
         if link == 0 and upstream:
             numbers = [number for number, _ in up_frames]
             if not up_frames or up_frames[0][1] != 0 or (up_frames[-1][1] != n and upstream == 1):
@@ -168,7 +175,7 @@ def check(paths, min_packets=1, upstream=0):
         sys.exit(f'Two streams have the same UDP destination port: {ports}')
     print(f'{", ".join(paths)}: {total} packets OK in {len(runs)} run(s) ('
           + ', '.join(f'{sum(counts[r, s] for r in runs)} of stream {NAMES[s]} on port {origin[1, s][1]}' for s in streams)
-          + f'), {payload_bytes * 8 // 12} samples checked, no packet lost, all streams start on the same sample'
+          + f'), {samples_checked} samples checked, no packet lost, all streams start on the same sample'
           + (f', {len(up_frames)} complete upstream frames, {up_closed} closed by the firmware' if upstream else ''))
 
 
@@ -177,5 +184,6 @@ if __name__ == '__main__':
     p.add_argument('files', nargs='+', help='one file for each link, link 0 first')
     p.add_argument('--min-packets', type=int, default=1)
     p.add_argument('--upstream', type=int, default=0, choices=(0, 1, 2), help='upstream frames on the first link: 0 none, 1 all the time, 2 stopped during the runs')
+    p.add_argument('--sample-bits', type=int, default=None, choices=(12, 14), help='number of bits of a sample that every packet must have (default: 12 or 14, from each header)')
     a = p.parse_args()
-    check(a.files, a.min_packets, a.upstream)
+    check(a.files, a.min_packets, a.upstream, a.sample_bits)

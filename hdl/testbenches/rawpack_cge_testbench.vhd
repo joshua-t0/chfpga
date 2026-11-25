@@ -5,7 +5,7 @@
 -- on a transmit underflow and writes every frame it sends to FRAME_FILE (one line of hex per frame).
 --
 -- The capture bus carries the same pattern as in ``rawpack_testbench``: sample number t of channel c
--- has the 14-bit value (t * (2c + 3) + 1000c) mod 16384, of which the 12 MSBs are sent. The frame file is checked afterwards by
+-- has the 14-bit value (t * (2c + 3) + 1000c) mod 16384, of which the 12 MSBs are sent (rounded), or all the 14 bits (``SAMPLE_BITS``). The frame file is checked afterwards by
 -- ``check_frames.py`` (headers, packet counter continuity of each stream = no packet lost in the FIFOs, samples).
 --
 -- This testbench checks that no FIFO overflowed and ends with "RAWPACK CGE SIMULATION DONE".
@@ -26,6 +26,7 @@ entity rawpack_cge_testbench is
 		CHAN_D: integer := 0;
 		STREAM_ENABLE: integer range 1 to 15 := 15; -- streams to send: bit 0 = A, 1 = B (link 0), 2 = C, 3 = D (link 1)
 		BLOCKS_PER_PACKET: integer := 64;
+		SAMPLE_BITS: integer := 12; -- number of bits of a sample: 12 or 14
 		RUN_TIME_US: integer := 500; -- duration of a run
 		RUNS: integer := 1; -- number of runs (start, RUN_TIME_US, stop), each a little longer than the last
 		UPSTREAM: integer range 0 to 2 := 1; -- frames on the pass-through bus of link 0, with the timing of upack (194 words every 256 clocks). 0: none, the module has no such bus. 1: all the time. 2: the transmitter is stopped in the middle of a frame during each run.
@@ -220,6 +221,7 @@ begin
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 28, CHAN_D * 16 + CHAN_C);
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 2, BLOCKS_PER_PACKET);
 		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 29, STREAM_ENABLE);
+		fpga_write_control(bsb_clk, bsb_cmd_tdata, bsb_cmd_tvalid, bsb_cmd_tlast, bsb_cmd_tready, 54, SAMPLE_BITS);
 		for r in 0 to RUNS - 1 loop
 			if UPSTREAM = 2 then
 				wait until rising_edge(clk) and up_index = 50;
