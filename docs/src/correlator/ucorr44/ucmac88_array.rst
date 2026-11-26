@@ -1,8 +1,8 @@
 UCMAC88_ARRAY
 =============
 
-``UCMAC88_ARRAY`` is the version of ``UCMAC44_ARRAY`` for inputs with 8-bit components (-128 to 127). It is an
-experiment for the ``crs_corr8`` build: all eight inputs are correlated with 8 bits, the products are exact (there is no
+``UCMAC88_ARRAY`` is the version of ``UCMAC44_ARRAY`` for inputs with 8-bit components (-128 to 127). It is the
+correlator of the ``crs_corr8`` build: all eight inputs are correlated with 8 bits, the products are exact (there is no
 scaling and no rounding), and the sums are wider. ``UCORR44`` uses it when its generic ``SAMPLE_BITS`` is 16
 (``UCORR44_ARRAY``: ``N_BITS_PER_BIN = 16``; ``chfpga``: the constant ``WIDE_CORR``).
 

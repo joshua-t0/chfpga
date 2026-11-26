@@ -629,7 +629,7 @@ architecture impl of chFPGA is
 	-- Features of a correlator on the same board and the same clock as the channelizers (corr8): the gain bank switch at
 	-- the end of an integration, the split-sample mode and the wide autocorrelations
 	constant LOCAL_CORR: boolean := CORR_TYPE = UCORR44 and CT_LEVEL = 1 and CT_CLK_SOURCE = ADC_CLK;
-	-- Experiment: the correlator on the board has (8+8)-bit inputs for all the channelizers, with exact products and
+	-- The correlator on the board (corr8) has (8+8)-bit inputs for all the channelizers, with exact products and
 	-- wide sums (UCMAC88_ARRAY). It replaces the 4-bit correlator, its split-sample mode and its wide products.
 	-- Each bit of the sums needs RAM: with 22 + 22-bit cross-products and 26-bit autocorrelations the correlator has 72
 	-- UltraRAMs (and its 64 block RAMs), and UCAP has UltraRAMs for 4 of its 8 buffers. 24 + 24 and 30 bits need all the
