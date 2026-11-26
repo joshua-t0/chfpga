@@ -48,6 +48,12 @@ entity ucap is
         -- output do not change, but the data of those buffers are zeros. With 4: mode 0 has channels 0 to 3 only,
         -- mode 1 has its first two selected channels only, mode 2 its first one, and mode 3 has 8 frames and then zeros.
         BUFFERS_WITH_MEMORY: integer := 8;
+        -- Distance between the buffers that have memory: 1 (buffers 0, 1, 2, ...), 2 (buffers 0, 2, ...) or 4 (buffers 0
+        -- and 4). With 2 buffers and a distance of 4, mode 2 captures 2 frames of each of its two selected channels at
+        -- the same time, and mode 0 captures channels 0 and 4. With a distance of more than 1, mode 3 uses the memories
+        -- as buffers 0, 1, ...: the frames of its channel that have data are the first ones, in a row (4 frames with 2
+        -- buffers).
+        MEMORY_BUFFER_SPACING: integer := 1;
         MEMORY_PRIMITIVE: string := "ultra"; -- "ultra" (UltraRAM) or "block" (block RAM)
         -- TRUE (only with BUFFERS_WITH_MEMORY = 4 and UltraRAM): mode 0 captures one frame of each of the 8 channels at
         -- the same time, and not two frames. Buffer k (0 to 3) gets channel 2k in its first half through its first port
@@ -124,6 +130,11 @@ architecture impl of ucap is
     signal readout_delay_reg: unsigned(15 downto 0); -- ADC input frames to wait after ram_readout_trig (0 = no delay)
     -- Signals used for both write and read processes
     signal chan_pair_sel: u3_array(0 to NUMBER_OF_CHANNEL_PAIRS-1);
+    function has_memory(i: integer) return boolean is
+    begin
+        return i mod MEMORY_BUFFER_SPACING = 0 and i / MEMORY_BUFFER_SPACING < BUFFERS_WITH_MEMORY;
+    end function;
+    signal one_channel_in_a_row: std_logic; -- mode 3 with MEMORY_BUFFER_SPACING > 1: memory k is buffer k, and not buffer k * MEMORY_BUFFER_SPACING
     signal one_frame_mode: std_logic; -- mode 0 with MODE0_ONE_FRAME: 8 channels, one frame each, two channels in each buffer
 	signal capture_timestamp: u48_array(0 to NUMBER_OF_SOURCES-1);
     signal ram_readout_trig: std_logic_vector(0 to NUMBER_OF_BUFFERS-1);
@@ -133,6 +144,7 @@ architecture impl of ucap is
     -- RAM signals
 	signal ram_wr_addr, ram_rd_addr: slv12_array(0 to NUMBER_OF_BUFFERS-1);
 	signal ram_din: slv_array(0 to NUMBER_OF_BUFFERS-1)(CAPTURE_BITS_PER_WORD -1 downto 0);
+	signal mem_dout: slv_array(0 to NUMBER_OF_BUFFERS-1)(CAPTURE_BITS_PER_WORD -1 downto 0); -- outputs of the memories (zeros with no memory)
 	signal ram_dout: slv_array(0 to NUMBER_OF_BUFFERS-1)(CAPTURE_BITS_PER_WORD -1 downto 0); -- one for each column;
 	signal ram_wr_en: std_logic_vector(0 to NUMBER_OF_BUFFERS-1);  -- one for each row
 	signal ram_rd_en: std_logic_vector(0 to NUMBER_OF_BUFFERS-1);  -- one for each column
@@ -204,6 +216,7 @@ begin
 
 	-- CONTROL byte 0 -1 : mode and channel selection
 	one_frame_mode  <= to_std_logic(MODE0_ONE_FRAME and control_bytes(0)(7 downto 6) = "00");
+	one_channel_in_a_row <= to_std_logic(MEMORY_BUFFER_SPACING > 1 and control_bytes(0)(7 downto 6) = "11");
 	mode            <= control_bytes(0)(7 downto 6); -- "00": 8-channel mode, "01": 4-channel, "10": 2-channel, "11": 1-channel
 	chan_sel_map(1) <= unsigned(control_bytes(0)(5 downto 3));
 	chan_sel_map(0) <= unsigned(control_bytes(0)(2 downto 0));
@@ -240,7 +253,8 @@ begin
 	status_bytes(1) <= std_logic_vector(in_frame_ctr);
 	status_bytes(2) <= std_logic_vector(out_frame_ctr);
 	status_bytes(3) <= std_logic_vector(m_clk_ctr);
-	status_bytes(4)(6 downto 0) <= to_slv(BUFFERS_WITH_MEMORY, 7);
+	status_bytes(4)(3 downto 0) <= to_slv(BUFFERS_WITH_MEMORY, 4);
+	status_bytes(4)(6 downto 4) <= "000" when MEMORY_BUFFER_SPACING = 1 else "001" when MEMORY_BUFFER_SPACING = 2 else "010"; -- log2 of MEMORY_BUFFER_SPACING
 	status_bytes(4)(7) <= to_std_logic(MODE0_ONE_FRAME); -- mode 0 gives one frame of each of the 8 channels -- 0 from a firmware that does not have this byte: all the buffers have memory
 
     ------------------------------------------------------------
@@ -263,7 +277,7 @@ begin
 			signal a_addr, b_addr, a_addr_reg, b_addr_reg: std_logic_vector(11 downto 0);
 			signal a_en, b_en, b_we, a_en_reg, b_en_reg, b_we_reg: std_logic;
 		begin
-			assert BUFFERS_WITH_MEMORY = NUMBER_OF_BUFFERS / 2 and MEMORY_PRIMITIVE = "ultra" report "MODE0_ONE_FRAME needs UltraRAM for one half of the buffers" severity FAILURE;
+			assert BUFFERS_WITH_MEMORY = NUMBER_OF_BUFFERS / 2 and MEMORY_PRIMITIVE = "ultra" and MEMORY_BUFFER_SPACING = 1 report "MODE0_ONE_FRAME needs UltraRAM for one half of the buffers" severity FAILURE;
 			a_din <= ram_din(2 * i) when one_frame_mode else ram_din(i);
 			a_addr <= ram_wr_addr(2 * i) when one_frame_mode else ram_wr_addr(i); -- first half of the buffer (the frame number is 0)
 			a_en <= ram_wr_en(2 * i) when one_frame_mode else ram_wr_en(i);
@@ -291,12 +305,12 @@ begin
 				)
 				port map (
 					dina => a_din_reg, addra => a_addr_reg, ena => a_en_reg, wea => "1", douta => open,
-					dinb => b_din_reg, addrb => b_addr_reg, enb => b_en_reg, web(0) => b_we_reg, doutb => ram_dout(i),
+					dinb => b_din_reg, addrb => b_addr_reg, enb => b_en_reg, web(0) => b_we_reg, doutb => mem_dout(i),
 					clka => s_axis_clk, clkb => s_axis_clk, rsta => rst, rstb => rst,
 					regcea => '1', regceb => '1', sleep => '0',
 					injectsbiterra => '0', injectdbiterra => '0', injectsbiterrb => '0', injectdbiterrb => '0'
 				);
-		elsif i < BUFFERS_WITH_MEMORY generate
+		elsif has_memory(i) generate
 			-- the inputs of the memory, after RAM_INPUT_STAGES register stages
 			signal din_pipe: slv_array(0 to RAM_INPUT_STAGES)(CAPTURE_BITS_PER_WORD - 1 downto 0);
 			signal wr_addr_pipe, rd_addr_pipe: slv12_array(0 to RAM_INPUT_STAGES);
@@ -306,9 +320,10 @@ begin
 		begin
 			din_pipe(0) <= ram_din(i);
 			wr_addr_pipe(0) <= ram_wr_addr(i);
-			wr_en_pipe(0) <= ram_wr_en(i);
+			-- In mode 3 all the buffers have the same input data and the same addresses: only the enables differ.
+			wr_en_pipe(0) <= ram_wr_en(i / MEMORY_BUFFER_SPACING) when one_channel_in_a_row else ram_wr_en(i);
 			rd_addr_pipe(0) <= ram_rd_addr(i);
-			rd_en_pipe(0) <= ram_rd_en(i);
+			rd_en_pipe(0) <= ram_rd_en(i / MEMORY_BUFFER_SPACING) when one_channel_in_a_row else ram_rd_en(i);
 			pipe_gen: for k in 1 to RAM_INPUT_STAGES generate
 				process(s_axis_clk) begin
 					if rising_edge(s_axis_clk) then
@@ -359,7 +374,7 @@ begin
 					wea => "1",
 
 					-- read port
-					doutb => ram_dout(i),
+					doutb => mem_dout(i),
 					addrb => rd_addr_pipe(RAM_INPUT_STAGES),
 					enb => rd_en_pipe(RAM_INPUT_STAGES),
 
@@ -375,8 +390,16 @@ begin
 					clkb => '0'
 			   );
 		else generate
-			ram_dout(i) <= (others => '0');
+			mem_dout(i) <= (others => '0');
 		end generate mem_gen;
+		-- The output of buffer i for the readout logic
+		dout_gen: if MEMORY_BUFFER_SPACING > 1 and i < BUFFERS_WITH_MEMORY generate
+			ram_dout(i) <= mem_dout(i * MEMORY_BUFFER_SPACING) when one_channel_in_a_row else mem_dout(i);
+		elsif MEMORY_BUFFER_SPACING > 1 generate
+			ram_dout(i) <= (others => '0') when one_channel_in_a_row else mem_dout(i);
+		else generate
+			ram_dout(i) <= mem_dout(i);
+		end generate dout_gen;
 	end generate uram_gen;
 
     -- Write block: writes data to memory

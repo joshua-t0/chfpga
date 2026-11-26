@@ -102,7 +102,7 @@ Each input sample is a (4+4)-bit value with an exponent of ``EXPONENT_BITS`` bit
 
 One block RAM has, for each bin and each bank, the bit that tells that the bin has exponents (the OR of the bits of the 8 inputs, written again with each frame).
 
-With ``EXPONENT_BITS`` = 3 the packetizer has all the 80 UltraRAMs of the device, and UCAP has no buffer with memory (see the ``ct`` configuration).
+With ``EXPONENT_BITS`` = 3 the packetizer has all the 80 UltraRAMs of the device, and the buffers of UCAP are in block RAM (see the ``ct`` configuration).
 
 **Controls** (0 after a reset):
 
