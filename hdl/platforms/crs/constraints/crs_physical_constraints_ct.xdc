@@ -69,6 +69,40 @@ resize_pblock [get_pblocks UPACK] -add {RAMB36_X1Y44:RAMB36_X1Y49}
 set_property EXCLUDE_PLACEMENT 1 [get_pblocks UPACK]
 set_property IS_SOFT FALSE [get_pblocks UPACK]
 
+# Exponent mode: the packetizer has more UltraRAMs for the exponents of the samples, at the sites of the UCAP region of
+# crs_physical_constraints_common.xdc (URAM288_X0Y64 to Y79), next to its own region.
+#   EXPONENT_BITS = 2: 8 UltraRAMs (2 for each of the 4 frame rows) at Y64 to Y71. UCAP has 4 buffers with memory
+#     (8 UltraRAMs) at Y72 to Y79, as in the build with the (8+8)-bit correlator.
+#   EXPONENT_BITS = 3: 16 UltraRAMs (4 for each frame row): the first two of each row at Y64 to Y71 as above, the
+#     other two at Y72 to Y79. UCAP has no UltraRAM in that build.
+# Each line is for cells that are in only one of the two builds or at the same site in the two: a line whose cells
+# are not in the build does nothing (get_cells -quiet).
+set_property LOC URAM288_X0Y64 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0/exp_gen.x_blk.x_row_gen[0].x_u_gen[0].x_ram0/*/*_uram_0}]
+set_property LOC URAM288_X0Y65 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0/exp_gen.x_blk.x_row_gen[0].x_u_gen[1].x_ram0/*/*_uram_0}]
+set_property LOC URAM288_X0Y66 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0/exp_gen.x_blk.x_row_gen[1].x_u_gen[0].x_ram0/*/*_uram_0}]
+set_property LOC URAM288_X0Y67 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0/exp_gen.x_blk.x_row_gen[1].x_u_gen[1].x_ram0/*/*_uram_0}]
+set_property LOC URAM288_X0Y68 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0/exp_gen.x_blk.x_row_gen[2].x_u_gen[0].x_ram0/*/*_uram_0}]
+set_property LOC URAM288_X0Y69 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0/exp_gen.x_blk.x_row_gen[2].x_u_gen[1].x_ram0/*/*_uram_0}]
+set_property LOC URAM288_X0Y70 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0/exp_gen.x_blk.x_row_gen[3].x_u_gen[0].x_ram0/*/*_uram_0}]
+set_property LOC URAM288_X0Y71 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0/exp_gen.x_blk.x_row_gen[3].x_u_gen[1].x_ram0/*/*_uram_0}]
+set_property LOC URAM288_X0Y72 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0/exp_gen.x_blk.x_row_gen[0].x_u_gen[2].x_ram0/*/*_uram_0}]
+set_property LOC URAM288_X0Y73 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0/exp_gen.x_blk.x_row_gen[0].x_u_gen[3].x_ram0/*/*_uram_0}]
+set_property LOC URAM288_X0Y74 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0/exp_gen.x_blk.x_row_gen[1].x_u_gen[2].x_ram0/*/*_uram_0}]
+set_property LOC URAM288_X0Y75 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0/exp_gen.x_blk.x_row_gen[1].x_u_gen[3].x_ram0/*/*_uram_0}]
+set_property LOC URAM288_X0Y76 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0/exp_gen.x_blk.x_row_gen[2].x_u_gen[2].x_ram0/*/*_uram_0}]
+set_property LOC URAM288_X0Y77 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0/exp_gen.x_blk.x_row_gen[2].x_u_gen[3].x_ram0/*/*_uram_0}]
+set_property LOC URAM288_X0Y78 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0/exp_gen.x_blk.x_row_gen[3].x_u_gen[2].x_ram0/*/*_uram_0}]
+set_property LOC URAM288_X0Y79 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0/exp_gen.x_blk.x_row_gen[3].x_u_gen[3].x_ram0/*/*_uram_0}]
+set_property LOC URAM288_X0Y72 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[0]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y73 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[0]*/*/*_uram_1}]
+set_property LOC URAM288_X0Y74 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[1]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y75 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[1]*/*/*_uram_1}]
+set_property LOC URAM288_X0Y76 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[2]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y77 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[2]*/*/*_uram_1}]
+set_property LOC URAM288_X0Y78 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[3]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y79 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[3]*/*/*_uram_1}]
+
+
 
 
 create_pblock CORN
@@ -80,8 +114,3 @@ resize_pblock [get_pblocks CORN] -add {DSP48E2_X0Y144:DSP48E2_X0Y167}
 resize_pblock [get_pblocks CORN] -add {RAMB18_X0Y144:RAMB18_X0Y167}
 resize_pblock [get_pblocks CORN] -add {RAMB36_X0Y72:RAMB36_X0Y83}
 set_property IS_SOFT FALSE [get_pblocks CORN]
-
-
-
-
-

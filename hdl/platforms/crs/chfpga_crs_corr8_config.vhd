@@ -31,6 +31,7 @@ package chfpga_config is
 
     constant CONFIG_DATA_LINK_TYPE: data_link_type_enum := RAW_CGE; -- 100G QSFP link carrying the raw ADC streamer (rawpack)
     constant CONFIG_NUMBER_OF_CGE_LINKS: integer := 2; -- 100G links. 2: a second link on SFP28 cages 1 to 4, for raw ADC streams (needs a 100G link type)
+    constant CONFIG_EXPONENT_BITS: integer := 0; -- 0: no exponent mode (it is for the F-engine packets of the ct configuration)
 
 
 

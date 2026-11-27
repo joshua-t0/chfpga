@@ -120,6 +120,8 @@ Data offload parameters
 
 - **CONFIG_DATA_LINK_TYPE** (data_link_type_enum): Real-time data offload type. ``NONE``: no offload. ``XGE``: 8×10G Ethernet. ``UPACK_CGE``: 100G Ethernet via UPACK + CGE. ct configs use XGE (IceBoard) or UPACK_CGE (CRS, ZCU111); corr configs typically use NONE.
 
+- **CONFIG_EXPONENT_BITS** (integer, CRS only): Exponent mode of the F-engine packets. ``0``: none. ``2`` or ``3`` (``ct`` configuration): each scaler can give each sample an exponent of this number of bits (0 to 3, or 0 to 7), and the packetizer (``upack``) can send one exponent for each group of 2, 4, 8 or 16 frames, for the bins that the host selects in the scalers. With ``2`` UCAP has 4 buffers with memory; with ``3`` it has none, and the exponents can have 4 bits in the packets. Only with ``UPACK_CGE``, UCT level 1 and no correlator. See ``upack`` and ``scaler``.
+
 - **CONFIG_NUMBER_OF_CGE_LINKS** (integer, CRS only): Number of 100G links with a 100G link type. ``1``: the QSFP28 port. ``2``: also a second link on the SFP28 cages 1 to 4 (second hard MAC), which carries only the raw ADC streams C and D of ``rawpack``.
 
 .. _config_data_link_link_to_quad_map:

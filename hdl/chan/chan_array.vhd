@@ -41,8 +41,10 @@ entity chan_array is
 		CAPTURE_TYPE                    : chan_capture_type_enum;
 		SPLIT_SAMPLE_SUPPORT            : boolean := FALSE; -- TRUE: the first half of the channelizers have 8-bit outputs, and the split-sample stage (sample_split) is in front of the outputs
 		WIDE_SAMPLE_SUPPORT             : boolean := FALSE; -- TRUE: all the channelizers have 8-bit outputs, and chan_out_tdata has (8+8) bits for each bin (not with SPLIT_SAMPLE_SUPPORT)
+		EXPONENT_BITS                   : integer := 0; -- 0: no exponent mode in the scalers. 1 to 3: bits of the exponent of each bin (chan_out_texp)
 		UCAP_BUFFERS                    : integer := 8; -- UCAP buffers that have memory (see ucap)
-		UCAP_MEMORY                     : string := "ultra"; -- memory of the UCAP buffers: "ultra" or "block"
+		UCAP_MEMORY                     : string := "ultra"; -- memory of the UCAP buffers: "ultra" (UltraRAM) or "block" (block RAM)
+		UCAP_BUFFER_SPACING             : integer := 1; -- distance between the UCAP buffers that have memory (see ucap)
 		UCAP_MODE0_ONE_FRAME            : boolean := FALSE; -- UCAP mode 0 captures one frame of each of the 8 channels (see ucap)
 		NUMBER_OF_CAPTURE_SOURCES       : integer                                           := CHAN_CAPTURE_INFO(CAPTURE_TYPE).NUMBER_OF_SOURCES;
 		CAPTURE_BITS_PER_WORD           : integer                                           := CHAN_CAPTURE_INFO(CAPTURE_TYPE).INPUT_WIDTH;
@@ -110,6 +112,8 @@ entity chan_array is
 
 		chan_out_tdata        : out slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(sel(WIDE_SAMPLE_SUPPORT, 64, 32) - 1 downto 0);
 		chan_out_tuser        : out slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
+		-- Exponent bits of each bin of chan_out_tdata (exponent mode of the scalers): EXPONENT_BITS + 1 bits for each bin (the bit that tells that the bin has an exponent, and the exponent), in the order of the bins of the word. 1 bit for each bin, not used, if EXPONENT_BITS = 0.
+		chan_out_texp         : out slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(FFT_INFO(FFT_TYPE).BINS_PER_WORD * sel(EXPONENT_BITS > 0, EXPONENT_BITS + 1, 1) - 1 downto 0);
 		chan_out_tvalid       : out std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
 		chan_out_tlast        : out std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
 		ct_clk                : in std_logic;
@@ -667,7 +671,8 @@ begin
 				SCALER_USE_COMPLEX_GAINS => CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS, -- don't use config param here
 				CAPTURE_TYPE => CAPTURE_TYPE,
 				CT_TYPE => CT_TYPE,
-				OUT_BITS_PER_WORD => fifo_out_width(i)
+				OUT_BITS_PER_WORD => fifo_out_width(i),
+				EXPONENT_BITS => EXPONENT_BITS
 					)
 			port map (
 				integ_last_frame => integ_last_frame,
@@ -685,6 +690,7 @@ begin
 				out_dat_tvalid       => fifo_out_tvalid(i),
 				out_dat_tlast        => fifo_out_tlast(i),
 				out_dat_tuser        => fifo_out_tuser(i),
+				out_dat_texp         => chan_out_texp(i), -- in step with chan_out_tdata
 				out_dat_send         => chan_out_send(i),
 				out_dat_almost_empty => chan_out_almost_empty(i),
 				out_reset            => ct_reset,
@@ -818,6 +824,7 @@ begin
 					FPGA_SERIES => FPGA_SERIES,
 					BUFFERS_WITH_MEMORY => UCAP_BUFFERS,
 					MEMORY_PRIMITIVE => UCAP_MEMORY,
+					MEMORY_BUFFER_SPACING => UCAP_BUFFER_SPACING,
 					MODE0_ONE_FRAME => UCAP_MODE0_ONE_FRAME,
 					CAPTURE_BITS_PER_WORD => CAPTURE_BITS_PER_WORD
 				)

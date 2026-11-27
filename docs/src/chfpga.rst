@@ -340,6 +340,10 @@ Selects the high-speed Ethernet interface for real-time streaming to a GPU or co
 - ``XGE``: 10 Gigabit Ethernet over SFP+ transceivers.
 - ``UPACK_CGE``: 100 Gigabit Ethernet over QSFP28 transceivers, using the UPACK packetizer engine.
 
+**EXPONENT_BITS** *(integer, 0 to 3)*
+
+Exponent mode of the F-engine packets (``UPACK_CGE`` with the UCT at level 1 and no correlator). ``0`` (default): none. ``1`` to ``3``: the scalers have the exponent mode with this number of bits, the exponents, and one bit for each bin that tells that the bin has an exponent, go with the samples through the channelizer FIFOs and the corner-turn engine, and the packetizer can send them (see ``upack``; the packetizer is built for ``2`` and ``3``).
+
 **DATA_LINK_LINK_TO_QUAD_MAP** *(integer_array)*
 
 Maps each offload channel to the GTY transceiver quad it uses. The array length determines ``NUMBER_OF_GPU_LINKS``. Ignored when ``DATA_LINK_TYPE = NONE``.

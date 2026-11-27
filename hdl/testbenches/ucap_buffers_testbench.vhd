@@ -25,6 +25,7 @@ entity ucap_buffers_testbench is
 		CH1: integer := 2; -- second selected channel
 		BUFFERS: integer := 2;
 		MEMORY: string := "block";
+		SPACING: integer := 1; -- MEMORY_BUFFER_SPACING of the module under test: the buffers with memory are 0, SPACING, ...
 		ONE_FRAME: boolean := FALSE -- MODE0_ONE_FRAME of the module under test (with BUFFERS = 4, MEMORY = ultra)
 	);
 end entity;
@@ -68,7 +69,7 @@ begin
 		);
 
 	dut0: entity work.ucap
-		generic map (FPGA_SERIES => ULTRASCALEPLUS, BUFFERS_WITH_MEMORY => BUFFERS, MEMORY_PRIMITIVE => MEMORY, MODE0_ONE_FRAME => ONE_FRAME)
+		generic map (FPGA_SERIES => ULTRASCALEPLUS, BUFFERS_WITH_MEMORY => BUFFERS, MEMORY_PRIMITIVE => MEMORY, MEMORY_BUFFER_SPACING => SPACING, MODE0_ONE_FRAME => ONE_FRAME)
 		port map (
 			s_axis_tdata => tdata_in, s_axis_tvalid => tvalid_in, s_axis_tlast => tlast_in, source_sel_out => open, source_sel_in => "00000000",
 			s_axis_clk => clk, rst => rst,
@@ -117,7 +118,7 @@ begin
 
 	check: process
 		variable equal, zeros: boolean;
-		variable n_equal, n_zero, base, ref_base: integer := 0;
+		variable n_equal, n_zero, base, ref_base, buf: integer := 0;
 	begin
 		wait until count(0) = PACKETS * PACKET_BYTES and count(1) = DUT_PACKETS * PACKET_BYTES for 20 ms;
 		wait for 200 us; -- no more bytes after the last packet
@@ -149,6 +150,10 @@ begin
 				if store(1, base + b) /= X"00" then zeros := FALSE; end if;
 			end loop;
 			assert equal or zeros report "Data of packet " & integer'image(p) & " are not those of the reference and are not zeros" severity FAILURE;
+			-- The reference sends the packets of buffer 0 first, then those of buffer 1, ...: only the buffers with memory have data.
+			buf := p / (PACKETS / 8);
+			-- In mode 3 with SPACING > 1 the module under test uses its memories as buffers 0, 1, ... (frames in a row).
+			assert equal = ((buf mod SPACING = 0 and buf / SPACING < BUFFERS and not (MODE = 3 and SPACING > 1)) or (MODE = 3 and SPACING > 1 and buf < BUFFERS)) report "Packet " & integer'image(p) & " (buffer " & integer'image(buf) & "): data " & boolean'image(equal) severity FAILURE;
 			if equal then n_equal := n_equal + 1; else n_zero := n_zero + 1; end if;
 		end loop;
 		assert n_equal * 8 = PACKETS * BUFFERS report "Packets with data: " & integer'image(n_equal) & ", expected " & integer'image(PACKETS * BUFFERS / 8) severity FAILURE;

@@ -64,6 +64,7 @@ entity chan is
 		SCALER_COEFF_BITS_PER_BIN: integer := sel(SCALER_USE_COMPLEX_GAINS, 16 + 16, 16); -- use wither 16-bit real gains or (16+16i) bit complex gains
 		OUT_BITS_PER_WORD: integer         := CT_INFO(CT_TYPE).INPUT_WIDTH; -- Width of the output data bus which feeds the corner-turn engine. Sets the scaler output width. BCT can receive 2x (8+8)-bits bins, UCT can receive 4x (4+4)-bit bins, so always 32. 
 		CAPTURE_BITS_PER_WORD: integer     := CHAN_CAPTURE_INFO(CAPTURE_TYPE).INPUT_WIDTH; --  Sets the SCALER capture bus width to match the capture engine input bus
+		EXPONENT_BITS: integer             := 0; -- 0: no exponent mode in the scaler. 1 to 3: bits of the exponent of each bin (see scaler). Only with (4+4)-bit outputs.
 		SIM: boolean                       := GLOBAL_SIM
 	);
 	port (
@@ -87,6 +88,8 @@ entity chan is
 		out_dat_tvalid: out std_logic;
 		out_dat_tlast: out std_logic;
 		out_dat_tuser: out std_logic_vector(3 downto 0); -- TODO: make this also variable width and propagated at that width through ct engine
+		-- Exponent bits of each bin of out_dat_tdata (EXPONENT_BITS + 1 bits for each bin: the bit that tells that the bin has an exponent, and the exponent, as m_axis_out_texp of the scaler; the bin in the LSBs of tdata has its bits in the LSBs). 1 bit for each bin, not used, if EXPONENT_BITS = 0.
+		out_dat_texp: out std_logic_vector(FFT_INFO(FFT_TYPE).BINS_PER_WORD * sel(EXPONENT_BITS > 0, EXPONENT_BITS + 1, 1) - 1 downto 0);
 		out_dat_almost_empty: out std_logic; -- asserts about 15 clocks before the FIFO has no more data
 		out_dat_send: in  std_logic := '1'; -- Set to '1' by the sink to indicate that output data can be sent. Has a one clock latency.
 		out_clk: in  std_logic;
@@ -185,6 +188,8 @@ architecture impl of CHAN is
 	signal scaler_out_tvalid: std_logic;
 	signal scaler_out_tlast: std_logic;
 	signal scaler_out_tuser: std_logic_vector(SCALER_TUSER_BITS_PER_WORD - 1 downto 0);
+	constant EXP_BITS_PER_WORD: integer := FFT_BINS_PER_WORD * sel(EXPONENT_BITS > 0, EXPONENT_BITS + 1, 0); -- exponent bits of a word (for each bin: the bit that tells that it has an exponent, and the exponent). 0 without the exponent mode
+	signal scaler_out_texp: std_logic_vector(FFT_BINS_PER_WORD * sel(EXPONENT_BITS > 0, EXPONENT_BITS + 1, 1) - 1 downto 0) := (others => '0');
 
 	signal scaler_cap_tdata: std_logic_vector(CAPTURE_BITS_PER_WORD - 1 downto 0);
 	signal scaler_cap_tvalid: std_logic;
@@ -554,7 +559,8 @@ begin
 				OUT_BITS_PER_BIN => SCALER_BITS_PER_BIN,
 				CAP_BITS_PER_WORD => CAPTURE_BITS_PER_WORD,
 				FFT_TUSER_BITS_PER_WORD => FFT_TUSER_BITS_PER_WORD,
-				SCALER_TUSER_BITS_PER_WORD => SCALER_TUSER_BITS_PER_WORD
+				SCALER_TUSER_BITS_PER_WORD => SCALER_TUSER_BITS_PER_WORD,
+				EXPONENT_BITS => EXPONENT_BITS
 				)
 			port map (
 				-- Input data from the FFT
@@ -568,6 +574,7 @@ begin
 				m_axis_out_tvalid => scaler_out_tvalid,
 				m_axis_out_tlast => scaler_out_tlast,
 				m_axis_out_tuser => scaler_out_tuser,
+				m_axis_out_texp => scaler_out_texp,
 
 
 				m_axis_cap_tdata => scaler_cap_tdata,
@@ -631,12 +638,13 @@ begin
 
 		signal fifo_rst: std_logic;
 
-		signal fifo_in_tdata: std_logic_vector(OUT_BITS_PER_WORD - 1 downto 0);
+		-- The exponents of the bins (exponent mode) are data bits above the samples in the FIFO
+		signal fifo_in_tdata: std_logic_vector(OUT_BITS_PER_WORD + EXP_BITS_PER_WORD - 1 downto 0);
 		signal fifo_in_tvalid: std_logic;
 		signal fifo_in_tlast: std_logic;
 		signal fifo_in_tuser: std_logic_vector(SCALER_TUSER_BITS_PER_WORD - 1 downto 0);
 
-		signal fifo_out_tdata: std_logic_vector(OUT_BITS_PER_WORD - 1 downto 0);
+		signal fifo_out_tdata: std_logic_vector(OUT_BITS_PER_WORD + EXP_BITS_PER_WORD - 1 downto 0);
 		signal fifo_out_tvalid: std_logic;
 		signal fifo_out_tvalid_not_rst: std_logic;
 		signal fifo_out_tlast: std_logic;
@@ -644,8 +652,12 @@ begin
 
 		signal fifo_almost_full: std_logic;
 		signal fifo_almost_empty: std_logic;
+		signal fifo_out_texp: std_logic_vector(out_dat_texp'range) := (others => '0');
 	begin
-		fifo_in_tdata <= scaler_out_tdata;
+		texp_gen: if EXPONENT_BITS > 0 generate
+			fifo_out_texp <= fifo_out_tdata(OUT_BITS_PER_WORD + EXP_BITS_PER_WORD - 1 downto OUT_BITS_PER_WORD);
+		end generate texp_gen;
+		fifo_in_tdata <= scaler_out_texp(EXP_BITS_PER_WORD - 1 downto 0) & scaler_out_tdata;
 		fifo_in_tvalid <= scaler_out_tvalid and not fifo_rst and (not fifo_almost_full or scaler_out_tlast); -- make sure we don't write during reset
 		fifo_in_tlast <= scaler_out_tlast;
 		fifo_in_tuser <= scaler_out_tuser;
@@ -663,7 +675,7 @@ begin
 		fifo0: entity work.chan_fifo
 			generic map (
 				FPGA_SERIES => FPGA_SERIES,
-				DATA_WIDTH => OUT_BITS_PER_WORD,
+				DATA_WIDTH => OUT_BITS_PER_WORD + EXP_BITS_PER_WORD,
 				USER_WIDTH  => SCALER_TUSER_BITS_PER_WORD
 				)
 			port map (
@@ -694,7 +706,8 @@ begin
 		out_proc: process(all) begin
 			if rising_edge(out_clk) then
 				out_dat_almost_empty <= fifo_almost_empty;
-				out_dat_tdata <= fifo_out_tdata;
+				out_dat_tdata <= fifo_out_tdata(OUT_BITS_PER_WORD - 1 downto 0);
+				out_dat_texp <= fifo_out_texp;
 				out_dat_tuser <= fifo_out_tuser(3 downto 0);
 				out_dat_tlast <= fifo_out_tlast;
 				out_dat_tvalid <= fifo_out_tvalid when out_dat_send and not out_reset else '0'; -- it is important to clear tvalid when send=0 as the FIFO still says it has new valid data but we are not sending that data
@@ -846,6 +859,7 @@ begin
 		out_dat_tvalid <= '0'; -- this line makes the simulator crash
 		out_dat_tdata <= (others => '0');
 		out_dat_tuser <= (others => '0');
+		out_dat_texp <= (others => '0');
 		out_dat_tlast <= '0';
 
 		-- Force the command interface to accept and ignore any command and to reply nothing.
