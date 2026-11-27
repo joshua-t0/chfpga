@@ -70,7 +70,7 @@ entity UCORR44 is
 		SAMPLE_BITS: integer := 4 + 4; -- Bits of one input value. 8 + 8: the multipliers are those of UCMAC88_ARRAY (exact products of 8-bit components; only with one clock for each bin)
 		CROSS_BITS: integer := 24; -- SAMPLE_BITS = 16: bits of each part of the sum of a cross-product
 		AUTO_BITS: integer := 30; -- SAMPLE_BITS = 16: bits of the sum of an autocorrelation
-		WIDE_CROSS: boolean := FALSE; -- TRUE: the cross-products of the odd inputs with each other (1, 3, 5...) have 22 + 22 bits and an overflow flag. In the split-sample mode they are the products of the low parts. Only with one clock for each bin.
+		WIDE_CROSS: boolean := FALSE; -- TRUE: the cross-products of the odd inputs with each other (1, 3, 5...) have 22 + 22 bits and an overflow flag. Only with one clock for each bin.
 		WIDE_AUTOCORR: boolean := FALSE; -- TRUE: 36-bit unsigned autocorrelations. Only with one clock for each bin (NCHAN = NCHAN_PER_CLK).
 		BINS_PER_FRAME_LOG2: integer := 3 -- Aggregate 2**N readout bins per AXIS frame / UDP packet (TLAST every 2**N bins, or on the last bin). Must be >= 1. 3 => 8 bins/frame.
 		);

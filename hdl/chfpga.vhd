@@ -628,10 +628,10 @@ architecture impl of chFPGA is
 	-- their frame. Driven only where the scalers and the correlator have the same clock and less than one frame of delay.
 	signal integ_last_frame_reg: std_logic_vector(0 to 1) := "00";
 	-- Features of a correlator on the same board and the same clock as the channelizers (corr8): the gain bank switch at
-	-- the end of an integration, the split-sample mode and the wide autocorrelations
+	-- the end of an integration
 	constant LOCAL_CORR: boolean := CORR_TYPE = UCORR44 and CT_LEVEL = 1 and CT_CLK_SOURCE = ADC_CLK;
 	-- The correlator on the board (corr8) has (8+8)-bit inputs for all the channelizers, with exact products and
-	-- wide sums (UCMAC88_ARRAY). It replaces the 4-bit correlator, its split-sample mode and its wide products.
+	-- wide sums (UCMAC88_ARRAY). It replaces the 4-bit correlator and its wide products.
 	-- Each bit of the sums needs RAM: with 22 + 22-bit cross-products and 26-bit autocorrelations the correlator has 72
 	-- UltraRAMs (and its 64 block RAMs), and UCAP has UltraRAMs for 4 of its 8 buffers. 24 + 24 and 30 bits need all the
 	-- 80 UltraRAMs: then UCAP needs block RAM, and those builds did not place (see docs: ucmac88_array).
@@ -640,8 +640,6 @@ architecture impl of chFPGA is
 	constant WIDE_CORR_AUTO_BITS: integer := 26; -- bits of the sum of an autocorrelation
 	constant WIDE_CORR_UCAP_BUFFERS: integer := 4; -- UCAP buffers that have memory (UltraRAM)
 	constant CHAN_OUT_WIDTH: integer := sel(WIDE_CORR, 64, 32); -- bits of a channelizer output word: 4 bins of (4+4) or (8+8) bits
-	signal split_mode, split_sat_reset: std_logic := '0';
-	signal split_sat_count: slv_array(0 to 3)(15 downto 0);
 	-- Exponent mode of the F-engine packets (see upack and scaler). The packetizer takes UltraRAMs from UCAP:
 	-- with exponents of 2 bits UCAP has 4 of its 8 buffers (mode 0 then gives one frame of each of the 8 channels),
 	-- and with exponents of 3 bits the packetizer has all the UltraRAMs: UCAP then has two buffers, in block RAM
@@ -1845,7 +1843,6 @@ begin
 			NUMBER_OF_CHANNELIZERS_WITH_FFT => NUMBER_OF_CHANNELIZERS_WITH_FFT,
 			FFT_TYPE => FFT_TYPE,
 			CAPTURE_TYPE => CAPTURE_TYPE,
-			SPLIT_SAMPLE_SUPPORT => LOCAL_CORR and not WIDE_CORR,
 			WIDE_SAMPLE_SUPPORT => WIDE_CORR,
 			EXPONENT_BITS => EXPONENT_BITS,
 			UCAP_BUFFERS => sel(WIDE_CORR, WIDE_CORR_UCAP_BUFFERS, sel(UCAP_BLOCK_RAM, 2, sel(UCAP_4_BUFFERS, 4, 8))),
@@ -1925,9 +1922,6 @@ begin
 			ct_clk => ct_clk,
 			ct_reset => ct_reset,
 			integ_last_frame => integ_last_frame_reg(integ_last_frame_reg'RIGHT),
-			split_mode => split_mode,
-			split_sat_count => split_sat_count,
-			split_sat_reset => split_sat_reset,
 
 			-- 8-bit Data Capture streaming interface from PROBER Oor UCAP (on axis_cap_clk)
 			
@@ -2906,7 +2900,6 @@ begin
 						NBINS_PER_CORR        => NBINS_PER_CORR,
 						BIN_DECIMATION_FACTOR => BIN_DECIMATION_FACTOR,
 						GAIN_SWITCH_SUPPORT   => GAIN_SWITCH_SUPPORT,
-						SPLIT_SAMPLE_SUPPORT  => LOCAL_CORR and not WIDE_CORR,
 						WIDE_AUTOCORR         => LOCAL_CORR and not WIDE_CORR,
 						WIDE_CROSS            => LOCAL_CORR and not WIDE_CORR,
 						N_BITS_PER_BIN        => CT_OUT_BITS_PER_BIN,
@@ -2918,9 +2911,6 @@ begin
 					)
 					port map (
 						integ_last_frame => integ_last_frame,
-						split_mode       => split_mode,
-						split_sat_reset  => split_sat_reset,
-						split_sat_count  => split_sat_count,
 						-- Input data interface (AXI4-Streaning, non-blocking)
 						-- One input per channelizer
 

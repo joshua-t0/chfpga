@@ -1,7 +1,7 @@
 -- Self-checking testbench: a scaler with (8+8)-bit outputs gives, in the 4-bit mode, the values of a
 -- scaler with (4+4)-bit outputs.
 --
--- The corr8 build has scalers with (8+8)-bit outputs for the split-sample mode. In the default mode
+-- The corr8 build has scalers with (8+8)-bit outputs. In the default mode
 -- (four_bits = 1) the correlator takes the 4 MSBs of each component. This testbench gives the same
 -- random data, the same random gain tables and the same settings to a scaler of each width, and
 -- compares the 4-bit values on every clock, for each rounding mode, with and without the symmetric

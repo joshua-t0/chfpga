@@ -50,7 +50,7 @@ The option is correct only if a CMAC always has the same pair of inputs (one clo
 Wide cross-products
 -------------------
 
-The generic ``WIDE_CROSS`` gives, for each CMAC, a product of 22 + 22 bits in place of 18 + 18 bits. ``UCORR44`` sets it for the cross-products of the odd inputs with each other (inputs 1-3, 3-5, 5-7, 1-5, 1-7 and 3-7: CMACs 6, 14, 22, 27, 33 and 35 with 8 inputs). In the split-sample mode these are the products of the low parts of two wide inputs, which have the same power at any signal level and thus cannot be made smaller with the gains.
+The generic ``WIDE_CROSS`` gives, for each CMAC, a product of 22 + 22 bits in place of 18 + 18 bits. ``UCORR44`` sets it for the cross-products of the odd inputs with each other (inputs 1-3, 3-5, 5-7, 1-5, 1-7 and 3-7: CMACs 6, 14, 22, 27, 33 and 35 with 8 inputs).
 
 For these CMACs the 18 bits of the real part and of the imaginary part go past their limits with no saturation. A signed 4-bit counter for each part counts the times, up or down, with the overflow detection that the saturation of the other products uses. The value of a part is ``counter * 2^18 + the 18 bits (signed)``: from about -2.2 million to +1.97 million. An overflow flag is set when a counter goes past its limits, and stays set to the end of the integration.
 

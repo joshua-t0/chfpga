@@ -55,7 +55,6 @@ set hdl_base_files [list  \
  "chan/scaler_mul.vhd" \
  "chan/scaler.vhd" \
  "chan/chan_fifo.vhd" \
- "chan/sample_split.vhd" \
  ]
 
 

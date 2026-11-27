@@ -39,8 +39,7 @@ entity chan_array is
 		NUMBER_OF_CHANNELIZERS_WITH_FFT : integer                                           := NUMBER_OF_CHANNELIZERS;
 		FFT_TYPE                        : fft_type_enum;
 		CAPTURE_TYPE                    : chan_capture_type_enum;
-		SPLIT_SAMPLE_SUPPORT            : boolean := FALSE; -- TRUE: the first half of the channelizers have 8-bit outputs, and the split-sample stage (sample_split) is in front of the outputs
-		WIDE_SAMPLE_SUPPORT             : boolean := FALSE; -- TRUE: all the channelizers have 8-bit outputs, and chan_out_tdata has (8+8) bits for each bin (not with SPLIT_SAMPLE_SUPPORT)
+		WIDE_SAMPLE_SUPPORT             : boolean := FALSE; -- TRUE: all the channelizers have 8-bit outputs, and chan_out_tdata has (8+8) bits for each bin
 		EXPONENT_BITS                   : integer := 0; -- 0: no exponent mode in the scalers. 1 to 3: bits of the exponent of each bin (chan_out_texp)
 		UCAP_BUFFERS                    : integer := 8; -- UCAP buffers that have memory (see ucap)
 		UCAP_MEMORY                     : string := "ultra"; -- memory of the UCAP buffers: "ultra" (UltraRAM) or "block" (block RAM)
@@ -118,9 +117,6 @@ entity chan_array is
 		chan_out_tlast        : out std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
 		ct_clk                : in std_logic;
 		ct_reset              : in std_logic;
-		split_mode            : in std_logic := '0'; -- split-sample mode (synchronous to ct_clk). See sample_split.
-		split_sat_count       : out slv_array(0 to 3)(15 downto 0); -- of the 4 wide inputs
-		split_sat_reset       : in std_logic := '0';
 		integ_last_frame      : in std_logic := '0'; -- to the scalers (synchronous to the channelizer clock): the correlator has the last frame of an integration
 
 		-- 8-bit data capture stream from PROBER or UCAP
@@ -228,73 +224,25 @@ architecture impl of chan_array is
 	signal chan_out_almost_empty: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
 	signal chan_out_send: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1) := (others => '1');
 
-	-- Width of the output word of a channelizer: 8-bit components for the wide inputs of the split-sample mode, 4-bit components otherwise
+	-- Width of the output word of a channelizer: 8-bit components with WIDE_SAMPLE_SUPPORT, 4-bit components otherwise
 	constant NARROW_WIDTH: integer := CT_INFO(CT_TYPE).INPUT_WIDTH;
-	function fifo_out_width(i: integer) return integer is
-	begin
-		if WIDE_SAMPLE_SUPPORT or (SPLIT_SAMPLE_SUPPORT and i < NUMBER_OF_CHANNELIZERS / 2) then
-			return 2 * NARROW_WIDTH;
-		end if;
-		return NARROW_WIDTH;
-	end function;
-	-- Outputs of the channelizers (of their FIFOs), in front of the split-sample stage
+	constant FIFO_OUT_WIDTH: integer := sel(WIDE_SAMPLE_SUPPORT, 2 * NARROW_WIDTH, NARROW_WIDTH);
+	-- Outputs of the channelizers (of their FIFOs)
 	signal fifo_out_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(2 * NARROW_WIDTH - 1 downto 0);
 	signal fifo_out_tuser: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(3 downto 0);
 	signal fifo_out_tvalid, fifo_out_tlast: std_logic_vector(0 to NUMBER_OF_CHANNELIZERS - 1);
 begin
 
-	split_gen: if WIDE_SAMPLE_SUPPORT generate
-		assert not SPLIT_SAMPLE_SUPPORT report "WIDE_SAMPLE_SUPPORT and SPLIT_SAMPLE_SUPPORT cannot be used together" severity FAILURE;
+	wide_gen: if WIDE_SAMPLE_SUPPORT generate
 		chan_out_tdata <= fifo_out_tdata;
-		chan_out_tuser <= fifo_out_tuser;
-		chan_out_tvalid <= fifo_out_tvalid;
-		chan_out_tlast <= fifo_out_tlast;
-		split_sat_count <= (others => (others => '0'));
-	elsif SPLIT_SAMPLE_SUPPORT generate
-		signal wide_tdata: slv_array(0 to NUMBER_OF_CHANNELIZERS - 1)(2 * NARROW_WIDTH - 1 downto 0);
-	begin
-		assert NUMBER_OF_CHANNELIZERS = 8 report "The split-sample mode is for 8 channelizers" severity FAILURE;
-
-		-- A channelizer with 4-bit components: they are the 4 MSBs of the components for the split-sample stage
-		wide_gen: for i in 0 to NUMBER_OF_CHANNELIZERS - 1 generate
-			wide_if: if fifo_out_width(i) = NARROW_WIDTH generate
-				comp_gen: for c in 0 to NARROW_WIDTH / 4 - 1 generate
-					wide_tdata(i)(8 * c + 7 downto 8 * c) <= fifo_out_tdata(i)(4 * c + 3 downto 4 * c) & "0000";
-				end generate comp_gen;
-			else generate
-				wide_tdata(i) <= fifo_out_tdata(i);
-			end generate wide_if;
-		end generate wide_gen;
-
-		split0: entity work.sample_split
-			generic map (
-				NUMBER_OF_LANES => NUMBER_OF_CHANNELIZERS,
-				BINS_PER_WORD   => NARROW_WIDTH / 8
-			)
-			port map (
-				s_axis_tdata  => wide_tdata,
-				s_axis_tuser  => fifo_out_tuser,
-				s_axis_tvalid => fifo_out_tvalid,
-				s_axis_tlast  => fifo_out_tlast,
-				m_axis_tdata  => chan_out_tdata,
-				m_axis_tuser  => chan_out_tuser,
-				m_axis_tvalid => chan_out_tvalid,
-				m_axis_tlast  => chan_out_tlast,
-				split_mode      => split_mode,
-				sat_count       => split_sat_count,
-				sat_count_reset => split_sat_reset,
-				clk => ct_clk,
-				rst => ct_reset
-			);
 	else generate
-		no_split_gen: for i in 0 to NUMBER_OF_CHANNELIZERS - 1 generate
+		narrow_gen: for i in 0 to NUMBER_OF_CHANNELIZERS - 1 generate
 			chan_out_tdata(i) <= fifo_out_tdata(i)(NARROW_WIDTH - 1 downto 0);
-		end generate no_split_gen;
-		chan_out_tuser <= fifo_out_tuser;
-		chan_out_tvalid <= fifo_out_tvalid;
-		chan_out_tlast <= fifo_out_tlast;
-		split_sat_count <= (others => (others => '0'));
-	end generate split_gen;
+		end generate narrow_gen;
+	end generate wide_gen;
+	chan_out_tuser <= fifo_out_tuser;
+	chan_out_tvalid <= fifo_out_tvalid;
+	chan_out_tlast <= fifo_out_tlast;
 
 	-- ADCDAQ_RESET <= adcdaq_reset_async or refclk_adcdaq_reset;
 
@@ -671,7 +619,7 @@ begin
 				SCALER_USE_COMPLEX_GAINS => CONFIG_CHAN_SCALER_USE_COMPLEX_GAINS, -- don't use config param here
 				CAPTURE_TYPE => CAPTURE_TYPE,
 				CT_TYPE => CT_TYPE,
-				OUT_BITS_PER_WORD => fifo_out_width(i),
+				OUT_BITS_PER_WORD => FIFO_OUT_WIDTH,
 				EXPONENT_BITS => EXPONENT_BITS
 					)
 			port map (
@@ -686,7 +634,7 @@ begin
 				in_clk        => chan_clk(i), -- input and signal processing clock
 
 				-- Channelizer output, resynchronized to out_clk
-				out_dat_tdata        => fifo_out_tdata(i)(fifo_out_width(i) - 1 downto 0),
+				out_dat_tdata        => fifo_out_tdata(i)(FIFO_OUT_WIDTH - 1 downto 0),
 				out_dat_tvalid       => fifo_out_tvalid(i),
 				out_dat_tlast        => fifo_out_tlast(i),
 				out_dat_tuser        => fifo_out_tuser(i),

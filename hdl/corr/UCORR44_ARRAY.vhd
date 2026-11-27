@@ -48,7 +48,6 @@ entity UCORR44_ARRAY is
 		SOFT_AUTOCORR_ONLY: boolean := FALSE;
 		WIDE_CROSS: boolean := FALSE; -- TRUE: the cross-products of the odd inputs with each other have 22 + 22 bits and an overflow flag, and the result records are longer (only with one clock for each bin)
 		WIDE_AUTOCORR: boolean := FALSE; -- TRUE: the autocorrelations are 36-bit unsigned numbers (only with one clock for each bin)
-		SPLIT_SAMPLE_SUPPORT: boolean := FALSE; -- TRUE: the split-sample stage (sample_split) is in front of the correlator (reported in the status bytes; its control and status are here)
 		GAIN_SWITCH_SUPPORT: boolean := FALSE; -- TRUE if integ_last_frame is connected to the scalers (reported in the status bytes only)
 		PARALLEL_READOUT: boolean := FALSE; -- TRUE: the correlators are read at the same time and their records are sent in turn (only with N_BITS_PER_BIN = 16). FALSE: one correlator after the other.
 		READOUT_BINS: integer_array(0 to NCORR-1) := (others => 0); -- array of integers indicating which bin is sacrificed to the readout cycle for each correlator
@@ -70,10 +69,6 @@ entity UCORR44_ARRAY is
 		-- if the delay from the scaler input to here and back is less than one frame.
 		integ_last_frame : out std_logic;
 
-		-- Control and status of the split-sample stage (sample_split), synchronous to clk
-		split_mode      : out std_logic;
-		split_sat_reset : out std_logic;
-		split_sat_count : in slv_array(0 to 3)(15 downto 0) := (others => (others => '0')); -- of the 4 wide inputs
 
 		clk : in std_logic; -- Input clock channelized data.
 		rst: in std_logic; -- Reset synchronous to the input clock
@@ -122,7 +117,6 @@ architecture Behavioral of UCORR44_ARRAY is
     signal control_bytes: slv8_array(0 to 3);
     signal status_bytes: slv8_array(0 to 22);
     signal gain_switch_enable, gain_switch_enable_resync, gain_switch_enable_frame: std_logic;
-    signal split_mode_reg: std_logic;
     signal last_frame: std_logic_vector(0 to NCORR-1);
     signal integ_start: slv_array(0 to NCORR-1)(47 downto 0);
     signal user_reset: std_logic;
@@ -175,7 +169,7 @@ begin
     -- |         |  3  |  7   | offset_encoding        | Offset binary encoding |
     -- |         |     |  6   | auto_bin_set            | Auto bin set |
     -- |         |     |  5   | gain_switch_enable      | '1': the scalers that wait for it switch their gain bank at the end of the integration |
-    -- |         |     |  4   | split_mode              | '1': split-sample mode (see sample_split). It takes effect at the end of a frame. |
+    -- |         |     |  4   | (not used)              | It was split_mode in the builds that had the split-sample mode. |
     -- |         |     | 3:0  | bin_set                 | Manual bin set |
     -- | STATUS  |  0  |  0   | or(overrun)            | OR of all overrun flags |
     -- |         |     |  1   | rst                     | Reset status |
@@ -188,10 +182,10 @@ begin
     -- |         |  4  | 7:0  | out_frame_ctr           | Output frame counter |
     -- |         |  5  | 3:0  | NCLK_PER_BIN            | Number of clocks per bin |
     -- |         |     |  4   | GAIN_SWITCH_SUPPORT     | '1': the scalers can switch their gain bank at the end of an integration |
-    -- |         |     |  5   | SPLIT_SAMPLE_SUPPORT    | '1': the build has the split-sample mode |
+    -- |         |     |  5   | (not used)              | '0'. It was SPLIT_SAMPLE_SUPPORT in the builds that had the split-sample mode. |
     -- |         |     |  6   | WIDE_AUTOCORR           | '1': the autocorrelations are 36-bit unsigned numbers |
     -- |         |     |  7   | WIDE_CROSS              | '1': the cross-products of the odd inputs have 22 + 22 bits, and a result record has one more byte for each of them |
-    -- |         |12-..| 15:0 | split_sat_count(i)      | For each of the 4 wide inputs (2 bytes each): words with a saturated value in the split-sample mode. Cleared by overrun_reset. |
+    -- |         |12-19| 7:0  | (not used)              | 0. They were the counters of the split-sample mode. |
     -- |         | 6-11| 47:0 | integ_start             | Timestamp of the first frame of the integration in progress (the timestamp of its result packets) |
     -- ------------------------------------------------------------------------------
 
@@ -233,7 +227,6 @@ begin
     offset_encoding <= control_bytes(3)(7);
     auto_bin_set <= control_bytes(3)(6);
     gain_switch_enable <= control_bytes(3)(5);
-    split_mode_reg <= control_bytes(3)(4);
     bin_set      <= control_bytes(3)(3 downto 0);
 
 
@@ -260,7 +253,7 @@ begin
     -- Status Byte 5
     status_bytes(5)(3 downto 0) <= to_slv(NCLK_PER_BIN, 4);
     status_bytes(5)(4) <= to_std_logic(GAIN_SWITCH_SUPPORT);
-    status_bytes(5)(5) <= to_std_logic(SPLIT_SAMPLE_SUPPORT);
+    status_bytes(5)(5) <= '0'; -- was SPLIT_SAMPLE_SUPPORT
     status_bytes(5)(6) <= to_std_logic(WIDE_AUTOCORR and NCLK_PER_BIN = 1 and BIN_DECIMATION_FACTOR = 1);
     status_bytes(5)(7) <= to_std_logic(WIDE_CROSS and NCLK_PER_BIN = 1 and BIN_DECIMATION_FACTOR = 1);
 
@@ -270,14 +263,7 @@ begin
     -- Byte 22: format of the result records of the (8+8)-bit correlator. 1: the two parts of a product are plain signed
     -- numbers of CROSS_BITS bits, with two saturation flags above them. 0 (first build): RE and IM_HIGH & IM_LOW in 24 + 24 bits.
     status_bytes(22) <= to_slv(sel(N_BITS_PER_BIN = 16, 1, 0), 8);
-    sat_gen: for i in 0 to 3 generate
-        status_bytes(12 + 2 * i to 13 + 2 * i) <= to_slv8_array(unsigned(split_sat_count(i)));
-    end generate sat_gen;
-
-	split_cdc0: xpm_cdc_single
-		generic map (SRC_INPUT_REG => 0)
-		port map (src_clk => '0', src_in => split_mode_reg, dest_clk => clk, dest_out => split_mode);
-	split_sat_reset <= overrun_reset_resync;
+    status_bytes(12 to 19) <= (others => (others => '0')); -- not used (they were the counters of the split-sample mode)
 
     -- Status bytes 6-11. The value changes one time for each integration: read it two times.
     status_bytes(6 to 11) <= to_slv8_array(unsigned(integ_start(0)));
