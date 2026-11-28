@@ -1,13 +1,13 @@
 # CRS corr8 with the (8+8)-bit correlator, 22 + 22-bit cross-products: the 4 UCAP buffers that have memory use the
 # last 8 UltraRAMs (the correlator has URAM288_X0Y0 to Y71). Read this file after crs_physical_constraints_chan_LOCs.xdc.
-set_property LOC URAM288_X0Y72 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[0]*/*/*_uram_0}]
-set_property LOC URAM288_X0Y73 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[0]*/*/*_uram_1}]
-set_property LOC URAM288_X0Y74 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[1]*/*/*_uram_0}]
-set_property LOC URAM288_X0Y75 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[1]*/*/*_uram_1}]
-set_property LOC URAM288_X0Y76 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[2]*/*/*_uram_0}]
-set_property LOC URAM288_X0Y77 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[2]*/*/*_uram_1}]
-set_property LOC URAM288_X0Y78 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[3]*/*/*_uram_0}]
-set_property LOC URAM288_X0Y79 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[3]*/*/*_uram_1}]
+set_property LOC URAM288_X0Y72 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/all_gen.*_gen[0]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y73 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/all_gen.*_gen[0]*/*/*_uram_1}]
+set_property LOC URAM288_X0Y74 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/all_gen.*_gen[1]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y75 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/all_gen.*_gen[1]*/*/*_uram_1}]
+set_property LOC URAM288_X0Y76 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/all_gen.*_gen[2]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y77 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/all_gen.*_gen[2]*/*/*_uram_1}]
+set_property LOC URAM288_X0Y78 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/all_gen.*_gen[3]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y79 [get_cells {chfpga0/chan_array0/cap_gen.uram_case.ucap0/all_gen.*_gen[3]*/*/*_uram_1}]
 
 # The three block RAMs of the FIFOs of the AXI DMAs have exactly the three block RAM sites of the TCPIPE pblock.
 # With the larger correlator the placer often fails to put them there ("BRAM area constraints are over utilized").
