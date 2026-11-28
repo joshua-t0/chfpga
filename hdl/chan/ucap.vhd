@@ -427,6 +427,9 @@ begin
 			mem0: xpm_memory_tdpram
 				generic map (
 					MEMORY_PRIMITIVE => MEMORY_PRIMITIVE,
+					-- Block RAM: no cascade. With the default, a memory is 16 RAMB36 in cascades of 4, which are slow and
+					-- hard to place (the build missed the timing by 0.4 ns); with no cascade it is 15 RAMB36.
+					CASCADE_HEIGHT => sel(MEMORY_PRIMITIVE = "block", 1, 0),
 					CLOCKING_MODE => "common_clock",
 					ADDR_WIDTH_A => 12, WRITE_DATA_WIDTH_A => CAPTURE_BITS_PER_WORD, BYTE_WRITE_WIDTH_A => CAPTURE_BITS_PER_WORD, READ_DATA_WIDTH_A => CAPTURE_BITS_PER_WORD,
 					ADDR_WIDTH_B => 12, WRITE_DATA_WIDTH_B => CAPTURE_BITS_PER_WORD, BYTE_WRITE_WIDTH_B => CAPTURE_BITS_PER_WORD, READ_DATA_WIDTH_B => CAPTURE_BITS_PER_WORD,
