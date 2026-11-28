@@ -159,40 +159,44 @@ The memory write address is constructed from the frame number LSB (selecting whi
 Buffers with memory
 ~~~~~~~~~~~~~~~~~~~
 
-A build can give memory to some of the 8 buffers only, so that other blocks can use the UltraRAMs. The logic, the registers and the packets of UCAP do not change: UCAP sends all the frames, and the frames of a buffer with no memory are zeros. Four generics select the memory:
+A build can give memory to 4 or to 2 of the 8 buffers, so that other blocks can use the UltraRAMs. Two generics select the memory:
 
-- ``BUFFERS_WITH_MEMORY`` (default 8): the number of buffers that have memory.
-- ``MEMORY_PRIMITIVE`` (default ``"ultra"``): ``"ultra"`` (2 UltraRAMs for each buffer) or ``"block"`` (block RAM: 14 RAMB36 and 1 RAMB18 for each buffer, with two register stages in front of the memory).
-- ``MEMORY_BUFFER_SPACING`` (default 1): the distance between the buffers with memory: 1 (buffers 0, 1, 2, ...), 2 (buffers 0, 2, ...) or 4 (buffers 0 and 4). With a distance of more than 1, mode 3 uses the memories as buffers 0, 1, ...: the frames of its channel that have data are the first ones, in a row. In mode 3 all the buffers have the same input data and the same addresses, so only the write enable, the read enable and the output of a memory change place.
-- ``MODE0_ONE_FRAME`` (default FALSE; only with 4 UltraRAM buffers and a distance of 1): mode 0 captures one frame of each of the 8 channels at the same time, and not two frames. Buffer *k* gets channel 2\ *k* in its first half through its first port, and channel 2\ *k* + 1 in its second half through its second port, which the readout also uses. The packets are those of mode 0 with frame number 0 only.
+- ``BUFFERS_WITH_MEMORY`` (default 8): 8, 4 or 2.
+- ``MEMORY_PRIMITIVE`` (default ``"ultra"``): ``"ultra"`` (2 UltraRAMs for each buffer) or ``"block"`` (block RAM, with two register stages in front of the memory).
 
-Status byte 4 tells the host what the build has: bits 3:0 = ``BUFFERS_WITH_MEMORY`` (0 from a firmware that does not have this byte: all the buffers have memory), bits 6:4 = log2 of ``MEMORY_BUFFER_SPACING``, bit 7 = ``MODE0_ONE_FRAME``.
-
-The frames with data of a capture, in the configurations of the CRS:
+With 4 or 2 buffers, each mode gives the memory in equal parts to its channels. A capture has the same number of frames for each channel of the mode, and these frames are the first ones, in a row:
 
 .. list-table::
    :header-rows: 1
 
    * - Mode
      - 8 buffers (default)
-     - 4 UltraRAM buffers with ``MODE0_ONE_FRAME`` (``crs_ct``)
-     - 2 block RAM buffers with a distance of 4 (``crs_ct_exponent3``)
+     - 4 buffers (``crs_ct``)
+     - 2 buffers (``crs_ct_exponent3``)
    * - 0: the 8 channels
      - 2 frames of each
-     - 1 frame of each, at the same time
-     - 2 frames of channels 0 and 4
+     - 1 frame of each
+     - no data
    * - 1: four selected channels
      - 4 frames of each
-     - 4 frames of the first two
-     - 2 frames of the first and of the third
+     - 2 frames of each
+     - 1 frame of each
    * - 2: two selected channels
      - 8 frames of each
-     - 8 frames of the first
-     - 2 frames of each, at the same time
+     - 4 frames of each
+     - 2 frames of each
    * - 3: one selected channel
      - 16 frames
-     - 8 frames in a row
-     - 4 frames in a row
+     - 8 frames
+     - 4 frames
+
+The capture logic, the registers and the packets do not change. UCAP sends all the frames of a mode, and the frames with no memory are zeros. The host gives only the frames with data.
+
+- **A mode with one memory or more for each channel.** Memory *j* of channel *c* is buffer *j* of channel *c* for the write logic and for the read logic. All the buffers of a channel have the same input data and the same write address, so a memory always takes these from one buffer of its channel: only its write enable, its read enable and the place of its output depend on the mode.
+- **The one-frame mode** (mode 0 with 4 buffers, mode 1 with 2 buffers): a channel has one half of a memory. The memory gets its first channel in its first half through its first port, and its second channel in its second half through its second port, at the same time. The second port also reads. The packets are those of the mode with frame number 0 only: UCAP sends one frame for each channel.
+- **Mode 0 with 2 buffers** has no memory: all its data are zeros.
+
+Status byte 4 tells the host what the build has: bits 3:0 = ``BUFFERS_WITH_MEMORY`` (0 from a firmware that does not have this byte: all the buffers have memory); bit 6 = 1 if each mode gives the memory in equal parts to its channels (a build with 4 or 2 buffers); bit 7 = 1 if mode 0 gives one frame of each of the 8 channels (4 buffers).
 
 Write process
 ~~~~~~~~~~~~~

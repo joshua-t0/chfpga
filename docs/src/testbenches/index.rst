@@ -169,9 +169,9 @@ ucap_buffers
 
 **File:** ``hdl/testbenches/ucap_buffers_testbench.vhd``
 
-**Run with:** ``xilinx_projects/testbenches/ucap_buffers_testbench/run.sh [MODE=0..3] [BUFFERS=4 MEMORY=ultra] [ONE_FRAME=true] [BUFFERS=2 MEMORY=block SPACING=4]`` (3 minutes)
+**Run with:** ``xilinx_projects/testbenches/ucap_buffers_testbench/run.sh [MODE=0..3] [BUFFERS=4 MEMORY=ultra] [BUFFERS=2 MEMORY=block] [CH0=.. CH1=.. CH2=.. CH3=..]`` (3 minutes)
 
-Self-checking test of ``ucap`` with memory in some of its buffers only (``BUFFERS_WITH_MEMORY``). The module under test and a reference with 8 UltraRAM buffers get the same data and commands, and their output streams of one capture are compared packet for packet: the headers must be equal, and the data must be equal to those of the reference or all zeros, in the fraction ``BUFFERS / 8`` of the packets. The default is 2 buffers in block RAM (with the register stages in front of the memories). With ``MODE=0 BUFFERS=4 MEMORY=ultra ONE_FRAME=true`` it tests the mode that captures one frame of each of the 8 channels (``MODE0_ONE_FRAME``): the 4 packets of each channel must be equal to the packets of frame 0 of that channel of the reference. ``SPACING`` is ``MEMORY_BUFFER_SPACING`` of the module under test (``BUFFERS=2 MEMORY=block SPACING=4`` is the ``crs_ct_exponent3`` configuration). The test also checks which buffers have the data: the buffers 0, ``SPACING``, ..., or the first ``BUFFERS`` buffers in mode 3 with ``SPACING`` > 1. The test ends with ``UCAP BUFFERS TEST PASSED``.
+Self-checking test of ``ucap`` with 4 or 2 memories (``BUFFERS_WITH_MEMORY``). The module under test and a reference with 8 UltraRAM buffers get the same data and commands, and their output streams of one capture are compared. In a mode with one memory or more for each channel, the two send the same packets: the headers must be equal, the data of the first frames of each channel must be equal to those of the reference, and the data of the other frames must be zeros. In the one-frame mode (``MODE=0 BUFFERS=4``, ``MODE=1 BUFFERS=2``) the module under test sends one frame for each channel, and its 4 packets must be equal to the packets of frame 0 of that channel of the reference. With ``MODE=0 BUFFERS=2`` all the data must be zeros. The test ends with ``UCAP BUFFERS TEST PASSED``.
 
 scaler_exponent
 ~~~~~~~~~~~~~~~
