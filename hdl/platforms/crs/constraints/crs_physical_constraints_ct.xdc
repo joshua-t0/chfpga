@@ -93,14 +93,14 @@ set_property LOC URAM288_X0Y76 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_lin
 set_property LOC URAM288_X0Y77 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0/exp_gen.x_blk.x_row_gen[2].x_u_gen[3].x_ram0/*/*_uram_0}]
 set_property LOC URAM288_X0Y78 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0/exp_gen.x_blk.x_row_gen[3].x_u_gen[2].x_ram0/*/*_uram_0}]
 set_property LOC URAM288_X0Y79 [get_cells -quiet {chfpga0/DATA_LINK_GEN.data_link_sel_gen.upack_cge_case.upack0/exp_gen.x_blk.x_row_gen[3].x_u_gen[3].x_ram0/*/*_uram_0}]
-set_property LOC URAM288_X0Y72 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[0]*/*/*_uram_0}]
-set_property LOC URAM288_X0Y73 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[0]*/*/*_uram_1}]
-set_property LOC URAM288_X0Y74 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[1]*/*/*_uram_0}]
-set_property LOC URAM288_X0Y75 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[1]*/*/*_uram_1}]
-set_property LOC URAM288_X0Y76 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[2]*/*/*_uram_0}]
-set_property LOC URAM288_X0Y77 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[2]*/*/*_uram_1}]
-set_property LOC URAM288_X0Y78 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[3]*/*/*_uram_0}]
-set_property LOC URAM288_X0Y79 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/uram_gen[3]*/*/*_uram_1}]
+set_property LOC URAM288_X0Y72 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/all_gen.*_gen[0]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y73 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/all_gen.*_gen[0]*/*/*_uram_1}]
+set_property LOC URAM288_X0Y74 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/all_gen.*_gen[1]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y75 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/all_gen.*_gen[1]*/*/*_uram_1}]
+set_property LOC URAM288_X0Y76 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/all_gen.*_gen[2]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y77 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/all_gen.*_gen[2]*/*/*_uram_1}]
+set_property LOC URAM288_X0Y78 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/all_gen.*_gen[3]*/*/*_uram_0}]
+set_property LOC URAM288_X0Y79 [get_cells -quiet {chfpga0/chan_array0/cap_gen.uram_case.ucap0/all_gen.*_gen[3]*/*/*_uram_1}]
 
 
 
