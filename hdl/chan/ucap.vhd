@@ -44,22 +44,18 @@ entity ucap is
 	    NUMBER_OF_CHANNELS: integer := 8; -- Warning: current design works only with NUMBER_OF_CHANNELS = 8
 	    NUMBER_OF_SOURCES : integer := 2; -- Warning; current design works only with NUMBER_OF_SOURCES = 2
         CAPTURE_BITS_PER_WORD: integer := 128; -- must be a multiple of 8 bits
-        -- Buffers that have memory (the first ones). The other buffers have no memory: the logic and the format of the
-        -- output do not change, but the data of those buffers are zeros. With 4: mode 0 has channels 0 to 3 only,
-        -- mode 1 has its first two selected channels only, mode 2 its first one, and mode 3 has 8 frames and then zeros.
+        -- Buffers that have memory: 8 (all), 4 or 2. A buffer holds 2 frames. With 4 or 2, each mode gives the memory in
+        -- equal parts to its channels:
+        --   8 buffers: 2 frames of 8 channels, 4 frames of 4, 8 frames of 2, 16 frames of 1
+        --   4 buffers: 1 frame of 8 channels, 2 frames of 4, 4 frames of 2, 8 frames of 1
+        --   2 buffers: (mode 0: no data), 1 frame of 4, 2 frames of 2, 4 frames of 1
+        -- The frames of a channel that have data are its first ones, in a row. The logic and the packets do not change:
+        -- UCAP sends all the frames of a mode, and the frames with no memory are zeros. The mode with one frame for
+        -- each channel (mode 0 with 4 buffers, mode 1 with 2) is the one-frame mode: a memory holds two channels, one
+        -- in each half, written at the same time through its two ports, and the packets are those of the mode with
+        -- frame number 0 only.
         BUFFERS_WITH_MEMORY: integer := 8;
-        -- Distance between the buffers that have memory: 1 (buffers 0, 1, 2, ...), 2 (buffers 0, 2, ...) or 4 (buffers 0
-        -- and 4). With 2 buffers and a distance of 4, mode 2 captures 2 frames of each of its two selected channels at
-        -- the same time, and mode 0 captures channels 0 and 4. With a distance of more than 1, mode 3 uses the memories
-        -- as buffers 0, 1, ...: the frames of its channel that have data are the first ones, in a row (4 frames with 2
-        -- buffers).
-        MEMORY_BUFFER_SPACING: integer := 1;
-        MEMORY_PRIMITIVE: string := "ultra"; -- "ultra" (UltraRAM) or "block" (block RAM)
-        -- TRUE (only with BUFFERS_WITH_MEMORY = 4 and UltraRAM): mode 0 captures one frame of each of the 8 channels at
-        -- the same time, and not two frames. Buffer k (0 to 3) gets channel 2k in its first half through its first port
-        -- and channel 2k + 1 in its second half through its second port, which the readout also uses. The packets are
-        -- those of mode 0 with frame number 0 only. The other modes do not change (buffers 0 to 3).
-        MODE0_ONE_FRAME: boolean := FALSE
+        MEMORY_PRIMITIVE: string := "ultra" -- "ultra" (UltraRAM) or "block" (block RAM)
 	);
     port (
         -- Input data buses, synchronous to s_axis_clk
@@ -105,7 +101,11 @@ architecture impl of ucap is
     constant NUMBER_OF_CHANNEL_PAIRS: integer := NUMBER_OF_CHANNELS/2;
     -- Block RAMs can be far from this logic (they are where the device has free ones): then the address, enable and
     -- data inputs of the buffers have register stages in front of them.
-    constant RAM_INPUT_STAGES: integer := sel(MEMORY_PRIMITIVE = "block", 2, sel(MODE0_ONE_FRAME, 1, 0)); -- one stage after the port multiplexers of MODE0_ONE_FRAME
+    constant ALL_BUFFERS: boolean := BUFFERS_WITH_MEMORY = NUMBER_OF_BUFFERS;
+    constant MEM_STEP: integer := NUMBER_OF_BUFFERS / BUFFERS_WITH_MEMORY; -- 1, 2 or 4
+    -- The mode in which a memory holds two channels (the number of channels is 2 x BUFFERS_WITH_MEMORY): -1 if none
+    constant ONE_FRAME_MODE_NUMBER: integer := sel(BUFFERS_WITH_MEMORY = 4, 0, sel(BUFFERS_WITH_MEMORY = 2, 1, -1));
+    constant RAM_INPUT_STAGES: integer := sel(MEMORY_PRIMITIVE = "block", 2, sel(ALL_BUFFERS, 0, 1)); -- one stage after the multiplexers of the memories
     constant XPM_LATENCY: integer := 4; -- read latency of the memories
     constant RAM_LATENCY: integer := XPM_LATENCY + RAM_INPUT_STAGES; -- read latency of the buffers, from ram_rd_addr and ram_rd_en. Used to align the ram reads
 
@@ -130,12 +130,42 @@ architecture impl of ucap is
     signal readout_delay_reg: unsigned(15 downto 0); -- ADC input frames to wait after ram_readout_trig (0 = no delay)
     -- Signals used for both write and read processes
     signal chan_pair_sel: u3_array(0 to NUMBER_OF_CHANNEL_PAIRS-1);
-    function has_memory(i: integer) return boolean is
+    -- With 4 or 2 memories. A buffer is a buffer of the write and read logic (0 to 7); NO_BUFFER is the index of a '0'.
+    constant NO_BUFFER: integer := NUMBER_OF_BUFFERS;
+    -- The buffer that memory p is in mode m, with one memory or more for each channel: memory j of channel c is
+    -- buffer j of channel c. NO_BUFFER: the mode has more channels than the memories can hold.
+    function buffer_of_memory(p, m: integer) return integer is
+        constant CHANNELS: integer := NUMBER_OF_CHANNELS / 2 ** m;
     begin
-        return i mod MEMORY_BUFFER_SPACING = 0 and i / MEMORY_BUFFER_SPACING < BUFFERS_WITH_MEMORY;
+        if CHANNELS > BUFFERS_WITH_MEMORY then
+            return NO_BUFFER;
+        end if;
+        return (NUMBER_OF_BUFFERS / CHANNELS) * (p / (BUFFERS_WITH_MEMORY / CHANNELS)) + p mod (BUFFERS_WITH_MEMORY / CHANNELS);
     end function;
-    signal one_channel_in_a_row: std_logic; -- mode 3 with MEMORY_BUFFER_SPACING > 1: memory k is buffer k, and not buffer k * MEMORY_BUFFER_SPACING
-    signal one_frame_mode: std_logic; -- mode 0 with MODE0_ONE_FRAME: 8 channels, one frame each, two channels in each buffer
+    -- The buffer whose write enable is that of the first port of memory p in mode m. One-frame mode: the first buffer
+    -- of the first channel of the memory.
+    function write_buffer(p, m: integer) return integer is
+    begin
+        return sel(m = ONE_FRAME_MODE_NUMBER, MEM_STEP * p, buffer_of_memory(p, m));
+    end function;
+    -- The buffer of the read logic that reads memory p in mode m. One-frame mode: the read logic reads memory p as
+    -- its buffer p.
+    function read_buffer(p, m: integer) return integer is
+    begin
+        return sel(m = ONE_FRAME_MODE_NUMBER, p, buffer_of_memory(p, m));
+    end function;
+    -- The memory that the read logic reads as its buffer b in mode m. BUFFERS_WITH_MEMORY: none (zeros).
+    function memory_of_buffer(b, m: integer) return integer is
+    begin
+        for p in 0 to BUFFERS_WITH_MEMORY - 1 loop
+            if read_buffer(p, m) = b then
+                return p;
+            end if;
+        end loop;
+        return BUFFERS_WITH_MEMORY;
+    end function;
+    signal ram_wr_en_x, ram_rd_en_x: std_logic_vector(0 to NUMBER_OF_BUFFERS); -- the enables of the buffers, and a '0' at NO_BUFFER
+    signal one_frame_mode: std_logic; -- the mode with one frame for each channel: two channels in each memory (see BUFFERS_WITH_MEMORY)
 	signal capture_timestamp: u48_array(0 to NUMBER_OF_SOURCES-1);
     signal ram_readout_trig: std_logic_vector(0 to NUMBER_OF_BUFFERS-1);
     signal ram_readout_trig_ack: std_logic_vector(0 to NUMBER_OF_BUFFERS-1); -- pulses to '1' when a ram buffer processing is finished
@@ -215,8 +245,7 @@ begin
 		);
 
 	-- CONTROL byte 0 -1 : mode and channel selection
-	one_frame_mode  <= to_std_logic(MODE0_ONE_FRAME and control_bytes(0)(7 downto 6) = "00");
-	one_channel_in_a_row <= to_std_logic(MEMORY_BUFFER_SPACING > 1 and control_bytes(0)(7 downto 6) = "11");
+	one_frame_mode  <= to_std_logic(to_integer(unsigned(control_bytes(0)(7 downto 6))) = ONE_FRAME_MODE_NUMBER);
 	mode            <= control_bytes(0)(7 downto 6); -- "00": 8-channel mode, "01": 4-channel, "10": 2-channel, "11": 1-channel
 	chan_sel_map(1) <= unsigned(control_bytes(0)(5 downto 3));
 	chan_sel_map(0) <= unsigned(control_bytes(0)(2 downto 0));
@@ -253,9 +282,10 @@ begin
 	status_bytes(1) <= std_logic_vector(in_frame_ctr);
 	status_bytes(2) <= std_logic_vector(out_frame_ctr);
 	status_bytes(3) <= std_logic_vector(m_clk_ctr);
-	status_bytes(4)(3 downto 0) <= to_slv(BUFFERS_WITH_MEMORY, 4);
-	status_bytes(4)(6 downto 4) <= "000" when MEMORY_BUFFER_SPACING = 1 else "001" when MEMORY_BUFFER_SPACING = 2 else "010"; -- log2 of MEMORY_BUFFER_SPACING
-	status_bytes(4)(7) <= to_std_logic(MODE0_ONE_FRAME); -- mode 0 gives one frame of each of the 8 channels -- 0 from a firmware that does not have this byte: all the buffers have memory
+	status_bytes(4)(3 downto 0) <= to_slv(BUFFERS_WITH_MEMORY, 4); -- 0 from a firmware that does not have this byte: all the buffers have memory
+	status_bytes(4)(5 downto 4) <= "00";
+	status_bytes(4)(6) <= to_std_logic(not ALL_BUFFERS); -- each mode gives the memory in equal parts to its channels
+	status_bytes(4)(7) <= to_std_logic(ONE_FRAME_MODE_NUMBER = 0); -- mode 0 gives one frame of each of the 8 channels
 
     ------------------------------------------------------------
     -- UltraRAM data buffers
@@ -268,49 +298,8 @@ begin
     --   8 frames from 2 channels (mode "10")
     --   16 frames from 1 channel (mode "11")
     --
+	all_gen: if ALL_BUFFERS generate
 	uram_gen: for i in 0 to NUMBER_OF_BUFFERS-1 generate
-		begin
-		mem_gen: if i < BUFFERS_WITH_MEMORY and MODE0_ONE_FRAME generate
-			-- Buffer with two ports. Port A writes. Port B writes the second channel in the one-frame mode, and reads.
-			-- (2 * i and 2 * i + 1 are the buffers of the two channels in the write logic of mode 0.)
-			signal a_din, b_din, a_din_reg, b_din_reg: std_logic_vector(CAPTURE_BITS_PER_WORD - 1 downto 0);
-			signal a_addr, b_addr, a_addr_reg, b_addr_reg: std_logic_vector(11 downto 0);
-			signal a_en, b_en, b_we, a_en_reg, b_en_reg, b_we_reg: std_logic;
-		begin
-			assert BUFFERS_WITH_MEMORY = NUMBER_OF_BUFFERS / 2 and MEMORY_PRIMITIVE = "ultra" and MEMORY_BUFFER_SPACING = 1 report "MODE0_ONE_FRAME needs UltraRAM for one half of the buffers" severity FAILURE;
-			a_din <= ram_din(2 * i) when one_frame_mode else ram_din(i);
-			a_addr <= ram_wr_addr(2 * i) when one_frame_mode else ram_wr_addr(i); -- first half of the buffer (the frame number is 0)
-			a_en <= ram_wr_en(2 * i) when one_frame_mode else ram_wr_en(i);
-			b_din <= ram_din(2 * i + 1);
-			b_we <= ram_wr_en(2 * i + 1) and one_frame_mode;
-			b_addr <= '1' & ram_wr_addr(2 * i + 1)(10 downto 0) when b_we else ram_rd_addr(i); -- second half of the buffer
-			b_en <= b_we or ram_rd_en(i);
-			process(s_axis_clk) begin -- the register stage of RAM_INPUT_STAGES
-				if rising_edge(s_axis_clk) then
-					a_din_reg <= a_din; a_addr_reg <= a_addr; a_en_reg <= a_en;
-					b_din_reg <= b_din; b_addr_reg <= b_addr; b_en_reg <= b_en; b_we_reg <= b_we;
-				end if;
-			end process;
-			uram0: xpm_memory_tdpram
-				generic map (
-					MEMORY_PRIMITIVE => "ultra",
-					CLOCKING_MODE => "common_clock",
-					ADDR_WIDTH_A => 12, WRITE_DATA_WIDTH_A => CAPTURE_BITS_PER_WORD, BYTE_WRITE_WIDTH_A => CAPTURE_BITS_PER_WORD, READ_DATA_WIDTH_A => CAPTURE_BITS_PER_WORD,
-					ADDR_WIDTH_B => 12, WRITE_DATA_WIDTH_B => CAPTURE_BITS_PER_WORD, BYTE_WRITE_WIDTH_B => CAPTURE_BITS_PER_WORD, READ_DATA_WIDTH_B => CAPTURE_BITS_PER_WORD,
-					MEMORY_SIZE => CAPTURE_BITS_PER_WORD * 4096,
-					READ_LATENCY_A => XPM_LATENCY, READ_LATENCY_B => XPM_LATENCY,
-					WRITE_MODE_A => "no_change", WRITE_MODE_B => "no_change",
-					SIM_ASSERT_CHK => 1,
-					WRITE_PROTECT => 1
-				)
-				port map (
-					dina => a_din_reg, addra => a_addr_reg, ena => a_en_reg, wea => "1", douta => open,
-					dinb => b_din_reg, addrb => b_addr_reg, enb => b_en_reg, web(0) => b_we_reg, doutb => mem_dout(i),
-					clka => s_axis_clk, clkb => s_axis_clk, rsta => rst, rstb => rst,
-					regcea => '1', regceb => '1', sleep => '0',
-					injectsbiterra => '0', injectdbiterra => '0', injectsbiterrb => '0', injectdbiterrb => '0'
-				);
-		elsif has_memory(i) generate
 			-- the inputs of the memory, after RAM_INPUT_STAGES register stages
 			signal din_pipe: slv_array(0 to RAM_INPUT_STAGES)(CAPTURE_BITS_PER_WORD - 1 downto 0);
 			signal wr_addr_pipe, rd_addr_pipe: slv12_array(0 to RAM_INPUT_STAGES);
@@ -320,10 +309,9 @@ begin
 		begin
 			din_pipe(0) <= ram_din(i);
 			wr_addr_pipe(0) <= ram_wr_addr(i);
-			-- In mode 3 all the buffers have the same input data and the same addresses: only the enables differ.
-			wr_en_pipe(0) <= ram_wr_en(i / MEMORY_BUFFER_SPACING) when one_channel_in_a_row else ram_wr_en(i);
+			wr_en_pipe(0) <= ram_wr_en(i);
 			rd_addr_pipe(0) <= ram_rd_addr(i);
-			rd_en_pipe(0) <= ram_rd_en(i / MEMORY_BUFFER_SPACING) when one_channel_in_a_row else ram_rd_en(i);
+			rd_en_pipe(0) <= ram_rd_en(i);
 			pipe_gen: for k in 1 to RAM_INPUT_STAGES generate
 				process(s_axis_clk) begin
 					if rising_edge(s_axis_clk) then
@@ -389,18 +377,85 @@ begin
 					regceb => '1',
 					clkb => '0'
 			   );
-		else generate
-			mem_dout(i) <= (others => '0');
-		end generate mem_gen;
-		-- The output of buffer i for the readout logic
-		dout_gen: if MEMORY_BUFFER_SPACING > 1 and i < BUFFERS_WITH_MEMORY generate
-			ram_dout(i) <= mem_dout(i * MEMORY_BUFFER_SPACING) when one_channel_in_a_row else mem_dout(i);
-		elsif MEMORY_BUFFER_SPACING > 1 generate
-			ram_dout(i) <= (others => '0') when one_channel_in_a_row else mem_dout(i);
-		else generate
 			ram_dout(i) <= mem_dout(i);
-		end generate dout_gen;
 	end generate uram_gen;
+	else generate
+		-- 4 or 2 memories, with two ports. See BUFFERS_WITH_MEMORY.
+		assert BUFFERS_WITH_MEMORY = 4 or BUFFERS_WITH_MEMORY = 2 report "BUFFERS_WITH_MEMORY must be 8, 4 or 2" severity FAILURE;
+		ram_wr_en_x <= ram_wr_en & '0';
+		ram_rd_en_x <= ram_rd_en & '0';
+		mem_gen: for p in 0 to BUFFERS_WITH_MEMORY - 1 generate
+			-- In all the modes the write data and the write address of the memory are those of buffer FIRST: a channel
+			-- has the same data and the same address in all its buffers, and buffer FIRST is a buffer of the channel of
+			-- this memory. The write enable is that of the buffer that the memory is in the mode.
+			constant FIRST: integer := MEM_STEP * p;
+			-- One-frame mode: the first buffer of the second channel of this memory
+			constant SECOND: integer := MEM_STEP * p + MEM_STEP / 2;
+			-- The inputs of the two ports, with RAM_INPUT_STAGES register stages. Port A writes. Port B writes the
+			-- second channel in the one-frame mode (in the second half of the memory), and reads.
+			signal a_din, b_din: slv_array(0 to RAM_INPUT_STAGES)(CAPTURE_BITS_PER_WORD - 1 downto 0);
+			signal a_addr, b_addr: slv12_array(0 to RAM_INPUT_STAGES);
+			signal a_en, b_en, b_we: std_logic_vector(0 to RAM_INPUT_STAGES);
+			signal rd_en: std_logic;
+			attribute shreg_extract: string;
+			attribute shreg_extract of a_din, b_din, a_addr, b_addr, a_en, b_en, b_we: signal is "no";
+		begin
+			a_din(0) <= ram_din(FIRST);
+			a_addr(0) <= ram_wr_addr(FIRST);
+			with mode select a_en(0) <=
+				ram_wr_en_x(write_buffer(p, 0)) when "00",
+				ram_wr_en_x(write_buffer(p, 1)) when "01",
+				ram_wr_en_x(write_buffer(p, 2)) when "10",
+				ram_wr_en_x(write_buffer(p, 3)) when others;
+			with mode select rd_en <=
+				ram_rd_en_x(read_buffer(p, 0)) when "00",
+				ram_rd_en_x(read_buffer(p, 1)) when "01",
+				ram_rd_en_x(read_buffer(p, 2)) when "10",
+				ram_rd_en_x(read_buffer(p, 3)) when others;
+			b_din(0) <= ram_din(SECOND);
+			b_we(0) <= ram_wr_en(SECOND) and one_frame_mode;
+			b_addr(0) <= '1' & ram_wr_addr(SECOND)(10 downto 0) when b_we(0) else ram_rd_addr(0); -- all the buffers have the same read address
+			b_en(0) <= b_we(0) or rd_en;
+			pipe_gen: for k in 1 to RAM_INPUT_STAGES generate
+				process(s_axis_clk) begin
+					if rising_edge(s_axis_clk) then
+						a_din(k) <= a_din(k - 1); a_addr(k) <= a_addr(k - 1); a_en(k) <= a_en(k - 1);
+						b_din(k) <= b_din(k - 1); b_addr(k) <= b_addr(k - 1); b_en(k) <= b_en(k - 1); b_we(k) <= b_we(k - 1);
+					end if;
+				end process;
+			end generate pipe_gen;
+			mem0: xpm_memory_tdpram
+				generic map (
+					MEMORY_PRIMITIVE => MEMORY_PRIMITIVE,
+					CLOCKING_MODE => "common_clock",
+					ADDR_WIDTH_A => 12, WRITE_DATA_WIDTH_A => CAPTURE_BITS_PER_WORD, BYTE_WRITE_WIDTH_A => CAPTURE_BITS_PER_WORD, READ_DATA_WIDTH_A => CAPTURE_BITS_PER_WORD,
+					ADDR_WIDTH_B => 12, WRITE_DATA_WIDTH_B => CAPTURE_BITS_PER_WORD, BYTE_WRITE_WIDTH_B => CAPTURE_BITS_PER_WORD, READ_DATA_WIDTH_B => CAPTURE_BITS_PER_WORD,
+					MEMORY_SIZE => CAPTURE_BITS_PER_WORD * 4096,
+					READ_LATENCY_A => XPM_LATENCY, READ_LATENCY_B => XPM_LATENCY,
+					WRITE_MODE_A => "no_change", WRITE_MODE_B => "no_change",
+					SIM_ASSERT_CHK => 1,
+					WRITE_PROTECT => 1
+				)
+				port map (
+					dina => a_din(RAM_INPUT_STAGES), addra => a_addr(RAM_INPUT_STAGES), ena => a_en(RAM_INPUT_STAGES), wea => "1", douta => open,
+					dinb => b_din(RAM_INPUT_STAGES), addrb => b_addr(RAM_INPUT_STAGES), enb => b_en(RAM_INPUT_STAGES), web(0) => b_we(RAM_INPUT_STAGES), doutb => mem_dout(p),
+					clka => s_axis_clk, clkb => s_axis_clk, rsta => rst, rstb => rst,
+					regcea => '1', regceb => '1', sleep => '0',
+					injectsbiterra => '0', injectdbiterra => '0', injectsbiterrb => '0', injectdbiterrb => '0'
+				);
+		end generate mem_gen;
+		zero_gen: for p in BUFFERS_WITH_MEMORY to NUMBER_OF_BUFFERS - 1 generate
+			mem_dout(p) <= (others => '0'); -- mem_dout(BUFFERS_WITH_MEMORY) is the data of a buffer that has no memory in a mode
+		end generate zero_gen;
+		-- The data of each buffer of the read logic
+		dout_gen: for b in 0 to NUMBER_OF_BUFFERS - 1 generate
+			with mode select ram_dout(b) <=
+				mem_dout(memory_of_buffer(b, 0)) when "00",
+				mem_dout(memory_of_buffer(b, 1)) when "01",
+				mem_dout(memory_of_buffer(b, 2)) when "10",
+				mem_dout(memory_of_buffer(b, 3)) when others;
+		end generate dout_gen;
+	end generate all_gen;
 
     -- Write block: writes data to memory
     --
@@ -750,10 +805,10 @@ begin
                         -- If any buffer is ready for transmission, grab the trigger pattern so we can process them as a batch.
 	            		ready := ram_readout_trig and not ram_readout_trig_ack; -- ack won't affect trig until the next clock. Anticipate the result.
 	            		if one_frame_mode then -- a buffer has two channels: it is ready when its two channels are complete
-	            			for i in 0 to NUMBER_OF_BUFFERS / 2 - 1 loop
-	            				ready(i) := ram_readout_trig(2 * i) and ram_readout_trig(2 * i + 1) and not ram_readout_trig_ack(2 * i);
+	            			ready := (others => '0');
+	            			for i in 0 to BUFFERS_WITH_MEMORY - 1 loop -- memory i is read as buffer i; its two channels start at the buffers MEM_STEP * i and MEM_STEP * i + MEM_STEP / 2
+	            				ready(i) := ram_readout_trig(MEM_STEP * i) and ram_readout_trig(MEM_STEP * i + MEM_STEP / 2) and not ram_readout_trig_ack(MEM_STEP * i);
 	            			end loop;
-	            			ready(NUMBER_OF_BUFFERS / 2 to NUMBER_OF_BUFFERS - 1) := (others => '0');
 	            		end if;
 	            		if any_one(ready) then
                             ram_readout_mask <= ready when one_frame_mode else ram_readout_trig;
@@ -823,8 +878,9 @@ begin
                                 ram_readout_trig_ack <= ram_readout_ack_var; -- signal the write process we have finished with this buffer
                                 if one_frame_mode then -- the two channels of this buffer
                                     ram_readout_trig_ack <= (others => '0');
-                                    ram_readout_trig_ack(2 * to_integer(buf_ix(buf_ix'LEFT)(1 downto 0))) <= '1';
-                                    ram_readout_trig_ack(2 * to_integer(buf_ix(buf_ix'LEFT)(1 downto 0)) + 1) <= '1';
+                                    for j in 0 to MEM_STEP - 1 loop -- all the buffers of the two channels
+                                        ram_readout_trig_ack((MEM_STEP * to_integer(buf_ix(buf_ix'LEFT)) + j) mod NUMBER_OF_BUFFERS) <= '1';
+                                    end loop;
                                 end if;
                                 if ram_readout_mask = ram_readout_ack_var then -- if this was the last buffer in the mask
                                     read_seq_state <= READ_SEQ_WAIT; -- Go back to wait mode to check for new buffers
@@ -842,8 +898,8 @@ begin
                 -- Convert useful signals to variables and integers for ease of use
                 buf := buf_ix(0);
                 chan_buf := buf;
-                if one_frame_mode then -- the first half of buffer k has channel 2k, the second half has channel 2k + 1
-                    chan_buf := buf(1 downto 0) & read_proc_pkt_ctr(2);
+                if one_frame_mode then -- the first half of memory k has its first channel, the second half has its second channel: the first buffer of that channel
+                    chan_buf := to_unsigned((MEM_STEP * to_integer(buf) + (MEM_STEP / 2) * to_integer(read_proc_pkt_ctr(2 downto 2))) mod NUMBER_OF_BUFFERS, 3);
                 end if;
                 src := ram_readout_src(to_integer(chan_buf));
                 src_int := to_integer(to_unsigned(src));
@@ -873,8 +929,10 @@ begin
 			            frame_header.STREAM_ID(2 downto 0) := std_logic_vector(chan_buf); -- channel (0-7)
 	                when "01" => -- 4-channel mode   (pkt ctr = 2 bit chan, 2 bit seq, 2 bit subframe)
 	                    -- STREAM_ID = "00" [2-bit frame #] [8-bit crate/slot #] "0" [3-bit chan #]
-			            frame_header.STREAM_ID(13 downto 12) := std_logic_vector'(buf(0) & read_proc_pkt_ctr(2)); -- frame (0-3)
-			            frame_header.STREAM_ID(2 downto 0) := std_logic_vector(chan_pair_sel(to_integer(buf(2 downto 1)))); -- channel (0-7) from chan_pair_sel(buf/2)
+			            if not one_frame_mode then
+			            	frame_header.STREAM_ID(13 downto 12) := std_logic_vector'(buf(0) & read_proc_pkt_ctr(2)); -- frame (0-3); always 0 in the one-frame mode
+			            end if;
+			            frame_header.STREAM_ID(2 downto 0) := std_logic_vector(chan_pair_sel(to_integer(chan_buf(2 downto 1)))); -- channel (0-7) from chan_pair_sel(buffer / 2)
 	                when "10" => -- 2-channel mode (pkt ctr = 1 bit chan, 3 bit seq, 2 bit subframe)
 	                    -- STREAM_ID = "0" [3-bit frame #] [8-bit crate/slot #] "0" [3-bit chan #]
 			            frame_header.STREAM_ID(14 downto 12) := std_logic_vector(buf(1 downto 0) & read_proc_pkt_ctr(2));

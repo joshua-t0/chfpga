@@ -641,10 +641,9 @@ architecture impl of chFPGA is
 	constant WIDE_CORR_UCAP_BUFFERS: integer := 4; -- UCAP buffers that have memory (UltraRAM)
 	constant CHAN_OUT_WIDTH: integer := sel(WIDE_CORR, 64, 32); -- bits of a channelizer output word: 4 bins of (4+4) or (8+8) bits
 	-- Exponent mode of the F-engine packets (see upack and scaler). The packetizer takes UltraRAMs from UCAP:
-	-- with exponents of 2 bits UCAP has 4 of its 8 buffers (mode 0 then gives one frame of each of the 8 channels),
-	-- and with exponents of 3 bits the packetizer has all the UltraRAMs: UCAP then has two buffers, in block RAM
-	-- (14 RAMB36 and 1 RAMB18 each): buffers 0 and 4. Its mode 2 captures 2 frames of each of its two selected channels at the same
-	-- time, and its mode 3 captures 4 frames in a row of one channel; the other frames are zeros.
+	-- with exponents of 2 bits UCAP has 4 of its 8 buffers in UltraRAM, and with exponents of 3 bits the packetizer
+	-- has all the UltraRAMs: UCAP then has 2 buffers, in block RAM. In each mode the channels have equal parts of
+	-- this memory (see ucap): 8 frames in all with 4 buffers, 4 frames in all with 2 buffers.
 	constant UCAP_BLOCK_RAM: boolean := EXPONENT_BITS = 3;
 	constant UCAP_4_BUFFERS: boolean := EXPONENT_BITS > 0 and not UCAP_BLOCK_RAM;
 	function ucap_memory return string is
@@ -1847,8 +1846,6 @@ begin
 			EXPONENT_BITS => EXPONENT_BITS,
 			UCAP_BUFFERS => sel(WIDE_CORR, WIDE_CORR_UCAP_BUFFERS, sel(UCAP_BLOCK_RAM, 2, sel(UCAP_4_BUFFERS, 4, 8))),
 			UCAP_MEMORY => ucap_memory,
-			UCAP_BUFFER_SPACING => sel(UCAP_BLOCK_RAM, 4, 1),
-			UCAP_MODE0_ONE_FRAME => WIDE_CORR or UCAP_4_BUFFERS, -- with 4 buffers: mode 0 gives one frame of each of the 8 channels
             -- ADC config
 			ADC_IS_DIFFERENTIAL => ADC_IS_DIFFERENTIAL,
 			ADC_PROVIDE_BUFFERED_DIVCLK => ADC_PROVIDE_BUFFERED_DIVCLK,

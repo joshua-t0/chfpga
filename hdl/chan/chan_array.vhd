@@ -43,8 +43,6 @@ entity chan_array is
 		EXPONENT_BITS                   : integer := 0; -- 0: no exponent mode in the scalers. 1 to 3: bits of the exponent of each bin (chan_out_texp)
 		UCAP_BUFFERS                    : integer := 8; -- UCAP buffers that have memory (see ucap)
 		UCAP_MEMORY                     : string := "ultra"; -- memory of the UCAP buffers: "ultra" (UltraRAM) or "block" (block RAM)
-		UCAP_BUFFER_SPACING             : integer := 1; -- distance between the UCAP buffers that have memory (see ucap)
-		UCAP_MODE0_ONE_FRAME            : boolean := FALSE; -- UCAP mode 0 captures one frame of each of the 8 channels (see ucap)
 		NUMBER_OF_CAPTURE_SOURCES       : integer                                           := CHAN_CAPTURE_INFO(CAPTURE_TYPE).NUMBER_OF_SOURCES;
 		CAPTURE_BITS_PER_WORD           : integer                                           := CHAN_CAPTURE_INFO(CAPTURE_TYPE).INPUT_WIDTH;
 		ADC_SAMPLES_PER_FRAME           : integer := FFT_INFO(FFT_TYPE).SAMPLES_PER_FRAME;
@@ -772,8 +770,6 @@ begin
 					FPGA_SERIES => FPGA_SERIES,
 					BUFFERS_WITH_MEMORY => UCAP_BUFFERS,
 					MEMORY_PRIMITIVE => UCAP_MEMORY,
-					MEMORY_BUFFER_SPACING => UCAP_BUFFER_SPACING,
-					MODE0_ONE_FRAME => UCAP_MODE0_ONE_FRAME,
 					CAPTURE_BITS_PER_WORD => CAPTURE_BITS_PER_WORD
 				)
 				port map (
